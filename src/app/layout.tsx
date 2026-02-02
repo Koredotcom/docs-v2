@@ -14,7 +14,7 @@ export const metadata = {
 const navbar = (
   <Navbar
     logo={<span style={{ fontWeight: 700 }}>Kore.ai Platform</span>}
-    projectLink="https://github.com/your-org/kore-platform"
+    projectLink="https://github.com/Koredotcom/docs-v2"
   />
 )
 
@@ -33,8 +33,9 @@ export default async function RootLayout({
           navbar={navbar}
           footer={footer}
           pageMap={await getPageMap()}
-          docsRepositoryBase="https://github.com/your-org/kore-platform/tree/main/docs"
+          docsRepositoryBase="https://github.com/Koredotcom/docs-v2/tree/main/src/content"
           editLink="Edit this page"
+          feedback={{ content: 'Question? Give us feedback →', labels: 'feedback' }}
           sidebar={{ defaultMenuCollapseLevel: 1, toggleButton: true }}
           toc={{ backToTop: true }}
         >
