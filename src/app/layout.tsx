@@ -10,7 +10,7 @@ export const metadata = {
   },
   description: 'Build intelligent AI solutions for enterprise productivity, customer service, and process automation.',
   icons: {
-    icon: '/favicon.svg',
+    icon: '/favicon.png',
   },
 }
 
