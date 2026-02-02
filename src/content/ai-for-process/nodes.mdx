@@ -1,0 +1,428 @@
+# Workflow Nodes
+
+Available node types for building workflows.
+
+---
+
+## Overview
+
+Workflow nodes are the building blocks of automation:
+
+| Category | Purpose |
+|----------|---------|
+| **Control** | Start, end, flow control |
+| **AI** | Text, image, audio, document AI |
+| **Integration** | API calls, external systems |
+| **Logic** | Conditions, loops, branching |
+| **Human** | Human-in-the-loop tasks |
+
+---
+
+## Control Nodes
+
+### Start Node
+
+Entry point for workflow execution:
+
+```yaml
+Start Node:
+  trigger: api | schedule | event | manual
+  input_schema:
+    type: object
+    properties:
+      document: { type: string }
+  validation:
+    - required: document
+```
+
+### End Node
+
+Complete workflow and return output:
+
+```yaml
+End Node:
+  output_schema:
+    type: object
+    properties:
+      result: { type: string }
+      status: { type: string }
+  output_mapping:
+    result: "{{ai_node.output}}"
+    status: "completed"
+```
+
+---
+
+## AI Nodes
+
+### Text-to-Text
+
+Generate, transform, or analyze text:
+
+```yaml
+Text-to-Text Node:
+  model: gpt-4
+  prompt: |
+    Summarize the following text in 3 bullet points:
+
+    {{input.text}}
+  temperature: 0.7
+  max_tokens: 500
+  output_variable: summary
+```
+
+**Use cases:**
+- Text summarization
+- Content generation
+- Translation
+- Classification
+- Entity extraction
+
+### Text-to-Image
+
+Generate images from text prompts:
+
+```yaml
+Text-to-Image Node:
+  model: dall-e-3
+  prompt: "{{input.image_description}}"
+  size: 1024x1024
+  quality: standard
+  output_variable: generated_image
+```
+
+**Use cases:**
+- Marketing visuals
+- Product mockups
+- Creative content
+
+### Image-to-Text
+
+Extract text or descriptions from images:
+
+```yaml
+Image-to-Text Node:
+  model: gpt-4-vision
+  image: "{{input.image_url}}"
+  prompt: |
+    Describe the contents of this image in detail.
+    Extract any visible text.
+  output_variable: image_analysis
+```
+
+**Use cases:**
+- Image description
+- OCR
+- Visual QA
+- Content moderation
+
+### Audio-to-Text
+
+Transcribe audio to text:
+
+```yaml
+Audio-to-Text Node:
+  model: whisper-1
+  audio: "{{input.audio_url}}"
+  language: auto
+  timestamps: true
+  output_variable: transcription
+```
+
+**Use cases:**
+- Meeting transcription
+- Voice note processing
+- Podcast transcription
+- Call center analytics
+
+### Doc Intelligence
+
+Extract structured data from documents:
+
+```yaml
+Doc Intelligence Node:
+  document: "{{input.document_url}}"
+  extraction_schema:
+    - field: invoice_number
+      type: string
+    - field: amount
+      type: number
+    - field: line_items
+      type: array
+  ocr_model: default
+  output_variable: extracted_data
+```
+
+**Use cases:**
+- Invoice processing
+- Form extraction
+- Contract analysis
+- Receipt processing
+
+### Agentic App Node
+
+Call Agent Platform applications:
+
+```yaml
+Agentic App Node:
+  app_id: "customer-support-bot"
+  input:
+    query: "{{input.customer_question}}"
+    context: "{{input.customer_info}}"
+  output_variable: agent_response
+```
+
+---
+
+## Integration Nodes
+
+### API Node
+
+Call external APIs:
+
+```yaml
+API Node:
+  method: POST
+  url: "https://api.example.com/orders"
+  headers:
+    Authorization: "Bearer {{env.API_KEY}}"
+    Content-Type: "application/json"
+  body:
+    order_id: "{{input.order_id}}"
+    action: "update_status"
+  timeout: 30s
+  retry:
+    count: 3
+    delay: 1s
+  output_variable: api_response
+```
+
+### Function Node
+
+Run custom code:
+
+```yaml
+Function Node:
+  runtime: python3.9
+  code: |
+    def handler(input, context):
+        # Process data
+        result = input['value'] * 2
+        return {'doubled': result}
+  input:
+    value: "{{previous_node.output}}"
+  output_variable: function_result
+```
+
+Supported runtimes:
+- Python 3.9+
+- Node.js 18+
+
+### DocSearch Node
+
+Search document repositories:
+
+```yaml
+DocSearch Node:
+  source: search_ai_app
+  query: "{{input.search_query}}"
+  filters:
+    document_type: "policy"
+  top_k: 5
+  output_variable: search_results
+```
+
+---
+
+## Logic Nodes
+
+### Condition Node
+
+Branch based on conditions:
+
+```yaml
+Condition Node:
+  conditions:
+    - name: high_value
+      expression: "{{amount}} > 10000"
+      next: high_value_path
+    - name: medium_value
+      expression: "{{amount}} > 1000"
+      next: medium_value_path
+  default: standard_path
+```
+
+### Loop Node
+
+Iterate over collections:
+
+```yaml
+Loop Node:
+  collection: "{{input.items}}"
+  item_variable: current_item
+  max_iterations: 100
+  parallel: false
+  body:
+    - node: process_item
+    - node: store_result
+```
+
+### Split Node
+
+Execute parallel branches:
+
+```yaml
+Split Node:
+  branches:
+    - name: email_notification
+      nodes: [send_email]
+    - name: slack_notification
+      nodes: [send_slack]
+    - name: update_database
+      nodes: [db_update]
+  wait_for_all: true
+```
+
+### Merge Node
+
+Combine parallel results:
+
+```yaml
+Merge Node:
+  inputs:
+    - branch: email_notification
+      variable: email_result
+    - branch: slack_notification
+      variable: slack_result
+  output_variable: merged_results
+```
+
+---
+
+## Human Node
+
+Route tasks to humans:
+
+```yaml
+Human Node:
+  task_type: review | approval | input | classification
+  title: "Review AI Extraction"
+  instructions: |
+    Review the extracted data and correct any errors.
+  assignees:
+    - role: reviewer
+    - user: specific@email.com
+  fields:
+    - name: invoice_number
+      type: text
+      value: "{{ai_extract.invoice_number}}"
+      editable: true
+    - name: amount
+      type: number
+      value: "{{ai_extract.amount}}"
+      editable: true
+    - name: approved
+      type: boolean
+      default: false
+  timeout:
+    duration: 24h
+    action: escalate
+  escalation:
+    assignees:
+      - role: supervisor
+```
+
+### Task Types
+
+| Type | Description |
+|------|-------------|
+| **Review** | Review and edit AI output |
+| **Approval** | Approve or reject |
+| **Input** | Provide missing information |
+| **Classification** | Categorize or label |
+
+---
+
+## Utility Nodes
+
+### Delay Node
+
+Pause execution:
+
+```yaml
+Delay Node:
+  duration: 5m
+  # Or wait until specific time
+  until: "{{input.scheduled_time}}"
+```
+
+### Variable Node
+
+Set or transform variables:
+
+```yaml
+Variable Node:
+  operations:
+    - set: formatted_date
+      value: "{{format_date(input.date, 'YYYY-MM-DD')}}"
+    - set: full_name
+      value: "{{input.first_name}} {{input.last_name}}"
+```
+
+### Log Node
+
+Add logging for debugging:
+
+```yaml
+Log Node:
+  level: info | debug | warn | error
+  message: "Processing order {{order_id}}"
+  data:
+    - order_id
+    - customer_email
+```
+
+---
+
+## Error Handling
+
+### Try-Catch Pattern
+
+```yaml
+Error Handling:
+  try:
+    - node: api_call
+    - node: process_response
+  catch:
+    - condition: "{{error.type}} == 'timeout'"
+      action: retry
+      max_retries: 3
+    - condition: "{{error.type}} == 'validation'"
+      action: route_to_human
+    - default:
+      action: fail_workflow
+      message: "{{error.message}}"
+```
+
+### Retry Configuration
+
+```yaml
+Retry:
+  enabled: true
+  max_attempts: 3
+  delay: exponential
+  initial_delay: 1s
+  max_delay: 30s
+  retryable_errors:
+    - timeout
+    - rate_limit
+    - server_error
+```
+
+---
+
+## Related
+
+- [Workflows](/ai-for-process/workflows)
+- [Inbox](/ai-for-process/inbox)
+- [Model Hub](/ai-for-process/models)

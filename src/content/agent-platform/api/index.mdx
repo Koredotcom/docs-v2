@@ -1,0 +1,370 @@
+# API Reference
+
+Integrate your applications with the Agent Platform API.
+
+---
+
+## Overview
+
+The Agent Platform API enables programmatic access to your agentic apps. Use it to:
+
+- Execute conversations
+- Manage sessions
+- Retrieve analytics
+- Configure apps programmatically
+
+---
+
+## Base URL
+
+```
+https://api.platform.kore.ai/v1
+```
+
+---
+
+## Authentication
+
+All API requests require authentication via API key.
+
+### Headers
+
+```http
+Authorization: Bearer sk-app-xxxxxxxxxxxxx
+Content-Type: application/json
+```
+
+### Getting API Keys
+
+1. Navigate to **Deploy** → **API Keys**
+2. Click **Generate Key**
+3. Copy and store securely
+
+---
+
+## Endpoints
+
+### Execute Conversation
+
+Send a message and receive an agent response.
+
+```http
+POST /apps/{app_id}/execute
+```
+
+**Request**:
+```json
+{
+  "message": "What's my order status?",
+  "session_id": "sess_abc123",
+  "metadata": {
+    "user_id": "user_456",
+    "channel": "web"
+  }
+}
+```
+
+**Response**:
+```json
+{
+  "response": "I found your order #12345. It shipped yesterday and should arrive by Friday.",
+  "session_id": "sess_abc123",
+  "trace_id": "trace_xyz789",
+  "agent": "support_agent",
+  "tools_used": ["get_order_status"],
+  "usage": {
+    "input_tokens": 145,
+    "output_tokens": 52
+  }
+}
+```
+
+### Create Session
+
+Start a new conversation session.
+
+```http
+POST /apps/{app_id}/sessions
+```
+
+**Request**:
+```json
+{
+  "user_id": "user_456",
+  "metadata": {
+    "channel": "mobile_app",
+    "language": "en"
+  }
+}
+```
+
+**Response**:
+```json
+{
+  "session_id": "sess_abc123",
+  "created_at": "2024-01-15T14:30:00Z",
+  "expires_at": "2024-01-15T15:30:00Z"
+}
+```
+
+### Get Session History
+
+Retrieve conversation history for a session.
+
+```http
+GET /apps/{app_id}/sessions/{session_id}/history
+```
+
+**Response**:
+```json
+{
+  "session_id": "sess_abc123",
+  "messages": [
+    {
+      "role": "user",
+      "content": "What's my order status?",
+      "timestamp": "2024-01-15T14:30:00Z"
+    },
+    {
+      "role": "assistant",
+      "content": "I found your order #12345...",
+      "timestamp": "2024-01-15T14:30:02Z",
+      "agent": "support_agent"
+    }
+  ]
+}
+```
+
+### End Session
+
+Explicitly close a session.
+
+```http
+DELETE /apps/{app_id}/sessions/{session_id}
+```
+
+---
+
+## Streaming
+
+For real-time responses, use Server-Sent Events.
+
+### Streaming Execute
+
+```http
+POST /apps/{app_id}/execute/stream
+```
+
+**Request** (same as execute):
+```json
+{
+  "message": "Explain your return policy",
+  "session_id": "sess_abc123"
+}
+```
+
+**Response** (SSE stream):
+```
+event: start
+data: {"trace_id": "trace_xyz789"}
+
+event: token
+data: {"content": "Our"}
+
+event: token
+data: {"content": " return"}
+
+event: token
+data: {"content": " policy"}
+
+event: tool_call
+data: {"tool": "search_knowledge", "status": "started"}
+
+event: tool_call
+data: {"tool": "search_knowledge", "status": "completed"}
+
+event: token
+data: {"content": " allows..."}
+
+event: done
+data: {"usage": {"input_tokens": 45, "output_tokens": 128}}
+```
+
+---
+
+## Metadata
+
+Pass contextual information with requests.
+
+### Session Metadata
+
+Stored in `sessionMeta` memory:
+
+```json
+{
+  "metadata": {
+    "userProfile": {
+      "name": "John",
+      "tier": "premium",
+      "preferences": {
+        "language": "en",
+        "notifications": true
+      }
+    }
+  }
+}
+```
+
+### Accessing in Prompts
+
+```
+Welcome back, {{memory.sessionMeta.metadata.userProfile.name}}!
+```
+
+---
+
+## Error Handling
+
+### Error Response Format
+
+```json
+{
+  "error": {
+    "code": "invalid_request",
+    "message": "Session not found",
+    "details": {
+      "session_id": "sess_invalid"
+    }
+  }
+}
+```
+
+### Error Codes
+
+| Code | HTTP Status | Description |
+|------|-------------|-------------|
+| `invalid_request` | 400 | Malformed request |
+| `authentication_error` | 401 | Invalid API key |
+| `not_found` | 404 | Resource not found |
+| `rate_limited` | 429 | Too many requests |
+| `internal_error` | 500 | Server error |
+
+---
+
+## Rate Limits
+
+| Plan | Requests/minute | Requests/day |
+|------|-----------------|--------------|
+| Free | 60 | 1,000 |
+| Pro | 600 | 50,000 |
+| Enterprise | Custom | Custom |
+
+### Rate Limit Headers
+
+```http
+X-RateLimit-Limit: 600
+X-RateLimit-Remaining: 599
+X-RateLimit-Reset: 1705330260
+```
+
+---
+
+## SDKs
+
+### JavaScript/TypeScript
+
+```bash
+npm install @kore/agent-platform
+```
+
+```typescript
+import { AgentPlatform } from '@kore/agent-platform';
+
+const client = new AgentPlatform({
+  apiKey: 'sk-app-xxxxx'
+});
+
+const response = await client.execute({
+  appId: 'app_123',
+  message: "What's my order status?",
+  sessionId: 'sess_abc123'
+});
+
+console.log(response.response);
+```
+
+### Python
+
+```bash
+pip install kore-agent-platform
+```
+
+```python
+from kore_platform import AgentPlatform
+
+client = AgentPlatform(api_key="sk-app-xxxxx")
+
+response = client.execute(
+    app_id="app_123",
+    message="What's my order status?",
+    session_id="sess_abc123"
+)
+
+print(response.response)
+```
+
+---
+
+## Webhooks
+
+Receive notifications for events.
+
+### Configure Webhook
+
+```json
+{
+  "url": "https://your-app.com/webhooks/kore",
+  "events": [
+    "session.started",
+    "session.ended",
+    "conversation.escalated"
+  ],
+  "secret": "whsec_xxxxx"
+}
+```
+
+### Webhook Payload
+
+```json
+{
+  "event": "conversation.escalated",
+  "timestamp": "2024-01-15T14:30:00Z",
+  "data": {
+    "session_id": "sess_abc123",
+    "reason": "user_requested",
+    "context": {...}
+  }
+}
+```
+
+### Verify Signatures
+
+```javascript
+const signature = req.headers['x-kore-signature'];
+const expected = crypto
+  .createHmac('sha256', webhookSecret)
+  .update(req.body)
+  .digest('hex');
+
+if (signature !== expected) {
+  throw new Error('Invalid signature');
+}
+```
+
+---
+
+## Related
+
+- [Deployment](/docs/deploy)
+- [Authentication](/docs/security/auth)
+- [Rate Limits](/docs/api/rate-limits)

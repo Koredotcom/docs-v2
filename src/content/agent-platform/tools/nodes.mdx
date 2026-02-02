@@ -1,0 +1,463 @@
+# Workflow Nodes
+
+Build tool flows with specialized nodes for different operations.
+
+---
+
+## Overview
+
+Workflow tools are built by connecting nodes on a visual canvas. Each node type serves a specific purpose—from making API calls to running custom code to branching logic.
+
+```
+Start → Validate → API Call → Transform → Condition → End
+                                              ↓
+                                         Error Handler
+```
+
+---
+
+## Node Types
+
+| Node | Purpose |
+|------|---------|
+| **Start** | Entry point, receives input parameters |
+| **End** | Exit point, returns output |
+| **API** | Make REST/SOAP API calls |
+| **Function** | Execute custom JavaScript/Python code |
+| **Integration** | Connect to third-party services |
+| **Condition** | Branch based on logic |
+| **Loop** | Iterate over arrays |
+| **AI** | Use LLMs for text, image, or audio processing |
+
+---
+
+## Start Node
+
+Every flow begins with a Start node that defines input parameters.
+
+### Configuration
+
+```yaml
+inputs:
+  order_id:
+    type: string
+    description: The order identifier
+    required: true
+
+  include_details:
+    type: boolean
+    description: Whether to include full details
+    default: false
+
+outputs:
+  - name: order_status
+    type: object
+```
+
+### Accessing Inputs
+
+Reference input values in downstream nodes:
+
+```javascript
+// JavaScript
+{{context.steps.Start.order_id}}
+
+// Python
+{{context["steps"]["Start"]["order_id"]}}
+```
+
+---
+
+## End Node
+
+Terminates the flow and returns output to the caller.
+
+### Configuration
+
+Map output values from previous nodes:
+
+```yaml
+outputs:
+  status:
+    value: "{{context.steps.ProcessOrder.status}}"
+    type: string
+
+  data:
+    value: "{{context.steps.Transform.result}}"
+    type: object
+```
+
+---
+
+## API Node
+
+Make HTTP requests to external services.
+
+### Key Features
+
+- **Protocols**: REST and SOAP
+- **Methods**: GET, POST, PUT, DELETE, PATCH
+- **Auth**: Pre-configured tokens or runtime authorization
+- **Modes**: Synchronous (5-180s) or Asynchronous (30-300s)
+
+### Configuration
+
+```yaml
+name: Fetch Order
+type: REST
+method: GET
+url: "https://api.example.com/orders/{{context.steps.Start.order_id}}"
+
+headers:
+  Authorization: "Bearer {{env.API_TOKEN}}"
+  Content-Type: application/json
+
+timeout: 30000  # milliseconds
+
+on_success: TransformData
+on_failure: HandleError
+```
+
+### Request Body Formats
+
+- JSON
+- XML
+- Form URL Encoded
+- Raw data
+
+### Response Handling
+
+Access response data in downstream nodes:
+
+```javascript
+{{context.steps.FetchOrder.output.data}}
+{{context.steps.FetchOrder.output.status}}
+```
+
+---
+
+## Function Node
+
+Execute custom code for data transformation and business logic.
+
+### Supported Languages
+
+- **JavaScript**: Async execution with `await`
+- **Python**: Synchronous execution
+
+### Use Cases
+
+- Data transformation and formatting
+- Custom validation logic
+- Mathematical calculations
+- String manipulation
+- Complex business rules
+
+### JavaScript Example
+
+```javascript
+// Transform order data
+const order = context.steps.FetchOrder.output;
+
+const transformed = {
+  id: order.order_id,
+  total: order.items.reduce((sum, item) => sum + item.price, 0),
+  itemCount: order.items.length,
+  formattedDate: new Date(order.created_at).toLocaleDateString()
+};
+
+return transformed;
+```
+
+### Python Example
+
+```python
+# Transform order data
+order = context["steps"]["FetchOrder"]["output"]
+
+transformed = {
+    "id": order["order_id"],
+    "total": sum(item["price"] for item in order["items"]),
+    "item_count": len(order["items"]),
+    "status": order["status"].upper()
+}
+
+return transformed
+```
+
+### Memory Access
+
+Read and write to memory stores:
+
+```python
+# Read from memory
+user_prefs = await memory.get_content("userPreferences")
+
+# Write to memory
+await memory.set_content("sessionData", {"last_action": "order_lookup"})
+
+# Delete from memory
+await memory.delete_content("tempData")
+```
+
+### Accessing Output
+
+```javascript
+{{context.steps.FunctionNodeName.output}}
+{{context.steps.FunctionNodeName.error}}
+```
+
+---
+
+## Integration Node
+
+Connect to pre-configured third-party services without code.
+
+### Features
+
+- No-code service connections
+- Pre-tested authentication
+- Auto-generated JSON payloads
+- Visual configuration
+
+### Supported Services
+
+- CRM systems (Salesforce, HubSpot)
+- Marketing automation
+- Payment gateways
+- E-commerce platforms
+- Communication tools
+
+### Configuration
+
+1. Select a pre-configured connection from Settings → Integrations
+2. Add an action (one action per node)
+3. Map input parameters
+4. Configure success/failure paths
+
+### Output Access
+
+```javascript
+{{context.steps.IntegrationNodeName.output}}
+```
+
+---
+
+## Condition Node
+
+Branch workflow execution based on logical conditions.
+
+### Structure
+
+```
+                    ┌─────────────┐
+                    │  Condition  │
+                    │ amount > 100│
+                    └──────┬──────┘
+                           │
+              ┌────────────┼────────────┐
+              ▼            ▼            ▼
+         ┌────────┐   ┌────────┐   ┌────────┐
+         │   IF   │   │ELSE IF │   │  ELSE  │
+         └────────┘   └────────┘   └────────┘
+```
+
+### Operators
+
+| Operator | Description |
+|----------|-------------|
+| `==` | Equals |
+| `!=` | Not equals |
+| `>` | Greater than |
+| `<` | Less than |
+| `>=` | Greater or equal |
+| `<=` | Less or equal |
+| `contains` | String contains |
+| `startsWith` | String starts with |
+| `endsWith` | String ends with |
+
+### Complex Conditions
+
+Combine conditions with AND/OR:
+
+```javascript
+// AND condition
+context.steps.Order.amount > 100 && context.steps.Order.status === "pending"
+
+// OR condition
+context.steps.User.tier === "premium" || context.steps.Order.amount > 500
+```
+
+### Configuration
+
+```yaml
+conditions:
+  - if: "{{context.steps.Order.amount}} > 1000"
+    then: HighValuePath
+
+  - else_if: "{{context.steps.Order.amount}} > 100"
+    then: StandardPath
+
+  - else: LowValuePath
+```
+
+### Limits
+
+A condition node can be called a maximum of **10 times** in a tool flow.
+
+---
+
+## Loop Node
+
+Iterate over arrays to process multiple items.
+
+### Use Cases
+
+- Batch processing
+- Bulk notifications
+- Multi-item operations
+- Data transformation of lists
+
+### Configuration
+
+```yaml
+name: ProcessOrders
+input_array: "{{context.steps.FetchOrders.output.orders}}"
+output_variable: processed_orders
+
+# Error handling strategy
+on_error: continue  # continue | terminate | remove_failed
+
+# Nodes inside the loop
+internal_nodes:
+  - ValidateOrder
+  - UpdateStatus
+  - SendNotification
+```
+
+### Error Handling Options
+
+| Strategy | Behavior |
+|----------|----------|
+| **Continue** | Process all items; collect successes and errors |
+| **Terminate** | Stop on first failure; follow error path |
+| **Remove Failed** | Complete all; exclude failures from output |
+
+### Inside the Loop
+
+Access the current item:
+
+```javascript
+// Current iteration item
+{{context.loop.currentItem}}
+
+// Current index
+{{context.loop.index}}
+```
+
+### Output
+
+Results are aggregated into an array:
+
+```javascript
+{{context.steps.ProcessOrders.output}}
+// Returns: [result1, result2, result3, ...]
+```
+
+---
+
+## AI Nodes
+
+Use LLMs for intelligent processing within workflows.
+
+### Node Types
+
+| Type | Input | Output | Use Cases |
+|------|-------|--------|-----------|
+| **Text to Text** | Text | Text | Summarization, translation, generation |
+| **Text to Image** | Text | Image | Artwork, concept sketches |
+| **Audio to Text** | Audio | Text | Transcription, voice processing |
+| **Image to Text** | Image | Text | OCR, image captioning |
+
+### Text-to-Text Configuration
+
+```yaml
+name: SummarizeOrder
+type: text_to_text
+model: gpt-4o
+
+prompt: |
+  Summarize this order for customer communication:
+
+  Order ID: {{context.steps.Start.order_id}}
+  Items: {{context.steps.FetchOrder.output.items}}
+  Total: {{context.steps.FetchOrder.output.total}}
+
+parameters:
+  temperature: 0.3
+  max_tokens: 500
+```
+
+### Tool Calling in AI Nodes
+
+AI nodes can invoke tools during execution:
+
+```yaml
+tools:
+  - name: lookup_product
+    description: Get product details by ID
+  - name: check_inventory
+    description: Check stock availability
+
+tool_choice: auto  # auto | required | none
+```
+
+---
+
+## Managing Nodes
+
+### Adding Nodes
+
+1. **Drag from panel**: Drag node types onto the canvas
+2. **Plus icon**: Click the "+" on a node's connector
+3. **Assets panel**: Select pre-configured nodes
+
+### Connecting Nodes
+
+- Drag from one node's output to another's input
+- Use the Connections tab in node configuration
+- All nodes must connect to Start (directly or indirectly)
+
+### Constraints
+
+- Maximum **10 outgoing connections** per node
+- No duplicate connections from same parent
+- No backward loops (prevents cycles)
+
+### Deleting Nodes
+
+Right-click → Delete. Reconnect dependent paths afterward.
+
+### Auto Arrange
+
+Right-click canvas → Auto Arrange for automatic layout.
+
+---
+
+## Debugging
+
+The Debug panel shows:
+
+- Execution status per node
+- Input/output values
+- Error messages
+- Timing metrics
+- Iteration details (for loops)
+
+---
+
+## Related
+
+- [Workflow Tools](/tools/workflow)
+- [Code Tools](/tools/code)
+- [Tool Calling](/tools/calling)

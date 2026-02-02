@@ -1,0 +1,401 @@
+# Case Management
+
+Track and manage customer issues through resolution.
+
+---
+
+## Overview
+
+Case management provides a system for tracking customer issues from initial contact through resolution.
+
+{/* Screenshot placeholder */}
+
+---
+
+## Case Lifecycle
+
+```
+[New] → [Assigned] → [In Progress] → [Pending] → [Resolved] → [Closed]
+              │            │              │
+              │            ▼              ▼
+              │       [Escalated]   [Waiting on Customer]
+              │            │
+              └────────────┘
+```
+
+### Status Definitions
+
+| Status | Description |
+|--------|-------------|
+| **New** | Just created, not assigned |
+| **Assigned** | Assigned to agent, not started |
+| **In Progress** | Agent actively working |
+| **Pending** | Waiting for information/action |
+| **Waiting on Customer** | Awaiting customer response |
+| **Escalated** | Escalated to higher tier |
+| **Resolved** | Issue resolved |
+| **Closed** | Case closed and archived |
+
+---
+
+## Creating Cases
+
+### Auto-Creation
+
+Cases can be created automatically:
+
+{/* Screenshot placeholder */}
+
+```yaml
+Auto Case Creation:
+  triggers:
+    - channel: email
+      create_case: always
+
+    - channel: voice
+      create_case: on_disposition
+      dispositions: [escalated, follow_up_required]
+
+    - channel: chat
+      create_case: on_transfer
+      transfer_types: [to_agent, to_queue]
+
+  defaults:
+    priority: medium
+    type: support_request
+    assignment: round_robin
+```
+
+### Manual Creation
+
+{/* Screenshot placeholder */}
+
+```yaml
+Case Form Fields:
+  required:
+    - field: subject
+      type: text
+      max_length: 200
+
+    - field: description
+      type: textarea
+      max_length: 5000
+
+    - field: priority
+      type: dropdown
+      options: [low, medium, high, critical]
+
+    - field: type
+      type: dropdown
+      options: [support_request, bug_report, feature_request, billing]
+
+  optional:
+    - field: customer_id
+      type: lookup
+      source: crm
+
+    - field: product
+      type: dropdown
+      source: products_list
+
+    - field: attachments
+      type: file
+      max_size: 10MB
+      allowed_types: [pdf, png, jpg, doc, docx]
+```
+
+---
+
+## Case Configuration
+
+### Priority Rules
+
+{/* Screenshot placeholder */}
+
+```yaml
+Priority Rules:
+  auto_assignment:
+    - condition: customer.tier == "enterprise"
+      priority: high
+
+    - condition: type == "bug_report" AND severity == "critical"
+      priority: critical
+
+    - condition: sentiment == "very_negative"
+      priority: high
+
+    - condition: default
+      priority: medium
+
+  escalation:
+    - condition: priority == "critical" AND age > 1h
+      action: escalate
+      notify: [manager, on_call]
+
+    - condition: priority == "high" AND age > 4h
+      action: escalate
+      notify: [supervisor]
+```
+
+### SLA Configuration
+
+```yaml
+SLA Policies:
+  enterprise:
+    first_response:
+      critical: 15m
+      high: 1h
+      medium: 4h
+      low: 8h
+
+    resolution:
+      critical: 4h
+      high: 8h
+      medium: 24h
+      low: 72h
+
+    business_hours_only: true
+
+  standard:
+    first_response:
+      critical: 1h
+      high: 4h
+      medium: 8h
+      low: 24h
+
+    resolution:
+      critical: 8h
+      high: 24h
+      medium: 48h
+      low: 1w
+
+    business_hours_only: true
+```
+
+---
+
+## Case Queue
+
+### Case List View
+
+{/* Screenshot placeholder */}
+
+| Case # | Subject | Customer | Priority | Status | Age | SLA |
+|--------|---------|----------|----------|--------|-----|-----|
+| #1234 | Login issues | Acme Corp | High | In Progress | 2h | ⚠️ 2h left |
+| #1235 | Feature request | Tech Inc | Medium | New | 30m | ✓ On track |
+| #1236 | Billing question | StartupXYZ | Low | Pending | 1d | ✓ On track |
+
+### Filters & Views
+
+```yaml
+Saved Views:
+  - name: My Open Cases
+    filters:
+      assignee: current_user
+      status: [new, assigned, in_progress, pending]
+    sort: priority desc, created_at asc
+
+  - name: Escalated Cases
+    filters:
+      status: escalated
+    sort: created_at asc
+
+  - name: SLA At Risk
+    filters:
+      sla_status: [warning, breached]
+    sort: sla_time_remaining asc
+```
+
+---
+
+## Working on Cases
+
+### Case Detail View
+
+{/* Screenshot placeholder */}
+
+Components:
+- **Header** — Case #, subject, status, priority
+- **Customer Info** — Contact details, account info
+- **Timeline** — All activities and communications
+- **Details** — Custom fields, metadata
+- **Related** — Related cases, orders, assets
+
+### Adding Notes
+
+```yaml
+Note Types:
+  - type: internal
+    visible_to: agents_only
+    description: Internal notes, not visible to customer
+
+  - type: customer_reply
+    visible_to: all
+    description: Response to customer
+
+  - type: system
+    visible_to: agents_only
+    description: Auto-generated system notes
+```
+
+### Attachments
+
+| Action | Description |
+|--------|-------------|
+| **Upload** | Add files to case |
+| **Link** | Link to external resources |
+| **Screenshot** | Capture and attach screenshot |
+| **Email** | Attach email thread |
+
+---
+
+## Automation
+
+### Triggers
+
+```yaml
+Case Triggers:
+  - name: Auto-assign to team
+    event: case_created
+    conditions:
+      - product: enterprise
+    actions:
+      - type: assign_to_group
+        group: enterprise_support
+
+  - name: SLA Warning
+    event: sla_warning
+    actions:
+      - type: notify
+        recipients: [assignee, supervisor]
+        template: sla_warning_email
+
+  - name: Customer Response
+    event: customer_replied
+    conditions:
+      - status: waiting_on_customer
+    actions:
+      - type: change_status
+        status: in_progress
+      - type: notify
+        recipients: [assignee]
+```
+
+### Macros
+
+Pre-defined action sets:
+
+{/* Screenshot placeholder */}
+
+```yaml
+Macros:
+  - name: Escalate to Tier 2
+    actions:
+      - change_status: escalated
+      - change_priority: high
+      - assign_to_group: tier_2_support
+      - add_tag: escalated
+      - add_note: "Escalated to Tier 2 for {{reason}}"
+
+  - name: Request More Info
+    actions:
+      - change_status: waiting_on_customer
+      - send_email:
+          template: request_more_info
+      - set_follow_up: 3 days
+```
+
+---
+
+## Reporting
+
+### Case Metrics
+
+{/* Screenshot placeholder */}
+
+| Metric | Description |
+|--------|-------------|
+| **Open Cases** | Currently open |
+| **Created Today** | New cases today |
+| **Resolved Today** | Closed today |
+| **Avg Resolution Time** | Time to resolve |
+| **First Response Time** | Time to first reply |
+| **SLA Compliance** | % within SLA |
+| **Backlog** | Cases > 7 days old |
+
+### Reports
+
+```yaml
+Case Reports:
+  - name: Daily Summary
+    metrics:
+      - cases_created
+      - cases_resolved
+      - avg_resolution_time
+      - sla_compliance
+    grouping: by_queue
+    schedule: daily
+
+  - name: Agent Performance
+    metrics:
+      - cases_handled
+      - avg_handle_time
+      - customer_satisfaction
+      - sla_compliance
+    grouping: by_agent
+    schedule: weekly
+```
+
+---
+
+## Integration
+
+### CRM Integration
+
+Sync cases with external CRM:
+
+```yaml
+CRM Sync:
+  system: salesforce
+  direction: bidirectional
+
+  mapping:
+    case_id: Case.CaseNumber
+    subject: Case.Subject
+    description: Case.Description
+    status: Case.Status
+    priority: Case.Priority
+    customer_id: Case.AccountId
+
+  triggers:
+    on_create: sync
+    on_update: sync
+    on_close: sync
+```
+
+### Email Integration
+
+```yaml
+Email-to-Case:
+  enabled: true
+  inbox: support@company.com
+
+  parsing:
+    subject: case_subject
+    body: case_description
+    from: customer_email
+    attachments: case_attachments
+
+  threading:
+    enabled: true
+    match_by: [email, subject_pattern]
+```
+
+---
+
+## Related
+
+- [Agent Console](/ai-for-service/contact-center/agent-console) — Handle cases
+- [Queue Management](/ai-for-service/contact-center/queues) — Case routing
+- [Quality AI](/ai-for-service/quality) — Case quality monitoring

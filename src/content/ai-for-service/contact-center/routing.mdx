@@ -1,0 +1,368 @@
+# Routing
+
+Intelligent routing matches conversations with the best available agents.
+
+---
+
+## Overview
+
+The routing engine analyzes incoming conversations and matches them with qualified agents based on skills, language, availability, and business rules.
+
+{/* Screenshot placeholder */}
+
+---
+
+## How Routing Works
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                    Incoming Conversation                         │
+│                  (with skills & language)                        │
+└─────────────────────────────────┬───────────────────────────────┘
+                                  │
+                                  ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                         Queue                                    │
+│              (Virtual waiting area)                              │
+└─────────────────────────────────┬───────────────────────────────┘
+                                  │
+                                  ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                    Routing Engine                                │
+│                                                                  │
+│  1. Check preferred agent (if configured)                        │
+│  2. Match required skills                                        │
+│  3. Match language                                               │
+│  4. Consider proficiency levels                                  │
+│  5. Check availability & capacity                                │
+│  6. Apply routing strategy                                       │
+└─────────────────────────────────┬───────────────────────────────┘
+                                  │
+                                  ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                    Agent Assignment                              │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## Routing Methods
+
+{/* Screenshot placeholder */}
+
+| Method | Description | Best For |
+|--------|-------------|----------|
+| **Standard (V2)** | Matches all required skills and language, considers proficiency | Most use cases |
+| **Advanced (V2)** | Preferred agent priority with time-based skill relaxation | VIP customers |
+| **Load Balanced (V3)** | Distributes by oldest last assignment time | Fair workload |
+| **Named** | Direct assignment to specific agents | Account managers |
+
+---
+
+## Standard Routing
+
+Routes based on highest skill proficiency match.
+
+{/* Screenshot placeholder */}
+
+### Configuration
+
+```yaml
+Standard Routing:
+  matching:
+    skills: all_required    # All required skills must match
+    language: required      # Language must match
+    proficiency: weighted   # Higher proficiency preferred
+
+  tiebreakers:
+    1: highest_proficiency  # Most skilled agent
+    2: lowest_utilization   # Fewest active conversations
+    3: longest_idle         # Waiting longest
+```
+
+### How It Works
+
+1. Find agents with **all required skills**
+2. Filter by **language match**
+3. Rank by **proficiency level**
+4. Apply tiebreakers for equal proficiency
+5. Route to top-ranked available agent
+
+---
+
+## Advanced Routing
+
+Prioritizes preferred agents with fallback to skill-based routing.
+
+{/* Screenshot placeholder */}
+
+### Configuration
+
+```yaml
+Advanced Routing:
+  preferred_agent:
+    enabled: true
+    timeout: 30s
+    ignore_skills: true    # Skills checked only on fallback
+
+  skill_relaxation:
+    enabled: true
+    intervals:
+      - after: 60s
+        relax: optional_skills
+      - after: 120s
+        relax: proficiency_requirement
+      - after: 180s
+        relax: secondary_skills
+```
+
+### Preferred Agent Flow
+
+```
+[Customer Calls]
+       │
+       ▼
+[Check Preferred Agent]
+       │
+   ┌───┴───┐
+   ▼       ▼
+[Available] [Unavailable]
+   │           │
+   ▼           ▼
+[Route to    [Wait up to 30s]
+ Preferred]       │
+                  ▼
+            [Still Unavailable?]
+                  │
+                  ▼
+            [Standard Skill-Based Routing]
+```
+
+### Skill Relaxation
+
+When no agents match, progressively relax requirements:
+
+| Time | Relaxation |
+|------|------------|
+| 0-60s | Full requirements |
+| 60-120s | Drop optional skills |
+| 120-180s | Drop proficiency requirement |
+| 180s+ | Drop secondary skills |
+
+---
+
+## Load Balanced Routing
+
+Fair distribution without proficiency weighting.
+
+### Configuration
+
+```yaml
+Load Balanced Routing:
+  strategy: oldest_last_assignment
+  skill_matching: eligible_only    # No proficiency ranking
+  distribution: even_across_agents
+
+  considerations:
+    - agent_capacity
+    - current_workload
+    - channel_limits
+```
+
+### Use Cases
+
+- High-volume queues needing even distribution
+- Teams with similar skill levels
+- Preventing agent burnout
+
+---
+
+## Priority-Based Routing
+
+Dynamic prioritization based on business rules.
+
+{/* Screenshot placeholder */}
+
+### Configuration
+
+```yaml
+Priority Rules:
+  - name: VIP Customers
+    condition: customer_tier == "platinum"
+    priority: 1    # Highest (1-10 scale)
+    queue_jump: true
+
+  - name: High Value Transaction
+    condition: ticket_value > 10000
+    priority: 2
+
+  - name: Critical Intent
+    condition: intent in ["complaint", "cancellation", "legal"]
+    priority: 2
+
+  - name: Long Wait Time
+    condition: wait_time > 300
+    priority: 3
+
+  - name: Standard
+    condition: default
+    priority: 5
+```
+
+### Dynamic Priority Adjustment
+
+Priorities can change while in queue:
+
+```yaml
+Priority Escalation:
+  rules:
+    - condition: wait_time > 120
+      action: increase_priority
+      amount: 1
+      max_priority: 2
+
+    - condition: sentiment == "very_negative"
+      action: set_priority
+      value: 2
+```
+
+---
+
+## Language Matching
+
+Ensure customers are routed to agents who speak their language.
+
+{/* Screenshot placeholder */}
+
+### Configuration
+
+```yaml
+Language Routing:
+  detection:
+    method: auto    # auto, specified, ask
+    fallback: en
+
+  agent_languages:
+    - agent_id: agent_001
+      languages:
+        - language: en
+          proficiency: native
+        - language: es
+          proficiency: fluent
+
+  matching:
+    mode: required    # required, preferred, none
+    fallback_language: en
+    allow_translation: false
+```
+
+---
+
+## Routing Fallbacks
+
+Handle scenarios when no agents are available.
+
+{/* Screenshot placeholder */}
+
+### Configuration
+
+```yaml
+Fallback Configuration:
+  no_agents_available:
+    wait_time: 300s
+    actions:
+      - type: message
+        content: "All agents are currently busy. Estimated wait: {{estimated_wait}}"
+      - type: offer_callback
+        after: 120s
+      - type: voicemail
+        after: 300s
+
+  out_of_hours:
+    actions:
+      - type: message
+        content: "We're closed. Hours: Mon-Fri 9am-6pm EST"
+      - type: route_to_flow
+        flow: after_hours_ivr
+      - type: voicemail
+        enabled: true
+
+  skill_timeout:
+    timeout: 300s
+    actions:
+      - type: relax_skills
+        after: 60s
+      - type: expand_queues
+        after: 180s
+        queues: [overflow_support]
+      - type: escalate
+        after: 300s
+```
+
+---
+
+## Routing Rules
+
+Create complex routing logic with rules:
+
+{/* Screenshot placeholder */}
+
+### Example Rules
+
+```yaml
+Routing Rules:
+  - name: Enterprise Technical Support
+    conditions:
+      - field: customer.tier
+        operator: equals
+        value: enterprise
+      - field: intent
+        operator: in
+        value: [technical_issue, bug_report]
+    actions:
+      - type: set_queue
+        queue: enterprise_tech_support
+      - type: add_skill
+        skill: enterprise_products
+        required: true
+      - type: set_priority
+        priority: 2
+
+  - name: Billing Disputes
+    conditions:
+      - field: intent
+        operator: equals
+        value: billing_dispute
+      - field: amount
+        operator: greater_than
+        value: 500
+    actions:
+      - type: set_queue
+        queue: billing_escalations
+      - type: set_priority
+        priority: 1
+```
+
+---
+
+## Testing Routing
+
+### Routing Simulator
+
+Test routing configuration before deployment:
+
+{/* Screenshot placeholder */}
+
+1. Enter test conversation attributes
+2. Select skills and language
+3. Run simulation
+4. View matched agents and ranking
+5. Verify expected behavior
+
+---
+
+## Related
+
+- [Queue Management](/ai-for-service/contact-center/queues) — Configure queues
+- [Skills](/ai-for-service/contact-center/skills) — Manage agent skills
+- [Agent Console](/ai-for-service/contact-center/agent-console) — Agent experience

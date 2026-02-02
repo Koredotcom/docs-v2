@@ -1,0 +1,341 @@
+# Tool Calling
+
+How agents identify, invoke, and process tools during execution.
+
+---
+
+## Overview
+
+Tool calling is the mechanism by which agents interact with external systems. The LLM identifies when a tool is needed, selects the appropriate one, invokes it with the correct parameters, and incorporates the results into its response.
+
+---
+
+## The Tool Calling Process
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│ 1. Input Processing                                              │
+│    User: "What's the weather in Tokyo?"                         │
+└───────────────────────────────┬─────────────────────────────────┘
+                                │
+                                ▼
+┌─────────────────────────────────────────────────────────────────┐
+│ 2. Tool Identification                                           │
+│    LLM analyzes query, identifies need for weather data         │
+│    Selected: get_weather                                        │
+└───────────────────────────────┬─────────────────────────────────┘
+                                │
+                                ▼
+┌─────────────────────────────────────────────────────────────────┐
+│ 3. Parameter Preparation                                         │
+│    Extract and map entities to parameters                       │
+│    { "location": "Tokyo", "units": "celsius" }                  │
+└───────────────────────────────┬─────────────────────────────────┘
+                                │
+                                ▼
+┌─────────────────────────────────────────────────────────────────┐
+│ 4. Tool Invocation                                               │
+│    Platform triggers the tool with prepared parameters          │
+└───────────────────────────────┬─────────────────────────────────┘
+                                │
+                                ▼
+┌─────────────────────────────────────────────────────────────────┐
+│ 5. Execution                                                     │
+│    Tool performs its operation (API call, computation, etc.)    │
+└───────────────────────────────┬─────────────────────────────────┘
+                                │
+                                ▼
+┌─────────────────────────────────────────────────────────────────┐
+│ 6. Result Processing                                             │
+│    Validate and format tool output                              │
+│    { "temp": 22, "condition": "Sunny", "humidity": 45 }        │
+└───────────────────────────────┬─────────────────────────────────┘
+                                │
+                                ▼
+┌─────────────────────────────────────────────────────────────────┐
+│ 7. Response Generation                                           │
+│    Agent incorporates results into natural language             │
+│    "It's currently 22°C and sunny in Tokyo."                    │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## How the LLM Selects Tools
+
+The LLM uses tool descriptions to decide which tool to invoke:
+
+### Tool Definition
+
+```yaml
+name: get_weather
+description: |
+  Retrieves current weather conditions for a specified location.
+  Returns temperature, conditions (sunny, cloudy, rainy), humidity,
+  and wind speed. Use when users ask about weather or need to plan
+  outdoor activities.
+
+parameters:
+  location:
+    type: string
+    description: City name or coordinates (e.g., "Tokyo" or "35.6762,139.6503")
+    required: true
+
+  units:
+    type: string
+    enum: [celsius, fahrenheit]
+    description: Temperature unit preference
+    default: celsius
+```
+
+### Selection Criteria
+
+The LLM considers:
+
+1. **Query intent** — What is the user trying to accomplish?
+2. **Tool descriptions** — Which tool's description matches?
+3. **Required information** — What data does the tool provide?
+4. **Parameter availability** — Can required parameters be extracted?
+
+### Writing Effective Descriptions
+
+```yaml
+# Good - Specific and actionable
+description: |
+  Retrieves the current status of a customer order including
+  shipping information and tracking number. Use when customers
+  ask about order status, delivery dates, or tracking.
+
+# Bad - Too vague
+description: Gets order information.
+```
+
+---
+
+## Multiple Tool Calling
+
+Agents can invoke multiple tools in a single turn.
+
+### Sequential Execution
+
+Tools run one after another when outputs are dependent:
+
+```
+User: "What's my order status and when will it arrive?"
+
+1. get_order_status(order_id) → status, tracking_number
+2. get_shipping_estimate(tracking_number) → delivery_date
+
+Response: "Your order shipped yesterday. Based on tracking,
+          it should arrive by Friday."
+```
+
+### Parallel Execution
+
+Independent tools run simultaneously for faster responses:
+
+```
+User: "Compare the weather in Tokyo and New York"
+
+┌─ get_weather(location="Tokyo") ────┐
+│                                    ├─→ Compare and respond
+└─ get_weather(location="New York") ─┘
+
+Response: "Tokyo is 22°C and sunny, while New York is 15°C
+          and cloudy. Tokyo is warmer by 7 degrees."
+```
+
+---
+
+## Tool Calling in Different Contexts
+
+### Agentic Apps
+
+Agents dynamically select tools based on reasoning:
+
+```
+Agent receives: "I need to book a flight and hotel"
+
+Agent reasoning:
+├── Task requires travel booking
+├── Available tools: search_flights, book_flight, search_hotels, book_hotel
+├── User hasn't specified details yet
+└── Action: Ask for dates and destination, then use tools
+
+Agent: "I can help with that. Where are you traveling to,
+       and what are your dates?"
+```
+
+### Workflow Tools (AI Nodes)
+
+AI nodes in workflows can be configured with tool access:
+
+```yaml
+ai_node:
+  prompt: "Process this customer request"
+  tools:
+    - check_inventory
+    - create_order
+    - send_confirmation
+  tool_choice: auto  # auto, required, none
+```
+
+---
+
+## Tool Choice Modes
+
+Control how the LLM interacts with tools:
+
+| Mode | Behavior |
+|------|----------|
+| `auto` | LLM decides whether to use tools |
+| `required` | LLM must use at least one tool |
+| `none` | Tools are disabled for this request |
+| `specific` | LLM must use a specified tool |
+
+```yaml
+# Force tool usage
+tool_choice: required
+
+# Disable tools
+tool_choice: none
+
+# Use specific tool
+tool_choice:
+  type: specific
+  tool: get_order_status
+```
+
+---
+
+## Error Handling
+
+### Tool Execution Failures
+
+```yaml
+error_handling:
+  on_failure: retry  # retry, fallback, fail
+  retry_attempts: 2
+  fallback_message: |
+    I'm having trouble retrieving that information right now.
+    Please try again in a moment.
+```
+
+### Invalid Parameters
+
+```yaml
+parameter_validation:
+  strict: true  # Fail if parameters don't match schema
+  coercion: true  # Attempt to convert types
+```
+
+### Timeout Handling
+
+```yaml
+execution:
+  timeout_ms: 30000
+  on_timeout: fallback
+```
+
+---
+
+## Observability
+
+Track tool usage for debugging and optimization.
+
+### Execution Trace
+
+```json
+{
+  "trace_id": "trace_abc123",
+  "tool_calls": [
+    {
+      "tool": "get_order_status",
+      "parameters": { "order_id": "ORD-12345" },
+      "started_at": "2024-01-15T14:30:00.123Z",
+      "completed_at": "2024-01-15T14:30:00.456Z",
+      "duration_ms": 333,
+      "status": "success",
+      "result": { "status": "shipped", "tracking": "1Z999..." }
+    }
+  ]
+}
+```
+
+### Metrics
+
+- **Invocation count** — How often each tool is used
+- **Success rate** — Tool reliability
+- **Latency** — Execution time
+- **Token impact** — Tokens used for tool calls
+
+---
+
+## Supported Models
+
+Tool calling requires models with function calling support:
+
+| Provider | Models |
+|----------|--------|
+| **OpenAI** | GPT-4, GPT-4o, GPT-3.5-turbo |
+| **Azure OpenAI** | GPT-4, GPT-3.5-turbo |
+| **Anthropic** | Claude 3 Opus, Sonnet, Haiku; Claude 3.5 Sonnet |
+| **Google** | Gemini 1.5 Pro, Gemini 1.5 Flash |
+
+Platform-hosted and some open-source models don't support tool calling.
+
+---
+
+## Best Practices
+
+### Clear Tool Descriptions
+
+Write descriptions that help the LLM make good decisions:
+
+```yaml
+# Include: What it does, when to use it, what it returns
+description: |
+  Searches the product catalog by keyword, category, or filters.
+  Returns matching products with names, prices, and availability.
+  Use when users ask about products, want recommendations, or
+  are looking for specific items.
+```
+
+### Appropriate Granularity
+
+```yaml
+# Too broad - hard for LLM to know when to use
+name: do_everything
+description: Handles all customer operations
+
+# Too narrow - creates tool sprawl
+name: get_order_status_for_shipped_orders
+name: get_order_status_for_processing_orders
+
+# Just right - clear scope
+name: get_order_status
+description: Gets status for any order by order ID
+```
+
+### Handle Missing Parameters
+
+Don't fail silently—return helpful errors:
+
+```javascript
+if (!params.order_id) {
+  return {
+    error: "order_id is required",
+    message: "Please provide an order number"
+  };
+}
+```
+
+---
+
+## Related
+
+- [Tools Overview](/docs/tools)
+- [Workflow Tools](/docs/tools/workflow)
+- [Code Tools](/docs/tools/code)
+- [MCP Tools](/docs/tools/mcp)
+- [Create an Agent](/docs/agents/create)

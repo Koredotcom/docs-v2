@@ -1,0 +1,420 @@
+# MCP Tools
+
+Connect to remote tools via Model Context Protocol servers.
+
+---
+
+## Overview
+
+Model Context Protocol (MCP) is an open standard that enables AI agents to interact with external tools hosted on remote servers. Think of it as a universal translator—allowing agents to communicate with any MCP-compatible tool without custom integration.
+
+```
+Agent → MCP Client (Platform) → MCP Protocol → MCP Server → Tools
+```
+
+---
+
+## When to Use
+
+MCP tools are ideal when:
+
+- Tools are hosted on **external servers**
+- You need **shared toolsets** across teams
+- Tools require **enterprise integrations**
+- You want to use **third-party tool providers**
+- You need **separation** between tool logic and agent logic
+
+### Good Fit Examples
+
+| Use Case | Why MCP Works |
+|----------|---------------|
+| CRM integration | Connect to Salesforce MCP server |
+| Enterprise tools | Shared tools across multiple apps |
+| Third-party services | Pre-built MCP tool providers |
+| Microservices | Each service exposes tools via MCP |
+
+---
+
+## How MCP Works
+
+### Architecture
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                         Agentic App                              │
+│  ┌──────────────────────────────────────────────────────────┐   │
+│  │                      MCP Client                           │   │
+│  │              (built into the Platform)                    │   │
+│  └───────────────────────────┬──────────────────────────────┘   │
+└──────────────────────────────┼──────────────────────────────────┘
+                               │
+                    MCP Protocol (HTTP/SSE)
+                               │
+┌──────────────────────────────┼──────────────────────────────────┐
+│                              ▼                                   │
+│  ┌──────────────────────────────────────────────────────────┐   │
+│  │                      MCP Server                           │   │
+│  │  ┌─────────┐  ┌─────────┐  ┌─────────┐  ┌─────────┐     │   │
+│  │  │ Tool A  │  │ Tool B  │  │ Tool C  │  │ Tool D  │     │   │
+│  │  └─────────┘  └─────────┘  └─────────┘  └─────────┘     │   │
+│  └──────────────────────────────────────────────────────────┘   │
+│                        External System                           │
+└──────────────────────────────────────────────────────────────────┘
+```
+
+### Components
+
+| Component | Role |
+|-----------|------|
+| **MCP Server** | Hosts and exposes tools |
+| **MCP Client** | The Platform—discovers and invokes tools |
+| **MCP Protocol** | Standardized request/response format |
+
+---
+
+## Interaction Flow
+
+```
+1. Tool Discovery
+   └─ Client connects to server, retrieves available tools
+
+2. Intent Detection
+   └─ LLM identifies which MCP tool matches user request
+
+3. Tool Invocation
+   └─ Client sends structured request to server
+
+4. Execution
+   └─ Server executes tool logic, returns results
+
+5. Response Generation
+   └─ Agent uses tool output in its response
+```
+
+### Example
+
+```
+User: "What's the weather in Dubai?"
+
+1. Agent identifies need for weather data
+2. Selects: mcp_weather_server.get_forecast
+3. Invokes with: { "location": "Dubai" }
+4. Server returns: { "temp": 35, "condition": "Sunny" }
+5. Agent responds: "It's 35°C and sunny in Dubai today."
+```
+
+---
+
+## Configuring MCP Tools
+
+### Step 1: Add MCP Server
+
+1. Navigate to **Tools** → **+ New Tool** → **MCP Tool**
+2. Configure the server connection:
+
+```yaml
+server:
+  name: weather_tools
+  url: https://mcp.weather-service.com
+  transport: http  # or: sse
+
+auth:
+  type: bearer
+  token: "{{env.MCP_WEATHER_TOKEN}}"
+```
+
+### Step 2: Discover Tools
+
+The platform automatically queries the server for available tools:
+
+```json
+{
+  "tools": [
+    {
+      "name": "get_current_weather",
+      "description": "Get current weather for a location",
+      "parameters": {
+        "location": { "type": "string", "required": true },
+        "units": { "type": "string", "enum": ["celsius", "fahrenheit"] }
+      }
+    },
+    {
+      "name": "get_forecast",
+      "description": "Get 7-day weather forecast",
+      "parameters": {
+        "location": { "type": "string", "required": true }
+      }
+    }
+  ]
+}
+```
+
+### Step 3: Select Tools
+
+Choose which tools to enable for your app:
+
+```yaml
+enabled_tools:
+  - get_current_weather
+  - get_forecast
+```
+
+### Step 4: Link to Agent
+
+Add the MCP tools to your agent's tool list.
+
+---
+
+## Server Types
+
+### HTTP-Based
+
+Standard request/response over HTTP.
+
+```yaml
+server:
+  transport: http
+  url: https://mcp.example.com/v1
+  timeout_ms: 30000
+```
+
+### SSE-Based (Server-Sent Events)
+
+Streaming responses for real-time updates.
+
+```yaml
+server:
+  transport: sse
+  url: https://mcp.example.com/stream
+  keepalive_ms: 60000
+```
+
+---
+
+## Authentication
+
+### Bearer Token
+
+```yaml
+auth:
+  type: bearer
+  token: "{{env.MCP_TOKEN}}"
+```
+
+### API Key Header
+
+```yaml
+auth:
+  type: api_key
+  header: X-API-Key
+  key: "{{env.MCP_API_KEY}}"
+```
+
+### OAuth 2.0
+
+```yaml
+auth:
+  type: oauth2
+  client_id: "{{env.CLIENT_ID}}"
+  client_secret: "{{env.CLIENT_SECRET}}"
+  token_url: https://auth.example.com/token
+```
+
+---
+
+## Tool Invocation
+
+When an agent invokes an MCP tool:
+
+### Request Format
+
+```json
+{
+  "method": "tools/call",
+  "params": {
+    "name": "get_current_weather",
+    "arguments": {
+      "location": "Tokyo",
+      "units": "celsius"
+    }
+  }
+}
+```
+
+### Response Format
+
+```json
+{
+  "content": [
+    {
+      "type": "text",
+      "text": "{\"temp\": 22, \"condition\": \"Partly cloudy\", \"humidity\": 65}"
+    }
+  ]
+}
+```
+
+---
+
+## Configuration Example
+
+Complete MCP tool configuration:
+
+```yaml
+name: enterprise_tools
+description: Enterprise CRM and ticketing tools
+
+server:
+  url: https://mcp.enterprise.internal
+  transport: http
+  timeout_ms: 30000
+
+auth:
+  type: bearer
+  token: "{{env.ENTERPRISE_MCP_TOKEN}}"
+
+tools:
+  - name: crm_lookup
+    description: Look up customer information by ID or email
+    enabled: true
+
+  - name: create_ticket
+    description: Create a support ticket in the ticketing system
+    enabled: true
+
+  - name: get_order_history
+    description: Retrieve customer order history
+    enabled: true
+
+  - name: update_customer
+    description: Update customer profile information
+    enabled: false  # Disabled for safety
+```
+
+---
+
+## Limitations
+
+### Static Discovery
+
+Tool lists are discovered at configuration time. Changes to the MCP server require manual reconfiguration.
+
+```
+Server adds new tool → Must reconfigure in Platform → Tool becomes available
+```
+
+### Platform Support
+
+The Platform supports:
+
+- Tool discovery
+- Tool invocation
+- Result processing
+
+It does **not** support:
+
+- Resources (MCP resource endpoints)
+- Prompts (MCP prompt templates)
+- Dynamic tool updates
+
+---
+
+## Building an MCP Server
+
+If you need to expose your own tools via MCP:
+
+### Server Implementation
+
+```javascript
+// Example using MCP SDK
+import { MCPServer } from '@modelcontextprotocol/server';
+
+const server = new MCPServer({
+  name: 'my-tools',
+  version: '1.0.0'
+});
+
+server.addTool({
+  name: 'get_inventory',
+  description: 'Check product inventory levels',
+  parameters: {
+    product_id: { type: 'string', required: true }
+  },
+  handler: async (params) => {
+    const inventory = await checkInventory(params.product_id);
+    return { stock: inventory.quantity, location: inventory.warehouse };
+  }
+});
+
+server.listen(3000);
+```
+
+### Deployment Options
+
+| Option | Best For |
+|--------|----------|
+| Cloud function | Simple, serverless tools |
+| Container | Complex tools with dependencies |
+| Internal service | Enterprise tools behind firewall |
+
+---
+
+## Best Practices
+
+### Use Descriptive Tool Names
+
+```yaml
+# Good
+crm_customer_lookup
+inventory_check_availability
+order_create_new
+
+# Avoid
+tool1
+getData
+do_thing
+```
+
+### Write Clear Descriptions
+
+The LLM uses descriptions to select tools:
+
+```yaml
+description: |
+  Retrieves detailed customer information from the CRM.
+  Returns contact info, account status, and recent interactions.
+  Use when the user asks about customer details or account status.
+```
+
+### Handle Server Failures
+
+Configure timeouts and fallbacks:
+
+```yaml
+server:
+  timeout_ms: 30000
+  retry:
+    attempts: 3
+    delay_ms: 1000
+
+fallback:
+  message: "Unable to reach external service. Please try again."
+```
+
+### Monitor Performance
+
+Track MCP tool metrics:
+
+- Response times
+- Error rates
+- Availability
+- Token usage
+
+---
+
+## Related
+
+- [Tools Overview](/docs/tools)
+- [Workflow Tools](/docs/tools/workflow)
+- [Code Tools](/docs/tools/code)
+- [Tool Calling](/docs/tools/calling)

@@ -1,0 +1,361 @@
+# Guardrails
+
+Maintain safety, stability, and compliance during agent execution.
+
+---
+
+## Overview
+
+Guardrails are pre-deployed scanners that evaluate inputs and outputs to protect your application from harmful content, ensure compliance, and maintain quality standards.
+
+```
+User Input → Input Scanners → Agent Processing → Output Scanners → Response
+```
+
+---
+
+## Scanner Types
+
+### Input Scanners
+
+Monitor data agents receive from users:
+
+- Detect harmful or inappropriate language
+- Identify jailbreak attempts
+- Block unsafe instructions
+- Scan for sensitive data patterns
+
+### Output Scanners
+
+Evaluate responses before delivery:
+
+- Filter inappropriate content
+- Enforce compliance rules
+- Mask sensitive information
+- Validate response quality
+
+---
+
+## Available Scanners
+
+| Scanner | Purpose | Applied To |
+|---------|---------|------------|
+| **Toxicity** | Detect harmful, offensive, or inappropriate language | Input, Output |
+| **PII Detection** | Identify personal information (SSN, credit cards, etc.) | Input, Output |
+| **Jailbreak Detection** | Identify attempts to bypass agent instructions | Input |
+| **Prompt Injection** | Detect malicious prompt manipulation | Input |
+| **Regex Patterns** | Custom pattern matching | Input, Output |
+| **Content Moderation** | Block specific topics or content types | Output |
+
+---
+
+## How Guardrails Work
+
+### Processing Flow
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                        User Input                                │
+└───────────────────────────────┬─────────────────────────────────┘
+                                │
+                                ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                      Input Scanners                              │
+│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐          │
+│  │   Toxicity   │  │  Jailbreak   │  │     PII      │          │
+│  └──────────────┘  └──────────────┘  └──────────────┘          │
+└───────────────────────────────┬─────────────────────────────────┘
+                                │
+                        ┌───────┴───────┐
+                        ▼               ▼
+                   ┌─────────┐     ┌─────────┐
+                   │  Pass   │     │  Block  │
+                   └────┬────┘     └────┬────┘
+                        │               │
+                        ▼               ▼
+               ┌────────────────┐  ┌────────────────┐
+               │ Agent Process  │  │ Return Warning │
+               └───────┬────────┘  └────────────────┘
+                       │
+                       ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                     Output Scanners                              │
+│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐          │
+│  │   Toxicity   │  │     PII      │  │  Compliance  │          │
+│  └──────────────┘  └──────────────┘  └──────────────┘          │
+└───────────────────────────────┬─────────────────────────────────┘
+                                │
+                                ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                       Final Response                             │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## Configuration
+
+### Account-Level Guardrails
+
+Guardrails deployed at the account level are available to all apps:
+
+```yaml
+account_guardrails:
+  toxicity:
+    enabled: true
+    threshold: 0.8
+    action: block
+
+  pii_detection:
+    enabled: true
+    patterns:
+      - ssn
+      - credit_card
+      - phone_number
+      - email
+    action: mask
+```
+
+### App-Level Configuration
+
+Override or extend account settings:
+
+```yaml
+app_guardrails:
+  # Inherit account guardrails
+  inherit: true
+
+  # Additional app-specific settings
+  custom_patterns:
+    - name: internal_codes
+      pattern: "INT-\\d{6}"
+      action: mask
+
+  content_moderation:
+    blocked_topics:
+      - competitor_names
+      - pricing_speculation
+```
+
+### Tool-Level Guardrails
+
+Apply to specific tools:
+
+```yaml
+tool: customer_lookup
+guardrails:
+  input:
+    - pii_detection
+  output:
+    - pii_masking
+    - compliance_check
+```
+
+---
+
+## Scanner Configuration
+
+### Toxicity Scanner
+
+```yaml
+toxicity:
+  enabled: true
+  threshold: 0.8          # Confidence threshold (0-1)
+  categories:
+    - hate_speech
+    - harassment
+    - violence
+    - self_harm
+  action: block           # block | warn | log
+  message: "I can't process that request. Please rephrase."
+```
+
+### PII Detection
+
+```yaml
+pii_detection:
+  enabled: true
+  patterns:
+    # Built-in patterns
+    - ssn              # Social Security Numbers
+    - credit_card      # Credit card numbers
+    - phone            # Phone numbers
+    - email            # Email addresses
+    - address          # Physical addresses
+
+    # Custom patterns
+    - name: employee_id
+      regex: "EMP\\d{8}"
+
+  action: mask          # mask | block | log
+  mask_char: "*"
+  mask_preserve: 4      # Show last N characters
+```
+
+### Jailbreak Detection
+
+```yaml
+jailbreak_detection:
+  enabled: true
+  sensitivity: high     # low | medium | high
+  patterns:
+    - ignore_previous
+    - pretend_you_are
+    - bypass_restrictions
+  action: block
+  message: "I'm designed to be helpful within my guidelines."
+```
+
+### Custom Regex Patterns
+
+```yaml
+custom_patterns:
+  - name: api_keys
+    pattern: "sk-[a-zA-Z0-9]{32,}"
+    scope: [input, output]
+    action: mask
+
+  - name: internal_urls
+    pattern: "https?://internal\\."
+    scope: [output]
+    action: block
+    message: "I can't share internal URLs."
+```
+
+---
+
+## Actions
+
+| Action | Behavior |
+|--------|----------|
+| **block** | Reject the request/response entirely |
+| **mask** | Replace sensitive content with masked characters |
+| **warn** | Allow but flag for review |
+| **log** | Record without intervention |
+
+---
+
+## Testing Guardrails
+
+Validate scanner effectiveness:
+
+1. Navigate to **Settings** → **Guardrails**
+2. Select a scanner
+3. Click **Test**
+4. Enter sample input
+5. Review detection results
+
+### Test Cases
+
+```yaml
+test_cases:
+  toxicity:
+    should_block:
+      - "You're an idiot"
+      - "[offensive content]"
+    should_pass:
+      - "I disagree with that approach"
+      - "This isn't working correctly"
+
+  pii:
+    should_mask:
+      - "My SSN is 123-45-6789"
+      - "Call me at 555-123-4567"
+    should_pass:
+      - "Contact support for help"
+      - "Your order number is ORD-12345"
+```
+
+---
+
+## PII Protection Pipeline
+
+Complete PII handling across the system:
+
+```
+┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
+│  User Input     │───▶│  PII Detection  │───▶│  PII Masking    │
+│                 │    │                 │    │                 │
+│ "My SSN is      │    │ Detected: SSN   │    │ "My SSN is      │
+│  123-45-6789"   │    │ at position 10  │    │  ***-**-6789"   │
+└─────────────────┘    └─────────────────┘    └─────────────────┘
+                                                      │
+                                                      ▼
+┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
+│  Final Output   │◀───│  Output Scan    │◀───│ Agent Process   │
+│                 │    │                 │    │                 │
+│ "Your account   │    │ Verified: No    │    │ Processes with  │
+│  is verified"   │    │ PII in output   │    │ masked data     │
+└─────────────────┘    └─────────────────┘    └─────────────────┘
+```
+
+---
+
+## Monitoring
+
+Track guardrail effectiveness:
+
+### Metrics
+
+- **Block rate**: Percentage of blocked requests
+- **Detection accuracy**: False positive/negative rates
+- **Categories**: Distribution of detected issues
+- **Trends**: Changes over time
+
+### Alerts
+
+Configure alerts for unusual patterns:
+
+```yaml
+alerts:
+  - name: high_toxicity_rate
+    condition: toxicity_blocks > 10/hour
+    action: notify_admin
+
+  - name: jailbreak_attempts
+    condition: jailbreak_detections > 5/hour
+    action: notify_security
+```
+
+---
+
+## Best Practices
+
+### Start Conservative
+
+Begin with stricter settings and loosen as needed based on false positives.
+
+### Layer Protection
+
+Use multiple scanners for defense in depth:
+
+```yaml
+input_scanners:
+  - toxicity         # Catch harmful content
+  - jailbreak        # Prevent manipulation
+  - pii              # Protect user data
+
+output_scanners:
+  - toxicity         # Ensure safe responses
+  - pii              # Prevent data leakage
+  - compliance       # Enforce business rules
+```
+
+### Test Regularly
+
+- Review blocked content for false positives
+- Test with adversarial inputs
+- Update patterns as threats evolve
+
+### Document Policies
+
+Maintain clear documentation of what's blocked and why.
+
+---
+
+## Related
+
+- [PII Protection](/docs/security/pii)
+- [Compliance](/docs/security/compliance)
+- [Agents Overview](/docs/agents)
+- [Deployment](/docs/deploy)

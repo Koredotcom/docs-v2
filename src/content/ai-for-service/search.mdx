@@ -1,0 +1,800 @@
+# Search AI
+
+Conversational search with LLM and generative AI capabilities.
+
+---
+
+## Overview
+
+Search AI enables natural language search across your enterprise content:
+
+- Connect 50+ data sources
+- Retrieve relevant information with semantic search
+- Generate accurate, contextual answers
+- Cite sources for transparency
+
+For virtual assistant integration, see [Automation AI](/ai-for-service/automation). For agent knowledge assist, see [Agent AI](/ai-for-service/agent-ai).
+
+---
+
+## Architecture
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                         User Query                               │
+│               "What's the return policy for electronics?"        │
+└─────────────────────────────────┬───────────────────────────────┘
+                                  │
+                                  ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                      Query Processing                            │
+│                                                                  │
+│  Query understanding → Intent detection → Query expansion        │
+└─────────────────────────────────┬───────────────────────────────┘
+                                  │
+                                  ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                         Retrieval                                │
+│                                                                  │
+│  Vector search → Keyword search → Hybrid ranking                 │
+│                                                                  │
+│  ┌─────────┐ ┌─────────┐ ┌─────────┐ ┌─────────┐               │
+│  │  Chunk  │ │  Chunk  │ │  Chunk  │ │  Chunk  │               │
+│  │    1    │ │    2    │ │    3    │ │    4    │               │
+│  └─────────┘ └─────────┘ └─────────┘ └─────────┘               │
+└─────────────────────────────────┬───────────────────────────────┘
+                                  │
+                                  ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                    Answer Generation                             │
+│                                                                  │
+│  LLM synthesizes answer from retrieved chunks with citations     │
+└─────────────────────────────────┬───────────────────────────────┘
+                                  │
+                                  ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                        Response                                  │
+│  "Electronics can be returned within 30 days of purchase..."     │
+│  [Source: Return Policy Document, Section 2.3]                   │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## Content Sources
+
+### Supported Connectors
+
+| Category | Sources |
+|----------|---------|
+| **Documents** | PDF, Word, Excel, PowerPoint, TXT, Markdown |
+| **Knowledge bases** | Confluence, SharePoint, Notion, Guru |
+| **Help centers** | Zendesk Guide, Intercom, Freshdesk, ServiceNow |
+| **Websites** | Web crawling, sitemap indexing, RSS feeds |
+| **Cloud storage** | Google Drive, Dropbox, Box, OneDrive, S3 |
+| **Databases** | SQL (PostgreSQL, MySQL), MongoDB, Elasticsearch |
+| **Code** | GitHub, GitLab, Bitbucket repositories |
+| **Custom** | REST API, file upload, webhooks |
+
+### Adding a Content Source
+
+1. Navigate to **Search AI** → **Sources**
+2. Click **Add Source**
+3. Select connector type
+4. Configure authentication
+5. Set sync schedule
+6. Map content structure
+
+### Connector Configuration
+
+#### Confluence
+
+```yaml
+Source: Confluence
+Type: confluence_cloud
+
+Connection:
+  url: https://company.atlassian.net
+  auth_type: api_token
+  email: admin@company.com
+  api_token: "{{env.CONFLUENCE_TOKEN}}"
+
+Content Selection:
+  spaces:
+    include:
+      - SUPPORT
+      - PRODUCT
+      - ENGINEERING
+    exclude:
+      - ARCHIVE
+      - PRIVATE
+
+  content_types:
+    - pages
+    - blogs
+    - attachments  # PDF, Word, etc.
+
+  labels:
+    include: [public, documentation]
+    exclude: [draft, internal-only]
+
+Sync:
+  schedule: "0 2 * * *"  # Daily at 2 AM
+  mode: incremental
+  full_sync_interval: weekly
+
+Content Processing:
+  include_attachments: true
+  include_comments: false
+  extract_tables: true
+  max_attachment_size: 50MB
+```
+
+#### SharePoint
+
+```yaml
+Source: SharePoint
+Type: sharepoint_online
+
+Connection:
+  tenant_id: "{{env.AZURE_TENANT_ID}}"
+  client_id: "{{env.AZURE_CLIENT_ID}}"
+  client_secret: "{{env.AZURE_CLIENT_SECRET}}"
+
+Content Selection:
+  sites:
+    - https://company.sharepoint.com/sites/Support
+    - https://company.sharepoint.com/sites/Products
+
+  document_libraries:
+    include: [Documents, Shared Documents]
+    exclude: [Archive]
+
+  file_types:
+    - pdf
+    - docx
+    - pptx
+    - xlsx
+
+Permissions:
+  respect_sharepoint_permissions: true
+  service_account_access_only: false
+```
+
+#### Web Crawling
+
+```yaml
+Source: Help Center Website
+Type: web_crawler
+
+Configuration:
+  start_urls:
+    - https://help.company.com
+    - https://docs.company.com
+
+  crawl_rules:
+    include_patterns:
+      - "/articles/*"
+      - "/guides/*"
+    exclude_patterns:
+      - "/admin/*"
+      - "/login"
+      - "*.pdf"  # Handle separately
+
+  depth: 3
+  max_pages: 1000
+  respect_robots_txt: true
+
+  selectors:
+    title: "h1.article-title"
+    content: "article.content"
+    ignore: [".sidebar", ".comments", "footer"]
+
+Sync:
+  schedule: daily
+  check_for_updates: true
+```
+
+#### Custom API
+
+```yaml
+Source: Internal Knowledge Base
+Type: custom_api
+
+Connection:
+  base_url: https://api.internal.company.com
+  auth:
+    type: bearer
+    token: "{{env.INTERNAL_API_TOKEN}}"
+
+Endpoints:
+  list_documents:
+    method: GET
+    path: /documents
+    pagination:
+      type: cursor
+      param: next_cursor
+      response_path: meta.next_cursor
+
+  get_document:
+    method: GET
+    path: /documents/{id}
+
+Response Mapping:
+  id: document.id
+  title: document.title
+  content: document.body
+  url: document.web_url
+  updated_at: document.modified_date
+  metadata:
+    category: document.category
+    author: document.author.name
+    tags: document.tags
+```
+
+---
+
+## Index Configuration
+
+### Chunking Strategies
+
+How content is split affects retrieval quality.
+
+| Strategy | Best For | Chunk Size |
+|----------|----------|------------|
+| **Fixed size** | General documents | 500-1000 tokens |
+| **Paragraph** | Well-structured articles | Natural breaks |
+| **Semantic** | Mixed content | Variable |
+| **Heading-based** | Documentation with sections | Per section |
+| **Sentence** | FAQs, Q&A content | 1-3 sentences |
+
+#### Chunking Configuration
+
+```yaml
+Chunking:
+  strategy: semantic
+
+  settings:
+    target_chunk_size: 500  # tokens
+    min_chunk_size: 100
+    max_chunk_size: 1000
+    chunk_overlap: 50
+
+  semantic_settings:
+    model: sentence-transformers
+    similarity_threshold: 0.85
+    preserve_sentences: true
+
+  structure_preservation:
+    preserve_headings: true
+    include_parent_headings: true
+    preserve_lists: true
+    preserve_tables: true
+    preserve_code_blocks: true
+
+  metadata_extraction:
+    extract_title: true
+    extract_headings: true
+    extract_summary: true
+    custom_fields:
+      - field: product
+        pattern: "Product: (.*)"
+      - field: version
+        pattern: "Version: (\\d+\\.\\d+)"
+```
+
+### Embedding Models
+
+Select the model that generates vector representations.
+
+| Model | Provider | Dimensions | Languages | Best For |
+|-------|----------|------------|-----------|----------|
+| `text-embedding-3-small` | OpenAI | 1536 | Multi | Cost-effective |
+| `text-embedding-3-large` | OpenAI | 3072 | Multi | High accuracy |
+| `embed-english-v3.0` | Cohere | 1024 | English | English content |
+| `embed-multilingual-v3.0` | Cohere | 1024 | 100+ | International |
+| `bge-large-en-v1.5` | Open source | 1024 | English | Self-hosted |
+| `multilingual-e5-large` | Open source | 1024 | Multi | Self-hosted |
+
+#### Embedding Configuration
+
+```yaml
+Embeddings:
+  model: text-embedding-3-small
+  provider: openai
+
+  settings:
+    batch_size: 100
+    max_retries: 3
+    timeout: 30s
+
+  preprocessing:
+    lowercase: false
+    remove_stopwords: false
+    max_tokens: 8191
+
+  caching:
+    enabled: true
+    ttl: 7d
+```
+
+### Index Settings
+
+```yaml
+Index Configuration:
+  name: support-knowledge
+
+  vector_store:
+    type: pinecone  # or weaviate, qdrant, opensearch
+    dimensions: 1536
+    metric: cosine
+
+  full_text:
+    enabled: true
+    analyzer: standard
+    languages: [en, es, fr]
+
+  metadata_fields:
+    - name: source
+      type: keyword
+      filterable: true
+    - name: category
+      type: keyword
+      filterable: true
+    - name: updated_at
+      type: date
+      filterable: true
+    - name: permissions
+      type: keyword
+      filterable: true
+
+  reindexing:
+    schedule: weekly
+    on_schema_change: auto
+```
+
+---
+
+## Query Processing
+
+### Query Understanding Pipeline
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                      User Query                                  │
+│            "how do I reset my password on mobile"               │
+└─────────────────────────────────┬───────────────────────────────┘
+                                  │
+                                  ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                  Query Classification                            │
+│                                                                  │
+│  Type: how-to question                                          │
+│  Intent: password_reset                                         │
+│  Entities: [mobile]                                             │
+└─────────────────────────────────┬───────────────────────────────┘
+                                  │
+                                  ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                   Query Expansion                                │
+│                                                                  │
+│  Original: "reset password mobile"                              │
+│  Expanded: "reset password mobile app iOS Android forgot"       │
+│  Synonyms: "change password", "recover account"                 │
+└─────────────────────────────────┬───────────────────────────────┘
+                                  │
+                                  ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                   Query Reformulation                            │
+│                                                                  │
+│  HyDE: Generate hypothetical answer, embed that instead         │
+│  Multi-query: Generate multiple search queries                  │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### Query Configuration
+
+```yaml
+Query Processing:
+  classification:
+    enabled: true
+    model: gpt-4
+    types:
+      - factual
+      - how-to
+      - troubleshooting
+      - comparison
+      - definition
+
+  expansion:
+    enabled: true
+    methods:
+      - synonyms
+      - related_terms
+      - spelling_correction
+    max_expanded_terms: 5
+
+  reformulation:
+    hyde:
+      enabled: true
+      model: gpt-4
+      prompt: "Write a short paragraph answering: {{query}}"
+
+    multi_query:
+      enabled: true
+      num_queries: 3
+      model: gpt-4
+
+  filters:
+    auto_detect: true
+    extract_from_query:
+      - date_ranges
+      - categories
+      - product_names
+```
+
+---
+
+## Retrieval Strategies
+
+### Hybrid Search
+
+Combine semantic and keyword search for best results.
+
+```yaml
+Retrieval:
+  strategy: hybrid
+
+  vector_search:
+    weight: 0.7
+    top_k: 20
+    similarity_metric: cosine
+    min_score: 0.5
+
+  keyword_search:
+    weight: 0.3
+    top_k: 20
+    algorithm: bm25
+    boost_fields:
+      title: 2.0
+      headings: 1.5
+      content: 1.0
+
+  fusion:
+    method: reciprocal_rank  # or linear, weighted
+    k: 60
+    final_top_k: 10
+```
+
+### Re-ranking
+
+Improve result quality with a second-stage ranker.
+
+```yaml
+Reranking:
+  enabled: true
+
+  model:
+    provider: cohere
+    name: rerank-english-v3.0
+    # Or: cross-encoder/ms-marco-MiniLM-L-6-v2
+
+  settings:
+    top_n: 5  # Return top 5 after reranking
+    input_documents: 20  # Rerank top 20 from retrieval
+    return_scores: true
+
+  fallback:
+    on_error: skip_reranking
+    min_score: 0.1
+```
+
+### Contextual Retrieval
+
+Include surrounding context for better answers.
+
+```yaml
+Contextual Retrieval:
+  enabled: true
+
+  context_window:
+    before: 1  # Include 1 chunk before
+    after: 1   # Include 1 chunk after
+    same_document_only: true
+
+  parent_document:
+    include_metadata: true
+    include_summary: true
+
+  deduplication:
+    enabled: true
+    similarity_threshold: 0.95
+```
+
+### Filtering
+
+Apply metadata filters to narrow results.
+
+```yaml
+Filters:
+  # Static filters (always applied)
+  static:
+    - field: status
+      value: published
+
+  # Dynamic filters (from query or context)
+  dynamic:
+    - source: user_context
+      field: department
+      target_field: permissions
+
+  # Query-extracted filters
+  extracted:
+    date_filter:
+      enabled: true
+      fields: [created_at, updated_at]
+    category_filter:
+      enabled: true
+      field: category
+      values: [billing, technical, general]
+```
+
+---
+
+## Answer Generation
+
+### Generation Configuration
+
+```yaml
+Answer Generation:
+  enabled: true
+  model: gpt-4
+
+  prompt:
+    system: |
+      You are a helpful assistant that answers questions based on the provided context.
+
+      Guidelines:
+      - Only use information from the provided sources
+      - Always cite sources using [Source: title]
+      - If the answer isn't in the sources, say "I don't have information about that"
+      - Be concise and direct
+      - Use bullet points for lists
+
+    user: |
+      Context:
+      {{#each sources}}
+      [{{this.title}}]
+      {{this.content}}
+
+      {{/each}}
+
+      Question: {{query}}
+
+      Answer:
+
+  settings:
+    temperature: 0.3
+    max_tokens: 500
+    stop_sequences: ["\n\nQuestion:"]
+
+  citations:
+    style: inline  # or footnote, end
+    format: "[Source: {{title}}]"
+    include_url: true
+    include_snippet: false
+```
+
+### Response Modes
+
+| Mode | Description | Use Case |
+|------|-------------|----------|
+| **Generative** | LLM synthesizes answer from sources | Complex questions |
+| **Extractive** | Returns relevant passages directly | Simple lookups |
+| **Hybrid** | Generated answer + source excerpts | Detailed responses |
+| **Direct** | Returns top chunk if high confidence | FAQ-style |
+
+```yaml
+Response Mode:
+  default: generative
+
+  auto_select:
+    enabled: true
+    rules:
+      - condition: top_score > 0.95 AND query_type == "factual"
+        mode: direct
+      - condition: query_type == "how-to"
+        mode: hybrid
+      - condition: default
+        mode: generative
+
+  hybrid_settings:
+    answer_position: top
+    max_excerpts: 3
+    excerpt_length: 200
+```
+
+### Fallback Handling
+
+```yaml
+Fallback:
+  no_results:
+    message: "I couldn't find information about that in our knowledge base."
+    suggestions:
+      enabled: true
+      prompt: "Suggest 3 related topics the user might search for"
+
+  low_confidence:
+    threshold: 0.4
+    action: acknowledge_uncertainty
+    message: "I found some information, but I'm not fully confident it answers your question:"
+
+  out_of_scope:
+    enabled: true
+    detection: llm
+    message: "That question is outside the scope of our documentation. For assistance, please contact support."
+```
+
+---
+
+## Workbench
+
+### Testing Queries
+
+1. Navigate to **Search AI** → **Workbench**
+2. Enter test queries
+3. View retrieved chunks with scores
+4. Review generated answers
+5. Iterate on configuration
+
+### Debug Panel
+
+| Tab | Information |
+|-----|-------------|
+| **Query** | Processed query, expansions, filters |
+| **Retrieval** | All retrieved chunks with scores |
+| **Reranking** | Before/after reranking comparison |
+| **Generation** | Prompt sent to LLM, token usage |
+| **Sources** | Final sources used in answer |
+
+### Quality Metrics
+
+| Metric | Description |
+|--------|-------------|
+| **Retrieval precision** | % of retrieved chunks that are relevant |
+| **Answer accuracy** | Manual or LLM-judged correctness |
+| **Citation accuracy** | % of claims properly cited |
+| **Latency** | End-to-end response time |
+| **Fallback rate** | % of queries with no/low-confidence answers |
+
+---
+
+## Integration
+
+### API Access
+
+```bash
+curl -X POST https://api.kore.ai/search-ai/v1/query \
+  -H "Authorization: Bearer $API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "query": "What is the refund policy?",
+    "top_k": 5,
+    "generate_answer": true,
+    "filters": {
+      "category": "policies"
+    },
+    "options": {
+      "include_sources": true,
+      "include_scores": true
+    }
+  }'
+```
+
+**Response:**
+
+```json
+{
+  "answer": "Our refund policy allows returns within 30 days of purchase...",
+  "sources": [
+    {
+      "title": "Return Policy",
+      "url": "https://help.company.com/returns",
+      "snippet": "Items can be returned within 30 days...",
+      "score": 0.92
+    }
+  ],
+  "metadata": {
+    "query_time_ms": 234,
+    "model": "gpt-4",
+    "tokens_used": 450
+  }
+}
+```
+
+### Virtual Assistant Integration
+
+Embed Search AI in [Automation AI](/ai-for-service/automation):
+
+```yaml
+Search AI Action:
+  name: search_knowledge
+  type: search_ai
+
+  configuration:
+    app_id: support-search
+    generate_answer: true
+    top_k: 3
+
+  input:
+    query: "{{context.user_query}}"
+    filters:
+      product: "{{context.session.product}}"
+
+  output:
+    answer: search_result.answer
+    sources: search_result.sources
+    confidence: search_result.confidence
+
+  fallback:
+    on_no_results: continue_dialog
+    on_low_confidence: show_sources_only
+```
+
+### Widget Embed
+
+```html
+<script>
+  window.KoreSearch = {
+    appId: "your-app-id",
+    apiKey: "your-api-key",
+    theme: {
+      primaryColor: "#0066cc",
+      position: "bottom-right"
+    },
+    options: {
+      placeholder: "Search our help center...",
+      showSources: true,
+      maxResults: 5
+    }
+  };
+</script>
+<script src="https://sdk.kore.ai/search-widget.js"></script>
+```
+
+---
+
+## Best Practices
+
+### Content Quality
+
+- Keep source documents up to date
+- Use clear headings and structure
+- Remove duplicate content
+- Maintain consistent terminology
+- Add metadata for better filtering
+
+### Retrieval Tuning
+
+- Start with hybrid search (70/30 split)
+- Use reranking for better precision
+- Set appropriate similarity thresholds
+- Test with real user queries
+- Monitor retrieval metrics
+
+### Answer Generation
+
+- Provide clear system instructions
+- Require source citations
+- Handle knowledge gaps gracefully
+- Test edge cases
+- Monitor answer quality
+
+---
+
+## Related
+
+- [Automation AI](/ai-for-service/automation) — Virtual assistant integration
+- [Agent AI](/ai-for-service/agent-ai) — Agent knowledge assist
+- [Integrations](/ai-for-service/integrations) — Enterprise connections
+- [Getting Started](/ai-for-service/getting-started) — Initial setup
