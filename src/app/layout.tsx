@@ -9,6 +9,9 @@ export const metadata = {
     template: '%s – Kore.ai Platform'
   },
   description: 'Build intelligent AI solutions for enterprise productivity, customer service, and process automation.',
+  icons: {
+    icon: '/favicon.svg',
+  },
 }
 
 const navbar = (
