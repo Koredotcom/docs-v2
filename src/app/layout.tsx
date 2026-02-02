@@ -36,7 +36,7 @@ export default async function RootLayout({
           navbar={navbar}
           footer={footer}
           pageMap={await getPageMap()}
-          docsRepositoryBase="https://github.com/Koredotcom/docs-v2/blob/main/src/content"
+          docsRepositoryBase="https://github.com/Koredotcom/docs-v2/blob/main"
           editLink="Edit this page"
           feedback={{ content: 'Question? Give us feedback →', labels: 'feedback' }}
           sidebar={{ defaultMenuCollapseLevel: 1, toggleButton: true }}
