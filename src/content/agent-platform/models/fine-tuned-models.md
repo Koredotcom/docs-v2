@@ -6,35 +6,9 @@ Fine-tuned models let you customize base models for your specific use cases by t
 
 ## View Models & Deployments
 
-### Models List
+* Models List: Go to **Models** > **Fine-tuned models** to see all fine-tuned models with their deployment status. Click a model to open its detail view with Overview, Deployments, and Configurations tabs.
 
-Go to **Models** > **Fine-tuned models** to see all fine-tuned models with their deployment status.
-
-| Field | Description |
-|-------|-------------|
-| Model Name | Name of the fine-tuned model |
-| Base Model | The model used as the foundation for fine-tuning |
-| Active Deployments | Currently active deployment count |
-| Deployment Failed | Failed deployment count |
-| Ready to Deploy | Deployments pending activation |
-| Tags | Labels for organization |
-| Added By | Creator of the model |
-| Updated On | Last modification date |
-
-Click a model to open its detail view with Overview, Deployments, and Configurations tabs.
-
-### Deployments List
-
-Each model can have multiple independent deployments. The Deployments tab shows:
-
-| Field | Description |
-|-------|-------------|
-| Deployment Name | User-assigned name |
-| Deployment ID | System-generated identifier (read-only) |
-| Status | Deploying, Optimizing, Failed, Ready to Deploy, or Deployed |
-| Deployed By | User who deployed |
-| Added On | Deployment date |
-| Actions | Copy cURL, Manage API Keys, Re-trigger (for failed/stopped) |
+* Deployments List: Each model can have multiple independent deployments. The Deployments tab shows the name, id, status and other attributes of the models.
 
 ---
 

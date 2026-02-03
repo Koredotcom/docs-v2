@@ -24,30 +24,9 @@ For the complete list of supported models, see [Supported Models](../supported-m
 
 ## View Models & Deployments
 
-Go to **Models** → **Open-source models** to view all models.
+* View Models: Go to **Models** → **Open-source models** and click a model to view its deployments.
 
-### Models List
-
-| Column | Description |
-|--------|-------------|
-| Model Name | Name of the model (from file name for imports) |
-| Active Deployments | Number of currently deployed instances |
-| Deployment Failed | Number of failed deployments |
-| Ready to Deploy | Deployments waiting to be started |
-| Source | Platform-Hosted, Hugging Face, or File |
-
-Click a model to view its deployments.
-
-### Deployments List
-
-Each model can have multiple deployments. Select a deployment to access its settings.
-
-| Column | Description |
-|--------|-------------|
-| Deployment Name | User-assigned name |
-| Deployment ID | System-generated identifier |
-| Status | Deploying, Optimizing, Failed, Ready to Deploy, Deployed |
-| Actions | Copy cURL, Manage API Keys, Re-trigger |
+* Deployments List: Each model can have multiple deployments. Select a deployment to access its settings.
 
 ---
 
