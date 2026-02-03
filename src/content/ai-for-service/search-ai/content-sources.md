@@ -1,4 +1,4 @@
-# Content Sources
+# Ingest Data from Content Sources
 
 Content Sources enable Search AI to ingest data from websites, documents, and third-party applications, creating a unified knowledge base for generating accurate answers. When content is ingested, Search AI automatically initiates training to create the answer index using configured extraction strategies.
 
