@@ -1,3 +1,4 @@
 export default {
-  'content-sources-overview': 'Content Sources'
+  'content-sources': 'Content Sources',
+  'index-configuration': 'Index Configuration'
 }
