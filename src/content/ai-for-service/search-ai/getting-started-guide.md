@@ -1,4 +1,4 @@
-# Search AI: Getting Started Guide
+# Getting Started with Search AI
 
 ## Overview
 

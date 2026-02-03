@@ -1,4 +1,4 @@
-# Search AI: Agentic RAG and Business Rules Guide
+# Agentic RAG and Business Rules Guide
 
 ## Overview
 
@@ -6,7 +6,6 @@ This guide covers intelligent query processing with Agentic RAG and customizing 
 
 **Navigation:** Configuration menu in Search AI
 
----
 
 ## Agentic RAG
 
@@ -48,7 +47,6 @@ To change model/prompt settings or enable/disable specific agents:
 | API Usage | Enable agents only when utilizing search results via API |
 | Accuracy | Improves retrieval precision for complex queries |
 
----
 
 ## Business Rules
 
@@ -137,7 +135,6 @@ Available chunk fields can be viewed in the Content Browser.
 | Edit Rule | Select rule from list, make changes, click **Save** |
 | Delete Rule | Open rule details, click **Delete** button |
 
----
 
 ## Quick Reference
 
@@ -159,5 +156,3 @@ Available chunk fields can be viewed in the Content Browser.
 | Filter | Apply field-based filtering |
 
 ---
-
-*Sources: [Agentic RAG](https://docs.kore.ai/xo/searchai/rag-agents/), [Business Rules](https://docs.kore.ai/xo/searchai/business-rules/)*

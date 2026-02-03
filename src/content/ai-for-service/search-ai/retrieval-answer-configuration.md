@@ -1,4 +1,4 @@
-# Search AI: Retrieval and Answer Configuration Guide
+# Retrieval and Answer Configuration Guide
 
 ## Overview
 
@@ -6,7 +6,7 @@ This guide covers the configuration of retrieval strategies, answer generation, 
 
 **Navigation:** Configuration menu in Search AI
 
----
+
 
 ## Retrieval Strategies
 
@@ -35,7 +35,7 @@ Configure the chunk retrieval strategy and corresponding thresholds for finding 
 - Top K Chunks: 20
 - Token budget for chunks: 20,000
 
----
+
 
 ## Answer Generation
 
@@ -90,7 +90,6 @@ Enable real-time token-by-token response delivery for Web/Mobile SDK channels, r
 
 **Note:** Streaming is configured via prompt settings and is currently supported only for OpenAI and Azure OpenAI models. Not available for API-based responses.
 
----
 
 ## Search Results
 
@@ -152,7 +151,6 @@ Every application includes default filters that can be updated, deleted, or disa
 
 Currently available via Search API only.
 
----
 
 ## Configuration Checklist
 
@@ -165,7 +163,6 @@ Currently available via Search API only.
 | 5 | Enable/configure search results | Configuration > Search Results |
 | 6 | Set up filters | Configuration > Search Results |
 
----
 
 ## Quick Reference: Default Values
 
@@ -180,5 +177,3 @@ Currently available via Search API only.
 | Search Results Count | 20 |
 
 ---
-
-*Sources: [Retrieval Strategies](https://docs.kore.ai/xo/searchai/retrieval/), [Answer Generation](https://docs.kore.ai/xo/searchai/answer-generation/), [Search Results](https://docs.kore.ai/xo/searchai/search-results/)*

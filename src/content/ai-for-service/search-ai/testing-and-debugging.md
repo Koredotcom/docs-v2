@@ -1,4 +1,4 @@
-# Search AI: Testing and Debugging Guide
+# Testing and Debugging Guide
 
 ## Overview
 
@@ -6,7 +6,6 @@ This guide covers validating your Search AI configuration through testing and de
 
 **Navigation:** Configuration > Testing and Debugging
 
----
 
 ## Testing Answers
 
@@ -28,7 +27,6 @@ This guide covers validating your Search AI configuration through testing and de
 | 4 | Analyze chunks | Check which content was used |
 | 5 | Refine configuration | Adjust settings based on findings |
 
----
 
 ## Debug Information
 
@@ -54,7 +52,6 @@ When Agentic RAG is enabled, an additional **Retrieval** tab appears showing:
 | Agent Output | Results returned from each agent |
 | LLM Timing | Time taken per LLM call |
 
----
 
 ## Answer Insights
 
@@ -73,7 +70,6 @@ The Answer Insights feature provides analytics for query-response interactions.
 
 Navigate to **Analytics > Search AI > Answer Insights**
 
----
 
 ## Debugging Checklist
 
@@ -98,7 +94,6 @@ Navigate to **Analytics > Search AI > Answer Insights**
 | LLM Settings | Configuration > Answer Generation | Model, prompt, temperature |
 | Business Rules | Configuration > Business Rules | Active rules and conditions |
 
----
 
 ## Best Practices
 
@@ -123,7 +118,6 @@ Navigate to **Analytics > Search AI > Answer Insights**
 3. **Iterate configuration** - Continuously refine based on data
 4. **Document changes** - Keep records of configuration modifications
 
----
 
 ## Testing Scenarios
 
@@ -163,7 +157,6 @@ Navigate to **Analytics > Search AI > Answer Insights**
 4. Verify agent sequence and outputs
 ```
 
----
 
 ## Quick Reference
 
@@ -185,5 +178,3 @@ Navigate to **Analytics > Search AI > Answer Insights**
 | User Feedback | Positive ratings trending up |
 
 ---
-
-*Source: [Testing and Debugging Answers](https://docs.kore.ai/xo/searchai/testing-and-debugging-answers/)*
