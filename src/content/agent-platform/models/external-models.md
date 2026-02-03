@@ -29,14 +29,8 @@ For the complete list of supported models, see [Supported Models](../supported-m
 
 ### View Models
 
-Go to **Models** → **External Models** to see all connected models.
+* Go to **Models** → **External Models** to see all connected models.
 
-| Column | Description |
-|--------|-------------|
-| Model Name | Name assigned during integration |
-| Type | Easy Integration or API Integration |
-| Source | Provider (OpenAI, Anthropic, Custom, etc.) |
-| Added On | Date added or updated |
 
 ### Manage Connections
 
