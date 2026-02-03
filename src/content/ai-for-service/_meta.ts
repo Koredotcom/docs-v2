@@ -6,7 +6,8 @@ export default {
     title: 'Products'
   },
   automation: 'Automation AI',
-  search: 'Search AI',
+  'search-all': 'Search AIC',
+  'search-ai': 'Search AI',
   'contact-center': 'Contact Center AI',
   'agent-ai': 'Agent AI',
   quality: 'Quality AI',
