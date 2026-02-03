@@ -5,5 +5,8 @@ export default {
   'fine-tuned-models': 'Fine-tuned Models',
   'add-via-easy-integration': {
     'display': 'hidden'
+  },
+  'external-models-overview': {
+    'display': 'hidden'
   }
 }
