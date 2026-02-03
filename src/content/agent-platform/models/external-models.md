@@ -2,7 +2,7 @@
 
 Connect commercial and custom models to Agent Platform.
 
----
+
 
 ## Overview
 
@@ -23,7 +23,7 @@ External models are AI models hosted outside the platform. Once connected, they 
 
 For the complete list of supported models, see [Supported Models](../supported-models/).
 
----
+
 
 ## Manage Connected Models
 
@@ -44,7 +44,7 @@ Each model can have multiple connections with different API keys, enabling separ
 
 When adding multiple API keys for the same model, each connection must have a unique name and API key. In Agentic Apps, you can assign specific connections at the Agent or Supervisor level.
 
----
+
 
 ## Add a Model via Easy Integration
 
@@ -85,7 +85,7 @@ Bedrock uses IAM role-based authentication instead of API keys.
 4. Configure model settings using [Default](#default-mode) or [Existing Provider Structures](#existing-provider-structures-mode)
 5. Click **Confirm**
 
----
+
 
 ## Add a Model via API Integration
 
@@ -109,7 +109,7 @@ Use API Integration for custom endpoints or self-hosted models.
 4. Configure model settings using [Default](#default-mode) or [Existing Provider Structures](#existing-provider-structures-mode)
 5. Click **Confirm**
 
----
+
 
 ## Model Configuration Modes
 
@@ -185,7 +185,7 @@ Enable only features your model supports:
 
 > **Warning**: Enabling unsupported features may cause unexpected behavior.
 
----
+
 
 ## Troubleshooting
 
@@ -197,7 +197,7 @@ Enable only features your model supports:
 | Tool calling not working | Verify model supports it and feature is enabled |
 | Bedrock connection fails | Check IAM role ARN and trust policy configuration |
 
----
+
 
 ## Related
 

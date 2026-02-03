@@ -2,7 +2,6 @@
 
 Fine-tuned models let you customize base models for your specific use cases by training them on your own datasets. You can fine-tune Platform-hosted models or import base models from Hugging Face, then deploy them for inference within the Platform or externally via API.
 
----
 
 ## View Models & Deployments
 
@@ -10,7 +9,6 @@ Fine-tuned models let you customize base models for your specific use cases by t
 
 * Deployments List: Each model can have multiple independent deployments. The Deployments tab shows the name, id, status and other attributes of the models.
 
----
 
 ## Create a Fine-Tuned Model
 
@@ -72,7 +70,7 @@ Connect your W&B account to monitor fine-tuning metrics in real-time. Select an 
 
 Review all settings and click **Start fine-tuning**. The Overview page displays real-time progress.
 
----
+
 
 ## Training Overview
 
@@ -96,7 +94,6 @@ The Overview page displays real-time fine-tuning progress:
 
 After completion, download training files, test results, and test data for reference.
 
----
 
 ## Deploy a Fine-Tuned Model
 
@@ -134,7 +131,7 @@ Once fine-tuning completes, deploy the model for inference.
 
 After deployment completes, the status changes to "Deployed" and an API endpoint is generated.
 
----
+
 
 ## Manage Deployed Models
 
@@ -177,7 +174,7 @@ Generate API keys for secure external access. Keys are scoped per deployment.
 
 **Delete**: Removes the model and all associated data. Only available for undeployed models. Click **Proceed to delete**.
 
----
+
 
 ## Re-deploy a Model
 
@@ -190,7 +187,7 @@ To update deployment parameters or hardware:
 
 The system creates a new version in the deployment history.
 
----
+
 
 ## Export a Model
 
@@ -200,7 +197,7 @@ Export fine-tuned models for backup or reference:
 2. Select **Export model**
 3. The ZIP file downloads to your local machine
 
----
+
 
 ## Iterative Fine-Tuning
 
@@ -211,7 +208,7 @@ You can fine-tune on top of an existing fine-tuned model:
 
 This enables iterative improvement of your models.
 
----
+
 
 ## Related
 

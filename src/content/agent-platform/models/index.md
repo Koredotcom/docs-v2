@@ -2,8 +2,6 @@
 
 Configure and manage AI models for your agents, tools, and workflows.
 
----
-
 ## Overview
 
 Agent Platform is model-agnostic, supporting a wide range of AI models from commercial providers, open-source repositories, and custom fine-tuned deployments. Access Model Hub from the top navigation to manage all your models in one place.
@@ -16,117 +14,7 @@ Model Hub provides three ways to work with models:
 | **Open-Source Models** | 30+ curated models plus any Hugging Face text generation model | Cost control, customization, data privacy |
 | **Fine-Tuned Models** | Custom models trained on your enterprise data | Domain-specific tasks, consistent outputs |
 
----
 
-## External Models
-
-Connect commercial models with minimal setup using Easy Integration or API Integration.
-
-### Supported Providers
-
-| Provider | Popular Models | Tool Calling |
-|----------|---------------|--------------|
-| **OpenAI** | GPT-4o, GPT-4 Turbo, GPT-3.5 Turbo, o1 series | ✓ |
-| **Anthropic** | Claude 3.5 Sonnet, Claude 3 Opus/Sonnet/Haiku | ✓ |
-| **Google** | Gemini 1.5 Pro, Gemini 1.5 Flash | ✓ |
-| **Azure OpenAI** | GPT-4o, GPT-4, GPT-3.5 Turbo | ✓ |
-| **Cohere** | Command R+, Command R | ✓ |
-| **Amazon Bedrock** | Claude, Titan, Llama models via AWS | ✓ |
-
-### Adding an External Model
-
-**Easy Integration** (recommended):
-1. Go to **Models** → **External Models** → **Add a model**
-2. Select **Easy Integration** and choose your provider
-3. Enter your API credentials
-4. Select the model and confirm
-
-**API Integration** (for custom endpoints):
-1. Select **API Integration** when adding a model
-2. Configure the endpoint URL and authentication
-3. Map request/response parameters
-4. Test and save
-
-> **Note**: Custom models must support tool calling and follow OpenAI or Anthropic API structures to work with Agentic Apps.
-
-For detailed setup instructions, see [Add a Model using Easy Integration](./external-models/add-an-external-model-using-easy-integration/) or [Add a Model using API Integration](./external-models/add-an-external-model-using-api-integration/).
-
----
-
-## Open-Source Models
-
-Deploy from 30+ curated models or import any text generation model from Hugging Face.
-
-### Deployment Options
-
-| Option | Description |
-|--------|-------------|
-| **Kore-Hosted** | Select from curated models, optimize, and deploy on managed infrastructure |
-| **Hugging Face Import** | Bring any compatible model from Hugging Face (public or private) |
-
-### Optimization Techniques
-
-Before deployment, optimize models for better performance:
-
-- **vLLM**: High-throughput inference optimization
-- **CTranslate2 (CT2)**: Efficient inference with reduced memory footprint
-- **No Optimization**: Deploy as-is for maximum compatibility
-
-### Quick Deploy Steps
-
-1. Go to **Models** → **Open-source models** → **Deploy a model**
-2. Select a Kore-hosted model or import from Hugging Face
-3. Choose optimization technique (optional)
-4. Configure parameters and hardware
-5. Click **Deploy**
-
-For the complete model list and detailed instructions, see [Deploy an Open-Source Model](./open-source-models/select-and-deploy-an-open-source-model/).
-
----
-
-## Fine-Tuned Models
-
-Create custom models trained on your enterprise data for domain-specific tasks.
-
-### When to Fine-Tune
-
-- Consistent output format required across responses
-- Domain-specific terminology or jargon
-- Unique tone, style, or brand voice
-- Improved accuracy for specialized tasks
-
-### Fine-Tuning Process
-
-1. **Prepare Data**: Format training data as JSONL with conversation examples
-2. **Select Base Model**: Choose from supported Kore-hosted or Hugging Face models
-3. **Configure Training**: Select fine-tuning type (Full, LoRA, or QLoRA)
-4. **Monitor Progress**: Track metrics via Weights & Biases integration
-5. **Deploy**: Make the model available across Agent Platform
-
-### Training Data Format
-
-```json
-{"messages": [{"role": "system", "content": "You are a support agent."}, {"role": "user", "content": "Order status?"}, {"role": "assistant", "content": "I'll check your order status right away."}]}
-{"messages": [{"role": "system", "content": "You are a support agent."}, {"role": "user", "content": "Return request"}, {"role": "assistant", "content": "I can help process your return."}]}
-```
-
-For step-by-step instructions, see [Create a Fine-Tuned Model](./fine-tune-models/create-a-fine-tuned-model/).
-
----
-
-## Model Parameters
-
-Configure generation behavior when using models across Agent Platform:
-
-| Parameter | Description | Typical Range |
-|-----------|-------------|---------------|
-| **Temperature** | Controls randomness. Lower = focused, higher = creative | 0.0–2.0 (default: 0.7) |
-| **Top P** | Nucleus sampling—considers tokens within probability mass | 0.0–1.0 (default: 0.9) |
-| **Top K** | Limits selection to top K tokens | 1–100 (default: 50) |
-| **Max Tokens** | Maximum output length | Varies by model |
-| **Stop Sequences** | Strings that stop generation | Custom list |
-
----
 
 ## Tool Calling Support
 
@@ -144,7 +32,6 @@ Not all models support tool calling, which is required for Agentic Apps. Use mod
 - Most Hugging Face imports
 - Models without function calling capabilities
 
----
 
 ## Model Selection Guide
 
@@ -176,7 +63,7 @@ Enable consistent, parseable responses using JSON schemas.
 - Hugging Face imports
 - Locally imported models
 
----
+
 
 ## Model Endpoint & API Keys
 
@@ -188,7 +75,7 @@ After deployment, each model provides:
 
 Access these from the model's three-dot menu → **API Endpoint**.
 
----
+
 
 ## Monitoring
 
@@ -200,7 +87,7 @@ Track model performance across Agent Platform:
 
 Access via **Settings** → **Monitoring** → **Analytics**.
 
----
+
 
 ## Related
 

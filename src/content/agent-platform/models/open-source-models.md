@@ -20,7 +20,7 @@ Agent Platform supports 30+ curated open-source models and allows importing any 
 
 For the complete list of supported models, see [Supported Models](../supported-models/).
 
----
+
 
 ## View Models & Deployments
 
@@ -28,7 +28,7 @@ For the complete list of supported models, see [Supported Models](../supported-m
 
 * Deployments List: Each model can have multiple deployments. Select a deployment to access its settings.
 
----
+
 
 ## Deploy a Platform-Hosted Model
 
@@ -42,7 +42,7 @@ For the complete list of supported models, see [Supported Models](../supported-m
 
 After deployment, the model is available across Agent Platform and via API endpoint.
 
----
+
 
 ## Deploy from Hugging Face
 
@@ -60,7 +60,7 @@ Import and deploy any compatible model from Hugging Face.
 
 To connect your Hugging Face account, see [Enable Hugging Face](../../settings/integrations/enable-hugging-face/).
 
----
+
 
 ## Import a Local Model
 
@@ -94,7 +94,7 @@ Adapter models require a compatible base model.
 
 After import, the model appears in the Open-source models list and can be deployed like any other model.
 
----
+
 
 ## Optimization Techniques
 
@@ -128,7 +128,7 @@ High-performance inference for very large language models.
 | Resource-constrained | ✓ | |
 | Distributed deployment | | ✓ |
 
----
+
 
 ## Deployment Parameters
 
@@ -158,7 +158,7 @@ Configure these parameters when deploying a model:
 
 Select GPU hardware based on model size and performance requirements.
 
----
+
 
 ## Manage Deployed Models
 
@@ -203,7 +203,7 @@ API keys are scoped to the specific deployment.
 
 > **Note**: Timeout precedence: Tool > Node timeout > Model timeout.
 
----
+
 
 ## Re-deploy a Model
 
@@ -216,7 +216,7 @@ To update parameters or hardware after initial deployment:
 
 A new version is created automatically.
 
----
+
 
 ## Limitations
 
@@ -225,7 +225,7 @@ A new version is created automatically.
 - Hugging Face models require Transformers ≤4.43.1
 - Structured output requires v2/chat/completions endpoint and vLLM/no optimization
 
----
+
 
 ## Related
 
