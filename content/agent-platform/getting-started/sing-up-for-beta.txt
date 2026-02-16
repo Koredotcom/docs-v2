@@ -1,0 +1,4 @@
+# Sign up for Beta Testing
+The GALE beta program is now open and accepting applications. Beta testers can use our no-code toolset to build and deploy AI applications. While GALE offers a wide range of effective AI models for diverse services, this beta program may not be ideal for every use case. Use the link below to tell us a bit about what you plan to build with GALE. We will consider each application to ensure the beta program fits well with the goals of each project. We appreciate your interest in GALE and look forward to collaborating with you.
+
+[Sign up for Beta Testing :octicons-arrow-right-24:](https://info.kore.ai/gale-beta-signup#Application-Form){:target="_blank"}
