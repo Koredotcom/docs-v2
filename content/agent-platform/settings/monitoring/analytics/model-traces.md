@@ -312,11 +312,11 @@ The table below summarizes the available columns along with their supported oper
    <td rowspan="3" >
 <ul>
 
-<li><strong>Tool</strong>: The request was sent to the model from a tool. <a href="../../../../ai-agents/tools/overview/" target="_blank">Learn more</a>.</li>
+<li><strong>Tool</strong>: The request was sent to the model from a tool. <a href="../../../../ai-agents/tools/overview/">Learn more</a>.</li>
 
-<li><strong>Prompts</strong>: The request was sent to the model from a Prompt experiment. <a href="../../../../prompts/using-prompt-studio/" target="_blank">Learn more</a>.</li>
+<li><strong>Prompts</strong>: The request was sent to the model from a Prompt experiment. <a href="../../../../prompts/using-prompt-studio/">Learn more</a>.</li>
 
-<li><strong>API Key</strong>: The request was sent to the (open-source) model using an API key. <a href="../../../../models/open-source-models/generate-an-api-key-open-source/" target="_blank">Learn more</a>.</li>
+<li><strong>API Key</strong>: The request was sent to the (open-source) model using an API key. <a href="../../../../models/open-source-models/generate-an-api-key-open-source/">Learn more</a>.</li>
 </ul>
    </td>
   </tr>

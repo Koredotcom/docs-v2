@@ -112,7 +112,7 @@ Click **OK** to see the imported users on the dashboard.
 
 <div class="admonition note">
 <p class="admonition-title">Note</p>
-<p>The imported users are assigned the <b>Viewer</b> system role by default, which you can change. <a href="../role-management/#system-defined-roles" target="_blank">Learn more</a>.</p> 
+<p>The imported users are assigned the <b>Viewer</b> system role by default, which you can change. <a href="../role-management/#system-defined-roles">Learn more</a>.</p> 
 </div>
 
 <img src="../images/imported-entries.png" alt="imported entries" title="imported entries" style="border: 1px solid gray; zoom:75%;">

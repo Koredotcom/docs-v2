@@ -78,20 +78,20 @@ Otherwise, click **Add new auth**.
 <ol start="3"><li>In the <b>New Authorization Mechanism</b> dialog, select the required option for <b>Authorization Type</b>.</li> 
 <img src="../images/select-oauthv2.png" alt="select oauth v2" title="select oauth v2" style="border: 1px solid gray; zoom:75%;"></ol>  
 <ol start="4"><li>In the <b>Identity Provider Name</b> field, enter a name for the authorization type, which is mandatory.
-<img src="../images/identity-provider.png" alt="identity provider" title="identity provider" style="border: 1px solid gray; zoom:75%;"></li>
-<li>Provide the values for the mandatory authorization fields. For details, refer to the <a href="#define-authorization-fields" target="_blank">Define Authorization Fields</a> section. 
+<img src="../images/identity-provider.png" alt="identity provider" title="identity provider" style="border: 1px solid gray; zoom:75%;"/></li>
+<li>Provide the values for the mandatory authorization fields. For details, refer to the <a href="#define-authorization-fields">Define Authorization Fields</a> section. 
 
 If the mandatory fields are left blank, validation error messages appear, as shown below.
 
-<img src="../images/form-validation-errors.png" alt="validation errors" title="validation errors" style="border: 1px solid gray; zoom:75%;"></li>
-<li>(Optional) Click <b>+ Add Additional Field</b> to add additional fields for authorization. See the <a href="#add-additional-field" target="_blank">Add Additional Field</a> section.</li></ol>
+<img src="../images/form-validation-errors.png" alt="validation errors" title="validation errors" style="border: 1px solid gray; zoom:75%;"/></li>
+<li>(Optional) Click <b>+ Add Additional Field</b> to add additional fields for authorization. See the <a href="#add-additional-field">Add Additional Field</a> section.</li></ol>
 
 <div class="admonition note">
 <p class="admonition-title">Note</p>
 <p>If the default <b>Username</b> and <b>Password</b> fields do not meet your authorization requirements, you can add <b>custom fields</b> using additional fields or authorization IDP form fields to the authorization process. For example, if a <b>PIN code</b> is required in addition to the standard login fields, you can include it as an extra input for the end user.</p>
 </div>
     
-<ol start="7"><li>(Optional step to be executed only when you select <b><i>OAuth V2</i></b> as the Authorization type) Click <b>+ Add Authorization Field</b> to add additional auth fields to your profile. This is required For more information, see the <a href="#add-authorization-field" target="_blank">Add Authorization Field</a> section.</li>
+<ol start="7"><li>(Optional step to be executed only when you select <b><i>OAuth V2</i></b> as the Authorization type) Click <b>+ Add Authorization Field</b> to add additional auth fields to your profile. This is required For more information, see the <a href="#add-authorization-field">Add Authorization Field</a> section.</li>
 <li>Click <b>Save new Auth</b>.</li>
 <img src="../images/save-new-auth.png" alt="save new auth" title="save new auth" style="border: 1px solid gray; zoom:75%;"></ol>
 
@@ -231,7 +231,7 @@ Example: <code>read_profile</code>.
    <td><strong>Additional Fields</strong>
    </td>
    <td>
-    Refer <a href="#add-additional-field" target="_blank">here</a>.
+    Refer <a href="#add-additional-field">here</a>.
    </td>
    <td>Optional
    </td>
@@ -241,7 +241,7 @@ Example: <code>read_profile</code>.
    <td><strong>Authorization Fields</strong>
    </td>
    <td>
-    Refer <a href="#add-authorization-field" target="_blank">here</a>.</td>
+    Refer <a href="#add-authorization-field">here</a>.</td>
    <td>Optional
    </td>
    <td>OAuth V2</td>

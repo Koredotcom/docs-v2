@@ -1698,7 +1698,7 @@ To add a connection and configure an integration, follow the steps below:
 
 <div class="admonition note">
 <p class="admonition-title">Note</p>
-<p>You can also add a connection directly from the <b>Integration node</b> on the Tool Flow canvas. <a href="../../../ai-agents/tools/tool-flows/types-of-nodes/integration-node/" target="_blank">Learn more</a>.</p>
+<p>You can also add a connection directly from the <b>Integration node</b> on the Tool Flow canvas. <a href="../../../ai-agents/tools/tool-flows/types-of-nodes/integration-node/">Learn more</a>.</p>
 </div>
 
 1. [Access](../integrations/about-integrations.md#access-integrations){:target="_blank"} **Integrations**.

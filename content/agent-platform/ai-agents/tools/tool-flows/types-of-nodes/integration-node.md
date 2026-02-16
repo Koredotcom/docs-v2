@@ -146,7 +146,7 @@ After adding and configuring the node as mentioned [here](./integration-node.md#
 
 ### Step 1: (Optional) Add Input Variable(s)
 
-* Click the <b>Input</b> tab of the <b>Start</b> node, and click <b>Add Input Variable</b> to configure the input for the flow’s test run. <a href="../../perform-other-actions-on-the-flow-builder/manage-input-and-output/#adding-input-variables" target="_blank">Learn more</a>
+* Click the <b>Input</b> tab of the <b>Start</b> node, and click <b>Add Input Variable</b> to configure the input for the flow’s test run. <a href="../../perform-other-actions-on-the-flow-builder/manage-input-and-output/#adding-input-variables">Learn more</a>
     
     <img src="../images/start-node-io.png" alt="start node io" title="start node io" style="border: 1px solid gray; zoom:75%;">
 
@@ -167,8 +167,8 @@ This step is required because the **Start node** must have at least one **output
     <img src="../images/add-op-var.png" alt="add output variable" title="add output variable" style="border: 1px solid gray; zoom:75%;">
 
 * Enter the value for <b>Name (key)</b> and select <i>String</i> for <b>Type</b>.
-* Click <b>Save</b>. <a href="#access-the-nodes-output" target="_blank">Learn more</a> about accessing the node’s output.
-<img src="../images/output-variable.png" alt="op variable" title="op variable" style="border: 1px solid gray; zoom:75%;">
+* Click <b>Save</b>. <a href="#access-the-nodes-output">Learn more</a> about accessing the node’s output.
+<img src="../images/output-variable.png" alt="op variable" title="op variable" style="border: 1px solid gray; zoom:75%;"/>
 
 ### Step 3: Run the Flow
 

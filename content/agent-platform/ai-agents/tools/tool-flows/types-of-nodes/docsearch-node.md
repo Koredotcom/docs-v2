@@ -104,13 +104,13 @@ After fetching the Search AI application credentials, configuring the source, an
 
 * Add the input for the <b>Query</b> field to capture the user's search query. 
   
-  To accept dynamic inputs, either configure an input variable in the <b>Start</b> node or use the <a href="../../perform-other-actions-on-the-flow-builder/manage-input-and-output/#adding-input-variables" target="_blank">Manage Input Variables</a> feature.</p>
+  To accept dynamic inputs, either configure an input variable in the <b>Start</b> node or use the <a href="../../perform-other-actions-on-the-flow-builder/manage-input-and-output/#adding-input-variables">Manage Input Variables</a> feature.</p>
 
   You can also add plain text for hard-coded inputs like "<i>What does the McKinsey report forecast for Q3 in 2025 based on historic data taken in the past 3 years</i>."
    <img src="./../images/context-input.png" alt="query field" title="query field" style="border: 1px solid gray; zoom:75%;">
    
- * Select the <b>Search AI connection</b> you set up in <a href="#step-2-link-the-search-ai-app-in-agent-platform" target="_blank">Step 2</a> on the Platform integration page.
-   <img src="./../images/searchai-connection.png" alt="search ai connection" title="search ai connection" style="border: 1px solid gray; zoom:75%;">
+ * Select the <b>Search AI connection</b> you set up in <a href="#step-2-link-the-search-ai-app-in-agent-platform">Step 2</a> on the Platform integration page.
+   <img src="./../images/searchai-connection.png" alt="search ai connection" title="search ai connection" style="border: 1px solid gray; zoom:75%;"/>
 
    <div class="admonition note">
    <p class="admonition-title">Note</p>
@@ -118,8 +118,8 @@ After fetching the Search AI application credentials, configuring the source, an
 
   To set up a new connection, click **+ New Connection**. It redirects you to the Platform Integrations page. Follow the steps mentioned [here](./docsearch-node.md#step-2-link-the-search-ai-app-in-agent-platform){:target="_blank"} to complete the integration.
 
- * (Optional) Set <b>Meta filters</b> (click the expansion arrow to access the editor) to define rules that will narrow down the search results. For example, if the sources have multiple files, you can define the specific file names to look up in the meta filters code. <a href="https://docs.kore.ai/xo/apis/searchai/answer-generation/#body-parameters" target="_blank">Learn more</a>.
-<img src="./../images/set-meta-filters.png" alt="set meta filters" title="set meta filters" style="border: 1px solid gray; zoom:75%;">
+ * (Optional) Set <b>Meta filters</b> (click the expansion arrow to access the editor) to define rules that will narrow down the search results. For example, if the sources have multiple files, you can define the specific file names to look up in the meta filters code. <a href="https://docs.kore.ai/xo/apis/searchai/answer-generation/#body-parameters">Learn more</a>.
+<img src="./../images/set-meta-filters.png" alt="set meta filters" title="set meta filters" style="border: 1px solid gray; zoom:75%;"/>
 
 <div class="admonition note">
 <p class="admonition-title">Note</p>

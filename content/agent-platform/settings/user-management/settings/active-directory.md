@@ -90,8 +90,8 @@ To remove a field, click the **Delete** icon as shown below.
 </div>
 
 <ol start="4"><li>Next, define the rules and sync criteria to import specific users from your Active Directory server. To do this, click the <b>Manage Inclusion & Exclusion Rules</b> tab.</li>
-<li>Under <b>Inclusion Rules</b>, you can sync specific users from your Active Directory Server by defining criteria or filters using profile parameters. Enter the rule expression using the user profile parameters in the <b>Rule Definition</b> textbox according to the LDAP filter syntax mentioned <a href="https://social.technet.microsoft.com/wiki/contents/articles/5392.active-directory-ldap-syntax-filters.aspx" target="_blank">here</a>.</li>
-<img src="../images/manage-rules.png" alt="manage rules" title="manage rules" style="border: 1px solid gray; zoom:75%;"></ol>
+<li>Under <b>Inclusion Rules</b>, you can sync specific users from your Active Directory Server by defining criteria or filters using profile parameters. Enter the rule expression using the user profile parameters in the <b>Rule Definition</b> textbox according to the LDAP filter syntax mentioned <a href="https://social.technet.microsoft.com/wiki/contents/articles/5392.active-directory-ldap-syntax-filters.aspx">here</a>.</li>
+<img src="../images/manage-rules.png" alt="manage rules" title="manage rules" style="border: 1px solid gray; zoom:75%;"/></ol>
 
 <ol start="6"><li>(Optional) An <b>Exclusion Rule</b> includes the <b>AD/LDAP field</b>, <b>Match Type</b>, and <b>Value</b>. You must set <b>Match Type</b> for one of the following options:</li></ol>
 

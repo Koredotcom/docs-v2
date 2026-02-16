@@ -15,6 +15,6 @@ Powered by the Platform, AI for Work enables the development of two distinct age
 
 ## Agent Types
 
-**Workflow Agent:** Workflow Agents in AI for Work leverage capabilities from the Platform to deliver precise, contextually relevant responses to user queries in real-time. This streamlined approach simplifies the creation of intelligent agents, enabling the rapid deployment of business solutions. <a href="https://docs.kore.ai/ai-for-work/custom-agents/workflow-agents/" target="_blank">Learn more about Workflow Agents.</a>
+**Workflow Agent:** Workflow Agents in AI for Work leverage capabilities from the Platform to deliver precise, contextually relevant responses to user queries in real-time. This streamlined approach simplifies the creation of intelligent agents, enabling the rapid deployment of business solutions. <a href="https://docs.kore.ai/ai-for-work/custom-agents/workflow-agents/">Learn more about Workflow Agents.</a>
 
-**Autonomous Agent:** Autonomous Agents leverage the Platform to manage complex business tasks and workflows independently. These AI-powered agents utilize adaptive algorithms for dynamic decision-making, responding to evolving business requirements in real-time. <a href="https://docs.kore.ai/ai-for-work/custom-agents/autonomous-agent/" target="_blank">Learn more about Autonomous Agents.</a>
+**Autonomous Agent:** Autonomous Agents leverage the Platform to manage complex business tasks and workflows independently. These AI-powered agents utilize adaptive algorithms for dynamic decision-making, responding to evolving business requirements in real-time. <a href="https://docs.kore.ai/ai-for-work/custom-agents/autonomous-agent/">Learn more about Autonomous Agents.</a>
