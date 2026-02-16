@@ -28,7 +28,7 @@ For assistance, you can click "Generate prompt" to help expand your prompt into 
 
     This step is optional and depends on the selected model. If the chosen model supports the response format, you can use this feature. If not, the schema will be included with the prompt, allowing the model to determine whether it can respond in the requested format. By default, if no schema is provided, the model will respond with plain text.
 
-    Supported JSON schema types include: String, Boolean, Number, Integer, Object, Array, Enum, and anyOf. Ensure the schema follows the standard outlined here: [Defining JSON schema](../ai-agents/tools/tool-flows/perform-other-actions-on-the-flow-builder/defining-json.md){:target="_blank"}. If the schema is invalid or mismatched, errors will be logged, and you must resolve them before proceeding.
+    Supported JSON schema types include: String, Boolean, Number, Integer, Object, Array, Enum, and anyOf. Ensure the schema follows the standard outlined here: [Defining JSON schema](../ai-agents/tools/tool-flows/perform-other-actions-on-the-flow-builder/defining-json.md). If the schema is invalid or mismatched, errors will be logged, and you must resolve them before proceeding.
 
 
     <img src="../images/prompts_json.png" alt="JSON schema" title="JSON schema" style="border: 1px solid gray; zoom:80%;"/>

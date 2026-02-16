@@ -80,7 +80,7 @@ If SSO is already configured, the **Single sign-on** setup page is displayed.
 
 ## Enable SSO
 
-Depending on your company's security requirements, you can enable SSO for your account users. Enabling SSO includes selecting the protocol and IDP and providing the [parameters](../security-and-control/single-sign-on.md#configuration-parameters){:target="_blank"} to integrate with the IDP service.
+Depending on your company's security requirements, you can enable SSO for your account users. Enabling SSO includes selecting the protocol and IDP and providing the [parameters](../security-and-control/single-sign-on.md#configuration-parameters) to integrate with the IDP service.
 
 <div class="admonition warning">
 <p class="admonition-title">Important</p>
@@ -194,12 +194,12 @@ To enable SSO on the **Settings** console, follow the steps below:
 2. If no SSO is enabled, click **Enable SSO**.
 3. If SSO is already enabled for a provider, click the **Enable SSO** tab and do one of the following:
 
-    * Change and save the existing [parameters](../security-and-control/single-sign-on.md#configuration-parameters){:target="_blank"} for the enabled SSO provider.
+    * Change and save the existing [parameters](../security-and-control/single-sign-on.md#configuration-parameters) for the enabled SSO provider.
     * Disable the enabled SSO and set up a new configuration.
     * Select a different protocol/provider and complete the configuration.
 
 4. Select the required protocol and SP. The default selections are **SAML** and **Okta**.
-5. Configure the [parameters](../security-and-control/single-sign-on.md#configuration-parameters){:target="_blank"} for one of the following SSO protocols and providers:
+5. Configure the [parameters](../security-and-control/single-sign-on.md#configuration-parameters) for one of the following SSO protocols and providers:
 
 <ul><li><b>SAML</b>: <a href="#okta-configuration" target="_blank">Okta</a>, <a href="#onelogin-configuration" target="_blank">Onelogin</a>, or <a href="#other-configuration" target="_blank">Other</a>. <a href="#saml" target="_blank">Learn more</a>.</li>
 <li><b>WS-Federation</b>: <a href="#windows-azure-configuration" target="_blank">Windows Azure</a> or <a href="#other-configuration" target="_blank">Other</a>. <a href="#ws-federation" target="_blank">Learn more</a>.</li>
@@ -307,7 +307,7 @@ To configure SSO using SAML and Onelogin, follow the steps below:
 1. Go to **Single sign-on** page.
 2. Select the **Enable SSO** tab.
 3. Select **SAML** for **Sign-on protocol** and **Onelogin** for **SSO provider**.
-4. Login into the [Onelogin developer portal](https://app.onelogin.com/login){:target="_blank"}.
+4. Login into the [Onelogin developer portal](https://app.onelogin.com/login).
 5. Go to **Applications** > **Add Apps** to access your app.
 <img src="../images/onelogin-add-app.png" alt="onelogin add app" title="onelogin add app" style="border: 1px solid gray; zoom:75%;"/>
 
@@ -351,7 +351,7 @@ To configure and enable SSO using SAML for other IDPs of your choice, follow the
 1. Go to the Platform’s **Single sign-on** page.
 2. Select the **Enable SSO** tab.
 3. Select **SAML** for **Sign-on protocol** and **Other** for **SSO provider**.
-4. Fetch the necessary SSO configuration parameters listed in [this](../security-and-control/single-sign-on.md#configuration-parameters){:target="_blank"} table from your app's **Settings** page within the IDP developer portal. 
+4. Fetch the necessary SSO configuration parameters listed in [this](../security-and-control/single-sign-on.md#configuration-parameters) table from your app's **Settings** page within the IDP developer portal. 
 5. Paste them into the relevant fields on the Platform’s SSO setup page.
 
 To add a new certificate, click **+Add new**.
@@ -393,7 +393,7 @@ To configure SSO using WS-Federation and Windows Azure, follow the steps below:
    <img src="../images/copy-idp-url.png" alt="copy idp url" title="copy idp url"  style="border: 1px solid gray; zoom:75%;"/>
 
 6. Paste this value into the **Azure AD sign-on end point url** field on the Platform’s SSO setup page.
-7. Copy and paste [this](https://login.microsoftonline.com/common/FederationMetadata/2007-06/FederationMetadata.xml){:target="_blank"} URL link into the **Azure AD federation metadata document** field on the Platform’s SSO setup page.
+7. Copy and paste [this](https://login.microsoftonline.com/common/FederationMetadata/2007-06/FederationMetadata.xml) URL link into the **Azure AD federation metadata document** field on the Platform’s SSO setup page.
 8. Click **Save**.
 
 ### Other Configuration
@@ -443,7 +443,7 @@ However, you can still view the previously configured SSO parameters for a speci
 
 ## Steps to Disable SSO
 
-1. [Access](../security-and-control/single-sign-on.md#access-single-sign-on){:target="_blank"} the **Single sign on** page.
+1. [Access](../security-and-control/single-sign-on.md#access-single-sign-on) the **Single sign on** page.
 2. Click the **Disable SSO** tab.
 3. In the confirmation window, click **Yes**.
 
@@ -471,7 +471,7 @@ The **Manage Users** feature on the **Single Sign-On** page allows the account o
 
 To exclude a user from the SSO requirement, follow the steps below:
 
-1. [Navigate](../security-and-control/single-sign-on.md#access-single-sign-on){:target="_blank"} to the **Single Sign-on** page.
+1. [Navigate](../security-and-control/single-sign-on.md#access-single-sign-on) to the **Single Sign-on** page.
 2. Type and add an email address or select from the dropdown in the **Manage Users** textbox. You can add multiple users by entering an email address and pressing Tab.
 3. Click <b>Save</b>.
 
@@ -503,4 +503,4 @@ As a Platform admin, you can enable Single Sign-On (SSO) using a third-party pro
 
 **Related resource**
 
-* [Settings Console](../../administration/overview.md){:target="_blank"}- Learn more about other the Platform's admin features.
+* [Settings Console](../../administration/overview.md)- Learn more about other the Platform's admin features.

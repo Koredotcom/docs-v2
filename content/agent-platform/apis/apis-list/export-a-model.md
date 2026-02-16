@@ -2,7 +2,7 @@
 
 # Export a Model API
 
-This API exports a trained AI model from the system. Once initiated, the export process runs in the background. Use the <code>dockStatusId</code> from the API response to call the [Get Dock Status API](../apis-list/get-dock-status.md){:target="_blank"} and track the export status.
+This API exports a trained AI model from the system. Once initiated, the export process runs in the background. Use the <code>dockStatusId</code> from the API response to call the [Get Dock Status API](../apis-list/get-dock-status.md) and track the export status.
 
 Additionally, the response provides a **download URL**. Copy and paste this URL into a browser or API client to download the exported model’s file.
 
@@ -35,7 +35,7 @@ Additionally, the response provides a **download URL**. Copy and paste this URL 
 
 **Where can I find the API key?**
 
-To use the API, you will need an API key. [Learn more](../../apis/overview.md#how-to-create-the-api-key){:target="_blank"}.
+To use the API, you will need an API key. [Learn more](../../apis/overview.md#how-to-create-the-api-key).
 
 ## Path Parameters
 

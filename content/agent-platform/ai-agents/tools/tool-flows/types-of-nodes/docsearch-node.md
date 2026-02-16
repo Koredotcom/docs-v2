@@ -38,16 +38,16 @@ In this document, you will learn how to add and configure DocSearch Nodes with S
 
 Configuring the DocSearch Node consists of the following steps:
 
-1. [Set up a Search AI application and the information source for Platform integration](../types-of-nodes/docsearch-node.md#step-1-set-up-search-ai-app){:target="_blank"}.
-2. [Link the Search AI application in the Platform](../types-of-nodes/docsearch-node.md#step-2-link-the-search-ai-app-in-agent-platform){:target="_blank"}.
-3. [Add and configure the DocSearch node](../types-of-nodes/docsearch-node.md#step-3-add-and-configure-a-docsearch-node){:target="_blank"}.
+1. [Set up a Search AI application and the information source for Platform integration](../types-of-nodes/docsearch-node.md#step-1-set-up-search-ai-app).
+2. [Link the Search AI application in the Platform](../types-of-nodes/docsearch-node.md#step-2-link-the-search-ai-app-in-agent-platform).
+3. [Add and configure the DocSearch node](../types-of-nodes/docsearch-node.md#step-3-add-and-configure-a-docsearch-node).
 4. [Test the Flow](../types-of-nodes/docsearch-node.md#step-4-test-the-flow) you have built.
 
 ## Step 1: Set up Search AI App
 
 The integration of Search AI with the Platform involves setting up a Search AI application, configuring it for integration, and modifying the Platform to interact with Search AI in response to specific conditions or events. Search AI provides REST APIs that enable seamless interaction with any application.
 
-Follow the detailed steps [here](https://docs.kore.ai/xo/apis/automation/api-introduction/#creating-and-managing-jwt-apps-in-xo-platform){:target="_blank"} to complete the configuration.
+Follow the detailed steps [here](https://docs.kore.ai/xo/apis/automation/api-introduction/#creating-and-managing-jwt-apps-in-xo-platform) to complete the configuration.
 
 <div class="admonition note">
 <p class="admonition-title">Note</p>
@@ -67,7 +67,7 @@ After fetching the Search AI application credentials, configuring the source, an
   <img src="./../images/link-an-app.png" alt="link an app" title="link an app" style="border: 1px solid gray; zoom:75%;"/>
 
 5. In the **Search AI** window, provide the required information that you copied from the Search AI app in 
-[Step 1](./docsearch-node.md#step-1-set-up-search-ai-app){:target="_blank"}.
+[Step 1](./docsearch-node.md#step-1-set-up-search-ai-app).
 6. Click **Test** to test the connection.
 * If the connection is successful, click **Confirm**.
   <img src="./../images/searchai-connection-form.png" alt="searchai connection form" title="searchai connection form" style="border: 1px solid gray; zoom:75%;"/>
@@ -116,7 +116,7 @@ After fetching the Search AI application credentials, configuring the source, an
    <p class="admonition-title">Note</p>
    <p>Use search to look up and select the required connection.</p></div>
 
-  To set up a new connection, click **+ New Connection**. It redirects you to the Platform Integrations page. Follow the steps mentioned [here](./docsearch-node.md#step-2-link-the-search-ai-app-in-agent-platform){:target="_blank"} to complete the integration.
+  To set up a new connection, click **+ New Connection**. It redirects you to the Platform Integrations page. Follow the steps mentioned [here](./docsearch-node.md#step-2-link-the-search-ai-app-in-agent-platform) to complete the integration.
 
  * (Optional) Set <b>Meta filters</b> (click the expansion arrow to access the editor) to define rules that will narrow down the search results. For example, if the sources have multiple files, you can define the specific file names to look up in the meta filters code. <a href="https://docs.kore.ai/xo/apis/searchai/answer-generation/#body-parameters" target="_blank">Learn more</a>.
 <img src="./../images/set-meta-filters.png" alt="set meta filters" title="set meta filters" style="border: 1px solid gray; zoom:75%;"/>
@@ -139,13 +139,13 @@ To run and test the flow, follow the steps below:
 * Click the **Run Flow** button at the top-right corner of the flow builder.
   <img src="../images/docsearch-run-flow.png" alt="click run button" title="click run button" style="border: 1px solid gray; zoom:75%;"/>
 
-* (Optional) Add the value for **Input Variable** if you have configured it to test the flow in **Step 5** of [this](../types-of-nodes/docsearch-node.md#step-3-add-and-configure-a-docsearch-node){:target="_blank"} section. Otherwise, go directly to the next step.
+* (Optional) Add the value for **Input Variable** if you have configured it to test the flow in **Step 5** of [this](../types-of-nodes/docsearch-node.md#step-3-add-and-configure-a-docsearch-node) section. Otherwise, go directly to the next step.
 
 * Click <b>Generate Output</b>.
 
      <img src="../images/input-and-generate-output-docsearch.png" alt="generate output" title="generate output" style="border: 1px solid gray; zoom:75%;"/>
 
-   The **Debug** window displays the flow log and execution status of each node on the canvas, starting from the **Start** node to the **End** node, along with the result shown in the **Output** window. [Learn more](../../../tools/tool-flows/perform-other-actions-on-the-flow-builder/run-the-flow.md){:target="_blank"} about running the tool flow.
+   The **Debug** window displays the flow log and execution status of each node on the canvas, starting from the **Start** node to the **End** node, along with the result shown in the **Output** window. [Learn more](../../../tools/tool-flows/perform-other-actions-on-the-flow-builder/run-the-flow.md) about running the tool flow.
 
 <div class="admonition note">
 <p class="admonition-title">Accessing the Output</p>
@@ -162,5 +162,5 @@ Use that key in your tool flow. You may also need to extract multiple chunks fro
 
 **Related Resources**
 
-* [Manage Nodes in Tool Flow](./../manage-flow-nodes.md){:target="_blank"} - Add and manage nodes on the canvas.
-* [Run Tool Flow](./../perform-other-actions-on-the-flow-builder/run-the-flow.md){:target="_blank"} - Run and test an tool flow in real time.
+* [Manage Nodes in Tool Flow](./../manage-flow-nodes.md) - Add and manage nodes on the canvas.
+* [Run Tool Flow](./../perform-other-actions-on-the-flow-builder/run-the-flow.md) - Run and test an tool flow in real time.

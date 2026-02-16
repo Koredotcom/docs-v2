@@ -102,7 +102,7 @@ To access a tool template, follow the steps below:
 
     <img src="../images/click-tool-install.png" alt="install tool" title="install tool" style="border: 1px solid gray; zoom:60%;"/></ol>
 
-    The system redirects you to the **Tool Flow** page. Click **Go to Flow** to view and manage the prebuilt tool flow canvas. [Learn more](../tools/tool-templates.md#view-and-manage-tool-flow){:target="_blank"}.
+    The system redirects you to the **Tool Flow** page. Click **Go to Flow** to view and manage the prebuilt tool flow canvas. [Learn more](../tools/tool-templates.md#view-and-manage-tool-flow).
 
 **Important Considerations** 
 
@@ -134,7 +134,7 @@ To modify your tool's general details, such as its name and description, asynchr
 2. On the left navigation menu, click **Configurations**.
    <img src="../images/configurations-tools.png" alt="configurations" title="configurations" style="border: 1px solid gray; zoom:75%;"/>  
 
-3. Perform the required action on the page like tool renaming or [deletion](../tools/tool-templates.md#delete-a-tool-template){:target="_blank"}. To configure other tool options, refer [here](../tools/configure-a-tool.md){:target="_blank"}.
+3. Perform the required action on the page like tool renaming or [deletion](../tools/tool-templates.md#delete-a-tool-template). To configure other tool options, refer [here](../tools/configure-a-tool.md).
 
 ### View and Manage Tool Flow
 

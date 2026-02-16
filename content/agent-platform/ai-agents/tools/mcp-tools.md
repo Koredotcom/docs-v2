@@ -88,7 +88,7 @@ This decoupling of the MCP server from the client allows for greater flexibility
 8. The LLM generates a final natural language response.
  *"The weather in Dubai today is partly cloudy with a temperature of 36°C and light winds from the northwest."*
 
-[Learn More.](https://docs.anthropic.com/en/docs/agents-and-tools/mcp){:target="_blank"} 
+[Learn More.](https://docs.anthropic.com/en/docs/agents-and-tools/mcp) 
 
 Agentic Apps enable seamless integration with the MCP server, allowing the apps to use the tools hosted by the MCP server. 
 

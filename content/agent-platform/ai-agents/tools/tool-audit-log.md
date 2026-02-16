@@ -15,9 +15,9 @@ Each log entry includes the following to provide actionable insights on account 
 
 The event metadata provides business users with actionable insights, helping them in efficiently identifying patterns in user activities within their accounts. It also aids in detecting anomalies, spotting unauthorized usage, and enhancing overall account security.
 
-You can specify a **current** or **past period** to view the logs and have complete visibility into the activities and modifications in your account. [Learn more](../../settings/monitoring/audit-logs.md#steps-to-set-time-range-for-audit-logs){:target="_blank"}.
+You can specify a **current** or **past period** to view the logs and have complete visibility into the activities and modifications in your account. [Learn more](../../settings/monitoring/audit-logs.md#steps-to-set-time-range-for-audit-logs).
 
-Additionally, you can set **custom filters** based on a specific category, event, or user value to view only the required audit logs. [Learn more](../../settings/monitoring/audit-logs.md#steps-to-add-a-custom-filter){:target="_blank"}.
+Additionally, you can set **custom filters** based on a specific category, event, or user value to view only the required audit logs. [Learn more](../../settings/monitoring/audit-logs.md#steps-to-add-a-custom-filter).
 
 ## Access Audit Logs
 
@@ -26,7 +26,7 @@ Steps to access and view tool audit logs:
 1. Log in to your Agent Platform account and click **Tools** from the list of modules.
 2. On the **All tools** page, click the desired tool.
 3. In the left navigation pane, click **Audit logs**. The Audit logs page is displayed.
-4. Click each row to view more details about the event. For more information, see Tool-Level Audit Logs. [Learn more](../../settings/monitoring/audit-logs.md#tool-level-audit-logs){:target="_blank"}.
+4. Click each row to view more details about the event. For more information, see Tool-Level Audit Logs. [Learn more](../../settings/monitoring/audit-logs.md#tool-level-audit-logs).
 
     <img src="../images/agent_audit_log.png" alt="agent audit logs" title="agent audit logs" style="border: 1px solid gray; zoom:80%;"/>
 

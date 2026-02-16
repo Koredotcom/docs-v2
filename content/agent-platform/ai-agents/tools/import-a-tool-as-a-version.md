@@ -6,7 +6,7 @@ When you import an tool as a version, you must upload all the following files:
 
 * **Flow definition file**: Upload the required **flow_definition.json** file from your local directory. The file includes the tool's canvas definitions (node definitions) and AI node configurations, including prompts, hyperparameters, and timeout information.
 * **App definition file**: Upload the required **app_definition.json** file, which includes general information about the tool version and guardrails.
-* **Environment variable file**: Upload the required **env_variables.json** file, which includes the environment variables set for the tool. Any conflicts between environment variables in the parent tool and the imported version must be resolved. [Learn more](./configure-a-tool.md#manage-environment-variables){:target="_blank"}.
+* **Environment variable file**: Upload the required **env_variables.json** file, which includes the environment variables set for the tool. Any conflicts between environment variables in the parent tool and the imported version must be resolved. [Learn more](./configure-a-tool.md#manage-environment-variables).
 
 ## Steps to Import a Tool
 
@@ -83,7 +83,7 @@ To cancel the import process during the conflicting environment variables resolu
 
 **Related Resources**
 
-* [Create a Tool](../tools/create-a-new-tool.md){:target="_blank"}- Create a new tool and configure its flow.
-* [Export a Tool](../tools/export-a-tool.md){:target="_blank"}- Export the set configurations of a tool for data sharing and preservation.
-* [Deploy a Tool](../tools/deploy-a-tool.md){:target="_blank"}- Explore synchronous and asynchronous deployment methods for tool integration.
-* [Configure a Tool](../tools/configure-a-tool.md){:target="_blank"}- Modify the tool's details, configure settings, or undeploy and delete it if unused.
+* [Create a Tool](../tools/create-a-new-tool.md)- Create a new tool and configure its flow.
+* [Export a Tool](../tools/export-a-tool.md)- Export the set configurations of a tool for data sharing and preservation.
+* [Deploy a Tool](../tools/deploy-a-tool.md)- Explore synchronous and asynchronous deployment methods for tool integration.
+* [Configure a Tool](../tools/configure-a-tool.md)- Modify the tool's details, configure settings, or undeploy and delete it if unused.

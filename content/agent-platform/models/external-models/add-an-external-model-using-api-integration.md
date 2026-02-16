@@ -16,7 +16,7 @@ The steps to add an external model using API integration are given below:
 4. On the **Custom API integration** dialog, enter the **Connection name** and **Model endpoint URL**.  
 <img src="../images/custom-api-integration-general-details.png" alt="Custom API Integration General Details" title="Custom API Integration General Details" style="border: 1px solid gray; zoom:80%;"/>
 
-5. Select the **Authorization profile** you want to use with the request payload from the configured options on the **Settings** console. [Learn more](../../settings/security-and-control/authorization-profile.md){:target="_blank"} about Auth Profiles. To proceed without authentication, choose ***None*** which is the default selection.
+5. Select the **Authorization profile** you want to use with the request payload from the configured options on the **Settings** console. [Learn more](../../settings/security-and-control/authorization-profile.md) about Auth Profiles. To proceed without authentication, choose ***None*** which is the default selection.
 <img src="../images/set-auth-profile-parameter.png" alt="set auth profile" title="set auth profile" style="border: 1px solid gray; zoom:80%;"/>
 
 6. In the **Headers** section, specify the headers such as **Key** and **Value** that need to be sent along with the request payload. 
@@ -88,8 +88,8 @@ With the Default option, you must manually define the request payload variables,
     This configuration requires at least one feature to be enabled.  
     Users can enable any feature, but the model must support it. Otherwise, you may see unexpected behavior.
 
-  * **Structured response**: Specifies that the model supports the generation of a structured response. Enabling this flag allows the model to be used for generating a structured output within [Prompts](../../prompts/using-prompt-studio.md#add-prompts){:target="_blank"} and [Tools Flow](../../ai-agents/tools/tool-flows/flows-overview.md){:target="_blank"}.
-  * **Data generation**: Specifies that the model can be used for synthetic data generation for text-based tasks. Turning this flag on allows the model to be used for prompt generation in [Prompts Studio](../../prompts/using-prompt-studio.md#add-prompts){:target="_blank"}.
+  * **Structured response**: Specifies that the model supports the generation of a structured response. Enabling this flag allows the model to be used for generating a structured output within [Prompts](../../prompts/using-prompt-studio.md#add-prompts) and [Tools Flow](../../ai-agents/tools/tool-flows/flows-overview.md).
+  * **Data generation**: Specifies that the model can be used for synthetic data generation for text-based tasks. Turning this flag on allows the model to be used for prompt generation in [Prompts Studio](../../prompts/using-prompt-studio.md#add-prompts).
   * **Streaming**: Specifies that the model supports real-time, token-by-token generation for faster AI responses. Turning this flag on allows the model to be used for generating streaming responses within Agentic Apps.
   * **Tool calling**: Indicates whether the model supports tool calling. 
   
@@ -99,13 +99,13 @@ With the Default option, you must manually define the request payload variables,
   
   * **Support Tools**: Specifies if the model supports simple tool calling. Dynamic function or API calling by the LLM to perform actions or retrieve real-time data during generation.
   * **Parallel Tool Calling**: Specifies if the model handles parallel tool calls emanating from a single user request. 
-  * **Modalities Support**: Specifies the modalities supported by the model. Enabling this flag allows the model to run Text-to-Text, Text-to-Image, Image-to-Text, and Audio-to-Text tasks for seamless downstream integration within the [Tools Flow](../../ai-agents/tools/tool-flows/flows-overview.md){:target="_blank"}.
+  * **Modalities Support**: Specifies the modalities supported by the model. Enabling this flag allows the model to run Text-to-Text, Text-to-Image, Image-to-Text, and Audio-to-Text tasks for seamless downstream integration within the [Tools Flow](../../ai-agents/tools/tool-flows/flows-overview.md).
   <img src="../images/model-features-list.png" alt="model features" title="model features" style="border: 1px solid gray; zoom:75%;"/>
  
 **Body**: In this section, specify the **model name** to be included in the request body and select a provider to set the API reference. The platform uses this mapping to resolve the model’s request-response structure. The available options include:
 
-  * **Anthropic (Messages)**:  Specifies that the selected model follows the request-response structure similar to [Anthropic’s Messages API](https://docs.anthropic.com/en/api/messages){:target="_blank"}.
-  * **OpenAI (Chat Completions)**: Specifies that the selected model follows the request-response structure similar to [OpenAI’s Chat Completions API](https://platform.openai.com/docs/api-reference/chat){:target="_blank"}.
+  * **Anthropic (Messages)**:  Specifies that the selected model follows the request-response structure similar to [Anthropic’s Messages API](https://docs.anthropic.com/en/api/messages).
+  * **OpenAI (Chat Completions)**: Specifies that the selected model follows the request-response structure similar to [OpenAI’s Chat Completions API](https://platform.openai.com/docs/api-reference/chat).
   * **Google (Gemini)**: Specifies that the selected model follows the request–response structure for Google’s Gemini API, enabling compatibility with Gemini-formatted requests and responses.
   <img src="../images/api-reference-model.png" alt="api reference" title="api reference" style="border: 1px solid gray; zoom:75%;"/>
 

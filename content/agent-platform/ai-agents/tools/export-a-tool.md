@@ -6,7 +6,7 @@ When you export a tool, Platform automatically creates a *.zip* file named after
 
 The exported package can be reimported to create a new tool or add it as a version to an existing one, ensuring seamless restoration.
 
-The [exported package](#exported-information){:target="_blank"} preserves the following tool configurations within JSON files:
+The [exported package](#exported-information) preserves the following tool configurations within JSON files:
 
 * Name and description
 * API, Condition, AI, and Script node configurations
@@ -50,7 +50,7 @@ The exported package includes the following JSON files encapsulating the tool’
 
 * ***flow_definition.json***: It includes the tool's canvas definitions (node definitions) and AI node configurations, including prompts, hyper parameters, and timeout information.
 * ***app_definition.json:*** It includes general information about the tool version and guardrails.
-* ***env_variables.json***: It includes the environment variables set for the tool. [Learn more](../tools/configure-a-tool.md){:target="_blank"}.
+* ***env_variables.json***: It includes the environment variables set for the tool. [Learn more](../tools/configure-a-tool.md).
 
 You can view the file name in the archive.
 
@@ -58,6 +58,6 @@ You can view the file name in the archive.
 
 **Related Resources**
 
-* [Import a tool](./import-a-tool.md){:target="_blank"} - Create a tool by importing configurations or add it as a version to an existing tool.
-* [Deploy a tool](./deploy-a-tool.md){:target="_blank"} - Explore synchronous and asynchronous deployment methods for tool integration.
-* [Configure a tool](./configure-a-tool.md){:target="_blank"} - Modify the tool's details, configure settings, or undeploy and delete it if unused.
+* [Import a tool](./import-a-tool.md) - Create a tool by importing configurations or add it as a version to an existing tool.
+* [Deploy a tool](./deploy-a-tool.md) - Explore synchronous and asynchronous deployment methods for tool integration.
+* [Configure a tool](./configure-a-tool.md) - Modify the tool's details, configure settings, or undeploy and delete it if unused.

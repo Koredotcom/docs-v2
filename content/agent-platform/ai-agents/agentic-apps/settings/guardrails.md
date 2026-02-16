@@ -23,7 +23,7 @@ Debug logs, traces, and sessions show redacted values by default, reducing the r
 
 PII detection helps identify and protect sensitive user information—such as names, email addresses, phone numbers, and other personally identifiable data—before it's processed by the agent. When it is enabled, detected values are automatically masked or replaced according to your configuration. The agent works with the inputs ensuring privacy and compliance throughout the workflow.  
 
-Learn how to add a [PII detection pattern.](pii-detection-pattern.md){:target="_blank"}
+Learn how to add a [PII detection pattern.](pii-detection-pattern.md)
 
 ## Guardrails
 
@@ -38,7 +38,7 @@ Examples of guardrail use cases:
 
 Since guardrails are automatically deployed across the account, they can be added directly to any tool or flow without additional setup.
 
-Learn more about [Guardrails](../../../guardrails/overview.md){:target="_blank"} and [how to test the scanner](../../../guardrails/test-guardrail.md){:target="_blank"}.
+Learn more about [Guardrails](../../../guardrails/overview.md) and [how to test the scanner](../../../guardrails/test-guardrail.md).
 
 ## Data Anonymization
 

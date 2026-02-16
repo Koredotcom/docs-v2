@@ -27,7 +27,7 @@ Steps to fine-tune a model:
     **Note**: Imported models are also included in the list of models.  
     <img src="../images/base-model-platform-hosted.png" alt="Platform-hosted models" title="Platform-hosted models" style="border: 1px solid gray; zoom:80%;"/>
 
-    * If you choose to **Import from Hugging Face**, select the **Hugging Face connection** type from the dropdown, and paste the **model name**. Click **Next**. For more information about how to connect to your Hugging Face account, see[ How to Connect to your Hugging Face Account](../../settings/integrations/enable-hugging-face.md){:target="_blank"}.
+    * If you choose to **Import from Hugging Face**, select the **Hugging Face connection** type from the dropdown, and paste the **model name**. Click **Next**. For more information about how to connect to your Hugging Face account, see[ How to Connect to your Hugging Face Account](../../settings/integrations/enable-hugging-face.md).
     <img src="../images/import-hugging-face.png" alt="Import from Hugging Face" title="Import from Hugging Face" style="border: 1px solid gray; zoom:80%;"/> 
 
 5. In the **Fine-tuning configuration** section:
@@ -75,7 +75,7 @@ Steps to fine-tune a model:
 <img src="../images/hardware-section.png" alt="Hardware Section" title="Hardware Section" style="border: 1px solid gray; zoom:80%;"/>
 
 9. In the **Weights & Biases** section, select your **WandB connection** from the drop-down list and click **Next**. 
-To create a Weight & Biases connection, click **+ New connection**. For more information about how to create the WandB account, see[ How to Integrate with WandB](../../settings/integrations/integrate-with-wandb.md){:target="_blank"}. 
+To create a Weight & Biases connection, click **+ New connection**. For more information about how to create the WandB account, see[ How to Integrate with WandB](../../settings/integrations/integrate-with-wandb.md). 
 
     !!! note
 

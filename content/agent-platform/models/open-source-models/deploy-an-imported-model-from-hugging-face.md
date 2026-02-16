@@ -30,7 +30,7 @@ To deploy a model from Hugging Face, follow these steps:
 
 1. In the **Import** model section:
 
-    * Select the **Hugging Face connection to use** from the drop-down list.  For more information about enabling your Hugging Face account, see [How to Connect to your Hugging Face Account](../../settings/integrations/enable-hugging-face.md){:target="_blank"}.
+    * Select the **Hugging Face connection to use** from the drop-down list.  For more information about enabling your Hugging Face account, see [How to Connect to your Hugging Face Account](../../settings/integrations/enable-hugging-face.md).
 
         <img src="../images/deploy-hugging-face-import-model-section.png" alt="Deploy Hugging Face Import Model Section" title="Deploy Hugging Face Import Model Section" style="border: 1px solid gray; zoom:80%;"/>
 

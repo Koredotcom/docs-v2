@@ -4,7 +4,7 @@
 
 This API enables users to import configurations, datasets, or updates into an existing tool, allowing modifications without creating a new one. It ensures seamless integration by updating the tool with the provided tool data, flow data, and environment variables files.
 
-After triggering the import, the response returns a <code>dockStatusId</code>. Use this ID to call the [Get Dock Status API](../apis-list/get-dock-status.md){:target="_blank"} and verify the status of the tool import process.
+After triggering the import, the response returns a <code>dockStatusId</code>. Use this ID to call the [Get Dock Status API](../apis-list/get-dock-status.md) and verify the status of the tool import process.
 
 <table>
   <tr>
@@ -35,7 +35,7 @@ After triggering the import, the response returns a <code>dockStatusId</code>. U
 
 **Where can I find the API key?**
 
-To use the API, you will need an API key. [Learn more](../../apis/overview.md#how-to-create-the-api-key){:target="_blank"}.
+To use the API, you will need an API key. [Learn more](../../apis/overview.md#how-to-create-the-api-key).
 
 ## Query Parameters
 

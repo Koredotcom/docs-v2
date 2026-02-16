@@ -46,4 +46,4 @@ DialogGPT operates through a structured three-step process:
     * Manages multi-intent scenarios sequentially or in parallel.
     * Delivers contextually relevant responses while adhering to enterprise business rules.
 
-[Learn more](https://docs.kore.ai/xo/generative-ai-tools/dialog-gpt/){:target="_blank"}.
+[Learn more](https://docs.kore.ai/xo/generative-ai-tools/dialog-gpt/).

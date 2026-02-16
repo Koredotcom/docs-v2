@@ -4,7 +4,7 @@
 
 This API deploys an open-source or fine-tuned model in the ***Ready to Deploy*** state. Users can configure deployment parameters, including hyperparameters, scaling, and optimization settings, allowing for flexible model scaling and performance tuning.
 
-The API response includes the **model ID** and the **model deployment status**. After receiving the response, use the <code>dockStatusId</code> to call the [Get Dock Status API](../apis-list/get-dock-status.md){:target="_blank"}  and verify the successful deployment of the model.
+The API response includes the **model ID** and the **model deployment status**. After receiving the response, use the <code>dockStatusId</code> to call the [Get Dock Status API](../apis-list/get-dock-status.md)  and verify the successful deployment of the model.
 
 <table>
   <tr>
@@ -35,7 +35,7 @@ The API response includes the **model ID** and the **model deployment status**. 
 
 **Where can I find the API key?**
 
-To use the API, you will need an API key. [Learn more](../../apis/overview.md#how-to-create-the-api-key){:target="_blank"}.
+To use the API, you will need an API key. [Learn more](../../apis/overview.md#how-to-create-the-api-key).
 
 ## Query Parameters
 

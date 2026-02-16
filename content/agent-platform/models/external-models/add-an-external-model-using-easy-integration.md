@@ -46,7 +46,7 @@ You can easily connect Amazon Bedrock models to the Platform using a guided setu
 
 !!! important
 
-    Customers must create an IAM role within their AWS account with the necessary permissions in their AWS account (e.g., access to AWS Bedrock APIs). This role must include a trust policy that allows the Platform’s AWS principal (or a designated IAM role in an AWS account) to assume it. For more information, see [Configuring Amazon Bedrock models](./configuring-aws.md){:target="_blank"}.
+    Customers must create an IAM role within their AWS account with the necessary permissions in their AWS account (e.g., access to AWS Bedrock APIs). This role must include a trust policy that allows the Platform’s AWS principal (or a designated IAM role in an AWS account) to assume it. For more information, see [Configuring Amazon Bedrock models](./configuring-aws.md).
 
 
 Steps to add Amazon Bedrock models using easy integration:
@@ -141,7 +141,7 @@ Before you can integrate Vertex AI models, you need to obtain an API key from yo
 
 **For new users or express mode users**
 
-1. Navigate to the [express mode setup page](https://docs.cloud.google.com/vertex-ai/generative-ai/docs/start/express-mode/overview){:target="_blank"}.
+1. Navigate to the [express mode setup page](https://docs.cloud.google.com/vertex-ai/generative-ai/docs/start/express-mode/overview).
 2. Follow the guided setup to automatically generate an API key.
 3. View and manage your API keys at **APIs & Services > Credentials** in the Google Cloud Console.
 
@@ -179,14 +179,14 @@ In the **Manual Setup** tab, configure the following:
 
 **Connection Details**:
 
-* **Model**: Select the desired Gemini model from the dropdown. For more information on the list of external models supported, see [Supported AI Models](../supported-models.md){:target="_blank"}.
+* **Model**: Select the desired Gemini model from the dropdown. For more information on the list of external models supported, see [Supported AI Models](../supported-models.md).
 * **Connection name**: Enter a custom name to identify this model connection within your workspace.
 
 **Authentication**:
 
 * **API key**: Enter your API key from your Google Vertex AI Console.
 
-**Note**: API keys are validated during entry. If OAuth 2.0 access tokens or unsupported authentication credentials are detected, an error message displays. For more information, see [ Authentication methods at Google.](https://cloud.google.com/docs/authentication){:target="_blank"}
+**Note**: API keys are validated during entry. If OAuth 2.0 access tokens or unsupported authentication credentials are detected, an error message displays. For more information, see [ Authentication methods at Google.](https://cloud.google.com/docs/authentication)
 
 **Advanced Settings** (Optional): Configure additional endpoint settings:
 

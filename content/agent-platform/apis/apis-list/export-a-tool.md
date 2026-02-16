@@ -4,7 +4,7 @@
 
 This API exports a tool's configuration and associated data, including its flow  for backup, sharing, or reuse. It allows users to generate an export of a specific tool along with its deployed call flow.
 
-When an export request is initiated, the API triggers the export process and returns a <code>dockStatusId</code>, which can be used with the [Get Dock Status API](../apis-list/get-dock-status.md){:target="_blank"} to track the export progress. The API response also includes an <code>exportJobId</code> for tracking the specific export job.
+When an export request is initiated, the API triggers the export process and returns a <code>dockStatusId</code>, which can be used with the [Get Dock Status API](../apis-list/get-dock-status.md) to track the export progress. The API response also includes an <code>exportJobId</code> for tracking the specific export job.
 
 Additionally, the response provides a **download URL**. Copy and paste this URL into a browser or API client to download the exported tool file.
 
@@ -37,11 +37,11 @@ Additionally, the response provides a **download URL**. Copy and paste this URL 
 
 **Where can I find the API key?**
 
-To use the API, you will need an API key. [Learn more](../../apis/overview.md#how-to-create-the-api-key){:target="_blank"}.
+To use the API, you will need an API key. [Learn more](../../apis/overview.md#how-to-create-the-api-key).
 
 **How to obtain toolId or callflowId for the API?**
 
-1. Follow the steps mentioned [here](../../ai-agents/tools/export-a-tool.md#steps-to-export-a-tool){:target="_blank"} to export a tool.
+1. Follow the steps mentioned [here](../../ai-agents/tools/export-a-tool.md#steps-to-export-a-tool) to export a tool.
 2. Open developer tools.
 3. Select the **Network** tab.
 <img src="../images/developer-tools.png" alt="developer tools" title="developer tools" style="border: 1px solid gray; zoom:60%;"/>
