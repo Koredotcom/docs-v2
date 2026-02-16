@@ -14,17 +14,17 @@ Make sure you have already interacted with the app and generated conversation se
 Steps to import production data:
 
 1. Open your evaluation from **Evaluation Studio → Agentic Evaluation → Evaluations**.
-<img src="../../agentic-evaluation/images/evaluations_listing_page.png" alt="evaluation list" title="evaluation list" style="border: 1px solid gray; zoom:80%;">
+<img src="../../agentic-evaluation/images/evaluations_listing_page.png" alt="evaluation list" title="evaluation list" style="border: 1px solid gray; zoom:80%;"/>
 
 2. Select the evaluation where you want to import data, and then select **Import sessions** to import the relevant session.
-<img src="../../agentic-evaluation/images/import_live_data.png" alt="import data" title="import data" style="border: 1px solid gray; zoom:60%;">
+<img src="../../agentic-evaluation/images/import_live_data.png" alt="import data" title="import data" style="border: 1px solid gray; zoom:60%;"/>
 
 3. In the Import Session dialog, enter the following and click **Import** to begin the import:
     1. **Version:** Select the version of the Agentic app to evaluate.
     2. **Environment**: Choose the environment that contains the session data you want to import.
     3. **Date:** Select the time range to filter sessions by a specific release or timeframe.
 
-    <img src="../../agentic-evaluation/images/import_prod_data.png" alt="Import sessions" title="Import sessions" style="border: 1px solid gray; zoom:60%;">
+    <img src="../../agentic-evaluation/images/import_prod_data.png" alt="Import sessions" title="Import sessions" style="border: 1px solid gray; zoom:60%;"/>
 
 After the import is complete, the session data appears in the Sessions and Traces tabs on the Evaluation page. See [ Understanding the Imported Data](../agentic-evaluation/import-data.md#understanding-the-imported-data).
 
@@ -37,13 +37,13 @@ To import simulated data, at least one simulation run with the relevant personas
 Steps to import simulated data:
 
 1. Open your evaluation from **Evaluation Studio → Agentic Evaluation → Evaluations**.
-<img src="../../agentic-evaluation/images/evaluations_listing_page.png" alt="evaluation list" title="evaluation list" style="border: 1px solid gray; zoom:80%;">
+<img src="../../agentic-evaluation/images/evaluations_listing_page.png" alt="evaluation list" title="evaluation list" style="border: 1px solid gray; zoom:80%;"/>
 
 2. Select the evaluation where you want to import data, and then select **Import simulated data** to import the simulated data.
-<img src="../../agentic-evaluation/images/import_simulated_data.png" alt="import data" title="import data" style="border: 1px solid gray; zoom:60%;">
+<img src="../../agentic-evaluation/images/import_simulated_data.png" alt="import data" title="import data" style="border: 1px solid gray; zoom:60%;"/>
 
 3. Choose the **Simulation** from which to import sessions and click **Import.**
-<img src="../../agentic-evaluation/images/import_session_simulated.png" alt="Import sessions dialog" title="Import sessions dialog" style="border: 1px solid gray; zoom:60%;">
+<img src="../../agentic-evaluation/images/import_session_simulated.png" alt="Import sessions dialog" title="Import sessions dialog" style="border: 1px solid gray; zoom:60%;"/>
 
 After the import is complete, the simulated sessions appears in the Sessions and Traces tabs, just like production data.
 
@@ -54,4 +54,4 @@ Imported data is organized into two tabs: Sessions and Traces. These tabs reflec
 * **Sessions**: Displays the list of sessions with details like session ID, number of traces, creation time, and duration. Users can add session-level evaluators here to measure overall outcomes. [Learn more about Session evaluators](./configure-evaluators.md#session-evaluators).
 * **Traces**: Breaks sessions into individual traces, each representing one pair of user input and agentic app response from the whole session. Users can add trace-level evaluators to check specific actions, like whether the correct agent or tool was used. [Learn more about Trace evaluators](./configure-evaluators.md#trace-evaluators).
 
-<img src="../../agentic-evaluation/images/imported_sessions_new.png" alt="Imported sessions" title="Imported sessions" style="border: 1px solid gray; zoom:80%;">
+<img src="../../agentic-evaluation/images/imported_sessions_new.png" alt="Imported sessions" title="Imported sessions" style="border: 1px solid gray; zoom:80%;"/>

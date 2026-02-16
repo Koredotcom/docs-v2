@@ -20,7 +20,7 @@ Each imported session appears as a row in the table with the following key infor
 
 Use the Sessions tab to view overall scores for each session, including averages of trace-level evaluators. Use the Traces tab to see detailed scores for each step in a session, reflecting trace-level evaluation.  
 
-<img src="../../agentic-evaluation/images/session_columns.png" alt="Session table" title="Session table" style="border: 1px solid gray; zoom:80%;">  
+<img src="../../agentic-evaluation/images/session_columns.png" alt="Session table" title="Session table" style="border: 1px solid gray; zoom:80%;"/>  
 
 
 **Steps to analyze your evaluation:**
@@ -38,7 +38,7 @@ Clicking on a session score opens the **Session Details View**, which contains t
 * **Verdict**: Displays the evaluation score (for example, pass/fail for message tonality) along with a written explanation for that score.
 * **Transcript**: Shows the full conversation for that session.
 
-<img src="../../agentic-evaluation/images/click_session_evaluator_score.png" alt="Session view" title="Session view" style="border: 1px solid gray; zoom:80%;">
+<img src="../../agentic-evaluation/images/click_session_evaluator_score.png" alt="Session view" title="Session view" style="border: 1px solid gray; zoom:80%;"/>
 
 ### Trace View Overview
 
@@ -55,7 +55,7 @@ Clicking on a trace opens the **Trace Details View**, which includes two panels:
 * **Evaluators tab:** Displays all the evaluators applied at the selected node level (Supervisor, Agent) with the evaluator results.
 * **Input/Output tab:** Shows relevant inputs and outputs for the selected node.
 
-<img src="../../agentic-evaluation/images/click_trace_evaluator_score.png" alt="Trace view" title="Trace view" style="border: 1px solid gray; zoom:80%;">
+<img src="../../agentic-evaluation/images/click_trace_evaluator_score.png" alt="Trace view" title="Trace view" style="border: 1px solid gray; zoom:80%;"/>
 
 The trace tree on the left displays the hierarchical structure of the agentic system, starting with the root level at the top, followed by drill-down levels that include the supervisor, agents, and tools.
 
@@ -65,7 +65,7 @@ The trace tree on the left displays the hierarchical structure of the agentic sy
 * Aggregates all evaluators applied to the trace
 * Clicking the root node (For example, *Trace*) displays all attached evaluators like *Agent Call Accuracy* and *Tool Call Accuracy* in the right panel
 
-<img src="../../agentic-evaluation/images/root_level.png" alt="Root level" title="Root level" style="border: 1px solid gray; zoom:80%;">
+<img src="../../agentic-evaluation/images/root_level.png" alt="Root level" title="Root level" style="border: 1px solid gray; zoom:80%;"/>
 
 
 **Supervisor Level:**
@@ -73,7 +73,7 @@ The trace tree on the left displays the hierarchical structure of the agentic sy
 * Contains evaluations that assess whether the supervisor called the correct agents
 * Clicking a supervisor node shows only supervisor-specific evaluators (For example, *Agent Call Accuracy*)
 
-<img src="../../agentic-evaluation/images/supervisor_level.png" alt="Supervisor level" title="Supervisor level" style="border: 1px solid gray; zoom:80%;">
+<img src="../../agentic-evaluation/images/supervisor_level.png" alt="Supervisor level" title="Supervisor level" style="border: 1px solid gray; zoom:80%;"/>
 
 **Agent Level:**
 
@@ -81,7 +81,7 @@ The trace tree on the left displays the hierarchical structure of the agentic sy
 * Displays only agent-specific evaluators (For example, *Tool Call Accuracy*)
 * Clicking an agent node reveals tool usage and corresponding evaluation results for each tool called
 
-<img src="../../agentic-evaluation/images/agent_level.png" alt="Agent level" title="Agent level" style="border: 1px solid gray; zoom:80%;">
+<img src="../../agentic-evaluation/images/agent_level.png" alt="Agent level" title="Agent level" style="border: 1px solid gray; zoom:80%;"/>
 
 
 **Tool Level:**
@@ -93,7 +93,7 @@ The trace tree on the left displays the hierarchical structure of the agentic sy
     * Evaluator explanations outlining the reasoning behind the score
     * Tool’s input and output
 
-<img src="../../agentic-evaluation/images/tool_level.png" alt="Tool level" title="Tool level" style="border: 1px solid gray; zoom:80%;">
+<img src="../../agentic-evaluation/images/tool_level.png" alt="Tool level" title="Tool level" style="border: 1px solid gray; zoom:80%;"/>
 
 
 ## Error Scenarios
@@ -114,7 +114,7 @@ The following model-related errors can occur during evaluation:
 If a trace does not contain any tool or agent calls, the corresponding evaluator cell will be highlighted in yellow with a message like ‘No tool calls found’ or ‘No agent calls found’.  
 For example, a user says, “Hi! How are you?”, and the agent responds with a small talk reply and does not trigger any tool or agent calls. Since no tool or agent call is made, the evaluator cell displays a warning - 'No tool calls found'.
 
-<img src="../../agentic-evaluation/images/missing_tool_errors.png" alt="Missing tool errors" title="Missing tool errors" style="border: 1px solid gray; zoom:80%;">
+<img src="../../agentic-evaluation/images/missing_tool_errors.png" alt="Missing tool errors" title="Missing tool errors" style="border: 1px solid gray; zoom:80%;"/>
 
 ## Understanding Evaluation Scores
 
@@ -142,7 +142,7 @@ Session evaluators assess the overall quality of a full session, which includes 
     * **Pass**: The agent stays on-topic.
     * **Fail**: The agent goes off-topic. 
 
-<img src="../../agentic-evaluation/images/pass_fail_scoring.png" alt="Session evaluator scoring" title="Session evaluator scoring" style="border: 1px solid gray; zoom:80%;">
+<img src="../../agentic-evaluation/images/pass_fail_scoring.png" alt="Session evaluator scoring" title="Session evaluator scoring" style="border: 1px solid gray; zoom:80%;"/>
 
 ### How Trace Evaluators Are Scored
 
@@ -160,4 +160,4 @@ For example, if the user asks for the weather in Chicago, the agent calls the we
     * **Bad Score (0)**: The agent calls the wrong tool and also provides incorrect or missing parameters. 
 If the user asks for the weather in Chicago, but the agent calls a calendar tool (wrong tool) and passes an unrelated or empty parameter (wrong parameter), it gets a score of 0 because both the tool and parameters are wrong.
 
-<img src="../../agentic-evaluation/images/numerical_scoring.png" alt="Trace evaluator scoring" title="Trace evaluator scoring" style="border: 1px solid gray; zoom:80%;">
+<img src="../../agentic-evaluation/images/numerical_scoring.png" alt="Trace evaluator scoring" title="Trace evaluator scoring" style="border: 1px solid gray; zoom:80%;"/>

@@ -6,7 +6,7 @@ When you import an tool as a version, you must upload all the following files:
 
 * **Flow definition file**: Upload the required **flow_definition.json** file from your local directory. The file includes the tool's canvas definitions (node definitions) and AI node configurations, including prompts, hyperparameters, and timeout information.
 * **App definition file**: Upload the required **app_definition.json** file, which includes general information about the tool version and guardrails.
-* **Environment variable file**: Upload the required **env_variables.json** file, which includes the environment variables set for the tool. Any conflicts between environment variables in the parent tool and the imported version must be resolved. [Learn more](./configure-a-tool.md#manage-environment-variables){:target="_blank"}.
+* **Environment variable file**: Upload the required **env_variables.json** file, which includes the environment variables set for the tool. Any conflicts between environment variables in the parent tool and the imported version must be resolved. [Learn more](./configure-a-tool.md#manage-environment-variables).
 
 ## Steps to Import a Tool
 
@@ -20,11 +20,11 @@ To import a tool as a version, follow the steps below:
 2. Click the **Tools** tab on the top navigation bar, and select the tool you want to import. 
 3. Click **Configurations** on the left menu.
 4. Scroll down to the **Import tool** section and click **Import**.
-    <img src="../images/agent_platform/import_tool_config.png" alt="import tool configuration" title="import tool configuration" style="border: 1px solid gray; zoom:75%;">
+    <img src="../images/agent_platform/import_tool_config.png" alt="import tool configuration" title="import tool configuration" style="border: 1px solid gray; zoom:75%;"/>
 
 5. (Optional) In the following dialog, select the **Back up your current tool** option to preserve the data of the version being replaced.
 
-    <img src="../images/agent_platform/backup_tool.png" alt="import confirmation" title="import confirmation" style="border: 1px solid gray; zoom:75%;">
+    <img src="../images/agent_platform/backup_tool.png" alt="import confirmation" title="import confirmation" style="border: 1px solid gray; zoom:75%;"/>
 
 <div class="admonition note">
 <p class="admonition-title">Note</p>
@@ -63,7 +63,7 @@ When conflicting environment variables are detected, you must resolve them with 
 1. Select the **Conflicting variables** tab.
 2. Select either **Overwrite** to replace the existing variable with the imported one or select **Keep existing**.
 3. Click **Proceed** to continue importing.
-<img src="../images/agent_platform/overwrite-or-keep.png" alt="import tool" title="import tool" style="border: 1px solid gray; zoom:50%;">
+<img src="../images/agent_platform/overwrite-or-keep.png" alt="import tool" title="import tool" style="border: 1px solid gray; zoom:50%;"/>
 
 **Editing Existing and Imported Variables**
 
@@ -71,11 +71,11 @@ To resolve conflicts by editing either the existing or imported environment vari
 
 1. Click the **Three-dots (Ellipsis)** icon of the required variable.
 2. Select **Edit**.  
-<img src="../images/agent_platform/edit-env-variable.png" alt="edit variable" title="edit variable" style="border: 1px solid gray; zoom:50%;">   
+<img src="../images/agent_platform/edit-env-variable.png" alt="edit variable" title="edit variable" style="border: 1px solid gray; zoom:50%;"/>   
 
 3. Change the required values in the **Edit Variable** window.  
 4. Click **Save**.  
-<img src="../images/agent_platform/save-edit-variable.png" alt="save variable" title="save variable" style="border: 1px solid gray; zoom:50%;">  
+<img src="../images/agent_platform/save-edit-variable.png" alt="save variable" title="save variable" style="border: 1px solid gray; zoom:50%;"/>  
 
 To cancel the import process during the conflicting environment variables resolution, click **Cancel** in the **Edit Environment Variable** window, and then click **Confirm**.
 
@@ -83,7 +83,7 @@ To cancel the import process during the conflicting environment variables resolu
 
 **Related Resources**
 
-* [Create a Tool](../tools/create-a-new-tool.md){:target="_blank"}- Create a new tool and configure its flow.
-* [Export a Tool](../tools/export-a-tool.md){:target="_blank"}- Export the set configurations of a tool for data sharing and preservation.
-* [Deploy a Tool](../tools/deploy-a-tool.md){:target="_blank"}- Explore synchronous and asynchronous deployment methods for tool integration.
-* [Configure a Tool](../tools/configure-a-tool.md){:target="_blank"}- Modify the tool's details, configure settings, or undeploy and delete it if unused.
+* [Create a Tool](../tools/create-a-new-tool.md)- Create a new tool and configure its flow.
+* [Export a Tool](../tools/export-a-tool.md)- Export the set configurations of a tool for data sharing and preservation.
+* [Deploy a Tool](../tools/deploy-a-tool.md)- Explore synchronous and asynchronous deployment methods for tool integration.
+* [Configure a Tool](../tools/configure-a-tool.md)- Modify the tool's details, configure settings, or undeploy and delete it if unused.

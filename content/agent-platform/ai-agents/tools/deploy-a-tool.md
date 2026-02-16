@@ -37,14 +37,14 @@ Steps to deploy a tool:
 2. Click the **Tools** tab on the top navigation bar, and select the tool you want to deploy.
 3. Click **Tool endpoint** in the left menu.
 4. The Tool endpoint page is displayed. Click **Deploy**.  
-<img src="../images/agent_platform/tool_endpoint.png" alt="Deploy Button" title="Deploy Button" style="border: 1px solid gray; zoom:70%;">
+<img src="../images/agent_platform/tool_endpoint.png" alt="Deploy Button" title="Deploy Button" style="border: 1px solid gray; zoom:70%;"/>
 
 5. The tool is deployed and the **Sync** and **Async poll** endpoints are generated.  
-<img src="../images/new_endpoint.png" alt="Sync Async Poll" title="Sync Async Poll" style="border: 1px solid gray; zoom:70%;">
+<img src="../images/new_endpoint.png" alt="Sync Async Poll" title="Sync Async Poll" style="border: 1px solid gray; zoom:70%;"/>
 
 6. If you want to generate an Async push endpoint for the tool, do the following:
     1. Click the **Async push** tab and click **Enable**/**Settings**.  
-    <img src="../images/enable-settings.png" alt="Enable/Settings" title="Enable/Settings" style="border: 1px solid gray; zoom:70%;">
+    <img src="../images/enable-settings.png" alt="Enable/Settings" title="Enable/Settings" style="border: 1px solid gray; zoom:70%;"/>
 
     2. The **Sync/Async mode setup** pop-up displays with sync mode disabled by default.
         * **Synchronous mode timeout**. The allowed range is 60 to 300 seconds (5 minutes). The default is 180 Seconds (3 minutes). The endpoint will trigger a timeout error if the request is not completed within the selected time frame.  
@@ -56,18 +56,18 @@ Steps to deploy a tool:
             3. Set the Asynchronous mode timeout duration: 
                 * **Set timeout**: The allowed timeout range is 60 seconds to 600 seconds (10 minutes). The default is 180 Seconds (3 minutes). 
                 * **No timeout**: This allows the tool to process the request without a time limit.  
-                <img src="../images/async-mode-configuration.png" alt="Async Mode Configuration" title="Async Mode Configuration" style="border: 1px solid gray; zoom:60%;">
+                <img src="../images/async-mode-configuration.png" alt="Async Mode Configuration" title="Async Mode Configuration" style="border: 1px solid gray; zoom:60%;"/>
            
         !!! note
 
             Timeout precedence: Tool timeout > Node timeout > Model timeout.
 
     4. Click **Save**. The async push endpoint is created.  
-    <img src="../images/async-push-endpoint.png" alt="Deploy Button" title="Deploy Button" style="border: 1px solid gray; zoom:70%;">
+    <img src="../images/async-push-endpoint.png" alt="Deploy Button" title="Deploy Button" style="border: 1px solid gray; zoom:70%;"/>
 
 ## Redeploy a Tool for the Changes in the Flow
 
 The Deployed version of your tool's flow is accessible from the **Tool Flow** page. You can click the **View the Flow** button to view the flow in read-only mode.  
-<img src="../images/deployed-version.png" alt="Deployed Version" title="Deployed Version" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/deployed-version.png" alt="Deployed Version" title="Deployed Version" style="border: 1px solid gray; zoom:80%;"/>
 
 You can change the in-development version of the flow. To redeploy the tool with the updated flow, click the **Deploy** button at the top-right corner of the **Tool endpoint** page. The redeployment doesn't change the tool's endpoint.

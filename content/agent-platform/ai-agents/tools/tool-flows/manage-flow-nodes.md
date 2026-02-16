@@ -26,7 +26,7 @@ You can add nodes to the canvas in three ways:
     * **Add new node** – Instantly places a new node on the canvas and connects it.
     * **Add existing node** – Allows you to select a previously added node.
 
-  <img src="../images/start_node_new.png" alt="Add a new Node" title="Add a new Node" style="border: 1px solid gray; zoom:80%;">
+  <img src="../images/start_node_new.png" alt="Add a new Node" title="Add a new Node" style="border: 1px solid gray; zoom:80%;"/>
 
 ## Rename Nodes
 
@@ -38,7 +38,7 @@ To rename a node:
 
 Use clear, descriptive names to make your flow easy to understand. For example, Rename a generic “Function Node” to something meaningful like “Validate Email Input”.
 
-<img src="../images/rename_node_new.png" alt="Rename a Node" title="Rename a Node" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/rename_node_new.png" alt="Rename a Node" title="Rename a Node" style="border: 1px solid gray; zoom:80%;"/>
 
 ## Delete Nodes
 
@@ -54,7 +54,7 @@ You can rearrange nodes for visual clarity without affecting their logical conne
 To move a node, click and drag the node to the desired location on the canvas.
 Only the selected node will move—connected lines will automatically adjust to maintain the connection, while other nodes remain fixed.
 
-<img src="../images/rearrange-a-node-new.gif" alt="Rearrange a Node" title="Rearrange a Node" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/rearrange-a-node-new.gif" alt="Rearrange a Node" title="Rearrange a Node" style="border: 1px solid gray; zoom:80%;"/>
 
 Optional layout options:
 
@@ -202,14 +202,14 @@ A sales assistant agent uses a sequential pattern to assess and score leads. Fir
 2. Click and **drag a line** to the destination node.
 3. A connection line is drawn between the nodes, with an arrow indicating the direction of the node connection.
 
-<img src="../images/connect-nodes-new.gif" alt="Connect Nodes" title="Connect Nodes" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/connect-nodes-new.gif" alt="Connect Nodes" title="Connect Nodes" style="border: 1px solid gray; zoom:80%;"/>
 
 **Option 2: Use the Blue + Icon**
 
 1. Hover over the existing node, click the **blue + icon,** and then choose **Add New** or **Add Existing**.
 The selected node is added and connected in sequence.
 
-<img src="../images/blue_plus_icon.png" alt="Blue plus icon" title="Blue plus icon" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/blue_plus_icon.png" alt="Blue plus icon" title="Blue plus icon" style="border: 1px solid gray; zoom:80%;"/>
 
 **Option 3: Use the Connections Panel**
 
@@ -220,7 +220,7 @@ The selected node is added and connected in sequence.
     * Connect to an existing, unused node.
 4. A sequential connection is automatically created and reflected on the canvas.
 
-<img src="../images/sequential_connection.png" alt="Sequential connection" title="Sequential connection" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/sequential_connection.png" alt="Sequential connection" title="Sequential connection" style="border: 1px solid gray; zoom:80%;"/>
 
 **Key Considerations**
 
@@ -248,19 +248,19 @@ Flow Builder supports several ways to structure parallel logic, depending on how
 A single node branches out to multiple child nodes, each running independently.
 *Use this when tasks can occur simultaneously without any dependencies.*
 
-<img src="../images/simple_parallel.png" alt="Simple parallel" title="Simple parallel" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/simple_parallel.png" alt="Simple parallel" title="Simple parallel" style="border: 1px solid gray; zoom:80%;"/>
 
 * **Nested Parallel**
 A parallel branch contains its own parallel branches. 
 *Useful for multi-step logic where each level does independent work.
 
-<img src="../images/nested_parallel.png" alt="Nested parallel" title="Nested parallel" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/nested_parallel.png" alt="Nested parallel" title="Nested parallel" style="border: 1px solid gray; zoom:80%;"/>
 
 * **Conditional + Parallel**
 Combine condition nodes with parallel execution. Based on logic (e.g., if/else), different sets of parallel branches are triggered.
 *Example: If status is "new", run onboarding tasks in parallel. If "existing", skip them.*
 
-<img src="../images/conditional_parallel.png" alt="Conditional parallel" title="Conditional parallel" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/conditional_parallel.png" alt="Conditional parallel" title="Conditional parallel" style="border: 1px solid gray; zoom:80%;"/>
 
 **Steps to create a parallel connection:**
 
@@ -275,7 +275,7 @@ You can design parallel execution using either the Canvas or the Connections Pan
 
 The selected node is added, and a connection line is automatically drawn between the nodes.
 
-<img src="../images/blue_icon_parallel.png" alt="Blue icon" title="Blue icon" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/blue_icon_parallel.png" alt="Blue icon" title="Blue icon" style="border: 1px solid gray; zoom:80%;"/>
 
 
 **Option 2: Drag-to-Connect on the canvas**
@@ -285,7 +285,7 @@ The selected node is added, and a connection line is automatically drawn between
 3. A connection line is drawn between the nodes, with an arrow indicating the direction of the node connection. 
 4. To form a fork for parallel execution, repeat the process by adding and connecting more nodes from the same parent.
 
-<img src="../images/parallel_dragtoconnect.png" alt="Drag to connect" title="Drag to connect" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/parallel_dragtoconnect.png" alt="Drag to connect" title="Drag to connect" style="border: 1px solid gray; zoom:80%;"/>
 
 
 **Option 3: Use the Connections Panel**
@@ -297,7 +297,7 @@ Nodes that are already connected will be disabled.
 4. Click **+ Parallel Node** to add more branches.
 5. As soon as you select a node, it’s added as a parallel path. A connection line appears on the canvas to reflect the update.
 
-<img src="../images/parallel_connections_panel.png" alt="Drag to connect" title="Drag to connect" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/parallel_connections_panel.png" alt="Drag to connect" title="Drag to connect" style="border: 1px solid gray; zoom:80%;"/>
 
 
 
@@ -323,7 +323,7 @@ To delete a connection between nodes:
 2. Click the Delete icon. The nodes remain on the canvas but are no longer linked.
 3. Deleting a connection breaks the flow until the nodes are reconnected.
 
-<img src="../images/delete_connection.png" alt="Delete icon" title="Delete icon" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/delete_connection.png" alt="Delete icon" title="Delete icon" style="border: 1px solid gray; zoom:80%;"/>
 
 You can also manage connections from the Configuration Panel:
 
@@ -331,7 +331,7 @@ You can also manage connections from the Configuration Panel:
 2. In the Connections tab, click the Delete icon next to the connection you want to remove.
 3. The connection is deleted instantly from both the panel and the canvas.
 
-<img src="../images/delete_icon.png" alt="Delete icon" title="Delete icon" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/delete_icon.png" alt="Delete icon" title="Delete icon" style="border: 1px solid gray; zoom:80%;"/>
 
 ## Common Issues and How to Resolve Them
 
@@ -402,7 +402,7 @@ In sequential flows, node execution is logged in the exact order of operation in
 * Each node appears one after another based on the flow sequence.
 * This view helps track the step-by-step progression of the flow and isolate issues in linear flows.
 
-<img src="../images/sequential_log.png" alt="Sequential log" title="Sequential log" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/sequential_log.png" alt="Sequential log" title="Sequential log" style="border: 1px solid gray; zoom:80%;"/>
 
 ### View Parallel Execution in Logs
 
@@ -414,7 +414,7 @@ When a flow includes parallel branches, the Debug Logs panel helps you trace eac
 * Branches are labeled (for example, A, B, C) to show separate paths.
 * You can expand or collapse each branch to view or hide its details.
 
-<img src="../images/debug_log_new.png" alt="Parallel log" title="Parallel log" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/debug_log_new.png" alt="Parallel log" title="Parallel log" style="border: 1px solid gray; zoom:80%;"/>
 
 **Behavior**
 

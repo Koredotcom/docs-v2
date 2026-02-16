@@ -27,10 +27,10 @@ Steps to create a new project:
 
 1. Navigate to Model Evaluation.
 2. On the Projects tab, click **New Project**.
-<img src="../../images/project.png" alt="Projects" title="Projects" style="border: 1px solid gray; zoom:80%;"> 
+<img src="../../images/project.png" alt="Projects" title="Projects" style="border: 1px solid gray; zoom:80%;"/> 
 
 3. In the **Create a new project** dialog, enter a name for the new project. Ensure the project name does not exceed the predefined character limit (e.g., 100 characters).
-    <img src="../../images/create_new_project.png" alt="Create project" title="Create project" style="border: 1px solid gray; zoom:80%;"> 
+    <img src="../../images/create_new_project.png" alt="Create project" title="Create project" style="border: 1px solid gray; zoom:80%;"/> 
 
 4. Click **Create** to submit the project creation request.
 Once the project is created successfully, the system will redirect you to the newly created project’s main page.
@@ -40,7 +40,7 @@ Once the project is created successfully, the system will redirect you to the ne
     * **Delete**: Use this option to delete the project. A confirmation message appears, asking for confirmation to delete the project. If the user confirms, the project and all its associated datasets will be permanently deleted.
     * **Share**: Use this option to share the project with other users by providing email addresses or user identifiers.
 
-    <img src="../../images/project_threedots.png" alt="Create project" title="Create project" style="border: 1px solid gray; zoom:80%;"> 
+    <img src="../../images/project_threedots.png" alt="Create project" title="Create project" style="border: 1px solid gray; zoom:80%;"/> 
 
 
 ## Key Highlights

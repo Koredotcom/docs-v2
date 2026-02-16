@@ -7,15 +7,15 @@ Connecting with Weights and Biases (WandB) allows users to link to the platform,
 
 1. Click the **Settings** icon on the top navigation bar. The **Integrations** page is displayed.
 
-    <img src="../images/navigate-to-settings.png" alt="Navigate to Settings" title="Navigate to Settings" style="border: 1px solid gray; zoom:80%;">
+    <img src="../images/navigate-to-settings.png" alt="Navigate to Settings" title="Navigate to Settings" style="border: 1px solid gray; zoom:80%;"/>
 
 1. Click the **Weights & Biases** option from the list of Integrations. The Weights & Biases section is expanded.
 
-    <img src="../images/add-w&b-connection.png" alt="Add W&B Connection" title="Add W&B Connection" style="border: 1px solid gray; zoom:80%;">
+    <img src="../images/add-w&b-connection.png" alt="Add W&B Connection" title="Add W&B Connection" style="border: 1px solid gray; zoom:80%;"/>
 
 1. Click **Add connection**. The **Weights & Biases** dialog is displayed.
 
-    <img src="../images/wandb-connection.png" alt="WandB Connection" title="WandB Connection" style="border: 1px solid gray; zoom:60%;">
+    <img src="../images/wandb-connection.png" alt="WandB Connection" title="WandB Connection" style="border: 1px solid gray; zoom:60%;"/>
 
 1. Enter the following details in the dialog to create a connection:
     * Provide a **Connection name**.
@@ -31,7 +31,7 @@ You can test your connection after you provide the details to verify the accurac
 
 1. Click the **Test** button on the **Weights & Biases** dialog.
 
-    <img src="../images/test-wandb-connection.png" alt="Test WandB Connection" title="Test WandB Connection" style="border: 1px solid gray; zoom:60%;">
+    <img src="../images/test-wandb-connection.png" alt="Test WandB Connection" title="Test WandB Connection" style="border: 1px solid gray; zoom:60%;"/>
 
     Once the connection is tested, you will receive feedback information.
 
@@ -46,7 +46,7 @@ You can test your connection after you provide the details to verify the accurac
 
 1. Hover over the connection name and click the three dots icon corresponding to the **Connection name**. The list of options is displayed. Click **Edit** to modify the connection details and **Delete** to delete the connection.
 
-    <img src="../images/manage-wandb-connection.png" alt="Manage WandB Connection" title="Manage WandB Connection" style="border: 1px solid gray; zoom:80%;">
+    <img src="../images/manage-wandb-connection.png" alt="Manage WandB Connection" title="Manage WandB Connection" style="border: 1px solid gray; zoom:80%;"/>
 
 
 !!! note

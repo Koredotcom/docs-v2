@@ -15,10 +15,10 @@ Steps to create an evaluation:
 1. Navigate to Model Evaluation.
 2. Click the **Projects** tab, and click the row of the project you want.
 3. To create an evaluation, click **Create evaluation**.
-    <img src="../../images/create_evaluation.png" alt="Create evaluation" title="Create evaluation" style="border: 1px solid gray; zoom:80%;"> 
+    <img src="../../images/create_evaluation.png" alt="Create evaluation" title="Create evaluation" style="border: 1px solid gray; zoom:80%;"/> 
 
 4. If there are existing evaluations for a project, the Evaluations section is displayed and users can view all evaluations associated with the project. To create a new evaluation, click **New evaluation**.  
-    <img src="../../images/evaluations_landing.png" alt="Evaluation" title="Evaluation" style="border: 1px solid gray; zoom:80%;"> 
+    <img src="../../images/evaluations_landing.png" alt="Evaluation" title="Evaluation" style="border: 1px solid gray; zoom:80%;"/> 
 
 5. In the **Create evaluation** dialog, enter a name for the evaluation and click **Done**.
 Once the evaluation is created successfully, the system will redirect the user to the **Import dataset** page.

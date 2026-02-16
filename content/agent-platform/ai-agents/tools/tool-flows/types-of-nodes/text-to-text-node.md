@@ -23,7 +23,7 @@ The Text to Text node is part of the AI node family in the Tool Builder, enablin
 
 Once placed in the workflow, the Text to Text node takes input from previous nodes and sends a prompt to the selected AI model. Based on your configuration—prompt, schema, and model settings—it returns a response to the context variable for use in the next step. Execution can optionally involve tool calls, and success/failure paths allow routing based on the outcome.
 
-<img src="../images/text_to_text_node_new.png" alt="Text to Text Node" title="Text to Text Node" style="border: 1px solid gray; zoom:60%;">
+<img src="../images/text_to_text_node_new.png" alt="Text to Text Node" title="Text to Text Node" style="border: 1px solid gray; zoom:60%;"/>
 
 In this document, you will learn how to add the node to your flows, configure it with system and human prompts along with model settings, manage inputs and outputs, and test the generated text results.
 
@@ -45,7 +45,7 @@ Setting up a Text to Text node in a tool flow involves adding the node at the ap
 ### Step 3: Configure the Node
 
 * Click the added node to open its properties dialog box. 
-<img src="../images/configure-gen-ai-node.png" alt="Configure AI Node" title="Configure AI Node" style="border: 1px solid gray; zoom:75%;">
+<img src="../images/configure-gen-ai-node.png" alt="Configure AI Node" title="Configure AI Node" style="border: 1px solid gray; zoom:75%;"/>
 
 * Enter the following General Settings:
 
@@ -70,7 +70,7 @@ Setting up a Text to Text node in a tool flow involves adding the node at the ap
     
             * To edit the prompt, click the **Customize** option. The ‘Custom Prompt’ view is displayed, where the prompt from Prompt Studio will be populated in both the system and human prompt fields. You can then modify the prompt while preserving the selected version.  
 
-        <img src="./../images/choose_prompt_with_variables_fields.png" alt="Choose a prompt" title="Choose a prompt" style="border: 1px solid gray; zoom:70%;">      
+        <img src="./../images/choose_prompt_with_variables_fields.png" alt="Choose a prompt" title="Choose a prompt" style="border: 1px solid gray; zoom:70%;"/>      
 
         !!! note
 
@@ -89,10 +89,10 @@ Setting up a Text to Text node in a tool flow involves adding the node at the ap
 
     5. **Response JSON schema**:  Define a JSON schema for structured responses. This step is optional and depends on the selected model.   
         You can define a JSON schema to structure the model's response if the chosen model supports the response format. By default, if no schema is provided, the model will respond with plain text.
-        Supported JSON schema types include: String, Boolean, Number, Integer, Object, Array, Enum, and anyOf. Ensure the schema follows the standard outlined here: [Defining JSON schema](../perform-other-actions-on-the-flow-builder/defining-json.md){:target="_blank"}. 
+        Supported JSON schema types include: String, Boolean, Number, Integer, Object, Array, Enum, and anyOf. Ensure the schema follows the standard outlined here: [Defining JSON schema](../perform-other-actions-on-the-flow-builder/defining-json.md). 
         If the schema is invalid or mismatched, errors will be logged, and you must resolve them before proceeding.  
 
-        For more information about how the model parses the response and separates keys from the content body, see: [Structured Response Parsing and Context Sharing in Workflows](../perform-other-actions-on-the-flow-builder/model_response_parsing.md){:target="_blank"}.
+        For more information about how the model parses the response and separates keys from the content body, see: [Structured Response Parsing and Context Sharing in Workflows](../perform-other-actions-on-the-flow-builder/model_response_parsing.md).
 
     6. **Model Configurations**: Use hyperparameters to fine-tune the AI model's behavior to suit your needs. While the default settings work well for most cases, you can adjust them to find the right balance for your use case.
 
@@ -112,7 +112,7 @@ Click the **Connections** icon and select the **Go to Node** for success and fai
 
 * **On Failure** > **Go to Node**: If the execution of the current node fails, go to the End node to display any custom error message from the AI node.
 
-    <img src="./../images/gen-ai-connections.png" alt="AI Actions" title="AI Actions" style="border: 1px solid gray; zoom:70%;">
+    <img src="./../images/gen-ai-connections.png" alt="AI Actions" title="AI Actions" style="border: 1px solid gray; zoom:70%;"/>
 
 ### Step 5: Add Tools
 
@@ -133,7 +133,7 @@ To add tools, click the **Tool Calling** icon. When you select a model that supp
         * **Tool choice**: Select *Auto* or *Required*. This option determines whether the model will automatically decide when to make a tool call (Auto), or if a tool call is required every time (Required). The default setting is Auto.
         * **Parallel tool calls**: Select *True* to enable the model to execute multiple tool calls simultaneously. Select *False* if you want the model to execute tool calls sequentially, optimizing for the best possible outcome.  
         
-    <img src="./../images/tool_calling_configuration.png" alt="AI Actions" title="AI Actions" style="border: 1px solid gray; zoom:70%;">
+    <img src="./../images/tool_calling_configuration.png" alt="AI Actions" title="AI Actions" style="border: 1px solid gray; zoom:70%;"/>
 
 ### Step 6: Test the Flow
 

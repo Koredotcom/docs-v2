@@ -42,7 +42,7 @@ You can create multiple personas to represent different user types. Each persona
     Use the **Additional Information** field to configure specific behaviors for the persona. This allows you to define & control over how the persona interacts or responds.
 
  
-<img src="../../agentic-evaluation/images/create_persona.png" alt="create persona" title="create persona" style="border: 1px solid gray; zoom:60%;">
+<img src="../../agentic-evaluation/images/create_persona.png" alt="create persona" title="create persona" style="border: 1px solid gray; zoom:60%;"/>
 
 After creating personas, you can edit, duplicate, or delete them anytime from the Personas page. When a persona is deleted, any active simulations using it automatically switch to the default Unidentified Persona.
 
@@ -61,7 +61,7 @@ You can create test scenarios in two ways:
 * **[Write test scenarios](../agentic-evaluation/create-simulation.md#write-test-scenarios)** – Manually define details such as the user query, context, and expected output.
 * **[Generate test scenarios](../agentic-evaluation/create-simulation.md#generate-test-scenarios)** – Automatically generate multiple scenarios using AI, based on your agent’s configured capabilities.
 
-<img src="../../agentic-evaluation/images/test_scenarios_page.png" alt="test scenario" title="test scenario" style="border: 1px solid gray; zoom:60%;">
+<img src="../../agentic-evaluation/images/test_scenarios_page.png" alt="test scenario" title="test scenario" style="border: 1px solid gray; zoom:60%;"/>
 
 ### Write Test Scenarios
 
@@ -85,7 +85,7 @@ After creation, you can edit, duplicate, or delete scenarios anytime from the Te
 
     Make sure you provide any specific test scenario details required for the task, such as account numbers, external links, ticket IDs, or user IDs. The simulation agent requires these details to supply the necessary context to the Agentic App so the multi-turn conversation can complete successfully.
 
-<img src="../../agentic-evaluation/images/write_test_scenario.png" alt="write test scenario" title="write test scenario" style="border: 1px solid gray; zoom:60%;">
+<img src="../../agentic-evaluation/images/write_test_scenario.png" alt="write test scenario" title="write test scenario" style="border: 1px solid gray; zoom:60%;"/>
 
 ### Generate Test Scenarios
 
@@ -103,7 +103,7 @@ To automatically generate test scenarios:
 
     Provide any required details - such as account numbers, external links, ticket IDs, or user IDs - when generating scenarios. These details are appended to all generated scenarios and are used only if needed by the simulation agent to successfully complete the multi-turn conversation.
 
-<img src="../../agentic-evaluation/images/generate_test_scenario.png" alt="generate test scenario" title="generate test scenario" style="border: 1px solid gray; zoom:60%;">
+<img src="../../agentic-evaluation/images/generate_test_scenario.png" alt="generate test scenario" title="generate test scenario" style="border: 1px solid gray; zoom:60%;"/>
 
 The system automatically generates multiple varied test queries for each capability, including both normal and negative cases.
 
@@ -113,7 +113,7 @@ After creation, you can edit, duplicate, or delete scenarios anytime from the Te
 
     Manual and AI-generated scenarios can coexist and are reusable across multiple simulations within the Agentic Project.
 
-<img src="../../agentic-evaluation/images/generate_test_scenario.png" alt="generate test scenario" title="generate test scenario" style="border: 1px solid gray; zoom:60%;">
+<img src="../../agentic-evaluation/images/generate_test_scenario.png" alt="generate test scenario" title="generate test scenario" style="border: 1px solid gray; zoom:60%;"/>
 
 !!! example
 
@@ -144,7 +144,7 @@ To create and run a simulation:
 
 The system executes mock sessions for all generated test queries. Once complete, you can monitor progress in real time from the **Simulation Runs** panel.
 
-<img src="../../agentic-evaluation/images/create_simulation.png" alt="create simulation" title="create simulation" style="border: 1px solid gray; zoom:60%;">
+<img src="../../agentic-evaluation/images/create_simulation.png" alt="create simulation" title="create simulation" style="border: 1px solid gray; zoom:60%;"/>
 
 
 **What happens during a simulation**
@@ -154,7 +154,7 @@ The system executes mock sessions for all generated test queries. Once complete,
 * Queries are passed to the agent to create mock conversations (each conversation representing one simulation session).
 * Outputs are recorded, including agent responses, scenario and persona information, and metadata.
 
-<img src="../../agentic-evaluation/images/simulation_complete.png" alt="simulation" title="simulation" style="border: 1px solid gray; zoom:60%;">
+<img src="../../agentic-evaluation/images/simulation_complete.png" alt="simulation" title="simulation" style="border: 1px solid gray; zoom:60%;"/>
 
 **After the simulation run completes**
 
@@ -162,9 +162,9 @@ The system executes mock sessions for all generated test queries. Once complete,
 * Analyze how well the agent handled each scenario.
 * Identify areas for improvement before production deployment.
 
-<img src="../../agentic-evaluation/images/simulation_conversation.png" alt="simulation transcript" title="simulation transcript" style="border: 1px solid gray; zoom:60%;">
+<img src="../../agentic-evaluation/images/simulation_conversation.png" alt="simulation transcript" title="simulation transcript" style="border: 1px solid gray; zoom:60%;"/>
 
-<img src="../../agentic-evaluation/images/simulation_trace.png" alt="simulation tree" title="simulation tree" style="border: 1px solid gray; zoom:60%;">
+<img src="../../agentic-evaluation/images/simulation_trace.png" alt="simulation tree" title="simulation tree" style="border: 1px solid gray; zoom:60%;"/>
 
 ## Use Simulated Data for Evaluation
 

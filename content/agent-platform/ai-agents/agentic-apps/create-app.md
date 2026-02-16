@@ -2,7 +2,7 @@
 
 Prerequisites:
 
-* Add an AI Model that supports tool-calling capabilities. The Platform supports OpenAI, Gemini, Anthropic, and Azure OpenAI models. For more information, see [Add an External Model](../../models/external-models/add-an-external-model-using-easy-integration.md){:target="_blank"}.
+* Add an AI Model that supports tool-calling capabilities. The Platform supports OpenAI, Gemini, Anthropic, and Azure OpenAI models. For more information, see [Add an External Model](../../models/external-models/add-an-external-model-using-easy-integration.md).
 
 
 ## Steps to Create an Agentic App
@@ -13,7 +13,7 @@ Creating an Agentic App broadly consists of the following steps:
 
 ### Step 1: Create an Agentic App
 
-1. Sign in to the [Agent Platform](https://agent-platform.kore.ai/auth/login){:target="_blank"} and go to Autonomous Agents. 
+1. Sign in to the [Agent Platform](https://agent-platform.kore.ai/auth/login) and go to Autonomous Agents. 
 
 2. Click on the +New App on the Agentic Apps page. This page also lists the existing apps in the workspace.  
 ![Create App](images/createapp/list-apps.png "Agentic App Creation")

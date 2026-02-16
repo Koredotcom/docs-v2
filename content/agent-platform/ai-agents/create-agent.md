@@ -4,7 +4,7 @@ An AI Agent is a configurable, goal-driven component that can understand user in
 
 **Components of an Agent**
 
-<img src="../images/agent-anatomy.png" alt="Anatomy of an Agent" title="Anatomy of an Agent" style="border: 1px solid gray; zoom:65%;">
+<img src="../images/agent-anatomy.png" alt="Anatomy of an Agent" title="Anatomy of an Agent" style="border: 1px solid gray; zoom:65%;"/>
 
 <!-- ## Agents Page
 

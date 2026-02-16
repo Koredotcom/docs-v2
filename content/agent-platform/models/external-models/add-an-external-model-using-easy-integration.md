@@ -9,28 +9,28 @@ Steps to add the Anthropic Claude-V1 model using easy integration:
 1. Click **Models** on the top navigation bar of the application. The **Models** page is displayed.
 2. Click the **External models** tab on the **Models** page.
 
-    <img src="../images/navigating-to-external-models.png" alt="Navigating to External Models" title="Navigating to External Models" style="border: 1px solid gray; zoom:80%;">
+    <img src="../images/navigating-to-external-models.png" alt="Navigating to External Models" title="Navigating to External Models" style="border: 1px solid gray; zoom:80%;"/>
 
 3. Click **Add a model** under the **External models** tab. The **Add an external model** dialog is displayed.
 
-    <img src="../images/add-external-model-easy-integration.png" alt="Add External Model Easy Integration" title="Add External Model Easy Integration" style="border: 1px solid gray; zoom:40%;">
+    <img src="../images/add-external-model-easy-integration.png" alt="Add External Model Easy Integration" title="Add External Model Easy Integration" style="border: 1px solid gray; zoom:40%;"/>
 
 4. Select the **Easy integration** option to integrate models from Open AI, Anthropic, Google, or Cohere and click **Next**.
 5. Select a provider to integrate with and click **Next**.
 
-    <img src="../images/easy-integration.png" alt="Easy Integration" title="Easy Integration" style="border: 1px solid gray; zoom:65%;">
+    <img src="../images/easy-integration.png" alt="Easy Integration" title="Easy Integration" style="border: 1px solid gray; zoom:65%;"/>
 
     A pop-up with the list of all the Anthropic models that are supported in the Platform is displayed.
     
     For more information on the list of external models supported, see [Supported models](../supported-models.md).
 
-    <img src="../images/select-model.png" alt="Select Model" title="Select Model" style="border: 1px solid gray; zoom:50%;">
+    <img src="../images/select-model.png" alt="Select Model" title="Select Model" style="border: 1px solid gray; zoom:50%;"/>
 
 6. Select the required **Model** and enter a **Connection name**.
 
 7. Enter the respective API key you have received from the provider in the **API key** field and click **Confirm** to start the integration.
 
-      <img src="../images/api-key-for-model.png" alt="API Key for Model" title="API Key for Model" style="border: 1px solid gray; zoom:50%;"></ol>
+      <img src="../images/api-key-for-model.png" alt="API Key for Model" title="API Key for Model" style="border: 1px solid gray; zoom:50%;"/></ol>
 
 The model is integrated and is listed in the External models list.
 
@@ -46,7 +46,7 @@ You can easily connect Amazon Bedrock models to the Platform using a guided setu
 
 !!! important
 
-    Customers must create an IAM role within their AWS account with the necessary permissions in their AWS account (e.g., access to AWS Bedrock APIs). This role must include a trust policy that allows the Platform’s AWS principal (or a designated IAM role in an AWS account) to assume it. For more information, see [Configuring Amazon Bedrock models](./configuring-aws.md){:target="_blank"}.
+    Customers must create an IAM role within their AWS account with the necessary permissions in their AWS account (e.g., access to AWS Bedrock APIs). This role must include a trust policy that allows the Platform’s AWS principal (or a designated IAM role in an AWS account) to assume it. For more information, see [Configuring Amazon Bedrock models](./configuring-aws.md).
 
 
 Steps to add Amazon Bedrock models using easy integration:
@@ -57,7 +57,7 @@ Steps to add Amazon Bedrock models using easy integration:
 2. Go to the **External Models** tab and click **Add a model**.
 3. Select **Easy integration** > **AWS Bedrock** and click **Next**.
 
-    <img src="../images/aws_dialog.png" alt="Select AWS Bedrock" title="Select AWS Bedrock" style="border: 1px solid gray; zoom:50%;">
+    <img src="../images/aws_dialog.png" alt="Select AWS Bedrock" title="Select AWS Bedrock" style="border: 1px solid gray; zoom:50%;"/>
 
 
 <font size="4">**2. Configure the Integration**</font> 
@@ -78,7 +78,7 @@ In the AWS Bedrock dialog, configure the following:
 **Headers** (Optional): Provide any additional information to include with the HTTP request. Use this if your model requires custom headers for configuration or authentication.  
 For example: "Content-Type": "application/json"
 
-<img src="../images/aws_bedrock.png" alt="AWS Bedrock integration" title="AWS Bedrock" style="border: 1px solid gray; zoom:50%;">
+<img src="../images/aws_bedrock.png" alt="AWS Bedrock integration" title="AWS Bedrock" style="border: 1px solid gray; zoom:50%;"/>
 
 <font size="4">**3. Configure Model Settings**</font>
 
@@ -118,7 +118,7 @@ Use this option to automatically map known API formats for supported providers. 
 
 Each option determines how your model communicates with the platform and how responses are parsed. For more details, see [**Default**](../external-models/add-an-external-model-using-api-integration.md#option-a-default) and [**Existing Provider Structures**](../external-models/add-an-external-model-using-api-integration.md#option-b-existing-model-provider-structures).
 
-<img src="../images/existing-provider-structures.png" alt="Existing Provider Structures" title="Existing Provider Structures" style="border: 1px solid gray; zoom:50%;">
+<img src="../images/existing-provider-structures.png" alt="Existing Provider Structures" title="Existing Provider Structures" style="border: 1px solid gray; zoom:50%;"/>
 
 <font size="4">**4. Finalize the Configuration**</font> 
 
@@ -141,7 +141,7 @@ Before you can integrate Vertex AI models, you need to obtain an API key from yo
 
 **For new users or express mode users**
 
-1. Navigate to the [express mode setup page](https://docs.cloud.google.com/vertex-ai/generative-ai/docs/start/express-mode/overview){:target="_blank"}.
+1. Navigate to the [express mode setup page](https://docs.cloud.google.com/vertex-ai/generative-ai/docs/start/express-mode/overview).
 2. Follow the guided setup to automatically generate an API key.
 3. View and manage your API keys at **APIs & Services > Credentials** in the Google Cloud Console.
 
@@ -168,7 +168,7 @@ Steps to add Google Vertex AI models using easy integration:
     2. Go to the **External Models** tab and click **Add a model**.
     3. Select **Easy integration** > **Vertex AI** and click **Next**.
     
-    <img src="../images/vertex-ai.png" alt="Existing Provider Structures" title="Existing Provider Structures" style="border: 0px solid gray; zoom:50%;">
+    <img src="../images/vertex-ai.png" alt="Existing Provider Structures" title="Existing Provider Structures" style="border: 0px solid gray; zoom:50%;"/>
 
 2. **Configure the Integration**
 
@@ -179,14 +179,14 @@ In the **Manual Setup** tab, configure the following:
 
 **Connection Details**:
 
-* **Model**: Select the desired Gemini model from the dropdown. For more information on the list of external models supported, see [Supported AI Models](../supported-models.md){:target="_blank"}.
+* **Model**: Select the desired Gemini model from the dropdown. For more information on the list of external models supported, see [Supported AI Models](../supported-models.md).
 * **Connection name**: Enter a custom name to identify this model connection within your workspace.
 
 **Authentication**:
 
 * **API key**: Enter your API key from your Google Vertex AI Console.
 
-**Note**: API keys are validated during entry. If OAuth 2.0 access tokens or unsupported authentication credentials are detected, an error message displays. For more information, see [ Authentication methods at Google.](https://cloud.google.com/docs/authentication){:target="_blank"}
+**Note**: API keys are validated during entry. If OAuth 2.0 access tokens or unsupported authentication credentials are detected, an error message displays. For more information, see [ Authentication methods at Google.](https://cloud.google.com/docs/authentication)
 
 **Advanced Settings** (Optional): Configure additional endpoint settings:
 
@@ -195,7 +195,7 @@ In the **Manual Setup** tab, configure the following:
 
 Click **Confirm** to save the configuration.
 
-<img src="../images/manual-setup.png" alt="Manual Setup" title="Manual Setup" style="border: 0px solid gray; zoom:50%;">
+<img src="../images/manual-setup.png" alt="Manual Setup" title="Manual Setup" style="border: 0px solid gray; zoom:50%;"/>
 
 **Option B: Import from cURL**
 
@@ -205,6 +205,6 @@ In the **Import from cURL** tab:
 2. Paste a cURL command in the provided text area.
 3. Click **Fetch** to extract the configuration, and then click **Confirm** to start the integration.
 
-    <img src="../images/import-from-curl.png" alt="Import from cURL" title="Import from cURL" style="border: 0px solid gray; zoom:50%;">
+    <img src="../images/import-from-curl.png" alt="Import from cURL" title="Import from cURL" style="border: 0px solid gray; zoom:50%;"/>
 
 The model is integrated and is listed in the External models list.

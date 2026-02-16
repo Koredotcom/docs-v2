@@ -42,7 +42,7 @@ The Loop node runs a defined set of steps repeatedly—once for each item in an 
 
 You can configure how the loop handles errors during execution and define what should happen when the loop completes successfully or encounters a failure.
 
-<img src="../images/loop_node_flow.png" alt="loop node" title="loop node" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/loop_node_flow.png" alt="loop node" title="loop node" style="border: 1px solid gray; zoom:80%;"/>
 
 In this document, you’ll learn how to add a Loop node to your canvas, place and connect steps inside it, configure input and output variables, and customize error-handling behavior.
 
@@ -67,7 +67,7 @@ You can insert a Loop node on the canvas using any of the following methods:
 
 By default, the Loop node is added in *expanded mode*, allowing you to start building the logic inside immediately.
 
-<img src="../images/loop_node.png" alt="loop node" title="loop node" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/loop_node.png" alt="loop node" title="loop node" style="border: 1px solid gray; zoom:80%;"/>
 
 ### Step 3: Add Nodes Inside the Loop
 
@@ -79,7 +79,7 @@ You can define the repeated steps by placing nodes inside the loop structure. Su
 
 You can add any supported child nodes inside the Loop node, including Function Nodes, Text-to-Text AI Nodes, API Nodes, Condition Nodes, and others. Each child node runs once per item in the loop's input list. Use `{{currentItem}}` (or a custom alias if defined) to reference the current iteration item inside these nodes.
 
-<img src="../images/loop_add_nodes_inside.png" alt="loop node" title="loop node" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/loop_add_nodes_inside.png" alt="loop node" title="loop node" style="border: 1px solid gray; zoom:80%;"/>
 
 !!! note
 
@@ -97,7 +97,7 @@ Click on the Loop node to open its configuration panel. The following options ar
     * An output field from a previous node
 * **Output Field**: Define a variable to store the results from each iteration into the node’s output array (e.g., `context.result`). This output array is available for downstream nodes after the loop completes.
 
-<img src="../images/loop_config_panel.png" alt="loop node config panel" title="loop node config panel" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/loop_config_panel.png" alt="loop node config panel" title="loop node config panel" style="border: 1px solid gray; zoom:80%;"/>
 
 **2. Define Success and Error Paths**
 
@@ -120,7 +120,7 @@ Think of these like array processing methods:
 * `terminateOnError` = like throwing an exception that stops everything.
 * `filterErrors` = like `map().filter()` that removes the bad ones.
 
-<img src="../images/loop_errors.png" alt="loop errors" title="loop errors" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/loop_errors.png" alt="loop errors" title="loop errors" style="border: 1px solid gray; zoom:80%;"/>
 
 ### Step 5: Run Workflow with Loops
 
@@ -148,7 +148,7 @@ After running the workflow, use the Debug panel to inspect loop behavior, debug 
     * The result reflects your selected error-handling option
     * Total execution time is displayed
 
-<img src="../images/loop_debug.png" alt="loop node debug panel" title="loop node debug panel" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/loop_debug.png" alt="loop node debug panel" title="loop node debug panel" style="border: 1px solid gray; zoom:80%;"/>
 
 ## Troubleshooting Common Issues
 

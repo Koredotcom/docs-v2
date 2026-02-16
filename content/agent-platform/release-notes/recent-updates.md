@@ -330,7 +330,7 @@ The Platform now provides a unified interface for testing workflow tools directl
 
 The Platform now supports seamless integration of custom models in Agentic Apps and Agents through API endpoints. To ensure compatibility, custom models must support tool calling and adhere to the request and response structures as per the API reference of Anthropic or OpenAI.  Custom model integrations with Default model settings are currently not supported in Agentic Apps. The platform provides standardized API integration, performance monitoring, and security controls to ensure consistent and secure usage.
 
-[Learn more :octicons-arrow-right-24:](../models/supported-models.md#custom-model-support-in-agentic-apps){:target="_blank"}
+[Learn more :octicons-arrow-right-24:](../models/supported-models.md#custom-model-support-in-agentic-apps)
 
 
 **Structured Output Support for Open-Source Models**
@@ -342,7 +342,7 @@ Open-source models now support structured JSON output through the response_forma
 * Not supported for fine-tuned models, Hugging Face imports, CT2-optimized models, or locally imported models.
 * The schema editor automatically appears in AI nodes when a supported model is selected.
 
-[Learn more :octicons-arrow-right-24:](../models/supported-models.md#supported-models-for-structured-output){:target="_blank"}
+[Learn more :octicons-arrow-right-24:](../models/supported-models.md#supported-models-for-structured-output)
 
 
 **Expanded Model Support**
@@ -352,7 +352,7 @@ The Agent Platform now supports additional AI models, providing greater flexibil
 * OpenAI Models GPT-5 Family: gpt-5-2025-08-07, gpt-5-mini-2025-08-07, gpt-5-nano-2025-08-07, and gpt-5-chat-latest
 * Anthropic Model: claude-opus-4-1-20250805
 
-   [Learn more :octicons-arrow-right-24:](../models/supported-models.md){:target="_blank"} 
+   [Learn more :octicons-arrow-right-24:](../models/supported-models.md) 
 
 <hr>
 
@@ -391,13 +391,13 @@ Key benefits
 * Maintain Flow: Automatically manage interruptions and exceptions without breaking the workflow.
 * Gain Control: Design the exact review process your business rules require. <br>
 
-[Learn more :octicons-arrow-right-24:](../ai-agents/tools/tool-flows/types-of-nodes/human-node.md){:target="_blank"}
+[Learn more :octicons-arrow-right-24:](../ai-agents/tools/tool-flows/types-of-nodes/human-node.md)
 
 
 **Data Type Validation for Custom Scripts in the Function Node**
 
 The Function node now supports data type selection and validation for Custom Function arguments. Users can define each argument as Text, Number, Boolean, or JSON, instead of the default String. During execution, the system validates that mapped values or variables match the defined type and throws a clear error if a mismatch occurs, preventing runtime failures. <br>
-[Learn more :octicons-arrow-right-24:](../ai-agents/tools/tool-flows/types-of-nodes/function-node.md#add-and-configure-a-function-node){:target="_blank"}
+[Learn more :octicons-arrow-right-24:](../ai-agents/tools/tool-flows/types-of-nodes/function-node.md#add-and-configure-a-function-node)
 
 
 <font size="4">AI Engineering Tools</font>
@@ -416,12 +416,12 @@ This update introduces support for the following new AI models, providing greate
     * gemini-live-2.5-flash-preview
     * gemini-2.0-flash-live-001 <br>
 
-[Learn more :octicons-arrow-right-24:](../models/supported-models.md){:target="_blank"}
+[Learn more :octicons-arrow-right-24:](../models/supported-models.md)
 
 **Enhanced Custom API Integration for External Models**
 
 Custom API integration for external models now offers automatic provider format mapping (Anthropic, OpenAI) with improved error messaging, simplifying request/response configuration. Admins can also explicitly select supported features from a predefined list, making integration more robust and error-resistant. <br>
-[Learn more :octicons-arrow-right-24:](../models/external-models/add-an-external-model-using-api-integration.md#add-an-external-model){:target="_blank"}
+[Learn more :octicons-arrow-right-24:](../models/external-models/add-an-external-model-using-api-integration.md#add-an-external-model)
 
 **Tool Calling Support for Open-Source Models**
 
@@ -439,7 +439,7 @@ The following models are now enabled for tool calling, allowing them to integrat
 **Model Deployment Status in Model Hub**
 
 The Model Hub landing page now provides an updated overview of model deployment statuses, including counts for active, failed, and ready-to-deploy models. <br>
-[Learn more :octicons-arrow-right-24:](../models/open-source-models/open-source-summary.md){:target="_blank"}
+[Learn more :octicons-arrow-right-24:](../models/open-source-models/open-source-summary.md)
 
 
 **Enhanced Configuration Options for Realtime Models**
@@ -451,7 +451,7 @@ The platform now supports additional voice parameters for real-time models from 
 **Enhanced User Invitation UI for Admins**
 
 The Settings console now features an improved multi-row form for user invitations. Admins can add or delete rows to invite multiple users simultaneously, assign system or custom roles to each user, and track total invites with an auto-updating counter. <br>
-[Learn more :octicons-arrow-right-24:](../settings/user-management/invite-a-user.md){:target="_blank"}
+[Learn more :octicons-arrow-right-24:](../settings/user-management/invite-a-user.md)
 
 <hr>
 
@@ -527,9 +527,9 @@ The platform now provides advanced filtering and usage tracking in the Settings 
 
 Key improvements:
 
-* Model Analytics & Traces: Filter and view data by deployment name & version (open-source/fine-tuned) or connection name (external). [Learn more :octicons-arrow-right-24:](../settings/monitoring/analytics/model-analytics-dashboard.md#model-performance-filters){:target="_blank"}
-* Audit Logs: Model Added/Deleted events now display the relevant deployment or connection name. [Learn more :octicons-arrow-right-24:](../settings/monitoring/audit-logs.md#account-level-audit-logs){:target="_blank"}
-* Billing & Usage: The drill-down view in the Usage page’s Models tab displays the *deployment name*, *type*, *credits used*, *last updated date,* and *status* for a model. Totals of all the deployments roll up to show model-level consumption, with deployment-level data reflected in *fine-tuning*, *hosting*, and *storage* metrics. [Learn more :octicons-arrow-right-24:](../settings/billing/billing-and-usage.md#models-usage){:target="_blank"}
+* Model Analytics & Traces: Filter and view data by deployment name & version (open-source/fine-tuned) or connection name (external). [Learn more :octicons-arrow-right-24:](../settings/monitoring/analytics/model-analytics-dashboard.md#model-performance-filters)
+* Audit Logs: Model Added/Deleted events now display the relevant deployment or connection name. [Learn more :octicons-arrow-right-24:](../settings/monitoring/audit-logs.md#account-level-audit-logs)
+* Billing & Usage: The drill-down view in the Usage page’s Models tab displays the *deployment name*, *type*, *credits used*, *last updated date,* and *status* for a model. Totals of all the deployments roll up to show model-level consumption, with deployment-level data reflected in *fine-tuning*, *hosting*, and *storage* metrics. [Learn more :octicons-arrow-right-24:](../settings/billing/billing-and-usage.md#models-usage)
 
 
 <font size="4">Other Improvements</font>
@@ -665,7 +665,7 @@ Key highlights:
 
 **Export All Runs and Logs Data**
 
-Admins can now export and download All Runs and Logs from the Monitoring Custom Scripts dashboard as a <code><em>.csv</em></code> file, following the schema and file-naming conventions defined in the Agent Platform. [Learn more :octicons-arrow-right-24:](../settings/monitoring/monitoring-custom-scripts.md#export-runs-and-logs-data){:target="_blank"}
+Admins can now export and download All Runs and Logs from the Monitoring Custom Scripts dashboard as a <code><em>.csv</em></code> file, following the schema and file-naming conventions defined in the Agent Platform. [Learn more :octicons-arrow-right-24:](../settings/monitoring/monitoring-custom-scripts.md#export-runs-and-logs-data)
 
  
 <hr>
@@ -731,7 +731,7 @@ Support for a broader range of models has been added, offering greater flexibili
 
 **Monitoring Custom Scripts Across Runs and Logs**
 
-The Monitoring module now allows administrators to track custom script executions across deployments (endpoints), Function nodes, and API nodes. The **All Runs** section shows performance metrics (response times, failure rates) and execution details, while the **Logs** section provides runtime debugging information. Administrators can filter by date, search for runs or logs, and copy IDs to identify and resolve script issues efficiently. [Learn more :octicons-arrow-right-24:](../settings/monitoring/monitoring-custom-scripts.md){:target="_blank"}
+The Monitoring module now allows administrators to track custom script executions across deployments (endpoints), Function nodes, and API nodes. The **All Runs** section shows performance metrics (response times, failure rates) and execution details, while the **Logs** section provides runtime debugging information. Administrators can filter by date, search for runs or logs, and copy IDs to identify and resolve script issues efficiently. [Learn more :octicons-arrow-right-24:](../settings/monitoring/monitoring-custom-scripts.md)
 
 
 <font size="4">Bug Fix</font>

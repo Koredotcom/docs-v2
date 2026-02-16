@@ -4,7 +4,7 @@
 
 This API deploys a specific tool into an environment. It allows the user to control the deployment process either synchronously or asynchronously, depending on the value of the <code>isAsync</code> parameter.
 
-The API response includes the **tool ID** and the **tool deployment status**. After receiving the response, use the <code>dockStatusId</code> to call the [Get Dock Status API](../apis-list/get-dock-status.md){:target="_blank"} and verify the tool deployment status.
+The API response includes the **tool ID** and the **tool deployment status**. After receiving the response, use the <code>dockStatusId</code> to call the [Get Dock Status API](../apis-list/get-dock-status.md) and verify the tool deployment status.
 
 
 <table>
@@ -36,7 +36,7 @@ The API response includes the **tool ID** and the **tool deployment status**. Af
 
 **Where can I find the API key?**
 
-To use the API, you will need an API key. [Learn more](../../apis/overview.md#how-to-create-the-api-key){:target="_blank"}.
+To use the API, you will need an API key. [Learn more](../../apis/overview.md#how-to-create-the-api-key).
 
 ## Path Parameters
 

@@ -37,7 +37,7 @@ Agent profile consists of the following fields:
 * Tool calling 
 * Transforming results from agents into natural and contextual responses for the users.
 
-For more information, see [Managing External Models](../models/external-models/managing-external-models.md){:target="_blank"}.
+For more information, see [Managing External Models](../models/external-models/managing-external-models.md).
 
 !!!tip
     When choosing a model for your agent, consider its specific use case. For example, if the agent is designed for code generation, opt for a model that specializes in coding skills.
@@ -97,7 +97,7 @@ The platform provides powerful search functionality across diverse content sourc
 
 You can link to one or more Search AI applications in the same workspace and account and access them as Knowledge Tools for the agent to answer user queries. Each Search AI app can be integrated with multiple content sources. 
 
-[Learn more](./knowledge/overview.md){:target="_blank"} about Knowledge integration with agents. 
+[Learn more](./knowledge/overview.md) about Knowledge integration with agents. 
 
 ---
 ## Tools
@@ -154,9 +154,9 @@ For a **Workflow Tool**, enter the tool's *name* and *description*, then click *
 
 ![Create App](images/addtool1.png "Agentic App Creation")
 
-To create a **Code tool**, click on Code Tool and configure the details of the tool. Refer [to this page](tools/create-a-code-tool.md){:target="_blank"} for details on creating a new code tool, along with an example. 
+To create a **Code tool**, click on Code Tool and configure the details of the tool. Refer [to this page](tools/create-a-code-tool.md) for details on creating a new code tool, along with an example. 
 
-Similarly, to add a new MCP server and use MCP Tool, click on MCP Server and provide the configuration details. [Learn More about MCP Server Configuration](tools/configure-mcp-server.md){:target="_blank"}.
+Similarly, to add a new MCP server and use MCP Tool, click on MCP Server and provide the configuration details. [Learn More about MCP Server Configuration](tools/configure-mcp-server.md).
 
 The Tools Assignment page provides a structured view of the available tools, showing their types, statuses, and the total number of tools in the app.
 
@@ -185,7 +185,7 @@ Tools can be imported via:
 
 To make changes, simply select the tool and open it to **modify the flow** as needed.
 
-Use [this example as a reference or starting point](./../ai-agents/agent-creation-example.md){:target="_blank"} when building your own agent.
+Use [this example as a reference or starting point](./../ai-agents/agent-creation-example.md) when building your own agent.
 
 
 ### Testing a Tool
@@ -198,7 +198,7 @@ To test a tool:
 * Select the tool you want to test to open its details view.
 * Use the Test interface on the tool details page to run the tool and review its behavior and responses.
 
-For step-by-step instructions and example, refer to [this](test-a-workflow-tool.md){:target="_blank"}.
+For step-by-step instructions and example, refer to [this](test-a-workflow-tool.md).
 
 ## Delegation
 

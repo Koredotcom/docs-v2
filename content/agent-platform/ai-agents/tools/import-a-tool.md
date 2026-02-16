@@ -4,7 +4,7 @@ Using import functionality, you can create a new tool or add it as a version to 
 
 When a tool is imported, its prompts, properties, and linked tools with their configurations are carried over. This ensures that the tool works seamlessly in the new system. Additionally, any models present in the exported tool — specifically external and open-source models — will be automatically linked and integrated. If any child tools are missing or there are conflicts, the system will notify you.
 
-Creating a new tool involves importing a *.zip* package from your local system with the flow definition, app definition, and environment variables JSON files from another environment. During the creation journey, assign the imported tool a unique name to avoid conflicts with existing tool. [Learn more](../tools/import-a-tool.md#import-to-create-a-new-tool){:target="_blank"}.
+Creating a new tool involves importing a *.zip* package from your local system with the flow definition, app definition, and environment variables JSON files from another environment. During the creation journey, assign the imported tool a unique name to avoid conflicts with existing tool. [Learn more](../tools/import-a-tool.md#import-to-create-a-new-tool).
 
 When importing a tool version to a parent tool, the imported flow definition becomes the new in-dev version, overriding the flow, app definition, and environment variable files. The previous version is renamed and saved in the list, with optional backup of the current version available.
 
@@ -36,7 +36,7 @@ To initiate a tool creation journey through the import functionality, follow the
 
 <ul><li>If you don't have any existing tools and want to create one by importing from another environment, click <b>Import Tool</b>.
 <li>If you already have tools deployed, the following page is displayed. To import a tool, select the relevant tab on the <b>Tools</b> dashboard and click the <b>Import tool</b> icon.
-<img src="../images/agent_platform/import_tool.png" alt="click import tool" title="click import tool" style="border: 1px solid gray; zoom:75%;"></li></ul>
+<img src="../images/agent_platform/import_tool.png" alt="click import tool" title="click import tool" style="border: 1px solid gray; zoom:75%;"/></li></ul>
 
 <ol start="4"><li>In the <b>Import tool</b> window, providing the following information is mandatory.</li>
 <ul><li><b>Tool Name</b>: Provide a unique tool name.</li>
@@ -55,10 +55,10 @@ Providing the following information is optional:
 <li>The values for <b>System Prompt</b>, <b>Prompt</b>, <b>Timeout</b>, and <b>Hyperparameters</b> are imported for the AI node.</li></ul></p></div>
 
 <ol start="5"><li>Click <b>Import</b>.</li>
-<img src="../images/agent_platform/click-import-new.png" alt="click import" title="click import" style="border: 1px solid gray; zoom:75%;"></ol>
+<img src="../images/agent_platform/click-import-new.png" alt="click import" title="click import" style="border: 1px solid gray; zoom:75%;"/></ol>
 
 Once the import is complete, the system will redirect you to the **Tool Flow** page, where you can access the new tool’s flow canvas by clicking **Go to flow**.
-<img src="../images/agent_platform/tool_flow.png" alt="tool flow page" title="tool flow page" style="border: 1px solid gray; zoom:50%;">
+<img src="../images/agent_platform/tool_flow.png" alt="tool flow page" title="tool flow page" style="border: 1px solid gray; zoom:50%;"/>
 
 The imported tool is listed under **All tools** and **My tools** on the **Tools** dashboard.
 
@@ -75,14 +75,14 @@ The imported tool is listed under **All tools** and **My tools** on the **Tools*
 
 The import may fail due to an incompatible tool version, a corrupt file, an internal error, or missing guardrails in the current account, triggering an error notification.
 
-You can also import a tool as a version of the parent tool to create and test different in-development versions. [Learn more](../tools/import-a-tool-as-a-version.md){:target="_blank"}.
+You can also import a tool as a version of the parent tool to create and test different in-development versions. [Learn more](../tools/import-a-tool-as-a-version.md).
 
 <hr/> 
 
 **Related Resources**
 
-* [Create a Tool](../tools/create-a-new-tool.md){:target="_blank"}- Create a new tool and configure its flow.
-* [Export a Tool](../tools/export-a-tool.md){:target="_blank"}- Export the set configurations of a tool for data sharing and preservation.
-* [Deploy a Tool](../tools/deploy-a-tool.md){:target="_blank"}- Explore synchronous and asynchronous deployment methods for tool integration.
-* [Configure a Tool](../tools/configure-a-tool.md){:target="_blank"}- Modify the tool's details, configure settings, or undeploy and delete it if unused.
-* [Import a tool as a version](../tools/import-a-tool-as-a-version.md){:target="_blank"}- Create multiple versions of the same tool for testing multiple use cases.
+* [Create a Tool](../tools/create-a-new-tool.md)- Create a new tool and configure its flow.
+* [Export a Tool](../tools/export-a-tool.md)- Export the set configurations of a tool for data sharing and preservation.
+* [Deploy a Tool](../tools/deploy-a-tool.md)- Explore synchronous and asynchronous deployment methods for tool integration.
+* [Configure a Tool](../tools/configure-a-tool.md)- Modify the tool's details, configure settings, or undeploy and delete it if unused.
+* [Import a tool as a version](../tools/import-a-tool-as-a-version.md)- Create multiple versions of the same tool for testing multiple use cases.

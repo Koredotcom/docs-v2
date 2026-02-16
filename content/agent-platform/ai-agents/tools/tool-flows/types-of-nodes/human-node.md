@@ -99,7 +99,7 @@ You can rename the node (e.g., ManagerApproval, QualityCheck) or add a descripti
 
 In the **Send & wait for response** field, the currently supported option is *Custom Request*. This specifies where the request will be sent for human review.
 
-<img src="../images/human_node_request.png" alt="Human Node" title="Human Node" style="border: 1px solid gray; zoom:60%;">
+<img src="../images/human_node_request.png" alt="Human Node" title="Human Node" style="border: 1px solid gray; zoom:60%;"/>
 
 **2. Define Request details**
 
@@ -134,7 +134,7 @@ For example, you can create two fields for an approval flow:
 * Approval (dropdown: Approved / Rejected)
 * Comments (text field for reviewer notes)
 
-<img src="../images/human_node_inputfields.png" alt="Human Node" title="Human Node" style="border: 1px solid gray; zoom:60%;">
+<img src="../images/human_node_inputfields.png" alt="Human Node" title="Human Node" style="border: 1px solid gray; zoom:60%;"/>
 
 **4. Configure the Review Note**
 
@@ -143,7 +143,7 @@ For example, you can create two fields for an approval flow:
     * **Message body** - Instructions or context for the reviewer. The context is resolved at run-time.
     * **Assign to** - Reviewer’s email address.
 
-<img src="../images/human_node_review_note.png" alt="Human Node" title="Human Node" style="border: 1px solid gray; zoom:60%;">
+<img src="../images/human_node_review_note.png" alt="Human Node" title="Human Node" style="border: 1px solid gray; zoom:60%;"/>
 
 **5. Configure Timeout Behavior**
 
@@ -378,7 +378,7 @@ Once the reviewer responds, the Human node captures the input and makes it avail
     * Full payload: `{{context.steps.&lt;Nodename>.output}}`
     * Specific fields: `{{context.steps.&lt;Nodename>.output.Approval}}` or `{{context.steps.&lt;Nodename>.output.Comments}}`
 
-<img src="../images/human_node_success.png" alt="Human Node" title="Human Node" style="border: 1px solid gray; zoom:60%;">
+<img src="../images/human_node_success.png" alt="Human Node" title="Human Node" style="border: 1px solid gray; zoom:60%;"/>
 
 
 ## Use Case – Content Publishing Workflow

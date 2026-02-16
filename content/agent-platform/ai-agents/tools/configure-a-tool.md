@@ -11,11 +11,11 @@ Steps to enable and configure the asynchronous mode:
 1. Log in to your account and click **Tools** from the list of modules.
 2. Click the **Tools** tab on the top navigation bar, and select the tool to modify its configuration. The Tool Flow page is displayed.
 3. Click **Configurations** in the left navigation and then click **Setup sync/async**.  
-<img src="../images/setup-sync-async.png" alt="Setup sync/async" title="Setup sync/async" style="border: 1px solid gray; zoom:60%;">
+<img src="../images/setup-sync-async.png" alt="Setup sync/async" title="Setup sync/async" style="border: 1px solid gray; zoom:60%;"/>
 
 4. The Sync/Async mode setup pop-up displays with async mode disabled by default.
     * **Synchronous mode timeout**: The allowed range is 60 to 300 seconds (5 minutes). The default is 180 Seconds (3 minutes). The endpoint will trigger a timeout error if the request is not completed within the selected time frame.  
-<img src="../images/sync-mode-timeout.png" alt="Sync Mode Timeout" title="Sync Mode Timeout" style="border: 1px solid gray; zoom:70%;">
+<img src="../images/sync-mode-timeout.png" alt="Sync Mode Timeout" title="Sync Mode Timeout" style="border: 1px solid gray; zoom:70%;"/>
 
     * **Asynchronous mode configuration**: Turn on the **Enable async** toggle and do the following:
 
@@ -24,7 +24,7 @@ Steps to enable and configure the asynchronous mode:
         3. Set the Asynchronous mode timeout duration: 
             * **Set timeout**: The allowed timeout range is 60 seconds to 600 seconds (10 minutes). The default is 180 Seconds (3 minutes). 
             * **No timeout**: This allows the tool to process the request without a time limit.  
-            <img src="../images/async-mode-configuration.png" alt="Async Mode Configuration" title="Async Mode Configuration" style="border: 1px solid gray; zoom:70%;">
+            <img src="../images/async-mode-configuration.png" alt="Async Mode Configuration" title="Async Mode Configuration" style="border: 1px solid gray; zoom:70%;"/>
         4. Click **Save**.
 
     !!! note 
@@ -45,12 +45,12 @@ Steps to add an environment variable:
 1. On the **Tools** tab, click the tool you want to modify the details. The Tool Flow page is displayed.
 
 2. Click **Configurations** in the left navigation and then click **Manage environment variables**.  
-<img src="../images/manage-environment-variables.png" alt="Manage Environment Variables" title="Manage Environment Variables" style="border: 1px solid gray; zoom:50%;">
+<img src="../images/manage-environment-variables.png" alt="Manage Environment Variables" title="Manage Environment Variables" style="border: 1px solid gray; zoom:50%;"/>
 
 3. The **Create environment variable** dialog box is displayed. Click **Add** or **Add variable**.
 
 4. Specify the following information on the **Add variable** dialog box:  
-<img src="../images/add-variable.png" alt="Add a variable" title="Add a variable" style="border: 1px solid gray; zoom:50%;">
+<img src="../images/add-variable.png" alt="Add a variable" title="Add a variable" style="border: 1px solid gray; zoom:50%;"/>
 
     * **Variable name**: Provide a descriptive name for the variable.
     * **Secure variable**: Use the toggle to enable security for the variable. (If you are enabling the security, read the onscreen information carefully to understand the impact.)
@@ -65,7 +65,7 @@ Steps to add an environment variable:
 
 Click the three dots icon corresponding to the Name of the variable to edit the details of the variable or Delete to delete a variable.
 
-<img src="../images/manage-a-variable.png" alt="Manage a Variable" title="Manage a Variable" style="border: 1px solid gray; zoom:60%;">
+<img src="../images/manage-a-variable.png" alt="Manage a Variable" title="Manage a Variable" style="border: 1px solid gray; zoom:60%;"/>
 
 ## Undeploy the Tool
 

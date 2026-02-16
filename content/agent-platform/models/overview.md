@@ -15,7 +15,7 @@ Model Hub empowers you to enhance base models by fine-tuning them directly withi
 
 ## Accessing Model Hub
 
-1. [Log in](../getting-started/sign-up-sign-in.md){:target="_blank"} to your Platform account and then select  **Model hub** from the list of modules.
+1. [Log in](../getting-started/sign-up-sign-in.md) to your Platform account and then select  **Model hub** from the list of modules.
  
 2. On the Models page, you can see three tabs: 
     * Fine-tuned Models
@@ -24,4 +24,4 @@ Model Hub empowers you to enhance base models by fine-tuning them directly withi
 
     Select any tab to explore the available models.
 
-    <img src="../fine-tune-models/images/start-fine-tuning.png" alt="Models page" title="Models page" style="border: 1px solid gray; zoom:80%;">
+    <img src="../fine-tune-models/images/start-fine-tuning.png" alt="Models page" title="Models page" style="border: 1px solid gray; zoom:80%;"/>
