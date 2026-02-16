@@ -24,4 +24,4 @@ Model Hub empowers you to enhance base models by fine-tuning them directly withi
 
     Select any tab to explore the available models.
 
-    <img src="../fine-tune-models/images/start-fine-tuning.png" alt="Models page" title="Models page" style="border: 1px solid gray; zoom:80%;">
+    <img src="../fine-tune-models/images/start-fine-tuning.png" alt="Models page" title="Models page" style="border: 1px solid gray; zoom:80%;"/>

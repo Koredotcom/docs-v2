@@ -51,7 +51,7 @@ To import and add a custom script, follow the steps below:
 
 1. [Access](../manage-custom-scripts/custom-scripts.md#access-script-deployment-wizard){:target="_blank"} the script deployment wizard.
 2. Click **+ Import** or **+ Import new**.
-<img src="../images/import-options.png" alt="import options" title="import options" style="border: 1px solid gray; zoom:75%;">
+<img src="../images/import-options.png" alt="import options" title="import options" style="border: 1px solid gray; zoom:75%;"/>
  
 <div class="admonition note">
 <p class="admonition-title">Note</p>
@@ -78,7 +78,7 @@ In the **General Details** window, follow these steps:
 <p><ul><li>Supported file formats include <code>.zip</code>, <code>.gz</code>, and <code>.tar</code>.</li>
 <li>The max file size is 1 GB. Larger files will result in a validation error.</li>
 <li>Click <b>Validate</b> to check the file for errors.</li>
-<img src="../images/validate-file.png" alt="validate file" title="validate file" style="border: 1px solid gray; zoom:75%;"></ul>
+<img src="../images/validate-file.png" alt="validate file" title="validate file" style="border: 1px solid gray; zoom:75%;"/></ul>
 </p>
 </div>
 
@@ -87,7 +87,7 @@ In the **General Details** window, follow these steps:
 <p><ul><li>The uploaded file must match the recommended project structure. Click <b>Download sample project</b> to access the <i>.zip</i> folder of the script definitions and follow its structure when uploading your file.</li>
 <li>The structure is different for different base languages. Ensure that the correct file structure is followed for the chosen language.</li>
 <li>The file naming convention should be followed to avoid any errors.</li>
-<img src="../images/file-naming-convention.png" alt="file naming convention error" title="file naming convention error" style="border: 1px solid gray; zoom:75%;"></ul>
+<img src="../images/file-naming-convention.png" alt="file naming convention error" title="file naming convention error" style="border: 1px solid gray; zoom:75%;"/></ul>
 </p>
 </div>
 
@@ -141,7 +141,7 @@ Configure **Runtime variables** (environment variables and execution timeout) to
 
 1. Enter the **Key** and the **Value** to declare **environment variables** as key-value pairs that are accessible from your function.
 2. (Optional) Click **+ Add** to add additional key-value pairs, and the **Delete** icon to remove.
-<img src="../images/click-add-key.png" alt="add key value" title="add key value" style="border: 1px solid gray; zoom:75%;"> 
+<img src="../images/click-add-key.png" alt="add key value" title="add key value" style="border: 1px solid gray; zoom:75%;"/> 
 
 <div class="admonition note">
 <p class="admonition-title">Note</p>
@@ -157,7 +157,7 @@ Configure **Runtime variables** (environment variables and execution timeout) to
 <li><b>Ensures responsiveness</b>: Keeps systems responsive by limiting how long a task can delay other operations.</li>
 <li><b>Supports fail-safe mechanisms</b>: If a script fails to complete in time, the timeout can trigger error handling or retries.</li></ul>
 <li>Click <b>Next</b>.</li>
-<img src="../images/runtime-settings.png" alt="runtime settings" title="runtime settings" style="border: 1px solid gray; zoom:75%;"></ol>
+<img src="../images/runtime-settings.png" alt="runtime settings" title="runtime settings" style="border: 1px solid gray; zoom:75%;"/></ol>
 
 ### Step 3: Resource Allocation
 
@@ -229,7 +229,7 @@ On this page, you define scaling parameters (minimum and maximum replicas) and h
 </table>
 
 <ol start="2"><li>Click <b>Next</b>.</li>
-<img src="../images/resource-allocation.png" alt="resource allocation" title="resource allocation" style="border: 1px solid gray; zoom:75%;"></ol>
+<img src="../images/resource-allocation.png" alt="resource allocation" title="resource allocation" style="border: 1px solid gray; zoom:75%;"/></ol>
 
 
 ### Step 4: Review the Provided Details
@@ -239,10 +239,10 @@ The next step is to review all the configuration details before deploying the sc
 1. Review each section- [General Details](../manage-custom-scripts/custom-scripts.md#step-1-general-details){:target="_blank"}, [Runtime Settings](../manage-custom-scripts/custom-scripts.md#step-2-runtime-settings){:target="_blank"}, and  [Resource Allocation](../manage-custom-scripts/custom-scripts.md#step-3-resource-allocation){:target="_blank"} to ensure all information is accurate. You can return to any section to modify the configured values if needed.
 2. Read all the **Terms and Conditions**, and select **Accept** to enable deployment.
 3. (Optional) Click **Save as Draft** to save a copy and deploy it later. A success message is displayed, and the label “*Draft*” is displayed for the script. 
-<img src="../images/saved-as-draft.png" alt="saved as draft" title="saved as draft" style="border: 1px solid gray; zoom:75%;">
+<img src="../images/saved-as-draft.png" alt="saved as draft" title="saved as draft" style="border: 1px solid gray; zoom:75%;"/>
 
 4. Click **Deploy**.
-<img src="../images/click-deploy-terms.png" alt="deploy terms" title="deploy terms" style="border: 1px solid gray; zoom:75%;">
+<img src="../images/click-deploy-terms.png" alt="deploy terms" title="deploy terms" style="border: 1px solid gray; zoom:75%;"/>
 
 During deployment, the progress status displays “Deploying.”
 After the script is successfully deployed, a success message appears and the status changes to “Deployed.”
@@ -262,7 +262,7 @@ Once a script is deployed or saved as a draft, a table listing all scripts and t
 **Search Script**
 
 Enter the script name in the **search field** to retrieve a matching entry from the list.
-<img src="../images/search-script.png" alt="search script" title="search script" style="border: 1px solid gray; zoom:75%;">
+<img src="../images/search-script.png" alt="search script" title="search script" style="border: 1px solid gray; zoom:75%;"/>
 
 **View Summary**
 
@@ -270,7 +270,7 @@ The summary table displays the following fields:
 
 * **Script Name**: The name provided by the user.
 * **Status**: The current deployment status of the script.
-   <img src="../images/deployment-statuses.png" alt="all statuses" title="all statuses" style="border: 1px solid gray; zoom:75%;">
+   <img src="../images/deployment-statuses.png" alt="all statuses" title="all statuses" style="border: 1px solid gray; zoom:75%;"/>
 
 * **Added by**: The user who added the custom script.
 * **Updated on**: The timestamp when an action (deployment, re-deployment, or undeployment) was done on the script.
@@ -465,7 +465,7 @@ The following table illustrates the various statuses and the actions that can be
 
 * Every time an action is taken for a script, the **Updated on** field captures the latest timestamp.
 * Hover over a "*Deployment failed*" status to view the error tooltip explaining the reason for failure.
-<img src="../images/hover-over-failed-status.png" alt="failed status" title="failed status" style="border: 1px solid gray; zoom:75%;"> 
+<img src="../images/hover-over-failed-status.png" alt="failed status" title="failed status" style="border: 1px solid gray; zoom:75%;"/> 
 
 ### Actions
 
@@ -476,7 +476,7 @@ In addition to deploy, the following actions can be performed on a custom script
 Downloads the *.Zip* folder of the project to the user’s local system. To export, follow the steps below on the **Manage Custom Scripts** page:
 
 1. Click the **Ellipses** icon under **Actions**. Then, click **Export**.
-<img src="../images/access-export.png" alt="access export" title="access export" style="border: 1px solid gray; zoom:75%;">
+<img src="../images/access-export.png" alt="access export" title="access export" style="border: 1px solid gray; zoom:75%;"/>
 
    Alternatively, click the deployed script entry and select **Export** on the **Overview** page.
 
@@ -504,15 +504,15 @@ This action lets you undeploy the script from all its deployed locations on the 
 To undeploy, follow the steps below on the **Manage Custom Scripts** page:
 
 1. Click the **Ellipses** icon under **Actions**. Then, click **Undeploy**.
-<img src="../images/access-undeploy.png" alt="access undeploy" title="access undeploy" style="border: 1px solid gray; zoom:75%;">
+<img src="../images/access-undeploy.png" alt="access undeploy" title="access undeploy" style="border: 1px solid gray; zoom:75%;"/>
 
    You can also select a script entry and click **Proceed to Undeploy** on its **Overview** page. 
 
 <ol start="2"><li>Click <b>Undeploy</b> in the confirmation window.</li>
-<img src="../images/undeploy-script-confirmation.png" alt="undeploy script confirm" title="undeploy script confirm" style="border: 1px solid gray; zoom:75%;"></ol>
+<img src="../images/undeploy-script-confirmation.png" alt="undeploy script confirm" title="undeploy script confirm" style="border: 1px solid gray; zoom:75%;"/></ol>
 
 A success message is displayed, and the script’s status changes to <b>Ready to Deploy</b>.</li>
-<img src="../images/ready-to-deploy-success.png" alt="ready to deploy" title="ready to deploy" style="border: 1px solid gray; zoom:75%;">
+<img src="../images/ready-to-deploy-success.png" alt="ready to deploy" title="ready to deploy" style="border: 1px solid gray; zoom:75%;"/>
 
 
 To see when **undeploy** is available, please refer to the table [here](../manage-custom-scripts/custom-scripts.md#information-on-script-deployment-statuses){:target="_blank"}. 
@@ -538,12 +538,12 @@ This action permanently deletes a deployed script, including its configurations 
 To delete, follow the steps below on the **Manage Custom Scripts** page:
 
 1. Click the **Ellipses** icon under **Actions**. Then, click **Delete**.
-<img src="../images/access-delete.png" alt="access delete" title="access delete" style="border: 1px solid gray; zoom:75%;">  
+<img src="../images/access-delete.png" alt="access delete" title="access delete" style="border: 1px solid gray; zoom:75%;"/>  
 
    Alternatively, select a script entry and click **Proceed to Delete** on its **Overview** page.
 
 <ol start="2"><li>Click <b>Delete</b> in the confirmation window.</li> 
-<img src="../images/delete-the-script.png" alt="delete the script" title="delete the script" style="border: 1px solid gray; zoom:75%;"></ol>
+<img src="../images/delete-the-script.png" alt="delete the script" title="delete the script" style="border: 1px solid gray; zoom:75%;"/></ol>
 
 A success message is displayed, and the script is permanently removed. 
 
@@ -555,13 +555,13 @@ To see when **delete** is available, please refer to the table [here](../manage-
 This action lets you redeploy a script by editing the description, project file, runtime settings, and resource allocation (except name, base language, and version number) in the **Import Custom Script** flow mentioned [here](../manage-custom-scripts/custom-scripts.md#import-and-deploy-a-custom-script){:target="_blank"}. Redeploy is only available for the “**Deployed**” status.
 
 To re-deploy, select the script with the “**Deployed**” status, and click **Re-deploy** in the **Overview** page. 
-<img src="../images/click-deployed-script.png" alt="deployed script" title="deployed script" style="border: 1px solid gray; zoom:75%;">  
+<img src="../images/click-deployed-script.png" alt="deployed script" title="deployed script" style="border: 1px solid gray; zoom:75%;"/>  
 
-<img src="../images/re-deploy-script.png" alt="redeploy script" title="redeploy script" style="border: 1px solid gray; zoom:75%;">  
+<img src="../images/re-deploy-script.png" alt="redeploy script" title="redeploy script" style="border: 1px solid gray; zoom:75%;"/>  
 
 The system redirects to the following page.
 
-<img src="../images/general-details-page.png" alt="general details page" title="general details page" style="border: 1px solid gray; zoom:75%;">  
+<img src="../images/general-details-page.png" alt="general details page" title="general details page" style="border: 1px solid gray; zoom:75%;"/>  
  
 After redeployment, the **Overview** page is updated with the latest deployment information. 
 
@@ -583,7 +583,7 @@ The information available on this page includes the configurations you have set 
 
 The [actions](../manage-custom-scripts/custom-scripts.md#actions){:target="_blank"} you can perform on the script on the **Overview** page depend on the assigned status. See the table [here](../manage-custom-scripts/custom-scripts.md#information-on-script-deployment-statuses){:target="_blank"} for more details.
 
-<img src="../images/overview-script-deployment.png" alt="overview" title="overview" style="border: 1px solid gray; zoom:75%;">  
+<img src="../images/overview-script-deployment.png" alt="overview" title="overview" style="border: 1px solid gray; zoom:75%;"/>  
 
 Refer [here](../manage-custom-scripts/custom-scripts.md#import-and-deploy-a-custom-script){:target="_blank"} to import and deploy a custom script.
 
@@ -596,14 +596,14 @@ The **Deployment History** page helps view key information about the script’s 
 * Deployment history information is only available for the statuses “**Deployed**,” “**Deployment Failed**,” “**Deploying**,” and “**Ready to Deploy**.”  
 * For the “**Draft**” status, the following window is displayed.
 
-     <img src="../images/draft-action.png" alt="draft action" title="draft action" style="border: 1px solid gray; zoom:75%;">  
+     <img src="../images/draft-action.png" alt="draft action" title="draft action" style="border: 1px solid gray; zoom:75%;"/>  
 
 Click **Deploy custom script** and follow the steps for 
 [import and deploy](../manage-custom-scripts/custom-scripts.md#import-and-deploy-a-custom-script){:target="_blank"}.
 
 * Information about un-deployment is displayed only when the status is '**Ready to Deploy**', indicating that the script is currently undeployed.
 * Hover over a failed status to view the reason.
-<img src="../images/view-failure-reason.png" alt="deployment failure" title="deployment failure" style="border: 1px solid gray; zoom:75%;"> 
+<img src="../images/view-failure-reason.png" alt="deployment failure" title="deployment failure" style="border: 1px solid gray; zoom:75%;"/> 
 
 
 The following script deployment or un-deployment details are displayed:
@@ -611,18 +611,18 @@ The following script deployment or un-deployment details are displayed:
 * Deployment name and version (the first version starts with v1). The version is auto-generated and appended to the script name. You can edit this name if required.
 * A green **Check** icon for the latest running deployment. This icon does not appear for failed deployments or undeployed scripts.
 * An **Edit** icon to edit the script name.
-<img src="../images/green-check-icon.png" alt="deployment details" title="deployment details" style="border: 1px solid gray; zoom:75%;"> 
+<img src="../images/green-check-icon.png" alt="deployment details" title="deployment details" style="border: 1px solid gray; zoom:75%;"/> 
 
 To edit the deployed/undeployed script’s name, click the **Edit** icon. In the following window, enter the new name and click **Confirm**.
 
-<img src="../images/rename-dep-version.png" alt="rename deployment version" title="rename deployment version" style="border: 1px solid gray; zoom:75%;"> 
+<img src="../images/rename-dep-version.png" alt="rename deployment version" title="rename deployment version" style="border: 1px solid gray; zoom:75%;"/> 
 
 <div class="admonition note">
 <p class="admonition-title">Note</p>
 <p>Please follow the suggested naming convention to avoid errors.</p>
 </div>
 
-<img src="../images/naming-convention.png" alt="naming convention" title="naming convention" style="border: 1px solid gray; zoom:75%;"> 
+<img src="../images/naming-convention.png" alt="naming convention" title="naming convention" style="border: 1px solid gray; zoom:75%;"/> 
 
 A success message is displayed, and the deployment name is changed. 
 
@@ -632,7 +632,7 @@ A success message is displayed, and the deployment name is changed.
 
 To view the detailed deployment/undeployment summary, click the **Expand** arrow. 
 
-<img src="../images/expand-deployment-history.png" alt="deployment history expansion" title="deployment history expansion" style="border: 1px solid gray; zoom:75%;"> 
+<img src="../images/expand-deployment-history.png" alt="deployment history expansion" title="deployment history expansion" style="border: 1px solid gray; zoom:75%;"/> 
 
 The following information, configured by the user during the [import and deploy ](../manage-custom-scripts/custom-scripts.md#import-and-deploy-a-custom-script){:target="_blank"} or [un-deploy](../manage-custom-scripts/custom-scripts.md#undeploy-the-script){:target="_blank"} step, is displayed:
 
@@ -651,7 +651,7 @@ Additionally, the following details are available:
 * **Time Taken to Deploy**: Total duration between the start and end times. 
 
 * **Status**: Final status of the deployment/un-deployment (Success or Failed).
-<img src="../images/deployment-history-screen.png" alt="deployment history" title="deployment history" style="border: 1px solid gray; zoom:75%;">  
+<img src="../images/deployment-history-screen.png" alt="deployment history" title="deployment history" style="border: 1px solid gray; zoom:75%;"/>  
 
 ### Statuses and Deployment Details
 
@@ -659,20 +659,20 @@ Deployment history information is displayed based on the status as follows:
 
 **Deployed**
 
-<img src="../images/deployment-success.png" alt="deployment success" title="deployment success" style="border: 1px solid gray; zoom:75%;">  
+<img src="../images/deployment-success.png" alt="deployment success" title="deployment success" style="border: 1px solid gray; zoom:75%;"/>  
 
 
 **Deployment Failed**
 
-<img src="../images/deployment-failed.png" alt="deployment failed" title="deployment failed" style="border: 1px solid gray; zoom:75%;"> 
+<img src="../images/deployment-failed.png" alt="deployment failed" title="deployment failed" style="border: 1px solid gray; zoom:75%;"/> 
 
 **Ready to Deploy**
 
-<img src="../images/success-status-deployment.png" alt="ready to deploy status" title="ready to deploy status" style="border: 1px solid gray; zoom:75%;">  
+<img src="../images/success-status-deployment.png" alt="ready to deploy status" title="ready to deploy status" style="border: 1px solid gray; zoom:75%;"/>  
 
 **Deploying**
 
-<img src="../images/deploying-status.png" alt="deploying status" title="deploying status" style="border: 1px solid gray; zoom:75%;">  
+<img src="../images/deploying-status.png" alt="deploying status" title="deploying status" style="border: 1px solid gray; zoom:75%;"/>  
 
 ## Endpoint
 
@@ -686,21 +686,21 @@ The **Endpoint** page displays code viewers of the activated endpoint for the de
 The available formats include:
 
 * **cURL**: Displays the API endpoint information for the script.
-<img src="../images/curl-endpoint.png" alt="curl code" title="curl code" style="border: 1px solid gray; zoom:75%;">  
+<img src="../images/curl-endpoint.png" alt="curl code" title="curl code" style="border: 1px solid gray; zoom:75%;"/>  
  
 * **JavaScript**: Displays the payload JSON code in JS format.
-<img src="../images/java-endpoint.png" alt="java code" title="java code" style="border: 1px solid gray; zoom:75%;">   
+<img src="../images/java-endpoint.png" alt="java code" title="java code" style="border: 1px solid gray; zoom:75%;"/>   
 
 * **Python**: Displays the payload JSON code in Python format.
-<img src="../images/python-endpoint.png" alt="python code" title="python code" style="border: 1px solid gray; zoom:75%;">   
+<img src="../images/python-endpoint.png" alt="python code" title="python code" style="border: 1px solid gray; zoom:75%;"/>   
 
 Clicking **Copy** copies the selected endpoint format to the clipboard, allowing you to paste it into your applications or code editors. A success message confirms the copy action. 
 
-<img src="../images/copy-endpoint-icon.png" alt="copy endpoint icon" title="copy endpoint icon" style="border: 1px solid gray; zoom:75%;">   
+<img src="../images/copy-endpoint-icon.png" alt="copy endpoint icon" title="copy endpoint icon" style="border: 1px solid gray; zoom:75%;"/>   
 
 For the statuses '*Deploying*,' '*Deployment Failed*,' and '*Ready to Deploy*,' the page displays the following message along with an option to **deploy** the script. 
 
-<img src="../images/not-deployed-error.png" alt="not deployed error" title="not deployed error" style="border: 1px solid gray; zoom:75%;">   
+<img src="../images/not-deployed-error.png" alt="not deployed error" title="not deployed error" style="border: 1px solid gray; zoom:75%;"/>   
  
 To [deploy the script](../manage-custom-scripts/custom-scripts.md#import-and-deploy-a-custom-script){:target="_blank"} and activate the endpoint (obtain the code), click **Deploy**. 
 
@@ -719,16 +719,16 @@ To add an API secret key, follow these steps:
 
 1. Navigate to the **API Keys** page.
 2. Click **Create a New API Key** or **Create New Key**.
-   <img src="../images/create-a-new-api-key.png" alt="create a new api key" title="create a new api key" style="border: 1px solid gray; zoom:75%;">  
-   <img src="../images/click-create-new-key.png" alt="create new key" title="create new key" style="border: 1px solid gray; zoom:75%;">  
+   <img src="../images/create-a-new-api-key.png" alt="create a new api key" title="create a new api key" style="border: 1px solid gray; zoom:75%;"/>  
+   <img src="../images/click-create-new-key.png" alt="create new key" title="create new key" style="border: 1px solid gray; zoom:75%;"/>  
  
 3. Enter a unique name for the key. By default, “**Secret Key**” is displayed, which you can change.
 4. Click **Generate Key**.
    
-   <img src="../images/generate-secret-key.png" alt="generate secret key" title="generate secret key" style="border: 1px solid gray; zoom:75%;">
+   <img src="../images/generate-secret-key.png" alt="generate secret key" title="generate secret key" style="border: 1px solid gray; zoom:75%;"/>
 
 <ol start="5"><li>Click <b>Copy and Close</b>.</li>   
-<img src="../images/create-new-api-copy.png" alt="create new api copy" title="create new api copy" style="border: 1px solid gray; zoom:75%;"></ol>  
+<img src="../images/create-new-api-copy.png" alt="create new api copy" title="create new api copy" style="border: 1px solid gray; zoom:75%;"/></ol>  
  
 <div class="admonition note">
 <p class="admonition-title">Important</p>
@@ -744,11 +744,11 @@ To delete an API key, follow the steps below:
 
 1. On the **API Keys** page, hover over the required key.
 2. Click the **Delete** icon.
-<img src="../images/api-delete-icon.png" alt="click delete" title="click delete" style="border: 1px solid gray; zoom:75%;">  
+<img src="../images/api-delete-icon.png" alt="click delete" title="click delete" style="border: 1px solid gray; zoom:75%;"/>  
 
 3. Click **Delete** in the confirmation window.
 
-       <img src="../images/delete-api-key.png" alt="delete api key" title="delete api key" style="border: 1px solid gray; zoom:75%;">  
+       <img src="../images/delete-api-key.png" alt="delete api key" title="delete api key" style="border: 1px solid gray; zoom:75%;"/>  
 
 A success message is displayed, and the API key is removed from the list. 
 
@@ -760,23 +760,23 @@ A success message is displayed, and the API key is removed from the list.
 ### Search API Key
 
 To look up a specific API key, type the name (partial or full) in the **Search** field.
-<img src="../images/api-keys-list.png" alt="api keys list" title="api keys list" style="border: 1px solid gray; zoom:75%;">  
+<img src="../images/api-keys-list.png" alt="api keys list" title="api keys list" style="border: 1px solid gray; zoom:75%;"/>  
 
 ## Example: Use Custom Script via the API Node Endpoint
 
 To add a deployed custom script via the endpoint into the API node, follow the steps below:
 
 1. Click **Define Request** in the API node configuration window.
-<img src="../images/define-request.png" alt="define request" title="define request" style="border: 1px solid gray; zoom:75%;">  
+<img src="../images/define-request.png" alt="define request" title="define request" style="border: 1px solid gray; zoom:75%;"/>  
 
 2. Enter or select the following details in the **Edit Request** dialog box: 
 
     * Select the request type from the list.
     * Copy the cURL from the [Endpoint section](../manage-custom-scripts/custom-scripts.md#endpoint){:target="_blank"} of the custom script wizard.
-    <img src="../images/copy-endpoint.png" alt="copy endpoint" title="copy endpoint" style="border: 1px solid gray; zoom:75%;"> 
+    <img src="../images/copy-endpoint.png" alt="copy endpoint" title="copy endpoint" style="border: 1px solid gray; zoom:75%;"/> 
 
     * Paste it in the text field of the **Edit Request** page.
-    <img src="../images/curl-edit-request.png" alt="curl link" title="curl link" style="border: 1px solid gray; zoom:75%;"> 
+    <img src="../images/curl-edit-request.png" alt="curl link" title="curl link" style="border: 1px solid gray; zoom:75%;"/> 
 
     * In the **Auth Profiles** section, select the required option from the list of configured profiles to enable user authentication for the node. [Learn more](../security-and-control/authorization-profile.md){:target="_blank"} about Auth Profiles. 
     

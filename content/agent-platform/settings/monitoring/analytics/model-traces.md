@@ -21,15 +21,15 @@ Monitoring open-source, fine-tuned, commercial, or custom API models offers the 
 * Hovering over specific metrics displays a tooltip that provides additional information about the metric's purpose and significance.
 * When selecting a date range filter, you can obtain **hourly performance analysis** for a model on a specific day or review **daily performance trends**.
 * Click the **Visibility Filter** icon shown below to add or remove the selected column(s) from the table view of records. Turn on the toggle to add a column and turn it off to remove it.
-<img src="../images/visibility-icon.png" alt="visibility icon" title="visibility icon" style="border: 1px solid gray; zoom:75%;">
+<img src="../images/visibility-icon.png" alt="visibility icon" title="visibility icon" style="border: 1px solid gray; zoom:75%;"/>
 * Successful requests are marked with a **green check icon**, while failed requests are marked with a **red alert icon**.
-<img src="../images/success-failed-requests.png" alt="success and failed requests" title="success and failed requests" style="border: 1px solid gray; zoom:75%;">
+<img src="../images/success-failed-requests.png" alt="success and failed requests" title="success and failed requests" style="border: 1px solid gray; zoom:75%;"/>
 
 * Export the model traces dataset for your model into a CSV file for further analysis, editing, and debugging.
 * The **Metrics Summary** showcases the key performance metrics of the selected model across all executed runs. [Learn more](./model-traces.md#performance-metrics-summary){:target="_blank"}.
 * The **table view** summarizes key metadata for successful and failed runs of the selected model, offering quick insights and the ability to monitor run-specific response times, analyze input and output, view failed runs in detail, and verify whether credit consumption aligns with usage. 
 * Click the **Sort** filter in the **Executed on** column to view the data in ascending or descending order by execution date.
-<img src="../images/model-traces-sort.png" alt="model traces sort" title="model traces sort" style="border: 1px solid gray; zoom:75%;">
+<img src="../images/model-traces-sort.png" alt="model traces sort" title="model traces sort" style="border: 1px solid gray; zoom:75%;"/>
 
 * Click on each model traces record in the table to view the input, output, and key metadata. [Learn more](./model-traces.md#traces-input-output-and-metadata){:target="_blank"}.
 
@@ -50,12 +50,12 @@ To access the **Model Traces**, follow the steps below:
 1. [Navigate](../../../administration/overview.md#access-settings-console){:target="_blank"} to the **Settings** Console.
 2. On the left menu, select **Monitoring** > **Model Traces**.
 3. If this is your first time accessing the feature, select the desired model from the dropdown menu shown below.
-<img src="../images/get-started-model-traces.png" alt="get started with model traces" title="get started with model traces" style="border: 1px solid gray; zoom:75%;">
+<img src="../images/get-started-model-traces.png" alt="get started with model traces" title="get started with model traces" style="border: 1px solid gray; zoom:75%;"/>
 
 The system loads the **Model Traces** feature with data for the last 30 days, which is the default time range selection. 
 
 If you have used the feature before, the data from your previous model selection is loaded for 30 days (the default selection).
-<img src="../images/preload-model-traces-data.png" alt="preload model traces data" title="preload model traces data" style="border: 1px solid gray; zoom:75%;">
+<img src="../images/preload-model-traces-data.png" alt="preload model traces data" title="preload model traces data" style="border: 1px solid gray; zoom:75%;"/>
 
 ## Model Traces Information
 
@@ -65,15 +65,15 @@ The key features for customizing the model traces data include:
 
 * **Model Name Filter**: Required for selecting and viewing information specific to the model you want to monitor.
     * For open-source and fine-tuned models, you can select from different deployment names, including the versions for the model. 
-      <img src="../images/traces-os.png" alt="model name filter" title="model name filter" style="border: 1px solid gray; zoom:75%;">
+      <img src="../images/traces-os.png" alt="model name filter" title="model name filter" style="border: 1px solid gray; zoom:75%;"/>
 
     * For commercial models, you can select the default connection linked to the model.
-       <img src="../images/traces-external.png" alt="external filter" title="external filter" style="border: 1px solid gray; zoom:75%;">  
+       <img src="../images/traces-external.png" alt="external filter" title="external filter" style="border: 1px solid gray; zoom:75%;"/>  
 
 * **Time Selection Filter**: Required to analyze model traces data for a specific time-frame in the past. [Learn more](./model-traces.md#time-based-filters){:target="_blank"}.
 * **Filter By Option**: An optional multi-field, multi-level filter for targeted analysis. [Learn more](./model-traces.md#filter-model-traces-by-columns){:target="_blank"}.
 * **Visibility Filter**: Add or remove columns from the UI to display only relevant data. To set the filter, click the **Eye** icon, enable the field to view its data, and disable it otherwise.
-<img src="../images/visibility-filter.png" alt="visibility filters" title="visibility filters" style="border: 1px solid gray; zoom:75%;">
+<img src="../images/visibility-filter.png" alt="visibility filters" title="visibility filters" style="border: 1px solid gray; zoom:75%;"/>
 
 <div class="admonition note">
 <p class="admonition-title">Note</p>
@@ -82,19 +82,19 @@ The key features for customizing the model traces data include:
 <li>The <b>Deployment Type</b> filter is available only for open-source and fine-tuned models, not for external or custom API types.</li></ul></p></div>
 
 <ul><li><b>Export Data</b>: Click <b>Export</b> to generate a <i>CSV</i> file of your model traces records based on the selected date range and filters. Note that all eight columns in the table are prepared and exported, irrespective of the applied visibility filter.</li>
-<img src="../images/click-export.png" alt="export" title="export" style="border: 1px solid gray; zoom:75%;"></ul>
+<img src="../images/click-export.png" alt="export" title="export" style="border: 1px solid gray; zoom:75%;"/></ul>
 
 The progress status is displayed in the UI when preparing and exporting data.
-<img src="../images/export-progress-status.png" alt="export progress" title="export progress" style="border: 1px solid gray; zoom:75%;">
+<img src="../images/export-progress-status.png" alt="export progress" title="export progress" style="border: 1px solid gray; zoom:75%;"/>
 
 Once the file is downloaded, the following message is displayed.
-<img src="../images/export-model-traces-success.png" alt="export success" title="export success" style="border: 1px solid gray; zoom:75%;">
+<img src="../images/export-model-traces-success.png" alt="export success" title="export success" style="border: 1px solid gray; zoom:75%;"/>
 
 If any error occurs during the export process, the following message is displayed:
-<img src="../images/export-failed-notification.png" alt="export error" title="export error" style="border: 1px solid gray; zoom:75%;">
+<img src="../images/export-failed-notification.png" alt="export error" title="export error" style="border: 1px solid gray; zoom:75%;"/>
 
 Below is a sample of the export schema file. The file name is automatically saved in the format <code>modelname_traces_data</code>, such as <code>GPT4_traces_data</code>.
-<img src="../images/export-schema.png" alt="export schema" title="export schema" style="border: 1px solid gray; zoom:75%;">
+<img src="../images/export-schema.png" alt="export schema" title="export schema" style="border: 1px solid gray; zoom:75%;"/>
 
 <div class="admonition note">
 <p class="admonition-title">Key Considerations</p>
@@ -102,7 +102,7 @@ Below is a sample of the export schema file. The file name is automatically save
 <li>Users can cancel an ongoing export operation, if required.</li></ul></p></div>
 
 * **Search**: You can locate specific model traces records on the UI by entering the run's *Request* *ID* in the **Search** textbox. The system returns matching results, as shown below.
-<img src="../images/search-record-model-traces.png" alt="search model traces record" title="search model traces record" style="border: 1px solid gray; zoom:75%;">
+<img src="../images/search-record-model-traces.png" alt="search model traces record" title="search model traces record" style="border: 1px solid gray; zoom:75%;"/>
 
 * **Model Performance Metrics Summary**: Summarizes key metrics to help quickly analyze the model’s performance. [Learn more](./model-traces.md#performance-metrics-summary){:target="_blank"}.
 * **Model Traces**: The table displays all runs executed by the model since its configuration, sorted by execution date from the latest to the oldest records. It includes data from the initial execution onward—whether deployed (for open-source and fine-tuned models) or integrated (for external models). The table includes the following metrics:
@@ -120,7 +120,7 @@ Please refer to the table [here](./model-traces.md#steps-to-add-a-custom-filter)
 * **Output**: Displays the output text generated or response after the run.
 
 To view the detailed trace information, click the required record.
-<img src="../images/detailed-trace-information.png" alt="click traces record" title="click traces record" style="border: 1px solid gray; zoom:75%;">
+<img src="../images/detailed-trace-information.png" alt="click traces record" title="click traces record" style="border: 1px solid gray; zoom:75%;"/>
 
 ## Performance Metrics Summary
 
@@ -137,7 +137,7 @@ The UI summarizes key metrics for the selected period, offering actionable insig
 <p class="admonition-title">Note</p>
 <p>Hosting Credits apply only to the Platform’s open-source and fine-tuned models and are not displayed for external models.</p></div>
 
-<img src="../images/hosting-credits.png" alt="hosting credits" title="hosting credits" style="border: 1px solid gray; zoom:75%;">
+<img src="../images/hosting-credits.png" alt="hosting credits" title="hosting credits" style="border: 1px solid gray; zoom:75%;"/>
 
 ## Time-based Filters
 
@@ -166,11 +166,11 @@ Time selection is available for the past and current period, including the ones 
 
 1. [Navigate](../analytics/model-traces.md#access-model-traces){:target="_blank"} to the **Model Traces** feature.
 2. Click the time selection button (displays **Last 30 Days**).
-<img src="../images/time-selection-button.png" alt="time selection button" title="time selection button" style="border: 1px solid gray; zoom:75%;">
+<img src="../images/time-selection-button.png" alt="time selection button" title="time selection button" style="border: 1px solid gray; zoom:75%;"/>
 
 3. Select the required period on the left panel, or select a specific date, month, or year on the calendar widget (the current day is the default selection).
 4. Click **Apply**.
-<img src="../images/select-and-apply.png" alt="select date" title="select date" style="border: 1px solid gray; zoom:75%;">
+<img src="../images/select-and-apply.png" alt="select date" title="select date" style="border: 1px solid gray; zoom:75%;"/>
 
 The relevant model traces' data is displayed for the selected period.
 
@@ -187,10 +187,10 @@ Filter customization streamlines tracking and debugging of model runs at a detai
 1. [Navigate](./model-traces.md#access-model-traces){:target="_blank"} to the **Model Traces** feature.
 2. Click the **Filter** icon.
 3. Click **+ Add Filter**.
-<img src="../images/click-add-filter.png" alt="add filter" title="add filter" style="border: 1px solid gray; zoom:75%;">
+<img src="../images/click-add-filter.png" alt="add filter" title="add filter" style="border: 1px solid gray; zoom:75%;"/>
 
 4. In the **Filter By** window, select the required option from the **Select** **Column**, **Operator**, and **Value** dropdown lists. For specific column filters, you must enter the value manually.
-<img src="../images/filter-selection-model-traces.png" alt="filter selection" title="filter selection" style="border: 1px solid gray; zoom:75%;">
+<img src="../images/filter-selection-model-traces.png" alt="filter selection" title="filter selection" style="border: 1px solid gray; zoom:75%;"/>
 
 The table below summarizes the available columns along with their supported operators and values. 
 
@@ -351,14 +351,14 @@ The table below summarizes the available columns along with their supported oper
 </table>
 
 <ol start="5"><li>Click <b>Apply</b>.</li>
-<img src="../images/apply-filter-model-traces.png" alt="apply filter" title="apply filter" style="border: 1px solid gray; zoom:75%;"></ol>
+<img src="../images/apply-filter-model-traces.png" alt="apply filter" title="apply filter" style="border: 1px solid gray; zoom:75%;"/></ol>
 
 The UI displays all the relevant model traces' records that align with the applied filter(s). The number of filters you have applied is displayed on the **Filter** icon.
-<img src="../images/number-of-filters.png" alt="number of filters" title="number of filters" style="border: 1px solid gray; zoom:75%;">
+<img src="../images/number-of-filters.png" alt="number of filters" title="number of filters" style="border: 1px solid gray; zoom:75%;"/>
 
 To clear the filter settings, click **Clear All**.
 
-<img src="../images/clear-all-link.png" alt="clear all" title="clear all" style="border: 1px solid gray; zoom:75%;">
+<img src="../images/clear-all-link.png" alt="clear all" title="clear all" style="border: 1px solid gray; zoom:75%;"/>
 
 ### Add Multiple Filters
 
@@ -370,14 +370,14 @@ Adding multiple filter levels enhances model trace visibility on the UI. You can
 * Using the AND operator ensures that all specified conditions must be met for an entry to be included in the results.
 * On the other hand, using the OR operator broadens the criteria, allowing entries that meet any of the specified conditions to be included. These operators provide flexibility in tailoring your model traces data.
 * Click the **Delete** icon to delete a filter criteria step.
-<img src="../images/delete-filter-icon.png" alt="delete filter" title="delete filter" style="border: 1px solid gray; zoom:75%;">
+<img src="../images/delete-filter-icon.png" alt="delete filter" title="delete filter" style="border: 1px solid gray; zoom:75%;"/>
 
 #### Steps to Add Multiple Filters
 
 1. Follow **Steps 1 to 3** mentioned [here](./model-traces.md#steps-to-add-a-custom-filter){:target="_blank"}.
 2. Select the **AND/OR** operator tab in the **Filter by** window.
 
-    <img src="../images/select-operator-filter.png" alt="select operator" title="select operator" style="border: 1px solid gray; zoom:75%;">
+    <img src="../images/select-operator-filter.png" alt="select operator" title="select operator" style="border: 1px solid gray; zoom:75%;"/>
 
 3. Follow **Steps 4 to 5** mentioned [here](./model-traces.md#steps-to-add-a-custom-filter){:target="_blank"}.
 
@@ -402,10 +402,10 @@ Clicking on a run/request record on the UI opens the detailed **Traces** window 
     <p>The model name shown in the code editor includes the deployment version for open-source and fine-tuned models, and the connection name for externally hosted models.</p></div>
 
 * The text and JSON code cannot be modified in the editor.
-<img src="../images/json-editor-model-traces.png" alt="json editor" title="json editor" style="border: 1px solid gray; zoom:75%;">
+<img src="../images/json-editor-model-traces.png" alt="json editor" title="json editor" style="border: 1px solid gray; zoom:75%;"/>
 
 * Click the **Copy** icon to copy the text or code and paste it into your preferred editor for debugging or troubleshooting.
-<img src="../images/copy-input.png" alt="copy input" title="copy input" style="border: 1px solid gray; zoom:75%;">
+<img src="../images/copy-input.png" alt="copy input" title="copy input" style="border: 1px solid gray; zoom:75%;"/>
 
 * The key metadata related to the processed request is shown in a separate panel, discussed in the next section.
 
@@ -428,7 +428,7 @@ The following model run metadata helps analyze the model’s performance.
 * **Source**: Specific origin of the request.
 * **User ID**: Identifier for the user who initiated the request.
 
-    <img src="../images/os-metadata.png" alt="metadata" title="metadata" style="border: 1px solid gray; zoom:75%;">
+    <img src="../images/os-metadata.png" alt="metadata" title="metadata" style="border: 1px solid gray; zoom:75%;"/>
 
 **For External models**
 
@@ -436,7 +436,7 @@ In addition to the above metadata (excluding *Deployment name* and *Deployment v
 
 * **Connection name**: The deployed connection name for the model.
 
-    <img src="../images/external-metadata.png" alt="external model metadata" title="external model metadata" style="border: 1px solid gray; zoom:75%;">
+    <img src="../images/external-metadata.png" alt="external model metadata" title="external model metadata" style="border: 1px solid gray; zoom:75%;"/>
 
 **Model Traces** empowers users to identify time-based trends, troubleshoot issues, and make informed decisions by offering detailed and targeted insights into run-based metrics. This capability ensures that organizations uphold high efficiency, reliability, and compliance standards in their model deployments.
 

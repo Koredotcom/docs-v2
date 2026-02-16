@@ -29,7 +29,7 @@ The Usage page displays the following tabs for billing and usage:
 * Track guardrail deployment duration to manage hardware costs effectively.
 * Hover over the top-right corner of the **Runs** and **Credits** widgets and click the **Refresh** icon to update the latest data.
  
-     <img src="../images/refresh-runs.png" alt="refresh" title="refresh" style="border: 1px solid gray; zoom:80%;">
+     <img src="../images/refresh-runs.png" alt="refresh" title="refresh" style="border: 1px solid gray; zoom:80%;"/>
 
 <div class="admonition note">
 <p class="admonition-title">Note</p>
@@ -59,14 +59,14 @@ The following usage information is displayed on the tab:
 * **Last active on**: The date when the tool was last active.
 * **Status**: The tool's status - Deployed, Undeployed, or Deleted.
 
- <img src="../images/tools-tab.png" alt="Billing Tools tab" title="Billing Tools tab" style="border: 1px solid gray; zoom:80%;">
+ <img src="../images/tools-tab.png" alt="Billing Tools tab" title="Billing Tools tab" style="border: 1px solid gray; zoom:80%;"/>
 
 
 ## Models Usage
 
 The **Models** tab displays a comprehensive list of open-source and fine-tuning models in the account and the computational cost of storing, fine-tuning, and hosting each model.
 
-<img src="../images/models-usage.png" alt="Billing Models tab" title="Billing Models tab" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/models-usage.png" alt="Billing Models tab" title="Billing Models tab" style="border: 1px solid gray; zoom:80%;"/>
 
 If there are multiple deployments of the same model, the usage data is displayed for each deployment in the drill-down view. [Learn more](./billing-and-usage.md#viewing-deployment-level-information){:target="_blank"}.
 
@@ -97,7 +97,7 @@ The following information is displayed:
 * **Last updated on**: The date when the deployment was last done.
 * **Status**: The current deployment status: *Deployed*, *Undeployed*, or *Deleted*.
 
-    <img src="../images/models-usage-drill-down.png" alt="drill down view" title="drill down view" style="border: 1px solid gray; zoom:80%;">
+    <img src="../images/models-usage-drill-down.png" alt="drill down view" title="drill down view" style="border: 1px solid gray; zoom:80%;"/>
 
 ## Guardrails Usage
 
@@ -105,7 +105,7 @@ The Guardrails tab displays the list of guardrails used and the charges related 
 
 The guardrail usage is deducted from the Model credits shown in the Overview tab, indicating that the available credits for the model will decrease based on the cost of using the guardrails.
 
-<img src="../images/guardrails-tab.png" alt="Guardrails tab" title="Guardrails tab" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/guardrails-tab.png" alt="Guardrails tab" title="Guardrails tab" style="border: 1px solid gray; zoom:80%;"/>
 
 The following usage information is displayed on the Guardrails tab:
 
@@ -131,7 +131,7 @@ Clicking each row on the Guardrail tab opens a panel on the right that displays 
 * If no credits exist, the following happens:
      * Further deployments are disabled. 
      * All ongoing deployments are disrupted once the negative credit limit is reached, and the message “*You've used all your available credits. Please add more credits to your account to continue.*” appears.
-      <img src="../images/guardrails-info.png" alt="Guardrails detailed information" title="Guardrails detailed information" style="border: 1px solid gray; zoom:80%;">
+      <img src="../images/guardrails-info.png" alt="Guardrails detailed information" title="Guardrails detailed information" style="border: 1px solid gray; zoom:80%;"/>
 
 
 The following information is displayed:
@@ -159,7 +159,7 @@ The **Custom Scripts** tab displays the list of custom scripts added to your acc
       * Projects can only be imported as drafts. 
       *  Users will not be able to deploy imported projects. Deployment actions get disabled for the scripts.
       *  If the negative credit limit is crossed during deployment, the process will be stopped, and a failure message will be displayed.
-      <img src="../images/cs-usage-data.png" alt="cs usage data" title="cs usage data" style="border: 1px solid gray; zoom:80%;">
+      <img src="../images/cs-usage-data.png" alt="cs usage data" title="cs usage data" style="border: 1px solid gray; zoom:80%;"/>
 
 The following usage information is displayed:
 
@@ -180,7 +180,7 @@ Clicking each row on the **Custom scripts** tab opens a panel on the right that 
 * Hosting time in hours and minutes.
 * Credits consumed by the components. Refer to the table [here](../manage-custom-scripts/custom-scripts.md#step-3-resource-allocation){:target="_blank"} for pricing.
 * **Total** which represents the aggregate of all the credit components (when multiple components are involved).
-<img src="../images/custom-script-usage.png" alt="cs usage" title="cs usage" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/custom-script-usage.png" alt="cs usage" title="cs usage" style="border: 1px solid gray; zoom:80%;"/>
 
 ### Email Notifications
 

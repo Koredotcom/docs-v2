@@ -16,7 +16,7 @@ Key metrics are displayed intuitively using visually engaging graphs and dynamic
 * Hovering over a data point on the **dynamic and interactive line graph** reveals the real-time information for that specific period, providing a focused view of tool performance.
 * You can obtain **hourly performance analysis** for a tool on a specific day or review **daily performance trends** when selecting a date range filter.
 * Click the **Refresh icon** shown below to ensure you have the latest dashboard data available to make informed decisions.
-<img src="../images/refresh-icon.png" alt="refresh icon" title="refresh icon" style="border: 1px solid gray; zoom:75%;">
+<img src="../images/refresh-icon.png" alt="refresh icon" title="refresh icon" style="border: 1px solid gray; zoom:75%;"/>
 
 * The dashboard offers **Tooltip** support for each widget to get quick summaries of the monitored metrics.
 * You can analyze nodes execution data for a tool based on the **rate limit** subscription for your account. Learn more.
@@ -36,7 +36,7 @@ To access the **Tools Analytics** dashboard, follow the steps below:
 1. [Navigate](../../../administration/overview.md#access-settings-console){:target="_blank"} to the **Settings** Console.
 2. On the left menu, select **Monitoring** > **Analytics**.
 3. Click the **Tools Analytics** tab on the right-hand side screen.
-<img src="../images/agents-analytics-tab.png" alt="tools analytics tab" title="tools analytics tab" style="border: 1px solid gray; zoom:75%;">
+<img src="../images/agents-analytics-tab.png" alt="tools analytics tab" title="tools analytics tab" style="border: 1px solid gray; zoom:75%;"/>
 
 The system loads the **Tools Analytics** dashboard with data for the last 7 days, which is the **default time range selection**. You can select the required period to generate data.
 
@@ -64,7 +64,7 @@ For detailed statistics on the total events and the runs executed by each node, 
 <p class="admonition-title">Note</p>
 <p>Hover over the "<b><i>i</i></b>" icon to view the information summary for the metric.</p></div>
 
-<img src="../images/info-icon.png" alt="info icon" title="info icon" style="border: 1px solid gray; zoom:75%;">
+<img src="../images/info-icon.png" alt="info icon" title="info icon" style="border: 1px solid gray; zoom:75%;"/>
 
 To generate and view the required tools analytics data, use the **Global Timeline Filters**. [Learn more](../analytics/tools-analytics-dashboard.md#global-timeline-filters){:target="_blank"}.
 
@@ -85,7 +85,7 @@ Use the top-panel filters to scope account- and tool-level data by time.
 * **Preset ranges**: 24 hrs, 7 days, 30 days, and 90 days.
 * **Custom range**: Select a single date or a continuous date range via the calendar, then click *Apply*.
 
-     <img src="../images/global-timeline-filters.png" alt="global timeline filters" title="global timeline filters" style="border: 1px solid gray; zoom:75%;">
+     <img src="../images/global-timeline-filters.png" alt="global timeline filters" title="global timeline filters" style="border: 1px solid gray; zoom:75%;"/>
 
 **Calendar Presets**
 
@@ -139,7 +139,7 @@ This widget features two dynamic graphs illustrating successful and failed reque
 * Successful runs are displayed in green, while failed runs are shown in red.
 * The **Total Number of Requests** (Y-axis) automatically scales to accommodate runs executed across different date selections.
 * Hover over a data point on the success and failure line graphs to view the counts for Total Requests and the successful and failed requests executed by the tool at that specific date and time. For example, you can check the successful and unsuccessful request executions at 11:25 AM on January 16, 2024.
-<img src="../images/tooltip-feature.png" alt="tooltip feature" title="tooltip feature" style="border: 1px solid gray; zoom:75%;">
+<img src="../images/tooltip-feature.png" alt="tooltip feature" title="tooltip feature" style="border: 1px solid gray; zoom:75%;"/>
 
 <div class="admonition warning">
 <p class="admonition-title">Important</p>
@@ -173,14 +173,14 @@ You can do the following to analyze tool performance:
 * View the average tool response time for each hourly request within a day. For instance, if the tool executes 100 requests between 12 PM and 1 PM, each with its own response time, the average of these values is represented by the graph line.  Hover over the corresponding data point on the graph to view the ART for a specific hour. The tooltip shows the selected date & time, ART for the hour, and the no.of requests processed during that hour.
 * View the overall ART, which is the total of the ART for all hours combined during the selected day.
 
-<img src="../images/overall-art.png" alt="overall art" title="overall art" style="border: 1px solid gray; zoom:75%;">
+<img src="../images/overall-art.png" alt="overall art" title="overall art" style="border: 1px solid gray; zoom:75%;"/>
 
 **Date Range**
 
 * View the ART of a tool for requests processed daily over the specified date range. For example, if you select the date range between September 1 and September 30, the ART for each day is combined to show the graph line. Hover over the corresponding data point on the graph to see the ART for a specific date and time. The tooltip shows the selected date, ART for the day, and the no.of requests processed on that date.
 
 * View the overall ART, which is the total of the ART for all days in the selected date range.
-<img src="../images/overall-art-for-date-range.png" alt="overall art for date range" title="overall art for date range" style="border: 1px solid gray; zoom:75%;">
+<img src="../images/overall-art-for-date-range.png" alt="overall art for date range" title="overall art for date range" style="border: 1px solid gray; zoom:75%;"/>
 
 <div class="admonition note">
 <p class="admonition-title">Note</p>
@@ -202,7 +202,7 @@ This widget displays a line graph showing the number of nodes (including all nod
 
 The **Nodes Execution** widget displays a graph up to your account's maximum subscribed rate limit, indicated by a red line. For example, if your subscription allows 8,000 node executions, the graph will show data for a maximum of 8,000 nodes during the selected period. Once this limit is reached, an error message will appear, notifying you that the threshold has been reached and no further node executions can occur.
 
-<img src="../images/nodes-execution-rate-limit.png" alt="rate limit" title="rate limit" style="border: 1px solid gray; zoom:75%;">
+<img src="../images/nodes-execution-rate-limit.png" alt="rate limit" title="rate limit" style="border: 1px solid gray; zoom:75%;"/>
 
 **Key Features**
 
@@ -244,21 +244,21 @@ The widget-level filters include the following:
 
 To expand a widget, hover over the top-right corner of the widget, and click the **Double-arrow** icon.
 
-<img src="../images/expand-widget-icon.png" alt="expand widget" title="expand widget" style="border: 1px solid gray; zoom:75%;">
+<img src="../images/expand-widget-icon.png" alt="expand widget" title="expand widget" style="border: 1px solid gray; zoom:75%;"/>
 
 The expanded views of all the widgets are shown below:
 
 **Tool Runs**
 
-<img src="../images/agent-runs-expanded-view.png" alt="tool runs expanded view" title="tool runs expanded view" style="border: 1px solid gray; zoom:75%;">
+<img src="../images/agent-runs-expanded-view.png" alt="tool runs expanded view" title="tool runs expanded view" style="border: 1px solid gray; zoom:75%;"/>
 
 **Avg. Tool Response Time**
 
-<img src="../images/avg-art-expanded-view.png" alt="average art expanded view" title="average art expanded view" style="border: 1px solid gray; zoom:75%;">
+<img src="../images/avg-art-expanded-view.png" alt="average art expanded view" title="average art expanded view" style="border: 1px solid gray; zoom:75%;"/>
 
 **Nodes Execution**
 
-<img src="../images/nodes-execution-expanded-view.png" alt="nodes execution expanded view" title="nodes execution expanded view" style="border: 1px solid gray; zoom:75%;">
+<img src="../images/nodes-execution-expanded-view.png" alt="nodes execution expanded view" title="nodes execution expanded view" style="border: 1px solid gray; zoom:75%;"/>
 
 The **Tools Analysis Dashboard** offers actionable and customized insights on the tool performance metrics for various features in your account. 
 

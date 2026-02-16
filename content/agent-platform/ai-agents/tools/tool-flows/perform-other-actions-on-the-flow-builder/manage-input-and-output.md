@@ -18,14 +18,14 @@ Steps to add input variables:
 
 1. On the top of the Tool flow canvas, click the **Manage I/O** button.
 Alternatively, you can click the **Start** node. The **Manage Input & Output** dialog is displayed.  
-<img src="../images/adding_input_output_variables.png" alt="Manage Input Output Variables" title="Manage Input Output Variables" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/adding_input_output_variables.png" alt="Manage Input Output Variables" title="Manage Input Output Variables" style="border: 1px solid gray; zoom:80%;"/>
 
 
 2. On the **Input** tab, click the **+ Add input variable** button.
 
     The **Enter input variable** dialog is displayed.
 
-    <img src="../images/enter-input-variable.png" alt="Enter Input Variable" title="Enter Input Variable" style="border: 1px solid gray; zoom:40%;">
+    <img src="../images/enter-input-variable.png" alt="Enter Input Variable" title="Enter Input Variable" style="border: 1px solid gray; zoom:40%;"/>
 
 3. In the **Name (key)** field, provide a name for the input variable. For example, Product_ID.
 
@@ -36,19 +36,19 @@ If you want to make the data type mandatory, then enable the **Mandatory** toggl
         
     * If you select the **Remote file** data type, the **File url timeout** field appears. Enter the File URL timeout duration in minutes. The default File URL timeout is 5 minutes. You can set it to anywhere between 5 minutes and 7 days (10080 minutes).
 
-        <img src="../images/url-timeout.png" alt="File URL timeout" title="File URL timeout" style="border: 1px solid gray; zoom:40%;">
+        <img src="../images/url-timeout.png" alt="File URL timeout" title="File URL timeout" style="border: 1px solid gray; zoom:40%;"/>
  
     * If you select the **List of values (Enum)** data type, you can set predefined values that are allowed for tool input variables by clicking **Add Values +**.
 
-        <img src="../images/enter-input-variable-window.png" alt="Enter Input Variable window" title="Enter Input Variable window" style="border: 1px solid gray; zoom:40%;">
+        <img src="../images/enter-input-variable-window.png" alt="Enter Input Variable window" title="Enter Input Variable window" style="border: 1px solid gray; zoom:40%;"/>
  
         When you enable **Default value**, the defined values get listed in the dropdown for selection. The system validates the input against the defined enum values and provides an error message if an invalid value is provided.
 
-        <img src="../images/add-default-key-value.png" alt="add default key value" title="add default key value" style="border: 1px solid gray; zoom:40%;">
+        <img src="../images/add-default-key-value.png" alt="add default key value" title="add default key value" style="border: 1px solid gray; zoom:40%;"/>
 
     * If you select the **JSON** data type, a schema Box/JSON Editor appears, where you need to define the JSON schema for the input parameter. You must ensure to follow the supported JSON schema format standard as detailed here: [Defining JSON schema](../perform-other-actions-on-the-flow-builder/defining-json.md){:target="_blank"}.
 
-        <img src="../images/json_schema.png" alt="defining json" title="defining json" style="border: 1px solid gray; zoom:60%;">
+        <img src="../images/json_schema.png" alt="defining json" title="defining json" style="border: 1px solid gray; zoom:60%;"/>
         
         In the **Default Value** field, set a default value for the specified field and validate it against the designated data type, ensuring consistency with the defined JSON schema. You must ensure that the default value matches the schema you’ve defined. If the JSON is invalid, the system will display the relevant error message and execution will fail.
 
@@ -61,7 +61,7 @@ Steps to add output variables:
 1. On the top of the canvas of the Tools page, click the **Manage I/O** button. The **Manage Input & Output** dialog is displayed.
 
 2. On the **Output** tab, click the **+ Add output variable** button. The **Enter output variable** dialog is displayed.  
- <img src="../images/enter-output-variable.png" alt="Enter Output Variable" title="Enter Output Variable" style="border: 1px solid gray; zoom:50%;">
+ <img src="../images/enter-output-variable.png" alt="Enter Output Variable" title="Enter Output Variable" style="border: 1px solid gray; zoom:50%;"/>
 
 3. In the **Name (key)** field, provide a name for the output variable.
 

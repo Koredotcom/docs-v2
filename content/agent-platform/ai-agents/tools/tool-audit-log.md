@@ -11,7 +11,7 @@ Each log entry includes the following to provide actionable insights on account 
 - Date and time of the event.
 - Detailed description of the action.
 
-<img src="../images/agent_audit_log_details.png" alt="audit logs metadata" title="audit logs metadata" style="border: 1px solid gray; zoom:75%;">
+<img src="../images/agent_audit_log_details.png" alt="audit logs metadata" title="audit logs metadata" style="border: 1px solid gray; zoom:75%;"/>
 
 The event metadata provides business users with actionable insights, helping them in efficiently identifying patterns in user activities within their accounts. It also aids in detecting anomalies, spotting unauthorized usage, and enhancing overall account security.
 
@@ -28,7 +28,7 @@ Steps to access and view tool audit logs:
 3. In the left navigation pane, click **Audit logs**. The Audit logs page is displayed.
 4. Click each row to view more details about the event. For more information, see Tool-Level Audit Logs. [Learn more](../../settings/monitoring/audit-logs.md#tool-level-audit-logs){:target="_blank"}.
 
-    <img src="../images/agent_audit_log.png" alt="agent audit logs" title="agent audit logs" style="border: 1px solid gray; zoom:80%;">
+    <img src="../images/agent_audit_log.png" alt="agent audit logs" title="agent audit logs" style="border: 1px solid gray; zoom:80%;"/>
 
 ## Dashboard Information
 

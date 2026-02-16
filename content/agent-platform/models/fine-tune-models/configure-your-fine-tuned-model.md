@@ -2,7 +2,7 @@
 
 On the Configurations page, you can edit the model name and description, add tags, adjust the model endpoint timeout duration, undeploy, or delete the model.
 
-<img src="../images/configure-fine-tuned-model-1.png" alt="Configure Fine-Tuned Model" title="Configure Fine-Tuned Model" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/configure-fine-tuned-model-1.png" alt="Configure Fine-Tuned Model" title="Configure Fine-Tuned Model" style="border: 1px solid gray; zoom:80%;"/>
 
 ## Model Endpoint Timeout
 

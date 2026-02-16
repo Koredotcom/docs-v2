@@ -19,17 +19,17 @@ Install a pre-built app to get a ready-to-use agentic solution. Find an app in t
 
 1. Go to [Agentic Apps](https://agent-platform.kore.ai/apps){:target="_blank"} page or visit the [Marketplace](https://kore.ai/ai-marketplace/){:target="_blank"}.
 
-    <img src="../images/marketplace.png" alt="Access the Marketplace" title="Marketplace" style="border: 0px solid gray; zoom:80%;">
+    <img src="../images/marketplace.png" alt="Access the Marketplace" title="Marketplace" style="border: 0px solid gray; zoom:80%;"/>
 
 2. Browse by category, select an app to view its details and installation instructions, then prepare for tool configuration.
 
-    <img src="../images/app-information-window.png" alt="App Information Window" title="App Information Window" style="border: 1px solid gray; zoom:60%;">
+    <img src="../images/app-information-window.png" alt="App Information Window" title="App Information Window" style="border: 1px solid gray; zoom:60%;"/>
 
 3. Select the required tools and click **Install App** > **Proceed to Import**.
 
 4. (Optional) Connect Search AI for knowledge base integration. [Learn more about Knowledge Tool Integration](../knowledge/overview.md){:target="_blank"}.
 
-    <img src="../images/app-overview-page-marketplace.png" alt="App overview page" title="App overview page" style="border: 0px solid gray; zoom:80%;">
+    <img src="../images/app-overview-page-marketplace.png" alt="App overview page" title="App overview page" style="border: 0px solid gray; zoom:80%;"/>
 
 5. Return to the Marketplace, select your installed app, and click the tool link to view its configuration procedure.
 
@@ -39,11 +39,11 @@ Enhance an existing app by selectively importing specific agents or tools to add
 
 1. Go to [Agentic Apps](https://agent-platform.kore.ai/apps){:target="_blank"}, select an existing app, and choose **Explore Marketplace**. Alternatively, go to the [Marketplace](https://kore.ai/ai-marketplace/){:target="_blank"} and select your existing app.
 
-    <img src="../images/add-agent.png" alt="Add agent" title="Add agent" style="border: 1px solid gray; zoom:80%;">
+    <img src="../images/add-agent.png" alt="Add agent" title="Add agent" style="border: 1px solid gray; zoom:80%;"/>
 
 2. Browse by category, select an app to view its details and installation instructions, then prepare for tool configuration.
 
-    <img src="../images/agent-creation.png" alt="Agent details window" title="Agent details window" style="border: 2px solid gray; zoom:50%;">
+    <img src="../images/agent-creation.png" alt="Agent details window" title="Agent details window" style="border: 2px solid gray; zoom:50%;"/>
 
 3. Choose **Select Tools** > **Install** > **Import**.
 

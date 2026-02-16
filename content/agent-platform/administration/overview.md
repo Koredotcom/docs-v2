@@ -126,7 +126,7 @@ To access the **Settings** Console on the Platform, follow these steps:
    
 2. Select **Settings** on the top navigation bar. The Platform redirects you to the **Users** page in **Users Management**.
 
-   <img src="../images/access-settings-menu.png" alt="access settings" title="access settings" style="border: 1px solid gray; zoom:75%;">
+   <img src="../images/access-settings-menu.png" alt="access settings" title="access settings" style="border: 1px solid gray; zoom:75%;"/>
 
 ## Modules and Features
 

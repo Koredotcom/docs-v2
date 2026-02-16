@@ -17,9 +17,9 @@ The Webclient Script provides a simple integration method for embedding the Agen
 
 1. Go to the Environments page of the app.
 2. Select the environment tile for which you want to access the script.  
-   <img src="../images/webclient-script.png" alt="Webclient script" title="Webclient script" style="border: 1px solid gray; zoom:80%;">
+   <img src="../images/webclient-script.png" alt="Webclient script" title="Webclient script" style="border: 1px solid gray; zoom:80%;"/>
 3. Go to the *Embed Code* tab.  
-   <img src="../images/embed-code.png" alt="Embed code" title="Embed code" style="border: 1px solid gray; zoom:80%;">
+   <img src="../images/embed-code.png" alt="Embed code" title="Embed code" style="border: 1px solid gray; zoom:80%;"/>
 4. Copy the provided HTML code and paste it into each page of your application or website where the chat experience appears. Insert your API key into the code snippet. The containerId identifies the HTML element where the chat widget appears.
 
 !!! note

@@ -28,16 +28,16 @@ To export an tool’s version, follow the steps below:
 2. Click the **Tools** tab on the top navigation bar, and select the tool you want to export. The Tool flow page is displayed. 
 3. Click **Configurations** on the left navigation menu.
 4. Scroll down to the **Export tool** section. By default, the currently deployed version is selected in the dropdown.
-<img src="../images/export-agent.png" alt="export agent" title="export agent" style="border: 1px solid gray; zoom:75%;">
+<img src="../images/export-agent.png" alt="export agent" title="export agent" style="border: 1px solid gray; zoom:75%;"/>
 
 5. To change, click and choose another version from the list.
-<img src="../images/choose-another-version.png" alt="change version" title="change version" style="border: 1px solid gray; zoom:75%;">
+<img src="../images/choose-another-version.png" alt="change version" title="change version" style="border: 1px solid gray; zoom:75%;"/>
 
 6. Click the **Export** button.
 
 The export process begins, and a success message is displayed after the tool validation is completed and the export process finishes.
 
-<img src="../images/agent-export-success.png" alt="export success" title="export success" style="border: 1px solid gray; zoom:75%;">
+<img src="../images/agent-export-success.png" alt="export success" title="export success" style="border: 1px solid gray; zoom:75%;"/>
 
 <div class="admonition note">
 <p class="admonition-title">Note</p>

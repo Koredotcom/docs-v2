@@ -9,21 +9,21 @@ Steps to access Prompts:
     * **My prompts**: Displays only the prompts that you have created or saved.
     * **Shared prompts**: Displays prompts that others have shared with you for use or collaboration. 
 
-    <img src="../images/prompt_dashboard.png" alt="Prompts dashboard" title="Prompts dashboard" style="border: 1px solid gray; zoom:80%;"> 
+    <img src="../images/prompt_dashboard.png" alt="Prompts dashboard" title="Prompts dashboard" style="border: 1px solid gray; zoom:80%;"/> 
 
     Each tab displays the title or name of each prompt, the exact text of the prompt, and the name of the individual who created the prompt.
 
 3. To create a new prompt, click **New prompt**.
 4. On the **New prompt** dialog, enter a name for your prompt, and click **Proceed**. The Prompt landing page is displayed.
 
-    <img src="../images/prompt_entertext.png" alt="New prompt dialog" title="New Prompt dialog" style="border: 1px solid gray; zoom:80%;">
+    <img src="../images/prompt_entertext.png" alt="New prompt dialog" title="New Prompt dialog" style="border: 1px solid gray; zoom:80%;"/>
 
 5. On the Prompts landing page, choose one of the three options to start your prompt creation journey:
     * **Generate a prompt**
     * **Start from scratch**
     * **Prompt library**  
 
-    <img src="../images/prompts_landing_page.png" alt="Prompts landing page" title="Prompts landing page" style="border: 1px solid gray; zoom:80%;">
+    <img src="../images/prompts_landing_page.png" alt="Prompts landing page" title="Prompts landing page" style="border: 1px solid gray; zoom:80%;"/>
  
 
 ## Generate a Prompt
@@ -39,7 +39,7 @@ Steps to create prompts using the Generate a prompt option:
 1. On the Prompts landing page, click **Generate a prompt**.
 2. In the Prompt generator dialog, select a model and enter your instruction.  
 
-    <img src="../images/generate_a_prompt.png" alt="Generate prompt" title="Generate prompt" style="border: 1px solid gray; zoom:80%;">
+    <img src="../images/generate_a_prompt.png" alt="Generate prompt" title="Generate prompt" style="border: 1px solid gray; zoom:80%;"/>
 
 3. Review the AI-generated prompt.
 4. Once you click **Proceed**, the prompt will be copied to the prompt canvas. You can then customize the prompt as needed.
@@ -72,15 +72,15 @@ Steps to create prompts from prompt library:
 **My templates**:  View and manage your saved templates. If you have not saved any templates, this section will be empty.  
 **All templates**:  Browse a list of available templates.
 
-    <img src="../images/prompt_library_templates.png" alt="Prompt library" title="Prompt library" style="border: 1px solid gray; zoom:30%;">
+    <img src="../images/prompt_library_templates.png" alt="Prompt library" title="Prompt library" style="border: 1px solid gray; zoom:30%;"/>
 
 3. Click your desired template. A dialog box with the system prompt and prompt is displayed. To use the template, click **Use template**.
 
-    <img src="../images/prompt_template_dialog.png" alt="Prompt library dialog" title="Prompt library dialog" style="border: 1px solid gray; zoom:30%;">
+    <img src="../images/prompt_template_dialog.png" alt="Prompt library dialog" title="Prompt library dialog" style="border: 1px solid gray; zoom:30%;"/>
 
 4. Once you click **Use template**, the prompts will be copied to the prompt canvas. You can then customize the prompts as needed.
 
-    <img src="../images/prompt_canvas_library.png" alt="Prompt library canvas" title="Prompt library canvas" style="border: 1px solid gray; zoom:30%;">
+    <img src="../images/prompt_canvas_library.png" alt="Prompt library canvas" title="Prompt library canvas" style="border: 1px solid gray; zoom:30%;"/>
   
 !!! note
 

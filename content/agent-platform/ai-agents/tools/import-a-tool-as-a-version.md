@@ -20,11 +20,11 @@ To import a tool as a version, follow the steps below:
 2. Click the **Tools** tab on the top navigation bar, and select the tool you want to import. 
 3. Click **Configurations** on the left menu.
 4. Scroll down to the **Import tool** section and click **Import**.
-    <img src="../images/agent_platform/import_tool_config.png" alt="import tool configuration" title="import tool configuration" style="border: 1px solid gray; zoom:75%;">
+    <img src="../images/agent_platform/import_tool_config.png" alt="import tool configuration" title="import tool configuration" style="border: 1px solid gray; zoom:75%;"/>
 
 5. (Optional) In the following dialog, select the **Back up your current tool** option to preserve the data of the version being replaced.
 
-    <img src="../images/agent_platform/backup_tool.png" alt="import confirmation" title="import confirmation" style="border: 1px solid gray; zoom:75%;">
+    <img src="../images/agent_platform/backup_tool.png" alt="import confirmation" title="import confirmation" style="border: 1px solid gray; zoom:75%;"/>
 
 <div class="admonition note">
 <p class="admonition-title">Note</p>
@@ -63,7 +63,7 @@ When conflicting environment variables are detected, you must resolve them with 
 1. Select the **Conflicting variables** tab.
 2. Select either **Overwrite** to replace the existing variable with the imported one or select **Keep existing**.
 3. Click **Proceed** to continue importing.
-<img src="../images/agent_platform/overwrite-or-keep.png" alt="import tool" title="import tool" style="border: 1px solid gray; zoom:50%;">
+<img src="../images/agent_platform/overwrite-or-keep.png" alt="import tool" title="import tool" style="border: 1px solid gray; zoom:50%;"/>
 
 **Editing Existing and Imported Variables**
 
@@ -71,11 +71,11 @@ To resolve conflicts by editing either the existing or imported environment vari
 
 1. Click the **Three-dots (Ellipsis)** icon of the required variable.
 2. Select **Edit**.  
-<img src="../images/agent_platform/edit-env-variable.png" alt="edit variable" title="edit variable" style="border: 1px solid gray; zoom:50%;">   
+<img src="../images/agent_platform/edit-env-variable.png" alt="edit variable" title="edit variable" style="border: 1px solid gray; zoom:50%;"/>   
 
 3. Change the required values in the **Edit Variable** window.  
 4. Click **Save**.  
-<img src="../images/agent_platform/save-edit-variable.png" alt="save variable" title="save variable" style="border: 1px solid gray; zoom:50%;">  
+<img src="../images/agent_platform/save-edit-variable.png" alt="save variable" title="save variable" style="border: 1px solid gray; zoom:50%;"/>  
 
 To cancel the import process during the conflicting environment variables resolution, click **Cancel** in the **Edit Environment Variable** window, and then click **Confirm**.
 

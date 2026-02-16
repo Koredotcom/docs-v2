@@ -7,7 +7,7 @@ Steps to create a tool:
 1. Log in to your account and click **Tools** from the list of modules.
   
 2. On the **Tools** page, click **Create a new tool**. The **New tool** dialog box is displayed.  
-<img src="../images/agent_platform/create_a_new_tool_fill.png" alt="Create a New Tool" title="Create a New Tool" style="border: 1px solid gray; zoom:60%;">
+<img src="../images/agent_platform/create_a_new_tool_fill.png" alt="Create a New Tool" title="Create a New Tool" style="border: 1px solid gray; zoom:60%;"/>
 
 3. Enter a name and a brief description for the tool and click **Create**. The tool is created, and the **Tool Flow** option is displayed. You can start creating your tool flow now.
 

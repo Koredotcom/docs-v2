@@ -6,7 +6,7 @@ The Prompt canvas offers a range of options to help you customize the generated 
 
 The options in the Model column enable users to tailor their experience based on specific needs, providing flexibility and control over how the outputs are produced.
 
-<img src="../images/model_column_options.png" alt="Model column options" title="Model column options" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/model_column_options.png" alt="Model column options" title="Model column options" style="border: 1px solid gray; zoom:80%;"/>
 
 The following table lists the options available in the Model column:
 
@@ -22,7 +22,7 @@ The following table lists the options available in the Model column:
   <tr>
    <td>
 
-<img src="../images/drag_drop.png" style="zoom:100%;"></img>
+<img src="../images/drag_drop.png" style="zoom:100%;"/></img>
 
    </td>
    <td>Rearrange  
@@ -35,7 +35,7 @@ The following table lists the options available in the Model column:
 
 
 
-<img src="../images/remove_model.png" style="zoom:100%;"></img>
+<img src="../images/remove_model.png" style="zoom:100%;"/></img>
 
    </td>
    <td>Remove Model
@@ -49,7 +49,7 @@ The following table lists the options available in the Model column:
 
 
 
-<img src="../images/bookmark.png" style="zoom:100%;"></img>
+<img src="../images/bookmark.png" style="zoom:100%;"/></img>
 
    </td>
    <td>Bookmark a model
@@ -65,7 +65,7 @@ The following table lists the options available in the Model column:
 
 
 
-<img src="../images/model_settings.png" style="zoom:100%;"></img>
+<img src="../images/model_settings.png" style="zoom:100%;"/></img>
 
    </td>
    <td>Model Settings
@@ -79,7 +79,7 @@ The following table lists the options available in the Model column:
 
 
 
-<img src="../images/play.png" style="zoom:100%;"></img>
+<img src="../images/play.png" style="zoom:100%;"/></img>
 
    </td>
    <td>Play
@@ -93,7 +93,7 @@ The following table lists the options available in the Model column:
 
 
 
-<img src="../images/avg_response_time.png" style="zoom:100%;"></img>
+<img src="../images/avg_response_time.png" style="zoom:100%;"/></img>
 
    </td>
    <td>Average Response Time
@@ -107,7 +107,7 @@ The following table lists the options available in the Model column:
 
 
 
-<img src="../images/avg_tokens.png" style="zoom:100%;"></img>
+<img src="../images/avg_tokens.png" style="zoom:100%;"/></img>
 
    </td>
    <td>Average Tokens
@@ -121,7 +121,7 @@ The following table lists the options available in the Model column:
 
 
 
-<img src="../images/copy.png" style="zoom:100%;"></img>
+<img src="../images/copy.png" style="zoom:100%;"/></img>
 
    </td>
    <td>Copy
@@ -135,7 +135,7 @@ The following table lists the options available in the Model column:
 
 
 
-<img src="../images/view_in_json.png" style="zoom:100%;"></img>
+<img src="../images/view_in_json.png" style="zoom:100%;"/></img>
 
    </td>
    <td>View in JSON format
@@ -150,7 +150,7 @@ Clicking this icon opens a separate dialog displaying the request and response i
 
 
 
-<img src="../images/regenerate.png" style="zoom:100%;"></img>
+<img src="../images/regenerate.png" style="zoom:100%;"/></img>
 
    </td>
    <td>Re-generate
@@ -164,7 +164,7 @@ Clicking this icon opens a separate dialog displaying the request and response i
 
 The options available in the top toolbar of the prompt canvas are essential for efficiently generating and managing outputs. These options help to organize and share generated data, enhancing the overall user experience in the output generation process.
 
-<img src="../images/top_toolbar_options.png" alt="Top toolbar options" title="Top toolbar options" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/top_toolbar_options.png" alt="Top toolbar options" title="Top toolbar options" style="border: 1px solid gray; zoom:80%;"/>
 
 The following table lists the options available on the top toolbar of the prompt canvas:
 
@@ -183,7 +183,7 @@ The following table lists the options available on the top toolbar of the prompt
 
 
 
-<img src="../images/prompt_library.png" style="zoom:100%;"></img>
+<img src="../images/prompt_library.png" style="zoom:100%;"/></img>
 
    </td>
    <td>Prompt library
@@ -199,7 +199,7 @@ Click the icon to browse and select a template to customize or use as a base for
 
 
 
-<img src="../images/prompt_api.png" style="zoom:100%;"></img>
+<img src="../images/prompt_api.png" style="zoom:100%;"/></img>
 
    </td>
    <td>Prompt API
@@ -215,7 +215,7 @@ Click to open a dialog with API endpoints and select your preferred format (cURL
 
 
 
-<img src="../images/three_dots.png" style="zoom:100%;"></img>
+<img src="../images/three_dots.png" style="zoom:100%;"/></img>
 
    </td>
    <td>Save to prompt library
@@ -229,7 +229,7 @@ Click to open a dialog with API endpoints and select your preferred format (cURL
 
 
 
-<img src="../images/three_dots.png" style="zoom:100%;"></img>
+<img src="../images/three_dots.png" style="zoom:100%;"/></img>
 
    </td>
    <td>Draft history
@@ -244,7 +244,7 @@ Click to open a dialog with API endpoints and select your preferred format (cURL
 
 
 
-<img src="../images/three_dots.png" style="zoom:100%;"></img>
+<img src="../images/three_dots.png" style="zoom:100%;"/></img>
 
    </td>
    <td>Export as CSV
@@ -256,7 +256,7 @@ Click to open a dialog with API endpoints and select your preferred format (cURL
    <td>
 
 
-<img src="../images/three_dots.png" style="zoom:100%;"></img>
+<img src="../images/three_dots.png" style="zoom:100%;"/></img>
 
    </td>
    <td>Share
@@ -271,7 +271,7 @@ Click to open a dialog with API endpoints and select your preferred format (cURL
 
 
 
-<img src="../images/versions.png" style="zoom:100%;"></img>
+<img src="../images/versions.png" style="zoom:100%;"/></img>
 
    </td>
    <td>Versions
@@ -285,7 +285,7 @@ Click to open a dialog with API endpoints and select your preferred format (cURL
 
 
 
-<img src="../images/commit.png" style="zoom:100%;"></img>
+<img src="../images/commit.png" style="zoom:100%;"/></img>
 
    </td>
    <td>Commit
@@ -301,7 +301,7 @@ Click to commit the current prompt as a new version, creating a record in Versio
 
 
 
-<img src="../images/run.png" style="zoom:100%;"></img>
+<img src="../images/run.png" style="zoom:100%;"/></img>
 
    </td>
    <td>Run

@@ -55,7 +55,7 @@ A creative marketing team can use the system to instantly generate images for em
 
 The **Text to Image** node fits seamlessly into your tool flows, accepting descriptive inputs from previous nodes and returning AI-generated image URLs as outputs. You can define prompts directly within the node, select the processing model, and specify what the image should include or exclude, along with aspect ratio, steps, and batch count. The node supports both static and dynamic inputs via context variables, enabling automated image generation across a wide range of use cases, from marketing creatives to content illustration.
 
-<img src="../images/how-text-to-image-works.png" alt="how text to image works" title="how text to image works" style="border: 1px solid gray; zoom:75%;">
+<img src="../images/how-text-to-image-works.png" alt="how text to image works" title="how text to image works" style="border: 1px solid gray; zoom:75%;"/>
 
 In this document, you will learn how to add the node to your flows, configure it with descriptive prompts and generation settings, manage inputs and outputs, and test the generated image results.
 
@@ -114,7 +114,7 @@ The metrics include:
 ### Step 2: Add the Node
 
 * Click the "**+**" icon for **Text to Image** under **AI** in the **Assets** panel. Alternatively, drag the node from the panel onto the canvas. You can also click **AI** in the pop-up menu and click **Text to Image**.
-  <img src="../images/text-to-image-add-node.png" alt="add node" title="add node" style="border: 1px solid gray; zoom:75%;">
+  <img src="../images/text-to-image-add-node.png" alt="add node" title="add node" style="border: 1px solid gray; zoom:75%;"/>
 
 ### Step 3: Configure the Node
 
@@ -135,7 +135,7 @@ The metrics include:
     * **Steps**: Add the number of times the model will go back to the image and add more details/enhancements to get it as close to the prompt as possible. 25-30 steps are recommended for any image generation. Increasing the steps might add unwanted elements or model hallucinations and increase the time of generation.
     * **Batch Count**: The number of images to be generated sequentially.
 
-        <img src="../images/properties-panel-text-to-image.png" alt="properties panel" title="properties panel" style="border: 1px solid gray; zoom:75%;">
+        <img src="../images/properties-panel-text-to-image.png" alt="properties panel" title="properties panel" style="border: 1px solid gray; zoom:75%;"/>
 
        <div class="admonition warning" bgcolor="blue">
        <p class="admonition-title">Standard Error</p>
@@ -143,14 +143,14 @@ The metrics include:
 
 
 * Click the <b>Connections</b> icon and select the <b>Go to Node</b> for success and failure conditions.
-  <img src="../images/connection-text-to-image.png" alt="click connections" title="click connections" style="border: 1px solid gray; zoom:75%;">
+  <img src="../images/connection-text-to-image.png" alt="click connections" title="click connections" style="border: 1px solid gray; zoom:75%;"/>
 
     * <b>On Success</b> -> <b>Go to Node</b>: After the current node is successfully executed, go to a selected node in the flow to execute next, such as an AI node, Function node, Condition node, API node, or End node.
     * <b>On Failure</b> -> <b>Go to Node</b>: If the execution of the current node fails, go to the End node to display any custom error message from the <b>Text to Image</b> node.
 
     For the configured inputs, the following image is generated.
     
-     <img src="../images/node-output-image.png" alt="output image" title="output image" style="border: 1px solid gray; zoom:75%;">
+     <img src="../images/node-output-image.png" alt="output image" title="output image" style="border: 1px solid gray; zoom:75%;"/>
 
 * Finally, <a href="#step-3-run-the-flow" target="_blank">run the flow</a> and fix any issues found.
 
@@ -162,17 +162,17 @@ After adding and configuring the node as mentioned [here](./text-to-image-node.m
 <p class="admonition-title">Dynamic Prompt Inputs</p>
 <p>Before you <a href="#step-3-run-the-flow" target="_blank">run the flow</a>, provide clear instructions for the model to follow using the <b>input variable(s)</b> you add in the following step with the help of <b>context variables</b>. Context variables add dynamic values to the prompt instructions that the model will follow. The recommended syntax is: <code>{{context.variable_name}}</code>. For example, you can store the generated image URL in a variable named “<i>Imaggenerated</i>” and pass it on in the prompt when you mention <q><i>Generate an image based on the below description</i>: <code>{{context.steps.Start.Imaggenerated}}</code></q>, as shown in the image below.</p></div>
 
-<img src="../images/dynamic-prompt-input.png" alt="dynamic prompt input" title="dynamic prompt input" style="border: 1px solid gray; zoom:75%;"> 
+<img src="../images/dynamic-prompt-input.png" alt="dynamic prompt input" title="dynamic prompt input" style="border: 1px solid gray; zoom:75%;"/> 
 
 ### Step 1: (Optional) Add Input Variable(s)
 
 * Click the **Input** tab of the **Start** node, and click **Add Input Variable** to configure the input for the flow’s test run. [Learn more](../perform-other-actions-on-the-flow-builder/manage-input-and-output.md#adding-input-variables){:target="_blank"}.
 
-     <img src="../images/add-input-variable-text-to-image.png" alt="add input variable" title="add input variable" style="border: 1px solid gray; zoom:75%;">
+     <img src="../images/add-input-variable-text-to-image.png" alt="add input variable" title="add input variable" style="border: 1px solid gray; zoom:75%;"/>
 
 * Select <b><i>Text</i></b> for the <b>Type</b> field in the <b>Enter input variable window</b> to define a text input variable.
 * Click <b>Save</b>. <a href="../text-to-text-node/#access-the-ai-nodes-output" target="_blank">Learn more</a> about accessing the node’s output.
-   <img src="../images/select-text-for-input.png" alt="click add output variable" title="click add output variable" style="border: 1px solid gray; zoom:75%;">
+   <img src="../images/select-text-for-input.png" alt="click add output variable" title="click add output variable" style="border: 1px solid gray; zoom:75%;"/>
 
 Add all the required input variables to run the flow in the **Input** section of the **Start** node.
 
@@ -182,25 +182,25 @@ Add all the required input variables to run the flow in the **Input** section of
 * Click the **Output** tab for the **Start** node.
 * Click **Add Output Variable**.
 
-    <img src="../images/click-add-output-variable.png" alt="click add output variable" title="click add output variable" style="border: 1px solid gray; zoom:75%;">
+    <img src="../images/click-add-output-variable.png" alt="click add output variable" title="click add output variable" style="border: 1px solid gray; zoom:75%;"/>
 
 * Enter the value for <b>Name (key)</b> and select <b><i>String</i></b> for <b>Type</b> to generate the image URL.
 * Click <b>Save</b>. <a href="../text-to-text-node/#access-the-ai-nodes-output" target="_blank">Learn more</a> about accessing the node’s output.
      
-   <img src="../images/output-var.png" alt="save output variable" title="save output variable" style="border: 1px solid gray; zoom:75%;">
+   <img src="../images/output-var.png" alt="save output variable" title="save output variable" style="border: 1px solid gray; zoom:75%;"/>
 
 ### Step 3: Run the Flow
 
 To run and test the flow, follow the steps below:
 
 * Click the **Run Flow** button at the top-right corner of the flow builder.
-   <img src="../images/run-the-flow-text-to-image.png" alt="run the flow" title="run the flow" style="border: 1px solid gray; zoom:75%;">
+   <img src="../images/run-the-flow-text-to-image.png" alt="run the flow" title="run the flow" style="border: 1px solid gray; zoom:75%;"/>
     
 * (Optional) Add the value for **Input Variable** if you have configured it to test the flow. Otherwise, go directly to the next step.
 * Click **Generate Output**.
 
-     <img src="../images/generate-output-text-to-image.png" alt="generate output" title="generate output" style="border: 1px solid gray; zoom:75%;">
+     <img src="../images/generate-output-text-to-image.png" alt="generate output" title="generate output" style="border: 1px solid gray; zoom:75%;"/>
 
 The **Debug** window generates the flow log and results, as shown below. [Learn more](../types-of-nodes/text-to-image-node.md#step-3-run-the-flow){:target="_blank"} about running the tool flow.
 
-<img src="../images/debug-window-text-to-image.png" alt="debug window" title="debug window" style="border: 1px solid gray; zoom:75%;">
+<img src="../images/debug-window-text-to-image.png" alt="debug window" title="debug window" style="border: 1px solid gray; zoom:75%;"/>

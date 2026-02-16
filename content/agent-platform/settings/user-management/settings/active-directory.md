@@ -40,7 +40,7 @@ Moreover, the automatic synchronization (auto sync) feature ensures that Setting
 <li><b>User ID</b>: The identity used to log into the Active Directory.</li>
 <li><b>Password</b>: The password used to log into the Active Directory.</li>
 <li><b>(Optional) SSL</b>: Enable this option to secure communications over the web, particularly for services and applications that interact with Active Directory via HTTPS.</li>
-<img src="../images/configure-ad-connection.png" alt="configure ad connection" title="configure ad connection" style="border: 1px solid gray; zoom:75%;"></ul>
+<img src="../images/configure-ad-connection.png" alt="configure ad connection" title="configure ad connection" style="border: 1px solid gray; zoom:75%;"/></ul>
 
 <ol start="2"><li>Click <b>Next</b> to confirm the credentials before proceeding. If validation errors occur, they will be displayed on the screen so you can correct them before continuing.</li></ol>
 
@@ -55,7 +55,7 @@ Follow the steps below to configure and import user data from key organizational
 <li><b>Import only the following organization units</b>: Imports user information only from the organization unit you select.</li></ul>
 
 <ol start="2"><li>Click <b>Next</b> to proceed to user profile fields mapping.
-<img src="../images/org-units.png" alt="manage org units" title="manage org units" style="border: 1px solid gray; zoom:75%;"></li></ol>
+<img src="../images/org-units.png" alt="manage org units" title="manage org units" style="border: 1px solid gray; zoom:75%;"/></li></ol>
 
 ### Step 3: Specify User Attributes and Configure Rules for Selective Import from Active Directory
 
@@ -68,7 +68,7 @@ To define both default (pre-defined) and custom fields during setup, follow the 
 
 1. (Optional) Select **Import users from active directory** to fetch the user default fields from the Active Directory.
 2. Click the **User Attributes** tab and select the value from the dropdown to map the field from the Active Directory to the user attribute for all the fields under **Default Fields**.
-<img src="../images/default-fields.png" alt="default fields" title="default fields" style="border: 1px solid gray; zoom:75%;">
+<img src="../images/default-fields.png" alt="default fields" title="default fields" style="border: 1px solid gray; zoom:75%;"/>
 
 3. (Optional) In addition to the default fields, you can add custom fields for your user profile information and map them to a corresponding field in the Active Directory. To add a custom field mapping, follow the steps below:
 
@@ -77,12 +77,12 @@ To define both default (pre-defined) and custom fields during setup, follow the 
 <li>Enter the corresponding Active Directory field in the <b>Field from Active Directory</b> textbox.</li>
 <li>(Optional) Click the <b>tag</b> icon to set the custom field as the primary field. However, to delete this field, you must first remove the primary field tag.</li>
 <li>Click <b>Next</b> to complete user profile fields' mapping and proceed.</li>
-<img src="../images/custom-field-management.png" alt="manage custom field" title="manage custom field" style="border: 1px solid gray; zoom:75%;">
+<img src="../images/custom-field-management.png" alt="manage custom field" title="manage custom field" style="border: 1px solid gray; zoom:75%;"/>
 </ul>
 
 To remove a field, click the **Delete** icon as shown below.
 
-<img src="../images/delete-custom-field.png" alt="delete custom field" title="delete custom field" style="border: 1px solid gray; zoom:75%;">
+<img src="../images/delete-custom-field.png" alt="delete custom field" title="delete custom field" style="border: 1px solid gray; zoom:75%;"/>
 
 <div class="admonition note">
 <p class="admonition-title">Note</p>
@@ -91,7 +91,7 @@ To remove a field, click the **Delete** icon as shown below.
 
 <ol start="4"><li>Next, define the rules and sync criteria to import specific users from your Active Directory server. To do this, click the <b>Manage Inclusion & Exclusion Rules</b> tab.</li>
 <li>Under <b>Inclusion Rules</b>, you can sync specific users from your Active Directory Server by defining criteria or filters using profile parameters. Enter the rule expression using the user profile parameters in the <b>Rule Definition</b> textbox according to the LDAP filter syntax mentioned <a href="https://social.technet.microsoft.com/wiki/contents/articles/5392.active-directory-ldap-syntax-filters.aspx" target="_blank">here</a>.</li>
-<img src="../images/manage-rules.png" alt="manage rules" title="manage rules" style="border: 1px solid gray; zoom:75%;"></ol>
+<img src="../images/manage-rules.png" alt="manage rules" title="manage rules" style="border: 1px solid gray; zoom:75%;"/></ol>
 
 <ol start="6"><li>(Optional) An <b>Exclusion Rule</b> includes the <b>AD/LDAP field</b>, <b>Match Type</b>, and <b>Value</b>. You must set <b>Match Type</b> for one of the following options:</li></ol>
 
@@ -112,7 +112,7 @@ To set an **Exclusion Rules**, follow the steps below:
 <p>All mandatory fields must be filled in before you can proceed to the next step. Deleting a custom field is allowed only if you have added multiple fields.</p>
 </div>
 
-<img src="../images/add-exclusion.png" alt="add exclusion" title="add exclusion" style="border: 1px solid gray; zoom:75%;">
+<img src="../images/add-exclusion.png" alt="add exclusion" title="add exclusion" style="border: 1px solid gray; zoom:75%;"/>
 
 To delete a rule, hover over the entry, click the **Delete** icon, and confirm.
 
@@ -130,7 +130,7 @@ Auto sync will ensure that any changes in Active Directory, such as user additio
 To enable and configure auto sync, follow the steps below:
 
 1. Click the **Enable auto-sync** toggle.
-<img src="../images/enable-auto-sync.png" alt="enable auto sync" title="enable auto sync" style="border: 1px solid gray; zoom:75%;">
+<img src="../images/enable-auto-sync.png" alt="enable auto sync" title="enable auto sync" style="border: 1px solid gray; zoom:75%;"/>
 
 <div class="admonition note">
 <p class="admonition-title">Note</p>
@@ -161,7 +161,7 @@ When you set up Active Directory sync for the first time, the following options 
   * Date and Time
   * By (user name)
   * The number of *successful* and *failed* user records that got synced.
-  <img src="../images/sync-history.png" alt="sync history" title="sync history" style="border: 1px solid gray; zoom:75%;">
+  <img src="../images/sync-history.png" alt="sync history" title="sync history" style="border: 1px solid gray; zoom:75%;"/>
 
 * **Manage directory sync**: Displays the **Configure Directory** window where you can edit the existing configurations.
 * **Reset**: Resets the Active Directory sync configurations but retains the last sync data on the Platform.
@@ -172,7 +172,7 @@ When you set up Active Directory sync for the first time, the following options 
 <p>Even if auto sync is turned off, you can click on the <b>Change</b> link in the sync status to access and schedule an auto sync on the configuration page.</p>
 </div>
 
-<img src="../images/configure-sync-with-directory.png" alt="configure sync with directory" title="configure sync with directory" style="border: 1px solid gray; zoom:75%;">
+<img src="../images/configure-sync-with-directory.png" alt="configure sync with directory" title="configure sync with directory" style="border: 1px solid gray; zoom:75%;"/>
 
 ### User Settings
 

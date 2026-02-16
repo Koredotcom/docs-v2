@@ -22,24 +22,24 @@
 **UI Features**
 
 * **Tooltips**: Hover over metrics for additional information.
-   <img src="../images/hover-over-metrics.png" alt="hover over metrics" title="hover over metrics" style="border: 1px solid gray; zoom:75%;">
+   <img src="../images/hover-over-metrics.png" alt="hover over metrics" title="hover over metrics" style="border: 1px solid gray; zoom:75%;"/>
 
 * **ID Copying**: Click the copy icon when hovering over *Run ID* or *Log ID*. 
-   <img src="../images/copy-run-id.png" alt="copy run id" title="copy run id" style="border: 1px solid gray; zoom:75%;">
+   <img src="../images/copy-run-id.png" alt="copy run id" title="copy run id" style="border: 1px solid gray; zoom:75%;"/>
 
 * **Performance Analysis**: View hourly data for specific days or daily trends over time.
 * **Script Selection**: Switch between scripts using the dropdown menu.
-   <img src="../images/current-script-selection.png" alt="current selection" title="current selection" style="border: 1px solid gray; zoom:75%;">
+   <img src="../images/current-script-selection.png" alt="current selection" title="current selection" style="border: 1px solid gray; zoom:75%;"/>
 
 * **Status Indicators**:
     * Green labels for successful runs.
     * Red labels for failed runs.
     * "*In Progress*" for currently deploying scripts
 
-        <img src="../images/in-progress-deployments.png" alt="in progress" title="in progress" style="border: 1px solid gray; zoom:75%;">
+        <img src="../images/in-progress-deployments.png" alt="in progress" title="in progress" style="border: 1px solid gray; zoom:75%;"/>
 
 * **Navigation**: Use arrow buttons or keyboard shortcuts (<code>K</code> for previous, <code>J</code> for next) to navigate records.
-    <img src="../images/keyboard-shortcuts.png" alt="keyboard shortcuts" title="keyboard shortcuts" style="border: 1px solid gray; zoom:75%;">
+    <img src="../images/keyboard-shortcuts.png" alt="keyboard shortcuts" title="keyboard shortcuts" style="border: 1px solid gray; zoom:75%;"/>
 
 * Click on each script run record to see the record-level view of the log based on the **Run ID**. [Learn more](../monitoring/monitoring-custom-scripts.md#record-view){:target="_blank"}.
 * Click the **Logs** tab to view metrics and summary information on each run-based log recorded for the script.
@@ -70,18 +70,18 @@ To access the feature, follow the steps below:
 
 1. [Navigate](../../administration/overview.md#access-settings-console){:target="_blank"} to the **Settings** Console.
 2. On the left menu, select **Monitoring** > **Custom scripts**.
-   <img src="../images/access-custom-script-monitoring.png" alt="custom scripts monitoring" title="custom scripts monitoring" style="border: 1px solid gray; zoom:75%;">
+   <img src="../images/access-custom-script-monitoring.png" alt="custom scripts monitoring" title="custom scripts monitoring" style="border: 1px solid gray; zoom:75%;"/>
 
 3. For first-time access, select a script from the dropdown menu.
     
-    <img src="../images/select-script.png" alt="select script" title="select script" style="border: 1px solid gray; zoom:75%;">
+    <img src="../images/select-script.png" alt="select script" title="select script" style="border: 1px solid gray; zoom:75%;"/>
 
 **Key Considerations** 
 
 * At least one custom script must be deployed and executed via API call or API/Function node.
 * If no custom script has been deployed and executed, or if it has been deployed but not yet executed, the following message is displayed. 
     
-      <img src="../images/no-data-to-display.png" alt="no data" title="no data" style="border: 1px solid gray; zoom:75%;">
+      <img src="../images/no-data-to-display.png" alt="no data" title="no data" style="border: 1px solid gray; zoom:75%;"/>
 
 * If a previously deployed and executed script is undeployed, only the existing run-level and log data remain accessible. No new runs or logs will be generated unless the script is redeployed and executed again. 
  
@@ -90,7 +90,7 @@ The system loads the **Monitoring custom scripts** feature with data for the las
 
 You can select the required date/date range to view the relevant data.
 
-<img src="../images/one-week-default.png" alt="default calendar selection" title="default calendar selection" style="border: 1px solid gray; zoom:75%;">
+<img src="../images/one-week-default.png" alt="default calendar selection" title="default calendar selection" style="border: 1px solid gray; zoom:75%;"/>
 
 ## Custom Scripts Monitoring Information
 
@@ -125,7 +125,7 @@ It displays performance metrics and run-level metadata to analyze the script’s
     * If a script’s P99 is 100 seconds, it means that 99% of the runs are completed within 100 seconds.
 * **Failure Rate**: Indicates the number of script runs that failed with an error code out of the total runs executed since deployment. For example, 1 failure in 3 runs = 33.33%.
 
-    <img src="../images/failure-rate.png" alt="failure rate" title="failure rate" style="border: 1px solid gray; zoom:75%;">
+    <img src="../images/failure-rate.png" alt="failure rate" title="failure rate" style="border: 1px solid gray; zoom:75%;"/>
 
 
 #### Run-level Metadata
@@ -197,7 +197,7 @@ It provides insights into script execution through captured logs.
 The UI summarizes key metrics for the selected period, offering actionable insights into the logs captured during the script execution.
 
 * **Total Logs**: The total number of logs recorded during the script’s execution.
-   <img src="../images/total-logs.png" alt="total logs" title="total logs" style="border: 1px solid gray; zoom:75%;">
+   <img src="../images/total-logs.png" alt="total logs" title="total logs" style="border: 1px solid gray; zoom:75%;"/>
 
 
 The **Total Logs** metric helps determine:
@@ -261,7 +261,7 @@ You can narrow down the information displayed for custom script runs and logs by
 
 Additionally, the filter for custom scripts includes the **contains** operator, which matches results that include a specific keyword or value you enter. For example, the following image depicts checking if the **Log message** contains the string “*Adding*.”  
  
-<img src="../images/contains-adding.png" alt="contains adding" title="contains adding" style="border: 1px solid gray; zoom:75%;">
+<img src="../images/contains-adding.png" alt="contains adding" title="contains adding" style="border: 1px solid gray; zoom:75%;"/>
 
 
 These filters allow you to select specific column values, compare the chosen or entered values, and apply logical operators across columns for multi-level filtering, providing targeted, custom data on the UI.
@@ -275,16 +275,16 @@ Filter customization streamlines tracking and debugging of script runs at a deta
 2. Click the **Filter** icon on the top right.
 3. Click **+ Add Filter**.
     
-    <img src="../images/access-filter.png" alt="access filter" title="access filter" style="border: 1px solid gray; zoom:75%;">
+    <img src="../images/access-filter.png" alt="access filter" title="access filter" style="border: 1px solid gray; zoom:75%;"/>
 
 5. In the **Filter By** window, select column, operator, and enter values.
-   <img src="../images/choosing-filter.png" alt="choosing filter" title="choosing filter" style="border: 1px solid gray; zoom:75%;">
+   <img src="../images/choosing-filter.png" alt="choosing filter" title="choosing filter" style="border: 1px solid gray; zoom:75%;"/>
  
     <div class="admonition note">
     <p class="admonition-title">Note</p>
     <p>You can enter multiple values in the <b>Enter Value</b> field by pressing the <i>Tab</i> key after each entry. The system will filter data based on all the entered values. </p></div>
 
-    <img src="../images/apply-multiple-filters.png" alt="multiple filters" title="multiple filters" style="border: 1px solid gray; zoom:75%;">
+    <img src="../images/apply-multiple-filters.png" alt="multiple filters" title="multiple filters" style="border: 1px solid gray; zoom:75%;"/>
 
 <ol start="6"><li>Click <b>Apply</b>.</li></ol>
 
@@ -321,7 +321,7 @@ The record view offers log-specific insights at the script run level after each 
     * JSON editors that display the script’s input and the function’s output, respectively. 
     * Navigation buttons.
 
-       <img src="../images/record-view.png" alt="record view" title="record view" style="border: 1px solid gray; zoom:75%;">
+       <img src="../images/record-view.png" alt="record view" title="record view" style="border: 1px solid gray; zoom:75%;"/>
 
 ## Enhanced Logging for gVisor Monitoring
 
@@ -467,11 +467,11 @@ Exporting **All Runs** and **Logs** data for the selected custom script download
 3. A *CSV* file containing records of all runs or logs for the selected script is downloaded to the configured system location.
 
 Once the data is exported, the following message is displayed.
-<img src="../images/export-flow.png" alt="export flow" title="export flow" style="border: 1px solid gray; zoom:75%;"> 
+<img src="../images/export-flow.png" alt="export flow" title="export flow" style="border: 1px solid gray; zoom:75%;"/> 
 
 If any error occurs during the export process, the following message is displayed: 
 
-<img src="../images/export-err.png" alt="export error" title="export error" style="border: 1px solid gray; zoom:75%;">
+<img src="../images/export-err.png" alt="export error" title="export error" style="border: 1px solid gray; zoom:75%;"/>
 
 The file name is automatically saved in the following formats:
 
@@ -482,11 +482,11 @@ The export schema files include the dashboard data organized in the following fo
 
 **Runs**
 
-<img src="../images/runs-schema.png" alt="runs schema" title="runs schema" style="border: 1px solid gray; zoom:75%;">
+<img src="../images/runs-schema.png" alt="runs schema" title="runs schema" style="border: 1px solid gray; zoom:75%;"/>
 
 **Logs**
 
-<img src="../images/logs-schema.png" alt="logs schema" title="logs schema" style="border: 1px solid gray; zoom:75%;">
+<img src="../images/logs-schema.png" alt="logs schema" title="logs schema" style="border: 1px solid gray; zoom:75%;"/>
 
 <div class="admonition note">
 <p class="admonition-title">Note</p>

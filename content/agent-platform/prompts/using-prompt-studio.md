@@ -17,12 +17,12 @@ Here are the steps to create prompts on the prompt canvas:
 1. The **System prompt** field helps you assign a role to the model. 
 System prompts are optional. You can use the toggle to enable or disable it as needed.
 
-    <img src="../images/promptcanvas-systemprompt.png" alt="System prompt" title="System prompt" style="border: 1px solid gray; zoom:80%;">
+    <img src="../images/promptcanvas-systemprompt.png" alt="System prompt" title="System prompt" style="border: 1px solid gray; zoom:80%;"/>
 	
 2. In the **Prompt** field, you can provide the instructions that you want the model to follow.
 For assistance, you can click "Generate prompt" to help expand your prompt into a more detailed and elaborative prompt.  
 
-    <img src="../images/promptcanvas_human_prompt.png" alt="Human prompt" title="Human prompt" style="border: 1px solid gray; zoom:80%;">
+    <img src="../images/promptcanvas_human_prompt.png" alt="Human prompt" title="Human prompt" style="border: 1px solid gray; zoom:80%;"/>
 
 3. In the **Response JSON schema** field, you can define a JSON schema to structure the model's responses.
 
@@ -31,7 +31,7 @@ For assistance, you can click "Generate prompt" to help expand your prompt into 
     Supported JSON schema types include: String, Boolean, Number, Integer, Object, Array, Enum, and anyOf. Ensure the schema follows the standard outlined here: [Defining JSON schema](../ai-agents/tools/tool-flows/perform-other-actions-on-the-flow-builder/defining-json.md){:target="_blank"}. If the schema is invalid or mismatched, errors will be logged, and you must resolve them before proceeding.
 
 
-    <img src="../images/prompts_json.png" alt="JSON schema" title="JSON schema" style="border: 1px solid gray; zoom:80%;">
+    <img src="../images/prompts_json.png" alt="JSON schema" title="JSON schema" style="border: 1px solid gray; zoom:80%;"/>
 
 
 You can also click the "Prompt library" icon (highlighted in yellow in the image above) to explore a selection of templates that contain carefully crafted prompts designed for various use cases.
@@ -56,14 +56,14 @@ When you add variables in the Prompt field, the **Variables** column appears, di
 
 2. In the **Variables** window, assign the variables a value (name/text).
 
-    <img src="../images/promptcanvas_variable.png" alt="Variables column" title="Variables column" style="border: 1px solid gray; zoom:80%;">
+    <img src="../images/promptcanvas_variable.png" alt="Variables column" title="Variables column" style="border: 1px solid gray; zoom:80%;"/>
  
     You can click **Add an empty row** to add multiple rows in the Variables window.
 
 3. In the **Prompt** window, check how your entered prompt appears.
 The variables are substituted with their assigned values.
 
-    <img src="../images/prompt_window_example.png" alt="Prompt column" title="Prompt column" style="border: 1px solid gray; zoom:80%;">
+    <img src="../images/prompt_window_example.png" alt="Prompt column" title="Prompt column" style="border: 1px solid gray; zoom:80%;"/>
 
 
 ## Select Models
@@ -81,7 +81,7 @@ A list of models is displayed in the drop-down list.
 2. Select your preferred model and connection for your prompts.
 3. To add multiple models, select different models in the columns on the right.  
 
-    <img src="../images/prompt_studio_models.png" alt="Select model" title="Select model" style="border: 1px solid gray; zoom:80%;">
+    <img src="../images/prompt_studio_models.png" alt="Select model" title="Select model" style="border: 1px solid gray; zoom:80%;"/>
 
     You can also click the model settings icon to adjust the model parameters like temperature, top k, top p, and max tokens.
 
@@ -100,7 +100,7 @@ After selecting your models, you can generate the output for your prompt. Ensure
 
 1. On the prompt canvas, click **Run** to generate the output.
 
-    <img src="../images/prompt_outputscreen_example.png" alt="Select model" title="Select model" style="border: 1px solid gray; zoom:80%;">
+    <img src="../images/prompt_outputscreen_example.png" alt="Select model" title="Select model" style="border: 1px solid gray; zoom:80%;"/>
 
 2. Once the generation is complete, the output is displayed in the model column of the prompt canvas. You can review the matrix in the generated output area to determine which prompt and model best meet your needs.
 
