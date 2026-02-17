@@ -2,13 +2,13 @@
 
 # Import a New Tool API
 
-This API imports a new tool by providing the necessary **file IDs**, ensuring all the necessary configurations, including the tool’s flow data, app definitions, and environment variables are correctly imported. After triggering the import, the response returns a <code>dockStatusId</code>. Use this ID to call the [Get Dock Status API](../apis-list/get-dock-status.md){:target="_blank"} and verify the successful import of the tool.
+This API imports a new tool by providing the necessary **file IDs**, ensuring all the necessary configurations, including the tool’s flow data, app definitions, and environment variables are correctly imported. After triggering the import, the response returns a <code>dockStatusId</code>. Use this ID to call the [Get Dock Status API](../apis-list/get-dock-status.md) and verify the successful import of the tool.
 
 To import a tool, follow the steps below:
 
-1. **Upload Files**: Use the [File Upload API](./upload-file-api.md){:target="_blank"} to upload the files for the flow definition, app definition, and environment variables. [Learn more](../../ai-agents/tools/import-a-tool.md#import-to-create-a-new-tool){:target="_blank"}. This API returns unique **file IDs** for each file. 
-2. **Import the Tool**: Call the [Import Tools API](../apis-list/import-a-new-tool.md){:target="_blank"} using the retrieved **file IDs** along with the tool name.
-3. **Track import Status**: The API response returns a <code>dockStatusId</code> that helps monitor the import progress using the [Get Dock Status API](../apis-list/get-dock-status.md){:target="_blank"}.
+1. **Upload Files**: Use the [File Upload API](./upload-file-api.md) to upload the files for the flow definition, app definition, and environment variables. [Learn more](../../ai-agents/tools/import-a-tool.md#import-to-create-a-new-tool). This API returns unique **file IDs** for each file. 
+2. **Import the Tool**: Call the [Import Tools API](../apis-list/import-a-new-tool.md) using the retrieved **file IDs** along with the tool name.
+3. **Track import Status**: The API response returns a <code>dockStatusId</code> that helps monitor the import progress using the [Get Dock Status API](../apis-list/get-dock-status.md).
 
 <table>
   <tr>
@@ -40,7 +40,7 @@ To import a tool, follow the steps below:
 
 **Where can I find the API key?**
 
-To use the API, you will need an API key. [Learn more](../../apis/overview.md#how-to-create-the-api-key){:target="_blank"}.
+To use the API, you will need an API key. [Learn more](../../apis/overview.md#how-to-create-the-api-key).
 
 ## Query Parameters
 

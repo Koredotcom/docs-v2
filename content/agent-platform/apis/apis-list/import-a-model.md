@@ -4,13 +4,13 @@
 
 The API imports a model in chunks into the Agent Platform environment. The import process includes the following steps and APIs:
 
-* [Start Import Session](./import-a-model.md#start-import-session){:target="_blank"} - Import Model - Start Session API.
-* [Upload Model in Chunks](./import-a-model.md#upload-model-in-chunks){:target="_blank"} - Import Model - Chunk Upload API.
-* [Complete the Import Process](./import-a-model.md#complete-the-import-process){:target="_blank"} - Import Model- Completion API.
+* [Start Import Session](./import-a-model.md#start-import-session) - Import Model - Start Session API.
+* [Upload Model in Chunks](./import-a-model.md#upload-model-in-chunks) - Import Model - Chunk Upload API.
+* [Complete the Import Process](./import-a-model.md#complete-the-import-process) - Import Model- Completion API.
 
 **Where can I find the API key?**
 
-To use the API, you will need an API key. [Learn more](../../apis/overview.md#how-to-create-the-api-key){:target="_blank"}.
+To use the API, you will need an API key. [Learn more](../../apis/overview.md#how-to-create-the-api-key).
 
 ## Start Import Session
 
@@ -208,7 +208,7 @@ curl --location 'https://{host}/api/public/files/session/start'
 
 ## Upload Model in Chunks
 
-The **Import Model - Chunk Upload** API uploads a file chunk for model import. The <code>sessionId</code> from the [Start Import Session API](./import-a-model.md#start-import-session){:target="_blank"} must be used here to upload the file in incrementing chunks identified by a unique <code>chunkNumber</code>.
+The **Import Model - Chunk Upload** API uploads a file chunk for model import. The <code>sessionId</code> from the [Start Import Session API](./import-a-model.md#start-import-session) must be used here to upload the file in incrementing chunks identified by a unique <code>chunkNumber</code>.
 
 <table>
   <tr>
@@ -358,7 +358,7 @@ curl --location 'https://{host}/api/public/files/session/5cxxxxxb-5xx5-4xxa-bxx1
 
 ## Complete the Import Process
 
-The **Import Model- Complete** API completes the model import process after all file chunks have been successfully uploaded. The <code> sessionId</code> from the [Start Import Session API](./import-a-model.md#start-import-session){:target="_blank"} must be used for this API.
+The **Import Model- Complete** API completes the model import process after all file chunks have been successfully uploaded. The <code> sessionId</code> from the [Start Import Session API](./import-a-model.md#start-import-session) must be used for this API.
 
 
 <table>

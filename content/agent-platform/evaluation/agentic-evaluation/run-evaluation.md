@@ -4,7 +4,7 @@ Once sessions are imported (either simulated or production) and you have added e
 
 The system runs all applicable evaluators, processes the data, and computes scores for each relevant session or trace segment. Evaluation results are displayed in the session grid, with each evaluator contributing one or more dedicated column.
 
-<img src="../../agentic-evaluation/images/run_evaluation.png" alt="Run evaluation" title="Run evaluation" style="border: 1px solid gray; zoom:80%;">
+<img src="../../agentic-evaluation/images/run_evaluation.png" alt="Run evaluation" title="Run evaluation" style="border: 1px solid gray; zoom:80%;"/>
 
 
 !!! note

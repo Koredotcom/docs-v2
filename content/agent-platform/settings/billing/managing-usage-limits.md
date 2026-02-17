@@ -34,9 +34,9 @@ Users can easily track their usage and know when to take action. A **Clock** ico
 * The unique **Account ID** for the user or account. Click the **Copy** icon to copy and share this ID with the backend team for further debugging an issue in the account.
 * **Credits**: The *Total allocation* and *remaining credits* available in the account for the usage of models, guardrails, and custom scripts.
 * **Tool Runs**: The *Total allocation* and *remaining tool runs* available in the account for the usage of the tools automation flow.
-  <img src="../images/account-id-display.png" alt="account id" title="account id" style="border: 1px solid gray; zoom:75%;">
+  <img src="../images/account-id-display.png" alt="account id" title="account id" style="border: 1px solid gray; zoom:75%;"/>
 
-To view detailed information on billing and usage, click **Manage billing**. [Learn more](../billing/billing-and-usage.md){:target="_blank"}. 
+To view detailed information on billing and usage, click **Manage billing**. [Learn more](../billing/billing-and-usage.md). 
 
 
 As credits are consumed, the dynamic pie chart indicates how much of the available credits have been used. The icon's color dynamically changes based on your credit usage, providing a clear visual indicator of your remaining balance.

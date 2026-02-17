@@ -11,7 +11,7 @@ Versioning, environments, and the deployment process are critical to managing ap
 1. **Deploying App to an Environment** - Releasing a selected version to a chosen environment. 
 1. **Accessing the deployed app** via a unique URL or API for integration or user interaction.
 
-   <img src="../../images/app-deployment-overview.png" alt="Restore version" title="Restore version" style="border: 1px solid gray; zoom:90%;">
+   <img src="../../images/app-deployment-overview.png" alt="Restore version" title="Restore version" style="border: 1px solid gray; zoom:90%;"/>
 
 !!! note
  
@@ -51,11 +51,11 @@ Role-Based Access: Limit version control actions to authorized personnel, enhanc
 To create a new app version, follow the steps listed below.
 
 1. Go to the Versions page and click + New Version.
-  <img src="../images/new-version.png" alt="New version" title="New version" style="border: 1px solid gray; zoom:70%;">
+  <img src="../images/new-version.png" alt="New version" title="New version" style="border: 1px solid gray; zoom:70%;"/>
 2. Enter the Name and Description for the application version. Select appropriate versions of the agents and the tools to be included in the app. Click Create.
-  <img src="../images/new-app-version.png" alt="New app version" title="New app version" style="border: 1px solid gray; zoom:70%;">
+  <img src="../images/new-app-version.png" alt="New app version" title="New app version" style="border: 1px solid gray; zoom:70%;"/>
 3. Once the version is created, preview the version to review its configuration and functionality and then Deploy the version.  
-  <img src="../images/version-created-successfully.png" alt="Version created successfully" title="Version created successfully" style="border: 1px solid gray; zoom:70%;">
+  <img src="../images/version-created-successfully.png" alt="Version created successfully" title="Version created successfully" style="border: 1px solid gray; zoom:70%;"/>
 
 
 ### Deploy the App Version
@@ -73,12 +73,12 @@ Use this feature to revert to a known working state after experimentation, undo 
  
     Restoring a version replaces the current draft and cannot be undone. To preserve your current work, consider saving it as a new version before restoring another.
 
-<img src="../images/restore-version.png" alt="Restore version" title="Restore version" style="border: 1px solid gray; zoom:70%;">
+<img src="../images/restore-version.png" alt="Restore version" title="Restore version" style="border: 1px solid gray; zoom:70%;"/>
 
 ### Delete a Version
 
 Delete an app version to remove it permanently. Before deletion, it performs dependency checks to ensure no linked agents or tools are removed.  
-   <img src="../images/delete-version.png" alt="Delete version" title="Delete version" style="border: 1px solid gray; zoom:70%;">
+   <img src="../images/delete-version.png" alt="Delete version" title="Delete version" style="border: 1px solid gray; zoom:70%;"/>
 
 ## Environment Configuration and Management
 
@@ -101,7 +101,7 @@ By default, a draft environment exists for deployment and testing.
 1. Go to the **Environments** page.
 
 2. Click **+ New Environment**.  
-   <img src="../images/new-environment.png" alt="New environment" title="New environment" style="border: 1px solid gray; zoom:70%;">
+   <img src="../images/new-environment.png" alt="New environment" title="New environment" style="border: 1px solid gray; zoom:70%;"/>
 
 
 3. Enter the **Name**, **Description**, and select the **App Version**.
@@ -109,7 +109,7 @@ By default, a draft environment exists for deployment and testing.
 4. Click the **Preview** icon to review version details.
 
 5. Click **Create**.  
-   <img src="../images/new-environment-fields.png" alt="New environment fields" title="New environment fields" style="border: 1px solid gray; zoom:40%;">
+   <img src="../images/new-environment-fields.png" alt="New environment fields" title="New environment fields" style="border: 1px solid gray; zoom:40%;"/>
 
 
 Once created, the Environments page is displayed, listing the draft and the created environments.
@@ -123,4 +123,4 @@ Click the environment to see its details and manage it:
 * **cURL script:** Use the curl script to interact with the app through the code. Construct your API requests in accordance with the given specifications.
 * **Delete Environment:** This function handles the removal of an environment with user confirmation, ensuring associated configurations are cleaned up, endpoints are deactivated, and resources are released. Audit logs and usage statistics are preserved for future reference.  
 
-   <img src="../images/web-client-details.png" alt="Web client details" title="Web client details" style="border: 1px solid gray; zoom:80%;">
+   <img src="../images/web-client-details.png" alt="Web client details" title="Web client details" style="border: 1px solid gray; zoom:80%;"/>

@@ -1,6 +1,6 @@
 # Import Agentic Apps
 
-The Agentic app import feature enables users to transfer complete application configurations between environments. This feature facilitates reuse, sharing, and [version management](deployment/app-deployment.md#app-versioning){:target="_blank"} of Agentic applications.
+The Agentic app import feature enables users to transfer complete application configurations between environments. This feature facilitates reuse, sharing, and [version management](deployment/app-deployment.md#app-versioning) of Agentic applications.
 
 ## Prerequisites
 

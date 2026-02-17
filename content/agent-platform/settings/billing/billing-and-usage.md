@@ -25,11 +25,11 @@ The Usage page displays the following tabs for billing and usage:
 
 * Regularly monitor your usage trends to optimize resource allocation.
 * Review tools, models, guardrails, and custom scripts to identify cost-saving opportunities.
-* Please refer to the hardware profile and the credits consumption chart [here](../manage-custom-scripts/custom-scripts.md#step-3-resource-allocation){:target="_blank"} before deploying custom scripts.
+* Please refer to the hardware profile and the credits consumption chart [here](../manage-custom-scripts/custom-scripts.md#step-3-resource-allocation) before deploying custom scripts.
 * Track guardrail deployment duration to manage hardware costs effectively.
 * Hover over the top-right corner of the **Runs** and **Credits** widgets and click the **Refresh** icon to update the latest data.
  
-     <img src="../images/refresh-runs.png" alt="refresh" title="refresh" style="border: 1px solid gray; zoom:80%;">
+     <img src="../images/refresh-runs.png" alt="refresh" title="refresh" style="border: 1px solid gray; zoom:80%;"/>
 
 <div class="admonition note">
 <p class="admonition-title">Note</p>
@@ -59,16 +59,16 @@ The following usage information is displayed on the tab:
 * **Last active on**: The date when the tool was last active.
 * **Status**: The tool's status - Deployed, Undeployed, or Deleted.
 
- <img src="../images/tools-tab.png" alt="Billing Tools tab" title="Billing Tools tab" style="border: 1px solid gray; zoom:80%;">
+ <img src="../images/tools-tab.png" alt="Billing Tools tab" title="Billing Tools tab" style="border: 1px solid gray; zoom:80%;"/>
 
 
 ## Models Usage
 
 The **Models** tab displays a comprehensive list of open-source and fine-tuning models in the account and the computational cost of storing, fine-tuning, and hosting each model.
 
-<img src="../images/models-usage.png" alt="Billing Models tab" title="Billing Models tab" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/models-usage.png" alt="Billing Models tab" title="Billing Models tab" style="border: 1px solid gray; zoom:80%;"/>
 
-If there are multiple deployments of the same model, the usage data is displayed for each deployment in the drill-down view. [Learn more](./billing-and-usage.md#viewing-deployment-level-information){:target="_blank"}.
+If there are multiple deployments of the same model, the usage data is displayed for each deployment in the drill-down view. [Learn more](./billing-and-usage.md#viewing-deployment-level-information).
 
 The following usage metrics summarize data for all the deployments:
 
@@ -97,7 +97,7 @@ The following information is displayed:
 * **Last updated on**: The date when the deployment was last done.
 * **Status**: The current deployment status: *Deployed*, *Undeployed*, or *Deleted*.
 
-    <img src="../images/models-usage-drill-down.png" alt="drill down view" title="drill down view" style="border: 1px solid gray; zoom:80%;">
+    <img src="../images/models-usage-drill-down.png" alt="drill down view" title="drill down view" style="border: 1px solid gray; zoom:80%;"/>
 
 ## Guardrails Usage
 
@@ -105,7 +105,7 @@ The Guardrails tab displays the list of guardrails used and the charges related 
 
 The guardrail usage is deducted from the Model credits shown in the Overview tab, indicating that the available credits for the model will decrease based on the cost of using the guardrails.
 
-<img src="../images/guardrails-tab.png" alt="Guardrails tab" title="Guardrails tab" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/guardrails-tab.png" alt="Guardrails tab" title="Guardrails tab" style="border: 1px solid gray; zoom:80%;"/>
 
 The following usage information is displayed on the Guardrails tab:
 
@@ -131,7 +131,7 @@ Clicking each row on the Guardrail tab opens a panel on the right that displays 
 * If no credits exist, the following happens:
      * Further deployments are disabled. 
      * All ongoing deployments are disrupted once the negative credit limit is reached, and the message “*You've used all your available credits. Please add more credits to your account to continue.*” appears.
-      <img src="../images/guardrails-info.png" alt="Guardrails detailed information" title="Guardrails detailed information" style="border: 1px solid gray; zoom:80%;">
+      <img src="../images/guardrails-info.png" alt="Guardrails detailed information" title="Guardrails detailed information" style="border: 1px solid gray; zoom:80%;"/>
 
 
 The following information is displayed:
@@ -146,10 +146,10 @@ Billing and credit calculation data for Guardrails is sent via email, notifying 
 
 ## Custom Scripts Usage
 
-The **Custom Scripts** tab displays the list of custom scripts added to your account, along with the credits consumed for their deployment. Each custom script entry displays the language and version of the script, the credits used, the latest date of script usage (when it was active), and its [status](../manage-custom-scripts//custom-scripts.md#information-on-script-deployment-statuses){:target="_blank"}. The **Total Scripts** and the **Hosting Credits** available in the account are also displayed as key metrics on the page. The custom scripts are charged for each deployment and hardware profile used.
+The **Custom Scripts** tab displays the list of custom scripts added to your account, along with the credits consumed for their deployment. Each custom script entry displays the language and version of the script, the credits used, the latest date of script usage (when it was active), and its [status](../manage-custom-scripts//custom-scripts.md#information-on-script-deployment-statuses). The **Total Scripts** and the **Hosting Credits** available in the account are also displayed as key metrics on the page. The custom scripts are charged for each deployment and hardware profile used.
 
 
-* Credits for script consumption are deducted from the allocated credits (**Overview** tab) based on the table mentioned [here](../manage-custom-scripts/custom-scripts.md#step-3-resource-allocation){:target="_blank"}.
+* Credits for script consumption are deducted from the allocated credits (**Overview** tab) based on the table mentioned [here](../manage-custom-scripts/custom-scripts.md#step-3-resource-allocation).
 * In case the account credits are insufficient, new deployments are disabled via the script wizard.
 * If the low credit limit is reached during an active deployment, the deployment will continue and proceed into negative credit. 
       
@@ -159,7 +159,7 @@ The **Custom Scripts** tab displays the list of custom scripts added to your acc
       * Projects can only be imported as drafts. 
       *  Users will not be able to deploy imported projects. Deployment actions get disabled for the scripts.
       *  If the negative credit limit is crossed during deployment, the process will be stopped, and a failure message will be displayed.
-      <img src="../images/cs-usage-data.png" alt="cs usage data" title="cs usage data" style="border: 1px solid gray; zoom:80%;">
+      <img src="../images/cs-usage-data.png" alt="cs usage data" title="cs usage data" style="border: 1px solid gray; zoom:80%;"/>
 
 The following usage information is displayed:
 
@@ -169,7 +169,7 @@ The following usage information is displayed:
 * **Language(Version)**: The language and version of the script.
 * **Credits used**: The credits consumed by the script for hardware and other resources.
 * **Last active on**: The latest date when the script was actively used.
-* **Status**: The deployment status of the script. [Learn more](../manage-custom-scripts/custom-scripts.md#information-on-script-deployment-statuses){:target="_blank"}.
+* **Status**: The deployment status of the script. [Learn more](../manage-custom-scripts/custom-scripts.md#information-on-script-deployment-statuses).
 
 
 ### Viewing Detailed Script Information
@@ -178,9 +178,9 @@ Clicking each row on the **Custom scripts** tab opens a panel on the right that 
 
 * **Hosting infrastructure**: The hardware configurations (VCPUs and memory) used by the script.
 * Hosting time in hours and minutes.
-* Credits consumed by the components. Refer to the table [here](../manage-custom-scripts/custom-scripts.md#step-3-resource-allocation){:target="_blank"} for pricing.
+* Credits consumed by the components. Refer to the table [here](../manage-custom-scripts/custom-scripts.md#step-3-resource-allocation) for pricing.
 * **Total** which represents the aggregate of all the credit components (when multiple components are involved).
-<img src="../images/custom-script-usage.png" alt="cs usage" title="cs usage" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/custom-script-usage.png" alt="cs usage" title="cs usage" style="border: 1px solid gray; zoom:80%;"/>
 
 ### Email Notifications
 

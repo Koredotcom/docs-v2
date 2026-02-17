@@ -74,13 +74,13 @@ To access the SSO feature, follow the steps below:
 3. Go to **Security & Control** > **Single Sign On** on the left menu.
 
    If you’re using this feature for the first time, the following screen appears.
-     <img src="../images/access-single-sign-on.png" alt="access sso" title="access sso" style="border: 1px solid gray; zoom:75%;">
+     <img src="../images/access-single-sign-on.png" alt="access sso" title="access sso" style="border: 1px solid gray; zoom:75%;"/>
 
 If SSO is already configured, the **Single sign-on** setup page is displayed.
 
 ## Enable SSO
 
-Depending on your company's security requirements, you can enable SSO for your account users. Enabling SSO includes selecting the protocol and IDP and providing the [parameters](../security-and-control/single-sign-on.md#configuration-parameters){:target="_blank"} to integrate with the IDP service.
+Depending on your company's security requirements, you can enable SSO for your account users. Enabling SSO includes selecting the protocol and IDP and providing the [parameters](../security-and-control/single-sign-on.md#configuration-parameters) to integrate with the IDP service.
 
 <div class="admonition warning">
 <p class="admonition-title">Important</p>
@@ -194,12 +194,12 @@ To enable SSO on the **Settings** console, follow the steps below:
 2. If no SSO is enabled, click **Enable SSO**.
 3. If SSO is already enabled for a provider, click the **Enable SSO** tab and do one of the following:
 
-    * Change and save the existing [parameters](../security-and-control/single-sign-on.md#configuration-parameters){:target="_blank"} for the enabled SSO provider.
+    * Change and save the existing [parameters](../security-and-control/single-sign-on.md#configuration-parameters) for the enabled SSO provider.
     * Disable the enabled SSO and set up a new configuration.
     * Select a different protocol/provider and complete the configuration.
 
 4. Select the required protocol and SP. The default selections are **SAML** and **Okta**.
-5. Configure the [parameters](../security-and-control/single-sign-on.md#configuration-parameters){:target="_blank"} for one of the following SSO protocols and providers:
+5. Configure the [parameters](../security-and-control/single-sign-on.md#configuration-parameters) for one of the following SSO protocols and providers:
 
 <ul><li><b>SAML</b>: <a href="#okta-configuration">Okta</a>, <a href="#onelogin-configuration">Onelogin</a>, or <a href="#other-configuration">Other</a>. <a href="#saml">Learn more</a>.</li>
 <li><b>WS-Federation</b>: <a href="#windows-azure-configuration">Windows Azure</a> or <a href="#other-configuration">Other</a>. <a href="#ws-federation">Learn more</a>.</li>
@@ -245,12 +245,12 @@ To configure SSO using SAML and Okta, follow the steps below:
 <ol start="4"><li>Login to the <a href="https://developer.okta.com/login/">Okta developer portal</a>.</li>
 <li>On the dashboard, click <b>Applications</b> on the left menu.</li>
 <li>Click <b>Create App Integration</b>.</li>
-<img src="../images/okta-create-app-integration.png" alt="okta create app integration" title="okta create app integration" style="border: 1px solid gray; zoom:75%;"></ol>
+<img src="../images/okta-create-app-integration.png" alt="okta create app integration" title="okta create app integration" style="border: 1px solid gray; zoom:75%;"/></ol>
 
 <ol start="7"><li>In the <b>Create a new app integration</b> window, select <b>SAML 2.0</b> and click <b>Next</b>.
-<img src="../images/create-a-new-app-integration.png" alt="create a new app integration" title="create a new app integration" style="border: 1px solid gray; zoom:75%;"></li>
+<img src="../images/create-a-new-app-integration.png" alt="create a new app integration" title="create a new app integration" style="border: 1px solid gray; zoom:75%;"/></li>
 <li>On the <b>Create SAML Integration</b> page, provide the <b>App Name</b> under <b>General Settings</b>, and click <b>Next</b>.
-<img src="../images/create-saml-integration.png" alt="create saml integration" title="create saml integration" style="border: 1px solid gray; zoom:75%;"></li>
+<img src="../images/create-saml-integration.png" alt="create saml integration" title="create saml integration" style="border: 1px solid gray; zoom:75%;"/></li>
 <li>Copy the following values from the Platform’s SSO setup page and paste them into Okta under <b>Configure SAML</b>:</li>
 <ul><li><b>ACS url for SP initiated SAML flow</b>: Paste into <i>Single sign-on URL</i>.</li>
 <li><b>ACS url for IDP initiated SAML flow</b>: Paste into <i>Audience URI (SP Entity ID)</i>.</li></ul></ol>
@@ -285,9 +285,9 @@ To configure SSO using SAML and Okta, follow the steps below:
 <li>Copy the <b>Identity Provider Issuer</b> value into the <b>Identity provider issuer</b>.</li></ul>
 <li>Go to <b>Sign On</b> > <b>SAML Signing Certificates</b> on your Okta app.</li>
 <li>Click <b>Download certificate</b> under <b>Actions</b> for the required certificate.
-<img src="../images/download-certificate-saml.png" alt="download certificate" title="download certificate" style="border: 1px solid gray; zoom:75%;"></li>
+<img src="../images/download-certificate-saml.png" alt="download certificate" title="download certificate" style="border: 1px solid gray; zoom:75%;"/></li>
 <li>Once the certificate is downloaded, open it in Notepad and copy the data between the <b>BEGIN CERTIFICATE</b> header and <b>END CERTIFICATE</b> footer.
-<img src="../images/okta-certificate-notepad.png" alt="okta certificate" title="okta certificate" style="border: 1px solid gray; zoom:75%;"></li>
+<img src="../images/okta-certificate-notepad.png" alt="okta certificate" title="okta certificate" style="border: 1px solid gray; zoom:75%;"/></li>
 <li>Paste the value into the <b>Certificate</b> field on the Platform’s SSO setup page.</li>
 To add a new certificate, click <b>+ Add new</b>.</ol>
 
@@ -307,9 +307,9 @@ To configure SSO using SAML and Onelogin, follow the steps below:
 1. Go to **Single sign-on** page.
 2. Select the **Enable SSO** tab.
 3. Select **SAML** for **Sign-on protocol** and **Onelogin** for **SSO provider**.
-4. Login into the [Onelogin developer portal](https://app.onelogin.com/login){:target="_blank"}.
+4. Login into the [Onelogin developer portal](https://app.onelogin.com/login).
 5. Go to **Applications** > **Add Apps** to access your app.
-<img src="../images/onelogin-add-app.png" alt="onelogin add app" title="onelogin add app" style="border: 1px solid gray; zoom:75%;">
+<img src="../images/onelogin-add-app.png" alt="onelogin add app" title="onelogin add app" style="border: 1px solid gray; zoom:75%;"/>
 
 <ul><li>To learn how to <b>add a new app</b>, click <a href="https://onelogin.service-now.com/support?id=kb_article&sys_id=9bf39e0047ccbd509d8dfd1f536d431c&kb_category=e9866930db185340d5505eea4b9619b7#manage-add">here</a>.</li>
 <li>To learn how to <b>configure apps</b>, click <a href="https://onelogin.service-now.com/support?id=kb_article&sys_id=9bf39e0047ccbd509d8dfd1f536d431c&kb_category=e9866930db185340d5505eea4b9619b7#config">here</a>.</li></ul>
@@ -321,7 +321,7 @@ To configure SSO using SAML and Onelogin, follow the steps below:
     <li><b>OneLogin Issuer URL</b>: Paste into <b>Issuer URL</b>.</li></ul>
 
 <li>In the <b>OneLogin X.509 Certificate</b> field, click <b>View Details</b>. The <b>Standard Strength Certificate (2048-bit)</b> page is displayed.
-<img src="../images/onelogin-view-details.png" alt="one login view details" title="one login view details" style="border: 1px solid gray; zoom:75%;"></li>
+<img src="../images/onelogin-view-details.png" alt="one login view details" title="one login view details" style="border: 1px solid gray; zoom:75%;"/></li>
 <li>In the <b>X.509 Certificate</b> section, copy the certificate data and then paste it into the <b>X.509 Certificate</b> field on the Platform’s SSO setup page.</li>
 
 <div class="admonition note">
@@ -329,7 +329,7 @@ To configure SSO using SAML and Onelogin, follow the steps below:
 <p>Copy data after the <b>BEGIN CERTIFICATE</b> header and before the <b>END CERTIFICATE</b> footer.</p></div>
 
 To add a new certificate, click <b>+Add new</b>.
-<img src="../images/add-new-x-509-certificate.png" alt="add new x 509 certificate" title="add new x 509 certificate" style="border: 1px solid gray; zoom:75%;"></ol>
+<img src="../images/add-new-x-509-certificate.png" alt="add new x 509 certificate" title="add new x 509 certificate" style="border: 1px solid gray; zoom:75%;"/></ol>
 
 <div class="admonition note">
 <p class="admonition-title">Note</p>
@@ -351,7 +351,7 @@ To configure and enable SSO using SAML for other IDPs of your choice, follow the
 1. Go to the Platform’s **Single sign-on** page.
 2. Select the **Enable SSO** tab.
 3. Select **SAML** for **Sign-on protocol** and **Other** for **SSO provider**.
-4. Fetch the necessary SSO configuration parameters listed in [this](../security-and-control/single-sign-on.md#configuration-parameters){:target="_blank"} table from your app's **Settings** page within the IDP developer portal. 
+4. Fetch the necessary SSO configuration parameters listed in [this](../security-and-control/single-sign-on.md#configuration-parameters) table from your app's **Settings** page within the IDP developer portal. 
 5. Paste them into the relevant fields on the Platform’s SSO setup page.
 
 To add a new certificate, click **+Add new**.
@@ -390,10 +390,10 @@ To configure SSO using WS-Federation and Windows Azure, follow the steps below:
 4. Open **Server Manager** on the computer running AD FS, then choose **AD FS** > **Tools** > **AD FS Management**.
 5. Copy **IdP URL** from your IdP metadata (FederationMetadata.xml). You can find your ADFS Federation Metadata file URL on the AD FS server through **ADFS Management** in **ADFS** > **Service** > **Endpoints** > **Metadata**. It should look like this:
 
-   <img src="../images/copy-idp-url.png" alt="copy idp url" title="copy idp url"  style="border: 1px solid gray; zoom:75%;">
+   <img src="../images/copy-idp-url.png" alt="copy idp url" title="copy idp url"  style="border: 1px solid gray; zoom:75%;"/>
 
 6. Paste this value into the **Azure AD sign-on end point url** field on the Platform’s SSO setup page.
-7. Copy and paste [this](https://login.microsoftonline.com/common/FederationMetadata/2007-06/FederationMetadata.xml){:target="_blank"} URL link into the **Azure AD federation metadata document** field on the Platform’s SSO setup page.
+7. Copy and paste [this](https://login.microsoftonline.com/common/FederationMetadata/2007-06/FederationMetadata.xml) URL link into the **Azure AD federation metadata document** field on the Platform’s SSO setup page.
 8. Click **Save**.
 
 ### Other Configuration
@@ -443,7 +443,7 @@ However, you can still view the previously configured SSO parameters for a speci
 
 ## Steps to Disable SSO
 
-1. [Access](../security-and-control/single-sign-on.md#access-single-sign-on){:target="_blank"} the **Single sign on** page.
+1. [Access](../security-and-control/single-sign-on.md#access-single-sign-on) the **Single sign on** page.
 2. Click the **Disable SSO** tab.
 3. In the confirmation window, click **Yes**.
 
@@ -471,7 +471,7 @@ The **Manage Users** feature on the **Single Sign-On** page allows the account o
 
 To exclude a user from the SSO requirement, follow the steps below:
 
-1. [Navigate](../security-and-control/single-sign-on.md#access-single-sign-on){:target="_blank"} to the **Single Sign-on** page.
+1. [Navigate](../security-and-control/single-sign-on.md#access-single-sign-on) to the **Single Sign-on** page.
 2. Type and add an email address or select from the dropdown in the **Manage Users** textbox. You can add multiple users by entering an email address and pressing Tab.
 3. Click <b>Save</b>.
 
@@ -480,12 +480,12 @@ A success message is displayed, and the SSO sign-in is made optional for the use
 ### Sign-In Flow for the Excluded User
 
 During sign-in, the following screen is displayed for the excluded user. 
-<img src="../images/screen-for-excluded-user.png" alt="screen for excluded user" title="screen for excluded user" style="border: 1px solid gray; zoom:75%;">
+<img src="../images/screen-for-excluded-user.png" alt="screen for excluded user" title="screen for excluded user" style="border: 1px solid gray; zoom:75%;"/>
 
 When the user clicks **Continue**, one of the following happens:
 
 When **SSO is enabled**, the following page is displayed.
-<img src="../images/login-with-sso.png" alt="login with sso" title="login with sso" style="border: 1px solid gray; zoom:75%;">
+<img src="../images/login-with-sso.png" alt="login with sso" title="login with sso" style="border: 1px solid gray; zoom:75%;"/>
 
 The user can do one of the following:
 
@@ -503,4 +503,4 @@ As a Platform admin, you can enable Single Sign-On (SSO) using a third-party pro
 
 **Related resource**
 
-* [Settings Console](../../administration/overview.md){:target="_blank"}- Learn more about other the Platform's admin features.
+* [Settings Console](../../administration/overview.md)- Learn more about other the Platform's admin features.

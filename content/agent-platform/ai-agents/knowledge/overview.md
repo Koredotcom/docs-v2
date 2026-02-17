@@ -28,7 +28,7 @@ Search AI enables an end-to-end workflow for creating a robust, intelligent, and
 
 ### Ingestion
 
-Integrate and index content from diverse data sources to build a unified knowledge base. Search AI provides a versatile solution for data ingestion, supporting methods such as [web crawling](https://docs.kore.ai/xo/searchai/content-sources/web-crawl/){:target="_blank"}, [directory indexing](https://docs.kore.ai/xo/searchai/content-sources/directory/){:target="_blank"}, and [connectors](https://docs.kore.ai/xo/searchai/content-sources/connectors/){:target="_blank"} for third-party applications.
+Integrate and index content from diverse data sources to build a unified knowledge base. Search AI provides a versatile solution for data ingestion, supporting methods such as [web crawling](https://docs.kore.ai/xo/searchai/content-sources/web-crawl/), [directory indexing](https://docs.kore.ai/xo/searchai/content-sources/directory/), and [connectors](https://docs.kore.ai/xo/searchai/content-sources/connectors/) for third-party applications.
 
 
 ### Enhancement and Vector Generation
@@ -36,19 +36,19 @@ Integrate and index content from diverse data sources to build a unified knowled
 Refine and enrich the ingested content to align with specific organizational needs and improve the quality of answer generation. Key aspects of enhancement include:
 
 
-* [Processing ingested content using Workbench](https://docs.kore.ai/xo/searchai/workbench/introduction/){:target="_blank"}: Clean up irrelevant content, remove noise, tag or annotate content with custom metadata, or apply rules to exclude or update content. 
-* [Selecting the most suitable embedding models and fields for vector generation](https://docs.kore.ai/xo/searchai/index-configuration/){:target="_blank"}: This involves choosing the right models to convert the content into vector representations and specifying which parts of the content (such as title, body, metadata) should be used for vectorization. This ensures that the semantic meaning of the content is accurately captured. 
+* [Processing ingested content using Workbench](https://docs.kore.ai/xo/searchai/workbench/introduction/): Clean up irrelevant content, remove noise, tag or annotate content with custom metadata, or apply rules to exclude or update content. 
+* [Selecting the most suitable embedding models and fields for vector generation](https://docs.kore.ai/xo/searchai/index-configuration/): This involves choosing the right models to convert the content into vector representations and specifying which parts of the content (such as title, body, metadata) should be used for vectorization. This ensures that the semantic meaning of the content is accurately captured. 
 
 
 ### Retrieval
 
 Set up retrieval and answer generation strategies to deliver the most accurate and relevant information to the users, including: 
 
-* [Selecting the optimum retrieval strategy](https://docs.kore.ai/xo/searchai/retrieval/){:target="_blank"}: This defines how relevant content is fetched in response to user queries. Search AI supports Vector Retrieval and Hybrid Retrieval. 
-* [Query Processing to improve retrieval relevance](https://docs.kore.ai/xo/searchai/rag-agents/){:target="_blank"}: Leverages LLM to enhance and clarify user queries by understanding the context and user intent. Also identifies key terms within a query and removes noise from the user query. This helps improve query understanding and retrieval accuracy. 
-* [Answer Generation configuration](https://docs.kore.ai/xo/searchai/answer-generation/){:target="_blank"}: Define how responses are composed based on retrieved content. You can configure whether the response should be extractive (directly from content) or generative (summarized and rephrased). For generative answers, configure further properties for optimized results. 
+* [Selecting the optimum retrieval strategy](https://docs.kore.ai/xo/searchai/retrieval/): This defines how relevant content is fetched in response to user queries. Search AI supports Vector Retrieval and Hybrid Retrieval. 
+* [Query Processing to improve retrieval relevance](https://docs.kore.ai/xo/searchai/rag-agents/): Leverages LLM to enhance and clarify user queries by understanding the context and user intent. Also identifies key terms within a query and removes noise from the user query. This helps improve query understanding and retrieval accuracy. 
+* [Answer Generation configuration](https://docs.kore.ai/xo/searchai/answer-generation/): Define how responses are composed based on retrieved content. You can configure whether the response should be extractive (directly from content) or generative (summarized and rephrased). For generative answers, configure further properties for optimized results. 
 
-[Learn more about Search AI](https://docs.kore.ai/xo/searchai/about-search-ai/){:target="_blank"}.
+[Learn more about Search AI](https://docs.kore.ai/xo/searchai/about-search-ai/).
 
 
 ### An Example Scenario

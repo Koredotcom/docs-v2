@@ -8,15 +8,15 @@ The Platform seamlessly integrates with Hugging Face, allowing you to incorporat
 2. Click **Settings** on the top navigation bar.
 2. Click **Integrations** on the left menu.
 
-    <img src="../images/navigate-to-settings.png" alt="Navigate to Settings" title="Navigate to Settings" style="border: 1px solid gray; zoom:80%;">
+    <img src="../images/navigate-to-settings.png" alt="Navigate to Settings" title="Navigate to Settings" style="border: 1px solid gray; zoom:80%;"/>
 
 3. Click the **Hugging Face** option from the list of Integrations. The Hugging Face section is expanded.
 
-    <img src="../images/add-hugging-face-connection.png" alt="Add Hugging Face Connection" title="Add Hugging Face Connection" style="border: 1px solid gray; zoom:80%;">
+    <img src="../images/add-hugging-face-connection.png" alt="Add Hugging Face Connection" title="Add Hugging Face Connection" style="border: 1px solid gray; zoom:80%;"/>
 
 4. Click **Add connection**. The **Hugging Face** dialog is displayed.
 
-    <img src="../images/hugging-face-connection.png" alt="Hugging Face Connection" title="Hugging Face Connection" style="border: 1px solid gray; zoom:60%;">
+    <img src="../images/hugging-face-connection.png" alt="Hugging Face Connection" title="Hugging Face Connection" style="border: 1px solid gray; zoom:60%;"/>
 
 5. Enter the following details in the dialog to create a connection:
     * Provide a **Connection name**.
@@ -32,7 +32,7 @@ You can test your connection after you provide the details to verify the accurac
 
 1. Click the **Test** button on the **Hugging Face** dialog.
 
-    <img src="../images/test-hugging-face-connection.png" alt="Test Hugging Face Connection" title="Test Hugging Face Connection" style="border: 1px solid gray; zoom:60%;">
+    <img src="../images/test-hugging-face-connection.png" alt="Test Hugging Face Connection" title="Test Hugging Face Connection" style="border: 1px solid gray; zoom:60%;"/>
 
     Once the connection is tested, you will receive feedback information.
 

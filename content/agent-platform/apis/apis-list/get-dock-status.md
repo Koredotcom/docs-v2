@@ -33,7 +33,7 @@ This API allows users to track the status of ongoing or completed jobs related t
 
 **Where can I find the API key?**
 
-To use the API, you will need an API key. [Learn more](../../apis/overview.md#how-to-create-the-api-key){:target="_blank"}.
+To use the API, you will need an API key. [Learn more](../../apis/overview.md#how-to-create-the-api-key).
 
 
 ## QPath Parameters

@@ -31,10 +31,10 @@ Agentic Evaluation enables multi-level evaluation across sessions and traces, of
 
 ## Accessing Evaluation Studio
 
-1. [Log in](../getting-started/sign-up-sign-in.md){:target="_blank"} to your Platform account.
+1. [Log in](../getting-started/sign-up-sign-in.md) to your Platform account.
 
 2. From the modules menu, select **Evaluation Studio**.
  
 2. On the Evaluation page, select **Model evaluation** or **Agentic evaluation** to begin.
 
-    <img src="../images/eval_studio_page.png" alt="Evaluation page" title="Evaluation page" style="border: 1px solid gray; zoom:80%;">
+    <img src="../images/eval_studio_page.png" alt="Evaluation page" title="Evaluation page" style="border: 1px solid gray; zoom:80%;"/>

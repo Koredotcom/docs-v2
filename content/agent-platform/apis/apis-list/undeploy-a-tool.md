@@ -4,7 +4,7 @@
 
 This API undeploys a tool that's deployed in an environment. 
 
-The API response includes the tool ID, dock status ID and the tool undeployment status. After receiving the response, use the <code>dockStatusId</code> to call the [Get Dock Status API](../apis-list/get-dock-status.md){:target="_blank"} and verify the status of the task.
+The API response includes the tool ID, dock status ID and the tool undeployment status. After receiving the response, use the <code>dockStatusId</code> to call the [Get Dock Status API](../apis-list/get-dock-status.md) and verify the status of the task.
 
 
 <table>
@@ -36,7 +36,7 @@ The API response includes the tool ID, dock status ID and the tool undeployment 
 
 **Where can I find the API key?**
 
-To use the API, you will need an API key. [Learn more](../../apis/overview.md#how-to-create-the-api-key){:target="_blank"}.
+To use the API, you will need an API key. [Learn more](../../apis/overview.md#how-to-create-the-api-key).
 
 ## Path Parameters
 

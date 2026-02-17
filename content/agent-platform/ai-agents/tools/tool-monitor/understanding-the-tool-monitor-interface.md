@@ -8,7 +8,7 @@ The Tool Monitor capabilities are shown on the following tabs:
 
 Both tabs include summary metrics at the top of the page, including total runs/requests, average response times (P90 and P99), and failure rates.
 
-<img src="../images/new_agent_monitor.png" alt="All runs and Model runs tabs" title="All runs and Model runs tabs" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/new_agent_monitor.png" alt="All runs and Model runs tabs" title="All runs and Model runs tabs" style="border: 1px solid gray; zoom:80%;"/>
 
 ## All Runs
 
@@ -75,9 +75,9 @@ These metrics are dependent on the selected date range, filters, and search crit
 
 ## Viewing Detailed Run Information
 
-Clicking each row in either the All runs tab or the Model runs tab opens a detailed view panel on the right. This view is similar to the Run dialog panel on the Tool flow canvas. [Learn more](../tool-flows/perform-other-actions-on-the-flow-builder/run-the-flow.md){:target="_blank"}.
+Clicking each row in either the All runs tab or the Model runs tab opens a detailed view panel on the right. This view is similar to the Run dialog panel on the Tool flow canvas. [Learn more](../tool-flows/perform-other-actions-on-the-flow-builder/run-the-flow.md).
 
-<img src="../images/agent_monitor_viewing_run_information.png" alt="Viewing detailed run information" title="Viewing detailed run information" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/agent_monitor_viewing_run_information.png" alt="Viewing detailed run information" title="Viewing detailed run information" style="border: 1px solid gray; zoom:80%;"/>
 
 The panel displays the following details:
 
@@ -93,7 +93,7 @@ The panel displays the following details:
 
 *  **Output section**: The Output section displays the tool's output (for successful runs). You can copy the output and view tokens.
 
-    <img src="../images/agent_monitor_viewing_run_information_detailed.png" alt="Viewing detailed run information" title="Viewing detailed run information" style="border: 1px solid gray; zoom:80%;">
+    <img src="../images/agent_monitor_viewing_run_information_detailed.png" alt="Viewing detailed run information" title="Viewing detailed run information" style="border: 1px solid gray; zoom:80%;"/>
 
 
 ## Understanding the Impact of Timeouts on Tool Endpoints
@@ -123,7 +123,7 @@ Below are the four scenarios showing how timeouts affect the tool endpoint, alon
 * If the external system tries the same callback URL again, it will be notified that the request has already been fulfilled.
 
 
-The timeout settings affect how long the system waits for responses and how it handles retries, ensuring proper status updates and communication with external systems. For more information on configuring timeouts, see [Configure a tool](../configure-a-tool.md){:target="_blank"} and [API Node](../tool-flows/types-of-nodes/api-node.md){:target="_blank"}.
+The timeout settings affect how long the system waits for responses and how it handles retries, ensuring proper status updates and communication with external systems. For more information on configuring timeouts, see [Configure a tool](../configure-a-tool.md) and [API Node](../tool-flows/types-of-nodes/api-node.md).
 
 ## Searching and Filtering Information
 

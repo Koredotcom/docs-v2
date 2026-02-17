@@ -20,12 +20,12 @@ The following file extensions are currently supported:
 
 **Where can I find the API key?**
 
-To use the API, you will need an API key. [Learn more](../../apis/overview.md#how-to-create-the-api-key){:target="_blank"}.
+To use the API, you will need an API key. [Learn more](../../apis/overview.md#how-to-create-the-api-key).
 
 The following file upload modes are supported:
 
-* [Mode 1 - Upload a single file as is](./upload-file-api.md#mode-1-upload-a-single-file-as-is){:target="_blank"}: Use this mode if your file is smaller than 25 MB.
-* [Mode 2 - Upload a file in chunks](./upload-file-api.md#mode-2-upload-a-file-in-chunks){:target="_blank"}: Use this mode if your file is larger than 25 MB. Ensure you start the session for chunk uploads before proceeding.
+* [Mode 1 - Upload a single file as is](./upload-file-api.md#mode-1-upload-a-single-file-as-is): Use this mode if your file is smaller than 25 MB.
+* [Mode 2 - Upload a file in chunks](./upload-file-api.md#mode-2-upload-a-file-in-chunks): Use this mode if your file is larger than 25 MB. Ensure you start the session for chunk uploads before proceeding.
 
 ## Mode 1: Upload a Single File As Is
 
@@ -170,9 +170,9 @@ curl --location 'https://{host}/api/public/files'
 
 This method requires the following three APIs to upload a large file:
 
-1. [Start the file upload session](./upload-file-api.md#start-session-api){:target="_blank"}.
-2. [Upload in chunks](./upload-file-api.md#chunk-upload-api){:target="_blank"}, and 
-3. [Merge the chunks to complete the process](./upload-file-api.md#complete-the-process){:target="_blank"}.
+1. [Start the file upload session](./upload-file-api.md#start-session-api).
+2. [Upload in chunks](./upload-file-api.md#chunk-upload-api), and 
+3. [Merge the chunks to complete the process](./upload-file-api.md#complete-the-process).
 
 ### Start Session API
 
@@ -350,7 +350,7 @@ curl --location 'https://{host}/api/public/files/session/start'
 
 ### Chunk Upload API
 
-The API uploads the file in multiple chunks. The <code>session ID</code> from the [Start Session](./upload-file-api.md#start-session-api){:target="_blank"} API must be used in this step.
+The API uploads the file in multiple chunks. The <code>session ID</code> from the [Start Session](./upload-file-api.md#start-session-api) API must be used in this step.
 
 <table>
   <tr>
@@ -500,7 +500,7 @@ curl --location 'https://{host}/api/public/files/session/14xxxxxd-0xx4-4xxf-axx1
 
 ### Complete The Process
 
-This API merges the uploaded chunks and finalizes the process using the `session Id` from the [Start Session](./upload-file-api.md#start-session-api){:target="_blank"} API. It returns the <code>file URL</code> and <code>file ID</code>. Missing chunk numbers are identified after the merge.
+This API merges the uploaded chunks and finalizes the process using the `session Id` from the [Start Session](./upload-file-api.md#start-session-api) API. It returns the <code>file URL</code> and <code>file ID</code>. Missing chunk numbers are identified after the merge.
 
 <table>
   <tr>

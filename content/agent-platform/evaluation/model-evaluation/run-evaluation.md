@@ -8,7 +8,7 @@ To start an evaluation, click **Run** on the Evaluation page. The system will th
 
 Once the evaluation is complete, the evaluator columns will be populated with scores, giving you a clear overview of the model’s performance.
 
-<img src="../../images/results.png" alt="Results" title="Results" style="border: 1px solid gray; zoom:80%;">
+<img src="../../images/results.png" alt="Results" title="Results" style="border: 1px solid gray; zoom:80%;"/>
 
 The evaluator tiles for each evaluator you've set up will also appear at the top in the Evaluation Insights section. This layout provides an easy, visual way to assess model performance against the defined thresholds.
 
@@ -22,7 +22,7 @@ If you decide to stop an evaluation midway, before it completes—perhaps becaus
 2. A confirmation message asks if you're sure you want to stop. Click 'Continue' to confirm. The evaluation will keep running in the background until you click 'Continue'.
 3. Once you click 'Continue', the evaluation will be fully stopped, and all evaluators and rows will be halted.
 
-    <img src="../../images/stop_button.png" alt="Stopping evaluation" title="Stopping evaluation" style="border: 1px solid gray; zoom:80%;">
+    <img src="../../images/stop_button.png" alt="Stopping evaluation" title="Stopping evaluation" style="border: 1px solid gray; zoom:80%;"/>
 
 
 
@@ -40,7 +40,7 @@ Tracking the progress of an evaluation is crucial to understanding how long an e
 
 During the evaluation, simply click the progress ring icon in the top corner to quickly view detailed progress information and real-time updates on the evaluation.
 
-<img src="../../images/eval_progress_final.png" alt="Evaluation progress" title="Evaluation progress" style="border: 1px solid gray; zoom:80%;">
+<img src="../../images/eval_progress_final.png" alt="Evaluation progress" title="Evaluation progress" style="border: 1px solid gray; zoom:80%;"/>
 
 **Why is this useful?**
 

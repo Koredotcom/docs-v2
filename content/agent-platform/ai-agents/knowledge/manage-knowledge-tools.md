@@ -69,12 +69,12 @@ Click **Create**. This action creates a new Search AI application within the sam
 
 **Next Steps** : Navigate to Search AI and take the following actions.
 
-* [Set extraction strategies.](https://docs.kore.ai/xo/searchai/content-extraction/etl/){:target="_blank"} 
-* [Ingest Content.](https://docs.kore.ai/xo/searchai/content-sources/introduction/){:target="_blank"}
-* [Set Retrieval Strategies.](https://docs.kore.ai/xo/searchai/retrieval/){:target="_blank"}
-* [Configure answer generation.](https://docs.kore.ai/xo/searchai/answer-generation/){:target="_blank"}
+* [Set extraction strategies.](https://docs.kore.ai/xo/searchai/content-extraction/etl/) 
+* [Ingest Content.](https://docs.kore.ai/xo/searchai/content-sources/introduction/)
+* [Set Retrieval Strategies.](https://docs.kore.ai/xo/searchai/retrieval/)
+* [Configure answer generation.](https://docs.kore.ai/xo/searchai/answer-generation/)
 
-[Learn More.](https://docs.kore.ai/xo/searchai/about-search-ai/){:target="_blank"}
+[Learn More.](https://docs.kore.ai/xo/searchai/about-search-ai/)
 
 ## Test the Knowledge Base
 
@@ -92,4 +92,4 @@ To remove the knowledge tool from the Agentic app, go to the Knowledge page and 
 
 ## Manage Content in Search AI
 
-To update the content in the search AI application or edit any configurations, use the **Manage Content** option to navigate to the corresponding Search AI app. [Learn More](https://docs.kore.ai/xo/searchai/content-sources/introduction/){:target="_blank"}.
+To update the content in the search AI application or edit any configurations, use the **Manage Content** option to navigate to the corresponding Search AI app. [Learn More](https://docs.kore.ai/xo/searchai/content-sources/introduction/).

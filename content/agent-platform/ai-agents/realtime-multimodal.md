@@ -19,7 +19,7 @@ Traditional AI systems can handle only one input type. However, Multimodal orche
 
 The core architecture of a Realtime Multimodal Orchestration system typically includes the following components and workflow:
 
-<img src="../images/realtime-multimodal-orchestration.png" alt="Realtime Multimodal AI" title="Realtime Multimodal AI" style="zoom:60%;">
+<img src="../images/realtime-multimodal-orchestration.png" alt="Realtime Multimodal AI" title="Realtime Multimodal AI" style="zoom:60%;"/>
 
 
 1. **Input Layer**: The system captures data from various sources, including spoken queries (audio), written text, and uploaded images. A session manager handles WebSocket connections and detects the input modality.
