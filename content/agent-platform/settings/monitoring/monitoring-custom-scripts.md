@@ -231,7 +231,7 @@ This section displays a dynamic table with the following log-level data:
   <tr>
    <td ><strong>Log level</strong>
    </td>
-   <td>Stdout, Stderr, Info, Debug, Warning, or Error. <a href="#enhanced-logging-for-gvisor-monitoring" target="_blank">Learn more</a> about the supported logging options for the gVisor service.</td>
+   <td>Stdout, Stderr, Info, Debug, Warning, or Error. <a href="#enhanced-logging-for-gvisor-monitoring">Learn more</a> about the supported logging options for the gVisor service.</td>
   </tr>
   <tr>
    <td><strong>Log Message</strong>

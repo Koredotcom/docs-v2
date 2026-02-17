@@ -157,7 +157,7 @@ Once you install a tool template, you can access its prebuilt flow and modify it
    Each node available on the prebuilt flow canvas is automatically mapped to the relevant node type. You can view the node configurations on the **General Settings** panel, as shown below.
    <img src="../images/node-mapping.png" alt="node mapping" title="node mapping" style="border: 1px solid gray; zoom:75%;"/>
 
-<ol start="3"><li><a href="../tool-flows/manage-flow-nodes/" target="_blank">Manage nodes and their configurations</a> in the flow, <a href="../tool-flows/perform-other-actions-on-the-flow-builder/manage-input-and-output" target="_blank">edit input and output</a>, and <a href="../tool-flows/perform-other-actions-on-the-flow-builder/run-the-flow" target="_blank">run the flow</a> as required to customize the tool flow. To view the changes made to the tool flow, use the change log. <a href="../tool-flows/tool-canvas-change-log" target="_blank">Learn more</a>.</li></ol>
+<ol start="3"><li><a href="../tool-flows/manage-flow-nodes/">Manage nodes and their configurations</a> in the flow, <a href="../tool-flows/perform-other-actions-on-the-flow-builder/manage-input-and-output">edit input and output</a>, and <a href="../tool-flows/perform-other-actions-on-the-flow-builder/run-the-flow">run the flow</a> as required to customize the tool flow. To view the changes made to the tool flow, use the change log. <a href="../tool-flows/tool-canvas-change-log">Learn more</a>.</li></ol>
 
 ### Delete a Tool Template
 

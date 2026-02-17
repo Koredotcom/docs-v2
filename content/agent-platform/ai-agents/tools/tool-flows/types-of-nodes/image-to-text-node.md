@@ -73,7 +73,7 @@ In this document, you will learn how to add the node to your flows, configure it
       <li>The file source url must be valid for the node to function properly.</li>
       <li>Only PNG, JPEG, and JPG file formats are supported.</li>
       <li>Except for image input handling, the OCR node functions like the existing AI node.</li>
-      <li>Sending images and related settings are handled by the <a href="../../../../../apis/apis-list/upload-file-api/" target="_blank">File Upload API</a>.</li>
+      <li>Sending images and related settings are handled by the <a href="../../../../../apis/apis-list/upload-file-api/">File Upload API</a>.</li>
       <li>Image input preprocessing is supported in the following formats:</li>
      <ul><li>Binary, base64-encoded for Anthropic models.</li>
      <li>Both binary, base64-encoded, and image URLs for OpenAI models.</li></ul></p></div>

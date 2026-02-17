@@ -180,7 +180,7 @@ Metrics include:
      * **On Success** > <b>Go to Node</b>: After the current node is successfully executed, go to a selected node in the flow to execute next, such as an AI node, Function node, Condition node, API node, or End node.
      * **On Failure** > <b>Go to Node</b>: If the execution of the current node fails, go to the End node to display any custom error message from the <b>Audio to Text</b> node.
 
-* Finally, <a href="#step-3-run-the-flow" target="_blank">run the flow</a> and fix any issues found.
+* Finally, <a href="#step-3-run-the-flow">run the flow</a> and fix any issues found.
 
 ## Test the Flow for the Node
 
@@ -206,7 +206,7 @@ Add all the required input variables to run the flow in the **Input** section of
     <img src="../images/click-add-output-variable.png" alt="click add output variable" title="click add output variable" style="border: 1px solid gray; zoom:75%;"/>
 
 * Enter the value for <b>Name (key)</b> and select <b><i>String</i></b> for <b>Type</b> to generate the transcribed text output.
-* Click <b>Save</b>. <a href="../text-to-text-node/#access-the-ai-nodes-output" target="_blank">Learn more</a> about accessing the node’s output.
+* Click <b>Save</b>. <a href="../text-to-text-node/#access-the-ai-nodes-output">Learn more</a> about accessing the node’s output.
     <img src="../images/save-output-variable.png" alt="save output variable" title="save output variable" style="border: 1px solid gray; zoom:75%;"/>
 
 ### Step 3: Run the Flow

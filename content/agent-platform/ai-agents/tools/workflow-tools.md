@@ -16,7 +16,7 @@ Workflow Tools allow you to:
 
 **Visual Tool Flow Builder**
 
-Design workflows using a node-based, drag-and-drop interface. Nodes and transitions define execution logic, enabling end-to-end automation without writing code. It uses nodes and transitions to help you automate end-to-end tasks without writing complex code. To build a flow, you can either [create a tool](./create-a-new-tool.md){target="_blank"} from scratch, [import an existing tool](./import-a-tool.md){target="_blank"}, or [access prebuilt tool flows using the tool templates](../tools/tool-templates.md){target="_blank"} available in the marketplace.
+Design workflows using a node-based, drag-and-drop interface. Nodes and transitions define execution logic, enabling end-to-end automation without writing code. It uses nodes and transitions to help you automate end-to-end tasks without writing complex code. To build a flow, you can either [create a tool](./create-a-new-tool.md) from scratch, [import an existing tool](./import-a-tool.md), or [access prebuilt tool flows using the tool templates](../tools/tool-templates.md) available in the marketplace.
 
 **Synchronous & Asynchronous Execution**
 
