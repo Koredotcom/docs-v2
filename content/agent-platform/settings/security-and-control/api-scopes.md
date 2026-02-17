@@ -43,73 +43,73 @@ The following API scopes are available for this feature.
   <tr>
    <td>Deploy Tool
    </td>
-   <td>Deploy a specific tool into an environment. It allows the user to control the deployment process either synchronously or asynchronously. <a href="../../../apis/apis-list/deploy-a-tool/" target="_blank">Learn more</a>.
+   <td>Deploy a specific tool into an environment. It allows the user to control the deployment process either synchronously or asynchronously. <a href="../../../apis/apis-list/deploy-a-tool/">Learn more</a>.
    </td>
   </tr>
   <tr>
    <td>Undeploy Tool
    </td>
-   <td>Undeploy a tool that is deployed in an environment. <a href="../../../apis/apis-list/undeploy-a-tool/" target="_blank">Learn more</a>.
+   <td>Undeploy a tool that is deployed in an environment. <a href="../../../apis/apis-list/undeploy-a-tool/">Learn more</a>.
    </td>
   </tr>
   <tr>
    <td>Deploy Model
    </td>
-   <td>Deploy an open-source or fine-tuned model in the <strong><em>Ready to Deploy</em></strong> state. <a href="../../../apis/apis-list/deploy-a-model/" target="_blank">Learn more</a>.
+   <td>Deploy an open-source or fine-tuned model in the <strong><em>Ready to Deploy</em></strong> state. <a href="../../../apis/apis-list/deploy-a-model/">Learn more</a>.
    </td>
   </tr>
   <tr>
    <td>Undeploy Model
    </td>
-   <td>Undeploy a model from the environment. <a href="../../../apis/apis-list/undeploy-a-model/" target="_blank">Learn more</a>.
+   <td>Undeploy a model from the environment. <a href="../../../apis/apis-list/undeploy-a-model/">Learn more</a>.
    </td>
   </tr>
   <tr>
    <td>Import Model
    </td>
-   <td> Import a model in chunks into the Platform environment. <a href="../../../apis/apis-list/import-a-model/" target="_blank">Learn more</a>.
+   <td> Import a model in chunks into the Platform environment. <a href="../../../apis/apis-list/import-a-model/">Learn more</a>.
    </td>
   </tr>
   <tr>
    <td>Import Tool
    </td>
-   <td>Import a new tool into the system. <a href="../../../apis/apis-list/import-a-new-tool/" target="_blank">Learn more</a>.
+   <td>Import a new tool into the system. <a href="../../../apis/apis-list/import-a-new-tool/">Learn more</a>.
    </td>
   </tr>
   <tr>
    <td>Export Model
    </td>
-   <td>Export a trained AI model from the system. <a href="../../../apis/apis-list/export-a-model/" target="_blank">Learn more</a>.
+   <td>Export a trained AI model from the system. <a href="../../../apis/apis-list/export-a-model/">Learn more</a>.
    </td>
   </tr>
   <tr>
    <td>Export Tool
    </td>
-   <td>Export a tool's configuration and associated data.<a href="../../../apis/apis-list/export-a-tool/" target="_blank">Learn more</a>.
+   <td>Export a tool's configuration and associated data.<a href="../../../apis/apis-list/export-a-tool/">Learn more</a>.
    </td>
   </tr>
   <tr>
    <td>Deploy Guardrails
    </td>
-   <td>Deploy pre-defined <strong>guardrails</strong> to enhance security, compliance, and content moderation in AI interactions. <a href="../../../apis/apis-list/deploy-guardrails/" target="_blank">Learn more</a>.
+   <td>Deploy pre-defined <strong>guardrails</strong> to enhance security, compliance, and content moderation in AI interactions. <a href="../../../apis/apis-list/deploy-guardrails/">Learn more</a>.
    </td>
   </tr>
   <tr>
    <td>Undeploy Guardrails
    </td>
-   <td>Remove the previously deployed guardrails that regulate AI interactions.<a href="../../../apis/apis-list/undeploy-guardrails/" target="_blank" target="_blank"> Learn more</a>.
+   <td>Remove the previously deployed guardrails that regulate AI interactions.<a href="../../../apis/apis-list/undeploy-guardrails/"> Learn more</a>.
    </td>
   </tr>
   <tr>
    <td>View Connections
    </td>
-   <td>Required for viewing connection details. <a href="../../../apis/apis-list/connections-api/" target="_blank">Learn more</a>.
+   <td>Required for viewing connection details. <a href="../../../apis/apis-list/connections-api/">Learn more</a>.
    </td>
   </tr>
   <tr>
    <td>Manage Connections
    </td>
-   <td>Required for creating and updating connections. <a href="../../../apis/apis-list/connections-api/" target="_blank">Learn more</a>.
+   <td>Required for creating and updating connections. <a href="../../../apis/apis-list/connections-api/">Learn more</a>.
    </td>
   </tr>
 </table>

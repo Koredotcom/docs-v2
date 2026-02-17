@@ -25,32 +25,32 @@ The Platform supports SSO for the following protocols and providers:
   </tr>
   <tr>
    <td>
-<a href="#saml" target="_blank">SAML</a>
+<a href="#saml">SAML</a>
    </td>
    <td>
 <ul>
-<li><a href="#okta-configuration" target="_blank">Okta</a></li>
-<li><a href="#onelogin-configuration" target="_blank">OneLogin</a></li>
-<li><a href="#other-configuration" target="_blank">Other</a></li>
+<li><a href="#okta-configuration">Okta</a></li>
+<li><a href="#onelogin-configuration">OneLogin</a></li>
+<li><a href="#other-configuration">Other</a></li>
 </ul>
    </td>
   </tr>
   <tr>
-   <td><a href="#ws-federation" target="_blank">WS-Federation</a>
+   <td><a href="#ws-federation">WS-Federation</a>
    </td>
    <td>
 <ul>
-<li><a href="#windows-azure-configuration" target="_blank">Windows Azure</a></li>
-<li><a href="#other-configuration_1" target="_blank">Other</a></li>
+<li><a href="#windows-azure-configuration">Windows Azure</a></li>
+<li><a href="#other-configuration_1">Other</a></li>
 </ul>
    </td>
   </tr>
   <tr>
-   <td><a href="#openid-connect-configuration" target="_blank">OpenID Connect</a>
+   <td><a href="#openid-connect-configuration">OpenID Connect</a>
    </td>
    <td>
 <ul>
-<li><a href="#google-configuration" target="_blank">Google account</a></li>
+<li><a href="#google-configuration">Google account</a></li>
 </ul>
    </td>
   </tr>
@@ -201,9 +201,9 @@ To enable SSO on the **Settings** console, follow the steps below:
 4. Select the required protocol and SP. The default selections are **SAML** and **Okta**.
 5. Configure the [parameters](../security-and-control/single-sign-on.md#configuration-parameters) for one of the following SSO protocols and providers:
 
-<ul><li><b>SAML</b>: <a href="#okta-configuration" target="_blank">Okta</a>, <a href="#onelogin-configuration" target="_blank">Onelogin</a>, or <a href="#other-configuration" target="_blank">Other</a>. <a href="#saml" target="_blank">Learn more</a>.</li>
-<li><b>WS-Federation</b>: <a href="#windows-azure-configuration" target="_blank">Windows Azure</a> or <a href="#other-configuration" target="_blank">Other</a>. <a href="#ws-federation" target="_blank">Learn more</a>.</li>
-<li><b>OpenId connect</b>: <a href="#google-configuration" target="_blank">Google</a>. <a href="#openid-connect-configuration" target="_blank">Learn more</a></li></ul>
+<ul><li><b>SAML</b>: <a href="#okta-configuration">Okta</a>, <a href="#onelogin-configuration">Onelogin</a>, or <a href="#other-configuration">Other</a>. <a href="#saml">Learn more</a>.</li>
+<li><b>WS-Federation</b>: <a href="#windows-azure-configuration">Windows Azure</a> or <a href="#other-configuration">Other</a>. <a href="#ws-federation">Learn more</a>.</li>
+<li><b>OpenId connect</b>: <a href="#google-configuration">Google</a>. <a href="#openid-connect-configuration">Learn more</a></li></ul>
 
 <ol start="9"><li>Click <b>Save</b>.</li></ol>
 
@@ -242,7 +242,7 @@ To configure SSO using SAML and Okta, follow the steps below:
 <p class="admonition-title">Note</p>
 <p>If you already have the required parameters for Okta, move directly to Step 18.</p></div>
 
-<ol start="4"><li>Login to the <a href="https://developer.okta.com/login/" target="_blank">Okta developer portal</a>.</li>
+<ol start="4"><li>Login to the <a href="https://developer.okta.com/login/">Okta developer portal</a>.</li>
 <li>On the dashboard, click <b>Applications</b> on the left menu.</li>
 <li>Click <b>Create App Integration</b>.</li>
 <img src="../images/okta-create-app-integration.png" alt="okta create app integration" title="okta create app integration" style="border: 1px solid gray; zoom:75%;"/></ol>
@@ -311,8 +311,8 @@ To configure SSO using SAML and Onelogin, follow the steps below:
 5. Go to **Applications** > **Add Apps** to access your app.
 <img src="../images/onelogin-add-app.png" alt="onelogin add app" title="onelogin add app" style="border: 1px solid gray; zoom:75%;"/>
 
-<ul><li>To learn how to <b>add a new app</b>, click <a href="https://onelogin.service-now.com/support?id=kb_article&sys_id=9bf39e0047ccbd509d8dfd1f536d431c&kb_category=e9866930db185340d5505eea4b9619b7#manage-add" target="_blank">here</a>.</li>
-<li>To learn how to <b>configure apps</b>, click <a href="https://onelogin.service-now.com/support?id=kb_article&sys_id=9bf39e0047ccbd509d8dfd1f536d431c&kb_category=e9866930db185340d5505eea4b9619b7#config" target="_blank">here</a>.</li></ul>
+<ul><li>To learn how to <b>add a new app</b>, click <a href="https://onelogin.service-now.com/support?id=kb_article&sys_id=9bf39e0047ccbd509d8dfd1f536d431c&kb_category=e9866930db185340d5505eea4b9619b7#manage-add">here</a>.</li>
+<li>To learn how to <b>configure apps</b>, click <a href="https://onelogin.service-now.com/support?id=kb_article&sys_id=9bf39e0047ccbd509d8dfd1f536d431c&kb_category=e9866930db185340d5505eea4b9619b7#config">here</a>.</li></ul>
 
 <ol start="6"><li>Search for your Platform app and click <b>Enter</b>.</li>
 <li>Click your app to view the <b>Add App</b> page. Optionally, change the display name or the icons displayed to your users in the <i>OneLogin</i> portal, and then click <b>SAVE</b>. The Platform app has been added to your company apps for <i>OneLogin</i> and is listed on the app page.</li>

@@ -16,7 +16,7 @@ To invite a user, follow the steps below:
  
 <div class="admonition note">
 <p class="admonition-title">Note</p>
-<p>System-defined and custom roles available in the inviter’s account can be assigned. <a href="../role-management/" target="_blank">Learn more</a> about roles and permissions.</p></div></ol>
+<p>System-defined and custom roles available in the inviter’s account can be assigned. <a href="../role-management/">Learn more</a> about roles and permissions.</p></div></ol>
 
 <ol start="6"><li>To invite multiple users, click <b>+ Add another member</b>. Then, follow steps 4 and 5.
 
