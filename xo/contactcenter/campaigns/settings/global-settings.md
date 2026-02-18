@@ -3,18 +3,18 @@
 This section consists of the settings required for campaigns.
 
 To access campaign settings, go to Contact Center AI > Campaigns > Settings.  
-<img src="../images/settings-page.png" alt="Settings Page" title="Settings Page" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/settings-page.png" alt="Settings Page" title="Settings Page" style="border: 1px solid gray; zoom:80%;"/>
 
 ## Global Settings
 
 Select **Global Settings**.  
-<img src="../images/global-settings.png" alt="Global Settings" title="Global Settings" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/global-settings.png" alt="Global Settings" title="Global Settings" style="border: 1px solid gray; zoom:80%;"/>
 
 * Supervisors can configure the maximum count of concurrent calls for the campaigns. By default, the count is set to 10, and the maximum count that can be set is 25. This applies only to Agentless Campaigns. Progressive and Preview Campaigns remain unaffected, as they depend solely on the number of available agents.  
 * Supervisors can set the total messages per minute for the campaigns. By default, the count is set to 1.  
 * Power dialing customer wait time determines how long a customer stays on the call while waiting for an agent before the call ends. The default duration is 5 seconds, and the minimum duration is 3 seconds.  
 * Power dialing agent idle max time sets the maximum time an agent can remain idle while assigned to a campaign before releasing back to the queue. The default duration is 30 seconds, and the minimum duration is 5 seconds.  
- <img src="../images/global-settings-panel.png" alt="Global Settings" title="Global Settings" style="border: 1px solid gray; zoom:80%;">
+ <img src="../images/global-settings-panel.png" alt="Global Settings" title="Global Settings" style="border: 1px solid gray; zoom:80%;"/>
 
 ## Proactive CoolDown Time
 
@@ -35,16 +35,16 @@ Only one proactive campaign widget displays at any given time. A campaign templa
 Steps to configure the cooldown time:
 
 1. Select **Proactive CoolDown Time**.  
-    <img src="../images/proactive-cooldown-time.png" alt="Proactive Cooldown Time" title="Proactive Cooldown Time" style="border: 1px solid gray; zoom:80%;">
+    <img src="../images/proactive-cooldown-time.png" alt="Proactive Cooldown Time" title="Proactive Cooldown Time" style="border: 1px solid gray; zoom:80%;"/>
 
 2. Enter a value between 0 and 30,000 for the Cooldown Time (default: 0), and click **Save**.  
-    <img src="../images/cooldown-time.png" alt="Save" title="Save" style="border: 1px solid gray; zoom:80%;">
+    <img src="../images/cooldown-time.png" alt="Save" title="Save" style="border: 1px solid gray; zoom:80%;"/>
 
     This setting applies uniformly across all proactive campaigns within the application.
 
 ## Unanswered Call Attempts
 
-<img src="../images/unanswered-call-attempts.png" alt="Unanswered Call Attempts" title="Unanswered Call Attempts" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/unanswered-call-attempts.png" alt="Unanswered Call Attempts" title="Unanswered Call Attempts" style="border: 1px solid gray; zoom:80%;"/>
 
 Automatically add phone numbers to the Global DNC list when they repeatedly fail to connect during voice campaigns.
 
@@ -56,7 +56,7 @@ Automatically add phone numbers to the Global DNC list when they repeatedly fail
 
 ## Voice Machine Timeouts
 
-<img src="../images/voice-machine-timeouts.png" alt="Voice Machine Timeouts" title="Voice Machine Timeouts" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/voice-machine-timeouts.png" alt="Voice Machine Timeouts" title="Voice Machine Timeouts" style="border: 1px solid gray; zoom:80%;"/>
 
 Voice machine timeouts define how long the system waits at each stage of an IVR or answering machine interaction before taking action.
 

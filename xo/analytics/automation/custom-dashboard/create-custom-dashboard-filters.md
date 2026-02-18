@@ -8,7 +8,7 @@ You can either add or update the custom filters for the dashboard.
 
     The date selection filter is a default filter that gets applied to all the widgets across the dashboard.
 
-<img src="./../images/custom-dashboard-with-filters.png" alt="Custom Dashboard with Filters" title="Custom Dashboard with Filters" style="border: 1px solid gray; zoom:80%;">
+<img src="./../images/custom-dashboard-with-filters.png" alt="Custom Dashboard with Filters" title="Custom Dashboard with Filters" style="border: 1px solid gray; zoom:80%;"/>
 
 ## Add Filters
 
@@ -16,13 +16,13 @@ To add one or more filters at the Custom Dashboard level, perform the following 
 
 
 1. Click the **Add Filter** button to go to the **Configuration** panel shown below.
-    <img src="./../images/add-custom-filters1.png" alt="Add Custom Filters1" title="Add Custom Filters1" style="border: 1px solid gray; zoom:80%;">
+    <img src="./../images/add-custom-filters1.png" alt="Add Custom Filters1" title="Add Custom Filters1" style="border: 1px solid gray; zoom:80%;"/>
 
     !!! note
 
         Tooltips are available for all the fields in the Add Custom Filter panel except the Preview Date. Using the Preview Date, you can select a date range to display the data.
 
-    <img src="./../images/add-custom-filters2.png" alt="Add Custom Filters2" title="Add Custom Filters2" style="border: 1px solid gray; zoom:80%;">
+    <img src="./../images/add-custom-filters2.png" alt="Add Custom Filters2" title="Add Custom Filters2" style="border: 1px solid gray; zoom:80%;"/>
     The Platform currently supports 3 types of filters:
 
     * **Drop-down list:** Allows you to choose from a list of values based on the selected field name within the dataset or meta tag. You can set one or more values as ‘default values’ for this control.
@@ -47,7 +47,7 @@ To add one or more filters at the Custom Dashboard level, perform the following 
 
     See Datasets and Fields to understand more.
 
-    <img src="./../images/add-custom-filters3.png" alt="Add Custom Filters3" title="Add Custom Filters3" style="border: 1px solid gray; zoom:80%;">   
+    <img src="./../images/add-custom-filters3.png" alt="Add Custom Filters3" title="Add Custom Filters3" style="border: 1px solid gray; zoom:80%;"/>   
 
     For custom filters, we can use fields either from the Sessions dataset or from Message, User, or Session tags. We can add filters for the existing tags and also the tags that are not available in the AI Agents. See Custom Meta Tags to understand more.
 
@@ -57,7 +57,7 @@ To add one or more filters at the Custom Dashboard level, perform the following 
 
 4. Click the button **Save & Preview** to save and preview the filter details.
 5. You can also select a **Default** filter to be applied to all the widgets in the entire dashboard.
-<img src="./../images/add-custom-filters4.png" alt="Add Custom Filters4" title="Add Custom Filters4" style="border: 1px solid gray; zoom:80%;">    
+<img src="./../images/add-custom-filters4.png" alt="Add Custom Filters4" title="Add Custom Filters4" style="border: 1px solid gray; zoom:80%;"/>    
 
 6. Click the button **Add to Dashboard** in the preview panel to add the filter to the dashboard.
 7. Click the button **Apply** if you want to apply the filter to the dashboard.
@@ -66,7 +66,7 @@ To add one or more filters at the Custom Dashboard level, perform the following 
 
         The default filter is added at the dashboard level (highlighted in the screenshot) and you can select the value from the LoB drop-down to apply to all the widgets.
 
-    <img src="./../images/add-custom-filters5.png" alt="Add Custom Filters5" title="Add Custom Filters5" style="border: 1px solid gray; zoom:80%;"> 
+    <img src="./../images/add-custom-filters5.png" alt="Add Custom Filters5" title="Add Custom Filters5" style="border: 1px solid gray; zoom:80%;"/> 
         
 
 ## Manage Filters
@@ -85,21 +85,21 @@ You can perform the following steps to update the filters of the Custom Dashboar
 
 
 1. Click the **Manage Filter** drop-down button. The options **Add Filter** and **Update Filter** are displayed.
-<img src="./../images/update-filter1.png" alt="Update Filter1" title="Update Filter1" style="border: 1px solid gray; zoom:80%;"> 
+<img src="./../images/update-filter1.png" alt="Update Filter1" title="Update Filter1" style="border: 1px solid gray; zoom:80%;"/> 
 
 
 2. Select the **Update Filter** option. The panel **Update Custom Filter** is displayed as shown below.
-<img src="./../images/update-filter2.png" alt="Update Filter2" title="Update Filter2" style="border: 1px solid gray; zoom:80%;"> 
+<img src="./../images/update-filter2.png" alt="Update Filter2" title="Update Filter2" style="border: 1px solid gray; zoom:80%;"/> 
 
 
 3. Select a filter from the **Choose Filter** drop-down menu.
-<img src="./../images/update-filter3.png" alt="Update Filter3" title="Update Filter3" style="border: 1px solid gray; zoom:80%;"> 
+<img src="./../images/update-filter3.png" alt="Update Filter3" title="Update Filter3" style="border: 1px solid gray; zoom:80%;"/> 
 
 
 4. Edit the details as per the requirement, in the **Configuration** panel.
 5. Click the **Preview** button. The **Preview Filter** pop-up is displayed as shown in the preceding screenshot. Select a value from the drop-down as per the requirement.
 6. Click the **Update filter** button to update the details.
-<img src="./../images/update-filter4.png" alt="Update Filter4" title="Update Filter4" style="border: 1px solid gray; zoom:80%;">    
+<img src="./../images/update-filter4.png" alt="Update Filter4" title="Update Filter4" style="border: 1px solid gray; zoom:80%;"/>    
 
 
 7. Click **Proceed** in the displayed pop-up to confirm the updates.
@@ -112,11 +112,11 @@ You can perform the following steps to delete the filters of the Custom Dashboar
 
 
 1. In the **Update Custom Filter** panel, select the filter to be deleted from the **Choose Filter** drop-down.
-<img src="./../images/delete-filter1.png" alt="Delete Filter1" title="Delete Filter1" style="border: 1px solid gray; zoom:80%;"> 
+<img src="./../images/delete-filter1.png" alt="Delete Filter1" title="Delete Filter1" style="border: 1px solid gray; zoom:80%;"/> 
 
 
 2. Click the button **Delete** to delete the selected filter.
-<img src="./../images/delete-filter2.png" alt="Delete Filter2" title="Delete Filter2" style="border: 1px solid gray; zoom:80%;">
+<img src="./../images/delete-filter2.png" alt="Delete Filter2" title="Delete Filter2" style="border: 1px solid gray; zoom:80%;"/>
 
 
 3. Click **Proceed** in the displayed pop-up to confirm the deletion.
@@ -126,7 +126,7 @@ You can perform the following steps to delete the filters of the Custom Dashboar
 
 If more than two filters are added to the dashboard, then they are displayed in the **More Filters** drop-down next to the first two added filters.
 
-<img src="./../images/more-filters.png" alt="More Filters" title="Delete Filter1" style="border: 1px solid gray; zoom:80%;">
+<img src="./../images/more-filters.png" alt="More Filters" title="Delete Filter1" style="border: 1px solid gray; zoom:80%;"/>
 
 
 ## Filter Configurations

@@ -14,4 +14,4 @@ If clients prefer to use a different model (for reasons such as language or qual
 
 **Dialog Task flow for Summarization activities**:
 
-<img src="../custom-dialog-task-auto-summarization/flow-diagram-summarization.svg" alt="dialog-task-flow-for-summarization" title="dialog-task-flow-for-summarization" style="border: 1px solid gray; zoom:80%;">
+<img src="../custom-dialog-task-auto-summarization/flow-diagram-summarization.svg" alt="dialog-task-flow-for-summarization" title="dialog-task-flow-for-summarization" style="border: 1px solid gray; zoom:80%;"/>

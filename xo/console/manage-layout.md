@@ -1,14 +1,14 @@
 # Manage Layout
 
 The Manage Layout option lets you to add, delete, and switch between different layouts. While creating a new layout, you can add customizable widgets to the interface.  
-<img src="../images/manage-layout-button.png" alt="Manage Layout Button" title="Manage Layout Button" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/manage-layout-button.png" alt="Manage Layout Button" title="Manage Layout Button" style="border: 1px solid gray; zoom:80%;"/>
 
 ## Notifications
 
 Notifications are real-time alerts that keep agents informed about crucial events and updates. Notifications are essential in enhancing the user experience by improving responsiveness, productivity, and workflow management. By alerting agents about New Conversations, Messages from other Agents, Error prompts, Transfer Request, etc., notifications ensure that agents can prioritize their workload and deliver swift, personalized customer service.
 
 The Notifications icon helps you choose preferences to get notified about upcoming events, agent responses, and the type of sound generated upon receiving updates.  
-<img src="../images/notifications.png" alt="Notifications" title="Notifications" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/notifications.png" alt="Notifications" title="Notifications" style="border: 1px solid gray; zoom:80%;"/>
 
 Notifications is compatible with the following browsers:
 
@@ -23,10 +23,10 @@ Notifications is compatible with the following browsers:
 Steps to manage notifications:
 
 1. Select the **Bell** icon on the top-right corner.  
-    <img src="../images/bell-icon.png" alt="Notifications" title="Notifications" style="border: 1px solid gray; zoom:80%;">
+    <img src="../images/bell-icon.png" alt="Notifications" title="Notifications" style="border: 1px solid gray; zoom:80%;"/>
 
 2. Select the **Settings** icon to view the available options.  
-    <img src="../images/settings.png" alt="Settings" title="Settings" style="border: 1px solid gray; zoom:80%;">
+    <img src="../images/settings.png" alt="Settings" title="Settings" style="border: 1px solid gray; zoom:80%;"/>
 
 3. You can manage notifications for:  
     <img src="../images/notification-preference.png" alt="Notification Preferences" title="Notification Preferences" style="border: 1px solid gray; zoom:70%;">
@@ -52,14 +52,14 @@ Repeated notifications for incoming interactions at configurable intervals can b
 Steps to enable repeat notifications for incoming interactions:
 
 1. Select the **Repeat** icon beside Incoming Interactions to enable it.    
-    <img src="../images/enable-repeat-notification.png" alt="Enable Repeat Tone" title="Enable Repeat Tone" style="border: 1px solid gray; zoom:80%;">
+    <img src="../images/enable-repeat-notification.png" alt="Enable Repeat Tone" title="Enable Repeat Tone" style="border: 1px solid gray; zoom:80%;"/>
 
     !!! Note
 
         The repeat functionality is not enabled by default.
 
 2. The default timer is set to 5 seconds. Select the duration from the dropdown.  
-<img src="../images/duration-dropdown.png" alt="Duration" title="Duration" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/duration-dropdown.png" alt="Duration" title="Duration" style="border: 1px solid gray; zoom:80%;"/>
 
 3. Select **Save** to update the notification settings.
 
@@ -84,7 +84,7 @@ Users can customize this setting based on their preference for alert audibility.
 User diagnostics systematically assesses and analyzes network connectivity and device permissions to identify issues, optimize service delivery, and enhance user satisfaction. Using real-time monitoring, this tool helps resolve problems efficiently, improving agent performance, and ensuring a seamless customer experience.
 
 The User Diagnostics (♡) icon is at the right corner of the Agent Console.  
-<img src="../images/user-diagnostics-icon.png" alt="User Diagnostics Icon" title="User Diagnostics Icon" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/user-diagnostics-icon.png" alt="User Diagnostics Icon" title="User Diagnostics Icon" style="border: 1px solid gray; zoom:80%;"/>
 
 When an agent logs in to the Agent Console, the browser asks for microphone and speaker permissions. On granting permissions, the user diagnostics icon appears green. Hovering over the icon displays “Device connections are active.”  
 <img src="../images/device-permissions-active.png" alt="Device Permissions Active" title="Device Permissions Active" style="border: 1px solid gray; zoom:100%;">
@@ -168,7 +168,7 @@ Steps to perform the connectivity, bandwidth, and server reachability tests:
 ## Connection Handling
 
 If the internet connection is lost, a message appears at the top of the agent console page.  
-<img src="../images/connection-lost.png" alt="Connection Lost" title="Connection Lost" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/connection-lost.png" alt="Connection Lost" title="Connection Lost" style="border: 1px solid gray; zoom:80%;"/>
 
 The system automatically attempts to reconnect to the network. If it fails after several tries, a message instructs you to reload the page.  
 <img src="../images/error-message.png" alt="Error" title="Error" style="border: 1px solid gray; zoom:60%;">
@@ -182,28 +182,28 @@ CSAT (Customer Satisfaction) triggers under the following conditions:
 * In all digital and voice channels, both for user-side and agent-side chat termination:
 * Out of Hours of Operation: CSAT triggers when a conversation occurs outside of the designated hours of operation.
 * Queue Max Timeout: CSAT triggers when a conversation remains unaccepted or unassigned to any subsequent agents due to reaching the maximum queue timeout.  
-<img src="../images/csat.png" alt="Features" title="Features" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/csat.png" alt="Features" title="Features" style="border: 1px solid gray; zoom:80%;"/>
 
 ## Agent Status
 
 The Status icon lets agents to show customers whether they're available for the conversation or not.  
-<img src="../images/agent-status-insights.png" alt="Agent Status" title="Agent Status" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/agent-status-insights.png" alt="Agent Status" title="Agent Status" style="border: 1px solid gray; zoom:80%;"/>
 
 Selecting View Status Insights displays a pop-up with the time spent for each status. The pop-up displays data only for the selected day. To view detailed insights for custom date ranges, users can select `View Detailed Status Insights`, which redirects them to `My Dashboard`. Each status shows the amount of time the agent spent in that status.  
-<img src="../images/status-insights.png" alt="Agent Status Insights" title="Agent Status Insights" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/status-insights.png" alt="Agent Status Insights" title="Agent Status Insights" style="border: 1px solid gray; zoom:80%;"/>
 
 Administrators can configure the Agent Status from [Agent Status Management](../contactcenter/agent-and-supervisors/agent-management/agent-management.md#agent-status-management).
 
 ## Agent Profile
 
 The Agent Profile icon is located on the top-right corner of the console.  
-<img src="../images/profile-icon.png" alt="Profile Icon" title="Profile Icon" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/profile-icon.png" alt="Profile Icon" title="Profile Icon" style="border: 1px solid gray; zoom:80%;"/>
 
 Selecting the profile displays a window that lets an agent to change their login and contact details.  
-<img src="../images/profile-details.png" alt="Profile Details" title="Profile Details" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/profile-details.png" alt="Profile Details" title="Profile Details" style="border: 1px solid gray; zoom:80%;"/>
 
 Selecting **Logout** lets an agent to exit AI for Service.  
-<img src="../images/logout-button.png" alt="Logout" title="Logout" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/logout-button.png" alt="Logout" title="Logout" style="border: 1px solid gray; zoom:80%;"/>
 
 ### App Language
 
@@ -220,13 +220,13 @@ You can choose the language for the Agent desktop application from the following
 Steps to choose the app language:
 
 1. Select **App Language**.  
-    <img src="../images/app-language.png" alt="App Language" title="App Language" style="border: 1px solid gray; zoom:80%;">
+    <img src="../images/app-language.png" alt="App Language" title="App Language" style="border: 1px solid gray; zoom:80%;"/>
 
 2. On the App language pop-up window, choose the language.  
-    <img src="../images/select-language.png" alt="Select Language" title="Select Language" style="border: 1px solid gray; zoom:80%;">
+    <img src="../images/select-language.png" alt="Select Language" title="Select Language" style="border: 1px solid gray; zoom:80%;"/>
 
 3. Select **Save**.  
-    <img src="../images/save.png" alt="Save" title="Save" style="border: 1px solid gray; zoom:80%;">
+    <img src="../images/save.png" alt="Save" title="Save" style="border: 1px solid gray; zoom:80%;"/>
 
     The app language updates and displays a confirmation.
 
@@ -240,28 +240,28 @@ During Sign-in, the user can choose the account and set it as default.
 
     If the user has multiple accounts, they have the option to mark one as the default.
 
-<img src="../images/default-workspace.png" alt="Default Workspace" title="Default Workspace" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/default-workspace.png" alt="Default Workspace" title="Default Workspace" style="border: 1px solid gray; zoom:80%;"/>
 
 After the user has signed in, they can switch between accounts. The system displays the account name on the top-right corner.  
-<img src="../images/switch-workspace.png" alt="Switch Workspace" title="Switch Workspace" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/switch-workspace.png" alt="Switch Workspace" title="Switch Workspace" style="border: 1px solid gray; zoom:80%;"/>
 
 ## Adding New Layout
 
 To configure the responses under a new layout for a particular conversation, follow these steps:
 
 1. Go to **Console** > **Manage Layout** > **+ Create New**. A new layout page displays with the available widgets on the left-side panel.  
-    <img src="../images/create-new-layout.png" alt="Add New Layout" title="Add New Layout" style="border: 1px solid gray; zoom:80%;">
+    <img src="../images/create-new-layout.png" alt="Add New Layout" title="Add New Layout" style="border: 1px solid gray; zoom:80%;"/>
 
 2. Drag the required widgets to the right side of the layout page.  
-    <img src="../images/add-widgets.png" alt="Add Widgets" title="Add Widgets" style="border: 1px solid gray; zoom:80%;">
+    <img src="../images/add-widgets.png" alt="Add Widgets" title="Add Widgets" style="border: 1px solid gray; zoom:80%;"/>
 
 3. Enter a **Layout Name** for the new layout and select **Save**.  
-    <img src="../images/save-layout.png" alt="Save Layout" title="Save Layout" style="border: 1px solid gray; zoom:80%;">
+    <img src="../images/save-layout.png" alt="Save Layout" title="Save Layout" style="border: 1px solid gray; zoom:80%;"/>
 
 ### Adding Agent AI Widget to a Layout
 
 The example illustrates the process of adding the Agent AI widget to a layout.  
-<img src="../images/adding-agent-ai.gif" alt="Adding Agent AI" title="Adding Agent AI" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/adding-agent-ai.gif" alt="Adding Agent AI" title="Adding Agent AI" style="border: 1px solid gray; zoom:80%;"/>
 
 ## Maximize External Widgets
 
@@ -271,14 +271,14 @@ Steps to maximize external widgets:
 
 1. In the Agent Console, a Maximize icon appears on the external widgets.
 2. Select the **Maximize** icon.  
-    <img src="../images/expand-icon.png" alt="Maximize Icon" title="Maximize Icon" style="border: 1px solid gray; zoom:80%;">
+    <img src="../images/expand-icon.png" alt="Maximize Icon" title="Maximize Icon" style="border: 1px solid gray; zoom:80%;"/>
 
     * The widget expands in a full page view within the application interface (not a separate browser window).
     * The expanded widget occupies the screen and remains resizable and draggable within console boundaries.  
-        <img src="../images/expanded-window.png" alt="Expanded Window" title="Expanded Window" style="border: 1px solid gray; zoom:80%;"> 
+        <img src="../images/expanded-window.png" alt="Expanded Window" title="Expanded Window" style="border: 1px solid gray; zoom:80%;"/> 
 
     * A disclaimer appears in the original widget tab: *“The information in this widget is now displayed in the expanded view.”*  
-        <img src="../images/widget-disclaimer.png" alt="Disclaimer" title="Disclaimer" style="border: 1px solid gray; zoom:80%;">
+        <img src="../images/widget-disclaimer.png" alt="Disclaimer" title="Disclaimer" style="border: 1px solid gray; zoom:80%;"/>
 
 3. Interact with the widget in the expanded view.
 
@@ -303,7 +303,7 @@ The widget level refresh enables customers to refresh a widget individually, eli
 The refresh is available only when the user is within that specific widget. Selecting this option refreshes the widget with the most recent data.
 
 Users can refresh widgets by refreshing the entire application.  
-<img src="../images/refresh-icon.png" alt="Refresh Widget Icon" title="Refresh Widget Icon" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/refresh-icon.png" alt="Refresh Widget Icon" title="Refresh Widget Icon" style="border: 1px solid gray; zoom:80%;"/>
 
 ## Chat
 

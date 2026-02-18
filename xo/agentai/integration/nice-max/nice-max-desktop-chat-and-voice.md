@@ -188,18 +188,18 @@ This section explains the configuration steps needed to integrate Kore Agent AI 
 
 1. Sign in to your **NICE** account with the user name and password provided by the NICE customer support.
 2. Click the **Applications Launcher** button.  
-<img src="../nice-max-images/application-launcher-button-1.png" alt="application-launcher-button" title="application-launcher-button" style="border: 1px solid gray; zoom:80%;">
+<img src="../nice-max-images/application-launcher-button-1.png" alt="application-launcher-button" title="application-launcher-button" style="border: 1px solid gray; zoom:80%;"/>
 
 3. A menu opens from the left side of the page. Click **OTHERS** > **Automation & AI**.  
-<img src="../nice-max-images/automation-ai-2.png" alt="automation-ai" title="automation-ai" style="border: 1px solid gray; zoom:80%;">
+<img src="../nice-max-images/automation-ai-2.png" alt="automation-ai" title="automation-ai" style="border: 1px solid gray; zoom:80%;"/>
 
 4. Click **Agent Assist Hub** > **Add Agent Assist App**.  
-<img src="../nice-max-images/add-agent-assist-app-3.png" alt="add-agent-assist-app" title="add-agent-assist-app" style="border: 1px solid gray; zoom:80%;">
+<img src="../nice-max-images/add-agent-assist-app-3.png" alt="add-agent-assist-app" title="add-agent-assist-app" style="border: 1px solid gray; zoom:80%;"/>
 
 5. Enter the name of the **Agent Assist App** in the **AGENT ASSIST APP NAME** field.
 6. Select **Custom Agent Assist Endpoints**.
 7. Click **Next**.  
-<img src="../nice-max-images/custom-agent-assist-endpoint-4.png" alt="custom-agent-assist-endpoint" title="custom-agent-assist-endpoint" style="border: 1px solid gray; zoom:80%;">
+<img src="../nice-max-images/custom-agent-assist-endpoint-4.png" alt="custom-agent-assist-endpoint" title="custom-agent-assist-endpoint" style="border: 1px solid gray; zoom:80%;"/>
 
 8. Add the following settings with config parameters:
     1. Agent UI Option: Available by default 
@@ -207,14 +207,14 @@ This section explains the configuration steps needed to integrate Kore Agent AI 
     3. App Title: Kore Agent AI (change as needed)
     4. Participants: Both
     5. Text Relay Endpoint:{<a href="#adn">Agent AI URL</a>}/integrations/nice/relay/toKore  
-    <img src="../nice-max-images/configuration-5.png" alt="configuration" title="configuration" style="border: 1px solid gray; zoom:80%;">
+    <img src="../nice-max-images/configuration-5.png" alt="configuration" title="configuration" style="border: 1px solid gray; zoom:80%;"/>
 
     6. Audio Relay Endpoint: {<a href="#kvg">Kore Voice Gateway(KVG)</a>}/audiosocket/nice?sipuri=&lt;Bot SIP URI>&lt;DNS>&token=&lt;Token>&botId=&lt;Bot ID>&accountId=&lt;Account ID>&agentassist=true
         * Bot SIP URI : **Channels > Voice** section of the **[Agent AI](https://agentassist.kore.ai){:target="_blank"}** configuration portal.  
-        <img src="../nice-max-images/sip-id-6.png" alt="sip-id" title="sip-id" style="border: 1px solid gray; zoom:80%;">
+        <img src="../nice-max-images/sip-id-6.png" alt="sip-id" title="sip-id" style="border: 1px solid gray; zoom:80%;"/>
 
         * Bot ID and Account ID: **Channels** > **Chat** section of the **[Agent AI](https://agentassist.kore.ai){:target="_blank"}** configuration portal.  
-        <img src="../nice-max-images/chat-section-7.png" alt="chat-section" title="chat-section" style="border: 1px solid gray; zoom:80%;">
+        <img src="../nice-max-images/chat-section-7.png" alt="chat-section" title="chat-section" style="border: 1px solid gray; zoom:80%;"/>
 
         * Token: Create a **JSON Web Token** on jwt.io with the following details:
             * Payload: {“appId”: &lt;Bot Client ID>}
@@ -227,7 +227,7 @@ This section explains the configuration steps needed to integrate Kore Agent AI 
 
         If the language parameter is not provided, English (en) is used as the default. Refer to this [doc](../../agent-experience/supported-languages.md){:target="_blank"} to obtain the language code corresponding to your AI Agent's language.  
 
-    <img src="../nice-max-images/configuration-parameters-8.png" alt="configuration-parameters" title="configuration-parameters" style="border: 1px solid gray; zoom:80%;">
+    <img src="../nice-max-images/configuration-parameters-8.png" alt="configuration-parameters" title="configuration-parameters" style="border: 1px solid gray; zoom:80%;"/>
 
 10. Click **Create**.
 
@@ -238,9 +238,9 @@ This section explains the configuration steps needed to integrate Kore Agent AI 
 3. Click **File** > **Import from File**.
 4. Select the **downloaded script** for chat / voice.
 5. Double-click the **Generate Iframe Params** tile.  
-<img src="../nice-max-images/generate-iframe-param-9.png" alt="generate-iframe-param" title="generate-iframe-param" style="border: 1px solid gray; zoom:80%;">  
+<img src="../nice-max-images/generate-iframe-param-9.png" alt="generate-iframe-param" title="generate-iframe-param" style="border: 1px solid gray; zoom:80%;"/>  
 
-    <img src="../nice-max-images/generate-iframe-param2-10.png" alt="generate-iframe-param" title="generate-iframe-param" style="border: 1px solid gray; zoom:80%;">
+    <img src="../nice-max-images/generate-iframe-param2-10.png" alt="generate-iframe-param" title="generate-iframe-param" style="border: 1px solid gray; zoom:80%;"/>
 
 6. Update the values for the corresponding parameters:
     1. Kore.ai Parameters
@@ -266,13 +266,13 @@ This section explains the configuration steps needed to integrate Kore Agent AI 
             Refer to [https://help.nice-incontact.com/content/admin/security/manageaccesskeys.htm](https://help.nice-incontact.com/content/admin/security/manageaccesskeys.htm){:target="_blank"} to create NICE CX API Access Key and NICE CX API Access Key Secret. 
 
 7. Double-click the **Agent Assist** tile.  
-<img src="../nice-max-images/agent-assist-tile-11.png" alt="agent-assist-tile" title="agent-assist-tile" style="border: 1px solid gray; zoom:80%;">
+<img src="../nice-max-images/agent-assist-tile-11.png" alt="agent-assist-tile" title="agent-assist-tile" style="border: 1px solid gray; zoom:80%;"/>
 
 8. Select the **checkbox** against the Agent Assist instance you created in the above step.  
-<img src="../nice-max-images/agent-assist-instance-12.png" alt="agent-assist-instance" title="agent-assist-instance" style="border: 1px solid gray; zoom:80%;">
+<img src="../nice-max-images/agent-assist-instance-12.png" alt="agent-assist-instance" title="agent-assist-instance" style="border: 1px solid gray; zoom:80%;"/>
 
 9. Click **Yes**.  
-<img src="../nice-max-images/studio-action-13.png" alt="studio-action" title="studio-action" style="border: 1px solid gray; zoom:80%;">
+<img src="../nice-max-images/studio-action-13.png" alt="studio-action" title="studio-action" style="border: 1px solid gray; zoom:80%;"/>
 
 10. After selecting **Agent Assist**, click the **Close** button on the bottom-right corner of the page. 
 !!! note
@@ -296,55 +296,55 @@ This section explains the configuration steps needed to integrate Kore Agent AI 
 1. Go to the **NICE** home page.
 2. Click the **Application Launcher** button.
 3. Click **MAX**.  
-<img src="../nice-max-images/chat-simulation-18.png" alt="chat-simulation" title="chat-simulation" style="border: 1px solid gray; zoom:80%;">
+<img src="../nice-max-images/chat-simulation-18.png" alt="chat-simulation" title="chat-simulation" style="border: 1px solid gray; zoom:80%;"/>
 
 4. Select **Integrated Softphone,** and click **Connect**.
 5. Change the status to **Available**.  
-<img src="../nice-max-images/chat-available-19.png" alt="chat-available" title="chat-available" style="border: 1px solid gray; zoom:80%;">  
+<img src="../nice-max-images/chat-available-19.png" alt="chat-available" title="chat-available" style="border: 1px solid gray; zoom:80%;"/>  
 
 6. Go back to the **NICE** home page, and click **Application Launcher** > **ACD**.
 7. Click **Points of Contact**.
 8. Click the Chat **Point of Contact** you have created.  
-<img src="../nice-max-images/chat-point-of-contact-20.png" alt="chat-point-of-contact" title="chat-point-of-contact" style="border: 1px solid gray; zoom:80%;">
+<img src="../nice-max-images/chat-point-of-contact-20.png" alt="chat-point-of-contact" title="chat-point-of-contact" style="border: 1px solid gray; zoom:80%;"/>
     
 9. Copy the **Point of Contact URL**, and open it in a new tab.
 10. Initiate the chat from here. A chat request appears on the **MAX** desktop.
 11. Click **Accept**.  
-    <img src="../nice-max-images/accept-chat-request-21.png" alt="accept-chat-request" title="accept-chat-request" style="border: 1px solid gray; zoom:80%;">  
+    <img src="../nice-max-images/accept-chat-request-21.png" alt="accept-chat-request" title="accept-chat-request" style="border: 1px solid gray; zoom:80%;"/>  
 
-    <img src="../nice-max-images/chat-simulation-realtime-22.png" alt="chat-simulation-realtime" title="chat-simulation-realtime" style="border: 1px solid gray; zoom:80%;">
+    <img src="../nice-max-images/chat-simulation-realtime-22.png" alt="chat-simulation-realtime" title="chat-simulation-realtime" style="border: 1px solid gray; zoom:80%;"/>
 
 12. Click **End** to disconnect the chat.  
-    <img src="../nice-max-images/end-chat-button.png" alt="end-chat-button" title="end-chat-button" style="border: 1px solid gray; zoom:80%;">
+    <img src="../nice-max-images/end-chat-button.png" alt="end-chat-button" title="end-chat-button" style="border: 1px solid gray; zoom:80%;"/>
 
 13. Click **End** again to confirm ending the chat. The Chat **summary** pop-up triggers at the end of the chat session.
 14. Select the **disposition**, and click **Save & Close**.  
-    <img src="../nice-max-images/chat-summary-and-disposition.png" alt="chat-summary-and-disposition" title="chat-summary-and-disposition" style="border: 1px solid gray; zoom:80%;">
+    <img src="../nice-max-images/chat-summary-and-disposition.png" alt="chat-summary-and-disposition" title="chat-summary-and-disposition" style="border: 1px solid gray; zoom:80%;"/>
 
 ## Voice Simulation
 
 1. Go to the **NICE** home page.
 2. Click **Application Launcher** > **MAX**.  
-<img src="../nice-max-images/voice-simulation-23.png" alt="voice-simulation" title="voice-simulation" style="border: 1px solid gray; zoom:80%;">
+<img src="../nice-max-images/voice-simulation-23.png" alt="voice-simulation" title="voice-simulation" style="border: 1px solid gray; zoom:80%;"/>
 
 3. Select **Integrated Softphone**, and click **Connect**.
 4. Change the status to **Available**.  
-<img src="../nice-max-images/voice-available-24.png" alt="voice-available" title="voice-available" style="border: 1px solid gray; zoom:80%;">
+<img src="../nice-max-images/voice-available-24.png" alt="voice-available" title="voice-available" style="border: 1px solid gray; zoom:80%;"/>
 
 5. Go back to the **NICE** home page, and click **Application Launcher** > **ACD**.
 6. Click **Points of Contact**.
 7. Click the Voice **Point of Contact** you have created.  
-<img src="../nice-max-images/voice-point-of-contact-25.png" alt="voice-point-of-contact" title="voice-point-of-contact" style="border: 1px solid gray; zoom:80%;">
+<img src="../nice-max-images/voice-point-of-contact-25.png" alt="voice-point-of-contact" title="voice-point-of-contact" style="border: 1px solid gray; zoom:80%;"/>
 
 8. Copy the **Phone Number,** and initiate the call.
 9. A voice request appears on the **MAX** desktop. Click **Accept**.  
-   <img src="../nice-max-images/accept-voice-26.png" alt="accept-voice" title="accept-voice" style="border: 1px solid gray; zoom:80%;">
-    <img src="../nice-max-images/voice-realtime-27.png" alt="voice-realtime" title="voice-realtime" style="border: 1px solid gray; zoom:80%;">
+   <img src="../nice-max-images/accept-voice-26.png" alt="accept-voice" title="accept-voice" style="border: 1px solid gray; zoom:80%;"/>
+    <img src="../nice-max-images/voice-realtime-27.png" alt="voice-realtime" title="voice-realtime" style="border: 1px solid gray; zoom:80%;"/>
 
 10. Click **Hang Up** to disconnect the call.  
-    <img src="../nice-max-images/call-disconnection-button.png" alt="call-disconnection-button" title="call-disconnection-button" style="border: 1px solid gray; zoom:80%;">
+    <img src="../nice-max-images/call-disconnection-button.png" alt="call-disconnection-button" title="call-disconnection-button" style="border: 1px solid gray; zoom:80%;"/>
 
 11. Click **Hang Up** again to confirm disconnection of the call. The Call **summary** pop-up gets triggered at the end of the call session.
 12. Select the **disposition**, and click **Save & Close**.  
-    <img src="../nice-max-images/call-summary-and-disposition.png" alt="call-summary-and-disposition" title="call-summary-and-disposition" style="border: 1px solid gray; zoom:80%;">
+    <img src="../nice-max-images/call-summary-and-disposition.png" alt="call-summary-and-disposition" title="call-summary-and-disposition" style="border: 1px solid gray; zoom:80%;"/>
 

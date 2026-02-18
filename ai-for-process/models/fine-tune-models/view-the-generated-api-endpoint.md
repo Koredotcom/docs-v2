@@ -13,7 +13,7 @@ Steps to view the API Endpoint:
 1. Go to **Models** > **Fine-tuned models** and click the required model from the list. The model's Overview page is displayed. Click **Model Endpoint** in the left navigation.
 
 2. Click the **Copy** icon to copy and share the API Endpoint.  
-<img src="../images/view-generated-api-endpoint.png" alt="Generated API Endpoint" title="Generate API Endpoint" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/view-generated-api-endpoint.png" alt="Generated API Endpoint" title="Generate API Endpoint" style="border: 1px solid gray; zoom:80%;"/>
 
 The API endpoint is available in 3 formats. You can copy and use the same as required.
 
@@ -38,7 +38,7 @@ For example, if a model named "Flan T5" is deployed for the first time, it will 
 The most recent deployment is marked with a green tick next to the model name. You can click on any deployment version to view its details.
 
   
-<img src="../images/deployment-history.png" alt="Deployment History" title="Deployment History" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/deployment-history.png" alt="Deployment History" title="Deployment History" style="border: 1px solid gray; zoom:80%;"/>
 
 **General details**: This section displays the model's basic information, such as its name, description, tags, optimization technique, parameters, the hardware used, and deployment duration.
 

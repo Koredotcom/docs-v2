@@ -99,20 +99,20 @@ Step to set up a Dynamic Routing:
 
 
 1. Navigate to **Flows & Channels** > **Flows** > **Start Flows** > **Welcome Chat Flow**. Click the **Automation Node**.  
-<img src="../images/ua2.png" alt="Dynamic Routing" title="Dynamic Routing" style="border: 1px solid gray; zoom:80%;"> 
+<img src="../images/ua2.png" alt="Dynamic Routing" title="Dynamic Routing" style="border: 1px solid gray; zoom:80%;"/> 
 
 2. On the Component Properties tab, select Autonomy Level as **Orchestrated Autonomy**.
 3. In the Automation AI Options section, select **Use GenAI to dynamically route to linked apps**. If DialogGPT is disabled, follow the onscreen instructions to enable it.
 3. Use the [Message Prompt](../flows/node-types/message-prompt.md) if required.
 4. Click **+Link Apps**. The available apps to link are displayed.  
-<img src="../images/link-apps.png" alt="Dynamic Routing" title="Dynamic Routing" style="border: 1px solid gray; zoom:80%;"> 
+<img src="../images/link-apps.png" alt="Dynamic Routing" title="Dynamic Routing" style="border: 1px solid gray; zoom:80%;"/> 
 
 5. Select the app(s) and click **Save**. The success message is displayed.
 6. To link more app, click **+Link App**. To unlink the apps, click unlink icon next to the app.  
-<img src="../images/ua3.png" alt="Dynamic Routing" title="Dynamic Routing" style="border: 1px solid gray; zoom:80%;"> 
+<img src="../images/ua3.png" alt="Dynamic Routing" title="Dynamic Routing" style="border: 1px solid gray; zoom:80%;"/> 
 
 7. To unlink the app, click the unlink icon next to it.  
-<img src="../images/image3.png" alt="Dynamic Routing" title="Dynamic Routing" style="border: 1px solid gray; zoom:80%;"> 
+<img src="../images/image3.png" alt="Dynamic Routing" title="Dynamic Routing" style="border: 1px solid gray; zoom:80%;"/> 
 
 
 

@@ -33,7 +33,7 @@ In this section, you can select the Search App and define the search functionali
 * **None**: Makes the Search AI functionality unavailable, and search results don’t appear on the widget.
 * **Use only the inbuilt XO 11 Search App (AA Bot)**: Uses the built-in XO 11 Search AI app available with the current AI for Service app.
 * **Configure multiple Search Apps across XO 10 or XO 11**: Lets you configure up to three custom Search AI apps across XO 10 or XO 11.  
-<img src="../answers-configuration-images/search-ai-configuration-options.png" alt="search-ai-configuration" title="search-ai-configuration" style="border: 1px solid gray; zoom:80%;">   
+<img src="../answers-configuration-images/search-ai-configuration-options.png" alt="search-ai-configuration" title="search-ai-configuration" style="border: 1px solid gray; zoom:80%;"/>   
 
 #### None
 
@@ -99,7 +99,7 @@ Select this option to configure and enable up to three Search Apps across XO 10 
 2. Go to **Agent AI** > **Linked Services** > **Search AI**.  
 3. Select the **Configure multiple Search Apps across XO 10 or XO 11** option.  
 4. Select **+Add Search AI App**.  
-    <img src="../answers-configuration-images/add-search-ai-app-5.png" alt="add-search-ai-app" title="add-search-ai-app" style="border: 1px solid gray; zoom:80%;">  
+    <img src="../answers-configuration-images/add-search-ai-app-5.png" alt="add-search-ai-app" title="add-search-ai-app" style="border: 1px solid gray; zoom:80%;"/>  
 5. Enter a name for the Search AI app in the **Name** field.
 6. Select the version (XO10 or XO11) for the app in the **Select Version** list.  
 7. Select an option or options in the **Use This App Settings for** list. Refer to the **[Configuration Rules](#configuration-rules)** while selecting your options.   
@@ -118,7 +118,7 @@ Select this option to configure and enable up to three Search Apps across XO 10 
     2. Select a **channel** in the **Select channel** list.
     3. Refer to the [Knowledge AI](#knowledge-ai) section, and select the options under the **Search Results** and **Control expand behavior of Answers** sections.  
     4. Select **Add Custom Meta Filter Script (Optional)** under **Advanced Search API Configuration**, Select **Add Script**, enter your script in the **Define Script** editor, and select **Save**.   
-    <img src="../answers-configuration-images/knowledge-ai-7.png" alt="knowledge-ai" title="knowledge-ai" style="border: 1px solid gray; zoom:80%;">  
+    <img src="../answers-configuration-images/knowledge-ai-7.png" alt="knowledge-ai" title="knowledge-ai" style="border: 1px solid gray; zoom:80%;"/>  
 
 10. Select **Test Connection & Save** to verify the configuration. The **Connection Established Successfully** message appears, if the connection is successful.
 11. Add more Search AI apps, as required, by following the above steps. 
@@ -186,12 +186,12 @@ Follow these steps to configure an Agentic Copilot app:
 2. Go to **Agent AI** > **Configurations** > **Linked Services**> and select **Agentic Configuration**.
 3. Select **+ Add Agentic Copilot App**. 
 4. Enter the **app name**, **domain URL**, **environment name**, **app ID**, and **API Key** in their respective fields. For help, refer to the [Entering the app details](#entering-the-app-details) section.  
-    <img src="../answers-configuration-images/agentic-configuration-app-info.png" alt="agentic-configuration-app-info" title="agentic-configuration-app-info" style="border: 1px solid gray; zoom:80%;"> 
+    <img src="../answers-configuration-images/agentic-configuration-app-info.png" alt="agentic-configuration-app-info" title="agentic-configuration-app-info" style="border: 1px solid gray; zoom:80%;"/> 
 
 5. Expand the **Pass Metadata** section, and select from the list that you want to pass.  
-    <img src="../answers-configuration-images/choose-metadata-to-pass.png" alt="choose-metadata-to-pass" title="choose-metadata-to-pass" style="border: 1px solid gray; zoom:80%;">  
+    <img src="../answers-configuration-images/choose-metadata-to-pass.png" alt="choose-metadata-to-pass" title="choose-metadata-to-pass" style="border: 1px solid gray; zoom:80%;"/>  
 6. Expand the **Add Custom Metadata** section, and enter your custom metadata script in the code editor. You can enlarge the editor page or copy the script using the corresponding buttons.  
-    <img src="../answers-configuration-images/add-custom-metadata.png" alt="add-custom-metadata" title="add-custom-metadata" style="border: 1px solid gray; zoom:80%;">  
+    <img src="../answers-configuration-images/add-custom-metadata.png" alt="add-custom-metadata" title="add-custom-metadata" style="border: 1px solid gray; zoom:80%;"/>  
 7. Select **Test Connection & Save**. The configured app is saved and gets connected.  
 
 ### Deleting an Agentic Copilot app
@@ -204,4 +204,4 @@ This section lets you delete a preconfigured Agentic Copilot app. When deleted, 
     !!! note
         You can't delete an in-use Agentic app—the delete button is unavailable, and a badge indicates the app is in use: 
 
-    <img src="../answers-configuration-images/linked-services.png" alt="linked-services" title="linked-services" style="border: 1px solid gray; zoom:80%;"> 
+    <img src="../answers-configuration-images/linked-services.png" alt="linked-services" title="linked-services" style="border: 1px solid gray; zoom:80%;"/> 

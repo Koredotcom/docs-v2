@@ -60,31 +60,31 @@ This section explains the configuration steps needed to integrate Kore Agent AI 
 
 1. Sign in to your NICE account with the user name and password provided by the NICE customer support.
 2. Click the **Applications Launcher** button.  
-    <img src="../images/app_launcher_button_1.png" alt="app_launcher_button" title="app_launcher_button" style="border: 1px solid gray; zoom:80%;">
+    <img src="../images/app_launcher_button_1.png" alt="app_launcher_button" title="app_launcher_button" style="border: 1px solid gray; zoom:80%;"/>
 
 3. A menu opens from the left side of the page. Click **OTHERS** > **Automation & AI**.  
-    <img src="../images/automation_ai_2.png" alt="automation_ai" title="automation_ai" style="border: 1px solid gray; zoom:80%;">
+    <img src="../images/automation_ai_2.png" alt="automation_ai" title="automation_ai" style="border: 1px solid gray; zoom:80%;"/>
 
 4. Click **Agent Assist Hub** > **Add Agent Assist App**.  
-    <img src="../images/add_agentassist_app_3.png" alt="add_agentassist_app" title="add_agentassist_app" style="border: 1px solid gray; zoom:80%;">
+    <img src="../images/add_agentassist_app_3.png" alt="add_agentassist_app" title="add_agentassist_app" style="border: 1px solid gray; zoom:80%;"/>
 
 5. Enter the name of the Agent Assist App in the **AGENT ASSIST APP NAME** field.
 6. Select **Custom Agent Assist Endpoints**.
 7. Click **Next**.  
-    <img src="../images/custom_agent_assist_endpoints_4.png" alt="custom_agent_assist_endpoints" title="custom_agent_assist_endpoints" style="border: 1px solid gray; zoom:80%;">
+    <img src="../images/custom_agent_assist_endpoints_4.png" alt="custom_agent_assist_endpoints" title="custom_agent_assist_endpoints" style="border: 1px solid gray; zoom:80%;"/>
 
 8. Add the following settings with config parameters:
     1. **Agent UI Option**: No Assist Panel shown to agent
     2. **App Title**: Kore AA (this is not a visible UI)
     3. **Participants**: Both  
-    <img src="../images/config_parameters_5.png" alt="config_parameters" title="config_parameters" style="border: 1px solid gray; zoom:80%;">
+    <img src="../images/config_parameters_5.png" alt="config_parameters" title="config_parameters" style="border: 1px solid gray; zoom:80%;"/>
 
     4. **Audio Relay Endpoint**: <a href="#KVG">{[Kore Voice Gateway(KVG)]}</a>/audiosocket/nice?sipuri=&lt;Bot SIP URI>&lt;DNS>&token=&lt;Token>&botId=&lt;Bot ID>&accountId=&lt;Account ID>&agentassist=true
         1. **Bot SIP URI**: **Agent AI** > **Flows & Channels** > **Channels** > **Voice Gateway** > **SIP Numbers** > **Configure SIP Trunk** page.  
-        <img src="../images/bot_sip_uri_6.png" alt="bot_sip_uri" title="bot_sip_uri" style="border: 1px solid gray; zoom:80%;">
+        <img src="../images/bot_sip_uri_6.png" alt="bot_sip_uri" title="bot_sip_uri" style="border: 1px solid gray; zoom:80%;"/>
 
         2. **Bot ID and Account ID**: **Agent AI** > **Flows & Channels** > **Channels** > **Digital** > **Web/Mobile Client** page.  
-            <img src="../images/botid_accountid_7.png" alt="botid_accountid" title="botid_accountid" style="border: 1px solid gray; zoom:80%;">
+            <img src="../images/botid_accountid_7.png" alt="botid_accountid" title="botid_accountid" style="border: 1px solid gray; zoom:80%;"/>
 
         3. **Token**: Create a JSON Web Token on jwt.io with the following details:
             * Payload: {“appId”: &lt;Bot Client ID>}
@@ -99,12 +99,12 @@ This section explains the configuration steps needed to integrate Kore Agent AI 
 2. Open the NICE CX Studio app from your desktop.
 3. Click **File** > **Import from File**.
 4. Select the downloaded script for voice. It looks like the following screenshot:  
-    <img src="../images/voice_script_8.png" alt="voice_script" title="voice_script" style="border: 1px solid gray; zoom:80%;">
+    <img src="../images/voice_script_8.png" alt="voice_script" title="voice_script" style="border: 1px solid gray; zoom:80%;"/>
 
 5. Double-click the **Generate Iframe Params** tile.  
-    <img src="../images/generate_iframe_params_9.png" alt="generate_iframe_params" title="generate_iframe_params" style="border: 1px solid gray; zoom:80%;"> 
+    <img src="../images/generate_iframe_params_9.png" alt="generate_iframe_params" title="generate_iframe_params" style="border: 1px solid gray; zoom:80%;"/> 
 
-    <img src="../images/iframe_params_script_10.png" alt="iframe_params_script" title="iframe_params_script" style="border: 1px solid gray; zoom:80%;">
+    <img src="../images/iframe_params_script_10.png" alt="iframe_params_script" title="iframe_params_script" style="border: 1px solid gray; zoom:80%;"/>
 
 6. Update the values for the corresponding parameters:
     1. **Kore.ai parameters**:
@@ -118,20 +118,20 @@ This section explains the configuration steps needed to integrate Kore Agent AI 
     Include your data in the customdata object (one key-value pair per line). For example: `customdata.agentName="Agent" `and `customdata.agentID="1234"`
 
 7. Double-click the **PopURL** tile.  
-    <img src="../images/popurl_tile_11.png" alt="popurl_tile" title="popurl_tile" style="border: 1px solid gray; zoom:80%;">
+    <img src="../images/popurl_tile_11.png" alt="popurl_tile" title="popurl_tile" style="border: 1px solid gray; zoom:80%;"/>
 
 8. In the PopURL, update the URL with the following values:
     3. <a href="#AAurl">{[Agent AI URL]}</a>/integrations/nice/iframe/?params={scriptparamsjson}
     4. Tab Title: Kore AgentAI (change as per your requirement)
     5. Pop Destination: Contact Panel (it will be preset for imported script)
 9. Double-click the **Agent Assist** tile.  
-    <img src="../images/agent_assist_tile_12.png" alt="agent_assist_tile" title="agent_assist_tile" style="border: 1px solid gray; zoom:80%;">
+    <img src="../images/agent_assist_tile_12.png" alt="agent_assist_tile" title="agent_assist_tile" style="border: 1px solid gray; zoom:80%;"/>
 
 10. Select the checkbox against the Agent Assist instance you created in the above step.  
-    <img src="../images/agent_assist_instance_checkbox_13.png" alt="agent_assist_instance_checkbox" title="agent_assist_instance_checkbox" style="border: 1px solid gray; zoom:80%;">
+    <img src="../images/agent_assist_instance_checkbox_13.png" alt="agent_assist_instance_checkbox" title="agent_assist_instance_checkbox" style="border: 1px solid gray; zoom:80%;"/>
 
 11. Click **Yes**.  
-    <img src="../images/studio_action_14.png" alt="studio_action" title="studio_action" style="border: 1px solid gray; zoom:80%;">
+    <img src="../images/studio_action_14.png" alt="studio_action" title="studio_action" style="border: 1px solid gray; zoom:80%;"/>
 
 12. After selecting Agent Assist, click the **close** button on the bottom-right corner of the page.  
 
@@ -158,33 +158,33 @@ This section explains the configuration steps needed to integrate Kore Agent AI 
 
 1. Go to the **NICE** home page.
 2. Click **Application Launcher** > **Agent**.  
-    <img src="../images/app_launcher_15.png" alt="app_launcher" title="app_launcher" style="border: 1px solid gray; zoom:80%;">
+    <img src="../images/app_launcher_15.png" alt="app_launcher" title="app_launcher" style="border: 1px solid gray; zoom:80%;"/>
 
 3. Select **Integrated Softphone**, and click **Launch**.  
-<img src="../images/integrated_softphone_16.png" alt="integrated_softphone" title="integrated_softphone" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/integrated_softphone_16.png" alt="integrated_softphone" title="integrated_softphone" style="border: 1px solid gray; zoom:80%;"/>
 
 4. Change the status to **Available**.  
-    <img src="../images/available_status_17.png" alt="available_status" title="available_status" style="border: 1px solid gray; zoom:80%;">
+    <img src="../images/available_status_17.png" alt="available_status" title="available_status" style="border: 1px solid gray; zoom:80%;"/>
 
 5. Go back to the **NICE** home page, and click **Application Launcher** > **ACD**.
 6. Click **Points of Contact**.
 7. Click the Voice Point of Contact you have created.  
-    <img src="../images/point_of_contact_18.png" alt="point_of_contact" title="point_of_contact" style="border: 1px solid gray; zoom:80%;">
+    <img src="../images/point_of_contact_18.png" alt="point_of_contact" title="point_of_contact" style="border: 1px solid gray; zoom:80%;"/>
 
 8. Copy the **Phone Number**, and initiate the call.
 9. A voice request appears on the NICE Agent desktop. Click **Accept**.  
-    <img src="../images/accept_voice_call_19.png" alt="accept_voice_call" title="accept_voice_call" style="border: 1px solid gray; zoom:80%;">
+    <img src="../images/accept_voice_call_19.png" alt="accept_voice_call" title="accept_voice_call" style="border: 1px solid gray; zoom:80%;"/>
 
 10. The Kore AgentAI widget loads inside the contact panel.  
-<img src="../images/agentai_widget_20.png" alt="agentai_widget" title="agentai_widget" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/agentai_widget_20.png" alt="agentai_widget" title="agentai_widget" style="border: 1px solid gray; zoom:80%;"/>
 
 11. Click **Hang Up** to disconnect the call.  
-<img src="../images/hang_up_voice_calls_21.png" alt="hang_up_voice_calls" title="hang_up_voice_calls" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/hang_up_voice_calls_21.png" alt="hang_up_voice_calls" title="hang_up_voice_calls" style="border: 1px solid gray; zoom:80%;"/>
 
 12. The Call summary pop-up gets triggered at the end of the call session.  
-<img src="../images/call_summary_popup_22.png" alt="call_summary_popup" title="call_summary_popup" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/call_summary_popup_22.png" alt="call_summary_popup" title="call_summary_popup" style="border: 1px solid gray; zoom:80%;"/>
 
 13. Select the disposition, copy the summary, and paste it in the NOTES for future reference.
 14. Click **Save** > **Close**.  
-    <img src="../images/save_close_summary_23.png" alt="save_close_summary" title="save_close_summary" style="border: 1px solid gray; zoom:80%;">
+    <img src="../images/save_close_summary_23.png" alt="save_close_summary" title="save_close_summary" style="border: 1px solid gray; zoom:80%;"/>
 

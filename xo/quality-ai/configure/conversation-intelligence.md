@@ -17,7 +17,7 @@ This extracts valuable insights from customer interactions across various commun
 ## Access Settings - Conversation Intelligence
 
 Navigate to **Quality AI** > **CONFIGURE** > **Settings** > **Conversation Intelligence**.  
-<img src="../settings/images/default-settings.png" alt="Settings" title="Settings" style="border: 1px solid gray; zoom:80%;">
+<img src="../settings/images/default-settings.png" alt="Settings" title="Settings" style="border: 1px solid gray; zoom:80%;"/>
 
 ### Conversation Intelligence Dashboard
 
@@ -32,10 +32,10 @@ For more information about the Conversation Intelligence Dashboard, see [Convers
 Steps to enable the Conversation Intelligence:
 
 1. Expand the **Conversation Intelligence** collapse icon to view the **Conversation Intelligence Dashboard**.  
-<img src="../settings/images/converse-intelligence.png" alt="Conversation Intelligence Dashboard" title="Conversation Intelligence Dashboard" style="border: 1px solid gray; zoom:80%;">
+<img src="../settings/images/converse-intelligence.png" alt="Conversation Intelligence Dashboard" title="Conversation Intelligence Dashboard" style="border: 1px solid gray; zoom:80%;"/>
 
 2. Enable the **Conversation Intelligence Dashboard** toggle to set the **Script adherence configuration** details.  
-<img src="../settings/conversation-intelligence/images/converse-intelligence-dashboard.png" alt="Conversation Intelligence Dashboard Toggle" title="Conversation Intelligence Dashboard Toggle" style="border: 1px solid gray; zoom:80%;">
+<img src="../settings/conversation-intelligence/images/converse-intelligence-dashboard.png" alt="Conversation Intelligence Dashboard Toggle" title="Conversation Intelligence Dashboard Toggle" style="border: 1px solid gray; zoom:80%;"/>
 
     !!! Note
     
@@ -102,7 +102,7 @@ If the system resolves a customer’s payment issue but not a casual rewards que
             * Real-time dashboards and reports.
             * Agent performance metrics.
             * Quality assurance workflows.
-    <img src="../settings/conversation-intelligence/images/interaction-level-resolution-detection-method.png" alt="Interaction Level Detection Method" title="Interaction Level Detection Method" style="border: 1px solid gray; zoom:80%;">
+    <img src="../settings/conversation-intelligence/images/interaction-level-resolution-detection-method.png" alt="Interaction Level Detection Method" title="Interaction Level Detection Method" style="border: 1px solid gray; zoom:80%;"/>
 
 #### Settings vs. Taxonomy Configuration
 

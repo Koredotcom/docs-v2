@@ -30,7 +30,7 @@ aaWindowInstance.on('BEFORE_VIEW_INIT', (html, payload) => {
 });
 ```
 
-<img src="../images/bot-transcript01.png" alt="web-sdk-channel" title="bot-transcript01" style="border: 1px solid gray; zoom:80%;"> 
+<img src="../images/bot-transcript01.png" alt="web-sdk-channel" title="bot-transcript01" style="border: 1px solid gray; zoom:80%;"/> 
 
 ## TRANSCRIPT_BULB
 
@@ -58,7 +58,7 @@ aaWindowInstance.on('BEFORE_VIEW_INIT', (html, payload) => {
 });
 ```
 
-<img src="../images/user-transcript01.png" alt="web-sdk-channel" title="user-transcript01" style="border: 1px solid gray; zoom:80%;"> 
+<img src="../images/user-transcript01.png" alt="web-sdk-channel" title="user-transcript01" style="border: 1px solid gray; zoom:80%;"/> 
 
 ## AGENT_TRANSCRIPT
 
@@ -72,7 +72,7 @@ aaWindowInstance.on('BEFORE_VIEW_INIT', (html, payload) => {
 });
 ```
 
-<img src="../images/agent-transcript01.png" alt="web-sdk-channel" title="agent-transcript01" style="border: 1px solid gray; zoom:80%;"> 
+<img src="../images/agent-transcript01.png" alt="web-sdk-channel" title="agent-transcript01" style="border: 1px solid gray; zoom:80%;"/> 
 
 ## AGENT_JOINED_TEMPLATE
 
@@ -85,7 +85,7 @@ aaWindowInstance.on('BEFORE_VIEW_INIT', (html, payload) => {
    	}
 });
 ```
-<img src="../images/Agentjoined-transcript01.png" alt="web-sdk-channel" title="Agentjoined-transcript01" style="border: 1px solid gray; zoom:80%;"> 
+<img src="../images/Agentjoined-transcript01.png" alt="web-sdk-channel" title="Agentjoined-transcript01" style="border: 1px solid gray; zoom:80%;"/> 
 
 ## SUMMARY_TEMPLATE
 
@@ -98,4 +98,4 @@ aaWindowInstance.on('BEFORE_VIEW_INIT', (html, payload) => {
    	}
 });
 ```
-<img src="../images/summary-template.png" alt="web-sdk-channel" title="summary-template" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/summary-template.png" alt="web-sdk-channel" title="summary-template" style="border: 1px solid gray; zoom:80%;"/>

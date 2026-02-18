@@ -15,9 +15,9 @@ Each log entry includes the following to provide actionable insights on account 
 
 The event metadata provides business users with actionable insights, helping them in efficiently identifying patterns in user activities within their accounts. It also aids in detecting anomalies, spotting unauthorized usage, and enhancing overall account security.
 
-You can specify a **current** or **past period** to view the logs and have complete visibility into the activities and modifications in your account. [Learn more](./audit-logs.md#steps-to-set-time-range-for-audit-logs){:target="_blank"}.
+You can specify a **current** or **past period** to view the logs and have complete visibility into the activities and modifications in your account. [Learn more](./audit-logs.md#steps-to-set-time-range-for-audit-logs).
 
-Additionally, you can set **custom filters** based on a specific category, event, or user value to view only the required audit logs. [Learn more](./audit-logs.md#steps-to-add-a-custom-filter){:target="_blank"}.
+Additionally, you can set **custom filters** based on a specific category, event, or user value to view only the required audit logs. [Learn more](./audit-logs.md#steps-to-add-a-custom-filter).
 
 <div class="admonition note">
 <p class="admonition-title">Note</p>
@@ -1222,7 +1222,7 @@ This customization helps you focus on relevant audit logs, making it easier to t
 
 ### Steps to Add a Custom Filter
 
-1. [Navigate](./audit-logs.md#access-audit-logs){:target="_blank"} to **Audit Logs**.
+1. [Navigate](./audit-logs.md#access-audit-logs) to **Audit Logs**.
 2. Click the **Filter** icon.
 3. Click **+Add Filter**.
 <img src="../images/add-filter-audit-logs.png" alt="add filter" title="audit logs" style="border: 1px solid gray; zoom:75%;">
@@ -1276,12 +1276,12 @@ On the other hand, using the OR operator broadens the criteria, allowing entries
 
 #### Steps to Add Multiple Filters
 
-1. Follow **Steps 1 to 3** mentioned [here](./audit-logs.md#steps-to-add-a-custom-filter){:target="_blank"}.
+1. Follow **Steps 1 to 3** mentioned [here](./audit-logs.md#steps-to-add-a-custom-filter).
 2. Select the **AND/OR** operator tab in the **Filter by** window.
 
     <img src="../images/filter-operators.png" alt="filter operators" title="filter operators" style="border: 1px solid gray; zoom:75%;">
 
-3. Follow **Steps 4 to 5** mentioned [here](./audit-logs.md#steps-to-add-a-custom-filter){:target="_blank"}.
+3. Follow **Steps 4 to 5** mentioned [here](./audit-logs.md#steps-to-add-a-custom-filter).
 
 The matched log entries are displayed in the dashboard. 
 
@@ -1308,7 +1308,7 @@ Time selection is available for past and current time periods, including the one
 
 ### Steps to Set Time Range for Audit Logs
 
-1. [Navigate](./audit-logs.md#access-audit-logs){:target="_blank"} to the **Audit Logs** dashboard.
+1. [Navigate](./audit-logs.md#access-audit-logs) to the **Audit Logs** dashboard.
 2. Click the time selection button (displays **Last 30 Days**).
 <img src="../images/click-time-selection.png" alt="time selection" title="time selection" style="border: 1px solid gray; zoom:75%;">
 
@@ -1336,7 +1336,7 @@ By default, the current day will be set as the end date. This feature allows you
 
 ## Export Audit Logs
 
-The **Export** feature helps prepare and export [account-level audit logs](./audit-logs.md#account-level-audit-logs){:target="_blank"} into a *.csv* file. The audit logs data for the following columns is downloaded. [Learn more](./audit-logs.md#dashboard-information){:target="_blank"}.
+The **Export** feature helps prepare and export [account-level audit logs](./audit-logs.md#account-level-audit-logs) into a *.csv* file. The audit logs data for the following columns is downloaded. [Learn more](./audit-logs.md#dashboard-information).
 
 * Date and Time
 * Event Name
@@ -1354,7 +1354,7 @@ Exporting audit logs offers the following benefits:
 
 To export audit logs, follow the steps below:
 
-1. [Navigate](./audit-logs.md#access-audit-logs){:target="_blank"} to the **Audit Logs** dashboard.
+1. [Navigate](./audit-logs.md#access-audit-logs) to the **Audit Logs** dashboard.
 2. Click the **Export** icon next to the **Filter By** icon.
 <img src="../images/export-audit-logs.png" alt="export audit logs" title="export audit logs" style="border: 1px solid gray; zoom:75%;">
 
@@ -1370,10 +1370,10 @@ You can confidently scale AI initiatives with event-based user activity logs to 
 
 ## Related Information
 
-* [Settings Console](../overview.md){:target="_blank"}- Learn more about other AI for Process admin features.
-* [Users Management](../user-management/overview.md){:target="_blank"}- Manage users linked to your account.
-* [Role Management](../user-management/role-management.md){:target="_blank"}- View and manage system and custom roles for your account.
-* [Workflow Flow Change Logs](../../workflows/workflow-builder/workflow-canvas-change-log.md){:target="_blank"}- Track, audit, and review changes made to a workflow.
+* [Settings Console](../overview.md)- Learn more about other AI for Process admin features.
+* [Users Management](../user-management/overview.md)- Manage users linked to your account.
+* [Role Management](../user-management/role-management.md)- View and manage system and custom roles for your account.
+* [Workflow Flow Change Logs](../../workflows/workflow-builder/workflow-canvas-change-log.md)- Track, audit, and review changes made to a workflow.
 
 
 

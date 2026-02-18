@@ -1051,7 +1051,7 @@ Added new permission that enables you to configure custom roles to select the in
 * Voice & Digital
 * Voice
 * Digital  
-<img src="../images/channel-selection-dropdown.png" alt="Channel Selection" title="Channel Selection" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/channel-selection-dropdown.png" alt="Channel Selection" title="Channel Selection" style="border: 1px solid gray; zoom:80%;"/>
 
 Key Benefits:
 
@@ -1197,7 +1197,7 @@ A new status indicator at the top of the Agent Console shows the connection stat
 * The connection is lost (offline),
 * Reconnection is in progress, or
 * The connection is restored (online).  
-<img src="../images/connection-lost.png" alt="Connection Status Alert" title="Connection Status Alert" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/connection-lost.png" alt="Connection Status Alert" title="Connection Status Alert" style="border: 1px solid gray; zoom:80%;"/>
 
 [Learn more :octicons-arrow-right-24:](../../console/manage-layout.md#connection-handling)
 
@@ -1482,7 +1482,7 @@ Key Updates:
 
 This update introduces Email Address Blocklisting functionality for Contact Center AI administrators. By proactively managing potentially problematic email addresses, contact centers can maintain a clear communication channel, improve efficiency, and protect their email reputation.
 
-<img src="../images/email-blocklist.png" alt="Email Address Blocklist" title="Email Address Blocklist" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/email-blocklist.png" alt="Email Address Blocklist" title="Email Address Blocklist" style="border: 1px solid gray; zoom:80%;"/>
 
 Key Updates:
 
@@ -1506,7 +1506,7 @@ On the **Dashboard** > **Interactions** tab, supervisors now have two options to
 
 Diagnostics functionality is enhanced by adding the **Flow** and **Quality of Service (QoS)** tabs.
 
-<img src="../images/flow-qos.png" alt="Flow and QoS" title="Flow and QoS" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/flow-qos.png" alt="Flow and QoS" title="Flow and QoS" style="border: 1px solid gray; zoom:80%;"/>
 
 The diagnostics reports can be exported in the following formats:
 
@@ -1587,7 +1587,7 @@ The Transcripts now show key conversation stages, including:
 
 The Mean Opinion Score (MOS), indicating signal connectivity strength, is now displayed as a bar chart within the call controls widget.
 
-<img src="../images/mos-connection.png" alt="Mean Opinion Score" title="Mean Opinion Score" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/mos-connection.png" alt="Mean Opinion Score" title="Mean Opinion Score" style="border: 1px solid gray; zoom:80%;"/>
 
 Color Coding:
 

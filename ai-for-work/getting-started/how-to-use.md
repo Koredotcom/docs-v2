@@ -1,6 +1,6 @@
 # Using AI for Work Assistant
 
-Log in to [the Platform](https://work.kore.ai/login/){:target="_blank"}.
+Log in to [the Platform](https://work.kore.ai/login/).
 
 The **AI for Work** Assistant is available on the homepage, you can ask an open-ended question to the assistant.
 
@@ -36,7 +36,7 @@ All files stored in the platform's managed storage infrastructure are protected 
 2. **Google Calendar:** Checks John Doe’s availability for a specified time.
 3. **Gmail:** Sends the fetched Jira issues to John Doe via email. 
 
-<img src="../images/agentic-flow.png" alt="agentic-flow" title="agentic-flow" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/agentic-flow.png" alt="agentic-flow" title="agentic-flow" style="border: 1px solid gray; zoom:80%;"/>
 
 **Steps to execute the flow:**
 

@@ -5,7 +5,7 @@ The allocation creation process follows a three-step workflow that provides prec
 ## Access My Allocations
 
 Navigate to **Quality AI** > **ANALYZE** > **My Allocations**.  
-<img src="../allocations/images/create-allocations.png" alt="Create Allocations" title="Create Allocations" style="border: 1px solid gray; zoom:80%;">
+<img src="../allocations/images/create-allocations.png" alt="Create Allocations" title="Create Allocations" style="border: 1px solid gray; zoom:80%;"/>
 
 ### Step 1: Settings
 
@@ -26,7 +26,7 @@ Begin by defining the core parameters of your allocation:
 1. **Languages**: Choose the languages for this allocation. Select specific languages when creating audits for auditors who evaluate only certain languages, or select all languages for comprehensive coverage. The system displays the total interaction count that matches your language selections.
 
 1. **Queue**: Select the queue associated with your chosen evaluation form.  
-<img src="../allocations/images/queue-selection.png" alt="Queue Selection" title="Queue Selection" style="border: 1px solid gray; zoom:80%;">
+<img src="../allocations/images/queue-selection.png" alt="Queue Selection" title="Queue Selection" style="border: 1px solid gray; zoom:80%;"/>
 
 **Filter by Agents or Agent Groups**
 
@@ -47,7 +47,7 @@ Narrow your allocation scope to specific team members or groups:
 * Useful for team-based evaluations or audits of organizational units.
 
 * Combine with individual agent selection if needed.   
-<img src="../allocations/images/agents-and-agent-groups-selection.png" alt="Agent and Agent Groups Selection" title="Agent and Agent Groups Selection" style="border: 1px solid gray; zoom:80%;">
+<img src="../allocations/images/agents-and-agent-groups-selection.png" alt="Agent and Agent Groups Selection" title="Agent and Agent Groups Selection" style="border: 1px solid gray; zoom:80%;"/>
 
 The interaction count updates automatically as you adjust your selections, showing exactly how many interactions match your criteria.
 
@@ -56,12 +56,12 @@ The interaction count updates automatically as you adjust your selections, showi
 ### Step 2: Allocation Type
 
 The Allocation step determines how you select interactions from your filtered pool. Choose between Random for unbiased sampling or Custom for targeted evaluations based on specific criteria.   
-<img src="../allocations/images/allocation-type.png" alt="Allocation Type" title="Allocation Type" style="border: 1px solid gray; zoom:80%;">
+<img src="../allocations/images/allocation-type.png" alt="Allocation Type" title="Allocation Type" style="border: 1px solid gray; zoom:80%;"/>
 
 #### Random Allocation
 
 Random allocation uses statistical sampling to guarantee impartial selection of interactions among your filtered agents. This technique ensures representative coverage while giving you control over the sample size through two different assignment strategies.   
-<img src="../allocations/images/random-allocation.png" alt="Random Allocation" title="Random Allocation" style="border: 1px solid gray; zoom:80%;">
+<img src="../allocations/images/random-allocation.png" alt="Random Allocation" title="Random Allocation" style="border: 1px solid gray; zoom:80%;"/>
 
 **Configure Random Sampling**
 
@@ -98,7 +98,7 @@ Random allocation uses statistical sampling to guarantee impartial selection of 
 #### Custom Allocation
 
 Custom allocation gives you precise control over interaction selection by applying specific filters to target particular scenarios, topics, sentiment ranges, or performance metrics. This method works well for focused evaluations that target known issues or validate Auto QA accuracy in specific situations.   
-<img src="../allocations/images/custom-allocation.png" alt="Custom Allocation" title="Custom Allocation" style="border: 1px solid gray; zoom:80%;">
+<img src="../allocations/images/custom-allocation.png" alt="Custom Allocation" title="Custom Allocation" style="border: 1px solid gray; zoom:80%;"/>
 
 **Configure Custom Allocation**
 
@@ -119,13 +119,13 @@ Custom allocation gives you precise control over interaction selection by applyi
     * Access the same comprehensive filter options available in Conversation Mining.
 
     * Perfect for one-time allocations without cluttering your saved filter library.     
-    <img src="../allocations/images/custom-quick-filter.png" alt="Quick Filter" title="Quick Filter" style="border: 1px solid gray; zoom:80%;">
+    <img src="../allocations/images/custom-quick-filter.png" alt="Quick Filter" title="Quick Filter" style="border: 1px solid gray; zoom:80%;"/>
 
 ##### Quick Filter Creation
 
 Select **Create Filter** to access the quick filter builder. You can refine your interaction selection using criteria organized into four categories.
 
-<img src="../allocations/images/quick-filters.png" alt="Quick Filter Creation" title="Quick Filter Creation" style="border: 1px solid gray; zoom:80%;">
+<img src="../allocations/images/quick-filters.png" alt="Quick Filter Creation" title="Quick Filter Creation" style="border: 1px solid gray; zoom:80%;"/>
 
 **Experience Filters:** Target interactions based on customer experience metrics, including sentiment trends from opening to closing, emotional indicators, average waiting time, sentiment scores, Customer Satisfaction Score (CSAT) ratings, detected intents, conversation topics, and churn risk indicators.
 
@@ -154,7 +154,7 @@ After defining your custom filters, you can further refine your allocation:
 ### Step 3: Assignment
 
 The Assignment step completes your allocation by distributing the selected interactions across your auditor team. This final configuration ensures balanced workload distribution and activates the allocation for evaluation.    
-<img src="../allocations/images/assignment.png" alt="Assignment" title="Assignment" style="border: 1px solid gray; zoom:80%;">
+<img src="../allocations/images/assignment.png" alt="Assignment" title="Assignment" style="border: 1px solid gray; zoom:80%;"/>
 
 **Assign Auditors**
 

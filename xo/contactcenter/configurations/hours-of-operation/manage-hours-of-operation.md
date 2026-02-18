@@ -6,7 +6,7 @@ In Contact Center AI, you can define the standard working hours for each day of 
 
 You can reach the Hours of Operation feature by going to **Contact Center AI** > **CONFIGURATIONS** > **Hours of Operation**.
 <img src="../images/hours-of-operation-page.png" alt="
-Hours of Operation Page" title="Hours of Operation Page" style="border: 1px solid gray; zoom:80%;">
+Hours of Operation Page" title="Hours of Operation Page" style="border: 1px solid gray; zoom:80%;"/>
 
 The Hours of Operation section displays the following details:
 
@@ -21,7 +21,7 @@ To add Hours of Operation, follow these steps:
 
 1. Click `+ Add New` to add a new Hours of Operation entry.
 <img src="../images/add-new.png" alt="
-Add Hours of Operation" title="Add Hours of Operation" style="border: 1px solid gray; zoom:80%;">
+Add Hours of Operation" title="Add Hours of Operation" style="border: 1px solid gray; zoom:80%;"/>
 
 2. In the New Hours of Operation panel, configure the following fields:
     1. **Name:** Add a name to identify the Hours of Operation profile. For example, Official Working Hours.
@@ -32,7 +32,7 @@ Add Hours of Operation" title="Add Hours of Operation" style="border: 1px solid 
 
 Set the standard working hours explicitly or opt for the pre-selected hours (9 AM to 6 PM). By default, the weekdays are open, and weekends are closed. The status for Saturday or Sunday can be enabled or disabled using the toggle.
 <img src="../images/new-hours-of-operation.png" alt="
-New Hours of Operation" title="New Hours of Operation" style="border: 1px solid gray; zoom:80%;">
+New Hours of Operation" title="New Hours of Operation" style="border: 1px solid gray; zoom:80%;"/>
 
 ## Holidays and Special Days
 
@@ -40,7 +40,7 @@ Set the Date, Name, Period, Start Work Time, and End Work Time for holidays or s
 
 To add a new entry, click the `+ Add New` button.
 <img src="../images/holidays-and-special-days.png" alt="
-Add Holidays & Special Days" title="Add Holidays & Special Days" style="border: 1px solid gray; zoom:80%;">
+Add Holidays & Special Days" title="Add Holidays & Special Days" style="border: 1px solid gray; zoom:80%;"/>
 
 * Enter the `Date` of the holiday or special day;
 * Enter a `Name`;
@@ -49,16 +49,16 @@ Add Holidays & Special Days" title="Add Holidays & Special Days" style="border: 
 * To delete an entry, click the `Delete` icon next to it.
 * Click `Save`.
 <img src="../images/configure-holiday-hours.png" alt="
-Configure Holiday Hours" title="Configure Holiday Hours" style="border: 1px solid gray; zoom:80%;">
+Configure Holiday Hours" title="Configure Holiday Hours" style="border: 1px solid gray; zoom:80%;"/>
 
 ## Edit Hours of Operation
 
 To edit Hours of Operation, click the `Edit` icon under Actions.
 <img src="../images/edit-button.png" alt="
-Edit Hours of Operation" title="Edit Hours of Operation" style="border: 1px solid gray; zoom:80%;">
+Edit Hours of Operation" title="Edit Hours of Operation" style="border: 1px solid gray; zoom:80%;"/>
 
 ## Delete Hours of Operation
 
 To delete an Hours of Operation, click the `Delete` icon under Actions and confirm your choice.
 <img src="../images/delete-button.png" alt="
-Delete Hours of Operation" title="Delete Hours of Operation" style="border: 1px solid gray; zoom:80%;">
+Delete Hours of Operation" title="Delete Hours of Operation" style="border: 1px solid gray; zoom:80%;"/>

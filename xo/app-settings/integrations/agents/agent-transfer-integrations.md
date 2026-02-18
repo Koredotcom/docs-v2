@@ -137,7 +137,7 @@ Steps to delete a configured agent transfer integration:
 
 1. To delete a configured Agent Transfer integration, go to **App Settings > Integration > Agent Transfer > Configured** hover over it in the **Configured** list and click the **Delete** icon.
 
-    <img src="../images/agent-transfer-integrations-img1-delete-agent.png" alt="Delete agent" title="Delete agent" style="border: 1px solid gray;zoom:80%;">
+    <img src="../images/agent-transfer-integrations-img1-delete-agent.png" alt="Delete agent" title="Delete agent" style="border: 1px solid gray;zoom:80%;"/>
 
     !!! Warning
 
@@ -145,7 +145,7 @@ Steps to delete a configured agent transfer integration:
 
 2. Click **Proceed** to delete.
 
-    <img src="../images/agent-transfer-integrations-img2-delete-agent-confirmation.png" alt="Delete agent" title="Delete agent" style="border: 1px solid gray;zoom:80%;">
+    <img src="../images/agent-transfer-integrations-img2-delete-agent-confirmation.png" alt="Delete agent" title="Delete agent" style="border: 1px solid gray;zoom:80%;"/>
 
 ## User-Bot Chat Transcript Link to Live Agents
 

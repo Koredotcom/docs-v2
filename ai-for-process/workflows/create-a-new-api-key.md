@@ -9,7 +9,7 @@ Steps to create an API key for your workflow:
 2. Select the required workflow from the list. 
 
 3. Click **API keys** in the left panel.  
-<img src="../images/create-new-api-key.png" alt="Create new API Key" title="Create new API Key" style="border: 0px solid gray; zoom:80%;">
+<img src="../images/create-new-api-key.png" alt="Create new API Key" title="Create new API Key" style="border: 0px solid gray; zoom:80%;"/>
 
 4. Click the **Create a new API** key button. The Create new API key dialog is displayed.  
 <img src="../images/generate-new-api-key.png" alt="Generate new API Key" title="Generate new API Key" style="border: 1px solid gray; zoom:60%;">
@@ -21,4 +21,4 @@ Steps to create an API key for your workflow:
         AI for Process won't show the API key again for security reasons. Keep the API key secure and confidential. Never share it with unauthorized users or expose it in client-side code or browsers.
 
 All generated API keys are listed in the API keys section for easy reference and management. 
-<img src="../images/api-keys-list.png" alt="API Keys List" title="API Keys List" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/api-keys-list.png" alt="API Keys List" title="API Keys List" style="border: 1px solid gray; zoom:80%;"/>

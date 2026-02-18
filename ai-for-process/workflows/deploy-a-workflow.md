@@ -67,6 +67,6 @@ Steps to deploy a workflow:
 ## Redeploy a Workflow for the Changes in the Flow
 
 The Deployed version of your workflow's flow is accessible from the **Workflow** page. You can click the **View the Flow** button to view the flow in read-only mode.  
-<img src="../images/deployed-version.png" alt="Deployed Version" title="Deployed Version" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/deployed-version.png" alt="Deployed Version" title="Deployed Version" style="border: 1px solid gray; zoom:80%;"/>
 
 You can change the in-development version of the flow. To redeploy the workflow with the updated flow, click the **Deploy** button at the top-right corner of the **Workflow endpoint** page. The redeployment doesn't change the workflow's endpoint.

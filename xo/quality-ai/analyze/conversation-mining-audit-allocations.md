@@ -7,7 +7,7 @@ The Audit Allocations interface adapts to your permission level, displaying eith
 ## Access Audit Allocations
 
 Navigate to **Quality AI** > **ANALYZE** > **Allocations**.  
-<img src="../allocations/images/audit-allocations.png" alt="Audit Allocations" title="Audit Allocations" style="border: 1px solid gray; zoom:80%;">
+<img src="../allocations/images/audit-allocations.png" alt="Audit Allocations" title="Audit Allocations" style="border: 1px solid gray; zoom:80%;"/>
 
 ## Why Audit Allocations?
 

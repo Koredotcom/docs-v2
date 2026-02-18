@@ -26,7 +26,7 @@ There are two pre-configured groups available:
 To create a new agent group, follow these steps:
 
 1. On the Agent Groups page, select `Add Group`.  
-<img src="../images/add-agent-group.png" alt="Add Group" title="Add Group" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/add-agent-group.png" alt="Add Group" title="Add Group" style="border: 1px solid gray; zoom:80%;"/>
 
 2. In the New Group window, provide the input for the following fields:
     * `Group Name` - Enter the agent group name.
@@ -48,7 +48,7 @@ To learn more about adding or editing agents, see [Edit a User](../../../user-ma
 To modify an agent group, follow these steps:
 
 1. On the Agent Groups page, hover over the group that you want to edit, then select the `Edit` icon next to the group name;  
-<img src="../images/edit-group-button.png" alt="Edit Group Name" title="Edit Group Name" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/edit-group-button.png" alt="Edit Group Name" title="Edit Group Name" style="border: 1px solid gray; zoom:80%;"/>
 
 2. In the Edit Group window, make the required changes;
 3. Select `Save`.
@@ -134,7 +134,7 @@ To create a new agent status, follow these steps:
 To edit an existing Agent status entry, follow these steps:
 
 1. In the Agent Status section, select the `Edit` icon corresponding to the status entry that you want to modify.  
-    <img src="../images/status-edit-button.png" alt="Status Edit Icon" title="Status Edit Icon" style="border: 1px solid gray; zoom:80%;">
+    <img src="../images/status-edit-button.png" alt="Status Edit Icon" title="Status Edit Icon" style="border: 1px solid gray; zoom:80%;"/>
 
 2. In the Edit Status window, edit the Status Name, Status Type, and or Description, then select Update.  
 
@@ -236,7 +236,7 @@ When turned off (default):
 The Conversation Status Control settings are available for the following channels: Live Chat, Messaging, Voice, and Emails.
 
 Different statuses apply to each channel. Watch the short demo to see what these look like in Contact Center AI, and read the following sections for details on available statuses and their configuration.
-<img src="../images/conversation-status-control-channels.gif" alt="Conversation Status Control" title="Conversation Status Control" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/conversation-status-control-channels.gif" alt="Conversation Status Control" title="Conversation Status Control" style="border: 1px solid gray; zoom:80%;"/>
 
 ### Conversation Statuses by Channel (Live Chat, Messaging, and Voice)
 
@@ -287,7 +287,7 @@ For each status, you can configure the following:
 
     * The statuses for which you can set a percentage value are: `Due Reminder For Agent`, and `Idle Reminder For Customer`.  
     * The statuses that don't require percentile or response time configuration are: `On Connect`, `On Interruption`, and `On Close`.   
-        <img src="../images/response-status.png" alt="Status Configuration" title="Status Configuration" style="border: 1px solid gray; zoom:80%;">     
+        <img src="../images/response-status.png" alt="Status Configuration" title="Status Configuration" style="border: 1px solid gray; zoom:80%;"/>     
         The following applies to emails:  
     * The statuses for which you can set a response time (in hours) are `Due Reminder for Agent Inactivity`, and `Due Reminder for Auto Expiry`.  
     * The status for which there is no response time is `On Close`.  
@@ -300,26 +300,26 @@ For each status, you can configure the following:
 2. The messaging goes out to either the user or the agent. Edit status messages by selecting the Edit icon under the Message column.  
 
     1. Each status lets you edit the message text, add variables and select the language.  
-        <img src="../images/onconnect-other-channels.png" alt="Status Message Dialog Box" title="Status Message Dialog Box" style="border: 1px solid gray; zoom:80%;">
+        <img src="../images/onconnect-other-channels.png" alt="Status Message Dialog Box" title="Status Message Dialog Box" style="border: 1px solid gray; zoom:80%;"/>
 
     2. To add a variable, place the cursor where you want to insert the variable, select the Variable field, then select the one you need. This adds a variable placeholder in your message text, which replaces with contextual information once the message reaches its recipient. You can select more than one variable within the same message.
     For example: `{{agentFirstName}}` becomes John.  
-        <img src="../images/auto-expire-messaging.png" alt="Add Variable" title="Add Variable" style="border: 1px solid gray; zoom:80%;">  
+        <img src="../images/auto-expire-messaging.png" alt="Add Variable" title="Add Variable" style="border: 1px solid gray; zoom:80%;"/>  
 
 See the tables in [Conversation Statuses by Channel (Live Chat, Messaging, and Voice)](#conversation-statuses-by-channel-live-chat-messaging-and-voice) and [Conversation Statuses by Channel (Email)](#conversation-statuses-by-channel-email) for details on available variables.
 
 When you configure your Conversation Statuses and Messaging, select `Save`.  
-<img src="../images/save-button.png" alt="Save Conversation Status" title="Save Conversation Status" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/save-button.png" alt="Save Conversation Status" title="Save Conversation Status" style="border: 1px solid gray; zoom:80%;"/>
 
 ### Allow Agent to Pause/Resume
 
 By default, the Allow Agent to Pause or Resume feature is disabled. However, admins can enable it for agents handling voice interactions, allowing them to pause the recording during the call.
-<img src="../images/allow-agent-to-pause-resume.png" alt="Allow Agents to Pause/Resume Call Recording" title="Allow Agents to Pause/Resume Call Recording" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/allow-agent-to-pause-resume.png" alt="Allow Agents to Pause/Resume Call Recording" title="Allow Agents to Pause/Resume Call Recording" style="border: 1px solid gray; zoom:80%;"/>
 
 ### Allow Assistant Dialogs to Pause or Resume
 
 By default, the Allow Assistant to Pause/Resume feature isn't available. However, admins can enable it for AI Agents (automation) handling voice interactions, allowing them to pause the recording when collecting Personally Identifiable Information (PII).  
-<img src="../images/allow-virtual-assistants-to-pause-resume.png" alt="Allow Assistant Dialogs to Pause/Resume Call Recording" title="Allow Assistant Dialogs to Pause/Resume Call Recording" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/allow-virtual-assistants-to-pause-resume.png" alt="Allow Assistant Dialogs to Pause/Resume Call Recording" title="Allow Assistant Dialogs to Pause/Resume Call Recording" style="border: 1px solid gray; zoom:80%;"/>
 
 Recorded calls are available to supervisors on the Dashboard’s [Interactions](../../../analytics/overview/conversations.md#call-recording){:target="_blank"} tab. The system doesn't record interactions in the Interactions tab during the period when recording stops or pauses.
 
@@ -330,12 +330,12 @@ The system logs the changes to the Call Recording Control settings on the [Admin
 ### Transfer to External Contacts
 
 If enabled, this option lets agents to transfer ongoing customer calls to the external contacts list, via the Agent Console. See [Agent Console > Transfer Interactions](../../../console/interacting-with-customers.md#transfer-interactions){:target="_blank"} to learn more.  
-<img src="../images/transfer-to-external-contacts.png" alt="Enable Transfer to External Contacts" title="Enable Transfer to External Contacts" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/transfer-to-external-contacts.png" alt="Enable Transfer to External Contacts" title="Enable Transfer to External Contacts" style="border: 1px solid gray; zoom:80%;"/>
 
 ### Enforce Skill Match for Transfers
 
 If enabled, the system considers skills while finding an agent, during a queue transfer. If disabled, the system ignores skills while finding an agent, during a queue transfer.  
-<img src="../images/enforce-skill-match-for-transfers.png" alt="Enable Enforce Skill Match for Transfers" title="Enable Enforce Skill Match for Transfers" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/enforce-skill-match-for-transfers.png" alt="Enable Enforce Skill Match for Transfers" title="Enable Enforce Skill Match for Transfers" style="border: 1px solid gray; zoom:80%;"/>
 
 ### Transfer Destinations
 
@@ -343,7 +343,7 @@ Supervisors can decide where agents can transfer interactions:
 
 * `Queues & Agents`: Agents can transfer interactions to queues and other individual agents.
 * `Queues only`: Agents can transfer interactions only to queues.  
-<img src="../images/transfer-destinations.png" alt="Transfer Destinations" title="Transfer Destinations" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/transfer-destinations.png" alt="Transfer Destinations" title="Transfer Destinations" style="border: 1px solid gray; zoom:80%;"/>
 
 ## Skill Modification
 
@@ -354,34 +354,34 @@ You can select from the following options:
 * `Live Interaction`: Selecting this option lets agents modify skills from the skills bar on the Live Interaction window.
 * `Transfer`: Selecting this option lets agents modify skills when transferring an interaction.  
 * `Transfer`: Selecting this option lets agents modify skills when transferring an interaction.  
-<img src="../images/skill-modification.png" alt="Skill Modification" title="Skill Modification" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/skill-modification.png" alt="Skill Modification" title="Skill Modification" style="border: 1px solid gray; zoom:80%;"/>
 
 ## Auto Logout & Auto Close Conversation
 
 This feature lets administrators to specify the period of inactivity for automatic agent logout and a conversation timeout to transition into ACW mode. By default, auto logout & auto close conversation is disabled.
 
 Auto Logout  
-<img src="../images/auto-logout-toggle.png" alt="Auto Logout" title="Auto Logout" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/auto-logout-toggle.png" alt="Auto Logout" title="Auto Logout" style="border: 1px solid gray; zoom:80%;"/>
 
 Enabling the setting lets administrators to configure the following rules:
 
 `Auto Logout`: The period of inactivity after which auto logout occurs. The default setting is 8 hours.
 
 `Due Reminder for Auto Logout`: The time duration before auto logout when the alert message appears.  
-<img src="../images/configuring-auto-logout.png" alt="Configure Auto Logout" title="Configure Auto Logout" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/configuring-auto-logout.png" alt="Configure Auto Logout" title="Configure Auto Logout" style="border: 1px solid gray; zoom:80%;"/>
 
 Conversation Callback Timeout
 
 If enabled, the conversation automatically moves to ACW mode after the timeout period if the agent remains inactive on the callback screen. 30 Seconds is the default selection, you can configure it between 10 seconds and 5 minutes.  
-<img src="../images/conversation-callback-timeout.png" alt="Conversation Callback Timeout" title="Conversation Callback Timeout" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/conversation-callback-timeout.png" alt="Conversation Callback Timeout" title="Conversation Callback Timeout" style="border: 1px solid gray; zoom:80%;"/>
 
 `Due Reminder for Auto Logout`: The time duration before auto logout when the alert message appears.  
-<img src="../images/configuring-auto-logout.png" alt="Configure Auto Logout" title="Configure Auto Logout" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/configuring-auto-logout.png" alt="Configure Auto Logout" title="Configure Auto Logout" style="border: 1px solid gray; zoom:80%;"/>
 
 `Conversation Callback Timeout`
 
 If enabled, the conversation automatically moves to ACW mode after the timeout period if the agent remains inactive on the callback screen. 30 Seconds is the default selection, you can configure it between 10 seconds and 5 minutes.  
-<img src="../images/conversation-callback-timeout.png" alt="Conversation Callback Timeout" title="Conversation Callback Timeout" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/conversation-callback-timeout.png" alt="Conversation Callback Timeout" title="Conversation Callback Timeout" style="border: 1px solid gray; zoom:80%;"/>
 
 ## Snooze
 
@@ -396,12 +396,12 @@ When enabled, the following options are available:
 * **Agent Logout with Snoozed Interactions**: This setting lets agents to log out even when they have snoozed interactions in their tray. Snoozed interactions remain in the agent’s personal inbox and resume when the agent logs in next. Administrators can select the applicable channels from the available options (Live Chat, Messaging, and Email).  
 
 * **Reactivation of Snoozed Interactions on User Message**: When enabled, any incoming user message reactivates the snoozed conversation and moves it to an in-progress state. When disabled, user messages received during snooze don't reactivate the conversation until the agent manually resumes it. Administrators can select the applicable channels from the available options (Live Chat, Messaging, and Email).  
-<img src="../images/snooze-default.png" alt="Snooze" title="Snooze" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/snooze-default.png" alt="Snooze" title="Snooze" style="border: 1px solid gray; zoom:80%;"/>
 
 ## Blended Agents
 
 Administrators can turn on the toggle to enable the functionality, allowing agents to handle both voice and digital interactions concurrently, optimizing agent capacity, improving efficiency, and aligning with modern contact center best practices. By default, the blended agents functionality unavailable. For details on blended mode changes, see [Key Changes with Blended Mode](../agent-management/agent-management.md#key-changes-with-blended-mode).  
-<img src="../images/blended-agents-toggle.png" alt="Blended Agents Toggle" title="Blended Agents Toggle" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/blended-agents-toggle.png" alt="Blended Agents Toggle" title="Blended Agents Toggle" style="border: 1px solid gray; zoom:80%;"/>
 
 ## Additional Routing Configuration
 
@@ -418,12 +418,12 @@ Administrators can select from the following routing options that complement exi
 `Omit Language in Routing`: When enabled, the system ignores language during routing. Routing continues to consider skill, proficiency, availability, capacity, and other applicable parameters.
 
 When disabled (Default), the system includes language as a routing criterion along with skill, proficiency, availability, and other parameters.  
-<img src="../images/additional-routing-config.png" alt="Additional Routing Configuration" title="Additional Routing Configuration" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/additional-routing-config.png" alt="Additional Routing Configuration" title="Additional Routing Configuration" style="border: 1px solid gray; zoom:80%;"/>
 
 ## Enable Dial Tone Until Agent Connects
 
 By default, the enable dial tone until agent connects functionality is disabled. Administrators can turn on the toggle and select **Save** to enable the functionality. When enabled, a dial tone plays  until the connection with the agent establishes after the user hears a connected tone.  
-<img src="../images/enable-dial-tone.png" alt="Enable Dial Tone Until Agents Connect" title="Enable Dial Tone Until Agents Connect" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/enable-dial-tone.png" alt="Enable Dial Tone Until Agents Connect" title="Enable Dial Tone Until Agents Connect" style="border: 1px solid gray; zoom:80%;"/>
 
 ## Total Digital Conversation Limit
 
@@ -434,4 +434,4 @@ This setting lets admins to configure a maximum total digital conversation limit
     You can set the total conversation limit for a user only from the User section. This setting is not available in the user profile under the Monitor tab.  
 
 When the Total digital conversation limit is reached,  an agent moves to System Busy status. This setting is disabled by default.  
-<img src="../images/total-digital-conversations-enable.png" alt="Enable Total Digital Conversations Limit" title="Enable Total Digital Conversations Limit" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/total-digital-conversations-enable.png" alt="Enable Total Digital Conversations Limit" title="Enable Total Digital Conversations Limit" style="border: 1px solid gray; zoom:80%;"/>
