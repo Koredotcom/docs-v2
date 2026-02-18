@@ -1,0 +1,614 @@
+---
+title: Search AI Tips and FAQs
+sidebarTitle: Tips and FAQs
+---
+
+This document covers best practices, how-to instructions, and frequently asked questions for building and managing Search AI solutions.
+
+| Section | What's Covered |
+|---------|----------------|
+| [Best Practices](#best-practices) | Data ingestion, chunking strategy, LLM selection and token management |
+| [How-To Topics](#how-to-topics) | Custom embedding model integration, channel-based response customization |
+| [Frequently Asked Questions](#frequently-asked-questions) | Application training, multilingual support, user feedback handling |
+| [Quick Reference](#quick-reference) | Checklists and summary tables for all key topics |
+---
+
+## Best Practices
+
+This section provides essential recommendations for building effective Search AI solutions across three critical areas: data ingestion, chunking strategy, and LLM selection.
+
+### 1. Data Ingestion
+
+The quality of your data directly impacts search performance. Ensure you ingest the right content in the right format.
+
+#### Supported Data Sources
+
+Search AI accepts content from:
+- **Files**: PDF, DOCX, PPTX, TXT
+- **Websites**: Web pages and HTML content
+- **Connectors**: Third-party applications
+
+#### File Best Practices
+
+**Document Quality**
+- Use **digitally created documents** rather than scanned or handwritten files
+- Maintain **consistent layouts** across pages
+- Ensure documents are **unencrypted** and password-free
+- Keep content **concise and well-structured** for better search accuracy
+- Remove unnecessary headers, footers, and metadata
+
+**Layout and Formatting**
+- **Single-column documents** work best
+- Multi-column layouts may reduce accuracy and need tuning
+- Use clear section headers and logical organization
+- Avoid switching between single and multi-column formats in the same document
+
+**Content Restrictions**
+
+Avoid these to prevent data loss:
+- Compressed PDFs (can cause distortion)
+- Multi-page tables (hard to process)
+- Scanned or heavily formatted files
+- Inconsistent formatting
+
+**Images and Tables**
+
+Search AI extracts text by default. For better results:
+- Provide text descriptions for key information in images
+- Add contextual summaries before or after tables and images
+- Use meaningful titles for images and tables
+- Update extraction strategies for documents with significant visual content
+
+#### Website Best Practices
+
+**Structure**
+- Follow **schema.org standards** for metadata
+- If not using schema.org, apply **consistent heading logic** (h1, h2, p tags)
+- Standard HTML tags provide the best results
+- Custom CSS structures may need fine-tuning
+
+**Non-Standard Content**
+- Override default processing using **Document Workbench** for custom layouts
+- Define custom extraction rules for non-standard structures
+
+#### Connector Integration Best Practices
+
+**Relevance and Filtering**
+- **Ingest only relevant data** for your use case
+- Use **advanced filters** to select valuable content
+- Avoid pulling entire datasets to prevent noise
+
+**Performance**
+- **Limit ingestion frequency** to avoid system overload
+- **Monitor logs** and adjust based on performance
+- Use **incremental updates** instead of full re-ingestion
+
+---
+
+### 2. Chunking Strategy
+
+Chunking breaks content into smaller pieces for better search and retrieval. Choose your chunk size based on your specific needs.
+
+**Default chunk size**: 1000 tokens (customize based on your use case)
+
+#### When to Use Smaller Chunks (300–500 tokens)
+
+- **Precise question answering**: When answers are in short text segments
+- **Technical documentation**: Dense content with tightly packed concepts
+- **Multiple topics**: Documents covering various subjects requiring targeted retrieval
+- **Limited context windows**: LLMs with smaller capacity
+- **Memory efficiency**: Optimizing storage and processing
+- **Cost sensitivity**: Managing token usage
+
+#### When to Use Larger Chunks (1000+ tokens)
+
+- **Reasoning tasks**: When context and relationships between concepts matter
+- **Narrative content**: Stories, case studies, or arguments that need coherence
+- **Contextual dependency**: Information requiring surrounding text
+- **Cross-paragraph references**: Content with internal references
+- **Multi-step procedures**: Processes that must be followed in sequence
+- **Conceptual understanding**: When grasping themes is more important than specific facts
+
+---
+
+### 3. LLM Selection and Configuration
+
+Your choice of LLM shapes performance, accuracy, cost, and user experience.
+
+#### Model Selection
+
+**Cost-Sensitive Applications**
+- **Recommended**: GPT-4o mini
+- **Best for**: High query volume, straightforward retrieval, budget constraints
+- **Trade-offs**: May struggle with complex reasoning but offers faster responses
+
+**Performance-Prioritizing Applications**
+- **Recommended**: GPT-4o or similar high-performance models
+- **Best for**: Customer-facing apps, complex documents, technical/medical/legal content
+- **Trade-offs**: Higher costs but better accuracy and coherence
+
+**Model Recommendations by Content Type**
+
+| Content Type | Recommended Model | Reason |
+|--------------|-------------------|--------|
+| Simple FAQs, knowledge base | GPT-3.5, GPT-4o mini | Cost-effective for explicit information |
+| Technical docs, processes | GPT-4 Turbo | Better handling of technical concepts |
+| Legal, scientific, complex | GPT-4o | Superior reasoning for interpretation |
+| Specialized knowledge | Fine-tuned custom model | Industry-specific accuracy |
+
+#### Context Window Considerations
+
+The context window is the amount of text a model can process in one call. This is critical for RAG applications.
+
+**Matching Window Size to Chunks**
+
+- **Small chunks (300–500 tokens)**: 8k–16k context windows are sufficient
+  - Can accommodate 15–40 chunks
+  - Examples: GPT-3.5 Turbo (16k)
+- **Medium chunks (1k–2k tokens)**: 16k–32k context windows recommended
+  - Can accommodate 8–15 chunks
+- **Large chunks (3k–5k tokens)**: 32k–128k context windows essential
+  - Examples: GPT-4o (128k), Claude 3 Opus (200k)
+
+#### Token Management
+
+Your context window accommodates three parts:
+
+1. **System and User Prompts** (500–1000 tokens) — Instructions, format specs, custom domain instructions
+2. **Retrieved Chunks** (70–90% of total usage) — Varies by chunk size, number of chunks, and search settings
+3. **Model Response** (500–2000 tokens) — Controlled through output length instructions
+
+**Recommended Max Tokens for Chunks by Context Window**
+
+| Context Window | Recommended Max Tokens | Reasoning |
+|----------------|------------------------|-----------|
+| 4k | 2,000–2,500 | Reserves space for prompts/responses |
+| 8k | 5,000–6,000 | Balances chunks with prompt space |
+| 16k | 12,000–13,000 | Maximizes info while preventing overflow |
+| 32k | 25,000–27,000 | Uses larger windows with safety margin |
+| 64k+ | 50,000+ | Leverages expansive context |
+
+**Example Token Calculations**
+
+*Example 1: 16k Context Window*
+- System prompt: 500 tokens
+- Chunks: 12 × 1000 = 12,000 tokens
+- Response: 1,500 tokens
+- **Total: 14,000 tokens** ✓ Fits in 16k window
+
+*Example 2: Problematic Configuration*
+- System prompt: 800 tokens
+- Chunks: 20 × 800 = 16,000 tokens
+- Response: 1,200 tokens
+- **Total: 18,000 tokens** ✗ Exceeds 16k window → Error
+
+#### Cost Optimization
+
+| Configuration | Approximate Tokens | Cost per Query (GPT-4o) | Weekly Cost (1000 queries) |
+|---------------|-------------------|------------------------|---------------------------|
+| Conservative (5k chunks) | 7k input, 1k output | $0.28 | $280 |
+| Moderate (10k chunks) | 12k input, 1.5k output | $0.45 | $450 |
+| Expansive (20k chunks) | 22k input, 2k output | $0.75 | $750 |
+
+**Optimization Tips**
+- For verbose responses, reduce "Max tokens for Chunks"
+- For complex prompts, account for their increased token usage
+- Monitor usage patterns and adjust accordingly
+- Use lower temperature settings (0.0–0.3) for factual responses
+
+#### Custom LLM Implementation
+
+When using custom or third-party LLMs:
+- Search AI doesn't auto-detect context window limits for custom LLMs
+- Set maximum input token limits manually
+- Configure "Max tokens for chunks" according to context window
+- Test regularly to prevent overflow errors
+- Adjust temperature settings for your use case (lower is better for factual content)
+
+---
+
+## How-To Topics
+
+### Integrate a Custom Embedding Model
+
+Connect your own embedding model to control how Search AI vectorizes text, enabling domain-specific embeddings or compliance with data privacy requirements.
+
+#### Supported Vector Dimensions
+
+Your embedding model must output one of these vector sizes:
+
+| Supported Sizes |
+|-----------------|
+| 128, 256, 384, 512, 768, 1024, 1028, 1536, 2048, 3072 |
+
+#### Integration Steps
+
+**Step 1: Configure the Model**
+
+1. Go to **Generative AI Tools > Model Library**
+2. Click **+New Model** and select **Custom Integration**
+3. In the **Configurations** tab, provide:
+
+| Field | Description |
+|-------|-------------|
+| Integration Name | Unique identifier for this integration |
+| Model Name | Your model name (e.g., `text-embedding-ada-002`) |
+| Endpoint | API endpoint that returns embeddings |
+| Auth | Authorization profile (if required) |
+| Headers | Any required request headers |
+
+4. Click **Next** and enter your **Request Prompt** (the payload sent to the model):
+
+```json
+{
+  "input": "The food was delicious and the waiter...",
+  "model": "text-embedding-ada-002",
+  "encoding_format": "float"
+}
+```
+
+5. Click **Test** to verify the response, then **Save**
+
+**Step 2: Create a Custom Prompt**
+
+1. Go to **Generative AI Tools > Prompt Library**
+2. Click **+New Prompt** and configure:
+
+| Field | Description |
+|-------|-------------|
+| Name | Unique identifier for this prompt |
+| Feature | Select **Vector Generation** |
+| Model | Select your custom model from Step 1 |
+
+3. Define the **Request** using the `{{embedding_input}}` variable:
+
+```json
+{
+  "input": "{{embedding_input}}",
+  "model": "text-embedding-ada-002",
+  "encoding_format": "float"
+}
+```
+
+4. Enter sample values and click **Test**
+5. In the **Response**, double-click the field containing the embeddings array to set the **Text Response Path**
+
+The selected field must contain an array of numbers:
+
+```json
+{
+  "data": [
+    {
+      "embedding": [-0.022822052, 0.01614314, 0.008042404, ...]
+    }
+  ]
+}
+```
+
+6. Click **Save**
+
+> **Note:** If the response format doesn't match, use a post-processor script to transform it.
+
+**Step 3: Enable the Model**
+
+1. Go to **GenAI Features**
+2. For **Vector Generation**:
+   - Select the model from Step 1
+   - Select the prompt from Step 2
+3. Enable the feature
+
+Search AI now uses your custom embedding model.
+
+#### Fine-Tuning Embedding Models
+
+For improved relevance, fine-tune embedding models with your domain-specific data using the [Fine-Tune Embedding Utility]() from the Search AI Toolkit.
+
+---
+
+### Customize Responses by Channel Type
+
+Search AI can format responses differently for digital channels (chat, messaging) versus voice channels (IVR, phone). Digital responses can include rich formatting, while voice responses should be concise and TTS-compatible.
+
+#### How It Works
+
+The `{{answer_mode}}` variable tells the LLM which channel type is being used:
+
+| Value | Channel Types |
+|-------|---------------|
+| `digital` | Chat, messaging, email, SMS, web widgets, social platforms (WhatsApp, Slack, Teams, etc.) |
+| `voice` | IVR, Alexa, Twilio Voice, Voice Gateway, AudioCodes |
+
+#### Default Behavior
+
+The **Default-v2** prompt automatically includes `{{answer_mode}}`. No configuration needed if you're using the default prompt.
+
+#### Custom Prompt Configuration
+
+When creating a custom prompt for Answer Generation, include `{{answer_mode}}` so the model adapts its response style.
+
+**Example prompt structure:**
+
+```json
+{
+  "messages": [
+    {
+      "role": "system",
+      "content": "Generate answers based on the provided context. Customize format based on {{answer_mode}}:\n\n**Digital Channel:**\n- Use markdown for formatting\n- Include bullet points, numbered lists, headings\n- Ensure visual hierarchy and readability\n\n**Voice Channel:**\n- Remove markdown syntax for TTS compatibility\n- Keep responses short and concise\n- Use natural language transitions (First, Second, Lastly)"
+    },
+    {
+      "role": "user",
+      "content": "Context: {{chunks}}\nQuery: {{query}}\nAnswer Mode: {{answer_mode}}"
+    }
+  ]
+}
+```
+
+#### Response Formatting Guidelines
+
+| Channel | Formatting |
+|---------|------------|
+| Digital | Markdown, bullet points, headings, structured layout |
+| Voice | Plain text, short sentences, natural transitions, no special characters |
+
+---
+
+## Frequently Asked Questions
+
+### Application Training
+
+Training prepares ingested content for search by applying configurations, extracting chunks, and generating embeddings. Training is required whenever content or configuration changes.
+
+#### Training Types
+
+| Type | Description | Scope |
+|------|-------------|-------|
+| Full Training | Complete training of the application | All content, regardless of changes |
+| Incremental Training | Training only for changed content | Additions, deletions, or modifications |
+
+#### Automatic Training
+
+The application automatically trains when new content is ingested through file uploads, web crawls, or connectors.
+
+| Scenario | Behavior |
+|----------|----------|
+| Initial Ingestion | Full training of all ingested content |
+| Incremental Updates | Training only for content changes (recrawling, connector resync) |
+
+When auto-training initiates, a banner appears at the top of the application interface.
+
+#### Manual Training
+
+Use the **Train** button on the **Extract** or **Vector Configuration** page to force retraining.
+
+**When Manual Training is Required:**
+
+| Scenario | Examples |
+|----------|----------|
+| Config Updates | Changes to extraction strategies, vector configuration |
+| Content Deletion | Removing files or content sources |
+
+**Training Scope Based on Change Type:**
+
+| Change Location | Reprocessing Scope |
+|-----------------|-------------------|
+| Before extraction stage | Reprocesses from extraction and chunking onward (e.g., connector config, schema, extraction strategy) |
+| After extraction stage | Skips re-chunking, updates enrichment and vector generation only (e.g., embedding model, embedding fields) |
+
+#### Training Logs
+
+View detailed training logs with document-level visibility:
+
+1. Navigate to the **Extract** page
+2. Click the dropdown with the **Train** option
+3. Select **View Training Logs**
+
+**Log Information:**
+
+| Field | Description |
+|-------|-------------|
+| Training Type | Full or Incremental |
+| Trigger Time | When training was initiated |
+| Successful Docs | Number of documents processed successfully |
+| Failed Docs | Number of documents with errors |
+| Overall Status | Training marked as failed if any doc fails |
+
+Click individual records to view details grouped by extraction strategy.
+
+#### Important Notes
+
+- Manual chunk edits are overwritten during retraining for affected content only
+- Manually resynchronizing a connector may require manual training trigger (known issue)
+
+---
+
+### Multilingual Support
+
+Search AI supports multilingual capabilities, enabling users to interact in their preferred language.
+
+#### Core Capabilities
+
+| Feature | Description |
+|---------|-------------|
+| Content Management | Add and manage content in multiple languages |
+| Query Processing | Submit queries in supported languages |
+| Response Generation | Receive answers in the same language as the query |
+
+#### Language Support Requirements
+
+Multilingual support works with any language supported by your configured LLM and vector generation model when using:
+- Text Extraction strategy
+- Vector Retrieval method
+
+No additional configuration is required for basic multilingual support.
+
+#### Widely Supported Languages
+
+Search AI supports languages commonly handled by advanced LLMs and embedding models like BGE-M3. Refer to your LLM or vector generation model's official documentation for a comprehensive list.
+
+#### Language-Sensitive Components
+
+Certain modules require specific strategies or models depending on the language.
+
+**Content Extraction:**
+
+| Language | Supported Strategies |
+|----------|---------------------|
+| English | All extraction methods |
+| Other languages | Varies by method - consult documentation |
+
+**Vector Generation Models:**
+
+| Model | Language Support |
+|-------|-----------------|
+| BGE-M3 | Wide range of languages; performance may be lower for underrepresented languages |
+| Other models | Varies - check model documentation |
+
+**Re-Ranker Models:**
+
+| Model | Best For |
+|-------|----------|
+| Cross Encoder (ms-marco-MiniLM) | English - lightweight and fast |
+| BGE Re-Ranker (bge-reranker-v2-m3) | Multilingual - lightweight with broad language support |
+| MixedBread Re-Ranker | Highest accuracy - resource intensive |
+
+#### Best Practices
+
+1. **Verify model compatibility** — Ensure your LLM and embedding model support target languages
+2. **Test across languages** — Validate answer quality in each supported language
+3. **Consider re-ranker selection** — Choose based on primary language requirements
+4. **Monitor performance** — Low-resource languages may have reduced accuracy
+
+---
+
+### User Feedback Handling
+
+The feedback mechanism allows end users to rate response quality, helping evaluate and improve answer delivery.
+
+#### How Feedback Works
+
+Users express satisfaction through thumbs up/down actions captured via:
+- Web SDK
+- Public API
+
+#### Enabling Feedback
+
+1. Navigate to **Configuration > Answer Generation**
+2. Enable **Feedback Configuration**
+
+#### Capturing Feedback
+
+**Via Web SDK:**
+
+When enabled, thumbs up/down icons appear with each answer in the SDK interface.
+
+**Via API:**
+
+Use the [Feedback API](https://docs.kore.ai/xo/apis/searchai/feedback/) to capture feedback programmatically.
+
+#### Viewing Feedback Data
+
+Feedback appears in **Analytics > Search AI > Answer Insights**.
+
+**Feedback Display:**
+
+| Scenario | Display |
+|----------|---------|
+| Majority positive | Green indicator with positive count |
+| Majority negative | Red indicator with negative count |
+| Mixed feedback | Highlights majority sentiment |
+
+**Example:** 20 feedback entries with 16 positive and 4 negative displays as green with count of 16.
+
+#### Detailed Feedback Analysis
+
+1. Click a query in Answer Insights to view the Answer Summary page
+2. See all answers users received for that query with associated feedback
+3. Click **View Details** for any answer to see user comments
+
+#### Implementation Notes
+
+**When using SearchAINode:**
+- Ensure `searchRequestId` is included in the channel response
+- Automatic when SearchAINode response is presented directly
+- Must be explicitly included if response is saved to context and rendered with a custom template
+
+#### Feedback vs. Feedback Surveys
+
+| Feature | Purpose |
+|---------|---------|
+| Search AI Feedback | Captures answer relevance and accuracy ratings |
+| Platform Feedback Surveys | General survey capabilities in AI for Service platform |
+
+These are separate mechanisms — the Search AI feedback mechanism is specifically designed for answer quality evaluation.
+
+---
+
+## Quick Reference
+
+### Best Practices Checklist
+
+**Data Ingestion**
+- Use digitally created, unencrypted documents
+- Maintain consistent single-column layouts
+- Add text descriptions for images and tables
+- Use filters to ingest only relevant data
+- Implement incremental updates
+
+**Chunking**
+- Choose chunk size based on content type and use case
+- Use 300–500 tokens for precise retrieval
+- Use 1000+ tokens for complex narratives
+
+**LLM Configuration**
+- Select model based on budget vs. performance needs
+- Ensure context window matches your chunk strategy
+- Configure "Max tokens for Chunks" appropriately
+- Monitor token usage and costs
+- Test configurations to avoid context overflow
+
+### Custom Embedding Model Checklist
+
+| Step | Action |
+|------|--------|
+| 1 | Verify model outputs a supported vector dimension |
+| 2 | Configure model in Model Library with endpoint and auth |
+| 3 | Create prompt in Prompt Library for Vector Generation |
+| 4 | Set the response path to the embeddings array field |
+| 5 | Enable model and prompt in GenAI Features |
+
+### Channel Response Customization Checklist
+
+| Step | Action |
+|------|--------|
+| 1 | For default behavior, use Default-v2 prompt (no changes needed) |
+| 2 | For custom prompts, include `{{answer_mode}}` variable |
+| 3 | Add formatting instructions for both digital and voice modes |
+
+### Training Summary
+
+| Question | Answer |
+|----------|--------|
+| When does auto-training occur? | On content ingestion (uploads, crawls, connector syncs) |
+| When is manual training needed? | Config changes, content deletion |
+| Where to trigger manual training? | Extract or Vector Configuration page |
+| Where to view training logs? | Extract page > Train dropdown > View Training Logs |
+
+### Multilingual Summary
+
+| Question | Answer |
+|----------|--------|
+| What languages are supported? | Any language supported by configured LLM and embedding model |
+| Is configuration required? | No additional setup for basic support |
+| Which re-ranker for multilingual? | BGE Re-Ranker (bge-reranker-v2-m3) |
+| Which re-ranker for English only? | Cross Encoder (ms-marco-MiniLM) |
+
+### Feedback Summary
+
+| Question | Answer |
+|----------|--------|
+| How to enable feedback? | Configuration > Answer Generation > Enable Feedback Configuration |
+| Where to view feedback? | Analytics > Search AI > Answer Insights |
+| How to capture via API? | Use the Feedback API |
+| What does feedback show? | Thumbs up/down counts with majority sentiment highlighted |
+
+---
