@@ -29,7 +29,7 @@ The evaluation form includes chosen metrics with customizable weights totaling 1
 ## Access Evaluation Forms
 
 Navigate to **Quality AI** > **CONFIGURE** > **Evaluation Forms**.    
-<img src="../evaluation-criteria/evaluation-forms/images/evaluation-forms.png" alt="Evaluation Forms Tab" title="Evaluation Forms Tab" style="border: 1px solid gray; zoom:80%;">
+<img src="../evaluation-criteria/evaluation-forms/images/evaluation-forms.png" alt="Evaluation Forms Tab" title="Evaluation Forms Tab" style="border: 1px solid gray; zoom:80%;"/>
 
 ## Creating and Configuring Evaluation Forms
 
@@ -60,10 +60,10 @@ The evaluation forms has the following options:
 Steps to create a new evaluation form:  
 
 1. Select the **Evaluation Forms** tab.   
-   <img src="../evaluation-criteria/evaluation-forms/images/eva-form-tab-selection.png" alt="Evaluation Forms Tab" title="Evaluation Forms Tab" style="border: 1px solid gray; zoom:80%;">
+   <img src="../evaluation-criteria/evaluation-forms/images/eva-form-tab-selection.png" alt="Evaluation Forms Tab" title="Evaluation Forms Tab" style="border: 1px solid gray; zoom:80%;"/>
 
 2. Click the **+ New Evaluation Form** displayed in the upper-right corner.    
-   <img src="../evaluation-criteria/evaluation-forms/images/new-eva-form-selection.png" alt="New Evaluation Forms" title="New Evaluation Forms" style="border: 1px solid gray; zoom:80%;">
+   <img src="../evaluation-criteria/evaluation-forms/images/new-eva-form-selection.png" alt="New Evaluation Forms" title="New Evaluation Forms" style="border: 1px solid gray; zoom:80%;"/>
 
 ### General Settings
 
@@ -149,7 +149,7 @@ This section lets you add and create evaluation metrics for each attribute confi
  Steps to configure evaluation metrics:
 
 1. Using the **Search** option, select the required evaluation metrics from the available options.   
-   <img src="../evaluation-criteria/evaluation-forms/images/forms-search-metrics.png" alt="Search Metrics" title="Search Metrics" style="border: 1px solid gray; zoom:80%;">
+   <img src="../evaluation-criteria/evaluation-forms/images/forms-search-metrics.png" alt="Search Metrics" title="Search Metrics" style="border: 1px solid gray; zoom:80%;"/>
 
 2. Choose the **Evaluation Metrics** to assign to the corresponding queues and sources:
 
@@ -158,7 +158,7 @@ This section lets you add and create evaluation metrics for each attribute confi
 * For **Quality AI Express** queues (alone or in combination with **CCAI** or **Agent AI**), only **By Question** and **By Speech** metrics are allowed. 
 
 3. Click **Edit** to assign weight to each agent attribute based on importance.    
-<img src="../evaluation-criteria/evaluation-forms/images/add-new-eva-forms-edit.png" alt="Edit Metrics" title="Edit Metrics" style="border: 1px solid gray; zoom:80%;">
+<img src="../evaluation-criteria/evaluation-forms/images/add-new-eva-forms-edit.png" alt="Edit Metrics" title="Edit Metrics" style="border: 1px solid gray; zoom:80%;"/>
 
 **Metric Type Validations by Conversation Source**
 
@@ -177,7 +177,7 @@ This section lets you add and create evaluation metrics for each attribute confi
       * If **Yes** is the correct response; only positive weight is allowed.
       
       * If **No** is the correct response; only zero or negative weight is allowed.    
-      <img src="../evaluation-criteria/evaluation-forms/images/outcome-weight-response.png" alt="Correct Response" title="Correct Response" style="border: 1px solid gray; zoom:80%;">
+      <img src="../evaluation-criteria/evaluation-forms/images/outcome-weight-response.png" alt="Correct Response" title="Correct Response" style="border: 1px solid gray; zoom:80%;"/>
 
 5. Assign the **Weightage** percentage based on the correct response validation.
 
@@ -194,7 +194,7 @@ This section lets you add and create evaluation metrics for each attribute confi
         * **No**: When the agent’s response (such as a rude response) does not match the correct response, the system assigns zero or negative weight accordingly.	
 
 7. Toggle the **Fatal Error** if the metric is fatal and considered a critical failure in the response.    
-   <img src="../evaluation-criteria/evaluation-forms/images/add-new-eva-forms-fatal-error.png" alt="Fatal Error" title="Fatal Error" style="border: 1px solid gray; zoom:80%;">
+   <img src="../evaluation-criteria/evaluation-forms/images/add-new-eva-forms-fatal-error.png" alt="Fatal Error" title="Fatal Error" style="border: 1px solid gray; zoom:80%;"/>
        
 8. Click **Create** to finalize the form creation. 
 
@@ -303,10 +303,10 @@ This section guides you through the process of updating (editing or deleting) an
 Steps to edit the existing evaluation forms:
 
 1. Select a target evaluation form, and right-click on any existing forms.   
-   <img src="../evaluation-criteria/evaluation-forms/images/update-evaluation-form.png" alt="Update Evaluation Form" title="Update Evaluation Form" style="border: 1px solid gray; zoom:80%;">
+   <img src="../evaluation-criteria/evaluation-forms/images/update-evaluation-form.png" alt="Update Evaluation Form" title="Update Evaluation Form" style="border: 1px solid gray; zoom:80%;"/>
 
 2. Click **Edit** to modify the selected form details.   
-      <img src="../evaluation-criteria/evaluation-forms/images/edit-evaluation-form.png" alt="Edit Evaluation Form" title="Edit Evaluation Form" style="border: 1px solid gray; zoom:80%;">
+      <img src="../evaluation-criteria/evaluation-forms/images/edit-evaluation-form.png" alt="Edit Evaluation Form" title="Edit Evaluation Form" style="border: 1px solid gray; zoom:80%;"/>
 
 3. Modify the required fields.   
    <img src="../evaluation-criteria/evaluation-forms/images/edit-eva-form-field-details.png" alt="Modify Evaluation Form" title="Modify Evaluation Form" style="border: 1px solid gray; zoom:50%;">
@@ -325,7 +325,7 @@ Steps to delete an evaluation metric:
    <img src="../evaluation-criteria/evaluation-forms/images/eva-metrics-delete.png" alt="Dead Air Warning" title="Dead Air Warning" style="border: 1px solid gray; zoom:50%;">   
 
 2. Click **Delete** to display a warning dialog box prompting you to update the weights for the remaining metrics.     
-   <img src="../evaluation-criteria/evaluation-forms/images/delete-eva-metric.png" alt="Delete Metrics" title="Delete Metrics" style="border: 1px solid gray; zoom:80%;">
+   <img src="../evaluation-criteria/evaluation-forms/images/delete-eva-metric.png" alt="Delete Metrics" title="Delete Metrics" style="border: 1px solid gray; zoom:80%;"/>
 
 3. Update the required metric weights as prompted.
 
@@ -356,7 +356,7 @@ To resolve this, perform the following actions:
 * Update the metrics to support the new language before you add the language to the form.
 
 * Once all metrics support the language, add the language to the form.   
-   <img src="../evaluation-criteria/evaluation-forms/images/edit-lang-config.png" alt="Language Configuration Error" title="Language Configuration Error" style="border: 1px solid gray; zoom:80%;">
+   <img src="../evaluation-criteria/evaluation-forms/images/edit-lang-config.png" alt="Language Configuration Error" title="Language Configuration Error" style="border: 1px solid gray; zoom:80%;"/>
 
 #### Language Limitation on Adding New Language 
 
@@ -394,10 +394,10 @@ Evaluation forms support only one speech metric per subtype: **Crosstalk**, **De
 #### Speech Metric Errors
 
 **Crosstalk Warning**     
-<img src="../evaluation-criteria/evaluation-forms/images/crosstalk-error.png" alt="Crosstalk Warning" title="Crosstalk Warning" style="border: 1px solid gray; zoom:80%;">   
+<img src="../evaluation-criteria/evaluation-forms/images/crosstalk-error.png" alt="Crosstalk Warning" title="Crosstalk Warning" style="border: 1px solid gray; zoom:80%;"/>   
 
 **Dead Air Warning**   
-<img src="../evaluation-criteria/evaluation-forms/images/deadair-error.png" alt="Dead Air Warning" title="Dead Air Warning" style="border: 1px solid gray; zoom:80%;">   
+<img src="../evaluation-criteria/evaluation-forms/images/deadair-error.png" alt="Dead Air Warning" title="Dead Air Warning" style="border: 1px solid gray; zoom:80%;"/>   
 
 **Speaking Rate** **Warning**   
-<img src="../evaluation-criteria/evaluation-forms/images/speech-rate-error.png" alt="Dead Air Warning" title="Dead Air Warning" style="border: 1px solid gray; zoom:80%;">   
+<img src="../evaluation-criteria/evaluation-forms/images/speech-rate-error.png" alt="Dead Air Warning" title="Dead Air Warning" style="border: 1px solid gray; zoom:80%;"/>   

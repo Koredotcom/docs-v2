@@ -4,7 +4,7 @@ Response Templates are predefined (“canned”) messages that agents can use to
 
 To access this feature, go to **Contact Center AI** > **CONFIGURATIONS** > **Response Templates**.
 <img src="../images/response templates.png" alt="
-Response Templates Page" title="Response Templates Page" style="border: 1px solid gray; zoom:80%;">
+Response Templates Page" title="Response Templates Page" style="border: 1px solid gray; zoom:80%;"/>
 
 ## The Response Templates Live Board
 
@@ -22,7 +22,7 @@ Response Templates are organized into _Response Groups_, to which agents need to
 
 Click on a Response Group name to view its contents:
 <img src="../images/view-existing-response-group.gif" alt="
-View Existing response Group" title="View Existing Response Group" style="border: 1px solid gray; zoom:80%;">
+View Existing response Group" title="View Existing Response Group" style="border: 1px solid gray; zoom:80%;"/>
 
 Contact Center comes pre-configured with the following Response Groups:
 
@@ -40,7 +40,7 @@ To create a **Response Group**, follow these steps:
 1. Go to **CONFIGURATION > Response Templates**.
 2. In the **Response Templates** section, click **+ Response Group**.
 <img src="../images/add-response-group.png" alt="
-Add Response Group" title="Add Response Group" style="border: 1px solid gray; zoom:80%;">
+Add Response Group" title="Add Response Group" style="border: 1px solid gray; zoom:80%;"/>
 
 3. In the **Add New Response Group** panel, provide the following details:
 <img src="../images/create-new-response-group.png" alt="
@@ -48,7 +48,7 @@ Add New Response Group Window" title="Add New Response Group Window" style="bord
     1. **Group Name** – The name of your **response group**. For example, _Greetings, Sales Responses_, etc.
     2. **Shortcut Command** – Agents can quickly find the group of responses by typing the shortcut command in their chat response box. This action pulls up a list of available responses within the group.
     <img src="../images/response-template-live-interaction.gif" alt="
-Live Interaction" title="Live Interaction" style="border: 1px solid gray; zoom:80%;">
+Live Interaction" title="Live Interaction" style="border: 1px solid gray; zoom:80%;"/>
     3. **Description** – A brief description of the response group.
     4. **Skill Match** – By default, this feature is disabled. While _Skill Match_ is off at the group level, you can map skills per response. If you enable this feature, all the responses in this group will be mapped to the selected skills and made available to matching agents. Therefore, the group and its responses within it will not be made available to agents who are not assigned the mapped skills. The skill match does not take routing into account, so if an agent matches the skills but, for example, is transferred a conversation from an agent with a different skill set, they will still see the responses.
         1. Configure the **OR/AND** conditional logic by toggling between the tabs.
@@ -63,15 +63,15 @@ Live Interaction" title="Live Interaction" style="border: 1px solid gray; zoom:8
                 You cannot restore deleted conditions.
             6. Below is a short demo of this configuration:
             <img src="../images/add-skills-to-response-group.gif" alt="
-Add Skills" title="add Skills" style="border: 1px solid gray; zoom:80%;">
+Add Skills" title="add Skills" style="border: 1px solid gray; zoom:80%;"/>
 
         2. **Agent Group Match** – This option is disabled by default. When enabled, all the responses in this group appear only to member agents. The **agent** group matching property at each skill level is not available.
         <img src="../images/agent-group-matching.png" alt="
-Agent Group Match" title="Agent Group Match" style="border: 1px solid gray; zoom:80%;">
+Agent Group Match" title="Agent Group Match" style="border: 1px solid gray; zoom:80%;"/>
 
         3. **Queue Match** - When Queue Match is enabled, administrators can select one or more queues from a dropdown, and the response group becomes visible only to agents handling interactions from those queues.  
         <img src="../images/queue-match.png" alt="
-Queue Match" title="Queue Match" style="border: 1px solid gray; zoom:80%;">
+Queue Match" title="Queue Match" style="border: 1px solid gray; zoom:80%;"/>
 
 !!! Note
 
@@ -111,7 +111,7 @@ To create a new response within a response group, follow these steps:
 
 1. Under **Response Templates**, click the desired response group entry in the list to view the mapped responses.
 2. Click **+ New Response**.  
-<img src="../images/add-new-response.png" alt="Add New Response" title="Add New Response" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/add-new-response.png" alt="Add New Response" title="Add New Response" style="border: 1px solid gray; zoom:80%;"/>
 
 3. In the **Add New Response** panel, set the title (name) and the auto-expire values.
     1. **Title**: The name to identify the response.
@@ -161,7 +161,7 @@ You can add the following variables to Response Templates (chat and email):
 * `Agent Email.`
 
 You can find this list in the message editor whenever you add or edit a Response Template.
-<img src="../images/response-variables.gif" alt="Response Variables" title="Response Variables" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/response-variables.gif" alt="Response Variables" title="Response Variables" style="border: 1px solid gray; zoom:80%;"/>
 
 ## Edit a Response
 
@@ -169,7 +169,7 @@ To edit the details of an existing response, follow these steps:
 
 1. Under **Response Templates**,  click the desired _response group name_.
 2. Find the response you want to update, and click the corresponding **Edit** icon under _Actions_.
-<img src="../images/edit-button.png" alt="Edit Response" title="Edit Response" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/edit-button.png" alt="Edit Response" title="Edit Response" style="border: 1px solid gray; zoom:80%;"/>
 
 3. Make the required changes in the _Edit Response_ window, then **Save**.
 
@@ -180,7 +180,7 @@ To delete a response, follow these steps:
 1. Under **Response Templates**, click the desired _response group name._ This action displays an expanded view of the responses mapped to the group.
 2. Find the response you want to delete, then click the corresponding **Edit** icon under _Actions_.
 3. Click the **Delete (bin)** button on the bottom toolbar in the _Edit Response_ window.
-<img src="../images/delete-button.png" alt="Delete Response" title="Delete Response" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/delete-button.png" alt="Delete Response" title="Delete Response" style="border: 1px solid gray; zoom:80%;"/>
 
 4. Click **Delete** on the delete confirmation dialog to remove the selected response.
 
@@ -195,7 +195,7 @@ Export standard responses functionality is a secure and efficient method to expo
 Steps to export standard responses in bulk:
 
 1. Click Download Response Templates.  
-    <img src="../images/download-button.png" alt="Download Button" title="Download Button" style="border: 1px solid gray; zoom:80%;">
+    <img src="../images/download-button.png" alt="Download Button" title="Download Button" style="border: 1px solid gray; zoom:80%;"/>
 
 2. A notification is displayed, and the response templates are downloaded as a CSV file.
-    <img src="../images/download-success.png" alt="Download Success" title="Download Success" style="border: 1px solid gray; zoom:80%;">
+    <img src="../images/download-success.png" alt="Download Success" title="Download Success" style="border: 1px solid gray; zoom:80%;"/>

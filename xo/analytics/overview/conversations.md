@@ -5,7 +5,7 @@ Conversations provides insights into the AI Agents Conversations. You can use th
 To view the Conversations dashboard, follow the steps:
 
 1. Go to **Analytics** > **Overview** > **Conversations**.  
-    <img src="../images/interactions-page.png" alt="Conversations Page" title="Conversations Page" style="border: 1px solid gray; zoom:80%;">
+    <img src="../images/interactions-page.png" alt="Conversations Page" title="Conversations Page" style="border: 1px solid gray; zoom:80%;"/>
 
 2. On this page, the following details of the logs appear in a table:
 
@@ -23,7 +23,7 @@ To view the Conversations dashboard, follow the steps:
     * Agent Conversation ID  
     * X External Call ID   
     
-    <img src="../images/agent-conversation-id.png" alt="Agent Conversation ID" title="Agent Conversation ID" style="border: 1px solid gray; zoom:80%;">
+    <img src="../images/agent-conversation-id.png" alt="Agent Conversation ID" title="Agent Conversation ID" style="border: 1px solid gray; zoom:80%;"/>
 
 * Support: The agent who handled the conversation.
 * Start Time: The date and time of logging the conversation. Select the arrow icon to rearrange this field to display newest to oldest or oldest to newest.
@@ -48,21 +48,21 @@ Steps to perform supervisor actions:
 1. Select **Conversations** under the **Overview** section of the **Analytics** panel. The **Conversations** dashboard appears on the right side of the page.
 
 2. Select **⋮** under ACTIONS and then select **Supervisor View**.  
-<img src="../images/supervisor-actions.png" alt="Supervisor Actions" title="Supervisor Actions" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/supervisor-actions.png" alt="Supervisor Actions" title="Supervisor Actions" style="border: 1px solid gray; zoom:80%;"/>
 
 3. You are redirected to the Conversations section on the Monitor tab.  
-  <img src="../images/supervisor-actions-1.png" alt="Supervisor Actions 1" title="Supervisor Actions 1" style="border: 1px solid gray; zoom:80%;">
+  <img src="../images/supervisor-actions-1.png" alt="Supervisor Actions 1" title="Supervisor Actions 1" style="border: 1px solid gray; zoom:80%;"/>
 
 4. Select the ongoing conversation. You can perform the following actions in the conversation:
     * Join Conversation
     * Assign
     * Change Queue  
-    <img src="../images/supervisor-actions-2.png" alt="Supervisor Actions 2" title="Supervisor Actions 2" style="border: 1px solid gray; zoom:80%;">
+    <img src="../images/supervisor-actions-2.png" alt="Supervisor Actions 2" title="Supervisor Actions 2" style="border: 1px solid gray; zoom:80%;"/>
 
 ## Search Conversations
 
 You can find the search field on the top right side of the Conversations tab.  
-<img src="../images/search-interactions.png" alt="Search Conversations" title="Search Conversations" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/search-interactions.png" alt="Search Conversations" title="Search Conversations" style="border: 1px solid gray; zoom:80%;"/>
 
 The search feature on Conversations lets supervisors to do the following:
 
@@ -81,13 +81,13 @@ How it works:
 1. Enter a word or phrase in the search field and search the **Search** icon.
 
 2. The count of search results appears.  
-    <img src="../images/search-interactions-1.png" alt="Search Conversations 1" title="Search Conversations 1" style="border: 1px solid gray; zoom:80%;">
+    <img src="../images/search-interactions-1.png" alt="Search Conversations 1" title="Search Conversations 1" style="border: 1px solid gray; zoom:80%;"/>
 
 3. When you select a conversation, the Insights to Logs window appears. Enter the word or phrase in the search field to prompt the system to search for it in the conversation.  
-    <img src="../images/search-interactions-2.png" alt="Search Conversations 2" title="Search Conversations 2" style="border: 1px solid gray; zoom:80%;">
+    <img src="../images/search-interactions-2.png" alt="Search Conversations 2" title="Search Conversations 2" style="border: 1px solid gray; zoom:80%;"/>
 
 4. The system displays the count of the occurrences of the word or phrase along with the highlighted results.  
-    <img src="../images/search-interactions-3.png" alt="Search Conversations 3" title="Search Conversations 3" style="border: 1px solid gray; zoom:80%;">
+    <img src="../images/search-interactions-3.png" alt="Search Conversations 3" title="Search Conversations 3" style="border: 1px solid gray; zoom:80%;"/>
 
 !!! Note
 
@@ -100,14 +100,14 @@ You can download the recording, transcripts, latency reports, and events to your
 Steps to export conversation data/transcripts:
 
 1. Select the conversations and select **Export**.  
-    <img src="../images/export-button.png" alt="Export" title="Export" style="border: 1px solid gray; zoom:80%;">
+    <img src="../images/export-button.png" alt="Export" title="Export" style="border: 1px solid gray; zoom:80%;"/>
 
 2. Select **Export Conversation Data**, **Export Transcripts**, or **Export Events** as required.
 
     or
 
     Select **Download Chat Transcript**, or **Download Latency Report**. The transcript and latency report downloads in .csv format.  
-    <img src="../images/download-options-interactions.png" alt="Download Options" title="Download Options" style="border: 1px solid gray; zoom:80%;"> 
+    <img src="../images/download-options-interactions.png" alt="Download Options" title="Download Options" style="border: 1px solid gray; zoom:80%;"/> 
 
     !!! Notes
 
@@ -126,10 +126,10 @@ Steps to export conversation data/transcripts:
 Steps to Preview and Download Events:
 
 1. Select the conversations, select **Export**, or select the **⋮** icon under Actions.  
-    <img src="../images/ellipsis-button-event.png" alt="Ellipsis Button" title="Ellipsis Button" style="border: 1px solid gray; zoom:80%;">
+    <img src="../images/ellipsis-button-event.png" alt="Ellipsis Button" title="Ellipsis Button" style="border: 1px solid gray; zoom:80%;"/>
 
 2. Select **Preview Events**.  
-    <img src="../images/preview-events.png" alt="Preview Events" title="Preview Events" style="border: 1px solid gray; zoom:80%;">
+    <img src="../images/preview-events.png" alt="Preview Events" title="Preview Events" style="border: 1px solid gray; zoom:80%;"/>
 
 3. Select **Download Events**.
 
@@ -138,10 +138,10 @@ Steps to Preview and Download Events:
         * The Download Events option are unavailable for conversations over 30 days old.
         * Events are recorded periodically, so the exported document may not always reflect the entire event history. For a comprehensive record, it is recommended to download the events once the conversation has ended.
 
-    <img src="../images/preview-events-page.png" alt="Preview Events Page" title="Preview Events Page" style="border: 1px solid gray; zoom:80%;">
+    <img src="../images/preview-events-page.png" alt="Preview Events Page" title="Preview Events Page" style="border: 1px solid gray; zoom:80%;"/>
 
 4. A confirmation is displayed when the event is exported.  
-    <img src="../images/export-completed.png" alt="Export Completed" title="Export Completed" style="border: 1px solid gray; zoom:80%;">  
+    <img src="../images/export-completed.png" alt="Export Completed" title="Export Completed" style="border: 1px solid gray; zoom:80%;"/>  
 
     The system exports the following events and their timestamps for chat and voice conversations.  
     * Routing Initiation  
@@ -289,12 +289,12 @@ The following Custom Tag fields appear:
     1. Tag name
     2. Predicate drop-down (CONTAINS and DOES NOT CONTAIN)
     3. AND to create a new clause
-    <img src="../images/create-filters-1.png" alt="Create Filters 1" title="Create Filters 1" style="border: 1px solid gray; zoom:80%;">
+    <img src="../images/create-filters-1.png" alt="Create Filters 1" title="Create Filters 1" style="border: 1px solid gray; zoom:80%;"/>
 
 2. Select the values for the custom tag fields and select **AND** to create a new clause.
 
 3. Select the values for the second clause and select Apply.  
-<img src="../images/create-filters-2.png" alt="Create Filters 2" title="Create Filters 2" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/create-filters-2.png" alt="Create Filters 2" title="Create Filters 2" style="border: 1px solid gray; zoom:80%;"/>
 
 A confirmation appears. Selecting (-) deletes a clause.
 
@@ -353,7 +353,7 @@ Icons beside the Insights to Logs header show the following details:
 * Language
 * Sentiment (Positive, Neutral, etc.)
 * Channel (Voice, Chat, or Email)  
-    <img src="../images/insights-to-logs.png" alt="Insights to Logs" title="Insights to Log" style="border: 1px solid gray; zoom:80%;">
+    <img src="../images/insights-to-logs.png" alt="Insights to Logs" title="Insights to Log" style="border: 1px solid gray; zoom:80%;"/>
 
 **Transcript**: This tab shows the transcript of the voice conversation including whispers from the supervisor.  
 <img src="../images/transcripts.png" alt="Transcript Tab" title="Transcript Tab" style="border: 1px solid gray; zoom:60%;">  
@@ -446,7 +446,7 @@ Configure the following recording settings:
 * Play Audio: Select the Play icon to play the waveform of the audio.
 
 * Increase playback speed: To change the playback speed, select the speed selection drop-down, and select the speed. The values ranging from the lowest to highest speeds are as follows:  
-    <img src="../images/increase-playback-speed.png" alt="Increase Playback Speed" title="Increase Playback Speed" style="border: 1px solid gray; zoom:80%;">
+    <img src="../images/increase-playback-speed.png" alt="Increase Playback Speed" title="Increase Playback Speed" style="border: 1px solid gray; zoom:80%;"/>
 
 * Volume: Adjust the volume slider to increase or decrease the volume.  
 
@@ -476,10 +476,10 @@ Configure the following recording settings:
 * **Download as separate files**: If you choose this option, you can select the files and download them. 
 
 The file format of the downloaded file is .flac across all operating systems, including Windows, macOS, and Linux.  
-<img src="../images/file-format.png" alt="Download as separate files" title="Download as separate files" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/file-format.png" alt="Download as separate files" title="Download as separate files" style="border: 1px solid gray; zoom:80%;"/>
 
 * Duration: The increment and the countdown counters appear when the audio plays. The total duration of the audio appears before the audio plays.  
-    <img src="../images/duration.png" alt="Duration" title="Duration" style="border: 1px solid gray; zoom:80%;">
+    <img src="../images/duration.png" alt="Duration" title="Duration" style="border: 1px solid gray; zoom:80%;"/>
 
     !!! Note
 
@@ -488,7 +488,7 @@ The file format of the downloaded file is .flac across all operating systems, in
         * If you enable the Pause/Resume Call Recording feature, the system does not record the duration of any paused voice interaction.
 
 A message appears to the user on the Transcript tab when Call Recording Control is disabled in [Agent Settings](../../app-settings/advanced-settings/system-settings.md#call-recording-control).  
-<img src="../images/recording-disabled.png" alt="No Recording Available" title="No Recording Available" style="border: 1px solid gray; zoom:80%;">  
+<img src="../images/recording-disabled.png" alt="No Recording Available" title="No Recording Available" style="border: 1px solid gray; zoom:80%;"/>  
 
 List of recording status and messages:
 
@@ -564,7 +564,7 @@ Access Diagnostics at the top-right corner of Insights to Logs.
 
     This option is available only for voice Conversations.
 
-<img src="../images/diagnostics.png" alt="Diagnostics" title="Diagnostics" style="border: 1px solid gray; zoom:80%;">  
+<img src="../images/diagnostics.png" alt="Diagnostics" title="Diagnostics" style="border: 1px solid gray; zoom:80%;"/>  
 
 Selecting Diagnostics shows the following tabs:
 
@@ -925,4 +925,4 @@ You can export the following reports:
 
 * Export PCAP
 * Export TEXT.  
-    <img src="../images/export.png" alt="Export Reports" title="Export Reports" style="border: 1px solid gray; zoom:80%;"> 
+    <img src="../images/export.png" alt="Export Reports" title="Export Reports" style="border: 1px solid gray; zoom:80%;"/> 

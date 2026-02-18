@@ -15,17 +15,17 @@ Steps to add a Scanner:
 2. In the **Workflows** section, click the workflow to which you want to add the scanner. The Workflow page is displayed. 
 
 2. Click **Guardrails** in the left navigation pane. The Guardrails page is displayed.  
-<img src="./../images/navigate-to-guardrails.png" alt="Navigate to Guardrails" title="Navigate to Guardrails" style="border: 1px solid gray; zoom:80%;">
+<img src="./../images/navigate-to-guardrails.png" alt="Navigate to Guardrails" title="Navigate to Guardrails" style="border: 1px solid gray; zoom:80%;"/>
 
 3. In the Input Scanners section, click **Add Scanner**, select the required scanners from the pop-up list, and then click **Done**. 
-<img src="./../images/add_a_scanner.png" alt="Add Input Scanner" title="Add Input Scanner" style="border: 1px solid gray; zoom:80%;">
+<img src="./../images/add_a_scanner.png" alt="Add Input Scanner" title="Add Input Scanner" style="border: 1px solid gray; zoom:80%;"/>
 
     The selected scanners are added to the list.  
-    <img src="./../images/added-guardrails.png" alt="Scanner Added" title="Scanner Added" style="border: 1px solid gray; zoom:80%;">
+    <img src="./../images/added-guardrails.png" alt="Scanner Added" title="Scanner Added" style="border: 1px solid gray; zoom:80%;"/>
 
 4. Click an added scanner to configure its settings, which vary depending on the scanner type.
 For example, **Toxicity** has "Threshold" and "End the flow if the risk score is above" settings, while **Regex** has "Enter patterns to ban", "End the flow if the risk score is above", and "Match type" settings.  
-<img src="./../images/toxicity-scanner-settings.png" alt="Configure Scanner's Settings" title="Configure Scanner's Settings" style="border: 1px solid gray; zoom:80%;">
+<img src="./../images/toxicity-scanner-settings.png" alt="Configure Scanner's Settings" title="Configure Scanner's Settings" style="border: 1px solid gray; zoom:80%;"/>
 
 5. (Optional) To add more scanners, click the plus or **Add Scanner** icon. To remove an unused scanner, click the minus or **Remove Scanner** icon.  
-<img src="./../images/add-remove-scanners.png" alt="Remove Scanner" title="Remove Scanner" style="border: 1px solid gray; zoom:80%;">
+<img src="./../images/add-remove-scanners.png" alt="Remove Scanner" title="Remove Scanner" style="border: 1px solid gray; zoom:80%;"/>

@@ -2,7 +2,7 @@
 
 This document provides instructions on managing domains within your account. Domain management allows administrators to configure domains, enabling controlled access to the account via organization SSO for verified domains.
 
-<img src="../images/domain-management-main.png" alt="service-account" title="service-account" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/domain-management-main.png" alt="service-account" title="service-account" style="border: 1px solid gray; zoom:80%;"/>
 
 ## Domain Types
 
@@ -18,7 +18,7 @@ Administrators can add domains to extend access to approved domains within the o
 2. Select the domain type:
     * Choose **Company Domain** for domains owned by your organization.
     * Choose **Partner Domain** for external domains used by trusted partners. 
-<img src="../images/domain-management-1.png" alt="service-account" title="service-account" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/domain-management-1.png" alt="service-account" title="service-account" style="border: 1px solid gray; zoom:80%;"/>
 
 3. Once the details are entered, submit the domain for verification. The system will review and verify the domain.
 4. Successfully verified domains will be added to the account. Users from these domains can access the account based on their domain type permissions. If a domain is rejected, it will not be added to the account. However, it will be listed with a **Rejected** status for record purposes.

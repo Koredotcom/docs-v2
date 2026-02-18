@@ -22,7 +22,7 @@ You can apply Call Control Parameters at either the Session or Node level, offer
 ## Node Level Call Control
 
 The call control section is Available In [Entity Node](../../automation/use-cases/dialogs/node-types/working-with-the-entity-node.md)/[Message Node](../../automation/use-cases/dialogs/node-types/working-with-the-message-nodes.md#ivr-properties)/[Confirmation Node](../../automation/use-cases/dialogs/node-types/working-with-the-confirmation-nodes.md#ivr-properties) > IVR Properties > Advanced Controls. [Learn more](../../automation/use-cases/dialogs/node-types/voice-call-properties.md#configuring-grammar).  
-<img src="../images/node-level-call-control-parameters.png" alt="Node Level Call Control" title="Node Level Call Control" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/node-level-call-control-parameters.png" alt="Node Level Call Control" title="Node Level Call Control" style="border: 1px solid gray; zoom:80%;"/>
 
 ## Channel Level Call Control
 
@@ -448,7 +448,7 @@ Configure Voice Gateway to act when the bot takes time to respond to a message.
 #### Handle Bot Delay After User Input
 
 The delay is only applied when Voice Gateway sends a response to the bot and is waiting for the bot's reply. This includes delays at the Entity Node, Confirmation Node, or Message Node with an "On Intent" (User-Bot delay).  
-<img src="../images/handle-bot-delay.png" alt="Handle Bot Delay" title="Handle Bot Delay" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/handle-bot-delay.png" alt="Handle Bot Delay" title="Handle Bot Delay" style="border: 1px solid gray; zoom:80%;"/>
 
 If a delay occurs between two Message nodes, the bot developer must handle it manually by playing audio and stopping it after the delay.
 
@@ -479,7 +479,7 @@ The following table lists the bot parameters used to configure this feature:
 | `botNoInputUrl`             | String         | Specifies a URL from which an audio file plays to the user when the bot doesn't respond within the defined timeout.                                                                                             | Yes                    |
 
 Example:  
-<img src="../images/message-node-parameters.png" alt="Example Configuration" title="Example Configuration" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/message-node-parameters.png" alt="Example Configuration" title="Example Configuration" style="border: 1px solid gray; zoom:80%;"/>
 
 !!! Note
 
@@ -503,7 +503,7 @@ To handle this scenario:
       If you receive a response from the API and don’t want to play the full music, immediately abort the music and play the Message node prompt using the channel override utility function:
 
    `print(voiceUtils.abortPrompt(“Dummy message“))` → (The message parameter is optional).  
-      <img src="../images/optional-message-parameter.png" alt="Optional Message Parameter" title="Optional Message Parameter" style="border: 1px solid gray; zoom:80%;">
+      <img src="../images/optional-message-parameter.png" alt="Optional Message Parameter" title="Optional Message Parameter" style="border: 1px solid gray; zoom:80%;"/>
 
 ### Barge-In Scenarios
 

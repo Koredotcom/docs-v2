@@ -11,10 +11,10 @@ Moreover, the automatic synchronization (auto sync) feature ensures that Setting
 
 **Key Steps for Configuring AD Import**
 
-1. [Set up the Connection](./active-directory.md#step-1-set-up-the-connection){:target="_blank"}: Connect the **Settings** Console to your organization's AD to enable data import.
-2. [Select and Import the Organizational Units (OUs)](./active-directory.md#step-2-import-organization-units){:target="_blank"}: Choose specific OUs or all OUs from which to import key user information.
-3. [Specify User Attributes and Configure Rules for Selective Import from AD](./active-directory.md#step-3-specify-user-attributes-and-configure-rules-for-selective-import-from-ad){:target="_blank"}: Define desired user attributes (profile fields) that need to be imported from your active directory. Configure the inclusion and exclusion rules to control the information you need.
-4. [Schedule Automatic AD Sync](./active-directory.md#step-4-schedule-automatic-ad-sync){:target="_blank"}: Set up automatic or periodic sync schedules to keep user data current and reflect any changes or deletions from AD.
+1. [Set up the Connection](./active-directory.md#step-1-set-up-the-connection): Connect the **Settings** Console to your organization's AD to enable data import.
+2. [Select and Import the Organizational Units (OUs)](./active-directory.md#step-2-import-organization-units): Choose specific OUs or all OUs from which to import key user information.
+3. [Specify User Attributes and Configure Rules for Selective Import from AD](./active-directory.md#step-3-specify-user-attributes-and-configure-rules-for-selective-import-from-ad): Define desired user attributes (profile fields) that need to be imported from your active directory. Configure the inclusion and exclusion rules to control the information you need.
+4. [Schedule Automatic AD Sync](./active-directory.md#step-4-schedule-automatic-ad-sync): Set up automatic or periodic sync schedules to keep user data current and reflect any changes or deletions from AD.
 
 ## Steps to Configure AD Sync 
 
@@ -228,4 +228,4 @@ For a **failed** sync, you will receive the following email:
 
 An alternative way to add users to your account (without using AD sync) is to invite them via email. 
 
-To learn more about other administrator features on the **Settings** Console, click [here](../../../settings/overview.md){:target="_blank"}.
+To learn more about other administrator features on the **Settings** Console, click [here](../../../settings/overview.md).

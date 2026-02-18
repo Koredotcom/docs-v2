@@ -16,10 +16,10 @@ The email channel offers the following functionalities:
 You can use the Kore.ai Email domain or create your custom Email Domain to configure your email addresses.
 
 To configure the email domains, go to **Flows & Channels** > **Channels** > **Digital** > **All** > **Email**.  
-<img src="../images/email-digital-page.png" alt="Email Icon" title="Email Icon" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/email-digital-page.png" alt="Email Icon" title="Email Icon" style="border: 1px solid gray; zoom:80%;"/>
 
 To manage the channel session settings, click settings (gear icon) on the Email channel page.  
-<img src="../images/email-settings.png" alt="Email Settings" title="Email Settings" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/email-settings.png" alt="Email Settings" title="Email Settings" style="border: 1px solid gray; zoom:80%;"/>
 
 
 
@@ -30,7 +30,7 @@ To manage the channel session settings, click settings (gear icon) on the Email 
 
 **Thread-Based Sessions**: When enabled, the platform creates sessions based on email thread reference headers. Replies within the same thread continue the existing session, while new threads always start fresh sessions. When users or agents add recipients mid-thread, the platform maintains the existing email thread and preserves conversation context. This option is only available when Channel-Based Sessions is enabled.  
 
-<img src="../images/email-session-settings.png" alt="Email Settings" title="Email Settings" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/email-session-settings.png" alt="Email Settings" title="Email Settings" style="border: 1px solid gray; zoom:80%;"/>
 
 
 
@@ -43,14 +43,14 @@ With the capabilities of the experience flow, we can efficiently route incoming 
 Any reply email managed by either the Human Agent or the AI Agent is directly sent to the end customer. To maintain transparency and accountability, the customer contact center domain is included in the BCC (Blind Carbon Copy) field and the Reply-to field. This configuration ensures that communication remains open and accessible to all relevant parties.
 
 Whenever the customer responds to the email thread, it is directed back to the customer contact center domain. From there, it is seamlessly forwarded to the Kore domain, ensuring a continuous and efficient communication loop.  
-<img src="../images/email-flow.png" alt="Email Flow" title="Email Flow" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/email-flow.png" alt="Email Flow" title="Email Flow" style="border: 1px solid gray; zoom:80%;"/>
 
 ### Create a Kore Domain Email Address
 
 Steps to create an email address in the Kore domain:
 
 1. Click the **+ New Email Address**.  
-    <img src="../images/new-kore-email.png" alt="+ New Email Address" title="+ New Email Address" style="border: 1px solid gray; zoom:80%;">
+    <img src="../images/new-kore-email.png" alt="+ New Email Address" title="+ New Email Address" style="border: 1px solid gray; zoom:80%;"/>
 
 2. Enter the following details.
     1. Email Address
@@ -58,11 +58,11 @@ Steps to create an email address in the Kore domain:
     3. Choose whether to use the custom email for inbound, outbound, or both under **Additional Settings**.
     4. Choose whether you want to send a contact card to all users as a part of the introduction message under **Send contact card (.VCF)**.
     5. Under the Enable Channel section, select **Yes** to enable the channel.  
-        <img src="../images/kore-email-configuration.png" alt="Email Configuration" title="Email Configuration" style="border: 1px solid gray; zoom:80%;">
+        <img src="../images/kore-email-configuration.png" alt="Email Configuration" title="Email Configuration" style="border: 1px solid gray; zoom:80%;"/>
 
     6. Turn on the **Email Template Design (Optional)** toggle to configure the header and footer of the emails that are sent via the configured email address, and do the following:
         1. Click **Edit Header** and **Edit Footer** to configure the header and footer details.  
-            <img src="../images/email-template-design.png" alt="Email Template Design" title="Email Template Design" style="border: 1px solid gray; zoom:80%;">
+            <img src="../images/email-template-design.png" alt="Email Template Design" title="Email Template Design" style="border: 1px solid gray; zoom:80%;"/>
 
         2. In the **Edit** window, change the header and footer details, and click **Save**.
 
@@ -71,7 +71,7 @@ Steps to create an email address in the Kore domain:
 
 3. Click **Save.**
 4. A success message is displayed and the email address is created.  
-    <img src="../images/kore-email-created.png" alt="Email Address Created" title="Email Address Created" style="border: 1px solid gray; zoom:80%;">  
+    <img src="../images/kore-email-created.png" alt="Email Address Created" title="Email Address Created" style="border: 1px solid gray; zoom:80%;"/>  
 
     !!! Note
 
@@ -91,7 +91,7 @@ Steps to publish email addresses in the Kore domain:
     <img src="../images/comments-publish.png" alt="Comments" title="Comments" style="border: 1px solid gray; zoom:60%;">
 
 4. A success message is displayed and the email address is published.  
-    <img src="../images/email-published.png" alt="Email Address Published" title="Email Address Published" style="border: 1px solid gray; zoom:80%;">
+    <img src="../images/email-published.png" alt="Email Address Published" title="Email Address Published" style="border: 1px solid gray; zoom:80%;"/>
 
 ## Custom Email Domain
 
@@ -108,7 +108,7 @@ Follow these steps to set up a standard custom domain and add an email ID to it.
 1. Navigate to **Flows & Channels** > **Channels** > **Digital** > **All** > **Email**.
 2. Click **+ New Domain** and select **Custom Domain**.
 3. Enter the **Domain Name**. Select the domain type as Standard, and click **Create**.  
-<img src="../images/email-stddomain.png" alt="Standard Custom Domain" title="Standard Custom Domain" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/email-stddomain.png" alt="Standard Custom Domain" title="Standard Custom Domain" style="border: 1px solid gray; zoom:80%;"/>
 
 4. The domain created a success message is displayed.
 
@@ -132,18 +132,18 @@ Follow these steps to set up a standard custom domain and add an email ID to it.
 
     9. Turn on the **Email Template Design (Optional)** toggle to configure the header and footer of the emails that are sent via the configured email address, and do the following:
         1. Click **Edit Header** and **Edit Footer** to configure the header and footer details.  
-            <img src="../images/email-template-design.png" alt="Email Template Design" title="Email Template Design" style="border: 1px solid gray; zoom:80%;">
+            <img src="../images/email-template-design.png" alt="Email Template Design" title="Email Template Design" style="border: 1px solid gray; zoom:80%;"/>
 
         2. In the **Edit** window, change the header and footer details, and click **Save**.  
-            <img src="../images/edit-window-change-header-footer.png" alt="Edit Header-Footer" title="Edit Header-Footer" style="border: 1px solid gray; zoom:80%;">  
+            <img src="../images/edit-window-change-header-footer.png" alt="Edit Header-Footer" title="Edit Header-Footer" style="border: 1px solid gray; zoom:80%;"/>  
 
-            <img src="../images/edit-window-click save.png" alt="Save Header-Footer" title="Save Header-Footer" style="border: 1px solid gray; zoom:80%;">
+            <img src="../images/edit-window-click save.png" alt="Save Header-Footer" title="Save Header-Footer" style="border: 1px solid gray; zoom:80%;"/>
 
     9. Click **Preview** to see a preview of the Email template.  
-        <img src="../images/custom-template-preview.png" alt="Template Preview" title="Template Preview" style="border: 1px solid gray; zoom:80%;">
+        <img src="../images/custom-template-preview.png" alt="Template Preview" title="Template Preview" style="border: 1px solid gray; zoom:80%;"/>
 
 3. Click the **Test Connection** to verify the domain ownership. A success message is displayed.  
-    <img src="../images/test-connection.png" alt="Test Connection" title="Test Connection" style="border: 1px solid gray; zoom:80%;">
+    <img src="../images/test-connection.png" alt="Test Connection" title="Test Connection" style="border: 1px solid gray; zoom:80%;"/>
 
 4. Click **Save**.
 
@@ -163,45 +163,45 @@ Upon receiving a new interaction, the system checks the incoming email address a
 Steps to Configure Email Blocklist:
 
 1. Click the **Email Blocklist** tab and turn on the **Enable Email Blocklist** toggle.  
-    <img src="../images/email-blocklist-tab.png" alt="Email Blocklist Tab" title="Email Blocklist Tab" style="border: 1px solid gray; zoom:80%;">
+    <img src="../images/email-blocklist-tab.png" alt="Email Blocklist Tab" title="Email Blocklist Tab" style="border: 1px solid gray; zoom:80%;"/>
 
 2. You can add email addresses manually or using bulk upload.
     1. **Manual entry**:
         1. Enter the email address in the search dialog box and click **Add**.  
-            <img src="../images/manual-blocklist-upload.png" alt="Manual Entry" title="Manual Entry" style="border: 1px solid gray; zoom:80%;">  
+            <img src="../images/manual-blocklist-upload.png" alt="Manual Entry" title="Manual Entry" style="border: 1px solid gray; zoom:80%;"/>  
 
             !!! Note
 
                 The search box can be used to find existing email addresses or to add a new one.
 
         2. The email address is updated successfully.  
-            <img src="../images/manual-blocklist-updated.png" alt="Manual Entry Updated" title="Manual Entry Updated" style="border: 1px solid gray; zoom:80%;">
+            <img src="../images/manual-blocklist-updated.png" alt="Manual Entry Updated" title="Manual Entry Updated" style="border: 1px solid gray; zoom:80%;"/>
 
     2. **Bulk Upload**:
         1. Click **Bulk Upload**.  
-            <img src="../images/bulk-upload-button.png" alt="Bulk Upload Button" title="Bulk Upload Button" style="border: 1px solid gray; zoom:80%;">
+            <img src="../images/bulk-upload-button.png" alt="Bulk Upload Button" title="Bulk Upload Button" style="border: 1px solid gray; zoom:80%;"/>
 
         2. A pop-up window is displayed. Click **Select a CSV file to Upload** and upload the CSV file. You can download a sample CSV file by clicking **Download sample CSV file**.  
-            <img src="../images/select-csv.png" alt="Select CSV File" title="select CSV File" style="border: 1px solid gray; zoom:80%;">
+            <img src="../images/select-csv.png" alt="Select CSV File" title="select CSV File" style="border: 1px solid gray; zoom:80%;"/>
 
         3. The upload progress is displayed.  
-            <img src="../images/upload-progress.png" alt="Upload Progress" title="Upload Progress" style="border: 1px solid gray; zoom:80%;">
+            <img src="../images/upload-progress.png" alt="Upload Progress" title="Upload Progress" style="border: 1px solid gray; zoom:80%;"/>
 
         4. On completion, map the CSV file fields with system fields.  
-            <img src="../images/map-fields.png" alt="Map Fields" title="Map Fields" style="border: 1px solid gray; zoom:80%;">  
+            <img src="../images/map-fields.png" alt="Map Fields" title="Map Fields" style="border: 1px solid gray; zoom:80%;"/>  
 
             !!! Note
 
                 If the CSV file contains only one column, field mapping is not required and will not be displayed.
 
         5. Click **Validate**.  
-            <img src="../images/validate.png" alt="Validate" title="Validate" style="border: 1px solid gray; zoom:80%;">
+            <img src="../images/validate.png" alt="Validate" title="Validate" style="border: 1px solid gray; zoom:80%;"/>
 
         6. The details of the mapped contacts, duplicates, and errors (if any) are displayed. Click **Save**.  
-            <img src="../images/save-mapped-fields.png" alt="Save Button" title="Save Button" style="border: 1px solid gray; zoom:80%;">
+            <img src="../images/save-mapped-fields.png" alt="Save Button" title="Save Button" style="border: 1px solid gray; zoom:80%;"/>
 
         7. A success message is displayed and the email blocklist is updated.  
-            <img src="../images/bulk-upload-button.png" alt="Bulk Blocklist Updated" title="Bulk Blocklist Updated" style="border: 1px solid gray; zoom:80%;">
+            <img src="../images/bulk-upload-button.png" alt="Bulk Blocklist Updated" title="Bulk Blocklist Updated" style="border: 1px solid gray; zoom:80%;"/>
 
 
 ### Advanced Custom Domain
@@ -236,7 +236,7 @@ Generate and Configure DKIM for this domain by providing your own private key. T
 1. Navigate to **Flows & Channels** > **Channels** > **Digital** > **All** > **Email**.
 2. Click **+ New Domain** and select **Custom Domain**.
 3. Enter the **Domain Name**. Select the domain type Advanced, then click **Create**.  
-<img src="../images/email-advdomain.png" alt="Advanced Custom Domain" title="Advanced Custom Domain" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/email-advdomain.png" alt="Advanced Custom Domain" title="Advanced Custom Domain" style="border: 1px solid gray; zoom:80%;"/>
 
 4. On the verification tab, enter the **DKIM Private Key**, **Selector Name**, and click **Verify Domain**.
 
@@ -247,17 +247,17 @@ Generate and Configure DKIM for this domain by providing your own private key. T
 
     **Example**: If your selector is "ses2024" and the domain is "example.com," the DNS record would be: <code>ses2024._domainkey[.example.com]</code>.
     
-    <img src="../images/email-custom-dkim.png" alt="Advanced Custom Domain" title="Advanced Custom Domain" style="border: 1px solid gray; zoom:80%;">
+    <img src="../images/email-custom-dkim.png" alt="Advanced Custom Domain" title="Advanced Custom Domain" style="border: 1px solid gray; zoom:80%;"/>
 
 5. The Verification in Progress message is displayed.  
-<img src="../images/email-vip.png" alt="Advanced Custom Domain" title="Advanced Custom Domain" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/email-vip.png" alt="Advanced Custom Domain" title="Advanced Custom Domain" style="border: 1px solid gray; zoom:80%;"/>
 
 6. Click **Confirm**. You can navigate to the Email Channels page to check the latest status. This might take up to 72 hours. The status can be one of the following: 
     * **Pending**: DNS records not yet detected.
     * **Success**: DKIM successfully verified.
     * **Failed**: DNS records incorrect or missing.
     * **Temporary Failure**: DNS issues, will retry automatically.  
-    <img src="../images/email-domain.png" alt="Advanced Custom Domain" title="Advanced Custom Domain" style="border: 1px solid gray; zoom:80%;">
+    <img src="../images/email-domain.png" alt="Advanced Custom Domain" title="Advanced Custom Domain" style="border: 1px solid gray; zoom:80%;"/>
 
 #### Step 3: Complete Configuration
 
@@ -266,7 +266,7 @@ After successful DKIM verification, follow these steps:
 
 
 1. On the Email Channel page, click **Complete Configuration** for a domain.  
-<img src="../images/email-custom-config-new.png" alt="Advanced Custom Domain" title="Advanced Custom Domain" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/email-custom-config-new.png" alt="Advanced Custom Domain" title="Advanced Custom Domain" style="border: 1px solid gray; zoom:80%;"/>
 
 2. Click **+ New Email ID** to add an email to the domain. 
 3. Enter the **Display Name**, add the **Email ID**  from which emails have to be forwarded or sent, and select the **Usage**.
@@ -311,20 +311,20 @@ Generate and Configure DKIM for this domain by providing your own private key. T
         **Example**: If your selector is "ses2024" and the domain is "example.com," the DNS record would be: <code>ses2024._domainkey[.example.com](http://.example.com)</code>  
         
         
-        <img src="../images/msexchange1.png" alt="Microsoft Exchange" title="Microsoft Exchange" style="border: 1px solid gray; zoom:80%;">
+        <img src="../images/msexchange1.png" alt="Microsoft Exchange" title="Microsoft Exchange" style="border: 1px solid gray; zoom:80%;"/>
 
 
 
 
 4. The Verification in Progress message is displayed.  
-<img src="../images/msexchange2.png" alt="Microsoft Exchange" title="Microsoft Exchange" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/msexchange2.png" alt="Microsoft Exchange" title="Microsoft Exchange" style="border: 1px solid gray; zoom:80%;"/>
 
 5. Click **Confirm**. You can navigate to the Email Channels page to check the latest status. This might take up to 72 hours. The status can be one of the following:
     * **Pending**: DNS records not yet detected.
     * **Success**: DKIM successfully verified.
     * **Failed**: DNS records are incorrect or missing.
     * **Temporary Failure**: DNS issues, will retry automatically.  
-    <img src="../images/msexchange3.png" alt="Microsoft Exchange" title="Microsoft Exchange" style="border: 1px solid gray; zoom:80%;">
+    <img src="../images/msexchange3.png" alt="Microsoft Exchange" title="Microsoft Exchange" style="border: 1px solid gray; zoom:80%;"/>
 
 
 
@@ -373,7 +373,7 @@ Generate and Configure DKIM for this domain by providing your own private key. T
     * `User.Read`
     * `User.Read.All`
 
-    <img src="../images/msexchange4.png" alt="Microsoft Exchange" title="Microsoft Exchange" style="border: 1px solid gray; zoom:80%;">
+    <img src="../images/msexchange4.png" alt="Microsoft Exchange" title="Microsoft Exchange" style="border: 1px solid gray; zoom:80%;"/>
 
 
 5. Click **Add permissions**.
@@ -413,25 +413,25 @@ After successful domain verification, follow these steps:
 
 1. On the Email Channel page, click **Complete Configuration** for a domain.
 2. On the Configuration tab, enter **Client ID**, **Client Secret Key**, **Tenant ID**, and enable the channel.  
-<img src="../images/msexchange5.png" alt="Microsoft Exchange" title="Microsoft Exchange" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/msexchange5.png" alt="Microsoft Exchange" title="Microsoft Exchange" style="border: 1px solid gray; zoom:80%;"/>
 
 
 
 
 3. Click **+New Group** and enter the **Group Name** that you would like to subscribe to via the Graph API. You can add up to 50 domains and 50 email addresses per domain.  
-<img src="../images/msexchange6.png" alt="Microsoft Exchange" title="Microsoft Exchange" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/msexchange6.png" alt="Microsoft Exchange" title="Microsoft Exchange" style="border: 1px solid gray; zoom:80%;"/>
 
 
 4. Click **Sync** to fetch all the email id of the group.  
-<img src="../images/msexchange7.png" alt="Microsoft Exchange" title="Microsoft Exchange" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/msexchange7.png" alt="Microsoft Exchange" title="Microsoft Exchange" style="border: 1px solid gray; zoom:80%;"/>
 
 
 5. Click **Save**. The configuration saved message is displayed.  
-<img src="../images/msexchange8.png" alt="Microsoft Exchange" title="Microsoft Exchange" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/msexchange8.png" alt="Microsoft Exchange" title="Microsoft Exchange" style="border: 1px solid gray; zoom:80%;"/>
 
 
 6. Click **Edit** to sync up the emails of a group or to add.  
-<img src="../images/msexchange9.png" alt="Microsoft Exchange" title="Microsoft Exchange" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/msexchange9.png" alt="Microsoft Exchange" title="Microsoft Exchange" style="border: 1px solid gray; zoom:80%;"/>
 
 
 

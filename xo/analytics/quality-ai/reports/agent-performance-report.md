@@ -101,7 +101,7 @@ This report provides an overview of each agent’s performance, summarizing key 
 * **Format**: CSV file
 
 * **File Name**: [ReportName]-YYYY-MM-DD-HH-MM-SS.csv   
-<img src="../images/sample-agent-performance-report.png" alt="Sample Report Format" title="Sample Report Format" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/sample-agent-performance-report.png" alt="Sample Report Format" title="Sample Report Format" style="border: 1px solid gray; zoom:80%;"/>
 
 ## Related Links
 

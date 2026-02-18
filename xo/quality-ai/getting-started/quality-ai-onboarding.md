@@ -52,24 +52,24 @@ Use the following steps to create a Quality AI application in the XO platform:
 1. Choose one of the following options to start a new project or select a product: 
 
     * On the XO landing page, select the **New App** from the application menu.   
-    <img src="../Onboarding/images/navigate-to new-app.png" alt="New App" title="New App" style="border: 1px solid gray; zoom:80%;">
+    <img src="../Onboarding/images/navigate-to new-app.png" alt="New App" title="New App" style="border: 1px solid gray; zoom:80%;"/>
 
         * After you select **+ New App**, the system displays to create your Service App screen.       
-        <img src="../Onboarding/images/Quality-ai-new-user.png" alt="Contact us" title="Contact us" style="border: 1px solid gray; zoom:80%;">
+        <img src="../Onboarding/images/Quality-ai-new-user.png" alt="Contact us" title="Contact us" style="border: 1px solid gray; zoom:80%;"/>
 
             !!! note
             
                 * Select **New App** from the application dropdown menu to create a new Quality AI application. New App is available from the global app switcher and lets you create a new application at any time, regardless of your current product licenses.
 
     * On the Get Started screen, select **Create New**.      
-    <img src="../Onboarding/images/create-new-app-project.png" alt="Create New App" title="Create New App" style="border: 1px solid gray; zoom:80%;">
+    <img src="../Onboarding/images/create-new-app-project.png" alt="Create New App" title="Create New App" style="border: 1px solid gray; zoom:80%;"/>
 
         !!! note
             
             * Select **Create New** from the **Get Started** screen to manually create a new AI application. You select and enable products, such as Quality AI, during setup. 
 
     * On the Get Started screen, select **Contact us** or **Try now**.         
-    <img src="../Onboarding/images/onboarding-new-users.png" alt="Contact Us" title="Contact Us" style="border: 1px solid gray; zoom:80%;">
+    <img src="../Onboarding/images/onboarding-new-users.png" alt="Contact Us" title="Contact Us" style="border: 1px solid gray; zoom:80%;"/>
 
         !!! note 
 
@@ -80,10 +80,10 @@ Use the following steps to create a Quality AI application in the XO platform:
 #### Application Details
 
 1. Enter the **App's Name** and a brief **Description**.    
-<img src="../Onboarding/images/create-new-app.png" alt="Try Now" title="Try Now" style="border: 1px solid gray; zoom:80%;">
+<img src="../Onboarding/images/create-new-app.png" alt="Try Now" title="Try Now" style="border: 1px solid gray; zoom:80%;"/>
 
 1. The system automatically generates a new application.  
-<img src="../Onboarding/images/creating-app.png" alt="Try Now" title="Try Now" style="border: 1px solid gray; zoom:80%;">
+<img src="../Onboarding/images/creating-app.png" alt="Try Now" title="Try Now" style="border: 1px solid gray; zoom:80%;"/>
 
 1. After creation, follow the guided setup steps.
 
@@ -96,7 +96,7 @@ Quality AI supports multiple languages. English is the default language.
 1. Select agent languages for customer assistance and AI-generated output (Topics, Justifications, QA outcomes).
 
 1. Select a preferred language for reports.   
-<img src="../Onboarding/images/choose-language.png" alt="Preferred Language" title="Preferred Language" style="border: 1px solid gray; zoom:80%;">
+<img src="../Onboarding/images/choose-language.png" alt="Preferred Language" title="Preferred Language" style="border: 1px solid gray; zoom:80%;"/>
 
     !!! note
 
@@ -105,10 +105,10 @@ Quality AI supports multiple languages. English is the default language.
         * To enable Quality AI features for non-English languages, configure an LLM in the GenAI section.
 
 1. Select **+ Add** to move languages to the **Selected Languages** list.  
-<img src="../Onboarding/images/add-new-lang.png" alt="Select Language" title="Select Language" style="border: 1px solid gray; zoom:80%;">
+<img src="../Onboarding/images/add-new-lang.png" alt="Select Language" title="Select Language" style="border: 1px solid gray; zoom:80%;"/>
 
 1. Toggle a language on to **Mark as the Default**.   
-<img src="../Onboarding/images/set-default-lang.png" alt="Mark Default Language" title="Mark Default Language" style="border: 1px solid gray; zoom:80%;">
+<img src="../Onboarding/images/set-default-lang.png" alt="Mark Default Language" title="Mark Default Language" style="border: 1px solid gray; zoom:80%;"/>
     
 1. Toggle a language off to remove it from the default list.   
 
@@ -145,7 +145,7 @@ Configure queues for Agent AI and Quality AI Express sources to route conversati
 1. Select **Add Queue**.
 
 1. Enter the following details:   
-<img src="../Onboarding/images/add-queue.png" alt="Add Queue" title="Add Queue" style="border: 1px solid gray; zoom:80%;">
+<img src="../Onboarding/images/add-queue.png" alt="Add Queue" title="Add Queue" style="border: 1px solid gray; zoom:80%;"/>
 
     * **Name**: Enter a descriptive queue name.
 
@@ -160,7 +160,7 @@ Configure queues for Agent AI and Quality AI Express sources to route conversati
         Include unique agent email IDs and Queue IDs from the source system. Duplicate values can cause routing or processing issues.
 
 1. Select **Save** to start or update conversation ingestion.     
-<img src="../Onboarding/images/add-queue-agent.png" alt="Agent Queue Details" title="Agent Queue Details" style="border: 1px solid gray; zoom:80%;">
+<img src="../Onboarding/images/add-queue-agent.png" alt="Agent Queue Details" title="Agent Queue Details" style="border: 1px solid gray; zoom:80%;"/>
 
 #### Conversation Agent–Queue Mapping
 
@@ -239,7 +239,7 @@ Application usage settings control agent access, audit behavior, and usage polic
 * Enable Speech-based audits 
 
 * Enable Agent AI Playbook audits        
-<img src="../Onboarding/images/app-usage-settings.png" alt="App Usage Setting" title="App Usage Setting" style="border: 1px solid gray; zoom:80%;"> 
+<img src="../Onboarding/images/app-usage-settings.png" alt="App Usage Setting" title="App Usage Setting" style="border: 1px solid gray; zoom:80%;"/> 
 
     !!! note
 
@@ -254,7 +254,7 @@ Complete all required configuration steps.
 1. After setup, **Quality AI** automatically processes conversations.
 
 1. Use the **Product Switcher** to access **Quality AI**. This screen appears only on first-time login.        
-<img src="../Onboarding/images/product-switcher.png" alt="Product Switcher" title="Product Switcher" style="border: 1px solid gray; zoom:80%;">   
+<img src="../Onboarding/images/product-switcher.png" alt="Product Switcher" title="Product Switcher" style="border: 1px solid gray; zoom:80%;"/>   
 
     !!! note
 
@@ -263,7 +263,7 @@ Complete all required configuration steps.
         * Feature flags control the Quality AI Switcher.
 
 1. Navigate to **Conversation Sources** > **Configure** and enable the required sources for tracking and routing. The Product Switcher icon lets you switch effortlessly between products.       
-<img src="../Onboarding/images/conversation-sources.png" alt="Conversation Sources" title="Conversation Sources" style="border: 1px solid gray; zoom:80%;"> 
+<img src="../Onboarding/images/conversation-sources.png" alt="Conversation Sources" title="Conversation Sources" style="border: 1px solid gray; zoom:80%;"/> 
 
 ### Quality AI Left Navigation
 
@@ -276,6 +276,6 @@ After launch, the left navigation displays:
 * **Deploy** (deployment and publishing workflows).
 
 * **User Management** (roles and permissions).     
-<img src="../Onboarding/images/conversation-sources-left-navigation.png" alt="App Usage Setting" title="App Usage Setting" style="border: 1px solid gray; zoom:80%;"> 
+<img src="../Onboarding/images/conversation-sources-left-navigation.png" alt="App Usage Setting" title="App Usage Setting" style="border: 1px solid gray; zoom:80%;"/> 
 
 

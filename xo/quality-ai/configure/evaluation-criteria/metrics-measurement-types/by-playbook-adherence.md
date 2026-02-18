@@ -42,7 +42,7 @@ The By Playbook Adherence metric uses automated quality assurance tools to measu
 4. Enter a descriptive **Name** for the future audit reference.
 
 5. Select a **Playbook Name** from the dropdown list, from which the metric should evaluate adherence.  
-<img src="../images/by-playbook-fields.png" alt="Playbook Metrics Fields" title="Playbook Metrics Fields" style="border: 1px solid gray; zoom:80%;"> 
+<img src="../images/by-playbook-fields.png" alt="Playbook Metrics Fields" title="Playbook Metrics Fields" style="border: 1px solid gray; zoom:80%;"/> 
 
 6. Select an **Adherence Type** (**Entire Playbook** or **Steps**) from the dropdown. 
 
@@ -55,7 +55,7 @@ The By Playbook Adherence metric uses automated quality assurance tools to measu
     * **Stage**: Select the stage under which the desired step for evaluation is configured.
 
     * **Step**: Select the desired step for adherence evaluation.        
-    <img src="../images/by-playbook-adherence-type.png" alt="Steps" title="Steps" style="border: 1px solid gray; zoom:80%;"> 
+    <img src="../images/by-playbook-adherence-type.png" alt="Steps" title="Steps" style="border: 1px solid gray; zoom:80%;"/> 
 
  9. Click **Create** to save the new metric for the playbook adherence.
 
@@ -64,7 +64,7 @@ The By Playbook Adherence metric uses automated quality assurance tools to measu
 Steps to edit or delete any existing **By Playbook** evaluation metrics:
 
 1. Right-click on a desired evaluation metric name **By Playbook Adherence** metrics category.   
-<img src="../images/playbook-modification.png" alt="Edit Metric" title="Edit Metric" style="border: 1px solid gray; zoom:80%;"> 
+<img src="../images/playbook-modification.png" alt="Edit Metric" title="Edit Metric" style="border: 1px solid gray; zoom:80%;"/> 
 
 2. Choose an option:
 

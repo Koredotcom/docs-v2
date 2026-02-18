@@ -2,7 +2,7 @@
 
 **Enterprise Encryption** secures organizational data with flexible, enterprise-grade encryption options that meet both compliance and operational needs. Administrators can choose between a **system-generated Default Key** for quick setup or **Bring Your Own Key (BYOK)** for maximum control.
 
-<img src="../images/enterprise-encryption_1.png" alt="enterprise-encryption" title="enterprise-encryption" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/enterprise-encryption_1.png" alt="enterprise-encryption" title="enterprise-encryption" style="border: 1px solid gray; zoom:80%;"/>
 
 ## Default Encryption Key Management
 

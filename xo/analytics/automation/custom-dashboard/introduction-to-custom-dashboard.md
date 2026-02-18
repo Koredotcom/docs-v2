@@ -15,7 +15,7 @@ Custom Dashboards are available along with the other out-of-the-box dashboards i
 **To view the Custom Dashboard, follow the steps**: 
 
 1. Click **Analytics** on the left navigation pane. The Analytics panel is displayed with the list of reports.
-<img src="./../images/navigate-to-custom-dashboard.png" alt="Navigate to Custom Dashboard" title="Navigate to Custom Dashboard" style="border: 1px solid gray; zoom:80%;">
+<img src="./../images/navigate-to-custom-dashboard.png" alt="Navigate to Custom Dashboard" title="Navigate to Custom Dashboard" style="border: 1px solid gray; zoom:80%;"/>
 
 2. Click the **Custom Dashboards** under the **Automation** section of the **Analytics** panel. The **Custom Dashboards** is displayed on the right side of the page.
 3. Select appropriate filters on the dashboard and click **Apply**.
@@ -40,7 +40,7 @@ You can add one or more Dashboards by providing basic details of the Dashboard.
     * **Export Dashboard:** Exports the configuration of the dashboard in a JSON file.
     * **Delete Dashboard:** Allows you to Delete the custom dashboard.
 
-<img src="./../images/add-custom-dashboard.png" alt="Add Custom Dashboard" title="Add Custom Dashboard" style="border: 1px solid gray; zoom:80%;">
+<img src="./../images/add-custom-dashboard.png" alt="Add Custom Dashboard" title="Add Custom Dashboard" style="border: 1px solid gray; zoom:80%;"/>
 
 
 ## Add Widgets
@@ -85,7 +85,7 @@ The platform allows you to choose between Query Mode and Advanced Mode while wri
     Aggregate functions are visible only when the user chooses the Advanced mode.
 
 
-<img src="./../images/aggregate-functions.png" alt="Aggregate Functions" title="Aggregate Functions" style="border: 1px solid gray; zoom:80%;">
+<img src="./../images/aggregate-functions.png" alt="Aggregate Functions" title="Aggregate Functions" style="border: 1px solid gray; zoom:80%;"/>
 
 
 The following table describes all the available aggregate functions:
@@ -193,7 +193,7 @@ To understand how the Having clause works, see Filter the Messages using the Hav
 
 **Run** the query to see the results in a tabular format.
 
-<img src="./../images/run-the-query.png" alt="Run the Query" title="Run the Query" style="border: 1px solid gray; zoom:80%;">
+<img src="./../images/run-the-query.png" alt="Run the Query" title="Run the Query" style="border: 1px solid gray; zoom:80%;"/>
 
 
 !!! note
@@ -201,7 +201,7 @@ To understand how the Having clause works, see Filter the Messages using the Hav
     A tag added for Select, Filter By, Group By, Having etc. can be deleted using a Delete icon which is displayed only upon hovering over the tag.
 
 
-<img src="./../images/run-the-query-1.png" alt="Run the Query1" title="Run the Query1" style="border: 1px solid gray; zoom:80%;">
+<img src="./../images/run-the-query-1.png" alt="Run the Query1" title="Run the Query1" style="border: 1px solid gray; zoom:80%;"/>
 
 
 
@@ -218,7 +218,7 @@ By default, the end-user interactions are displayed for all the datasets in the 
 
 In any custom dashboard widget, for any dataset, you can assign a value to the `isdeveloper` flag in the **Filter By** clause as shown in the following screen. 
 
-<img src="./../images/filter-by.png" alt="Filter By" title="Filter By" style="border: 1px solid gray; zoom:80%;">
+<img src="./../images/filter-by.png" alt="Filter By" title="Filter By" style="border: 1px solid gray; zoom:80%;"/>
 
 
 
@@ -244,7 +244,7 @@ Click the **Preview** button to visualize the widget. If it suits your purpose, 
     You have to successfully run the query to be able to Preview it.
 
 
-<img src="./../images/data-representation.png" alt="Data Representation" title="Data Representation" style="border: 1px solid gray; zoom:80%;">
+<img src="./../images/data-representation.png" alt="Data Representation" title="Data Representation" style="border: 1px solid gray; zoom:80%;"/>
 
 
 ### Widget Actions
@@ -265,7 +265,7 @@ Using the **more icon** (vertical ellipses) against each Widget, you can access 
     The final Widget definitions of a custom dashboard can be exported in JSON format. The individual widget data can be exported in CSV format.
 
 
-<img src="./../images/widget-actions.png" alt="Widget Actions" title="Widget Actions" style="border: 1px solid gray; zoom:80%;">
+<img src="./../images/widget-actions.png" alt="Widget Actions" title="Widget Actions" style="border: 1px solid gray; zoom:80%;"/>
 
 
 ## Widget Configuration Modes
@@ -277,7 +277,7 @@ The platform allows users to select between Query Mode and Advanced Mode to extr
 
 Query mode is for users and developers who can write queries to create a widget. Ideally, advanced users who know the fields in the dataset are recommended to use this feature.
 
-<img src="./../images/query-modes.png" alt="Query Modes" title="Query Modes" style="border: 1px solid gray; zoom:80%;">
+<img src="./../images/query-modes.png" alt="Query Modes" title="Query Modes" style="border: 1px solid gray; zoom:80%;"/>
 
 ### Advanced Mode
 
@@ -298,13 +298,13 @@ In the Advanced Mode, you get type-ahead suggestions to write the criteria for *
     You can add custom meta tags to the query that are not included in the AI Agents while configuring the widget. However, to get the right data, you need to add the custom meta tag to the AI Agents configuration.
 
 
-<img src="./../images/type-ahead-suggestions-1.png" alt="Type Ahead Suggestions 1" title="Type Ahead Suggestions 1" style="border: 1px solid gray; zoom:80%;">
+<img src="./../images/type-ahead-suggestions-1.png" alt="Type Ahead Suggestions 1" title="Type Ahead Suggestions 1" style="border: 1px solid gray; zoom:80%;"/>
 
 
-<img src="./../images/type-ahead-suggestions-2.png" alt="Type Ahead Suggestions 2" title="Type Ahead Suggestions 2" style="border: 1px solid gray; zoom:80%;">
+<img src="./../images/type-ahead-suggestions-2.png" alt="Type Ahead Suggestions 2" title="Type Ahead Suggestions 2" style="border: 1px solid gray; zoom:80%;"/>
 
 
-<img src="./../images/type-ahead-suggestions-3.png" alt="Type Ahead Suggestions 3" title="Type Ahead Suggestions 3" style="border: 1px solid gray; zoom:80%;">
+<img src="./../images/type-ahead-suggestions-3.png" alt="Type Ahead Suggestions 3" title="Type Ahead Suggestions 3" style="border: 1px solid gray; zoom:80%;"/>
 
 
 ## Custom Dashboard Limitations

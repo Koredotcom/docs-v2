@@ -9,7 +9,7 @@ Steps to access the workflow monitor page:
     Ensure that the status of the selected workflow is deployed. Workflow monitoring is only available for workflow deployed in production. Workflows that are in debugging or design phases aren't tracked here. 
 
 3. In the left navigation pane, click **Workflow runs**. The Workflow monitor page is displayed.  
-<img src="../images/agent_monitor_new.png" alt="Agent monitor dashboard" title="Agent monitor dashboard" style="border: 0px solid gray; zoom:80%;">
+<img src="../images/agent_monitor_new.png" alt="Agent monitor dashboard" title="Agent monitor dashboard" style="border: 0px solid gray; zoom:80%;"/>
 
 4. Click one of the following tabs to see the data for the deployed workflows:
     * **All runs**

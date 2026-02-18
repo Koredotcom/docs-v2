@@ -7,7 +7,7 @@ The Summary dashboard gives a snapshot of the AI Agent’s conversations, user a
 
 1. Click **Analytics** on the left navigation pane. The Analytics panel is displayed with the list of reports.
 
-    <img src="../images/overview-dashboard.png" alt="Overview Dashboard" title="Overview Dashboard" style="border: 1px solid gray; zoom:80%;">
+    <img src="../images/overview-dashboard.png" alt="Overview Dashboard" title="Overview Dashboard" style="border: 1px solid gray; zoom:80%;"/>
     
 2. Click **Summary** under the **Overview** section of the **Analytics** panel. The Summary dashboard is displayed on the right side of the page.
 3. Select appropriate filters on the dashboard and click **Apply**.

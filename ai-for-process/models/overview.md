@@ -19,4 +19,4 @@ Model Hub empowers you to enhance base models by fine-tuning them directly withi
  
 2. On the Models page, you can see three tabs: Fine-tuned Models, Open-source Models, and External Models. Click any tab to explore the corresponding models.
 
-    <img src="../fine-tune-models/images/start-fine-tuning.png" alt="Models page" title="Models page" style="border: 0px solid gray; zoom:80%;">
+    <img src="../fine-tune-models/images/start-fine-tuning.png" alt="Models page" title="Models page" style="border: 0px solid gray; zoom:80%;"/>

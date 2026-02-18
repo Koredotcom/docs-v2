@@ -18,13 +18,13 @@ To run SMS campaigns, you must configure the SMS Channel. Currently, the channel
 Steps for SMS Channel Configuration:
 
 1. The SMS channel can be configured by going to **Automation AI** > **Flows & Channels** > **Channels** > **Digital** > **All** > **Others** > **SMS Channel**.  
-<img src="../images/sms-channel-page.png" alt="SMS Channel Page" title="SMS Channel Page" style="border: 1px solid gray; zoom:80%;">  
+<img src="../images/sms-channel-page.png" alt="SMS Channel Page" title="SMS Channel Page" style="border: 1px solid gray; zoom:80%;"/>  
 
     You can also configure the SMS channel by going to **Contact Center AI** > **Campaigns** > **Campaign Management** > **SMS** > **Configure SMS Channel**.  
-    <img src="../images/configure-sms-channel-button.png" alt="Configure SMS Channel Button" title="Configure SMS Channel Button" style="border: 1px solid gray; zoom:80%;">
+    <img src="../images/configure-sms-channel-button.png" alt="Configure SMS Channel Button" title="Configure SMS Channel Button" style="border: 1px solid gray; zoom:80%;"/>
 
 2. Clicking the **Configure SMS Channel** button redirects the user to the Digital channel page. Click **SMS**.  
-<img src="../images/sms-icon.png" alt="SMS Icon" title="SMS Icon" style="border: 1px solid gray; zoom:80%;">  
+<img src="../images/sms-icon.png" alt="SMS Icon" title="SMS Icon" style="border: 1px solid gray; zoom:80%;"/>  
 
     The following page appears to select a provider name from the dropdown list.  
     <img src="../images/sms-window.png" alt="Instructions Tab" title="Instructions Tab" style="border: 1px solid gray; zoom:60%;">  
@@ -56,7 +56,7 @@ Steps for SMS Channel Configuration:
                 * You cannot delete a phone number that is linked to one or more active campaigns and flows. To delete a phone number, first unlink it from the flows and ensure the campaign is no longer active.
 
 6. Click **Save**. The SMS channel is configured.  
-<img src="../images/sms-channel-configured.png" alt="SMS Channel Configured" title="SMS Channel Configured" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/sms-channel-configured.png" alt="SMS Channel Configured" title="SMS Channel Configured" style="border: 1px solid gray; zoom:80%;"/>
 
 ## Disable or Delete Configured SMS Channel
 

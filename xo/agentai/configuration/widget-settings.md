@@ -76,18 +76,18 @@ This section lets you set your preferences based on the channels–Chat, Voice, 
             2. Click to select the **Allow auto send Message** option. Clearing this option cancels all unsent or new Agentic messages.
             3. Set the timer for the **Set message delay before auto send** field by using the slider. You can set a delay up to a maximum of 60 seconds.  
 
-                <img src="../widget-settings-images/agentic-copilot-all-agents.png" alt="agentic-copilot-all-agents" title="agentic-copilot-all-agents" style="border: 1px solid gray; zoom:80%;">  
+                <img src="../widget-settings-images/agentic-copilot-all-agents.png" alt="agentic-copilot-all-agents" title="agentic-copilot-all-agents" style="border: 1px solid gray; zoom:80%;"/>  
 
         * **Enable for Specific Queues**: Select this option to assign specific apps to selected queues in the **[Agent AI Mapping](../configuration/agent-ai-mapping.md)** section.  
             1. Click **Open AI Feature Mapping** to navigate to the Agent AI Mapping section.
             2. Click **learn more** to read about queue configuration.  
             
-                <img src="../widget-settings-images/agentic-copilot-specific-agents.png" alt="agentic-copilot-specific-agents" title="agentic-copilot-specific-agents" style="border: 1px solid gray; zoom:80%;">  
+                <img src="../widget-settings-images/agentic-copilot-specific-agents.png" alt="agentic-copilot-specific-agents" title="agentic-copilot-specific-agents" style="border: 1px solid gray; zoom:80%;"/>  
 
 9. Turn the **toggle** on or off for **Control Transcript Visibility between Agents** (for Voice channel only), and select one of the following options: 
     * Use public APIs to control transcription 
     * Use agent’s entry and exit events 
-    <img src="../widget-settings-images/control-transcript-visibility.png" alt="control-transcript-visibility" title="control-transcript-visibility" style="border: 1px solid gray; zoom:80%;"> 
+    <img src="../widget-settings-images/control-transcript-visibility.png" alt="control-transcript-visibility" title="control-transcript-visibility" style="border: 1px solid gray; zoom:80%;"/> 
 
 10. Turn on the **Widget Search Bar Configuration** toggle. 
     1. Select one or more options—**XO Platform**, **Search AI**, **Agentic App**.  
@@ -98,7 +98,7 @@ This section lets you set your preferences based on the channels–Chat, Voice, 
 
 11. Select an option under the **Conversation Transfer** section.  
 12. Click **Save** to save your settings.  
-   <img src="../widget-settings-images/agentassist-channel-specific-settings-page-1.png" alt="agentassist-channel-specific-settings-page" title="agentassist-channel-specific-settings-page" style="border: 1px solid gray; zoom:80%;">
+   <img src="../widget-settings-images/agentassist-channel-specific-settings-page-1.png" alt="agentassist-channel-specific-settings-page" title="agentassist-channel-specific-settings-page" style="border: 1px solid gray; zoom:80%;"/>
 
 ## Agent AI General Settings
 
@@ -107,7 +107,7 @@ This section lets you set up the general features of the Agent AI widget. Here, 
 * **URL opening behavior**: Here, you can customize the behavior for URL opening in the Agent AI widget for desktop applications. The following options are available:
     * **Default System Behavior**: The Agent AI widget uses the system’s default approach for URL opening – the link/page opens in a new window.
     * **Post Event**: When a URL is clicked within the Agent AI widget, it initiates an event named “**AgentAI.UrlClickedMessage**.” This event enables the desktop application to manage the URL’s opening behavior, as defined in the agreement between Agent AI and the agent desktop application. The following screenshot depicts the actions in the widget when you click a URL:  
-    <img src="../widget-settings-images/post-event-url-opening-behavior-3.png" alt="post-event-url-opening-behavior" title="post-event-url-opening-behavior" style="border: 1px solid gray; zoom:80%;">
+    <img src="../widget-settings-images/post-event-url-opening-behavior-3.png" alt="post-event-url-opening-behavior" title="post-event-url-opening-behavior" style="border: 1px solid gray; zoom:80%;"/>
 
     As in the above image, when you click a link in the widget the **AgentAI.UrlClickedMessage** event is triggered and a log opens on the right showing the URL. Desktop applications can take this URL and customize its opening behavior.
 
@@ -139,9 +139,9 @@ This section lets you set up the general features of the Agent AI widget. Here, 
 8. Select **Default System Behavior** or **Advanced Mode** in the **Dialog Task Display Name Configurations** field.
     1. If you select **Advanced Mode**, a pop-up box to enter custom scripts appears.
     2. Enter your script, and click **Save**.  
-    <img src="../widget-settings-images/custom-script.png" alt="custom-script" title="custom-script" style="border: 1px solid gray; zoom:80%;">
+    <img src="../widget-settings-images/custom-script.png" alt="custom-script" title="custom-script" style="border: 1px solid gray; zoom:80%;"/>
 9. Click **Save** to save your settings.  
-<img src="../widget-settings-images/agent-ai-general-settings.png" alt="agent-ai-general-settings" title="agent-ai-general-settings" style="border: 1px solid gray; zoom:80%;">
+<img src="../widget-settings-images/agent-ai-general-settings.png" alt="agent-ai-general-settings" title="agent-ai-general-settings" style="border: 1px solid gray; zoom:80%;"/>
 
 ### Auto-corrections for the Search tab
 

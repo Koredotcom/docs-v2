@@ -2,7 +2,7 @@
 
 OpenID Connect (OIDC) is a modern authentication protocol built on OAuth 2.0 that provides simple identity verification and enables applications to obtain basic profile information about users. This configuration allows seamless integration with popular identity providers like Google and Microsoft Azure.
 
-<img src="../images/oidc_overview.png" alt="open-id-connect" title="open-id-connect" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/oidc_overview.png" alt="open-id-connect" title="open-id-connect" style="border: 1px solid gray; zoom:80%;"/>
 
 ## Getting Started
 
@@ -21,7 +21,7 @@ Choose from the supported identity providers. Each provider offers specific feat
 
 Google's OpenID Connect implementation provides enterprise-grade authentication with seamless integration for G Suite domains. Configure these essential fields to establish secure communication between Google and AI for Work.
 
-<img src="../images/oidc_overview_2.png" alt="open-id-connect" title="open-id-connect" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/oidc_overview_2.png" alt="open-id-connect" title="open-id-connect" style="border: 1px solid gray; zoom:80%;"/>
 
 #### Configuration Steps
 
@@ -113,7 +113,7 @@ To set up the application in your Google Workspace environment, you need to crea
 
 Microsoft Azure Active Directory (now Microsoft Entra ID) provides comprehensive identity and access management with robust security features. This configuration enables secure authentication for your organization's users.
 
-<img src="../images/oidc_overview_3.png" alt="open-id-connect" title="open-id-connect" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/oidc_overview_3.png" alt="open-id-connect" title="open-id-connect" style="border: 1px solid gray; zoom:80%;"/>
 
 #### Configuration Steps
 

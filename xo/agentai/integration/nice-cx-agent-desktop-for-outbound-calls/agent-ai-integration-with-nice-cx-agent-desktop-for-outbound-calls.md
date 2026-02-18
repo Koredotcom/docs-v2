@@ -182,7 +182,7 @@ This section explains the configuration steps you must complete to integrate Age
 
 1. Sign in to your **NICE** account with the user name and password provided by the NICE Customer Support.
 2. Select the **Applications Launcher** button.  
-    <img src="../images/app-launcher-button-1.png" alt="app-launcher-button" title="app-launcher-button" style="border: 1px solid gray; zoom:80%;">  
+    <img src="../images/app-launcher-button-1.png" alt="app-launcher-button" title="app-launcher-button" style="border: 1px solid gray; zoom:80%;"/>  
 
 3. Select **OTHERS** > **Automation & AI**.   
     <img src="../images/automation-ai-2.png" alt="automation-ai" title="automation-ai" style="border: 1px solid gray; zoom:60%;">  
@@ -198,11 +198,11 @@ This section explains the configuration steps you must complete to integrate Age
     * **App Title**: Agent AI (change as needed)
     * **Participants**: Both 
     * Turn on the **CTI EVENT** toggle.  
-    <img src="../images/config-parameters-4.png" alt="config-parameters" title="config-parameters" style="border: 1px solid gray; zoom:80%;">  
+    <img src="../images/config-parameters-4.png" alt="config-parameters" title="config-parameters" style="border: 1px solid gray; zoom:80%;"/>  
 
     * **Audio Relay Endpoint**: {<a href="#kvg">[Kore Voice Gateway</a>(KVG)]}</a>/audiosocket/nice?sipuri=&lt;Bot SIP URI>&lt;DNS>&token=&lt;Token>&botId=&lt;Bot ID>&accountId=&lt;Account ID>&agentassist=true
         * **Bot SIP URI**: Flows & Channels > Channels > Voice Gateway > SIP Numbers > Configure SIP Trunk > Agent AI section of the **[Agent AI](https://platform.kore.ai/)** configuration portal.  
-            <img src="../images/configure-sip-trunk-5.png" alt="configure-sip-trunk" title="configure-sip-trunk" style="border: 1px solid gray; zoom:80%;">  
+            <img src="../images/configure-sip-trunk-5.png" alt="configure-sip-trunk" title="configure-sip-trunk" style="border: 1px solid gray; zoom:80%;"/>  
 
         * **Bot ID and Account ID**: Flows & Channels > Channels > Digital > Web/Mobile Client > JWT App Details section of the **[Agent AI](https://platform.kore.ai/){:target="_blank"}** configuration portal.  
             <img src="../images/web-mobile-client-6.png" alt="web-mobile-client" title="web-mobile-client" style="border: 1px solid gray; zoom:70%;">  
@@ -223,9 +223,9 @@ This section explains the configuration steps you must complete to integrate Age
 3. Select **File** > **Import from File**.
 4. Select the **downloaded outbound voice script**.
 5. Double-click the **Generate iframe params** tile. 
-    <img src="../images/generate-iframe-params-7.png" alt="generate-iframe-params" title="generate-iframe-params" style="border: 1px solid gray; zoom:80%;">  
+    <img src="../images/generate-iframe-params-7.png" alt="generate-iframe-params" title="generate-iframe-params" style="border: 1px solid gray; zoom:80%;"/>  
 
-    <img src="../images/script-8.png" alt="script" title="script" style="border: 1px solid gray; zoom:80%;">  
+    <img src="../images/script-8.png" alt="script" title="script" style="border: 1px solid gray; zoom:80%;"/>  
 
 6. Update the values for the corresponding parameters:
     * Agent AI Parameters
@@ -238,10 +238,10 @@ This section explains the configuration steps you must complete to integrate Age
         * `customdata.agentName="Agent"`
         * `customdata.agentID="{__agentid}"`
 7. Double-click the **Agent Assist** tile.  
-    <img src="../images/agent-assist-tile-9.png" alt="agent-assist-tile" title="agent-assist-tile" style="border: 1px solid gray; zoom:80%;">  
+    <img src="../images/agent-assist-tile-9.png" alt="agent-assist-tile" title="agent-assist-tile" style="border: 1px solid gray; zoom:80%;"/>  
 
 8. Select the **checkbox** next to the Agent Assist instance you created in the above step.  
-    <img src="../images/agent-assist-instance-10.png" alt="agent-assist-instance" title="agent-assist-instance" style="border: 1px solid gray; zoom:80%;">   
+    <img src="../images/agent-assist-instance-10.png" alt="agent-assist-instance" title="agent-assist-instance" style="border: 1px solid gray; zoom:80%;"/>   
 
 9. Select **Yes**.
 10. After selecting **Agent Assist**, select the **Close** button on the bottom-right corner of the page.  
@@ -266,19 +266,19 @@ During Skill creation, select the **NICE Studio Script** created in the previous
 3. Select **Integrated Softphone**.
 4. Select **Connect**.
 5. Change the status to **Available**.  
-    <img src="../images/integrated-softphone-available-11.png" alt="integrated-softphone-available" title="integrated-softphone-available" style="border: 1px solid gray; zoom:80%;">  
+    <img src="../images/integrated-softphone-available-11.png" alt="integrated-softphone-available" title="integrated-softphone-available" style="border: 1px solid gray; zoom:80%;"/>  
 
 6. Select **New Outbound** at the top-left of the desktop.  
-    <img src="../images/new-outbound-12.png" alt="new-outbound" title="new-outbound" style="border: 1px solid gray; zoom:80%;">   
+    <img src="../images/new-outbound-12.png" alt="new-outbound" title="new-outbound" style="border: 1px solid gray; zoom:80%;"/>   
 
 7. Enter a phone number in the search bar, select **Voice** **Call**, and select the outbound skill created in the previous step.  
-    <img src="../images/making-outbound-call-13.png" alt="making-outbound-call" title="making-outbound-call" style="border: 1px solid gray; zoom:80%;">  
+    <img src="../images/making-outbound-call-13.png" alt="making-outbound-call" title="making-outbound-call" style="border: 1px solid gray; zoom:80%;"/>  
 
 8. Select the **Call** button.
 9. When a customer accepts the call, the Agent AI widget loads automatically.  
-    <img src="../images/widget-loading-automatically-14.png" alt="widget-loading-automatically" title="free text" style="border: 1px solid gray; zoom:80%;">  
+    <img src="../images/widget-loading-automatically-14.png" alt="widget-loading-automatically" title="free text" style="border: 1px solid gray; zoom:80%;"/>  
 
 10. Select **Hang Up** to disconnect the call.
 11. The **call summary** pop-up is triggered at the end of the call session.
 12. Select the disposition **(Submit or Copy)**, and select **Save & Close**.   
-    <img src="../images/call-summary-15.png" alt="call-summary" title="call-summary" style="border: 1px solid gray; zoom:80%;">   
+    <img src="../images/call-summary-15.png" alt="call-summary" title="call-summary" style="border: 1px solid gray; zoom:80%;"/>   

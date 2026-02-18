@@ -49,7 +49,7 @@ This section outlines the essential components, credentials, and permissions req
 
 The following architecture diagram shows the interaction between ServiceNow and Agent AI:
 
-<img src="../images/snow-kore.ai-architecture.png" alt="snow-kore.ai-architecture" title="snow-kore.ai-architecture" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/snow-kore.ai-architecture.png" alt="snow-kore.ai-architecture" title="snow-kore.ai-architecture" style="border: 1px solid gray; zoom:80%;"/>
 
 ## Set Up Agent AI in ServiceNow Sandbox
 
@@ -69,7 +69,7 @@ Setting Up Agent AI chat with ServiceNow includes the following steps:
 1. Get the [Agent AI by Kore.ai](https://store.servicenow.com/sn_appstore_store.do#!/store/application/92d544cec3da0a9082881b6ce0013194/1.0.0?referer=%2Fstore%2Fsearch%3Flistingtype%3Dallintegrations%25253Bancillary_app%25253Bcertified_apps%25253Bcontent%25253Bindustry_solution%25253Boem%25253Butility%25253Btemplate%25253Bgenerative_ai%25253Bsnow_solution%26q%3Dkore&sl=sh){:target=”_blank”} application from the ServiceNow store.
 2. Click **GET** to begin the application entitlement process.
 3. Select the organization name where you want to install this application.  
-<img src="../images/servicenow-org-selection.png" alt="org-name-selection" title="org-name-selection" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/servicenow-org-selection.png" alt="org-name-selection" title="org-name-selection" style="border: 1px solid gray; zoom:80%;"/>
 
 **or**
 
@@ -78,26 +78,26 @@ Setting Up Agent AI chat with ServiceNow includes the following steps:
 1. Ask the Support team for the relevant Update Set XML file.
 2. Search in **All** > **filter** navigator as **Retrieved Update Sets**, which is under **System Update Sets**, and open it.
 3. Under **Related Links**, click **Import Update Set from XML**.  
-<img src="../images/import-update-xml.png" alt="import-update-xml" title="import-update-xml" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/import-update-xml.png" alt="import-update-xml" title="import-update-xml" style="border: 1px solid gray; zoom:80%;"/>
 
 4. Open the update set **Agent AI by kore.ai** (official update set name).
 
 #### Preview Update Set
 
 To preview the update set, click the **Preview Update Set** tab.  
-<img src="../images/preview-update-set.png" alt="preview-update-set" title="preview-update-set" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/preview-update-set.png" alt="preview-update-set" title="preview-update-set" style="border: 1px solid gray; zoom:80%;"/>
 
 #### Commit Update Set
 
 This option becomes available after a successful preview. Click **Commit Update Set** to proceed.
 
-<img src="../images/commit-update-set.png" alt="commit-update-set" title="commit-update-set" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/commit-update-set.png" alt="commit-update-set" title="commit-update-set" style="border: 1px solid gray; zoom:80%;"/>
 
 ##### Tips
 
 If you get any error (refer to the following screenshot) in the preview step, perform the following steps to resolve it.
 
-<img src="../images/update-set-preview-error.png" alt="update-set-preview-error" title="update-set-preview-error" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/update-set-preview-error.png" alt="update-set-preview-error" title="update-set-preview-error" style="border: 1px solid gray; zoom:80%;"/>
 
 Steps to resolve the error:
 
@@ -120,7 +120,7 @@ This section outlines the steps to configure the Agent AI app. With the multibot
 1. Change your ServiceNow scope from **Global** to **Agent AI by kore.ai**.
 2. Go to **All** > **Filter navigator**, and search **Kore_configuration**> **kore-config-customtable**.
 
-    <img src="../images/kore-config-customtable.png" alt="kore-config-customtable" title="kore-config-customtable" style="border: 1px solid gray; zoom:80%;">
+    <img src="../images/kore-config-customtable.png" alt="kore-config-customtable" title="kore-config-customtable" style="border: 1px solid gray; zoom:80%;"/>
 
 3. Click **New**. 
 4. Add the **Agent AI URL**, **Bot Id**, **Client Id**, **Client Secret**, **Language Code**, and **Queue Name**. Refer to [Prerequisite](#prerequisites).  
@@ -133,7 +133,7 @@ This section outlines the steps to configure the Agent AI app. With the multibot
 
         The **Client Secret** and **AAtoken** field must be empty for the widget to load. The AAtoken field automatically populates at the runtime.
 
-    <img src="../images/aatoken.png" alt="aatoken" title="aatoken" style="border: 1px solid gray; zoom:80%;">
+    <img src="../images/aatoken.png" alt="aatoken" title="aatoken" style="border: 1px solid gray; zoom:80%;"/>
 
 #### V2-V3 Migration
 
@@ -154,20 +154,20 @@ Sample v2 URL: https://<domain-name\>.kore.ai
 
         ESC portal link: &lt;ServiceNow domain>/esc.
    
-    <img src="../images/chat-initiate.png" alt="Chat Initiate" title="Chat Initiate" style="border: 1px solid gray; zoom:80%;">
+    <img src="../images/chat-initiate.png" alt="Chat Initiate" title="Chat Initiate" style="border: 1px solid gray; zoom:80%;"/>
 
 * **Agent:** Once the agent accepts the incoming chat, an Interaction Record page opens, and the **Agent AI by Kore** is the first icon on the Contextual side panel.
 
     * The agent gets a notification of the incoming chat.  
-        <img src="../images/incoming-chat-notification.png" alt="incoming-chat-notification" title="incoming-chat-notification" style="border: 1px solid gray; zoom:80%;">
+        <img src="../images/incoming-chat-notification.png" alt="incoming-chat-notification" title="incoming-chat-notification" style="border: 1px solid gray; zoom:80%;"/>
 
     * Once the agent accepts the chat, the Agent AI widget appears on the right Contextual side panel. 
 
-        <img src="../images/agent-ai-contextual-panel.png" alt="agent-ai-contextual-panel" title="agent-ai-contextual-panel" style="border: 1px solid gray; zoom:80%;">
+        <img src="../images/agent-ai-contextual-panel.png" alt="agent-ai-contextual-panel" title="agent-ai-contextual-panel" style="border: 1px solid gray; zoom:80%;"/>
 
     * Once a conversation ends, the Agent AI widget generates the conversation summary. 
 
-        <img src="../images/agent-ai-conversation-summary.png" alt="agent-ai-conversation-summary" title="agent-ai-conversation-summary" style="border: 1px solid gray; zoom:80%;">
+        <img src="../images/agent-ai-conversation-summary.png" alt="agent-ai-conversation-summary" title="agent-ai-conversation-summary" style="border: 1px solid gray; zoom:80%;"/>
 
 ### Step 4: XO Configuration (Optional)
 
@@ -192,7 +192,7 @@ let metaData = {
 agentUtils.setMetaInfo("ServiceNowMetaData", JSON.stringify(metaData)); 
 ```
 
-   <img src="../images/script-node.png" alt="Language Code" title="Language Code" style="border: 1px solid gray; zoom:80%;">
+   <img src="../images/script-node.png" alt="Language Code" title="Language Code" style="border: 1px solid gray; zoom:80%;"/>
 
 !!! note
 
@@ -205,10 +205,10 @@ From the integration perspective, along with all the features and capabilities o
 * **Send / Copy Buttons:** Agents can use the **Send** and **Copy** buttons on the Agent AI UI to directly send and copy data from the Agent AI widget to the customer.  
 
 * **Conversation Summary / End Of Conversation**: The conversation summary appears in the **Summary** box of the Agent AI widget after the conversation ends. Agents can copy the summary to their notepad or save it. When agents select **Submit Summary**, the system saves the summary in the interaction table for that conversation.    
-    <img src="../images/submit-summary.png" alt="send-copy-button" title="send-copy-button" style="border: 1px solid gray; zoom:80%;">
+    <img src="../images/submit-summary.png" alt="send-copy-button" title="send-copy-button" style="border: 1px solid gray; zoom:80%;"/>
 
 * **Conversation logs:** Agents or supervisors can check the chat transcript along with the Agent AI summary on the Interaction record page.  
-<img src="../images/conversation-logs.png" alt="send-copy-button" title="send-copy-button" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/conversation-logs.png" alt="send-copy-button" title="send-copy-button" style="border: 1px solid gray; zoom:80%;"/>
 
 #### Additional Configuration for HR Agent Workspace (Optional)
 
@@ -216,35 +216,35 @@ Follow this step only if you use the HR Agent Workspace to receive incoming chat
 
 1. Sign in to the **Servicenow** instance.
 2. Search in the **All** > **Filter** navigator.  
-<img src="../images/filter-navigator-3.png" alt="filter-navigator" title="filter-navigator" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/filter-navigator-3.png" alt="filter-navigator" title="filter-navigator" style="border: 1px solid gray; zoom:80%;"/>
 3. Go to **UI Builder** > **Experiences**.
 4. Filter with **HR Agent Workspace**, and open it.  
-<img src="../images/hragent-workspace-4.png" alt="hragent-workspace" title="hragent-workspace" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/hragent-workspace-4.png" alt="hragent-workspace" title="hragent-workspace" style="border: 1px solid gray; zoom:80%;"/>
 5. Search with **Case SRP variant** (under the **Record** page).
 6. Create a copy of **Case SRP variant**, if the above one is read only.  
-    <img src="../images/record-5.png" alt="record" title="record" style="border: 1px solid gray; zoom:80%;">  
+    <img src="../images/record-5.png" alt="record" title="record" style="border: 1px solid gray; zoom:80%;"/>  
 7. Open the **settings** of **Case SRP copy** and change the value of **Order** to **10**.  
-    <img src="../images/case-srp-copy.png" alt="case-srp-copy" title="case-srp-copy" style="border: 1px solid gray; zoom:80%;">  
+    <img src="../images/case-srp-copy.png" alt="case-srp-copy" title="case-srp-copy" style="border: 1px solid gray; zoom:80%;"/>  
 8. Open the editor for **Case SRP copy**, and add the **KoreaiWidget** component to the right sidebar. Follow these steps:
     1. Go to **Body** > **Resizable panes** > **right** > **Tab sidebar**
     2. **Add** a new tab (preferably, select **start from an empty container**).  
-    <img src="../images/tab-sidebar-6.png" alt="tab-sidebar" title="tab-sidebar" style="border: 1px solid gray; zoom:80%;"> 
+    <img src="../images/tab-sidebar-6.png" alt="tab-sidebar" title="tab-sidebar" style="border: 1px solid gray; zoom:80%;"/> 
     3. Drag that **TAB** to the top of the list.
     4. Add **Kore AgentAI ui-component** to that TAB (search with **KoreaiWidget**).
     5. Click that component to change its styles:
         * Flex : Grow
         * Alignment: Stretch
         * Sizing (Width: 100%, Height: 100%, Min Height: 100%). Keep other properties empty.  
-        <img src="../images/component-style-change-7.png" alt="component-style-change" title="component-style-change" style="border: 1px solid gray; zoom:80%;">  
+        <img src="../images/component-style-change-7.png" alt="component-style-change" title="component-style-change" style="border: 1px solid gray; zoom:80%;"/>  
     6. To render the widget vertically and take up the full height of the workspace, set the height of the parent TAB (Eg- KoreAA-HR) to 100%.  
-    <img src="../images/parent-tab-8.png" alt="parent-tab" title="parent-tab" style="border: 1px solid gray; zoom:80%;">
+    <img src="../images/parent-tab-8.png" alt="parent-tab" title="parent-tab" style="border: 1px solid gray; zoom:80%;"/>
 
     7. Perform the following steps to proceed with Data Binding (sysId):
         1. Click the **KoreaiWidget** again.
         2. Update **Config** > **sysId** as following:
            * Change the input option to **Bind Data**.
            * Type **[@context](https://github.com/context).props.sysId** (you get an auto suggestion).  
-            <img src="../images/data-binding-9.png" alt="data-binding" title="data-binding" style="border: 1px solid gray; zoom:80%;"> 
+            <img src="../images/data-binding-9.png" alt="data-binding" title="data-binding" style="border: 1px solid gray; zoom:80%;"/> 
 
         !!! note
         
@@ -261,4 +261,4 @@ Follow this step only if you use the HR Agent Workspace to receive incoming chat
 ### No Widget for Inactive Conversation
 
 The multibot solution includes an additional feature that hides the widget when no conversation is active. The following screen appears when there is no active conversation:  
-<img src="../images/widget-unavailable-10.png" alt="widget-unavailable" title="widget-unavailable" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/widget-unavailable-10.png" alt="widget-unavailable" title="widget-unavailable" style="border: 1px solid gray; zoom:80%;"/>

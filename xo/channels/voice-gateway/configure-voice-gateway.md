@@ -5,7 +5,7 @@ Voice Gateway is a comprehensive voice automation solution that manages inbound 
 This section covers the fundamental steps required to set up and configure your Voice Gateway for basic operation.
 
 Go to The Product (For example, Automation AI/ Contact Center AI) > Flows & Channels > Channels > Voice Gateway.  
-<img src="../images/vg-page.png" alt="Voice Gateway Page" title="Voice Gateway Page" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/vg-page.png" alt="Voice Gateway Page" title="Voice Gateway Page" style="border: 1px solid gray; zoom:80%;"/>
 
 ## Configuration
 
@@ -115,15 +115,15 @@ Agent AI supports real-time audio streaming through two primary methods:
         * **SIP URI**: This is a pre-configured field. A copy option enables you to copy the SIP URIs.
         * **Network**: To configure the Network, you can select one of the following:
             * Under **List of IP Address**, type the values for **Incoming IP Address** in the textbox.  
-            <img src="../images/sip-uri.png" alt="SIP Trunk Setup" title="SIP Trunk Setup" style="border: 1px solid gray; zoom:80%;"> 
+            <img src="../images/sip-uri.png" alt="SIP Trunk Setup" title="SIP Trunk Setup" style="border: 1px solid gray; zoom:80%;"/> 
 
             * Under **Domain Name**, provide the following:
                 * **Fully Qualified Domain Name (FQDN)**: The domain name specifies all domain levels, including the top-level domain and the root zone. [Learn more](./../../channels/voice-gateway/deployment-and-operations.md#ips-ports-and-protocols).
                 * **DNS (Domain Name System) Resolve Method** (Optional): Select an option from the list to translate IP addresses to domain names for resolution when the hostname associates with multiple IP addresses. You can choose a-record, srv, naptr, or ms-lync.  
-                <img src="../images/dns-resolve-method.png" alt="DNS Resolve Method" title="DNS Resolve Method" style="border: 1px solid gray; zoom:80%;">
+                <img src="../images/dns-resolve-method.png" alt="DNS Resolve Method" title="DNS Resolve Method" style="border: 1px solid gray; zoom:80%;"/>
 
             * Under **MS Teams**, provide a **Fully Qualified Domain Name** (the domain name that specifies all domain levels, including the top-level domain and the root zone).  
-            <img src="../images/ms-teams.png" alt="MS Teams" title="MS Teams" style="border: 1px solid gray; zoom:80%;">  
+            <img src="../images/ms-teams.png" alt="MS Teams" title="MS Teams" style="border: 1px solid gray; zoom:80%;"/>  
 
         * (Optional) By default, the system selects **E.164 Syntax**. Selecting this option prepends a + before the DID number.  
 
@@ -428,7 +428,7 @@ Behavior:
 ### Voice Preferences
 
 This section outlines the steps to configure Automatic Speech Recognition (ASR) and Text-to-Speech (TTS) for your Voice Gateway. You can configure the voice preferences to personalize the ASR Engine and the voice that plays for your TTS conversions by going to the Voice Preferences tab and selecting **Manage**.  
-    <img src="../images/voice-preference.png" alt="Voice Preferences" title="Voice Preferences" style="border: 1px solid gray; zoom:80%;">
+    <img src="../images/voice-preference.png" alt="Voice Preferences" title="Voice Preferences" style="border: 1px solid gray; zoom:80%;"/>
 
 Steps to configure Voice Preferences:
 
@@ -725,7 +725,7 @@ Troubleshooting and limitations
 This section describes global voice call properties that apply to your entire Voice Gateway setup. Voice call properties are fundamental aspects that define the quality and reliability of communication over Voice Gateway. These properties include End of Task Behavior, Event Configuration, Call Termination Handler, Call Control Parameters, Timeout Prompt, Barge-in, Timeout, and No. of Retries, which collectively determine the user experience during a voice call. Configuring these properties is crucial for ensuring seamless and effective voice communication over network infrastructures.
 
 You can configure the voice call properties by going to the Voice Preferences tab and selecting **Configure** on the **Voice Call Properties** section.  
-    <img src="../images/voice-call-properties.png" alt="Configure Voice Call Properties" title="Configure Voice Call Properties" style="border: 1px solid gray; zoom:80%;">
+    <img src="../images/voice-call-properties.png" alt="Configure Voice Call Properties" title="Configure Voice Call Properties" style="border: 1px solid gray; zoom:80%;"/>
 
 The Voice Call Properties window displays.
 
@@ -735,44 +735,44 @@ Define the app's behavior when reaching the end of a task. You can choose the fo
 
 * Trigger End of Task Event
 * Terminate Call  
-    <img src="../images/end-of-task-behavior.png" alt="End of Task Behavior" title="End of Task Behavior" style="border: 1px solid gray; zoom:80%;">
+    <img src="../images/end-of-task-behavior.png" alt="End of Task Behavior" title="End of Task Behavior" style="border: 1px solid gray; zoom:80%;"/>
 
 ### Event Configuration
 
 Define how to proceed on detecting this event. You can choose the following actions:
 
 * **Initiate Task**: Select a task from the dropdown menu that initiates on detecting the event.  
-    <img src="../images/initiate-task.png" alt="Initiate Task" title="Initiate Task" style="border: 1px solid gray; zoom:80%;">
+    <img src="../images/initiate-task.png" alt="Initiate Task" title="Initiate Task" style="border: 1px solid gray; zoom:80%;"/>
 
 * **Run Script**: Enter the script that runs on detecting the event.  
-    <img src="../images/run-script.png" alt="Run Script" title="Run Script" style="border: 1px solid gray; zoom:80%;">
+    <img src="../images/run-script.png" alt="Run Script" title="Run Script" style="border: 1px solid gray; zoom:80%;"/>
 
 * **Show Message**: Select **+ Add Response**, enter the message that displays on detecting the event, and select **Done**.  
-    <img src="../images/add-response.png" alt="Add Response" title="Add Response" style="border: 1px solid gray; zoom:80%;">
+    <img src="../images/add-response.png" alt="Add Response" title="Add Response" style="border: 1px solid gray; zoom:80%;"/>
 
 ### Call Termination Handler
 
 Specify the intent (dialog) to handle the call termination event from the dropdown.  
-    <img src="../images/call-termination-handler.png" alt="Call Termination Handler" title="Call Termination Handler" style="border: 1px solid gray; zoom:80%;">
+    <img src="../images/call-termination-handler.png" alt="Call Termination Handler" title="Call Termination Handler" style="border: 1px solid gray; zoom:80%;"/>
 
 ### Timeout Prompt
 
 Define prompt to be played when user input isn't received within the time-out period.  
-    <img src="../images/timeout-prompt.png" alt="Timeout Prompt" title="Timeout Prompt" style="border: 1px solid gray; zoom:80%;">
+    <img src="../images/timeout-prompt.png" alt="Timeout Prompt" title="Timeout Prompt" style="border: 1px solid gray; zoom:80%;"/>
 
 ### Barge-in
 
 Define whether user input is allowed while a prompt is in progress. By default, this option is un-available. 
-    <img src="../images/barge-in.png" alt="Barge In" title="Barge In" style="border: 1px solid gray; zoom:80%;">
+    <img src="../images/barge-in.png" alt="Barge In" title="Barge In" style="border: 1px solid gray; zoom:80%;"/>
 
 ### Timeout
 
 Define the maximum wait time to receive user input. The maximum wait time is 60 seconds.  
-    <img src="../images/timeout.png" alt="Timeout" title="Timeout" style="border: 1px solid gray; zoom:80%;">
+    <img src="../images/timeout.png" alt="Timeout" title="Timeout" style="border: 1px solid gray; zoom:80%;"/>
 
 ### No. of Retries
 
 Define the maximum number of retries allowed.  
-    <img src="../images/no-of-retries.png" alt="No.of Retries" title="No.of Retries" style="border: 1px solid gray; zoom:80%;">
+    <img src="../images/no-of-retries.png" alt="No.of Retries" title="No.of Retries" style="border: 1px solid gray; zoom:80%;"/>
 
 Select **Save**. A success message appears, and saves the voice call properties.

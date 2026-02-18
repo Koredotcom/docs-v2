@@ -29,7 +29,7 @@ Follow these steps to configure and deploy a new Docling model:
 
 Once deployment is complete, the model appears in the Deployed list and becomes available for use in the Doc Intelligence Node.
 
-<img src="../images/ocr_manage_docling.png" alt="manage OCR" title="manage OCR" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/ocr_manage_docling.png" alt="manage OCR" title="manage OCR" style="border: 1px solid gray; zoom:80%;"/>
 
 ### Manage Existing Deployments
 
@@ -37,18 +37,18 @@ You can view and manage Docling deployments by clicking any deployment row to op
 
 **Overview:** Shows the current deployment status and key configuration details such as deployment name, selected language, scaling parameters, and allocated hardware resources.
 
-<img src="../images/ocr_overview.png" alt="overview" title="overview" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/ocr_overview.png" alt="overview" title="overview" style="border: 1px solid gray; zoom:80%;"/>
 
 **Deployment history:** Lists all past and current deployment versions for a model, along with status, timestamps, and ownership. Expanding a deployment entry reveals configuration and lifecycle details, including deployment and undeployment events, helping you audit configuration changes and track deployment activity over time.
 
-<img src="../images/ocr_deployment_history.png" alt="deployment history" title="deployment history" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/ocr_deployment_history.png" alt="deployment history" title="deployment history" style="border: 1px solid gray; zoom:80%;"/>
 
 **Configurations:** Allows you to manage the deployment lifecycle:
 
 * **Undeploy** an active deployment. Once undeployed, the model is no longer available to workflows.
 * **Delete** an undeployed configuration. Deletion is disabled while a deployment is active and becomes available only after the deployment is undeployed.
 
-<img src="../images/ocr_configurations.png" alt="Docling configurations" title="Docling configurations" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/ocr_configurations.png" alt="Docling configurations" title="Docling configurations" style="border: 1px solid gray; zoom:80%;"/>
 
 
 ## Configure Azure Doc Models
@@ -81,4 +81,4 @@ You can enable, disable, or delete Azure connections directly from the list usin
 * **Enable or Disable a Connection**: Toggle the switch next to a connection to instantly enable or disable it.
 * **Delete a Connection**: Click the delete icon, then confirm the action to permanently remove the connection.
 
-<img src="../images/ocr_manage_azuredoc.png" alt="manage OCR" title="manage OCR" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/ocr_manage_azuredoc.png" alt="manage OCR" title="manage OCR" style="border: 1px solid gray; zoom:80%;"/>

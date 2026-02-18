@@ -31,7 +31,7 @@ The dashboard displays user counts by status:
 
 <img src="../images/users-count.png" alt="users count" title="users count" style="border: 1px solid gray; zoom:75%;">
 
-It also shows detailed user information, including name, email, role, and status. For information on default system roles, click [here](../user-management/role-management.md#system-defined-roles){:target="_blank"}.
+It also shows detailed user information, including name, email, role, and status. For information on default system roles, click [here](../user-management/role-management.md#system-defined-roles).
 
 ## Add a New User
 
@@ -42,7 +42,7 @@ The **Settings** Console provides two ways to add a new user to the system:
 
 ### Invite (Email Invitation)
 
-See [Invite a User](../user-management/invite-a-user.md){:target="_blank"} to learn how to add a user to your account via email invitation.
+See [Invite a User](../user-management/invite-a-user.md) to learn how to add a user to your account via email invitation.
 
 ### Import (Bulk Import)
 
@@ -218,7 +218,7 @@ On the **Users** dashboard, you can change the account-level role for one or mor
 
 Changing the user role automatically assigns the designated permissions and access levels defined in the system.
 
-To change a user’s role, follow the steps mentioned [here](../user-management/role-management.md#reassign-an-alternative-role-to-active-users){:target="_blank"}.
+To change a user’s role, follow the steps mentioned [here](../user-management/role-management.md#reassign-an-alternative-role-to-active-users).
 
 ### Bulk Role Change
 
@@ -235,9 +235,9 @@ The role is updated for the selected users.
 
 ## Related Information
 
-* **Settings Console** - [Learn more](../overview.md){:target="_blank"} about other AI for Process admin features.
-* **Role Management** - [Learn more](../user-management/role-management.md){:target="_blank"} about managing default and custom roles in your account.
-* **Monitoring: Audit Logs** - [Learn more](../monitoring/audit-logs.md){:target="_blank"} about tracking events and user activity in your account.
+* **Settings Console** - [Learn more](../overview.md) about other AI for Process admin features.
+* **Role Management** - [Learn more](../user-management/role-management.md) about managing default and custom roles in your account.
+* **Monitoring: Audit Logs** - [Learn more](../monitoring/audit-logs.md) about tracking events and user activity in your account.
 
 
 
