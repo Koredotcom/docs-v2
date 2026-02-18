@@ -6,7 +6,7 @@ The Coaching Monitor feature enables supervisors to track and evaluate the coach
 ## Access Coaching Monitor
 
 Navigate to **Quality AI** > **Coach** > **Coaching Monitor**.   
-<img src="../coaching-monitor/images/coaching-monitor-landing-page.png" alt="Coaching Monitor" title="Coaching Monitor" style="border: 1px solid gray; zoom:80%;">
+<img src="../coaching-monitor/images/coaching-monitor-landing-page.png" alt="Coaching Monitor" title="Coaching Monitor" style="border: 1px solid gray; zoom:80%;"/>
 
 !!! note
 

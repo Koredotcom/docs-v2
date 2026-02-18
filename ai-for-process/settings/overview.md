@@ -2,13 +2,13 @@
 
 AI for Process' **Settings** console is a centralized management interface that provides administrators with the workflows and functionalities to configure, monitor, and manage AI for Process’ system configurations to manage the following:
 
-1. [Users](../settings/user-management/users.md){:target="_blank"}
-2. [Roles and permissions](../settings/user-management/role-management.md){:target="_blank"}
-3. [Automated synchronization](../settings/user-management/settings/active-directory.md#step-4-schedule-automatic-ad-sync){:target="_blank"} of user data from Enterprise AD, plus configuration of user profile fields and email notifications.
-4. [Integrations](../settings/integrations/about-integrations.md){:target="_blank"} 
-5. [Manage Custom Scripts](../settings/manage-custom-scripts/custom-scripts.md){:target="_blank"}
-6. [Monitoring](../settings/monitoring/overview.md){:target="_blank"}: [Audit Logs](../settings/monitoring/audit-logs.md){:target="_blank"}, [Workflows Analytics Dashboard](../settings/monitoring/analytics/workflows-analytics-dashboard.md){:target="_blank"}, [Model Analytics Dashboard](../settings/monitoring/analytics/model-analytics-dashboard.md){:target="_blank"}, [Model Traces](../settings/monitoring/analytics/model-traces.md){:target="_blank"}, and [Monitoring Custom Scripts](../settings/monitoring/monitoring-custom-scripts.md){:target="_blank"}.
-7. Security and Control: [Single Sign On](../settings/security-and-control/single-sign-on.md){:target="_blank"}, [Authorization Profile](../settings/security-and-control/authorization-profile.md){:target="_blank"}, and [API Scopes](../settings/security-and-control/api-scopes.md){:target="_blank"}.
+1. [Users](../settings/user-management/users.md)
+2. [Roles and permissions](../settings/user-management/role-management.md)
+3. [Automated synchronization](../settings/user-management/settings/active-directory.md#step-4-schedule-automatic-ad-sync) of user data from Enterprise AD, plus configuration of user profile fields and email notifications.
+4. [Integrations](../settings/integrations/about-integrations.md) 
+5. [Manage Custom Scripts](../settings/manage-custom-scripts/custom-scripts.md)
+6. [Monitoring](../settings/monitoring/overview.md): [Audit Logs](../settings/monitoring/audit-logs.md), [Workflows Analytics Dashboard](../settings/monitoring/analytics/workflows-analytics-dashboard.md), [Model Analytics Dashboard](../settings/monitoring/analytics/model-analytics-dashboard.md), [Model Traces](../settings/monitoring/analytics/model-traces.md), and [Monitoring Custom Scripts](../settings/monitoring/monitoring-custom-scripts.md).
+7. Security and Control: [Single Sign On](../settings/security-and-control/single-sign-on.md), [Authorization Profile](../settings/security-and-control/authorization-profile.md), and [API Scopes](../settings/security-and-control/api-scopes.md).
 
 ## Levels of Users Management 
 
@@ -38,7 +38,7 @@ The modules and the capabilities supported on the <b>Settings</b> Console includ
 * Unlock the locked users.
 * Reassign a default or custom role to a user.
 
-[Learn more](../settings/user-management/users.md){:target="_blank"} about this feature.
+[Learn more](../settings/user-management/users.md) about this feature.
 
 **Roles and Permissions**
 
@@ -47,11 +47,11 @@ The modules and the capabilities supported on the <b>Settings</b> Console includ
 * View the enabled/disabled access controls for various modules and permissions for system roles.
 * Add new custom roles for workflow and account types, enable/disable access, and set access controls (full, view, custom, and no access) for various modules and permissions assigned to the roles. 
 
-[Learn more](../settings/user-management/role-management.md){:target="_blank"} about this feature.
+[Learn more](../settings/user-management/role-management.md) about this feature.
 
 **Settings**
 
-[Sync and import key user information](../settings/user-management/settings/active-directory.md){:target="_blank"} from your organization's AD by doing the following: 
+[Sync and import key user information](../settings/user-management/settings/active-directory.md) from your organization's AD by doing the following: 
 
 * Configuring the connection to your AD.
 * Importing user data from all or specific organization units.
@@ -65,11 +65,11 @@ Additionally, you can do the following:
 * Configure how joining requests from new users are handled, including automatic approval options.
 * Choose whether users should receive email notifications upon being added to your account via email invitation or AD sync.
 
-[Learn more](../settings/user-management/settings/active-directory.md){:target="_blank"} about this feature.
+[Learn more](../settings/user-management/settings/active-directory.md) about this feature.
 
 **Integrations**
 
-Connect to third-party services using prebuilt, secure, and configurable integrations. These connections can be used to access the linked services via the [Integration node](../workflows/workflow-builder/types-of-nodes/integration-node.md){:target="_blank"} in the workflows automation flow. [Learn more](../settings/integrations/about-integrations.md){:target="_blank"}.
+Connect to third-party services using prebuilt, secure, and configurable integrations. These connections can be used to access the linked services via the [Integration node](../workflows/workflow-builder/types-of-nodes/integration-node.md) in the workflows automation flow. [Learn more](../settings/integrations/about-integrations.md).
 
 **Manage Custom Scripts**
 
@@ -103,18 +103,18 @@ Deploy and undeploy guardrail models to apply scanners to prompt input and outpu
 
 **Monitoring**
 
-- Track the audit logs of all user activities within your account and quickly troubleshoot issues with real-time event tracking. [Learn more](../settings/monitoring/audit-logs.md){:target="_blank"}.
-- Review workflow performance metrics and take informed decisions on the **Workflows Analytics** dashboard. [Learn more](../settings/monitoring/analytics/workflows-analytics-dashboard.md){:target="_blank"}.
+- Track the audit logs of all user activities within your account and quickly troubleshoot issues with real-time event tracking. [Learn more](../settings/monitoring/audit-logs.md).
+- Review workflow performance metrics and take informed decisions on the **Workflows Analytics** dashboard. [Learn more](../settings/monitoring/analytics/workflows-analytics-dashboard.md).
 
-* Review, track, and fine tune model performance using model-specific metrics. [Learn more](../settings/monitoring/analytics/model-analytics-dashboard.md){:target="_blank"}.
-* Track and monitor run-level metrics and metadata for each model execution to determine the best and worst performers. [Learn more](../settings/monitoring/analytics/model-traces.md){:target="_blank"}.
-* Track custom script executions across runs and logs for deployments (endpoints), Function nodes, and API nodes. The **All Runs** section shows performance metrics (response times, failure rates) and execution details, while the **Logs** section provides runtime debugging information. Administrators can filter by date, search for runs or logs, and copy IDs to identify and resolve script issues efficiently. [Learn more](../settings/monitoring/monitoring-custom-scripts.md){:target="_blank"}.
+* Review, track, and fine tune model performance using model-specific metrics. [Learn more](../settings/monitoring/analytics/model-analytics-dashboard.md).
+* Track and monitor run-level metrics and metadata for each model execution to determine the best and worst performers. [Learn more](../settings/monitoring/analytics/model-traces.md).
+* Track custom script executions across runs and logs for deployments (endpoints), Function nodes, and API nodes. The **All Runs** section shows performance metrics (response times, failure rates) and execution details, while the **Logs** section provides runtime debugging information. Administrators can filter by date, search for runs or logs, and copy IDs to identify and resolve script issues efficiently. [Learn more](../settings/monitoring/monitoring-custom-scripts.md).
 
 **Security and Control**
 
-- Enable or disable **Single Sign-On (SSO)** for your account and other users to streamline authentication and enhance password security. [Learn more](../settings/security-and-control/single-sign-on.md){:target="_blank"}.
-- Set up authorization profiles that enable your workflows, models, and AI agents to access external web services securely. [Learn more](../settings/security-and-control/authorization-profile.md){:target="_blank"}.
-- Create and manage API-scoped apps and keys to securely authenticate and authorize access to specific endpoints based on selected scopes. [Learn more](../settings/security-and-control/api-scopes.md){:target="_blank"}.
+- Enable or disable **Single Sign-On (SSO)** for your account and other users to streamline authentication and enhance password security. [Learn more](../settings/security-and-control/single-sign-on.md).
+- Set up authorization profiles that enable your workflows, models, and AI agents to access external web services securely. [Learn more](../settings/security-and-control/authorization-profile.md).
+- Create and manage API-scoped apps and keys to securely authenticate and authorize access to specific endpoints based on selected scopes. [Learn more](../settings/security-and-control/api-scopes.md).
 
 ## Access Settings Console
 
@@ -206,7 +206,7 @@ The following modules and features are supported on the **Settings** Console:
    </td>
   </tr>
   <tr>
-   <td>[Manage Guardrails](../workflows/guardrails/manage-guardrails.md){:target="_blank"}</td>
+   <td>[Manage Guardrails](../workflows/guardrails/manage-guardrails.md)</td>
    <td>Deploy models to make them available for anomaly scanners in all the workflows. 
    </td>
    <td>

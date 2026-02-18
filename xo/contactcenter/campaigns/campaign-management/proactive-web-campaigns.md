@@ -3,7 +3,7 @@
 Web campaigns are online strategic initiatives to promote a product, service, cause, or brand. They harness the power of web engagement to reach and engage target audiences. Their utility lies in their ability to amplify visibility, generate leads, foster brand awareness, and achieve predefined objectives with precision and measurable outcomes.
 
 You can access the Proactive Web Campaigns by going to Campaign Management > Proactive Web.
-<img src="../images/campaign-management-page.png" alt="Proactive Web Page" title="Proactive Web" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/campaign-management-page.png" alt="Proactive Web Page" title="Proactive Web" style="border: 1px solid gray; zoom:80%;"/>
 
 ## Proactive Web Campaign Types
 
@@ -15,7 +15,7 @@ You can access the Proactive Web Campaigns by going to Campaign Management > Pro
 | `Button`   | A button appears to the customer on the web page. This button can remain static or trigger based on a customer action, and you can place it on either the right or left side of the web page. |
 
 On this page, the following details of the web campaigns appear in a table:  
-<img src="../images/campaign-management-page-details.png" alt="Campaign Details" title="Campaign Details" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/campaign-management-page-details.png" alt="Campaign Details" title="Campaign Details" style="border: 1px solid gray; zoom:80%;"/>
 
 * **Name** - The campaign name and Type.
 * **Actions** - Play/Pause/Replay, Stop, Edit, Clone campaign.
@@ -103,38 +103,38 @@ Steps to create a proactive web campaign:
 
 1. Go to `Campaign Management > Proactive Web`.
 2. Select `+ New Campaign`.  
-<img src="../images/new-campaign-button-proactive.png" alt="New Campaign Button" title="New Campaign Button" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/new-campaign-button-proactive.png" alt="New Campaign Button" title="New Campaign Button" style="border: 1px solid gray; zoom:80%;"/>
 
 ### Chat
 
 1. On the `New Proactive Web Campaign` page, select `Chat`.  
-<img src="../images/chat.png" alt="Chat Button" title="Chat Button" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/chat.png" alt="Chat Button" title="Chat Button" style="border: 1px solid gray; zoom:80%;"/>
 
 2. Select the `General` tab and enter the `Campaign Name` and `Description`.  
 
 3. Select the `Layout Design` tab. Under the `Message Header` select the `Edit` icon to enter the header `Text` and `Image` used along with the displayed message, and select `Save`.  
-<img src="../images/message-header.png" alt="Message Header" title="Message Header" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/message-header.png" alt="Message Header" title="Message Header" style="border: 1px solid gray; zoom:80%;"/>
 
 4. Select the `Edit` icon and enter the message that displays to the website visitor. You can select the font size, make the text bold, italics, underline, select, add links,  text color, or add variables, and select `Save`.  
-<img src="../images/messages.png" alt="Messages" title="Messages" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/messages.png" alt="Messages" title="Messages" style="border: 1px solid gray; zoom:80%;"/>
 
 5. Select `+ Add Button` to add a new button.
 
     Select the `Edit` icon to edit the details of an existing button. You can enter the Text for the button, select the Action performed on selecting the button, Background Color, Text Color for the button, and select `Save`.  
-    <img src="../images/buttons.png" alt="Buttons" title="Buttons" style="border: 1px solid gray; zoom:80%;">  
+    <img src="../images/buttons.png" alt="Buttons" title="Buttons" style="border: 1px solid gray; zoom:80%;"/>  
     The following options are available for the Actions:  
         1. **Send to URL** - Selecting this option displays the URL field where the system redirects the user.
         2. **Send to AI Agent** - The system redirects the conversation to the AI Agent.
         3. **Dismiss** - Dismiss the proactive chat offer.
 
 6. Under the `Appearance` section, select the `Message Bubble Alignment`, `Bubble Alignment`, and `Dark Shadow`.  
-<img src="../images/appearance.png" alt="Appearance" title="Appearance" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/appearance.png" alt="Appearance" title="Appearance" style="border: 1px solid gray; zoom:80%;"/>
 
 7. The `Preview Section` on the left side shows the configured layout.
 8. Select the `Engagement Strategy` tab and configure the following:
 
     1. **Website**: Select `+ Add Website` and select the `URL` or `Page Name`. URLs are crucial for directing users to specific web pages, tracking campaign performance, and optimizing user experience, enhancing audience engagement and conversion rates. Select the URL and the condition about what the URL contains.  
-        <img src="../images/engagement-strategy.png" alt="Engagement Strategy" title="Engagement Strategy" style="border: 1px solid gray; zoom:80%;">
+        <img src="../images/engagement-strategy.png" alt="Engagement Strategy" title="Engagement Strategy" style="border: 1px solid gray; zoom:80%;"/>
 
     2. **Rules**: Rules define when a Proactive Web Campaign (PWC) engages with a website visitor. Use rules to target visitors based on who they're, what they're doing, and where they're on the site.
 
@@ -248,9 +248,9 @@ Steps to create a proactive web campaign:
 ### Post
 
 1. On the `New Proactive Web Campaign` page, select `Post`.  
-    <img src="../images/post.png" alt="Post Button" title="Post Button" style="border: 1px solid gray; zoom:80%;"> 
+    <img src="../images/post.png" alt="Post Button" title="Post Button" style="border: 1px solid gray; zoom:80%;"/> 
 2. Select the `General` tab, and enter the `Campaign Name` and `Description`. Steps to add the name and description are same for all proactive web campaign types. [Learn more](#chat).
-3. Select the `Layout Design` tab. Select the `Edit` icon under Message, enter a message, and select `Save`. You can use the options available in the editor to design the layout. Under Appearance, select the `Size`.  <img src="../images/layout-design-post.png" alt="Layout Design Post" title="Layout Design Post" style="border: 1px solid gray; zoom:80%;"> 
+3. Select the `Layout Design` tab. Select the `Edit` icon under Message, enter a message, and select `Save`. You can use the options available in the editor to design the layout. Under Appearance, select the `Size`.  <img src="../images/layout-design-post.png" alt="Layout Design Post" title="Layout Design Post" style="border: 1px solid gray; zoom:80%;"/> 
 
 4. Select the `Engagement Strategy` tab and configure the `Website`, `Rules`, `Exclusions`, `Goal`, `Channel`, and `Engagement Hours`. Steps to configure the engagement strategy are same for all proactive web campaign types. [Learn more](#chat).
 5. Select `Save`.
@@ -258,11 +258,11 @@ Steps to create a proactive web campaign:
 ### Banner
 
 1. On the `New Proactive Web Campaign` page, select `Banner`.  
-    <img src="../images/banner.png" alt="Banner Button" title="Banner Button" style="border: 1px solid gray; zoom:80%;"> 
+    <img src="../images/banner.png" alt="Banner Button" title="Banner Button" style="border: 1px solid gray; zoom:80%;"/> 
 
 2. Select the `General` tab, and enter the `Campaign Name` and **Description**. Steps to add the name and description are same for all proactive web campaign types. [Learn more](#chat).
 3. Select the `Layout Design` tab. Select the `Edit` icon under Message, enter a message, and select `Save`. You can use the options available in the editor to design the layout. Under Appearance, select the `Pattern` (`Sticky`/`Floating`), `Placement` (`Top`/`Bottom`), `Background`, and `Text Color`.  
-    <img src="../images/banner-layout design.png" alt="Layout Design Banner" title="Layout Design Banner" style="border: 1px solid gray; zoom:80%;"> 
+    <img src="../images/banner-layout design.png" alt="Layout Design Banner" title="Layout Design Banner" style="border: 1px solid gray; zoom:80%;"/> 
 
 4. Select the `Engagement Strategy` tab and configure the `Website`, `Rules`, `Exclusions`, `Goal`, `Channel`, and `Engagement Hours`. Steps to configure the engagement strategy are same for all proactive web campaign types. [Learn more](#chat).
 5. Select `Save`.
@@ -270,7 +270,7 @@ Steps to create a proactive web campaign:
 ### Button
 
 1. On the `New Proactive Web Campaign` page, select `Button`.  
-    <img src="../images/button.png" alt="Button" title="Button" style="border: 1px solid gray; zoom:80%;"> 
+    <img src="../images/button.png" alt="Button" title="Button" style="border: 1px solid gray; zoom:80%;"/> 
 
 2. Select the `General` tab, and enter the `Campaign Name` and `Description`. Steps to add the name and description are same for all proactive web campaign types. [Learn more](#chat).
 3. Select the `Layout Design` tab. Select the `Edit` icon on the right corner and do the following:
@@ -281,7 +281,7 @@ Steps to create a proactive web campaign:
     5. Enter the `Message` that displays on selecting button. You can use the options available in the editor to design the layout.
     6. Select the `Background` and `Text Color`.
     7. Select the `Placement` of the button (Left/Right).  
-    <img src="../images/slide-out.gif" alt="Layout Design Button" title="Layout Design Button" style="border: 1px solid gray; zoom:80%;"> 
+    <img src="../images/slide-out.gif" alt="Layout Design Button" title="Layout Design Button" style="border: 1px solid gray; zoom:80%;"/> 
 
 4. Select the `Engagement Strategy` tab and configure the `Website`, `Rules`, `Exclusions`, `Goal`, `Channel`, and `Engagement Hours`. Steps to configure the engagement strategy are same for all proactive web campaign types. [Learn more](#chat).
 5. Select `Save`.
@@ -318,7 +318,7 @@ Steps to schedule a Campaign:
 
     `Every “Enter Value” day(s)` is a subset of what you select, Daily, Weekly, Monthly, or Yearly.  
 
-    <img src="../images/recurrence-duration.gif" alt="Recurrence Precedence" title="Recurrence Precedence" style="border: 1px solid gray; zoom:80%;">
+    <img src="../images/recurrence-duration.gif" alt="Recurrence Precedence" title="Recurrence Precedence" style="border: 1px solid gray; zoom:80%;"/>
 
     !!! Note
 
@@ -327,7 +327,7 @@ Steps to schedule a Campaign:
 
 5. Turning on the Allow Recurrence Precedence toggle gives the recurrence start and end time precedence over Contactable timings.
 For example, if Contactable Timings are 9:00 AM to 6:00 PM but the user selects Recurrence Start Time as 8:00 AM, the campaign starts contacting from 8:00 AM.  
-<img src="../images/allow-recurrence-precedence.png" alt="Allow Recurrence Precedence" title="Allow Recurrence Precedence" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/allow-recurrence-precedence.png" alt="Allow Recurrence Precedence" title="Allow Recurrence Precedence" style="border: 1px solid gray; zoom:80%;"/>
 
 6. Select `Save`.
 
@@ -356,7 +356,7 @@ Steps to edit a web campaign:
 1. Select the ⋮ icon beside the campaign name and select `Edit`.  
 
 2. Do the required changes and select `Save`.  
-    <img src="../images/edit-and-save-web-campaign.png" alt="Edit and Save Web Campaign" title="Edit and Save Web Campaign" style="border: 1px solid gray; zoom:80%;">
+    <img src="../images/edit-and-save-web-campaign.png" alt="Edit and Save Web Campaign" title="Edit and Save Web Campaign" style="border: 1px solid gray; zoom:80%;"/>
 
 ### Clone a Proactive Web Campaign
 
@@ -389,7 +389,7 @@ Steps to delete a web campaign:
 ### Run Proactive Web Campaigns
 
 You can run a proactive web campaign by selecting `Play`.  
-<img src="../images/run-web-campaign.png" alt="Run Web Campaign Button" title="Run Web Campaign Button" style="border: 1px solid gray; zoom:80%;"> 
+<img src="../images/run-web-campaign.png" alt="Run Web Campaign Button" title="Run Web Campaign Button" style="border: 1px solid gray; zoom:80%;"/> 
 
 When the campaign runs, you can pause or stop it. You can also rerun a completed campaign.
 

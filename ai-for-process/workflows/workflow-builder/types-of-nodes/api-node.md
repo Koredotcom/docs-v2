@@ -143,7 +143,7 @@ Click the added node to open its properties dialog box. The General Settings for
 
 Click the **Connections** icon in the left navigation and select **Go to Node** for success and failure conditions.
 
-<img src="./../images/api-node-connections.png" alt="API node Connections Properties" title="API node Connections Properties" style="border: 1px solid gray; zoom:80%;">
+<img src="./../images/api-node-connections.png" alt="API node Connections Properties" title="API node Connections Properties" style="border: 1px solid gray; zoom:80%;"/>
 
 * **On Success** > **Go to Node**: After the current node is successfully executed, go to a selected node in the flow to execute next. For example, you can process the data from this node into a Function node and then use it further. In this case, select the Function node. 
 * **On Failure** > **Go to Node**: If the execution of the current node fails, go to an appropriate node having a custom error message configured.

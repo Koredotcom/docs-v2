@@ -333,26 +333,26 @@ This app will be used in studio script.
 
 1. Sign in to your **NICE account** with the username and password provided by the NICE customer support.
 2. Click the **applications launcher** button. A menu opens from the left side of the page. 
-<img src="../images/app-launcher-button_1.png" alt="app-launcher-button" title="app-launcher-button" style="border: 1px solid gray; zoom:80%;"> 
+<img src="../images/app-launcher-button_1.png" alt="app-launcher-button" title="app-launcher-button" style="border: 1px solid gray; zoom:80%;"/> 
 3. Click **OTHERS** > **Automation & AI**.  
-<img src="../images/automation-ai_2.png" alt="automation-ai" title="automation-ai" style="border: 1px solid gray; zoom:80%;"> 
+<img src="../images/automation-ai_2.png" alt="automation-ai" title="automation-ai" style="border: 1px solid gray; zoom:80%;"/> 
 4. Click **Agent Assist Hub** > **Add Agent Assist App**. 
-<img src="../images/add-agentassist-app_3.png" alt="add-agentassist-app" title="add-agentassist-app" style="border: 1px solid gray; zoom:80%;"> 
+<img src="../images/add-agentassist-app_3.png" alt="add-agentassist-app" title="add-agentassist-app" style="border: 1px solid gray; zoom:80%;"/> 
 5. Enter the name of the Agent Assist App in the **AGENT ASSIST APP NAME** field.
 6. Select **Custom Agent Assist Endpoints**.
 7. Click **Next**.  
-<img src="../images/create-new-agent-assistant_4.png" alt="create-new-agent-assistant" title="create-new-agent-assistant" style="border: 1px solid gray; zoom:80%;"> 
+<img src="../images/create-new-agent-assistant_4.png" alt="create-new-agent-assistant" title="create-new-agent-assistant" style="border: 1px solid gray; zoom:80%;"/> 
 8. Add the following settings with config parameters provided by the Kore.ai representative:
     1. **Agent UI Option**: Available by default
     2. **App URL**: {<a href="#aiurl">[Agent AI URL]</a>}/integrations/nice/iframe/?params={scriptparams}
     3. **App Title**: Kore Agent AI (change as needed)
     4. **Participants**: Both  
-    <img src="../images/config-parameters_5.png" alt="config-parameters" title="config-parameters" style="border: 1px solid gray; zoom:80%;">  
+    <img src="../images/config-parameters_5.png" alt="config-parameters" title="config-parameters" style="border: 1px solid gray; zoom:80%;"/>  
     5. **Audio Relay Endpoint**: {<a href="#kvg">[Kore Voice Gateway]</a>(KVG)}/audiosocket/nice?sipuri=&lt;Bot SIP URI>&token=&lt;Token>&botId=&lt;Bot ID>&accountId=&lt;Account ID>&agentassist=true
         1. **Bot SIP URI**: **Flows & Channels** > **Channels** > **Voice Gateway** > **SIP Numbers** > **Configure SIP Trunk** > **Agent AI** section of the **[Agent AI](https://agentassist.kore.ai/){:target="_blank"}** configuration portal.  
-        <img src="../images/configure-sip-trunk_6.png" alt="configure-sip-trunk" title="configure-sip-trunk" style="border: 1px solid gray; zoom:80%;"> 
+        <img src="../images/configure-sip-trunk_6.png" alt="configure-sip-trunk" title="configure-sip-trunk" style="border: 1px solid gray; zoom:80%;"/> 
         2. **Bot ID and Account ID**: **Flows & Channels** > **Channels** > **Digital** > **Web/Mobile Client** > **JWT App Details** section of the **[Agent AI](https://agentassist.kore.ai/){:target="_blank"}** configuration portal.  
-        <img src="../images/web-mobile-client_7.png" alt="web-mobile-client" title="web-mobile-client" style="border: 1px solid gray; zoom:80%;"> 
+        <img src="../images/web-mobile-client_7.png" alt="web-mobile-client" title="web-mobile-client" style="border: 1px solid gray; zoom:80%;"/> 
         3. **Token**: Create a JSON Web Token on [jwt.io](https://www.jwt.io/){:target="_blank"} with the following details.
             1. Payload: {“appId”: &lt;Bot Client ID>}
             2. Header: {“alg”: “HS256″,”typ”: “JWT”}
@@ -366,28 +366,28 @@ This app will be used in studio script.
 ### Set up AgentAssist feature
 
 1. Click the **app launcher**.  
-<img src="../images/app-launcher_8.png" alt="app-launcher" title="app-launcher" style="border: 1px solid gray; zoom:80%;"> 
+<img src="../images/app-launcher_8.png" alt="app-launcher" title="app-launcher" style="border: 1px solid gray; zoom:80%;"/> 
 2. Type “kore” in the search box and select **Kore AgentAssist Feature Configuration** from the displayed list.  
-<img src="../images/kore-aa-feature-configuration_9.png" alt="kore-aa-feature-configuration" title="kore-aa-feature-configuration" style="border: 1px solid gray; zoom:80%;"> 
+<img src="../images/kore-aa-feature-configuration_9.png" alt="kore-aa-feature-configuration" title="kore-aa-feature-configuration" style="border: 1px solid gray; zoom:80%;"/> 
 3. Click **New** from the top-right corner of the page.  
-<img src="../images/kore-aa-feature-configuration-new_10.png" alt="kore-aa-feature-configuration-new" title="free text" style="border: 1px solid gray; zoom:80%;"> 
+<img src="../images/kore-aa-feature-configuration-new_10.png" alt="kore-aa-feature-configuration-new" title="free text" style="border: 1px solid gray; zoom:80%;"/> 
 4. Type **Test Configuration** in the **Configuration Name** field.  
-<img src="../images/test-configuration_11.png" alt="test-configuration" title="test-configuration" style="border: 1px solid gray; zoom:80%;"> 
+<img src="../images/test-configuration_11.png" alt="test-configuration" title="test-configuration" style="border: 1px solid gray; zoom:80%;"/> 
 5. Select **NICE inContact** in the **CTI Provider** list.  
-<img src="../images/cti-provider-list_12.png" alt="cti-provider-list" title="cti-provider-list" style="border: 1px solid gray; zoom:80%;"> 
+<img src="../images/cti-provider-list_12.png" alt="cti-provider-list" title="cti-provider-list" style="border: 1px solid gray; zoom:80%;"/> 
 6. Select **Active**, and click **Save**.  
-<img src="../images/active-save_13.png" alt="active-save" title="active-save" style="border: 1px solid gray; zoom:80%;"> 
+<img src="../images/active-save_13.png" alt="active-save" title="active-save" style="border: 1px solid gray; zoom:80%;"/> 
 
 ### Set up AgentAssist Configuration
 
 1. Click the **app launcher**.
 2. Type “config” in the search box and select **Kore AgentAssist Configuration** from the displayed list.  
-<img src="../images/kore-aa-configuration_14.png" alt="kore-aa-configuration" title="kore-aa-configuration" style="border: 1px solid gray; zoom:80%;"> 
+<img src="../images/kore-aa-configuration_14.png" alt="kore-aa-configuration" title="kore-aa-configuration" style="border: 1px solid gray; zoom:80%;"/> 
 3. Click **New** from the right-top corner of the page.
 4. Enter the required details. Note that you can fetch the **AgentAssist URL**, **Bot ID**, **Client ID**, and **Client Secret** details from the **[Agent AI](https://agentassist.kore.ai/){:target="_blank"}** configuration portal.  
-<img src="../images/web-mobile-client_15.png" alt="web-mobile-client" title="web-mobile-client" style="border: 1px solid gray; zoom:80%;">  
+<img src="../images/web-mobile-client_15.png" alt="web-mobile-client" title="web-mobile-client" style="border: 1px solid gray; zoom:80%;"/>  
     - [ ] Select a language in the **Language** dropdown list. The selected language corresponds to the language configured in the AI Agent.  
-    <img src="../images/kore-aa-config-page_16.png" alt="kore-aa-config-page" title="kore-aa-config-page" style="border: 1px solid gray; zoom:80%;">  
+    <img src="../images/kore-aa-config-page_16.png" alt="kore-aa-config-page" title="kore-aa-config-page" style="border: 1px solid gray; zoom:80%;"/>  
 5. Select **Active**, and click **Save**. 
 
     !!! note
@@ -397,7 +397,7 @@ This app will be used in studio script.
    2. Search for and select the **Kore AgentAssist Configuration** object. 
    3. On the left panel, click **Page Layouts**. 
    4. Open **KoreAgentAssistConfig Layout**, and drag the **Language parameter** on to the layout screen.  
-      <img src="../images/aa-config-layout_17.png" alt="aa-config-layout" title="aa-config-layout" style="border: 1px solid gray; zoom:80%;"> 
+      <img src="../images/aa-config-layout_17.png" alt="aa-config-layout" title="aa-config-layout" style="border: 1px solid gray; zoom:80%;"/> 
 
 ### Configure NICE CTI Data in Salesforce
 
@@ -405,14 +405,14 @@ This app will be used in studio script.
 2. Sign in to your **NICE CX** account.
 3. Ensure the **Store Salesforce Agent Script Variables** setting is enabled in the **Data Storage** section.
 4. In the dropdown list, select a Salesforce object against which the Agent AI widget needs to be configured in its page layout.  
-<img src="../images/salesforce-object_18.png" alt="salesforce-object" title="salesforce-object" style="border: 1px solid gray; zoom:80%;">  
+<img src="../images/salesforce-object_18.png" alt="salesforce-object" title="salesforce-object" style="border: 1px solid gray; zoom:80%;"/>  
 
 ### Configure Page layout to embed Kore Agent AI Widget to Salesforce object
 
 Assuming the Account Object is mapped above, open the page layout for Account Object.
 
 In the filter field, type “NiceCTI” and drag and drop the object onto the **Account Object** layout page.  
-<img src="../images/account-object-layout_19.png" alt="account-object-layout" title="account-object-layout" style="border: 1px solid gray; zoom:80%;"> 
+<img src="../images/account-object-layout_19.png" alt="account-object-layout" title="account-object-layout" style="border: 1px solid gray; zoom:80%;"/> 
 
 ### Configure a Visualforce Page to embed Kore Agent AI Widget (If Applicable)
 
@@ -528,7 +528,7 @@ Create a Lightning tab by following the instructions in this [document](https://
 ### Enabling OAuth
 
 1. Go to **Setup** > **OAuth and OpenID Connect Settings** and enable **Allow OAuth Username-Password Flows**.      
-<img src="../images/enable-allow-oauth-password-20.png" alt="enable-allow-oauth-password" title="enable-allow-oauth-password" style="border: 1px solid gray; zoom:80%;"> 
+<img src="../images/enable-allow-oauth-password-20.png" alt="enable-allow-oauth-password" title="enable-allow-oauth-password" style="border: 1px solid gray; zoom:80%;"/> 
 
 2. Create a connected Salesforce app and get the **Access Key** and **Access Token**. Follow [this guide](https://help.salesforce.com/s/articleView?id=sf.connected_app_client_credentials_setup.htm&language=en_US&type=5){:target="_blank"} for help.
 
@@ -538,7 +538,7 @@ Import and configure the NICE Studio Script for Salesforce Integration for Outbo
 
 Download Script For Voice: [kore.ai-nicecti_aa_sf_outbound.XML](https://bitbucket.org/koreteam1/integration_sharedresources/src/main/nicecx/kore.ai%20-%20nicecti_aa_sf_outbound.XML){:target="_blank"}
 
-<img src="../images/script-for-voice_21.png" alt="script-for-voice" title="script-for-voice" style="border: 1px solid gray; zoom:80%;"> 
+<img src="../images/script-for-voice_21.png" alt="script-for-voice" title="script-for-voice" style="border: 1px solid gray; zoom:80%;"/> 
 
 Open the Studio, import the above script, and customize as per the following table definition:
 
@@ -622,7 +622,7 @@ curl –location –request POST ‘https://login.salesforce.com/services/oauth2
 **AgentAssist Hub Reference**:
 
 Click the checkbox on the specific instance. Only one can be active.  
-<img src="../images/agent-assist-hub-reference-22.png" alt="agent-assist-hub-reference" title="agent-assist-hub-reference" style="border: 1px solid gray; zoom:80%;"> 
+<img src="../images/agent-assist-hub-reference-22.png" alt="agent-assist-hub-reference" title="agent-assist-hub-reference" style="border: 1px solid gray; zoom:80%;"/> 
 
 After selecting the AgentAssist app, click the **Close** button on the bottom-right corner of the page. 
 
@@ -637,22 +637,22 @@ On the **NICE Incontact** home page, click the **application launcher** button a
 
 **Create a Campaign**
 
-<img src="../images/create-campaign-23.png" alt="create-campaign" title="create-campaign" style="border: 1px solid gray; zoom:80%;">  
+<img src="../images/create-campaign-23.png" alt="create-campaign" title="create-campaign" style="border: 1px solid gray; zoom:80%;"/>  
 
 **Create a Skill**
 
-<img src="../images/create-a-skill_24.png" alt="create-a-skill" title="create-a-skill" style="border: 1px solid gray; zoom:80%;"> 
+<img src="../images/create-a-skill_24.png" alt="create-a-skill" title="create-a-skill" style="border: 1px solid gray; zoom:80%;"/> 
 
 For Custom Script, select the NICE Studio Script created in the previous step.
 
 **Create a Disposition**
 
-<img src="../images/create-disposition-25.png" alt="create-disposition" title="create-disposition" style="border: 1px solid gray; zoom:80%;"> 
+<img src="../images/create-disposition-25.png" alt="create-disposition" title="create-disposition" style="border: 1px solid gray; zoom:80%;"/> 
 
 ## Important Notes
 
 * If the Agent AI widget is embedded within the Salesforce popup page configured in Softphone Layout, **Agent AI Initiated Transcription** must be disabled for transcription to work correctly. This is because the widget loads before the customer accepts the call, and the audio stream is sent to Kore only after the call is accepted.  
-<img src="../images/speech-recognition_26.png" alt="speech-recognition" title="speech-recognition" style="border: 1px solid gray; zoom:80%;"> 
+<img src="../images/speech-recognition_26.png" alt="speech-recognition" title="speech-recognition" style="border: 1px solid gray; zoom:80%;"/> 
 
     However, if the Agent AI widget is embedded in a separate page that opens after the customer accepts the call, transcription will work even if **Agent AI Initiated Transcription** is disabled as the widget is being rendered after the customer accepts the call.
 
@@ -667,46 +667,46 @@ For Custom Script, select the NICE Studio Script created in the previous step.
 5. Sign in to your **Salesforce** org.
 6. From the **app launcher**, select **Service Console**.
 7. Sign in with **NICE CX** credentials for the agent.  
-<img src="../images/install-softphone-extension_27.png" alt="install-softphone-extension" title="install-softphone-extension" style="border: 1px solid gray; zoom:80%;">  
+<img src="../images/install-softphone-extension_27.png" alt="install-softphone-extension" title="install-softphone-extension" style="border: 1px solid gray; zoom:80%;"/>  
 
 8. Install the softphone: [https://help.nice-incontact.com/content/agent/cxoneagent/addcxawebrtcext.htm \
 ](https://help.nice-incontact.com/content/agent/cxoneagent/addcxawebrtcext.htm){:target="_blank"}  
-<img src="../images/install-softphone_28.png" alt="install-softphone" title="install-softphone" style="border: 1px solid gray; zoom:80%;">  
+<img src="../images/install-softphone_28.png" alt="install-softphone" title="install-softphone" style="border: 1px solid gray; zoom:80%;"/>  
 9. Refresh the screen, and click the **phone** icon on the status bar.
 10. Select **Integrated Softphone**, and click **Connect**.  
-<img src="../images/integrated-softphone-connect-29.png" alt="integrated-softphone-connect" title="integrated-softphone-connect" style="border: 1px solid gray; zoom:80%;"> 
+<img src="../images/integrated-softphone-connect-29.png" alt="integrated-softphone-connect" title="integrated-softphone-connect" style="border: 1px solid gray; zoom:80%;"/> 
 11. Change the status to **Available**.  
-<img src="../images/status-available-30.png" alt="status-available" title="status-available" style="border: 1px solid gray; zoom:80%;">  
+<img src="../images/status-available-30.png" alt="status-available" title="status-available" style="border: 1px solid gray; zoom:80%;"/>  
 
-      <img src="../images/available-status_31.png" alt="available-status" title="available-status" style="border: 1px solid gray; zoom:80%;">  
+      <img src="../images/available-status_31.png" alt="available-status" title="available-status" style="border: 1px solid gray; zoom:80%;"/>  
 
 12. Click **New**, and select **Call**.  
-<img src="../images/new-call_32.png" alt="new-call" title="new-call" style="border: 1px solid gray; zoom:80%;">  
+<img src="../images/new-call_32.png" alt="new-call" title="new-call" style="border: 1px solid gray; zoom:80%;"/>  
 
-      <img src="../images/call-dialer_33.png" alt="call-dialer" title="call-dialer" style="border: 1px solid gray; zoom:80%;"> 
+      <img src="../images/call-dialer_33.png" alt="call-dialer" title="call-dialer" style="border: 1px solid gray; zoom:80%;"/> 
 
 13. The NICE Studio Script configured for outbound calls will be selected by default. If needed, you can manually select a different script from the dropdown menu.
 14. Enter the phone number you wish to call, then click the **Call** button to initiate the call.  
-<img src="../images/call-button_34.png" alt="call-button" title="call-button" style="border: 1px solid gray; zoom:80%;"> 
+<img src="../images/call-button_34.png" alt="call-button" title="call-button" style="border: 1px solid gray; zoom:80%;"/> 
 
 15. The Salesforce popup page configured in the Softphone layout will open automatically—for example, a Contact page.  
-<img src="../images/contact-page_35.png" alt="contact-page" title="contact-page" style="border: 1px solid gray; zoom:80%;"> 
+<img src="../images/contact-page_35.png" alt="contact-page" title="contact-page" style="border: 1px solid gray; zoom:80%;"/> 
 
 16. Once the customer accepts the call, transcription will begin automatically and will be displayed under the **Transcripts** tab in the Agent AI widget.  
-<img src="../images/transcripts-tab_36.png" alt="transcripts" title="transcripts" style="border: 1px solid gray; zoom:80%;">  
+<img src="../images/transcripts-tab_36.png" alt="transcripts" title="transcripts" style="border: 1px solid gray; zoom:80%;"/>  
 
 17. When the **End** button is clicked, **Summary** is generated and displayed on the Agent AI widget.  
-<img src="../images/summary_37.png" alt="summary" title="summary" style="border: 1px solid gray; zoom:80%;">  
+<img src="../images/summary_37.png" alt="summary" title="summary" style="border: 1px solid gray; zoom:80%;"/>  
 
 18. Upon clicking the **Submit** button on the Agent AI widget, Summary is stored in the Kore Agent AI Conversation Summaries.  
-<img src="../images/kore-agentai-conv-summaries_38.png" alt="kore-agentai-conv-summaries" title="kore-agentai-conv-summaries" style="border: 1px solid gray; zoom:80%;">  
+<img src="../images/kore-agentai-conv-summaries_38.png" alt="kore-agentai-conv-summaries" title="kore-agentai-conv-summaries" style="border: 1px solid gray; zoom:80%;"/>  
 
 ## FAQ
 
 **Q: Why are the transcripts not working in Agent AI widget?**
 
 **A**: If the Agent AI widget is embedded within the Salesforce popup page configured in Softphone Layout, **Agent AI Initiated Transcription** must be disabled for transcription to work correctly.  
-<img src="../images/disable-agent-ai-transcription_39.png" alt="disable-agent-ai-transcription" title="disable-agent-ai-transcription" style="border: 1px solid gray; zoom:80%;">  
+<img src="../images/disable-agent-ai-transcription_39.png" alt="disable-agent-ai-transcription" title="disable-agent-ai-transcription" style="border: 1px solid gray; zoom:80%;"/>  
 
 **Q: Why is the custom data passing not working?**
 

@@ -95,7 +95,7 @@ The generated image output is available only in PNG format. Once created, the im
 The metrics include:
 
 * **Number of images generated** since the supported models are charged based on this count.
-* **Input tokens** since the Stable Diffusion models usually support a small number of tokens, and tracking the counts is necessary. [Learn more](../../../../settings/monitoring/analytics/model-analytics-dashboard.md#tokens){:target="_blank"}.
+* **Input tokens** since the Stable Diffusion models usually support a small number of tokens, and tracking the counts is necessary. [Learn more](../../../../settings/monitoring/analytics/model-analytics-dashboard.md#tokens).
 
 
 ## Add and Configure a Text to Image Node
@@ -156,7 +156,7 @@ The metrics include:
 
 ## Test the Flow for the Node
 
-After adding and configuring the node as mentioned [here](./text-to-image-node.md#add-and-configure-a-text-to-image-node){:target="_blank"}, follow the steps below to test the flow.
+After adding and configuring the node as mentioned [here](./text-to-image-node.md#add-and-configure-a-text-to-image-node), follow the steps below to test the flow.
 
 <div class="admonition note">
 <p class="admonition-title">Dynamic Prompt Inputs</p>
@@ -166,7 +166,7 @@ After adding and configuring the node as mentioned [here](./text-to-image-node.m
 
 ### Step 1: (Optional) Add Input Variable(s)
 
-* Click the **Input** tab of the **Start** node, and click **Add Input Variable** to configure the input for the flow’s test run. [Learn more](../perform-other-actions-on-the-flow-builder/manage-input-and-output.md#adding-input-variables){:target="_blank"}.
+* Click the **Input** tab of the **Start** node, and click **Add Input Variable** to configure the input for the flow’s test run. [Learn more](../perform-other-actions-on-the-flow-builder/manage-input-and-output.md#adding-input-variables).
 
      <img src="../images/add-input-variable-text-to-image.png" alt="add input variable" title="add input variable" style="border: 1px solid gray; zoom:75%;">
 
@@ -201,6 +201,6 @@ To run and test the flow, follow the steps below:
 
      <img src="../images/generate-output-text-to-image.png" alt="generate output" title="generate output" style="border: 1px solid gray; zoom:75%;">
 
-The **Debug** window generates the flow log and results, as shown below. [Learn more](../types-of-nodes/text-to-image-node.md#step-3-run-the-flow){:target="_blank"} about running the tool flow.
+The **Debug** window generates the flow log and results, as shown below. [Learn more](../types-of-nodes/text-to-image-node.md#step-3-run-the-flow) about running the tool flow.
 
 <img src="../images/debug-window-text-to-image.png" alt="debug window" title="debug window" style="border: 1px solid gray; zoom:75%;">

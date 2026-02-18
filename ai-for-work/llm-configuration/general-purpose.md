@@ -89,12 +89,12 @@ Pre-built integrations offer the fastest path to leveraging leading AI models wi
 **Configuration Steps:**
 
 1. Navigate to **Admin Console > Assist Configuration > General Purpose**.
-   <img src="../images/general-purpose-llm.png" alt="general-purpose-llm" title="general-purpose-llm" style="border: 1px solid gray; zoom:80%;">
+   <img src="../images/general-purpose-llm.png" alt="general-purpose-llm" title="general-purpose-llm" style="border: 1px solid gray; zoom:80%;"/>
 2. Click **New** and select your desired LLM provider from the dropdown menu:
     * OpenAI
     * Azure OpenAI
     * Google Gemini
-    <img src="../images/general-purpose-llm-new.png" alt="general-purpose-llm" title="general-purpose-llm" style="border: 1px solid gray; zoom:80%;">
+    <img src="../images/general-purpose-llm-new.png" alt="general-purpose-llm" title="general-purpose-llm" style="border: 1px solid gray; zoom:80%;"/>
 3. Enter the required authorization details:
     * **Integration Name**: A unique identifier for this configuration (e.g., "OpenAI-Production").
     * **API Key**: Your provider-specific API key obtained from their portal.
@@ -103,10 +103,10 @@ Pre-built integrations offer the fastest path to leveraging leading AI models wi
     * Understand data usage and retention policies.
     * Ensure compliance with your organization's governance requirements.
     * Acknowledge the terms by selecting the checkbox.
-    <img src="../images/open-ai.png" alt="open-ai" title="open-ai" style="border: 1px solid gray; zoom:80%;">
+    <img src="../images/open-ai.png" alt="open-ai" title="open-ai" style="border: 1px solid gray; zoom:80%;"/>
 5. Click **Save** to activate the configuration.
 6. Verify the integration appears in the **General LLM Integrations** list with an active status.
-<img src="../images/configured-model.png" alt="configured-model" title="configured-model" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/configured-model.png" alt="configured-model" title="configured-model" style="border: 1px solid gray; zoom:80%;"/>
 
 **Provider-Specific Configuration Notes**:
 
@@ -144,7 +144,7 @@ Custom LLM configuration provides maximum flexibility for organizations with uni
     * **Integration Name**: A descriptive name for this custom integration.
     * **Model Name**: The specific model identifier.
     * **Endpoint URL**: The full API endpoint URL where your model is hosted.
-    <img src="../images/custom-llm.png" alt="custom-llm" title="custom-llm" style="border: 1px solid gray; zoom:80%;">
+    <img src="../images/custom-llm.png" alt="custom-llm" title="custom-llm" style="border: 1px solid gray; zoom:80%;"/>
 4. **API Configuration**:
     * **Method**: Select the HTTP method (typically POST or GET) from the dropdown.
     * **Max Request Tokens**: Set the maximum number of tokens for each request to control costs and response size.
@@ -155,14 +155,14 @@ Custom LLM configuration provides maximum flexibility for organizations with uni
     * Click **+ Add a Header** to add additional HTTP headers.
     * Enter key-value pairs for each required header (e.g., "Content-Type: application/json").
     * Add multiple headers as needed for your integration.
-    <img src="../images/add-header.png" alt="add-header.png" title="add-header" style="border: 1px solid gray; zoom:80%;">
+    <img src="../images/add-header.png" alt="add-header.png" title="add-header" style="border: 1px solid gray; zoom:80%;"/>
 7. Test the connection:
     * Enter a sample test payload in the provided field.
     * Click **Test** to verify connectivity and model response.
     * Review the response to ensure proper configuration:
         * **Success**: Connection is validated, and you can proceed to save.
         * **Error**: Review error messages to troubleshoot connection issues, authentication problems, or endpoint configuration.
-    <img src="../images/success-message.png" alt="success-message" title="success-message" style="border: 1px solid gray; zoom:80%;">
+    <img src="../images/success-message.png" alt="success-message" title="success-message" style="border: 1px solid gray; zoom:80%;"/>
 8. Review and accept:
     * Read the **Policy Guidelines**.
     * Select the checkbox to acknowledge compliance.

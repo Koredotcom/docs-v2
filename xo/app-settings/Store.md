@@ -27,7 +27,7 @@ You can access the store as follows:
 1. As a Kore.ai platform user, you can access the store from within your account.
     1. Log into the Kore.ai XO Platform.
     2. On the landing page, click **Marketplace** at the top right.
-    <img src="../images/marketplace.png" alt="Marketplace" title="Marketplace" style="border: 1px solid gray; zoom:80%;">
+    <img src="../images/marketplace.png" alt="Marketplace" title="Marketplace" style="border: 1px solid gray; zoom:80%;"/>
     3. You can also access the Marketplace while creating a new assistant. Click **New App**, then click **Explore Templates**.
     <img src="../images/explore-templates.png" alt="Explore Template" title="Explore template" style="border: 1px solid gray; zoom:100%;">
 
@@ -74,12 +74,12 @@ On the preview display, click **Know More** for more details such as:
     * The **_category_** of the App.
     * The list of **_channels,_** **_languages,_** and **_integrations_** (if any) supported.
     * The **_Related Templates_** section for Apps similar to the selected template App.
-    <img src="../images/bot-template-details.png" alt="Related Templates" title="Related Templates" style="border: 1px solid gray; zoom:80%;">
+    <img src="../images/bot-template-details.png" alt="Related Templates" title="Related Templates" style="border: 1px solid gray; zoom:80%;"/>
 
 ## Select a Template
 
 After exploring the template you can click **Use Template** if you choose to do so it.
-<img src="../images/use-template.png" alt="Use Template" title="Use Template" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/use-template.png" alt="Use Template" title="Use Template" style="border: 1px solid gray; zoom:80%;"/>
 
 ## Use a Templates
 
@@ -95,7 +95,7 @@ When using an App template from the store, you are importing it into your accoun
 
 1. Log in to the Kore.ai XO Platform.
 2. On the landing page click **New App**, then select **Start from the Store**.
-<img src="../images/va-landing-page-use-bot-template.png" alt="Start from the Store" title="Start from the Store" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/va-landing-page-use-bot-template.png" alt="Start from the Store" title="Start from the Store" style="border: 1px solid gray; zoom:80%;"/>
 3. Explore the template Apps and click **Use Template** against the selected templated App.
 4. Once selected, the App Template will be made available for you to work with.
- <img src="../images/bot-template-added.png" alt="Bot Template added" title="Bot Template added" style="border: 1px solid gray; zoom:80%;">
+ <img src="../images/bot-template-added.png" alt="Bot Template added" title="Bot Template added" style="border: 1px solid gray; zoom:80%;"/>

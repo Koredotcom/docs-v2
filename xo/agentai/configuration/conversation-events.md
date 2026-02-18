@@ -23,7 +23,7 @@ In this section, you can select a pre-configured dialog task and channel and cho
 
 1. Sign in to **AI for Service**.
 2. Click **Product Switcher** > **Agent AI**.  
-   <img src="../welcome-events-images/select-agent-ai.png" alt="select-agent-ai" title="select-agent-ai" style="border: 1px solid gray; zoom:80%;">
+   <img src="../welcome-events-images/select-agent-ai.png" alt="select-agent-ai" title="select-agent-ai" style="border: 1px solid gray; zoom:80%;"/>
 3. Click the **Agent AI** icon from the left menu.
 4. Click **CONFIGURATION** > **Conversation Events** > **Welcome Events**.
 5. Click to expand the **Configure On-Connect Dialog Task** section.
@@ -36,7 +36,7 @@ In this section, you can select a pre-configured dialog task and channel and cho
         When enabled, the system terminates the current dialog and uses the message node's content to identify the Next Best Actions (suggestions) upon encountering it. Ensure the dialog flow contains only one message node, preferably at the end.  
 
 10. Click **Save**.  
-   <img src="../welcome-events-images/conversation-events.png" alt="conversation-events" title="conversation-events" style="border: 1px solid gray; zoom:80%;">
+   <img src="../welcome-events-images/conversation-events.png" alt="conversation-events" title="conversation-events" style="border: 1px solid gray; zoom:80%;"/>
 
 ### Configure Greeting Messages
 
@@ -50,7 +50,7 @@ In this section, you can customize greeting messages at the beginning of the con
 4. Select a channel—**Chat**,**Voice**, or **Email**.
 5. Select a language. The app's language appears by default.
 6. Click **+ Add Message** > **New Messages** to add a new greeting message.  
-   <img src="../welcome-events-images/adding-new-greeting-messages-2.png" alt="adding-new-greeting-messages" title="adding-new-greeting-messages" style="border: 1px solid gray; zoom:80%;"> 
+   <img src="../welcome-events-images/adding-new-greeting-messages-2.png" alt="adding-new-greeting-messages" title="adding-new-greeting-messages" style="border: 1px solid gray; zoom:80%;"/> 
 7. Enter the new greeting message in the **Message** box and click **Add**.  
    <img src="../welcome-events-images/configure-and-add-new-greeting-message-3.png" alt="configure-and-add-new-greeting-message" title="configure-and-add-new-greeting-message" style="border: 1px solid gray; zoom:60%;">
 
@@ -61,7 +61,7 @@ In this section, you can customize greeting messages at the beginning of the con
     !!! note
         **Copy from Voice** appears for the Chat channel and **Copy from Chat** appears for the Voice channel.  
          
-      <img src="../welcome-events-images/copying-from-chat-messages-4.png" alt="copying-from-chat-messages" title="copying-from-chat-messages" style="border: 1px solid gray; zoom:80%;"> 
+      <img src="../welcome-events-images/copying-from-chat-messages-4.png" alt="copying-from-chat-messages" title="copying-from-chat-messages" style="border: 1px solid gray; zoom:80%;"/> 
       
       a. Select the **Welcome Messages** button to select all the existing messages or select individual messages one by one.
       
@@ -70,7 +70,7 @@ In this section, you can customize greeting messages at the beginning of the con
       All selected messages appear in the list of existing messages.
 
 9. Click **Display Random Message** to enable all configured messages and randomly display any three on the agent’s screen.  
-   <img src="../welcome-events-images/display-random-message-and-select-message-language-5.png" alt="display-random-message-and-select-message-language" title="display-random-message-and-select-message-language" style="border: 1px solid gray; zoom:80%;">  
+   <img src="../welcome-events-images/display-random-message-and-select-message-language-5.png" alt="display-random-message-and-select-message-language" title="display-random-message-and-select-message-language" style="border: 1px solid gray; zoom:80%;"/>  
 
 10. Click the **down-arrow** to change message language.
 11. Click the **edit** button against an existing message to modify it.
@@ -88,7 +88,7 @@ In this section, you can select what to run first between the dialog tasks and g
 1. Click **CONFIGURATION** > **Welcome Events**.
 2. Click to expand the **Priority Settings** section.
 3. Select the radio button **On-Connect Dialog Task** or **Greeting Messages**  
-   <img src="../welcome-events-images/priority-settings-6.png" alt="priority-settings" title="priority-settings" style="border: 1px solid gray; zoom:80%;">  
+   <img src="../welcome-events-images/priority-settings-6.png" alt="priority-settings" title="priority-settings" style="border: 1px solid gray; zoom:80%;"/>  
 4. Click **Save**. 
 
     !!! note
@@ -110,24 +110,24 @@ This section lets you select a dialog task to run automatically when an exit eve
 1. Sign in to **AI for Service** > **Agent AI**.
 2. Go to **Configurations** > **Conversation Events**.  
 3. Click **Exit Events**.  
-   <img src="../welcome-events-images/exit-events-1.png" alt="exit-events" title="exit-events" style="border: 1px solid gray; zoom:80%;">  
+   <img src="../welcome-events-images/exit-events-1.png" alt="exit-events" title="exit-events" style="border: 1px solid gray; zoom:80%;"/>  
 
 4. Select a channel—**Chat**, **Voice**, or **Email**. 
 5. Click the toggle to enable **Configure End of conversation Dialog Task**.  
    * The following confirmation message appears, if the **Conversation Summary** > **Custom Dialog Task** was enabled:  
-    <img src="../welcome-events-images/disable-custom-summarization-2.png" alt="disable-custom-summarization" title="disable-custom-summarization" style="border: 1px solid gray; zoom:80%;">  
+    <img src="../welcome-events-images/disable-custom-summarization-2.png" alt="disable-custom-summarization" title="disable-custom-summarization" style="border: 1px solid gray; zoom:80%;"/>  
 
        !!! note
 
            For new accounts, the **Conversation Summary** > **OOTB Kore Summarization** is enabled by default.  
 
    * The following confirmation message appears, if the **Configure End of Conversation Agentic App** was enabled:  
-    <img src="../welcome-events-images/disable-agentic-exit-events-3.png" alt="disable-agentic-exit-events" title="disable-agentic-exit-events" style="border: 1px solid gray; zoom:80%;">  
+    <img src="../welcome-events-images/disable-agentic-exit-events-3.png" alt="disable-agentic-exit-events" title="disable-agentic-exit-events" style="border: 1px solid gray; zoom:80%;"/>  
 
 6. Click **Yes, Proceed**. 
 7. Click to expand the **Configure End of conversation Dialog Task** section. 
 8. Select a dialog task from the **Select Dialog** dropdown list.  
-   <img src="../welcome-events-images/select-dialog-4.png" alt="select-dialog" title="select-dialog" style="border: 1px solid gray; zoom:80%;">  
+   <img src="../welcome-events-images/select-dialog-4.png" alt="select-dialog" title="select-dialog" style="border: 1px solid gray; zoom:80%;"/>  
 9. Click **Save**. 
 
 ### Conversation Summary
@@ -152,11 +152,11 @@ This section lets you configure how to autogenerate a conversation summary at th
 5. Click the toggle to enable **Conversation Summary**.
 6. Select either **OOTB Kore Summarization** or **Custom Dialog Task**.
     1. If you select **Custom Dialog Task**, the following confirmation message appears (if the **Configure End of Conversation Dialog Task was enabled**):  
-    <img src="../welcome-events-images/disable-end-of-conversation-5.png" alt="disable-end-of-conversation" title="disable-end-of-conversation" style="border: 1px solid gray; zoom:80%;">   
+    <img src="../welcome-events-images/disable-end-of-conversation-5.png" alt="disable-end-of-conversation" title="disable-end-of-conversation" style="border: 1px solid gray; zoom:80%;"/>   
 
     2. Click **Yes, Proceed**.
     3. Select a **dialog task** from the **Select Dialog** dropdown list:  
-    <img src="../welcome-events-images/custom-dialog-task-6.png" alt="custom-dialog-task" title="custom-dialog-task" style="border: 1px solid gray; zoom:80%;">   
+    <img src="../welcome-events-images/custom-dialog-task-6.png" alt="custom-dialog-task" title="custom-dialog-task" style="border: 1px solid gray; zoom:80%;"/>   
 
 7. Select or clear the **Show Submit button** option. 
 8. Click **Save**. 
@@ -176,11 +176,11 @@ This section lets you select an Agentic App to trigger when a conversation ends.
 4. Select a channel—**Chat**, **Voice**, or **Email**.
 5. Click the toggle to enable **Configure End of Conversation Agentic App**.
 6. The following confirmation message appears, if **Configure End of Conversation Dialog Task** was enabled.  
-<img src="../welcome-events-images/disable-end-of-conversation-dialog-task-7.png" alt="disable-end-of-conversation-dialog-task" title="disable-end-of-conversation-dialog-task" style="border: 1px solid gray; zoom:80%;">  
+<img src="../welcome-events-images/disable-end-of-conversation-dialog-task-7.png" alt="disable-end-of-conversation-dialog-task" title="disable-end-of-conversation-dialog-task" style="border: 1px solid gray; zoom:80%;"/>  
 
 7. Click **Yes, Proceed**.
 8. Select **Use same app as Agentic Copilot** or **Select a different Agentic App** option.  
     1. If you select the **Select a different Agentic App** option, the following screenshot appears:  
-      <img src="../welcome-events-images/different-agentic-app-8.png" alt="different-agentic-app" title="different-agentic-app" style="border: 1px solid gray; zoom:80%;">  
+      <img src="../welcome-events-images/different-agentic-app-8.png" alt="different-agentic-app" title="different-agentic-app" style="border: 1px solid gray; zoom:80%;"/>  
     2. Select an **Agentic App** from the dropdown list.  
 9. Click **Save**. 

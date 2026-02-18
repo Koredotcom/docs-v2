@@ -2,7 +2,7 @@
 
 Single Sign-On (SSO) enables easy access to AI for Work using your existing identity provider. With SSO, your users can log on once, for example, to your company account, and when accessing the platform, the system can automatically use the same login credentials.
 
-<img src="../images/sso_overview.png" alt="open-id-connect" title="open-id-connect" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/sso_overview.png" alt="open-id-connect" title="open-id-connect" style="border: 1px solid gray; zoom:80%;"/>
 
 ## Supported Sign-On Protocols
 

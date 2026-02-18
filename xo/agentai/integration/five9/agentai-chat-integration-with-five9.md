@@ -50,90 +50,90 @@ Refer to the [doc](../../configuration/third-party-configuration.md){:target="_b
 **Example**: 
 
 You have a skill named **Chat_Skill**, that handles incoming chat requests, and you want the Agent AI widget to render for conversations routed to this skill. You must create the following details of the Third-Party Configuration record in your Agent AI account:  
-<img src="../images/create-record.png" alt="create-record" title="create-record" style="border: 1px solid gray; zoom:80%;">  
+<img src="../images/create-record.png" alt="create-record" title="create-record" style="border: 1px solid gray; zoom:80%;"/>  
 
-<img src="../images/create-record-add-values.png" alt="create-record-add-values" title="create-record-add-values" style="border: 1px solid gray; zoom:80%;">  
+<img src="../images/create-record-add-values.png" alt="create-record-add-values" title="create-record-add-values" style="border: 1px solid gray; zoom:80%;"/>  
 
 !!! note
 
     The **Values** should be **base64 encoded**. 
 
-<img src="../images/third-party-configuration.png" alt="third-party-configuration" title="third-party-configuration" style="border: 1px solid gray; zoom:80%;">  
+<img src="../images/third-party-configuration.png" alt="third-party-configuration" title="third-party-configuration" style="border: 1px solid gray; zoom:80%;"/>  
 
 !!! note
 
     Ensure the **Third-Party Configuration** setting is enabled in **Agent AI** > **Configurations** > **Widget Settings** > **Agent AI Settings** > **Agent AI General Settings**.  
 
-<img src="../images/enable-third-party-configuration.png" alt="enable-third-party-configuration" title="enable-third-party-configuration" style="border: 1px solid gray; zoom:80%;">  
+<img src="../images/enable-third-party-configuration.png" alt="enable-third-party-configuration" title="enable-third-party-configuration" style="border: 1px solid gray; zoom:80%;"/>  
 
 ## Create Connector
 
 1. Sign in to [Five9 Administrator Console](https://admin.us.five9.net/){:target="_blank"}.
 2. Search for “connectors” in the search bar, and select **Connectors**.  
-    <img src="../images/connectors_9.png" alt="connectors" title="connectors" style="border: 1px solid gray; zoom:80%;"> 
+    <img src="../images/connectors_9.png" alt="connectors" title="connectors" style="border: 1px solid gray; zoom:80%;"/> 
 
 3. Click the **Create** button. 
-    <img src="../images/create-connectors_10.png" alt="create-connectors" title="create-connectors" style="border: 1px solid gray; zoom:80%;"> 
+    <img src="../images/create-connectors_10.png" alt="create-connectors" title="create-connectors" style="border: 1px solid gray; zoom:80%;"/> 
 
-    <img src="../images/create-new-connectors_11.png" alt="create-new-connectors" title="create-new-connectors" style="border: 1px solid gray; zoom:80%;"> 
+    <img src="../images/create-new-connectors_11.png" alt="create-new-connectors" title="create-new-connectors" style="border: 1px solid gray; zoom:80%;"/> 
 
 4. Provide a name in the **Connector Name** field.
 5. The URL should be {<a href="#pookie">[Agent AI]</a>}/integrations/five9/
 6. The method should be GET. 
-    <img src="../images/create-new-connector-get-method_12.png" alt="create-new-connector-get-method" title="create-new-connector-get-method" style="border: 1px solid gray; zoom:80%;">  
+    <img src="../images/create-new-connector-get-method_12.png" alt="create-new-connector-get-method" title="create-new-connector-get-method" style="border: 1px solid gray; zoom:80%;"/>  
 
 7. Click **Next**. 
-    <img src="../images/create-new-connector-next_13.png" alt="create-new-connector-next" title="create-new-connector-next" style="border: 1px solid gray; zoom:80%;"> 
+    <img src="../images/create-new-connector-next_13.png" alt="create-new-connector-next" title="create-new-connector-next" style="border: 1px solid gray; zoom:80%;"/> 
 
 8. In the **Parameters** section, click the **Add** dropdown and select **Field**. 
-    <img src="../images/create-new-connector-param_14.png" alt="create-new-connector-param" title="create-new-connector-param" style="border: 1px solid gray; zoom:80%;"> 
+    <img src="../images/create-new-connector-param_14.png" alt="create-new-connector-param" title="create-new-connector-param" style="border: 1px solid gray; zoom:80%;"/> 
 
 9. Select **session_id**, **domain_id**, **id**, **skill_name/campaign_name** (choose either skill_name or campaign_name, depending on which is used to map the bot in Agent AI), and click **Ok**. 
-    <img src="../images/add-field_15.png" alt="add-field" title="add-field" style="border: 1px solid gray; zoom:80%;"> 
+    <img src="../images/add-field_15.png" alt="add-field" title="add-field" style="border: 1px solid gray; zoom:80%;"/> 
     
-    <img src="../images/add-field-ok_16.png" alt="add-field-ok" title="add-field-ok" style="border: 1px solid gray; zoom:80%;"> 
+    <img src="../images/add-field-ok_16.png" alt="add-field-ok" title="add-field-ok" style="border: 1px solid gray; zoom:80%;"/> 
 
 10. Click the **Edit** icon against the parameters and change as per the following:
     * domain_id -> Domain ID
     * id -> Agent ID
     * session_id -> conversationid
     * skill_name/campaign_name -> identifiers 
-        <img src="../images/changing-parameters_17.png" alt="changing-parameters" title="changing-parameters" style="border: 1px solid gray; zoom:80%;"> 
+        <img src="../images/changing-parameters_17.png" alt="changing-parameters" title="changing-parameters" style="border: 1px solid gray; zoom:80%;"/> 
 
 11. In the **Parameters** section, click the **Add** dropdown and select **Constant**. 
-    <img src="../images/parameters-add-constant_18.png" alt="parameters-add-constant" title="parameters-add-constant" style="border: 1px solid gray; zoom:80%;"> 
+    <img src="../images/parameters-add-constant_18.png" alt="parameters-add-constant" title="parameters-add-constant" style="border: 1px solid gray; zoom:80%;"/> 
 
 12. Enter **Name** as **accountid** and the **Value** should be the **accountid** of your Agent AI account. You can find this ID by navigating to the **Agent AI** > **Flows & Channels** > **Channels** > **Digital** > **Web/Mobile Client** > **JWT App Details**. Refer to this [doc](../../../channels/add-web-mobile-client.md){:target="_blank"}.  
 
-    <img src="../images/add-constant.png" alt="add-constant" title="add-constant" style="border: 1px solid gray; zoom:80%;"> 
+    <img src="../images/add-constant.png" alt="add-constant" title="add-constant" style="border: 1px solid gray; zoom:80%;"/> 
 
 13. Click **Ok** > **Next**. 
-    <img src="../images/ok-next_20.png" alt="ok-next" title="ok-next" style="border: 1px solid gray; zoom:80%;"> 
+    <img src="../images/ok-next_20.png" alt="ok-next" title="ok-next" style="border: 1px solid gray; zoom:80%;"/> 
 
 14. By default, **Call** is selected for **Trigger Event** and **On Call Accepted** is selected for **On Call Event**. Select **Chat** for **Trigger Event**, and the **On Chat Arrival** appears for **On Chat Event**.
 15. Click **Done**. 
-    <img src="../images/create-new-connector-done_21.png" alt="create-new-connector-done" title="create-new-connector-done" style="border: 1px solid gray; zoom:80%;"> 
+    <img src="../images/create-new-connector-done_21.png" alt="create-new-connector-done" title="create-new-connector-done" style="border: 1px solid gray; zoom:80%;"/> 
 
 ## Five9 Account Setup to get Incoming Chat Requests
 
 * Create a skill, and add agents with Chat/SMS Channel enabled to the skill by following [this doc](https://documentation.five9.com/bundle/admin-console/page/admin-console/skills/_ch-user-skills.htm){:target="_blank"}.
 * Create a chat profile by following [this doc](https://documentation.five9.com/bundle/digital-engagement/page/digital-engagement/digital-in-admin-console/digital-components/chat-profiles.htm){:target="_blank"}.
 * Create IVR Script by following [this doc](https://documentation.five9.com/bundle/ivr-admin/page/ivr-admin/examples/creating-an-ivr-script.htm){:target="_blank"}. 
-    <img src="../images/ivr-script_22.png" alt="ivr-script" title="ivr-script" style="border: 1px solid gray; zoom:80%;"> 
+    <img src="../images/ivr-script_22.png" alt="ivr-script" title="ivr-script" style="border: 1px solid gray; zoom:80%;"/> 
 
 ### Create Inbound Campaign
 
 1. Sign in to the [Admin Console](https://admin.us.five9.net/){:target="_blank"}.
 2. Search for campaigns, and select **Campaigns**. 
-    <img src="../images/search-campaigns_23.png" alt="search-campaigns" title="search-campaigns" style="border: 1px solid gray; zoom:80%;"> 
+    <img src="../images/search-campaigns_23.png" alt="search-campaigns" title="search-campaigns" style="border: 1px solid gray; zoom:80%;"/> 
 
-    <img src="../images/select-campaigns_24.png" alt="select-campaigns" title="select-campaigns" style="border: 1px solid gray; zoom:80%;"> 
+    <img src="../images/select-campaigns_24.png" alt="select-campaigns" title="select-campaigns" style="border: 1px solid gray; zoom:80%;"/> 
 
 3. Click **Create**.
 4. Select **Inbound**, and click **Continue**. 
-    <img src="../images/create-campaign_25.png" alt="create-campaign" title="create-campaign" style="border: 1px solid gray; zoom:80%;"> 
+    <img src="../images/create-campaign_25.png" alt="create-campaign" title="create-campaign" style="border: 1px solid gray; zoom:80%;"/> 
 
-    <img src="../images/new-campaign_26.png" alt="new-campaign" title="new-campaign" style="border: 1px solid gray; zoom:80%;"> 
+    <img src="../images/new-campaign_26.png" alt="new-campaign" title="new-campaign" style="border: 1px solid gray; zoom:80%;"/> 
 
 5. Enter the following details: 
     1. Enter a **campaign name**.
@@ -152,16 +152,16 @@ You have a skill named **Chat_Skill**, that handles incoming chat requests, and 
     7. Enter **email addresses for threshold notifications**. Use semicolons to delimit a list.
     8. Enter the number of lines to dedicate to **Visual IVR (VIVR) sessions**. This setting runs an IVR script using a web browser URL, but instead of TTS prompts playing audio (as in a voice call), it displays the actual TTS text. A voice caller and a VIVR caller get the same IVR flow and experience; one uses voice, and the other uses a browser screen for online viewing. For more information about VIVR, see the [Interactive Voice Response (IVR)](https://documentation.five9.com/bundle/ivr-admin/page/ivr-admin/landing-ivr-admin.htm){:target="_blank"} admin guide.
     9. Click **Next**.  
-        <img src="../images/new-campaign-next_27.png" alt="new-campaign-next" title="new-campaign-next" style="border: 1px solid gray; zoom:80%;"> 
+        <img src="../images/new-campaign-next_27.png" alt="new-campaign-next" title="new-campaign-next" style="border: 1px solid gray; zoom:80%;"/> 
 
 6. Do not select anything in the **Numbers** section, and click **Next**.
 7. Click **Default Script**, and select the default IVR Script or the IVR Script created in the previous step.
 8. Click **Next**. 
-    <img src="../images/new-campaign-default-script_28.png" alt="new-campaign-default-script" title="new-campaign-default-script" style="border: 1px solid gray; zoom:80%;"> 
+    <img src="../images/new-campaign-default-script_28.png" alt="new-campaign-default-script" title="new-campaign-default-script" style="border: 1px solid gray; zoom:80%;"/> 
 
 9. Click **Digital Skill**, and either select the skill created in the previous step or the Default Skill.
 10. Click **Create**. 
-    <img src="../images/new-campaign-digital-script_29.png" alt="new-campaign-digital-script" title="new-campaign-digital-script" style="border: 1px solid gray; zoom:80%;"> 
+    <img src="../images/new-campaign-digital-script_29.png" alt="new-campaign-digital-script" title="new-campaign-digital-script" style="border: 1px solid gray; zoom:80%;"/> 
 
     !!! note
         After the inbound campaign is created successfully, start the campaign. Refer to the [Manage Campaigns](https://documentation.five9.com/bundle/admin-console/page/admin-console/campaigns/managing-campaigns.htm){:target="_blank"} doc for help. 
@@ -170,25 +170,25 @@ You have a skill named **Chat_Skill**, that handles incoming chat requests, and 
 
 1. Open [Script Generator](https://app.five9.com/five9_clients/consoles_latest/Generator/index.html){:target="_blank"}.
 2. Enter your Five9 account domain name in the **Domain** field and the chat inbound campaign name in the **Profiles** field. 
-    <img src="../images/chat-simulation-1_30.png" alt="chat-simulation-1" title="chat-simulation-1" style="border: 1px solid gray; zoom:80%;"> 
+    <img src="../images/chat-simulation-1_30.png" alt="chat-simulation-1" title="chat-simulation-1" style="border: 1px solid gray; zoom:80%;"/> 
 
 3. Scroll down, and click **Preview on Page**. 
-    <img src="../images/chat-preview-on-page_31.png" alt="chat-preview-on-page" title="chat-preview-on-page" style="border: 1px solid gray; zoom:80%;"> 
+    <img src="../images/chat-preview-on-page_31.png" alt="chat-preview-on-page" title="chat-preview-on-page" style="border: 1px solid gray; zoom:80%;"/> 
 
 4. Enter values in the **Name** and **Question** fields.
 5. Click **Start Chat**. 
-    <img src="../images/start-chat_32.png" alt="start-chat" title="start-chat" style="border: 1px solid gray; zoom:80%;"> 
+    <img src="../images/start-chat_32.png" alt="start-chat" title="start-chat" style="border: 1px solid gray; zoom:80%;"/> 
 
 6. Open the **Five9 Agent Desktop,** and change the status to **Ready (Text)**.
 7. The request arrives on the desktop. Click the **lock** icon to accept the interaction. 
-    <img src="../images/accept-interaction_33.png" alt="accept-interaction" title="accept-interaction" style="border: 1px solid gray; zoom:80%;"> 
+    <img src="../images/accept-interaction_33.png" alt="accept-interaction" title="accept-interaction" style="border: 1px solid gray; zoom:80%;"/> 
 
 8. Once the interaction is accepted, the connector opens by default where the Agent AI widget is rendered. 
-    <img src="../images/agentai-widget_34.png" alt="agentai-widget" title="agentai-widget" style="border: 1px solid gray; zoom:80%;"> 
+    <img src="../images/agentai-widget_34.png" alt="agentai-widget" title="agentai-widget" style="border: 1px solid gray; zoom:80%;"/> 
 
 9. Click the **send** button to send a message to the customer. The message gets copied to the clipboard, if you click the **copy** button.
 10. When the agent or customer ends the chat, the chat summary appears in the Agent AI widget. 
-    <img src="../images/chat-summary_35.png" alt="chat-summary" title="chat-summary" style="border: 1px solid gray; zoom:80%;"> 
+    <img src="../images/chat-summary_35.png" alt="chat-summary" title="chat-summary" style="border: 1px solid gray; zoom:80%;"/> 
 
 ## Integration Limitations
 

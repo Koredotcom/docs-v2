@@ -18,7 +18,7 @@ Steps to add input variables:
 
 1. On the top of the  Workflow canvas, click the **Manage I/O** button.
 Alternatively, you can click the **Start** node. The **Manage Input & Output** dialog is displayed.  
-<img src="../images/adding_input_output_variables.png" alt="Manage Input Output Variables" title="Manage Input Output Variables" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/adding_input_output_variables.png" alt="Manage Input Output Variables" title="Manage Input Output Variables" style="border: 1px solid gray; zoom:80%;"/>
 
 
 2. On the **Input** tab, click the **+ Add input variable** button.
@@ -46,7 +46,7 @@ If you want to make the data type mandatory, then enable the **Mandatory** toggl
 
         <img src="../images/add-default-key-value.png" alt="add default key value" title="add default key value" style="border: 1px solid gray; zoom:40%;">
 
-    * If you select the **JSON** data type, a schema Box/JSON Editor appears, where you need to define the JSON schema for the input parameter. You must ensure to follow the supported JSON schema format standard as detailed here: [Defining JSON schema](../perform-other-actions-on-the-flow-builder/defining-json.md){:target="_blank"}.
+    * If you select the **JSON** data type, a schema Box/JSON Editor appears, where you need to define the JSON schema for the input parameter. You must ensure to follow the supported JSON schema format standard as detailed here: [Defining JSON schema](../perform-other-actions-on-the-flow-builder/defining-json.md).
 
         <img src="../images/json_schema.png" alt="defining json" title="defining json" style="border: 1px solid gray; zoom:60%;">
         

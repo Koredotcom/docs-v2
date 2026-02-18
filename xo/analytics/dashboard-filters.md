@@ -201,7 +201,7 @@ tags.addMessageLevelTag(“tagname”,”tagvalue”)
     To see the filter criteria from UserID till Custom Tags listed in the preceding table, click the More Filters drop-down.
 
 
-<img src="../images/more-filters-drop-down.png" alt="More Filters drop-down" title="More Filters drop-down" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/more-filters-drop-down.png" alt="More Filters drop-down" title="More Filters drop-down" style="border: 1px solid gray; zoom:80%;"/>
 
 
 

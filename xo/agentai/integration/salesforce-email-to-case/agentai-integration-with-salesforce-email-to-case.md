@@ -22,17 +22,17 @@ Before integrating Agent AI with Salesforce, you must meet the following prerequ
 2. Select **App Launcher**.  
 3. Type **config** in the **search bar**, and select **Kore Agent AI Configuration** from the displayed list.  
 4. Select **New** from the top-right corner of the page.  
-    <img src="../images/agentai-configuration-page_1.png" alt="agentai-configuration-page" title="agentai-configuration-page" style="border: 1px solid gray; zoom:80%;">  
+    <img src="../images/agentai-configuration-page_1.png" alt="agentai-configuration-page" title="agentai-configuration-page" style="border: 1px solid gray; zoom:80%;"/>  
 
 5. Enter the required values in the **Agent AI URL**, **Bot ID**, **Client ID,** **Client Secret**, and **Language (bot language)**  fields. To get these values:
     1. Sign in to [AI for Service](https://platform.kore.ai/){:target="_blank"}. 
     2. Go to **Agent AI** > **Flows & Channels** > **Digital**. 
     3. Select **Web/Mobile Client** and expand the **JWT App Details** section. 
     4. Select the **copy** buttons against the required fields.  
-        <img src="../images/jwt-app-details-section_2.png" alt="jwt-app-details-section" title="jwt-app-details-section" style="border: 1px solid gray; zoom:80%;">   
+        <img src="../images/jwt-app-details-section_2.png" alt="jwt-app-details-section" title="jwt-app-details-section" style="border: 1px solid gray; zoom:80%;"/>   
 
 6. Select **Generate Summary in Agent AI with External API Data** to generate both the Landing Summary and Intermittent Summary within the Agent AI widget using external data.  
-    <img src="../images/api-with-external-data_3.png" alt="api-with-external-data" title="api-with-external-data" style="border: 1px solid gray; zoom:80%;">  
+    <img src="../images/api-with-external-data_3.png" alt="api-with-external-data" title="api-with-external-data" style="border: 1px solid gray; zoom:80%;"/>  
 
 7. Click **Save**.  
 
@@ -71,17 +71,17 @@ Once configured and saved, Agent AI invokes the external API during summary gene
 ## Add Component to the Case Page  
 
 1. Go to **App Launcher** and select **Cases**.  
-    <img src="../images/app-launcher-cases_4.png" alt="app-launcher-cases" title="app-launcher-cases" style="border: 1px solid gray; zoom:80%;">  
+    <img src="../images/app-launcher-cases_4.png" alt="app-launcher-cases" title="app-launcher-cases" style="border: 1px solid gray; zoom:80%;"/>  
 
 2. Open any record of cases.
 3. Click the **gear** icon in the top-right corner, and then select **Edit Page**.  
-    <img src="../images/edit-page_5.png" alt="edit-page" title="edit-page" style="border: 1px solid gray; zoom:80%;">   
+    <img src="../images/edit-page_5.png" alt="edit-page" title="edit-page" style="border: 1px solid gray; zoom:80%;"/>   
 
 4. Under the **Custom–Managed** components, find the **OmniChannel_AgentAIEmail** component.  
-    <img src="../images/custom-managed-omnichannel-agentai-email_6.png" alt="custom-managed-omnichannel-agentai-email" title="custom-managed-omnichannel-agentai-email" style="border: 1px solid gray; zoom:80%;">  
+    <img src="../images/custom-managed-omnichannel-agentai-email_6.png" alt="custom-managed-omnichannel-agentai-email" title="custom-managed-omnichannel-agentai-email" style="border: 1px solid gray; zoom:80%;"/>  
 
 5. Drag and drop the component on the **Case** page.  
-    <img src="../images/case-page_7.png" alt="case-page" title="case-page" style="border: 1px solid gray; zoom:80%;">  
+    <img src="../images/case-page_7.png" alt="case-page" title="case-page" style="border: 1px solid gray; zoom:80%;"/>  
 
 6. Select **Save**.  
 7. Select **Activation** and activate the page as per your requirement.  
@@ -93,17 +93,17 @@ Once configured and saved, Agent AI invokes the external API during summary gene
 ## Test your Solution
 
 1. The customer sends an email to the address configured under **Routing Addresses** in Email-to-Case.  
-    <img src="../images/email-to-case-page_8.png" alt="email-to-case-page" title="email-to-case-page" style="border: 1px solid gray; zoom:80%;">   
+    <img src="../images/email-to-case-page_8.png" alt="email-to-case-page" title="email-to-case-page" style="border: 1px solid gray; zoom:80%;"/>   
 
 2. A new case is created automatically when the customer initiates a new email.
 3. After the case is opened, the Agent AI widget appears in the location where it was placed during setup in the [previous step](#add-component-to-the-case-page).  
-    <img src="../images/agentai-widget_9.png" alt="agentai-widget" title="agentai-widget" style="border: 1px solid gray; zoom:80%;">  
+    <img src="../images/agentai-widget_9.png" alt="agentai-widget" title="agentai-widget" style="border: 1px solid gray; zoom:80%;"/>  
 
     If **Generate Summary in Agent AI with External API Data** is selected and configured during Agent AI Configuration, the landing summary is generated as follows:  
-    <img src="../images/landing-summary_10.png" alt="landing-summary" title="landing-summary" style="border: 1px solid gray; zoom:80%;">   
+    <img src="../images/landing-summary_10.png" alt="landing-summary" title="landing-summary" style="border: 1px solid gray; zoom:80%;"/>   
 
 4. When a new email appears in the Email section (whether from the agent or the customer), the agent must select the **Refresh** button at the top of the widget. After refreshing, the latest email is passed to the Agent AI widget, which then provides suggestions based on the customer’s message.
 5. Since email conversations don’t have a defined end, agents can use the [Generate Summary](../../agent-experience/agent-assist-widget-v3.md/#generate-summary){:target="_blank"} button on the Agent AI widget to generate on-demand summary of the conversation. A summary pop-up appears within the Agent AI widget.
 6. Select the **Submit** button to save the summary in one of the custom objects in Salesforce. To access these summaries, search for **Kore NonCTI AgentAI Conversation Summary** in the **App Launcher**.  
-    <img src="../images/kore-noncti-agentai-conversation-summary_11.png" alt="kore-noncti-agentai-conversation-summary" title="kore-noncti-agentai-conversation-summary" style="border: 1px solid gray; zoom:80%;">  
+    <img src="../images/kore-noncti-agentai-conversation-summary_11.png" alt="kore-noncti-agentai-conversation-summary" title="kore-noncti-agentai-conversation-summary" style="border: 1px solid gray; zoom:80%;"/>  
 

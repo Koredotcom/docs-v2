@@ -21,7 +21,7 @@ To create bulk contact from a CSV file with the given stream Id.
 
 ## Sample CSV File
 
-<img src="../images/sample-csv-file.png" alt="Sample CSV File" title="Sample CSV File" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/sample-csv-file.png" alt="Sample CSV File" title="Sample CSV File" style="border: 1px solid gray; zoom:80%;"/>
 
 ## Sample Request
 

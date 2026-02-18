@@ -6,7 +6,7 @@ The Conversation Mining feature lets you focus on interactions of interest or th
 
 Navigate to **Quality AI** > **ANALYZE** > **Conversation Mining**.  
 
-<img src="../conversation-mining/images/conversation-mining-default-page.png" alt="Default Page" title="Default Page" style="border: 1px solid gray; zoom:80%;">
+<img src="../conversation-mining/images/conversation-mining-default-page.png" alt="Default Page" title="Default Page" style="border: 1px solid gray; zoom:80%;"/>
 
 The **Conversation Mining** includes the following sections:
 
@@ -40,7 +40,7 @@ Save Custom Views: Store preferred filter sets and column configurations for tar
 ### Access Interactions
 
 Navigate to **Quality AI** > **ANALYZE** > **Conversation Mining** > **Interactions**.  
-<img src="../conversation-mining/images/conversation-mining-interaction-default.png" alt="Interactions" title="Interactions" style="border: 1px solid gray; zoom:80%;">
+<img src="../conversation-mining/images/conversation-mining-interaction-default.png" alt="Interactions" title="Interactions" style="border: 1px solid gray; zoom:80%;"/>
 
 !!! Note
 
@@ -59,10 +59,10 @@ The **Interactions** dashboard includes the following items:
     * **Pass**: Shows a green icon when all processes succeed and the system captures metric adherence.
 
     * **Failed**: Shows a red icon when any process fails and the system doesn't capture metric adherence.  
-<img src="../conversation-mining/images/processing-status.png" alt="Processing Status" title="Processing Status" style="border: 1px solid gray; zoom:80%;">
+<img src="../conversation-mining/images/processing-status.png" alt="Processing Status" title="Processing Status" style="border: 1px solid gray; zoom:80%;"/>
 
 * **Actions**: Lets you assign the interaction to a bookmark for future reference.    
-<img src="../conversation-mining/images/actions-tags.png" alt="Moments" title="Moments" style="border: 1px solid gray; zoom:80%;">
+<img src="../conversation-mining/images/actions-tags.png" alt="Moments" title="Moments" style="border: 1px solid gray; zoom:80%;"/>
 
     !!! Note
 
@@ -91,7 +91,7 @@ The **Interactions** dashboard includes the following items:
     * **Violation**: Speech-based violations that occurred.
 
     * **Omission**: Metrics not met, including playbook steps, dialog tasks, and by-question metrics. Select an interaction to open the conversation history and view Moment metrics in the AI-Assisted Manual Audit page. [Learn more](../ai-assisted-manual-audit.md){:target=”_blank”}.  
-    <img src="../conversation-mining/images/moments.png" alt="Moments" title="Moments" style="border: 1px solid gray; zoom:80%;">    
+    <img src="../conversation-mining/images/moments.png" alt="Moments" title="Moments" style="border: 1px solid gray; zoom:80%;"/>    
 
 * **Sentiment Trend**: Shows the distribution of positive, negative, and neutral tones; tracks sentiment changes throughout the call; highlights the resolution tone; and summarizes overall sentiment.
 Emotions: Shows customer emotional states or tracked emotions during a conversation.
@@ -135,7 +135,7 @@ The new filter interaction enables you to focus on areas of interest or those wi
 Steps to Add New Filter:
 
 1. Select the **Filters** dropdown to add a new filter.   
-<img src="../conversation-mining/images/Filters.png" alt="Filter" title="Filter" style="border: 1px solid gray; zoom:80%;">  
+<img src="../conversation-mining/images/Filters.png" alt="Filter" title="Filter" style="border: 1px solid gray; zoom:80%;"/>  
 
 Steps to Add New Filter:
 
@@ -191,7 +191,7 @@ This indicates the positive sentiment score (higher) and negative sentiment scor
 #### CSAT
  
 This shows the distribution of interactions across the score range in which the customer has responded to the feedback service, and is then drilled down accordingly.  
-<img src="../conversation-mining/images/experience-csat.png" alt="CSAT" title="CSAT" style="border: 1px solid gray; zoom:80%;">  
+<img src="../conversation-mining/images/experience-csat.png" alt="CSAT" title="CSAT" style="border: 1px solid gray; zoom:80%;"/>  
 
 #### Configured Intents
 
@@ -290,7 +290,7 @@ This shows the automated QA score for an interaction, based on the evaluation fo
 ### View Filtered Interactions
 
 * Select **Filtered Interactions** to view the real-time count of conversation interactions based on your filter criteria. The system updates this count dynamically whenever you apply or remove filters.      
-<img src="../conversation-mining/images/filtered-interactions.png" alt="Filtered Interactions" title="Filtered Interactions" style="border: 1px solid gray; zoom:80%;"> 
+<img src="../conversation-mining/images/filtered-interactions.png" alt="Filtered Interactions" title="Filtered Interactions" style="border: 1px solid gray; zoom:80%;"/> 
 
 #### Saved Filters Customization Options
 
@@ -307,4 +307,4 @@ When filters are saved, the following customization options are available:
 * **Edit Filter**: Lets you modify the details of a saved filter.
 
 * **Delete Filter**: Removes the selected saved filter permanently.  
-    <img src="../conversation-mining/images/saved-filters.png" alt="Saved Filters" title="Saved Filters" style="border: 1px solid gray; zoom:80%;"> 
+    <img src="../conversation-mining/images/saved-filters.png" alt="Saved Filters" title="Saved Filters" style="border: 1px solid gray; zoom:80%;"/> 

@@ -24,7 +24,7 @@ The Doc Intelligence Node acts as an automated document-processing point within 
 
 The extracted information is then made available for downstream workflow steps, enabling automation of decision-making, data entry, or reporting. Built-in error handling and engine configuration checks ensure that the node functions reliably and provides traceability into the processing results.
 
-<img src="../images/doc_node_how_it_works.png" alt="Doc Intelligence node" title="Doc Intelligence node" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/doc_node_how_it_works.png" alt="Doc Intelligence node" title="Doc Intelligence node" style="border: 1px solid gray; zoom:80%;"/>
 
 This allows workflows to seamlessly incorporate document intelligence, turning unstructured documents into actionable data with minimal manual intervention.
 
@@ -53,7 +53,7 @@ Begin by opening the Doc node’s properties panel and giving it a clear, descri
 * Engine-specific configuration options appear based on your selection.
 * If the selected engine is not configured, the system prompts you to set it up and redirects you to the appropriate configuration page.
 
-<img src="../images/doc_node_panel.png" alt="Doc node panel" title="Doc node panel" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/doc_node_panel.png" alt="Doc node panel" title="Doc node panel" style="border: 1px solid gray; zoom:80%;"/>
 
 ### 3. Configure Engine Settings
 
@@ -68,7 +68,7 @@ Options include Async execution, which processes the document in the background 
 | **Anthropic**              | Async enabled        | Only configured Anthropic models are listed.<br>Model timeout: 30–360 sec (default 300). |
 | **Azure Doc Intelligence** | Async enabled, structured data always enabled | Prebuilt models are available by default. |
 
-<img src="../images/doc_node_config.png" alt="Doc node panel" title="Doc node panel" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/doc_node_config.png" alt="Doc node panel" title="Doc node panel" style="border: 1px solid gray; zoom:80%;"/>
 
 For information about supported file types, file size limits, and available models by engine, see [Engine support and limits](../types-of-nodes/doc-intelligence-node.md#engine-support-and-limits).
 
@@ -79,7 +79,7 @@ Run the flow and verify the flow behaves as expected and fix any errors.
 
 The Debug panel displays logs, extracted text, structured data, and metadata based on your node configuration.
 
-<img src="../images/debug_panel.png" alt="Doc node panel" title="Doc node panel" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/debug_panel.png" alt="Doc node panel" title="Doc node panel" style="border: 1px solid gray; zoom:80%;"/>
 
 ## Access the Node’s Output
 

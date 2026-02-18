@@ -9,7 +9,7 @@ The Sentiment Chart helps agents and administrators:
 - Gain insights for better customer engagement and conversation outcomes.
 
 
-<img src="../images/sentiment-chart.png" alt="web-sdk-channel" title="sentiment-chart" style="border: 1px solid gray; zoom:80%;"> 
+<img src="../images/sentiment-chart.png" alt="web-sdk-channel" title="sentiment-chart" style="border: 1px solid gray; zoom:80%;"/> 
 
 ## Features
 

@@ -9,16 +9,16 @@ The wallboard is a powerful tool for monitoring and analyzing data. It provides 
 Steps to create a wallboard:
 
 1. Go to **Contact Center AI** > **CONFIGURATIONS** > **Wallboards**.  
-    <img src="../images/ccai-wallboards-page.png" alt="Wallboards Page" title="Wallboards Page" style="border: 1px solid gray; zoom:80%;">
+    <img src="../images/ccai-wallboards-page.png" alt="Wallboards Page" title="Wallboards Page" style="border: 1px solid gray; zoom:80%;"/>
 
 2. Select **+Add New Wallboard**. The Add New Wallboard dialog box displays.  
-    <img src="../images/ccai-add-new-wallboard.png" alt="Add New Wallboard" title="Add New Wallboard" style="border: 1px solid gray; zoom:80%;">
+    <img src="../images/ccai-add-new-wallboard.png" alt="Add New Wallboard" title="Add New Wallboard" style="border: 1px solid gray; zoom:80%;"/>
 
 3. Enter the following details to create the wallboard:
     1. **Name**: Enter the name of the wallboard.
     2. **Wallboard Description** (optional): Enter the description of the wallboard.
     3. **Wallboard Type**: Center Wide (default), Queue Specific.  
-        <img src="../images/wallboard-type.png" alt="Wallboard Type" title="Wallboard Type" style="border: 1px solid gray; zoom:80%;">
+        <img src="../images/wallboard-type.png" alt="Wallboard Type" title="Wallboard Type" style="border: 1px solid gray; zoom:80%;"/>
 
 ### Center Wide
 
@@ -39,7 +39,7 @@ Steps to create a wallboard:
     3. Fast.  
 
 6. Select **Create**. A confirmation message displays, and creates the wallboard.  
-    <img src="../images/add-wallboard.png" alt="Create Center Wide Wallboard" title="Create Center Wide Wallboard" style="border: 1px solid gray; zoom:80%;">
+    <img src="../images/add-wallboard.png" alt="Create Center Wide Wallboard" title="Create Center Wide Wallboard" style="border: 1px solid gray; zoom:80%;"/>
 
 ### Queue Specific
 
@@ -72,27 +72,27 @@ Steps to create a wallboard:
     3. Fast.  
 
 7. Select **Create**. A confirmation message displays, and creates the wallboard.  
-    <img src="../images/create-queue-specific-wallboard.png" alt="Create Queue Specific Wallboard" title="Create Queue Specific Wallboard" style="border: 1px solid gray; zoom:80%;">
+    <img src="../images/create-queue-specific-wallboard.png" alt="Create Queue Specific Wallboard" title="Create Queue Specific Wallboard" style="border: 1px solid gray; zoom:80%;"/>
 
 ## Edit a Wallboard
 
 Steps to edit a wallboard:
 
 1. Select **Edit**.  
-    <img src="../images/ccai-edit-button.png" alt="Edit" title="Edit" style="border: 1px solid gray; zoom:80%;">
+    <img src="../images/ccai-edit-button.png" alt="Edit" title="Edit" style="border: 1px solid gray; zoom:80%;"/>
 
 2. Make the required changes and select **Update**.  
-<img src="../images/edit-wallboard.png" alt="Edit Wallboard" title="Edit Wallboard" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/edit-wallboard.png" alt="Edit Wallboard" title="Edit Wallboard" style="border: 1px solid gray; zoom:80%;"/>
 
 ## Delete a Wallboard
 
 Steps to delete a wallboard:
 
 1. Select the **Delete** (bin) icon.  
-    <img src="../images/ccai-delete-button.png" alt="Delete" title="Delete" style="border: 1px solid gray; zoom:80%;">
+    <img src="../images/ccai-delete-button.png" alt="Delete" title="Delete" style="border: 1px solid gray; zoom:80%;"/>
 
 2. A confirmation window is displayed. Click **Yes** to confirm.  
-    <img src="../images/ccai-confirm-delete.png" alt="Confirm Delete" title="Confirm Delete" style="border: 1px solid gray; zoom:80%;">
+    <img src="../images/ccai-confirm-delete.png" alt="Confirm Delete" title="Confirm Delete" style="border: 1px solid gray; zoom:80%;"/>
 
 ### Related Link
 

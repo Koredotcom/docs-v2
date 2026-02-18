@@ -45,9 +45,9 @@ In this document, you will learn how to add the node to your flow, configure it 
 You can add audio input in one of the following ways:
 
 1. Manually select and upload an audio file in the allowed format.
-2. Configure the **Input variable** by selecting <b><i>Text</i></b> for **Type** in the following window when adding input variables for the node. [Learn more](../perform-other-actions-on-the-flow-builder/manage-input-and-output.md#adding-input-variables){:target="_blank"}. 
+2. Configure the **Input variable** by selecting <b><i>Text</i></b> for **Type** in the following window when adding input variables for the node. [Learn more](../perform-other-actions-on-the-flow-builder/manage-input-and-output.md#adding-input-variables). 
 
-   You must provide the audio file URL when running the flow, as mentioned [here](../../../workflows/workflow-builder/types-of-nodes/audio-to-text-node.md#step-3-run-the-flow){:target="_blank"}.
+   You must provide the audio file URL when running the flow, as mentioned [here](../../../workflows/workflow-builder/types-of-nodes/audio-to-text-node.md#step-3-run-the-flow).
 
    <img src="../images/select-text-input-type.png" alt="select text type input" title="select text type input" style="border: 1px solid gray; zoom:75%;">
 
@@ -95,24 +95,24 @@ This node is commonly used for:
 
 ### Translation
 
-* Transcribes and translates speech in non-English languages see [Open AI Whisper-supported language](https://platform.openai.com/docs/guides/speech-to-text#supported-languages){:target="_blank"} into English when enabled.
+* Transcribes and translates speech in non-English languages see [Open AI Whisper-supported language](https://platform.openai.com/docs/guides/speech-to-text#supported-languages) into English when enabled.
 * Inverse translation (English to other languages) isn't currently supported.
 
 
 ### Important Considerations
 
-* Audio uploads and settings are handled by the [File Upload API](){:target="_blank"}.
+* Audio uploads and settings are handled by the [File Upload API]().
 
 * OpenAI Whisper automatically removes offensive and banned words during transcription. 
-* Performance tracking is available under **Settings** > **Model Analytics Dashboard** > **External Models** tab. [Learn more](../../../settings/monitoring/analytics/model-analytics-dashboard.md){:target="_blank"}. 
+* Performance tracking is available under **Settings** > **Model Analytics Dashboard** > **External Models** tab. [Learn more](../../../settings/monitoring/analytics/model-analytics-dashboard.md). 
 
 Metrics include:
 
 * **Minutes transcribed/Minutes of Audio** (total audio processed by the node) since the Whisper models are charged based on the minutes of the audio consumed.
-* **Input and output tokens** since the Whisper models usually support a small number of tokens, and tracking the counts is necessary. [Learn more](../../../settings/monitoring/analytics/model-analytics-dashboard.md#tokens){:target="_blank"}.
+* **Input and output tokens** since the Whisper models usually support a small number of tokens, and tracking the counts is necessary. [Learn more](../../../settings/monitoring/analytics/model-analytics-dashboard.md#tokens).
 * Each model execution is logged on the **Model Traces** page, displaying summarized data for:
     * **Input**, **Output**, and **Response Time**
-    * **Translation,** and **Timestamp**.  [Learn more](../../../settings/monitoring/analytics/model-traces.md){:target="_blank"}.
+    * **Translation,** and **Timestamp**.  [Learn more](../../../settings/monitoring/analytics/model-traces.md).
 
 ## Add and Configure an Audio to Text Node
 
@@ -141,7 +141,7 @@ Metrics include:
 
 * Enter or select the following **General Settings**:
     * **Node Name**: Enter an appropriate name for the node. For example, “*CustomerSupportConversation*.”
-    * Provide the input variable that is set for the node for the **Audio File** field. [Learn more](../perform-other-actions-on-the-flow-builder/manage-input-and-output.md){:target="_blank"}.
+    * Provide the input variable that is set for the node for the **Audio File** field. [Learn more](../perform-other-actions-on-the-flow-builder/manage-input-and-output.md).
     * Select a model from the list of configured models.
     * (Optional) Turn on the toggle for the following to enable the respective feature:
          * **Translation**: Translate other languages supported by the model to English.
@@ -171,9 +171,9 @@ Metrics include:
 
     * **Response JSON schema**:  Define a JSON schema for structured responses. This step is optional and depends on the selected model.   
     You can define a JSON schema to structure the model's response if the chosen model supports the response format. By default, if no schema is provided, the model will respond with plain text.
-    Supported JSON schema types include: String, Boolean, Number, Integer, Object, Array, Enum, and anyOf. Ensure the schema follows the standard outlined here: [Defining JSON schema](../perform-other-actions-on-the-flow-builder/defining-json.md){:target="_blank"}. 
+    Supported JSON schema types include: String, Boolean, Number, Integer, Object, Array, Enum, and anyOf. Ensure the schema follows the standard outlined here: [Defining JSON schema](../perform-other-actions-on-the-flow-builder/defining-json.md). 
     If the schema is invalid or mismatched, errors will be logged, and you must resolve them before proceeding.  
-    For more information about how the model parses the response and separates keys from the content body, see: [Structured Response Parsing and Context Sharing in Workflows](../perform-other-actions-on-the-flow-builder/model_response_parsing.md){:target="_blank"}.
+    For more information about how the model parses the response and separates keys from the content body, see: [Structured Response Parsing and Context Sharing in Workflows](../perform-other-actions-on-the-flow-builder/model_response_parsing.md).
 
 
 * Click the **Connections** icon and select the **Go to Node** for success and failure conditions. 
@@ -188,7 +188,7 @@ Metrics include:
 
 ### Step 1: (Optional) Add Input Variable(s)
 
-* Click the **Input** tab of the **Start** node, and click **Add Input Variable** to configure the input for the flow’s test run. [Learn more](../perform-other-actions-on-the-flow-builder/manage-input-and-output.md#adding-input-variables){:target="_blank"}.
+* Click the **Input** tab of the **Start** node, and click **Add Input Variable** to configure the input for the flow’s test run. [Learn more](../perform-other-actions-on-the-flow-builder/manage-input-and-output.md#adding-input-variables).
 
     <img src="../images/add-input-variable-audio-to-text.png" alt="add input variable" title="add input variable" style="border: 1px solid gray; zoom:75%;">
 
@@ -224,6 +224,6 @@ To run and test the flow, follow the steps below:
 
 * Click <b>Generate Output</b>.
 
-  The **Debug** window generates the flow log and results, as shown below. [Learn more](../perform-other-actions-on-the-flow-builder/run-the-flow.md){:target="_blank"} about running the workflow.
+  The **Debug** window generates the flow log and results, as shown below. [Learn more](../perform-other-actions-on-the-flow-builder/run-the-flow.md) about running the workflow.
 
    <img src="../images/debug-window-audio-to-text.png" alt="debug window" title="debug window" style="border: 1px solid gray; zoom:75%;">

@@ -409,4 +409,4 @@ This section describes the warnings and prerequisites you must address before de
 3. The system allows you to delete the metric only after resolving all dependencies.
 
 4. Verify the metric is deleted, and related data are removed.  
-    <img src="../images/by-value-delete-error.png" alt="Delete Warning" title="Delete Warning" style="border: 1px solid gray; zoom:80%;">     
+    <img src="../images/by-value-delete-error.png" alt="Delete Warning" title="Delete Warning" style="border: 1px solid gray; zoom:80%;"/>     

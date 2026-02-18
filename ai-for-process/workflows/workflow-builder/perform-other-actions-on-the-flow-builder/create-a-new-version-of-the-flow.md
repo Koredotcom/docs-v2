@@ -10,7 +10,7 @@ You can save versions of your flows, restore older versions, and delete versions
 
 1. To save a version of the flow, click the **+ icon**.
 
-    <img src="./../images/create-a-new-version.png" alt="Create a New Version" title="Create a New Version" style="border: 1px solid gray; zoom:80%;">
+    <img src="./../images/create-a-new-version.png" alt="Create a New Version" title="Create a New Version" style="border: 1px solid gray; zoom:80%;"/>
 
     The **Name the version** dialog is displayed.
 

@@ -8,7 +8,7 @@ The **Skills** feature helps set up organizational classifications to route call
 ## The Skills Live Board
 
 You can reach the Skills Live Board by going to **Contact Center** > **ROUTING** > **Skills**.
-<img src="../images/skills-page.png" alt="Skills Page" title="Skills Page" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/skills-page.png" alt="Skills Page" title="Skills Page" style="border: 1px solid gray; zoom:80%;"/>
 
 The Skills section is organized by Skill Groups. Click a group to expand it and display the skills assigned to that group. You can use the **Search** field to find skills or skill groups by name.
 

@@ -4,7 +4,7 @@ In the Contact Center, Agent Forms provide a range of input fields that allow ca
 
 To reach the _Agent Forms_ section, go to **Contact Center AI > CONFIGURATIONS > Agent Forms**. Here, you can view and search existing forms and create new ones.  
 <img src="../images/agent-forms-page.png" alt="
-Agent Forms Page" title="Agent Forms Page" style="border: 1px solid gray; zoom:80%;">
+Agent Forms Page" title="Agent Forms Page" style="border: 1px solid gray; zoom:80%;"/>
 
 ## The Agent Forms Live Board
 
@@ -18,7 +18,7 @@ You can access the following features and information within the Agent Forms sec
     2. **Published** displays when a form has been approved and published.
 5. **Last Updated**: Displays the date and time when the form was last updated.  
 <img src="../images/agent-form-columns.png" alt="
-Agent Forms Columns" title="Agent Forms Columns" style="border: 1px solid gray; zoom:80%;">
+Agent Forms Columns" title="Agent Forms Columns" style="border: 1px solid gray; zoom:80%;"/>
 
 ### Create an Agent Form
 
@@ -26,7 +26,7 @@ Steps to create an Agent form:
 
 1. Click **+ New Form**.  
 <img src="../images/add-new-form.png" alt="
-Add New Form Button" title="Add New Form Button" style="border: 1px solid gray; zoom:80%;">
+Add New Form Button" title="Add New Form Button" style="border: 1px solid gray; zoom:80%;"/>
 
 2. The **New Form** window opens, and you can configure the following:
     1. Enter the **Name** of the form, the **Display Name** of the form, and the **Description**.
@@ -35,7 +35,7 @@ Add New Form Button" title="Add New Form Button" style="border: 1px solid gray; 
         1. **Assign to Queues** lets you make forms available for conversations in all or selected queues.
         2. **Assign to Agent Groups** allows you to make forms available for agents in specific agent groups.
     4. Click **Save & Proceed**.  
-    <img src="../images/new-form.png" alt="Save New Form" title="Save New Form" style="border: 1px solid gray; zoom:80%;">
+    <img src="../images/new-form.png" alt="Save New Form" title="Save New Form" style="border: 1px solid gray; zoom:80%;"/>
 
 ### Build an Agent Form
 
@@ -57,23 +57,23 @@ There are two ways to edit form settings (Name, Description, Form Data Security 
 1. **From the Agent Forms Live Board**:
     1. Find the form in the **Contact Center AI > CONFIGURATIONS > Agent Forms** section.
     2. Click the **Edit** icon under _Actions_.  
-    <img src="../images/edit-button.png" alt="Edit Form Button" title="Edit Form Button" style="border: 1px solid gray; zoom:80%;">
+    <img src="../images/edit-button.png" alt="Edit Form Button" title="Edit Form Button" style="border: 1px solid gray; zoom:80%;"/>
 2. **From the Form Builder**:
     3. From the top toolbar of the form builder, click the **More Options** button.
     4. Select **Form Setting**.  
-    <img src="../images/form-setting-button.png" alt="Form Setting Button" title="Form Setting Button" style="border: 1px solid gray; zoom:80%;">
+    <img src="../images/form-setting-button.png" alt="Form Setting Button" title="Form Setting Button" style="border: 1px solid gray; zoom:80%;"/>
 
 ### Publish an Agent Form
 
 Publishing a form means making it available for agents to select within the Agent Console and send to customers, as shown below. See [Agent Forms for Handling Sensitive Information](../../../console/interacting-with-customers.md#agent-forms-for-handling-sensitive-information) for detail.  
-<img src="../images/agent-form-console.png" alt="Send Agent Form" title="Send Agent Form" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/agent-form-console.png" alt="Send Agent Form" title="Send Agent Form" style="border: 1px solid gray; zoom:80%;"/>
 
 Steps to publish a form:
 
 1. Find the form in the **Contact Center AI > CONFIGURATIONS > Agent Forms** section.
 2. Click the **More Options** icon under _Actions_.
 3. Select **Publish**.  
-<img src="../images/publish-button.png" alt="Publish Button" title="Publish Button" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/publish-button.png" alt="Publish Button" title="Publish Button" style="border: 1px solid gray; zoom:80%;"/>
 
     !!! Note
 
@@ -87,12 +87,12 @@ There are two ways to delete an Agent Form:
     1. Find the form in the **Contact Center AI > CONFIGURATIONS > Agent Forms** section.
     2. Click the **More Options** icon under _Actions_.
     3. Select **Delete**.  
-    <img src="../images/delete-button.png" alt="Delete Button" title="Delete Button" style="border: 1px solid gray; zoom:80%;">
+    <img src="../images/delete-button.png" alt="Delete Button" title="Delete Button" style="border: 1px solid gray; zoom:80%;"/>
 
 2. **From the Form Builder**:  
     4. From the top toolbar of the form builder, click the **More Options** button.  
     5. Select **Delete**.  
-    <img src="../images/delete-button-form-builder.png" alt="Form Builder Delete Button" title="Form Builder Delete Button" style="border: 1px solid gray; zoom:80%;">
+    <img src="../images/delete-button-form-builder.png" alt="Form Builder Delete Button" title="Form Builder Delete Button" style="border: 1px solid gray; zoom:80%;"/>
 
     !!! Note
 

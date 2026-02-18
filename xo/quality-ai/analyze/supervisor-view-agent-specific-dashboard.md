@@ -82,17 +82,17 @@ The following metrics help evaluate agent performance and coaching progress, fil
     <img src="../agent-leaderboard/images/No-of-fails.png" alt="No. of Fails" title="No. of Fails" style="border: 1px solid gray; zoom:100%;">
 
 * **Fatal Interactions**: Displays an agent’s interactions that failed critical compliance or quality checks during a selected date range, helping supervisors to identify and address high-risk cases.         
-    <img src="..//agent-leaderboard/images/fatal-interactions.png" alt="Fatal Interactions" title="Fatal Interactions" style="border: 1px solid gray; zoom:80%;">
+    <img src="..//agent-leaderboard/images/fatal-interactions.png" alt="Fatal Interactions" title="Fatal Interactions" style="border: 1px solid gray; zoom:80%;"/>
 
 ### Coaching Insights
 
 * **Select Scorecard**: Lets you choose specific scorecard templates to filter the Coaching Insights analysis and populate metrics of that scorecard type. 
 
 * **Strongest Attributes**: Based on the scorecard selected, it displays the bottom five attributes with the lowest scores from the agent’s scorecards during the specified date range. The system shows only attributes with scores under 80 as areas for improvement.     
-<img src="../agent-leaderboard/images/strongest-attributes.png" alt="Coaching Insights" title="Coaching Insights" style="border: 1px solid gray; zoom:80%;">
+<img src="../agent-leaderboard/images/strongest-attributes.png" alt="Coaching Insights" title="Coaching Insights" style="border: 1px solid gray; zoom:80%;"/>
 
 * **Opportunity Areas**: The system displays the bottom five attributes with the lowest scores from the agent’s scorecards during the selected date range and shows only attributes with scores under 80 as areas for improvement.    
-    <img src="../agent-dashboard/images/scorecard-selection-for-coaching-insights.png" alt="Opportunity Areas" title="Opportunity Areas" style="border: 1px solid gray; zoom:80%;">
+    <img src="../agent-dashboard/images/scorecard-selection-for-coaching-insights.png" alt="Opportunity Areas" title="Opportunity Areas" style="border: 1px solid gray; zoom:80%;"/>
 
 ### Sentiment Insights
 
@@ -121,7 +121,7 @@ Supervisors can view:
     * **Spot Coaching Opportunities**: Enables you to make informed decisions based on negative sentiment drivers or recurring customer frustrations.
 
     * **Monitor Trends**: Lets you track agent sentiment patterns in conversation.   
-    <img src="../dashboard/images/sentiment-insights.png" alt="Sentiment Insights" title="Sentiment Insights" style="border: 1px solid gray; zoom:80%;">
+    <img src="../dashboard/images/sentiment-insights.png" alt="Sentiment Insights" title="Sentiment Insights" style="border: 1px solid gray; zoom:80%;"/>
 
 ### Resolution Insights
 
@@ -142,14 +142,14 @@ Supervisors can view the following details:
     * **View All Topics**: Navigates to Topic Discovery with the selected topic and automatically applied filters.
 
     * **View Conversations**: Navigates to Conversation Mining with the exact topic and filters pre-applied.   
-    <img src="../dashboard/images/resolution-insights.png" alt="Resolution Insights" title="Resolution Insights" style="border: 1px solid gray; zoom:80%;">
+    <img src="../dashboard/images/resolution-insights.png" alt="Resolution Insights" title="Resolution Insights" style="border: 1px solid gray; zoom:80%;"/>
 
 * **Identify Performance Gaps**: Provides a comparison view to identify the highest vs. the lowest resolution rates.
 
 ### Coaching Assignments
 
 This feature displays all coaching assignments given to an agent within the agent dashboard. Supervisors can track scorecard performance trends over time to assess progress or decline and take appropriate action through targeted coaching.   
-<img src="../agent-leaderboard/images/coaching-assignments.png" alt="Coaching Assignments" title="Coaching Assignments" style="border: 1px solid gray; zoom:80%;">
+<img src="../agent-leaderboard/images/coaching-assignments.png" alt="Coaching Assignments" title="Coaching Assignments" style="border: 1px solid gray; zoom:80%;"/>
 
 The Coaching Assignments include the following items:
 

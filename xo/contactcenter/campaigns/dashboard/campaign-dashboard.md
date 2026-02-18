@@ -3,7 +3,7 @@
 The campaign dashboard lets campaign managers to track the progress and other essential metrics related to campaigns.
 
 To access dashboards, go to **Contact Center AI** > **Campaigns** > **Dashboard**.  
-<img src="../images/dashboard-pagination.png" alt="Dashboard Page" title="Dashboard Page" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/dashboard-pagination.png" alt="Dashboard Page" title="Dashboard Page" style="border: 1px solid gray; zoom:80%;"/>
 
 The following details related to campaigns appears on the dashboard:
 
@@ -17,7 +17,7 @@ Clicking any campaign displays detailed information related to the selected camp
 
 ### Voice Campaigns
 
-<img src="../images/campaign-details-dashboard.png" alt="Voice Campaign Details" title="Voice Campaign Details" style="border: 1px solid gray; zoom:80%;">  
+<img src="../images/campaign-details-dashboard.png" alt="Voice Campaign Details" title="Voice Campaign Details" style="border: 1px solid gray; zoom:80%;"/>  
 
 Campaign Name: Agentless
 
@@ -29,11 +29,11 @@ This section displays the following information:
 * **Connected Calls** - Count and percentage of connected calls.
 * **Unconnected Calls** - Count and percentage of unconnected calls, including calls that go into the retry state.
 * **Avg. Call Duration** - Average Duration of all the connected calls in the campaign.
-    <img src="../images/overview.png" alt="Overview" title="Overview" style="border: 1px solid gray; zoom:80%;">  
+    <img src="../images/overview.png" alt="Overview" title="Overview" style="border: 1px solid gray; zoom:80%;"/>  
 
 ### Outcome
 
-<img src="../images/outcome.png" alt="Outcome" title="Outcome" style="border: 1px solid gray; zoom:80%;">  
+<img src="../images/outcome.png" alt="Outcome" title="Outcome" style="border: 1px solid gray; zoom:80%;"/>  
 
 The Outcome section presents detailed insights into call dispositions for outbound dialer campaigns.
 
@@ -119,7 +119,7 @@ The system deselects additional mapped and unmapped fields by default.
 
 ### SMS Campaigns
 
-<img src="../images/sms-campaign-detailed.png" alt="SMS Campaign Details" title="Voice Campaign Details" style="border: 1px solid gray; zoom:80%;">  
+<img src="../images/sms-campaign-detailed.png" alt="SMS Campaign Details" title="Voice Campaign Details" style="border: 1px solid gray; zoom:80%;"/>  
 
 Campaign Name: Up-sell of Feature
 
@@ -183,7 +183,7 @@ This section displays the total count of messages delivered. You can select from
 * Last 30 days
 
 Hovering over the hours/days shows the count of messages delivered and the delivery rate.  
-<img src="../images/hover-over-details.png" alt="SMS Campaign Dashboard Hover" title="Voice Campaign Dashboard Hover" style="border: 1px solid gray; zoom:80%;"> 
+<img src="../images/hover-over-details.png" alt="SMS Campaign Dashboard Hover" title="Voice Campaign Dashboard Hover" style="border: 1px solid gray; zoom:80%;"/> 
 
 ### Filter, Search, and Sort Latest Execution (Voice and SMS)
 
