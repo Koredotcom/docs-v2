@@ -734,7 +734,7 @@ This update includes enhancements and bug fixes. Key enhancements included in th
 
 **Auto-Scroll for Transcript Tab**
 The Transcript tab is now updated with the "auto-scroll" functionality, wherein the system automatically navigates to the last message for new utterances. Agents can manually scroll up and down to read through the content.  
-<img src="../images/auto-scroll-transcript-tab.png" alt="auto-scroll-transcript-tab" title="auto-scroll-transcript-tab" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/auto-scroll-transcript-tab.png" alt="auto-scroll-transcript-tab" title="auto-scroll-transcript-tab" style="border: 1px solid gray; zoom:80%;"/>
 
 **Enhanced Language Support for Localization**
 The Greeting Messages, Widget Content, Layout Customization, and Negative Feedback Reasons now support the following additional languages:
@@ -755,7 +755,7 @@ The Greeting Messages, Widget Content, Layout Customization, and Negative Feedba
 **Clickable Spyglass icon on the Search bar**
 
 The **Spyglass** icon on the Agent AI widget’s **Search** bar is now clickable. Users can search by pressing the **Enter** key or clicking the **Spyglass** icon.  
-<img src="../images/spy-glass-icon-search-tab.png" alt="spy-glass-icon" title="spy-glass-icon" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/spy-glass-icon-search-tab.png" alt="spy-glass-icon" title="spy-glass-icon" style="border: 1px solid gray; zoom:80%;"/>
 
 **Run Dialog Task Enhancement**
 In the Agent AI widget, Dialog Tasks now display the **Run with Agent Input** button as an icon next to the Run button. Agents can click this icon to customize the Dialog Task content and decide whether to send the dialog.
@@ -903,7 +903,7 @@ This update includes enhancements and bug fixes. Key enhancements included in th
 <font size="4">“Thumbs-down”/Negative Feedback Reasons Comment Box Updated</font>
 
 The placeholder text in the comment box is now labeled “Tell us more…” instead of “Add additional comments here.”  
-<img src="../images/negative-feedback-reason-comment-box.png" alt="negative-feedback-reason-comment-box" title="negative-feedback-reason-comment-box" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/negative-feedback-reason-comment-box.png" alt="negative-feedback-reason-comment-box" title="negative-feedback-reason-comment-box" style="border: 1px solid gray; zoom:80%;"/>
 
 <font size="4">Summarization in Spanish</font>
 
@@ -918,12 +918,12 @@ You can configure error messages during [Use Case creation](https://docs.kore.ai
 **Single Error Message**
 
 When a single error message is triggered during dialog task execution, the **Assist** tab displays the error message and the number of occurrences. If the same error message is triggered again, the message does not repeat, but the number of occurrences increases.  
-<img src="../images/single-error-message.png" alt="single-error-message" title="single-error-message" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/single-error-message.png" alt="single-error-message" title="single-error-message" style="border: 1px solid gray; zoom:80%;"/>
 
 **Multiple Error MessageS**
 
 When multiple (different) error messages are triggered, they are all displayed in the **Assist** tab, with a count indicating the total number of error messages.  
-<img src="../images/multiple-error-messages.png" alt="multiple-error-messages" title="multiple-error-messages" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/multiple-error-messages.png" alt="multiple-error-messages" title="multiple-error-messages" style="border: 1px solid gray; zoom:80%;"/>
 
 <font size="4">Enhanced Raw Data API</font>
 
@@ -968,7 +968,7 @@ Key updates:
 * **Expand/Collapse Functionality**: Icons added to toggle table view.
 * **Default View**: Tables appear expanded by default.
 * **User Control**: Agents can adjust table visibility as needed.  
-<img src="../images/expandable-collapsible-content.png" alt="expandable-collapsible-content" title="expandable-collapsible-content" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/expandable-collapsible-content.png" alt="expandable-collapsible-content" title="expandable-collapsible-content" style="border: 1px solid gray; zoom:80%;"/>
 
 <font size="4">Enabling Server-Side Triggering of Conversation Summary in Agent AI</font>
 
@@ -1025,22 +1025,22 @@ The Search AI Configuration data is now saved at the bot level instead of the ac
 <font size="4">Enhanced Scroll Functionality in the Widget</font>
 
 In the Agent AI widget, the **Assist** and the **My Bot** tabs now contain “up” and “down” arrow buttons at the top and the bottom to let you scroll to the first and last messages. These buttons appear after the messages in the **Assist** tab are large enough to require a scroll bar.  
-<img src="../images/enhanced-scroll-functionality-1.png" alt="enhanced-scroll-functionality" title="enhanced-scroll-functionality" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/enhanced-scroll-functionality-1.png" alt="enhanced-scroll-functionality" title="enhanced-scroll-functionality" style="border: 1px solid gray; zoom:80%;"/>
 
 <font size="4">Agent AI Enabled Dialog Tasks for Playbook Step Adherence and Triggers</font>
 
 To improve the usability and relevance of the Playbooks module, Agent AI now restricts the selection of dialog tasks specified only for the Playbook’s designated channel. This dialog task selection applies during trigger point creation for Dynamic Playbooks and Step Adherence within Primary Playbooks.  
-<img src="../images/agent-ai-enabled-dialog-tasks-2.png" alt="agent-ai-enabled-dialog-tasks" title="agent-ai-enabled-dialog-tasks" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/agent-ai-enabled-dialog-tasks-2.png" alt="agent-ai-enabled-dialog-tasks" title="agent-ai-enabled-dialog-tasks" style="border: 1px solid gray; zoom:80%;"/>
 
 <font size="4">Feedback Reason and Comment on Summarization</font>
 
 The Agent AI widget's Summary feature now offers enhanced feedback capabilities for auto-generated summaries. Agents can provide more specific and actionable feedback by selecting a reason from up to five customizable messages and adding optional comments. Administrators can edit these messages, turn the comment box on or off, and choose the feedback language. This improved feedback system allows agents to pinpoint issues with summaries more accurately, contributing to the continuous improvement of the auto-summarization feature's accuracy and relevance over time. [Learn More :octicons-arrow-right-24:](../../agentai/configuration/feedback-settings.md){:target="_blank"} 
-<img src="../images/feedback-reason-3.png" alt="feedback-reason" title="feedback-reason" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/feedback-reason-3.png" alt="feedback-reason" title="feedback-reason" style="border: 1px solid gray; zoom:80%;"/>
 
 <font size="4">Language-specific Summarization</font>
 
 The Agent AI widget now supports language-specific summarization for third-party agent desktops. Admins can customize the language of automatically generated conversation summaries by selecting the **Custom Dialog Task** option in the **Auto Summarization Model** section. After choosing a preferred language, the system displays a configured dialog task for that language. The summary is then generated based on this language-specific task, allowing for more accurate and culturally appropriate summaries across different languages.  
-<img src="../images/language-specific-summarization-4.png" alt="language-specific-summarization" title="language-specific-summarization" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/language-specific-summarization-4.png" alt="language-specific-summarization" title="language-specific-summarization" style="border: 1px solid gray; zoom:80%;"/>
 
 <font size="4">View Summary from Any Active Tab</font>
 
@@ -1049,7 +1049,7 @@ The Agent AI widget now displays summaries more flexibly across all active tabs.
 <font size="4">Widget Layout Customization (Beta)</font>
 
 The Agent AI widget now offers channel-specific layout customization in beta. Users can adjust language settings, menu labels, visibility controls for messages, dialog task timelines, and assist message types. The feature also allows customization of widget menu layout, assist action menu, landing tab settings, and "More" menu behavior. This flexibility enables tailoring the widget to specific channel needs and preferences. While the preview function is still in beta and may not fully reflect the final widget experience, it provides a close reference for customization options. [Learn More :octicons-arrow-right-24:](../../agentai/configuration/widget-theming-layout-customization.md){:target="_blank"}  
-<img src="../images/widget-layout-customization-5.png" alt="widget-layout-customization" title="widget-layout-customization" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/widget-layout-customization-5.png" alt="widget-layout-customization" title="widget-layout-customization" style="border: 1px solid gray; zoom:80%;"/>
 
 <font size="4">Entry/Exit Event Support in Third-Party Integration</font>
 
@@ -1088,7 +1088,7 @@ Agent AI dashboard is enhanced with new suggestion relevance metrics and reorgan
     * "Articles" is renamed to "Answers", displaying SearchAssist results.
     * A new "Others" tab is added for web suggestions and additional data sources.
 
-<img src="../images/updated-dashboard.png" alt="updated-dashboard" title="updated-dashboard" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/updated-dashboard.png" alt="updated-dashboard" title="updated-dashboard" style="border: 1px solid gray; zoom:80%;"/>
 
 <font size="4">Attachment Support in Widget</font>
 
@@ -1104,30 +1104,30 @@ Agents can now customize the widget appearance by selecting a theme. To select i
 
 Agent AI has introduced in-line digital forms in the **Assist** tab, making it easier to collect customer information during live conversations. Configure the forms with dialog tasks to use this feature and select "Open inline form" in the **Web/Mobile SDK Form Behavior** setting.
 
-<img src="../images/inline-digital-form.png" alt="inline-digital-form" title="inline-digital-form" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/inline-digital-form.png" alt="inline-digital-form" title="inline-digital-form" style="border: 1px solid gray; zoom:80%;"/>
 
 **In-line form**:
 
-<img src="../images/inline-form.png" alt="inline-form" title="inline-form" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/inline-form.png" alt="inline-form" title="inline-form" style="border: 1px solid gray; zoom:80%;"/>
 
 <font size="4">Streamlined Conversation Summary Management</font>
 
 Conversation Summary management has been improved to enhance usability and tracking.
 
 * When agents submit a summary, it's automatically saved and linked to its **Conversation ID**, making it easily accessible in the **Conversation Logs** screen.  
-<img src="../images/conversation-logs.png" alt="conversation-logs" title="conversation-logs" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/conversation-logs.png" alt="conversation-logs" title="conversation-logs" style="border: 1px solid gray; zoom:80%;"/>
 
 * For easy identification and comparison, the modified Conversation Summary before submission is marked as “Edited Summary” with an “eye” icon to view the original summary.  
-<img src="../images/edited-summary.png" alt="edited-summary" title="edited-summary" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/edited-summary.png" alt="edited-summary" title="edited-summary" style="border: 1px solid gray; zoom:80%;"/>
 
 * Each displayed Conversation Summary indicates whether it has been modified.
 * If summary generation fails, the following message is displayed to inform the user: "Error occurred while generating summary".  
-<img src="../images/summary-generation-error.png" alt="summary-generation-error" title="summary-generation-error" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/summary-generation-error.png" alt="summary-generation-error" title="summary-generation-error" style="border: 1px solid gray; zoom:80%;"/>
 
 <font size="4">Enabling Channel-Specific Automations and Managing Appearance in the Widget Library</font>
 
 Agent AI lets you configure channel-specific dialog tasks across all communication channels - Chat, Voice, and Email. You can also specify whether these dialog tasks appear in the list or only when searched in the widget’s library (**Search** tab). These preferences can be set while creating or editing a dialog task and are available under the **Triggers & Permissions** tab.
-<img src="../images/triggers-and-permissions.png" alt="triggers-and-permissions" title="free text" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/triggers-and-permissions.png" alt="triggers-and-permissions" title="free text" style="border: 1px solid gray; zoom:80%;"/>
 
 **When Enabled**: When a dialog task is enabled for a specific channel, it is triggered automatically or manually by the agent during interaction with customers on that specific channel.
 
@@ -1166,15 +1166,15 @@ This update includes feature enhancements and bug fixes. Key features and enhanc
 <font size="4">Auto-scroll Agent AI Widget Content</font>
 
 The **Auto-Scroll Assist Tab Content toggle** lets you manage the scrolling functionality of content in the Assist tab. Agents can enable/disable this toggle in the **AgentAssist widget** > **Settings** tab.
-<img src="../images/autoscroll-settings-tab.png" alt="autoscroll-settings-tab" title="autoscroll-settings-tab" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/autoscroll-settings-tab.png" alt="autoscroll-settings-tab" title="autoscroll-settings-tab" style="border: 1px solid gray; zoom:80%;"/>
 
-<img src="../images/autoscroll-enabled-disabled-1.png" alt="autoscroll-enabled-disabled" title="autoscroll-enabled-disabled" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/autoscroll-enabled-disabled-1.png" alt="autoscroll-enabled-disabled" title="autoscroll-enabled-disabled" style="border: 1px solid gray; zoom:80%;"/>
 
 <font size="4">Entity-Based Summarization</font>
 
 Dialog tasks having “message nodes” didn’t let users customize the Conversation Summary. Hence, to let users customize the Conversation Summary, “message nodes” are replaced with “entity nodes”. To utilize this capability, admins must create dialog tasks with entity nodes and select these dialog tasks in the **Agent AI** > **Configuration** > **Widget Settings** > **AgentAssist Channel Specific Settings** > **Auto Summarization** > **Auto Summarization Model** > **Custom Dialog Task** section.
 
-<img src="../images/entity-based-summarization-2.png" alt="entity-based-summarization" title="entity-based-summarization" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/entity-based-summarization-2.png" alt="entity-based-summarization" title="entity-based-summarization" style="border: 1px solid gray; zoom:80%;"/>
 
 For Conversation Summary customization, select a dialog task with “entity node” in the **Custom Dialog Task** field.
 
@@ -1196,11 +1196,11 @@ For better processing and accurate identification of reasons for receiving a “
 
 **Feedback Settings in the AgentAssist UI**:
 
-<img src="../images/feedback-settings-ui-3.png" alt="feedback-settings-ui" title="feedback-settings-ui" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/feedback-settings-ui-3.png" alt="feedback-settings-ui" title="feedback-settings-ui" style="border: 1px solid gray; zoom:80%;"/>
 
 **Feedback Messages and Comment Box in the Widget**:
 
-<img src="../images/feedback-settings-widget-4.png" alt="feedback-settings-widget" title="feedback-settings-widget" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/feedback-settings-widget-4.png" alt="feedback-settings-widget" title="feedback-settings-widget" style="border: 1px solid gray; zoom:80%;"/>
 
 <hr>
 

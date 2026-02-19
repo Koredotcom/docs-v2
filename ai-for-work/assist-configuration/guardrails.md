@@ -2,7 +2,7 @@
 
 Guardrails is an advanced security and compliance framework designed to protect sensitive information and enforce content policies in AI-powered applications. The system operates as a multi-layered defense mechanism, automatically scanning inputs and outputs to ensure data privacy and content appropriateness.
 
-<img src="../images/guardrails-implementation.png" alt="guardrails-implementation" title="guardrails-implementation" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/guardrails-implementation.png" alt="guardrails-implementation" title="guardrails-implementation" style="border: 1px solid gray; zoom:80%;"/>
 
 ## Accessing Guardrails
 
@@ -12,7 +12,7 @@ Get started with Guardrails in four simple steps to secure your AI interactions 
 
 1. Navigate to the Guardrails section in **Account Hub**.
 
-<img src="../images/guardrails-account.png" alt="guardrails-account" title="guardrails-account" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/guardrails-account.png" alt="guardrails-account" title="guardrails-account" style="border: 1px solid gray; zoom:80%;"/>
 
 2. Examine pre-configured PII (personally identifiable information) detection rules.
 3. Set up content restrictions appropriate for your organization.
@@ -37,7 +37,7 @@ The PII Settings component provides comprehensive protection for personally iden
 * **Social Security Numbers**: Detection of SSN patterns with format validation.
 * **Credit Card Numbers**: Identification of major credit card number formats.
 
-<img src="../images/PII-Settings.png" alt="PII-Settings" title="PII-Settings" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/PII-Settings.png" alt="PII-Settings" title="PII-Settings" style="border: 1px solid gray; zoom:80%;"/>
 
 #### Add or Update Rule
 
@@ -46,13 +46,13 @@ Create custom detection patterns using regular expressions:
 * **Name**: Assign unique identifiers and descriptions to the Rule.
 * **Description**: Describe the topic to be banned.
 * **Regex Selection**: Map entities from Dialog Tasks to their corresponding information types for scanning purposes.
-<img src="../images/Regex-Selection.png" alt="Regex-Selection" title="Regex-Selection" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/Regex-Selection.png" alt="Regex-Selection" title="Regex-Selection" style="border: 1px solid gray; zoom:80%;"/>
 
 * **Action**: Choose how to display redacted data to non-authorized users.
      * *Redaction*: Complete removal of sensitive data from text.
      * *Static Replacement*: Substitution with predefined safe text.
      * *Masking*: Replacement with placeholder characters (e.g., **** or XXX).
-<img src="../images/action.png" alt="action" title="action" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/action.png" alt="action" title="action" style="border: 1px solid gray; zoom:80%;"/>
 
 ### Ban Topics Configuration
 
@@ -68,4 +68,4 @@ The Ban Topics system offers a flexible and user-friendly configuration manageme
 
 The integrated testing suite provides validation and performance analysis for all guardrail configurations. Testing involves using an isolated environment to conduct full or targeted validation of PII rules and banned topics. Test inputs can be managed manually, AI-driven, or through batch tests and boundary condition testing. Test outcomes are analyzed through individual rule analysis, impact status, process duration, and output. Additionally, users can preview data sanitization visually.
 
-<img src="../images/testing-framework.png" alt="testing-framework" title="testing-framework" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/testing-framework.png" alt="testing-framework" title="testing-framework" style="border: 1px solid gray; zoom:80%;"/>

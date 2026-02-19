@@ -7,7 +7,7 @@ Outbound campaigns are reshaping how businesses connect with their audience. The
     Campaigns do not come enabled by default for all accounts. Contact Support to enable campaigns for your account.
 
 You can access Campaigns by going to **Contact Center AI** > **Campaigns** > **Proactive Outreach** > **Campaign Management**.  
-<img src="../images/campaigns-page-main.png" alt="Campaigns Main Page" title="Campaigns Main Page" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/campaigns-page-main.png" alt="Campaigns Main Page" title="Campaigns Main Page" style="border: 1px solid gray; zoom:80%;"/>
 
 Enable the "Outbound Voice Campaigns" permission in the [User Permissions](../../../user-management/role-management.md#agent) for agents who will handle campaign calls in the queue.
 
@@ -18,7 +18,7 @@ Enable the "Outbound Voice Campaigns" permission in the [User Permissions](../..
 ## Voice Campaigns
 
 The following details of the voice campaigns are shown in a table:  
-<img src="../images/voice-campaigns-details.png" alt="Campaigns Table Top Panel" title="Campaigns Table Top Panel" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/voice-campaigns-details.png" alt="Campaigns Table Top Panel" title="Campaigns Table Top Panel" style="border: 1px solid gray; zoom:80%;"/>
 
 * **Name** - Campaign name and Type.
 * **Actions** - Play/Pause/Replay, Stop, Edit, Clone campaign.
@@ -289,13 +289,13 @@ Scheduling lets precise control over when your messages deliver. You can seamles
 Steps to schedule a Campaign:
 
 1. Select the **Schedule** tab and turn on the **Schedule Campaign** toggle.
-    <img src="../images/schedule-campaign-toggle.png" alt="Schedule campaign Toggle" title="Schedule Campaign Toggle" style="border: 1px solid gray; zoom:80%;">
+    <img src="../images/schedule-campaign-toggle.png" alt="Schedule campaign Toggle" title="Schedule Campaign Toggle" style="border: 1px solid gray; zoom:80%;"/>
 
 2. Select the campaign **Start Date & Time**. **End Date & Time** is optional.
-    <img src="../images/start-and-end-time.png" alt="Start & End time" title="Start & End Time" style="border: 1px solid gray; zoom:80%;">
+    <img src="../images/start-and-end-time.png" alt="Start & End time" title="Start & End Time" style="border: 1px solid gray; zoom:80%;"/>
 
 3. Select the **Time Zone** to dial the campaign.  
-    <img src="../images/timezone-dropdown.png" alt="Timezone" title="Timezone" style="border: 1px solid gray; zoom:80%;">
+    <img src="../images/timezone-dropdown.png" alt="Timezone" title="Timezone" style="border: 1px solid gray; zoom:80%;"/>
 
 4. Turn on the Recurrence toggle if you want the campaign to recur at defined intervals. You can select Daily, Weekly, Monthly, or Yearly recurrence.
 
@@ -308,7 +308,7 @@ Steps to schedule a Campaign:
 
 5. Turning on the Allow Recurrence Precedence toggle gives the recurrence start and end time precedence over Contactable timings.
 For example, if Contactable Timings are 9:00 AM to 6:00 PM but the user selects Recurrence Start Time as 8:00 AM, the campaign starts contacting from 8:00 AM.  
-    <img src="../images/allow-recurrence-precedence.png" alt="Allow Recurrence Precedence" title="Allow Recurrence Precedence" style="border: 1px solid gray; zoom:80%;">
+    <img src="../images/allow-recurrence-precedence.png" alt="Allow Recurrence Precedence" title="Allow Recurrence Precedence" style="border: 1px solid gray; zoom:80%;"/>
 
 6. Start **Save**. The system creates a campaign per the configured schedule.
 
@@ -325,7 +325,7 @@ For example, if Contactable Timings are 9:00 AM to 6:00 PM but the user selects 
 ### Stop a Scheduled Campaign
 
 Select **Stop** under actions. Stopping a scheduled campaign ends the instance of that campaign.  
-<img src="../images/stop-scheduled-campaign.png" alt="Stop" title="Stop" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/stop-scheduled-campaign.png" alt="Stop" title="Stop" style="border: 1px solid gray; zoom:80%;"/>
 
 A confirmation message displays. Select **Stop**.
 
@@ -350,7 +350,7 @@ Steps to configure disposition retry logic:
 * Shows counts for:  
     * The active campaign, or  
     * The last run when viewing a completed campaign.  
-        <img src="../images/dispositions-table.png" alt="Dispositions Table" title="Dispositions Table" style="border: 1px solid gray; zoom:80%;">
+        <img src="../images/dispositions-table.png" alt="Dispositions Table" title="Dispositions Table" style="border: 1px solid gray; zoom:80%;"/>
 
 ### Edit a Voice Campaign
 
@@ -361,7 +361,7 @@ Steps to edit a campaign:
 1. Select the ⋮ icon beside the campaign name and select **Edit**.  
 
 2. A pop-up window appears. Do the required changes and select **Save**.  
-    <img src="../images/edit-campaign-window.png" alt="Edit and Save Campaign" title="Edit and save Campaign" style="border: 1px solid gray; zoom:80%;">
+    <img src="../images/edit-campaign-window.png" alt="Edit and Save Campaign" title="Edit and save Campaign" style="border: 1px solid gray; zoom:80%;"/>
 
     !!! Note
 
@@ -374,13 +374,13 @@ Cloning a voice campaign creates a replica of the original campaign. This is use
 Steps to clone a campaign:
 
 1. Select the ⋮ icon beside the campaign name and select **Clone**.  
-    <img src="../images/clone-campaign.png" alt="Clone Campaign" title="Clone Campaign" style="border: 1px solid gray; zoom:80%;">
+    <img src="../images/clone-campaign.png" alt="Clone Campaign" title="Clone Campaign" style="border: 1px solid gray; zoom:80%;"/>
 2. The system creates a cloned campaign.  
 
     !!! Note
 
         The system does not clone the original campaign's schedule configuration.  
-    <img src="../images/cloned-campaigns.png" alt="Cloned Campaign" title="Cloned Campaign" style="border: 1px solid gray; zoom:80%;">
+    <img src="../images/cloned-campaigns.png" alt="Cloned Campaign" title="Cloned Campaign" style="border: 1px solid gray; zoom:80%;"/>
 
 ### Stop a Voice Campaign
 
@@ -389,10 +389,10 @@ Stopping a voice campaign resets the data, and creates a new instance of the cam
 Steps to stop a campaign:
 
 1. Select **Stop** under **ACTIONS** for the campaign you want to stop.  
-    <img src="../images/stop-campaign-button.png" alt="Stop Campaign" title="Stop Campaign" style="border: 1px solid gray; zoom:80%;">
+    <img src="../images/stop-campaign-button.png" alt="Stop Campaign" title="Stop Campaign" style="border: 1px solid gray; zoom:80%;"/>
 
 2. A **Stop Campaign** confirmation pop-up window appears. Select **Stop**.  
-    <img src="../images/stop-campaign-confirmation.png" alt="Stop Campaign Confirmation" title="Stop Campaign Confirmation" style="border: 1px solid gray; zoom:80%;">
+    <img src="../images/stop-campaign-confirmation.png" alt="Stop Campaign Confirmation" title="Stop Campaign Confirmation" style="border: 1px solid gray; zoom:80%;"/>
 
 ### Delete a Voice Campaign
 
@@ -403,14 +403,14 @@ Steps to delete a campaign:
 1. Select ⋮ icon beside the campaign name and select **Delete**.
 
 2. A **Delete Campaign** confirmation pop-up window appears. Select **Delete**.  
-    <img src="../images/delete-campaign-confirmation.png" alt="Delete Campaign Confirmation" title="Delete Campaign Confirmation" style="border: 1px solid gray; zoom:80%;">
+    <img src="../images/delete-campaign-confirmation.png" alt="Delete Campaign Confirmation" title="Delete Campaign Confirmation" style="border: 1px solid gray; zoom:80%;"/>
 
 3. The system deletes the campaign
 
 ### Run Voice Campaigns
 
 You can run a voice campaign by selecting the **Play** button.  
-<img src="../images/run-campaign-button.png" alt="Run Campaign" title="Run Campaign" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/run-campaign-button.png" alt="Run Campaign" title="Run Campaign" style="border: 1px solid gray; zoom:80%;"/>
 
 When the campaign runs, you can pause or stop it. You can also rerun a completed campaign.
 

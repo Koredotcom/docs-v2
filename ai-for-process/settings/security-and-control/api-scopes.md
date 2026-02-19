@@ -15,7 +15,7 @@ Users can select specific scopes for managing workflows, models, and guardrails.
 
 Users can rename an app, modify its selected scopes, or delete the app as needed. Once the admin defines or updates the API scopes, the changes are applied platform-wide, ensuring consistent and controlled access to the APIs wherever they are used. 
 
-For more information on roles and permissions for API-scoped apps, please refer [here](../user-management/role-management.md#module-wise-permissions-and-access-levels){:target="_blank"}.
+For more information on roles and permissions for API-scoped apps, please refer [here](../user-management/role-management.md#module-wise-permissions-and-access-levels).
 
 
 ## Use Case: Scoped API Access for Banking Departments
@@ -43,7 +43,7 @@ The following API scopes are available for this feature.
   <tr>
    <td>Deploy workflow
    </td>
-   <td>Deploy a specific workflow into an environment. It allows the user to control the deployment process either synchronously or asynchronously. [Learn more](../../workflows/deploy-a-workflow.md){:target="_blank"}.
+   <td>Deploy a specific workflow into an environment. It allows the user to control the deployment process either synchronously or asynchronously. [Learn more](../../workflows/deploy-a-workflow.md).
    </td>
   </tr>
   <tr>
@@ -115,15 +115,15 @@ To access this feature, follow the steps below:
 
 The key steps to implement API scoping include:
 
-1. [Create an API app and assign scopes](../security-and-control/api-scopes.md#create-an-api-application){:target="_blank"}: API-scoped apps have limited and specific permissions tied only to the API endpoints they need. Creating an API-scoped app enables you to restrict permissions, enhance security, better control and monitor access, and tailor the app specifically to meet the integration’s needs.
-2. [Create one or more API Keys to access the app](../security-and-control/api-scopes.md#create-an-api-key){:target="_blank"}: API keys for scoped apps provide secure, manageable, and auditable access control tailored to the app’s needs, making access and usage safer and easier to track.
+1. [Create an API app and assign scopes](../security-and-control/api-scopes.md#create-an-api-application): API-scoped apps have limited and specific permissions tied only to the API endpoints they need. Creating an API-scoped app enables you to restrict permissions, enhance security, better control and monitor access, and tailor the app specifically to meet the integration’s needs.
+2. [Create one or more API Keys to access the app](../security-and-control/api-scopes.md#create-an-api-key): API keys for scoped apps provide secure, manageable, and auditable access control tailored to the app’s needs, making access and usage safer and easier to track.
 
 
 ### Create an API Application
 
 To create an app, follow the steps below:
 
-1. [Access](../security-and-control/api-scopes.md#access-api-scopes){:target="_blank"} **API Scopes**.
+1. [Access](../security-and-control/api-scopes.md#access-api-scopes) **API Scopes**.
 2. Click **Create an API App** or **Create an App**.
    <img src="../images/create-an-api-app.png" alt="create api app" title="create api app" style="border: 1px solid gray; zoom:75%;">
 
@@ -136,7 +136,7 @@ To create an app, follow the steps below:
 5. Click **Next**. 
 
 
-    A success message is displayed, and the following window is displayed. Follow the steps in the [next section](../security-and-control/api-scopes.md#create-an-api-key){:target="_blank"} to complete the process.
+    A success message is displayed, and the following window is displayed. Follow the steps in the [next section](../security-and-control/api-scopes.md#create-an-api-key) to complete the process.
 
      <img src="../images/api-app-creation-success.png" alt="success app creation" title="success app creation" style="border: 1px solid gray; zoom:75%;">
 

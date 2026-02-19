@@ -11,7 +11,7 @@ The Agent Performance Monitor now includes a trend line for the Kore Evaluation 
 ## Access CX Insights
 
 Navigate to **Quality AI**> **Analyze**> **CX Insights**.   
-<img src="../conversation-intelligence/images/performance-insights-dashboard.png" alt="Performance Insights Dashboard" title="Performance Insights Dashboard" style="border: 1px solid gray; zoom:80%;">
+<img src="../conversation-intelligence/images/performance-insights-dashboard.png" alt="Performance Insights Dashboard" title="Performance Insights Dashboard" style="border: 1px solid gray; zoom:80%;"/>
 
 !!! Note
     
@@ -34,7 +34,7 @@ Use this to filter Performance Insights data for the selected date range (for ex
 ### Channel Filter
 
 Use this filter to analyze performance data across all communication channels or limit the view to a specific channel.  
-<img src="../conversation-intelligence/images/channels.png" alt="Channel Filter" title="Channel Filter" style="border: 1px solid gray; zoom:80%;">
+<img src="../conversation-intelligence/images/channels.png" alt="Channel Filter" title="Channel Filter" style="border: 1px solid gray; zoom:80%;"/>
 
 !!! Note
    
@@ -64,7 +64,7 @@ Measures how accurately agents respond to customers’ emotional needs.
 * Includes a percentage change indicator compared to the previous period.
 * Upward arrow = score increase; downward arrow = score decrease.
 * Provides a quick view of performance trends over time.   
-<img src="../conversation-intelligence/images/channels.png" alt="Channel Filter" title="Channel Filter" style="border: 1px solid gray; zoom:80%;">
+<img src="../conversation-intelligence/images/channels.png" alt="Channel Filter" title="Channel Filter" style="border: 1px solid gray; zoom:80%;"/>
 
 #### Crutch Word Score
 
@@ -86,7 +86,7 @@ Measures how frequently agents use filler or crutch words during conversations.
 * Includes a trend percentage indicator compared to the previous period.
 * Upward arrow = Increased crutch word usage; downward arrow = Reduced crutch word usage.
 * Lower scores indicate clearer, more confident, and professional communication.   
-<img src="../conversation-intelligence/images/crutch-word-score.png" alt="Crutch Word Score" title="Crutch Word Score" style="border: 1px solid gray; zoom:80%;">
+<img src="../conversation-intelligence/images/crutch-word-score.png" alt="Crutch Word Score" title="Crutch Word Score" style="border: 1px solid gray; zoom:80%;"/>
 
 ## Agent Performance Monitor
 
@@ -127,7 +127,7 @@ Provides visibility into agent performance and customer interactions, enabling d
 * **Strong Correlations**: Replicate best practices from high performers.
 * **Weak Correlations**: Investigate other influencing factors; consider training or resources.
 * **Negative Correlations**: Identify and correct counterproductive behavior.	  
-<img src="../conversation-intelligence/images/performance-insights.png" alt="Performance Insights" title="Performance Insights" style="border: 1px solid gray; zoom:80%;">
+<img src="../conversation-intelligence/images/performance-insights.png" alt="Performance Insights" title="Performance Insights" style="border: 1px solid gray; zoom:80%;"/>
 
 ## Playbook Adherence
 
@@ -167,6 +167,6 @@ Tracks how consistently agents follow predefined scripts during customer interac
    
     * The **Playbook Adherence** section appears only when at least one playbook exists in Agent AI.
     * If no playbooks or stages are configured, the system displays the relevant empty states instead of adherence data.    
-<img src="../conversation-intelligence/images/playbook-adherence-score.png" alt="Performance Insights" title="Performance Insights" style="border: 1px solid gray; zoom:80%;">
+<img src="../conversation-intelligence/images/playbook-adherence-score.png" alt="Performance Insights" title="Performance Insights" style="border: 1px solid gray; zoom:80%;"/>
 
 For more insights on how agent actions affect customer satisfaction and sentiment, refer to [CX Insights](../analyze/cx-insights.md).

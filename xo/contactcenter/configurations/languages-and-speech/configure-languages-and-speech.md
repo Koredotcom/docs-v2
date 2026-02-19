@@ -3,7 +3,7 @@
 This feature lets you configure the language and speech settings within Contact Center module, to manage how your contact center uses languages and speech recognition.
 
 Go to **Contact Center AI** > **CONFIGURATIONS** > **Languages & Speech** to access Languages and Speech settings.
-<img src="../images/languages-and-speech.png" alt="Languages & Speech Page" title="Languages & Speech Page" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/languages-and-speech.png" alt="Languages & Speech Page" title="Languages & Speech Page" style="border: 1px solid gray; zoom:80%;"/>
 
 This section of the Contact Center AI module provides access to the following settings:
 
@@ -16,7 +16,7 @@ This section of the Contact Center AI module provides access to the following se
 This feature helps manage the languages supported by the contact center infrastructure. You can add support for specific languages and enable, disable specific languages.
 
 To manage languages, select **Supported Languages**.
-<img src="../images/supported-languages.png" alt="Supported Languages Panel" title="Supported Languages Panel" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/supported-languages.png" alt="Supported Languages Panel" title="Supported Languages Panel" style="border: 1px solid gray; zoom:80%;"/>
 
 Administrators can add languages for AI Agents while setting up the app or later by accessing [Language Management](../../../app-settings/language-management/managing-languages-for-multilingual-vas.md).
 

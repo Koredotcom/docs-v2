@@ -68,11 +68,11 @@ ACD configuration includes
 2. Import the Studio Script as follows:
     1. Login to [NICE CXOne](https://cxone.niceincontact.com/auth/authorize?response_type=code&scope=openid&client_id=0b697ebb-4ea2-4052-b12b-d3cf12a53eca&redirect_uri=https%3A%2F%2Fcxone.niceincontact.com%2Fua%2Fv1%2Fcallback&nonce=fc3HdwV1yLMIP1AMgGkSnw%3D%3D) Studio with your credentials. [Learn more](https://help.nice-incontact.com/content/studio/gettingstarted/logintostudio.htm).
     2. On the **File** menu, select **Import from File**.  
-        <img src="../images/cxone-file-open.png" alt="Import from File" title="Import from File" style="border: 1px solid gray; zoom:80%;">
+        <img src="../images/cxone-file-open.png" alt="Import from File" title="Import from File" style="border: 1px solid gray; zoom:80%;"/>
     3. Open the saved studio script.  
-        <img src="../images/save-studio-script.png" alt="Save Studio Script" title="Save Studio Script" style="border: 1px solid gray; zoom:80%;">  
-        <img src="../images/entry-script.png" alt="Entry Script Flow" title="Entry Script Flow" style="border: 1px solid gray; zoom:80%;">  
-        <img src="../images/spawn-place-call.png" alt="Place Call" title="Place Call" style="border: 1px solid gray; zoom:80%;">  
+        <img src="../images/save-studio-script.png" alt="Save Studio Script" title="Save Studio Script" style="border: 1px solid gray; zoom:80%;"/>  
+        <img src="../images/entry-script.png" alt="Entry Script Flow" title="Entry Script Flow" style="border: 1px solid gray; zoom:80%;"/>  
+        <img src="../images/spawn-place-call.png" alt="Place Call" title="Place Call" style="border: 1px solid gray; zoom:80%;"/>  
     4. In the SIP Main Script, select the **SIP Spawn Script** in the **Spawn** action.  
         <img src="../images/choose-script.png" alt="Choose Script" title="Choose Script" style="border: 1px solid gray; zoom:70%;">
     5. Add SIP headers in the **Sipputheader** actions.

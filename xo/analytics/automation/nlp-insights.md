@@ -6,7 +6,7 @@ The NLP Insights feature helps you gain in-depth insights into the analytics dat
 
 
 1. Click **Analytics** on the left navigation pane. The Analytics panel is displayed with the list of reports.
-<img src="../images/navigating-to-nlp.png" alt="Navigating to NLP" title="Navigating to NLP" style="border: 1px solid gray; zoom:80%;"> 
+<img src="../images/navigating-to-nlp.png" alt="Navigating to NLP" title="Navigating to NLP" style="border: 1px solid gray; zoom:80%;"/> 
 
 2. Click the **NLP Insights** under the **Automation** section of the **Analytics** panel. The **NLP Insights dashboard** is displayed on the right side of the page.
 3. Select appropriate filters on the dashboard and click **Apply**.
@@ -37,7 +37,7 @@ An intent refers to the goal the customer has in mind when typing in a question 
 
 See the following table and features section to know more:
 
-   <img src="../images/intent-found-1.png" alt="Intent Found" title="Intent Found" style="border: 1px solid gray; zoom:80%;">
+   <img src="../images/intent-found-1.png" alt="Intent Found" title="Intent Found" style="border: 1px solid gray; zoom:80%;"/>
 
 The following is an example of Intent Found:
 
@@ -124,7 +124,7 @@ Intent Not Found includes all the user utterances that the platform is not able 
 
 See the following table and Features section to know more:
 
-<img src="../images/Intent-not-found.png" alt="Intent not Found" title="Intent not Found" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/Intent-not-found.png" alt="Intent not Found" title="Intent not Found" style="border: 1px solid gray; zoom:80%;"/>
 
 
 Example of Intent Not Found: 
@@ -205,7 +205,7 @@ In an unhandled utterance, the following new fields are available:
 * **Node Name**– Name of the node in which the utterance is not handled
 * **Task Name** – Name of the task in which the utterances are unidentified on an entity, message, or confirmation nodes.
 
-   <img src="../images/unhandled-utterances.png" alt="Unhandled Utterances" title="Unhandled Utterances" style="border: 1px solid gray; zoom:80%;">
+   <img src="../images/unhandled-utterances.png" alt="Unhandled Utterances" title="Unhandled Utterances" style="border: 1px solid gray; zoom:80%;"/>
 
 
 * Group by functionality is available for **_Utterances, Traits, Prompt Type, Task Name, and Node Name_**
@@ -433,7 +433,7 @@ The following list details the features available in NLP Insights for Intent Fou
 * Any important record you want to mark, track later, or both can be pinned. They appear on  the **Pinned** tab.
 * Sorting feature is available for Date and Time (Oldest to Newest, Newest to Oldest). You can export the insights data as a CSV file.
 
-   <img src="../images/NLP-insights-analysis.png" alt="NLP Insights Analysis" title="NLP Insights Analysis" style="border: 1px solid gray; zoom:80%;">
+   <img src="../images/NLP-insights-analysis.png" alt="NLP Insights Analysis" title="NLP Insights Analysis" style="border: 1px solid gray; zoom:80%;"/>
 
 !!! note
 
@@ -718,7 +718,7 @@ For all the user utterances listed on the various tabs such as Intent Found, Int
 
 The Details tab shows the basic details of the session along with a JSON file that includes the NLP analysis for the conversation.
 
-<img src="../images/Filter-criteria-details.png" alt="Filter Criteria Details" title="Filter Criteria Details" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/Filter-criteria-details.png" alt="Filter Criteria Details" title="Filter Criteria Details" style="border: 1px solid gray; zoom:80%;"/>
 
 
 If the intent has been answered from a document, this section provides the following details:
@@ -730,21 +730,21 @@ If the intent has been answered from a document, this section provides the follo
 * A Similarity Score for how similar the user query is to the document content.
 * An option to add the query to the Knowledge Graph as an FAQ.
 
-   <img src="../images/Filter-criteria-details-1.png" alt="Filter Criteria Details" title="Filter Criteria Details" style="border: 1px solid gray; zoom:80%;">
+   <img src="../images/Filter-criteria-details-1.png" alt="Filter Criteria Details" title="Filter Criteria Details" style="border: 1px solid gray; zoom:80%;"/>
 
 
 ### NLP Analysis
 
 This tab provides a visual representation of the NLP Analysis, including intent scoring and selection.  See Testing and Training an AI Agents and Ranking and Resolver for more information.
 
-   <img src="../images/NLP-analysis.png" alt="NLP Analysis" title="NLP Analysis" style="border: 1px solid gray; zoom:80%;">
+   <img src="../images/NLP-analysis.png" alt="NLP Analysis" title="NLP Analysis" style="border: 1px solid gray; zoom:80%;"/>
 
 
 ### Chat History
 
 On the Chat History tab, you can access the exact message or conversation for which the record is logged. It shows the entire chat history of the user session.
 
-   <img src="../images/chat-history.png" alt="Chat History" title="Chat History" style="border: 1px solid gray; zoom:80%;">
+   <img src="../images/chat-history.png" alt="Chat History" title="Chat History" style="border: 1px solid gray; zoom:80%;"/>
 
 Chat History provides visibility into the user information by capturing the following details:
 
@@ -1007,7 +1007,7 @@ You can train the specific intents and utterances from the Intent Found, Intent 
 
 You can export the data present on the NLP Insights page to a CSV file, by clicking the Export icon on the top right corner of the page.
 
-<img src="../images/data-export.png" alt="Data-Export" title="Data-Export" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/data-export.png" alt="Data-Export" title="Data-Export" style="border: 1px solid gray; zoom:80%;"/>
 
 
 Once you click the icon, the export process starts, and you can see the progress in the Status Tracker dock. The export file is downloaded to your local **Downloads** folder. The downloaded file has the information specific to the selected tab and a detailed analysis based on the selected filters.

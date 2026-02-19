@@ -11,10 +11,10 @@ If the error occurs multiple times, the agent (being aware of the input format) 
 ### Steps to override App inputs
 
 1. Below the automation step, click **Override Input**.  
-<img src="../bot-override-and-automation-images/override-input-1.png" alt="override-input" title="override-input" style="border: 1px solid gray; zoom:80%;">
+<img src="../bot-override-and-automation-images/override-input-1.png" alt="override-input" title="override-input" style="border: 1px solid gray; zoom:80%;"/>
 
 2. The **Type to continue** box is displayed. Enter the required value in the box.  
-<img src="../bot-override-and-automation-images/type-to-continue-box-2.png" alt="type-to-continue-box" title="type-to-continue-box" style="border: 1px solid gray; zoom:80%;">
+<img src="../bot-override-and-automation-images/type-to-continue-box-2.png" alt="type-to-continue-box" title="type-to-continue-box" style="border: 1px solid gray; zoom:80%;"/>
 
 The path is corrected, and the control gets back to the user. 
 To provide a better experience to the customer, you can intervene and correct the app’s path.
@@ -31,7 +31,7 @@ The terminate automation option allows you to stop ongoing automation anytime. T
 
 1. On the **Assist**/**My AI Agent (Bot)** tab, next to the automation step, click **Terminate**. A confirmation pop-up message appears.
 2. Click **Yes, Terminate** to stop the running task.  
-<img src="../bot-override-and-automation-images/terminate-dialog-task-3.png" alt="terminate-dialog-task" title="terminate-dialog-task" style="border: 1px solid gray; zoom:80%;">
+<img src="../bot-override-and-automation-images/terminate-dialog-task-3.png" alt="terminate-dialog-task" title="terminate-dialog-task" style="border: 1px solid gray; zoom:80%;"/>
 
 ## Sentiment Analysis
 
@@ -40,7 +40,7 @@ A single agent may serve multiple customers at a given time. It would mean switc
 The app continuously assesses the customer’s sentiment based on their messages and lets you know it in real-time.
 
 The customer sentiment is placed at the top-right corner of the widget.  
-<img src="../bot-override-and-automation-images/sentiment-analysis-4.png" alt="sentiment-analysis" title="sentiment-analysis" style="border: 1px solid gray; zoom:80%;">
+<img src="../bot-override-and-automation-images/sentiment-analysis-4.png" alt="sentiment-analysis" title="sentiment-analysis" style="border: 1px solid gray; zoom:80%;"/>
 
 ## Search or Ask a question
 
@@ -50,7 +50,7 @@ The search function allows you to search for FAQs/automations directly from the 
 
 1. In the **Ask a question** search bar, type the question you want to ask the app.
 2. Press the **Enter** key on the keyboard. Agent AI shows related search results. You can use the search results to respond to the customer.  
-<img src="../bot-override-and-automation-images/ask-a-question-5.png" alt="ask-a-question" title="ask-a-question" style="border: 1px solid gray; zoom:80%;">
+<img src="../bot-override-and-automation-images/ask-a-question-5.png" alt="ask-a-question" title="ask-a-question" style="border: 1px solid gray; zoom:80%;"/>
 
 ## Run Automation with Agent’s Input
 
@@ -67,6 +67,6 @@ Automation with the customer inputs feature introduces the capability where agen
 * Click the ellipsis, and click **Run with agent’s input**. The automation starts on the **My AI Agent (Bot)** tab. The automation is a parallel session dedicated to the agent and won’t impact customer interaction.
 
 The **Run with Agent’s input** feature allows an agent to run automation independently and helps agents retrieve information directly and give the final result to the customer, thereby decreasing the AHT drastically.  
-<img src="../bot-override-and-automation-images/run-with-agent&apos;s-input-6.png" alt="run-with-agent&apos;s-input" title="run-with-agent&apos;s-input" style="border: 1px solid gray; zoom:80%;">
+<img src="../bot-override-and-automation-images/run-with-agent&apos;s-input-6.png" alt="run-with-agent&apos;s-input" title="run-with-agent&apos;s-input" style="border: 1px solid gray; zoom:80%;"/>
 
 

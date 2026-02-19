@@ -12,7 +12,7 @@ The **Monitor** tab lets you monitor live conversations between agents and custo
 
         Your Monitor access is restricted to the Queues that you are assigned to.
 4. A pop-up message appears when the user selects the **Monitor** tab if the Contact Center Permissions are disabled for them.  
-    <img src="../images/monitor-tab-disabled-user.png" alt="Disabled User" title="Disabled User" style="border: 1px solid gray; zoom:80%;">
+    <img src="../images/monitor-tab-disabled-user.png" alt="Disabled User" title="Disabled User" style="border: 1px solid gray; zoom:80%;"/>
 
 ## Queues
 
@@ -23,10 +23,10 @@ Selecting the sort icon enables you to sort the columns in ascending/descending 
 To monitor the agents:
 
 * On the **Monitor** tab, select the **Queue** tab.  
-    <img src="../images/queues-tab.png" alt="Queues Tab" title="Queues Tab" style="border: 1px solid gray; zoom:80%;">
+    <img src="../images/queues-tab.png" alt="Queues Tab" title="Queues Tab" style="border: 1px solid gray; zoom:80%;"/>
 
 * On the left menu, select a queue that you want to view.  
-    <img src="../images/queue-name.png" alt="Queue Name" title="Queue Name" style="border: 1px solid gray; zoom:80%;">
+    <img src="../images/queue-name.png" alt="Queue Name" title="Queue Name" style="border: 1px solid gray; zoom:80%;"/>
 
 * The queue screen appears as shown:  
     <img src="../images/queues-details.png" alt="Queue Details" title="Queue Details" style="border: 1px solid gray; zoom:70%;">
@@ -43,17 +43,17 @@ To monitor the agents:
 #### Create a Filter
 
 1. Select the **Filter** option.  
-    <img src="../images/filter-button.png" alt="Filter" title="Filter" style="border: 1px solid gray; zoom:80%;"> 
+    <img src="../images/filter-button.png" alt="Filter" title="Filter" style="border: 1px solid gray; zoom:80%;"/> 
 
 2. Select **New Filter**.  
-    <img src="../images/new-filter.png" alt="New Filter" title="New Filter" style="border: 1px solid gray; zoom:80%;"> 
+    <img src="../images/new-filter.png" alt="New Filter" title="New Filter" style="border: 1px solid gray; zoom:80%;"/> 
 
 3. Select the **Queues**, **Channels**, **Type**, **State**, and **Languages**.
 
     !!! Note
 
         You can select from agent groups (list of agents), search for agents, and select from dynamic sub-filters.    
-    <img src="../images/filter-options-queues.png" alt="Filter By" title="Filter By" style="border: 1px solid gray; zoom:80%;">  
+    <img src="../images/filter-options-queues.png" alt="Filter By" title="Filter By" style="border: 1px solid gray; zoom:80%;"/>  
 
     Select from the following options:  
 
@@ -63,14 +63,14 @@ To monitor the agents:
 4. Select **Save & Apply**.
 
 5. On the pop-up window, enter a name (up to 20 characters) for the filter and select **Save & Apply**.  
-    <img src="../images/save-and-apply.png" alt="Save & Apply" title="Save & Apply" style="border: 1px solid gray; zoom:80%;">  
+    <img src="../images/save-and-apply.png" alt="Save & Apply" title="Save & Apply" style="border: 1px solid gray; zoom:80%;"/>  
 
     A confirmation message appears and saves the filter.
 
 6. Select Saved Filters. By default, the system shows the following:
 
     * The Waiting with Agents and Waiting in Queue quick filters are pre-selected. These filters can be edited and deleted.  
-        <img src="../images/default-filters.png" alt="Default Filters" title="Default Filters" style="border: 1px solid gray; zoom:80%;"> 
+        <img src="../images/default-filters.png" alt="Default Filters" title="Default Filters" style="border: 1px solid gray; zoom:80%;"/> 
     * You can select up to four quick filters. Quick filters appear along with unsaved filters.
     * If you set a filter as default but isn't selected as a quick filter, the system treats it as a quick filter.
     * You can't disable a quick filter while it's a default filter. To disable the quick filter, first remove the default filter.
@@ -80,13 +80,13 @@ To monitor the agents:
 Steps to edit a filter:
 
 1. Select the **Filters** tab. The Saved Filter name appears.  
-    <img src="../images/saved-filters.png" alt="Saved Filters" title="Saved Filters" style="border: 1px solid gray; zoom:80%;"> 
+    <img src="../images/saved-filters.png" alt="Saved Filters" title="Saved Filters" style="border: 1px solid gray; zoom:80%;"/> 
 
 2. Select **Edit**.  
-    <img src="../images/edit-button.png" alt="Edit" title="Edit" style="border: 1px solid gray; zoom:80%;"> 
+    <img src="../images/edit-button.png" alt="Edit" title="Edit" style="border: 1px solid gray; zoom:80%;"/> 
 
 3. Make the necessary changes and select **Save & Apply**.  
-    <img src="../images/edit-queue-filters.png" alt="Save and Apply" title="Save and Apply" style="border: 1px solid gray; zoom:80%;">  
+    <img src="../images/edit-queue-filters.png" alt="Save and Apply" title="Save and Apply" style="border: 1px solid gray; zoom:80%;"/>  
 
     A confirmation message displays and updates the filter.
 
@@ -95,24 +95,24 @@ Steps to edit a filter:
 1. Select **Duplicate**.
 
 2. On the Rename Filter window, enter a name for the filter and select **Save**.  
-    <img src="../images/save-copy.png" alt="Save" title="Save" style="border: 1px solid gray; zoom:80%;">
+    <img src="../images/save-copy.png" alt="Save" title="Save" style="border: 1px solid gray; zoom:80%;"/>
 
     A confirmation displays and creates a copy of the filter.
 
 #### Mark as Default
 
 1. Select **Mark as Default**.  
-    <img src="../images/mark-as-default.png" alt="Mark as Default" title="Mark as Default" style="border: 1px solid gray; zoom:80%;">
+    <img src="../images/mark-as-default.png" alt="Mark as Default" title="Mark as Default" style="border: 1px solid gray; zoom:80%;"/>
 
     A confirmation message displays and marks the filter as default.
 
 #### Delete Filter
 
 1. Select **Delete**.  
-    <img src="../images/delete-saved-filter.png" alt="Delete" title="Delete" style="border: 1px solid gray; zoom:80%;">
+    <img src="../images/delete-saved-filter.png" alt="Delete" title="Delete" style="border: 1px solid gray; zoom:80%;"/>
 
 2. A Delete Filter message appears. Select **Delete**.  
-    <img src="../images/delete-filter-confirmation.png" alt="Delete Confirmation" title="Delete Confirmation" style="border: 1px solid gray; zoom:80%;">  
+    <img src="../images/delete-filter-confirmation.png" alt="Delete Confirmation" title="Delete Confirmation" style="border: 1px solid gray; zoom:80%;"/>  
 
     A confirmation message displays and deletes the filter.
 
@@ -125,7 +125,7 @@ Supervisors can monitor live conversations between agents and customers. The sup
 Steps to assign a conversation from the queue to an agent (including themselves):
 
 1. Select the conversation from the Queue on the right pane and select **Assign**.  
-    <img src="../images/assign.png" alt="Assign" title="Assign" style="border: 1px solid gray; zoom:80%;"> 
+    <img src="../images/assign.png" alt="Assign" title="Assign" style="border: 1px solid gray; zoom:80%;"/> 
 
 2. A pop-up appears. Select the agent and assign the conversation to that agent.  
     <img src="../images/manual-assignment.png" alt="Manual Assignment" title="Manual Assignment" style="border: 1px solid gray; zoom:60%;">
@@ -240,7 +240,7 @@ The following metrics and their total counts appear:
 * **Unanswered**: Count of interactions assigned to an agent where the agent didn't pick up the interaction within the acceptance timeout.  
 
 The channel selection status appears on the Agents tab beside the Agent’s name. Active channels appear in Green and the disabled channels appear in Gray color.  
-<img src="../images/agents-tab.png" alt="Agents Tab" title="Agents Tab" style="border: 1px solid gray; zoom:80%;">  
+<img src="../images/agents-tab.png" alt="Agents Tab" title="Agents Tab" style="border: 1px solid gray; zoom:80%;"/>  
 If an agent selects a channel and logs out at the end of the day, the previously selected channel persists when the agent starts a new session. Active channels appear in green, while disabled channels appear in gray for the supervisor.
 
 * Hovering over an agent’s name displays a pop-up with the following information:
@@ -250,33 +250,33 @@ If an agent selects a channel and logs out at the end of the day, the previously
     * Skills assigned to the agent.
     * Queues associated with the agent.
     * Agent Groups the agent is part of.  
-        <img src="../images/agent-name-hover.png" alt="Agent Name Hover" title="Agents Name Hover" style="border: 1px solid gray; zoom:80%;">  
+        <img src="../images/agent-name-hover.png" alt="Agent Name Hover" title="Agents Name Hover" style="border: 1px solid gray; zoom:80%;"/>  
 
 * The load capacity indicator displays the agent’s overall load capacity. Hovering over the load shows the channel-wise load capacity-for example, Live Chat ⅔ (2 slots out of 3 defined slots engaged) and the total digital conversation limit.  
-    <img src="../images/load-capacity-indication.png" alt="Load Capacity Indicator" title="Load Capacity Indicator" style="border: 1px solid gray; zoom:80%;">
+    <img src="../images/load-capacity-indication.png" alt="Load Capacity Indicator" title="Load Capacity Indicator" style="border: 1px solid gray; zoom:80%;"/>
 
 * On the monitor tab, select an agent on the left side. The supervisor can view the agent’s ongoing conversation on the right and check the engagement metrics.  
-    <img src="../images/agents-details.png" alt="Engagement Metrics" title="Engagement Metrics" style="border: 1px solid gray; zoom:80%;">
+    <img src="../images/agents-details.png" alt="Engagement Metrics" title="Engagement Metrics" style="border: 1px solid gray; zoom:80%;"/>
 
 * On the right window, Select the agent’s name. Another window opens to the right. To check the agent engagement metrics, on the right window, select the down arrow:  
 
     **Chat**, **Messaging**, and **Voice**:
 
-    <img src="../images/engagement-metric.png" alt="Agent Engagement Metrics" title="Agent Engagement Metrics" style="border: 1px solid gray; zoom:80%;">  
+    <img src="../images/engagement-metric.png" alt="Agent Engagement Metrics" title="Agent Engagement Metrics" style="border: 1px solid gray; zoom:80%;"/>  
 
     **Email**:  
 
     <img src="../images/email-metrics.png" alt="Email Metrics" title="Email Metrics" style="border: 1px solid gray; zoom:70%;">
 
 * For a selected agent, the supervisor can check the agent profile, chat with the agent, change the queue, and assign the conversation to other agents:  
-    <img src="../images/agents-assign-change-queues.png" alt="Assign, Change Queue" title="Assign, Change Queue" style="border: 1px solid gray; zoom:80%;">
+    <img src="../images/agents-assign-change-queues.png" alt="Assign, Change Queue" title="Assign, Change Queue" style="border: 1px solid gray; zoom:80%;"/>
 
 ### Filters
 
 #### Create Filter
 
 1. Select **Filter**.  
-    <img src="../images/agents-filter-button.png" alt="Filter" title="Filter" style="border: 1px solid gray; zoom:80%;">
+    <img src="../images/agents-filter-button.png" alt="Filter" title="Filter" style="border: 1px solid gray; zoom:80%;"/>
 
 2. Select **New Filter**. 
 
@@ -291,14 +291,14 @@ If an agent selects a channel and logs out at the end of the day, the previously
 4. Select **Save & Apply**.  
 
 5. On the pop-up window, enter a name (up to 20 characters) for the filter and select Save & Apply.  
-    <img src="../images/save-and-apply.png" alt="Save & Apply" title="Save & Apply" style="border: 1px solid gray; zoom:80%;">  
+    <img src="../images/save-and-apply.png" alt="Save & Apply" title="Save & Apply" style="border: 1px solid gray; zoom:80%;"/>  
 
     A confirmation message appears and saves the filter.
 
 6. Select Saved Filters. By default, the system shows the following:
 
     * The Waiting with Agents and Waiting in Queue quick filters are pre-selected. These filters are editable and can deletable.  
-        <img src="../images/agents-default-filters.png" alt="Default Filters" title="Default Filters" style="border: 1px solid gray; zoom:80%;"> 
+        <img src="../images/agents-default-filters.png" alt="Default Filters" title="Default Filters" style="border: 1px solid gray; zoom:80%;"/> 
     * You can select up to four quick filters. Quick filters appear along with unsaved filters.
     * If you set a default filter but not select it as a quick filter, the system treats it as a quick filter.
     * You can't disable a quick filter while it's a default filter. To disable the quick filter, first remove the default filter.
@@ -308,10 +308,10 @@ If an agent selects a channel and logs out at the end of the day, the previously
 Steps to edit a filter:
 
 1. Select the **Filters** tab. The Saved Filter name appears.  
-    <img src="../images/saved-filters.png" alt="Saved Filters" title="Saved Filters" style="border: 1px solid gray; zoom:80%;">  
+    <img src="../images/saved-filters.png" alt="Saved Filters" title="Saved Filters" style="border: 1px solid gray; zoom:80%;"/>  
 
 2. Select **Edit**.  
-    <img src="../images/edit-button.png" alt="Edit" title="Edit" style="border: 1px solid gray; zoom:80%;">
+    <img src="../images/edit-button.png" alt="Edit" title="Edit" style="border: 1px solid gray; zoom:80%;"/>
 
 3. Make the necessary changes and select **Save & Apply**.  
 
@@ -320,7 +320,7 @@ Steps to edit a filter:
 #### Copy a Filter
 
 1. Select **Duplicate**.  
-    <img src="../images/duplicate-button.png" alt="Duplicate" title="Duplicate" style="border: 1px solid gray; zoom:80%;">
+    <img src="../images/duplicate-button.png" alt="Duplicate" title="Duplicate" style="border: 1px solid gray; zoom:80%;"/>
 
 2. On the Rename Filter window, enter a name for the filter and select **Save**.
     
@@ -329,14 +329,14 @@ Steps to edit a filter:
 #### Mark as Default
 
 1. Select **Mark as Default**.  
-<img src="../images/mark-as-default.png" alt="Mark as Default" title="Mark as Default" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/mark-as-default.png" alt="Mark as Default" title="Mark as Default" style="border: 1px solid gray; zoom:80%;"/>
 
     A confirmation message appears and marks the filter as default.
 
 #### Delete a Filter
 
 1. Select **Delete**.  
-<img src="../images/delete-saved-filter.png" alt="Delete" title="Delete" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/delete-saved-filter.png" alt="Delete" title="Delete" style="border: 1px solid gray; zoom:80%;"/>
 
 2. A Delete Filter message appears. select **Delete**.  
 
@@ -346,13 +346,13 @@ Steps to edit a filter:
 
 When a supervisor applies a filter, the page refreshes at fixed intervals to verify real-time data accuracy. For example, changes in agent status appear after the auto refresh, keeping the data up to date.
 The page refreshes every 10 seconds to update data changes. Supervisors can pause updates by selecting **Pause**.  
-<img src="../images/pause-button.png" alt="Pause Refresh" title="Pause refresh" style="border: 1px solid gray; zoom:80%;">  
+<img src="../images/pause-button.png" alt="Pause Refresh" title="Pause refresh" style="border: 1px solid gray; zoom:80%;"/>  
 
 Selecting **Play** resumes updates.  
-<img src="../images/resume-button.png" alt="Resume Refresh" title="Resume refresh" style="border: 1px solid gray; zoom:80%;">  
+<img src="../images/resume-button.png" alt="Resume Refresh" title="Resume refresh" style="border: 1px solid gray; zoom:80%;"/>  
 
 A confirmation appears on completing the refresh, and shows the updated data.  
-<img src="../images/filter-updated.png" alt="Filter Updated" title="Filter Updated" style="border: 1px solid gray; zoom:80%;">  
+<img src="../images/filter-updated.png" alt="Filter Updated" title="Filter Updated" style="border: 1px solid gray; zoom:80%;"/>  
 
 !!! Note
 
@@ -518,7 +518,7 @@ Steps to Listen and Whisper Voice Conversations:
 ## Interactions
 
 You can view all live interactions on the Contact Center AI console. This view includes only interactions that involve agent transfers. Selecting the sort icon lets you to sort the columns in ascending/descending order. A summary of the interactions view is as follows:  
-<img src="../images/interaction-tab.png" alt="Interactions Tab" title="Interactions Tab" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/interaction-tab.png" alt="Interactions Tab" title="Interactions Tab" style="border: 1px solid gray; zoom:80%;"/>
 
 !!! Note
 
@@ -527,31 +527,31 @@ You can view all live interactions on the Contact Center AI console. This view i
 ### Manually Assign Conversations to an Agent and Change Queue
 
 Supervisors can assign conversations to an agent, and change queues for conversations. Select an Ongoing conversation to view the Assign and Change Queue options.  
-<img src="../images/manually-assign-change-queue.png" alt="Manually Assign/Change Queue" title="Manually Assign/Change Queue" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/manually-assign-change-queue.png" alt="Manually Assign/Change Queue" title="Manually Assign/Change Queue" style="border: 1px solid gray; zoom:80%;"/>
 
 Supervisors can also view an agent’s engagement metrics.
 
 ### Manually Assign a Bot-led Conversation to an Agent or Queue
 
 Supervisors can assign bot-led conversations to an agent or a queue. To do so, select an Ongoing conversation and then select **Assign**.  
-<img src="../images/assign-button-bot-led-conversation.png" alt="Manually Assign/Change Queue" title="Manually Assign/Change Queue" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/assign-button-bot-led-conversation.png" alt="Manually Assign/Change Queue" title="Manually Assign/Change Queue" style="border: 1px solid gray; zoom:80%;"/>
 
 In the Assign Conversation pop-up window, select Agent/Queue, select the agent or queue from the dropdown, mark as priority if required, turn on the message to customer toggle if you want to send a message to the customer, and select **Assign**.  
-<img src="../images/assign-bot-led-conversation.png" alt="Assign/Change Queue (Bot-Led Conversation)" title="Assign/Change Queue (Bot-Led Conversation)" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/assign-bot-led-conversation.png" alt="Assign/Change Queue (Bot-Led Conversation)" title="Assign/Change Queue (Bot-Led Conversation)" style="border: 1px solid gray; zoom:80%;"/>
 
 ### Filters
 
 #### Create Filter
 
 1. Select **Filter**.  
-    <img src="../images/filter-interactions.png" alt="Filter" title="Filter" style="border: 1px solid gray; zoom:80%;">
+    <img src="../images/filter-interactions.png" alt="Filter" title="Filter" style="border: 1px solid gray; zoom:80%;"/>
 
 2. Select **New Filter**.
 
 3. Select the **Status**, **Agents** (bot-led interactions disabled), **Skills**, **Queues**, **Channels**, **Type**, and **Language**.  
-    <img src="../images/interaction-filter.png" alt="Filter Options" title="Filter Options" style="border: 1px solid gray; zoom:80%;">  
+    <img src="../images/interaction-filter.png" alt="Filter Options" title="Filter Options" style="border: 1px solid gray; zoom:80%;"/>  
     Select the **Status**, **Participants** (bot-led interactions enabled), **Skills**, **Queues**, **Channels**, **Type**, and **Language**.  
-        <img src="../images/participant-filter.png" alt="Filter Options" title="Filter Options" style="border: 1px solid gray; zoom:80%;">  
+        <img src="../images/participant-filter.png" alt="Filter Options" title="Filter Options" style="border: 1px solid gray; zoom:80%;"/>  
     
     !!! Note
 
@@ -566,14 +566,14 @@ In the Assign Conversation pop-up window, select Agent/Queue, select the agent o
 4. Select **Save & Apply**.
 
 5. On the pop-up window, enter a name (up to 20 characters) for the filter and select **Save & Apply**.  
-    <img src="../images/save-and-apply.png" alt="Save & Apply" title="Save & Apply" style="border: 1px solid gray; zoom:80%;">
+    <img src="../images/save-and-apply.png" alt="Save & Apply" title="Save & Apply" style="border: 1px solid gray; zoom:80%;"/>
 
     A confirmation message displays and creates the filter.
 
 6. Select Saved Filters. By default, the system shows the following:
 
     * The Waiting with Agents and Waiting in Queue quick filters are pre-selected. These filters are editable and can be deleted.  
-        <img src="../images/interactions-default-filters.png" alt="Default Filters" title="Default Filters" style="border: 1px solid gray; zoom:80%;"> 
+        <img src="../images/interactions-default-filters.png" alt="Default Filters" title="Default Filters" style="border: 1px solid gray; zoom:80%;"/> 
     * You can select up to four quick filters. Quick filters appear along with unsaved filters.
     * If you set a filter as the default but not selected as a quick filter, the system treats it as a quick filter.
     * You can't disable a quick filter while it's applied as a default filter. To disable the quick filter, first remove the default filter.
@@ -583,7 +583,7 @@ In the Assign Conversation pop-up window, select Agent/Queue, select the agent o
 Steps to edit a filter:
 
 1. Select the **Filters** tab. The Saved Filter name appears.  
-    <img src="../images/saved-filters.png" alt="Saved Filters" title="Saved Filters" style="border: 1px solid gray; zoom:80%;">
+    <img src="../images/saved-filters.png" alt="Saved Filters" title="Saved Filters" style="border: 1px solid gray; zoom:80%;"/>
 
 2. Select **Edit**.  
 
@@ -596,7 +596,7 @@ Steps to edit a filter:
 1. Select **Duplicate**.  
 
 2. On the Rename Filter window, enter a name for the filter and select **Save**.  
-    <img src="../images/save-copy.png" alt="Save Copy" title="Save Copy" style="border: 1px solid gray; zoom:80%;">
+    <img src="../images/save-copy.png" alt="Save Copy" title="Save Copy" style="border: 1px solid gray; zoom:80%;"/>
 
     A confirmation displays and creates a copy of the filter.
 
@@ -609,10 +609,10 @@ Steps to edit a filter:
 #### Delete Filter
 
 1. Select **Delete**.  
-    <img src="../images/delete-saved-filter.png" alt="Delete" title="Delete" style="border: 1px solid gray; zoom:80%;">
+    <img src="../images/delete-saved-filter.png" alt="Delete" title="Delete" style="border: 1px solid gray; zoom:80%;"/>
 
 2. A Delete Filter message appears. Select **Delete**.  
-    <img src="../images/delete-filter-confirmation.png" alt="Delete Confirmation" title="Delete Confirmation" style="border: 1px solid gray; zoom:80%;">
+    <img src="../images/delete-filter-confirmation.png" alt="Delete Confirmation" title="Delete Confirmation" style="border: 1px solid gray; zoom:80%;"/>
 
     A confirmation message displays and deletes the filter.
 
@@ -621,7 +621,7 @@ Steps to edit a filter:
 This section enables supervisors to  monitor service-level targets based on specific needs.
 
 To monitor service levels, go to Console > Monitor > SERVICE LEVELS.  
-<img src="../images/service-levels-dashboard.png" alt="Service Levels Dashboard" title="Service Levels Dashboard" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/service-levels-dashboard.png" alt="Service Levels Dashboard" title="Service Levels Dashboard" style="border: 1px solid gray; zoom:80%;"/>
 
 The dashboard displays the following information:
 

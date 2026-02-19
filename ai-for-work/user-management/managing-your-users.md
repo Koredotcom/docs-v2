@@ -4,7 +4,7 @@ You can manage users in **Admin Console** from the **User Management > Users sec
 
 All users across your network accounts are listed here.  
 
-<img src="../images/users.png" alt="users" title="users" style="border: 1px solid gray; zoom:80%;"> 
+<img src="../images/users.png" alt="users" title="users" style="border: 1px solid gray; zoom:80%;"/> 
 
 The following list describes the columns displayed for each user.
 
@@ -72,7 +72,7 @@ From the user details page, you can access the following fields:
 * Application Details
 * Log details  
 
-<img src="../images/user-details.png" alt="user-details" title="user-details" style="border: 1px solid gray; zoom:80%;"> 
+<img src="../images/user-details.png" alt="user-details" title="user-details" style="border: 1px solid gray; zoom:80%;"/> 
 
 ## User Roles Management
 
@@ -89,7 +89,7 @@ The User Roles feature allows administrators to control user access through pred
 1. Click **Manage role** from the user management interface.
 2. Select **Add Role** or equivalent option to create a new role.
 3. **Role name**: Enter a descriptive name for the custom role. Use clear, meaningful names that reflect the role's purpose 
-<img src="../images/user-role-2.png" alt="user-details" title="user-details" style="border: 1px solid gray; zoom:80%;"> 
+<img src="../images/user-role-2.png" alt="user-details" title="user-details" style="border: 1px solid gray; zoom:80%;"/> 
 
     **Access Permissions**: Choose one or multiple permissions from the provided list. Users will only see the modules corresponding to the permissions they are granted.
 
@@ -111,7 +111,7 @@ This section describes the commands available on the Top Navigation Menu.
 1. User Enrollments
 
     Click the **Change** button to open the User Enrollment page.  
-    <img src="../images/user-enrollment-ref.png" alt="user-enrollment-ref" title="user-enrollment-ref" style="border: 1px solid gray; zoom:80%;"> 
+    <img src="../images/user-enrollment-ref.png" alt="user-enrollment-ref" title="user-enrollment-ref" style="border: 1px solid gray; zoom:80%;"/> 
 
     Refer to [User Enrollment](../user-management/user-enrollments.md) for details on the type of enrollment configurations.
 
@@ -137,7 +137,7 @@ This section describes the commands available on the Top Navigation Menu.
 
     1. On the Top Navigation Menu, click **Invite users**.
     2. To invite users by importing a file, **Click to upload** the file or **drag and drop** the file. Refer to the **Format template for importing files** for the Instructions to prepare files for importing users.  
-    <img src="../images/invite-user.png" alt="invite-user" title="invite-user" style="border: 1px solid gray; zoom:80%;"> 
+    <img src="../images/invite-user.png" alt="invite-user" title="invite-user" style="border: 1px solid gray; zoom:80%;"/> 
 
     3. To invite users by sending emails, select the **Add manual** radio button.
     4. Enter the email address of the user. You can send invitations to multiple users at a given time.  

@@ -8,7 +8,7 @@ The **Advanced Conversation Analytics** feature provides a more detailed view of
 
 1.  Click **Analytics** on the left navigation pane. The Analytics panel is displayed with the list of reports.
 
-    <img src="../images/navigating-to-conversations-history-dashboard.png" alt="Navigating to Conversations History Dashboard" title="Navigating to Conversations History Dashboard" style="border: 1px solid gray; zoom:80%;">
+    <img src="../images/navigating-to-conversations-history-dashboard.png" alt="Navigating to Conversations History Dashboard" title="Navigating to Conversations History Dashboard" style="border: 1px solid gray; zoom:80%;"/>
 
 2. Click the **Conversations History dashboard** under the **Overview** section of the **Analytics** panel. The **Conversations History dashboard** is displayed on the right side of the page.
 3. Select appropriate filters on the dashboard and click **Apply**.
@@ -22,7 +22,7 @@ The **Filter Views** page is the preface or landing page displayed when you clic
 * Create a custom filter to view only the required data.
 * Access the **Conversations History Dashboard** for the selected preset.
 
-<img src="../images/filters-view-page.png" alt="Filters View Page" title="Filters View Page" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/filters-view-page.png" alt="Filters View Page" title="Filters View Page" style="border: 1px solid gray; zoom:80%;"/>
 
 ### Prebuilt Filters for Conversations History
 
@@ -183,15 +183,15 @@ To view the prebuilt filters, follow the steps:
 
 1. On the **Conversations History** dashboard page, the prebuilt filters are categorized and listed under the **Filter Views** section.
 
-    <img src="../images/view-prebuilt-filters-1.png" alt="View Prebuilt Filters-1" title="View Prebuilt Filters" style="border: 1px solid gray; zoom:80%;">
+    <img src="../images/view-prebuilt-filters-1.png" alt="View Prebuilt Filters-1" title="View Prebuilt Filters" style="border: 1px solid gray; zoom:80%;"/>
 
 2. Click the **Read More** link corresponding to the name of the filter type to see the configuration details of each conversation filter type. 
 
-    <img src="../images/view-prebuilt-filters-2.png" alt="View Prebuilt Filters-2" title="View Prebuilt Filters-1" style="border: 1px solid gray; zoom:80%;">
+    <img src="../images/view-prebuilt-filters-2.png" alt="View Prebuilt Filters-2" title="View Prebuilt Filters-1" style="border: 1px solid gray; zoom:80%;"/>
 
 3. Click any prebuilt filter name to access the **Conversations History** panel where relevant data is displayed.
 
-    <img src="../images/view-prebuilt-filters-3.png" alt="View Prebuilt Filters-3" title="View Prebuilt Filters-2" style="border: 1px solid gray; zoom:80%;">
+    <img src="../images/view-prebuilt-filters-3.png" alt="View Prebuilt Filters-3" title="View Prebuilt Filters-2" style="border: 1px solid gray; zoom:80%;"/>
 
 
 ### Create a Custom Conversation Filter
@@ -202,7 +202,7 @@ A **Conversation Filter** helps group and display selective conversation history
 
 1. On the **Conversations History** page, click **+ Create Filter**.
 
-    <img src="../images/create-conversation-filter-1.png" alt="Create Conversation Filter-1" title="Create Conversation Filter-1" style="border: 1px solid gray; zoom:80%;">
+    <img src="../images/create-conversation-filter-1.png" alt="Create Conversation Filter-1" title="Create Conversation Filter-1" style="border: 1px solid gray; zoom:80%;"/>
 
 
 2. On the **Create Conversation Filter** panel, provide inputs for the following fields:
@@ -590,7 +590,7 @@ The <strong>Conditional Filter</strong> options include
 
 <ol start="3"><li>Click <b>Save</b>.</li></ol>
 
-<img src="../images/create-conversation-filter-2.png" alt="Create Conversation Filter-2" title="Create Conversation Filter-2" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/create-conversation-filter-2.png" alt="Create Conversation Filter-2" title="Create Conversation Filter-2" style="border: 1px solid gray; zoom:80%;"/>
 
 The new custom filter is listed on the Filter Views page. The conversations are grouped and displayed Conversations History Dashboard based on the inputs provided on the Filter Views page.
 
@@ -603,13 +603,13 @@ You can edit one or more fields for an existing conversation filter.
  1. Click the custom filter on the **Filter Views** page.
  2. Click the **More Filters** dropdown list on the **Conversations History** panel.
 
-    <img src="../images/edit-a-conversation-filter-1.png" alt="Edit a Conversation Filter 1" title="Edit a Conversation Filter 1" style="border: 1px solid gray; zoom:80%;">
+    <img src="../images/edit-a-conversation-filter-1.png" alt="Edit a Conversation Filter 1" title="Edit a Conversation Filter 1" style="border: 1px solid gray; zoom:80%;"/>
 
 
  3. Modify the required fields on the **Edit Conversation Filter** window.
 4. Click **Apply**.
 
-    <img src="../images/edit-a-conversation-filter-2.png" alt="Edit a Conversation Filter 2" title="Edit a Conversation Filter 2" style="border: 1px solid gray; zoom:80%;"> 
+    <img src="../images/edit-a-conversation-filter-2.png" alt="Edit a Conversation Filter 2" title="Edit a Conversation Filter 2" style="border: 1px solid gray; zoom:80%;"/> 
 
 
 ## Filter Criteria
@@ -630,14 +630,14 @@ The following containment types affect the conversation flow and are displayed o
 * **Agent Transfer**: Indicates that the conversation was transferred to a live agent using the Agent Transfer node in the Dialog Flow.
 * **User Drop-off**: Indicates that the user stopped participating in the conversation before it was completed, either due to an error in the flow or some other reason.
 
-    <img src="../images/containment-type.png" alt="Containment Type" title="Containment Type" style="border: 1px solid gray; zoom:80%;">
+    <img src="../images/containment-type.png" alt="Containment Type" title="Containment Type" style="border: 1px solid gray; zoom:80%;"/>
 
 
 **Label**
 
 A **custom label** helps identify conversations that require follow-up or indicate an action item for an analyst during the review.
 
-<img src="../images/custom-label.png" alt="Custom Label" title="Custom Label" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/custom-label.png" alt="Custom Label" title="Custom Label" style="border: 1px solid gray; zoom:80%;"/>
 
 **Add a Custom Label**
 
@@ -645,7 +645,7 @@ To add a custom label in addition to the default label for a conversation, follo
 
 1. Click the **+ Label** button on the **Conversations History** panel for the required conversation session.
 
-    <img src="../images/add-a-custom-label-1.png" alt="Add a Custom Label-1" title="Add a Custom Label-1" style="border: 1px solid gray; zoom:80%;">
+    <img src="../images/add-a-custom-label-1.png" alt="Add a Custom Label-1" title="Add a Custom Label-1" style="border: 1px solid gray; zoom:80%;"/>
 
 2. In the **Labels** window, scroll down and click **+ Add**.
 3. Enter the **label name**, and click the **confirm** icon.
@@ -654,7 +654,7 @@ To add a custom label in addition to the default label for a conversation, follo
 
         You can select a different label color by clicking the color icon and using the color palette.
 
-    <img src="../images/add-a-custom-label-2.png" alt="Add a Custom Label-2" title="Add a Custom Label-2" style="border: 1px solid gray; zoom:80%;">
+    <img src="../images/add-a-custom-label-2.png" alt="Add a Custom Label-2" title="Add a Custom Label-2" style="border: 1px solid gray; zoom:80%;"/>
 4. Click **Save**.
 
 
@@ -683,7 +683,7 @@ You can edit or delete an existing custom label while adding a new label.
 
 The **Channel, Language, Date**, and **conversation duration** are displayed at the top of the Conversation History analytics panel.
 
-<img src="../images/other-conversation-parameters.png" alt="Other Conversation Parameters" title="Other Conversation Parameters" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/other-conversation-parameters.png" alt="Other Conversation Parameters" title="Other Conversation Parameters" style="border: 1px solid gray; zoom:80%;"/>
 
 ### Conversation Summary
 
@@ -694,14 +694,14 @@ The **Channel, Language, Date**, and **conversation duration** are displayed at 
 * **Tasks Completed**: The number of tasks successfully completed by the AI Agents.
 * **Failed Tasks**: The number of tasks that failed during the conversation.
 
-<img src="../images/conversation-summary.png" alt="Conversation Summary" title="Conversation Summary" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/conversation-summary.png" alt="Conversation Summary" title="Conversation Summary" style="border: 1px solid gray; zoom:80%;"/>
 
 
 ### Conversation Events
 
 **Conversation Events** indicate the sequence of occurrences during a conversation triggered by customer inputs and responses while interacting with a AI Agent. Each event can be categorized into regular and error-based occurrences. When analyzing a conversation flow, the user can identify the event type based on the following icons that are displayed for the relevant event.
 
-<img src="../images/conversation-events.png" alt="Conversation Events" title="Conversation Events" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/conversation-events.png" alt="Conversation Events" title="Conversation Events" style="border: 1px solid gray; zoom:80%;"/>
 
 The list of events triggered during a conversation is displayed below.
 
@@ -830,15 +830,15 @@ To view the Enriched Chat Transcript, enable the **Show Events** option (default
     Disabling the Show Events option will display only the chat transcript without the events.
 
 
-<img src="../images/enriched-chat-transcript-1.png" alt="Enriched Chat Transcript 1" title="Enriched Chat Transcript 1" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/enriched-chat-transcript-1.png" alt="Enriched Chat Transcript 1" title="Enriched Chat Transcript 1" style="border: 1px solid gray; zoom:80%;"/>
 
 
 The **Event** labels that appear under **Conversation Events** are displayed against each chat text in the chat transcript slider. Click here to learn more about Conversational Events.
 
-<img src="../images/enriched-chat-transcript-2.png" alt="Enriched Chat Transcript 2" title="Enriched Chat Transcript 2" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/enriched-chat-transcript-2.png" alt="Enriched Chat Transcript 2" title="Enriched Chat Transcript 2" style="border: 1px solid gray; zoom:80%;"/>
 
 
-<img src="../images/enriched-chat-transcript-3.png" alt="Enriched Chat Transcript 3" title="Enriched Chat Transcript 3" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/enriched-chat-transcript-3.png" alt="Enriched Chat Transcript 3" title="Enriched Chat Transcript 3" style="border: 1px solid gray; zoom:80%;"/>
 
 **Feedback User Type Label**
 
@@ -852,7 +852,7 @@ Hovering the mouse on the label displays the following data:
 * Customer type (result generated internally after the feedback is submitted).
 * Feedback score.
 
-<img src="../images/feedback-user-type-label.png" alt="Feedback User Type Label" title="Feedback User Type Label" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/feedback-user-type-label.png" alt="Feedback User Type Label" title="Feedback User Type Label" style="border: 1px solid gray; zoom:80%;"/>
 
 ### User Details
 
@@ -867,7 +867,7 @@ To view the details of the agent that handled a conversation session, follow the
     5. **Last Interaction Date**: The date of the agent’s most recent customer interaction.
     6. **User Meta tags**: Used to identify important keywords in the conversation.
 
-    <img src="../images/user-details.png" alt="User Details" title="User Details" style="border: 1px solid gray; zoom:80%;">
+    <img src="../images/user-details.png" alt="User Details" title="User Details" style="border: 1px solid gray; zoom:80%;"/>
 
 
 ### Chat History
@@ -882,7 +882,7 @@ The Enriched Chat Transcript is visible on the Chat History panel.
 * The Chat History window displays the conversation flow. In addition, the following information is displayed on the side pane:
     * **Date Filter** dropdown to select the period of Chat History.
 
-        <img src="../images/chat-history-1.png" alt="Chat History 1" title="Chat History 1" style="border: 1px solid gray; zoom:80%;">
+        <img src="../images/chat-history-1.png" alt="Chat History 1" title="Chat History 1" style="border: 1px solid gray; zoom:80%;"/>
 
     * The date-wise information summary on the following:
         * Conversation channel.
@@ -899,18 +899,18 @@ The Enriched Chat Transcript is visible on the Chat History panel.
         * Language (of interaction)
         * Event labels tagged to the conversation history.
        
-            <img src="../images/chat-history-2.png" alt="Chat History 2" title="Chat History 2" style="border: 1px solid gray; zoom:80%;">
+            <img src="../images/chat-history-2.png" alt="Chat History 2" title="Chat History 2" style="border: 1px solid gray; zoom:80%;"/>
 
         * X-Trace Id – A unique ID assigned to each incoming message. The ID is also included in all the logs maintained by the Platform. 
         * K-Trace Id – This is Kore’s monitoring trace ID. This ID is useful for debugging purposes.
 
         When you hover over the message, the info icon appears. Click the **Info** icon to view the **Message ID** associated with the message.
         
-        <img src="../images/chat-history-3.png" alt="Chat History 3" title="Chat History 3" style="border: 1px solid gray; zoom:80%;">
+        <img src="../images/chat-history-3.png" alt="Chat History 3" title="Chat History 3" style="border: 1px solid gray; zoom:80%;"/>
 
         * Click the **Message Id** to view the **X-Trace Id** and **K-Trace Id** associated with a message in the Chat History.
         
-        <img src="../images/xtraceid2.png" alt="Chat History 4" title="Chat History 4" style="border: 1px solid gray; zoom:80%;">
+        <img src="../images/xtraceid2.png" alt="Chat History 4" title="Chat History 4" style="border: 1px solid gray; zoom:80%;"/>
 
 
 !!! note
@@ -962,16 +962,16 @@ After the end user selects an account type, the Alternate message appears in the
 1. Hover over the message transcript in the conversation where you wish to add the message tag.
 2. Click **+Message Tag**.
 
-    <img src="../images/message-tags-1.png" alt="Message Tags 1" title="Message Tags 1" style="border: 1px solid gray; zoom:80%;">
+    <img src="../images/message-tags-1.png" alt="Message Tags 1" title="Message Tags 1" style="border: 1px solid gray; zoom:80%;"/>
 
 3. In the **Add Message Tag** window, enter the **Key** and **Value** in their respective text fields.
 
-    <img src="../images/message-tags-2.png" alt="Message Tags 2" title="Message Tags 2" style="border: 1px solid gray; zoom:80%;">
+    <img src="../images/message-tags-2.png" alt="Message Tags 2" title="Message Tags 2" style="border: 1px solid gray; zoom:80%;"/>
 
 
 4. Click **Save**. The new message tag is displayed below the message in the transcript slider.
 
-    <img src="../images/message-tags-3.png" alt="Message Tags 3" title="Message Tags 3" style="border: 1px solid gray; zoom:80%;">
+    <img src="../images/message-tags-3.png" alt="Message Tags 3" title="Message Tags 3" style="border: 1px solid gray; zoom:80%;"/>
 
 
 !!! note
@@ -988,7 +988,7 @@ The system captures and displays a **feedback event label** `"End of Conversatio
 The response will be mapped to a **key-value** pair for the conversation timeline, which can be useful for analyzing the conversation and customer experience at a granular level. This information is useful to improve the AI Agent’s performance and enhance the customer experience.
 
 
-<img src="../images/feedback-survey.png" alt="Feedback Survey" title="Feedback Survey" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/feedback-survey.png" alt="Feedback Survey" title="Feedback Survey" style="border: 1px solid gray; zoom:80%;"/>
 
 
 The **Conversation Summary** displays the following information on the Feedback event:
@@ -1001,7 +1001,7 @@ The **Conversation Summary** displays the following information on the Feedback 
     5. Tasks Completed
     6. Failed Tasks
 
-        <img src="../images/conversation-summary-1.png" alt="Conversation Summary 1" title="Conversation Summary 1" style="border: 1px solid gray; zoom:80%;">
+        <img src="../images/conversation-summary-1.png" alt="Conversation Summary 1" title="Conversation Summary 1" style="border: 1px solid gray; zoom:80%;"/>
 
 2. The Feedback Event is based on the event timeline with **Key** and **Value**.
 3. The **total number of feedback responses** collected for the session and the following:

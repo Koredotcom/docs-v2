@@ -22,7 +22,7 @@ The following features are available in the Agent AI widget:
 * **In-line Digital Form**: Lets you easily collect customer information during live conversations.
 * **Agentic Copilot**: The Agentic Copilot runs end-to-end conversations autonomously with Agents supervising the conversations. Agents can cancel, override, or edit the Agentic conversations, as needed. 
 
-<img src="../widget-images/agent-assist-widget-v3-appearance.png" alt="agent-assist-widget-v3-appearance.png" title="agent-assist-widget-v3-appearance.png" style="border: 1px solid gray; zoom:80%;">
+<img src="../widget-images/agent-assist-widget-v3-appearance.png" alt="agent-assist-widget-v3-appearance.png" title="agent-assist-widget-v3-appearance.png" style="border: 1px solid gray; zoom:80%;"/>
 
 ## Widget Tabs
 
@@ -30,13 +30,13 @@ The widget consists of five tabs—Search, My AI Agent (Bot), Assist, Transcript
 
 **Agent AI tabs**:
 
-<img src="../WidgetContentUpdate_3.3.0/agent-assist-widget-tabs.png" alt="agent-assist-widget-tabs.png" title="agent-assist-widget-tabs.png" style="border: 1px solid gray; zoom:80%;">
+<img src="../WidgetContentUpdate_3.3.0/agent-assist-widget-tabs.png" alt="agent-assist-widget-tabs.png" title="agent-assist-widget-tabs.png" style="border: 1px solid gray; zoom:80%;"/>
 
 ### Search Tab
 
 This tab shows all configured Dialog Tasks at the app level and also gives search capabilities, wherein agents can search Dialog Tasks, frequently asked questions (FAQ), Generative AI answers, web pages, files, and more. The content in this section automatically updates based on agent interactions. Agents can scroll through the list to view all available automations. Selecting the “Run with Agent input” button moves the Dialog Task to the **My AI Agent (Bot)** section, where it can be executed. The search functionality automatically updates the library list to match the search query. As you type, relevant words and phrases appear in real time.
 
-<img src="../WidgetContentUpdate_3.3.0/updated-search-functionality.png" alt="updated-search-functionality" title="updated-search-functionality" style="border: 1px solid gray; zoom:80%;">
+<img src="../WidgetContentUpdate_3.3.0/updated-search-functionality.png" alt="updated-search-functionality" title="updated-search-functionality" style="border: 1px solid gray; zoom:80%;"/>
 
 The following buttons are available in this section:
 
@@ -49,15 +49,15 @@ The following buttons are available in this section:
 The **Search** tab displays error messages for searches exceeding 10 seconds, dialog tasks not configured, and server issues.
 
 * Timeout/dialog tasks not configured:  
-<img src="../WidgetContentUpdate_3.3.0/timeout-first-time.png" alt="timeout-first-time" title="timeout-first-time" style="border: 1px solid gray; zoom:80%;">
+<img src="../WidgetContentUpdate_3.3.0/timeout-first-time.png" alt="timeout-first-time" title="timeout-first-time" style="border: 1px solid gray; zoom:80%;"/>
 * Search failing for the second consecutive time:  
-<img src="../WidgetContentUpdate_3.3.0/timeout-second-time.png" alt="timeout-second-time" title="timeout-second-time" style="border: 1px solid gray; zoom:80%;">
+<img src="../WidgetContentUpdate_3.3.0/timeout-second-time.png" alt="timeout-second-time" title="timeout-second-time" style="border: 1px solid gray; zoom:80%;"/>
 * Server errors:  
-<img src="../WidgetContentUpdate_3.3.0/server-error.png" alt="server-error" title="server-error" style="border: 1px solid gray; zoom:80%;">
+<img src="../WidgetContentUpdate_3.3.0/server-error.png" alt="server-error" title="server-error" style="border: 1px solid gray; zoom:80%;"/>
 * Dialog Tasks not found:  
-<img src="../WidgetContentUpdate_3.3.0/dialog-tasks-not-found.png" alt="dialog-tasks-not-found" title="dialog-tasks-not-found" style="border: 1px solid gray; zoom:80%;">
+<img src="../WidgetContentUpdate_3.3.0/dialog-tasks-not-found.png" alt="dialog-tasks-not-found" title="dialog-tasks-not-found" style="border: 1px solid gray; zoom:80%;"/>
 * No matching search results:  
-<img src="../WidgetContentUpdate_3.3.0/no-matching-search-results.png" alt="no-matching-search-results" title="no-matching-search-results" style="border: 1px solid gray; zoom:80%;">
+<img src="../WidgetContentUpdate_3.3.0/no-matching-search-results.png" alt="no-matching-search-results" title="no-matching-search-results" style="border: 1px solid gray; zoom:80%;"/>
 
 ### My AI Agent (Bot) Tab
 
@@ -65,7 +65,7 @@ My AI Agent (Bot) functionality allows agents to run the entire automation by th
 
 My AI Agent (Bot) tab displays the list of “next best action” suggestions for the agent based on the current conversation status and other interaction parameters.
 
-<img src="../widget-images/mybot-tab.png" alt="mybot-tab.png" title="mybot-tab.png" style="border: 1px solid gray; zoom:80%;">
+<img src="../widget-images/mybot-tab.png" alt="mybot-tab.png" title="mybot-tab.png" style="border: 1px solid gray; zoom:80%;"/>
 
 My AI Agent (Bot) functionality can be used in multiple circumstances (but not limited to): 
 
@@ -76,7 +76,7 @@ My AI Agent (Bot) functionality can be used in multiple circumstances (but not l
 
 The Assist tab is the primary interface for the agents. AgentAssist actively monitors conversations and offers assistance to agents. Through the Assist tab, customer intents in the form of Dialog Tasks, FAQs, KnowledgeAI, and Playbook are identified. Agents can run automation processes and send FAQs, Playbook body text, and Dialog Task text to users. The Assist tab displays Agentic Copilot messages, Dialog Tasks, Playbooks, Agent Coaching progression, a “bulb” icon (if there is a Dynamic Playbook match), and a summary generation button. For these features to be available, they should be configured on your device. This tab accepts file or image attachments during live conversations up to the size of 25 MB. If the file or image is not automatically detected, you can override and manually attach the file. It also features the "up" and "down" arrow buttons to scroll to the first and last messages in the Assist tab (these buttons appear only after the messages in the Assist tab are large enough to require a scroll bar). 
 
-<img src="../widget-images/assist-tab.jpg" alt="assist-tab" title="assist-tab" style="border: 1px solid gray; zoom:80%;">  
+<img src="../widget-images/assist-tab.jpg" alt="assist-tab" title="assist-tab" style="border: 1px solid gray; zoom:80%;"/>  
 
 The Assist tab facilitates the following:
 
@@ -102,10 +102,10 @@ The Assist tab features the following:
 * **Agentic Copilot messages**: The messages appear with a “Sending” button that delays auto-send for up to 10 seconds, based on the value set in the **Set message delay before auto send** field in the **Agent AI Widget Settings** section). During this time, Agents can click the **x** icon next to the **sending** button to cancel auto-send and choose to send or copy the message manually. 
 
     The auto-send functionality works uninterrupted across multiple parallel chats. The following screenshot shows the auto-send functionality button in progress along with the **Override** button:  
-    <img src="../widget-images/agentic-app-in-widget.png" alt="agentic-app-in-widget" title="agentic-app-in-widget" style="border: 1px solid gray; zoom:80%;"> 
+    <img src="../widget-images/agentic-app-in-widget.png" alt="agentic-app-in-widget" title="agentic-app-in-widget" style="border: 1px solid gray; zoom:80%;"/> 
 
    * To cancel auto sending, click “x” beside the “sending” button:  
-    <img src="../widget-images/agentic-app-messages.png" alt="agentic-app-messages" title="agentic-app-messages" style="border: 1px solid gray; zoom:80%;"> 
+    <img src="../widget-images/agentic-app-messages.png" alt="agentic-app-messages" title="agentic-app-messages" style="border: 1px solid gray; zoom:80%;"/> 
 
        * Click the “copy” icon to copy the message to the “chat response” field.
        * Click the “Send” button to send the message manually.
@@ -139,7 +139,7 @@ Agents can now click the **Generate Summary** button in the Assist tab to genera
     For this functionality, the **Generate Summary** toggle must be enabled in the **Widget Theming > Layout Customization > Assist Action Menu Layout** section. [Learn more](../configuration/widget-theming-layout-customization.md#assist-action-menu-layout){:target="_blank"}
 
 The following screenshot shows the agent-generated summaries with timestamps along with the end-of-summary auto-generated summary:  
-<img src="../widget-images/summary-generation.jpg" alt="summary-generation" title="summary-generation" style="border: 1px solid gray; zoom:80%;">
+<img src="../widget-images/summary-generation.jpg" alt="summary-generation" title="summary-generation" style="border: 1px solid gray; zoom:80%;"/>
 
 #### **Attachment Support**
 
@@ -148,42 +148,42 @@ AgentAssist accepts file or image attachments during live conversations. If the 
 If the file or image is automatically detected:
 
 * A “waiting…” message appears, and upon successful attachment the file name is displayed in the input field and a “View” button appears to preview the file/image.  
-<img src="../WidgetContentUpdate_3.3.0/automatic-detection-attachment_1.png" alt="automatic-detection-attachment" title="automatic-detection-attachment" style="border: 1px solid gray; zoom:80%;">
+<img src="../WidgetContentUpdate_3.3.0/automatic-detection-attachment_1.png" alt="automatic-detection-attachment" title="automatic-detection-attachment" style="border: 1px solid gray; zoom:80%;"/>
 
 * Preview is confined within the widget, featuring a “back” button and a “close” icon.  
-<img src="../WidgetContentUpdate_3.3.0/attachment-preview-back-and-close-buttons_2.png" alt="attachment-preview-back-and-close-buttons" title="attachment-preview-back-and-close-buttons" style="border: 1px solid gray; zoom:80%;">
+<img src="../WidgetContentUpdate_3.3.0/attachment-preview-back-and-close-buttons_2.png" alt="attachment-preview-back-and-close-buttons" title="attachment-preview-back-and-close-buttons" style="border: 1px solid gray; zoom:80%;"/>
 
 If the file or image does not get detected:
 
 * An “Override” option appears.
 * Once you click “Override,” the “Choose File” option with an attachment icon appears. You can choose a file or an image from your local directory and reject or confirm the attachment by clicking the “close” sign or the “tick” mark.  
-<img src="../WidgetContentUpdate_3.3.0/override-choose-file_3.png" alt="override-choose-file" title="override-choose-file" style="border: 1px solid gray; zoom:80%;">
+<img src="../WidgetContentUpdate_3.3.0/override-choose-file_3.png" alt="override-choose-file" title="override-choose-file" style="border: 1px solid gray; zoom:80%;"/>
 
 Error Messages
 
 The following error messages, along with an “exclamation” mark and count, appear during file/image attachment:
 
 * For more than 25 MB file size:  
-<img src="../WidgetContentUpdate_3.3.0/more-than-25mb-error_4.png" alt="more-than-25mb-error" title="more-than-25mb-error" style="border: 1px solid gray; zoom:80%;">
+<img src="../WidgetContentUpdate_3.3.0/more-than-25mb-error_4.png" alt="more-than-25mb-error" title="more-than-25mb-error" style="border: 1px solid gray; zoom:80%;"/>
 
 * For an unsupported file sent by the customer or attached by the agent:  
-<img src="../WidgetContentUpdate_3.3.0/unsupported-file_5.png" alt="unsupported-file" title="unsupported-file" style="border: 1px solid gray; zoom:80%;">
+<img src="../WidgetContentUpdate_3.3.0/unsupported-file_5.png" alt="unsupported-file" title="unsupported-file" style="border: 1px solid gray; zoom:80%;"/>
 
 #### **In-line Digital Form**
 
 The in-line digital forms in the Assist tab lets you easily collect customer information during live conversations. To use this feature, configure the forms with dialog tasks, and select “Open inline form” in the Web/Mobile SDK Form Behavior setting.  
-<img src="../WidgetContentUpdate_3.3.0/open-inline-form_6.png" alt="open-inline-form" title="open-inline-form" style="border: 1px solid gray; zoom:80%;">
+<img src="../WidgetContentUpdate_3.3.0/open-inline-form_6.png" alt="open-inline-form" title="open-inline-form" style="border: 1px solid gray; zoom:80%;"/>
 
 The following features appear for in-line forms within the Assist tab:
 
 1. Close icon: It appears on the top-right corner to let agents exit the form.
 2. Confirmation option: It appears while closing the form to confirm if you want to discard the task.  
-<img src="../WidgetContentUpdate_3.3.0/inline-form-confirmation-option_7.png" alt="inline-form-confirmation-option" title="inline-form-confirmation-option" style="border: 1px solid gray; zoom:80%;">
+<img src="../WidgetContentUpdate_3.3.0/inline-form-confirmation-option_7.png" alt="inline-form-confirmation-option" title="inline-form-confirmation-option" style="border: 1px solid gray; zoom:80%;"/>
 
 3. Fixed Frame Size: The form frame maintains a fixed height of 306 pixels.
 4. Scrolling Capability: Scroll within the form frame to access and complete all form content.
 5. Submit button: A sticky “Submit” button at the bottom of the form frame for easy access.  
-<img src="../WidgetContentUpdate_3.3.0/inline-form-submit-button_8.png" alt="inline-form-submit-button" title="inline-form-submit-button" style="border: 1px solid gray; zoom:80%;">
+<img src="../WidgetContentUpdate_3.3.0/inline-form-submit-button_8.png" alt="inline-form-submit-button" title="inline-form-submit-button" style="border: 1px solid gray; zoom:80%;"/>
 
 Scenario Specific Configurations
 
@@ -197,12 +197,12 @@ Scenario 2: Smart Assist Application Suite
 * You can send the form to the customers.
 * You can send the form multiple times, but it can be accessed only once in its entirety.
 * If the customer opens the form independently, you get an error message, preventing simultaneous access.  
-<img src="../WidgetContentUpdate_3.3.0/inline-form-opening-error_9.png" alt="inline-form-opening-error" title="inline-form-opening-error" style="border: 1px solid gray; zoom:80%;">
+<img src="../WidgetContentUpdate_3.3.0/inline-form-opening-error_9.png" alt="inline-form-opening-error" title="inline-form-opening-error" style="border: 1px solid gray; zoom:80%;"/>
 
 ### Transcript Tab
 
 The Transcription feature is available only for the voice calls. When a call begins, the Transcript tab displays the real-time transcription of conversations between agents and customers in text format. The transcriptions are available for the agent throughout the session and provide a historical record for future reference. Agents can read through and copy/paste it. If the Auto-scroll Widget Content toggle is enabled in the Widget Settings page, the system automatically navigates to the last message content for new utterances. Agents can manually scroll up and down to read through the content.  
-<img src="../widget-images/transcript-tab.png" alt="transcript-tab.png" title="transcript-tab.png" style="border: 1px solid gray; zoom:80%;">
+<img src="../widget-images/transcript-tab.png" alt="transcript-tab.png" title="transcript-tab.png" style="border: 1px solid gray; zoom:80%;"/>
 
 ### More Tab
 
@@ -214,7 +214,7 @@ The **More** (ellipsis) button lets agents share overall feedback on the Agent A
 #### Steps to Submit Overall Widget Feedback
 
 1. Click the **More** (ellipsis) button > **Feedback**.  
-    <img src="../widget-images/overall-widget-feedback-button.png" alt="overall-widget-feedback-button" title="overall-widget-feedback-button" style="border: 1px solid gray; zoom:80%;">  
+    <img src="../widget-images/overall-widget-feedback-button.png" alt="overall-widget-feedback-button" title="overall-widget-feedback-button" style="border: 1px solid gray; zoom:80%;"/>  
 
 2. Click one of the tabs—**Satisfied** or **Unsatisfied**. 
 
@@ -222,10 +222,10 @@ The **More** (ellipsis) button lets agents share overall feedback on the Agent A
 
         Select **Satisfied** for positive and **Unsatisfied** for negative feedback messages.  
 
-    <img src="../widget-images/positive-feedback.png" alt="positive-feedback" title="positive-feedback" style="border: 1px solid gray; zoom:80%;">  
+    <img src="../widget-images/positive-feedback.png" alt="positive-feedback" title="positive-feedback" style="border: 1px solid gray; zoom:80%;"/>  
 
 3. Select the feedback messages from the list, and enter any additional comments. In the following screenshot, agent has selected the **Unsatisfied** tab, the **Irrelevant Dialogs** message, and entered a comment:  
-    <img src="../widget-images/additional-comments.png" alt="widget-images/additional-comments" title="widget-images/additional-comments" style="border: 1px solid gray; zoom:80%;">  
+    <img src="../widget-images/additional-comments.png" alt="widget-images/additional-comments" title="widget-images/additional-comments" style="border: 1px solid gray; zoom:80%;"/>  
 
 4. Click **Submit**.
 
@@ -237,7 +237,7 @@ The Settings tab gives you access to set:
 * Auto-scroll functionality of the content in the Assist, My AI Agent (Bot), and Transcript tabs.
 * Available documents and FAQs.
 * Option to choose a language.  
-<img src="../WidgetContentUpdate_3.3.0/widget-settings-section.png" alt="settings-tab-updated" title="settings-tab-updated" style="border: 1px solid gray; zoom:80%;">
+<img src="../WidgetContentUpdate_3.3.0/widget-settings-section.png" alt="settings-tab-updated" title="settings-tab-updated" style="border: 1px solid gray; zoom:80%;"/>
 
 #### Proactive Mode
 
@@ -251,18 +251,18 @@ The Auto-Scroll Content toggle lets you manage the scrolling functionality of co
 
 This section gives you access to the available documentation, FAQs, and the Kore Academy courses. You can refer to these materials to answer questions or give reference to these to the customer.  
 
-<img src="../widget-images/settings-tab-help&support.png" alt="settings-tab-help&support.png" title="settings-tab-help&support.png" style="border: 1px solid gray; zoom:80%;">
+<img src="../widget-images/settings-tab-help&support.png" alt="settings-tab-help&support.png" title="settings-tab-help&support.png" style="border: 1px solid gray; zoom:80%;"/>
 
 #### Language
 
 This section lists the supported languages and lets you select a language of your choice. The selected language appears at the top of the section heading.
 
-<img src="../widget-images/settings-tab-help&support-language.png" alt="settings-tab-help&support-language.png" title="settings-tab-help&support-language.png" style="border: 1px solid gray; zoom:80%;">
+<img src="../widget-images/settings-tab-help&support-language.png" alt="settings-tab-help&support-language.png" title="settings-tab-help&support-language.png" style="border: 1px solid gray; zoom:80%;"/>
 
 ### **Theme Selection**
 
 This section lets you customize the widget’s appearance with the help of a theme (dark or light). To select it, go to the widget’s Settings tab, and select Dark or Light.  
-<img src="../WidgetContentUpdate_3.3.0/theme-icon.png" alt="widget-theme-selection" title="widget-theme-selection" style="border: 1px solid gray; zoom:80%;">
+<img src="../WidgetContentUpdate_3.3.0/theme-icon.png" alt="widget-theme-selection" title="widget-theme-selection" style="border: 1px solid gray; zoom:80%;"/>
 
 ## Agent AI V2 vs V3 - Key Differences
 
@@ -287,11 +287,11 @@ The following UI updates are done:
 
 **Agent AI V2**
 
-<img src="../widget-images/agent-assist-widget-v2.png" alt="agent-assist-widget-v2.png" title="agent-assist-widget-v2.png" style="border: 1px solid gray; zoom:80%;">
+<img src="../widget-images/agent-assist-widget-v2.png" alt="agent-assist-widget-v2.png" title="agent-assist-widget-v2.png" style="border: 1px solid gray; zoom:80%;"/>
 
 **Agent AI V3**
 
-<img src="../widget-images/agent-assist-widget-v3.png" alt="agent-assist-widget-v3.png" title="agent-assist-widget-v3.png" style="border: 1px solid gray; zoom:80%;">
+<img src="../widget-images/agent-assist-widget-v3.png" alt="agent-assist-widget-v3.png" title="agent-assist-widget-v3.png" style="border: 1px solid gray; zoom:80%;"/>
 
 ### Differences at the Feature/Tab level
 
@@ -301,21 +301,21 @@ The following updates have been added at the feature level:
 
 **Agent AI V2**
 
-<img src="../widget-images/agentassist-v2-features-1.png" alt="agentassist-v2-features-1" title="agentassist-v2-features-1" style="border: 1px solid gray; zoom:80%;">
+<img src="../widget-images/agentassist-v2-features-1.png" alt="agentassist-v2-features-1" title="agentassist-v2-features-1" style="border: 1px solid gray; zoom:80%;"/>
 
 **Agent AI V3**
 
-<img src="../widget-images/agent-assist-v3-features-tab-1.png" alt="agentassist-v3-features-2" title="agentassist-v3-features-2" style="border: 1px solid gray; zoom:80%;">
+<img src="../widget-images/agent-assist-v3-features-tab-1.png" alt="agentassist-v3-features-2" title="agentassist-v3-features-2" style="border: 1px solid gray; zoom:80%;"/>
 
 * The **Override Input** button in V2 and the input field under the running Dialog Task in V3 have the same functionality - prevent the widget from capturing the customer’s input. This functionality is useful when the agent has multiple conversations going on simultaneously. \
 
 **Agent AI V2**
 
-<img src="../widget-images/agent-assist-v2-features-2.png" alt="agent-assist-v2-features-2" title="agent-assist-v2-features-2" style="border: 1px solid gray; zoom:80%;">
+<img src="../widget-images/agent-assist-v2-features-2.png" alt="agent-assist-v2-features-2" title="agent-assist-v2-features-2" style="border: 1px solid gray; zoom:80%;"/>
 
 **Agent AI V3**
 
-<img src="../widget-images/agentassist-v3-features-2.png" alt="agentassist-v3-features-2" title="agentassist-v3-features-2" style="border: 1px solid gray; zoom:80%;">
+<img src="../widget-images/agentassist-v3-features-2.png" alt="agentassist-v3-features-2" title="agentassist-v3-features-2" style="border: 1px solid gray; zoom:80%;"/>
 
 ### New Tab addition - Settings Tab
 

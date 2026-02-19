@@ -125,7 +125,7 @@ To configure the scorecard,
 * **Purpose**: Focus coaching and training efforts.
 
 * **Update Frequency**: Real-time based on scorecard selection.  
-    <img src="../agent-dashboard/images/scorecard-selection-for-coaching-insights.png" alt="Coaching Insights" title="Coaching Insights" style="border: 1px solid gray; zoom:80%;">
+    <img src="../agent-dashboard/images/scorecard-selection-for-coaching-insights.png" alt="Coaching Insights" title="Coaching Insights" style="border: 1px solid gray; zoom:80%;"/>
 
 ### Sentiment Insights
 
@@ -151,7 +151,7 @@ Agents can view:
     * **Identify Performance Gaps**: Helps agents compare their highest and lowest sentiment areas. 
 
     * **Monitor Trends**: Lets agents track how sentiment performance over time.  
-    <img src="../agent-dashboard/images/sentiment-insights.png" alt="Sentiment Insights" title="Sentiment Insights" style="border: 1px solid gray; zoom:80%;">
+    <img src="../agent-dashboard/images/sentiment-insights.png" alt="Sentiment Insights" title="Sentiment Insights" style="border: 1px solid gray; zoom:80%;"/>
 
 ### Resolution Insights
 
@@ -172,7 +172,7 @@ The agents can view:
     * **View All Topics**: Opens Topic Discovery with filters applied so agents see only their own conversations.
 
     * **View Conversations**: Opens Conversation Mining filtered to the selected L3 topic.
-    <img src="../agent-dashboard/images/resolution-insights.png" alt="Resolution Insights" title="Resolution Insights" style="border: 1px solid gray; zoom:80%;">
+    <img src="../agent-dashboard/images/resolution-insights.png" alt="Resolution Insights" title="Resolution Insights" style="border: 1px solid gray; zoom:80%;"/>
     
 ## Scorecard Trend
 
@@ -193,7 +193,7 @@ The settings control automatic scorecard selection, manual switching, and multi-
 Each scorecard supports its own language settings, allowing for flexible multilingual configuration. Agents can assign different languages to different scorecards for localized performance tracking and reporting. 
 
 This language filter displays only the languages configured for each scorecard, and all associated languages are auto-selected when a scorecard is chosen. This enables multilingual performance monitoring, helping supervisors compare agent performance across languages and provide targeted coaching.   
-<img src="../agent-dashboard/images/my-dashboard-scorecard-trend.png" alt="All Languages" title="All Languages" style="border: 1px solid gray; zoom:80%;">
+<img src="../agent-dashboard/images/my-dashboard-scorecard-trend.png" alt="All Languages" title="All Languages" style="border: 1px solid gray; zoom:80%;"/>
 
 The widget presents attribute-level scoring trends across daily, weekly, and monthly time ranges. From the agent side, the scorecard trend widget shows the average scorecard for the selected time range and the scoring trend at an attribute level.
 

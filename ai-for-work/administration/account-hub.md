@@ -2,7 +2,7 @@
 
 The Account Hub serves as the central control panel for all administrative tasks within the system. It provides a unified platform for managing user accounts, assigning roles and permissions, monitoring system activity, and generating reports. This centralized approach streamlines administrative processes, improves efficiency, and enhances overall system security. 
 
-<img src="../images/account_hub.png" alt="admin-console" title="workspaces2" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/account_hub.png" alt="admin-console" title="workspaces2" style="border: 1px solid gray; zoom:80%;"/>
 
 The Account Hub includes the following key sections:
 

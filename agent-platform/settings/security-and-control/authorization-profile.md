@@ -68,7 +68,7 @@ The Client Credentials flow is one of the OAuth 2.0 authorization grant types. I
 
 To add a new Auth profile, you must first set up the required auth fields with the steps below: 
 
-1. [Navigate](../security-and-control/authorization-profile.md#access-authorization-profile){:target="_blank"} to the **Authorization Profile** feature.
+1. [Navigate](../security-and-control/authorization-profile.md#access-authorization-profile) to the **Authorization Profile** feature.
 2. Click **Create Authorization Profile** if this is your first auth profile.
 <img src="../images/click-create-auth-profile.png" alt="create auth profile" title="create auth profile" style="border: 1px solid gray; zoom:75%;">  
 

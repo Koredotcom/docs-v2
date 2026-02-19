@@ -38,23 +38,23 @@ Complete the following steps to configure the ServiceNow agent for **Tokyo** and
 1. Log in to your ServiceNow account.
 2. From the main menu on the left, search and select **Queues** under **Connect > Support Administration** and click on the **New** button.
 
-    <img src="../images/configuring-the-servicenow-agent-tokyo-img1.png" alt="Create new queue" title="Create new queue" style="border: 1px solid gray;zoom:80%;">
+    <img src="../images/configuring-the-servicenow-agent-tokyo-img1.png" alt="Create new queue" title="Create new queue" style="border: 1px solid gray;zoom:80%;"/>
 
 3. In the Queue dialog, enter the following queue details:
     1. **Name** of the queue.
     2. Select Consumer Service Support in the **Assignment group** field.
 
-    <img src="../images/configuring-the-servicenow-agent-tokyo-img2.png" alt="Queue details" title="Queue details" style="border: 1px solid gray;zoom:80%;">
+    <img src="../images/configuring-the-servicenow-agent-tokyo-img2.png" alt="Queue details" title="Queue details" style="border: 1px solid gray;zoom:80%;"/>
 
 4. Click the **New** button in the **Chat Queue Entries** section and assign the chat queue entry to a user as shown below:
 
-    <img src="../images/configuring-the-servicenow-agent-tokyo-img3.png" alt="Assign chat queue entry to  user" title="Assign chat queue entry to  user" style="border: 1px solid gray;zoom:80%;">
+    <img src="../images/configuring-the-servicenow-agent-tokyo-img3.png" alt="Assign chat queue entry to  user" title="Assign chat queue entry to  user" style="border: 1px solid gray;zoom:80%;"/>
 
 5. Click **Submit** to save the chat queue entry details.
 6. Click **Submit** again to save the queue details.
 7. Copy the ID from the **Queue ID** field.
 
-    <img src="../images/configuring-the-servicenow-agent-tokyo-img4.png" alt="Queue ID" title="Queue ID" style="border: 1px solid gray;zoom:80%;">
+    <img src="../images/configuring-the-servicenow-agent-tokyo-img4.png" alt="Queue ID" title="Queue ID" style="border: 1px solid gray;zoom:80%;"/>
 
 
 ### Step 3: Enable the ServiceNow Agent
@@ -100,11 +100,11 @@ Complete the following steps to configure the ServiceNow agent for **Tokyo** and
 
 7. You can customize the channel mapping by clicking the **Configure** link as shown below:
 
-    <img src="../images/configuring-the-servicenow-agent-tokyo-img8.png" alt="Customize channel mapping" title="Customize channel mapping" style="border: 1px solid gray;zoom:80%;">
+    <img src="../images/configuring-the-servicenow-agent-tokyo-img8.png" alt="Customize channel mapping" title="Customize channel mapping" style="border: 1px solid gray;zoom:80%;"/>
 
 9. Once you click **Configure**, you can map the channels for which you want to use ServiceNow agent to  hand over the conversations. 
 
-    <img src="../images/configuring-the-servicenow-agent-tokyo-img9.png" alt="Map channels to use ServiceNow agent" title="Map channels to use ServiceNow agent" style="border: 1px solid gray;zoom:80%;">
+    <img src="../images/configuring-the-servicenow-agent-tokyo-img9.png" alt="Map channels to use ServiceNow agent" title="Map channels to use ServiceNow agent" style="border: 1px solid gray;zoom:80%;"/>
 
     For example, if you have configured a Genesys chat integration, Intercom and ServiceNow agents. You can make one of them as default and map channels to agent systems. In this case, the Web Client and WebHook are mapped to Genesys and Intercom. Slack is mapped to the default ServiceNow agent. To learn more about channel enablement, see [Adding channels to your app](../../../../channels/adding-channels-to-your-bot.md){:target="_blank"}.
 
@@ -118,11 +118,11 @@ Complete the following steps to configure the ServiceNow agent for **Tokyo** and
 1. Log in to your ServiceNow account with admin user credentials. The ServiceNow account will have a unique URL for each developer instance in their Service Management or App Engine Studio, for example: `https://devXXX67.service-now.com`.
 2. Select the **All** menu, search for the **System Properties** filter, and click **New**.
 
-    <img src="../images/configuring-the-servicenow-agent-tokyo-img10.png" alt="System Properties" title="System Properties" style="border: 1px solid gray;zoom:80%;">
+    <img src="../images/configuring-the-servicenow-agent-tokyo-img10.png" alt="System Properties" title="System Properties" style="border: 1px solid gray;zoom:80%;"/>
 
 3. Enter the **glide.ui.polaris.on_off_user_pref_enabled** property, select the type as **true|false**, and click **Submit**.
 
-    <img src="../images/configuring-the-servicenow-agent-tokyo-img11.png" alt="glide.ui.polaris.on_off_user_pref_enabled property and type" title="glide.ui.polaris.on_off_user_pref_enabled property and type" style="border: 1px solid gray;zoom:80%;">
+    <img src="../images/configuring-the-servicenow-agent-tokyo-img11.png" alt="glide.ui.polaris.on_off_user_pref_enabled property and type" title="glide.ui.polaris.on_off_user_pref_enabled property and type" style="border: 1px solid gray;zoom:80%;"/>
 
     !!! Note
     
@@ -130,15 +130,15 @@ Complete the following steps to configure the ServiceNow agent for **Tokyo** and
 
 4. Click on the **System Admin** profile and select the **Preferences** menu.
 
-    <img src="../images/configuring-the-servicenow-agent-tokyo-img12.png" alt="Preferences" title="Preferences" style="border: 1px solid gray;zoom:80%;">
+    <img src="../images/configuring-the-servicenow-agent-tokyo-img12.png" alt="Preferences" title="Preferences" style="border: 1px solid gray;zoom:80%;"/>
 
 5. Turn on the **Turn off Next experience** toggle.
 
-    <img src="../images/configuring-the-servicenow-agent-tokyo-img13.png" alt="Turn off Next experience" title="Turn off Next experience" style="border: 1px solid gray;zoom:80%;">
+    <img src="../images/configuring-the-servicenow-agent-tokyo-img13.png" alt="Turn off Next experience" title="Turn off Next experience" style="border: 1px solid gray;zoom:80%;"/>
 
 6. The App Engine Studio view switches from Next Experience to UI 16 theme.
 
-    <img src="../images/configuring-the-servicenow-agent-tokyo-img14.png" alt="Next experience - UI 16" title="Next experience - UI 16" style="border: 1px solid gray;zoom:80%;">
+    <img src="../images/configuring-the-servicenow-agent-tokyo-img14.png" alt="Next experience - UI 16" title="Next experience - UI 16" style="border: 1px solid gray;zoom:80%;"/>
 
 
 ### Step 5: Install the required plugins
@@ -146,15 +146,15 @@ Complete the following steps to configure the ServiceNow agent for **Tokyo** and
 1. Log in to the ServiceNow Developer instance with Admin User Credentials.
 2. To create an application, search and select the **System Definition** under **Plugins** from the left menu.
 
-    <img src="../images/configuring-the-servicenow-agent-tokyo-img15.png" alt="Plugins - System Definition" title="Plugins - System Definition" style="border: 1px solid gray;zoom:80%;">
+    <img src="../images/configuring-the-servicenow-agent-tokyo-img15.png" alt="Plugins - System Definition" title="Plugins - System Definition" style="border: 1px solid gray;zoom:80%;"/>
 
 3. Search for the **Consumer Service Portal** plugin and install it.
 
-    <img src="../images/configuring-the-servicenow-agent-tokyo-img16.png" alt="Install Consumer Service Portal plugin" title="Install Consumer Service Portal plugin" style="border: 1px solid gray;zoom:80%;">
+    <img src="../images/configuring-the-servicenow-agent-tokyo-img16.png" alt="Install Consumer Service Portal plugin" title="Install Consumer Service Portal plugin" style="border: 1px solid gray;zoom:80%;"/>
 
 4. After the successful installation, a new Connect support menu item appears in the left navigation bar.
 
-    <img src="../images/configuring-the-servicenow-agent-tokyo-img17.png" alt="new Connect support menu item" title="new Connect support menu item" style="border: 1px solid gray;zoom:80%;">
+    <img src="../images/configuring-the-servicenow-agent-tokyo-img17.png" alt="new Connect support menu item" title="new Connect support menu item" style="border: 1px solid gray;zoom:80%;"/>
 
 
 ### Step 6: Create a user with agent_admin role
@@ -162,19 +162,19 @@ Complete the following steps to configure the ServiceNow agent for **Tokyo** and
 1. Log in to the ServiceNow instance with the admin user credentials.
 2. Navigate to **User Administration > Users > New**.
 
-    <img src="../images/configuring-the-servicenow-agent-tokyo-img18.png" alt="Users - New" title="Users - New" style="border: 1px solid gray;zoom:80%;">
+    <img src="../images/configuring-the-servicenow-agent-tokyo-img18.png" alt="Users - New" title="Users - New" style="border: 1px solid gray;zoom:80%;"/>
 
 3. Fill in the details to create a user and click **Submit**.
 
-    <img src="../images/configuring-the-servicenow-agent-tokyo-img19.png" alt="Provide new user's details" title="Provide new user's details" style="border: 1px solid gray;zoom:80%;">
+    <img src="../images/configuring-the-servicenow-agent-tokyo-img19.png" alt="Provide new user's details" title="Provide new user's details" style="border: 1px solid gray;zoom:80%;"/>
 
 4. Select the **Roles** tab and click the **Edit** button to navigate to the roles screen.
 
-    <img src="../images/configuring-the-servicenow-agent-tokyo-img20.png" alt="Roles" title="Roles" style="border: 1px solid gray;zoom:80%;">
+    <img src="../images/configuring-the-servicenow-agent-tokyo-img20.png" alt="Roles" title="Roles" style="border: 1px solid gray;zoom:80%;"/>
 
 5. Search for the **agent_admin** role and add it to the user.
 
-    <img src="../images/configuring-the-servicenow-agent-tokyo-img21.png" alt="Add agent_admin role to the user" title="Add agent_admin role to the user" style="border: 1px solid gray;zoom:80%;">
+    <img src="../images/configuring-the-servicenow-agent-tokyo-img21.png" alt="Add agent_admin role to the user" title="Add agent_admin role to the user" style="border: 1px solid gray;zoom:80%;"/>
 
 6. Click **Save**.
 
@@ -184,23 +184,23 @@ Complete the following steps to configure the ServiceNow agent for **Tokyo** and
 1. Create a group if you don’t have a group or use an existing group in ServiceNow.
 2. Navigate to **User Administration > Groups**.
 
-    <img src="../images/configuring-the-servicenow-agent-tokyo-img22.png" alt="User Administration - Groups" title="User Administration - Groups" style="border: 1px solid gray;zoom:80%;">
+    <img src="../images/configuring-the-servicenow-agent-tokyo-img22.png" alt="User Administration - Groups" title="User Administration - Groups" style="border: 1px solid gray;zoom:80%;"/>
 
 3. Click **New**.
 
-    <img src="../images/configuring-the-servicenow-agent-tokyo-img23.png" alt="Groups - New" title="Groups - New" style="border: 1px solid gray;zoom:80%;">
+    <img src="../images/configuring-the-servicenow-agent-tokyo-img23.png" alt="Groups - New" title="Groups - New" style="border: 1px solid gray;zoom:80%;"/>
 
 4. To create a new group, fill in the appropriate details and click **Submit**.
 
-    <img src="../images/configuring-the-servicenow-agent-tokyo-img24.png" alt="Provide details and submit" title="Provide details and submit" style="border: 1px solid gray;zoom:80%;">
+    <img src="../images/configuring-the-servicenow-agent-tokyo-img24.png" alt="Provide details and submit" title="Provide details and submit" style="border: 1px solid gray;zoom:80%;"/>
 
 5. Edit the group created above. Scroll down to the **Group Members** tab and click **Edit**.
 
-    <img src="../images/configuring-the-servicenow-agent-tokyo-img25.png" alt="Edit group" title="Edit group" style="border: 1px solid gray;zoom:80%;">
+    <img src="../images/configuring-the-servicenow-agent-tokyo-img25.png" alt="Edit group" title="Edit group" style="border: 1px solid gray;zoom:80%;"/>
 
 6. Select the agent created in the previous step and add it to the current group.
 
-    <img src="../images/configuring-the-servicenow-agent-tokyo-img26.png" alt="Add the new agent to the group" title="Add the new agent to the group" style="border: 1px solid gray;zoom:80%;">
+    <img src="../images/configuring-the-servicenow-agent-tokyo-img26.png" alt="Add the new agent to the group" title="Add the new agent to the group" style="border: 1px solid gray;zoom:80%;"/>
 
 7. Click **Save**.
 
@@ -211,11 +211,11 @@ Complete the following steps to configure the ServiceNow agent for **Tokyo** and
 2. Go to **System Web Services > Outbound > REST Messages** from the left menu.
 3. In the REST Messages page, click the **New** button to create a new REST Message.
 
-    <img src="../images/configuring-the-servicenow-agent-tokyo-img27.png" alt="REST Messages - New" title="REST Messages - New" style="border: 1px solid gray;zoom:80%;">
+    <img src="../images/configuring-the-servicenow-agent-tokyo-img27.png" alt="REST Messages - New" title="REST Messages - New" style="border: 1px solid gray;zoom:80%;"/>
 
 4. Copy the **WebHook URL** from the Platform AI Agent configuration page and paste it into the **Endpoint URL** field.
 
-    <img src="../images/configuring-the-servicenow-agent-tokyo-img28.png" alt="Endpoint URL" title="Endpoint URL " style="border: 1px solid gray;zoom:80%;">
+    <img src="../images/configuring-the-servicenow-agent-tokyo-img28.png" alt="Endpoint URL" title="Endpoint URL " style="border: 1px solid gray;zoom:80%;"/>
 
 5. Click **Save** to save the new REST message.
 
@@ -229,7 +229,7 @@ Complete the following steps to configure the ServiceNow agent for **Tokyo** and
 1. To define REST Outbound Message, navigate to **System Web Services > Outbound > REST Messages** in the left menu.
 2. Select the REST Messages for which you want to define the Outbound message from the list of REST Messages. For example, search and select the _Platform – Agent Integrations_ message.
 
-    <img src="../images/configuring-the-servicenow-agent-tokyo-img29.png" alt="" title=" " style="border: 1px solid gray;zoom:80%;">
+    <img src="../images/configuring-the-servicenow-agent-tokyo-img29.png" alt="" title=" " style="border: 1px solid gray;zoom:80%;"/>
 
 3. In the REST Message form, you can enter the API details, such as the name, endpoint URL as Callback URL from the **Configurations** page, and HTTP method.
 
@@ -239,14 +239,14 @@ Complete the following steps to configure the ServiceNow agent for **Tokyo** and
 
 4. To define the HTTP header, click the **HTTP Request** tab and select the **Add New Row** button.
 
-    <img src="../images/configuring-the-servicenow-agent-tokyo-img30.png" alt="HTTP Request - Add new row" title="HTTP Request - Add new row" style="border: 1px solid gray;zoom:80%;">
+    <img src="../images/configuring-the-servicenow-agent-tokyo-img30.png" alt="HTTP Request - Add new row" title="HTTP Request - Add new row" style="border: 1px solid gray;zoom:80%;"/>
 
 5. In the new row, add the HTTP Header as shown below:
 
     1. **HTTP Header**: Name: Content-Type, Value: application/json
     2. **Method**: Add the _POST_ method and paste the Webhook URL that you copied from the **Configurations** tab in the Endpoint field.
 
-    <img src="../images/configuring-the-servicenow-agent-tokyo-img31.png" alt="HTTP Request - Add header" title="HTTP Request - Add header" style="border: 1px solid gray;zoom:80%;">
+    <img src="../images/configuring-the-servicenow-agent-tokyo-img31.png" alt="HTTP Request - Add header" title="HTTP Request - Add header" style="border: 1px solid gray;zoom:80%;"/>
 
 6. Once you have entered the required details, click the **Update** button to save the REST Message.
 
@@ -256,7 +256,7 @@ Complete the following steps to configure the ServiceNow agent for **Tokyo** and
 1. To define an Outbound rule, search and select the **Business Rules** under **System Definition** from the left menu.
 2. Click the **New** button to configure the **Business Rule**.
 
-    <img src="../images/configuring-the-servicenow-agent-tokyo-img32.png" alt="Business Rule - New" title="Business Rule - New" style="border: 1px solid gray;zoom:80%;">
+    <img src="../images/configuring-the-servicenow-agent-tokyo-img32.png" alt="Business Rule - New" title="Business Rule - New" style="border: 1px solid gray;zoom:80%;"/>
 
 3. Enter the following business rule details:
     1. **Name** and select the **live_message** table from the **Table** drop-down.
@@ -264,7 +264,7 @@ Complete the following steps to configure the ServiceNow agent for **Tokyo** and
     3. Click the **When to run** tab, and select **after** from the **When** drop-down, and select the **Insert** checkbox.
     4. Add **Filter conditions** to execute this Business rule if created by is not an AI Agent_interface.
 
-    <img src="../images/configuring-the-servicenow-agent-tokyo-img33.png" alt="Add filter conditions" title="Add filter conditions" style="border: 1px solid gray;zoom:80%;">
+    <img src="../images/configuring-the-servicenow-agent-tokyo-img33.png" alt="Add filter conditions" title="Add filter conditions" style="border: 1px solid gray;zoom:80%;"/>
 
 4. Click the **Advanced** tab, add the code below and click **Submit**:
 
@@ -290,30 +290,30 @@ To verify the data exchange between the Platform AI Agent and ServiceNow agent, 
 1. Open an AI Agent for which you have enabled the ServiceNow agent.
 2. Create a new Agent Transfer Node task. For example, create a _Platform Agent_ task with the _UserAgent_ node and configure it to use the ServiceNow agent. For more information, see [Agent Transfer Node](../../../../automation/use-cases/dialogs/node-types/working-with-the-agent-transfer-node.md){:target="_blank"}.
 
-    <img src="../images/configuring-the-servicenow-agent-tokyo-img34.png" alt="new Agent Transfer Node task" title="new Agent Transfer Node task" style="border: 1px solid gray;zoom:80%;">
+    <img src="../images/configuring-the-servicenow-agent-tokyo-img34.png" alt="new Agent Transfer Node task" title="new Agent Transfer Node task" style="border: 1px solid gray;zoom:80%;"/>
 
 3. Click the **Talk to Bot** icon to launch the AI Agent and enter **Help**.
 4. Log in to the ServiceNow Instance, select the **Impersonate User** from the **Profile** option as shown:
 
-    <img src="../images/configuring-the-servicenow-agent-tokyo-img35.png" alt="Profile - Impersonate user" title="Profile - Impersonate user" style="border: 1px solid gray;zoom:80%;">
+    <img src="../images/configuring-the-servicenow-agent-tokyo-img35.png" alt="Profile - Impersonate user" title="Profile - Impersonate user" style="border: 1px solid gray;zoom:80%;"/>
 
 5. Enter the Username that you created. For example, select the _Abel Tuter_ username.
 
-    <img src="../images/configuring-the-servicenow-agent-tokyo-img36.png" alt="Provide Username" title="Provide Username" style="border: 1px solid gray;zoom:80%;">
+    <img src="../images/configuring-the-servicenow-agent-tokyo-img36.png" alt="Provide Username" title="Provide Username" style="border: 1px solid gray;zoom:80%;"/>
 
 6. Select **All** and navigate to **Workspace Experience > Workspaces > Agent Workspace Home**.
 
-    <img src="../images/configuring-the-servicenow-agent-tokyo-img37.png" alt="Agent Workspace Home" title="Agent Workspace Home" style="border: 1px solid gray;zoom:80%;">
+    <img src="../images/configuring-the-servicenow-agent-tokyo-img37.png" alt="Agent Workspace Home" title="Agent Workspace Home" style="border: 1px solid gray;zoom:80%;"/>
 
 7. In the Agent Workspace page, select **Inbox** and set the **Status** to **Available**.
 
-    <img src="../images/configuring-the-servicenow-agent-tokyo-img38.png" alt="Set inbox status to Available" title="Set inbox status to Available" style="border: 1px solid gray;zoom:80%;">
+    <img src="../images/configuring-the-servicenow-agent-tokyo-img38.png" alt="Set inbox status to Available" title="Set inbox status to Available" style="border: 1px solid gray;zoom:80%;"/>
 
 8. When a user initiates the chat from the AI Agent, it transfers the conversation to the ServiceNow agent and sends a message to the user.
 9. Agent receives a notification about this on ServiceNow.
 10. Now, the connection between the ServiceNow agent and the user has been established, and the conversation continues.
 
-    <img src="../images/configuring-the-servicenow-agent-tokyo-img39.png" alt="Connection established between Servicenow agent and user" title="Connection established between Servicenow agent and user" style="border: 1px solid gray;zoom:80%;">
+    <img src="../images/configuring-the-servicenow-agent-tokyo-img39.png" alt="Connection established between Servicenow agent and user" title="Connection established between Servicenow agent and user" style="border: 1px solid gray;zoom:80%;"/>
 
 
 

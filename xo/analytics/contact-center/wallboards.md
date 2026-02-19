@@ -13,18 +13,18 @@ Wallboards enhance the ability to oversee operations efficiently and effectively
 Steps to launch the wallboard:
 
 1. Click the (**...**) icon and click **Launch Wallboard**. The Wallboard is displayed in a new browser tab.  
-    <img src="../images/ccai-launch-wallboard.png" alt="Launch Wallboard" title="Launch Wallboard" style="border: 1px solid gray; zoom:80%;">
+    <img src="../images/ccai-launch-wallboard.png" alt="Launch Wallboard" title="Launch Wallboard" style="border: 1px solid gray; zoom:80%;"/>
 
     You can also access wallboards by going to **Contact Center AI** > **Analytics** > **CONTACT CENTER** > **Wallboards**.  
-        <img src="../images/ccai-analytics-wallboards.png" alt="Wallboards Page" title="Wallboards Page" style="border: 1px solid gray; zoom:80%;">
+        <img src="../images/ccai-analytics-wallboards.png" alt="Wallboards Page" title="Wallboards Page" style="border: 1px solid gray; zoom:80%;"/>
 
 2. The data on the dashboard is refreshed after 60 seconds. The data in the live widgets refreshes every second.  
 
     **Center Wide**  
-    <img src="../images/ccai-center-wide-wallboard.png" alt="Centerwide Wallboard" title="Centerwide Wallboard" style="border: 1px solid gray; zoom:80%;">  
+    <img src="../images/ccai-center-wide-wallboard.png" alt="Centerwide Wallboard" title="Centerwide Wallboard" style="border: 1px solid gray; zoom:80%;"/>  
 
     **Queue Specific**  
-    <img src="../images/queue-specific-wallboard.png" alt="Centerwide Wallboard" title="Centerwide Wallboard" style="border: 1px solid gray; zoom:80%;"> 
+    <img src="../images/queue-specific-wallboard.png" alt="Centerwide Wallboard" title="Centerwide Wallboard" style="border: 1px solid gray; zoom:80%;"/> 
 
 ### Wallboard Widgets
 
@@ -33,10 +33,10 @@ The following widgets on the wallboard show data related to the KPIs of the cont
 #### Center Wide
 
 * The wallboard name is displayed at the top of the wallboard.  
-    <img src="../images/ccai-wallboard-name.png" alt="Wallboard Name" title="Wallboard Name" style="border: 1px solid gray; zoom:80%;">
+    <img src="../images/ccai-wallboard-name.png" alt="Wallboard Name" title="Wallboard Name" style="border: 1px solid gray; zoom:80%;"/>
 
 * The top section of the wallboard shows the following widgets:  
-    <img src="../images/ccai-top-widgets.png" alt="Top Widgets" title="Top Widgets" style="border: 1px solid gray; zoom:80%;">
+    <img src="../images/ccai-top-widgets.png" alt="Top Widgets" title="Top Widgets" style="border: 1px solid gray; zoom:80%;"/>
 
     | **Name**                      | **Live/Time based** | **Description**                                                                 |
     |------------------------------|---------------------|----------------------------------------------------------------------------------|
@@ -50,7 +50,7 @@ The following widgets on the wallboard show data related to the KPIs of the cont
     | Avg. Speed To Answer (ASA)   | Time-based          | ASA of all conversations.                                                       |
 
 * The bottom section of the wallboard shows the following data related to the queues.  
-    <img src="../images/ccai-bottom-table.png" alt="Bottom Table" title="Bottom Table" style="border: 1px solid gray; zoom:80%;">
+    <img src="../images/ccai-bottom-table.png" alt="Bottom Table" title="Bottom Table" style="border: 1px solid gray; zoom:80%;"/>
 
     | **Name**   | **Live/Time based** | **Description**                                                                                     |
     |------------|---------------------|------------------------------------------------------------------------------------------------------|
@@ -65,18 +65,18 @@ The following widgets on the wallboard show data related to the KPIs of the cont
 #### Queue Specific
 
 * The wallboard name is displayed at the top of the wallboard.  
-    <img src="../images/queue-specific-wallboard-name.png" alt="Wallboard Name" title="Wallboard Name" style="border: 1px solid gray; zoom:80%;">
+    <img src="../images/queue-specific-wallboard-name.png" alt="Wallboard Name" title="Wallboard Name" style="border: 1px solid gray; zoom:80%;"/>
 
 * The top section of the wallboard shows the following widgets:  
 
     **Multiple Insights**  
-    <img src="../images/multiple-insights-wallboard.png" alt="Multiple Insights" title="Multiple Insights" style="border: 1px solid gray; zoom:80%;">  
+    <img src="../images/multiple-insights-wallboard.png" alt="Multiple Insights" title="Multiple Insights" style="border: 1px solid gray; zoom:80%;"/>  
 
     **One Insight**  
-    <img src="../images/one-insight-wallboard.png" alt="One Insight" title="One Insight" style="border: 1px solid gray; zoom:80%;">  
+    <img src="../images/one-insight-wallboard.png" alt="One Insight" title="One Insight" style="border: 1px solid gray; zoom:80%;"/>  
 
 * The top section of the wallboard shows the following widgets:  
-    <img src="../images/top-left-widgets.png" alt="Top Widgets" title="Top Widgets" style="border: 1px solid gray; zoom:80%;">  
+    <img src="../images/top-left-widgets.png" alt="Top Widgets" title="Top Widgets" style="border: 1px solid gray; zoom:80%;"/>  
 
     | **Name**                      | **Description**                                                                                                                                                            |
     |------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
@@ -90,7 +90,7 @@ The following widgets on the wallboard show data related to the KPIs of the cont
     | Queue Load Percentage        | The ratio of current queue demand to the queue's handling capacity, expressed as a percentage.<br><br>**Formula:**<br>(Number of waiting conversations + Number of active conversations) / (Number of available agents × Target conversations per agent) × 100% |
 
 * The right section of the wallboard shows the following widgets based on the selected option:  
-    <img src="../images/right-side-widgets.png" alt="Right Side Widgets" title="Right Side Widgets" style="border: 1px solid gray; zoom:80%;">
+    <img src="../images/right-side-widgets.png" alt="Right Side Widgets" title="Right Side Widgets" style="border: 1px solid gray; zoom:80%;"/>
 
     | **Name**                          | **Range**           | **Description**                                                                     |
     |----------------------------------|---------------------|--------------------------------------------------------------------------------------|
@@ -101,7 +101,7 @@ The following widgets on the wallboard show data related to the KPIs of the cont
     | Top N Average First Response Time| N in the range of 1–3 | Shows agents with the lowest Average   First Response Time (FRT).                     |
 
 * The bottom section of the wallboard shows the following agent-related data.  
-    <img src="../images/bottom-widget-queue-specific.png" alt="Bottom Widget" title="Bottom Widget" style="border: 1px solid gray; zoom:80%;">
+    <img src="../images/bottom-widget-queue-specific.png" alt="Bottom Widget" title="Bottom Widget" style="border: 1px solid gray; zoom:80%;"/>
 
     | **Name**         | **Description**                                                                                                                                                   |
     |------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------|
@@ -114,7 +114,7 @@ The following widgets on the wallboard show data related to the KPIs of the cont
     | Avg. CSAT        | Average CSAT of the agent.                                                                                                                                         |
 
 If the enable scroll text toggle is turned on, the configured text displays at the bottom of the page at the selected speed.  
-<img src="../images/ccai-marquee-text.gif" alt="Marquee Text" title="Marquee Text" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/ccai-marquee-text.gif" alt="Marquee Text" title="Marquee Text" style="border: 1px solid gray; zoom:80%;"/>
 
 ##### Related Link
 

@@ -13,13 +13,13 @@ This guide walks you through creating an Azure app registration with the require
 1. Log in to the[ Azure Portal](https://portal.azure.com/#home).
 2. Type **App Registrations** in the search bar at the top of the page.
 3. Select **App Registrations** from the search results.
-<img src="../images/microsoft-azure-access-app.png" alt="microsoft-azure-access-app" title="microsoft-azure-access-app" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/microsoft-azure-access-app.png" alt="microsoft-azure-access-app" title="microsoft-azure-access-app" style="border: 1px solid gray; zoom:80%;"/>
 
 ### Register New Application
 
 1. Click **New Registration** in the toolbar.
 2. Enter a descriptive **Application Name**.
-<img src="../images/microsoft-azure-register-app.png" alt="microsoft-azure-register-app" title="microsoft-azure-register-app" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/microsoft-azure-register-app.png" alt="microsoft-azure-register-app" title="microsoft-azure-register-app" style="border: 1px solid gray; zoom:80%;"/>
 
 1. Select the appropriate **Tenant Type**:
     * **Single tenant**: Only users in your organization can access this application.
@@ -37,10 +37,10 @@ The app registration requires specific Microsoft Graph permissions to access use
 1. Click **API Permissions** in the left sidebar.
 2. Click **Add a Permission** in the main panel.
 3. Select **Microsoft Graph** from the right sidebar.
-<img src="../images/microsoft-azure-graph.png" alt="microsoft-azure-graph" title="microsoft-azure-graph" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/microsoft-azure-graph.png" alt="microsoft-azure-graph" title="microsoft-azure-graph" style="border: 1px solid gray; zoom:80%;"/>
 
 1. Click **Application Permissions** (not Delegated permissions).
-<img src="../images/microsoft-azure-permissions.png" alt="microsoft-azure-permissions" title="microsoft-azure-permissions" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/microsoft-azure-permissions.png" alt="microsoft-azure-permissions" title="microsoft-azure-permissions" style="border: 1px solid gray; zoom:80%;"/>
 
 ### Select Required Permissions
 
@@ -92,7 +92,7 @@ Client secrets authenticate the platform when accessing Microsoft Graph APIs.
 2. Click the **Client Secrets** tab.
 3. Click **New Client Secret**.
 4. Enter a **Description** for the secret. 
-<img src="../images/microsoft-azure-description.png" alt="microsoft-azure-description" title="microsoft-azure-description" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/microsoft-azure-description.png" alt="microsoft-azure-description" title="microsoft-azure-description" style="border: 1px solid gray; zoom:80%;"/>
 
 1. Select an **Expiration Period**:
     * **90 days (3 months)**: Highest security, requires frequent rotation.

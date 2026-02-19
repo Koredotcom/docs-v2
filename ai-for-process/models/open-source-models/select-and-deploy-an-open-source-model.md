@@ -7,26 +7,26 @@ AI for Process supports thirty-plus open-source models and provides them as a se
 To select and deploy a model, follow these steps:
 
 1. Go to **Models** > **Open-source models** and click **Deploy a model**. 
-<img src="../images/deploy-a-model.png" alt="Deploy a Model" title="Deploy a Model" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/deploy-a-model.png" alt="Deploy a Model" title="Deploy a Model" style="border: 1px solid gray; zoom:80%;"/>
 
 
 2. The **Deploy** dialog is displayed. In the **General details** section:
     * If you choose hosted models, select the **model** from the dropdown menu. Add a **Description** and provide **tags** to ease the search for the model and click **Next**.
     
-      <img src="../images/image8.png" alt=" " title=" " style="border: 1px solid gray; zoom:80%;">
+      <img src="../images/image8.png" alt=" " title=" " style="border: 1px solid gray; zoom:80%;"/>
 
    For more information on the list of models supported, see [Supported models](../supported-models.md#supported-open-source-models).
 
 
   * If you choose to **Import from Hugging Face**, select the **Hugging Face connection** type from the dropdown and paste the **model name**.
-    For more information about connecting to your Hugging Face account, see [How to Connect to your Hugging Face Account](../../settings/integrations/enable-hugging-face.md){:target="_blank"}.
+    For more information about connecting to your Hugging Face account, see [How to Connect to your Hugging Face Account](../../settings/integrations/enable-hugging-face.md).
 
     !!! note
 
         In the case of public mode, selecting a connection is not necessary.  
 
 
-    <img src="../images/image7.png" alt=" " title=" " style="border: 1px solid gray; zoom:80%;">
+    <img src="../images/image7.png" alt=" " title=" " style="border: 1px solid gray; zoom:80%;"/>
 
 3.Based on the selected Platform-hosted model, the Optimization section is displayed. Choose the optimization option as required and then click **Next**. [Learn more](../open-source-models/model-optimization.md).
 
@@ -35,7 +35,7 @@ To select and deploy a model, follow these steps:
 * **vLLM**: Select Quantization from the dropdown menu if applicable. [Learn more](model-optimization.md#vllm).  
 
 
-<img src="../images/image1.png" alt=" " title=" " style="border: 1px solid gray; zoom:80%;">   
+<img src="../images/image1.png" alt=" " title=" " style="border: 1px solid gray; zoom:80%;"/>   
 
 
 <ol start="4"><li>In the <b>Parameters</b> section:</li>  
@@ -51,14 +51,14 @@ To select and deploy a model, follow these steps:
 <li>Select the <b>Scale-up delay (in seconds)</b>, which indicates how long to wait before scaling up replicas.</li>
 <li>Select the <b>Scale down replicas (in seconds)</b>, which indicates how long to wait before scaling down replicas.</li>  
 
-<img src="../images/image2.png" alt=" " title=" " style="border: 1px solid gray; zoom:80%;"></ul>
+<img src="../images/image2.png" alt=" " title=" " style="border: 1px solid gray; zoom:80%;"/></ul>
 <li>Click <b>Next</b>.</li>
 <li>In the Hardware section, select the required hardware for deployment from the dropdown menu and click <b>Next</b>. 
-<img src="../images/image6.png" alt=" " title=" " style="border: 1px solid gray; zoom:80%;"></li>
+<img src="../images/image6.png" alt=" " title=" " style="border: 1px solid gray; zoom:80%;"/></li>
 
 <li>In the <b>Review</b> section, verify all the details before starting the fine-tuning. To modify previous steps, click <b>Back</b>. Go through the terms and conditions and tick the checkbox <b>I accept all the Terms and Conditions</b>.
 
-<img src="../images/image3.png" alt=" " title=" " style="border: 1px solid gray; zoom:80%;"></li>
+<img src="../images/image3.png" alt=" " title=" " style="border: 1px solid gray; zoom:80%;"/></li>
 <li>Click <b>Deploy</b>.</li></ol>
 
       
@@ -71,7 +71,7 @@ If you have selected optimization, the model optimization starts, and the status
 Hover over the deployed model to view **more** icons (three dots) which provide access to the model **API endpoint** and **Configurations**. Selecting the API endpoint option shows the API endpoint, deployment history, API keys, and other details. Selecting the Configuration option allows you to add a description, tags, and deploy or delete the model.
 
 
-<img src="../images/image4.png" alt=" " title=" " style="border: 1px solid gray; zoom:80%;">
+<img src="../images/image4.png" alt=" " title=" " style="border: 1px solid gray; zoom:80%;"/>
 
 #### Re-deploy a Deployed Model
 

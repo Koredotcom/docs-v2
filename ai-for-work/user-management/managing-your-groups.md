@@ -2,7 +2,7 @@
 
 On the **User groups** page in the **User management** module, you can create and manage logically related groups of users, as well as import groups, such as your company Active Directory groups. You can also create a custom group of users, for example, by geographical location, department title, or common interest. The following illustration is an example of the **User groups** page in the **User Management** module.
 
-<img src="../images/user-group.png" alt="user-group" title="user-group" style="border: 1px solid gray; zoom:80%;"> 
+<img src="../images/user-group.png" alt="user-group" title="user-group" style="border: 1px solid gray; zoom:80%;"/> 
 
 The following list describes the columns displayed in the groups listing.
 
@@ -54,7 +54,7 @@ You may want to create one or more groups of users in your account for users wit
     2. Optionally, in the **Description** field, enter a description for the group.
     3. Add the users to the group.
         1. To Add users by syncing from the distribution list, **Search for DL** and click **Start Syncing**.  
-        <img src="../images/sync-from-dl.png" alt="sync-from-dl" title="sync-from-dl" style="border: 1px solid gray; zoom:80%;"> 
+        <img src="../images/sync-from-dl.png" alt="sync-from-dl" title="sync-from-dl" style="border: 1px solid gray; zoom:80%;"/> 
 
 
         2. To add users by importing from a file, **Click to upload** the files.  
@@ -63,13 +63,13 @@ You may want to create one or more groups of users in your account for users wit
     
                 Only XLS, and CSV File types are supported.  
                 
-            <img src="../images/import-from-file.png" alt="import-from-file" title="import-from-file" style="border: 1px solid gray; zoom:80%;">
+            <img src="../images/import-from-file.png" alt="import-from-file" title="import-from-file" style="border: 1px solid gray; zoom:80%;"/>
 
         3. To add people manually, enter the name of the user.
 
 4. Click **Create group**. The group is created and the **Groups** page is displayed.
 
-<img src="../images/create-group.png" alt="create-group" title="create-group" style="border: 1px solid gray; zoom:80%;"> 
+<img src="../images/create-group.png" alt="create-group" title="create-group" style="border: 1px solid gray; zoom:80%;"/> 
 
 ## Modification
 

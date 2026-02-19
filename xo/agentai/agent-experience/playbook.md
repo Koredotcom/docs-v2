@@ -36,7 +36,7 @@ AgentAssist lets you create two types of playbooks:
     6. Select a channel under the **Channels** section.
 For help, refer to the [Field Description](#field-description-general-settings) section.
 5. Click **Save**. The new Primary Playbook appears with the default creation of two stages (Open and Close) and a few steps under each stage.
-<img src="./../playbook-images/primary-playbook-creation-process-completion.png" alt="primary-playbook-creation-process-completion" title="primary-playbook-creation-process-completion" style="border: 1px solid gray; zoom:80%;">
+<img src="./../playbook-images/primary-playbook-creation-process-completion.png" alt="primary-playbook-creation-process-completion" title="primary-playbook-creation-process-completion" style="border: 1px solid gray; zoom:80%;"/>
 
 6. Click **Done** to complete the process.
 
@@ -46,15 +46,15 @@ For help, refer to the [Field Description](#field-description-general-settings) 
 2. Click **Configuration** > **Playbook**.
 3. Follow steps 3 and 4 of [Steps to Create a Primary Playbook](#steps-to-create-a-primary-playbook), but select **Dynamic** in the **Type** field. A new menu, **Triggers**, appears on the top-left of the **General Settings** page.
 
-    <img src="./../playbook-images/playbook-trigger-settings.png" alt="playbook-trigger-settings" title="playbook-trigger-settings" style="border: 1px solid gray; zoom:80%;">
+    <img src="./../playbook-images/playbook-trigger-settings.png" alt="playbook-trigger-settings" title="playbook-trigger-settings" style="border: 1px solid gray; zoom:80%;"/>
 
 4. Click the **Assignments** menu to select how you want to assign the playbook.
 
-    <img src="./../playbook-images/playbook-trigger-assignment-settings.png" alt="playbook-trigger-assignment-settings" title="playbook-trigger-assignment-settings" style="border: 1px solid gray; zoom:80%;">
+    <img src="./../playbook-images/playbook-trigger-assignment-settings.png" alt="playbook-trigger-assignment-settings" title="playbook-trigger-assignment-settings" style="border: 1px solid gray; zoom:80%;"/>
 
 5. Click the **Triggers** menu to select a trigger input. This lets you set up a trigger point for the playbook to appear on the AgentAssist widget.
 
-    <img src="./../playbook-images/triggers-tab-dynamic-playbook.png" alt="triggers-tab-dynamic-playbook.png" title="triggers-tab-dynamic-playbook.png" style="border: 1px solid gray; zoom:80%;">
+    <img src="./../playbook-images/triggers-tab-dynamic-playbook.png" alt="triggers-tab-dynamic-playbook.png" title="triggers-tab-dynamic-playbook.png" style="border: 1px solid gray; zoom:80%;"/>
 
 6. Select either **By Customer’s Utterance** or **By Dialog Execution**.
     1. If you select **By Customer’s Utterance**:
@@ -227,7 +227,7 @@ This section explains the process of editing and deleting an existing playbook. 
 2. Click **Configuration** > **Playbook**.
 3. Click the **Edit** button against the playbook you want to edit.
 
-    <img src="./../playbook-images/playbook-edit-button.png" alt="playbook-edit-button" title="playbook-edit-button" style="border: 1px solid gray; zoom:80%;">
+    <img src="./../playbook-images/playbook-edit-button.png" alt="playbook-edit-button" title="playbook-edit-button" style="border: 1px solid gray; zoom:80%;"/>
 
 4. Click the **Settings** button.
 5. Make changes as required.
@@ -239,7 +239,7 @@ This section explains the process of editing and deleting an existing playbook. 
 2. Click **Configuration** > **Playbook**.
 3. Click the **Delete** button against the playbook you want to delete.
 
-    <img src="./../playbook-images/playbook-delete-button.png" alt="playbook-delete-button" title="playbook-delete-button" style="border: 1px solid gray; zoom:80%;">
+    <img src="./../playbook-images/playbook-delete-button.png" alt="playbook-delete-button" title="playbook-delete-button" style="border: 1px solid gray; zoom:80%;"/>
 
 4. Click **Yes** in the confirmation window.
 
@@ -263,6 +263,6 @@ You can edit and delete an existing step, as required. This process is the same 
 3. Click the **Edit** button against the playbook for which you want to delete a step.
 4. Go to the step you want to delete and click the **Delete** button against it.
 
-    <img src="./../playbook-images/playbook-step-deletion-button.png" alt="playbook-step-deletion-button" title="playbook-step-deletion-button" style="border: 1px solid gray; zoom:80%;">
+    <img src="./../playbook-images/playbook-step-deletion-button.png" alt="playbook-step-deletion-button" title="playbook-step-deletion-button" style="border: 1px solid gray; zoom:80%;"/>
 
 5. Click **Yes** in the **Delete Step** confirmation window.

@@ -19,7 +19,7 @@ You see a single tab focused on your evaluation work:
 ## My Allocations
 
 The **My Allocations** tab serves as your central dashboard for managing all audit assignments you've created. This view provides complete visibility into allocation status, completion progress, and auditor assignments, with powerful tools for editing and monitoring your team's evaluation work.   
-<img src="../allocations/images/my-allocations.png" alt="My Allocations" title="My Allocations" style="border: 1px solid gray; zoom:80%;">
+<img src="../allocations/images/my-allocations.png" alt="My Allocations" title="My Allocations" style="border: 1px solid gray; zoom:80%;"/>
 
 ### Allocation Overview
 
@@ -38,7 +38,7 @@ The **My Allocations** tab displays comprehensive information about each allocat
 ### View Logic
 
 The View Logic action reveals the complete configuration behind your allocation, showing exactly which criteria and filters determined the interaction selection. This transparency helps you understand allocation composition and replicate successful audit strategies.   
-<img src="../allocations/images/view-logic-actions.png" alt="View Logic Actions" title="View Logic Actions" style="border: 1px solid gray; zoom:80%;">
+<img src="../allocations/images/view-logic-actions.png" alt="View Logic Actions" title="View Logic Actions" style="border: 1px solid gray; zoom:80%;"/>
 
 * Select **View Logic** from the Actions menu to see:
 
@@ -55,7 +55,7 @@ The View Logic action reveals the complete configuration behind your allocation,
 ### Edit Allocation
 
 The Edit Allocation capability addresses one of the most common operational challenges in manual QA, adapting to auditor availability changes. This feature lets you redistribute pending work without disrupting completed evaluations or forcing you to create entirely new allocations.  
-<img src="../allocations/images/my-allocations.png" alt="My Allocations" title="My Allocations" style="border: 1px solid gray; zoom:80%;">
+<img src="../allocations/images/my-allocations.png" alt="My Allocations" title="My Allocations" style="border: 1px solid gray; zoom:80%;"/>
 
 **When to Use Edit Allocation?**
 
@@ -95,7 +95,7 @@ Select **New Audit Allocation** to start the allocation creation process. The sy
 ## Assigned to Me
 
 The Assigned to Me tab displays all interactions that managers or supervisors have assigned to you for manual evaluation. This focused view helps you efficiently work through your audit queue while tracking your progress and organizing your evaluation work.   
-<img src="../allocations/images/assign-to-me.png" alt="Assign To Me" title="Assign To Me" style="border: 1px solid gray; zoom:80%;">
+<img src="../allocations/images/assign-to-me.png" alt="Assign To Me" title="Assign To Me" style="border: 1px solid gray; zoom:80%;"/>
 
 ### Interaction List Structure
 
@@ -124,7 +124,7 @@ Use the **Filters** button to narrow your assigned interactions:
 
 ### Evaluation Workflow   
 
-<img src="../allocations/images/evaluation-workflow.png" alt="Evaluation Workflow" title="Evaluation Workflow" style="border: 1px solid gray; zoom:80%;">   
+<img src="../allocations/images/evaluation-workflow.png" alt="Evaluation Workflow" title="Evaluation Workflow" style="border: 1px solid gray; zoom:80%;"/>   
 
 Complete your assigned evaluations following this process:
 

@@ -4,7 +4,7 @@ Security Assertion Markup Language (SAML) is a standard protocol for web browser
 
 SAML provides a solution to allow your identity provider and service provider to exist separately. When a user logs into a SAML-enabled application, the service provider requests authorization from the appropriate identity provider. The identity provider authenticates the user's credentials and then returns the authorization for the user to the service provider, allowing the user to access the application.
 
-<img src="../images/saml.png" alt="saml" title="saml" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/saml.png" alt="saml" title="saml" style="border: 1px solid gray; zoom:80%;"/>
 
 ## Getting Started
 

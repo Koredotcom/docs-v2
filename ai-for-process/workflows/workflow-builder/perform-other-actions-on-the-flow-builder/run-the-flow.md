@@ -9,7 +9,7 @@ The output includes key information such as the start and end times, the total t
 
 1. On the top right corner of the workflow canvas, click the **Run flow** icon.
 
-    <img src="./../images/run-the-flow.png" alt="Run the Flow" title="Run the Flow" style="border: 1px solid gray; zoom:80%;">
+    <img src="./../images/run-the-flow.png" alt="Run the Flow" title="Run the Flow" style="border: 1px solid gray; zoom:80%;"/>
 
     The Run dialog opens, displaying the Input, Flow log, and Output sections.
 
