@@ -932,10 +932,10 @@ By default, when a user provides a **Manage My Account** or similar utterance, t
 To offer greater flexibility, this flag enables or disables the standard behavior:
 
 * **True:** The system triggers the standard "Manage My Account" response.  
- <img src="../images/manage-account-based-fm-true.png" alt="manage-account-based-fm-true" title="manage-account-based-fm-true" style="border: 1px solid gray; zoom:80%;">
+ <img src="../images/manage-account-based-fm-true.png" alt="manage-account-based-fm-true" title="manage-account-based-fm-true" style="border: 1px solid gray; zoom:80%;"/>
 
 * **False:** The standard response is suppressed, allowing the platform to detect any Use Case or task that matches **Manage My Account.**  
-<img src="../images/manage-account-based-fm-false.png" alt="manage-account-based-fm-false" title="manage-account-based-fm-false" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/manage-account-based-fm-false.png" alt="manage-account-based-fm-false" title="manage-account-based-fm-false" style="border: 1px solid gray; zoom:80%;"/>
 
 This flag acts as a hidden advanced NLP setting and provides an option to disable the triggering of the "Manage My Account" standard response. 
 

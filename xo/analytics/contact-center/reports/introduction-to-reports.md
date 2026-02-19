@@ -131,13 +131,13 @@ Run Now:
 
 1. Select multiple reports from the list.
 2. The Bulk Action menu appears on the top-left of the screen, above the list of reports.
-    <img src="../images/bulk-actions.png" alt="Bulk Action" title="Bulk Actions" style="border: 1px solid gray; zoom:80%;">
+    <img src="../images/bulk-actions.png" alt="Bulk Action" title="Bulk Actions" style="border: 1px solid gray; zoom:80%;"/>
 
 3. The bulk actions menu items are displayed. Select **Run Now**.
-    <img src="../images/run-bulk-actions.png" alt="Run Bulk Action" title="Run Bulk Actions" style="border: 1px solid gray; zoom:80%;">
+    <img src="../images/run-bulk-actions.png" alt="Run Bulk Action" title="Run Bulk Actions" style="border: 1px solid gray; zoom:80%;"/>
 
 4. A confirmation pop-up appears. Type RUN to confirm the action and then select **Yes, Run**.  
-    <img src="../images/run-confirmation.png" alt="Run Bulk Action Confirmation" title="Run Bulk Actions Confirmation" style="border: 1px solid gray; zoom:80%;">
+    <img src="../images/run-confirmation.png" alt="Run Bulk Action Confirmation" title="Run Bulk Actions Confirmation" style="border: 1px solid gray; zoom:80%;"/>
 
 A list of reports that run together appears.
 
@@ -152,10 +152,10 @@ A list of reports that run together appears.
 The following actions are available for each report:
 
 * **Edit**  
-    <img src="../images/edit.png" alt="Edit" title="Edit" style="border: 1px solid gray; zoom:80%;">
+    <img src="../images/edit.png" alt="Edit" title="Edit" style="border: 1px solid gray; zoom:80%;"/>
 
 * **View History**  
-    <img src="../images/view-history.png" alt="View History" title="View History" style="border: 1px solid gray; zoom:80%;">
+    <img src="../images/view-history.png" alt="View History" title="View History" style="border: 1px solid gray; zoom:80%;"/>
 
 * **Clone/Favorite/Unfavorite/Switch to/Delete**  
     <img src="../images/ellipsis.png" alt="Ellipses" title="Ellipses" style="border: 1px solid gray; zoom:70%;">

@@ -10,7 +10,7 @@ Configuring the Agentic Copilot app to a queue enables autonomous task execution
 
     To configure this app, Agentic Copilot must be enabled in Widget Settings. If disabled, the following image appears, prompting you to click **Open Widget Settings**: 
 
-<img src="../agent-ai-mapping-images/open-widget-settings.png" alt="open-widget-settings" title="open-widget-settings" style="border: 1px solid gray; zoom:80%;">   
+<img src="../agent-ai-mapping-images/open-widget-settings.png" alt="open-widget-settings" title="open-widget-settings" style="border: 1px solid gray; zoom:80%;"/>   
 
 ### Steps to configure an Agentic Copilot app 
 
@@ -24,7 +24,7 @@ Configuring the Agentic Copilot app to a queue enables autonomous task execution
 8. Click to select the **Allow auto send Message** option. Clearing this option cancels all unsent or new Agentic messages.
 9. Set the timer for the **Set message delay before auto send** field by using the slider. You can set it to a maximum of 60 seconds.
 10. Click **Save**.  
-    <img src="../agent-ai-mapping-images/configure-copilot-app.png" alt="configure-copilot-app" title="configure-copilot-app" style="border: 1px solid gray; zoom:80%;">  
+    <img src="../agent-ai-mapping-images/configure-copilot-app.png" alt="configure-copilot-app" title="configure-copilot-app" style="border: 1px solid gray; zoom:80%;"/>  
 
     !!! note
 
@@ -40,17 +40,17 @@ To configure dialogs to  queues:
 2. Go to **Agent AI** > **Configurations** > **Agent AI Mapping**. 
 3. Use the **Agent AI Mapping** toggle to enable it, if disabled. 
 4. Click **Add Queue**.  
-    <img src="../agent-ai-mapping-images/agent-ai-mapping-main-page.png" alt="agent-ai-mapping-main-page" title="agent-ai-mapping-main-page" style="border: 1px solid gray; zoom:80%;"> 
+    <img src="../agent-ai-mapping-images/agent-ai-mapping-main-page.png" alt="agent-ai-mapping-main-page" title="agent-ai-mapping-main-page" style="border: 1px solid gray; zoom:80%;"/> 
 
 5. Select the **queue**/**queues** you want to add. Note that previously added queues do not appear in the selection list, unless you delete them from the Agent AI Mapping dashboard.  
     * To select all available queues, click the global checkbox beside the **Queues** header.
     * To search for an available queue, enter the **queue name** in the **search box**.  
 
 6. Click **Add selected**.  
-    <img src="../agent-ai-mapping-images/add-queue-page.png" alt="add-queue-page" title="add-queue-page" style="border: 1px solid gray; zoom:80%;">  
+    <img src="../agent-ai-mapping-images/add-queue-page.png" alt="add-queue-page" title="add-queue-page" style="border: 1px solid gray; zoom:80%;"/>  
 
 7. The new queue/queues appear in the list, with a warning message prompting to complete the configuration for them. Only the configured queues are available to agents at runtime.  
-    <img src="../agent-ai-mapping-images/warning-message.png" alt="warning-message" title="warning-message" style="border: 1px solid gray; zoom:80%;">  
+    <img src="../agent-ai-mapping-images/warning-message.png" alt="warning-message" title="warning-message" style="border: 1px solid gray; zoom:80%;"/>  
 
     !!! note
 
@@ -58,7 +58,7 @@ To configure dialogs to  queues:
 
 To delete a queue, click the **delete** icon against it, and then click **Delete** on the confirmation message:  
 
-<img src="../agent-ai-mapping-images/delete-queue.png" alt="delete-queue" title="delete-queue" style="border: 1px solid gray; zoom:80%;">  
+<img src="../agent-ai-mapping-images/delete-queue.png" alt="delete-queue" title="delete-queue" style="border: 1px solid gray; zoom:80%;"/>  
 
 ## Configure Dialog Tasks
 
@@ -75,9 +75,9 @@ Only the configured Dialog Tasks appear in the **Assist** tab (Proactive mode) a
     * **Allow Dialog Tasks**, if you want selected dialog tasks to appear at runtime.  
         1. Select the **dialog tasks** available for the app. 
         2. Click **Select All** to select all available dialog tasks. The number of selected dialog tasks appears next to the **Dialog Task** section. 
-            <img src="../agent-ai-mapping-images/queue-configuration.png" alt="queue-configuration" title="queue-configuration" style="border: 1px solid gray; zoom:80%;">  
+            <img src="../agent-ai-mapping-images/queue-configuration.png" alt="queue-configuration" title="queue-configuration" style="border: 1px solid gray; zoom:80%;"/>  
     * **Don’t Allow Dialog Tasks** if you don’t want dialog tasks to appear at runtime. If you select this option, the following message appears during runtime:   
-        <img src="../agent-ai-mapping-images/no-dialogs.png" alt="free text" title="free text" style="border: 1px solid gray; zoom:80%;">    
+        <img src="../agent-ai-mapping-images/no-dialogs.png" alt="free text" title="free text" style="border: 1px solid gray; zoom:80%;"/>    
 
 3. Click **Save**.  
 

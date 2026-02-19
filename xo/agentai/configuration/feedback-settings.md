@@ -14,23 +14,23 @@ The Feedback Settings section has five subsections–Dialog Task Feedback, Answe
 
 1. Sign in to **XO Platform**.
 2. Go to **Agent AI** > **Configuration** > **Feedback Settings**.
-    <img src="../feedback-settings-images/feedback-settings-main-page-1.png" alt="feedback-settings-main-page" title="feedback-settings-main-page" style="border: 1px solid gray; zoom:80%;">
+    <img src="../feedback-settings-images/feedback-settings-main-page-1.png" alt="feedback-settings-main-page" title="feedback-settings-main-page" style="border: 1px solid gray; zoom:80%;"/>
 3. Click to expand any subsection – **Dialog Task Feedback**, **Answers Feedback**, **FAQ Feedback**, **Summary Feedback**, or **Overall Widget Feedback**.
 4. Use the toggle to enable or disable the selected subsection.
     * For **Overall Widget Feedback**, click to expand the **Positive** or **Negative Feedback** selections: 
-    <img src="../feedback-settings-images/positive-negative-feedback-subsection.png" alt="positive-negative-feedback-subsection" title="positive-negative-feedback-subsection" style="border: 1px solid gray; zoom:80%;"> 
+    <img src="../feedback-settings-images/positive-negative-feedback-subsection.png" alt="positive-negative-feedback-subsection" title="positive-negative-feedback-subsection" style="border: 1px solid gray; zoom:80%;"/> 
 
 5. Click the “edit” icon against any feedback message.
-    <img src="../feedback-settings-images/feedback-messages-editing-2.png" alt="feedback-messages-editing" title="feedback-messages-editing" style="border: 1px solid gray; zoom:80%;">
+    <img src="../feedback-settings-images/feedback-messages-editing-2.png" alt="feedback-messages-editing" title="feedback-messages-editing" style="border: 1px solid gray; zoom:80%;"/>
 6. Configure the required feedback message, and press **Enter** to save it.
-    <img src="../feedback-settings-images/configuring-a-feedback-message-3.png" alt="configuring-a-feedback-message" title="configuring-a-feedback-message" style="border: 1px solid gray; zoom:80%;">
+    <img src="../feedback-settings-images/configuring-a-feedback-message-3.png" alt="configuring-a-feedback-message" title="configuring-a-feedback-message" style="border: 1px solid gray; zoom:80%;"/>
 
 ## **Enable or Disable Feedback Messages**
 
 Only **Enabled** feedback messages appear in the Agent AI widget for agents to select. You can enable or disable any five messages out of the default six at any given time. To enable or disable a feedback message:
 
 1. Click the **Enable**/**Disable** toggle against a feedback message.
-    <img src="../feedback-settings-images/enable-disable-feedback-messages-4.png" alt="enable-disable-feedback-messages" title="enable-disable-feedback-messages" style="border: 1px solid gray; zoom:80%;">  
+    <img src="../feedback-settings-images/enable-disable-feedback-messages-4.png" alt="enable-disable-feedback-messages" title="enable-disable-feedback-messages" style="border: 1px solid gray; zoom:80%;"/>  
 2. Click **Save**.
 
 ## **Enable or Disable the Additional Comments Box**
@@ -38,7 +38,7 @@ Only **Enabled** feedback messages appear in the Agent AI widget for agents to s
 The **Display additional comment** box appears in the Agent AI widget, only if you select it in the Feedback Settings section. To enable or disable it:
 
 1. Select or clear the **Display additional comment** box.
-    <img src="../feedback-settings-images/display-additional-comment-box-enable-disable-5.png" alt="display-additional-comment-box-enable-disable" title="display-additional-comment-box-enable-disable" style="border: 1px solid gray; zoom:80%;">
+    <img src="../feedback-settings-images/display-additional-comment-box-enable-disable-5.png" alt="display-additional-comment-box-enable-disable" title="display-additional-comment-box-enable-disable" style="border: 1px solid gray; zoom:80%;"/>
 2. Click **Save**.
 
 ## **Customize Language for the Feedback Messages**
@@ -47,7 +47,7 @@ The selected app's language appears by default as the feedback messages language
 
 4. Click the **language selection dropdown arrow** beside the **Display additional comment** box.
 5. Select a language, and click **Save**.
-    <img src="../feedback-settings-images/change-feedback-message-language-6.png" alt="change-feedback-message-language" title="change-feedback-message-language" style="border: 1px solid gray; zoom:80%;">
+    <img src="../feedback-settings-images/change-feedback-message-language-6.png" alt="change-feedback-message-language" title="change-feedback-message-language" style="border: 1px solid gray; zoom:80%;"/>
 
 ## **Feedback Settings appearance in the Agent AI Widget**
 
@@ -58,10 +58,10 @@ The feedback messages and additional comment box appear in the Agent AI widget o
 * **FAQ Feedback**: Upon viewing of an FAQ.
 * **Summary Feedback**: Upon the appearance of auto-generated summary.
 * **Overall Widget Feedback**: Upon clicking the "more (ellipsis)" button on the right-bottom of the widget.   
-    <img src="../feedback-settings-images/overall-widget-feedback-button.png" alt="overall-widget-feedback-button" title="overall-widget-feedback-button" style="border: 1px solid gray; zoom:80%;">
+    <img src="../feedback-settings-images/overall-widget-feedback-button.png" alt="overall-widget-feedback-button" title="overall-widget-feedback-button" style="border: 1px solid gray; zoom:80%;"/>
 
 The following screenshot represents a list of the feedback messages, with one of them being selected (in blue) by the agent:
 
-<img src="../feedback-settings-images/feedback-message-display-in-widget-7.png" alt="feedback-message-display-in-widget" title="feedback-message-display-in-widget" style="border: 1px solid gray; zoom:80%;">
+<img src="../feedback-settings-images/feedback-message-display-in-widget-7.png" alt="feedback-message-display-in-widget" title="feedback-message-display-in-widget" style="border: 1px solid gray; zoom:80%;"/>
 
 Note that the additional comment box can only contain 150 characters. The **Submit** button appears only if the feedback messages or the additional comment box appear on the widget.

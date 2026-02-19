@@ -7,7 +7,7 @@ This section explains the process of configuring a third party integration.
 1. Sign in to **Agent AI**. 
 2. Go to **Configuration** > **System Setup** > **Third Party Configuration**. 
 3. Click **+ New Record**. 
-<img src="../third-party-configuration-images/new-record.png" alt="new-record" title="new-record" style="border: 1px solid gray; zoom:80%;"> 
+<img src="../third-party-configuration-images/new-record.png" alt="new-record" title="new-record" style="border: 1px solid gray; zoom:80%;"/> 
 
 4. Enter values as per the following:
     * **Name**: Name of the record.
@@ -17,13 +17,13 @@ This section explains the process of configuring a third party integration.
         !!! note 
             The Queue Identifier value must be unique at the account level, and it’s a string.  
 
-        <img src="../third-party-configuration-images/create-record.png" alt="create-record" title="create-record" style="border: 1px solid gray; zoom:80%;">  
+        <img src="../third-party-configuration-images/create-record.png" alt="create-record" title="create-record" style="border: 1px solid gray; zoom:80%;"/>  
 
 5. Click **Next**. 
 6. Click **+ New Value Pair** to define your key-value pair. 
 7. Select a key from the **Key 1** list and enter its value in the **Value 1** field. You can create multiple key-value pairs (such as Key 2, Key 3) by clicking **+ New Value Pair**. 
     * To delete a key, click the “delete” button against it.  
-    <img src="../third-party-configuration-images/add-values.png" alt="add-values" title="add-values" style="border: 1px solid gray; zoom:80%;"> 
+    <img src="../third-party-configuration-images/add-values.png" alt="add-values" title="add-values" style="border: 1px solid gray; zoom:80%;"/> 
 
 8. Click **Create**. 
 
@@ -75,10 +75,10 @@ This section explains the steps to edit or delete an existing record.
 1. Sign in to **Agent AI**. 
 2. Go to **Configuration** > **System Setup** > **Third Party Configuration**.
 3. Click the “vertical ellipsis" against a record you want to edit or delete, as in the following screenshot:  
-<img src="../third-party-configuration-images/edit-delete-record.png" alt="edit-delete-record" title="edit-delete-record" style="border: 1px solid gray; zoom:80%;"> 
+<img src="../third-party-configuration-images/edit-delete-record.png" alt="edit-delete-record" title="edit-delete-record" style="border: 1px solid gray; zoom:80%;"/> 
 
     * If you click **Edit**, make the updates and click **Update**.
     * If you click **Delete**, the following confirmation message appears:  
-    <img src="../third-party-configuration-images/delete-record.png" alt="delete-record" title="delete-record" style="border: 1px solid gray; zoom:80%;"> 
+    <img src="../third-party-configuration-images/delete-record.png" alt="delete-record" title="delete-record" style="border: 1px solid gray; zoom:80%;"/> 
 
     * Click the **Delete** button again to confirm deletion. 

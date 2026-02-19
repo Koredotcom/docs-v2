@@ -9,7 +9,7 @@ The steps to add an external model using API integration are given below:
 1. Click **Models** on the top navigation bar. The **Models** page is displayed.
 
 2. Click the **External models** tab.  
-<img src="../images/navigating-to-external-models1.png" alt="Navigating to External Models" title="Navigating to External Models" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/navigating-to-external-models1.png" alt="Navigating to External Models" title="Navigating to External Models" style="border: 1px solid gray; zoom:80%;"/>
 
 3. Click **Add a model**. The **Add an external model** dialog is displayed.  
 <img src="../images/add-external-model-api-integration1.png" alt="Add External Model API Integration" title="Add External Model API Integration" style="border: 1px solid gray; zoom:60%;">
@@ -17,13 +17,13 @@ The steps to add an external model using API integration are given below:
 4. Select the **Custom integration** option to connect models via API integration, and click **Next**. The **Custom API integration** dialog is displayed.
 
 5. Enter a **Model name** and **Model endpoint URL** in the respective fields.  
-<img src="../images/custom-api-integration-general-details.png" alt="Custom API Integration General Details" title="Custom API Integration General Details" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/custom-api-integration-general-details.png" alt="Custom API Integration General Details" title="Custom API Integration General Details" style="border: 1px solid gray; zoom:80%;"/>
 
-6. Select the **Authorization profile** you want to use with the request payload from the configured options on the **Settings** console. [Learn more](../../settings/security-and-control/authorization-profile.md){:target="_blank"} about Auth Profiles. To proceed without authentication, choose ***None*** which is the default selection.
-<img src="../images/set-auth-profile-parameter.png" alt="set auth profile" title="set auth profile" style="border: 1px solid gray; zoom:80%;">
+6. Select the **Authorization profile** you want to use with the request payload from the configured options on the **Settings** console. [Learn more](../../settings/security-and-control/authorization-profile.md) about Auth Profiles. To proceed without authentication, choose ***None*** which is the default selection.
+<img src="../images/set-auth-profile-parameter.png" alt="set auth profile" title="set auth profile" style="border: 1px solid gray; zoom:80%;"/>
 
 7. In the **Headers** section, specify the headers such as **Key** and **Value** that need to be sent along with the request payload. 
-<img src="../images/custom-api-integration-headers.png" alt="Custom API Integration Headers" title="Custom API Integration Headers" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/custom-api-integration-headers.png" alt="Custom API Integration Headers" title="Custom API Integration Headers" style="border: 1px solid gray; zoom:80%;"/>
 
 8. In the **Model configurations** section, select one of the following options to define the model’s API settings:
 
@@ -84,16 +84,16 @@ These inputs are used to test the connection and receive a response from the mod
      <p><ul><li>This configuration requires at least one feature to be enabled.</li>
      <li>Users can enable any feature, but the model must support it. Otherwise, you may see unexpected behavior.</li></ul></p></div>
 
-    * **Structured response**: Specifies that the model supports the generation of a structured response. Enabling this flag allows the model to be used for generating a structured output within [Prompts](../../prompts/using-prompt-studio.md#add-prompts){:target="_blank"} and [Workflows](../../workflows/workflow-builder/flows-overview.md){:target="_blank"}.
-    * **Data generation**: Specifies that the model can be used for synthetic data generation for text-based tasks. Turning this flag on allows the model to be used for prompt generation in [Prompts Studio](../../prompts/using-prompt-studio.md#add-prompts){:target="_blank"}.
+    * **Structured response**: Specifies that the model supports the generation of a structured response. Enabling this flag allows the model to be used for generating a structured output within [Prompts](../../prompts/using-prompt-studio.md#add-prompts) and [Workflows](../../workflows/workflow-builder/flows-overview.md).
+    * **Data generation**: Specifies that the model can be used for synthetic data generation for text-based tasks. Turning this flag on allows the model to be used for prompt generation in [Prompts Studio](../../prompts/using-prompt-studio.md#add-prompts).
     * **Streaming**: Specifies that the model supports real-time, token-by-token generation for faster AI responses. Turning this flag on allows the model to be used for generating streaming responses within Agentic Apps. (coming soon) 
-    * **Modalities Support**: Specifies the modalities supported by the model. Enabling this flag allows the model to run Text-to-Text, Text-to-Image, Image-to-Text, and Audio-to-Text tasks for seamless downstream integration within the [Workflows](../../workflows/workflow-builder/flows-overview.md){:target="_blank"}.
+    * **Modalities Support**: Specifies the modalities supported by the model. Enabling this flag allows the model to run Text-to-Text, Text-to-Image, Image-to-Text, and Audio-to-Text tasks for seamless downstream integration within the [Workflows](../../workflows/workflow-builder/flows-overview.md).
      <img src="../images/model-features-list.png" alt="model features" title="model features" style="border: 1px solid gray; zoom:75%;">
  
  * **Body**: In this section, choose a provider to set the API reference. The platform uses this mapping to resolve your model’s request-response structure. The available options include:
 
-     * **Anthropic (Messages)**:  Specifies that the selected model follows the request-response structure similar to [Anthropic’s Messages API](https://docs.anthropic.com/en/api/messages){:target="_blank"}.
-     * **OpenAI (Chat Completions)**: Specifies that the selected model follows the request-response structure similar to [OpenAI’s Chat Completions API](https://platform.openai.com/docs/api-reference/chat){:target="_blank"}.
+     * **Anthropic (Messages)**:  Specifies that the selected model follows the request-response structure similar to [Anthropic’s Messages API](https://docs.anthropic.com/en/api/messages).
+     * **OpenAI (Chat Completions)**: Specifies that the selected model follows the request-response structure similar to [OpenAI’s Chat Completions API](https://platform.openai.com/docs/api-reference/chat).
    <img src="../images/api-reference-model.png" alt="api reference" title="api reference" style="border: 1px solid gray; zoom:75%;">
 
      <div class="admonition note">
@@ -112,4 +112,4 @@ To manage an integration, click the three-dot icon corresponding to its name and
  * **Copy**: Make an editable copy of the integration details.
  * **Delete**: Remove the integration.
 
-<img src="../images/three-dots-icon-options.png" alt="Three Dots Icon Options" title="Three Dots Icon Options" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/three-dots-icon-options.png" alt="Three Dots Icon Options" title="Three Dots Icon Options" style="border: 1px solid gray; zoom:80%;"/>

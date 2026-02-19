@@ -11,7 +11,7 @@ The Reports tab consists of a list of generated reports. You can generate an ins
 * **Navigation**: **Quality AI** > **Analytics** > **Reports**.
 
 * **Required Permission**: The Quality AI Reporting (auto-enabled for App Owners and Supervisors).  
-<img src="../images/reports.png" alt="Reports Access" title="Reports Access" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/reports.png" alt="Reports Access" title="Reports Access" style="border: 1px solid gray; zoom:80%;"/>
 
 ## Report Dashboard View
 
@@ -27,7 +27,7 @@ On the **Reports** page, you can view all your reports organized by type.
 | **All Reports** | This shows all reports available organization-wide, based on permissions.                       |
 | **Favorites**  | This shows reports created by any user that the current user has marked as favorites. |  
  
-<img src="../images/report-categorization.png" alt="Reports Dashboard" title="Reports Dashboard" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/report-categorization.png" alt="Reports Dashboard" title="Reports Dashboard" style="border: 1px solid gray; zoom:80%;"/>
 
 ### Reports List Columns
 
@@ -147,32 +147,32 @@ This lets you add filters when creating a new report or editing an existing repo
 
     * **Queues**
         * Select one or more queues from the dropdown list to evaluate workload distribution and queue-specific agent metrics.  
-        <img src="../images/general-queues.png" alt="Queues" title="Queues" style="border: 1px solid gray; zoom:80%;">    
+        <img src="../images/general-queues.png" alt="Queues" title="Queues" style="border: 1px solid gray; zoom:80%;"/>    
 
     * **Channel**
         * Select the **Channel** to set the value (**Chat** or **Voice**).  
-        <img src="../images/general-channel.png" alt="Channel" title="Channel" style="border: 1px solid gray; zoom:80%;">
+        <img src="../images/general-channel.png" alt="Channel" title="Channel" style="border: 1px solid gray; zoom:80%;"/>
 
     * **Agents**
         * Select the **Agents** for agent-level performance tracking and evaluation.  
-        <img src="../images/general-agents.png" alt="Agents" title="Agents" style="border: 1px solid gray; zoom:80%;">
+        <img src="../images/general-agents.png" alt="Agents" title="Agents" style="border: 1px solid gray; zoom:80%;"/>
 
     * **Agent Groups**
         * Select the **Agent Groups** to define the group or team of agents to include in the report.
-        <img src="../images/general-agent-groups.png" alt="Agent Groups" title="Agent Groups" style="border: 1px solid gray; zoom:80%;">
+        <img src="../images/general-agent-groups.png" alt="Agent Groups" title="Agent Groups" style="border: 1px solid gray; zoom:80%;"/>
 
     * **Language**
 
         * Select a **Language** that the system configures for Quality AI.
 
         * Defaults to the application's default language.
-        <img src="../images/general-language.png" alt="Language" title="Language" style="border: 1px solid gray; zoom:80%;">   
+        <img src="../images/general-language.png" alt="Language" title="Language" style="border: 1px solid gray; zoom:80%;"/>   
 
 1. Select the required **Optional Fields**.  
-<img src="../images/general-optional.png" alt="Optional Fields" title="Optional Fields" style="border: 1px solid gray; zoom:80%;">   
+<img src="../images/general-optional.png" alt="Optional Fields" title="Optional Fields" style="border: 1px solid gray; zoom:80%;"/>   
 
 1. Enter recipient addresses in **Send Email to** send the automated reports in the selected language. You must add at least one recipient email address.  
-<img src="../images/general-send-email.png" alt="Send Email to" title="Send Email to" style="border: 1px solid gray; zoom:80%;">   
+<img src="../images/general-send-email.png" alt="Send Email to" title="Send Email to" style="border: 1px solid gray; zoom:80%;"/>   
 
 1. Select **Delete** to remove the selected filter.
 
@@ -242,14 +242,14 @@ Lets you authorize users to automate report generation with minimal manual effor
     * Manually, you can generate the report immediately.
 
     * Automatically, the system runs the report based on a pre-set schedule.   
-    <img src="../images/insta-run.png" alt="Instant Run" title="Instant Run" style="border: 1px solid gray; zoom:80%;">   
+    <img src="../images/insta-run.png" alt="Instant Run" title="Instant Run" style="border: 1px solid gray; zoom:80%;"/>   
 
 1. Select **Save** to confirm and activate the schedule. The saved report appears in the **Reports > My Reports** dashboard.
 
     * Enable scheduling by switching on the Schedule toggle. 
 
     * From the **Actions** column, select **Run** to generate the report immediately.     
-    <img src="../images/saved-report.png" alt="Activate Schedule" title="Activate Schedule" style="border: 1px solid gray; zoom:80%;">  
+    <img src="../images/saved-report.png" alt="Activate Schedule" title="Activate Schedule" style="border: 1px solid gray; zoom:80%;"/>  
     
     !!! Note
 
@@ -260,7 +260,7 @@ Lets you authorize users to automate report generation with minimal manual effor
         * When in **Schedule** mode, the scheduling toggle remains enabled, and you can turn the schedule on or off at any time.
 
         * When you proceed to disable a report, the system displays displays a pop-up confirmation before updating the report status.  
-        <img src="../images/disable-report.png" alt="Disable A Report" title="Disable A Report" style="border: 1px solid gray; zoom:80%;"> 
+        <img src="../images/disable-report.png" alt="Disable A Report" title="Disable A Report" style="border: 1px solid gray; zoom:80%;"/> 
 
 ## Mandatory Configuration Fields
 
@@ -296,7 +296,7 @@ To edit a report,
 1. Update **Run on Demand** or **Schedule** with the desired frequency details, such as **Hourly, Daily, Weekly, Monthly, Quarterly, Yearly, Start Date, and Time Zone**.
 
 1. Select **Instant Run** to generate the report immediately.
-    <img src="../images/insta-run.png" alt="History" title="History" style="border: 1px solid gray; zoom:80%;">  
+    <img src="../images/insta-run.png" alt="History" title="History" style="border: 1px solid gray; zoom:80%;"/>  
     
     !!! Note
 
@@ -319,7 +319,7 @@ To view the history of any report:
 1. Select the vertical **Ellipsis** (⋮) button.
 
 1. Select the **History** to view the last 5 runs of the reports.  
-<img src="../images/download-report-action.png" alt="History" title="History" style="border: 1px solid gray; zoom:80%;">  
+<img src="../images/download-report-action.png" alt="History" title="History" style="border: 1px solid gray; zoom:80%;"/>  
 
 1. Select **Download** to save the report in CSV format.   
 <img src="../images/history.png" alt="History Report" title="History Report" style="border: 1px solid gray; zoom:60%;">  
@@ -337,10 +337,10 @@ To clone a report,
 1. Select the vertical **ellipsis** (⋮) button.
 
 1. Select **Clone** to create a copy of the report.   
-<img src="../images/actions-clone.png" alt="Clone Report" title="Clone Report" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/actions-clone.png" alt="Clone Report" title="Clone Report" style="border: 1px solid gray; zoom:80%;"/>
 
 1. A successful message appears when cloned.  
-<img src="../images/clone-report.png" alt="Clone Report Status" title="Clone Report Status" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/clone-report.png" alt="Clone Report Status" title="Clone Report Status" style="border: 1px solid gray; zoom:80%;"/>
 
 ### Favorite/Unfavorite a Report
 
@@ -353,10 +353,10 @@ To mark a report favorite/unfavorite,
 1. Select the vertical **Ellipsis** (⋮) button.
 
 1. Select **Favorite/Unfavorite** to create a copy of the report. A successful message appears when marked as favorite/unfavorite.  
-<img src="../images/actions-favorite.png" alt="Favorite Report" title="Favorite Report" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/actions-favorite.png" alt="Favorite Report" title="Favorite Report" style="border: 1px solid gray; zoom:80%;"/>
 
 1. All the tagged favorite reports appear in the **Favorites** tab. 
-<img src="../images/favorite.png" alt="Favorite Report Status" title="Favorite Report Status" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/favorite.png" alt="Favorite Report Status" title="Favorite Report Status" style="border: 1px solid gray; zoom:80%;"/>
 
 ### Switch to Public (Accessibility)
 
@@ -372,7 +372,7 @@ Steps to revise the access:
 1. Select the **Ellipsis** (⋮) button under **Actions** to revise the access for the report.
 
 1. Select **Switch to Public**. The Public report is permissible for all users.  
-<img src="../images/actions-switch-public.png" alt="Accessibility Report" title="Accessibility Report" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/actions-switch-public.png" alt="Accessibility Report" title="Accessibility Report" style="border: 1px solid gray; zoom:80%;"/>
 
 1. Select **Switch to Private**. A successful message appears when switched to public/private.
 
@@ -391,7 +391,7 @@ To delete a report,
 1. Click the vertical **Ellipsis** (⋮) button.
 
 1. Select **Delete** to remove the report.  
-<img src="../images/actions-delete.png" alt="Delete Report" title="Delete Report" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/actions-delete.png" alt="Delete Report" title="Delete Report" style="border: 1px solid gray; zoom:80%;"/>
     
 1. Click **Confirm**. A successful message appears when the selected reports are deleted.
 
@@ -419,7 +419,7 @@ Only the CSV format is generated and available for download, with headers transl
 * **File Name**: [ReportName]-YYYY-MM-DD-HH-MM-SS.csv
 
 * **Content**: Headers translated to the selected language with filtered data     
-<img src="../images/sample-agent-performance-report.png" alt="View and Download Report" title="View and Download Report" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/sample-agent-performance-report.png" alt="View and Download Report" title="View and Download Report" style="border: 1px solid gray; zoom:80%;"/>
 
 !!! Note
 
@@ -430,7 +430,7 @@ Only the CSV format is generated and available for download, with headers transl
 ### Standard Email Format
 
 All scheduled reports are delivered via email following this standardized format:  
-<img src="../images/email-config.png" alt="Email Format" title="Email Format" style="border: 1px solid gray; zoom:80%;">    
+<img src="../images/email-config.png" alt="Email Format" title="Email Format" style="border: 1px solid gray; zoom:80%;"/>    
 
 ## Data Availability Handling
 

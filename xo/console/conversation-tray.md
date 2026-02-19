@@ -1,7 +1,7 @@
 # Conversation Tray
 
 The conversation tray helps agents track their workload by displaying all conversations that are assigned to them.  
-<img src="../images/conversation-tray.png" alt="Conversation Tray" title="Conversation Tray" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/conversation-tray.png" alt="Conversation Tray" title="Conversation Tray" style="border: 1px solid gray; zoom:80%;"/>
 
 ## Conversation Status
 
@@ -45,15 +45,15 @@ Color codes help in easy identification and better readability of conversations 
 ## Search Conversations
 
 The Search functionality lets agents to find customer conversations by phone number, email, or name. Located on the left side of the Agent Console within the conversation tray, this feature improves efficiency and reduces case handling time.  
-<img src="../images/search-bar-tray.png" alt="Conversation Tray Search Bar" title="Conversation Tray Search Bar" style="border: 1px solid gray; zoom:80%;">  
+<img src="../images/search-bar-tray.png" alt="Conversation Tray Search Bar" title="Conversation Tray Search Bar" style="border: 1px solid gray; zoom:80%;"/>  
 
 ### Using the Search Functionality
 
 * Start typing a phone number, email address, or customer name in the search field, and matching results appear automatically. Select any result to open that conversation.  
-    <img src="../images/search-name.png" alt="Search Name" title="Search Name" style="border: 1px solid gray; zoom:80%;">  
+    <img src="../images/search-name.png" alt="Search Name" title="Search Name" style="border: 1px solid gray; zoom:80%;"/>  
 
 * A "No results found" message appears if no matches exist.  
-    <img src="../images/no-results.png" alt="No Results" title="No Results" style="border: 1px solid gray; zoom:80%;">  
+    <img src="../images/no-results.png" alt="No Results" title="No Results" style="border: 1px solid gray; zoom:80%;"/>  
 
 !!! Notes
 
@@ -63,7 +63,7 @@ The Search functionality lets agents to find customer conversations by phone num
 ## Customer Sentiment
 
 Digital conversations display the customer's real-time sentiment. This enables agents to handle conversations better. For example, a customer may be unhappy because they have been waiting for a response from an agent for a long time.  
-    <img src="../images/sentiment-conversation-tray.png" alt="Sentiment" title="Sentiment" style="border: 1px solid gray; zoom:80%;"> 
+    <img src="../images/sentiment-conversation-tray.png" alt="Sentiment" title="Sentiment" style="border: 1px solid gray; zoom:80%;"/> 
 
 ## Conversation Information
 
@@ -77,7 +77,7 @@ Each entry in this tray includes the following information:
 * Customer profile picture
 * Interaction channel icon
 * Conversation status icon.  
-    <img src="../images/conversation.png" alt="Conversation" title="Conversation" style="border: 1px solid gray; zoom:80%;">
+    <img src="../images/conversation.png" alt="Conversation" title="Conversation" style="border: 1px solid gray; zoom:80%;"/>
 
 ## Manual Call using the Dialer
 
@@ -105,7 +105,7 @@ To view the Outbound Call History, follow these steps:
     * Date
     * Time of call and duration
     * Type of call (Incoming, Outgoing, or Transferred)  
-        <img src="../images/call-history.png" alt="Call History" title="Call History" style="border: 1px solid gray; zoom:80%;">
+        <img src="../images/call-history.png" alt="Call History" title="Call History" style="border: 1px solid gray; zoom:80%;"/>
 
 !!! note "Call History Tab"
  

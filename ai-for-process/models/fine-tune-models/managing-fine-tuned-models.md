@@ -22,7 +22,7 @@ The Fine-Tuned Models listing page displays all available models along with the 
 | **Added by**        | User who created or imported the model. |
 | **Updated on**      | Date of the deployment. |
 
-<img src="../images/fine_tune_models_new.png" alt="Fine-tune models table" title="Fine-tune models table" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/fine_tune_models_new.png" alt="Fine-tune models table" title="Fine-tune models table" style="border: 1px solid gray; zoom:80%;"/>
 
 Select a model in the list to open the model’s detail view. By default, this opens the Overview page. The left navigation pane includes the following sections:
 
@@ -77,7 +77,7 @@ Click the Deployments tab to see all deployments for the selected model, along w
   </tbody>
 </table>
 
-<img src="../images/fine_tune_deployments.png" alt="Fine-tune deployments table" title="Fine-tune deployments table" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/fine_tune_deployments.png" alt="Fine-tune deployments table" title="Fine-tune deployments table" style="border: 1px solid gray; zoom:80%;"/>
 
 
 ## Managing Deployment Details
@@ -88,5 +88,5 @@ Selecting a specific deployment on the Deployment page opens its detail view, wh
 - **[API Keys](./generate-an-api-key.md)** – Generate and manage keys scoped to this deployment. API keys are isolated per deployment for secure access control.
 - **[Configurations](./configure-your-fine-tuned-model.md)** – Edit the description and tags, or undeploy/delete the model.
 
-<img src="../images/fine_tuned_deployment_detailed.png" alt="Fine-tune deployments" title="Fine-tune deployments" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/fine_tuned_deployment_detailed.png" alt="Fine-tune deployments" title="Fine-tune deployments" style="border: 1px solid gray; zoom:80%;"/>
 

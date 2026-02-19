@@ -8,7 +8,7 @@ To add users to an account.
 
 Before you use this API, go to **Automation AI > App Settings > Target Audience**, and select Enterprise Users. Then [publish the app](../../deploy/publishing-bot.md) to enable user invitations on the platform.
 
-<img src="../images/create-user.png" alt="Enterprise Users" title="Enterprise Users" style="border: 1px solid gray; zoom:80%;">  
+<img src="../images/create-user.png" alt="Enterprise Users" title="Enterprise Users" style="border: 1px solid gray; zoom:80%;"/>  
 
 
 !!!note

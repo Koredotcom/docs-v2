@@ -331,11 +331,11 @@ For on-prem, refer to the corresponding host.<strong> </strong>
 
 ### Chat
 
-<img src="../images/chat-architecture.png" alt="chat-architecture" title="chat-architecture" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/chat-architecture.png" alt="chat-architecture" title="chat-architecture" style="border: 1px solid gray; zoom:80%;"/>
 
 ### Voice
 
-<img src="../images/voice-architecture.png" alt="voice-architecture" title="voice-architecture" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/voice-architecture.png" alt="voice-architecture" title="voice-architecture" style="border: 1px solid gray; zoom:80%;"/>
 
 ## Set up Salesforce-NICE CTI package
 
@@ -361,18 +361,18 @@ This app will be used in the studio script.
 
 1. Sign in to your **NICE account** with the username and password provided by the NICE customer support.
 2. Click the **applications launcher** button. A menu opens from the left side of the page.  
-<img src="../images/applications_launcher_button-1.png" alt="applications_launcher_button" title="applications_launcher_button" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/applications_launcher_button-1.png" alt="applications_launcher_button" title="applications_launcher_button" style="border: 1px solid gray; zoom:80%;"/>
 
 3. Click **OTHERS** > **Automation & AI**.  
 <img src="../images/automation_ai-2.png" alt="automation_ai" title="automation_ai" style="border: 1px solid gray; zoom:60%;">
 
 4. Click **Agent Assist Hub** > **Add Agent Assist App**.  
-<img src="../images/add_agentassist_app-3.png" alt="add_agentassist_app" title="add_agentassist_app" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/add_agentassist_app-3.png" alt="add_agentassist_app" title="add_agentassist_app" style="border: 1px solid gray; zoom:80%;"/>
 
 5. Enter the name of the Agent Assist App in the **AGENT ASSIST APP NAME** field.
 6. Select **Custom Agent Assist Endpoints**.
 7. Click **Next**.  
-<img src="../images/next-4.png" alt="next" title="next" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/next-4.png" alt="next" title="next" style="border: 1px solid gray; zoom:80%;"/>
 
 8. Add the following settings with config parameters provided by the Support team:
     * **Agent UI Option**: Available by default
@@ -380,19 +380,19 @@ This app will be used in the studio script.
     * **App Title**: Kore Agent AI (change as needed)
     * **Participants**: Both
     * **Text Relay Endpoint**: (only for chat) {<a href="#AI URL">Agent AI URL</a>}/integrations/nice/relay/toKore  
-    <img src="../images/configurations-5.png" alt="configurations" title="configurations" style="border: 1px solid gray; zoom:80%;">
+    <img src="../images/configurations-5.png" alt="configurations" title="configurations" style="border: 1px solid gray; zoom:80%;"/>
     * **Audio Relay Endpoint**: {<a href="#KVG">Voice Gateway(VG)</a>}/audiosocket/nice?sipuri=&lt;Bot SIP URI>&token=&lt;Token>&botId=&lt;Bot ID>&accountId=&lt;Account ID>&agentassist=true  
     
         * **Bot SIP URI**: **Channels** > **Voice** section of the **[Agent AI](https://agentassist.kore.ai){:target="_blank"}** configuration portal.  
-        <img src="../images/channels_voice-6.png" alt="channels_voice" title="channels_voice" style="border: 1px solid gray; zoom:80%;">
+        <img src="../images/channels_voice-6.png" alt="channels_voice" title="channels_voice" style="border: 1px solid gray; zoom:80%;"/>
         * **Bot ID and Account ID**: **Channels** > **Chat** section of the **[Agent AI](https://agentassist.kore.ai){:target="_blank"}** configuration portal.  
-        <img src="../images/channels-chat-7.png" alt="channels-chat" title="channels-chat" style="border: 1px solid gray; zoom:80%;">
+        <img src="../images/channels-chat-7.png" alt="channels-chat" title="channels-chat" style="border: 1px solid gray; zoom:80%;"/>
         * **Token**: Create a JSON Web Token on [jwt.io](https://www.jwt.io) with the following details.
             * Payload: {"appId": &lt;Bot Client ID>}
             * Header: {"alg": "HS256","typ": "JWT"}
             * Secret: Your Kore.ai Client Secret.
     * Scroll down and add the following Configuration Parameters. (Only for Chat).  
-    <img src="../images/configuration-parameters-8.png" alt="configuration-parameters" title="configuration-parameters" style="border: 1px solid gray; zoom:80%;">
+    <img src="../images/configuration-parameters-8.png" alt="configuration-parameters" title="configuration-parameters" style="border: 1px solid gray; zoom:80%;"/>
 
 9. Click **Create**
 
@@ -403,38 +403,38 @@ This app will be used in the studio script.
 ### Set up the AgentAssist feature
 
 1. Click the **app launcher**.  
-<img src="../images/app-launcher-9.png" alt="app-launcher" title="app-launcher" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/app-launcher-9.png" alt="app-launcher" title="app-launcher" style="border: 1px solid gray; zoom:80%;"/>
 
 2. Type **kore** in the search box and select **Kore AgentAssist Feature Configuration** from the displayed list.  
-<img src="../images/kore-agentassist-feature-configuration-10.png" alt="kore-agentassist-feature-configuration" title="kore-agentassist-feature-configuration" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/kore-agentassist-feature-configuration-10.png" alt="kore-agentassist-feature-configuration" title="kore-agentassist-feature-configuration" style="border: 1px solid gray; zoom:80%;"/>
 
 3. Click **New** from the top-right corner of the page.  
-<img src="../images/new-11.png" alt="new" title="new" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/new-11.png" alt="new" title="new" style="border: 1px solid gray; zoom:80%;"/>
 
 4. Type **Test Configuration** in the **Configuration Name** field.  
-<img src="../images/test-configuration-12.png" alt="test-configuration" title="test-configuration" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/test-configuration-12.png" alt="test-configuration" title="test-configuration" style="border: 1px solid gray; zoom:80%;"/>
 
 5. Select **NICE inContact** in the **CTI Provider** list.  
-<img src="../images/nice-incontact-13.png" alt="nice-incontact" title="nice-incontact" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/nice-incontact-13.png" alt="nice-incontact" title="nice-incontact" style="border: 1px solid gray; zoom:80%;"/>
 
 6. Select **Active**, and click **Save**.  
-<img src="../images/active-save-14.png" alt="active-save" title="active-save" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/active-save-14.png" alt="active-save" title="active-save" style="border: 1px solid gray; zoom:80%;"/>
 
 ### Set up the AgentAssist Configuration
 
 1. Click the **app launcher**.
 2. Type **config** in the search box, and select **Kore AgentAssist Configuration** from the displayed list.
 
-   <img src="../images/kore-agentassist-configuration-15.png" alt="kore-agentassist-configuration" title="kore-agentassist-configuration" style="border: 1px solid gray; zoom:80%;">
+   <img src="../images/kore-agentassist-configuration-15.png" alt="kore-agentassist-configuration" title="kore-agentassist-configuration" style="border: 1px solid gray; zoom:80%;"/>
 
 3. Click **New** from the top-right corner of the page.
 
 4. Enter the required details. Note that you can fetch the **AgentAssist URL**, **Bot ID**, **Client ID**, and **Client Secret** details from the **[Agent AI](https://agentassist.kore.ai){:target="_blank"}** configuration portal.  
-<img src="../images/configuration-portal-17.png" alt="configuration-portal" title="configuration-portal" style="border: 1px solid gray; zoom:80%;"> 
+<img src="../images/configuration-portal-17.png" alt="configuration-portal" title="configuration-portal" style="border: 1px solid gray; zoom:80%;"/> 
 
    * Select a language in the **Language** dropdown list. The selected language corresponds to the language configured in the AI Agent.  
   
-      <img src="../images/configuration-details-16.png" alt="free text" title="free text" style="border: 1px solid gray; zoom:80%;">
+      <img src="../images/configuration-details-16.png" alt="free text" title="free text" style="border: 1px solid gray; zoom:80%;"/>
 
 5. Select **Active** and click **Save**.
 
@@ -444,14 +444,14 @@ This app will be used in the studio script.
 2. Sign in to your **NICE CX** account.
 3. Ensure the **Store Salesforce Agent Script Variables** setting is enabled in the **Data Storage** section.
 4. In the dropdown list, select a Salesforce object against which the Agent AI widget needs to be configured in its page layout.  
-<img src="../images/salesforce-object-selection-18.png" alt="salesforce-object-selection" title="salesforce-object-selection" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/salesforce-object-selection-18.png" alt="salesforce-object-selection" title="salesforce-object-selection" style="border: 1px solid gray; zoom:80%;"/>
 
 ### Configure Page layout to embed the Agent AI Widget to Salesforce object
 
 Assuming the Account Object is mapped above, open the page layout for Account Object.
 
 In the filter field, type **NiceCTI** and drag and drop the object onto the **Account Object** layout page.  
-<img src="../images/nice-cti-19.png" alt="nice-cti" title="nice-cti" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/nice-cti-19.png" alt="nice-cti" title="nice-cti" style="border: 1px solid gray; zoom:80%;"/>
 
 ### Configure a Visualforce Page to embed the Agent AI Widget (If Applicable)
 
@@ -545,7 +545,7 @@ Create a Lightning tab by following the instructions in this [document](https://
 ### <span id="OAuth">Enabling OAuth</span>
 
 1. Go to **Setup** > **OAuth and OpenID Connect Settings** and enable **Allow OAuth Username-Password Flows**.     
-<img src="../images/enable-allow-oauth-password-20.png" alt="enable-allow-oauth-password" title="enable-allow-oauth-password" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/enable-allow-oauth-password-20.png" alt="enable-allow-oauth-password" title="enable-allow-oauth-password" style="border: 1px solid gray; zoom:80%;"/>
 
 2. Create a connected Salesforce app and get the **Access Key** and **Access Token**. Follow [this guide](https://help.salesforce.com/s/articleView?id=sf.connected_app_client_credentials_setup.htm&language=en_US&type=5){:target="_blank"} for help.
 
@@ -558,14 +558,14 @@ In addition to all the previous steps, two more steps are required for the Chat 
 Refer to [Manage Access Keys](https://help.nice-incontact.com/content/admin/security/manageaccesskeys.htm){:target="_blank"} to create access keys to use for signaling APIs.
 
 The **Access Key Manager** page allows you to view all the access keys in your system.  
-<img src="../images/access-key-manager-21.png" alt="access-key-manager" title="access-key-manager" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/access-key-manager-21.png" alt="access-key-manager" title="access-key-manager" style="border: 1px solid gray; zoom:80%;"/>
 
 ### Configure NICE API Credentials (Only for Chat)
 
 1. Click the **app launcher**.
 2. Type **nice** in the search box, and select **Nice Signal Credentials** from the displayed list.  
 
-   <img src="../images/nice-signal-22.png" alt="nice-signal" title="nice-signal" style="border: 1px solid gray; zoom:80%;">
+   <img src="../images/nice-signal-22.png" alt="nice-signal" title="nice-signal" style="border: 1px solid gray; zoom:80%;"/>
 
 3. Click **New** from the top-right corner of the page.  
 
@@ -589,7 +589,7 @@ The **Access Key Manager** page allows you to view all the access keys in your s
 Import and configure the NICE Studio Script for Salesforce Integration.
 
 Download Script For Voice: [kore.ai_nicecti_sf_voice.XML](https://bitbucket.org/koreteam1/integration_sharedresources/src/main/nicecx/kore_nicecti_sf_voice.XML){:target="_blank"}  
-<img src="../images/nice-cti-studio-24.png" alt="nice-cti-studio" title="nice-cti-studio" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/nice-cti-studio-24.png" alt="nice-cti-studio" title="nice-cti-studio" style="border: 1px solid gray; zoom:80%;"/>
 
 Open the Studio, import the above script, and customize as per the following table definition:
 
@@ -604,7 +604,7 @@ Open the Studio, import the above script, and customize as per the following tab
 **AgentAssist Hub Reference**:
 
 Click the checkbox on the specific instance. Only one can be active.  
-<img src="../images/agent-assist-hub-reference-25.png" alt="agent-assist-hub-reference" title="agent-assist-hub-reference" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/agent-assist-hub-reference-25.png" alt="agent-assist-hub-reference" title="agent-assist-hub-reference" style="border: 1px solid gray; zoom:80%;"/>
 
 After selecting the AgentAssist app, click the **Close** button in the bottom-right corner of the page.  
 !!! note
@@ -617,9 +617,9 @@ Save the **Studio Script** and make sure there are no errors on Save.
 Import and configure the NICE Studio Script for Salesforce Integration.
 
 Download Script For Chat: [kore.ai_nicecti_sf_chat.XML](https://bitbucket.org/koreteam1/integration_sharedresources/src/main/nicecx/kore_nicecti_sf_chat.XML){:target="_blank"}  
-<img src="../images/nice-studio-script-for-chat-26.png" alt="nice-studio-script-for-chat" title="nice-studio-script-for-chat" style="border: 1px solid gray; zoom:80%;">  
+<img src="../images/nice-studio-script-for-chat-26.png" alt="nice-studio-script-for-chat" title="nice-studio-script-for-chat" style="border: 1px solid gray; zoom:80%;"/>  
 
-<img src="../images/nice-studio-script-for-chat-27.png" alt="nice-studio-script-for-chat" title="nice-studio-script-for-chat" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/nice-studio-script-for-chat-27.png" alt="nice-studio-script-for-chat" title="nice-studio-script-for-chat" style="border: 1px solid gray; zoom:80%;"/>
 
 Open the Studio, import the above script, and customize as per the following table definition:
 
@@ -636,13 +636,13 @@ Open the Studio, import the above script, and customize as per the following tab
 On the **NICE Incontact** home page, click the **application launcher** button and select **ACD**.
 
 **Create a Campaign**  
-<img src="../images/create-campaign-28.png" alt="create-campaign" title="create-campaign" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/create-campaign-28.png" alt="create-campaign" title="create-campaign" style="border: 1px solid gray; zoom:80%;"/>
 
 **Create a Skill**  
-<img src="../images/create-skill-29.png" alt="create-skill" title="create-skill" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/create-skill-29.png" alt="create-skill" title="create-skill" style="border: 1px solid gray; zoom:80%;"/>
 
 **Create a Disposition**  
-<img src="../images/create-disposition-30.png" alt="create-disposition" title="create-disposition" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/create-disposition-30.png" alt="create-disposition" title="create-disposition" style="border: 1px solid gray; zoom:80%;"/>
 
 **Create a new single Point of Contact (For Voice)**
 
@@ -653,7 +653,7 @@ On the **NICE Incontact** home page, click the **application launcher** button a
 * **Script** - From the dropdown list, select the **studio script** created for Salesforce-NICE CTI above.
 * **IVR Reporting Enabled** - Select the **checkbox**.
 * Click the **Create Point of Contact** button to save it.  
-<img src="../images/create-point-of-contact-31.png" alt="create-point-of-contact" title="create-point-of-contact" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/create-point-of-contact-31.png" alt="create-point-of-contact" title="create-point-of-contact" style="border: 1px solid gray; zoom:80%;"/>
 
 **Create a new single Point of Contact (For Chat)**
 
@@ -663,7 +663,7 @@ On the **NICE Incontact** home page, click the **application launcher** button a
 * **Script** - From the dropdown list, select the studio script created for Salesforce-NICE CTI above.
 * **IVR Reporting Enabled** - Select the **checkbox**.
 * Click the **Create Point of Contact** button to save it.  
-<img src="../images/create-point-of-contact2-32.png" alt="create-point-of-contact2" title="create-point-of-contact2" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/create-point-of-contact2-32.png" alt="create-point-of-contact2" title="create-point-of-contact2" style="border: 1px solid gray; zoom:80%;"/>
 
 ## Make a Test Call / Chat
 
@@ -693,41 +693,41 @@ On the **NICE Incontact** home page, click the **application launcher** button a
 <img src="../images/accept-a-call-38.png" alt="accept-a-call" title="accept-a-call" style="border: 1px solid gray; zoom:50%;">
 
     1. The **Contact** page appears.  
-    <img src="../images/contact-page-39.png" alt="contact-page" title="contact-page" style="border: 1px solid gray; zoom:80%;">
+    <img src="../images/contact-page-39.png" alt="contact-page" title="contact-page" style="border: 1px solid gray; zoom:80%;"/>
 
 3. When the **End** button is clicked, the **Summary** is generated and displayed on the Agent AI widget.  
-<img src="../images/summary-generation-40.png" alt="summary-generation" title="summary-generation" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/summary-generation-40.png" alt="summary-generation" title="summary-generation" style="border: 1px solid gray; zoom:80%;"/>
 
 4. Upon clicking the **Submit** button on the Agent AI widget, the Summary is stored in the Agent AI Conversation Summaries.  
-<img src="../images/kore-agentai-conversation-summary-41.png" alt="kore-agentai-conversation-summary" title="kore-agentai-conversation-summary" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/kore-agentai-conversation-summary-41.png" alt="kore-agentai-conversation-summary" title="kore-agentai-conversation-summary" style="border: 1px solid gray; zoom:80%;"/>
 
 **For Chat:**
 
 1. In the **Salesforce App Launcher**, search for **Nice Chats Handler** and select it.  
-<img src="../images/nice-chat-handlers-42.png" alt="nice-chat-handlers" title="nice-chat-handlers" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/nice-chat-handlers-42.png" alt="nice-chat-handlers" title="nice-chat-handlers" style="border: 1px solid gray; zoom:80%;"/>
 
     1. The following page opens and monitors active chats. It remains open for the Agent AI widget to render when an agent accepts a chat request.  
-    <img src="../images/active-chat-43.png" alt="active-chat" title="active-chat" style="border: 1px solid gray; zoom:80%;">
+    <img src="../images/active-chat-43.png" alt="active-chat" title="active-chat" style="border: 1px solid gray; zoom:80%;"/>
 
 2. Make a chat request by opening the **Point of Contact** link in the browser.  
-<img src="../images/point-of-contact-chat-44.png" alt="point-of-contact-chat" title="point-of-contact-chat" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/point-of-contact-chat-44.png" alt="point-of-contact-chat" title="point-of-contact-chat" style="border: 1px solid gray; zoom:80%;"/>
 
 3. Send a message, and the chat request is sent to the agent.  
-<img src="../images/chat-request-45.png" alt="chat-request" title="chat-request" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/chat-request-45.png" alt="chat-request" title="chat-request" style="border: 1px solid gray; zoom:80%;"/>
 
 4. Click **Accept**.  
-<img src="../images/accept-a-chat-46.png" alt="accept-a-chat" title="accept-a-chat" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/accept-a-chat-46.png" alt="accept-a-chat" title="accept-a-chat" style="border: 1px solid gray; zoom:80%;"/>
 
 5. The Agent AI widget opens for the ongoing chat conversation.  
-<img src="../images/chat-conversation-page-47.png" alt="chat-conversation-page" title="chat-conversation-page" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/chat-conversation-page-47.png" alt="chat-conversation-page" title="chat-conversation-page" style="border: 1px solid gray; zoom:80%;"/>
 
 6. When the **End** button is clicked, the Summary is generated and displayed on the Agent AI widget.  
-<img src="../images/chat-summary-48.png" alt="chat-summary" title="chat-summary" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/chat-summary-48.png" alt="chat-summary" title="chat-summary" style="border: 1px solid gray; zoom:80%;"/>
 
 7. Upon clicking the **Submit** button in the Agent AI widget, the Summary is stored in the Agent AI Conversation Summaries.  
-<img src="../images/chat-summary-in-agentai-49.png" alt="chat-summary-in-agentai" title="chat-summary-in-agentai" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/chat-summary-in-agentai-49.png" alt="chat-summary-in-agentai" title="chat-summary-in-agentai" style="border: 1px solid gray; zoom:80%;"/>
 
 8. When **Disposition** is selected and clicked **Save**, the Chat transcript is stored in Salesforce.  
-<img src="../images/chat-transcript-in-salesforce-50.png" alt="chat-transcript-in-salesforce" title="chat-transcript-in-salesforce" style="border: 1px solid gray; zoom:80%;">  
+<img src="../images/chat-transcript-in-salesforce-50.png" alt="chat-transcript-in-salesforce" title="chat-transcript-in-salesforce" style="border: 1px solid gray; zoom:80%;"/>  
 
-      <img src="../images/chat-summary-in-salesforce-51.png" alt="chat-summary-in-salesforce" title="chat-summary-in-salesforce" style="border: 1px solid gray; zoom:80%;">
+      <img src="../images/chat-summary-in-salesforce-51.png" alt="chat-summary-in-salesforce" title="chat-summary-in-salesforce" style="border: 1px solid gray; zoom:80%;"/>

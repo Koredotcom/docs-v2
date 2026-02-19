@@ -33,7 +33,7 @@ Create or utilize existing variables in the context object within script nodes o
 
 
 
-<img src="../images/metadata1.png" alt="Metadata" title="Metadata" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/metadata1.png" alt="Metadata" title="Metadata" style="border: 1px solid gray; zoom:80%;"/>
 
 
 
@@ -48,7 +48,7 @@ In the Automation Node’s metadata section, declare the variables that should b
 3. Ensure that Full Autonomy, Agentic App, and the environment are selected.
 4. In the Metadata configuration section, add your variables as *key-value* pairs:
     1. Click **+ Add** and then enter the details - add a logical name for the key (for example, `name`) and ‘XO variable path’ as the value (for example, `context.userInfo.name`). The changes are auto-saved.  
-    <img src="../images/metadata2.png" alt="Metadata" title="Metadata" style="border: 1px solid gray; zoom:80%;">
+    <img src="../images/metadata2.png" alt="Metadata" title="Metadata" style="border: 1px solid gray; zoom:80%;"/>
   
 
 
@@ -76,7 +76,7 @@ Examples:
 `Assist the agent based on customer tier: {{memory.sessionMeta.metadata.customerTier}}.
 `
 
-<img src="../images/metadata3.png" alt="Metadata" title="Metadata" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/metadata3.png" alt="Metadata" title="Metadata" style="border: 1px solid gray; zoom:80%;"/>
 
 
 ## Review Metadata in Traces for Debugging
@@ -89,4 +89,4 @@ During execution, these variables are injected into the memory store and are vis
 2. Navigate to the relevant Session/Trace in the Agent Platform.
 3. Validate if the memory variables are resolved.
 4. Validate that the correct values are being passed.  
-<img src="../images/metadata4.png" alt="Metadata" title="Metadata" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/metadata4.png" alt="Metadata" title="Metadata" style="border: 1px solid gray; zoom:80%;"/>

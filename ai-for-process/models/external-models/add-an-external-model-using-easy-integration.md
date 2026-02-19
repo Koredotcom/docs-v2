@@ -9,7 +9,7 @@ Steps to add the Anthropic Claude-V1 model using easy integration:
 1. Click **Models** on the top navigation bar of the application. The **Models** page is displayed.
 2. Click the **External models** tab on the **Models** page.
 
-    <img src="../images/navigating-to-external-models.png" alt="Navigating to External Models" title="Navigating to External Models" style="border: 1px solid gray; zoom:80%;">
+    <img src="../images/navigating-to-external-models.png" alt="Navigating to External Models" title="Navigating to External Models" style="border: 1px solid gray; zoom:80%;"/>
 
 3. Click **Add a model** under the **External models** tab. The **Add an external model** dialog is displayed.
 
@@ -46,7 +46,7 @@ You can easily connect Amazon Bedrock models to the AI for Process using a guide
 
 !!! important
 
-    Customers must create an IAM role within their AWS account with the necessary permissions in their AWS account (e.g., access to AWS Bedrock APIs). This role must include a trust policy that allows the AI for Process’s AWS principal (or a designated IAM role in an AWS account) to assume it. For more information, see [Configuring Amazon Bedrock models](./configuring-aws.md){:target="_blank"}.
+    Customers must create an IAM role within their AWS account with the necessary permissions in their AWS account (e.g., access to AWS Bedrock APIs). This role must include a trust policy that allows the AI for Process’s AWS principal (or a designated IAM role in an AWS account) to assume it. For more information, see [Configuring Amazon Bedrock models](./configuring-aws.md).
 
 
 Steps to add Amazon Bedrock models using easy integration:
