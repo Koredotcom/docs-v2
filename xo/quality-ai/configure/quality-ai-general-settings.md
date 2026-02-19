@@ -129,7 +129,7 @@ Agent Access to Scored Interactions includes two options:
 1. **Only manually audited interactions**: Agents view only interactions that supervisors audit manually.
      
 2. **Manually audited interactions and Auto QA scored interactions**: Agents view both Auto QA–scored interactions and supervisor-audited interactions.      
-<img src="../settings/quality-ai-general-settings/images/agent-access-to-scorecard.png" alt="Agent Access to Scored Interactions" title="Agent Access to Scored Interactions" style="border: 1px solid gray; zoom:80%;">
+<img src="../settings/quality-ai-general-settings/images/agent-access-to-scorecard.png" alt="Agent Access to Scored Interactions" title="Agent Access to Scored Interactions" style="border: 1px solid gray; zoom:80%;"/>
  
 Refer to the [Available Interactions Based on Access Settings](../analyze/my-dashboard-agent-view.md#available-interactions-based-on-access-settings).
 

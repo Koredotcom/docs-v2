@@ -85,7 +85,7 @@ This report summarizes adherence results for evaluation metrics across selected 
 * **Format**: CSV file
 
 * **File Name**: [ReportName]-YYYY-MM-DD-HH-MM-SS.csv   
-<img src="../images/sample-evaluation-form-summary-report.png" alt="Reports Access" title="Reports Access" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/sample-evaluation-form-summary-report.png" alt="Reports Access" title="Reports Access" style="border: 1px solid gray; zoom:80%;"/>
 
 ## Related Links
 

@@ -6,7 +6,7 @@ The Queues & Agents dashboard displays the Overview, Efficiency, Agent Performan
 
 1. Select **Analytics** on the left navigation pane. The **Analytics** panel displays with the list of reports.
 
-    <img src="../images/navigating-to-queues-agents-report.png" alt="Navigating to Queues Agents Report" title="Navigating to Queues Agents Report" style="border: 1px solid gray; zoom:80%;">
+    <img src="../images/navigating-to-queues-agents-report.png" alt="Navigating to Queues Agents Report" title="Navigating to Queues Agents Report" style="border: 1px solid gray; zoom:80%;"/>
 
 2. Select **Queues & Agents** under the **Contact Center** section of the **Analytics** panel. The **Queues & Agents** dashboard displays on the right side of the page.
 
@@ -14,7 +14,7 @@ The Queues & Agents dashboard displays the Overview, Efficiency, Agent Performan
 
 You can filter Queues & Agents data for a specific time range. You can choose a particular time range and select Apply.
 
-<img src="../images/time-selection.png" alt="Time Selection" title="Time Selection" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/time-selection.png" alt="Time Selection" title="Time Selection" style="border: 1px solid gray; zoom:80%;"/>
 
 ## Filters
 
@@ -28,7 +28,7 @@ To avoid repeatedly filtering your choices, you can create and save multiple fil
 
 3. Select the Queues, Channels, Direction, and Agents.
 
-    <img src="../images/create-filter-3.png" alt="Create Filters 3" title="Create Filters 3" style="border: 1px solid gray; zoom:80%;">
+    <img src="../images/create-filter-3.png" alt="Create Filters 3" title="Create Filters 3" style="border: 1px solid gray; zoom:80%;"/>
 
    Select from the following available options:
 
@@ -98,7 +98,7 @@ Clicking the percentage value on the Abandon Rate widget shows the following inf
 * `Abandoned while in Queue`-Count of conversations (NNNN) that were abandoned while waiting in the queue.
 * `Abandoned while with Agent`-Count of conversations (NNNN) that where abandoned while being attended by an Agent.
 
-    <img src="../images/abandon-rate.png" alt="Abandon Rate" title="Abandon Rate" style="border: 1px solid gray; zoom:80%;">
+    <img src="../images/abandon-rate.png" alt="Abandon Rate" title="Abandon Rate" style="border: 1px solid gray; zoom:80%;"/>
 
 The formula for measuring the Abandon Count:
 
@@ -111,7 +111,7 @@ Overdue-This live metric shows the number of conversations in the overdue state.
 
 System Terminations: Count of conversations terminated by the System. This metric appears based on selected queues only. Clicking on the number displays the details of the system terminations.
 
-<img src="../images/system-terminations.png" alt="System Terminations" title="System Terminations" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/system-terminations.png" alt="System Terminations" title="System Terminations" style="border: 1px solid gray; zoom:80%;"/>
 
 Average Speed to Answer-The average time it takes an agent to respond to a conversation assigned to them.
 
@@ -121,7 +121,7 @@ Queue Load-Displays the current load on the system as a percentage of its capaci
 
 Resolved Rate-Percentage of resolved conversations.
 
-<img src="../images/resolved-rate.png" alt="Resolved Rate" title="Resolved Rate" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/resolved-rate.png" alt="Resolved Rate" title="Resolved Rate" style="border: 1px solid gray; zoom:80%;"/>
 
 ## Efficiency
 
@@ -164,17 +164,17 @@ Conversations by &lt; List-of-all-Disposition Sets>: Displays the Conversations 
 
 **Average Satisfaction Rating**: Displays the customer satisfaction rating based on the count of survey responses.
 
-   <img src="../images/average-satisfaction-rating.png" alt="Average Satisfaction Rating" title="Average Satisfaction Rating" style="border: 1px solid gray; zoom:80%;">
+   <img src="../images/average-satisfaction-rating.png" alt="Average Satisfaction Rating" title="Average Satisfaction Rating" style="border: 1px solid gray; zoom:80%;"/>
 
 **Customer Satisfaction by Channel**: This section displays channel-wise customer satisfaction metrics based on survey responses.
 
-   <img src="../images/customer-satisfaction-by-channel.png" alt="Customer Satisfaction by Channel" title="Customer Satisfaction by Channel" style="border: 1px solid gray; zoom:80%;">
+   <img src="../images/customer-satisfaction-by-channel.png" alt="Customer Satisfaction by Channel" title="Customer Satisfaction by Channel" style="border: 1px solid gray; zoom:80%;"/>
 
 ## Agent Performance
 
 This section displays agent performance metrics for all conversations (call, chat, e-mail).
 
-   <img src="../images/agent-performance.png" alt="Agent Performance" title="Agent Performance" style="border: 1px solid gray; zoom:80%;">
+   <img src="../images/agent-performance.png" alt="Agent Performance" title="Agent Performance" style="border: 1px solid gray; zoom:80%;"/>
 
 <table>
   <tr>
@@ -261,7 +261,7 @@ This section displays agent performance metrics for all conversations (call, cha
 
 This section displays queue performance metrics for all conversations (call, chat, e-mail).
 
-   <img src="../images/queue-performance.png" alt="Queue Performance" title="Queue Performance" style="border: 1px solid gray; zoom:80%;">
+   <img src="../images/queue-performance.png" alt="Queue Performance" title="Queue Performance" style="border: 1px solid gray; zoom:80%;"/>
 
 <table>
   <tr>

@@ -25,7 +25,7 @@ For example, let's say you're asking for the scientific name of a flower. You ca
 
 This schema guides the model to return its response in a structured JSON format that matches these keys.
 
-<img src="../images/define_response_schema.png" alt="Define response schema Variables" title="Define response schema" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/define_response_schema.png" alt="Define response schema Variables" title="Define response schema" style="border: 1px solid gray; zoom:80%;"/>
 
 #### **Step 2: Automatic Parsing of the Model Response**
 
@@ -40,7 +40,7 @@ Each key from the parsed response (e.g., `scientificname`, `year`, `scientist`) 
 
 This gives you fine-grained control over which pieces of data are used in other nodes, without needing any extra parsing or logic.
 
-<img src="../images/storage_context.png" alt="Automatic storage in context" title="Automatic storage in context" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/storage_context.png" alt="Automatic storage in context" title="Automatic storage in context" style="border: 1px solid gray; zoom:80%;"/>
 
 #### **Step 4: Reuse Keys in Later Nodes**
 
@@ -48,7 +48,7 @@ The stored context values can now be used in any subsequent nodes. For example: 
 
 You no longer need to re-parse the response or write custom code to extract these values—these values are already accessible and ready for use.
 
-<img src="../images/reuse_keys.png" alt="reuse keys" title="reuse keys" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/reuse_keys.png" alt="reuse keys" title="reuse keys" style="border: 1px solid gray; zoom:80%;"/>
 
 #### **Step 5: View Structured Output During Execution**
 
@@ -60,7 +60,7 @@ When the tool runs:
 
 Each key is stored individually in the context, making it easy to trace, validate, and reuse specific values across the workflow.
 
-<img src="../images/view_structured_output.png" alt="View structured Output Variables" title="View structured Output" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/view_structured_output.png" alt="View structured Output Variables" title="View structured Output" style="border: 1px solid gray; zoom:80%;"/>
 
 ### Key Benefits
 

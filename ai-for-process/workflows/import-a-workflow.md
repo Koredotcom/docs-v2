@@ -4,7 +4,7 @@ Using import functionality, you can create a new workflow or add it as a version
 
 When a workflow is imported, its prompts, properties, and linked workflows with their configurations are carried over. This ensures that the workflow works seamlessly in the new system. Additionally, any models present in the exported workflow — specifically external and open-source models — will be automatically linked and integrated. If any child workflows are missing or there are conflicts, the system will notify you.
 
-Creating a new workflow involves importing a *.zip* package from your local system with the flow definition, app definition, and environment variables JSON files from another environment. During the creation journey, assign the imported workflow a unique name to avoid conflicts with existing workflow. [Learn more](../workflows/import-a-workflow.md#import-a-workflow){:target="_blank"}.
+Creating a new workflow involves importing a *.zip* package from your local system with the flow definition, app definition, and environment variables JSON files from another environment. During the creation journey, assign the imported workflow a unique name to avoid conflicts with existing workflow. [Learn more](../workflows/import-a-workflow.md#import-a-workflow).
 
 When importing a workflow version to a parent workflow, the imported flow definition becomes the new in-dev version, overriding the flow, app definition, and environment variable files. The previous version is renamed and saved in the list, with optional backup of the current version available.
 
@@ -86,7 +86,7 @@ When you import an workflow as a version, you must upload all the following file
 
 * **Flow definition file**: Upload the required **flow_definition.json** file from your local directory. The file includes the workflow's canvas definitions (node definitions) and AI node configurations, including prompts, hyperparameters, and timeout information.
 * **App definition file**: Upload the required **app_definition.json** file, which includes general information about the workflow version and guardrails.
-* **Environment variable file**: Upload the required **env_variables.json** file, which includes the environment variables set for the workflow. Any conflicts between environment variables in the parent workflow and the imported version must be resolved. [Learn more](./configure-a-workflow.md#manage-environment-variables){:target="_blank"}.
+* **Environment variable file**: Upload the required **env_variables.json** file, which includes the environment variables set for the workflow. Any conflicts between environment variables in the parent workflow and the imported version must be resolved. [Learn more](./configure-a-workflow.md#manage-environment-variables).
 
 ### Steps to Import a Workflow
 
@@ -109,7 +109,7 @@ To import a workflow as a version, follow the steps below:
 
 **NOTE**
 
-Backing up automatically exports and saves the .zip package of the workflow definition files to the designated location when the import is initiated. [Learn more](export-a-workflow.md){:target="_blank"}.
+Backing up automatically exports and saves the .zip package of the workflow definition files to the designated location when the import is initiated. [Learn more](export-a-workflow.md).
 
 If you choose not to back up/export the workflow configurations, unselect the back-up option and proceed to the next step.
 
@@ -162,7 +162,7 @@ To cancel the import process during the conflicting environment variables resolu
 
 ## Related Links
 
-* [Create a Workflow](create-a-workflow.md){:target="_blank"}- Create a new workflow and configure its flow.
-* [Export a Workflow](export-a-workflow.md){:target="_blank"}- Export the set configurations of a workflow for data sharing and preservation.
-* [Deploy a Workflow](deploy-a-workflow.md){:target="_blank"}- Explore synchronous and asynchronous deployment methods for workflow integration.
-* [Configure a Workflow](configure-a-workflow.md){:target="_blank"}- Modify the workflow's details, configure settings, or undeploy and delete it if unused.
+* [Create a Workflow](create-a-workflow.md)- Create a new workflow and configure its flow.
+* [Export a Workflow](export-a-workflow.md)- Export the set configurations of a workflow for data sharing and preservation.
+* [Deploy a Workflow](deploy-a-workflow.md)- Explore synchronous and asynchronous deployment methods for workflow integration.
+* [Configure a Workflow](configure-a-workflow.md)- Modify the workflow's details, configure settings, or undeploy and delete it if unused.

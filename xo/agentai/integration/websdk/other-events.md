@@ -64,7 +64,7 @@ aaWindowInstance.on('BEFORE_VIEW_INIT', (html, payload) => {
   });
 ```
 
-<img src="../images/summary-template-assist.png" alt="web-sdk-channel" title="summary-template-assist" style="border: 1px solid gray; zoom:80%;"> 
+<img src="../images/summary-template-assist.png" alt="web-sdk-channel" title="summary-template-assist" style="border: 1px solid gray; zoom:80%;"/> 
 
 ## SCROLL BTNS IN ASSIST AND MY AI Agent (Bot)
 
@@ -208,7 +208,7 @@ aaWindowInstance.on('BEFORE_VIEW_INIT', (html, payload) => {
    	}
 });
 ```
-<img src="../images/conversation-summary.png" alt="web-sdk-channel" title="conversation-summary" style="border: 1px solid gray; zoom:80%;"> 
+<img src="../images/conversation-summary.png" alt="web-sdk-channel" title="conversation-summary" style="border: 1px solid gray; zoom:80%;"/> 
 
 ## End of Conversation
 

@@ -10,7 +10,7 @@ AI for Process seamlessly integrates with the Hugging Face platform, allowing yo
 2. Click **Integrations** on the left menu.
 3. Click the **Hugging Face** option from the list of Integrations. The Hugging Face section is expanded.
 
-    <img src="../images/add-hugging-face-connection.png" alt="Add Hugging Face Connection" title="Add Hugging Face Connection" style="border: 1px solid gray; zoom:80%;">
+    <img src="../images/add-hugging-face-connection.png" alt="Add Hugging Face Connection" title="Add Hugging Face Connection" style="border: 1px solid gray; zoom:80%;"/>
 
 4. Click **Add connection**. The **Hugging Face** dialog is displayed.
 
@@ -38,7 +38,7 @@ You can test your connection after you provide the details to verify the accurac
 2. If the connection fails, you can verify the details entered or cancel the set-up process.
 3. You can test the connection by clicking the **Play** button on the connections list.
 
-    <img src="../images/play-button-hugging-face.png" alt="Play Button Hugging Face" title="Play Button Hugging Face" style="border: 1px solid gray; zoom:80%;">
+    <img src="../images/play-button-hugging-face.png" alt="Play Button Hugging Face" title="Play Button Hugging Face" style="border: 1px solid gray; zoom:80%;"/>
 
     !!! note
 
@@ -47,7 +47,7 @@ You can test your connection after you provide the details to verify the accurac
 
 1. Hover over the connection name and click the three dots icon corresponding to the **Connection name**. The list of options is displayed. Click **Edit** to modify the connection details and **Delete** to delete the connection.
 
-     <img src="../images/manage-hugging-face-connection.png" alt="Manage Hugging Face Connection" title="Manage Hugging Face Connection" style="border: 1px solid gray; zoom:80%;">
+     <img src="../images/manage-hugging-face-connection.png" alt="Manage Hugging Face Connection" title="Manage Hugging Face Connection" style="border: 1px solid gray; zoom:80%;"/>
 
     !!! note
 

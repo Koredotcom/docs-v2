@@ -6,7 +6,7 @@ When you export a workflow, AI for Process automatically creates a *.zip* file n
 
 The exported package can be reimported to create a new workflow or add it as a version to an existing one, ensuring seamless restoration.
 
-The [exported package](#exported-information){:target="_blank"} preserves the following workflow configurations within JSON files:
+The [exported package](#exported-information) preserves the following workflow configurations within JSON files:
 
 * Name and description
 * API, Condition, AI, and Script node configurations
@@ -50,7 +50,7 @@ The exported package includes the following JSON files encapsulating the workflo
 
 * ***flow_definition.json***: It includes the workflow's canvas definitions (node definitions) and AI node configurations, including prompts, hyperparameters, and timeout information.
 * ***app_definition.json:*** It includes general information about the workflow version and guardrails.
-* ***env_variables.json***: It includes the environment variables set for the workflow. [Learn more](../workflows/configure-a-workflow.md){:target="_blank"}.
+* ***env_variables.json***: It includes the environment variables set for the workflow. [Learn more](../workflows/configure-a-workflow.md).
 
 <img src="../images/exported-files.png" alt="exported files" title="exported files" style="border: 1px solid gray; zoom:75%;">
 
@@ -66,6 +66,6 @@ The file information is displayed as follows:
 
 ## Related Links
 
-* [Import a workflow](./import-a-workflow.md){:target="_blank"} - Create a workflow by importing configurations or add it as a version to an existing workflow.
-* [Deploy a workflow](./deploy-a-workflow.md){:target="_blank"} - Explore synchronous and asynchronous deployment methods for workflow integration.
-* [Configure a workflow](./configure-a-workflow.md){:target="_blank"} - Modify the workflow's details, configure settings, or undeploy and delete it if unused.
+* [Import a workflow](./import-a-workflow.md) - Create a workflow by importing configurations or add it as a version to an existing workflow.
+* [Deploy a workflow](./deploy-a-workflow.md) - Explore synchronous and asynchronous deployment methods for workflow integration.
+* [Configure a workflow](./configure-a-workflow.md) - Modify the workflow's details, configure settings, or undeploy and delete it if unused.

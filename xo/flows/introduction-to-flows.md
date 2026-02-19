@@ -24,7 +24,7 @@ There are a few benefits to using the Flow Designer:
 ## The Flows Live Board
 
 You can find the Flows by navigating to **Automation AI**/**Contact Center AI**/**Agent AI** > **Flows & Channels** > **FLOWS**.  
-<img src="../images/channels-and-flows-page.png" alt="Flows & Channels Page" title="Flows & Channels Page" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/channels-and-flows-page.png" alt="Flows & Channels Page" title="Flows & Channels Page" style="border: 1px solid gray; zoom:80%;"/>
 
 | **FIELD**          | **DESCRIPTION**                                                                                                                                                                                                                                                    |
 |--------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
@@ -39,19 +39,19 @@ You can find the Flows by navigating to **Automation AI**/**Contact Center AI**/
 You can access the following features on the Flows Live Board:
 
 * Use the **Search** option to enter keywords and search for a specific flow.
-<img src="../images/search-field.png" alt="Arrange in Order" title="Arrange in Order" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/search-field.png" alt="Arrange in Order" title="Arrange in Order" style="border: 1px solid gray; zoom:80%;"/>
 
 * Sort entries by clicking the **Flow** header:
     * **↑** – sort alphabetically, in ascending order.
     * **↓** – sort alphabetically, in descending order.  
-    <img src="../images/order.png" alt="Search Bar" title="Search Bar" style="border: 1px solid gray; zoom:80%;">
+    <img src="../images/order.png" alt="Search Bar" title="Search Bar" style="border: 1px solid gray; zoom:80%;"/>
 
 * Click any Flow to access the Flow Designer and configure the selected entry and to update the Name, Description, or Channel of an entry, click **Update**.  
-<img src="../images/functions.png" alt="Functionalities" title="Functionalities" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/functions.png" alt="Functionalities" title="Functionalities" style="border: 1px solid gray; zoom:80%;"/>
 
 * To delete a flow, click **Delete**.  
 
-<img src="../images/delete-flow.png" alt="Delete Flow" title="Delete Flow" style="border: 1px solid gray; zoom:80%;">  
+<img src="../images/delete-flow.png" alt="Delete Flow" title="Delete Flow" style="border: 1px solid gray; zoom:80%;"/>  
 
 !!! Note
 

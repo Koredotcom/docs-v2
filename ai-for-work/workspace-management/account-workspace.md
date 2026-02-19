@@ -10,7 +10,7 @@ Initiate workspace creation through:
 
 * **Account Workspace** tab in the **Account Hub**
 
-<img src="../images/workspace_3.png" alt="admin-console" title="admin-console" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/workspace_3.png" alt="admin-console" title="admin-console" style="border: 1px solid gray; zoom:80%;"/>
 
 When creating a workspace, admin must provide:
 
@@ -26,7 +26,7 @@ When creating a workspace, admin must provide:
         * Cannot add or manage users.
         * Have the ability to leave the workspace if desired.
          
-<img src="../images/workspace_4.png" alt="admin-console" title="admin-console" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/workspace_4.png" alt="admin-console" title="admin-console" style="border: 1px solid gray; zoom:80%;"/>
 
 * **Agent Publish Settings**: Publishing controls determine to whom the agents can be published within a workspace, allowing for precise audience targeting and information security. The system defaults to making agents available to all workspace users. For wider distribution, additional options exist:
     * Everyone in the Account toggle allows agents to be published to all users in the organization. Only administrators can modify publishing settings for workspaces.
@@ -40,7 +40,7 @@ When creating a workspace, admin must provide:
     * By default, all agent types are permitted.
     * If a workspace already contains agents of a specific type, that type cannot be deselected until those agents are deleted.
 
-<img src="../images/workspace_5.png" alt="admin-console" title="admin-console" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/workspace_5.png" alt="admin-console" title="admin-console" style="border: 1px solid gray; zoom:80%;"/>
 
 ## Workspace Deletion
 
@@ -53,7 +53,7 @@ To delete a workspace:
 3. Scroll down to find and click the **Delete Workspace button**.
 4. Click **Update**.
 
-<img src="../images/workspace_6.png" alt="admin-console" title="admin-console" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/workspace_6.png" alt="admin-console" title="admin-console" style="border: 1px solid gray; zoom:80%;"/>
 
 ### Workspace Modules
 

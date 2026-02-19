@@ -27,14 +27,14 @@ Conditional Group Routing is a dynamic routing feature in a Contact Center as a 
 Configure CGR at the queue level for queues containing a single channel type.
 
 Administrators can configure CGR rules in the routing settings of a queue by turning on the toggle.  
-<img src="../images/cgr-toggle.png" alt="Enable CGR" title="Enable CGR" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/cgr-toggle.png" alt="Enable CGR" title="Enable CGR" style="border: 1px solid gray; zoom:80%;"/>
 
 How it works?
 
 **Initial Routing Attempt**: The system first attempts to route the conversation within the originating queue (for example, Queue A) using standard skill and proficiency matching. This attempt occurs for a configurable duration, such as 30 seconds.
 
 **Conditional Expansion**: If no eligible agent is available in the originating queue within the configured wait period, the system expands the search to other similar queues (for example, Queue B, Queue C). This expansion is conditional and based on predefined KPIs, such as Average Handle Time (AHT) and Estimated Wait Time (EWT).  
-<img src="../images/options.png" alt="Options" title="Options" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/options.png" alt="Options" title="Options" style="border: 1px solid gray; zoom:80%;"/>
 
 Eligibility Rules:
 
@@ -66,7 +66,7 @@ Key Benefits:
 ## The Queues Live Board
 
 To access _Queues_, go to **Contact Center AI** > **ROUTING** > **Queues**.
-<img src="../images/queues-page.png" alt="Queues Page" title="Queues Page" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/queues-page.png" alt="Queues Page" title="Queues Page" style="border: 1px solid gray; zoom:80%;"/>
 
 This section displays the following:
 
@@ -82,7 +82,7 @@ This section displays the following:
 
 1. At the top-right corner of the Configuration page, select **New Queue**.
 2. In the **New Queue** window, you can set up the queue as follows:  
-    <img src="../images/new-queue-button.png" alt="New Queue Icon" title="New Queue Icon" style="border: 1px solid gray; zoom:80%;">
+    <img src="../images/new-queue-button.png" alt="New Queue Icon" title="New Queue Icon" style="border: 1px solid gray; zoom:80%;"/>
     1. With **Simple Routing**, you can configure the Queue Settings and Assignments;  
     2. With **Advanced Routings**, you can configure the Queue Settings, Assignments, Preferred Agents, and Skills.
 

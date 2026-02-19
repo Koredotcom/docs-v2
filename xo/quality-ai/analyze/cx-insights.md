@@ -16,7 +16,7 @@ The CX Insights dashboard includes:
 ## Access CX Insights
 
 Navigate to **Quality AI**> **Analyze**> **CX Insights**.   
-<img src="../conversation-intelligence/images/cx-insights.png" alt="Customer Experience Insights Dashboard" title="Customer Experience Insights Dashboard" style="border: 1px solid gray; zoom:80%;">
+<img src="../conversation-intelligence/images/cx-insights.png" alt="Customer Experience Insights Dashboard" title="Customer Experience Insights Dashboard" style="border: 1px solid gray; zoom:80%;"/>
 
 !!! Note
 
@@ -37,7 +37,7 @@ Use this to filter CX Insights data for the selected date range (for example, La
 ### Channel Filter
 
 Use this to filter CX data by **All**, **Voice**, **Chat**, or **Email**.   
-<img src="../conversation-intelligence/images/channels.png" alt="Channel Filter" title="Channel Filter" style="border: 1px solid gray; zoom:80%;">
+<img src="../conversation-intelligence/images/channels.png" alt="Channel Filter" title="Channel Filter" style="border: 1px solid gray; zoom:80%;"/>
 
 !!! Note
     
@@ -63,7 +63,7 @@ Displays the average time customers wait before an agent responds. The system ca
 
 * Monitor accessibility and responsiveness.
 * Identify staffing or queue optimization needs.    
-<img src="../conversation-intelligence/images/average-wait-time.png" alt="Average Wait Time" title="Average Wait Time" style="border: 1px solid gray; zoom:80%;">
+<img src="../conversation-intelligence/images/average-wait-time.png" alt="Average Wait Time" title="Average Wait Time" style="border: 1px solid gray; zoom:80%;"/>
 
 ### Overall Resolution Rate
 Shows the percentage of interactions marked as resolved across all conversations in the selected period based on your selected filters. Displays 0% when no qualifying conversations exist.
@@ -79,7 +79,7 @@ Shows the percentage of interactions marked as resolved across all conversations
 * Track end-to-end resolution effectiveness.
 * Measure the impact of process or agent improvements.
 * Set and monitor resolution benchmarks.   
-<img src="../conversation-intelligence/images/overall-resolution-rate.png" alt="Overall Resolution Rate" title="Overall Resolution Rate" style="border: 1px solid gray; zoom:80%;">
+<img src="../conversation-intelligence/images/overall-resolution-rate.png" alt="Overall Resolution Rate" title="Overall Resolution Rate" style="border: 1px solid gray; zoom:80%;"/>
 
 ## Sentiment Distribution
 
@@ -106,7 +106,7 @@ The doughnut chart shows how customer interactions distribute across sentiment c
 
 * Understand overall customer mood.
 * Track sentiment shifts over time.   
-<img src="../conversation-intelligence/images/sentiment.png" alt="Sentiment Category" title="Sentiment Category" style="border: 1px solid gray; zoom:80%;">
+<img src="../conversation-intelligence/images/sentiment.png" alt="Sentiment Category" title="Sentiment Category" style="border: 1px solid gray; zoom:80%;"/>
 
 ### Customer Churn Monitor
 
@@ -129,7 +129,7 @@ The Customer Churn Monitor shows customer churn risk in a pie chart. It compares
 * Identify churn risks early.
 * Track escalation trends.
 * Prioritize retention strategies.    
-<img src="../conversation-intelligence/images/customer-churn-monitor.png" alt="Customer Churn Monitor" title="Customer Churn Monitor" style="border: 1px solid gray; zoom:80%;"> 
+<img src="../conversation-intelligence/images/customer-churn-monitor.png" alt="Customer Churn Monitor" title="Customer Churn Monitor" style="border: 1px solid gray; zoom:80%;"/> 
 
     !!! Note
     
@@ -138,7 +138,7 @@ The Customer Churn Monitor shows customer churn risk in a pie chart. It compares
 ## CSAT Drivers
 
 CSAT drivers identify topics that affect customer satisfaction using a driver-impact scoring model based on average sentiment.        
-<img src="../conversation-intelligence/images/csat-drivers.png" alt="CSAT Drivers" title="CSAT Drivers" style="border: 1px solid gray; zoom:80%;"> 
+<img src="../conversation-intelligence/images/csat-drivers.png" alt="CSAT Drivers" title="CSAT Drivers" style="border: 1px solid gray; zoom:80%;"/> 
 
 ### How Driver Impact is Calculated?
 
@@ -200,7 +200,7 @@ The baseline adapts to your filter selection:
 ## DSAT Drivers
 
 Highlights the top 6 **DSAT** topics or those negatively impacting customer satisfaction.
-<img src="../conversation-intelligence/images/dsat-drivers.png" alt="DSAT Drivers" title="DSAT Drivers" style="border: 1px solid gray; zoom:80%;"> 
+<img src="../conversation-intelligence/images/dsat-drivers.png" alt="DSAT Drivers" title="DSAT Drivers" style="border: 1px solid gray; zoom:80%;"/> 
 
 **How it works**:
 

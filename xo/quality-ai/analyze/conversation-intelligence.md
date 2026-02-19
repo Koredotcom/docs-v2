@@ -111,13 +111,13 @@ Steps to edit a filter:
 
 This filter displays only the analytics data for the current day's agent performance, customer experience, and interaction details. When applied, it removes all previously selected date ranges and focuses solely on today's data.
 
-<img src="../conversation-intelligence/images/clear-filter.png" alt="Clear Filters" title="Clear Filters" style="border: 1px solid gray; zoom:80%;">
+<img src="../conversation-intelligence/images/clear-filter.png" alt="Clear Filters" title="Clear Filters" style="border: 1px solid gray; zoom:80%;"/>
 
 ## Date and Time Range Selection
 
 Lets you filter data by date and time range. The widget displays the current day’s data initially. Select a date and time range, and select **Apply**.  
 
-<img src="../conversation-intelligence/images/time-duration.png" alt="Time Selection" title="Time Selection" style="border: 1px solid gray; zoom:80%;">
+<img src="../conversation-intelligence/images/time-duration.png" alt="Time Selection" title="Time Selection" style="border: 1px solid gray; zoom:80%;"/>
 
 ## Compare Functionality
 
@@ -271,7 +271,7 @@ The sentiment monitor graph is a bar chart where each bar represents an intent o
 * **Positive Sentiment**: Green color
 * **Neutral Sentiment**: Yellow color
 * **Negative Sentiment**: Red color   
-<img src="../conversation-intelligence/images/sentiment-monitor.png" alt="Sentiment Monitor" title="Sentiment Monitor" style="border: 1px solid gray; zoom:80%;">
+<img src="../conversation-intelligence/images/sentiment-monitor.png" alt="Sentiment Monitor" title="Sentiment Monitor" style="border: 1px solid gray; zoom:80%;"/>
 
 ### Customer Churn Monitor
 
@@ -282,12 +282,12 @@ The Customer Churn Monitor shows customer churn risk in a pie chart. It compares
 * **Customer Churn**: Count of interactions where there has been a customer churn.
 
 * **Escalation**: Number of interactions where the customer has requested assistance from a supervisor or a senior.  
-<img src="../conversation-intelligence/images/customer-churn-monitor.png" alt="Customer Churn Monitor" title="Customer Churn Monitor" style="border: 1px solid gray; zoom:80%;">
+<img src="../conversation-intelligence/images/customer-churn-monitor.png" alt="Customer Churn Monitor" title="Customer Churn Monitor" style="border: 1px solid gray; zoom:80%;"/>
 
 ## Insights Mining
 
 Insights Mining displays the top 30 topics by volume and lets you identify the topics associated with volume, sentiment, keywords and emotions for the selected date range and channel.  
-<img src="../conversation-intelligence/images/insights-mining-default-screen.png" alt="Customer Churn Monitor" title="Customer Churn Monitor" style="border: 1px solid gray; zoom:80%;">
+<img src="../conversation-intelligence/images/insights-mining-default-screen.png" alt="Customer Churn Monitor" title="Customer Churn Monitor" style="border: 1px solid gray; zoom:80%;"/>
 
 By default, this widget displays a blank screen without any data. Based on the date range and topic selected from the calendar, it pulls the required sentiment scores for interactions in bubbles.
 

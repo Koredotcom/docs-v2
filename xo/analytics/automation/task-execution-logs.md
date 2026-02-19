@@ -8,7 +8,7 @@ The **Task Execution Logs** feature helps you gain in-depth insights into the ta
 
 1. Click **Analytics** on the left navigation pane. The Analytics panel is displayed with the list of reports.
     
-    <img src="../images/navigating-to-task-execution-logs.png" alt="Navigating to Task Execution Logs" title="Navigating to Task Execution Logs" style="border: 1px solid gray; zoom:80%;">
+    <img src="../images/navigating-to-task-execution-logs.png" alt="Navigating to Task Execution Logs" title="Navigating to Task Execution Logs" style="border: 1px solid gray; zoom:80%;"/>
 
 
 2. Click the **Task Execution Logs** under the **Automation** section of the **Analytics** panel. The **Task Execution Logs dashboard** is displayed on the right side of the page.
@@ -34,7 +34,7 @@ In a scenario where all the user utterances are successfully mapped to an intent
 
 See the following table and the Features section to know more:
 
-<img src="../images/failed-tasks.png" alt="Failed Tasks" title="Failed Tasks" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/failed-tasks.png" alt="Failed Tasks" title="Failed Tasks" style="border: 1px solid gray; zoom:80%;"/>
 
 
 ### Failed Task – Type of Issues
@@ -201,7 +201,7 @@ This can be sorted from <strong>High to Low</strong> or<strong> Low to High</str
 
 <p>
 
-<img src="../images/more-filters.png" alt="More Filters" title="Returning Users" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/more-filters.png" alt="More Filters" title="Returning Users" style="border: 1px solid gray; zoom:80%;"/>
 
 
 </li>

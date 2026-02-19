@@ -26,7 +26,7 @@ The platform offers features for end-to-end workflow implementation and maintena
 
 ### Configure and Manage
 
-**Configurations:** Manage workflow metadata, define reusable values using environment variables, and control deployment of workflows. [Learn more](configure-a-workflow.md){:target="_blank"}.
+**Configurations:** Manage workflow metadata, define reusable values using environment variables, and control deployment of workflows. [Learn more](configure-a-workflow.md).
 
 ### Collaborate and Control Access
 
@@ -45,6 +45,6 @@ The platform offers features for end-to-end workflow implementation and maintena
 
 ### Govern and Audit
 
-**Guardrails:** Apply guardrail models to scan LLM inputs and outputs, helping enforce safety, compliance, and content policies across workflows. [Learn more](guardrails/add-a-scanner.md){:target="_blank"}.
+**Guardrails:** Apply guardrail models to scan LLM inputs and outputs, helping enforce safety, compliance, and content policies across workflows. [Learn more](guardrails/add-a-scanner.md).
 
-**Audit Logs:** View detailed audit logs for all workflow activities to support troubleshooting and ensure traceability with real-time event tracking. [Learn more](./workflow-audit-log.md){:target="_blank"}.
+**Audit Logs:** View detailed audit logs for all workflow activities to support troubleshooting and ensure traceability with real-time event tracking. [Learn more](./workflow-audit-log.md).

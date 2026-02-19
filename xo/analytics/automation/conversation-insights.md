@@ -331,7 +331,7 @@ True Positives (TP) refer to instances where the AI Agents correctly identifies 
 In this example the intent is correctly mapped to **Check Balance**, hence it is a true positive.
 
 
-<img src="../images/true-positive.png" alt="True Positive" title="True Positive" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/true-positive.png" alt="True Positive" title="True Positive" style="border: 1px solid gray; zoom:80%;"/>
 
 
 
@@ -341,7 +341,7 @@ True Negatives (TN) refer to instances where the AI Agents correctly identifies 
 In the following example, the user utterance “Extremely Likely” did not match with any defined intent and is categorized as Unidentified intent.
 
 
-<img src="../images/true-negative.png" alt="True Negative" title="True Negative" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/true-negative.png" alt="True Negative" title="True Negative" style="border: 1px solid gray; zoom:80%;"/>
 
 
 
@@ -350,7 +350,7 @@ In the following example, the user utterance “Extremely Likely” did not matc
 False Positives (FP) refer to instances where the AI Agents incorrectly identifies the intent of an utterance. For example, if the user provides his bank account name, and the AI Agents incorrectly identifies the intent as “Close Account”, this would be a False Positive.
 
 
-<img src="../images/false-positive.png" alt="False Positive" title="False Positive" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/false-positive.png" alt="False Positive" title="False Positive" style="border: 1px solid gray; zoom:80%;"/>
 
 
 
@@ -360,5 +360,5 @@ False Negatives (FN) refer to instances where the AI Agents incorrectly identifi
 In this example, the “create account” utterance is wrongly mapped as an Unidentified intent and hence would be False Negative.
 
 
-<img src="../images/false-negative.png" alt="False Negative" title="False Negative" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/false-negative.png" alt="False Negative" title="False Negative" style="border: 1px solid gray; zoom:80%;"/>
 

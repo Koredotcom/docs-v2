@@ -103,7 +103,7 @@ After you sign in, the landing page loads. From this page you can access the fol
 * **Profile**: Your profile details, set the Platform’s language and log out options.
 * **New App**: Create an app or import an app.
 
-<img src="../images/xo-home.png" alt="Platform Homepage" title="Platform Homepage" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/xo-home.png" alt="Platform Homepage" title="Platform Homepage" style="border: 1px solid gray; zoom:80%;"/>
 
 ## Invite Users to your App from the Apps Admin portal
 

@@ -12,16 +12,16 @@ Steps to add an external widget:
 
 1. Go to Contact Center AI > CONFIGURATIONS > Widgets.
 2. Click `External Widget`.  
-    <img src="../images/widgets-page.png" alt="Widgets Page" title="Widgets Page" style="border: 1px solid gray; zoom:80%;">
+    <img src="../images/widgets-page.png" alt="Widgets Page" title="Widgets Page" style="border: 1px solid gray; zoom:80%;"/>
 
 3. The External Widgets window opens. Click `+ New External Widget`.
-    <img src="../images/new-external-widget.png" alt="New External Widget" title="New External Widget" style="border: 1px solid gray; zoom:80%;">
+    <img src="../images/new-external-widget.png" alt="New External Widget" title="New External Widget" style="border: 1px solid gray; zoom:80%;"/>
 
 4. The Add Widget window opens, and you can configure the following:
     1. The `Widget Name` by which to identify it later.
     2. Select the checkbox to load the custom widget independently without a conversation.
     3. The `Widget Icon`. Click the section to upload a file, or use drag-and-drop.  
-        <img src="../images/widget-name.png" alt="Widget Name and Icon" title="Widget Name and Icon" style="border: 1px solid gray; zoom:80%;">
+        <img src="../images/widget-name.png" alt="Widget Name and Icon" title="Widget Name and Icon" style="border: 1px solid gray; zoom:80%;"/>
 
 5. If you want to remove an icon, click `Delete` on the right side. You can re-upload an icon afterward as needed.
 
@@ -51,10 +51,10 @@ Steps to add an external widget:
     `https://www.example.com/?id=12345`
 
 7. The **Failure URL** displays in case the intended page doesn't load. You can set the same variables as for the main URL.  
-    <img src="../images/url-and-failure-url.png" alt="URL and Failure URL" title="URL and Failure URL" style="border: 1px solid gray; zoom:80%;">
+    <img src="../images/url-and-failure-url.png" alt="URL and Failure URL" title="URL and Failure URL" style="border: 1px solid gray; zoom:80%;"/>
 
 8. Click **Save**.  
-    <img src="../images/save-widget.png" alt="Save Widget" title="Save Widget" style="border: 1px solid gray; zoom:80%;">
+    <img src="../images/save-widget.png" alt="Save Widget" title="Save Widget" style="border: 1px solid gray; zoom:80%;"/>
 
 9. A success message displays, and lists the widget within the External Widgets window.
 
@@ -65,7 +65,7 @@ To edit an existing widget, find it in the list of External Widgets, then click 
 ## Delete a Widget
 
 To delete an existing widget, find it in the list of External Widgets, then click on it. Click `Delete` on the left of the bottom toolbar, then `confirm` your choice.  
-<img src="../images/delete-widget.png" alt=" Delete Widget" title="Delete Widget" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/delete-widget.png" alt=" Delete Widget" title="Delete Widget" style="border: 1px solid gray; zoom:80%;"/>
 
 !!! Note
 
@@ -80,10 +80,10 @@ To add a widget to an Agent Console Layout, follow these steps:
 1. From within the Agent Console, click `Manage Layout` on the top toolbar.
 2. From the list of available layouts, select the one to which you want to add the widget and click the `✐` icon next to it.
 3. On the Edit Layout screen, find the widget in the left-hand-side panel. Drag it to the right-hand-side panel.  
-    <img src="../images/edit-layout.png" alt="Edit Layout" title="Edit Layout" style="border: 1px solid gray; zoom:80%;">
+    <img src="../images/edit-layout.png" alt="Edit Layout" title="Edit Layout" style="border: 1px solid gray; zoom:80%;"/>
 
 4. Click `Save`. Once the widget is added, the integrated system or page displays within the widget as part of the selected Agent Console Layout. See what it looks like in the demo below.  
-    <img src="../images/layout-demo.gif" alt="Layout Demo" title="Layout Demo" style="border: 1px solid gray; zoom:80%;">
+    <img src="../images/layout-demo.gif" alt="Layout Demo" title="Layout Demo" style="border: 1px solid gray; zoom:80%;"/>
 
 ## Delete a Widget from an Agent Console Layout
 
@@ -91,10 +91,10 @@ To delete a widget from an Agent Console Layout, follow these steps:
 
 1. From within the Agent Console screen, click Manage Layout on the top toolbar.
 2. From the list of available layouts, select the one to which you want to add the widget and click the `✐` icon next to it.  
-    <img src="../images/edit-layout.png" alt="Edit Layout" title="Edit Layout" style="border: 1px solid gray; zoom:80%;">
+    <img src="../images/edit-layout.png" alt="Edit Layout" title="Edit Layout" style="border: 1px solid gray; zoom:80%;"/>
 
 3. On the Edit Layout screen, click `More Options` at the top of the widget, then select `Delete`.
-    <img src="../images/delete-widget-layout.png" alt="Delete Widget From Layout" title="Delete Widget From Layout" style="border: 1px solid gray; zoom:80%;">
+    <img src="../images/delete-widget-layout.png" alt="Delete Widget From Layout" title="Delete Widget From Layout" style="border: 1px solid gray; zoom:80%;"/>
 
     !!! Note
 
@@ -103,7 +103,7 @@ To delete a widget from an Agent Console Layout, follow these steps:
 ## Load Widgets Without Conversations
 
 If the checkbox to load the widget independently is selected when adding a widget, the widgets appear on the agent desktop even when a conversation isn't initiated. [Learn more](../widgets/configure-widgets.md#add-a-widget).  
-<img src="../images/layout.png" alt="Load Widgets Without Conversations" title="Load Widgets Without Conversations" style="border: 1px solid gray; zoom:80%;">  
+<img src="../images/layout.png" alt="Load Widgets Without Conversations" title="Load Widgets Without Conversations" style="border: 1px solid gray; zoom:80%;"/>  
 
 !!! Note
 

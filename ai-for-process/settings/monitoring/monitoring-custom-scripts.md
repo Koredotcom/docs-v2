@@ -15,8 +15,8 @@
 
 **Search and Filter Capabilities**
 
-* **Column Filters**: View specific records by setting column values or combining filters with logical operators. [Learn more](../monitoring/monitoring-custom-scripts.md#columns-filtering){:target="_blank"}.
-* **Time-based filters** Analyze script performance for specific dates or date ranges. [Learn more](../monitoring/monitoring-custom-scripts.md#time-based-filtering){:target="_blank"}.
+* **Column Filters**: View specific records by setting column values or combining filters with logical operators. [Learn more](../monitoring/monitoring-custom-scripts.md#columns-filtering).
+* **Time-based filters** Analyze script performance for specific dates or date ranges. [Learn more](../monitoring/monitoring-custom-scripts.md#time-based-filtering).
 * **Search Functionality** Look up script runs using Run ID and other searchable column fields.
 
 **UI Features**
@@ -41,7 +41,7 @@
 * **Navigation**: Use arrow buttons or keyboard shortcuts (<code>K</code> for previous, <code>J</code> for next) to navigate records.
     <img src="../images/keyboard-shortcuts.png" alt="keyboard shortcuts" title="keyboard shortcuts" style="border: 1px solid gray; zoom:75%;">
 
-* Click on each script run record to see the record-level view of the log based on the **Run ID**. [Learn more](../monitoring/monitoring-custom-scripts.md#record-view){:target="_blank"}.
+* Click on each script run record to see the record-level view of the log based on the **Run ID**. [Learn more](../monitoring/monitoring-custom-scripts.md#record-view).
 * Click the **Logs** tab to view metrics and summary information on each run-based log recorded for the script.
 * Log visibility depends on how the script is configured by the developer:
     * Failure runs **can generate logs if logging is implemented correctly**. 
@@ -61,7 +61,7 @@
 * Analyze the input and output for each script run (identified by **Run ID**) using Log data like *Log ID*, *Log level*, *Log message*, and *Timestamp*.
 * **Total Runs**, **Response Time** (P90 and P99), and **Failure Rate** for all script executions help uncover performance insights, diagnose errors, and optimize script usage.
 * Use the input and output code editors available in the record view to analyze and troubleshoot the script run logs.
-* Perform script tracing using the record view for a specific run. [Learn more](../monitoring/monitoring-custom-scripts.md#record-view){:target="_blank"}.
+* Perform script tracing using the record view for a specific run. [Learn more](../monitoring/monitoring-custom-scripts.md#record-view).
 
 
 ## Access Monitoring Custom Scripts
@@ -105,8 +105,8 @@ This feature provides a centralized view of actionable insights into run-level a
 The key features for customizing the data in the page include:
 
 * **Script Name Filter**: Use this to select and view data for a specific script you want to monitor. You can also choose another deployed and executed script from the list to view its metrics and logs.
-* **Time Selection Filter**: Required to analyze script runs data for a specific period in the past or current day. [Learn more](../monitoring/monitoring-custom-scripts.md#time-based-filtering){:target="_blank"}.
-* **Filter By Option**: An optional multi-field, multi-level filter for targeted analysis of runs and logs. [Learn more](../monitoring/monitoring-custom-scripts.md#columns-filtering){:target="_blank"}.
+* **Time Selection Filter**: Required to analyze script runs data for a specific period in the past or current day. [Learn more](../monitoring/monitoring-custom-scripts.md#time-based-filtering).
+* **Filter By Option**: An optional multi-field, multi-level filter for targeted analysis of runs and logs. [Learn more](../monitoring/monitoring-custom-scripts.md#columns-filtering).
 
 <div class="admonition note">
 <p class="admonition-title">Note</p>
@@ -254,11 +254,11 @@ Use the time selection dropdown (displayed as "Custom") at the top-right of the 
 <p class="admonition-title">Note</p>
 <p>Data is displayed only if the selected script’s runs were executed during the selected period.</p></div>
 
-[Learn more](../monitoring/audit-logs.md#time-based-audit-logs){:target="_blank"} about the calendar widget.
+[Learn more](../monitoring/audit-logs.md#time-based-audit-logs) about the calendar widget.
 
 ## Columns Filtering
 
-You can narrow down the information displayed for custom script runs and logs by applying **custom column filters**. This functionality is similar to the **Filter** in the Audit Logs feature. [Learn more](../monitoring/audit-logs.md#filter-audit-logs){:target="_blank"}. 
+You can narrow down the information displayed for custom script runs and logs by applying **custom column filters**. This functionality is similar to the **Filter** in the Audit Logs feature. [Learn more](../monitoring/audit-logs.md#filter-audit-logs). 
 
 Additionally, the filter for custom scripts includes the **contains** operator, which matches results that include a specific keyword or value you enter. For example, the following image depicts checking if the **Log message** contains the string “*Adding*.”  
  
@@ -295,7 +295,7 @@ The UI displays all the relevant run and log records that align with the applied
 
 ### Multiple Filters
 
-Users can combine filters using AND/OR operators for multi-level filtering. Note that AND/OR operators cannot be mixed in the same filter set. [Learn more](../monitoring/audit-logs.md#add-multiple-filters){:target="_blank"} about using multiple filters.
+Users can combine filters using AND/OR operators for multi-level filtering. Note that AND/OR operators cannot be mixed in the same filter set. [Learn more](../monitoring/audit-logs.md#add-multiple-filters) about using multiple filters.
 
 ## Record View
 
@@ -320,7 +320,7 @@ The record view offers log-specific insights at the script run level after each 
 2. The record view page is displayed with the following information: 
 
     * Run ID
-    * Log-specific information, including the *Log ID*, *Log level*, *Log message*, and *timestamp*. [Learn more](../monitoring/monitoring-custom-scripts.md#log-level-metadata){:target="_blank"}.
+    * Log-specific information, including the *Log ID*, *Log level*, *Log message*, and *timestamp*. [Learn more](../monitoring/monitoring-custom-scripts.md#log-level-metadata).
     * JSON editors that display the script’s input and the function’s output, respectively. 
     * Navigation buttons.
 

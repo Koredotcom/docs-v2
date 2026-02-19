@@ -7,7 +7,7 @@ You can assign agents to Agent AI and Quality AI Express queues directly through
 ## Access Conversation Sources
 
 Navigate to **Quality AI** > **CONFIGURE** > **Conversation Sources**.   
-<img src="../conversation-sources/conversation-sources.png" alt="Conversation Sources" title="Conversation Sources" style="border: 1px solid gray; zoom:80%;">
+<img src="../conversation-sources/conversation-sources.png" alt="Conversation Sources" title="Conversation Sources" style="border: 1px solid gray; zoom:80%;"/>
 
 ## Supported Conversation Sources
 
@@ -98,7 +98,7 @@ Complete these steps before activating **Quality AI Express**:
 * Clear all active **Dialog Task** metrics from evaluated form queues.
 
 If you skip these steps, the system blocks activation and displays a warning.      
-<img src="../conversation-sources/enable-quality-ai-express-setup.png" alt="Express Setup" title="Express Setup" style="border: 1px solid gray; zoom:80%;">
+<img src="../conversation-sources/enable-quality-ai-express-setup.png" alt="Express Setup" title="Express Setup" style="border: 1px solid gray; zoom:80%;"/>
 
 **AWS S3 Configuration**:
 
@@ -129,7 +129,7 @@ The main interface displays all enabled conversation sources and their queues.
 * **Actions**: Edit or delete queues.
 
 * **Add Queue**: Add new queues and assign agents.   
-<img src="../conversation-sources/connectors.png" alt="Connectors" title="Connectors" style="border: 1px solid gray; zoom:80%;">
+<img src="../conversation-sources/connectors.png" alt="Connectors" title="Connectors" style="border: 1px solid gray; zoom:80%;"/>
 
     !!! note
 
@@ -150,7 +150,7 @@ To map agents to a new queue:
 1. Turn on **Agent AI** or **Quality AI Express**, or both sources.
 
 1. Select **Add Queue** and enter the following details:   
-<img src="../conversation-sources/add-queue.png" alt="Add Queue" title="Add Queue" style="border: 1px solid gray; zoom:80%;">
+<img src="../conversation-sources/add-queue.png" alt="Add Queue" title="Add Queue" style="border: 1px solid gray; zoom:80%;"/>
 
     * **Name**: Enter a descriptive queue name.
 
@@ -161,7 +161,7 @@ To map agents to a new queue:
     * **Agents**: Assign agents to the queue using the searchable list. 
 
 1. Select **Save** to start or update conversation ingestion for the queue.    
-<img src="../conversation-sources/add-queue-agent.png" alt="Agent Queue Details" title="Agent Queue Details" style="border: 1px solid gray; zoom:80%;">    
+<img src="../conversation-sources/add-queue-agent.png" alt="Agent Queue Details" title="Agent Queue Details" style="border: 1px solid gray; zoom:80%;"/>    
 
 #### Conversation Agent–Queue Mapping
 

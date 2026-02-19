@@ -14,7 +14,7 @@ Orchestration Settings provides a comprehensive pipeline management framework th
 4. Test the pipeline configuration using sample queries.
 5. Monitor performance and adjust settings as needed.
 
-<img src="../images/orchestration-settings.png" alt="action" title="action" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/orchestration-settings.png" alt="action" title="action" style="border: 1px solid gray; zoom:80%;"/>
 
 ## **Understanding the Interface Layout**
 
@@ -30,7 +30,7 @@ The Orchestration Settings interface is organized into five main pipeline compon
 
 Guardrail Enforcement provides automated security policy application across all AI interactions through intelligent synchronization with your [Guardrails](./guardrails.md).
 
-<img src="../images/guardrails-enforcement.png" alt="action" title="action" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/guardrails-enforcement.png" alt="action" title="action" style="border: 1px solid gray; zoom:80%;"/>
 
 **Configuration Options:**
 
@@ -47,7 +47,7 @@ Guardrail Enforcement provides automated security policy application across all 
 
 Small Talk Handling enables AI systems to engage in casual, contextual conversations that improve user experience and interaction quality.
 
-<img src="../images/small-talk-handling.png" alt="action" title="action" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/small-talk-handling.png" alt="action" title="action" style="border: 1px solid gray; zoom:80%;"/>
 
 **Configuration Options:**
 
@@ -64,7 +64,7 @@ Small Talk Handling enables AI systems to engage in casual, contextual conversat
 
 Intelligent Agent Routing automatically analyzes incoming queries and directs them to the most appropriate AI agent or processing system for optimal response quality.
 
-<img src="../images/intelligent-agent.png" alt="action" title="action" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/intelligent-agent.png" alt="action" title="action" style="border: 1px solid gray; zoom:80%;"/>
 
 **Configuration Options:**
 
@@ -81,7 +81,7 @@ Intelligent Agent Routing automatically analyzes incoming queries and directs th
 
 Enterprise Knowledge Lookup seamlessly integrates your organization's knowledge base with AI processing, ensuring responses draw from authoritative internal sources.
 
-<img src="../images/enterprise-knowledge.png" alt="action" title="action" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/enterprise-knowledge.png" alt="action" title="action" style="border: 1px solid gray; zoom:80%;"/>
 
 **Configuration Options:**
 
@@ -102,7 +102,7 @@ Enterprise Knowledge Lookup seamlessly integrates your organization's knowledge 
 
 Fallback to AI Knowledge ensures continuous AI availability by providing alternative response generation when primary systems are unavailable or insufficient.
 
-<img src="../images/fallback-ai.png" alt="action" title="action" style="border: 1px solid gray; zoom:80%;">
+<img src="../images/fallback-ai.png" alt="action" title="action" style="border: 1px solid gray; zoom:80%;"/>
 
 **Configuration Options:**
 

@@ -11,7 +11,7 @@ The S3 Storage Integration functionality broadens AI for Process' capabilities b
 
 3. Click the **AWS S3 bucket** option from the list of Integrations. The AWS S3 bucket section is expanded.
 
-    <img src="../images/add-s3-connection.png" alt="Add S3 Connection" title="Add S3 Connection" style="border: 1px solid gray; zoom:80%;">
+    <img src="../images/add-s3-connection.png" alt="Add S3 Connection" title="Add S3 Connection" style="border: 1px solid gray; zoom:80%;"/>
 
 4. Click **Add connection**. The **AWS S3 bucket** dialog is displayed.
 

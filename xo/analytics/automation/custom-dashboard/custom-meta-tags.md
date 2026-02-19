@@ -11,7 +11,7 @@ The Platform allows you to add tags to various nodes in a dialog task like dialo
 
 This option is available from the **Instance Properties** tab, under **Advanced Controls**.
 
-<img src="./../images/defining-meta-tags.png" alt="Defining Meta Tags" title="Defining Meta Tags" style="border: 1px solid gray; zoom:80%;">
+<img src="./../images/defining-meta-tags.png" alt="Defining Meta Tags" title="Defining Meta Tags" style="border: 1px solid gray; zoom:80%;"/>
 
 
 You can define these tags at three levels:
