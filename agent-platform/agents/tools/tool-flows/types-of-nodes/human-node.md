@@ -60,6 +60,7 @@ sequenceDiagram
         HN ->> WF: Continue → Failure path
     end
 ```
+
 <hr>
 
 In this document, you’ll learn how to add a Human node to your canvas, configure custom input requests, define reviewer fields, and customize timeout and error-handling behavior.
