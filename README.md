@@ -42,7 +42,7 @@ xo                   # Dump of old docs
 .markdownlint.jsonc  # MD Linter
 .mintignore          # Exclusions from the Mintlify build
 docs.json            # Config, TOC, home page design, etc.
-home.mdx             # Docs home page 
+home.mdx             # Docs home page
 ```
 
 ## License
