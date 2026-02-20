@@ -26,15 +26,23 @@ Official documentation for the Kore.ai Platform — build intelligent AI solutio
 ## Folder structure
 
 ```
-content/             # Documentation content (MD and MDX formats)
-├── agent-platform/  # Agent Platform docs
-├── ai-for-work/     # AI for Work docs
-├── ai-for-service/  # AI for Service docs
-├── ai-for-process/  # AI for Process docs
-assets/
+agent-management-platform  # Agent Management Platform docs 
+agent-platform/            # Agent Platform docs
+ai-for-process/            # AI for Process docs
+ai-for-service/            # AI for Service docs
+ai-for-work/               # AI for Work docs
+assets/              # Common assets for all docs, mostly contains graphics
 ├── favicon.png
-.gitignore
-├── css-
+├── koreailogo.svg
+custom-css           # custom stylesheets
+├── style.css
+snippets             # Reusable content for single sourcing
+xo                   # Dump of old docs
+.gitignore           # Exclusions from repo uploads
+.markdownlint.jsonc  # MD Linter
+.mintignore          # Exclusions from the Mintlify build
+docs.json            # Config, TOC, home page design, etc.
+home.mdx             # Docs home page 
 ```
 
 ## License
