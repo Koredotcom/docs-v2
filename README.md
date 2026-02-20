@@ -9,20 +9,12 @@ Official documentation for the Kore.ai Platform — build intelligent AI solutio
 - **AI for Service** — Customer service AI solutions
 - **AI for Process** — Process automation with AI
 
-## Prerequisites
-
-- Node.js version ?
-
 ## Development
 
-```bash
-# Install Mintlify
-npm i -g mintlify
-
-# Create local build
-mint dev
-mint dev --port xxxx
-```
+* Install [Node.js](https://nodejs.org/en/download).
+* Install Mintlify `npm i -g mintlify`.
+* Create local build `mint dev` or `mint dev --port xxxx` in the cloned repo's root folder.
+* Preview deployments/stage links are in the [PRs](https://github.com/Koredotcom/docs-v2/pulls).
 
 ## Contribute
 
@@ -42,6 +34,7 @@ content/             # Documentation content (MD and MDX formats)
 assets/
 ├── favicon.png
 .gitignore
+├── css-
 ```
 
 ## License
