@@ -1,4 +1,4 @@
-# Integrate with S3 Bucket
+﻿# Integrate with S3 Bucket
 
 The S3 Storage Integration functionality broadens the Platform's capabilities by enabling connectivity with your AWS S3 account. It empowers you to import files from S3 and leverage them in developing high-quality AI applications for enterprises.
 
@@ -43,7 +43,7 @@ You can test your connection after you provide the details to verify the accurac
         If the connection fails a red icon is displayed corresponding to the name of the connection on the Connections list.
 
 
-## **How to use files from the connected S3 Buckets in the Tool Flow Builder**
+## How to use files from the connected S3 Buckets in the Tool Flow Builder
 
 Once a connection is created and the integration of S3 Bucket is successful you can use the files in the Flow builder canvas.
 

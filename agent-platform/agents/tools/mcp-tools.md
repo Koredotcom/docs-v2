@@ -1,4 +1,4 @@
-# About MCP Tools
+﻿# About MCP Tools
 
 The Model Context Protocol is an open standard that enables AI Agents to interact with external tools, data, and services. MCP acts as a universal translator or connector for AI agents, making it easy for LLMs to communicate with any tool without custom integration, using a standard interface.
 
@@ -71,7 +71,7 @@ This decoupling of the MCP server from the client allows for greater flexibility
 
 
 
-### **Example: Weather Check Agent via MCP Tools**
+### Example: Weather Check Agent via MCP Tools
 
 
 

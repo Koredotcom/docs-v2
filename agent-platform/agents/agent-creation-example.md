@@ -1,4 +1,4 @@
-# AI Agent Example: ProcurementInfoAgent
+﻿# AI Agent Example: ProcurementInfoAgent
 
 This example walks you through the complete process of configuring a new agent-based AI application.
 
@@ -121,7 +121,7 @@ Next, define the agents for the application. The app would require the following
 
 ---
 
-### **Summary**
+### Summary
 
 With this configuration, ProcurementInfoAgent demonstrates a clean separation of responsibilities:
 
