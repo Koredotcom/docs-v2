@@ -1,4 +1,4 @@
-# **Asana Connector**
+﻿# Asana Connector
 
 To search through the projects and tasks in your Asana application, configure the following connector in Search AI. This integration allows for a streamlined and efficient search experience. 
 

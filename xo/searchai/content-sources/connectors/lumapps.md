@@ -1,4 +1,4 @@
-# LumApps Connector
+﻿# LumApps Connector
 
 **LumApps** is a digital workplace platform that enhances internal communication, collaboration, and employee engagement within organizations. It serves as a centralized hub where employees can access company news, documents, and tools, and collaborate effectively.
 
@@ -148,7 +148,7 @@ You can also use **logical operators** to specify more than one condition to def
 ## RACL Support
 
 
-### **Content Objects**
+### Content Objects
 
 * In **LumApps**, various content objects such as **Pages, Custom Content, and News** can be shared with different user groups. This is controlled through the **Visible By** field in the UI, which determines accessibility. 
 
@@ -157,6 +157,6 @@ You can also use **logical operators** to specify more than one condition to def
 * For **Pages, Custom Content objects, and News**, the `sys_racl `field stores the groupID associated with the user group that has access to the content. The groupID is managed as a **Permission Entity**. SearchAI automatically resolves the permission entity, ensuring that users are correctly associated with the corresponding group ID.
 
 
-### **Community Posts**
+### Community Posts
 
 The `sys_racl` field stores the Community ID, ensuring that posts are visible only to authorized community members. The Community ID is managed as a Permission Entity. SearchAI automatically resolves the permission entity by identifying eligible members and associating them with the correct Community ID. 

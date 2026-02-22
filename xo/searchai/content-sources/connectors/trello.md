@@ -1,4 +1,4 @@
-# **Trello Connector**
+﻿# Trello Connector
 
 Trello is a project management and collaboration tool that utilizes **boards** and **cards** to organize tasks, projects, and workflows. Integrating **Search AI** with Trello enhances the accessibility of the content, making project management and team collaboration more streamlined and effective.
 

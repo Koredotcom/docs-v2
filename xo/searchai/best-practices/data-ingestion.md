@@ -1,4 +1,4 @@
-# Best Practices for Data Ingestion
+﻿# Best Practices for Data Ingestion
 
 The most crucial step in building a RAG solution is to ensure the correct data is ingested and available in the system. **Search AI** supports various **data sources**, including:
 
@@ -18,7 +18,7 @@ Search AI supports document ingestion in the following formats:
 Refer to the guidelines below for the optimum ingestion of content from documents. 
 
 
-### **Document Quality & Structure**
+### Document Quality & Structure
 
 For optimal processing and search accuracy, documents should:
 
@@ -31,7 +31,7 @@ For optimal processing and search accuracy, documents should:
 * Avoid unnecessary elements like headers, footers, and metadata that do not contribute to content relevance.
 
 
-### **Formatting & Layout Considerations**
+### Formatting & Layout Considerations
 
 
 
@@ -40,7 +40,7 @@ For optimal processing and search accuracy, documents should:
 * Documents should have **clear section headers and logical content organization** for improved readability and search effectiveness.
 
 
-### **Content & File Restrictions**
+### Content & File Restrictions
 
 To prevent data loss and ensure optimal retrieval:
 
@@ -52,7 +52,7 @@ To prevent data loss and ensure optimal retrieval:
 * **Avoid Scanned or heavily formatted files**, which may not be processed effectively.
 
 
-### **Media & Table Handling**
+### Media & Table Handling
 
 Search AI supports image and table extraction using a **layout-aware model**, but **only text is extracted by default**. To improve retrieval accuracy:
 
@@ -67,7 +67,7 @@ Search AI supports image and table extraction using a **layout-aware model**, bu
 ## Webpages/HTML Content
 
 
-### **Optimizing Web Page Structure**
+### Optimizing Web Page Structure
 
 
 
@@ -76,7 +76,7 @@ Search AI supports image and table extraction using a **layout-aware model**, bu
 * Websites using standard HTML tags (like, &lt;h1>, &lt;h2>, &lt;p>, &lt;img>, &lt;table>) provide the best results.
 
 
-### **Handling Non-Standard Web Content**
+### Handling Non-Standard Web Content
 
 
 
@@ -96,7 +96,7 @@ Search AI supports image and table extraction using a **layout-aware model**, bu
 * Avoid pulling in **entire datasets** from a connector, as unnecessary content can introduce noise and require additional fine-tuning.
 
 
-### **Performance Considerations**
+### Performance Considerations
 
 
 

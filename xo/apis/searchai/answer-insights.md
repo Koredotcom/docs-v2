@@ -1,4 +1,4 @@
---8<-- "includes/searchai-api-back-link.md"
+﻿--8<-- "includes/searchai-api-back-link.md"
 
 # Answer Insights API
 
@@ -49,7 +49,7 @@ Method
 
 
 
-## **Query Parameters**
+## Query Parameters
 
 
 <table>
@@ -73,7 +73,7 @@ Method
 
 
 
-## **Request Parameters**
+## Request Parameters
 
 
 <table>

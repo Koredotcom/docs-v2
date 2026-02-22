@@ -1,11 +1,11 @@
-# API Stage
+﻿# API Stage
 
 The API Stage for chunk enrichment enables you to connect with any third-party service and dynamically update or enrich content chunks. This is particularly useful when you need to augment chunks with external metadata, perform lookups, or apply additional transformations based on business logic. 
 
 You can invoke any RESTful API during this stage, and the response can be used to enhance the chunk before it proceeds further in the chunk processing pipeline. 
 
 
-## **API Stage Configuration**
+## API Stage Configuration
 
 Use the following properties to configure this stage. 
 
@@ -48,7 +48,7 @@ Use the following properties to configure this stage.
   }
   ```
 
-### **Testing and Mapping API Response**
+### Testing and Mapping API Response
 
 Click the **Test** button to send a request to the configured API. Enter the values of the context variables or inputs required, if any and click on **Pass Values**. The **Response** tab displays the data returned by the API. 
 

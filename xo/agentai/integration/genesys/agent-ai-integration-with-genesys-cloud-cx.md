@@ -1,4 +1,4 @@
-# Agent AI Integration with Genesys Cloud CX
+﻿# Agent AI Integration with Genesys Cloud CX
 
 Integration of Agent AI in Genesys is a significant enhancement to our solution. Previously limited to a single AI Agent and a department-specific approach, the solution has now been upgraded to support multiple bots and a queue-based functionality. This enhancement enables Genesys Cloud CX to offer a more flexible and scalable solution for businesses seeking to leverage AI to improve agent efficiency and customer satisfaction across multiple departments.
 
@@ -39,6 +39,28 @@ Integration of Agent AI in Genesys is a significant enhancement to our solution.
 <img src="../kore-data-table/architecture-diagram-voice-2.png" alt="architecture-diagram-voice" title="architecture-diagram-voice" style="border: 1px solid gray; zoom:80%;"/>
 
 ## Interaction Sequence 
+
+```mermaid 
+sequenceDiagram
+    participant G as Genesys
+    participant KM as Kore Middleware
+    participant KA as Kore Agent AI
+    participant KP as Kore Platform
+
+    G->>KM: 1. Interaction Widget URL<br/>(with param x_passthru_metadata and x_metadata)
+    activate KM
+    Note over KM: 2. Fetches x_passthru_metadata<br/>and build custom data payload
+    KM->>KA: 3. Fetch x_metadata and extract tablename and token.<br/>Make an API call to Agent AI to fetch bot credentials<br/>and kvpconfig from Kore Data Table
+    activate KA
+    KA-->>KM: 4. Return bot credentials, kvpconfig and public key
+    deactivate KA
+    Note over KM: 5. Generate JWE token with secure custom data
+    Note over KM: 6. Launches Agent AI Widget in iframe
+    KM->>KP: 7. customData with secureCustomData<br/>will be put in UserContext of the Bot
+    activate KP
+    deactivate KP
+    deactivate KM
+```
 
 <img src="../kore-data-table/interaction-sequence-3.png" alt="interaction-sequence" title="interaction-sequence" style="border: 1px solid gray; zoom:80%;"/>
 
@@ -281,7 +303,7 @@ Set up necessary permissions and app assignments and insert AI Agent-specific da
 **Multiple Queues Example**  
 <img src="../kore-data-table/multiple-queues-example-12.png" alt="multiple-queues-example" title="multiple-queues-example" style="border: 1px solid gray; zoom:80%;"/>
 
-## **Generate Oauth ID to enable Kore Services to Connect with Genesys**
+## Generate Oauth ID to enable Kore Services to Connect with Genesys
 
 **Steps to get Genesys OAuth ID**:  
 
@@ -312,7 +334,7 @@ Set up necessary permissions and app assignments and insert AI Agent-specific da
 After saving the configuration, you get the **Client Id** of the created OAuth client. Copy the ID and have it available for 
 [the next step](#create-an-interaction-widget-in-genesys-for-agent-ai).
 
-## **Create an Interaction Widget in Genesys for Agent AI**
+## Create an Interaction Widget in Genesys for Agent AI
 
 Create a new Interaction Widget. This widget is hosted in the Genesys agent desktop and provides the Agent AI solution features to agents.
 
@@ -457,7 +479,7 @@ To stream audio to third-party services, follow the below steps:
 
     **Audio Monitoring**: Voice settings on a Queue now have an additional **Audio Monitoring** option, separate from **Voice Transcription**. This allows granularity in what you turn on. The Audio Monitoring will be enabled in the queue, if Audiohook Monitor is enabled by the organization.
 
-## **Chat Setup**
+## Chat Setup
 
 ### Create/Update Architect Inbound Message Flow in Genesys for the Agent Queue
 
@@ -541,7 +563,7 @@ To deploy the Messenger snippet to your website, follow these steps:
 
         <img src="../kore-data-table/messenger-window-38.png" alt="messenger-window" title="messenger-window" style="border: 1px solid gray; zoom:80%;"/>
 
-## **(Optional) Install Audiohook for Voice Streaming**
+## (Optional) Install Audiohook for Voice Streaming
 
 The final step is to install Audiohook for voice streaming, if using Kore-managed Transcriptions.
 

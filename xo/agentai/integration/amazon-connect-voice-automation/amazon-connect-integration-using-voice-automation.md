@@ -1,4 +1,4 @@
-# Amazon Connect Integration with Kore using Amazon External Voice Connector (Voice Automation)
+﻿# Amazon Connect Integration with Kore using Amazon External Voice Connector (Voice Automation)
 
 This document outlines the steps for Kore users to integrate Kore Voice Automation with Amazon Connect, leveraging Amazon's external voice transfer capabilities. This setup enables voice transfers from Amazon Connect to a Voice Gateway and back, facilitating a seamless call experience through the Amazon Connect desktop.
 
@@ -17,7 +17,7 @@ This document outlines the steps for Kore users to integrate Kore Voice Automati
 
 ## Setup Instructions
 
-### **1. Enabling External Voice Transfer in Amazon Connect**
+### 1. Enabling External Voice Transfer in Amazon Connect
 
 Before setting up the integration, you must enable the "External voice systems" option in your Amazon Connect instance. Refer to [Set up Amazon Connect external voice transfer to an on-premise voice system](https://docs.aws.amazon.com/connect/latest/adminguide/external-voice-transfer.html){:target="_blank"} for more information. 
 
@@ -25,7 +25,7 @@ Before setting up the integration, you must enable the "External voice systems" 
 * **Accessing the Option**: Once approved, the "External voice systems" option becomes visible in your Amazon Connect console.  
 <img src="../images/external-voice-systems-1.png" alt="external-voice-systems" title="external-voice-systems" style="border: 1px solid gray; zoom:80%;"/>  
 
-### **2. Creating an External Voice Transfer Connector** 
+### 2. Creating an External Voice Transfer Connector 
 
 After enabling the feature, create a connector under **Voice transfer integrations** to link Amazon Connect with your Voice Gateway.  
 
@@ -42,7 +42,7 @@ After enabling the feature, create a connector under **Voice transfer integratio
 * The final configuration appears as shown in the following screenshot:  
 <img src="../images/test-kore-connector-3.png" alt="test-kore-connector" title="free text" style="border: 1px solid gray; zoom:80%;"/>  
 
-### **3. Configuring the Amazon Connect Flow**  
+### 3. Configuring the Amazon Connect Flow  
 
 The next step involves modifying your Amazon Connect flow to utilize the newly created external voice connector.  
 
@@ -54,7 +54,7 @@ The next step involves modifying your Amazon Connect flow to utilize the newly c
 * **Enable "Resume flow after disconnect"**: Set this option to "Yes." This step ensures that after the call ends with the third-party system (Voice Gateway), the call is transferred back to Amazon Connect, facilitating a continuous flow and correlation between Amazon Connect and the Kore system.  
 <img src="../images/destination-arn-5.png" alt="destination-arn" title="destination-arn" style="border: 1px solid gray; zoom:80%;"/>  
 
-### **4. Configuring Contact Center AI (Kore Side Configuration)** 
+### 4. Configuring Contact Center AI (Kore Side Configuration) 
 
 On Kore side, specific configurations are required in Contact Center AI (CCAI) to receive and manage calls transferred from Amazon Connect.  
 
@@ -66,7 +66,7 @@ On Kore side, specific configurations are required in Contact Center AI (CCAI) t
 * **Attach to Start Flow**: Once the configuration is complete, attach this number to the relevant Experience Flow within Kore.  
 <img src="../images/start-flows-7.png" alt="start-flows" title="start-flows" style="border: 1px solid gray; zoom:80%;"/>   
 
-### **End-to-End Call Flow** 
+### End-to-End Call Flow 
 
 The following steps describe the call flow after this integration:  
 
@@ -207,9 +207,9 @@ Open the Amazon Connect instance and add the last lambda function (koreRetrieveS
 
         You can also import the contact flow (.JSON file) from this [link](https://raw.githubusercontent.com/Koredotcom/korecc-twilio/refs/heads/master/AmazonConnect/Metadata%20passing%20via%20External%20voice%20connector/contact%20flows/transfertokore_sipconnector_metadata_passing.json){:target="_blank"} (right-click and save as **.JSON**).  
 
-### **Kore Side Configuration**
+### Kore Side Configuration
 
-#### **In CCAI**
+#### In CCAI
 
 * **Start Flows**  
 

@@ -1,4 +1,4 @@
-
+﻿
 
 
 
@@ -146,7 +146,7 @@ Good descriptions should be:
 * Contextual: Explain when users typically need this.
 
 
-#### **Example: Poor Scoping (High Collision Risk)**
+#### Example: Poor Scoping (High Collision Risk)
 
 The following use cases will all be retrieved for queries like "where is my order?"—causing confusion:
 
@@ -158,7 +158,7 @@ The following use cases will all be retrieved for queries like "where is my orde
 * Get_Order_Information
 
 
-#### **Example: Well-Scoped, Semantically Separated Use Cases**
+#### Example: Well-Scoped, Semantically Separated Use Cases
 
 
 

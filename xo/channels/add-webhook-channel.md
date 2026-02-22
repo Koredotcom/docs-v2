@@ -1,4 +1,4 @@
---8<-- "includes/digital-channels-back-link.md"
+﻿--8<-- "includes/digital-channels-back-link.md"
 
 # Adding WebHook as a channel
 
@@ -1332,7 +1332,7 @@ Here is the sample curl to use pollId to fetch the response:
 
 
 
-### **Change Conversation Language Response**
+### Change Conversation Language Response
 
 Here is the sample response for the change conversation language:
 
@@ -1365,7 +1365,7 @@ Here is the sample response for the change conversation language:
 
 
 
-### **Close Conversation Session Event Responses**
+### Close Conversation Session Event Responses
 
 Here are sample responses for the `SESSION_CLOSURE`:
 
@@ -1459,7 +1459,7 @@ The Webhook API can be used to send attachments from the end users to the app. F
 ### Option 1: Upload Files from Web URLs
 
 
-#### **Type 1 : Upload File with URL**
+#### Type 1 : Upload File with URL
 
 You can upload files hosted on external services by providing the Web URL of the file location. Make sure that the URL is accessible by the platform.
 
@@ -1496,7 +1496,7 @@ curl -X POST
 For parameter descriptions, refer to the [request parameters](#request-parameters) table.
 
 
-#### **Type 2:  Using fileId obtained from [file upload API](../apis/automation/upload-file.md)**
+#### Type 2:  Using fileId obtained from [file upload API](../apis/automation/upload-file.md)
 
 You can upload a file using the **fileId** obtained from file upload API. The following example uses a webhook instance when multiple webhook channels are configured:
 

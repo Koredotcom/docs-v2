@@ -1,4 +1,4 @@
-# Agent AI Widget
+﻿# Agent AI Widget
 
 The Agent AI is an AI powered solution to optimize contact center agent performance. It offers seamless assistance, promoting enhanced productivity and improved customer satisfaction. Its user-friendly interface and real-time support capabilities let agents effortlessly solve complex customer interactions.
 
@@ -141,7 +141,7 @@ Agents can now click the **Generate Summary** button in the Assist tab to genera
 The following screenshot shows the agent-generated summaries with timestamps along with the end-of-summary auto-generated summary:  
 <img src="../widget-images/summary-generation.jpg" alt="summary-generation" title="summary-generation" style="border: 1px solid gray; zoom:80%;"/>
 
-#### **Attachment Support**
+#### Attachment Support
 
 AgentAssist accepts file or image attachments during live conversations. If the file or image is not automatically detected, you can override and manually attach the file. To maintain system efficiency, attachments are limited to one file at a time and must not exceed 25 MB in size.
 
@@ -169,7 +169,7 @@ The following error messages, along with an “exclamation” mark and count, ap
 * For an unsupported file sent by the customer or attached by the agent:  
 <img src="../WidgetContentUpdate_3.3.0/unsupported-file_5.png" alt="unsupported-file" title="unsupported-file" style="border: 1px solid gray; zoom:80%;"/>
 
-#### **In-line Digital Form**
+#### In-line Digital Form
 
 The in-line digital forms in the Assist tab lets you easily collect customer information during live conversations. To use this feature, configure the forms with dialog tasks, and select “Open inline form” in the Web/Mobile SDK Form Behavior setting.  
 <img src="../WidgetContentUpdate_3.3.0/open-inline-form_6.png" alt="open-inline-form" title="open-inline-form" style="border: 1px solid gray; zoom:80%;"/>
@@ -259,7 +259,7 @@ This section lists the supported languages and lets you select a language of you
 
 <img src="../widget-images/settings-tab-help&support-language.png" alt="settings-tab-help&support-language.png" title="settings-tab-help&support-language.png" style="border: 1px solid gray; zoom:80%;"/>
 
-### **Theme Selection**
+### Theme Selection
 
 This section lets you customize the widget’s appearance with the help of a theme (dark or light). To select it, go to the widget’s Settings tab, and select Dark or Light.  
 <img src="../WidgetContentUpdate_3.3.0/theme-icon.png" alt="widget-theme-selection" title="widget-theme-selection" style="border: 1px solid gray; zoom:80%;"/>

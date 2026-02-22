@@ -1,4 +1,4 @@
---8<-- "includes/searchai-api-back-link.md"
+﻿--8<-- "includes/searchai-api-back-link.md"
 
 # Permission Entity APIs
 
@@ -41,7 +41,7 @@ This API lists all the permission entities associated with a connector.
 
 
 
-### **Query Parameters**
+### Query Parameters
 
 <table>
   <tr>
@@ -133,7 +133,7 @@ This API lists all the permission entities associated with a connector.
   </tr>
 </table>
 
-### **Sample Response**
+### Sample Response
 
 ```
 [
@@ -196,7 +196,7 @@ This API returns the details of the request permission entity. It lists the user
   </tr>
 </table>
 
-### **Query Parameters**
+### Query Parameters
 
 <table>
   <tr>
@@ -233,7 +233,7 @@ This API returns the details of the request permission entity. It lists the user
   </tr>
 </table>
 
-### **Sample Response**
+### Sample Response
 
 ```
 {
@@ -287,7 +287,7 @@ This API is used to associate users to a Permission Entity. You can add new user
 
 
 
-### **Query Parameters**
+### Query Parameters
 
 
 <table>
@@ -327,7 +327,7 @@ This API is used to associate users to a Permission Entity. You can add new user
 
 
 
-### **Sample Request Body**
+### Sample Request Body
 
 To associate a user with a permission entity, use the following as the request body. 
 
@@ -375,7 +375,7 @@ This API removes a user already associated with the permission entity.
   </tr>
 </table>
 
-### **Query Parameters**
+### Query Parameters
 
 
 <table>
@@ -413,7 +413,7 @@ This API removes a user already associated with the permission entity.
   </tr>
 </table>
 
-### **Sample Request Body**
+### Sample Request Body
 
 To delete a user from a permission entity, use the following as the request body. 
 
