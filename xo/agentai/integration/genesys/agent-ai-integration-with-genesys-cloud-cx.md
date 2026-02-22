@@ -40,6 +40,28 @@ Integration of Agent AI in Genesys is a significant enhancement to our solution.
 
 ## Interaction Sequence 
 
+```mermaid 
+sequenceDiagram
+    participant G as Genesys
+    participant KM as Kore Middleware
+    participant KA as Kore Agent AI
+    participant KP as Kore Platform
+
+    G->>KM: 1. Interaction Widget URL<br/>(with param x_passthru_metadata and x_metadata)
+    activate KM
+    Note over KM: 2. Fetches x_passthru_metadata<br/>and build custom data payload
+    KM->>KA: 3. Fetch x_metadata and extract tablename and token.<br/>Make an API call to Agent AI to fetch bot credentials<br/>and kvpconfig from Kore Data Table
+    activate KA
+    KA-->>KM: 4. Return bot credentials, kvpconfig and public key
+    deactivate KA
+    Note over KM: 5. Generate JWE token with secure custom data
+    Note over KM: 6. Launches Agent AI Widget in iframe
+    KM->>KP: 7. customData with secureCustomData<br/>will be put in UserContext of the Bot
+    activate KP
+    deactivate KP
+    deactivate KM
+```
+
 <img src="../kore-data-table/interaction-sequence-3.png" alt="interaction-sequence" title="interaction-sequence" style="border: 1px solid gray; zoom:80%;"/>
 
 This document provides detailed, step-by-step instructions for setting up the integration of the Agent AI widget in the Genesys environment.
