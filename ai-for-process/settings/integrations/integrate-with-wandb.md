@@ -1,4 +1,4 @@
-# Integrate with Weights and Biases
+﻿# Integrate with Weights and Biases
 
 Connecting with Weights and Biases (WandB) allows users to link to the platform, ensuring that the fine-tuning data associated with the model being refined in AI for Process is seamlessly transmitted to the WandB console for additional analytics.
 
@@ -24,7 +24,7 @@ Connecting with Weights and Biases (WandB) allows users to link to the platform,
 1. Click **Confirm** to create a connection.
 
 
-## **Testing your connection to Weights & Biases**
+## Testing your connection to Weights & Biases
 
 You can test your connection after you provide the details to verify the accuracy of the details.
 
