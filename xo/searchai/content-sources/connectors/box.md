@@ -1,4 +1,4 @@
-# **Box Connector**
+﻿# Box Connector
 
 To enhance the search capabilities for your content stored in Box, configure the following connector in Search AI. This integration allows for a streamlined and efficient search experience. 
 

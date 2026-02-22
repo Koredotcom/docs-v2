@@ -1,4 +1,4 @@
-# Task Execution Logs
+﻿# Task Execution Logs
 
 The **Task Execution Logs** feature helps you gain in-depth insights into the task execution-related data and assess your AI Agent’s performance in executing tasks. 
 
@@ -367,7 +367,7 @@ The platform imposes restrictions on the number of log statements retained per A
 * Statements older than 7 days are removed.
 
 
-## **Task Execution Logs Analysis**
+## Task Execution Logs Analysis
 
 The following sections describe more about the options available on the Task Execution Logs page and the analysis of the records captured here.
 

@@ -1,4 +1,4 @@
-[ :octicons-arrow-left-24: Back to NLP Topics](../../../nlp-topics.md)
+﻿[ :octicons-arrow-left-24: Back to NLP Topics](../../../nlp-topics.md)
 
 # Advanced NLP Configurations
 
@@ -665,7 +665,7 @@ Disable (default)
   
 </table>
 
-## **Machine Learning Engine Settings**
+## Machine Learning Engine Settings
 
 ### Split Compound Words
 
@@ -813,13 +813,13 @@ This is a **Custom** configuration, to enable follow the steps below:
 
       This configuration is not available in Spell Correction Version 2 is enabled for the app.
 
-## **Ranking and Resolver Engine Settings**
+## Ranking and Resolver Engine Settings
 
 ### Intent Elimination Rules
 
 There are a few safeguard rules in the R&R engine that reject a possible ML match. For example, rejection of intent when the user input contains only a verb word. But chances are that you do not want the R&R engine to apply any elimination rules and present all the qualified/winning intents to the end-users for resolving any ambiguity. Disabling this setting gives you that flexibility and NOT eliminate the intents that match the rules like single verb match (ML & FM), an entity only match with CR sentence (ML), earlier pattern match (multi-sentence scenario) (FM), or earlier definitive match (multi-sentence scenario) (All).
 
-## **Knowledge Graph Engine Settings**
+## Knowledge Graph Engine Settings
 
 ### Cosine Similarity Dampening
 
@@ -868,7 +868,7 @@ This is a **Custom** configuration, to enable follow these steps:
     <br>Enabling this setting would add the following configurations for Term settings – Term Display Name, Auto Qualify Path, and the following configurations would not be available – Path Coverage and Minimum and Definitive Level for Knowledge Tasks. <a href="#taxonomy-based-kg" target="_blank">Learn more</a>.</p>
     </div>
 
-## **Fundamental Meaning Engine Settings**
+## Fundamental Meaning Engine Settings
 
 ### Default Maximum Wildcards for Intent Patterns
 

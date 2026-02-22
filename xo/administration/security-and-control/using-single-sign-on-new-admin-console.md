@@ -1,4 +1,4 @@
-# Single Sign-On - New Admin Console
+﻿# Single Sign-On - New Admin Console
 
 Use the Single Sign-On (SSO) page in the **Security & Control** module to configure SSO, 2FA, and enterprise security keys in the Admin Console.
 
@@ -97,7 +97,7 @@ There are two ways SAML can be used within Platform:
 * For developer authentication to access the App Builder,  
 * For user authentication to access the App.
 
-#### **Use case 1: App builder authentication.**
+#### Use case 1: App builder authentication.
 
 Enterprises can set up access to the App builder tool using the enterprise SSO. App developers and admins can log into app builder using SSO done by the enterprise identity provider.
 
@@ -112,7 +112,7 @@ Enterprises can set up access to the App builder tool using the enterprise SSO. 
 
 Refer below [to configure SSO using SAML](#configuring-sso-using-saml)
 
-#### **Use case 2: End-user authentication**
+#### Use case 2: End-user authentication
 
 In this scenario, the chat interface is embedded on the customer portal or Mobile app that requires user authentication via SSO.  
 The App access is automatically limited to authenticated users. If the task requires API invocation that requires SSO-based authentication, the developer can follow the below steps
@@ -157,7 +157,7 @@ Complete the following steps to configure Single Sign-On (SSO) using Security As
            * Manage Data Tables and Views  
    7. **Exclude RequestedAuthnContext in request** - Enable this option to remove RequestedAuthnContext from SAML authentication requests.
 
-#### **Okta for AI for ServiceSSO**
+#### Okta for AI for ServiceSSO
 
 To configure Single Sign-On in *Okta* for AI for Service, you must first add the AI for Service app to your *Okta* account, and then copy URLs and the security certificate from *Okta* into your AI for Service account. This topic describes how to add the AI for Service app to your *Okta* account and then access the URLs and certificate needed for the AI for Service configuration for SSO using *Okta*.
 
@@ -233,7 +233,7 @@ To test the configuration, log off the Admin Console and log on again. The Okta 
       * Manage Data Tables and Views  
 * **Exclude RequestedAuthnContext in request** - Enable this option to remove RequestedAuthnContext from SAML authentication requests.
 
-#### **OneLogin for AI for Service SSO**
+#### OneLogin for AI for Service SSO
 
 To configure Single Sign-On in AI for Service using *OneLogin*, you must first add the AI for Service app to your *OneLogin* account and then copy URLs and the security certificate from *OneLogin* into your AI for Service account. This topic describes how to add the AI for Service app to your *OneLogin* account and then access the URLs and certificate needed for the AI for Service configuration for SSO using *OneLogin*.
 
@@ -291,7 +291,7 @@ To test the configuration, log off the Admin Console and log on again. The **One
       * Manage Data Tables and Views  
 * **Exclude RequestedAuthnContext in request-** Enable this option to remove RequestedAuthnContext from SAML authentication requests.
 
-#### **AI for Service SSO for Bitium**
+#### AI for Service SSO for Bitium
 
 To configure Single Sign-On in *Bitium* for AI for Service, you must first add the AI for Service app to your *Bitium* account and then copy URLs and the security certificate from *Bitium* into your AI for Service account. This topic describes how to add the AI for Service app to your *Bitium* account and then access the URLs and certificate needed for the AI for Service configuration for SSO using *Bitium*.
 
@@ -354,7 +354,7 @@ To complete this procedure, you must have already selected *Bitium* as a SAML pr
 
 9. Select **Create**.
 
-#### **Attributes for ADFS**
+#### Attributes for ADFS
 
 When you configure Single Sign-On using LDAP for ADFS, in addition to authentication attributes, your third-party SSO provider can send additional attributes to AI for Service through the **Assertion Consumer Service (ACS) URL** or **Callback URL**.
 

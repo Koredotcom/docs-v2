@@ -1,4 +1,4 @@
-# **Zendesk Connector**
+﻿# Zendesk Connector
 
 You can easily configure SearchAI to connect to the Zendesk application to enable users to fetch query results using the content in **Zendesk Knowledge Base articles and Tickets**. This integration ensures that Zendesk content is readily accessible, improving user productivity and search efficiency.
 

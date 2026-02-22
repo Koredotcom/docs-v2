@@ -1,4 +1,4 @@
-# **YouTrack Connector**
+﻿# YouTrack Connector
 
 YouTrack is a **project management and issue tracking tool**, primarily designed to streamline software development and agile workflows. 
 

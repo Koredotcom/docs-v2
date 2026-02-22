@@ -1,4 +1,4 @@
-# Using Single Sign-On
+﻿# Using Single Sign-On
 
 On the Admin Console **Single Sign-On** page, in the **Security & Control** module of the Admin Console, you can configure Single Sign-On (SSO) authentication for your AI for Service managed users using the following:
 
@@ -179,7 +179,7 @@ To configure Single Sign-On in _Okta_ for AI for Service, you must first add the
 
 To complete this procedure, you must have already selected _Okta_ as a SAML provider on the **Single Sign On** page in the Admin Console.
 
-#### **To add the AI for Service app to Okta**
+#### To add the AI for Service app to Okta
 
 1. Log on to _Okta_.
 2. On the **Home** page, click **Admin**. The **Dashboard** page is displayed.
@@ -258,7 +258,7 @@ To configure Single Sign-On in AI for Service using _OneLogin_, you must first a
 
 To complete this procedure, you must have already selected _OneLogin_ as a SAML provider on the **Single Sign On** page in the Admin Console.
 
-#### **To add the AI for Service app to OneLogin**
+#### To add the AI for Service app to OneLogin
 
 * Log on to _OneLogin_.
 * On the **APPS** menu, click **Add Apps**. The **Find Applications** page is displayed.

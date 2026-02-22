@@ -1,4 +1,4 @@
-[ :octicons-arrow-left-24: Back to NLP Topics](../../nlp-topics.md)
+﻿[ :octicons-arrow-left-24: Back to NLP Topics](../../nlp-topics.md)
 
 # Creating a Knowledge Graph from CSV or JSON Files
 
@@ -43,7 +43,7 @@ Each of the above categories needs to be preceded by the appropriate header. The
 
 Moving forward, this article discusses detailed information for each section and the content expected for each.
 
-### **FAQ**
+### FAQ
 
 This contains the actual questions and answers along with the alternate questions, answers, and extended answers.
 
@@ -69,7 +69,7 @@ The following column details can be used:
 * **ReferenceId**: reference to any external content used as a source for this FAQ
 * **Display Name**: The name that would be used for presenting the FAQ to the end-users in case of ambiguity.
 
-### **Nodes**
+### Nodes
 
 This section includes settings for both nodes and tags.
 
@@ -87,7 +87,7 @@ This section includes settings for both nodes and tags.
 <li><b>Traits</b>: Traits for this node/tag.</li></p>
 </div>
 
-### **Synonyms**
+### Synonyms
 
 Use this section to enter the synonyms as key-value pairs.
 
@@ -103,14 +103,14 @@ Use of synonyms in KG term identification can be enabled using the following:
     * **parameter**: *useBotSynonyms* in this case.
     * **value**: Set to true or false.
 
-### **KG Params**
+### KG Params
 
 * **KG Params**: mandatory entry in the header, must be blank in the following rows.
 * **lang**: App language code. For example, “en” for English.
 * **stopwords**: Comma-separated values.
 <img src="../images/kg-params.png" alt="kg params" title="kg params" style="border: 1px solid gray; zoom:75%;">
 
-### **Traits**
+### Traits
 
 Trait related information can be specified as follows:
 

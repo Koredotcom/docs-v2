@@ -1,4 +1,4 @@
-# **Amazon S3 Connector**
+﻿# Amazon S3 Connector
 
 The Amazon S3 Connector allows seamless integration between Amazon S3 and Search AI, enabling the ingestion of files stored in Amazon S3 buckets into the Search AI platform. By connecting to an Amazon S3 account, users can retrieve and make their content available for intelligent search and analysis.
 
