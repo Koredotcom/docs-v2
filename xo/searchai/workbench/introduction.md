@@ -1,4 +1,4 @@
-# Workbench Overview
+﻿# Workbench Overview
 
 Workbench is a tool that allows you to process and enhance the ingested content. Workbench transforms data through a series of steps called **Stages**. You can use Workbench to update content, add metadata, clean data to exclude certain pages, etc. By improving the quality of your content, you can enhance the accuracy of answers and thereby, the search experience. For example, if you don't want confidential information to appear in the answers, you can set up an exclude document stage that excludes chunks containing the word ‘Confidential’ in the title or the body of the chunk.
 
@@ -23,7 +23,7 @@ Workbench supports the following stages:
 * **API Stage**: This stage enables you to connect with any third-party service and dynamically update or enrich content chunks.
 * **LLM Stage**: This stage allows you to leverage the capabilities of an external LLM to refine, update, or enrich the chunks.
 
-## **Adding a new stage to the Workbench**
+## Adding a new stage to the Workbench
 
 Adding a new stage requires defining the type of stage, the condition that selects the data on which the processing is to be done, and the outcome of the stage. 
 

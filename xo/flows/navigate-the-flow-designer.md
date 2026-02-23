@@ -1,4 +1,4 @@
-# Navigate the Flow Designer
+﻿# Navigate the Flow Designer
 
 Once your Flow entry is created, the **Flow Designer** is displayed. The initial "Start" node is created by default, so you can begin creating the Flow from it.
 <img src="../images/start-node.png" alt="Start Node" title="Start Node" style="border: 1px solid gray; zoom:70%;">
@@ -12,7 +12,7 @@ The Flow Designer includes the following elements:
 5. The Mini Map.
 <img src="../images/flow-designer-page-sections.png" alt="Flow Designer Elements" title="Flow Designer elements" style="border: 1px solid gray; zoom:70%;">
 
-## **The Toolbar**
+## The Toolbar
 
 The toolbar provides access to the following:
 

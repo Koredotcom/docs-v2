@@ -1,4 +1,4 @@
---8<-- "includes/searchai-api-back-link.md"
+﻿--8<-- "includes/searchai-api-back-link.md"
 
 # Jobs API
 
@@ -39,7 +39,7 @@ This API is used to get the details of a job. The response of this API varies as
 </table>
 
 
-## **Query Parameters**
+## Query Parameters
 
 <table>
   <tr>
@@ -68,7 +68,7 @@ This API is used to get the details of a job. The response of this API varies as
   </tr>
 </table>
 
-## **Sample Response**
+## Sample Response
 
 This is a sample response generated for a job initiated to export analytics data to a file. The response includes the URL of the file which has the exported data. 
 

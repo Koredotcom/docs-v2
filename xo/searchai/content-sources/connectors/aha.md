@@ -1,4 +1,4 @@
-# **Aha! Connector**
+﻿# Aha! Connector
 
 <span style="text-decoration:underline;">Specifications</span>
 

@@ -1,4 +1,4 @@
-# Google Drive Cloud Storage Connector
+﻿# Google Drive Cloud Storage Connector
 
 By setting up the Google Drive connector in Search AI, you can extend the search capabilities to your Google Drive cloud storage-managed content and provide a seamless experience.
 
@@ -127,14 +127,14 @@ You can define conditions based on the following parameters or add your paramete
 
 ![Example](images/googledrive/example3.png "Example")
 
-## **Access Control**
+## Access Control
 
 RACL is a method of controlling access to specific resources or information based on the roles of individual users within the organization. Refer to this to learn more about how SearchAI handles access control. 
 
 Google Drive Connector allows you to import user permissions and access lists from the GDrive repository along with the content and other metadata for the content and present the answers according to the users’ access rights. For instance, you will only see answers generated from a Google Drive file if you can access that file.
 
 
-### **Handling Google Drive File Permissions**
+### Handling Google Drive File Permissions
 
 SearchAI application supports **file-level** permissions through Google Drive Connector. Search AI supports the following access types in GDrive. 
 
@@ -157,7 +157,7 @@ Similarly, if the files are accessible to a user and a user group in Google Driv
 ![Domain level Access](images/googledrive/racl/example4.png "Domain Level Access")
 
 
-### **Handling User Groups or Domain level access in Google Drive**
+### Handling User Groups or Domain level access in Google Drive
 
 When a file access is given to a user group or a domain, the group name or domain name is stored as a Permission Entity in Search AI. In this case, Search AI requires additional information to identify and resolve user identities. You need to associate individual users within the group or the domain to the Permission Entity to enable those users access to the file. 
 
@@ -166,7 +166,7 @@ To correctly associate users with the relevant permission entity, use the Permis
 Example: Suppose a file is shared with a user group, `hr-domain@example.com`. This group is stored as a permission entity within Search AI. If the HR team consists of five members who need access to this file, you should use the[ Permission Entity API](../../../apis/searchai/permission-entity-apis.md) to add the user IDs of these five team members to the corresponding permission entity.
 
 
-### **Enabling RACL**
+### Enabling RACL
 
 You can enable or disable RACL for any content ingested from Google Drive using the following options under the **Permissions and Security** tab. 
 

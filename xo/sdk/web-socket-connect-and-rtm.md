@@ -1,4 +1,4 @@
-# Web Socket Connect & RTM
+﻿# Web Socket Connect & RTM
 
 Kore.ai SDK libraries use the WebSocket channel to communicate with the Platform. When using the Kore Platform SDKs, only the JWT token must be generated and passed to the client SDK.
 
@@ -11,11 +11,11 @@ This section describes how the Kore.ai SDKs initialize a WebSocket session and i
 * Make sure to register the client app.
 * Generate the Client ID and Secret Key in the Platform.
 
-### **Step1**
+### Step1
 
 The JWT is generated on the server side using client app credentials and user information. The JWT is passed to the client app.
 
-### **Step 2**
+### Step 2
 
 The client app exchanges the JWT token for the `accessToken` on the Platform using the following Platform endpoint. \
 `POST \
@@ -32,7 +32,7 @@ This section describes how to format the request to post a message in a chat wit
 }
 ```
 
-#### **Sample cURL**
+#### Sample cURL
 
 ```json
 curl 'https://{{APIHost}}/api/1.1/oAuth/token/jwtgrant' \
@@ -65,7 +65,7 @@ The following sample JSON response shows the `accessToken` and the user associat
 }
 ```
 
-### **Step 3**
+### Step 3
 
 The client app acquires the WebSocket URL using the following endpoint.
 
@@ -89,7 +89,7 @@ This section describes how to format the request to get the web socket URL with 
 ```
 The `accessToken` is passed in the `bearer` parameter in the Authorization header.
 
-#### **Sample cURL**
+#### Sample cURL
 
 
 ```json

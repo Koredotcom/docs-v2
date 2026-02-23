@@ -1,4 +1,4 @@
-# Audit Logs - New Admin Console
+﻿# Audit Logs - New Admin Console
 
 This module provides the history of all administrative tasks with attributes such as **User Name**, **User Email,** **Date/Time**, and **Description** for an event. You can review the **Audit Report** page to analyze admin users, custom admins, and user events such as log on, log off, and changes to system settings.
 
@@ -113,11 +113,11 @@ The following list describes the columns displayed in the admin console table.
 
 This section describes the controls on the **Action** bar on the **Chat History** page.
 
-##### **Using the Time Zone Field**
+##### Using the Time Zone Field
 
 The time against the chat history would be displayed in the **Time Zone** selected. By default, it is set to *Local*. You can change it using the **Change** link and then selecting the appropriate zone.
 
-##### **Using the Search Field**
+##### Using the Search Field
 
 The list of entries in an admin console table can be very large, depending on the size of your company, for example, a list of users. To find one or more specific users or groups, enter at least three characters in the Search field to begin find-as-you-type.
 
@@ -127,7 +127,7 @@ The list of entries in an admin console table can be very large, depending on th
 
 To view all entries, clear the search field and then press the **Enter** key.
 
-##### **Select Timestamp**
+##### Select Timestamp
 
 Set the duration for which the Chat History needs to be retrieved:
 
@@ -135,11 +135,11 @@ Set the duration for which the Chat History needs to be retrieved:
 * 24 hours – default setting.  
 * Last 90 Days.
 
-##### **Export**
+##### Export
 
 You can use the export icon next to the Filters option to export the Chat History (Sessions) results in the CSV format.
 
-##### **Filters**
+##### Filters
 
 Filter based on:
 

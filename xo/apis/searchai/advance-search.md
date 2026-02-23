@@ -1,4 +1,4 @@
---8<-- "includes/searchai-api-back-link.md"
+﻿--8<-- "includes/searchai-api-back-link.md"
 
 # Advance Search API - V2
 
@@ -38,7 +38,7 @@ This API enables you to retrieve answers and search results related to a specifi
   </tr>
 </table>
 
-## **Query Parameters**
+## Query Parameters
 
 
 <table>
@@ -60,7 +60,7 @@ This API enables you to retrieve answers and search results related to a specifi
   </tr>
 </table>
 
-## **Request Parameters**
+## Request Parameters
 
 
 <table>

@@ -1,4 +1,4 @@
-# Human Node – Pause for Review and Approval
+﻿# Human Node – Pause for Review and Approval
 
 The Human Node introduces a human-in-the-loop capability within automation workflows. It allows workflows to pause and incorporate human judgment into automated processes. Designated users can review, approve, or provide input before the workflow continues, ensuring critical steps are validated, decisions are accurate, and compliance requirements are met. This capability is especially useful when certain decisions cannot be automated and require manual validation, oversight, or confirmation.
 
@@ -139,7 +139,7 @@ Supports parallel branching.
 
 Once configured, the Human node pauses workflow execution at the defined step, sends the approval request to the reviewer’s Inbox, and resumes automatically based on the reviewer’s decision or timeout configuration. [Learn more](../../inbox.md)
 
-## **Testing the Flow with Inbox Approvals**
+## Testing the Flow with Inbox Approvals
 
 Once you configure a Human node in a workflow, you can test how approval requests appear and behave in the Inbox during runtime. This validation step ensures that both the workflow logic and Human-in-the-Loop (HITL) interactions work as expected.
 
