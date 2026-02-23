@@ -1,4 +1,4 @@
-# Using the Confluence Action Templates
+﻿# Using the Confluence Action Templates
 
 You can use the **Prebuilt Action Templates** from your Confluence integration to auto-create dialog tasks and test them using the **Talk to Bot** option.
 
@@ -35,7 +35,7 @@ The following Confluence action is supported in the latest version of the XO Pla
 </table>
 
 
-### **Create Content**
+### Create Content
 
 Steps to create content using the Confluence integration:
 

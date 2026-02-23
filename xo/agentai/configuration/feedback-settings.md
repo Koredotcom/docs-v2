@@ -1,4 +1,4 @@
-
+﻿
 # Feedback Settings 
 
 The Feedback Settings section lets you configure how agents provide feedback on the Agent AI widget. It includes two types of feedback: 
@@ -6,11 +6,11 @@ The Feedback Settings section lets you configure how agents provide feedback on 
 * **Context-Specific Feedback**: Configure up to six predefined negative feedback messages for Dialog Tasks, Answers, FAQs, and Summaries, but enable only five per subsection at a time. To enable a sixth, you must first disable another. These options appear in the widget after agents select the “thumbs down” icon. You can edit these messages (limited to 25 words each), include a comment box for any additional input, and set the display language.  
 * **Overall Widget Feedback**: Configure up to six positive and six negative feedback messages, but enable only five from each category at a time. To enable a sixth, you must first disable another. You can also choose to display or hide an additional comment box and select a display language. By default, this feature remains in disabled status.  
 
-## **Configure Feedback Messages**
+## Configure Feedback Messages
 
 The Feedback Settings section has five subsections–Dialog Task Feedback, Answers Feedback, FAQ Feedback, Summary Feedback, and Overall Widget Feedback. These subsections include predefined feedback messages, which you can edit by clicking the “edit” button next to them. 
 
-### **Steps to Configure Feedback Messages**
+### Steps to Configure Feedback Messages
 
 1. Sign in to **XO Platform**.
 2. Go to **Agent AI** > **Configuration** > **Feedback Settings**.
@@ -25,7 +25,7 @@ The Feedback Settings section has five subsections–Dialog Task Feedback, Answe
 6. Configure the required feedback message, and press **Enter** to save it.
     <img src="../feedback-settings-images/configuring-a-feedback-message-3.png" alt="configuring-a-feedback-message" title="configuring-a-feedback-message" style="border: 1px solid gray; zoom:80%;"/>
 
-## **Enable or Disable Feedback Messages**
+## Enable or Disable Feedback Messages
 
 Only **Enabled** feedback messages appear in the Agent AI widget for agents to select. You can enable or disable any five messages out of the default six at any given time. To enable or disable a feedback message:
 
@@ -33,7 +33,7 @@ Only **Enabled** feedback messages appear in the Agent AI widget for agents to s
     <img src="../feedback-settings-images/enable-disable-feedback-messages-4.png" alt="enable-disable-feedback-messages" title="enable-disable-feedback-messages" style="border: 1px solid gray; zoom:80%;"/>  
 2. Click **Save**.
 
-## **Enable or Disable the Additional Comments Box**
+## Enable or Disable the Additional Comments Box
 
 The **Display additional comment** box appears in the Agent AI widget, only if you select it in the Feedback Settings section. To enable or disable it:
 
@@ -41,7 +41,7 @@ The **Display additional comment** box appears in the Agent AI widget, only if y
     <img src="../feedback-settings-images/display-additional-comment-box-enable-disable-5.png" alt="display-additional-comment-box-enable-disable" title="display-additional-comment-box-enable-disable" style="border: 1px solid gray; zoom:80%;"/>
 2. Click **Save**.
 
-## **Customize Language for the Feedback Messages**
+## Customize Language for the Feedback Messages
 
 The selected app's language appears by default as the feedback messages language. You can select or change the display language of the feedback messages from the available list. To select or change the language: 
 
@@ -49,7 +49,7 @@ The selected app's language appears by default as the feedback messages language
 5. Select a language, and click **Save**.
     <img src="../feedback-settings-images/change-feedback-message-language-6.png" alt="change-feedback-message-language" title="change-feedback-message-language" style="border: 1px solid gray; zoom:80%;"/>
 
-## **Feedback Settings appearance in the Agent AI Widget**
+## Feedback Settings appearance in the Agent AI Widget
 
 The feedback messages and additional comment box appear in the Agent AI widget only if you select and enable them in the XO Platform. If you don’t, only the “thumbs up” and “thumbs down” icons appear in the widget. If enabled and selected, the following options appear in the widget:
 

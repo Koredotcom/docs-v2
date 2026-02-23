@@ -1,4 +1,4 @@
-# Internal Transfers – SDK Integration Guide
+﻿# Internal Transfers – SDK Integration Guide
 
 This document explains how to use the `internalTransfer` method from the Agent AI SDK to handle different types of internal transfers during a conversation in the contact center desktop application.  
 It includes **context, rationale, and payload examples** for all scenarios: **Initial Request**, **Cold Transfers**, **Warm Transfers**, and **Redial Scenarios**.
@@ -190,7 +190,7 @@ aaWindowInstance.internalTransfer(data);
 This occurs when the conversation is **moved completely** from one agent to another.  
 At any time, only **one agent** is in the conversation.
 
-#### **New Agent Joins**
+#### New Agent Joins
 
 ```
 const data = {
@@ -323,7 +323,7 @@ In this scenario, Agent 1 accepts the call and redirects it to Agent 2 and later
 * **Agent 3 leaves** → `warm` + `exit`
 * Conversation ends → **Agent 1 exits** → `NA` + `exit`
 
-### **Redial Scenario**
+### Redial Scenario
 
 * Customer connects to **Agent 1** → `NA` + `entry`
 

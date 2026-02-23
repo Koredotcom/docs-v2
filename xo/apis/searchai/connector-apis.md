@@ -1,4 +1,4 @@
---8<-- "includes/searchai-api-back-link.md"
+﻿--8<-- "includes/searchai-api-back-link.md"
 
 # Connector APIs
 
@@ -42,7 +42,7 @@ This API returns the list of connectors configured for an application. For each 
 
 
 
-## **Query Parameters**
+## Query Parameters
 
 <table>
   <tr>
@@ -81,7 +81,7 @@ This API returns the list of connectors configured for an application. For each 
 
 
 
-## **Sample Response**
+## Sample Response
 
 
 ```json

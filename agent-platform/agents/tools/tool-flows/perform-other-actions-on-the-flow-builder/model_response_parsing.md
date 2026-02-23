@@ -1,4 +1,4 @@
-# Structured Response Parsing and Context Sharing in Workflows
+﻿# Structured Response Parsing and Context Sharing in Workflows
 
 When given a defined schema, the model produces structured data suitable for reuse across workflow steps. The system automatically parses the response and stores key values in a shared context object, eliminating the need for manual handling and reducing redundancy. This method enables different nodes to "communicate" by accessing shared data—ideal for workflows that involve both text and image handling.
 
@@ -11,7 +11,7 @@ When given a defined schema, the model produces structured data suitable for reu
 
 Here’s an example showing how model responses are automatically parsed, how individual keys are separated, and how context is used to pass data between nodes.
 
-#### **Step 1: Define the Response Schema**
+#### Step 1: Define the Response Schema
 
 In the AI node, attach a **response JSON schema** to define how you want the model to structure its response.
 
@@ -25,11 +25,11 @@ This schema guides the model to return its response in a structured JSON format 
 
 <img src="../images/define_response_schema.png" alt="Define response schema Variables" title="Define response schema" style="border: 1px solid gray; zoom:80%;"/>
 
-#### **Step 2: Automatic Parsing of the Model Response**
+#### Step 2: Automatic Parsing of the Model Response
 
 Once the model generates a response, the platform automatically parses the structured JSON output according to the schema you've defined. No manual parsing or code is needed—this happens in the background.
 
-#### **Step 3: Automatic Storage in Context**
+#### Step 3: Automatic Storage in Context
 
 Each key from the parsed response (e.g., `scientificname`, `year`, `scientist`) is automatically stored in the **context object** of the AI node.
 
@@ -40,7 +40,7 @@ This gives you fine-grained control over which pieces of data are used in other 
 
 <img src="../images/storage_context.png" alt="Automatic storage in context" title="Automatic storage in context" style="border: 1px solid gray; zoom:80%;"/>
 
-#### **Step 4: Reuse Keys in Later Nodes**
+#### Step 4: Reuse Keys in Later Nodes
 
 The stored context values can now be used in any subsequent nodes. For example: `{{context.steps.AI0001.output.scientificname}}`
 
@@ -48,7 +48,7 @@ You no longer need to re-parse the response or write custom code to extract thes
 
 <img src="../images/reuse_keys.png" alt="reuse keys" title="reuse keys" style="border: 1px solid gray; zoom:80%;"/>
 
-#### **Step 5: View Structured Output During Execution**
+#### Step 5: View Structured Output During Execution
 
 When the tool runs:
 

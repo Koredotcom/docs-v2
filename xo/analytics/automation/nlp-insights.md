@@ -1,4 +1,4 @@
-# NLP Insights
+﻿# NLP Insights
 
 The NLP Insights feature helps you gain in-depth insights into the analytics data and assess your AI Agent’s performance in identifying and executing tasks. You can improve your AI Agent’s performance based on the insights. 
 
@@ -418,7 +418,7 @@ If it is a multi-lingual AI Agents, you can select specific languages to filter 
 
 
 
-## **NLP Insights Analysis**
+## NLP Insights Analysis
 
 The following sections describe more about the options available on NLP Insights page and the analysis of the records captured here.
 

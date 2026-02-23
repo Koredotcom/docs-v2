@@ -1,4 +1,4 @@
-# Introduction to Custom Dashboard
+﻿# Introduction to Custom Dashboard
 
 Custom Dashboard allows you to design your dashboards to meet business needs using a combination of built-in metrics and custom KPIs based on the user’s demographic or context information to provide a more tailored and relevant view of the data.
 
@@ -205,7 +205,7 @@ To understand how the Having clause works, see Filter the Messages using the Hav
 
 
 
-##### **End-user Vs. Developer Interactions**
+##### End-user Vs. Developer Interactions
 
 By default, the end-user interactions are displayed for all the datasets in the Custom Dashboards. If you want to display the developer interactions, use the `isdeveloper` flag to filter the interactions as follows:
 

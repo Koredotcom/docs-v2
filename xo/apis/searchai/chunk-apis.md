@@ -1,4 +1,4 @@
---8<-- "includes/searchai-api-back-link.md"
+﻿--8<-- "includes/searchai-api-back-link.md"
 
 # Chunks APIs
 
@@ -39,7 +39,7 @@ This API returns the complete list of chunks that satisfy the given condition in
   </tr>
 </table>
 
-## **Query Parameters**
+## Query Parameters
 
 
 <table>
@@ -61,7 +61,7 @@ This API returns the complete list of chunks that satisfy the given condition in
   </tr>
 </table>
 
-## **Request Parameters**
+## Request Parameters
 
 
 <table>
@@ -155,7 +155,7 @@ For instance, if the value of the filter field is set as shown below, then a log
 
 
 
-## **Sample Response**
+## Sample Response
 
 
 ```
@@ -234,7 +234,7 @@ This API is used to update a given chunk. The parameters provided in the request
 
 
 
-## **Query Parameters**
+## Query Parameters
 
 
 <table>
@@ -266,11 +266,11 @@ This API is used to update a given chunk. The parameters provided in the request
 
 
 
-## **Request Parameters**
+## Request Parameters
 
 It is mandatory to pass the whole of this chunk info in the request body.  The field names should match as in the example below. 
 
-## **Sample Request**
+## Sample Request
 
 
 ```
@@ -285,7 +285,7 @@ It is mandatory to pass the whole of this chunk info in the request body.  The f
 ```
 
 
-## **Sample Response**
+## Sample Response
 
 ```json
 {

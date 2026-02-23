@@ -1,4 +1,4 @@
-# ServiceNow Connector
+﻿# ServiceNow Connector
 
 You can connect to the ServiceNow application to enable users to fetch query results using the knowledge articles managed by ServiceNow. The connector now supports real-time synchronization through webhook integration, ensuring your Search AI index stays up-to-date with changes in ServiceNow.
 
@@ -50,7 +50,7 @@ You can connect to the ServiceNow application to enable users to fetch query res
 To configure the ServiceNow connector, follow the steps listed below.
 
 
-## **Step 1: Configure an OAuth endpoint in ServiceNow**
+## Step 1: Configure an OAuth endpoint in ServiceNow
 
 If you are using **Basic authentication**, you can skip this step. To use **OAuth 2.0** for authentication, set up an OAuth endpoint in your ServiceNow instance. Refer to[ this documentation](https://docs.servicenow.com/bundle/washingtondc-platform-security/page/administer/security/task/t_CreateEndpointforExternalClients.html) for step-by-step instructions to do the same. Use one of the following Redirect URLs as per your region and deployment.
 
