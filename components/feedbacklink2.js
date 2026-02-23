@@ -11,8 +11,8 @@ export const FeedbackLink = ({ children }) => {
   }, []);
 
   // Update these with your specific Google Form details 
-  const formBase = "https://docs.google.com/forms/d/e/YOUR_FORM_ID/viewform?usp=pp_url";
-  const entryId = "entry.123456789"; // The ID for your 'URL' field 
+  const formBase = "https://docs.google.com/forms/d/e/1FAIpQLScS7Iv0uIYXSdxhZtwzxVZi4K0pg0-7dX23xIQ0CF56YvIAzg/viewform";
+  const entryId = "entry.1427399686"; // The ID for your 'URL' field 
   
   const fullHref = `${formBase}&${entryId}=${currentUrl}`;
 
