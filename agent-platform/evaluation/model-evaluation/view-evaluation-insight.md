@@ -38,7 +38,7 @@ You can export the evaluation table to a CSV file for offline analysis or furthe
 3. Click the **three-dot menu** at the top-right corner of the evaluation table.
 4. Select **Export**.
 
- <img src="../../images/export_new.png" alt="Export" title="Export" style="border: 1px solid gray; zoom:80%;"/>
+ <img src="../../images/export_new.png" alt="Export" title="Export" class="border-2 border-gray-300 rounded-xl" />
 
 A CSV file containing the evaluation table is automatically downloaded to your system. The CSV file includes:
 

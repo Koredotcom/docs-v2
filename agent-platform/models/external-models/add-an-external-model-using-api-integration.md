@@ -7,17 +7,17 @@ You can connect an external model to Platform using API integration. This featur
 The steps to add an external model using API integration are given below:
 
 1. In the top navigation bar, click **Models**, and then select the **External Models** tab.
-<img src="../images/navigating-to-external-models1.png" alt="Navigating to External Models" title="Navigating to External Models" style="border: 1px solid gray; zoom:80%;"/>
+<img src="../images/navigating-to-external-models1.png" alt="Navigating to External Models" title="Navigating to External Models" class="border-2 border-gray-300 rounded-xl" />
 
 2. Click **Add a model**. The **Add an external model** dialog is displayed.
 
 3. Select the **Custom integration** option to connect models via API integration, and click **Next**.
 
 4. On the **Custom API integration** dialog, enter the **Connection name** and **Model endpoint URL**.  
-<img src="../images/custom-api-integration-general-details.png" alt="Custom API Integration General Details" title="Custom API Integration General Details" style="border: 1px solid gray; zoom:80%;"/>
+<img src="../images/custom-api-integration-general-details.png" alt="Custom API Integration General Details" title="Custom API Integration General Details" class="border-2 border-gray-300 rounded-xl" />
 
 5. Select the **Authorization profile** you want to use with the request payload from the configured options on the **Settings** console. [Learn more](../../settings/security-and-control/authorization-profile.md) about Auth Profiles. To proceed without authentication, choose ***None*** which is the default selection.
-<img src="../images/set-auth-profile-parameter.png" alt="set auth profile" title="set auth profile" style="border: 1px solid gray; zoom:80%;"/>
+<img src="../images/set-auth-profile-parameter.png" alt="set auth profile" title="set auth profile" class="border-2 border-gray-300 rounded-xl" />
 
 6. In the **Headers** section, specify the headers such as **Key** and **Value** that need to be sent along with the request payload. 
 
@@ -119,4 +119,4 @@ To manage an integration, click the three-dot icon corresponding to its name and
  * **Copy**: Make an editable copy of the integration details.
  * **Delete**: Remove the integration.
 
-<img src="../images/three-dots-icon-options.png" alt="Three Dots Icon Options" title="Three Dots Icon Options" style="border: 1px solid gray; zoom:80%;"/>
+<img src="../images/three-dots-icon-options.png" alt="Three Dots Icon Options" title="Three Dots Icon Options" class="border-2 border-gray-300 rounded-xl" />
