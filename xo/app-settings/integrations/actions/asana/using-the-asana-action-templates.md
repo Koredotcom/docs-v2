@@ -1,4 +1,4 @@
-
+﻿
 # Using the Asana Action Templates
 
 You can use the **Prebuilt Action Templates** from your Asana integration to auto-create dialog tasks and test them using the **Test** option.
@@ -69,7 +69,7 @@ The following Asana action is supported in the latest version of the XO Platform
 
 
 
-### **Get Task by ID**
+### Get Task by ID
 
 Steps to fetch a task with ID from the Asana integration:
 
@@ -134,7 +134,7 @@ Steps to fetch a task with ID from the Asana integration:
 <img src="../images/asana_template-img9.png" alt="View task" title="View task" style="border: 1px solid gray;zoom:50%;"/>
 
 
-### **Find Tasks Created by a User**
+### Find Tasks Created by a User
 
 Steps to fetch tasks created by a user from the Asana integration:
 
@@ -225,7 +225,7 @@ Steps to fetch tasks created by a user from the Asana integration:
 <img src="../images/asana_template-img14.png" alt="View task" title="View task" style="border: 1px solid gray;zoom:50%;"/>
 
 
-### **Find Tasks Assigned to a User**
+### Find Tasks Assigned to a User
 
 Steps to fetch tasks created by a user from the Asana integration:
 
@@ -314,7 +314,7 @@ Steps to fetch tasks created by a user from the Asana integration:
 8. You will notice that a task is found with the ID on Asana. Expand and click the **View Task** button.
 
 
-### **List All Projects**
+### List All Projects
 
 Steps to retrieve all projects from the Asana integration:
 
@@ -377,7 +377,7 @@ Steps to retrieve all projects from the Asana integration:
 7. You will notice that all projects are found on Asana. Expand and click the **View Project** button.
 
 
-### **List All Users**
+### List All Users
 
 Steps to retrieve all users from the Asana integration:
 

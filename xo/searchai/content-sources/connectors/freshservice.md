@@ -1,4 +1,4 @@
-# Freshservice Connector 
+﻿# Freshservice Connector 
 
 Freshservice is a modern IT service management and team collaboration platform designed to help organizations streamline IT operations, manage incidents, and provide exceptional support efficiently. You can use the Search AI connector for Freshservice to ingest and index content from your Freshservice account and set up seamless search capabilities.
 
@@ -125,7 +125,7 @@ If the domain is <code>mydomaindotai</code>, the <code>sys_racl</code> field app
 ---
 
 
-### **4. Departments**
+### 4. Departments
 
 Files are accessible only to members of specific departments. A permission entity is created corresponding to each department. 
 
@@ -141,7 +141,7 @@ Files are accessible only to members of specific departments. A permission entit
 ---
 
 
-### **5. Agent Groups**
+### 5. Agent Groups
 
 Access is restricted to specific agent groups. A permission entity is created corresponding to each agent group in Freshservice. 
 
@@ -157,7 +157,7 @@ Access is restricted to specific agent groups. A permission entity is created co
 ---
 
 
-### **6. Requester Groups**
+### 6. Requester Groups
 
 Files are accessible only to specific requester groups.
 
@@ -175,7 +175,7 @@ Files are accessible only to specific requester groups.
 ---
 
 
-### **7. Agents by Workspace**
+### 7. Agents by Workspace
 
 Files are restricted to agents within a specific workspace.
 

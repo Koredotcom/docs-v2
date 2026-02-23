@@ -1,4 +1,4 @@
-# AI-Assisted Manual Audit
+﻿# AI-Assisted Manual Audit
 
 The AI-Assisted Manual Audit feature provides supervisors and quality assurance teams with an intelligent platform to evaluate agent-customer interactions across voice and chat channels. This combines artificial intelligence capabilities with manual oversight to streamline performance assessments, ensure compliance with quality standards, and enable data-driven coaching for continuous improvement. 
 
@@ -338,7 +338,7 @@ Displays Agent-specific performance data metrics.
 * **Empathy Score**: Agent utterance empathy measurement.    
 <img src="../ai-assist-manual-edit/images/agent-speech-insights.png" alt="Audit Screen" title="Audit Screen" style="border: 1px solid gray; zoom:80%;"/>
 
-#### **Audit-Specific Conversation Detail View**
+#### Audit-Specific Conversation Detail View
 
 The Audit screen integrates keyword search functionality directly into the conversation evaluation workflow. Filters applied on the **Conversation Mining** page carry over to this Audit screen. The conversation detail view presents the full transcript of the call or chat.
 

@@ -1,4 +1,4 @@
-# Platform Concepts and Terminology
+﻿# Platform Concepts and Terminology
 
 This glossary lists the key terms and concepts related to the Platform.
 
@@ -305,7 +305,7 @@ Count: Two
 			
 
 
-## **L**
+## L
 
 **Live agent handoff**: An agents ability to [seamlessly take a conversation from any channel and bring in a human agent](https://www.youtube.com/watch?v=ye9ahAWIzFs&feature=youtu.be). This function is especially useful for areas such as service, support and ITSM.
 
