@@ -50,7 +50,7 @@ Each model can have multiple deployments, which are tracked independently. The D
     <td><b>Status</b></td>
     <td>
     The status of deployment: Deploying, Optimizing, Failed, Ready to Deploy, or Deployed.
-  </ul>
+  </td>
 </td>
     </tr>
     <tr>
