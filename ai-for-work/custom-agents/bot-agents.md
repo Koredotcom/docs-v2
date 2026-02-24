@@ -51,7 +51,7 @@ To create a webhook channel on the Bot and complete the integration process, fol
 1. Copy the **Bot client ID** and **Bot secret ID** to use in the platform to complete the integration.
     <img src="../images/webhook_botID.png" alt="Admin Console" title="Admin Console" style="border: 1px solid gray; zoom:70%;"/>
 
-1. Under the **Configured Channels** section, click the <**Name of the Bot**> you have created and want to integrate, enables the channel.
+1. Under the **Configured Channels** section, click the name of the bot you have created and want to integrate, enables the channel.
 
 !!! note
 

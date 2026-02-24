@@ -59,7 +59,7 @@ Follow these steps to create a new Autonomous Agent:
 
 5. Appearance and Behavior: The **Appearance and Behavior** section displays sample queries to test the agent’s behavior.
      1. Click **+Add Query** to input additional test queries.
-     2. Enable **Allow End User Notification** toggle to enable notification configuration and agent trigger setup, For detailed instructions, refer [Notifications](../custom-agents/notify-api.md)</a>.
+     2. Enable **Allow End User Notification** toggle to enable notification configuration and agent trigger setup, For detailed instructions, refer [Notifications](../custom-agents/notify-api.md).
      3. Enable **Clear End-User Chat History** toggle to automatically delete the agent's chat history for end users after a specified period.
      4. Once validated, click **Publish** to move to the final step.
      <img src="../images/Advance_Agentic_App_3.png" alt="Admin Console" title="Admin Console" style="border: 1px solid gray; zoom:70%;"/>
