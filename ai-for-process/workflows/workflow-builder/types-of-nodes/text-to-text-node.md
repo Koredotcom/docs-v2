@@ -133,9 +133,7 @@ To add workflows, click the **Workflow Calling** icon. When you select a model t
 
 Finally, test the flow and fix any issues found. Click the **Run Flow** button at the top-right corner of the flow builder and follow the onscreen instructions.
 
-<Note>
-
-    When the Model is not selected, the prompt details are not provided, or both, the following error message is displayed: “Proper data needs to be provided in the LLM node”.</Note>
+<Note>When the Model is not selected, the prompt details are not provided, or both, the following error message is displayed: “Proper data needs to be provided in the LLM node”.</Note>
 
 ## Access the AI Node’s Output
 

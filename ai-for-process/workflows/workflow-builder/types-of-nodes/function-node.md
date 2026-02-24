@@ -217,7 +217,6 @@ Data is stored in the memory stores in JSON format and follows the [JSON Schema 
 * Refer to the schema of the memory store for field names and data types.
 * Handle error conditions.
 
-
 -->
 
 ### Execute a Custom Function 
@@ -270,17 +269,13 @@ To select a function the node must execute, follow the steps below:
     <img src="../images/search-function.png" alt="search function" title="search function" style="border: 1px solid gray; zoom:75%;"/></ul></p>
     </div>
  
- 
 When you select a function, the **Input Arguments** section appears. Arguments are automatically detected from the script and filled in the UI for you if specified in the function. If not, you must add values for each input parameter defined in the function, as discussed below.
 
 #### Step 3: Map Input Arguments
 
 The next step is to map input arguments of the selected function to static or dynamic values based on the selected data type, as discussed below.
 
-<div class="admonition note">
-<p class="admonition-title">Important</p>
-<p>By default, all arguments passed to the function are currently sent as 'string'. If your function requires other data types, please select the required type from the data type dropdown list in the <b>Input Arguments</b> section. The supported types include <i>String</i>, <i>Number</i>, <i>JSON</i>, and <i>Boolean</i>.</p>
-</div>
+<Note>By default, all arguments passed to the function are currently sent as 'string'. If your function requires other data types, please select the required type from the data type dropdown list in the <b>Input Arguments</b> section. The supported types include <i>String</i>, <i>Number</i>, <i>JSON</i>, and <i>Boolean</i> </Note>
 
    <img src="../images/data-type-dropdown.png" alt="select data type" title="select data type" style="border: 1px solid gray; zoom:75%;"/>
 

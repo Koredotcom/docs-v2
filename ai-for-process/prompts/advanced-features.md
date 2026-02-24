@@ -47,7 +47,7 @@ You can easily generate custom test datasets without manually creating data. By 
 **Steps to generate custom test data:**
 
 1. **Define the prompt**: In the prompt canvas, enter your prompt describing the dataset you want to generate. For example, "Generate a job description with job title, experience, and location."
-2. **Add the variables**: Include variables in double curly braces. For example, {{Job Title}}, {{Experience}}, and {{Location}}. Once you add the variables, the **Test data** option is displayed.
+2. **Add the variables**: Include variables in double curly braces. For example, `{{Job Title}}`, `{{Experience}}`, and `{{Location}}`. Once you add the variables, the **Test data** option is displayed.
 3. **Generate dataset**: Click **Test data > Generate test data**. In the Generate test data dialog, specify the type of model and number of rows and click **Generate**. The system generates the dataset based on the prompt and number of data points.
 
     <img src="../images/generate_test_data_dialog.png" alt="Import test data dialog" title="Import test data dialog" class="border-2 border-gray-300 rounded-xl" />

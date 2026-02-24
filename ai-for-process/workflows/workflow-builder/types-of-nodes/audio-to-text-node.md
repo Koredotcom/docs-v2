@@ -124,10 +124,11 @@ Metrics include:
 
 ### Step 1: Open Flow Builder
 
-* Log in → In AI for Process Modules top menu → Click **Workflows**.
-  <img src="../images/access-workflows.png" alt="access workflows" title="access workflows" style="border: 1px solid gray; zoom:75%;"/>
+* Log in → In AI for Process Modules top menu and click **Workflows**.
 
-* Select your workflow → Click **Go to Flow**.
+    <img src="../images/access-workflows.png" alt="access workflows" title="access workflows" style="border: 1px solid gray; zoom:75%;"/>
+
+* Select your workflow and click **Go to Flow**.
 
 ### Step 2: Add the Node
 
@@ -137,7 +138,8 @@ Metrics include:
 ### Step 3: Configure the Node
 
 * Click the added node to open its properties dialog box. The **General Settings** for the node are displayed.
-  <img src="../images/properties-dialog-audio-to-text.png" alt="properties dialog" title="properties dialog" style="border: 1px solid gray; zoom:75%;"/>
+
+    <img src="../images/properties-dialog-audio-to-text.png" alt="properties dialog" title="properties dialog" style="border: 1px solid gray; zoom:75%;"/>
 
 * Enter or select the following **General Settings**:
     * **Node Name**: Enter an appropriate name for the node. For example, “*CustomerSupportConversation*.”
@@ -150,28 +152,23 @@ Metrics include:
     
       You can use a hardcoded instruction like "<i>Use direct speech and highlight words related to problems and challenges in the voice/audio file</i>," when a static audio file URL input is provided in the Start node. 
     
-      Alternatively, you can add dynamic prompt instructions referencing different audio file URLs from the Start node using the syntax: `{{context.steps.Start.variable_name}}`, where <i>variable_name</i> stores the audio file URL. 
+      Alternatively, you can add dynamic prompt instructions referencing different audio file URLs from the Start node using the syntax: `{{context.steps.Start.variable_name}}`, where `variable_name` stores the audio file URL. 
       
-      For example, if “<i>ConversationFile</i>” stores the audio file URL (passed dynamically during runtime), you can reference it in the prompt using the syntax <code>{{context.steps.Start.ConversationFile}}</code>, as shown below.
-      <img src="../images/dynamic-prompt-example.png" alt="dynamic prompt example" title="dynamic prompt example" style="border: 1px solid gray; zoom:75%;"/>
+      For example, if `ConversationFile` stores the audio file URL (passed dynamically during runtime), you can reference it in the prompt using the syntax `{{context.steps.Start.ConversationFile}}`.
+
+         <img src="../images/dynamic-prompt-example.png" alt="dynamic prompt example" title="dynamic prompt example" style="border: 1px solid gray; zoom:75%;"/>
     
       You may include simple instructions regarding the style of the transcription, correct words or proper nouns, in case the model couldn't figure out what the spoken word was, fix punctuations, add context, and more. 
       
-      For example, "<i>Use a clean verbatim transcription style by omitting filler words such as “um,” “uh,” or “you know.” Correct any misheard or unclear words, especially product names, company names, and technical terms. Ensure proper punctuation and sentence casing to make the transcript easy to read. If a word is not clear, mark it as "inaudible" with a timestamp. Add short speaker labels (Customer: and Agent:) and make light contextual corrections for grammar and clarity without altering the original meaning."</i>
+      For example, `Use a clean verbatim transcription style by omitting filler words such as "um," "uh," or "you know." Correct any misheard or unclear words, especially product names, company names, and technical terms. Ensure proper punctuation and sentence casing to make the transcript easy to read. If a word is not clear, mark it as "inaudible" with a timestamp. Add short speaker labels (Customer: and Agent:) and make light contextual corrections for grammar and clarity without altering the original meaning.`
 
-    <div class="admonition note">
-    <p class="admonition-title">Note</p>
-    <p>Whisper models process up to <b>224 tokens</b> in the input prompt and ignore any input exceeding this limit.</p>
-    </div>
+    <Note>Whisper models process up to <b>224 tokens</b> in the input prompt and ignore any input exceeding this limit. </Note>
                 
-    <div class="admonition warning">
-    <p class="admonition-title">Standard Error</p>
-    <p>When the Model isn't selected, the prompt details aren't provided, or both, the error message “<i>Proper data needs to be provided in the LLM node</i>” is displayed.</p>
-    </div>
+    <Note>When the Model isn't selected, the prompt details aren't provided, or both, the error message `Proper data needs to be provided in the LLM node` is displayed.</Note>
 
     * **Response JSON schema**:  Define a JSON schema for structured responses. This step is optional and depends on the selected model.   
     You can define a JSON schema to structure the model's response if the chosen model supports the response format. By default, if no schema is provided, the model will respond with plain text.
-    Supported JSON schema types include: String, Boolean, Number, Integer, Object, Array, Enum, and anyOf. Ensure the schema follows the standard outlined here: [Defining JSON schema](../perform-other-actions-on-the-flow-builder/defining-json.md). 
+    Supported JSON schema types include: `String`, `Boolean`, `Number`, `Integer`, `Object`, `Array`, `Enum`, and `anyOf`. Ensure the schema follows the standard outlined here: [Defining JSON schema](../perform-other-actions-on-the-flow-builder/defining-json.md).
     If the schema is invalid or mismatched, errors will be logged, and you must resolve them before proceeding.  
     For more information about how the model parses the response and separates keys from the content body, see: [Structured Response Parsing and Context Sharing in Workflows](../perform-other-actions-on-the-flow-builder/model_response_parsing.md).
 
@@ -179,10 +176,10 @@ Metrics include:
 * Click the **Connections** icon and select the **Go to Node** for success and failure conditions. 
    <img src="../images/connections-audio-to-text.png" alt="click connections" title="click connections" style="border: 1px solid gray; zoom:75%;"/>
 
-     * **On Success** > <b>Go to Node</b>: After the current node is successfully executed, go to a selected node in the flow to execute next, such as an AI node, Function node, Condition node, API node, or End node.
-     * **On Failure** > <b>Go to Node</b>: If the execution of the current node fails, go to the End node to display any custom error message from the <b>Audio to Text</b> node.
+     * **On Success** > **Go to Node**: After the current node is successfully executed, go to a selected node in the flow to execute next, such as an AI node, Function node, Condition node, API node, or End node.
+     * **On Failure** > **Go to Node**: If the execution of the current node fails, go to the End node to display any custom error message from the **Audio to Text** node.
 
-* Finally, <a href="#step-3-run-the-flow" >run the flow</a> and fix any issues found.
+* Finally, <a href="#step-3-run-the-flow">run the flow</a> and fix any issues found.
 
 ## Test the Flow for the Node
 
@@ -193,22 +190,25 @@ Metrics include:
     <img src="../images/add-input-variable-audio-to-text.png" alt="add input variable" title="add input variable" style="border: 1px solid gray; zoom:75%;"/>
 
 * Select <b><i>Text</i></b> for the <b>Type</b> field in the <b>Enter input variable</b> window to define a text input variable.
-* Click <b>Save</b>.
+
+* Click **Save**.
     
     <img src="../images/select-text-type-input.png" alt="select text and save" title="select text and save" style="border: 1px solid gray; zoom:75%;"/>
 
 Add all the required input variables to run the flow in the **Input** section of the **Start** node.
 
-
 ### Step 2: Add Output Variable(s)
 
 * Click the **Output** tab for the **Start** node.
+
 * Click **Add Output Variable**.
     
     <img src="../images/click-add-output-variable.png" alt="click add output variable" title="click add output variable" style="border: 1px solid gray; zoom:75%;"/>
 
 * Enter the value for <b>Name (key)</b> and select <b><i>String</i></b> for <b>Type</b> to generate the transcribed text output.
+
 * Click <b>Save</b>. <a href="../text-to-text-node/#access-the-ai-nodes-output" >Learn more</a> about accessing the node’s output.
+
     <img src="../images/save-output-variable.png" alt="save output variable" title="save output variable" style="border: 1px solid gray; zoom:75%;"/>
 
 ### Step 3: Run the Flow
@@ -216,7 +216,8 @@ Add all the required input variables to run the flow in the **Input** section of
 To run and test the flow, follow the steps below:
 
 * Click the **Run Flow** button at the top-right corner of the flow builder.
-   <img src="../images/click-run-button.png" alt="click run button" title="click run button" style="border: 1px solid gray; zoom:75%;"/>
+
+    <img src="../images/click-run-button.png" alt="click run button" title="click run button" style="border: 1px solid gray; zoom:75%;"/>
 
 * (Optional) Add the value for **Input Variable** if you have configured it to test the flow. Otherwise, go directly to the next step.
     
@@ -226,4 +227,4 @@ To run and test the flow, follow the steps below:
 
   The **Debug** window generates the flow log and results, as shown below. [Learn more](../perform-other-actions-on-the-flow-builder/run-the-flow.md) about running the workflow.
 
-   <img src="../images/debug-window-audio-to-text.png" alt="debug window" title="debug window" style="border: 1px solid gray; zoom:75%;"/>
+    <img src="../images/debug-window-audio-to-text.png" alt="debug window" title="debug window" style="border: 1px solid gray; zoom:75%;"/>

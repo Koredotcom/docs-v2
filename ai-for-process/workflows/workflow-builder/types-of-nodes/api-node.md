@@ -52,8 +52,8 @@ Click the added node to open its properties dialog box. The General Settings for
 
 <table>
   <tr>
-   <td><strong>Field<strong> </td>
-   <td><strong>Description<strong></td>
+   <td><strong>Field</strong></td>
+   <td><strong>Description</strong></td>
   </tr>
   <tr>
    <td>Node Name
