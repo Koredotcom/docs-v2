@@ -49,6 +49,7 @@ Click the added node to open its properties dialog box. The General Settings for
 <img src="./../images/api-node-general-settings.png" alt="Go to Flow Canvas" title="Go to Flow Canvas" style="border: 1px solid gray; zoom:60%;"/>
 
 **General Settings**
+
 <table>
   <tr>
    <td><strong>Field<strong> </td>

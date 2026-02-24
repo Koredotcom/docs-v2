@@ -8,9 +8,7 @@ Key requirements
 * All workflow nodes must have a connection path back to the Start node.
 * Unconnected nodes will cause the workflow to fail.
 
-!!! note
-
-    You can reposition the Start node and all other nodes by dragging them anywhere on the canvas.
+<Note> You can reposition the Start node and all other nodes by dragging them anywhere on the canvas. </Note>
 
 ## Automation Features
 
@@ -58,9 +56,7 @@ Steps to configure the node:
 
 <img src="../images/add_trigger.png" alt="triggers" title="triggers" style="border: 1px solid gray; zoom:60%;"/>
 
-!!! note
-
-    Triggers must be active and enabled. Attachments from triggers are accessible via URL for 24 hours.
+<Note>Triggers must be active and enabled. Attachments from triggers are accessible via URL for 24 hours. </Note>
 
 ### Configure Time-Based Schedules
 

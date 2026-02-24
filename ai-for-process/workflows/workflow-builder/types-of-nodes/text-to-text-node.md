@@ -60,10 +60,8 @@ Setting up a Text to Text node in a workflow involves adding the node at the app
             Syntax: `{{context.variable_name}}`
             Example: `{{context.conversation}}`  
 
-        !!! note
-
-            System Prompts: These are instructions to guide how the model should respond. They define the overall behavior or tone of the model. For example: "You are a helpful assistant."   
-            Human Prompts: These are the questions or requests made by the user. They specify what the user wants the model to do or answer. For example: "Summarize this error log and tell me the likely cause of the issue."
+            <Note>System Prompts: These are instructions to guide how the model should respond. They define the overall behavior or tone of the model. For example: "You are a helpful assistant."   
+            Human Prompts: These are the questions or requests made by the user. They specify what the user wants the model to do or answer. For example: "Summarize this error log and tell me the likely cause of the issue."</Note>
 
 
         * **Choose a prompt from prompt hub:** If you select ‘Choose a prompt from prompt hub’, follow these steps:
@@ -74,9 +72,7 @@ Setting up a Text to Text node in a workflow involves adding the node at the app
 
         <img src="./../images/choose_prompt_with_variables_fields.png" alt="Choose a prompt" title="Choose a prompt" style="border: 1px solid gray; zoom:70%;"/>      
 
-        !!! note
-
-            Importing a Prompt with Variables: If you import a prompt from Prompt Studio with set variables, you can add the necessary variables in the ‘Map Variables’ field for that AI node.
+        <Note>Importing a Prompt with Variables: If you import a prompt from Prompt Studio with set variables, you can add the necessary variables in the ‘Map Variables’ field for that AI node.</Note>
 
             Importing a Prompt without Variables: If you import a prompt from Prompt Studio that does not have variables, you must customize the prompt and manually add the variables. In this case, the "Map Variables" field does not appear, as the imported prompt has no variables to map.
 
@@ -85,9 +81,7 @@ Setting up a Text to Text node in a workflow involves adding the node at the app
 
     4. **Timeout**: Select the timeout duration from the allowed range. The allowed range is 30 to 180 seconds (3 minutes). The default is 60 seconds (1 minute). The node triggers a timeout error if the request is not completed within the selected time frame.    
 
-        !!! note 
-
-            Timeout precedence: Workflow timeout *is greater than* Node timeout *is greater than* Model timeout.
+        <Note> Timeout precedence: Workflow timeout *is greater than* Node timeout *is greater than* Model timeout. </Note>
 
     5. **Response JSON schema**:  Define a JSON schema for structured responses. This step is optional and depends on the selected model.   
         You can define a JSON schema to structure the model's response if the chosen model supports the response format. By default, if no schema is provided, the model will respond with plain text.
@@ -120,9 +114,7 @@ Click the **Connections** icon and select the **Go to Node** for success and fai
 
 To add workflows, click the **Workflow Calling** icon. When you select a model that supports workflow calling, the ‘*workflow calling available*’ tab is displayed in the Properties panel. You can configure workflow calling settings from this tab.
 
-!!! note
-
-    When you attach workflows to the AI node, its details are sent to the model along with the request details. This enables the model to determine whether to resolve the input query, prompt, or request using its own knowledge or by calling the appropriate workflows. You can select up to three workflows for each AI node. 
+<Note> When you attach workflows to the AI node, its details are sent to the model along with the request details. This enables the model to determine whether to resolve the input query, prompt, or request using its own knowledge or by calling the appropriate workflows. You can select up to three workflows for each AI node. </Note>
 
 * **Add Workflows**: Click **Add Workflows** to add a workflow.
 
@@ -141,15 +133,15 @@ To add workflows, click the **Workflow Calling** icon. When you select a model t
 
 Finally, test the flow and fix any issues found. Click the **Run Flow** button at the top-right corner of the flow builder and follow the onscreen instructions.
 
-!!! Failure "Standard Error"
+<Note>
 
-    When the Model is not selected, the prompt details are not provided, or both, the following error message is displayed: “Proper data needs to be provided in the LLM node”.
+    When the Model is not selected, the prompt details are not provided, or both, the following error message is displayed: “Proper data needs to be provided in the LLM node”.</Note>
 
 ## Access the AI Node’s Output
 
 The node’s output is stored in a context variable. You can access the variable using the following syntax:
 `{{context.steps.AINodeName.output}}`
 
-!!! note
+<Note>
 
-    AI for Process can automatically recognize variables and outputs. To do so, type "context.steps." and you will see available variables and nodes, including the nodes' outputs.
+    AI for Process can automatically recognize variables and outputs. To do so, type "context.steps." and you will see available variables and nodes, including the nodes' outputs.</Note>
