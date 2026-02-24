@@ -42,7 +42,7 @@ Provide a suitable and unique **name** for the agent. Briefly describe the **pur
 
 For instance, if an agent is designed to answer all the user queries related to HR policies, specifying it as the purpose helps the system use this agent whenever a user sends a query related to any HR policy.
 
-<img src="../images/search_agents_1.png" alt="Details and Purpose" title="Details and Purpose" style="border: 1px solid gray; zoom:70%;">
+<img src="../images/search_agents_1.png" alt="Details and Purpose" title="Details and Purpose" style="border: 1px solid gray; zoom:70%;"/>
 
 ### Step 2: Configure Search Index
 
@@ -72,7 +72,7 @@ You need to associate four [API Scope](https://docs.kore.ai/xo/apis/automation/a
 
 If you select **Amazon Q**, you can integrate with your existing Amazon Q Index.
 
-<img src="../images/search_agents_2.png" alt="Details and Purpose" title="Details and Purpose" style="border: 1px solid gray; zoom:70%;">
+<img src="../images/search_agents_2.png" alt="Details and Purpose" title="Details and Purpose" style="border: 1px solid gray; zoom:70%;"/>
 
 To configure Amazon Q integration:
 
@@ -84,13 +84,13 @@ To configure Amazon Q integration:
     * **Application Location**: The AWS region where your Amazon Q Business application is deployed.
     * **IDC Location**: The AWS region where your AWS Identity Center instance is located.
 
-<img src="../images/search_agents_3.png" alt="Details and Purpose" title="Details and Purpose" style="border: 1px solid gray; zoom:70%;">
+<img src="../images/search_agents_3.png" alt="Details and Purpose" title="Details and Purpose" style="border: 1px solid gray; zoom:70%;"/>
 
 ### Step 3: Appearance and Behavior
 
 In the **Appearance and Behavior** section, a list of sample queries is displayed. If needed, you can add additional queries by clicking the **+ Add Query** button. Enable the **Clear End-User Chat History** toggle to automatically delete the agent's chat history for end users after a specified period. Once you're ready, click **Publish** to proceed to the next step.
 
-<img src="../images/search_agents_4.png" alt="Details and Purpose" title="Details and Purpose" style="border: 1px solid gray; zoom:70%;">
+<img src="../images/search_agents_4.png" alt="Details and Purpose" title="Details and Purpose" style="border: 1px solid gray; zoom:70%;"/>
 
 ### Step 4: Publish
 

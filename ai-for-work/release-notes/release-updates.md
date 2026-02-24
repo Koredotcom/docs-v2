@@ -8,7 +8,7 @@ This document provides information on the feature updates and enhancements intro
 
 This update includes new features and feature enhancements summarized below.
 
-</font></p><font size="4">New Feature</font>
+<font size="4">New Feature</font>
 
 **Slack Integration**
 
@@ -65,7 +65,7 @@ The HubSpot connector in Work - Agentic Search is optimized for improved query p
 
 This update includes new feature and feature enhancements summarized below.
 
-</font></p><font size="4">New Feature</font>
+<font size="4">New Feature</font>
 
 **Enterprise Directory**
 
@@ -105,7 +105,7 @@ Onboard partner domains without creating an enterprise account of their own. Thi
 
 This update includes new features and feature enhancement summarized below.
 
-</font></p><font size="4">New Features</font>
+<font size="4">New Features</font>
 
 **Omni Search (Beta)**
 
@@ -155,7 +155,7 @@ Enhanced Personal Workspace support agent sharing across all published users. Sh
 
 This update includes new features and feature enhancements summarized below.
 
-</font></p><font size="4">New Features</font>
+<font size="4">New Features</font>
 
 **Channels – Microsoft Teams and Copilot Integration**
 
@@ -220,7 +220,7 @@ We upgraded the **Agent Icons** across the platform to deliver a more modern, co
 
 This update includes new features and feature enhancements summarized below.
 
-</font></p><font size="4">New Features</font>
+<font size="4">New Features</font>
 
 **Agent Testing**
 
@@ -279,7 +279,7 @@ Improvised AI-generated code responses with dedicated code block components that
 
 This update includes new features, feature enhancements, and bug fixes summarized below.
 
-</font></p><font size="4">New Features</font>
+<font size="4">New Features</font>
 
 **Guardrails Security Framework**
 

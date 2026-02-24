@@ -43,10 +43,10 @@ This phase varies based on your chosen App Type (MultiTenant vs SingleTenant).
 **Generate Client Secret**
 
 1. In **Configuration**, click **Manage Password** next to the Microsoft App ID.
-<img src="../images/teams_1.png" alt="teams_1" title="teams_1" style="border: 1px solid gray; zoom:70%;">
+<img src="../images/teams_1.png" alt="teams_1" title="teams_1" style="border: 1px solid gray; zoom:70%;"/>
 
 2. Go to **Certificates & secrets** → **+ New client secret**.
-<img src="../images/teams_2.png" alt="teams_1" title="teams_1" style="border: 1px solid gray; zoom:70%;">
+<img src="../images/teams_2.png" alt="teams_1" title="teams_1" style="border: 1px solid gray; zoom:70%;"/>
 
 1. Enter description and expiry → **Add**.
 2. Copy the **Value** of the client secret (App Password).
@@ -62,7 +62,7 @@ Configure the bot to communicate with Microsoft Teams and enable Copilot integra
 
 1. Navigate to **Channels** in the bot resource menu and locate the **Available Channels** section.
 2. Select the **Microsoft Teams** channel and **M365 Extensions** channel (required for Copilot integration), review channel information, and select **Save**.
-<img src="../images/teams_3.png" alt="teams_1" title="teams_1" style="border: 1px solid gray; zoom:70%;">
+<img src="../images/teams_3.png" alt="teams_1" title="teams_1" style="border: 1px solid gray; zoom:70%;"/>
 
 !!!note
 
@@ -81,12 +81,12 @@ Enable the bot to send proactive notifications to users, which is essential for 
     * **Redirect URI**: Leave blank for this use case.
 3. Select **Register.**
 
-<img src="../images/teams_4.png" alt="teams_1" title="teams_1" style="border: 1px solid gray; zoom:70%;">
+<img src="../images/teams_4.png" alt="teams_1" title="teams_1" style="border: 1px solid gray; zoom:70%;"/>
 
 **Add Microsoft Graph Permissions**
 
 1. In the app registration, navigate to **API permissions** and select **Add a permission**.
-<img src="../images/teams_5.png" alt="teams_1" title="teams_1" style="border: 1px solid gray; zoom:70%;">
+<img src="../images/teams_5.png" alt="teams_1" title="teams_1" style="border: 1px solid gray; zoom:70%;"/>
 
 2. Select **Microsoft Graph** → **Application permissions.**
 
@@ -117,13 +117,13 @@ Provide Azure Bot credentials to the Platform to establish secure communication.
      * **Microsoft App Tenant ID**: (SingleTenant only) The tenant ID from the bot's app registration.
     * **Microsoft App ID**: The App ID from your Azure Bot resource.
     * **App Password**: The client secret from the bot's app registration.
-    <img src="../images/teams_6.png" alt="teams_1" title="teams_1" style="border: 1px solid gray; zoom:70%;">
+    <img src="../images/teams_6.png" alt="teams_1" title="teams_1" style="border: 1px solid gray; zoom:70%;"/>
 
     * **App ID of the Microsoft Teams App**:  The additional app credentials for sending the Proactive Notifications.
     * **Application (Client) ID**: From the notifications app registration.
     * **Client Secret**: From the notifications app registration.
     * **Delivery (Tenant) ID**: From the notifications app registration.
-    <img src="../images/teams_7.png" alt="teams_1" title="teams_1" style="border: 1px solid gray; zoom:70%;">
+    <img src="../images/teams_7.png" alt="teams_1" title="teams_1" style="border: 1px solid gray; zoom:70%;"/>
 
 **Customization Options**
 
@@ -146,7 +146,7 @@ Deploy the the Platform app to Microsoft Teams for user access.
 
 **Download Manifest**: Upon configuring credentials in the Platform, generate and download the Microsoft Teams application manifest file. This manifest file contains all the necessary configurations for integrating with Microsoft Teams.
 
-<img src="../images/teams_8.png" alt="teams_1" title="teams_1" style="border: 1px solid gray; zoom:70%;">
+<img src="../images/teams_8.png" alt="teams_1" title="teams_1" style="border: 1px solid gray; zoom:70%;"/>
 
 **Upload to Microsoft Teams Admin Center**
 
@@ -155,7 +155,7 @@ Deploy the the Platform app to Microsoft Teams for user access.
 1. Sign in to[ Microsoft Teams Admin Center](https://admin.teams.microsoft.com/)<span style="text-decoration:underline;">.</span>
 2. Navigate to **Microsoft Teams apps** → **Manage apps.**
 3. Click **Upload new app**.
-<img src="../images/teams_9.png" alt="teams_1" title="teams_1" style="border: 1px solid gray; zoom:70%;">
+<img src="../images/teams_9.png" alt="teams_1" title="teams_1" style="border: 1px solid gray; zoom:70%;"/>
 
 1. Select the downloaded manifest file from the Platform.
 2. Wait for upload and validation to complete.

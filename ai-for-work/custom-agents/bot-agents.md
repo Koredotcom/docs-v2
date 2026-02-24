@@ -18,11 +18,11 @@ To import an existing Bot Agent:
 
 1. Click the **Import Agent** button located in the upper-right
     corner.
-    <img src="../images/import_bot.png" alt="Admin Console" title="Admin Console" style="border: 1px solid gray; zoom:70%;">
+    <img src="../images/import_bot.png" alt="Admin Console" title="Admin Console" style="border: 1px solid gray; zoom:70%;"/>
 
 2. Select the .ZIP file of the existing
     agent.
-    <img src="../images/import_bot-agent.png" alt="Admin Console" title="Admin Console" style="border: 1px solid gray; zoom:70%;">
+    <img src="../images/import_bot-agent.png" alt="Admin Console" title="Admin Console" style="border: 1px solid gray; zoom:70%;"/>
 
 3. Click **Import** to complete the process. The imported agent appears on
     the Bot Agents page.
@@ -34,10 +34,10 @@ Create a new Bot agent to assist users in completing various tasks by utilizing 
 To create a new Bot Agent, follow these steps:
 
 1. In the **Admin Console**, click **AI Agents** from the left pane, and then select **Bot Agents**. Displays a list of available bot agents.
-    <img src="../images/bot-agent.png" alt="Admin Console" title="Admin Console" style="border: 1px solid gray; zoom:70%;">
+    <img src="../images/bot-agent.png" alt="Admin Console" title="Admin Console" style="border: 1px solid gray; zoom:70%;"/>
 
 2. On the Bot Agents page, click **+Create Agent**.
-    <img src="../images/create-agent.png" alt="Admin Console" title="Admin Console" style="border: 1px solid gray; zoom:70%;">
+    <img src="../images/create-agent.png" alt="Admin Console" title="Admin Console" style="border: 1px solid gray; zoom:70%;"/>
 
 3. You must link your Bot built on the AI for Service Platform and create a webhook channel. [Learn more](https://docs.kore.ai/xo/channels/add-webhook-channel/).
 
@@ -46,12 +46,12 @@ To create a webhook channel on the Bot and complete the integration process, fol
 1. Log in to the AI for Service Platform. Open the virtual assistant or the bot that you want to add the channels to. Navigate to **Deploy** > **Channels** > **Add More** > **Webhook**.
 
 1. Select your required app from the **Webhook** dialog.
-    <img src="../images/webhook_select_app.png" alt="Admin Console" title="Admin Console" style="border: 1px solid gray; zoom:70%;">
+    <img src="../images/webhook_select_app.png" alt="Admin Console" title="Admin Console" style="border: 1px solid gray; zoom:70%;"/>
 
 1. Copy the **Bot client ID** and **Bot secret ID** to use in the platform to complete the integration.
-    <img src="../images/webhook_botID.png" alt="Admin Console" title="Admin Console" style="border: 1px solid gray; zoom:70%;">
+    <img src="../images/webhook_botID.png" alt="Admin Console" title="Admin Console" style="border: 1px solid gray; zoom:70%;"/>
 
-1. Under the **Configured Channels** section, click the <**Name of the Bot**> you have created and want to integrate, enables the channel.
+1. Under the **Configured Channels** section, click the name of the bot you have created and want to integrate, enables the channel.
 
 !!! note
 
@@ -62,7 +62,7 @@ The **Prompt Agent creation** wizard will take you through the following steps:
 #### Step 1: Details and Purpose
 
 Provide a suitable and unique name for the agent and describe its purpose. Defining the agent's purpose enables it to accurately recognize its capabilities and effectively utilize them to respond to user queries aligned with the specified intent. Clearly outline the specific use cases for which you designed the agent.
-<img src="../images/detail-purpose.png" alt="Admin Console" title="Admin Console" style="border: 1px solid gray; zoom:70%;">
+<img src="../images/detail-purpose.png" alt="Admin Console" title="Admin Console" style="border: 1px solid gray; zoom:70%;"/>
 
 #### Step 2: Add Bot
 
@@ -75,7 +75,7 @@ The Add Bot feature enables seamless integration of a bot created on the platfor
      b. **Access Token**: Populates the field with the necessary endpoint.
 
      c. **Webhook URL**: Enter the URL from the Bot Webhook dialog. For detailed information about webhooks, [Learn more](https://docs.kore.ai/xo/channels/add-webhook-channel/).
-     <img src="../images/add-bot.png" alt="Admin Console" title="Admin Console" style="border: 1px solid gray; zoom:70%;">
+     <img src="../images/add-bot.png" alt="Admin Console" title="Admin Console" style="border: 1px solid gray; zoom:70%;"/>
 
      d. **Bot client ID** : Enter the client identifier retrieved from the Bot Webhook dialog.
 
@@ -120,9 +120,9 @@ View this agent in the **Agents list** on the **Agents** page.
 
 Interacting with the bot agent simplifies communication and task execution. Users initiate a conversation by typing a command. The bot responds promptly, guiding users through the required steps. For example, if performing a task like a fund transfer, users simply need to engage with the bot by providing key details such as the client's name, account information, and transfer amount. Once you complete the task, the bot provides a confirmation or status update.
 
-<img src="../images/user-interaction_1.png" alt="Admin Console" title="Admin Console" style="border: 1px solid gray; zoom:70%;">
+<img src="../images/user-interaction_1.png" alt="Admin Console" title="Admin Console" style="border: 1px solid gray; zoom:70%;"/>
 
-<img src="../images/user-interaction_2.png" alt="Admin Console" title="Admin Console" style="border: 1px solid gray; zoom:70%;">
+<img src="../images/user-interaction_2.png" alt="Admin Console" title="Admin Console" style="border: 1px solid gray; zoom:70%;"/>
 
 **Related Resources**
 
