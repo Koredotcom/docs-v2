@@ -187,11 +187,11 @@ Steps to bookmark a model:
  
     Once you select a preferred model, your version is committed successfully, and the number of committed versions is displayed.
 
-    <img src="../images/committed_version.png" alt="Versions committed" title="Versions committed" style="border: 1px solid gray; zoom:70%;">
+    <img src="../images/committed_version.png" alt="Versions committed" title="Versions committed" style="border: 1px solid gray; zoom:70%;"/>
 
 3. If you click Versions, the **Versions** dialog opens. You can see the model you bookmarked as the **Preferred model**.
 
-    <img src="../images/versions_dialog_preferred_model.png" alt="Versions dialog" title="Versions dialog" style="border: 1px solid gray; zoom:70%;">
+    <img src="../images/versions_dialog_preferred_model.png" alt="Versions dialog" title="Versions dialog" style="border: 1px solid gray; zoom:70%;"/>
 
 
 
@@ -199,11 +199,11 @@ Steps to bookmark a model:
 
 The Draft history option saves the current state of the entire prompt canvas. Draft history captures the prompt canvas at different points in time, preserving all input, output, and model information.
 
- <img src="../images/draft_history_new.png" alt="Draft history" title="Draft history" style="border: 1px solid gray; zoom:70%;">
+ <img src="../images/draft_history_new.png" alt="Draft history" title="Draft history" style="border: 1px solid gray; zoom:70%;"/>
 
 Once you click on Draft History, a dialog appears displaying the different drafts saved at various points in time. This dialog includes the system and human prompts, associated variables, the prompt window, and the generated output for each draft. If you click ‘Restore’, you can revert to the original prompt and the corresponding output generations.
 
- <img src="../images/draft_history_dialog_new.png" alt="Draft history preview" title="Draft history preview" style="border: 1px solid gray; zoom:70%;">
+ <img src="../images/draft_history_dialog_new.png" alt="Draft history preview" title="Draft history preview" style="border: 1px solid gray; zoom:70%;"/>
  
 You can utilize each version as a draft without altering the saved version of the prompt. While using a version as a draft, you can edit the prompt content (both human and system prompts) in the current prompt canvas. Any edits made in draft mode do not affect the saved version of the prompt.
 
@@ -232,9 +232,9 @@ You can experiment with specific cells or columns, adjust variables, and preserv
 
 Cell-level regeneration:
 
- <img src="../images/prompt_regenerate_cell_example.png" alt="Regenerate cell level" title="Regenerate cell level" style="border: 1px solid gray; zoom:70%;">
+ <img src="../images/prompt_regenerate_cell_example.png" alt="Regenerate cell level" title="Regenerate cell level" style="border: 1px solid gray; zoom:70%;"/>
 
 Column-level regeneration:
 
- <img src="../images/prompt_regenerate_model_example.png" alt="Regenerate model level" title="Regenerate model level" style="border: 1px solid gray; zoom:70%;">
+ <img src="../images/prompt_regenerate_model_example.png" alt="Regenerate model level" title="Regenerate model level" style="border: 1px solid gray; zoom:70%;"/>
  

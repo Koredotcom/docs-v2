@@ -23,7 +23,7 @@ The API Node enables you to seamlessly connect your workflow to external systems
 
 The API Node enables seamless integration with external services by sending and processing API requests. It allows you to configure the request method, endpoint, authentication, headers, and payload, then routes the workflow based on the response (success or failure). You can test and validate the API call directly within the flow to ensure proper functionality.
 
- <img src="../images/api_node_how_it_works.jpg" alt="API node" title="API node" style="border: 1px solid gray; zoom:75%;">
+ <img src="../images/api_node_how_it_works.jpg" alt="API node" title="API node" style="border: 1px solid gray; zoom:75%;"/>
 
 
 ## Add and Configure an API Node
@@ -46,7 +46,7 @@ Steps to add and configure the node:
 ### Step 3: Configure the Node
 
 Click the added node to open its properties dialog box. The General Settings for the node are displayed.  
-<img src="./../images/api-node-general-settings.png" alt="Go to Flow Canvas" title="Go to Flow Canvas" style="border: 1px solid gray; zoom:60%;">
+<img src="./../images/api-node-general-settings.png" alt="Go to Flow Canvas" title="Go to Flow Canvas" style="border: 1px solid gray; zoom:60%;"/>
 
 **General Settings**
 <table>

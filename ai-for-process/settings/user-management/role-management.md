@@ -205,7 +205,7 @@ For example, a custom role, “_Banking workflow Conversation Moderator_,” can
 <img src="../images/custom-role-listing.png" alt="custom role listing" title="custom role listing" class="border-2 border-gray-300 rounded-xl" />
 
 * You cannot delete a custom role if it is currently assigned to active users or included in an email invitation. The system displays an error message, as shown in the screenshot below.
-<img src="../images/error-custom-role.png" alt="error custom role deletion" title="error custom role deletion" style="border: 1px solid gray; zoom:50%;">
+<img src="../images/error-custom-role.png" alt="error custom role deletion" title="error custom role deletion" style="border: 1px solid gray; zoom:50%;"/>
 
 To proceed, you must first unassign the role or assign an alternative role to these users, and then you can delete the custom role.
 
@@ -1822,7 +1822,7 @@ The **Role Management** Dashboard displays key information related to system and
 To access the dashboard, follow the steps below:
 
 1. Log in → In AI for Process Modules top menu → Click **Settings**.
-   <img src="../images/aip-settings-access.png" alt="access settings" title="access settings" style="border: 1px solid gray; zoom:75%;">
+   <img src="../images/aip-settings-access.png" alt="access settings" title="access settings" style="border: 1px solid gray; zoom:75%;"/>
 
 2. In the **Users Management** section on the left menu, click **Role Management**.
 

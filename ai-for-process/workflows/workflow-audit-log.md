@@ -11,7 +11,7 @@ Each log entry includes the following to provide actionable insights on account 
 - Date and time of the event.
 - Detailed description of the action.
 
-<img src="../images/agent_audit_log_details.png" alt="audit logs metadata" title="audit logs metadata" style="border: 0px solid gray; zoom:75%;">
+<img src="../images/agent_audit_log_details.png" alt="audit logs metadata" title="audit logs metadata" style="border: 0px solid gray; zoom:75%;"/>
 
 The event metadata provides business users with actionable insights, helping them in efficiently identifying patterns in user activities within their accounts. It also aids in detecting anomalies, spotting unauthorized usage, and enhancing overall account security.
 
