@@ -329,9 +329,9 @@ The table below summarizes the available columns along with their supported oper
 
 <li><strong>Workflow</strong>: The request was sent to the model from a workflow. [Learn more](../../../workflows/overview.md).</li>
 
-<li><strong>Prompts</strong>: The request was sent to the model from a Prompt experiment. <a href="../../../../prompts/using-prompt-studio/" target="_blank">Learn more</a>.</li>
+<li><strong>Prompts</strong>: The request was sent to the model from a Prompt experiment. <a href="../../../../prompts/using-prompt-studio/" >Learn more</a>.</li>
 
-<li><strong>API Key</strong>: The request was sent to the (open-source) model using an API key. <a href="../../../../models/open-source-models/generate-an-api-key-open-source/" target="_blank">Learn more</a>.</li>
+<li><strong>API Key</strong>: The request was sent to the (open-source) model using an API key. <a href="../../../../models/open-source-models/generate-an-api-key-open-source/" >Learn more</a>.</li>
 </ul>
    </td>
   </tr>
