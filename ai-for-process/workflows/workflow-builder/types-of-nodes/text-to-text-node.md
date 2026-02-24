@@ -60,8 +60,7 @@ Setting up a Text to Text node in a workflow involves adding the node at the app
             Syntax: `{{context.variable_name}}`
             Example: `{{context.conversation}}`  
 
-            <Note>System Prompts: These are instructions to guide how the model should respond. They define the overall behavior or tone of the model. For example: "You are a helpful assistant."   
-            Human Prompts: These are the questions or requests made by the user. They specify what the user wants the model to do or answer. For example: "Summarize this error log and tell me the likely cause of the issue."</Note>
+            <Note>System Prompts: These are instructions to guide how the model should respond. They define the overall behavior or tone of the model. For example: "You are a helpful assistant." Human Prompts: These are the questions or requests made by the user. They specify what the user wants the model to do or answer. For example: "Summarize this error log and tell me the likely cause of the issue."</Note>
 
 
         * **Choose a prompt from prompt hub:** If you select ‘Choose a prompt from prompt hub’, follow these steps:
@@ -140,6 +139,4 @@ Finally, test the flow and fix any issues found. Click the **Run Flow** button a
 The node’s output is stored in a context variable. You can access the variable using the following syntax:
 `{{context.steps.AINodeName.output}}`
 
-<Note>
-
-    AI for Process can automatically recognize variables and outputs. To do so, type "context.steps." and you will see available variables and nodes, including the nodes' outputs.</Note>
+<Note> AI for Process can automatically recognize variables and outputs. To do so, type "context.steps." and you will see available variables and nodes, including the nodes' outputs.</Note>
