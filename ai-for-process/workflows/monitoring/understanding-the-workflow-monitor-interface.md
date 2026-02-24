@@ -8,7 +8,7 @@ The Workflow Monitor capabilities are shown on the following tabs:
 
 Both tabs include summary metrics at the top of the page, including total runs/requests, average response times (P90 and P99), and failure rates.
 
-<img src="../images/new_agent_monitor.png" alt="All runs and Model runs tabs" title="All runs and Model runs tabs" style="border: 1px solid gray; zoom:80%;"/>
+<img src="../images/new_agent_monitor.png" alt="All runs and Model runs tabs" title="All runs and Model runs tabs" class="border-2 border-gray-300 rounded-xl" />
 
 ## All Runs
 
@@ -74,7 +74,7 @@ These metrics are dependent on the selected date range, filters, and search crit
 
 Clicking each row in either the All runs tab or the Model runs tab opens a detailed view panel on the right. This view is similar to the Run dialog panel on the workflow canvas. [Learn more](../workflow-builder/perform-other-actions-on-the-flow-builder/run-the-flow.md).
 
-<img src="../images/agent_monitor_viewing_run_information.png" alt="Viewing detailed run information" title="Viewing detailed run information" style="border: 1px solid gray; zoom:80%;"/>
+<img src="../images/agent_monitor_viewing_run_information.png" alt="Viewing detailed run information" title="Viewing detailed run information" class="border-2 border-gray-300 rounded-xl" />
 
 The panel displays the following details:
 
@@ -90,7 +90,7 @@ The panel displays the following details:
 
 *  **Output section**: The Output section displays the workflow's output (for successful runs). You can copy the output and view tokens.
 
-    <img src="../images/agent_monitor_viewing_run_information_detailed.png" alt="Viewing detailed run information" title="Viewing detailed run information" style="border: 1px solid gray; zoom:80%;"/>
+    <img src="../images/agent_monitor_viewing_run_information_detailed.png" alt="Viewing detailed run information" title="Viewing detailed run information" class="border-2 border-gray-300 rounded-xl" />
 
 
 ## Understanding the Impact of Timeouts on Workflow Endpoints

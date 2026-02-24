@@ -9,7 +9,7 @@ The steps to add an external model using API integration are given below:
 1. Click **Models** on the top navigation bar. The **Models** page is displayed.
 
 2. Click the **External models** tab.  
-<img src="../images/navigating-to-external-models1.png" alt="Navigating to External Models" title="Navigating to External Models" style="border: 1px solid gray; zoom:80%;"/>
+<img src="../images/navigating-to-external-models1.png" alt="Navigating to External Models" title="Navigating to External Models" class="border-2 border-gray-300 rounded-xl" />
 
 3. Click **Add a model**. The **Add an external model** dialog is displayed.  
 <img src="../images/add-external-model-api-integration1.png" alt="Add External Model API Integration" title="Add External Model API Integration" style="border: 1px solid gray; zoom:60%;">
@@ -17,13 +17,13 @@ The steps to add an external model using API integration are given below:
 4. Select the **Custom integration** option to connect models via API integration, and click **Next**. The **Custom API integration** dialog is displayed.
 
 5. Enter a **Model name** and **Model endpoint URL** in the respective fields.  
-<img src="../images/custom-api-integration-general-details.png" alt="Custom API Integration General Details" title="Custom API Integration General Details" style="border: 1px solid gray; zoom:80%;"/>
+<img src="../images/custom-api-integration-general-details.png" alt="Custom API Integration General Details" title="Custom API Integration General Details" class="border-2 border-gray-300 rounded-xl" />
 
 6. Select the **Authorization profile** you want to use with the request payload from the configured options on the **Settings** console. [Learn more](../../settings/security-and-control/authorization-profile.md) about Auth Profiles. To proceed without authentication, choose ***None*** which is the default selection.
-<img src="../images/set-auth-profile-parameter.png" alt="set auth profile" title="set auth profile" style="border: 1px solid gray; zoom:80%;"/>
+<img src="../images/set-auth-profile-parameter.png" alt="set auth profile" title="set auth profile" class="border-2 border-gray-300 rounded-xl" />
 
 7. In the **Headers** section, specify the headers such as **Key** and **Value** that need to be sent along with the request payload. 
-<img src="../images/custom-api-integration-headers.png" alt="Custom API Integration Headers" title="Custom API Integration Headers" style="border: 1px solid gray; zoom:80%;"/>
+<img src="../images/custom-api-integration-headers.png" alt="Custom API Integration Headers" title="Custom API Integration Headers" class="border-2 border-gray-300 rounded-xl" />
 
 8. In the **Model configurations** section, select one of the following options to define the model’s API settings:
 
@@ -112,4 +112,4 @@ To manage an integration, click the three-dot icon corresponding to its name and
  * **Copy**: Make an editable copy of the integration details.
  * **Delete**: Remove the integration.
 
-<img src="../images/three-dots-icon-options.png" alt="Three Dots Icon Options" title="Three Dots Icon Options" style="border: 1px solid gray; zoom:80%;"/>
+<img src="../images/three-dots-icon-options.png" alt="Three Dots Icon Options" title="Three Dots Icon Options" class="border-2 border-gray-300 rounded-xl" />

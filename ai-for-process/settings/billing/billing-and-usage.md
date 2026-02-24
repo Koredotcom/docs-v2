@@ -61,14 +61,14 @@ The following usage information is displayed on the tab:
 * **Last active on**: The date when the workflow was last active.
 * **Status**: The workflow's status - Deployed, Undeployed, or Deleted.
 
-    <img src="../images/workflow_usage.png" alt="Billing Tools tab" title="Billing Tools tab" style="border: 1px solid gray; zoom:80%;"/>
+    <img src="../images/workflow_usage.png" alt="Billing Tools tab" title="Billing Tools tab" class="border-2 border-gray-300 rounded-xl" />
 
 
 ## Models Usage
 
 The **Models** tab displays a comprehensive list of open-source and fine-tuning models in the account and the computational cost of storing, fine-tuning, and hosting each model.
 
-<img src="../images/models-usage.png" alt="Billing Models tab" title="Billing Models tab" style="border: 1px solid gray; zoom:80%;"/>
+<img src="../images/models-usage.png" alt="Billing Models tab" title="Billing Models tab" class="border-2 border-gray-300 rounded-xl" />
 
 If there are multiple deployments of the same model, the usage data is displayed for each deployment in the drill-down view. [Learn more](./billing-and-usage.md#viewing-deployment-level-information).
 
@@ -99,7 +99,7 @@ The following information is displayed:
 * **Last updated on**: The date when the deployment was last done.
 * **Status**: The current deployment status: *Deployed*, *Undeployed*, or *Deleted*.
 
-    <img src="../images/models-usage-drill-down.png" alt="drill down view" title="drill down view" style="border: 1px solid gray; zoom:80%;"/>
+    <img src="../images/models-usage-drill-down.png" alt="drill down view" title="drill down view" class="border-2 border-gray-300 rounded-xl" />
 
 ## Guardrails Usage
 
@@ -133,7 +133,7 @@ Clicking each row on the Guardrail tab opens a panel on the right that displays 
      * Further deployments are disabled. 
      * All ongoing deployments are disrupted once the negative credit limit is reached, and the message “*You've used all your available credits. Please add more credits to your account to continue.*” appears.
 
-      <img src="../images/guardrails_right_panel.png" alt="Guardrails detailed information" title="Guardrails detailed information" style="border: 1px solid gray; zoom:80%;"/>
+      <img src="../images/guardrails_right_panel.png" alt="Guardrails detailed information" title="Guardrails detailed information" class="border-2 border-gray-300 rounded-xl" />
 
 
 The following information is displayed:
@@ -163,7 +163,7 @@ The **Custom Scripts** tab displays the list of custom scripts added to your acc
     *  Users will not be able to deploy imported projects. Deployment actions get disabled for the scripts.
     *  If the negative credit limit is crossed during deployment, the process will be stopped, and a failure message will be displayed.
 
-       <img src="../images/cs-usage-data.png" alt="cs usage data" title="cs usage data" style="border: 1px solid gray; zoom:80%;"/>
+       <img src="../images/cs-usage-data.png" alt="cs usage data" title="cs usage data" class="border-2 border-gray-300 rounded-xl" />
 
 The following usage information is displayed:
 
@@ -185,7 +185,7 @@ Clicking each row on the **Custom scripts** tab opens a panel on the right that 
 * Credits consumed by the components. Refer to the table [here](../manage-custom-scripts/custom-scripts.md#step-3-resource-allocation) for pricing.
 * **Total** which represents the aggregate of all the credit components (when multiple components are involved).
 
-    <img src="../images/custom-script-usage.png" alt="cs usage" title="cs usage" style="border: 1px solid gray; zoom:80%;"/>
+    <img src="../images/custom-script-usage.png" alt="cs usage" title="cs usage" class="border-2 border-gray-300 rounded-xl" />
 
 ### Email Notifications
 
@@ -200,7 +200,7 @@ The **OCR** tab provides a unified view of all OCR-related credit usage across y
 * See how many credits each deployment consumed
 * Check deployment status and usage history
 
-   <img src="../images/ocr_billing_details.png" alt="OCR billing" title="OCR billing" style="border: 1px solid gray; zoom:80%;"/>
+   <img src="../images/ocr_billing_details.png" alt="OCR billing" title="OCR billing" class="border-2 border-gray-300 rounded-xl" />
 
 ### Viewing Detailed OCR Information
 
@@ -211,7 +211,7 @@ Clicking a row in the **OCR** tab opens a panel on the right that provides detai
 * **Credits consumed:** The number of OCR credits used by the deployment.
 * **Total:** The aggregated credit usage across all contributing components for that deployment.
 
-    <img src="../images/ocr_billing_detailed.png" alt="OCR billing" title="OCR billing" style="border: 1px solid gray; zoom:80%;"/>
+    <img src="../images/ocr_billing_detailed.png" alt="OCR billing" title="OCR billing" class="border-2 border-gray-300 rounded-xl" />
 
 ## Browser Automation Usage
 
@@ -221,7 +221,7 @@ The **Browser Automation** tab provides a unified view of browser-automation cre
 * See deployment-level credits consumption
 * Check deployment status and usage history
 
-    <img src="../images/browser-automation-usage.png" alt="browser automation usage" title="browser automation usage" style="border: 1px solid gray; zoom:80%;"/>
+    <img src="../images/browser-automation-usage.png" alt="browser automation usage" title="browser automation usage" class="border-2 border-gray-300 rounded-xl" />
 
 ### Viewing Detailed Browser Automation Information
 
@@ -232,4 +232,4 @@ Clicking a row in the **Browser Automation** tab opens a right-side panel that d
 * **Credits consumed:** The number of browser automation credits used by the deployment.
 * **Total:** The aggregated credit usage across all contributing components for that deployment.
 
-    <img src="../images/browser_automation_billing_detailed.png" alt="browser automation detailed billing" title="browser automation detailed billing" style="border: 1px solid gray; zoom:80%;"/>
+    <img src="../images/browser_automation_billing_detailed.png" alt="browser automation detailed billing" title="browser automation detailed billing" class="border-2 border-gray-300 rounded-xl" />
