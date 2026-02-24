@@ -2,7 +2,7 @@
 
 AI for Process offers the ability to export specific workflow versions from your account as self-contained packages for data preservation and sharing. This feature also allows users to transfer workflow configurations without compromising the integrity and security of the workflow setup.
 
-When you export a workflow, AI for Process automatically creates a *.zip* file named after the workflow. For example, if the workflow is named "*Banking Assistant*," the exported file will be "*Banking Assistant.zip*". You can save this folder in the desired location on your local machine. 
+When you export a workflow, AI for Process automatically creates a *.zip* file named after the workflow. For example, if the workflow is named "*Banking Assistant*," the exported file will be "*Banking Assistant.zip*". You can save this folder in the desired location on your local machine.
 
 The exported package can be reimported to create a new workflow or add it as a version to an existing one, ensuring seamless restoration.
 
@@ -16,9 +16,7 @@ The [exported package](#exported-information) preserves the following workflow c
 
 To maintain security, sensitive information such as **API keys**, **sharing permissions**, **workflow endpoint**, and **audit logs** are excluded from the exported package.
 
-<div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>Users with only <b>Viewer</b> permissions can't export an workflow.</p></div>
+<Note>Users with only <b>Viewer</b> permissions can't export an workflow.</Note>
 
 ## Steps to Export a Workflow
 
@@ -39,10 +37,7 @@ The export process begins, and a success message is displayed after the workflow
 
 <img src="../images/agent-export-success.png" alt="export success" title="export success" style="border: 1px solid gray; zoom:75%;"/>
 
-<div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>Once export begins, the selected version can't be changed.
-</p></div>
+<Note>Once export begins, the selected version can't be changed.</Note>
 
 ## Exported Information
 
@@ -62,7 +57,7 @@ The file information is displayed as follows:
 
 <img src="../images/app-definition-file-example.png" alt="file example" title="file example" style="border: 1px solid gray; zoom:75%;"/>
 
-<hr>
+<hr />
 
 ## Related Links
 
