@@ -293,11 +293,11 @@ Steps to add an evaluator:
 
 When setting up an AI evaluator, variable mapping is a crucial step. This is where the user connects the variables in the evaluator's prompt to the corresponding columns in the dataset. 
 
-1. **Variables in the Prompt**: The evaluator’s prompt contains variables, indicated in double curly braces. For example, {{input}}, {{output}}, {{query}}. These variables are placeholders for your dataset columns and will appear on the left side of the Variable column. For example, in a Query Relevance evaluator, the prompt might include variables like {{query}} for the user query, {{input}} for the input text, and {{output}} for the model's response.
+1. **Variables in the Prompt**: The evaluator’s prompt contains variables, indicated in double curly braces. For example, `{{input}}`, `{{output}}`, `{{query}}`. These variables are placeholders for your dataset columns and will appear on the left side of the Variable column. For example, in a Query Relevance evaluator, the prompt might include variables like `{{query}}` for the user query, `{{input}}` for the input text, and `{{output}}` for the model's response.
 2. **Left Side - Prompt Variables**: The left side of the mapping section shows the variables from the evaluator's prompt. This section is auto-populated by the system.
 3. **Right Side - Dataset Columns**: The right side displays the columns from your imported dataset. You must select the correct columns from the dataset to match each variable in the prompt. For example:
-    * Map {{input}} to the corresponding input column in your dataset.
-    * Map {{output}} to the output column.
+    * Map `{{input}}` to the corresponding input column in your dataset.
+    * Map `{{output}}` to the output column.
 4. **Safety Evaluators**: For safety evaluators like Bias Detection or Toxicity, you may need to configure additional key-value pairs. These evaluators often provide binary (pass/fail) results, so map the relevant columns accordingly.
 
 By correctly mapping the variables, you ensure the evaluator receives the right data and produces accurate results.

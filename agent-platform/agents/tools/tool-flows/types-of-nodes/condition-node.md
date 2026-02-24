@@ -22,7 +22,7 @@ Whether you need a simple true/false evaluation or a more complex branching usin
 * Flexible Condition Types: Define IF, ELSE IF, and ELSE paths using context variables, static values, or output from previous steps.
 * AND / OR Logic: Combine multiple criteria for complex decision-making.
 * Multi-Branch Execution: Direct the flow to different downstream nodes based on the condition evaluation.
-* Context Variable Support: Easily reference values from earlier steps in the flow using {{context.variable}} and {{context.steps.nodename.output}}.
+* Context Variable Support: Easily reference values from earlier steps in the flow using `{{context.variable}}` and `{{context.steps.nodename.output}}`.
 * Inline Expression Support: Use Node, Context, or Value types directly in conditional expressions.
 
 

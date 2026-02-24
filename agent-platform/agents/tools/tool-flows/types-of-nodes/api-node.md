@@ -151,10 +151,4 @@ Click the **Connections** icon in the left navigation and select **Go to Node** 
 
 Finally, test the flow and fix any issues found. Click the **Run Flow** button at the top-right corner of the flow builder and follow the onscreen instructions.
 
-
-!!! note
-    
-    Use the following syntax to access an API node using the context variable: 
-    ~~~
-    {{context.steps.Start.APINodeName}}
-    ~~~
+<Note>Use the following syntax to access an API node using the context variable: `{{context.steps.Start.APINodeName}}`</Note>
