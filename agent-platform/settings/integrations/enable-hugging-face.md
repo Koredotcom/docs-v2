@@ -8,11 +8,11 @@ The Platform seamlessly integrates with Hugging Face, allowing you to incorporat
 2. Click **Settings** on the top navigation bar.
 2. Click **Integrations** on the left menu.
 
-    <img src="../images/navigate-to-settings.png" alt="Navigate to Settings" title="Navigate to Settings" class="border-2 border-gray-300 rounded-xl" />
+    <img src="../images/navigate-to-settings.png" alt="Navigate to Settings" title="Navigate to Settings"/>
 
 3. Click the **Hugging Face** option from the list of Integrations. The Hugging Face section is expanded.
 
-    <img src="../images/add-hugging-face-connection.png" alt="Add Hugging Face Connection" title="Add Hugging Face Connection" class="border-2 border-gray-300 rounded-xl" />
+    <img src="../images/add-hugging-face-connection.png" alt="Add Hugging Face Connection" title="Add Hugging Face Connection"/>
 
 4. Click **Add connection**. The **Hugging Face** dialog is displayed.
 

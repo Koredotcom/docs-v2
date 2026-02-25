@@ -119,4 +119,4 @@ Click the environment to see its details and manage it:
 * **cURL script:** Use the curl script to interact with the app through the code. Construct your API requests in accordance with the given specifications.
 * **Delete Environment:** This function handles the removal of an environment with user confirmation, ensuring associated configurations are cleaned up, endpoints are deactivated, and resources are released. Audit logs and usage statistics are preserved for future reference.  
 
-   <img src="../images/web-client-details.png" alt="Web client details" title="Web client details" class="border-2 border-gray-300 rounded-xl" />
+   <img src="../images/web-client-details.png" alt="Web client details" title="Web client details"/>

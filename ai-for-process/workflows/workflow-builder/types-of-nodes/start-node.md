@@ -54,7 +54,7 @@ Steps to configure the node:
 3. Select your trigger event and configure parameters.
 4. Save and test the workflow.
 
-<img src="../images/add_trigger.png" alt="triggers" title="triggers" class="border-2 border-gray-300 rounded-xl" />
+<img src="../images/add_trigger.png" alt="triggers" title="triggers"/>
 
 <Note>Triggers must be active and enabled. Attachments from triggers are accessible via URL for 24 hours. </Note>
 
@@ -65,7 +65,7 @@ Steps to configure the node:
 3. Configure start date, start time, and time zone.
 4. Save and test the workflow.
 
-<img src="../images/scheduler.png" alt="schedule" title="schedule" class="border-2 border-gray-300 rounded-xl" />
+<img src="../images/scheduler.png" alt="schedule" title="schedule"/>
 
 ## Supported Third-Party Services for Triggers
 

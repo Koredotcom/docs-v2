@@ -20,7 +20,7 @@ To use triggers in a workflow:
 
 For detailed configuration steps, see [Start Node – Automate Workflow Initiation](../workflow-builder/types-of-nodes/start-node.md).
 
-<img src="../images/triggers.png" alt="Triggers" title="Add a trigger" class="border-2 border-gray-300 rounded-xl" />
+<img src="../images/triggers.png" alt="Triggers" title="Add a trigger"/>
 
 ## Trigger Payload and Attachments
 

@@ -202,7 +202,7 @@ For example, a custom role, “_Banking Tool Conversation Moderator_,” can be 
 #### Key Considerations
 
 * After creating a custom role, it will appear in the dropdown menu of the email invitation template. You can then select and assign this role to the user you invite to your account.
-<img src="../images/custom-role-listing.png" alt="custom role listing" title="custom role listing" class="border-2 border-gray-300 rounded-xl" />
+<img src="../images/custom-role-listing.png" alt="custom role listing" title="custom role listing"/>
 
 * You cannot delete a custom role if it is currently assigned to active users or included in an email invitation. The system displays an error message, as shown in the screenshot below.
 <img src="../images/error-custom-role.png" alt="error custom role deletion" title="error custom role deletion" style="border: 1px solid gray; zoom:50%;"/>
@@ -1837,7 +1837,7 @@ To access the dashboard, follow the steps below:
 1. Log in to your account and click **Autonomous Agents** from the list of modules.
 2. Click **Settings** on the top navigation bar.
 3. Click **Users Management** > **Role Management** on the left menu.
-<img src="../images/access-role-management.png" alt="access role management" title="access role management" class="border-2 border-gray-300 rounded-xl" />
+<img src="../images/access-role-management.png" alt="access role management" title="access role management"/>
 
 The **Role Management** dashboard displays the following:
 
@@ -1846,7 +1846,7 @@ The **Role Management** dashboard displays the following:
     * **Total Roles**: The total count of system and custom roles in the system.
     * **System Roles**: The count of the pre-defined, system-generated user roles.
     * **Custom Roles**: The count of the user roles created and configured by the system admin.
-    <img src="../images/summary-of-counts.png" alt="summary of counts" title="summary of counts" class="border-2 border-gray-300 rounded-xl" />
+    <img src="../images/summary-of-counts.png" alt="summary of counts" title="summary of counts"/>
 
 2. A Table view of the following system and custom role details:
 
@@ -1854,7 +1854,7 @@ The **Role Management** dashboard displays the following:
     * **Role Type**: The role type defines its scope, including **Account**, **Tool**, and **Agentic App**.
     * **Description**: This is the description of the role. System roles are pre-defined, while you must provide custom role descriptions. Hover over the description text to view the entire description.
     * **Created by**: For system-generated roles, _System_ is displayed. For custom roles, the name of the user who created the role is displayed, as shown in the image below. This user can be the account owner or another user in the admin’s account.
-    <img src="../images/custom-and-system-roles.png" alt="custom and system roles" title="custom and system roles" class="border-2 border-gray-300 rounded-xl" />
+    <img src="../images/custom-and-system-roles.png" alt="custom and system roles" title="custom and system roles"/>
 
     * **Last Updated On**: The local time and date when the custom role was last updated are displayed. This information doesn't appear for system roles, as they can't be modified.
 
@@ -1865,10 +1865,10 @@ To look up a system or custom role, follow the steps below:
 1. [Navigate](../user-management/role-management.md#role-management-dashboard) to the **Role Management** dashboard.
 2. Click the **Search** text field.
 3. Enter the role you want to search for. All the matching results are displayed.
-<img src="../images/search-role.png" alt="search role" title="search role" class="border-2 border-gray-300 rounded-xl" />
+<img src="../images/search-role.png" alt="search role" title="search role"/>
 
    If no results are found, the following message is displayed.
-   <img src="../images/no-results-found.png" alt="no results found" title="no results found" class="border-2 border-gray-300 rounded-xl" />
+   <img src="../images/no-results-found.png" alt="no results found" title="no results found"/>
 
 ### Manage System Roles
 
@@ -1886,7 +1886,7 @@ To view the details of a [system-defined role](./role-management.md#system-defin
 1. [Navigate](../user-management/role-management.md#role-management-dashboard) to the **Role Management** dashboard,
 2. Click the **Ellipses** icon for a system role.
 3. Select **View**.
-<img src="../images/click-view.png" alt="select view" title="select view" class="border-2 border-gray-300 rounded-xl" />
+<img src="../images/click-view.png" alt="select view" title="select view"/>
 
 The following information is displayed:
 
@@ -1894,7 +1894,7 @@ The following information is displayed:
 * Role Name
 * Role Description
 * Configuration panel to enable/disable access and set access levels for the listed permissions at the account/tool level. Click [here](./role-management.md#module-wise-permissions-and-access-levels) to see the module-wise permissions and access levels for different roles.
-<img src="../images/module-wise-permissions-new.png" alt="module-wise permissions" title="module-wise permissions" class="border-2 border-gray-300 rounded-xl" />
+<img src="../images/module-wise-permissions-new.png" alt="module-wise permissions" title="module-wise permissions"/>
 
 #### Duplicate System Role
 
@@ -1913,10 +1913,10 @@ To duplicate a system role, follow the steps below:
 1. [Navigate](../user-management/role-management.md#role-management-dashboard) to the **Role Management** dashboard.
 2. Click the **Ellipses** icon for a system role.
 3. Select **Duplicate**.
-<img src="../images/select-duplicate.png" alt="select duplicate" title="select duplicate" class="border-2 border-gray-300 rounded-xl" />
+<img src="../images/select-duplicate.png" alt="select duplicate" title="select duplicate"/>
 
 The duplicate custom role displays the system role name followed by a suffix “**_copy_**,” as shown below. You can edit the name if required.
-<img src="../images/duplicate-role.png" alt="duplicate role" title="duplicate role" class="border-2 border-gray-300 rounded-xl" />
+<img src="../images/duplicate-role.png" alt="duplicate role" title="duplicate role"/>
 
 ### Manage Custom Roles
 
@@ -1929,14 +1929,14 @@ To add a custom role, follow the steps below:
 
 1. [Navigate](../user-management/role-management.md#role-management-dashboard) to **Role Management** on the **Settings** console.
 2. Click **Add New Role**.
-<img src="../images/add-new-role.png" alt="add new role" title="add new role" class="border-2 border-gray-300 rounded-xl" />
+<img src="../images/add-new-role.png" alt="add new role" title="add new role"/>
 
 3. Follow the steps below in the **New Role** window:
 
     * Enter **Role Name** (should be unique) & **Role Description**.
-    <img src="../images/enter-role-name-and-description.png" alt="enter role name and description" title="enter role name and description" class="border-2 border-gray-300 rounded-xl" />
+    <img src="../images/enter-role-name-and-description.png" alt="enter role name and description" title="enter role name and description"/>
     * Select the **Role Type** from the dropdown.
-    <img src="../images/select-role-type.png" alt="select role type" title="select role type" class="border-2 border-gray-300 rounded-xl" />
+    <img src="../images/select-role-type.png" alt="select role type" title="select role type"/>
     * Follow the steps below if you select **Role Type** as **_Account_**.
         * Enable/select the access level for module-wise permissions in the **Enable/Disable tool access** section. [Learn more](../user-management/role-management.md#module-wise-permissions-and-access-levels) about module-wise permissions and access levels you can configure for a custom role.
         * If you select *Custom*, Select the checkbox to enable the permissions (set to _Yes_) or unselect to disable (set to _No_) for the following:
@@ -1970,7 +1970,7 @@ To add a custom role, follow the steps below:
             * Monitoring
             * Billing
 
-          <img src="../images/enable-permissions.png" alt="enable permissions" title="enable permissions" class="border-2 border-gray-300 rounded-xl" />       
+          <img src="../images/enable-permissions.png" alt="enable permissions" title="enable permissions"/>       
 
        * Select the access level for **Models**, **Settings**, **Integrations**, and **User Management** from the following options:
         * **Full**: The users can access all the module permissions (view & edit).
@@ -1981,21 +1981,21 @@ To add a custom role, follow the steps below:
 **Important Considerations**
 
 * First, select the access level for **Models** to enable its permissions.
-<img src="../images/select-access-for-models.png" alt="set models access" title="set models access" class="border-2 border-gray-300 rounded-xl" />
+<img src="../images/select-access-for-models.png" alt="set models access" title="set models access"/>
 
     Missing this step automatically disables the permissions.
 
 * Selecting **_Full_** automatically selects all the module permissions.
-<img src="../images/select-full-auto-select.png" alt="full auto select" title="full auto select" class="border-2 border-gray-300 rounded-xl" />
+<img src="../images/select-full-auto-select.png" alt="full auto select" title="full auto select"/>
 
-* Selecting **_Custom_** allows you to enable only the required module permissions.  <img src="../images/select-custom-access.png" alt="select custom access" title="select custom access" class="border-2 border-gray-300 rounded-xl" />
+* Selecting **_Custom_** allows you to enable only the required module permissions.  <img src="../images/select-custom-access.png" alt="select custom access" title="select custom access"/>
 
 * Selecting **_View_** and **_No Access_** disables permissions selection.
-<img src="../images/select-view-and-no-access.png" alt="select view and no access" title="select view and no access" class="border-2 border-gray-300 rounded-xl" />       
+<img src="../images/select-view-and-no-access.png" alt="select view and no access" title="select view and no access"/>       
 
 * Selecting **_Full_** for **Settings** automatically sets the access levels of **Integrations** and **User Management** to **_Full_**.
 
-<img src="../images/select-full-access.png" alt="select full access" title="select full access" class="border-2 border-gray-300 rounded-xl" />
+<img src="../images/select-full-access.png" alt="select full access" title="select full access"/>
 
 Additionally, it automatically enables all the permissions for the following modules:
 
@@ -2007,7 +2007,7 @@ Additionally, it automatically enables all the permissions for the following mod
    * Billing
 
 * Selecting **_No Access_** for **Settings** automatically sets the access levels of **Integrations** to **_View_** and **User Management** to **_No Access_**.
-<img src="../images/select-no-access.png" alt="no access" title="no access" class="border-2 border-gray-300 rounded-xl" />
+<img src="../images/select-no-access.png" alt="no access" title="no access"/>
 
 Additionally, it disables all the permissions for the following modules:
 
@@ -2027,7 +2027,7 @@ Selecting **_Custom_** for **Settings** automatically sets the **Integrations** 
 * Monitoring
 * Billing
 
-<img src="../images/select-custom.png" alt="select custom" title="select custom" class="border-2 border-gray-300 rounded-xl" />
+<img src="../images/select-custom.png" alt="select custom" title="select custom"/>
 
 You can change **_Custom_** to **_Full_** or **_View_** for **Integrations** and **_Full_** or **_No Access_** for **User Management**.
 
@@ -2037,7 +2037,7 @@ If you select **Role Type** as **_Tool_**, follow the steps below:
 * Select **_Custom_**, **_View_**, or **_Full_** for **Access**. [Learn more](../user-management/role-management.md#access-levels). 
 
 **_Custom_** is the default selection.
-<img src="../images/access-options.png" alt="access options" title="access options" class="border-2 border-gray-300 rounded-xl" />
+<img src="../images/access-options.png" alt="access options" title="access options"/>
                      
 * Set up the tool permissions as follows in the **Enable/Disable tool access** section:
 * If you select **_View_** for **Access**, all the permissions are automatically disabled.
@@ -2048,7 +2048,7 @@ If you select **Role Type** as **_Tool_**, follow the steps below:
 
 The new custom role is created and listed on the **Role Management** dashboard.
 
-<img src="../images/list-new-custom-role.png" alt="list new custom role" title="list new custom role" class="border-2 border-gray-300 rounded-xl" />
+<img src="../images/list-new-custom-role.png" alt="list new custom role" title="list new custom role"/>
 
 #### Edit a Custom Role
 
@@ -2065,7 +2065,7 @@ To update a role, follow the steps below:
 1. [Navigate](../user-management/role-management.md#role-management-dashboard) to the **Role Management** dashboard on the **Settings** console.
 2. Click the **Ellipses** icon for the custom role you want to modify.
 3. Select **Edit**.
-<img src="../images/edit-role.png" alt="edit role" title="edit role" class="border-2 border-gray-300 rounded-xl" />
+<img src="../images/edit-role.png" alt="edit role" title="edit role"/>
 
 4. Edit the required values for the following In the **Update Role** window:
 
@@ -2079,11 +2079,11 @@ To update a role, follow the steps below:
 </div> 
 
 <ol start="5"><li>Click <b>Update</b>.</li>
-<img src="../images/update-role-window.png" alt="update role window" title="update role window" class="border-2 border-gray-300 rounded-xl" /></ol>
+<img src="../images/update-role-window.png" alt="update role window" title="update role window"/></ol>
 
 A success message is displayed upon completing the role edit, and the updated role details appear on the dashboard.
 
-<img src="../images/role-updated-message.png" alt="role updated message" title="role updated message" class="border-2 border-gray-300 rounded-xl" />
+<img src="../images/role-updated-message.png" alt="role updated message" title="role updated message"/>
 
 #### Delete a Custom Role
 
@@ -2107,17 +2107,17 @@ To delete a role, follow the steps below:
 1. [Navigate](../user-management/role-management.md#role-management-dashboard) to the **Role Management** dashboard on the **Settings** console.
 2. Click the **Ellipses** icon for the custom role you want to delete.
 3. Select **Delete**.
-<img src="../images/select-delete-role.png" alt="select delete role" title="select delete role" class="border-2 border-gray-300 rounded-xl" />
+<img src="../images/select-delete-role.png" alt="select delete role" title="select delete role"/>
 
 4. Click **Confirm** in the **Delete Role** confirmation window.
-<img src="../images/delete-role-confirm.png" alt="confirm delete role" title="confirm delete role" class="border-2 border-gray-300 rounded-xl" />
+<img src="../images/delete-role-confirm.png" alt="confirm delete role" title="confirm delete role"/>
 
 A success message is displayed, and the role is deleted from the **Role Management** dashboard.
 
 #### Role Deletion Error and Workaround 
 
 The **Settings** console allows you to delete only unassigned roles. If a role is assigned to active/inactive users during deletion, the following error message is displayed.
-<img src="../images/role-deletion-error.png" alt="role deletion error" title="role deletion error" class="border-2 border-gray-300 rounded-xl" />
+<img src="../images/role-deletion-error.png" alt="role deletion error" title="role deletion error"/>
 
 You must perform one of the following workarounds.
 
@@ -2126,12 +2126,12 @@ You must perform one of the following workarounds.
 1. [Navigate](../user-management/role-management.md#role-management-dashboard) to **Users Management** > **Users** on the **Settings** Console.
 2. Click the **Account Role** entry for the user.
 3. Select the role you want to reassign.
-<img src="../images/select-role-to-reassign.png" alt="reassign role" title="reassign role" class="border-2 border-gray-300 rounded-xl" />
+<img src="../images/select-role-to-reassign.png" alt="reassign role" title="reassign role"/>
 
 Once you reassign the role for the user, go to the **Role Management** dashboard and delete the role using the steps mentioned [here](../user-management/role-management.md#delete-a-custom-role).
 
 The role is deleted successfully from the **Role Management** dashboard and the count for custom roles is updated (decreased).
-<img src="../images/custom-role-deleted.png" alt="custom role deleted" title="custom role deleted" class="border-2 border-gray-300 rounded-xl" />
+<img src="../images/custom-role-deleted.png" alt="custom role deleted" title="custom role deleted"/>
 
 ##### Delete Assigned Users
 
@@ -2142,7 +2142,7 @@ Deleting the assigned users removes their association with the role you want to 
 #### Duplicate a Custom Role
 
 Like a system role, you can duplicate a custom role, which copies the name, role type, and configurations for permissions and access. Follow the steps mentioned [here](../user-management/role-management.md#duplicate-system-role) to complete the process for a custom role.
-<img src="../images/duplicate-custom-role.png" alt="duplicate custom role" title="duplicate custom role" class="border-2 border-gray-300 rounded-xl" />
+<img src="../images/duplicate-custom-role.png" alt="duplicate custom role" title="duplicate custom role"/>
 
 <hr/> 
 

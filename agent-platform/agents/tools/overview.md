@@ -91,4 +91,4 @@ Key highlights
 * Provide empty-state CTAs: **Import** and **New Tool** for Workflow tools, **New Tool** for Code tools, **Import** and **Link Tool** for MCP tools.
 * **Import Tool** and **New Tool** CTAs are located at the top right for easy access.
 
-<img src="../images/tools-listing-page.png" alt="Tools Listing Page" title="Tools Listing Page" class="border-2 border-gray-300 rounded-xl" />
+<img src="../images/tools-listing-page.png" alt="Tools Listing Page" title="Tools Listing Page"/>
