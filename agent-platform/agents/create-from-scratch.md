@@ -224,30 +224,6 @@ Add all the delegation rules in this section that the given agent can use for ro
 
 ![Delegation Rules](images/network/example.png "Delegation Rules")
 
-<!-----
-
-
-
-Conversion time: 1.146 seconds.
-
-
-Using this Markdown file:
-
-1. Paste this output into your source file.
-2. See the notes and action items below regarding this conversion run.
-3. Check the rendered output (headings, lists, code blocks, tables) for proper
-   formatting and use a linkchecker before you publish this page.
-
-Conversion notes:
-
-* Docs™ to Markdown version 2.0β2
-* Mon Feb 09 2026 23:10:37 GMT-0800 (Pacific Standard Time)
-* Source doc: Create an Agent From Scratch
-* This is a partial selection. Check to make sure intra-doc links work.
------>
-
-
-
 ### Event-based Delegation: 
 
 If a delegation rule is triggered by an *event*, subsequent handling follows the configuration of that event. For example, if an agent handoff event is configured to escalate to a human agent via AI for Service, the delegation triggers the agent handoff process.

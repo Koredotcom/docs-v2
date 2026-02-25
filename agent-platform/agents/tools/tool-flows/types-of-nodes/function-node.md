@@ -305,7 +305,7 @@ The next step is to map input arguments of the selected function to static or dy
 
     <div class="admonition note">
     <p class="admonition-title">Note</p>
-    <p><ul><li>When double curly braces “<code>{{</code>“ are typed in the value field, suggestions for context objects appear.</li>
+    <p><ul><li>When double curly braces `{{` are typed in the value field, suggestions for context objects appear.</li>
     <li>These suggestions list all context objects available for the flow in a list.</li>
     <li>You can also search from the list to select.</li>
     <li>The <b>Add</b> button lets you dynamically pass arguments to your function. The coding language must support additional arguments, and these should be defined at the function parameter level. If the function does not support additional arguments, the operation may fail.</li></ul></p>
