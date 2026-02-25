@@ -167,32 +167,32 @@ Below are the current list of RAGAS evaluators and the components required in th
 
 <table>
   <tr>
-    <td style="width: 150px;"><strong>Metric</strong></td>
+    <td style="width: 150px;" /><strong>Metric</strong></td>
     <td><strong>Description</strong></td>
     <td><strong>Required Dataset Components</strong></td>
   </tr>
   <tr>
-    <td style="width: 150px;">Context Precision</td>
+    <td style="width: 150px;" />Context Precision</td>
     <td>This metric measures the proportion of the relevant chunks and the total number of chunks retrieved for the given user input.</td>
     <td>Input<br>Response<br>Retrieved context</td>
   </tr>
   <tr>
-    <td style="width: 150px;">Context Recall</td>
+    <td style="width: 150px;" />Context Recall</td>
     <td>Considering a reference context, this metric evaluates whether the retrieved context is sufficient to address the user input. Higher recall indicates that fewer significant chunks are omitted.</td>
     <td>Input<br>Response<br>Retrieved context<br>Reference answer</td>
   </tr>
   <tr>
-    <td style="width: 150px;">Context Entity Recall</td>
+    <td style="width: 150px;" />Context Entity Recall</td>
     <td>Considering a reference context, this metric evaluates the number of common entities present in the retrieved context in relation to the total number of entities in that reference context.</td>
     <td>Retrieved context<br>Reference answer</td>
   </tr>
   <tr>
-    <td style="width: 150px;">Noise Sensitivity</td>
+    <td style="width: 150px;" />Noise Sensitivity</td>
     <td>Considering a reference context, this metric provides the proportion of incorrect claims in the total number of retrieved claims.</td>
     <td>Input<br>Response<br>Retrieved context<br>Reference answer</td>
   </tr>
   <tr>
-    <td style="width: 150px;">Faithfulness</td>
+    <td style="width: 150px;" />Faithfulness</td>
     <td>This metric measures how factually consistent a response is with the retrieved context.</td>
     <td>Input<br>Response<br>Retrieved context</td>
   </tr>
@@ -293,11 +293,11 @@ Steps to add an evaluator:
 
 When setting up an AI evaluator, variable mapping is a crucial step. This is where the user connects the variables in the evaluator's prompt to the corresponding columns in the dataset. 
 
-1. **Variables in the Prompt**: The evaluator’s prompt contains variables, indicated in double curly braces. For example, {{input}}, {{output}}, {{query}}. These variables are placeholders for your dataset columns and will appear on the left side of the Variable column. For example, in a Query Relevance evaluator, the prompt might include variables like {{query}} for the user query, {{input}} for the input text, and {{output}} for the model's response.
+1. **Variables in the Prompt**: The evaluator’s prompt contains variables, indicated in double curly braces. For example, `{{input}}`, `{{output}}`, `{{query}}`. These variables are placeholders for your dataset columns and will appear on the left side of the Variable column. For example, in a Query Relevance evaluator, the prompt might include variables like `{{query}}` for the user query, `{{input}}` for the input text, and `{{output}}` for the model's response.
 2. **Left Side - Prompt Variables**: The left side of the mapping section shows the variables from the evaluator's prompt. This section is auto-populated by the system.
 3. **Right Side - Dataset Columns**: The right side displays the columns from your imported dataset. You must select the correct columns from the dataset to match each variable in the prompt. For example:
-    * Map {{input}} to the corresponding input column in your dataset.
-    * Map {{output}} to the output column.
+    * Map `{{input}}` to the corresponding input column in your dataset.
+    * Map `{{output}}` to the output column.
 4. **Safety Evaluators**: For safety evaluators like Bias Detection or Toxicity, you may need to configure additional key-value pairs. These evaluators often provide binary (pass/fail) results, so map the relevant columns accordingly.
 
 By correctly mapping the variables, you ensure the evaluator receives the right data and produces accurate results.

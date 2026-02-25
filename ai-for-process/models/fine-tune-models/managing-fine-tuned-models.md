@@ -39,8 +39,8 @@ Click the Deployments tab to see all deployments for the selected model, along w
 <table>
   <thead>
     <tr>
-      <th style="width: 150px;">Field</th>
-      <th style="width: 500px;">Description</th>
+      <th style="width: 150px;" />Field</th>
+      <th style="width: 500px;" />Description</th>
     </tr>
   </thead>
   <tbody>
@@ -56,7 +56,7 @@ Click the Deployments tab to see all deployments for the selected model, along w
     <td><b>Status</b></td>
     <td>
     The status of deployment: Deploying, Optimizing, Failed, Ready to Deploy, or Deployed.
-  </ul>
+  </td>
 </td>
     </tr>
           <td><b>Deployed By</b></td>
@@ -69,8 +69,8 @@ Click the Deployments tab to see all deployments for the selected model, along w
     <tr>
       <td><b>Actions</b></td>
       <td>
-        <b>Copy cURL</b> – Copies the cURL command for invoking this deployment.<br>
-        <b>Manage API Keys</b> – Opens the API key management tab.<br>
+        <b>Copy cURL</b> – Copies the cURL command for invoking this deployment.
+        <b>Manage API Keys</b> – Opens the API key management tab.
         <b>Re-trigger</b> – Restarts the deployment (Option available only if it has failed or stopped).
       </td>
     </tr>

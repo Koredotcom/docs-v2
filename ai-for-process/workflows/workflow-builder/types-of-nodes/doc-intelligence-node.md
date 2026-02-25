@@ -64,8 +64,8 @@ Options include Async execution, which processes the document in the background 
 | Engine                     | Default settings                              | Notes |
 |----------------------------|-----------------------------------------------|-------|
 | **Docling**                | Async enabled        | The model dropdown shows all configured Docling connections. |
-| **OpenAI**                 | Async enabled        | Only configured OpenAI models are listed.<br>Model timeout: 30–360 sec (default 300). |
-| **Anthropic**              | Async enabled        | Only configured Anthropic models are listed.<br>Model timeout: 30–360 sec (default 300). |
+| **OpenAI**                 | Async enabled        | Only configured OpenAI models are listed. Model timeout: 30–360 sec (default 300). |
+| **Anthropic**              | Async enabled        | Only configured Anthropic models are listed. Model timeout: 30–360 sec (default 300). |
 | **Azure Doc Intelligence** | Async enabled, structured data always enabled | Prebuilt models are available by default. |
 
 <img src="../images/doc_node_config.png" alt="Doc node panel" title="Doc node panel" class="border-2 border-gray-300 rounded-xl" />

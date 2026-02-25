@@ -19,10 +19,10 @@ Moreover, the automatic synchronization (auto sync) feature ensures that Setting
 ## Steps to Configure AD Sync 
 
 1. Log in → In AI for Process Modules top menu → Click **Settings**.
-   <img src="../images/aip-settings-access.png" alt="access settings" title="access settings" style="border: 1px solid gray; zoom:75%;">
+   <img src="../images/aip-settings-access.png" alt="access settings" title="access settings" style="border: 1px solid gray; zoom:75%;"/>
 
 2. On the **Users** dashboard, click the **Configure Directory** button in the **Configure sync with directory** section.
-<img src="../images/configure-directory-button.png" alt="configure directory" title="configure directory" style="border: 1px solid gray; zoom:75%;">
+<img src="../images/configure-directory-button.png" alt="configure directory" title="configure directory" style="border: 1px solid gray; zoom:75%;"/>
 
 3. Complete the setup by following the steps below in the **Configure Directory** window:
 
@@ -42,7 +42,7 @@ Moreover, the automatic synchronization (auto sync) feature ensures that Setting
 <li><b>User ID</b>: The identity used to log into the AD.</li>
 <li><b>Password</b>: The password used to log into the AD.</li>
 <li><b>(Optional) SSL</b>: Enable this option to secure communications over the web, particularly for services and applications that interact with AD via HTTPS.</li>
-<img src="../images/configure-ad-connection.png" alt="configure ad connection" title="configure ad connection" style="border: 1px solid gray; zoom:75%;"></ul>
+<img src="../images/configure-ad-connection.png" alt="configure ad connection" title="configure ad connection" style="border: 1px solid gray; zoom:75%;"/></ul>
 
 <ol start="2"><li>Click <b>Next</b> to confirm the credentials before proceeding. If validation errors occur, they will be displayed on the screen so you can correct them before continuing.</li></ol>
 
@@ -57,7 +57,7 @@ Follow the steps below to configure and import user data from key organizational
 <li><b>Import only the following organization units</b>: Imports user information only from the organization unit you select.</li></ul>
 
 <ol start="2"><li>Click <b>Next</b> to proceed to user profile fields mapping.
-<img src="../images/org-units.png" alt="manage org units" title="manage org units" style="border: 1px solid gray; zoom:75%;"></li></ol>
+<img src="../images/org-units.png" alt="manage org units" title="manage org units" style="border: 1px solid gray; zoom:75%;"/></li></ol>
 
 ### Step 3: Specify User Attributes and Configure Rules for Selective Import from AD
 
@@ -70,7 +70,7 @@ To define both default (pre-defined) and custom fields during setup, follow the 
 
 1. (Optional) Select **Import users from active directory** to fetch the user default fields from the AD.
 2. Click the **User Attributes** tab and select the value from the dropdown to map the field from the AD to the user attribute for all the fields under **Default Fields**.
-<img src="../images/default-fields.png" alt="default fields" title="default fields" style="border: 1px solid gray; zoom:75%;">
+<img src="../images/default-fields.png" alt="default fields" title="default fields" style="border: 1px solid gray; zoom:75%;"/>
 
 3. (Optional) In addition to the default fields, you can add custom fields for your user profile information and map them to a corresponding field in the AD. To add a custom field mapping, follow the steps below:
 
@@ -79,12 +79,12 @@ To define both default (pre-defined) and custom fields during setup, follow the 
 <li>Enter the corresponding AD field in the <b>Field from Active Directory</b> textbox.</li>
 <li>(Optional) Click the <b>tag</b> icon to set the custom field as the primary field. However, to delete this field, you must first remove the primary field tag.</li>
 <li>Click <b>Next</b> to complete user profile fields' mapping and proceed.</li>
-<img src="../images/custom-field-management.png" alt="manage custom field" title="manage custom field" style="border: 1px solid gray; zoom:75%;">
+<img src="../images/custom-field-management.png" alt="manage custom field" title="manage custom field" style="border: 1px solid gray; zoom:75%;"/>
 </ul>
 
 To remove a field, click the **Delete** icon as shown below.
 
-<img src="../images/delete-custom-field.png" alt="delete custom field" title="delete custom field" style="border: 1px solid gray; zoom:75%;">
+<img src="../images/delete-custom-field.png" alt="delete custom field" title="delete custom field" style="border: 1px solid gray; zoom:75%;"/>
 
 <div class="admonition note">
 <p class="admonition-title">Note</p>
@@ -92,8 +92,8 @@ To remove a field, click the **Delete** icon as shown below.
 </div>
 
 <ol start="4"><li>Next, define the rules and sync criteria to import specific users from your AD server. To do this, click the <b>Manage Inclusion & Exclusion Rules</b> tab.</li>
-<li>Under <b>Inclusion Rules</b>, you can sync specific users from your AD Server by defining criteria or filters using profile parameters. Enter the rule expression using the user profile parameters in the <b>Rule Definition</b> textbox according to the LDAP filter syntax mentioned <a href="https://social.technet.microsoft.com/wiki/contents/articles/5392.active-directory-ldap-syntax-filters.aspx" target="_blank">here</a>.</li>
-<img src="../images/manage-rules.png" alt="manage rules" title="manage rules" style="border: 1px solid gray; zoom:75%;"></ol>
+<li>Under <b>Inclusion Rules</b>, you can sync specific users from your AD Server by defining criteria or filters using profile parameters. Enter the rule expression using the user profile parameters in the <b>Rule Definition</b> textbox according to the LDAP filter syntax mentioned <a href="https://social.technet.microsoft.com/wiki/contents/articles/5392.active-directory-ldap-syntax-filters.aspx" >here</a>.</li>
+<img src="../images/manage-rules.png" alt="manage rules" title="manage rules" style="border: 1px solid gray; zoom:75%;"/></ol>
 
 <ol start="6"><li>(Optional) An <b>Exclusion Rule</b> includes the <b>AD/LDAP field</b>, <b>Match Type</b>, and <b>Value</b>. You must set <b>Match Type</b> for one of the following options:</li></ol>
 
@@ -114,11 +114,11 @@ To set an **Exclusion Rules**, follow the steps below:
 <p>All mandatory fields must be filled in before you can proceed to the next step.Deleting a custom field is allowed only if you have added multiple fields.</p>
 </div>
 
-<img src="../images/add-exclusion.png" alt="add exclusion" title="add exclusion" style="border: 1px solid gray; zoom:75%;">
+<img src="../images/add-exclusion.png" alt="add exclusion" title="add exclusion" style="border: 1px solid gray; zoom:75%;"/>
 
 To delete a rule, hover over the entry and click the **Delete** icon.
 
-<img src="../images/delete-rule.png" alt="delete rule" title="delete rule" style="border: 1px solid gray; zoom:75%;">
+<img src="../images/delete-rule.png" alt="delete rule" title="delete rule" style="border: 1px solid gray; zoom:75%;"/>
 
 ### Step 4: Schedule Automatic AD Sync
 
@@ -134,7 +134,7 @@ Auto sync will ensure that any changes in AD, such as user additions or deletion
 To enable and configure auto sync, follow the steps below:
 
 1. Click the **Enable auto-sync** toggle.
-<img src="../images/enable-auto-sync.png" alt="enable auto sync" title="enable auto sync" style="border: 1px solid gray; zoom:75%;">
+<img src="../images/enable-auto-sync.png" alt="enable auto sync" title="enable auto sync" style="border: 1px solid gray; zoom:75%;"/>
 
 <div class="admonition note">
 <p class="admonition-title">Note</p>
@@ -164,7 +164,7 @@ Selecting the Daily option means user data from AD synchronizes everyday startin
 
 For example, the data syncs daily from 10 June 2024 at 12:00 PM.
 
-<img src="../images/daily-schedule.png" alt="daily schedule" title="daily schedule" style="border: 1px solid gray; zoom:75%;">
+<img src="../images/daily-schedule.png" alt="daily schedule" title="daily schedule" style="border: 1px solid gray; zoom:75%;"/>
 
 **Weekly**
 
@@ -172,7 +172,7 @@ Selecting the **Weekly** option means user data from AD synchronizes on the sele
 
 For example, the data syncs every Thursday from 10 June 2024, at 12:00 PM.
 
-<img src="../images/weekly-schedule.png" alt="weekly schedule" title="weekly schedule" style="border: 1px solid gray; zoom:75%;">
+<img src="../images/weekly-schedule.png" alt="weekly schedule" title="weekly schedule" style="border: 1px solid gray; zoom:75%;"/>
 
 **Monthly**
 
@@ -180,7 +180,7 @@ Selecting **monthly** triggers synchronizes user data from the AD on the designa
 
 For example, the data syncs on the 15th of each month, starting from 10 June 2024, at 12:00 PM.
 
-<img src="../images/monthly-schedule.png" alt="monthly schedule" title="monthly schedule" style="border: 1px solid gray; zoom:75%;">
+<img src="../images/monthly-schedule.png" alt="monthly schedule" title="monthly schedule" style="border: 1px solid gray; zoom:75%;"/>
 
 **Other**
 
@@ -188,10 +188,10 @@ Select **Other** to schedule AD syncs at intervals different from Daily, Weekly,
 
 For example, the data sync repeats every 60 days or weeks, starting 10 June 2024 at 12:00 PM.
 
-<img src="../images/other-schedule.png" alt="other schedule" title="other schedule" style="border: 1px solid gray; zoom:75%;">
+<img src="../images/other-schedule.png" alt="other schedule" title="other schedule" style="border: 1px solid gray; zoom:75%;"/>
 
 <ol start="3"><li>Click <b>Save</b>.</li>
-<img src="../images/save-schedule.png" alt="save schedule" title="save schedule" style="border: 1px solid gray; zoom:75%;">
+<img src="../images/save-schedule.png" alt="save schedule" title="save schedule" style="border: 1px solid gray; zoom:75%;"/>
 </ol>
 
 If auto sync is disabled, clicking **Save** only saves the AD sync configuration. Enabling auto-sync saves the configuration and initiates syncing at the scheduled date and time.
@@ -203,7 +203,7 @@ When you set up AD sync for the first time, the following options appear under *
   * **Date and Time**: Timestamp indicating when the sync occurred.
   * **By**: Identification of the individual who initiated the sync.
   * The number of **successful** and **failed** user records that got synced.
-  <img src="../images/sync-history.png" alt="sync history" title="sync history" style="border: 1px solid gray; zoom:75%;">
+  <img src="../images/sync-history.png" alt="sync history" title="sync history" style="border: 1px solid gray; zoom:75%;"/>
 
 * **Manage directory sync**: Displays the **Configure Directory** window where you can edit the existing configurations.
 * **Reset**: Resets the AD sync configurations but retains the last sync data on AI for Process.
@@ -214,17 +214,17 @@ When you set up AD sync for the first time, the following options appear under *
 <p>Even if auto sync is turned off, you can click on the <b>Change</b> link in the sync status to access and schedule an auto sync on the configuration page.</p>
 </div>
 
-<img src="../images/configure-sync-with-directory.png" alt="configure sync with directory" title="configure sync with directory" style="border: 1px solid gray; zoom:75%;">
+<img src="../images/configure-sync-with-directory.png" alt="configure sync with directory" title="configure sync with directory" style="border: 1px solid gray; zoom:75%;"/>
 
 ### Sync Status Email Notifications
 
 For a **successful** sync, you will receive the following email:    
 
-<img src="../images/success-sync.png" alt="success sync" title="success sync" style="border: 1px solid gray; zoom:75%;">
+<img src="../images/success-sync.png" alt="success sync" title="success sync" style="border: 1px solid gray; zoom:75%;"/>
 
 For a **failed** sync, you will receive the following email:    
 
-<img src="../images/failed-sync.png" alt="failed sync" title="failed sync" style="border: 1px solid gray; zoom:75%;">
+<img src="../images/failed-sync.png" alt="failed sync" title="failed sync" style="border: 1px solid gray; zoom:75%;"/>
 
 An alternative way to add users to your account (without using AD sync) is to invite them via email. 
 

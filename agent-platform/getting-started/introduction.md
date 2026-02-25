@@ -111,4 +111,4 @@ When selecting the appropriate paradigm for your use case, consider the followin
 
 Regardless of the chosen paradigm, the platform's core capabilities ensure enterprise-grade security, robust performance, and seamless integration with existing systems and processes.
 
-<hr>
+<hr />

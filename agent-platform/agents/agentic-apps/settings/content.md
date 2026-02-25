@@ -12,15 +12,15 @@ Example: Suppose multiple agents need access to user details such as user name, 
 
 Instead of having every agent fetch these values from the memory store (userdetails) separately, create a content Variable group called *UserContext* containing keys like:
 
-* username → {{memory.userdetails.name}}
-* location → {{memory.userdetails.location}}
-* preferredLang → {{memory.userdetails.preferredLang}}
+* username → `{{memory.userdetails.name}}`
+* location → `{{memory.userdetails.location}}`
+* preferredLang → `{{memory.userdetails.preferredLang}}`
 
 When the Supervisor references *UserContext*, as shown below, the platform resolves all the keys at once. 
 
 
 ```
-The user details are available as {{content.UserContext}}.
+The user details are available as `{{content.UserContext}}`.
 ```
 
 The complete set of user details is fetched from memory and added to the session history, which is available to every downstream agent. Each agent no longer performs repeated memory lookups. They simply reference the already resolved values from the context, as shown below. 

@@ -39,8 +39,8 @@ Click the Deployments tab to see all deployments for the selected model, along w
 <table>
   <thead>
     <tr>
-      <th style="width: 150px;">Field</th>
-      <th style="width: 500px;">Description</th>
+      <th style="width: 150px;" />Field</th>
+      <th style="width: 500px;" />Description</th>
     </tr>
   </thead>
   <tbody>

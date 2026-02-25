@@ -64,7 +64,7 @@ Under Connections, add the connections to the subsequent nodes after this node e
 
 You can pass input as text to the Agentic App. The text can include custom data or dynamic variables from the context object. Developers can also use both system variables and user-defined variables from the context object as input to the Agentic App. 
 
-For example, you can include a variable such as {{context.inputKey}} in the text prompt to pass its value directly to the Agentic App.
+For example, you can include a variable such as `{{context.inputKey}}` in the text prompt to pass its value directly to the Agentic App.
 
 
 ## Handling Response from the Agentic App

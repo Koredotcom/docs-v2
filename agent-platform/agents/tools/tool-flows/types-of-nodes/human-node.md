@@ -27,7 +27,7 @@ The execution behavior depends on the tool’s endpoint configuration:
 
 Built-in mechanisms handle timeouts, duplicate or late responses, and delivery failures to ensure the workflow progresses as configured. This provides visibility and traceability into decisions through the Debug Panel without disrupting the overall flow.
 
-<hr>
+<hr />
 
 ``` mermaid
 sequenceDiagram
@@ -61,7 +61,7 @@ sequenceDiagram
     end
 ```
 
-<hr>
+<hr />
 
 In this document, you’ll learn how to add a Human node to your canvas, configure custom input requests, define reviewer fields, and customize timeout and error-handling behavior.
 

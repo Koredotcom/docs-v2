@@ -5,7 +5,7 @@ AI for Process seamlessly integrates with the Hugging Face platform, allowing yo
 **To integrate with your hugging face account, follow these steps**:
 
 1. Log in → In AI for Process Modules top menu → Click **Settings**.
-   <img src="../images/aip-settings-access.png" alt="access settings" title="access settings" style="border: 1px solid gray; zoom:75%;">
+   <img src="../images/aip-settings-access.png" alt="access settings" title="access settings" style="border: 1px solid gray; zoom:75%;"/>
 
 2. Click **Integrations** on the left menu.
 3. Click the **Hugging Face** option from the list of Integrations. The Hugging Face section is expanded.
@@ -14,7 +14,7 @@ AI for Process seamlessly integrates with the Hugging Face platform, allowing yo
 
 4. Click **Add connection**. The **Hugging Face** dialog is displayed.
 
-    <img src="../images/hugging-face-connection.png" alt="Hugging Face Connection" title="Hugging Face Connection" style="border: 1px solid gray; zoom:60%;">
+    <img src="../images/hugging-face-connection.png" alt="Hugging Face Connection" title="Hugging Face Connection" style="border: 1px solid gray; zoom:60%;"/>
 
 5. Enter the following details in the dialog to create a connection:
     * Provide a **Connection name**.
@@ -30,7 +30,7 @@ You can test your connection after you provide the details to verify the accurac
 
 1. Click the **Test** button on the **Hugging Face** dialog.
 
-    <img src="../images/test-hugging-face-connection.png" alt="Test Hugging Face Connection" title="Test Hugging Face Connection" style="border: 1px solid gray; zoom:60%;">
+    <img src="../images/test-hugging-face-connection.png" alt="Test Hugging Face Connection" title="Test Hugging Face Connection" style="border: 1px solid gray; zoom:60%;"/>
 
     Once the connection is tested, you will receive feedback information.
 

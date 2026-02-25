@@ -48,7 +48,7 @@ Use the following format to access the metadata passed from the the Platform.
 * ```{{context.steps.queryResolver.orderNumber}}```
 * ```{{context.steps.queryResolver.userPreferences}}```
 
-<hr>
+<hr />
 
 **Related Links**
 

@@ -447,7 +447,7 @@ Example:
 }
 ```
 
-When the workflow runs, the expression inside {{ ... }} is automatically resolved at runtime using the Context Object.
+When the workflow runs, the expression inside `{{ ... }}` is automatically resolved at runtime using the Context Object.
 
 This declarative referencing allows you to bind data from previous nodes without writing code.
 
@@ -474,9 +474,7 @@ You can reference any accessible value from the Context Object:
 * If a referenced key doesn’t exist, the expression resolves to null (or an empty string in string contexts).
 * Circular references are automatically detected and blocked.
 
-!!! note
-
-    Typing {{ in any field within a node that supports context variables displays a dynamic dropdown of all available variables, grouped by node, including environment variables defined at the workflow-tool level. This allows referencing values without manually entering full paths.
+<Note>Typing `{{` in any field within a node that supports context variables displays a dynamic dropdown of all available variables, grouped by node, including environment variables defined at the workflow-tool level. This allows referencing values without manually entering full paths.</Note>
 
 ## Extending the Context Object with Script Nodes
 
@@ -527,7 +525,7 @@ print(context['customData']['stage'])
 * Use camelCase naming (customerInfo, retryCounter, tempResults). 
 * Avoid overriding system-reserved keys (steps, branch, status, dbquery). 
 * Keep data lightweight - avoid large arrays or raw API responses.
-* Everything added to the context object is accessible in later nodes through {{context.&lt;key>}} references. 
+* Everything added to the context object is accessible in later nodes through `{{context.<key>}}` references. 
 
 ## Best Practices
 
