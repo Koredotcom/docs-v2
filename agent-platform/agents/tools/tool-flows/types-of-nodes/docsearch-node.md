@@ -147,16 +147,7 @@ To run and test the flow, follow the steps below:
 
    The **Debug** window displays the flow log and execution status of each node on the canvas, starting from the **Start** node to the **End** node, along with the result shown in the **Output** window. [Learn more](../../../tools/tool-flows/perform-other-actions-on-the-flow-builder/run-the-flow.md) about running the tool flow.
 
-<div class="admonition note">
-<p class="admonition-title">Accessing the Output</p>
-<p>The answer
-(extracted chunks) from the node can be accessed via the context variable (key) in the output path. This key is dynamic and depends on the API response. The
-format is <code>{{context.steps.<<<b>nodename</b>>>.dynamic
-path}}</code>. For example, it
-could be <code>context.steps.DocSearch.response.response.answer</code> in one case or <code>context.steps.DocSearch.response.response.response.answer</code> in another.
-
-Check the sample response from Search AI to find the correct key that holds the content.
-Use that key in your tool flow. You may also need to extract multiple chunks from different keys.</p></div>
+<Note>The answer (extracted chunks) from the node can be accessed via the context variable (key) in the output path. This key is dynamic and depends on the API response. The format is `{{context.steps.<<<b>nodename</b>>>.dynamicpath}}`. For example, it could be `context.steps.DocSearch.response.response.answer` in one case or `context.steps.DocSearch.response.response.response.answer` in another. Check the sample response from Search AI to find the correct key that holds the content. Use that key in your tool flow. You may also need to extract multiple chunks from different keys.</Note>
 
 <hr/> 
 

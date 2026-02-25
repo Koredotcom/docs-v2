@@ -74,7 +74,7 @@ Click the added node to open its properties dialog box. The General Settings for
 
    </td>
   <td>
-  Select the integration type: <strong>Synchronous</strong> or <strong>Asynchronous</strong>.<br><br>
+  Select the integration type: <strong>Synchronous</strong> or <strong>Asynchronous</strong>.<br <br />r>
 
   <strong>Synchronous</strong>: Waits for a response before proceeding.
   <ul>
@@ -111,11 +111,11 @@ Click the added node to open its properties dialog box. The General Settings for
       In the <strong>Auth</strong> section, select the required <strong>Auth Profile</strong> from the list of configured profiles. Next, provide the authorization details.
       <ul>
         <li>
-          <strong>Pre-authorize the Integration</strong>: Select this option if the authorization has already been completed in advance. This is suitable for API calls that do not require the end user to authenticate or provide credentials.<br>
+          <strong>Pre-authorize the Integration</strong>: Select this option if the authorization has already been completed in advance. This is suitable for API calls that do not require the end user to authenticate or provide credentials.<br />
           <strong>Example</strong>: Connecting to a service using a system-level token or client credentials that have already been authorized. In this case, the same credentials are used for all users.
         </li>
         <li>
-          <strong>Allow users to authorize the integration</strong>: Choose this option if each end user needs to dynamically authorize the integration at runtime. This is useful when user-specific credentials or tokens are required for access.<br>
+          <strong>Allow users to authorize the integration</strong>: Choose this option if each end user needs to dynamically authorize the integration at runtime. This is useful when user-specific credentials or tokens are required for access.<br />
           <strong>Example</strong>: Connecting to a third-party service like Google Drive, where each user must log in and grant access to their account. This ensures personalized access and respects individual user permissions.
         </li>
       </ul>

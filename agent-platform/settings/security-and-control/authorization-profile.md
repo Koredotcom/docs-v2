@@ -36,13 +36,13 @@ OAuth 2.0 (OAuth2) is a standard authorization framework that enables applicatio
 
 * **Secure, Token-Based Authorization** – Grants access without sharing user credentials, using short-lived access tokens. 
 
-* **Multiple Authorization Flows** – Supports different grant types (e.g., Authorization Code, Client Credentials) for various use cases. 
+* **Multiple Authorization Flows** – Supports different grant types (for example, Authorization Code, Client Credentials) for various use cases. 
 
-* **Scope-Based Access Control** – Users can grant apps limited permissions (e.g., read-only access). 
+* **Scope-Based Access Control** – Users can grant apps limited permissions (for example, read-only access). 
 
 * **Refresh Token Support** –  Enables seamless re-authorization without requiring user login. 
 
-* **Third-Party & Scalable Integration** – Widely adopted for API authentication, allowing secure third-party access (e.g., "*Sign in with Google*").
+* **Third-Party & Scalable Integration** – Widely adopted for API authentication, allowing secure third-party access (for example, "*Sign in with Google*").
 
 ### OAuth V2 Client Credential
 
@@ -59,7 +59,7 @@ The Client Credentials flow is one of the OAuth 2.0 authorization grant types. I
 **Key Features**
 
 * **Client Credentials**: This flow uses the client's unique identifier (client ID) and a secret (client secret) to authenticate the application with the authorization server. 
-* **No User Interaction**: Unlike flows involving user authorization (e.g., authorization code flow), the client credentials flow doesn't require the user to log in or grant permissions. 
+* **No User Interaction**: Unlike flows involving user authorization (for example, authorization code flow), the client credentials flow doesn't require the user to log in or grant permissions. 
 * **Machine-to-Machine (M2M) Communication**: This flow is ideal for scenarios where one application needs to access resources owned by another application, such as microservices or server-to-server communication. 
 * **Resource Access**: The client uses the acquired access token to interact with the resource server and access protected resources. 
 * **Access Token**: The authorization server issues an access token, a short-lived credential that allows the client to access specific resources. 

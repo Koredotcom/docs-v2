@@ -150,22 +150,16 @@ Metrics include:
     
       Alternatively, you can add dynamic prompt instructions referencing different audio file URLs from the Start node using the syntax: `{{context.steps.Start.variable_name}}`, where <i>variable_name</i> stores the audio file URL. 
       
-      For example, if “<i>ConversationFile</i>” stores the audio file URL (passed dynamically during runtime), you can reference it in the prompt using the syntax <code>{{context.steps.Start.ConversationFile}}</code>, as shown below.
+      For example, if “<i>ConversationFile</i>” stores the audio file URL (passed dynamically during runtime), you can reference it in the prompt using the syntax `{{context.steps.Start.ConversationFile}}`.
       <img src="../images/dynamic-prompt-example.png" alt="dynamic prompt example" title="dynamic prompt example" style="border: 1px solid gray; zoom:75%;"/>
     
       You may include simple instructions regarding the style of the transcription, correct words or proper nouns, in case the model could not figure out what the spoken word was, fix punctuations, add context, and more. 
       
-      For example, "<i>Use a clean verbatim transcription style by omitting filler words such as “um,” “uh,” or “you know.” Correct any misheard or unclear words, especially product names, company names, and technical terms. Ensure proper punctuation and sentence casing to make the transcript easy to read. If a word is not clear, mark it as "inaudible" with a timestamp. Add short speaker labels (Customer: and Agent:) and make light contextual corrections for grammar and clarity without altering the original meaning."</i>
+      For example, `Use a clean verbatim transcription style by omitting filler words such as “um,” “uh,” or “you know.” Correct any misheard or unclear words, especially product names, company names, and technical terms. Ensure proper punctuation and sentence casing to make the transcript easy to read. If a word is not clear, mark it as "inaudible" with a timestamp. Add short speaker labels (Customer: and Agent:) and make light contextual corrections for grammar and clarity without altering the original meaning."`
 
-    <div class="admonition note">
-    <p class="admonition-title">Note</p>
-    <p>Whisper models process up to <b>224 tokens</b> in the input prompt and ignore any input exceeding this limit.</p>
-    </div>
+    <Note>Whisper models process up to <b>224 tokens</b> in the input prompt and ignore any input exceeding this limit.</Note>
                 
-    <div class="admonition warning">
-    <p class="admonition-title">Standard Error</p>
-    <p>When the Model is not selected, the prompt details are not provided, or both, the error message “<i>Proper data needs to be provided in the LLM node</i>” is displayed.</p>
-    </div>
+    <Note>When the Model is not selected, the prompt details are not provided, or both, the error message “<i>Proper data needs to be provided in the LLM node</i>” is displayed.</Note>
 
     * **Response JSON schema**:  Define a JSON schema for structured responses. This step is optional and depends on the selected model.   
     You can define a JSON schema to structure the model's response if the chosen model supports the response format. By default, if no schema is provided, the model will respond with plain text.

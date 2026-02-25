@@ -48,7 +48,7 @@
 
     * For **in-progress** runs, logs using **default logging** appear only after the run completes. 
 
-    * With the **custom <code>korelogger</code> library**, logs populate in real-time, with support for structured log levels (e.g., info, debug, error), making it ideal for live monitoring and debugging.
+    * With the **custom <code>korelogger</code> library**, logs populate in real-time, with support for structured log levels (for example, info, debug, error), making it ideal for live monitoring and debugging.
 
 * Export runs and logs as a dataset in .csv format, based on the applied filters and selected date range for further analysis, editing, and debugging.
 
@@ -309,7 +309,7 @@ The record view offers log-specific insights at the script run level after each 
     * Unexpected inputs or outputs.
     * Misconfigured logic or API responses.
 
-* **Enhanced Usability**: With features such as keyboard navigation (e.g., J/K to switch records), copy-to-clipboard, expand/collapse, and scroll, users can efficiently explore logs.
+* **Enhanced Usability**: With features such as keyboard navigation (for example, J/K to switch records), copy-to-clipboard, expand/collapse, and scroll, users can efficiently explore logs.
 
 ### Steps to Access Record View
 
@@ -329,7 +329,7 @@ The Platform offers two convenient logging options to help you effectively captu
 
 **Key Considerations**
 
-* When using **default logging** (e.g., `print()` in Python or `console.log()` in JavaScript), logs appear in the **Logs** section only after the script execution completes (success or failure).
+* When using **default logging** (for example, `print()` in Python or `console.log()` in JavaScript), logs appear in the **Logs** section only after the script execution completes (success or failure).
 * **Custom logging** with the `korelogger` library enables real-time log streaming where logs are populated in the table as they're generated.
 * We recommend using `korelogger` for its log-level control and immediate log visibility, which significantly improves monitoring and debugging efficiency.
 

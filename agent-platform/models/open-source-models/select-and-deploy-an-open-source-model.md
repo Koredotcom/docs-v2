@@ -20,9 +20,7 @@ To select and deploy a model, follow these steps:
   * If you choose to **Import from Hugging Face**, select the **Hugging Face connection** type from the dropdown and paste the **model name**.
     For more information about connecting to your Hugging Face account, see [How to Connect to your Hugging Face Account](../../settings/integrations/enable-hugging-face.md).
 
-    !!! note
-
-        In the case of public mode, selecting a connection is not necessary.  
+    <Note>In the case of public mode, selecting a connection is not necessary.</Note>
 
 
     <img src="../images/image7.png" alt=" " title=" " class="border-2 border-gray-300 rounded-xl" />

@@ -257,7 +257,7 @@ A parallel branch contains its own parallel branches.
 <img src="../images/nested_parallel.png" alt="Nested parallel" title="Nested parallel" class="border-2 border-gray-300 rounded-xl" />
 
 * **Conditional + Parallel**
-Combine condition nodes with parallel execution. Based on logic (e.g., if/else), different sets of parallel branches are triggered.
+Combine condition nodes with parallel execution. Based on logic (for example, if/else), different sets of parallel branches are triggered.
 *Example: If status is "new", run onboarding tasks in parallel. If "existing", skip them.*
 
 <img src="../images/conditional_parallel.png" alt="Conditional parallel" title="Conditional parallel" class="border-2 border-gray-300 rounded-xl" />

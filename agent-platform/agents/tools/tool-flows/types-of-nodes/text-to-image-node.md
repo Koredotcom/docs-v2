@@ -18,7 +18,7 @@ Configuration options allow you to specify input prompts and control output form
 
 * **Step-based Image Refinement**: Fine-tune image quality with adjustable step counts—up to **30 steps** recommended for balancing detail and performance. 
 
-* **Batch Generation**: Generate up to **5 image variants** in a single run (e.g., color and black-and-white versions for different audiences). 
+* **Batch Generation**: Generate up to **5 image variants** in a single run (for example, color and black-and-white versions for different audiences). 
 
 * **High-Quality Output Format**: Images are generated in **PNG format** and returned as **URLs** for seamless integration into workflows. 
 
@@ -127,9 +127,7 @@ The metrics include:
     * **Positive Prompt**: Enter the keywords for what needs to be generated in the image or what it should include. The model will generate along the lines of the details mentioned here and not consider the negative hints.
     * **Negative Prompt**: Enter the keywords for the elements the image should exclude.
 
-     <div class="admonition note">
-     <p class="admonition-title">Important</p>
-      <p>User prompts define specific questions or requests for the model to follow and generate results. You can use input variables you add in <a href="#step-1-optional-add-input-variables">this</a> step to add dynamic inputs to the prompt in the recommended syntax:<code>{{context.variable_name}}</code> before you run and test the flow. <a href="#step-3-run-the-flow">Learn more</a>.</p></div>
+     <Note>User prompts define specific questions or requests for the model to follow and generate results. You can use input variables you add in <a href="#step-1-optional-add-input-variables">this</a> step to add dynamic inputs to the prompt in the recommended syntax: `{{context.variable_name}}` before you run and test the flow. <a href="#step-3-run-the-flow">Learn more</a>.</Note>
 
     * **Aspect Ratio**: Define the dimensions of the image in pixels for width and height.
     * **Steps**: Add the number of times the model will go back to the image and add more details/enhancements to get it as close to the prompt as possible. 25-30 steps are recommended for any image generation. Increasing the steps might add unwanted elements or model hallucinations and increase the time of generation.
@@ -160,7 +158,7 @@ After adding and configuring the node as mentioned [here](./text-to-image-node.m
 
 <div class="admonition note">
 <p class="admonition-title">Dynamic Prompt Inputs</p>
-<p>Before you <a href="#step-3-run-the-flow">run the flow</a>, provide clear instructions for the model to follow using the <b>input variable(s)</b> you add in the following step with the help of <b>context variables</b>. Context variables add dynamic values to the prompt instructions that the model will follow. The recommended syntax is: <code>{{context.variable_name}}</code>. For example, you can store the generated image URL in a variable named “<i>Imaggenerated</i>” and pass it on in the prompt when you mention <q><i>Generate an image based on the below description</i>: <code>{{context.steps.Start.Imaggenerated}}</code></q>, as shown in the image below.</p></div>
+<p>Before you <a href="#step-3-run-the-flow">run the flow</a>, provide clear instructions for the model to follow using the <b>input variable(s)</b> you add in the following step with the help of <b>context variables</b>. Context variables add dynamic values to the prompt instructions that the model will follow. The recommended syntax is: `{{context.variable_name}}`. For example, you can store the generated image URL in a variable named “<i>Imaggenerated</i>” and pass it on in the prompt when you mention <q><i>Generate an image based on the below description</i>: `{{context.steps.Start.Imaggenerated}}` </q>, as shown in the image below.</p></div>
 
 <img src="../images/dynamic-prompt-input.png" alt="dynamic prompt input" title="dynamic prompt input" style="border: 1px solid gray; zoom:75%;" /> 
 

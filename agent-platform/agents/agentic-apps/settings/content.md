@@ -47,9 +47,7 @@ Use Content Variables when you need to centralize, reuse, or efficiently inject 
 
 ## Creating Content variables
 
-To create  content variables, 
-
-
+To create  content variables, follow these steps:
 
 1. Go to the *Content* page under the app's Settings.
 2. Click *+New Content*. 
@@ -60,16 +58,6 @@ To create  content variables,
     4. Contextual Information: Add key-value pairs that define the variables in this content. The value can be static strings or a dynamic values that reference memory stores or environment variables. 
 4. Click Create to save the content. This creates a content object containing all the specified key–value pairs.
 
-
 ## Accessing Content Variables
 
-To access content variables, use the following format.
-
-{{content.&lt;content-name>.&lt;key>}}
-
-Example: if a content field is created with the name ‘guidelines’ and has a key prefLang that stores the preferred language of the user, use the following format to access it in the agent prompt to set it as a guideline for the LLM. 
-
-
-```
-{{content.guidelines.prefLang}}
-```
+To access content variables, use the format `{{content.<content-name>.<key>}}`. For example: if a content field is created with the name `guidelines` and has a key prefLang that stores the preferred language of the user, use the format `{{content.guidelines.prefLang}}` to access it in the agent prompt to set it as a guideline for the LLM. 

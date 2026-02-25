@@ -24,7 +24,7 @@ Prompt Studio is a workspace for developing, experimenting with, and optimizing 
 
 Evaluation Studio provides a structured environment to analyze and benchmark the performance of LLMs using diverse datasets and scoring methods. Users can apply built-in evaluators or define custom evaluators to assess outputs for coherence, factual accuracy, safety, and more. Results are visualized and tracked across evaluation sessions for continuous improvement. [Learn more :octicons-arrow-right-24:](../evaluation/overview.md)
 
-* Evaluate models using prebuilt or custom evaluators (e.g., coherence, toxicity).
+* Evaluate models using prebuilt or custom evaluators (for example, coherence, toxicity).
 * Import datasets from production or offline sources.
 * Collaborate on evaluation projects and track longitudinal performance.
 

@@ -68,8 +68,8 @@ Each model can have multiple deployments, which are tracked independently. The D
     <tr>
       <td><b>Actions</b></td>
       <td>
-        <b>Copy cURL</b> – Copies the cURL command for invoking this deployment.<br>
-        <b>Manage API Keys</b> – Opens the API key management tab.<br>
+        <b>Copy cURL</b> – Copies the cURL command for invoking this deployment.<br />
+        <b>Manage API Keys</b> – Opens the API key management tab.<br />
         <b>Re-trigger</b> – Restarts the deployment (Option available only if it has failed or stopped).
       </td>
     </tr>

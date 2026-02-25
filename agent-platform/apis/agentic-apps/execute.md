@@ -331,7 +331,7 @@ Returns the agent's response to the query along with the session details.
 <p>
 - status: current session state 
 <p>
-- conversationState: e.g., COMPLETED 
+- conversationState: for example, COMPLETED 
 <p>
 - userReference, sessionReference, userId, sessionId, runId, appId
    </td>
@@ -1017,7 +1017,7 @@ curl --location 'https://{domain}/api/v2/apps/aa-0959e994-xxxx-xxxx-9217-45653a6
 ### Points to Notes
 
 1. When implementing thought streaming, ensure proper error handling for cases where the connection might be interrupted.
-2.  The **source** field in debug thoughts indicates the origin of each thought (e.g., agent, orchestrator), helping pinpoint issues during debugging and trace execution flow across components.
+2.  The **source** field in debug thoughts indicates the origin of each thought (for example, agent, orchestrator), helping pinpoint issues during debugging and trace execution flow across components.
 3. When using streamMode: "tokens", be aware that only the final output content will be streamed token by token, while debug thoughts will still come as complete messages.
 4. The sessionInfo object contains important tracking information, including the status of the conversation and run identifiers.
 5. For high-frequency thought streams, implement client-side buffering to ensure a smooth user experience and reduce rendering or processing lag.
