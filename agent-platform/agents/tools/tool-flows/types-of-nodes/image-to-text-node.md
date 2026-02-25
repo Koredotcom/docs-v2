@@ -23,11 +23,11 @@ The **Image to Text** node is a versatile multimodal component that enables you 
 
 ## Example Use Case
 
-A sample use case involves an insurance company evaluating vehicle damage to streamline the claim assessment process. The **Image to Text** node analyzes the uploaded image of the damaged vehicle using a natural language prompt like "*Analyze the uploaded image of the vehicle and identify which parts show visible damage. Choose the affected components from the following list: {{context.parts_list}}*.." It identifies impacted parts and estimates repair costs, helping automate claim verification and compensation decisions. 
+A sample use case involves an insurance company evaluating vehicle damage to streamline the claim assessment process. The **Image to Text** node analyzes the uploaded image of the damaged vehicle using a natural language prompt like `Analyze the uploaded image of the vehicle and identify which parts show visible damage. Choose the affected components from the following list: {{context.parts_list}}` It identifies impacted parts and estimates repair costs, helping automate claim verification and compensation decisions. 
 
 ## How it Works
 
-The **Image to Text** node integrates smoothly into your tool flows by accepting image file URLs and generating descriptive or structured text output for downstream nodes. You can configure the node by selecting a supported model and providing a valid image URL in PNG, JPEG, or JPG format. Use the System Prompt to define the model’s role (e.g., insurance evaluator), and the Prompt to specify the task, such as answering a question or extracting details. Prompts support dynamic context variables, enabling flexible, data-driven automation scenarios.
+The **Image to Text** node integrates smoothly into your tool flows by accepting image file URLs and generating descriptive or structured text output for downstream nodes. You can configure the node by selecting a supported model and providing a valid image URL in PNG, JPEG, or JPG format. Use the System Prompt to define the model’s role (for example, insurance evaluator), and the Prompt to specify the task, such as answering a question or extracting details. Prompts support dynamic context variables, enabling flexible, data-driven automation scenarios.
 
 <img src="../images/how-image-to-text-works.png" alt="how image to text works" title="how image to text works" style="border: 1px solid gray; zoom:75%;"/>
 
@@ -79,7 +79,7 @@ In this document, you will learn how to add the node to your flows, configure it
      <li>Both binary, base64-encoded, and image URLs for OpenAI models.</li></ul></p></div>
 
 * <b>System Prompt</b>: System prompts guide the model’s behavior and response style. Enter a system prompt to define its role for your use case. For example: "<i>You are a vehicle insurance assistant that analyzes uploaded vehicle images to assess damage and estimate repair costs in USD</i>."
-* <b>Prompt</b>: User prompts define specific questions or requests for the model. Provide clear instructions for the model to follow, using context variables for dynamic inputs in the syntax: <code>{{context.variable_name}}</code>. <b>Example:</b> "<i>Check the image provided for the damaged parts in the car and select what parts are affected from the list below - <code>{{context.parts_list}}</code></i>."</li>
+* <b>Prompt</b>: User prompts define specific questions or requests for the model. Provide clear instructions for the model to follow, using context variables for dynamic inputs in the syntax: `{{context.variable_name}}`. <b>Example:</b> `Check the image provided for the damaged parts in the car and select what parts are affected from the list below - {{context.parts_list}}`</li>
          <img src="../images/configuration-set.png" alt="configurations tab" title="configurations tab" style="border: 1px solid gray; zoom:75%;"/>
 
 * **Response JSON schema**:  Define a JSON schema for structured responses. This step is optional and depends on the selected model.   

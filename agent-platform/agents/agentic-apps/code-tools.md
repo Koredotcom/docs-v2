@@ -32,7 +32,7 @@ Define the **input parameters** required by the tool to perform its task. For ea
 
 * **Name:** A unique identifier for the parameter.
 * **Description:** Explains the parameter’s purpose to help the agent extract relevant data from user input.
-* **Type:** The expected data type (e.g., string, number, boolean).
+* **Type:** The expected data type (for example, string, number, boolean).
 
 **Example for SQL Query Processor**:
 

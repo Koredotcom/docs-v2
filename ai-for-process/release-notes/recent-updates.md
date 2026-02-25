@@ -20,7 +20,7 @@ Key Capabilities:
 * Secure & Auditable: Detailed logs, replay visibility, and credential management ensure reliability and compliance.
 
 
-<hr>
+<hr />
 
 ## v1.0.6 December 12, 2025
 
@@ -38,7 +38,7 @@ The enhanced Doc Intelligence node makes document processing more transparent, r
 * Simplified language configuration: English is selected by default during deployment, with support for selecting one additional language to reduce configuration complexity.
 * Deployment history for OCR models: A new Deployment History tab provides visibility into past and current deployments, including version details, status, configuration, and lifecycle information.
 
-<hr>
+<hr />
 
 
 
@@ -65,7 +65,7 @@ The Workflow Monitor page provides visibility into workflow runs:
 * Run status is clearly displayed as Success, Failure, In Progress, or Waiting.
 * Trigger type (event-based, schedule-based, or API-based) and source shown for each run.
 
-<hr>
+<hr />
 
 ## v1.0.4 November 24, 2025
 
@@ -83,7 +83,7 @@ Key capabilities:
 * OCR included in Usage breakdown chart: Understand how much OCR contributes to the overall consumption.
 * New OCR tab under Billing → Usage: View detailed OCR deployment usage, including credits used and status.
 
-<hr>
+<hr />
 
 ## v1.0.3 November 13, 2025
 
@@ -124,7 +124,7 @@ This update includes a new feature summarized below.
 
 AI for Process introduces the Agentic App Node, enabling workflows to invoke and interact with Agentic Apps created on the Agent Platform within the same workspace. This feature promotes the reuse of existing Agentic App capabilities and streamlines collaboration for more efficient task execution.
 
-<hr>
+<hr />
 
 ## v1.0.1 October 14, 2025
 

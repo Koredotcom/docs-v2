@@ -17,7 +17,7 @@ The Text to Text node is part of the AI node family in the Tool Builder, enablin
 * **Tone or Style Adjustment**: Refine a message to convey a more professional, friendly, technical, or other desired tone.
 * **Keyword-Based Generation**: Produce text using given inputs like names, topics, or key phrases.
 * **Error Explanation or Log Analysis**: Extract, explain, or simplify technical content.
-* **Content Rewriting**: Modify existing text to enhance clarity, structure, or purpose (e.g., simplifying instructions).
+* **Content Rewriting**: Modify existing text to enhance clarity, structure, or purpose (for example, simplifying instructions).
 
 ## How It Works
 

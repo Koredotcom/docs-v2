@@ -39,7 +39,7 @@ Enhance an existing app by selectively importing specific agents or tools to add
 
 1. Go to [Agentic Apps](https://agent-platform.kore.ai/apps), select an existing app, and choose **Explore Marketplace**. Alternatively, go to the [Marketplace](https://kore.ai/ai-marketplace/) and select your existing app.
 
-    <img src="../images/add-agent.png" alt="Add agent" title="Add agent" style="border: 1px solid gray; zoom:80%;"/>
+    <img src="../images/add-agent.png" alt="Add agent" title="Add agent" class="border-2 border-gray-300 rounded-xl" />
 
 2. Browse by category, select an app to view its details and installation instructions, then prepare for tool configuration.
 

@@ -3,7 +3,7 @@
 
 On the Configurations page, you can view the model name, edit the description, and add tags, adjust the model endpoint timeout duration, undeploy, or delete the model.
 
-<img src="../images/configure-open-source-model-1.png" alt="Configure your Open-Source Model " title="Configure your Open-Source Model" style="border: 1px solid gray; zoom:80%;"/>
+<img src="../images/configure-open-source-model-1.png" alt="Configure your Open-Source Model " title="Configure your Open-Source Model" class="border-2 border-gray-300 rounded-xl" />
 
 ## Model Endpoint Timeout
 

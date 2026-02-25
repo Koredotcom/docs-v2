@@ -7,6 +7,6 @@ Steps to create a Workflow:
 1. Log in to your account.  
 1. On the **Workflows** page, select **Create new workflow**. The **New workflow** dialog box is displayed.
 
-    <img src="../images/workflow-description.png" alt="Create a workflow" title="Create a workflow" style="border: 0px solid gray; zoom:60%;">
+    <img src="../images/workflow-description.png" alt="Create a workflow" title="Create a workflow" style="border: 0px solid gray; zoom:60%;"/>
 
 1. Enter a name and a brief description for the workflow and select **Create**. The workflow is created, and the **Workflow** option is displayed. You can start creating your workflow now.

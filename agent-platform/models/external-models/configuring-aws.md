@@ -168,7 +168,7 @@ Example payload:
 
 Configure JSON paths to extract:
 
-* Model output (e.g., response text)
+* Model output (for example, response text)
 * Input and output token counts
 
 Example:

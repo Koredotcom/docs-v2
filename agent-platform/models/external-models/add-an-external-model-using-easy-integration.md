@@ -9,7 +9,7 @@ Steps to add the Anthropic Claude-V1 model using easy integration:
 1. Click **Models** on the top navigation bar of the application. The **Models** page is displayed.
 2. Click the **External models** tab on the **Models** page.
 
-    <img src="../images/navigating-to-external-models.png" alt="Navigating to External Models" title="Navigating to External Models" style="border: 1px solid gray; zoom:80%;"/>
+    <img src="../images/navigating-to-external-models.png" alt="Navigating to External Models" title="Navigating to External Models" class="border-2 border-gray-300 rounded-xl" />
 
 3. Click **Add a model** under the **External models** tab. The **Add an external model** dialog is displayed.
 
@@ -46,7 +46,7 @@ You can easily connect Amazon Bedrock models to the Platform using a guided setu
 
 !!! important
 
-    Customers must create an IAM role within their AWS account with the necessary permissions in their AWS account (e.g., access to AWS Bedrock APIs). This role must include a trust policy that allows the Platform’s AWS principal (or a designated IAM role in an AWS account) to assume it. For more information, see [Configuring Amazon Bedrock models](./configuring-aws.md).
+    Customers must create an IAM role within their AWS account with the necessary permissions in their AWS account (for example, access to AWS Bedrock APIs). This role must include a trust policy that allows the Platform’s AWS principal (or a designated IAM role in an AWS account) to assume it. For more information, see [Configuring Amazon Bedrock models](./configuring-aws.md).
 
 
 Steps to add Amazon Bedrock models using easy integration:
@@ -86,12 +86,10 @@ In the **Model configurations** section, select one of the following options to 
 
 **Option A: Default**
 
-Use this option to manually configure all API components and control how requests and responses are structured
+Use this option to configure all API components and control how requests and responses are structured.
 
-* **Variables** – Define Prompt variables (mandatory) and add Custom variables as needed. These input variables are used within your request payload to bind dynamic input values to your payload structure.  
-For example: {{prompt}}, {{system.prompt}}
-* **Request Body** – Provide a sample JSON request body for invoking the model. Use the defined variable placeholders {{variableName}} (such as {{prompt}}) to bind input fields dynamically.
-For example:
+* **Variables**: Define Prompt variables (mandatory) and add Custom variables as needed. These input variables are used within your request payload to bind dynamic input values to your payload structure. For example: `{{prompt}}`, `{{system.prompt}}`.
+* **Request Body**: Provide a sample JSON request body for invoking the model. Use the defined variable placeholders `{{variableName}}` (such as `{{prompt}}`) to bind input fields dynamically. For example:
 
       ```
       {
@@ -101,13 +99,13 @@ For example:
       }
       ```
 
-    **Note**: Ensure the structure of the request body follows the model-specific API schema. Use only supported parameters for the selected Amazon Bedrock model.
+    <Note>Ensure the structure of the request body follows the model-specific API schema. Use only supported parameters for the selected Amazon Bedrock model.</Note>
 
-* **Test Response** – Provide sample values for your variables and click Test to invoke the model and preview the response.
-* **JSON Path Mapping** – Specify JSON keys to extract relevant output fields from the model response:
-    * **Output path** – e.g., `choices[0].message.content`
-    * **Input tokens** – e.g., `usage.prompt_tokens`
-    * **Output tokens** – e.g., `usage.completion_tokens`
+* **Test Response**: Provide sample values for your variables and click Test to invoke the model and preview the response.
+* **JSON Path Mapping**: Specify JSON keys to extract relevant output fields from the model response:
+    * **Output path**: for example, `choices[0].message.content`
+    * **Input tokens**: for example, `usage.prompt_tokens`
+    * **Output tokens**: for example, `usage.completion_tokens`
 
 **Option B: Existing Provider Structures**
 
@@ -174,7 +172,7 @@ Steps to add Google Vertex AI models using easy integration:
 
 In the Add connection dialog, you can choose between two configuration methods:
 
-**Option A: Manual Setup**<br>
+**Option A: Manual Setup**<br />
 In the **Manual Setup** tab, configure the following:
 
 **Connection Details**:

@@ -11,7 +11,7 @@ The following pre-existing libraries can be selected for use in the script edito
 * **Date-time Libraries**: [datetime](#datetime), [time](#time), and [calendar](#calendar).
 * [Itertools](#itertools)
 
-<hr>
+<hr />
 
 The libraries mentioned above are imported and made available in the function node in the following formats:
 
@@ -33,7 +33,7 @@ import time
 import calendar
 import itertools
 ```
-<hr>
+<hr />
 
 ## Functions of Supported Libraries
 
@@ -60,7 +60,7 @@ import itertools
         "IntFlag"
     ]
 ```
-<hr>
+<hr />
 
 ## Numerical Libraries
 
@@ -496,7 +496,7 @@ import itertools
     ]
 
 ```
-<a href="https://numpy.org/doc/stable/reference/index.html#reference" target="_blank">Learn more</a>.
+<a href="https://numpy.org/doc/stable/reference/index.html#reference" >Learn more</a>.
 
 ### pandas
 
@@ -576,7 +576,7 @@ import itertools
         "wide_to_long"
     ]
 ```
-<a href="https://pandas.pydata.org/docs/reference/index.html" target="_blank">Learn more</a>.
+<a href="https://pandas.pydata.org/docs/reference/index.html" >Learn more</a>.
 
 ### collections
 
@@ -593,7 +593,7 @@ import itertools
         "namedtuple"
     ]
 ```
-<a href="https://docs.python.org/3/library/collections.html" target="_blank">Learn more</a>.
+<a href="https://docs.python.org/3/library/collections.html" >Learn more</a>.
 
 ### math
 
@@ -651,7 +651,7 @@ import itertools
         "trunc"
     ]
 ```
-<a href="https://docs.python.org/3/library/math.html" target="_blank">Learn more</a>.
+<a href="https://docs.python.org/3/library/math.html" >Learn more</a>.
 
 ### cmath
 
@@ -682,7 +682,7 @@ import itertools
         "tanh"
     ]
 ```
-<a href="https://docs.python.org/3/library/cmath.html" target="_blank">Learn more</a>.
+<a href="https://docs.python.org/3/library/cmath.html" >Learn more</a>.
 
 ### statistics
 
@@ -694,7 +694,7 @@ import itertools
         "NormalDist"
     ]
 ```
-<a href="https://docs.python.org/3/library/statistics.html" target="_blank">Learn more</a>.
+<a href="https://docs.python.org/3/library/statistics.html" >Learn more</a>.
 
 ### random
 
@@ -727,9 +727,9 @@ import itertools
         "weibullvariate"
     ]
 ```
-<a href="https://docs.python.org/3/library/random.html" target="_blank">Learn more</a>.
+<a href="https://docs.python.org/3/library/random.html" >Learn more</a>.
 
-<hr>
+<hr />
 
 ## String Manipulation Libraries
 
@@ -752,7 +752,7 @@ import itertools
         "template"
     ]
 ```
-<a href="https://docs.python.org/3/library/re.html" target="_blank">Learn more</a>.
+<a href="https://docs.python.org/3/library/re.html" >Learn more</a>.
 
 ### textwrap
 
@@ -766,9 +766,9 @@ import itertools
         "wrap"
     ]
 ```
-<a href="https://docs.python.org/3/library/textwrap.html" target="_blank">Learn more</a>.
+<a href="https://docs.python.org/3/library/textwrap.html" >Learn more</a>.
 
-<hr>
+<hr />
 
 ## Date-time Libraries
 
@@ -784,7 +784,7 @@ import itertools
         "tzinfo"
     ]
 ```
-<a href="https://docs.python.org/3/library/datetime.html" target="_blank">Learn more</a>.
+<a href="https://docs.python.org/3/library/datetime.html" >Learn more</a>.
 
 ### time
 
@@ -811,7 +811,7 @@ import itertools
         "tzset"
     ]
 ```
-<a href="https://docs.python.org/3/library/time.html" target="_blank">Learn more</a>.
+<a href="https://docs.python.org/3/library/time.html" >Learn more</a>.
 
 ### calendar
 
@@ -842,9 +842,9 @@ import itertools
         "weekheader"
     ]
 ```
-<a href="https://docs.python.org/3/library/calendar.html" target="_blank">Learn more</a>.
+<a href="https://docs.python.org/3/library/calendar.html" >Learn more</a>.
 
-<hr>
+<hr />
 
 ## Itertools
 
@@ -871,6 +871,6 @@ import itertools
         "zip_longest"
     ]
 ```
-<a href="https://docs.python.org/3/library/itertools.html" target="_blank">Learn more</a>.
+<a href="https://docs.python.org/3/library/itertools.html" >Learn more</a>.
 
-<hr>
+<hr />

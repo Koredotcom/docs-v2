@@ -9,7 +9,7 @@ Define how your app appears to users in Slack.
 
 1. Log in to the **Admin Console**.
 2. Navigate to **Channels** → **Slack**.
-<img src="../images/slack-1.png" alt="teams_1" title="teams_1" style="border: 1px solid gray; zoom:70%;">
+<img src="../images/slack-1.png" alt="teams_1" title="teams_1" style="border: 1px solid gray; zoom:70%;"/>
 
 3. Open the **Configuration** page.
 
@@ -17,7 +17,7 @@ Define how your app appears to users in Slack.
 
 **Customize App Description**: Provide a description that explains what users can do with the app. This description appears in the app's About section within Slack.
 
-<img src="../images/slack-2.png" alt="teams_1" title="teams_1" style="border: 1px solid gray; zoom:70%;">
+<img src="../images/slack-2.png" alt="teams_1" title="teams_1" style="border: 1px solid gray; zoom:70%;"/>
 
 !!! note
     * You can modify these values to match your organization's terminology and branding.
@@ -30,7 +30,7 @@ Create the Slack app manifest that contains all necessary configuration details.
 1. In the **Configuration** page, click **Get Manifest**.
 2. The platform generates a manifest code containing your app configuration.
 3. Copy the entire manifest code to your clipboard.
-<img src="../images/slack-3.png" alt="teams_1" title="teams_1" style="border: 1px solid gray; zoom:70%;"> 
+<img src="../images/slack-3.png" alt="teams_1" title="teams_1" style="border: 1px solid gray; zoom:70%;"/> 
 
 The manifest includes all the permissions, features, and settings required for the Slack app to function properly.
 
@@ -43,14 +43,14 @@ Use the generated manifest to create your Slack application.
 1. Navigate to the[ Slack Developer Portal](https://api.slack.com/apps/).
 2. Sign in with your Slack workspace credentials.
 3. Click **Your Apps** to view existing applications.
-<img src="../images/slack-4.png" alt="teams_1" title="teams_1" style="border: 1px solid gray; zoom:70%;">
+<img src="../images/slack-4.png" alt="teams_1" title="teams_1" style="border: 1px solid gray; zoom:70%;"/>
 
 **Create New App**
 
 1. Click **Create New App** (or **Create an App** if this is your first application).
 2. In the app creation dialog, select **From a manifest**.
 3. From the **Slack Workspace** dropdown, select the workspace where you want to deploy the app.
-<img src="../images/slack-5.png" alt="teams_1" title="teams_1" style="border: 1px solid gray; zoom:70%;">
+<img src="../images/slack-5.png" alt="teams_1" title="teams_1" style="border: 1px solid gray; zoom:70%;"/>
 
 **Paste Manifest**
 
@@ -75,7 +75,7 @@ Copy the app credentials from Slack Developer Portal and provide them to the pla
     * **Client Secret**.
     * **Signing Secret**.
     
-    <img src="../images/slack-6.png" alt="teams_1" title="teams_1" style="border: 1px solid gray; zoom:70%;">
+    <img src="../images/slack-6.png" alt="teams_1" title="teams_1" style="border: 1px solid gray; zoom:70%;"/>
 
 **Configure Credentials in AI for Work**
 
@@ -85,7 +85,7 @@ Copy the app credentials from Slack Developer Portal and provide them to the pla
     * **Client Secret**. Paste the Client Secret from Slack.
     * **Signing Secret**. Paste the Signing Secret from Slack.
 3. Click **Authorize**.
-<img src="../images/slack-7.png" alt="teams_1" title="teams_1" style="border: 1px solid gray; zoom:70%;">
+<img src="../images/slack-7.png" alt="teams_1" title="teams_1" style="border: 1px solid gray; zoom:70%;"/>
 
 **Authorization Process**
 
@@ -105,7 +105,7 @@ Configure the introduction message and sample prompts that users see when they f
 
 1. In the Admin Console, navigate to the **Welcome Experience** page.
 2. This page displays the default welcome message and sample prompts.
-<img src="../images/slack-8.png" alt="teams_1" title="teams_1" style="border: 1px solid gray; zoom:70%;">
+<img src="../images/slack-8.png" alt="teams_1" title="teams_1" style="border: 1px solid gray; zoom:70%;"/>
 
 **Configure Welcome Message**: Edit the welcome message that greets users when they open the app. This message should introduce the app's capabilities and encourage users to start interacting.
 
@@ -134,7 +134,7 @@ While you configure the app name and description, you must upload the app icon d
 5. Customize the **Background Color** if you desire.
 6. Click **Save Changes**. 
 
-<img src="../images/slack-9.png" alt="teams_1" title="teams_1" style="border: 1px solid gray; zoom:70%;">
+<img src="../images/slack-9.png" alt="teams_1" title="teams_1" style="border: 1px solid gray; zoom:70%;"/>
 
 ## User Access Management
 

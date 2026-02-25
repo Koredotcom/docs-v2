@@ -10,7 +10,7 @@ Key Highlights
 * **The Knowledge** section displays knowledge bases associated with the Agentic app.
 * All sections use **"Load more"** functionality instead of traditional pagination.
 
-<img src="../images/overview.png" alt="Overview" title="Overview" style="zoom:70%; border: 1px solid gray;">
+<img src="../images/overview.png" alt="Overview" title="Overview" style="zoom:70%; border: 1px solid gray;" />
 
 ## Agent Listing Page
 
@@ -25,7 +25,7 @@ Key Highlights
 * Agents needing LLM configuration show a **Configure LLM** button for quick setup.
 * Displays the total agent count in the page header, with **Explore Marketplace** and **New Agent** options always visible.
 
-<img src="../images/agents-listing-page.png" alt="Agent Listing Page" title="Agent Listing Page" style="zoom:70%; border: 1px solid gray;">
+<img src="../images/agents-listing-page.png" alt="Agent Listing Page" title="Agent Listing Page" style="zoom:70%; border: 1px solid gray;" />
 
 ## Tools Listing Page
 
@@ -41,7 +41,7 @@ Key Highlights
 * Provide empty-state CTAs: **Import** and **New Tool** for Workflow tools, **New Tool** for Code tools, **Import** and **Link Tool** for MCP tools.
 * **Import Tool** and **New Tool** CTAs are located at the top right for easy access.
 
-<img src="../images/tools-listing-page.png" alt="Tools Listing Page" title="Tools Listing Page" style="zoom:70%; border: 1px solid gray;">
+<img src="../images/tools-listing-page.png" alt="Tools Listing Page" title="Tools Listing Page" style="zoom:70%; border: 1px solid gray;" />
 
 ## Knowledge Listing Page
 
@@ -56,4 +56,4 @@ Key Highlights
 * Shows clear empty-state actions to guide first-time users: **Create from Scratch** and **Create from Existing Sources**.
 * Ensures knowledge bases are easily discoverable and manageable, with consistent formatting and layout aligned with other listing sections.
 
-<img src="../images/knowledge-listing-page.png" alt="Knowledge Listing Page" title="Knowledge Listing Page" style="zoom:70%; border: 1px solid gray;">
+<img src="../images/knowledge-listing-page.png" alt="Knowledge Listing Page" title="Knowledge Listing Page" style="zoom:70%; border: 1px solid gray;" />

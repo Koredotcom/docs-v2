@@ -346,43 +346,11 @@ The loop context provides different ways to access data depending on whether you
 
 When configuring nodes that run within the loop, use these special context variables:
 
-
-<table>
-  <tr>
-   <td><strong>Variable</strong>
-   </td>
-   <td><strong>Description</strong>
-   </td>
-   <td><strong>Example</strong>
-   </td>
-  </tr>
-  <tr>
-   <td><code>{{context.currentItem}}</code>
-   </td>
-   <td>The item currently being processed in this iteration
-   </td>
-   <td>If processing <code>["user1@example.com", "user2@example.com"]</code>, this would be <code>"user1@example.com"</code> in the first iteration
-   </td>
-  </tr>
-  <tr>
-   <td><code>{{context.currentIndex}}</code>
-   </td>
-   <td>The zero-based index of the current item
-   </td>
-   <td><code>0</code> for the first iteration, <code>1</code> for the second, etc.
-   </td>
-  </tr>
-  <tr>
-   <td><code>{{context.currentOutput[x]}}</code>
-   </td>
-   <td>Access a specific value from the output array of previous iterations
-   </td>
-   <td><code>{{context.currentOutput[0]}}</code> would give you the output from the first iteration
-   </td>
-  </tr>
-</table>
-
-
+| Variable                       | Description                                                          | Example                                                                                                          |
+|--------------------------------|----------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------|
+| `{{context.currentItem}}`      | The item currently being processed in this iteration                 | If processing `[user1@example.com, user2@example.com]`, this would be `user1@example.com` in the first iteration |
+| `{{context.currentIndex}}`     | The zero-based index of the current item                             | `0` for the first iteration, `1` for the second, and so on.                                                      |
+| `{{context.currentOutput[x]}}` | Access a specific value from the output array of previous iterations | `{{context.currentOutput[0]}}` gives you the output from the first iteration                                     |
 
 #### Outside the Loop Node
 

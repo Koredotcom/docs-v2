@@ -28,7 +28,7 @@ Workspace-level connections provide isolated access to MCP tools within a specif
 * You can create connections with MCP servers that are accessible only within a specific workspace.
 * The platform makes connections available to all agents within that specific workspace.
 * These connections remain private to the workspace. The system does not make them visible or accessible outside of it.
-<img src="../images/mcp-connections-home.png" alt="mcp-agents-creation" title="mcp-agents-creation" style="border: 1px solid gray; zoom:70%;">
+<img src="../images/mcp-connections-home.png" alt="mcp-agents-creation" title="mcp-agents-creation" style="border: 1px solid gray; zoom:70%;"/>
 
 ### Account-Level Connections
 
@@ -39,7 +39,7 @@ Account-level connections provide broad access to MCP tools across your entire o
 * When you view account-level connections from within a workspace:
     * The system displays them but prevents editing.
     * The platform hides authentication profiles and URLs for security.
-<img src="../images/mcp-connections-account-level.png" alt="mcp-agents-creation" title="mcp-agents-creation" style="border: 1px solid gray; zoom:70%;">
+<img src="../images/mcp-connections-account-level.png" alt="mcp-agents-creation" title="mcp-agents-creation" style="border: 1px solid gray; zoom:70%;"/>
 
 ## Creating an MCP Connection
 
@@ -55,7 +55,7 @@ To create an MCP connection:
     * **MCP URL**: Enter the endpoint URL of the MCP server.
     * **Authentication Profile**: Select or configure the authentication method required by the MCP server.
     * **Custom Headers** (optional): Add any custom headers required for server communication. 
-  <img src="../images/mcp-connections-create.png" alt="mcp-agents-creation" title="mcp-agents-creation" style="border: 1px solid gray; zoom:70%;">
+  <img src="../images/mcp-connections-create.png" alt="mcp-agents-creation" title="mcp-agents-creation" style="border: 1px solid gray; zoom:70%;"/>
 
 1. Click **Save Changes**.
 
@@ -96,7 +96,7 @@ When you view an MCP connection, the platform displays:
 * **Input**: The parameters the tool requires, including data types and whether fields are mandatory.
 * **Output**: The structure of data the tool returns.
 
-<img src="../images/mcp-connections-tools.png" alt="mcp-agents-creation" title="mcp-agents-creation" style="border: 1px solid gray; zoom:70%;">
+<img src="../images/mcp-connections-tools.png" alt="mcp-agents-creation" title="mcp-agents-creation" style="border: 1px solid gray; zoom:70%;"/>
 
 This information helps you understand tool capabilities and configure them correctly in your agents.
 

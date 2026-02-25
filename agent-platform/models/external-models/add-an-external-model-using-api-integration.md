@@ -7,17 +7,17 @@ You can connect an external model to Platform using API integration. This featur
 The steps to add an external model using API integration are given below:
 
 1. In the top navigation bar, click **Models**, and then select the **External Models** tab.
-<img src="../images/navigating-to-external-models1.png" alt="Navigating to External Models" title="Navigating to External Models" style="border: 1px solid gray; zoom:80%;"/>
+<img src="../images/navigating-to-external-models1.png" alt="Navigating to External Models" title="Navigating to External Models" class="border-2 border-gray-300 rounded-xl" />
 
 2. Click **Add a model**. The **Add an external model** dialog is displayed.
 
 3. Select the **Custom integration** option to connect models via API integration, and click **Next**.
 
 4. On the **Custom API integration** dialog, enter the **Connection name** and **Model endpoint URL**.  
-<img src="../images/custom-api-integration-general-details.png" alt="Custom API Integration General Details" title="Custom API Integration General Details" style="border: 1px solid gray; zoom:80%;"/>
+<img src="../images/custom-api-integration-general-details.png" alt="Custom API Integration General Details" title="Custom API Integration General Details" class="border-2 border-gray-300 rounded-xl" />
 
 5. Select the **Authorization profile** you want to use with the request payload from the configured options on the **Settings** console. [Learn more](../../settings/security-and-control/authorization-profile.md) about Auth Profiles. To proceed without authentication, choose ***None*** which is the default selection.
-<img src="../images/set-auth-profile-parameter.png" alt="set auth profile" title="set auth profile" style="border: 1px solid gray; zoom:80%;"/>
+<img src="../images/set-auth-profile-parameter.png" alt="set auth profile" title="set auth profile" class="border-2 border-gray-300 rounded-xl" />
 
 6. In the **Headers** section, specify the headers such as **Key** and **Value** that need to be sent along with the request payload. 
 
@@ -44,15 +44,15 @@ By selecting this option, you can define the variables, request body code, and a
 
     <img src="../images/add-custom-variable.png" alt="custom variable form" title="custom variable form" style="border: 1px solid gray; zoom:50%;"/>
       
-**Body**: The request body must include the model’s relevant parameters, which you must define manually. For dynamic variable mapping, use <code>{{variable}}</code>. Ensure the body is in the correct format, as shown in the screenshot below; otherwise, the API testing won't work.
+**Body**: The request body must include the model’s relevant parameters, which you must define manually. For dynamic variable mapping, use `{{variable}}`. Ensure the body is in the correct format, as shown in the screenshot below; otherwise, the API testing won't work.
 
   <img src="../images/body-parameters.png" alt="request body" title="request body" style="border: 1px solid gray; zoom:75%;"/>
 
 **Test Response**: The response created for the configured LLM service appears here. To provide a test response from the model, click **Test**. In the **Sample Input** dialog, enter the Prompt, System prompt, and Examples in the respective fields, and click **Confirm**.
 These inputs are used to test the connection and receive a response from the model.
 
-  <img src="../images/sample-input-dialog.png" alt="sample input" title="sample input" style="border: 1px solid gray; zoom:75%;"/></ul></ul> 
- 
+  <img src="../images/sample-input-dialog.png" alt="sample input" title="sample input" style="border: 1px solid gray; zoom:75%;"/>
+
 Once the response is generated, you must configure the **JSON path** to capture the Output path, Input tokens, and Output tokens, as follows:
 
   * **Output Path**: When you interact with the model, you send a request in a specific format and receive a response in a corresponding format, often as a large JSON object. As a user, you are mainly interested in extracting the model’s answer from this response. The *output path* refers to the location or key within the JSON where the model’s main output is stored. Knowing this path is essential, especially in the prompt playground, as it tells you exactly which key to map to populate the response in the playground box. For example, in the sample response below, the output path is `choices[0].message.content.` 
@@ -119,4 +119,4 @@ To manage an integration, click the three-dot icon corresponding to its name and
  * **Copy**: Make an editable copy of the integration details.
  * **Delete**: Remove the integration.
 
-<img src="../images/three-dots-icon-options.png" alt="Three Dots Icon Options" title="Three Dots Icon Options" style="border: 1px solid gray; zoom:80%;"/>
+<img src="../images/three-dots-icon-options.png" alt="Three Dots Icon Options" title="Three Dots Icon Options" class="border-2 border-gray-300 rounded-xl" />

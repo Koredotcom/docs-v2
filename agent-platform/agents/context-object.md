@@ -347,76 +347,20 @@ The loop context provides different ways to access data depending on whether you
 When configuring nodes that run within the loop, use these special context variables:
 
 
-<table>
-  <tr>
-   <td><strong>Variable</strong>
-   </td>
-   <td><strong>Description</strong>
-   </td>
-   <td><strong>Example</strong>
-   </td>
-  </tr>
-  <tr>
-   <td><code>{{context.currentItem}}</code>
-   </td>
-   <td>The item currently being processed in this iteration
-   </td>
-   <td>If processing <code>["user1@example.com", "user2@example.com"]</code>, this would be <code>"user1@example.com"</code> in the first iteration
-   </td>
-  </tr>
-  <tr>
-   <td><code>{{context.currentIndex}}</code>
-   </td>
-   <td>The zero-based index of the current item
-   </td>
-   <td><code>0</code> for the first iteration, <code>1</code> for the second, etc.
-   </td>
-  </tr>
-  <tr>
-   <td><code>{{context.currentOutput[x]}}</code>
-   </td>
-   <td>Access a specific value from the output array of previous iterations
-   </td>
-   <td><code>{{context.currentOutput[0]}}</code> would give you the output from the first iteration
-   </td>
-  </tr>
-</table>
-
-
+| Variable                       | Description                                                          | Example                                                                                                              |
+|--------------------------------|----------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------|
+| `{{context.currentItem}}`      | The item currently being processed in this iteration                 | If processing `["user1@example.com", "user2@example.com"]`, this would be `user1@example.com` in the first iteration |
+| `{{context.currentIndex}}`     | The zero-based index of the current item                             | 0 for the first iteration, 1 for the second, etc.                                                                    |
+| `{{context.currentOutput[x]}}` | Access a specific value from the output array of previous iterations | `{{context.currentOutput[0]}}` would give you the output from the first iteration                                    |
 
 #### Outside the Loop Node
 
 After the loop completes, access the full results using the loop node's ID:
 
-
-<table>
-  <tr>
-   <td><strong>Variable</strong>
-   </td>
-   <td><strong>Description</strong>
-   </td>
-   <td><strong>Example</strong>
-   </td>
-  </tr>
-  <tr>
-   <td><code>{{context.steps.Loop0001.output}}</code>
-   </td>
-   <td>The complete array of all iteration results
-   </td>
-   <td>Access all outputs from a loop node with ID "Loop0001"
-   </td>
-  </tr>
-  <tr>
-   <td><code>{{context.steps.Loop0001.output[x]}}</code>
-   </td>
-   <td>A specific iteration's result
-   </td>
-   <td><code>{{context.steps.Loop0001.output[0]}}</code> gets the output entry for the first iteration from the loop’s output array
-   </td>
-  </tr>
-</table>
-
-
+| Variable                               | Description                                 | Example                                                                                                           |
+|----------------------------------------|---------------------------------------------|-------------------------------------------------------------------------------------------------------------------|
+| `{{context.steps.Loop0001.output}}`    | The complete array of all iteration results | Access all outputs from a loop node with ID "Loop0001"                                                            |
+| `{{context.steps.Loop0001.output[x]}}` | A specific iteration's result               | `{{context.steps.Loop0001.output[0]}}` gets the output entry for the first iteration from the loop’s output array |
 
 #### Quick Reference
 
@@ -447,7 +391,7 @@ Example:
 }
 ```
 
-When the workflow runs, the expression inside {{ ... }} is automatically resolved at runtime using the Context Object.
+When the workflow runs, the expression inside `{{ ... }}` is automatically resolved at runtime using the Context Object.
 
 This declarative referencing allows you to bind data from previous nodes without writing code.
 
@@ -474,9 +418,7 @@ You can reference any accessible value from the Context Object:
 * If a referenced key doesn’t exist, the expression resolves to null (or an empty string in string contexts).
 * Circular references are automatically detected and blocked.
 
-!!! note
-
-    Typing {{ in any field within a node that supports context variables displays a dynamic dropdown of all available variables, grouped by node, including environment variables defined at the workflow-tool level. This allows referencing values without manually entering full paths.
+<Note>Typing `{{` in any field within a node that supports context variables displays a dynamic dropdown of all available variables, grouped by node, including environment variables defined at the workflow-tool level. This allows referencing values without manually entering full paths.</Note>
 
 ## Extending the Context Object with Script Nodes
 
@@ -527,11 +469,11 @@ print(context['customData']['stage'])
 * Use camelCase naming (customerInfo, retryCounter, tempResults). 
 * Avoid overriding system-reserved keys (steps, branch, status, dbquery). 
 * Keep data lightweight - avoid large arrays or raw API responses.
-* Everything added to the context object is accessible in later nodes through {{context.&lt;key>}} references. 
+* Everything added to the context object is accessible in later nodes through `{{context.<key>}}` references. 
 
 ## Best Practices
 
 1. Use consistent node naming for traceability (QueryGenerator, DataCleaner).
 2. Mask sensitive data before writing to the context.
-3. Use declarative references ({{ ... }}) for readability whenever possible.
+3. Use declarative references (`{{ ... }}`) for readability whenever possible.
 4. Use Script Nodes only when dynamic or computed context manipulation is required.

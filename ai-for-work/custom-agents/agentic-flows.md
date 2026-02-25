@@ -9,12 +9,12 @@ Follow these steps to create a new Agentic Flow:
 1. Access the Admin Console
     * Navigate to **AI Agents** in the left pane.
     * Select **Agentic Flow** to view the list of existing flows.
-    <img src="../images/Agentic_App_1.png" alt="Admin Console" title="Admin Console" style="border: 1px solid gray; zoom:70%;">
+    <img src="../images/Agentic_App_1.png" alt="Admin Console" title="Admin Console" style="border: 1px solid gray; zoom:70%;"/>
 
 2. Initiate Agent Creation
     * Click **+Create Agent** on the Agentic Flow page.
     * The **Prompt Agentic Flow Creation Wizard** guides you through the setup process.
-    <img src="../images/Agentic_App_2.png" alt="Admin Creation" title="Admin Creation" style="border: 1px solid gray; zoom:70%;">
+    <img src="../images/Agentic_App_2.png" alt="Admin Creation" title="Admin Creation" style="border: 1px solid gray; zoom:70%;"/>
 
 ### Step 1: Details and Purpose
 
@@ -22,7 +22,7 @@ Define your agent's name and purpose for optimal performance.
 
 * **agent Name**: Enter a unique and meaningful name for your agent.
 * **Purpose**: Defines the intended functionality of the agent for query routing and training. This field specifies both the default prompt and sample queries that help the system in correctly routing user queries to the appropriate flow.  
-<img src="../images/Agentic_App_3.png" alt="Details and Purpose" title="Details and Purpose" style="border: 1px solid gray; zoom:70%;">
+<img src="../images/Agentic_App_3.png" alt="Details and Purpose" title="Details and Purpose" style="border: 1px solid gray; zoom:70%;"/>
 
 !!! note
 

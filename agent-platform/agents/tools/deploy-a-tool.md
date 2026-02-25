@@ -68,6 +68,6 @@ Steps to deploy a tool:
 ## Redeploy a Tool for the Changes in the Flow
 
 The Deployed version of your tool's flow is accessible from the **Tool Flow** page. You can click the **View the Flow** button to view the flow in read-only mode.  
-<img src="../images/deployed-version.png" alt="Deployed Version" title="Deployed Version" style="border: 1px solid gray; zoom:80%;"/>
+<img src="../images/deployed-version.png" alt="Deployed Version" title="Deployed Version" class="border-2 border-gray-300 rounded-xl" />
 
 You can change the in-development version of the flow. To redeploy the tool with the updated flow, click the **Deploy** button at the top-right corner of the **Tool endpoint** page. The redeployment doesn't change the tool's endpoint.
