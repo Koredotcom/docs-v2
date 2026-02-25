@@ -51,7 +51,7 @@ When adding connections:
 * Each connection name must be unique.
 * Each API key must be unique for the model.
 
-<img src="../images/add_model_connection.png" alt="Add model connection" title="Add model connections" style="border: 1px solid gray; zoom:50%;"/>
+<img src="../images/add_model_connection.png" alt="Add model connection" title="Add model connections" class="border-2 border-gray-300 rounded-xl"/>
 
 When multiple API keys are configured, each connection appears separately in the Connections list for the model, making it easier to manage access and switch between keys as needed.
 

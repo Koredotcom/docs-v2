@@ -16,7 +16,7 @@ You can save versions of your flows, restore older versions, and delete versions
 
 1. Enter a **Version name** and **Description** for the flow and click **Save**.
 
-    <img src="./../images/name-a-new-version-for-flow.png" alt="Name a New Version for Flow" title="Name a New Version for Flow" style="border: 1px solid gray; zoom:60%;"/>
+    <img src="./../images/name-a-new-version-for-flow.png" alt="Name a New Version for Flow" title="Name a New Version for Flow" class="border-2 border-gray-300 rounded-xl"/>
 
     The version you saved will be the current version. Any changes you make in the flow are auto-saved to the current version.
 

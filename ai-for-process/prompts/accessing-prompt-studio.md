@@ -14,7 +14,7 @@ Steps to access Prompts:
     Each tab displays the title or name of each prompt, the exact text of the prompt, and the name of the individual who created the prompt.
 
 3. To create a new prompt, click **New prompt**.
-   <img src="../images/new_prompt.png" alt="access prompt studio" title="access prompt studio" style="border: 1px solid gray; zoom:75%;"/>
+   <img src="../images/new_prompt.png" alt="access prompt studio" title="access prompt studio" class="border-2 border-gray-300 rounded-xl"/>
 
 4. On the **New prompt** dialog, enter a name for your prompt, and click **Proceed**. The Prompt landing page is displayed.
 
@@ -74,15 +74,15 @@ Steps to create prompts from prompt library:
 **My templates**:  View and manage your saved templates. If you have not saved any templates, this section will be empty.  
 **All templates**:  Browse a list of available templates.
 
-    <img src="../images/prompt_library_templates.png" alt="Prompt library" title="Prompt library" style="border: 1px solid gray; zoom:30%;"/>
+    <img src="../images/prompt_library_templates.png" alt="Prompt library" title="Prompt library" class="border-2 border-gray-300 rounded-xl"/>
 
 3. Click your desired template. A dialog box with the system prompt and prompt is displayed. To use the template, click **Use template**.
 
-    <img src="../images/prompt_template_dialog.png" alt="Prompt library dialog" title="Prompt library dialog" style="border: 1px solid gray; zoom:30%;"/>
+    <img src="../images/prompt_template_dialog.png" alt="Prompt library dialog" title="Prompt library dialog" class="border-2 border-gray-300 rounded-xl"/>
 
 4. Once you click **Use template**, the prompts will be copied to the prompt canvas. You can then customize the prompts as needed.
 
-    <img src="../images/prompt_canvas_library.png" alt="Prompt library canvas" title="Prompt library canvas" style="border: 1px solid gray; zoom:30%;"/>
+    <img src="../images/prompt_canvas_library.png" alt="Prompt library canvas" title="Prompt library canvas" class="border-2 border-gray-300 rounded-xl"/>
   
 !!! note
 

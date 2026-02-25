@@ -8,7 +8,7 @@ Steps to access the Usage page:
 
 1. Log in to AI for Process and click **Settings**.
 2. On the left navigation pane, click **Billing** > **Usage**.  
-<img src="../images/ocr_billing_new.png" alt="Usage page" title="Usage page" style="border: 1px solid gray; zoom:75%;"/>
+<img src="../images/ocr_billing_new.png" alt="Usage page" title="Usage page" class="border-2 border-gray-300 rounded-xl"/>
 
 The Usage page displays the following tabs:
 
@@ -26,7 +26,7 @@ Click the "*three-dots*" icon to view and select from the following options:
 * **OCR**: Displays OCR model deployments and their credit consumption, helping you track document-processing usage.
 * **Browser Automation**: Shows the credits consumption and usage trend for browser automation experiment pod deployments.
     
-    <img src="../images/usage-expanded-view.png" alt="Usage expanded list" title="Usage expanded list" style="border: 1px solid gray; zoom:75%;"/>
+    <img src="../images/usage-expanded-view.png" alt="Usage expanded list" title="Usage expanded list" class="border-2 border-gray-300 rounded-xl"/>
 
 ## Best Practices
 
@@ -107,7 +107,7 @@ The **Guardrails** tab displays the list of guardrails used and the charges rela
 
 The guardrail usage is deducted from the Model credits shown in the Overview tab, indicating that the available credits for the model will decrease based on the cost of using the guardrails.
 
- <img src="../images/guardrails-tab.png" alt="Guardrails tab" title="Guardrails tab" style="border: 1px solid gray; zoom:60%;"/>
+ <img src="../images/guardrails-tab.png" alt="Guardrails tab" title="Guardrails tab" class="border-2 border-gray-300 rounded-xl"/>
 
 The following usage information is displayed on the Guardrails tab:
 
