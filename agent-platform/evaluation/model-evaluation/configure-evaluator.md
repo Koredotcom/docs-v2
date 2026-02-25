@@ -83,7 +83,7 @@ Below are the key quality metrics and the components required in the dataset to 
   <tr>
    <td>GPT Similarity Score
    </td>
-   <td>Compares the model’s response with a superior model's response (e.g., GPT) for a given input.
+   <td>Compares the model’s response with a superior model's response (for example, GPT) for a given input.
    </td>
    <td>Input, your model’s response, Superior model’s response
    </td>
@@ -167,34 +167,34 @@ Below are the current list of RAGAS evaluators and the components required in th
 
 <table>
   <tr>
-    <td style="width: 150px;"><strong>Metric</strong></td>
+    <td style="width: 150px;" /><strong>Metric</strong></td>
     <td><strong>Description</strong></td>
     <td><strong>Required Dataset Components</strong></td>
   </tr>
   <tr>
-    <td style="width: 150px;">Context Precision</td>
+    <td style="width: 150px;" />Context Precision</td>
     <td>This metric measures the proportion of the relevant chunks and the total number of chunks retrieved for the given user input.</td>
-    <td>Input<br>Response<br>Retrieved context</td>
+    <td>Input<br />Response<br />Retrieved context</td>
   </tr>
   <tr>
-    <td style="width: 150px;">Context Recall</td>
+    <td style="width: 150px;" />Context Recall</td>
     <td>Considering a reference context, this metric evaluates whether the retrieved context is sufficient to address the user input. Higher recall indicates that fewer significant chunks are omitted.</td>
-    <td>Input<br>Response<br>Retrieved context<br>Reference answer</td>
+    <td>Input<br />Response<br />Retrieved context<br />Reference answer</td>
   </tr>
   <tr>
-    <td style="width: 150px;">Context Entity Recall</td>
+    <td style="width: 150px;" />Context Entity Recall</td>
     <td>Considering a reference context, this metric evaluates the number of common entities present in the retrieved context in relation to the total number of entities in that reference context.</td>
-    <td>Retrieved context<br>Reference answer</td>
+    <td>Retrieved context<br />Reference answer</td>
   </tr>
   <tr>
-    <td style="width: 150px;">Noise Sensitivity</td>
+    <td style="width: 150px;" />Noise Sensitivity</td>
     <td>Considering a reference context, this metric provides the proportion of incorrect claims in the total number of retrieved claims.</td>
-    <td>Input<br>Response<br>Retrieved context<br>Reference answer</td>
+    <td>Input<br />Response<br />Retrieved context<br />Reference answer</td>
   </tr>
   <tr>
-    <td style="width: 150px;">Faithfulness</td>
+    <td style="width: 150px;" />Faithfulness</td>
     <td>This metric measures how factually consistent a response is with the retrieved context.</td>
-    <td>Input<br>Response<br>Retrieved context</td>
+    <td>Input<br />Response<br />Retrieved context</td>
   </tr>
 </table>
 
@@ -224,7 +224,7 @@ Steps to add an evaluator:
 
 1. On the Evaluations page, click the **+** button, and select the **Add evaluator** option.
 
-    <img src="../../images/import_dataset_options.png" alt="Configure evaluator" title="Configure evaluator" style="border: 1px solid gray; zoom:80%;"/>
+    <img src="../../images/import_dataset_options.png" alt="Configure evaluator" title="Configure evaluator" class="border-2 border-gray-300 rounded-xl" />
 
 2. From the list of Quality and Safety evaluators, select the desired evaluator.
 3. In the Evaluators dialog, fill in these details:
@@ -241,7 +241,7 @@ Steps to add an evaluator:
 
 4. Click **Save** to save the evaluator configuration.
 
-    <img src="../../images/evaluators_config.png" alt="Configure evaluator" title="Configure evaluator" style="border: 1px solid gray; zoom:80%;"/>
+    <img src="../../images/evaluators_config.png" alt="Configure evaluator" title="Configure evaluator" class="border-2 border-gray-300 rounded-xl" />
 
 
 ## Adding a Custom Evaluator
@@ -252,13 +252,13 @@ Steps to add an evaluator:
 
 1. On the Evaluations page, click the **+** button, and select the **Add evaluator** option.
 
-    <img src="../../images/import_dataset_options.png" alt="Configure evaluator" title="Configure evaluator" style="border: 1px solid gray; zoom:80%;"/>
+    <img src="../../images/import_dataset_options.png" alt="Configure evaluator" title="Configure evaluator" class="border-2 border-gray-300 rounded-xl" />
 
     The list of Quality and Safety evaluators are displayed.
 
 2. To add a custom evaluator, click **Add evaluator**.  
 
-    <img src="../../images/add_custom_evaluator.png" alt="Add evaluator" title="Add evaluator" style="border: 1px solid gray; zoom:80%;"/>
+    <img src="../../images/add_custom_evaluator.png" alt="Add evaluator" title="Add evaluator" class="border-2 border-gray-300 rounded-xl" />
 
 3. In the Custom evaluators dialog, fill in these details:  
 
@@ -283,9 +283,9 @@ Steps to add an evaluator:
 
 4. Click **Save** to save the evaluator configuration.
 
-    <img src="../../images/custom_eval_dialog_filled1.png" alt="Custom evaluator" title="Custom evaluator" style="border: 1px solid gray; zoom:80%;"/> 
+    <img src="../../images/custom_eval_dialog_filled1.png" alt="Custom evaluator" title="Custom evaluator" class="border-2 border-gray-300 rounded-xl" /> 
 
-    <img src="../../images/custom_eval_dialog_filled2.png" alt="Custom evaluator" title="Custom evaluator" style="border: 1px solid gray; zoom:80%;"/> 
+    <img src="../../images/custom_eval_dialog_filled2.png" alt="Custom evaluator" title="Custom evaluator" class="border-2 border-gray-300 rounded-xl" /> 
 
 
 
@@ -293,11 +293,11 @@ Steps to add an evaluator:
 
 When setting up an AI evaluator, variable mapping is a crucial step. This is where the user connects the variables in the evaluator's prompt to the corresponding columns in the dataset. 
 
-1. **Variables in the Prompt**: The evaluator’s prompt contains variables, indicated in double curly braces. For example, {{input}}, {{output}}, {{query}}. These variables are placeholders for your dataset columns and will appear on the left side of the Variable column. For example, in a Query Relevance evaluator, the prompt might include variables like {{query}} for the user query, {{input}} for the input text, and {{output}} for the model's response.
+1. **Variables in the Prompt**: The evaluator’s prompt contains variables, indicated in double curly braces. For example, `{{input}}`, `{{output}}`, `{{query}}`. These variables are placeholders for your dataset columns and will appear on the left side of the Variable column. For example, in a Query Relevance evaluator, the prompt might include variables like `{{query}}` for the user query, `{{input}}` for the input text, and `{{output}}` for the model's response.
 2. **Left Side - Prompt Variables**: The left side of the mapping section shows the variables from the evaluator's prompt. This section is auto-populated by the system.
 3. **Right Side - Dataset Columns**: The right side displays the columns from your imported dataset. You must select the correct columns from the dataset to match each variable in the prompt. For example:
-    * Map {{input}} to the corresponding input column in your dataset.
-    * Map {{output}} to the output column.
+    * Map `{{input}}` to the corresponding input column in your dataset.
+    * Map `{{output}}` to the output column.
 4. **Safety Evaluators**: For safety evaluators like Bias Detection or Toxicity, you may need to configure additional key-value pairs. These evaluators often provide binary (pass/fail) results, so map the relevant columns accordingly.
 
 By correctly mapping the variables, you ensure the evaluator receives the right data and produces accurate results.

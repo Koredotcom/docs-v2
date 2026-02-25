@@ -6,30 +6,26 @@ Based on whether conditions are met, the workflow follows different paths, givin
 
 The node can handle three types of conditions:
 
-* **If**: It directs the flow to a specific path if criteria (Node, Context, or Value) are met.
-* **Else**: It defines the fallback path that the flow follows when the IF condition isn't met .
-* **Else If**: It allows you to configure another set of criteria (Node, Context, or Value) to be met when the initial 'If' condition isn't satisfied.
+* `If`: It directs the flow to a specific path if criteria (Node, Context, or Value) are met.
+* `Else`: It defines the fallback path that the flow follows when the IF condition isn't met .
+* `Else If`: It allows you to configure another set of criteria (Node, Context, or Value) to be met when the initial 'If' condition isn't satisfied.
 
 Whether you need a simple true/false evaluation or a more complex branching using AND, OR, or multiple ELSE IF checks, the Condition node enables precise control over decision logic.
 
-
-!!! note
-    
-    Due to security reasons, a condition can be called a maximum of 10 times in a workflow. Exceeding this limit will result in an error.
+    <Note>Due to security reasons, a condition can be called a maximum of 10 times in a workflow. Exceeding this limit will result in an error.</Note>
 
 ## Key Capabilities
 
-* Flexible Condition Types: Define IF, ELSE IF, and ELSE paths using context variables, static values, or output from previous steps.
-* AND / OR Logic: Combine multiple criteria for complex decision-making.
+* Flexible Condition Types: Define `IF`, `ELSE IF`, and `ELSE` paths using context variables, static values, or output from previous steps.
+* `AND` or `OR` Logic: Combine multiple criteria for complex decision-making.
 * Multi-Branch Execution: Direct the flow to different downstream nodes based on the condition evaluation.
-* Context Variable Support: Easily reference values from earlier steps in the flow using {{context.variable}} and {{context.steps.nodename.output}}.
+* Context Variable Support: Easily reference values from earlier steps in the flow using `{{context.variable}}` and `{{context.steps.nodename.output}}`.
 * Inline Expression Support: Use Node, Context, or Value types directly in conditional expressions.
-
 
 ## Common Use Cases
 
-* Route Based on Classification: Direct flow based on category, type, or priority (e.g., route a ticket if priority = "High").
-* Fallback Logic: Use ELSE conditions to redirect the flow if no match is found.
+* Route Based on Classification: Direct flow based on category, type, or priority (e.g., route a ticket if priority = `High`).
+* Fallback Logic: Use `ELSE` conditions to redirect the flow if no match is found.
 * Dynamic Node Triggering: Select which downstream actions to execute based on user inputs or computed data.
 * Validation Checks: Stop execution or branch if key data is missing or invalid.
 * Multi-Step Filtering: Combine multiple conditions for granular control (e.g., if country = US AND status = active).
@@ -38,7 +34,7 @@ Whether you need a simple true/false evaluation or a more complex branching usin
 
 The Condition Node dynamically controls workflow paths by evaluating data against user-defined rules. It checks inputs using comparison operators and routes execution based on whether conditions are met. The node can process context variables or previous node outputs, enabling adaptive flows and error handling.
 
-<img src="../images/condition_node_new.png" alt="Condition node" title="Condition node" style="border: 1px solid gray; zoom:75%;">
+<img src="../images/condition_node_new.png" alt="Condition node" title="Condition node" style="border: 1px solid gray; zoom:75%;"/>
 
 In this document, you will learn how to set up a Condition Node in a workflow, including adding it at the appropriate location and configuring its properties.
 
@@ -48,11 +44,11 @@ In this document, you will learn how to set up a Condition Node in a workflow, i
 
 * Log in to your AI for Process account.
 
-* Select your workflow → Click **Go to Flow**.
+* Select your workflow and click **Go to Flow**.
 
 ### Step 2: Add the Condition Node
 
-* Click the “**+**” icon on an existing node → Select Condition node.
+* Click the `+` icon on an existing node and select Condition node.
 * Or drag the Condition node from the Assets panel onto the canvas.
 
 ### Step 3: Configure the Node
@@ -66,9 +62,9 @@ In this document, you will learn how to set up a Condition Node in a workflow, i
     * (Optional) Combine multiple criteria using AND/OR.
 4. Set Routing:
     * **Go To:** Select the node if the IF condition is met.
-    * **ELSE:** Select the node if the IF condition is not met.
+    * **ELSE:** Select the node if the IF condition isn't met.
 
-       <img src="./../images/condition-node-settings-filled.png" alt="Condition Node's Settings" title="Condition Node's Settings" style="border: 1px solid gray; zoom:60%;">
+       <img src="./../images/condition-node-settings-filled.png" alt="Condition Node's Settings" title="Condition Node's Settings" style="border: 1px solid gray; zoom:60%;"/>
 
 
 ### Step 4: Test the Flow
@@ -76,8 +72,4 @@ In this document, you will learn how to set up a Condition Node in a workflow, i
 * Click Run Flow at the top-right of the builder.
 * Verify the flow behaves as expected and fix any errors.
 
-
-!!! failure "Standard Error"
-
-    If a condition is true or false but has no connected node, the following error message is displayed: "Path not defined. Please check the flow."
-
+<Note>If a condition is true or false but has no connected node, the following error message is displayed: `Path not defined. Please check the flow.` </Note>

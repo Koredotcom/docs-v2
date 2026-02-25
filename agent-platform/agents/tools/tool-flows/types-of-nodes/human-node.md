@@ -5,13 +5,13 @@ The Human Node introduces a human-in-the-loop capability within automation workf
 ## Key Capabilities
 
 * **Customizable Input Requests** – Send a request with fields tailored to collect the information or decision needed.
-* **Timeout Handling** – Define how the workflow behaves if no response is received (e.g., Terminate, Skip & Continue).
+* **Timeout Handling** – Define how the workflow behaves if no response is received (for example, Terminate, Skip & Continue).
 * **Error Handling** – Configure the outcome if the request fails or cannot be delivered.
 * **Sync or Async Modes (Tool level)** – Execution runs synchronously or asynchronously based on the tool’s endpoint configuration.
 
 ## Common Use Cases
 
-* **Approval Workflows** – Route requests for manager approval (e.g., expenses, leave, procurement).
+* **Approval Workflows** – Route requests for manager approval (for example, expenses, leave, procurement).
 * **Quality Assurance** – Insert a human checkpoint to validate AI-generated or automated outputs before publishing.
 * **Compliance Checks** – Require manual review for sensitive or regulated steps.
 * **Exception Handling** – Escalate unusual or edge cases to a reviewer for decision-making.
@@ -27,7 +27,7 @@ The execution behavior depends on the tool’s endpoint configuration:
 
 Built-in mechanisms handle timeouts, duplicate or late responses, and delivery failures to ensure the workflow progresses as configured. This provides visibility and traceability into decisions through the Debug Panel without disrupting the overall flow.
 
-<hr>
+<hr />
 
 ``` mermaid
 sequenceDiagram
@@ -46,7 +46,7 @@ sequenceDiagram
     Note over HN, RV: Workflow pauses —<br/>waiting for reviewer response
 
     alt On Success
-        RV ->> EP: Submit response<br/>(e.g., Approval, Comments)
+        RV ->> EP: Submit response<br/>(for example, Approval, Comments)
         EP ->>- HN: Return response via CallbackURL
         HN ->> HN: Store response in<br/>context.steps.NodeName.output
         HN ->>- WF: Continue → Success path
@@ -61,7 +61,7 @@ sequenceDiagram
     end
 ```
 
-<hr>
+<hr />
 
 In this document, you’ll learn how to add a Human node to your canvas, configure custom input requests, define reviewer fields, and customize timeout and error-handling behavior.
 
@@ -94,7 +94,7 @@ You can insert a Human node on the canvas using any of the following methods:
 
 Click the added node to open its properties dialog box. The General Settings for the node are displayed.  
  
-You can rename the node (e.g., ManagerApproval, QualityCheck) or add a description to provide context.
+You can rename the node (for example, ManagerApproval, QualityCheck) or add a description to provide context.
 
 **1. View Request Destination**
 
@@ -111,7 +111,7 @@ Select Request Definition to configure how the Human node sends requests and fet
     1. **Request Type**: Only POST is supported for Human nodes.
     2. **API Endpoint URL**: Enter the endpoint or paste a cURL command.
 3. **Auth profiles:** Choose an existing profile or provide authorization details:
-    * Pre-authorize the integration: Use pre-configured credentials (e.g., system token, client credentials).
+    * Pre-authorize the integration: Use pre-configured credentials (for example, system token, client credentials).
     * Allow users to authorize the integration: Require each end user to authenticate dynamically.
 4. **Headers**: Add key-value pairs as needed. Automatically included headers are: CallbackURL and Token (read-only, applied in all debug and test requests).
 5. **Body (Payload)**: At runtime, the Human node automatically generates the request body by combining: Input fields defined in Step 4 and the Reviewer note defined in Step 5.
@@ -127,7 +127,7 @@ In the **Input Fields** section, define the fields required from the reviewer. S
 1. For each field, you can:
     * Set a default value.
     * Mark it as required or optional.
-    * Map it to context variables (e.g., pre-fill text with `{{context.user.name}}`).
+    * Map it to context variables (for example, pre-fill text with `{{context.user.name}}`).
 2. Click **Payload preview** to see how the full payload will be sent to the downstream configured in the request URL.
 
 For example, you can create two fields for an approval flow:
@@ -191,7 +191,7 @@ For example, approval flows or mandatory checkpoints where execution cannot cont
 Here is a step-by-step execution of the Human node in Sync mode:
 
 1. **Workflow reaches the Human node**: The workflow reaches the Human node and sends a request payload to the configured endpoint.
-2. **Request forwarded**: The Human node forwards the payload downstream (e.g., to a channel, platform, or custom system).
+2. **Request forwarded**: The Human node forwards the payload downstream (for example, to a channel, platform, or custom system).
 3. **Reviewer input collected**: The downstream service collects the reviewer’s input and sends it back via the callback URL. The callback URL remains active until the configured wait time (Late or duplicate responses are ignored).
 4. **Workflow pauses while waiting/ Outcome handling**:
     * A reviewer responds within time → continues along the Success path.

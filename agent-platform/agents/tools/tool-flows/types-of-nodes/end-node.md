@@ -21,24 +21,22 @@ Steps to add and configure the node:
 ### Step 3: Configure the Node
 
 * Click the added node to open its properties dialog box. The General Settings for the node are displayed.  
-<img src="./../images/end-node-configure.png" alt="Configure End Node" title="Configure End Node" style="border: 1px solid gray; zoom:80%;"/>
+<img src="./../images/end-node-configure.png" alt="Configure End Node" title="Configure End Node" class="border-2 border-gray-300 rounded-xl" />
 
 * Enter or select the following information:
 
     * **Custom Name**: Enter an appropriate name for the node.
     
     * **Name (key)**: Select a key from the drop-down list. All defined keys in the Manage Output section are displayed here. You can select a variable and assign a value to it. (You can also add a new key. For more information, see [Manage Input and Output variable](./../perform-other-actions-on-the-flow-builder/manage-input-and-output.md).)  
-    <img src="./../images/select-a-key.png" alt="Select a Key" title="Select a Key" style="border: 1px solid gray; zoom:80%;"/>
+    <img src="./../images/select-a-key.png" alt="Select a Key" title="Select a Key" class="border-2 border-gray-300 rounded-xl" />
     
-    * **Value**: Select an appropriate variable or node as the value. Enter “{{context.” and select the node/variable from the list and then close the braces with “}}”.
+    * **Value**: Select an appropriate variable or node as the value. Enter `{{context.` and select the node/variable from the list and then close the braces with `}}`.
     
         Example: `{{context.steps.summarization.output}}`
 
-        <img src="./../images/end-node-success-output.png" alt="Configure End Node" title="Configure End Node" style="border: 1px solid gray; zoom:80%;"/>
+        <img src="./../images/end-node-success-output.png" alt="Configure End Node" title="Configure End Node" class="border-2 border-gray-300 rounded-xl" />
 
-        !!! note
-
-            Adding at least one output variable is required for each end node.
+        <Note> Adding at least one output variable is required for each end node.</Note>
 
 If you want to show multiple outputs or messages, click **Add a Key** to add the key and value details for the same.
 
@@ -46,6 +44,4 @@ If you want to show multiple outputs or messages, click **Add a Key** to add the
 
 Finally, test the flow and fix any issues found. Click the **Run Flow** button at the top-right corner of the flow builder and follow the onscreen instructions.
 
-!!! failure "Standard Error"
-
-    When the value for the output variable is not defined, a list of unresolved outputs is displayed.
+<Note>When the value for the output variable is not defined, a list of unresolved outputs is displayed.</Note>

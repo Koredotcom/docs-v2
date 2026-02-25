@@ -308,6 +308,6 @@ To access the sessionMeta from agent and orchestrator prompts, use the following
 
 For example, you can add the user name to the prompt as follows if the metadata has the name of the employee. 
 
-The name of the employee is {{memory.sessionMeta.metadata.empName}}
+The name of the employee is `{{memory.sessionMeta.metadata.empName}}`.
 
 Note: This is a read-only memory store and can't be updated via tools. However, you can update the metadata field in sessionMeta via APIs. Refer to [this to learn more](../../apis/agentic-apps/execute.md).

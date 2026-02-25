@@ -54,10 +54,10 @@ You can create a new agent or import an existing one.
 To import an existing Prompt Agent:
 
 1.  Click the **Import Agent** button located in the upper-right
-    corner.<img src="../images/import.png" alt="Details and Purpose" title="Details and Purpose" style="border: 1px solid gray; zoom:70%;">
+    corner.<img src="../images/import.png" alt="Details and Purpose" title="Details and Purpose" style="border: 1px solid gray; zoom:70%;"/>
 
 2.  Select the .ZIP file of the existing
-    agent.<img src="../images/import_agent.png" alt="Details and Purpose" title="Details and Purpose" style="border: 1px solid gray; zoom:70%;">
+    agent.<img src="../images/import_agent.png" alt="Details and Purpose" title="Details and Purpose" style="border: 1px solid gray; zoom:70%;"/>
 
 3.  Click **Import** to complete the process. The imported agent will appear on the
     Agents page.
@@ -71,7 +71,7 @@ To create a new Prompt Agent, follow these steps:
 
 1.  In the **Admin Console**, click **AI Agents** from the left pane, and then
     select **Prompt Agents**. A list of available prompt agents will be
-    displayed.<img src="../images/AI_agent.png" alt="Details and Purpose" title="Details and Purpose" style="border: 1px solid gray; zoom:70%;">
+    displayed.<img src="../images/AI_agent.png" alt="Details and Purpose" title="Details and Purpose" style="border: 1px solid gray; zoom:70%;"/>
 
 2.  On the Prompt Agents page, click **+Create Agent**
 
@@ -93,7 +93,7 @@ To create a new Prompt Agent, follow these steps:
 Provide a suitable and unique name for the agent and describe its purpose. Defining the agent’s purpose enables the system to accurately recognize the agent’s capabilities and effectively utilize them to respond to user queries aligned with the specified intent. It is essential to clearly outline the specific use cases for which the agent is designed, as all the fields, queries, and prompts are auto-generated based on the purpose provided. 
 
 To change the agent icon, click on the agent logo located above the agent's name. You can choose from a list of predefined logos or upload a custom logo.  Once you're ready, click **Continue** to proceed to the next step.
-<img src="../images/detail_and_purpose.png" alt="Details and Purpose" title="Details and Purpose" style="border: 1px solid gray; zoom:70%;">
+<img src="../images/detail_and_purpose.png" alt="Details and Purpose" title="Details and Purpose" style="border: 1px solid gray; zoom:70%;"/>
 
 #### Step 2: Source
 
@@ -108,7 +108,7 @@ In the Sources section, you can configure the following fields:
  The parameters fields are provided based on the purpose of the agent you provided in
 the previous step. For example, if the purpose is "summarization", fields might
 include Word Count, Summary Format
-etc.<img src="../images/source_gpt.png" alt="source_gpt" title="source_gpt" style="border: 1px solid gray; zoom:70%;">
+etc.<img src="../images/source_gpt.png" alt="source_gpt" title="source_gpt" style="border: 1px solid gray; zoom:70%;"/>
 
 ##### User Input
 
@@ -118,7 +118,7 @@ To configure user input, follow the steps outlined below:
    
 2.  Enter context name and any placeholder text in the **placeholder text**
     field if required. The placeholder text will appear in the form field before the end user provides input.
-3.  Select the **Field type** from the list for each field. You can select a single-line, multiline or file upload on the fields.<img src="../images/content_field_type_gpt.png" alt="content_field_type_gpt" title="content_field_type_gpt" style="border: 1px solid gray; zoom:70%;">
+3.  Select the **Field type** from the list for each field. You can select a single-line, multiline or file upload on the fields.<img src="../images/content_field_type_gpt.png" alt="content_field_type_gpt" title="content_field_type_gpt" style="border: 1px solid gray; zoom:70%;"/>
 
 4.  Click the mandatory toggle button ON if you want the field to be mandatory
     and click **Done**.
@@ -135,7 +135,7 @@ To configure user input, follow the steps outlined below:
 8.  Toggle the **Allow Upload Files** or **Allow URL Content** option to ON to
     enable file uploads or retrieval from URLs. This option is available only
     for Single-line and Multiline text field types.
-    <img src="../images/URL_content_gpt.png" alt="URL_content_gpt" title="URL_content_gpt" style="border: 1px solid gray; zoom:70%;">
+    <img src="../images/URL_content_gpt.png" alt="URL_content_gpt" title="URL_content_gpt" style="border: 1px solid gray; zoom:70%;"/>
 
 9.  Click the mandatory toggle button ON if you want the field to be mandatory
     and click **Done**.
@@ -148,7 +148,7 @@ To configure user input, follow the steps outlined below:
     be utilized in prompts. For example, if you uploaded a “Sample JD template”
     file, you can write a prompt that says, “Create a JD which is in the same
     format as in the Sample JD template file.”
-    <img src="../images/Knowledge_gpt.png" alt="URL_content_gpt" title="URL_content_gpt" style="border: 1px solid gray; zoom:70%;">
+    <img src="../images/Knowledge_gpt.png" alt="URL_content_gpt" title="URL_content_gpt" style="border: 1px solid gray; zoom:70%;"/>
 
     !!! note
 
@@ -158,10 +158,10 @@ To configure user input, follow the steps outlined below:
     displays all the integrated
     models. To know more about model integration, click
     [here](../llm-configuration/general-purpose.md#custom-llm-configuration).
-    <img src="../images/model.png" alt="URL_content_gpt" title="URL_content_gpt" style="border: 1px solid gray; zoom:70%;">
+    <img src="../images/model.png" alt="URL_content_gpt" title="URL_content_gpt" style="border: 1px solid gray; zoom:70%;"/>
 
 3. Toggle the **Show to users** button to display this prompt to the user. After switching the toggle to ON, you can choose between **Read-only** or **Editable** modes.
-    <img src="../images/show_to_users.png" alt="URL_content_gpt" title="URL_content_gpt" style="border: 1px solid gray; zoom:70%;">
+    <img src="../images/show_to_users.png" alt="URL_content_gpt" title="URL_content_gpt" style="border: 1px solid gray; zoom:70%;"/>
 
 ##### Prompts
 
@@ -196,7 +196,7 @@ To allow users to generate multiple responses,
     the output settings.  
 
 2. Enable **Skip Form Display** to automatically bypass forms. This feature intelligently prevents conflicts with Multi-Response and shows messages for incompatible settings. Smart query analysis now identifies when all required entities are present initially, and forms will only appear if mandatory fields are missing.
- <img src="../images/output_settings.png" alt="URL_content_gpt" title="URL_content_gpt" style="border: 1px solid gray; zoom:70%;">
+ <img src="../images/output_settings.png" alt="URL_content_gpt" title="URL_content_gpt" style="border: 1px solid gray; zoom:70%;"/>
 
 3. Click **Continue** to move to the next step.
 
@@ -208,12 +208,12 @@ The rule fills entities in a query when specific keywords are detected. Set rule
 
 You have options to set either an Entity Rule or Answering Rule.
 
-<img src="../images/Business_Rule.png" alt="URL_content_gpt" title="URL_content_gpt" style="border: 1px solid gray; zoom:70%;">
+<img src="../images/Business_Rule.png" alt="URL_content_gpt" title="URL_content_gpt" style="border: 1px solid gray; zoom:70%;"/>
 
 #### Step 4: Appearance and Behavior
 
 In the **Appearance and Behavior** section, a list of sample queries are displayed. If needed,
-you can add additional queries by clicking the **+ Add Query** button. Enable **Clear End-User Chat History** toggle to automatically delete the agent's chat history for end users after a specified period. Once you're ready, click **Publish** to proceed to the next step.<img src="../images/preview.png" alt="URL_content_gpt" title="URL_content_gpt" style="border: 1px solid gray; zoom:70%;">
+you can add additional queries by clicking the **+ Add Query** button. Enable **Clear End-User Chat History** toggle to automatically delete the agent's chat history for end users after a specified period. Once you're ready, click **Publish** to proceed to the next step.<img src="../images/preview.png" alt="URL_content_gpt" title="URL_content_gpt" style="border: 1px solid gray; zoom:70%;"/>
 
 #### Step 5: Publish Prompt Agent
 
