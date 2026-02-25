@@ -4,7 +4,7 @@ When given a defined schema, the model produces structured data suitable for reu
 
 ### Key Steps
 
-1. **Extract Structured Data**: When the model returns a structured response (e.g., JSON), relevant information is automatically parsed without manual intervention. For example,  intent, origin, destination, and date.
+1. **Extract Structured Data**: When the model returns a structured response (for example, JSON), relevant information is automatically parsed without manual intervention. For example,  intent, origin, destination, and date.
 2. **Store in Context**: The parsed data is automatically stored in the context object of the first node, making it immediately accessible to subsequent nodes without the need for the user writing a custom logic manually and parsing the keys using code.
 3. **Access and Reuse**: Later nodes can retrieve those stored keys from the context to dynamically generate messages or take further actions.
 4. **Create Flexible Flows**: Using the context object to store and access parsed information streamlines data flow between nodes, making workflows quicker and easier to build by automatically handling parsing behind the scenes.
@@ -31,7 +31,7 @@ Once the model generates a response, the platform automatically parses the struc
 
 #### Step 3: Automatic Storage in Context
 
-Each key from the parsed response (e.g., `scientificname`, `year`, `scientist`) is automatically stored in the **context object** of the AI node.
+Each key from the parsed response (for example, `scientificname`, `year`, `scientist`) is automatically stored in the **context object** of the AI node.
 
 * To access the entire output, you can use: `{{context.steps.AI0001.output}}`
 * To access specific fields/keys from the structured response, you can directly reference it. For example, `{{context.steps.AI0001.output.scientificname}}`

@@ -357,11 +357,11 @@ Click the **Copy** icon to copy the output.
 **Key Considerations**
 
 * Successful API calls return output values from the script.
-* The function’s **result key** value from the script is saved to the function node’s output (End node) as <code>{{context.steps.functionnodename.output}}</code>.
+* The function’s **result key** value from the script is saved to the function node’s output (End node) as `{{context.steps.functionnodename.output}}`.
 * Errors are displayed in the panel if an API request fails. The error logs are also displayed.
 <img src="../images/function-error-logs.png" alt="error logs" title="error logs" style="border: 1px solid gray; zoom:75%;"/>
 
-* The function’s **error/stderr** value from the script is saved to the function node’s output (End node) as <code>{{context.steps.functionnodename.error}}</code>.
+* The function’s **error/stderr** value from the script is saved to the function node’s output (End node) as `{{context.steps.functionnodename.error}}`.
 
 **Logs**
 

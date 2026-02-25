@@ -44,7 +44,7 @@ By selecting this option, you can define the variables, request body code, and a
 
     <img src="../images/add-custom-variable.png" alt="custom variable form" title="custom variable form" style="border: 1px solid gray; zoom:50%;"/>
       
-**Body**: The request body must include the model’s relevant parameters, which you must define manually. For dynamic variable mapping, use <code>{{variable}}</code>. Ensure the body is in the correct format, as shown in the screenshot below; otherwise, the API testing won't work.
+**Body**: The request body must include the model’s relevant parameters, which you must define manually. For dynamic variable mapping, use `{{variable}}`. Ensure the body is in the correct format, as shown in the screenshot below; otherwise, the API testing won't work.
 
   <img src="../images/body-parameters.png" alt="request body" title="request body" style="border: 1px solid gray; zoom:75%;"/>
 

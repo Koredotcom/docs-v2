@@ -83,7 +83,7 @@ Below are the key quality metrics and the components required in the dataset to 
   <tr>
    <td>GPT Similarity Score
    </td>
-   <td>Compares the model’s response with a superior model's response (e.g., GPT) for a given input.
+   <td>Compares the model’s response with a superior model's response (for example, GPT) for a given input.
    </td>
    <td>Input, your model’s response, Superior model’s response
    </td>

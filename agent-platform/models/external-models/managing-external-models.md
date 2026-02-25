@@ -17,7 +17,7 @@ Each row in the list shows:
 |---------------|-------------|
 | Model Name | Name assigned during integration. |
 | Type     | Indicates whether the model was added via Easy Integration or API Integration. |
-| Source     | The provider or origin of the model (e.g., OpenAI, Hugging Face, Custom). |
+| Source     | The provider or origin of the model (for example, OpenAI, Hugging Face, Custom). |
 | Added On   | Date the model was last added or updated. |
 
 

@@ -158,11 +158,11 @@ curl --location 'https://{host}/api/public/tools/a-fbxxxxxf4-20x5-58xb-8b94-00xx
   <tr>
    <td><strong>dockStatusId</strong>
    </td>
-   <td>The unique identifier to track the status of action. E.g. import, export, deploy, etc.
+   <td>The unique identifier to track the status of action. for example import, export, deploy, etc.
    </td>
    <td>String
    </td>
-   <td>e.g., ds-c6xxxxx5-dxxd-5xxf-9xxd-0xxxxx6xxxx8
+   <td>for example, ds-c6xxxxx5-dxxd-5xxf-9xxd-0xxxxx6xxxx8
    </td>
   </tr>
   <tr>
@@ -172,7 +172,7 @@ curl --location 'https://{host}/api/public/tools/a-fbxxxxxf4-20x5-58xb-8b94-00xx
    </td>
    <td>String
    </td>
-   <td>e.g., a-8xxxxxbe-6xxe-5xx1-8xxc-bxxxxxx80xx6
+   <td>for example, a-8xxxxxbe-6xxe-5xx1-8xxc-bxxxxxx80xx6
    </td>
   </tr>
   <tr>

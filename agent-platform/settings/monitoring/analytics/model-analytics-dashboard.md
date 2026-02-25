@@ -222,7 +222,7 @@ This widget is available exclusively for external models. It displays bar graphs
 
 **Best Practices**
 
-* **Performance Evaluation**: Understanding token counts helps assess the model's efficiency in processing input and generating output, i.e., fewer input tokens and higher output tokens.
+* **Performance Evaluation**: Understanding token counts helps assess the model's efficiency in processing input and generating output, that is, fewer input tokens and higher output tokens.
 * **Resource Management**: By tracking token usage, you can optimize credit consumption associated with tokens.
 * **Model Tuning**: Analyzing input and output tokens can provide insights for fine-tuning the model and improving its accuracy and response relevance.
 * **Identifying Bottlenecks**: Monitoring token counts helps proactively identify and troubleshoot potential bottlenecks in the model's processing pipeline.

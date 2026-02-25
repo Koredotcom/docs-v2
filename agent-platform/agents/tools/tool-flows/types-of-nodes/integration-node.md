@@ -14,12 +14,12 @@ The **Integration Node** is a powerful and flexible component that acts as a run
 * **CRM & Marketing Automation**: Connect CRM systems with marketing platforms to trigger personalized campaigns based on customer data and behavior, such as automatically launching email sequences when a lead is captured.
 * **Workflow Automation**: Automate tasks across apps, such as creating a project task when a support ticket is raised.
 * **Payment Gateways**: Securely process online transactions through integrated third-party payment providers.
-* **SaaS Integrations**: Enable seamless connections between SaaS tools (e.g., CRM, email marketing, e-commerce) to streamline daily workflows.
+* **SaaS Integrations**: Enable seamless connections between SaaS tools (for example, CRM, email marketing, e-commerce) to streamline daily workflows.
 
 
 ## Example Use Case
 
-Let’s consider an example where the **Integration Node** can be used to automate the tracking of broken back links for a website. The workflow begins with a manual input of the target URL via the Start node. The Integration Node connects to a third-party SEO tool (e.g., Ahrefs) and calls an API to fetch back link data filtered for broken links.
+Let’s consider an example where the **Integration Node** can be used to automate the tracking of broken back links for a website. The workflow begins with a manual input of the target URL via the Start node. The Integration Node connects to a third-party SEO tool (for example, Ahrefs) and calls an API to fetch back link data filtered for broken links.
 
 Using pre-configured authentication, the request returns a structured response with broken URLs, referring pages, and status codes. This data is then passed to the next node for formatting or further use.
 

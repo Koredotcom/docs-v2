@@ -475,5 +475,5 @@ print(context['customData']['stage'])
 
 1. Use consistent node naming for traceability (QueryGenerator, DataCleaner).
 2. Mask sensitive data before writing to the context.
-3. Use declarative references ({{ ... }}) for readability whenever possible.
+3. Use declarative references (`{{ ... }}`) for readability whenever possible.
 4. Use Script Nodes only when dynamic or computed context manipulation is required.

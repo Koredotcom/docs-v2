@@ -123,7 +123,7 @@ This functionality enhances the evaluation process by providing greater flexibil
 
 3. **Test the API call**: Click Test to verify the API setup. The response from the test will be displayed in the Response tab of the properties panel. If the JSON Output Path is incorrect, an error message will appear:
 4. **Fetch content from the API:** After configuring the API, click Run to trigger the request. The system will send the API call to the deployed tool, retrieve the output, and automatically add the response as a new column in the evaluation dataset.
-5. **Attach evaluators and evaluate the output:** Once the content is added as a column, you can attach evaluators (e.g., Coherence, Toxicity, Bias Detection) to assess the output. Then run the evaluation, and the evaluators will analyze the API-generated data, providing insights into the quality and performance of the content.
+5. **Attach evaluators and evaluate the output:** Once the content is added as a column, you can attach evaluators (for example, Coherence, Toxicity, Bias Detection) to assess the output. Then run the evaluation, and the evaluators will analyze the API-generated data, providing insights into the quality and performance of the content.
 
 
 ### Example Workflow for Running an API

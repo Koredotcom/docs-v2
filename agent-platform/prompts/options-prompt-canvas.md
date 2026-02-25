@@ -292,7 +292,7 @@ Click to open a dialog with API endpoints and select your preferred format (cURL
    </td>
    <td>Finalize and save the current prompt version.
 <p>
-Click to commit the current prompt as a new version, creating a record in Versions. When you save the current version, it will be labeled (e.g, V1, V2), and you will be able to track its evolution.
+Click to commit the current prompt as a new version, creating a record in Versions. When you save the current version, it will be labeled (for example, V1, V2), and you will be able to track its evolution.
    </td>
   </tr>
   <tr>

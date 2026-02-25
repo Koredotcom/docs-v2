@@ -211,7 +211,7 @@ To proceed, you must first unassign the role or assign an alternative role to th
 
 ### Permissions
 
-A **Permission** is a specific action or a set of actions the user can perform for a module i.e., **Admin**, **Tool**, or **Evaluation** based on the defined access level (*Full*, *Edit*, or *View*), assigned role type (*Account*, *Tools*, or *Agentic Apps*) and role category (*Admin*, or *Tools*). An example includes the system providing *full* access to *create a tool version* to the *Tool Admin* role of the *tool* role type.
+A **Permission** is a specific action or a set of actions the user can perform for a module that is, **Admin**, **Tool**, or **Evaluation** based on the defined access level (*Full*, *Edit*, or *View*), assigned role type (*Account*, *Tools*, or *Agentic Apps*) and role category (*Admin*, or *Tools*). An example includes the system providing *full* access to *create a tool version* to the *Tool Admin* role of the *tool* role type.
 
 ### Access Levels
 

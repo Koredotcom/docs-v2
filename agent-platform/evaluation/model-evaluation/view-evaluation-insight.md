@@ -4,12 +4,12 @@ In the Evaluation Insights section, you can view a detailed overview of your mod
 
 Each evaluator tile represents a specific evaluator and is updated based on the results . These results are shown in a bar graph format, where the color and length of the bar indicate whether the output meets or fails the defined criteria. The evaluator tile displays the bar graph, showing the number of records that have passed or failed the evaluation. The pass/fail status depends on the user-defined threshold set during the evaluator configuration or Boolean logic.
 
-* **Pass**: The output meets the evaluation criteria (e.g., no bias, no toxicity)
-* **Fail**: The output does not meet the evaluation criteria (e.g., contains bias, contains toxicity).
+* **Pass**: The output meets the evaluation criteria (for example, no bias, no toxicity)
+* **Fail**: The output does not meet the evaluation criteria (for example, contains bias, contains toxicity).
 
     <img src="../../images/bias.png" alt="Evaluator" title="Evaluator" style="border: 1px solid gray; zoom:50%;"/>
 
-**Quality evaluators** like Groundness, Query Relevance, Coherence, Fluency, Paraphrasing, and Completeness generally use *Continuous Scoring*. This method uses a numerical scale (e.g., 1-5 or 1-10). When you set a threshold, records above the threshold are marked as 'Pass', and those below the threshold are marked as 'Fail'.
+**Quality evaluators** like Groundness, Query Relevance, Coherence, Fluency, Paraphrasing, and Completeness generally use *Continuous Scoring*. This method uses a numerical scale (for example, 1-5 or 1-10). When you set a threshold, records above the threshold are marked as 'Pass', and those below the threshold are marked as 'Fail'.
 
 For example:
 

@@ -93,9 +93,9 @@ Click on the Loop node to open its configuration panel. The following options ar
 
 * **Node Name**: Assign a clear, descriptive name to the Loop node to make your workflow easier to understand and maintain.
 * **Loop Input Source:** Specify the list or array that the Loop node should iterate over. This input defines the number of times the loop will run. Supported input types include:
-    * A context variable (e.g., `context.invoices`)
+    * A context variable (for example, `context.invoices`)
     * An output field from a previous node
-* **Output Field**: Define a variable to store the results from each iteration into the node’s output array (e.g., `context.result`). This output array is available for downstream nodes after the loop completes.
+* **Output Field**: Define a variable to store the results from each iteration into the node’s output array (for example, `context.result`). This output array is available for downstream nodes after the loop completes.
 
 <img src="../images/loop_config_panel.png" alt="loop node config panel" title="loop node config panel" class="border-2 border-gray-300 rounded-xl" />
 
@@ -166,7 +166,7 @@ After running the workflow, use the Debug panel to inspect loop behavior, debug 
    </td>
    <td>Input list is undefined or resolves to <code>null</code>/empty
    </td>
-   <td>Ensure the Loop Input Source is set to a valid array (e.g., <code>{{inputs.items}}</code>). Verify it in the Debug Log.
+   <td>Ensure the Loop Input Source is set to a valid array (for example, `{{inputs.items}}`. Verify it in the Debug Log.
    </td>
   </tr>
   <tr>

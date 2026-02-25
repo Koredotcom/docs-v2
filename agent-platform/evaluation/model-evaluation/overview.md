@@ -33,13 +33,13 @@ The following outlines the key actions at each stage of the Model Evaluation use
 
 2. [**Create an evaluation**](./create-evaluation.md): Create an evaluation for your project.
 
-3. [**Import a dataset**](./import-dataset.md): Upload your dataset (e.g., CSV) for evaluation.
+3. [**Import a dataset**](./import-dataset.md): Upload your dataset (for example, CSV) for evaluation.
 
-4. [**Configure evaluators**](./configure-evaluator.md): Choose Quality or Safety evaluators such as Coherence, Toxicity, or Bias Detection. Then, link the evaluator’s prompt variables (e.g., {{input}}, {{output}}) to the dataset columns.
+4. [**Configure evaluators**](./configure-evaluator.md): Choose Quality or Safety evaluators such as Coherence, Toxicity, or Bias Detection. Then, link the evaluator’s prompt variables (for example, {{input}}, {{output}}) to the dataset columns.
 
 5. [**Run an evaluation**](./run-evaluation.md): Trigger the evaluation based on your dataset and selected evaluators.
 
-6. [**View evaluation results**](./view-evaluation-insight.md): Review the evaluator tiles in the Evaluation Insights section, where results are shown visually with color-coded indicators (e.g., green/red). Assess model performance by examining visual cues and scores.
+6. [**View evaluation results**](./view-evaluation-insight.md): Review the evaluator tiles in the Evaluation Insights section, where results are shown visually with color-coded indicators (for example, green/red). Assess model performance by examining visual cues and scores.
 
 7. [**Export evaluation results**](./view-evaluation-insight.md#export-evaluation-results):
 After reviewing the results, you can export the evaluation table in CSV format using the three-dot menu. The export includes all column and score data, as well as footer metrics like pass%, fail%, average, min, and max.

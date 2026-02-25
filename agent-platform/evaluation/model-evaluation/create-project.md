@@ -29,7 +29,7 @@ Steps to create a new project:
 2. On the Projects tab, click **New Project**.
 <img src="../../images/project.png" alt="Projects" title="Projects" class="border-2 border-gray-300 rounded-xl" /> 
 
-3. In the **Create a new project** dialog, enter a name for the new project. Ensure the project name does not exceed the predefined character limit (e.g., 100 characters).
+3. In the **Create a new project** dialog, enter a name for the new project. Ensure the project name does not exceed the predefined character limit (for example, 100 characters).
     <img src="../../images/create_new_project.png" alt="Create project" title="Create project" class="border-2 border-gray-300 rounded-xl" /> 
 
 4. Click **Create** to submit the project creation request.
