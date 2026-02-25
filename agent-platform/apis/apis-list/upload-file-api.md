@@ -119,7 +119,7 @@ curl --location 'https://{host}/api/public/files'
   <tr>
    <td><strong>fileContext</strong>
    </td>
-   <td>The context of the file (e.g., <code>bulkImport</code>).
+   <td>The context of the file (for example, <code>bulkImport</code>).
    </td>
    <td>String
    </td>
@@ -261,7 +261,7 @@ curl --location 'https://{host}/api/public/files/session/start'
   <tr>
    <td><strong>fileContext</strong>
    </td>
-   <td>The context of the file (e.g., <code>bulkImport</code>).
+   <td>The context of the file (for example, <code>bulkImport</code>).
    </td>
    <td>String
    </td>

@@ -27,7 +27,7 @@ Steps to publish a pre-built agent:
 1. Navigate to **User Profile** > **Admin Console** > **AI Search or AI Agents** > **API Agents** or **Prompt Agents**. You'll see a list of Pre-Built Agents, each marked with a "Prebuilt" label.
 
 2. To enable the Agent, Toggle the switch **ON** or click the **ellipsis** next to the specific agent. A pop-up window is displayed.  
-<img src="../images/enable-api-agents.png" alt="enable-api-agents" title="enable-api-agents" style="border: 1px solid gray; zoom:60%;">
+<img src="../images/enable-api-agents.png" alt="enable-api-agents" title="enable-api-agents" style="border: 1px solid gray; zoom:60;"/>
 
 1. Provide the following details:
     * **Published Version**: Select the version of the agent you are publishing.
@@ -41,7 +41,7 @@ Steps to publish a pre-built agent:
     
         For example: For a Jira agent, you can allow users to look up issues or also let them create new issues.
   
-        <img src="../images/publish-agent.png" alt="publish-agent" title="publish-agent" style="border: 1px solid gray; zoom:60%;">
+        <img src="../images/publish-agent.png" alt="publish-agent" title="publish-agent" style="border: 1px solid gray; zoom:60;"/>
 
 2. Click **Publish.** The agent is now available for the users to use in the Agent Store.
  

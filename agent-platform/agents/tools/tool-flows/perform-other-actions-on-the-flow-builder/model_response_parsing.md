@@ -4,7 +4,7 @@ When given a defined schema, the model produces structured data suitable for reu
 
 ### Key Steps
 
-1. **Extract Structured Data**: When the model returns a structured response (e.g., JSON), relevant information is automatically parsed without manual intervention. For example,  intent, origin, destination, and date.
+1. **Extract Structured Data**: When the model returns a structured response (for example, JSON), relevant information is automatically parsed without manual intervention. For example,  intent, origin, destination, and date.
 2. **Store in Context**: The parsed data is automatically stored in the context object of the first node, making it immediately accessible to subsequent nodes without the need for the user writing a custom logic manually and parsing the keys using code.
 3. **Access and Reuse**: Later nodes can retrieve those stored keys from the context to dynamically generate messages or take further actions.
 4. **Create Flexible Flows**: Using the context object to store and access parsed information streamlines data flow between nodes, making workflows quicker and easier to build by automatically handling parsing behind the scenes.
@@ -23,7 +23,7 @@ For example, let's say you're asking for the scientific name of a flower. You ca
 
 This schema guides the model to return its response in a structured JSON format that matches these keys.
 
-<img src="../images/define_response_schema.png" alt="Define response schema Variables" title="Define response schema" style="border: 1px solid gray; zoom:80%;"/>
+<img src="../images/define_response_schema.png" alt="Define response schema Variables" title="Define response schema" class="border-2 border-gray-300 rounded-xl" />
 
 #### Step 2: Automatic Parsing of the Model Response
 
@@ -31,14 +31,14 @@ Once the model generates a response, the platform automatically parses the struc
 
 #### Step 3: Automatic Storage in Context
 
-Each key from the parsed response (e.g., `scientificname`, `year`, `scientist`) is automatically stored in the **context object** of the AI node.
+Each key from the parsed response (for example, `scientificname`, `year`, `scientist`) is automatically stored in the **context object** of the AI node.
 
 * To access the entire output, you can use: `{{context.steps.AI0001.output}}`
 * To access specific fields/keys from the structured response, you can directly reference it. For example, `{{context.steps.AI0001.output.scientificname}}`
 
 This gives you fine-grained control over which pieces of data are used in other nodes, without needing any extra parsing or logic.
 
-<img src="../images/storage_context.png" alt="Automatic storage in context" title="Automatic storage in context" style="border: 1px solid gray; zoom:80%;"/>
+<img src="../images/storage_context.png" alt="Automatic storage in context" title="Automatic storage in context" class="border-2 border-gray-300 rounded-xl" />
 
 #### Step 4: Reuse Keys in Later Nodes
 
@@ -46,7 +46,7 @@ The stored context values can now be used in any subsequent nodes. For example: 
 
 You no longer need to re-parse the response or write custom code to extract these values—these values are already accessible and ready for use.
 
-<img src="../images/reuse_keys.png" alt="reuse keys" title="reuse keys" style="border: 1px solid gray; zoom:80%;"/>
+<img src="../images/reuse_keys.png" alt="reuse keys" title="reuse keys" class="border-2 border-gray-300 rounded-xl" />
 
 #### Step 5: View Structured Output During Execution
 
@@ -58,7 +58,7 @@ When the tool runs:
 
 Each key is stored individually in the context, making it easy to trace, validate, and reuse specific values across the workflow.
 
-<img src="../images/view_structured_output.png" alt="View structured Output Variables" title="View structured Output" style="border: 1px solid gray; zoom:80%;"/>
+<img src="../images/view_structured_output.png" alt="View structured Output Variables" title="View structured Output" class="border-2 border-gray-300 rounded-xl" />
 
 ### Key Benefits
 

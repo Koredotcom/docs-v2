@@ -466,7 +466,7 @@ The following deployment parameters can be configured and passed in the body:
   <tr>
    <td><b>jobType</b>
    </td>
-   <td>Specifies the type of job (e.g., "<em>MODELS</em>").
+   <td>Specifies the type of job (for example, "<em>MODELS</em>").
    </td>
    <td>String
    </td>

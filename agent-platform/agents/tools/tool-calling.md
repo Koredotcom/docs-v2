@@ -195,7 +195,7 @@ Below is a list of models across various platforms that support tool calling in 
 * Gemini-1.5-flash-latest
 * Gemini-1.5-pro
 
-<hr> 
+<hr /> 
 
 **Related Resources**
 

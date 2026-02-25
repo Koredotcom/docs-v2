@@ -6,20 +6,20 @@ The Notify API enables developers to send interactive notifications to the users
 
     Applicable only for Bot, Autonomous, and Workflow Agents.
 
-| Method<br>           | Post<br>                                                                                                                                               |
+| Method           | Post                                                                                                                                               |
 |----------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Endpoint<br>         | https://{{host}}/api/public/agents/{agentId}/notify<br>                                                                                                |
-| Content type<br>     | application/json<br>                                                                                                                                   |
-| Authorization<br>    | authorization: &lt;authToken><br><br>**Note**: The access token obtained from the agent settings page will serve as the authorization token. |
-| API Scope<br>        | Notification<br>                                                                                                                                       |
+| Endpoint         | `https://{{host}}/api/public/agents/{agentId}/notify`                                                                                                |
+| Content type     | application/json                                                                                                                                  |
+| Authorization    | authorization: &lt;authToken> The access token obtained from the agent settings page will serve as the authorization token. |
+| API Scope        | Notification                                                                                                                                       |
 
 
 ## Path Parameter
 
-| Parameter<br>    | Required/Optional<br>    | Description<br>                                                                                                                                                                                                                                                                                                         |
+| Parameter    | Required/Optional    | Description                                                                                                                                                                                                                                                                                                        |
 |------------------|--------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| host<br>         | Required<br>             | Environment URL, for example, `https://work.example`.ai<br>                                                                                                                                                                                                                                                                  |
-| agent ID<br>     | Required<br>             | This portion of the URL is a placeholder for the unique identifier of the specific agent. When making an actual API request, you must replace {agentId} with the actual ID of the agent you want to notify.<br><br> **Note**: Obtain the agent ID from the Post URL field while creating an agent. |
+| host         | Required             | Environment URL, for example, `https://work.example.ai`                                                                                                                                                                                                                                                                  |
+| agent ID     | Required             | This portion of the URL is a placeholder for the unique identifier of the specific agent. When making an actual API request, you must replace {agentId} with the actual ID of the agent you want to notify. Obtain the agent ID from the Post URL field while creating an agent. |
 
 ## Sample Request
 

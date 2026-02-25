@@ -5,17 +5,17 @@ The S3 Storage Integration functionality broadens AI for Process' capabilities b
 **To integrate with your S3 account, follow these steps**:
 
 1. Log in → In AI for Process Modules top menu → Click **Settings**.
-   <img src="../images/aip-settings-access.png" alt="access settings" title="access settings" style="border: 1px solid gray; zoom:75%;">
+   <img src="../images/aip-settings-access.png" alt="access settings" title="access settings" style="border: 1px solid gray; zoom:75%;"/>
 
 2. Click **Integrations** on the left menu.
 
 3. Click the **AWS S3 bucket** option from the list of Integrations. The AWS S3 bucket section is expanded.
 
-    <img src="../images/add-s3-connection.png" alt="Add S3 Connection" title="Add S3 Connection" style="border: 1px solid gray; zoom:80%;"/>
+    <img src="../images/add-s3-connection.png" alt="Add S3 Connection" title="Add S3 Connection" class="border-2 border-gray-300 rounded-xl" />
 
 4. Click **Add connection**. The **AWS S3 bucket** dialog is displayed.
 
-    <img src="../images/aws-s3-bucket-connection.png" alt="AWS S3 Bucket Connection" title="AWS S3 Bucket Connection" style="border: 1px solid gray; zoom:60%;">
+    <img src="../images/aws-s3-bucket-connection.png" alt="AWS S3 Bucket Connection" title="AWS S3 Bucket Connection" style="border: 1px solid gray; zoom:60%;"/>
 
 5. Enter the following details in the dialog to create a connection:
     * Provide a **Connection name**.

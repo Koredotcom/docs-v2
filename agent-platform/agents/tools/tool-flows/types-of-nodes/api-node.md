@@ -74,7 +74,7 @@ Click the added node to open its properties dialog box. The General Settings for
 
    </td>
   <td>
-  Select the integration type: <strong>Synchronous</strong> or <strong>Asynchronous</strong>.<br><br>
+  Select the integration type: <strong>Synchronous</strong> or <strong>Asynchronous</strong>.<br <br />r>
 
   <strong>Synchronous</strong>: Waits for a response before proceeding.
   <ul>
@@ -111,11 +111,11 @@ Click the added node to open its properties dialog box. The General Settings for
       In the <strong>Auth</strong> section, select the required <strong>Auth Profile</strong> from the list of configured profiles. Next, provide the authorization details.
       <ul>
         <li>
-          <strong>Pre-authorize the Integration</strong>: Select this option if the authorization has already been completed in advance. This is suitable for API calls that do not require the end user to authenticate or provide credentials.<br>
+          <strong>Pre-authorize the Integration</strong>: Select this option if the authorization has already been completed in advance. This is suitable for API calls that do not require the end user to authenticate or provide credentials.<br />
           <strong>Example</strong>: Connecting to a service using a system-level token or client credentials that have already been authorized. In this case, the same credentials are used for all users.
         </li>
         <li>
-          <strong>Allow users to authorize the integration</strong>: Choose this option if each end user needs to dynamically authorize the integration at runtime. This is useful when user-specific credentials or tokens are required for access.<br>
+          <strong>Allow users to authorize the integration</strong>: Choose this option if each end user needs to dynamically authorize the integration at runtime. This is useful when user-specific credentials or tokens are required for access.<br />
           <strong>Example</strong>: Connecting to a third-party service like Google Drive, where each user must log in and grant access to their account. This ensures personalized access and respects individual user permissions.
         </li>
       </ul>
@@ -142,7 +142,7 @@ Click the added node to open its properties dialog box. The General Settings for
 
 Click the **Connections** icon in the left navigation and select **Go to Node** for success and failure conditions.
 
-<img src="./../images/api-node-connections.png" alt="API node Connections Properties" title="API node Connections Properties" style="border: 1px solid gray; zoom:80%;"/>
+<img src="./../images/api-node-connections.png" alt="API node Connections Properties" title="API node Connections Properties" class="border-2 border-gray-300 rounded-xl" />
 
 * **On Success** > **Go to Node**: After the current node is successfully executed, go to a selected node in the flow to execute next. For example, you can process the data from this node into a Function node and then use it further. In this case, select the Function node. 
 * **On Failure** > **Go to Node**: If the execution of the current node fails, go to an appropriate node having a custom error message configured.
@@ -151,10 +151,4 @@ Click the **Connections** icon in the left navigation and select **Go to Node** 
 
 Finally, test the flow and fix any issues found. Click the **Run Flow** button at the top-right corner of the flow builder and follow the onscreen instructions.
 
-
-!!! note
-    
-    Use the following syntax to access an API node using the context variable: 
-    ~~~
-    {{context.steps.Start.APINodeName}}
-    ~~~
+<Note>Use the following syntax to access an API node using the context variable: `{{context.steps.Start.APINodeName}}`</Note>

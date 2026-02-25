@@ -36,13 +36,13 @@ OAuth 2.0 (OAuth2) is a standard authorization framework that enables applicatio
 
 * **Secure, Token-Based Authorization** – Grants access without sharing user credentials, using short-lived access tokens. 
 
-* **Multiple Authorization Flows** – Supports different grant types (e.g., Authorization Code, Client Credentials) for various use cases. 
+* **Multiple Authorization Flows** – Supports different grant types (for example, Authorization Code, Client Credentials) for various use cases. 
 
-* **Scope-Based Access Control** – Users can grant apps limited permissions (e.g., read-only access). 
+* **Scope-Based Access Control** – Users can grant apps limited permissions (for example, read-only access). 
 
 * **Refresh Token Support** –  Enables seamless re-authorization without requiring user login. 
 
-* **Third-Party & Scalable Integration** – Widely adopted for API authentication, allowing secure third-party access (e.g., "*Sign in with Google*").
+* **Third-Party & Scalable Integration** – Widely adopted for API authentication, allowing secure third-party access (for example, "*Sign in with Google*").
 
 ### OAuth V2 Client Credential
 
@@ -59,7 +59,7 @@ The Client Credentials flow is one of the OAuth 2.0 authorization grant types. I
 **Key Features**
 
 * **Client Credentials**: This flow uses the client's unique identifier (client ID) and a secret (client secret) to authenticate the application with the authorization server. 
-* **No User Interaction**: Unlike flows involving user authorization (e.g., authorization code flow), the client credentials flow doesn't require the user to log in or grant permissions. 
+* **No User Interaction**: Unlike flows involving user authorization (for example, authorization code flow), the client credentials flow doesn't require the user to log in or grant permissions. 
 * **Machine-to-Machine (M2M) Communication**: This flow is ideal for scenarios where one application needs to access resources owned by another application, such as microservices or server-to-server communication. 
 * **Resource Access**: The client uses the acquired access token to interact with the resource server and access protected resources. 
 * **Access Token**: The authorization server issues an access token, a short-lived credential that allows the client to access specific resources. 
@@ -70,13 +70,13 @@ To add a new Auth profile, you must first set up the required auth fields with t
 
 1. [Navigate](../security-and-control/authorization-profile.md#access-authorization-profile) to the **Authorization Profile** feature.
 2. Click **Create Authorization Profile** if this is your first auth profile.
-<img src="../images/click-create-auth-profile.png" alt="create auth profile" title="create auth profile" style="border: 1px solid gray; zoom:75%;">  
+<img src="../images/click-create-auth-profile.png" alt="create auth profile" title="create auth profile" style="border: 1px solid gray; zoom:75%;" />  
 
 Otherwise, click **Add new auth**.
-<img src="../images/add-new-auth-profile.png" alt="add new auth profile" title="add new auth profile" style="border: 1px solid gray; zoom:75%;">  
+<img src="../images/add-new-auth-profile.png" alt="add new auth profile" title="add new auth profile" style="border: 1px solid gray; zoom:75%;" />  
 
 <ol start="3"><li>In the <b>New Authorization Mechanism</b> dialog, select the required option for <b>Authorization Type</b>.</li> 
-<img src="../images/select-oauthv2.png" alt="select oauth v2" title="select oauth v2" style="border: 1px solid gray; zoom:75%;"></ol>  
+<img src="../images/select-oauthv2.png" alt="select oauth v2" title="select oauth v2" style="border: 1px solid gray; zoom:75%;" /></ol>  
 <ol start="4"><li>In the <b>Identity Provider Name</b> field, enter a name for the authorization type, which is mandatory.
 <img src="../images/identity-provider.png" alt="identity provider" title="identity provider" style="border: 1px solid gray; zoom:75%;"/></li>
 <li>Provide the values for the mandatory authorization fields. For details, refer to the <a href="#define-authorization-fields">Define Authorization Fields</a> section. 
@@ -93,7 +93,7 @@ If the mandatory fields are left blank, validation error messages appear, as sho
     
 <ol start="7"><li>(Optional step to be executed only when you select <b><i>OAuth V2</i></b> as the Authorization type) Click <b>+ Add Authorization Field</b> to add additional auth fields to your profile. This is required For more information, see the <a href="#add-authorization-field">Add Authorization Field</a> section.</li>
 <li>Click <b>Save new Auth</b>.</li>
-<img src="../images/save-new-auth.png" alt="save new auth" title="save new auth" style="border: 1px solid gray; zoom:75%;"></ol>
+<img src="../images/save-new-auth.png" alt="save new auth" title="save new auth" style="border: 1px solid gray; zoom:75%;" /></ol>
 
 A success message is displayed, and the new auth profile is added to the **Authorization Profile** page.
 
@@ -285,7 +285,7 @@ To add additional fields, follow the steps below:
 
 1. Click **+ Add Additional Field** in the **New Authorization Mechanism** window and enter one or more key-value pairs.
 
-    <img src="../images/add-additional-field-click.png" alt="add additional field" title="add additional field" style="border: 1px solid gray; zoom:75%;">
+    <img src="../images/add-additional-field-click.png" alt="add additional field" title="add additional field" style="border: 1px solid gray; zoom:75%;" />
 
 2. Add values for the following fields:
 
@@ -334,7 +334,7 @@ Authorization fields are data fields used in API requests to verify the identity
 To add auth fields, follow the steps below:
 
 1. Click **+ Add Authorization Field** in the **New Authorization Mechanism** window and enter one or more key/value pairs.
-<img src="../images/add-auth-field-new.png" alt="add new auth field" title="add new auth field" style="border: 1px solid gray; zoom:75%;">
+<img src="../images/add-auth-field-new.png" alt="add new auth field" title="add new auth field" style="border: 1px solid gray; zoom:75%;" />
 
 2. Add values for the following fields:
 
@@ -387,10 +387,10 @@ To add auth fields, follow the steps below:
 
 <ol start="3"><li>Click <b>Done</b>.</li></ol>
 
-<img src="../images/auth-field-form.png" alt="auth field form" title="auth field form" style="border: 1px solid gray; zoom:75%;">  
+<img src="../images/auth-field-form.png" alt="auth field form" title="auth field form" style="border: 1px solid gray; zoom:75%;" />  
 
 The new field is added to the Authorization Fields list.  You can edit or delete this custom field.
-<img src="../images/new-auth-field-listing.png" alt="new auth field" title="new auth field" style="border: 1px solid gray; zoom:75%;">
+<img src="../images/new-auth-field-listing.png" alt="new auth field" title="new auth field" style="border: 1px solid gray; zoom:75%;" />
 
 
 ## Authorization Profile Summary
@@ -402,7 +402,7 @@ Each authorization you add to your account is displayed in the **Authorization P
 * **Test auth**: Click the **Test** button corresponding to a configured profile to check if it establishes a connection with an external service based on the configured profile.
 * **Status**: Displays **Configured** or **Not Configured** based on the configuration status.
     
-<img src="../images/auth-profile-summary.png" alt="auth profile summary" title="auth profile summary" style="border: 1px solid gray; zoom:75%;">  
+<img src="../images/auth-profile-summary.png" alt="auth profile summary" title="auth profile summary" style="border: 1px solid gray; zoom:75%;" />  
 
 ## Test the Auth Profile
 
@@ -412,7 +412,7 @@ A new window appears where the Platform tries to establish a connection with the
 
 A successful connection is shown below:
 
-<img src="../images/successful-oauth-connection.png" alt="successful connection" title="successful connection" style="border: 1px solid gray; zoom:50%;">  
+<img src="../images/successful-oauth-connection.png" alt="successful connection" title="successful connection" style="border: 1px solid gray; zoom:50%;" />  
 
 If the connection fails, edit the auth profile with the correct information and test the connection again. 
 
@@ -424,7 +424,7 @@ You can either edit the configured values of an auth profile or delete it from t
 
 1. Click the **Ellipses** icon for an Auth profile on the **Authorization Profile** page. 
 2. Click **Edit**.
-<img src="../images/edit-auth-profile.png" alt="edit auth profile" title="edit auth profile" style="border: 1px solid gray; zoom:75%;">  
+<img src="../images/edit-auth-profile.png" alt="edit auth profile" title="edit auth profile" style="border: 1px solid gray; zoom:75%;" />  
 
 3. Modify the required fields in the **Update authorization mechanism** window.
 4. Click **Update new auth**.
@@ -441,7 +441,7 @@ You can either edit the configured values of an auth profile or delete it from t
 To delete an Auth profile, follow the steps below:
 
 1. Click the **Ellipses** icon and select **Delete**.
-<img src="../images/delete-auth-profile.png" alt="delete auth profile" title="delete auth profile" style="border: 1px solid gray; zoom:75%;">  
+<img src="../images/delete-auth-profile.png" alt="delete auth profile" title="delete auth profile" style="border: 1px solid gray; zoom:75%;" />  
 
 2. Click **Delete** in the confirmation window.
 

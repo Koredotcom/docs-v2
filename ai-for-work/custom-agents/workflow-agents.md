@@ -15,10 +15,10 @@ You can create a new agent or import an existing one.
 To import an existing Workflow agent:
 
 1. Click the **Import Agent** button located in the upper-right corner.
-<img src="../images/import-workflow.png" alt="Admin Console" title="Admin Console" style="border: 1px solid gray; zoom:70%;">
+<img src="../images/import-workflow.png" alt="Admin Console" title="Admin Console" style="border: 1px solid gray; zoom:70%;"/>
 
 1. Select the .ZIP file of the existing agent.
-<img src="../images/import-workflow-agent.png" alt="Admin Console" title="Admin Console" style="border: 1px solid gray; zoom:70%;">
+<img src="../images/import-workflow-agent.png" alt="Admin Console" title="Admin Console" style="border: 1px solid gray; zoom:70%;"/>
 
 1. Click **Import** to complete the process. The imported agent will appear on the Workflow Agents page.
 
@@ -27,10 +27,10 @@ To import an existing Workflow agent:
 To create a Workflow Agent, follow the steps outlined below:
 
 1. In the **Admin Console**, click **AI Agents** from the left pane, and then select **Workflow Agents**. A list of available workflow agents will be displayed.
-<img src="../images/AI_agent_workflow.png" alt="Admin Console" title="Admin Console" style="border: 1px solid gray; zoom:70%;">
+<img src="../images/AI_agent_workflow.png" alt="Admin Console" title="Admin Console" style="border: 1px solid gray; zoom:70%;"/>
 
 1. On the Workflow Agents page, click **+Create Agent**.
-<img src="../images/create_agent.png" alt="Admin Console" title="Admin Console" style="border: 1px solid gray; zoom:70%;">
+<img src="../images/create_agent.png" alt="Admin Console" title="Admin Console" style="border: 1px solid gray; zoom:70%;"/>
 
 1. The **Workflow** / **Workflow Agent creation** wizard will take you through the following steps:
 
@@ -49,7 +49,7 @@ agent. Defining the agentâ€™s purpose enables to accurately recognize the agentâ
 
 For instance, if an agent called "Sales Buddy" is created to handle user queries, specifying its purpose helps this agent whenever a user sends a query related to any cross-sell or upsell product.
 
-<img src="../images/detail_and_purpose_workflow.png" alt="Admin Console" title="Admin Console" style="border: 1px solid gray; zoom:70%;">
+<img src="../images/detail_and_purpose_workflow.png" alt="Admin Console" title="Admin Console" style="border: 1px solid gray; zoom:70%;"/>
 
 ### Step 2: Configure Workflow Flow
 
@@ -73,7 +73,7 @@ steps outlined below:
         back to the specified endpoint.
 
 2.  For Async Mode, enter the **POST URL** and **Access token**.
-<img src="../images/async.png" alt="Admin Console" title="Admin Console" style="border: 1px solid gray; zoom:70%;">
+<img src="../images/async.png" alt="Admin Console" title="Admin Console" style="border: 1px solid gray; zoom:70%;"/>
 
 To configure async mode with the Workflow Platform, copy the **POST URL** and **Access Token** from the agent, then follow the steps outlined below.
 
@@ -82,7 +82,7 @@ To configure async mode with the Workflow Platform, copy the **POST URL** and **
 2.  On the **Agents** tab, click the name of the agent that you want to integrate and then click **Agent endpoint** in the left  navigation.
 
 3.  Select the **Async push** to enable asynchronous response handling and click the settings icon next to the **Async push** option.
-<img src="../images/async_push.png" alt="Admin Console" title="Admin Console" style="border: 1px solid gray; zoom:70%;">
+<img src="../images/async_push.png" alt="Admin Console" title="Admin Console" style="border: 1px solid gray; zoom:70%;"/>
 
 4.  Next, paste the copied **POST URL** and **Access Token** into the appropriate fields on the **Sync/Async mode setup** page.  
 
@@ -125,7 +125,7 @@ To configure async mode with the Workflow Platform, copy the **POST URL** and **
     Agent and click **Continue**.
 
 13. The API response output displays all the keys received in the response. These keys are used to map the specific value that should be shown to the end user.
-<img src="../images/response.png" alt="Admin Console" title="Admin Console" style="border: 1px solid gray; zoom:70%;">
+<img src="../images/response.png" alt="Admin Console" title="Admin Console" style="border: 1px solid gray; zoom:70%;"/>
 
 14. Click **Continue** to move to the next step.
 
