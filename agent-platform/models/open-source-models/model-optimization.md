@@ -4,9 +4,7 @@ Model optimization is the process of improving a machine learning model's perfor
 
 The Platform supports the following optimization types: CTranslate2 and vLLM.
 
-!!! note
-
-    The model optimization is supported only for the Platform-hosted models.
+<Note> The model optimization is supported only for the Platform-hosted models. </Note>
 
 
 ## CTranslate2

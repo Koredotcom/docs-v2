@@ -226,9 +226,7 @@ The Response tab shows whether the first-row query is returning an answer, allow
 
 7. **Attach Evaluators:** Once the Search AI columns are populated, you can attach any built-in or custom evaluators to the Answers or Retrieved Contexts columns. Click the **“+”** icon and select **Add Evaluator**.  
 
-    !!! note
-
-        The **RAGAS evaluators** are specifically designed to test RAG systems. It is advisable to attach them as evaluators and run an evaluation to thoroughly assess the RAG pipeline's performance. 
+    <Note> The **RAGAS evaluators** are specifically designed to test RAG systems. It is advisable to attach them as evaluators and run an evaluation to thoroughly assess the RAG pipeline's performance. </Note>
 
     <img src="../../images/ragas.jpg" alt="RAGAS evaluators" title="RAGAS evaluators" class="border-2 border-gray-300 rounded-xl" />
 

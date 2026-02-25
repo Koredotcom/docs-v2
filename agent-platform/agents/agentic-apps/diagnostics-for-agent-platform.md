@@ -4,8 +4,7 @@ The Agent Diagnostics feature helps you validate the health and readiness of an 
 
 When you run Diagnostics from the Agentic App Overview page, the platform scans the entire app configuration and identifies issues that may affect functionality, stability, or deployment readiness.
 
-!!!note
-    Diagnostics performs static and logical validation. It evaluates configuration health and doesn't test conversational outcomes.
+<Note> Diagnostics performs static and logical validation. It evaluates configuration health and doesn't test conversational outcomes. </Note>
 
 **Key Highlights**
 

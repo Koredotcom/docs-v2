@@ -78,8 +78,7 @@ This section is used to control data access and retention.
 
 **Retention Policy**: This field specifies how long the data is retained, irrespective of the access type value. This can be set to **session-level,** in which case it's retained only for the duration of a session. Alternatively, you can specify the time( 1 day, 1 week, or 1 month) for which the data must be retained before automatically removing it from the memory store. 
 
-!!!note
-    Set appropriate retention periods based on specific usage of the data to balance performance, cost, and compliance.
+<Note> Set appropriate retention periods based on specific usage of the data to balance performance, cost, and compliance. </Note>
 
 
 <table>
@@ -201,10 +200,7 @@ Use the following format to create or update a record in the memory store. This 
 * store_name(string): the technical name of the store. 
 * data_object:  A JSON object representing the fields to write or update in the memory store.
 
-!!!note
-
-    * Records are stored based on the memory store’s access context: **session**, **user**, or **application**.
-    * Fields not included in the update are retained as-is.
+<Note> * Records are stored based on the memory store’s access context: **session**, **user**, or **application**. * Fields not included in the update are retained as-is. </Note>
 
 **Javascript Examples**
 

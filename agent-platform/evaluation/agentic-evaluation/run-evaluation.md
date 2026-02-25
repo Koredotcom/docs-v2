@@ -7,6 +7,4 @@ The system runs all applicable evaluators, processes the data, and computes scor
 <img src="../../agentic-evaluation/images/run_evaluation.png" alt="Run evaluation" title="Run evaluation" class="border-2 border-gray-300 rounded-xl" />
 
 
-!!! note
-
-    Evaluations can be run multiple times, for example, after updating agent logic, adding new simulated sessions, or importing additional production data. This allows developers to benchmark performance across different agent versions and testing conditions.
+<Note> Evaluations can be run multiple times, for example, after updating agent logic, adding new simulated sessions, or importing additional production data. This allows developers to benchmark performance across different agent versions and testing conditions. </Note>

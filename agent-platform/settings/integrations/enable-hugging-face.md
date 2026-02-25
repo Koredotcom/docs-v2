@@ -40,15 +40,11 @@ You can test your connection after you provide the details to verify the accurac
 2. If the connection fails, you can verify the details entered or cancel the set-up process.
 3. You can test the connection by clicking the **▶** icon on the connections list.
 
-    !!! note
-
-        If the connection fails a red icon is displayed corresponding to the name of the connection on the Connections list.
+    <Note> If the connection fails a red icon is displayed corresponding to the name of the connection on the Connections list. </Note>
 
 
 1. Hover over the connection name and click the three dots icon for **Connection name**. You can edit or delete a connection as required.
 
-    !!! note
-
-        * Once the Hugging Face connection is completed, you can see your connection name in the drop-down box while selecting and deploying an Open-source model.  For more information about selecting and deploying, see [Select and Deploy an Open-Source Model](../../models/open-source-models/select-and-deploy-an-open-source-model.md).
+    <Note> * Once the Hugging Face connection is completed, you can see your connection name in the drop-down box while selecting and deploying an Open-source model.  For more information about selecting and deploying, see [Select and Deploy an Open-Source Model](../../models/open-source-models/select-and-deploy-an-open-source-model.md). </Note>
 
         * If you delete the Hugging Face connection used for the model's deployment, the system will ask you to select a new connection on redeployment. 

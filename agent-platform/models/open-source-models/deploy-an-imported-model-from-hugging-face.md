@@ -2,9 +2,7 @@
 
 You can deploy an open-source model by selecting the Hugging Face option in the deployment process.
 
-!!! note
-
-    The Platform supports models compatible with Transformers library version lower than or equal to 4.43.1 and not the models that require a higher version of the Transformers library.
+<Note> The Platform supports models compatible with Transformers library version lower than or equal to 4.43.1 and not the models that require a higher version of the Transformers library. </Note>
 
 
 To deploy a model from Hugging Face, follow these steps:
@@ -69,9 +67,7 @@ To deploy a model from Hugging Face, follow these steps:
 
     <img src="../images/deploy-hugging-face-review-section.png" alt="Deploy Hugging Face Review Section" title="Deploy Hugging Face Review Section" class="border-2 border-gray-300 rounded-xl" />
 
-    !!! note
-
-        If you want to make any modifications, you can go to the previous step by clicking the **Back** button or a particular step indicator on the left panel.
+    <Note> If you want to make any modifications, you can go to the previous step by clicking the **Back** button or a particular step indicator on the left panel. </Note>
 
     
 4. Click **Deploy**.

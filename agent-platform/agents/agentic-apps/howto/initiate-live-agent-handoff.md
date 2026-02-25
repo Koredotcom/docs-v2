@@ -6,8 +6,7 @@ The Agent Handoff event in the Platform can initiate live agent handoff only via
 
 This document provides step-by-step instructions for configuring and invoking a live-agent handoff using the Automation Node in the AI for Service app. 
 
-!!! note
-    Although this document focuses on invoking a live agent via AI for Service, the same configuration can also be used to trigger other conversational agents or workflows via the AI for Service app.
+<Note> Although this document focuses on invoking a live agent via AI for Service, the same configuration can also be used to trigger other conversational agents or workflows via the AI for Service app. </Note>
 
 
 ## Prerequisites

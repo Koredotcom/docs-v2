@@ -20,6 +20,4 @@ You can save versions of your flows, restore older versions, and delete versions
 
     The version you saved will be the current version. Any changes you make in the flow are auto-saved to the current version.
 
-    !!! note
-
-        In the **Flow versions** dialog, you can click the 3 dots icon beside the version name to restore or delete a version. When you restore a version, the current version goes down to the bottom of the list, and the restored version becomes the current version and is moved to the top of the list. If you want to edit a restored version, a new current version is created, and you can save this version with a new name. A deployed version can only be restored but cannot be deleted.
+    <Note> In the **Flow versions** dialog, you can click the 3 dots icon beside the version name to restore or delete a version. When you restore a version, the current version goes down to the bottom of the list, and the restored version becomes the current version and is moved to the top of the list. If you want to edit a restored version, a new current version is created, and you can save this version with a new name. A deployed version can only be restored but cannot be deleted. </Note>

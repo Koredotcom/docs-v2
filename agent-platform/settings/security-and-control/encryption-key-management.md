@@ -17,8 +17,7 @@ This feature enables custom encryption using keys controlled by the organization
 
 Whenever custom encryption is available via the configured key management system, it's used for all content encryption. Else, the default encryption serves as the fallback. 
 
-!!!note
-    In the Platform, the encryption key configuration is implemented at the account level, unlike in the AI for Service platform, where it's applied at the app level. As a result, all apps within a given account in the Platform use the same encryption key. 
+<Note> In the Platform, the encryption key configuration is implemented at the account level, unlike in the AI for Service platform, where it's applied at the app level. As a result, all apps within a given account in the Platform use the same encryption key. </Note>
 
 
 ### Supported providers

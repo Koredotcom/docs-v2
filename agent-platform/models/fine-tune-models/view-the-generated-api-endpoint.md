@@ -4,9 +4,7 @@
 
 After the model is deployed, the API endpoint is generated which implies that your fine-tuned model is ready for inferencing externally and across the other sections in the Platform.
 
-!!! note
-
-    You will receive an email notification after your model deployment is completed and an API is generated and ready to use.
+<Note> You will receive an email notification after your model deployment is completed and an API is generated and ready to use. </Note>
 
 Steps to view the API Endpoint:
 

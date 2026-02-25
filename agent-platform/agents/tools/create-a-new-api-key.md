@@ -16,8 +16,7 @@ Steps to create an API key for your tool:
 5. Provide a descriptive name for the key and click **Generate key**. The newly generated API key is displayed in the dialog. Click **Copy and close** to save the key to your clipboard. You can now share this key with authorized users as needed.  
 <img src="../images/copy-and-close-api-key.png" alt="Copy and Close API Key" title="Copy and Close API Key" style="border: 1px solid gray; zoom:60%;"/>
 
-    !!! note
-        The Platform won't show the API key again for security reasons. Keep the API key secure and confidential. Never share it with unauthorized users or expose it in client-side code or browsers.
+    <Note> The Platform won't show the API key again for security reasons. Keep the API key secure and confidential. Never share it with unauthorized users or expose it in client-side code or browsers. </Note>
 
 All generated API keys are listed in the API keys section for easy reference and management. 
 <img src="../images/api-keys-list.png" alt="API Keys List" title="API Keys List" class="border-2 border-gray-300 rounded-xl" />

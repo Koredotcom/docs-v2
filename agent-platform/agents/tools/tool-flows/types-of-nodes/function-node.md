@@ -73,9 +73,7 @@ Click the **Connections** icon in the left navigation and select **Go to Node** 
 
 Finally, test the flow and fix any issues found.
 
-!!! failure "Standard Errors"
-
-    You can see compilation and runtime errors, if any, during the execution of the script/node.
+<Note> You can see compilation and runtime errors, if any, during the execution of the script/node. </Note>
 
 ## Define and Execute a Function For The Node
 

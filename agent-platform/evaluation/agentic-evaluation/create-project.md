@@ -2,9 +2,7 @@
 
 Before running any evaluations, you need to create a project in Evaluation Studio. A project serves as a workspace dedicated to a single Agentic app, where all related evaluations and session data are organized.
 
-!!! note
-
-    Projects are scoped to a single Agentic app. All evaluations related to that app will remain part of this project. You can continue to import more sessions to the same project as needed. However, projects are limited to sessions from the same app version and environment.
+<Note> Projects are scoped to a single Agentic app. All evaluations related to that app will remain part of this project. You can continue to import more sessions to the same project as needed. However, projects are limited to sessions from the same app version and environment. </Note>
 
 **Steps to create a new project:**
 

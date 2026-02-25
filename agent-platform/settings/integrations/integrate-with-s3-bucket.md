@@ -38,9 +38,7 @@ You can test your connection after you provide the details to verify the accurac
 2. If the connection fails, you can verify the details entered or cancel the set-up process.
 3. From the connections table, you can test the connection by clicking the **▶** icon.
 
-    !!! note
-
-        If the connection fails a red icon is displayed corresponding to the name of the connection on the Connections list.
+    <Note> If the connection fails a red icon is displayed corresponding to the name of the connection on the Connections list. </Note>
 
 
 ## How to use files from the connected S3 Buckets in the Tool Flow Builder

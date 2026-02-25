@@ -13,9 +13,7 @@ The node can handle three types of conditions:
 Whether you need a simple true/false evaluation or a more complex branching using AND, OR, or multiple ELSE IF checks, the Condition node enables precise control over decision logic.
 
 
-!!! note
-    
-    Due to security reasons, a condition can be called a maximum of 10 times in a tool flow. Exceeding this limit will result in an error.
+<Note> Due to security reasons, a condition can be called a maximum of 10 times in a tool flow. Exceeding this limit will result in an error. </Note>
 
 ## Key Capabilities
 

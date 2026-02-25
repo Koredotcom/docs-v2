@@ -57,9 +57,7 @@ To deploy your fine-tuned model, follow these steps:
 6. In the **Review** step, verify all the details that you provided earlier. Select the **I accept all the terms and conditions** check box.  
 <img src="../images/deploy-fine-tuned-review-section.png" alt="Deploy Fine-Tuned Review Section" title="Deploy Fine-Tuned Review Section" class="border-2 border-gray-300 rounded-xl" />
 
-    !!! note
-
-        If you want to make any modifications, you can go to the previous step by clicking the **Back** button or a particular step indicator on the left panel.
+    <Note> If you want to make any modifications, you can go to the previous step by clicking the **Back** button or a particular step indicator on the left panel. </Note>
 
 7. Click **Deploy**.
 

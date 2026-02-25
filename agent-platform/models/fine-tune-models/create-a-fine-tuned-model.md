@@ -50,9 +50,8 @@ Steps to fine-tune a model:
 6. In the **Dataset** section:
     * Select or upload the **Training dataset** from the dropdown to train the base model. It acts as the foundation for the model's learning.
     
-        !!! note
-
-            The system accepts JSONL, CSV, and JSON files. The training, evaluation, and test files must follow a specific format with at least two columns: one for the prompt and one for the completion. You can download a sample file. 
+        <Note> The system accepts JSONL, CSV, and JSON files. The training, evaluation, and test files must follow a specific format with at least two columns: one for the prompt and one for the completion. You can download a sample file. </Note>
+        
         <img src="../images/upload-dataset.png" alt="Dataset Section" title="Dataset Section" class="border-2 border-gray-300 rounded-xl" />
 
 
@@ -66,10 +65,7 @@ Steps to fine-tune a model:
 7. Select or upload the test dataset to test the fine-tuned model. Click **Next**.
     <img src="../images/test-data-section.png" alt=" Test Data Section" title="Test Data Section" class="border-2 border-gray-300 rounded-xl" />
 
-    !!! note
-
-        The system accepts JSONL, CSV, and JSON files. 
-        
+    <Note> The system accepts JSONL, CSV, and JSON files. </Note>
 
 8. Select the required hardware for fine-tuning from the dropdown menu and click **Next**.  
 <img src="../images/hardware-section.png" alt="Hardware Section" title="Hardware Section" class="border-2 border-gray-300 rounded-xl" />
@@ -77,9 +73,7 @@ Steps to fine-tune a model:
 9. In the **Weights & Biases** section, select your **WandB connection** from the drop-down list and click **Next**. 
 To create a Weight & Biases connection, click **+ New connection**. For more information about how to create the WandB account, see[ How to Integrate with WandB](../../settings/integrations/integrate-with-wandb.md). 
 
-    !!! note
-
-        You need an account with Weights and Biases. Enabling the integration with an API token will share your real-time fine-tuning status with the platform, allowing you to monitor your model's fine-tuning metrics comprehensively. Use the provided API token to create an integration, sending all fine-tuning process data to the associated account.
+    <Note> You need an account with Weights and Biases. Enabling the integration with an API token will share your real-time fine-tuning status with the platform, allowing you to monitor your model's fine-tuning metrics comprehensively. Use the provided API token to create an integration, sending all fine-tuning process data to the associated account. </Note>
 
     <img src="../images/new-connection.png" alt="WandB Section" title="WandB Section" class="border-2 border-gray-300 rounded-xl" />      
 

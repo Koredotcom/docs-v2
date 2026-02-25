@@ -40,6 +40,4 @@ Trace evaluators include:
 * **Agent Call Accuracy**: Evaluates whether the supervisor/orchestrator calls the correct agents based on the user’s query.
 * **Tool Call Accuracy**: Checks if the agent invokes the correct tools based on the context and intent.
 
-!!! note
-
-    Since traces are parts of sessions, you can add trace-level evaluators from the Sessions tab. However, session-level evaluators cannot be added from the Traces tab.
+<Note> Since traces are parts of sessions, you can add trace-level evaluators from the Sessions tab. However, session-level evaluators cannot be added from the Traces tab. </Note>

@@ -15,9 +15,7 @@ An API key serves as a unique identifier for the client or application accessing
 
 API keys are typically included in request headers or parameters to validate access.
 
-!!!note
-    
-    Each API key includes created on and last used dates to track its usage history.
+<Note> Each API key includes created on and last used dates to track its usage history. </Note>
 
 ## How to Create the API Key?
 
@@ -27,10 +25,7 @@ API keys are typically included in request headers or parameters to validate acc
 
 3. Create an API app and include all the required scopes, and the API keys as mentioned [here](../settings/security-and-control/api-scopes.md).
 
-!!!note
-    
-    You can copy the API key only once and must not lose it. Save the key in a secure location for future use.
-   
+<Note> You can copy the API key only once and must not lose it. Save the key in a secure location for future use. </Note>
 <hr/> 
 
 **Related resource**

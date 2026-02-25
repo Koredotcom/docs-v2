@@ -32,8 +32,7 @@ This field allows updating the prompt used for Thought Streaming. Click Modify P
 
 This feature allows you to configure how users are engaged during processing delays in voice interactions. Setting up appropriate wait-time interactions helps create a smoother and more human-like experience for users while they wait. The waiting experience begins automatically when a processing delay is detected and stops once the system response or the following action is available. Enable this feature to configure.
 
-!!!note
-    This feature only works in ASR/TTS streaming mode. It doesn't support real-time models.
+<Note> This feature only works in ASR/TTS streaming mode. It doesn't support real-time models. </Note>
 
 
 **Waiting Experience Configuration**

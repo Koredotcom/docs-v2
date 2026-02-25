@@ -81,9 +81,7 @@ You can add any supported child nodes inside the Loop node, including Function N
 
 <img src="../images/loop_add_nodes_inside.png" alt="loop node" title="loop node" class="border-2 border-gray-300 rounded-xl" />
 
-!!! note
-
-    Only nodes placed inside the loop block will execute per iteration. Nodes connected outside the Loop node will run after the loop completes.
+<Note> Only nodes placed inside the loop block will execute per iteration. Nodes connected outside the Loop node will run after the loop completes. </Note>
 
 ### Step 4: Configure Loop Node Settings
 

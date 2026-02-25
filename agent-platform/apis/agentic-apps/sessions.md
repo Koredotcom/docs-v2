@@ -507,8 +507,7 @@ Fetches the details of a given session. You must provide either a *sessionId* or
 </table>
 
 
-!!!note
-  Either sessionId or sessionReference must be provided to identify the session. 
+<Note> Either sessionId or sessionReference must be provided to identify the session. </Note>
 
 
 ### Sample Response

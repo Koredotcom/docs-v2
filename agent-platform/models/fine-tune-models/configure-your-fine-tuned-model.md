@@ -8,9 +8,7 @@ On the Configurations page, you can edit the model name and description, add tag
 
 You can configure a specific timeout for your model's endpoint. Enter the timeout duration from the allowed range - 30 to 180 seconds (3 minutes). The default is 60 Seconds (1 minute). If the request is't completed within the specified time frame, a timeout error will be triggered for the endpoint.
 
-!!! note 
-
-    Timeout precedence: Tool timeout > Node timeout > Model timeout.
+<Note> Timeout precedence: Tool timeout > Node timeout > Model timeout. </Note>
 
 
 ## Undeploy the Model 

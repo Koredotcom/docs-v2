@@ -5,9 +5,7 @@ Input and output scanners help evaluate prompts and responses within your applic
 * Input scanners assess user inputs or prompts sent to an AI node.
 * Output scanners evaluate the responses returned from the LLM.
 
-!!! note
-
-    All system scanners are pre-deployed and available by default. To use them, you must enable the required scanners in your agentic app or workflow tool.
+<Note> All system scanners are pre-deployed and available by default. To use them, you must enable the required scanners in your agentic app or workflow tool. </Note>
 
 
 Steps to enable scanners:

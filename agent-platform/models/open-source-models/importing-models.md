@@ -4,11 +4,10 @@ Agent Platform enables users to import base and adapter model files from their l
 
 This process enables users to seamlessly integrate local models into the platform, ensuring compatibility and readiness for deployment. It facilitates efficient management and configuration,  just like other open-source models, and streamlines workflows within the platform.
 
-!!! note
-
-    **Base Model**: A base model is a pre-trained model that can be used for general tasks. It’s already trained on a large dataset and can be used as-is or fine-tuned for specific tasks.  
-    
-    **Adapter Model**: An adapter model is a smaller model that works with a base model to make it more suited for a specific task or dataset. It doesn’t need to retrain the entire base model but adjusts it for new purposes. To import an adapter model in the platform, it is necessary to specify the related base model.
+<Note>
+* **Base Model**: A base model is a pre-trained model that can be used for general tasks. It’s already trained on a large dataset and can be used as-is or fine-tuned for specific tasks.
+* **Adapter Model**: An adapter model is a smaller model that works with a base model to make it more suited for a specific task or dataset. It doesn’t need to retrain the entire base model but adjusts it for new purposes. To import an adapter model in the platform, it is necessary to specify the related base model.
+</Note>
 
 
 ### Best Practices
@@ -95,6 +94,4 @@ Click ‘Instructions’ to view the detailed guidelines for the supported forma
 * **Further fine-tuning:** Imported models can be fine-tuned further and deployed as individual units. During fine-tuning, the imported models are included in the Models hub menu in the Base model section. 
 
 
-!!! note
-
-    The deployconfig.json file is added to the model export. If the same model is later imported into the platform, the deployment details from this file will be automatically retrieved and pre-filled in the deployment wizard. This includes the previously selected optimization techniques, hyperparameters, hardware settings, and scaling configuration.
+<Note> The deployconfig.json file is added to the model export. If the same model is later imported into the platform, the deployment details from this file will be automatically retrieved and pre-filled in the deployment wizard. This includes the previously selected optimization techniques, hyperparameters, hardware settings, and scaling configuration. </Note>

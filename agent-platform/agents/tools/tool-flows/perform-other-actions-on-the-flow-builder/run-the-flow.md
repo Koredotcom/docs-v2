@@ -22,9 +22,7 @@ The output includes key information such as the start and end times, the total t
     * Flow Errors: If errors occur, an error message will be displayed. Additionally, the output key will appear empty, and the output will be shown in JSON format, indicating a failure within the flow.  
 
 
-!!! note
-
-    You can stop the flow at any point during the execution and restart it by clicking the **Run flow** icon again.
+<Note> You can stop the flow at any point during the execution and restart it by clicking the **Run flow** icon again. </Note>
 
 
 ## Debug Log Overview

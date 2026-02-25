@@ -71,9 +71,7 @@ Use the Manage Namespaces option on the Variables page or when creating/editing 
 
 To update or delete the namespace, go to *Options* and select the appropriate action. Click the Preview option to view the environment variables associated with the namespace, along with the modules mapped to it.  
 
-!!!note
-    
-    A namespace cannot be deleted if it is currently associated with a tool. Additionally, all variables within the namespace must be removed before the namespace can be deleted.
+<Note> A namespace cannot be deleted if it is currently associated with a tool. Additionally, all variables within the namespace must be removed before the namespace can be deleted. </Note>
 
 
 ## Accessing Environment Variables 

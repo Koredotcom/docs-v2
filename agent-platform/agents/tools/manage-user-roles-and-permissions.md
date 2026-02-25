@@ -2,9 +2,7 @@
 
 Account owners can invite users to collaborate on specific tools. Invited users can access the Models and Data modules for the invited account but can only see the tools they are invited to. 
 
-!!! note
-
-    You can only invite those users to an application, who have access to your account.
+<Note> You can only invite those users to an application, who have access to your account. </Note>
 
 Steps to invite users to your Tool:
 
@@ -15,8 +13,6 @@ Steps to invite users to your Tool:
 
 4. Click **Invite** to add users to your tool. The Invite Users dialog box is displayed.  
 
-    !!! note
-
-        Only the account owners can view the Invite button and invite other users.    
+    <Note> Only the account owners can view the Invite button and invite other users. </Note>
 
 5. Enter users’ email addresses to invite them and click **Invite** to grant them access to collaborate on the Tool.  

@@ -21,9 +21,7 @@ When exporting, choose one of the following options:
     * Tools used by the agent
     * Delegation rules, if applicable
     
-!!! note
-
-    The tool configurations are part of the app-level export. 
+<Note> The tool configurations are part of the app-level export. </Note>
 
 
 ## Export App and Agents

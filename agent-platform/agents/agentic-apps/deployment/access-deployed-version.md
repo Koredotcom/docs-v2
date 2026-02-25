@@ -22,9 +22,7 @@ The Webclient Script provides a simple integration method for embedding the Agen
    <img src="../images/embed-code.png" alt="Embed code" title="Embed code" class="border-2 border-gray-300 rounded-xl" />
 4. Copy the provided HTML code and paste it into each page of your application or website where the chat experience appears. Insert your API key into the code snippet. The containerId identifies the HTML element where the chat widget appears.
 
-!!! note
- 
-    The 'containerId' parameter must match an existing HTML element ID in your webpage. Before initializing the SDK, ensure that you have created a container element (for example, `<div id="container-id"></div>`) where you want the chat widget to appear. The chat interface renders inside this element, so position it strategically within your page layout.
+<Note> The 'containerId' parameter must match an existing HTML element ID in your webpage. Before initializing the SDK, ensure that you have created a container element (for example, `<div id="container-id"></div>`) where you want the chat widget to appear. The chat interface renders inside this element, so position it strategically within your page layout. </Note>
 
 ## Generate the API Key for App Authentication
 
