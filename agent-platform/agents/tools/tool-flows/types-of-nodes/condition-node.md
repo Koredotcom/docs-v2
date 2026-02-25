@@ -22,17 +22,17 @@ Whether you need a simple true/false evaluation or a more complex branching usin
 * Flexible Condition Types: Define IF, ELSE IF, and ELSE paths using context variables, static values, or output from previous steps.
 * AND / OR Logic: Combine multiple criteria for complex decision-making.
 * Multi-Branch Execution: Direct the flow to different downstream nodes based on the condition evaluation.
-* Context Variable Support: Easily reference values from earlier steps in the flow using {{context.variable}} and {{context.steps.nodename.output}}.
+* Context Variable Support: Easily reference values from earlier steps in the flow using `{{context.variable}}` and `{{context.steps.nodename.output}}`.
 * Inline Expression Support: Use Node, Context, or Value types directly in conditional expressions.
 
 
 ## Common Use Cases
 
-* Route Based on Classification: Direct flow based on category, type, or priority (e.g., route a ticket if priority = "High").
+* Route Based on Classification: Direct flow based on category, type, or priority (for example, route a ticket if priority = "High").
 * Fallback Logic: Use ELSE conditions to redirect the flow if no match is found.
 * Dynamic Node Triggering: Select which downstream actions to execute based on user inputs or computed data.
 * Validation Checks: Stop execution or branch if key data is missing or invalid.
-* Multi-Step Filtering: Combine multiple conditions for granular control (e.g., if country = US AND status = active).
+* Multi-Step Filtering: Combine multiple conditions for granular control (for example, if country = US AND status = active).
 
 ## How It Works
 
@@ -60,7 +60,7 @@ In this document, you will learn how to set up a Condition Node in a tool flow, 
 2. Node Name: Enter a descriptive name
 3. Set IF Condition:
     * Select a context variable: Enter `{{context.` → Choose a variable → Close with `}}`. For example: `{{context.ambiguous_sub_categories}}`.
-    * Choose an operator (e.g., Contains).
+    * Choose an operator (for example, Contains).
     * Enter a value or another context variable. For example: `{{context.steps.Sub_Category_Detection.output}}`.
     * (Optional) Combine multiple criteria using AND/OR.
 4. Set Routing:

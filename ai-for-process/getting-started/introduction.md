@@ -32,7 +32,7 @@ AI for Process is designed to provide a unified, flexible framework for implemen
 
 **Key Layers and Components of the Platform**:
 
-<img src="../images/ai-for-process-architecture.svg" alt="AI for Work Architecture" title="AI for Work Architecture" style="zoom:100%;">
+<img src="../images/ai-for-process-architecture.svg" alt="AI for Work Architecture" title="AI for Work Architecture" style="zoom:100%;"/>
 
 1. **Access Points**: Entry interfaces for users and systems
 It provides entry interfaces for users, systems, and external applications to interact with the platform through various channels, including web-based interfaces, mobile applications, APIs, and direct integrations. 

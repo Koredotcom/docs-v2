@@ -1,7 +1,7 @@
 # MCP Agents
 
 MCP Agents enable your AI agents to interact with external systems through tools hosted on MCP servers. By configuring MCP tools within your agents, you empower them to execute complex workflows spanning multiple external services through a standardized interface.
-<img src="../images/mcp-agents-home.png" alt="mcp-agents-home" title="mcp-agents-home" style="border: 1px solid gray; zoom:70%;">
+<img src="../images/mcp-agents-home.png" alt="mcp-agents-home" title="mcp-agents-home" style="border: 1px solid gray; zoom:70%;"/>
 
 ## How MCP Agents Work?
 
@@ -22,7 +22,7 @@ The following workflow describes how MCP Agents interact with MCP servers to pro
 ## Creating an MCP Agent
 
 You create MCP Agents to enable your AI agents to use tools from MCP servers. During agent creation, you select which MCP tools the agent can access and configure how the agent uses those tools.
-<img src="../images/mcp-agents-creation.png" alt="mcp-agents-creation" title="mcp-agents-creation" style="border: 1px solid gray; zoom:70%;">
+<img src="../images/mcp-agents-creation.png" alt="mcp-agents-creation" title="mcp-agents-creation" style="border: 1px solid gray; zoom:70%;"/>
 
 **To create an MCP Agent:**
 
@@ -83,7 +83,7 @@ Dynamic values facilitate conversational interactions, allowing users to provide
     * **Description**: Information about the parameter's purpose and expected input.
     * **Field Type**: The system shows the expected data type (string, number, boolean, etc.).
     * **Required/Optional**: The platform indicates whether the parameter is mandatory.
-    <img src="../images/mcp-agents-config.png" alt="mcp-agents-config" title="mcp-agents-config" style="border: 1px solid gray; zoom:70%;">
+    <img src="../images/mcp-agents-config.png" alt="mcp-agents-config" title="mcp-agents-config" style="border: 1px solid gray; zoom:70%;"/>
 
 4. Choose the input type:
     * For **Static Values**:
@@ -155,7 +155,7 @@ To edit an MCP Agent:
 1. Navigate to the **MCP Agents** section.
 2. Select the agent you want to modify.
 3. Click **Edit**.
-<img src="../images/mcp-agents-manage.png" alt="Details and Purpose" title="Details and Purpose" style="border: 1px solid gray; zoom:70%;">
+<img src="../images/mcp-agents-manage.png" alt="Details and Purpose" title="Details and Purpose" style="border: 1px solid gray; zoom:70%;"/>
 
 1. Update any of the following:
     * Agent name, description, or instructions

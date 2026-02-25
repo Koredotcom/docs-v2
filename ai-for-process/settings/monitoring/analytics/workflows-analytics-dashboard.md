@@ -16,7 +16,7 @@ Key metrics are displayed intuitively using visually engaging graphs and dynamic
 * Hovering over a data point on the **dynamic and interactive line graph** reveals the real-time information for that specific period, providing a focused view of workflow performance.
 * You can obtain **hourly performance analysis** for a workflow on a specific day or review **daily performance trends** when selecting a date range filter.
 * Click the **Refresh icon** shown below to ensure you have the latest dashboard data available to make informed decisions.
-<img src="../images/refresh-icon.png" alt="refresh icon" title="refresh icon" style="border: 1px solid gray; zoom:75%;">
+<img src="../images/refresh-icon.png" alt="refresh icon" title="refresh icon" style="border: 1px solid gray; zoom:75%;"/>
 
 * The dashboard offers **Tooltip** support for each widget to get quick summaries of the monitored metrics.
 * You can analyze nodes execution data for a workflow based on the **rate limit** subscription for your account. Learn more.
@@ -34,7 +34,7 @@ Key metrics are displayed intuitively using visually engaging graphs and dynamic
 To access the **Workflows Analytics** dashboard, follow the steps below:
 
 1. Log in → In AI for Process Modules top menu → Click **Settings**.
-   <img src="../images/aip-settings-access.png" alt="access settings" title="access settings" style="border: 1px solid gray; zoom:75%;">
+   <img src="../images/aip-settings-access.png" alt="access settings" title="access settings" style="border: 1px solid gray; zoom:75%;"/>
 
 2. On the left menu, select **Monitoring** > **Analytics**.
 3. Click the **Workflows Analytics** tab on the right-hand side screen.
@@ -65,7 +65,7 @@ For detailed statistics on the total events and the runs executed by each node, 
 <p class="admonition-title">Note</p>
 <p>Hover over the "<b><i>i</i></b>" icon to view the information summary for the metric.</p></div>
 
-<img src="../images/info-icon.png" alt="info icon" title="info icon" style="border: 1px solid gray; zoom:75%;">
+<img src="../images/info-icon.png" alt="info icon" title="info icon" style="border: 1px solid gray; zoom:75%;"/>
 
 To generate and view the required Workflows Analytics data, use the **Global Timeline Filters**. [Learn more](../analytics/workflows-analytics-dashboard.md#global-timeline-filters).
 
@@ -88,7 +88,7 @@ To generate account-level and workflow-level data for a specific period, use the
 * **30 days**: Displays workflow data for all the days in the past month.
 * **90 days**: Displays workflow data for all the days in the past three months.
 * **Custom**: Allows you to select a custom day or date range from the following calendar widget to view workflow data. Once you select the required period, click **Apply** to see the relevant data.
-<img src="../images/global-timeline-filters.png" alt="global timeline filters" title="global timeline filters" style="border: 1px solid gray; zoom:75%;">
+<img src="../images/global-timeline-filters.png" alt="global timeline filters" title="global timeline filters" style="border: 1px solid gray; zoom:75%;"/>
 
 <div class="admonition note">
 <p class="admonition-title">Key Considerations</p>
@@ -98,12 +98,12 @@ To generate account-level and workflow-level data for a specific period, use the
 **Single Date**
 
 To select a single day, click the required date on the widget.
-<img src="../images/single-date.png" alt="single date" title="single date" style="border: 1px solid gray; zoom:75%;">
+<img src="../images/single-date.png" alt="single date" title="single date" style="border: 1px solid gray; zoom:75%;"/>
 
 **Date Range**
 
 To select a custom date range, select the start and end dates on the widget.
-<img src="../images/date-range.png" alt="date range" title="date range" style="border: 1px solid gray; zoom:75%;">
+<img src="../images/date-range.png" alt="date range" title="date range" style="border: 1px solid gray; zoom:75%;"/>
 
 <div class="admonition note">
 <p class="admonition-title">Note</p>
@@ -113,16 +113,16 @@ To select a custom date range, select the start and end dates on the widget.
 The other options you can select include:
 
 * **This Month**: Displays data for the current month. For example, if today is 20 September, the data from 1 September to 20 September is displayed.
-<img src="../images/this-month.png" alt="this month" title="this month" style="border: 1px solid gray; zoom:75%;">
+<img src="../images/this-month.png" alt="this month" title="this month" style="border: 1px solid gray; zoom:75%;"/>
 
 * **Last Month**: Displays data for the past month. For example, if this month is September, the data from 1 August to 31 August is displayed.
-<img src="../images/last-month.png" alt="last month" title="last month" style="border: 1px solid gray; zoom:75%;">
+<img src="../images/last-month.png" alt="last month" title="last month" style="border: 1px solid gray; zoom:75%;"/>
 
 * **This Year**: Displays data for the current year. For example, if today is 20 September 2024, the data from 1 January 2024 to 20 September is displayed.
-<img src="../images/this-year.png" alt="this year" title="this year" style="border: 1px solid gray; zoom:75%;">
+<img src="../images/this-year.png" alt="this year" title="this year" style="border: 1px solid gray; zoom:75%;"/>
 
 * **Last Year**: Displays data for the previous year from 1 January 2023 to 31 December 2023.
-<img src="../images/last-year.png" alt="last year" title="last year" style="border: 1px solid gray; zoom:75%;">
+<img src="../images/last-year.png" alt="last year" title="last year" style="border: 1px solid gray; zoom:75%;"/>
 
 ## Workflow Performance Filters
 
@@ -159,7 +159,7 @@ This widget features two dynamic graphs illustrating successful and failed reque
 * Successful runs are displayed in green, while failed runs are shown in red.
 * The **Total Number of Requests** (Y-axis) automatically scales to accommodate runs executed across different date selections.
 * Hover over a data point on the success and failure line graphs to view the counts for Total Requests and the successful and failed requests executed by the workflow at that specific date and time. For example, you can check the successful and unsuccessful request executions at 11:25 AM on January 16, 2024.
-<img src="../images/tooltip-feature.png" alt="tooltip feature" title="tooltip feature" style="border: 1px solid gray; zoom:75%;">
+<img src="../images/tooltip-feature.png" alt="tooltip feature" title="tooltip feature" style="border: 1px solid gray; zoom:75%;"/>
 
 <div class="admonition warning">
 <p class="admonition-title">Important</p>
@@ -193,14 +193,14 @@ You can do the following to analyze workflow performance:
 * View the average workflow response time for each hourly request within a day. For instance, if the workflow executes 100 requests between 12 PM and 1 PM, each with its own response time, the average of these values is represented by the graph line. Hover over the corresponding data point on the graph to view the ART for a specific hour. The tooltip shows the selected date & time, ART for the hour, and the no.of requests processed during that hour.
 * View the overall ART, which is the total of the ART for all hours combined during the selected day.
 
-<img src="../images/overall-art.png" alt="overall art" title="overall art" style="border: 1px solid gray; zoom:75%;">
+<img src="../images/overall-art.png" alt="overall art" title="overall art" style="border: 1px solid gray; zoom:75%;"/>
 
 **Date Range**
 
 * View the ART of a workflow for requests processed daily over the specified date range. For example, if you select the date range between September 1 and September 30, the ART for each day is combined to show the graph line. Hover over the corresponding data point on the graph to see the ART for a specific date and time. The tooltip shows the selected date, ART for the day, and the no.of requests processed on that date.
 
 * View the overall ART, which is the total of the ART for all days in the selected date range.
-<img src="../images/overall-art-for-date-range.png" alt="overall art for date range" title="overall art for date range" style="border: 1px solid gray; zoom:75%;">
+<img src="../images/overall-art-for-date-range.png" alt="overall art for date range" title="overall art for date range" style="border: 1px solid gray; zoom:75%;"/>
 
 <div class="admonition note">
 <p class="admonition-title">Note</p>
@@ -222,7 +222,7 @@ This widget displays a line graph showing the number of nodes (including all nod
 
 The **Nodes Execution** widget displays a graph up to your account's maximum subscribed rate limit, indicated by a red line. For example, if your subscription allows 8,000 node executions, the graph will show data for a maximum of 8,000 nodes during the selected period. Once this limit is reached, an error message will appear, notifying you that the threshold has been reached and no further node executions can occur.
 
-<img src="../images/nodes-execution-rate-limit.png" alt="rate limit" title="rate limit" style="border: 1px solid gray; zoom:75%;">
+<img src="../images/nodes-execution-rate-limit.png" alt="rate limit" title="rate limit" style="border: 1px solid gray; zoom:75%;"/>
 
 **Key Features**
 
@@ -264,21 +264,21 @@ The widget-level filters include the following:
 
 To expand a widget, hover over the top-right corner of the widget, and click the **Double-arrow** icon.
 
-<img src="../images/expand-widget-icon.png" alt="expand widget" title="expand widget" style="border: 1px solid gray; zoom:75%;">
+<img src="../images/expand-widget-icon.png" alt="expand widget" title="expand widget" style="border: 1px solid gray; zoom:75%;"/>
 
 The expanded views of all the widgets are shown below:
 
 **Workflow Runs**
 
-<img src="../images/agent-runs-expanded-view.png" alt="workflow runs expanded view" title="workflow runs expanded view" style="border: 1px solid gray; zoom:75%;">
+<img src="../images/agent-runs-expanded-view.png" alt="workflow runs expanded view" title="workflow runs expanded view" style="border: 1px solid gray; zoom:75%;"/>
 
 **Avg. Workflow Response Time**
 
-<img src="../images/avg-art-expanded-view.png" alt="average art expanded view" title="average art expanded view" style="border: 1px solid gray; zoom:75%;">
+<img src="../images/avg-art-expanded-view.png" alt="average art expanded view" title="average art expanded view" style="border: 1px solid gray; zoom:75%;"/>
 
 **Nodes Execution**
 
-<img src="../images/nodes-execution-expanded-view.png" alt="nodes execution expanded view" title="nodes execution expanded view" style="border: 1px solid gray; zoom:75%;">
+<img src="../images/nodes-execution-expanded-view.png" alt="nodes execution expanded view" title="nodes execution expanded view" style="border: 1px solid gray; zoom:75%;"/>
 
 The **Workflows Analysis Dashboard** offers actionable and customized insights on the workflow performance metrics for various features in your account. 
 

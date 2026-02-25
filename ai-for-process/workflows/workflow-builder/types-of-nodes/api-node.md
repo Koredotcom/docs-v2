@@ -23,7 +23,7 @@ The API Node enables you to seamlessly connect your workflow to external systems
 
 The API Node enables seamless integration with external services by sending and processing API requests. It allows you to configure the request method, endpoint, authentication, headers, and payload, then routes the workflow based on the response (success or failure). You can test and validate the API call directly within the flow to ensure proper functionality.
 
- <img src="../images/api_node_how_it_works.jpg" alt="API node" title="API node" style="border: 1px solid gray; zoom:75%;">
+ <img src="../images/api_node_how_it_works.jpg" alt="API node" title="API node" style="border: 1px solid gray; zoom:75%;"/>
 
 
 ## Add and Configure an API Node
@@ -46,13 +46,14 @@ Steps to add and configure the node:
 ### Step 3: Configure the Node
 
 Click the added node to open its properties dialog box. The General Settings for the node are displayed.  
-<img src="./../images/api-node-general-settings.png" alt="Go to Flow Canvas" title="Go to Flow Canvas" style="border: 1px solid gray; zoom:60%;">
+<img src="./../images/api-node-general-settings.png" alt="Go to Flow Canvas" title="Go to Flow Canvas" style="border: 1px solid gray; zoom:60%;"/>
 
 **General Settings**
+
 <table>
   <tr>
-   <td><strong>Field<strong> </td>
-   <td><strong>Description<strong></td>
+   <td><strong>Field</strong></td>
+   <td><strong>Description</strong></td>
   </tr>
   <tr>
    <td>Node Name
@@ -75,7 +76,7 @@ Click the added node to open its properties dialog box. The General Settings for
 
    </td>
   <td>
-  Select the integration type: <strong>Synchronous</strong> or <strong>Asynchronous</strong>.<br><br>
+  Select the integration type: <strong>Synchronous</strong> or <strong>Asynchronous</strong>.
 
   <strong>Synchronous</strong>: Waits for a response before proceeding.
   <ul>
@@ -112,11 +113,11 @@ Click the added node to open its properties dialog box. The General Settings for
       In the <strong>Auth</strong> section, select the required <strong>Auth Profile</strong> from the list of configured profiles. Next, provide the authorization details.
       <ul>
         <li>
-          <strong>Pre-authorize the Integration</strong>: Select this option if the authorization has already been completed in advance. This is suitable for API calls that do not require the end user to authenticate or provide credentials.<br>
+          <strong>Pre-authorize the Integration</strong>: Select this option if the authorization has already been completed in advance. This is suitable for API calls that do not require the end user to authenticate or provide credentials.
           <strong>Example</strong>: Connecting to a service using a system-level token or client credentials that have already been authorized. In this case, the same credentials are used for all users.
         </li>
         <li>
-          <strong>Allow users to authorize the integration</strong>: Choose this option if each end user needs to dynamically authorize the integration at runtime. This is useful when user-specific credentials or tokens are required for access.<br>
+          <strong>Allow users to authorize the integration</strong>: Choose this option if each end user needs to dynamically authorize the integration at runtime. This is useful when user-specific credentials or tokens are required for access.
           <strong>Example</strong>: Connecting to a third-party service like Google Drive, where each user must log in and grant access to their account. This ensures personalized access and respects individual user permissions.
         </li>
       </ul>
@@ -143,7 +144,7 @@ Click the added node to open its properties dialog box. The General Settings for
 
 Click the **Connections** icon in the left navigation and select **Go to Node** for success and failure conditions.
 
-<img src="./../images/api-node-connections.png" alt="API node Connections Properties" title="API node Connections Properties" style="border: 1px solid gray; zoom:80%;"/>
+<img src="./../images/api-node-connections.png" alt="API node Connections Properties" title="API node Connections Properties" class="border-2 border-gray-300 rounded-xl" />
 
 * **On Success** > **Go to Node**: After the current node is successfully executed, go to a selected node in the flow to execute next. For example, you can process the data from this node into a Function node and then use it further. In this case, select the Function node. 
 * **On Failure** > **Go to Node**: If the execution of the current node fails, go to an appropriate node having a custom error message configured.

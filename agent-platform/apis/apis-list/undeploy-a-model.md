@@ -132,7 +132,7 @@ No parameters are passed.
   <tr>
    <td><strong>action</strong>
    </td>
-   <td>The action performed on the model, i.e. “<em>UNDEPLOY</em>”).
+   <td>The action performed on the model, that is “<em>UNDEPLOY</em>”).
    </td>
    <td>String
    </td>

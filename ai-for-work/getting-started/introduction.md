@@ -31,7 +31,7 @@ The Platform is designed to provide a unified and flexible framework for impleme
 
 **Key Layers and Components of the Platform**:
 
-<img src="../images/ai-for-work-architecture-diagram.svg" alt="Platform Architecture" title="Platform Architecture" style="border: 1px solid gray; zoom:100%;">
+<img src="../images/ai-for-work-architecture-diagram.svg" alt="Platform Architecture" title="Platform Architecture" style="border: 1px solid gray; zoom:100;"/>
 
 1. **Access Points**: Users can access the Platform through a web-based interface or mobile applications.   
     

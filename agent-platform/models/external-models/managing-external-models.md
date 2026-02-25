@@ -17,13 +17,13 @@ Each row in the list shows:
 |---------------|-------------|
 | Model Name | Name assigned during integration. |
 | Type     | Indicates whether the model was added via Easy Integration or API Integration. |
-| Source     | The provider or origin of the model (e.g., OpenAI, Hugging Face, Custom). |
+| Source     | The provider or origin of the model (for example, OpenAI, Hugging Face, Custom). |
 | Added On   | Date the model was last added or updated. |
 
 
 Click a model from the list to view or manage its connections.
 
-<img src="../images/external_models_list.png" alt="External models table" title="External models table" style="border: 1px solid gray; zoom:80%;"/>
+<img src="../images/external_models_list.png" alt="External models table" title="External models table" class="border-2 border-gray-300 rounded-xl" />
 
 ## Managing Connections 
 
@@ -34,10 +34,10 @@ Each external model can have one or more associated connections, listed in the C
 | Connection Name | Name given during model integration (not editable once saved). |
 | Added By      | User who created the connection. |
 | Added On        | Date the connection was created. |
-| Actions         | - Toggle for Inference – Enable or disable usage of this connection for inference.<br> - Edit – Update the API key or credentials.<br> - Delete – Remove the connection from the workspace. |
+| Actions         | - Toggle for Inference – Enable or disable usage of this connection for inference.<br /> - Edit – Update the API key or credentials.<br /> - Delete – Remove the connection from the workspace. |
 
 
-<img src="../images/external_models_connections.png" alt="External models connections" title="External models connections" style="border: 1px solid gray; zoom:80%;"/>
+<img src="../images/external_models_connections.png" alt="External models connections" title="External models connections" class="border-2 border-gray-300 rounded-xl" />
 
 
 ## Adding Connections
