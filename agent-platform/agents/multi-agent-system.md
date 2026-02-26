@@ -13,7 +13,7 @@
 ## Advantages Over Single-Agent System
 
 | **Feature**   | **Multi-Agent System**   | **Single-Agent System**         |
-| ------------- | ------------------------ | ------------------------------- |
+|:--------------- |:-------------------------- |:--------------------------------- |
 | Capability    | Plan, Decide, and Adapt  | Linear, rule-based              |
 | Task Handling | Distributed, specialized | Centralized, general            |
 | Scalability   | Easily scalable          | Limited scalability             |

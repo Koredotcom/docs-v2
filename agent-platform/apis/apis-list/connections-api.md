@@ -27,7 +27,7 @@ https://{host}/api/public
 ## API List
 
 | API | Description | Method | Endpoint |
-|:------ | ----------- | ------ | -------- |
+|:------ |:------------- |:-------- |:---------- |
 | [List All Connections](#list-all-connections) | Retrieves all configured connections | GET | `/connections` |
 | [Get Connection by ID](#get-connection-by-id) | Retrieves a specific connection | GET | `/connections/{connectionId}` |
 | [Create Connection](#create-connection) | Creates a new connection | POST | `/connections` |
