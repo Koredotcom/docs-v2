@@ -6,13 +6,19 @@ The Platform supports thirty-plus open-source models and provides them as a serv
 To select and deploy a model, follow these steps:
 
 1. Go to **Models** > **Open-source models** and click **Deploy a model**. 
-<img src="../images/deploy-a-model.png" alt="Deploy a Model" title="Deploy a Model"/>
+
+![Deploy a Model](./images/deploy-a-model.png "Deploy a Model")
+
+
 
 
 2. The **Deploy** dialog is displayed. In the **General details** section:
     * If you choose hosted models, select the **model** from the dropdown menu. Add a **Description** and provide **tags** to ease the search for the model and click **Next**.
     
-      <img src="../images/image8.png" alt=" " title=" "/>
+
+      ![ ](./images/image8.png " ")
+
+
 
    For more information on the list of models supported, see [Supported models](../supported-models.md#supported-open-source-models).
 
@@ -23,7 +29,10 @@ To select and deploy a model, follow these steps:
     <Note>In the case of public mode, selecting a connection is not necessary.</Note>
 
 
-    <img src="../images/image7.png" alt=" " title=" "/>
+
+    ![ ](./images/image7.png " ")
+
+
 
 3.Based on the selected Platform-hosted model, the Optimization section is displayed. Choose the optimization option as required and then click **Next**. [Learn more](../open-source-models/model-optimization.md).
 
@@ -32,7 +41,10 @@ To select and deploy a model, follow these steps:
 * **vLLM**: Select Quantization from the dropdown menu if applicable. [Learn more](model-optimization.md#vllm).  
 
 
-<img src="../images/image1.png" alt=" " title=" "/>   
+
+![ ](./images/image1.png " ")
+
+   
 
 
 <ol start="4"><li>In the <b>Parameters</b> section:</li>  
@@ -48,27 +60,37 @@ To select and deploy a model, follow these steps:
 <li>Select the <b>Scale-up delay (in seconds)</b>, which indicates how long to wait before scaling up replicas.</li>
 <li>Select the <b>Scale down replicas (in seconds)</b>, which indicates how long to wait before scaling down replicas.</li>  
 
-<img src="../images/image2.png" alt=" " title=" "/></ul>
+
+![ ](./images/image2.png " ")
+
+</ul>
 <li>Click <b>Next</b>.</li>
 <li>In the Hardware section, select the required hardware for deployment from the dropdown menu and click <b>Next</b>. 
-<img src="../images/image6.png" alt=" " title=" "/></li>
+
+![ ](./images/image6.png " ")
+
+</li>
 
 <li>In the <b>Review</b> section, verify all the details before starting the fine-tuning. To modify previous steps, click <b>Back</b>. Go through the terms and conditions and tick the checkbox <b>I accept all the Terms and Conditions</b>.
 
-<img src="../images/image3.png" alt=" " title=" "/></li>
+
+![ ](./images/image3.png " ")
+
+</li>
 <li>Click <b>Deploy</b>.</li></ol>
 
       
-<div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>You will be charged for deployment and inferencing-related costs for each open-source model. </p></div> 
+<Note>You will be charged for deployment and inferencing-related costs for each open-source model. </Note> 
 
 If you have selected optimization, the model optimization starts, and the status changes to “Optimization”. If not, the model is deployed. After deployment, the status changes to "Deployed." You can now use this model across the Platform and externally.
 
 Hover over the deployed model to view **more** icons (three dots) which provide access to the model **API endpoint** and **Configurations**. Selecting the API endpoint option shows the API endpoint, deployment history, API keys, and other details. Selecting the Configuration option allows you to add a description, tags, and deploy or delete the model.
 
 
-<img src="../images/image4.png" alt=" " title=" "/>
+
+![ ](./images/image4.png " ")
+
+
 
 #### Re-deploy a Deployed Model
 

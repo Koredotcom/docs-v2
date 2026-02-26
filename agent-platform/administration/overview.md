@@ -21,10 +21,7 @@ The **Settings** Console provides administrators comprehensive control and visib
 
 This post describes how to access the **Settings** Console and summarizes the modules and features available.
 
-<div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>Only users included as <b>Admin</b> in the system with the required permissions can access the <b>Settings</b> Console.</p>
-</div>
+<Note>Only users included as <b>Admin</b> in the system with the required permissions can access the <b>Settings</b> Console.</Note>
 
 ## Actions You Can Perform on the Settings Console
 
@@ -126,7 +123,10 @@ To access the **Settings** Console on the Platform, follow these steps:
    
 2. Select **Settings** on the top navigation bar. The Platform redirects you to the **Users** page in **Users Management**.
 
-   <img src="../images/access-settings-menu.png" alt="access settings" title="access settings" style="border: 1px solid gray; zoom:75%;"/>
+
+   ![access settings](./images/access-settings-menu.png "access settings")
+
+
 
 ## Modules and Features
 

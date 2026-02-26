@@ -23,7 +23,10 @@ Each row in the list shows:
 
 Click a model from the list to view or manage its connections.
 
-<img src="../images/external_models_list.png" alt="External models table" title="External models table"/>
+
+![External models table](./images/external_models_list.png "External models table")
+
+
 
 ## Managing Connections 
 
@@ -37,7 +40,10 @@ Each external model can have one or more associated connections, listed in the C
 | Actions         | - Toggle for Inference – Enable or disable usage of this connection for inference.<br /> - Edit – Update the API key or credentials.<br /> - Delete – Remove the connection from the workspace. |
 
 
-<img src="../images/external_models_connections.png" alt="External models connections" title="External models connections"/>
+
+![External models connections](./images/external_models_connections.png "External models connections")
+
+
 
 
 ## Adding Connections
@@ -51,7 +57,10 @@ When adding connections:
 * Each connection name must be unique.
 * Each API key must be unique for the model.
 
-<img src="../images/add_model_connection.png" alt="Add model connection" title="Add model connections" style="border: 1px solid gray; zoom:50%;"/>
+
+![Add model connection](./images/add_model_connection.png "Add model connections")
+
+
 
 When multiple API keys are configured, each connection appears separately in the Connections list for the model, making it easier to manage access and switch between keys as needed.
 

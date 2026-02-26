@@ -1,4 +1,6 @@
-# Agentic App Setup Guide
+---
+title: Agentic App Setup Guide
+---
 
 This guide walks you through setting up your first Agentic App on the Platform. By following these steps, you'll learn how to create an account, configure your app, test the app, and deploy it to a production environment.
 

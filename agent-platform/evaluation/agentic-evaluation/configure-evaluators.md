@@ -5,13 +5,22 @@ After importing sessions into Evaluation Studio, you can apply pre-built evaluat
 **Steps to add evaluators:**
 
 1. On the **Imported Sessions** page, click **+ Evaluators**.
-<img src="../../agentic-evaluation/images/add_evaluators.png" alt="Add evaluators" title="Add evaluators"/>
+
+![Add evaluators](./../agentic-evaluation/images/add_evaluators.png "Add evaluators")
+
+
 
 2. Select the desired **session** or **trace-level** evaluators.
-<img src="../../agentic-evaluation/images/evaluators_list.png" alt="Create project" title="Create project"/>
+
+![Create project](./../agentic-evaluation/images/evaluators_list.png "Create project")
+
+
 
 3. Configure the evaluator settings as needed (such as selecting the model and adjusting model configurations) and click **Save**.
-<img src="../../agentic-evaluation/images/evaluator_config.png" alt="Evaluator configuration" title="Evaluator configuration"/>
+
+![Evaluator configuration](./../agentic-evaluation/images/evaluator_config.png "Evaluator configuration")
+
+
 
 4. Click **Run Evaluation** to start the evaluation process.
 

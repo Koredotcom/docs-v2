@@ -8,7 +8,10 @@ The Tool Monitor capabilities are shown on the following tabs:
 
 Both tabs include summary metrics at the top of the page, including total runs/requests, average response times (P90 and P99), and failure rates.
 
-<img src="../images/new_agent_monitor.png" alt="All runs and Model runs tabs" title="All runs and Model runs tabs"/>
+
+![All runs and Model runs tabs](./images/new_agent_monitor.png "All runs and Model runs tabs")
+
+
 
 ## All Runs
 
@@ -28,10 +31,7 @@ The All runs tab provides the following information for each tool run:
     * **Agentic App** - The name of the Agentic App used to run the tool.
     * **API Key**: The API key name used to execute the tool. (This is the name provided in the API keys page when you created a new API key. If you didn't provide a name, the system uses the default name ‘*Secret Key*’. You can have multiple API keys for a single tool).
 
-<div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>When there is a nested (multi-level) tool calling, the immediate tool (parent) is displayed as the source.</p>
-</div>
+<Note>When there is a nested (multi-level) tool calling, the immediate tool (parent) is displayed as the source.</Note>
 
 You can also see the following metrics on the top of the page: 
 
@@ -77,7 +77,10 @@ These metrics are dependent on the selected date range, filters, and search crit
 
 Clicking each row in either the All runs tab or the Model runs tab opens a detailed view panel on the right. This view is similar to the Run dialog panel on the Tool flow canvas. [Learn more](../tool-flows/perform-other-actions-on-the-flow-builder/run-the-flow.md).
 
-<img src="../images/agent_monitor_viewing_run_information.png" alt="Viewing detailed run information" title="Viewing detailed run information"/>
+
+![Viewing detailed run information](./images/agent_monitor_viewing_run_information.png "Viewing detailed run information")
+
+
 
 The panel displays the following details:
 
@@ -93,7 +96,10 @@ The panel displays the following details:
 
 *  **Output section**: The Output section displays the tool's output (for successful runs). You can copy the output and view tokens.
 
-    <img src="../images/agent_monitor_viewing_run_information_detailed.png" alt="Viewing detailed run information" title="Viewing detailed run information"/>
+
+    ![Viewing detailed run information](./images/agent_monitor_viewing_run_information_detailed.png "Viewing detailed run information")
+
+
 
 
 ## Understanding the Impact of Timeouts on Tool Endpoints

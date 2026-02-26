@@ -36,7 +36,10 @@ Whether you need a simple true/false evaluation or a more complex branching usin
 
 The Condition Node dynamically controls workflow paths by evaluating data against user-defined rules. It checks inputs using comparison operators and routes execution based on whether conditions are met. The node can process context variables or previous node outputs, enabling adaptive flows and error handling.
 
-<img src="../images/condition_node_new.png" alt="Condition node" title="Condition node" style="border: 1px solid gray; zoom:75%;"/>
+
+![Condition node](./images/condition_node_new.png "Condition node")
+
+
 
 In this document, you will learn how to set up a Condition Node in a tool flow, including adding it at the appropriate location and configuring its properties.
 
@@ -65,7 +68,10 @@ In this document, you will learn how to set up a Condition Node in a tool flow, 
     * **Go To:** Select the node if the IF condition is met.
     * **ELSE:** Select the node if the IF condition is not met.
 
-       <img src="./../images/condition-node-settings-filled.png" alt="Condition Node's Settings" title="Condition Node's Settings" style="border: 1px solid gray; zoom:60%;"/>
+
+       ![Condition Node's Settings](./../images/condition-node-settings-filled.png "Condition Node's Settings")
+
+
 
 
 ### Step 4: Test the Flow

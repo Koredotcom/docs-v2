@@ -71,7 +71,10 @@ To create an app, follow the steps below:
 1. [Access](../security-and-control/api-scopes.md#access-api-scopes) **API Scopes**.
 2. Click **Create an API App** or **Create an App**.
 3. Click **Untitled app** and provide the app name.
-    <img src="../images/provide-app-name.png" alt="provide app name" title="provide app name" style="border: 1px solid gray; zoom:75%;"/>
+
+    ![provide app name](./images/provide-app-name.png "provide app name")
+
+
 
 4. Select the required scopes from the list.
 5. Click **Next**. 
@@ -84,20 +87,20 @@ This step is necessary to complete the app creation process. To create an API Ke
 
 1. Click **Create API Key**.
 2. In the **Create new API key** dialog, provide a name and click **Generate Key**.
-    <img src="../images/generate-your-new-api-key.png" alt="generate new api key" title="generate new api key" style="border: 1px solid gray; zoom:75%;"/>
+
+    ![generate new api key](./images/generate-your-new-api-key.png "generate new api key")
+
+
 
 3. Once the key is successfully generated, click **Copy and Close** to copy the API key.
-   <img src="../images/create-new-api-key-window.png" alt="create new api key" title="create new api key" style="border: 1px solid gray; zoom:75%;"/>
 
+   ![create new api key](./images/create-new-api-key-window.png "create new api key")
 
 A success message is displayed after the key is copied. Additionally, the API key appears for the app on the summary page.
 
-<div class="admonition note">
-<p class="admonition-title">Important information on API Keys</p>
-<p>For security reasons, the API key is only shown once and is not stored or displayed again. Copy and save it in a secure location for future reference.</p>
+<Note>For security reasons, the API key is only shown once and is not stored or displayed again. Copy and save it in a secure location for future reference.</p>
 <p><b>What Happens If You Lose It?</b></p>
-<p>You’ll need to revoke the old key and <b>generate a new one</b>. This could disrupt services if the key is in use.</p>
-</div>   
+<p>You’ll need to revoke the old key and <b>generate a new one</b>. This could disrupt services if the key is in use.</Note> 
 
 <ol start="4"><li>Click <b>Done</b>.</li>
 
@@ -117,25 +120,31 @@ You can edit or delete an API app, including its name and scopes. However, you c
 To edit an API app, follow the steps below:
 
 1. Hover over and click the **Edit** icon for the required app.
-    <img src="../images/hover-edit-api-scopes.png" alt="access edit icon" title="access edit icon" style="border: 1px solid gray; zoom:75%;"/>
+
+    ![access edit icon](./images/hover-edit-api-scopes.png "access edit icon")
+
+
 
 2. In the App’s configuration window, do the following:
 
     * To change the app name, click and modify the title.
     * To change the scopes, click the **API Scopes** tab and select/unselect the listed scopes.
-        <img src="../images/edit-api-app-name.png" alt="change api config" title="change api config" style="border: 1px solid gray; zoom:75%;"/>
+
+        ![change api config](./images/edit-api-app-name.png "change api config")
+
+
          
     * To delete an API key, follow the steps below:
          * Click the **API Keys** tab.
          * Hover over and click the **Delete** icon for the required key.
-           <img src="../images/hover-delete-api-key.png" alt="access delete icon" title="access delete icon" style="border: 1px solid gray; zoom:75%;"/>
+
+           ![access delete icon](./images/hover-delete-api-key.png "access delete icon")
+
+
 
          * Click **Delete** in the confirmation window.
             
-            <div class="admonition warning">
-            <p class="admonition-title">Caution</p>
-            <p>The key you are deleting will no longer function if it is in use. You must generate a new key.</p>
-             </div>
+            <Danger>The key you are deleting will no longer function if it is in use. You must generate a new key.</Danger>
 
             The deleted key is removed from the app in the **API Keys** section and is no longer associated with the app.  
 
@@ -149,7 +158,10 @@ A success message is displayed once the app is edited. The changes are updated i
 To delete an API app, follow the steps below:
 
 1. Hover over and click the **Delete** icon for the required app.
-   <img src="../images/delete-api-app-icon.png" alt="access delete" title="access delete" style="border: 1px solid gray; zoom:105%;"/>
+
+   ![access delete](./images/delete-api-app-icon.png "access delete")
+
+
 
 2. Click **Delete** in the confirmation window.
 

@@ -31,10 +31,7 @@ Tool templates are the foundation for building AI tools. They provide a structur
 
 The **Tools Library Marketplace** offers more than 50 prebuilt tool templates for the following categories and AI tasks the associated LLM should perform:
 
-<div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>The Platform integrates with the XO Platform marketplace.</p>
-</div>
+<Note>The Platform integrates with the XO Platform marketplace.</Note>
 
 **Categories**
 
@@ -65,7 +62,10 @@ The **Tools Library Marketplace** offers more than 50 prebuilt tool templates fo
 * tagging
 * intent
 * content generation
-<img src="../images/tools-library.png" alt="tools library" title="tools library" style="border: 1px solid gray; zoom:60%;"/>
+
+![tools library](./images/tools-library.png "tools library")
+
+
 
 ## Access and Install a Tool Template
 
@@ -74,16 +74,25 @@ To access a tool template, follow the steps below:
 1. Log in to your account and click **Tools** from the list of modules.
 2. Click **Tools** on the top navigation bar to access the **Tools** dashboard.
 3. If you are adding your first tool, click **Tool templates**.
-<img src="../images/first-tool-template.png" alt="first tool" title="first tool" style="border: 1px solid gray; zoom:60%;"/>
+
+![first tool](./images/first-tool-template.png "first tool")
+
+
 
       Otherwise, click either the **All Tools** or **My Tools** tab. Then, click **Tool Templates** to access the Tools library/Marketplace.
 
-    <img src="../images/tools-template-nav.png" alt="tools template section" title="tools template section" style="border: 1px solid gray; zoom:60%;"/>
+
+    ![tools template section](./images/tools-template-nav.png "tools template section")
+
+
 
 4. Scroll down to the **Tools** section.
 5. Select the required **Categories** and **Tasks** from the left filter to view the relevant templates.
 
-    <img src="../images/select-category-tasks.png" alt="Select category and task" title="Select category and task"/>
+
+    ![Select category and task](./images/select-category-tasks.png "Select category and task")
+
+
 
 6. Click the required template to view its information window.
 
@@ -100,7 +109,10 @@ To access a tool template, follow the steps below:
 
 7. Click **Install** to connect to the Marketplace and import the tool template, including its pre-configured flow.
 
-    <img src="../images/click-tool-install.png" alt="install tool" title="install tool" style="border: 1px solid gray; zoom:60%;"/></ol>
+
+    ![install tool](./images/click-tool-install.png "install tool")
+
+</ol>
 
     The system redirects you to the **Tool Flow** page. Click **Go to Flow** to view and manage the prebuilt tool flow canvas. [Learn more](../tools/tool-templates.md#view-and-manage-tool-flow).
 
@@ -115,16 +127,25 @@ To access a tool template, follow the steps below:
     * How to Use the Agent
     * Key components
     * Additional configuration guidelines
-      <img src="../images/tools-pdf.png" alt="tools pdf" title="tools pdf" style="border: 1px solid gray; zoom:75%;"/>
+
+      ![tools pdf](./images/tools-pdf.png "tools pdf")
+
+
 
 * **Naming Convention**
     
     * The first installation of a template retains its original name and description.
-    <img src="../images/first-tool-installation.png" alt="first tool installation" title="first tool installation" style="border: 1px solid gray; zoom:75%;"/>
+
+    ![first tool installation](./images/first-tool-installation.png "first tool installation")
+
+
 
     * When you reinstall the same template, the system notifies you of a duplicate and appends a unique number to the name to prevent conflicts in the format: `<em>Tool Template Name + "_" + System-Generated Sequential Number</em>`
     * Example: <em>Automatic grading system_1743151769005</em>
-      <img src="../images/tool-seq-numbering.png" alt="tool seq numbering" title="tool seq numbering" style="border: 1px solid gray; zoom:75%;"/>
+
+      ![tool seq numbering](./images/tool-seq-numbering.png "tool seq numbering")
+
+
 
 ## Managing the Tool Template
 
@@ -132,7 +153,10 @@ To modify your tool's general details, such as its name and description, asynchr
 
 1. Access the **Tools** dashboard and click the required tool.
 2. On the left navigation menu, click **Configurations**.
-   <img src="../images/configurations-tools.png" alt="configurations" title="configurations" style="border: 1px solid gray; zoom:75%;"/>  
+
+   ![configurations](./images/configurations-tools.png "configurations")
+
+  
 
 3. Perform the required action on the page like tool renaming or [deletion](../tools/tool-templates.md#delete-a-tool-template). To configure other tool options, refer [here](../tools/configure-a-tool.md).
 
@@ -143,19 +167,25 @@ Once you install a tool template, you can access its prebuilt flow and modify it
 1. Click the required tool template on the <b>Tools</b> dashboard.
 2. Click **Go to Flow**.
 
-      <img src="../images/go-to-flow-automatic-grading.png" alt="go to flow" title="go to flow" style="border: 1px solid gray; zoom:75%;"/>
+
+      ![go to flow](./images/go-to-flow-automatic-grading.png "go to flow")
+
+
 
   The prebuilt flow is displayed on the canvas.
 
-   <div class="admonition note">
-   <p class="admonition-title">Note</p>
-   <p>Appropriate canvas-level errors are displayed (in the error log) with a fresh installation of templates since models won't be connected in Gen AI nodes, the API nodes will be empty, etc. You can view and fix the errors by clicking the <b>warning</b> icon.</p>
-   </div>
+   <Note>Appropriate canvas-level errors are displayed (in the error log) with a fresh installation of templates since models won't be connected in Gen AI nodes, the API nodes will be empty, etc. You can view and fix the errors by clicking the <b>warning</b> icon.</Note>
 
-   <img src="../images/canvas-level-errors.png" alt="canvas level errors" title="canvas level errors" style="border: 1px solid gray; zoom:75%;"/>
+
+   ![canvas level errors](./images/canvas-level-errors.png "canvas level errors")
+
+
 
    Each node available on the prebuilt flow canvas is automatically mapped to the relevant node type. You can view the node configurations on the **General Settings** panel, as shown below.
-   <img src="../images/node-mapping.png" alt="node mapping" title="node mapping" style="border: 1px solid gray; zoom:75%;"/>
+
+   ![node mapping](./images/node-mapping.png "node mapping")
+
+
 
 <ol start="3"><li><a href="../tool-flows/manage-flow-nodes/">Manage nodes and their configurations</a> in the flow, <a href="../tool-flows/perform-other-actions-on-the-flow-builder/manage-input-and-output">edit input and output</a>, and <a href="../tool-flows/perform-other-actions-on-the-flow-builder/run-the-flow">run the flow</a> as required to customize the tool flow. To view the changes made to the tool flow, use the change log. <a href="../tool-flows/tool-canvas-change-log">Learn more</a>.</li></ol>
 
@@ -165,12 +195,16 @@ To delete a tool template, follow the steps below:
 
 1. Scroll down to the **Delete tool** section on the **Configurations** page.
 2. Click **Proceed to delete**.
-   <img src="../images/proceed-to-delete.png" alt="proceed to delete" title="proceed to delete" style="border: 1px solid gray; zoom:75%;"/>  
+
+   ![proceed to delete](./images/proceed-to-delete.png "proceed to delete")
+
+  
 
 3. Click **Delete** in the confirmation dialog.
 
-      <img src="../images/delete-tool-confirm.png" alt="delete tool confirm" title="delete tool confirm" style="border: 1px solid gray; zoom:75%;"/>  
 
-<div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>Deleting the tool is irreversible and removes all the associated data.</p></div>
+      ![delete tool confirm](./images/delete-tool-confirm.png "delete tool confirm")
+
+  
+
+<Note>Deleting the tool is irreversible and removes all the associated data.</Note>

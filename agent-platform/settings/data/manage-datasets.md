@@ -20,4 +20,7 @@ Steps to upload a dataset:
 You can download or delete the dataset if it’s no longer used on the platform. Deleting a dataset used in Playground experiments may cause errors.
 
 * Click the three dots icon in the last column, and choose **Download** or **Delete** as required.  
-<img src="../images/download-or-delete-datasets.png" alt="Navigate to Data Module" title="Navigate to Data Module" style="border: 1px solid gray; zoom:50%;"/>
+
+![Navigate to Data Module](./images/download-or-delete-datasets.png "Navigate to Data Module")
+
+

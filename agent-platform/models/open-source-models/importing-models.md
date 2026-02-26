@@ -32,7 +32,10 @@ This process enables users to seamlessly integrate local models into the platfor
 
 1. Go to **Models** > **Open-source models** and click the **Import model** button.
 2. On the **Import model** dialog, choose the **Base Model** tab.  
-    <img src="../images/base_model.png" alt="Base Model" title="Base Model"/>
+
+    ![Base Model](./images/base_model.png "Base Model")
+
+
 
 3. **Upload the model file**: In the **Import base model file** section, drag and drop the model file into the designated upload area, or use the **Upload file** link to browse and select the file from your local machine. Ensure the file extension matches the supported model formats.  
 Click ‘Instructions’ to view the detailed guidelines for the supported format and the necessary files to include in the zip folder for both base and adapter models.
@@ -61,12 +64,18 @@ Click ‘Instructions’ to view the detailed guidelines for the supported forma
 
 1. Go to **Models** > **Open-source models** and click the **Import model** button.
 2. On the **Import model** dialog, choose the **Adapter Model** tab.  
-    <img src="../images/adapter_model.png" alt="Adapter Model" title="Adapter Model"/>
+
+    ![Adapter Model](./images/adapter_model.png "Adapter Model")
+
+
 
 3. **Select a base model**: Browse through the list of available base models and choose one that supports the adapter model you're importing. Once selected, the base model is associated with the adapter model.  
 Click ‘Instructions’ to view the detailed guidelines for the supported format and the necessary files to include in the zip folder for both base and adapter models.
 
-    <img src="../images/adapter_model_details.png" alt="Adapter Model" title="Adapter Model"/>  
+
+    ![Adapter Model](./images/adapter_model_details.png "Adapter Model")
+
+  
 
 4. **Upload the model file**: In the **Import base model file** section, drag and drop the model file into the designated upload area, or use the **Upload file** link to browse and select the file from your local machine. Ensure the file extension matches the supported model formats.
 5. **File Validation**: The system validates the file’s extension.
