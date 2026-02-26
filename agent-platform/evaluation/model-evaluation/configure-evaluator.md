@@ -29,80 +29,16 @@ Quality metrics assess the overall effectiveness and usefulness of the model's o
 Below are the key quality metrics and the components required in the dataset to use these evaluators:
 
 
-<table>
-  <tr>
-   <td><strong>Metric</strong>
-   </td>
-   <td><strong>Description</strong>
-   </td>
-   <td><strong>Required Dataset Components</strong>
-   </td>
-  </tr>
-  <tr>
-   <td>Groundness
-   </td>
-   <td>Evaluates whether the output accurately reflects the information provided in the input without introducing additional details from the model’s knowledge base.
-   </td>
-   <td>Input, Output
-   </td>
-  </tr>
-  <tr>
-   <td>Query Relevance
-   </td>
-   <td>Assesses the relevance of the output to a user query and ensures the output is related to the given input.
-   </td>
-   <td>Input, Output, User Query
-   </td>
-  </tr>
-  <tr>
-   <td>Ground Truth Relevance
-   </td>
-   <td>Compares the output to a provided ground truth to assess the relevance between input and output.
-   </td>
-   <td>Input, Output, Ground Truth
-   </td>
-  </tr>
-  <tr>
-   <td>Coherence
-   </td>
-   <td>Evaluates how logically consistent and well-structured the generated output is, assessing its natural flow and readability.
-   </td>
-   <td>Output
-   </td>
-  </tr>
-  <tr>
-   <td>Fluency
-   </td>
-   <td>Assesses the quality of individual sentences in the output, checking if they are grammatically correct and well-written.
-   </td>
-   <td>Output
-   </td>
-  </tr>
-  <tr>
-   <td>GPT Similarity Score
-   </td>
-   <td>Compares the model’s response with a superior model's response (for example, GPT) for a given input.
-   </td>
-   <td>Input, your model’s response, Superior model’s response
-   </td>
-  </tr>
-  <tr>
-   <td>Paraphrasing
-   </td>
-   <td>Assesses whether the output conveys the same meaning as the input using different phrasing and sentence structures.
-   </td>
-   <td>Input, Output
-   </td>
-  </tr>
-  <tr>
-   <td>Completeness
-   </td>
-   <td>Evaluates whether the output conveys the full context from the input, checking if any information was lost or omitted.
-   </td>
-   <td>Input, Output
-   </td>
-  </tr>
-</table>
+| <strong>Metric</strong> | <strong>Description</strong> | <strong>Required Dataset Components</strong> |
+|:------ |:------ |:------ |
+| Groundness | Evaluates whether the output accurately reflects the information provided in the input without introducing additional details from the model’s knowledge base. | Input, Output |
+| Query Relevance | Assesses the relevance of the output to a user query and ensures the output is related to the given input. | Input, Output, User Query |
+| Ground Truth Relevance | Compares the output to a provided ground truth to assess the relevance between input and output. | Input, Output, Ground Truth |
+| Coherence | Evaluates how logically consistent and well-structured the generated output is, assessing its natural flow and readability. | Output |
+| Fluency | Assesses the quality of individual sentences in the output, checking if they are grammatically correct and well-written. | Output |
+| GPT Similarity Score | Compares the model’s response with a superior model's response (for example, GPT) for a given input. | Input, your model’s response, Superior model’s response |
+| Paraphrasing | Assesses whether the output conveys the same meaning as the input using different phrasing and sentence structures. | Input, Output |
+| Completeness | Evaluates whether the output conveys the full context from the input, checking if any information was lost or omitted. | Input, Output |
 
 
 
@@ -113,40 +49,11 @@ Safety metrics focus on evaluating whether the model’s outputs are free from h
 Below are the key safety metrics and the components required in the dataset to use these evaluators:
 
 
-<table>
-  <tr>
-   <td><strong>Metric</strong>
-   </td>
-   <td><strong>Description</strong>
-   </td>
-   <td><strong>Required Dataset Components</strong>
-   </td>
-  </tr>
-  <tr>
-   <td>Bias Detection
-   </td>
-   <td>Analyzes the output for potential biases related to specified topics, ensuring that the model doesn’t exhibit unfair or discriminatory tendencies.
-   </td>
-   <td>Output
-   </td>
-  </tr>
-  <tr>
-   <td>Banned Topics
-   </td>
-   <td>Scans the output for prohibited content related to specific topics, like sensitive political issues or illegal activities.
-   </td>
-   <td>Output
-   </td>
-  </tr>
-  <tr>
-   <td>Toxicity
-   </td>
-   <td>Screens the output for toxic content, such as violent, sexual, or otherwise inappropriate material.
-   </td>
-   <td>Output
-   </td>
-  </tr>
-</table>
+| <strong>Metric</strong> | <strong>Description</strong> | <strong>Required Dataset Components</strong> |
+|:------ |:------ |:------ |
+| Bias Detection | Analyzes the output for potential biases related to specified topics, ensuring that the model doesn’t exhibit unfair or discriminatory tendencies. | Output |
+| Banned Topics | Scans the output for prohibited content related to specific topics, like sensitive political issues or illegal activities. | Output |
+| Toxicity | Screens the output for toxic content, such as violent, sexual, or otherwise inappropriate material. | Output |
 
 
 #### RAGAS Evaluators
@@ -163,38 +70,13 @@ Users can fine-tune the evaluation process by adjusting key parameters to meet s
 
 Below are the current list of RAGAS evaluators and the components required in the dataset to use these evaluators:
 
-<table>
-  <tr>
-    <td style="width: 150px;" /><strong>Metric</strong></td>
-    <td><strong>Description</strong></td>
-    <td><strong>Required Dataset Components</strong></td>
-  </tr>
-  <tr>
-    <td style="width: 150px;" />Context Precision</td>
-    <td>This metric measures the proportion of the relevant chunks and the total number of chunks retrieved for the given user input.</td>
-    <td>Input<br />Response<br />Retrieved context</td>
-  </tr>
-  <tr>
-    <td style="width: 150px;" />Context Recall</td>
-    <td>Considering a reference context, this metric evaluates whether the retrieved context is sufficient to address the user input. Higher recall indicates that fewer significant chunks are omitted.</td>
-    <td>Input<br />Response<br />Retrieved context<br />Reference answer</td>
-  </tr>
-  <tr>
-    <td style="width: 150px;" />Context Entity Recall</td>
-    <td>Considering a reference context, this metric evaluates the number of common entities present in the retrieved context in relation to the total number of entities in that reference context.</td>
-    <td>Retrieved context<br />Reference answer</td>
-  </tr>
-  <tr>
-    <td style="width: 150px;" />Noise Sensitivity</td>
-    <td>Considering a reference context, this metric provides the proportion of incorrect claims in the total number of retrieved claims.</td>
-    <td>Input<br />Response<br />Retrieved context<br />Reference answer</td>
-  </tr>
-  <tr>
-    <td style="width: 150px;" />Faithfulness</td>
-    <td>This metric measures how factually consistent a response is with the retrieved context.</td>
-    <td>Input<br />Response<br />Retrieved context</td>
-  </tr>
-</table>
+| <strong>Metric</strong> | <strong>Description</strong> | <strong>Required Dataset Components</strong> |
+|:------ |:------ |:------ |
+| Context Precision | This metric measures the proportion of the relevant chunks and the total number of chunks retrieved for the given user input. | Input<br />Response<br />Retrieved context |
+| Context Recall | Considering a reference context, this metric evaluates whether the retrieved context is sufficient to address the user input. Higher recall indicates that fewer significant chunks are omitted. | Input<br />Response<br />Retrieved context<br />Reference answer |
+| Context Entity Recall | Considering a reference context, this metric evaluates the number of common entities present in the retrieved context in relation to the total number of entities in that reference context. | Retrieved context<br />Reference answer |
+| Noise Sensitivity | Considering a reference context, this metric provides the proportion of incorrect claims in the total number of retrieved claims. | Input<br />Response<br />Retrieved context<br />Reference answer |
+| Faithfulness | This metric measures how factually consistent a response is with the retrieved context. | Input<br />Response<br />Retrieved context |
 
 
 ### Human Evaluators

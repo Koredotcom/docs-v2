@@ -39,43 +39,11 @@ The first step in setting up an agent is deciding how it will be created. Depend
 * Connect an external agent that's hosted elsewhere.
 * Build an agent from scratch with full control over its configuration.
 
-<table>
-  <tr>
-   <td>
-<b>Option</b>
-   </td>
-   <td><b>When to use</b>
-   </td>
-   <td><b>What you configure</b>
-   </td>
-  </tr>
-   <tr>
-   <td><a href="../create-from-scratch/">From Scratch</a>
-   </td>
-   <td>You want full control
-   </td>
-   <td>Configure everything for the agent - Profile, instructions, tools, and knowledge. 
-   </td>
-  </tr>
-  <tr>
-   <td><a href="../external-agents/">Connect External Agent</a>
-   </td>
-   <td>You already have an agent hosted elsewhere
-   </td>
-   <td>Connection details
-   </td>
-  </tr>
-  <tr>
-   <td><a href="../create-from-marketplace/">From Marketplace</a>
-   </td>
-   <td>You want to use a  preconfigured, ready-to-use agent
-   </td>
-   <td>Requires minimal edits
-   </td>
-  </tr>
-  
- 
-</table>
+| <b>Option</b> | <b>When to use</b> | <b>What you configure</b> |
+|:----- |:----- |:----- |
+| <a href="../create-from-scratch/">From Scratch</a> | You want full control | Configure everything for the agent - Profile, instructions, tools, and knowledge. |
+| <a href="../external-agents/">Connect External Agent</a> | You already have an agent hosted elsewhere | Connection details |
+| <a href="../create-from-marketplace/">From Marketplace</a> | You want to use a preconfigured, ready-to-use agent | Requires minimal edits |
 
 
 This selection determines the setup flow and the configurations available during agent creation. For step-by-step instructions, refer to the corresponding guides for each option.

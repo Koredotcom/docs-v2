@@ -150,45 +150,9 @@ After running the workflow, use the Debug panel to inspect loop behavior, debug 
 
 ## Troubleshooting Common Issues
 
-<table>
-  <tr>
-   <td><strong>Issue</strong>
-   </td>
-   <td><strong>Cause</strong>
-   </td>
-   <td><strong>How to Fix</strong>
-   </td>
-  </tr>
-  <tr>
-   <td><strong>Loop input is missing or empty</strong>
-   </td>
-   <td>Input list is undefined or resolves to <code>null</code>/empty
-   </td>
-   <td>Ensure the Loop Input Source is set to a valid array (for example, `{{inputs.items}}`. Verify it in the Debug Log.
-   </td>
-  </tr>
-  <tr>
-   <td><strong>Child nodes not executing</strong>
-   </td>
-   <td>Nodes are placed outside the loop container
-   </td>
-   <td>Only nodes inside the loop container run per iteration. Drag nodes into the loop box on the canvas.
-   </td>
-  </tr>
-  <tr>
-   <td><strong>Loop stops when one item fails</strong>
-   </td>
-   <td>The error handling option could be incorrect.
-   </td>
-   <td>Change the error handling option to 'Continue on error' to skip failed iterations.
-   </td>
-  </tr>
-  <tr>
-   <td><strong>Output variable conflicts</strong>
-   </td>
-   <td>Output field name is reused elsewhere in the flow
-   </td>
-   <td>Use a unique name for the Output field to avoid overwriting data.
-   </td>
-  </tr>
-</table>
+| <strong>Issue</strong> | <strong>Cause</strong> | <strong>How to Fix</strong> |
+|:----- |:----- |:----- |
+| <strong>Loop input is missing or empty</strong> | Input list is undefined or resolves to `null`/empty | Ensure the Loop Input Source is set to a valid array (for example, `{{inputs.items}}`. Verify it in the Debug Log. |
+| <strong>Child nodes not executing</strong> | Nodes are placed outside the loop container | Only nodes inside the loop container run per iteration. Drag nodes into the loop box on the canvas. |
+| <strong>Loop stops when one item fails</strong> | The error handling option could be incorrect. | Change the error handling option to 'Continue on error' to skip failed iterations. |
+| <strong>Output variable conflicts</strong> | Output field name is reused elsewhere in the flow | Use a unique name for the Output field to avoid overwriting data. |

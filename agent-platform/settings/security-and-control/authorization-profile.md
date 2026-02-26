@@ -106,175 +106,22 @@ To configure the OAuth2 profile, define the fields described in the table below:
     <p>Except for <b>Scope</b>, <b>Description</b>, <b>Refresh Token URL</b>, <b>Additional fields</b>, <b>Authorization fields</b>, and <b>Auth Error Status Code</b>, all the fields are mandatory.</p>
     </div>
 
-<table>
-  <tr>
-   <td>FIELD NAME
-   </td>
-   <td>DESCRIPTION
-   </td>
-   <td>MANDATE
-   </td>
-   <td>AUTH TYPE</td>
-  </tr>
-  <tr>
-   <td><strong>Authorization Type</strong>
-   </td>
-   <td>Select an option from the dropdown. <i>OAuth V2</i> and <i>OAuth v2 Client Credential</i> are currently supported.
-   </td>
-   <td>Required
-   </td>
-   <td>OAuth V2 and OAuth v2 Client Credential</td>
-  </tr>
-  <tr>
-   <td><strong>Identity Provider Name</strong>
-   </td>
-   <td>The name of the identity provider or service, for example, <em>Okta.</em>
-   </td>
-   <td>Required
-   </td>
-   <td>OAuth V2 and OAuth v2 Client Credential</td>
-  </tr>
-  <tr>
-   <td><strong>Description</strong>
-   </td>
-   <td>Enter a description for your auth profile.
-   </td>
-   <td>Optional
-   </td>
-   <td>OAuth V2 and OAuth v2 Client Credential</td>
-  </tr>
-  <tr>
-   <td><strong>Callback URL</strong>
-   </td>
-   <td>The endpoint in an OAuth 2.0 flow where the authorization server redirects the user after they grant or deny permission. It is used to return the authorization code or access token to the client application. The default URL is provided in the form. 
-   </td>
-   <td>Required
-   </td>
-   <td>OAuth V2 and OAuth v2 Client Credential</td>
-  </tr>
-  <tr>
-   <td><strong>Client ID</strong>
-   </td>
-   <td>
-    A unique identifier assigned that helps the authorization server recognize the application making authorization or API access requests. It helps in the following:
-<ul>
-
-<li>Used in <strong>OAuth flows</strong> to obtain access tokens</li>
-
-<li>Helps in tracking and logging API requests</li>
-
-<li>Ensures security by linking requests to a registered client.</li>
-</ul>
-   </td>
-   <td>Required
-   </td>
-   <td>OAuth V2 and OAuth v2 Client Credential</td>
-  </tr>
-  <tr>
-   <td><strong>Client Secret</strong>
-   </td>
-   <td>
-    A confidential key assigned to an application to authenticate its identity when requesting access tokens from the authorization server, ensuring secure and authorized API access.
-   </td>
-   <td>Required
-   </td>
-   <td>OAuth V2 and OAuth v2 Client Credential</td>
-  </tr>
-  <tr>
-   <td><strong>Authorization URL</strong>
-   </td>
-   <td>
-    The endpoint where users are redirected to authenticate and grant permissions to an application before it can access protected resources on their behalf. Example: <code>https://auth.example.com/oauth/authorize</code>
-   </td>
-   <td>Required
-   </td>
-   <td>OAuth V2</td>
-  </tr>
-  <tr>
-   <td><strong>Subdomain(aka tenancy URL)</strong>
-   </td>
-   <td>
-    A unique URL assigned to a specific tenant (organization, customer, or user group) within a multi-tenant system. It is used to differentiate and isolate data, authorization, and access for each tenant. You must select one of the following options based on your auth profile:
-<ul>
-
-<li>No, this tool and all of its tasks do not have tenancy URLs.</li>
-
-<li>Yes, some tasks will have tenancy URLs and the user will need to provide that to successfully authenticate.</li>
-</ul>
-   </td>
-   <td>Required
-   </td>
-   <td>OAuth V2</td>
-  </tr>
-  <tr>
-   <td><strong>Token request URL</strong>
-   </td>
-   <td>
-    The endpoint where a client application exchanges an <strong>authorization code</strong> or <strong>refresh token</strong> for an <strong>access token</strong>. This token allows the client to authenticate API requests on behalf of the user.
-   </td>
-   <td>Required
-   </td>
-   <td>OAuth V2 and OAuth v2 Client Credential</td>
-  </tr>
-  <tr>
-   <td><strong>Scope</strong>
-   </td>
-   <td>
-    Defines the level of access that a client application is requesting from the resource owner (user). It specifies what <strong>actions</strong> the application is allowed to perform and what <strong>resources</strong> it can access.  
-Example: <code>read_profile</code>.
-   </td>
-   <td>Optional
-   </td>
-   <td>OAuth V2 and OAuth v2 Client Credential</td>
-  </tr>
-  <tr>
-   <td><strong>Additional Fields</strong>
-   </td>
-   <td>
-    Refer <a href="#add-additional-field">here</a>.
-   </td>
-   <td>Optional
-   </td>
-   <td>OAuth V2</td>
-  </tr>
-  <tr>
-   <td><strong>Authorization Fields</strong>
-   </td>
-   <td>
-    Refer <a href="#add-authorization-field">here</a>.</td>
-   <td>Optional
-   </td>
-   <td>OAuth V2</td>
-  </tr>
-  <tr>
-   <td><strong>Refresh token URL</strong>
-   </td>
-   <td>
-    The endpoint where a client application sends a request to obtain a new <strong>access token</strong> using a <strong>refresh token</strong> (whenever the access token expires). Example: <code>https://auth.example.com/oauth/access</code>
-
-<p><strong>Note</strong>: When the <strong>Refresh Token URL</strong> or refresh token expires, the following happens:
-<ul>
-
-<li>The auth profile starts failing everywhere it is used.</li>
-
-<li>The user will receive an email to reconfigure a new URL or refresh token to ensure continuous and uninterrupted service.</li>
-</ul></p>
-   </td>
-   <td>Optional
-   </td>
-   <td>OAuth V2</td>
-  </tr>
-  <tr>
-   <td><strong>Auth Error Status Code</strong>
-   </td>
-   <td>
-    When authorization fails in OAuth 2.0, the server returns an HTTP status code along with an error message to indicate the issue.
-   </td>
-   <td>Optional
-   </td>
-   <td>OAuth V2 and OAuth v2 Client Credential</td>
-  </tr>
-</table>
+| FIELD NAME | DESCRIPTION | MANDATE | AUTH TYPE |
+|:------ |:------ |:------ |:------ |
+| <strong>Authorization Type</strong> | Select an option from the dropdown. <i>OAuth V2</i> and <i>OAuth v2 Client Credential</i> are currently supported. | Required | OAuth V2 and OAuth v2 Client Credential |
+| <strong>Identity Provider Name</strong> | The name of the identity provider or service, for example, <em>Okta.</em> | Required | OAuth V2 and OAuth v2 Client Credential |
+| <strong>Description</strong> | Enter a description for your auth profile. | Optional | OAuth V2 and OAuth v2 Client Credential |
+| <strong>Callback URL</strong> | The endpoint in an OAuth 2.0 flow where the authorization server redirects the user after they grant or deny permission. It is used to return the authorization code or access token to the client application. The default URL is provided in the form. | Required | OAuth V2 and OAuth v2 Client Credential |
+| <strong>Client ID</strong> | A unique identifier assigned that helps the authorization server recognize the application making authorization or API access requests. It helps in the following: <ul> <li>Used in <strong>OAuth flows</strong> to obtain access tokens</li> <li>Helps in tracking and logging API requests</li> <li>Ensures security by linking requests to a registered client.</li> </ul> | Required | OAuth V2 and OAuth v2 Client Credential |
+| <strong>Client Secret</strong> | A confidential key assigned to an application to authenticate its identity when requesting access tokens from the authorization server, ensuring secure and authorized API access. | Required | OAuth V2 and OAuth v2 Client Credential |
+| <strong>Authorization URL</strong> | The endpoint where users are redirected to authenticate and grant permissions to an application before it can access protected resources on their behalf. Example: `https://auth.example.com/oauth/authorize` | Required | OAuth V2 |
+| <strong>Subdomain(aka tenancy URL)</strong> | A unique URL assigned to a specific tenant (organization, customer, or user group) within a multi-tenant system. It is used to differentiate and isolate data, authorization, and access for each tenant. You must select one of the following options based on your auth profile: <ul> <li>No, this tool and all of its tasks do not have tenancy URLs.</li> <li>Yes, some tasks will have tenancy URLs and the user will need to provide that to successfully authenticate.</li> </ul> | Required | OAuth V2 |
+| <strong>Token request URL</strong> | The endpoint where a client application exchanges an <strong>authorization code</strong> or <strong>refresh token</strong> for an <strong>access token</strong>. This token allows the client to authenticate API requests on behalf of the user. | Required | OAuth V2 and OAuth v2 Client Credential |
+| <strong>Scope</strong> | Defines the level of access that a client application is requesting from the resource owner (user). It specifies what <strong>actions</strong> the application is allowed to perform and what <strong>resources</strong> it can access. Example: `read_profile`. | Optional | OAuth V2 and OAuth v2 Client Credential |
+| <strong>Additional Fields</strong> | Refer <a href="#add-additional-field">here</a>. | Optional | OAuth V2 |
+| <strong>Authorization Fields</strong> | Refer <a href="#add-authorization-field">here</a>. | Optional | OAuth V2 |
+| <strong>Refresh token URL</strong> | The endpoint where a client application sends a request to obtain a new <strong>access token</strong> using a <strong>refresh token</strong> (whenever the access token expires). Example: `https://auth.example.com/oauth/access` <p><strong>Note</strong>: When the <strong>Refresh Token URL</strong> or refresh token expires, the following happens: <ul> <li>The auth profile starts failing everywhere it is used.</li> <li>The user will receive an email to reconfigure a new URL or refresh token to ensure continuous and uninterrupted service.</li> </ul></p> | Optional | OAuth V2 |
+| <strong>Auth Error Status Code</strong> | When authorization fails in OAuth 2.0, the server returns an HTTP status code along with an error message to indicate the issue. | Optional | OAuth V2 and OAuth v2 Client Credential |
 
 ## Add Additional Field
 
@@ -289,38 +136,10 @@ To add additional fields, follow the steps below:
 
 2. Add values for the following fields:
 
-<table>
-  <tr>
-   <td>PARAMETER
-   </td>
-   <td>DESCRIPTION
-   </td>
-   <td>REQUIRED/OPTIONAL
-   </td>
-   <td>EXAMPLE
-   </td>
-  </tr>
-  <tr>
-   <td><strong>Field Key</strong>
-   </td>
-   <td>The name of the additional field. 
-   </td>
-   <td>Required
-   </td>
-   <td>Pin code
-   </td>
-  </tr>
-  <tr>
-   <td><strong>Field Value</strong>
-   </td>
-   <td>The value for the additional field.
-   </td>
-   <td>Required
-   </td>
-   <td>2344567
-   </td>
-  </tr>
-</table>
+| PARAMETER | DESCRIPTION | REQUIRED/OPTIONAL | EXAMPLE |
+|:------ |:------ |:------ |:------ |
+| <strong>Field Key</strong> | The name of the additional field. | Required | Pin code |
+| <strong>Field Value</strong> | The value for the additional field. | Required | 2344567 |
 
 <ol start="3"><li>Click <b>Done</b>.</li></ol>
 
@@ -338,51 +157,11 @@ To add auth fields, follow the steps below:
 
 2. Add values for the following fields:
 
-<table>
-  <tr>
-   <td>
-<strong>PARAMETER</strong>
-   </td>
-   <td><strong>DESCRIPTION</strong>
-   </td>
-   <td><strong>REQUIRED/OPTIONAL</strong>
-   </td>
-  </tr>
-  <tr>
-   <td>Field Type
-   </td>
-   <td>Defines how authorization data is sent and verified in an API request within the Platform for token-based authorization. The supported types include:
-<ul>
-
-<li><strong>Header</strong>: Used to send authorization credentials, such as API tokens.</li>
-
-<li><strong>Payload</strong>: Used in <code>POST</code> or <code>PUT</code> requests, sending credentials in the request body.</li>
-
-<li><strong>Query String</strong><em>:</em> Credentials are passed in the URL.</li>
-
-<li><strong>Path Param</strong>: Credentials or tokens are included in the URL path.</li>
-</ul>
-   </td>
-   <td>Required
-   </td>
-  </tr>
-  <tr>
-   <td>Field Key
-   </td>
-   <td>The name of the auth field. Example: <em>Profile_id.</em>
-   </td>
-   <td>Required
-   </td>
-  </tr>
-  <tr>
-   <td>Field Value
-   </td>
-   <td>The value of the auth field. Example: <em>123_xyz</em>.
-   </td>
-   <td>Optional
-   </td>
-  </tr>
-</table>
+| <strong>PARAMETER</strong> | <strong>DESCRIPTION</strong> | <strong>REQUIRED/OPTIONAL</strong> |
+|:------ |:------ |:------ |
+| Field Type | Defines how authorization data is sent and verified in an API request within the Platform for token-based authorization. The supported types include: <ul> <li><strong>Header</strong>: Used to send authorization credentials, such as API tokens.</li> <li><strong>Payload</strong>: Used in `POST` or `PUT` requests, sending credentials in the request body.</li> <li><strong>Query String</strong><em>:</em> Credentials are passed in the URL.</li> <li><strong>Path Param</strong>: Credentials or tokens are included in the URL path.</li> </ul> | Required |
+| Field Key | The name of the auth field. Example: <em>Profile_id.</em> | Required |
+| Field Value | The value of the auth field. Example: <em>123_xyz</em>. | Optional |
 
 
 <ol start="3"><li>Click <b>Done</b>.</li></ol>

@@ -173,29 +173,8 @@ Configure JSON paths to extract:
 
 Example:
 
-<table>
-  <tr>
-   <td><strong>Field</strong>
-   </td>
-   <td><strong>JSONPath</strong>
-   </td>
-  </tr>
-  <tr>
-   <td>Output Text
-   </td>
-   <td><code>$.output.text</code>
-   </td>
-  </tr>
-  <tr>
-   <td>Input Token Count
-   </td>
-   <td><code>$.usage.input_tokens</code>
-   </td>
-  </tr>
-  <tr>
-   <td>Output Token Count
-   </td>
-   <td><code>$.usage.output_tokens</code>
-   </td>
-  </tr>
-</table>
+| <strong>Field</strong> | <strong>JSONPath</strong> |
+|:------ |:------ |
+| Output Text | `$.output.text` |
+| Input Token Count | `$.usage.input_tokens` |
+| Output Token Count | `$.usage.output_tokens` |

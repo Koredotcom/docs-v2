@@ -33,86 +33,20 @@ By using API-scoped apps and API keys, the bank minimizes the risk of data expos
 
 The following API scopes are available for this feature.
 
-<table>
-  <tr>
-   <td><strong>API Scope</strong>
-   </td>
-   <td><strong>Description</strong>
-   </td>
-  </tr>
-  <tr>
-   <td>Deploy Tool
-   </td>
-   <td>Deploy a specific tool into an environment. It allows the user to control the deployment process either synchronously or asynchronously. <a href="../../../apis/apis-list/deploy-a-tool/">Learn more</a>.
-   </td>
-  </tr>
-  <tr>
-   <td>Undeploy Tool
-   </td>
-   <td>Undeploy a tool that is deployed in an environment. <a href="../../../apis/apis-list/undeploy-a-tool/">Learn more</a>.
-   </td>
-  </tr>
-  <tr>
-   <td>Deploy Model
-   </td>
-   <td>Deploy an open-source or fine-tuned model in the <strong><em>Ready to Deploy</em></strong> state. <a href="../../../apis/apis-list/deploy-a-model/">Learn more</a>.
-   </td>
-  </tr>
-  <tr>
-   <td>Undeploy Model
-   </td>
-   <td>Undeploy a model from the environment. <a href="../../../apis/apis-list/undeploy-a-model/">Learn more</a>.
-   </td>
-  </tr>
-  <tr>
-   <td>Import Model
-   </td>
-   <td> Import a model in chunks into the Platform environment. <a href="../../../apis/apis-list/import-a-model/">Learn more</a>.
-   </td>
-  </tr>
-  <tr>
-   <td>Import Tool
-   </td>
-   <td>Import a new tool into the system. <a href="../../../apis/apis-list/import-a-new-tool/">Learn more</a>.
-   </td>
-  </tr>
-  <tr>
-   <td>Export Model
-   </td>
-   <td>Export a trained AI model from the system. <a href="../../../apis/apis-list/export-a-model/">Learn more</a>.
-   </td>
-  </tr>
-  <tr>
-   <td>Export Tool
-   </td>
-   <td>Export a tool's configuration and associated data.<a href="../../../apis/apis-list/export-a-tool/">Learn more</a>.
-   </td>
-  </tr>
-  <tr>
-   <td>Deploy Guardrails
-   </td>
-   <td>Deploy pre-defined <strong>guardrails</strong> to enhance security, compliance, and content moderation in AI interactions. <a href="../../../apis/apis-list/deploy-guardrails/">Learn more</a>.
-   </td>
-  </tr>
-  <tr>
-   <td>Undeploy Guardrails
-   </td>
-   <td>Remove the previously deployed guardrails that regulate AI interactions.<a href="../../../apis/apis-list/undeploy-guardrails/"> Learn more</a>.
-   </td>
-  </tr>
-  <tr>
-   <td>View Connections
-   </td>
-   <td>Required for viewing connection details. <a href="../../../apis/apis-list/connections-api/">Learn more</a>.
-   </td>
-  </tr>
-  <tr>
-   <td>Manage Connections
-   </td>
-   <td>Required for creating and updating connections. <a href="../../../apis/apis-list/connections-api/">Learn more</a>.
-   </td>
-  </tr>
-</table>
+| <strong>API Scope</strong> | <strong>Description</strong> |
+|:------ |:------ |
+| Deploy Tool | Deploy a specific tool into an environment. It allows the user to control the deployment process either synchronously or asynchronously. <a href="../../../apis/apis-list/deploy-a-tool/">Learn more</a>. |
+| Undeploy Tool | Undeploy a tool that is deployed in an environment. <a href="../../../apis/apis-list/undeploy-a-tool/">Learn more</a>. |
+| Deploy Model | Deploy an open-source or fine-tuned model in the <strong><em>Ready to Deploy</em></strong> state. <a href="../../../apis/apis-list/deploy-a-model/">Learn more</a>. |
+| Undeploy Model | Undeploy a model from the environment. <a href="../../../apis/apis-list/undeploy-a-model/">Learn more</a>. |
+| Import Model | Import a model in chunks into the Platform environment. <a href="../../../apis/apis-list/import-a-model/">Learn more</a>. |
+| Import Tool | Import a new tool into the system. <a href="../../../apis/apis-list/import-a-new-tool/">Learn more</a>. |
+| Export Model | Export a trained AI model from the system. <a href="../../../apis/apis-list/export-a-model/">Learn more</a>. |
+| Export Tool | Export a tool's configuration and associated data.<a href="../../../apis/apis-list/export-a-tool/">Learn more</a>. |
+| Deploy Guardrails | Deploy pre-defined <strong>guardrails</strong> to enhance security, compliance, and content moderation in AI interactions. <a href="../../../apis/apis-list/deploy-guardrails/">Learn more</a>. |
+| Undeploy Guardrails | Remove the previously deployed guardrails that regulate AI interactions.<a href="../../../apis/apis-list/undeploy-guardrails/"> Learn more</a>. |
+| View Connections | Required for viewing connection details. <a href="../../../apis/apis-list/connections-api/">Learn more</a>. |
+| Manage Connections | Required for creating and updating connections. <a href="../../../apis/apis-list/connections-api/">Learn more</a>. |
 
 ## Access API Scopes
 

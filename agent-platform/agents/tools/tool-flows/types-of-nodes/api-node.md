@@ -48,95 +48,12 @@ Click the added node to open its properties dialog box. The General Settings for
 <img src="./../images/api-node-general-settings.png" alt="Go to Flow Canvas" title="Go to Flow Canvas" style="border: 1px solid gray; zoom:60%;"/>
 
 **General Settings**
-<table>
-  <tr>
-   <td><strong>Field<strong> </td>
-   <td><strong>Description<strong></td>
-  </tr>
-  <tr>
-   <td>Node Name
-
-   </td>
-   <td>Enter an appropriate name for the node.
-
-   </td>
-  </tr>
-  <tr>
-   <td>Type
-
-   </td>
-   <td>Select the API type from the drop-down: <strong>REST</strong> or <strong>SOAP</strong>.
-
-   </td>
-  </tr>
-  <tr>
-   <td>Integration Type
-
-   </td>
-  <td>
-  Select the integration type: <strong>Synchronous</strong> or <strong>Asynchronous</strong>.<br />
-
-  <strong>Synchronous</strong>: Waits for a response before proceeding.
-  <ul>
-    <li>
-      <strong>Synchronous Timeout</strong>: Range: <strong>5 to 180 seconds</strong> (default: <strong>60 seconds</strong>). 
-      Triggers a timeout if the response is not received within the set time.
-    </li>
-  </ul>
-
-  <strong>Asynchronous</strong>: Continues processing without waiting for response.
-  <ul>
-    <li>
-      <strong>Asynchronous Timeout:</strong> Range: <strong>30 to 300 seconds</strong> (default: <strong>60 seconds</strong>).
-    </li>
-    <li>
-      <strong>No timeout</strong>: Waits indefinitely for the response without triggering a timeout error. 
-      Useful for automating custom workflows like approvals and checks.
-    </li>
-  </ul>
-
-  <strong>Note</strong>: Ensure the "<strong>No timeout</strong>" setting is selected for both the API node and the tool to avoid timeout errors.
-</td>
-  </tr>
-  <tr>
-   <td>Request Definition
-
-   </td>
-  <td>
-  Define the service request details to make the call and fetch the data. Click <strong>Define Request</strong> and enter or select the following details in the Edit Request dialog box:
-  <ul>
-    <li>Select the request type from the list.</li>
-    <li>Paste your API Endpoint URL or cURL in the text field.</li>
-    <li>
-      In the <strong>Auth</strong> section, select the required <strong>Auth Profile</strong> from the list of configured profiles. Next, provide the authorization details.
-      <ul>
-        <li>
-          <strong>Pre-authorize the Integration</strong>: Select this option if the authorization has already been completed in advance. This is suitable for API calls that do not require the end user to authenticate or provide credentials.<br />
-          <strong>Example</strong>: Connecting to a service using a system-level token or client credentials that have already been authorized. In this case, the same credentials are used for all users.
-        </li>
-        <li>
-          <strong>Allow users to authorize the integration</strong>: Choose this option if each end user needs to dynamically authorize the integration at runtime. This is useful when user-specific credentials or tokens are required for access.<br />
-          <strong>Example</strong>: Connecting to a third-party service like Google Drive, where each user must log in and grant access to their account. This ensures personalized access and respects individual user permissions.
-        </li>
-      </ul>
-    </li>
-    <li>In the <strong>Headers</strong> tab, specify the details of the Key and Value pair. For example, Key: Content-Type, Value: application/json</li>
-    <li>
-      The <strong>Body</strong> tab is displayed for all request types except GET. Select the body content type from the drop-down list:
-      <ul>
-        <li><strong>application/x-www-form-urlencoded</strong>: Allows file uploads through HTTP POST requests. Add key/value pairs encoded by the platform.</li>
-        <li><strong>application/json</strong>: Transmits data between servers and web applications using JSON format without processing.</li>
-        <li><strong>application/xml</strong>: Sends XML payload for SOAP services using POST methods, with the option to include node values.</li>
-        <li><strong>Custom</strong>: Allows sending request payload in non-standard formats, such as for handling blogs or custom variables.</li>
-      </ul>
-    </li>
-    <li>Click the <strong>Test</strong> button at the top-right corner of the dialog. The API response is displayed on the <strong>Response</strong> tab.</li>
-    <li>Click <strong>Save</strong> at the top-right corner of the dialog.</li>
-  </ul>
-</td>
-
-  </tr>
-</table>
+| <strong>Field<strong> | <strong>Description<strong> |
+|:----- |:----- |
+| Node Name | Enter an appropriate name for the node. |
+| Type | Select the API type from the drop-down: <strong>REST</strong> or <strong>SOAP</strong>. |
+| Integration Type | Select the integration type: <strong>Synchronous</strong> or <strong>Asynchronous</strong>.<br /> <strong>Synchronous</strong>: Waits for a response before proceeding. <ul> <li> <strong>Synchronous Timeout</strong>: Range: <strong>5 to 180 seconds</strong> (default: <strong>60 seconds</strong>). Triggers a timeout if the response is not received within the set time. </li> </ul> <strong>Asynchronous</strong>: Continues processing without waiting for response. <ul> <li> <strong>Asynchronous Timeout:</strong> Range: <strong>30 to 300 seconds</strong> (default: <strong>60 seconds</strong>). </li> <li> <strong>No timeout</strong>: Waits indefinitely for the response without triggering a timeout error. Useful for automating custom workflows like approvals and checks. </li> </ul> <strong>Note</strong>: Ensure the "<strong>No timeout</strong>" setting is selected for both the API node and the tool to avoid timeout errors. |
+| Request Definition | Define the service request details to make the call and fetch the data. Click <strong>Define Request</strong> and enter or select the following details in the Edit Request dialog box: <ul> <li>Select the request type from the list.</li> <li>Paste your API Endpoint URL or cURL in the text field.</li> <li> In the <strong>Auth</strong> section, select the required <strong>Auth Profile</strong> from the list of configured profiles. Next, provide the authorization details. <ul> <li> <strong>Pre-authorize the Integration</strong>: Select this option if the authorization has already been completed in advance. This is suitable for API calls that do not require the end user to authenticate or provide credentials.<br /> <strong>Example</strong>: Connecting to a service using a system-level token or client credentials that have already been authorized. In this case, the same credentials are used for all users. </li> <li> <strong>Allow users to authorize the integration</strong>: Choose this option if each end user needs to dynamically authorize the integration at runtime. This is useful when user-specific credentials or tokens are required for access.<br /> <strong>Example</strong>: Connecting to a third-party service like Google Drive, where each user must log in and grant access to their account. This ensures personalized access and respects individual user permissions. </li> </ul> </li> <li>In the <strong>Headers</strong> tab, specify the details of the Key and Value pair. For example, Key: Content-Type, Value: application/json</li> <li> The <strong>Body</strong> tab is displayed for all request types except GET. Select the body content type from the drop-down list: <ul> <li><strong>application/x-www-form-urlencoded</strong>: Allows file uploads through HTTP POST requests. Add key/value pairs encoded by the platform.</li> <li><strong>application/json</strong>: Transmits data between servers and web applications using JSON format without processing.</li> <li><strong>application/xml</strong>: Sends XML payload for SOAP services using POST methods, with the option to include node values.</li> <li><strong>Custom</strong>: Allows sending request payload in non-standard formats, such as for handling blogs or custom variables.</li> </ul> </li> <li>Click the <strong>Test</strong> button at the top-right corner of the dialog. The API response is displayed on the <strong>Response</strong> tab.</li> <li>Click <strong>Save</strong> at the top-right corner of the dialog.</li> </ul> |
 
 ### Step 4: Add Connections
 
