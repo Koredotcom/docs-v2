@@ -4,27 +4,7 @@ An AI Agent is a configurable, goal-driven component that can understand user in
 
 **Components of an Agent**
 
-
 ![Anatomy of an Agent](./images/agent-anatomy.png "Anatomy of an Agent")
-
-
-
-<!-- ## Agents Page
-
-The **Agents** page displays all agents associated with the Agentic app as individual cards, providing clear visibility into each agent's connected tools and configuration status. It shows the total number of agents in the app.
-
-Key highlights
-
-* Each agent card shows the connected tools with identifiable icons.
-* Highlights **Proxy Agents** with an external icon and hover tooltips revealing connected apps.
-* Agents needing LLM configuration show a **Configure LLM** button for quick setup.
-* Displays the total agent count in the page header, with **Explore Marketplace** and **New Agent** options always visible.
-
-
-![Agent Listing Page](./images/agents-listing-page.png "Agent Listing Page")
-
-
--->
 
 ## Agent Setup Overview
 
