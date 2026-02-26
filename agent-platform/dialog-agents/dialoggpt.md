@@ -19,7 +19,10 @@ DialogGPT intelligently recognizes and processes tasks based on their names and 
 
 DialogGPT operates through a structured three-step process:
 
-<img src="../images/dialog-gpt-process.png" alt="DialogGPT Orchestration" title="DialogGPT Orchestration" />
+
+![DialogGPT Orchestration](./images/dialog-gpt-process.png "DialogGPT Orchestration")
+
+
 
 
 1. **User Input and Chunk Shortlisting**:

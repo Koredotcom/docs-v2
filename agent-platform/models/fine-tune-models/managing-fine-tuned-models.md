@@ -22,7 +22,10 @@ The Fine-Tuned Models listing page displays all available models along with the 
 | **Added by**        | User who created or imported the model. |
 | **Updated on**      | Date of the deployment. |
 
-<img src="../images/fine_tune_models_new.png" alt="Fine-tune models table" title="Fine-tune models table"/>
+
+![Fine-tune models table](./images/fine_tune_models_new.png "Fine-tune models table")
+
+
 
 Select a model in the list to open the model’s detail view. By default, this opens the Overview page. The left navigation pane includes the following sections:
 
@@ -44,7 +47,10 @@ Click the Deployments tab to see all deployments for the selected model, along w
 | <b>Added On</b> | Date of deployment. |
 | <b>Actions</b> | <b>Copy cURL</b> – Copies the cURL command for invoking this deployment.<br /> <b>Manage API Keys</b> – Opens the API key management tab.<br /> <b>Re-trigger</b> – Restarts the deployment (Option available only if it has failed or stopped). |
 
-<img src="../images/fine_tune_deployments.png" alt="Fine-tune deployments table" title="Fine-tune deployments table"/>
+
+![Fine-tune deployments table](./images/fine_tune_deployments.png "Fine-tune deployments table")
+
+
 
 
 ## Managing Deployment Details
@@ -55,4 +61,7 @@ Selecting a specific deployment on the Deployment page opens its detail view, wh
 - **[API Keys](./generate-an-api-key.md)** – Generate and manage keys scoped to this deployment. API keys are isolated per deployment for secure access control.
 - **[Configurations](./configure-your-fine-tuned-model.md)** – Edit the description and tags, or undeploy/delete the model.
 
-<img src="../images/fine_tuned_deployment_detailed.png" alt="Fine-tune deployments" title="Fine-tune deployments"/>
+
+![Fine-tune deployments](./images/fine_tuned_deployment_detailed.png "Fine-tune deployments")
+
+

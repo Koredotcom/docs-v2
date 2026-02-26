@@ -13,7 +13,10 @@ The change log, accessible through the admin console, is an essential tool for t
 
 The change log automatically records every change made within the tool flow whenever a user exits a property field in any node. You can quickly scroll through the log to review the complete history of changes made across the flow.
 
-<img src="../images/agent_canvas_change_log.png" alt="Agent canvas change log" title="Agent canvas change log"/>
+
+![Agent canvas change log](./images/agent_canvas_change_log.png "Agent canvas change log")
+
+
 
 ### Accessing the Change Log
 

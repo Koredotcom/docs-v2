@@ -29,7 +29,10 @@ The dashboard displays user counts by status:
 * **Inactive**: Users invited by the admin but who have yet to join or accept the invitation.
 * **Locked**: Users who have exceeded 5 failed login attempts and their accounts have been locked.
 
-<img src="../images/users-count.png" alt="users count" title="users count" style="border: 1px solid gray; zoom:75%;"/>
+
+![users count](./images/users-count.png "users count")
+
+
 
 It also shows detailed user information, including name, email, role, and status. For information on default system roles, click [here](../user-management/role-management.md#system-defined-roles).
 
@@ -69,12 +72,18 @@ The steps mentioned below, allow you to import users' data from a designated fil
 2. Click **Settings** on the navigation bar.
 3. Navigate to **Users Management** > **Users** on the left menu.
 4. Click **Add New User**, and select **Import**.
-   <img src="../images/import-user.png" alt="import user" title="import user" style="border: 1px solid gray; zoom:75%;"/>
+
+   ![import user](./images/import-user.png "import user")
+
+
 
 5. Perform one of the following actions on the **Import Users** page:
 
 * Click **Upload File**, then select and upload the user info file from your system.
-<img src="../images/click-upload-file.png" alt="click upload file" title="click upload file" style="border: 1px solid gray; zoom:75%;"/>
+
+![click upload file](./images/click-upload-file.png "click upload file")
+
+
 
 * Drag and drop the file from your system into the **Upload File** window.
 
@@ -83,26 +92,35 @@ The steps mentioned below, allow you to import users' data from a designated fil
 * Click and download the sample ._csv_ file for reference.
 * The fields are pre-defined in the sample file, as shown below.
 
-   <img src="../images/pre-defined-fields.png" alt="pre-defined fields" title="pre-defined fields" style="border: 1px solid gray; zoom:75%;"/>
 
-  <div class="admonition note">
-  <p class="admonition-title">Important</p>
-  <p><ul><li>Mandatory fields are marked with an asterisk (*).</li>
+   ![pre-defined fields](./images/pre-defined-fields.png "pre-defined fields")
+
+
+
+  <Info><ul><li>Mandatory fields are marked with an asterisk (*).</li>
   <li>The column header names and order must match the fields in the uploaded file.</li>
   <li>Only <i>New</i>, <i>Update</i>, and <i>Delete</i> user statuses are accepted.</li>
-  <li>Invalid email IDs are not accepted.</li></ul></p> 
-</div>
+  <li>Invalid email IDs are not accepted.</li></ul></Info>
 
 * Ensure the column names and field mandates match your uploaded file and the sample file. Any mismatch results in an error.
 
 4. A preview window displays the file’s data with a file uploaded success message. Click **Continue** to import the file.
-<img src="../images/success-import.png" alt="click settings" title="click settings" style="border: 1px solid gray; zoom:75%;"/>
+
+![click settings](./images/success-import.png "click settings")
+
+
 
 5. Click **Continue** once the import is complete, and the following message appears.
-<img src="../images/import-completed.png" alt="import completed" title="import completed" style="border: 1px solid gray; zoom:75%;"/>
+
+![import completed](./images/import-completed.png "import completed")
+
+
 
 6. The system validates the file for errors. If the user data contains errors, a window is displayed showing the import status and the reason for the errors.
-<img src="../images/failed-import-entries.png" alt="failed import entries" title="failed import entries" style="border: 1px solid gray; zoom:75%;"/>
+
+![failed import entries](./images/failed-import-entries.png "failed import entries")
+
+
 
 Correct the highlighted values based on the reason, and upload the file again. Then, follow **Steps 4 and 5** above.
 
@@ -110,22 +128,28 @@ The file may take a few minutes to import. You can track the progress in the dia
 
 Click **OK** to see the imported users on the dashboard. 
 
-<div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>The imported users are assigned the <b>Viewer</b> system role by default, which you can change. <a href="../role-management/#system-defined-roles">Learn more</a>.</p> 
-</div>
+<Note>The imported users are assigned the <b>Viewer</b> system role by default, which you can change. <a href="../role-management/#system-defined-roles">Learn more</a>.</Note>
 
-<img src="../images/imported-entries.png" alt="imported entries" title="imported entries" style="border: 1px solid gray; zoom:75%;"/>
+
+![imported entries](./images/imported-entries.png "imported entries")
+
+
 
 You can see the success/failed import status on the dashboard as highlighted below:
 
-<img src="../images/success-failed-import-status.png" alt="success and failed import status" title="success and failed import status" style="border: 1px solid gray; zoom:75%;"/>
+
+![success and failed import status](./images/success-failed-import-status.png "success and failed import status")
+
+
 
 **Failed Import** 
 
 The following message is displayed if the user data in the uploaded file fails to import:
 
-<img src="../images/failed-import-message.png" alt="failed import message" title="failed import message" style="border: 1px solid gray; zoom:75%;"/>
+
+![failed import message](./images/failed-import-message.png "failed import message")
+
+
 
 You can identify which user data failed to import, review the actions completed by the user, and understand the reason for the failure. 
 
@@ -134,56 +158,76 @@ Once you know the cause, you can retry importing the corrected user data.
 **Cancel Import**
 
 The system cancels the import for data that fails due to validation errors, such as an incorrect email address. A window is displayed showing the import status and reason after the import is canceled.
-<img src="../images/import-canceled.png" alt="import canceled" title="import canceled" style="border: 1px solid gray; zoom:75%;"/>
+
+![import canceled](./images/import-canceled.png "import canceled")
+
+
 
 #### Import History
 
 Click **Import History** in the **Import Users** window to view and analyze the import history of users in your account.
-<img src="../images/click-import-history.png" alt="click import history" title="click import history" style="border: 1px solid gray; zoom:75%;"/>
+
+![click import history](./images/click-import-history.png "click import history")
+
+
 
 The following window is displayed with the import date and time, the importing user, and the summary of successful and failed imports.
-<img src="../images/import-history.png" alt="import history" title="import history" style="border: 1px solid gray; zoom:75%;"/>
+
+![import history](./images/import-history.png "import history")
+
+
 
 ## Delete a User/Bulk Delete
 
 The **Delete** feature removes a user you’re managing from your Platform account.
 
-<div class="admonition warning">
-<p class="admonition-title">Important</p>
-<p>Only users included as Admin in the system with the required permissions can access the <b>Settings</b> Console.</p>
-<p><ul><li>Deleting a user revokes their access and removes their data from your account. However, the user can still access their personal account on the Platform. To rejoin your account, you must invite them again via email.</li>
-<li>You cannot delete users if they have created and manage tools in your account. The user must first remove all active tools before they can be deleted.</li></ul></p></div>
+<Info>Only users included as Admin in the system with the required permissions can access the <b>Settings</b> Console.
+
+<ul><li>Deleting a user revokes their access and removes their data from your account. However, the user can still access their personal account on the Platform. To rejoin your account, you must invite them again via email.</li>
+<li>You cannot delete users if they have created and manage tools in your account. The user must first remove all active tools before they can be deleted.</li></ul></Info>
 
 **Steps to delete a user**
 
 1. Click **Users Management** > **Users** on the left menu to access the **Users** dashboard.
 2. Hover over the user entry you want to delete.
 3. Click the **Delete** icon.
-<img src="../images/single-delete.png" alt="single delete" title="single delete" style="border: 1px solid gray; zoom:75%;"/>
+
+![single delete](./images/single-delete.png "single delete")
+
+
 
 **Updated Screen**
 
-<img src="../images/single-delete-result.png" alt="single delete result" title="single delete result" style="border: 1px solid gray; zoom:75%;"/>
+
+![single delete result](./images/single-delete-result.png "single delete result")
+
+
 
 **Bulk Delete**
 
 1. Select the required users, and click the **Delete** icon at the bottom of the screen to delete multiple users in the list.
-<img src="../images/click-delete-icon.png" alt="click delete icon" title="click delete icon" style="border: 1px solid gray; zoom:75%;"/>
+
+![click delete icon](./images/click-delete-icon.png "click delete icon")
+
+
 
 2. Click **Remove** in the **Remove users** window.
 
-    <img src="../images/click-remove.png" alt="click remove" title="click remove" style="border: 1px solid gray; zoom:75%;"/>
+
+    ![click remove](./images/click-remove.png "click remove")
+
+
 
 When a user's account and role assignments are permanently deleted, the user is removed from the list, and the **Total Users** and **Active Users** counts on the dashboard are updated accordingly.
 
 **Updated Screen**
 
-<img src="../images/bulk-delete-result.png" alt="bulk delete result" title="bulk delete result" style="border: 1px solid gray; zoom:75%;"/>
 
-<div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>Using <b>Delete</b> removes the user permanently.</p>
-</div>
+![bulk delete result](./images/bulk-delete-result.png "bulk delete result")
+
+
+
+<Note>Using <b>Delete</b> removes the user permanently.</Note>
 
 ## Search User 
 
@@ -195,10 +239,16 @@ Use the search field to find users by name:
 
 All the matching results are displayed. 
 
-<img src="../images/all-matching-results.png" alt="matching results" title="matching results" style="border: 1px solid gray; zoom:75%;"/>
+
+![matching results](./images/all-matching-results.png "matching results")
+
+
 
 The following message is displayed if the user does not exist.
-<img src="../images/user-does-not-exist.png" alt="user does not exist" title="user does not exist" style="border: 1px solid gray; zoom:75%;"/>
+
+![user does not exist](./images/user-does-not-exist.png "user does not exist")
+
+
 
 ## Unlock a Locked User
 
@@ -209,7 +259,10 @@ Locked users cannot access their accounts without unlocking them on the **Settin
 1. Navigate to **Settings** > **Users Management** > **Users** page.
 2. Hover over the user entry with the status highlighted as “**_Locked_**.” 
 3. Click the **Unlock** button.
-<img src="../images/click-unlock.png" alt="click unlock" title="click unlock" style="border: 1px solid gray; zoom:75%;"/>
+
+![click unlock](./images/click-unlock.png "click unlock")
+
+
 
 4. Click **Confirm** in the confirmation dialog.
 
@@ -231,10 +284,16 @@ To perform bulk role change, follow the steps below:
 
 1. Select the required users on the **Users** dashboard.
 2. Click the **Role** dropdown and select the required option in the bottom pane.
-<img src="../images/select-for-role-change.png" alt="select for role change" title="select for role change" style="border: 1px solid gray; zoom:75%;"/>
+
+![select for role change](./images/select-for-role-change.png "select for role change")
+
+
 
 The role is updated for the selected users.
-<img src="../images/bulk-role-changed.png" alt="select for role change" title="select for role change" style="border: 1px solid gray; zoom:75%;"/>
+
+![select for role change](./images/bulk-role-changed.png "select for role change")
+
+
 
 <hr/> 
 
