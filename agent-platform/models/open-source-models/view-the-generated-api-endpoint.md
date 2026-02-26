@@ -14,7 +14,10 @@ To view the API Endpoint, follow these steps:
 
 1. To use this model as a service, the generated code is helpful. Click the **Copy** icon to copy and share the API Endpoint.
 
-    <img src="../images/new_endpoint.png" alt="Deployed Model API Endpoint" title="Deployed Model API Endpoint"/>
+
+    ![Deployed Model API Endpoint](./images/new_endpoint.png "Deployed Model API Endpoint")
+
+
 
 <Note> Click the **Deployment history** tab on the Deploy page to view the history. This can be particularly useful for auditing and accountability purpose. </Note>
 
@@ -54,7 +57,10 @@ For example, if a model named "Flan T5" is deployed for the first time, it will 
 
 The most recent deployment is marked with a green ticket next to the model name. Click on any deployment version to view the details.
 
- <img src="../images/deployment-history.png" alt="Deployment History" title="Deployment History"/>
+
+ ![Deployment History](./images/deployment-history.png "Deployment History")
+
+
 
 **General details**: This section displays the model's basic information, such as its name, description, tags, optimization technique, parameters, the hardware used, and deployment duration.
 

@@ -4,7 +4,10 @@ An AI Agent is a configurable, goal-driven component that can understand user in
 
 **Components of an Agent**
 
-<img src="../images/agent-anatomy.png" alt="Anatomy of an Agent" title="Anatomy of an Agent" style="border: 1px solid gray; zoom:65%;"/>
+
+![Anatomy of an Agent](./images/agent-anatomy.png "Anatomy of an Agent")
+
+
 
 <!-- ## Agents Page
 
@@ -17,7 +20,10 @@ Key highlights
 * Agents needing LLM configuration show a **Configure LLM** button for quick setup.
 * Displays the total agent count in the page header, with **Explore Marketplace** and **New Agent** options always visible.
 
-<img src="../images/agents-listing-page.png" alt="Agent Listing Page" title="Agent Listing Page"/>
+
+![Agent Listing Page](./images/agents-listing-page.png "Agent Listing Page")
+
+
 -->
 
 ## Agent Setup Overview

@@ -36,7 +36,10 @@ To initiate a tool creation journey through the import functionality, follow the
 
 <ul><li>If you don't have any existing tools and want to create one by importing from another environment, click <b>Import Tool</b>.
 <li>If you already have tools deployed, the following page is displayed. To import a tool, select the relevant tab on the <b>Tools</b> dashboard and click the <b>Import tool</b> icon.
-<img src="../images/agent_platform/import_tool.png" alt="click import tool" title="click import tool" style="border: 1px solid gray; zoom:75%;"/></li></ul>
+
+![click import tool](./images/agent_platform/import_tool.png "click import tool")
+
+</li></ul>
 
 <ol start="4"><li>In the <b>Import tool</b> window, providing the following information is mandatory.</li>
 <ul><li><b>Tool Name</b>: Provide a unique tool name.</li>
@@ -55,10 +58,16 @@ Providing the following information is optional:
 <li>The values for <b>System Prompt</b>, <b>Prompt</b>, <b>Timeout</b>, and <b>Hyperparameters</b> are imported for the AI node.</li></ul></p></div>
 
 <ol start="5"><li>Click <b>Import</b>.</li>
-<img src="../images/agent_platform/click-import-new.png" alt="click import" title="click import" style="border: 1px solid gray; zoom:75%;"/></ol>
+
+![click import](./images/agent_platform/click-import-new.png "click import")
+
+</ol>
 
 Once the import is complete, the system will redirect you to the **Tool Flow** page, where you can access the new tool’s flow canvas by clicking **Go to flow**.
-<img src="../images/agent_platform/tool_flow.png" alt="tool flow page" title="tool flow page" style="border: 1px solid gray; zoom:50%;"/>
+
+![tool flow page](./images/agent_platform/tool_flow.png "tool flow page")
+
+
 
 The imported tool is listed under **All tools** and **My tools** on the **Tools** dashboard.
 

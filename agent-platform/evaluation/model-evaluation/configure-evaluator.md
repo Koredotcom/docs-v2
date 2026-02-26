@@ -104,7 +104,10 @@ Steps to add an evaluator:
 
 1. On the Evaluations page, click the **+** button, and select the **Add evaluator** option.
 
-    <img src="../../images/import_dataset_options.png" alt="Configure evaluator" title="Configure evaluator"/>
+
+    ![Configure evaluator](./../images/import_dataset_options.png "Configure evaluator")
+
+
 
 2. From the list of Quality and Safety evaluators, select the desired evaluator.
 3. In the Evaluators dialog, fill in these details:
@@ -121,7 +124,10 @@ Steps to add an evaluator:
 
 4. Click **Save** to save the evaluator configuration.
 
-    <img src="../../images/evaluators_config.png" alt="Configure evaluator" title="Configure evaluator"/>
+
+    ![Configure evaluator](./../images/evaluators_config.png "Configure evaluator")
+
+
 
 
 ## Adding a Custom Evaluator
@@ -132,13 +138,19 @@ Steps to add an evaluator:
 
 1. On the Evaluations page, click the **+** button, and select the **Add evaluator** option.
 
-    <img src="../../images/import_dataset_options.png" alt="Configure evaluator" title="Configure evaluator"/>
+
+    ![Configure evaluator](./../images/import_dataset_options.png "Configure evaluator")
+
+
 
     The list of Quality and Safety evaluators are displayed.
 
 2. To add a custom evaluator, click **Add evaluator**.  
 
-    <img src="../../images/add_custom_evaluator.png" alt="Add evaluator" title="Add evaluator"/>
+
+    ![Add evaluator](./../images/add_custom_evaluator.png "Add evaluator")
+
+
 
 3. In the Custom evaluators dialog, fill in these details:  
 
@@ -162,9 +174,15 @@ Steps to add an evaluator:
 
 4. Click **Save** to save the evaluator configuration.
 
-    <img src="../../images/custom_eval_dialog_filled1.png" alt="Custom evaluator" title="Custom evaluator"/> 
 
-    <img src="../../images/custom_eval_dialog_filled2.png" alt="Custom evaluator" title="Custom evaluator"/> 
+    ![Custom evaluator](./../images/custom_eval_dialog_filled1.png "Custom evaluator")
+
+ 
+
+
+    ![Custom evaluator](./../images/custom_eval_dialog_filled2.png "Custom evaluator")
+
+ 
 
 
 
