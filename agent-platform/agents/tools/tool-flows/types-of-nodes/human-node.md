@@ -199,7 +199,7 @@ Here is a step-by-step execution of the Human node in Sync mode:
     * A failure occurs → follows the Failure path.
 5. **Final output**: The tool’s final output - including the reviewer’s response (or error/timeout details) - is returned as the sync response and displayed in the Debug Panel.
 
-| <strong>Scenarios in sync mode</strong> | <strong>What Happens</strong> | <strong>Debug Panel Output</strong> | <strong>Flow Outcome</strong> |
+| Scenarios in sync mode | What Happens | Debug Panel Output | Flow Outcome |
 |:----- |:----- |:----- |:----- |
 | 1. Reviewer responds successfully | Downstream sends the reviewer’s input back before the timeout | Response JSON with key–value pairs | Workflow continues along the Success path |
 | 2. Channel/platform failure | Communication issue prevents response delivery | Error message in the Response section | Workflow continues along the Failure path |
@@ -230,7 +230,7 @@ Here is the execution of the Human node in Async mode:
 8. **Final output**: The tool’s final output - including the reviewer’s response, or error/timeout details - is sent to the pre-configured callback URL and logged in the Debug Panel.
 
 
-| <strong>Scenario</strong> | <strong>What Happens</strong> | <strong>Debug Panel Output</strong> | <strong>Flow Outcome</strong> |
+| Scenario | What Happens | Debug Panel Output | Flow Outcome |
 |:----- |:----- |:----- |:----- |
 | 1. Reviewer responds successfully | Downstream sends the reviewer’s input back before the timeout | Response JSON with key–value pairs | Workflow continues along the Success path |
 | 2. Channel/platform failure | Communication issue prevents response delivery | Error message in the Response section | Workflow continues along the Failure path |
