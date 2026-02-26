@@ -441,11 +441,11 @@ The **Debug** window generates the flow log and results for the given input(s), 
 The node’s output is stored in a context variable. You can access the variable using the syntax: 
 `{{context.steps.FunctionNodeName.output}`
 
-For example, <code><em>context.steps.Bankingnode.output</em></code>
+For example, `<em>context.steps.Bankingnode.output</em>`
 
 <div class="admonition note">
 <p class="admonition-title">Note</p>
-<p>The Platform can automatically recognize variables and outputs. To do so, type "<code>context.steps.</code>" and you will see the available variables, nodes, and node outputs.</p>
+<p>The Platform can automatically recognize variables and outputs. To do so, type "`context.steps.`" and you will see the available variables, nodes, and node outputs.</p>
 </div>
 
 ## Import, Export, and Share a Tool with Function Node

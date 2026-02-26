@@ -30,7 +30,7 @@ Please note the following when adding an email address:
 
 * The **Email address** field shouldn't be empty.
 * The system does't accept a space in front, between, or after the mail ID.
-* Enter a valid email address, including a domain (for example, <code>[john@doe.com](mailto:john@doe.com)</code>), which must be provided. 
+* Enter a valid email address, including a domain (for example, `[john@doe.com](mailto:john@doe.com)`), which must be provided. 
 
     <img src="../images/valid-email-address.png" alt="valid email address error" title="valid email address error" style="border: 1px solid gray; zoom:75%;"/></ol>
 

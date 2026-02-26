@@ -1,6 +1,6 @@
 # Import a Tool as a Version
 
-Use the **Import** functionality under **Tools** > **Configurations** to add a tool as a version of a parent tool. You should back up the current in-development version to preserve its configuration definitions. The export file is saved as '<code>Exported_<i>ToolName</i>.zip</code>.’
+Use the **Import** functionality under **Tools** > **Configurations** to add a tool as a version of a parent tool. You should back up the current in-development version to preserve its configuration definitions. The export file is saved as '`Exported_<i>ToolName</i>.zip`.’
 
 When you import an tool as a version, you must upload all the following files:
 
