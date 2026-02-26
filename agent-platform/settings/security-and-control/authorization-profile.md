@@ -70,30 +70,45 @@ To add a new Auth profile, you must first set up the required auth fields with t
 
 1. [Navigate](../security-and-control/authorization-profile.md#access-authorization-profile) to the **Authorization Profile** feature.
 2. Click **Create Authorization Profile** if this is your first auth profile.
-<img src="../images/click-create-auth-profile.png" alt="create auth profile" title="create auth profile"/>  
+
+![create auth profile](./images/click-create-auth-profile.png "create auth profile")
+
+  
 
 Otherwise, click **Add new auth**.
-<img src="../images/add-new-auth-profile.png" alt="add new auth profile" title="add new auth profile"/>  
+
+![add new auth profile](./images/add-new-auth-profile.png "add new auth profile")
+
+  
 
 <ol start="3"><li>In the <b>New Authorization Mechanism</b> dialog, select the required option for <b>Authorization Type</b>.</li> 
-<img src="../images/select-oauthv2.png" alt="select oauth v2" title="select oauth v2"/></ol>  
+
+![select oauth v2](./images/select-oauthv2.png "select oauth v2")
+
+</ol>  
 <ol start="4"><li>In the <b>Identity Provider Name</b> field, enter a name for the authorization type, which is mandatory.
-<img src="../images/identity-provider.png" alt="identity provider" title="identity provider" style="border: 1px solid gray; zoom:75%;"/></li>
+
+![identity provider](./images/identity-provider.png "identity provider")
+
+</li>
 <li>Provide the values for the mandatory authorization fields. For details, refer to the <a href="#define-authorization-fields">Define Authorization Fields</a> section. 
 
 If the mandatory fields are left blank, validation error messages appear, as shown below.
 
-<img src="../images/form-validation-errors.png" alt="validation errors" title="validation errors" style="border: 1px solid gray; zoom:75%;"/></li>
+
+![validation errors](./images/form-validation-errors.png "validation errors")
+
+</li>
 <li>(Optional) Click <b>+ Add Additional Field</b> to add additional fields for authorization. See the <a href="#add-additional-field">Add Additional Field</a> section.</li></ol>
 
-<div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>If the default <b>Username</b> and <b>Password</b> fields do not meet your authorization requirements, you can add <b>custom fields</b> using additional fields or authorization IDP form fields to the authorization process. For example, if a <b>PIN code</b> is required in addition to the standard login fields, you can include it as an extra input for the end user.</p>
-</div>
+<Note>If the default <b>Username</b> and <b>Password</b> fields do not meet your authorization requirements, you can add <b>custom fields</b> using additional fields or authorization IDP form fields to the authorization process. For example, if a <b>PIN code</b> is required in addition to the standard login fields, you can include it as an extra input for the end user.</Note>
     
 <ol start="7"><li>(Optional step to be executed only when you select <b><i>OAuth V2</i></b> as the Authorization type) Click <b>+ Add Authorization Field</b> to add additional auth fields to your profile. This is required For more information, see the <a href="#add-authorization-field">Add Authorization Field</a> section.</li>
 <li>Click <b>Save new Auth</b>.</li>
-<img src="../images/save-new-auth.png" alt="save new auth" title="save new auth"/></ol>
+
+![save new auth](./images/save-new-auth.png "save new auth")
+
+</ol>
 
 A success message is displayed, and the new auth profile is added to the **Authorization Profile** page.
 
@@ -101,10 +116,7 @@ A success message is displayed, and the new auth profile is added to the **Autho
 
 To configure the OAuth2 profile, define the fields described in the table below:
 
- <div class="admonition note">
-    <p class="admonition-title">Note</p>
-    <p>Except for <b>Scope</b>, <b>Description</b>, <b>Refresh Token URL</b>, <b>Additional fields</b>, <b>Authorization fields</b>, and <b>Auth Error Status Code</b>, all the fields are mandatory.</p>
-    </div>
+ <Note>Except for <b>Scope</b>, <b>Description</b>, <b>Refresh Token URL</b>, <b>Additional fields</b>, <b>Authorization fields</b>, and <b>Auth Error Status Code</b>, all the fields are mandatory.</Note>
 
 | FIELD NAME | DESCRIPTION | MANDATE | AUTH TYPE |
 |:------ |:------ |:------ |:------ |
@@ -132,7 +144,10 @@ To add additional fields, follow the steps below:
 
 1. Click **+ Add Additional Field** in the **New Authorization Mechanism** window and enter one or more key-value pairs.
 
-    <img src="../images/add-additional-field-click.png" alt="add additional field" title="add additional field"/>
+
+    ![add additional field](./images/add-additional-field-click.png "add additional field")
+
+
 
 2. Add values for the following fields:
 
@@ -153,7 +168,10 @@ Authorization fields are data fields used in API requests to verify the identity
 To add auth fields, follow the steps below:
 
 1. Click **+ Add Authorization Field** in the **New Authorization Mechanism** window and enter one or more key/value pairs.
-<img src="../images/add-auth-field-new.png" alt="add new auth field" title="add new auth field"/>
+
+![add new auth field](./images/add-auth-field-new.png "add new auth field")
+
+
 
 2. Add values for the following fields:
 
@@ -166,10 +184,16 @@ To add auth fields, follow the steps below:
 
 <ol start="3"><li>Click <b>Done</b>.</li></ol>
 
-<img src="../images/auth-field-form.png" alt="auth field form" title="auth field form"/>  
+
+![auth field form](./images/auth-field-form.png "auth field form")
+
+  
 
 The new field is added to the Authorization Fields list.  You can edit or delete this custom field.
-<img src="../images/new-auth-field-listing.png" alt="new auth field" title="new auth field"/>
+
+![new auth field](./images/new-auth-field-listing.png "new auth field")
+
+
 
 
 ## Authorization Profile Summary
@@ -181,7 +205,10 @@ Each authorization you add to your account is displayed in the **Authorization P
 * **Test auth**: Click the **Test** button corresponding to a configured profile to check if it establishes a connection with an external service based on the configured profile.
 * **Status**: Displays **Configured** or **Not Configured** based on the configuration status.
     
-<img src="../images/auth-profile-summary.png" alt="auth profile summary" title="auth profile summary"/>  
+
+![auth profile summary](./images/auth-profile-summary.png "auth profile summary")
+
+  
 
 ## Test the Auth Profile
 
@@ -191,7 +218,10 @@ A new window appears where the Platform tries to establish a connection with the
 
 A successful connection is shown below:
 
-<img src="../images/successful-oauth-connection.png" alt="successful connection" title="successful connection"/>  
+
+![successful connection](./images/successful-oauth-connection.png "successful connection")
+
+  
 
 If the connection fails, edit the auth profile with the correct information and test the connection again. 
 
@@ -203,30 +233,30 @@ You can either edit the configured values of an auth profile or delete it from t
 
 1. Click the **Ellipses** icon for an Auth profile on the **Authorization Profile** page. 
 2. Click **Edit**.
-<img src="../images/edit-auth-profile.png" alt="edit auth profile" title="edit auth profile"/>  
+
+![edit auth profile](./images/edit-auth-profile.png "edit auth profile")
+
+  
 
 3. Modify the required fields in the **Update authorization mechanism** window.
 4. Click **Update new auth**.
 
    A success message appears when the auth profile information is updated.
 
-<div class="admonition note">
-<p class="admonition-title">Important</p>
-<p>The <b>Authorization Type</b> and <b>Name</b> fields cannot be edited, but all other parameters can be modified.</p>
-</div>
+<Info>The <b>Authorization Type</b> and <b>Name</b> fields cannot be edited, but all other parameters can be modified.</Info>
 
 ### Delete
 
 To delete an Auth profile, follow the steps below:
 
 1. Click the **Ellipses** icon and select **Delete**.
-<img src="../images/delete-auth-profile.png" alt="delete auth profile" title="delete auth profile"/>  
+
+![delete auth profile](./images/delete-auth-profile.png "delete auth profile")
+
+  
 
 2. Click **Delete** in the confirmation window.
 
    A success message is displayed, and the profile is removed from the **Authorization profile** page.
 
-<div class="admonition warning">
-<p class="admonition-title">Caution</p>
-<p>Deleted profiles cannot be recovered. Proceed with caution.</p>
-</div>
+<Danger>Deleted profiles cannot be recovered. Proceed with caution.</Danger>

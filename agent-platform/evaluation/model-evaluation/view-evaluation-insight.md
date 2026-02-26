@@ -7,7 +7,10 @@ Each evaluator tile represents a specific evaluator and is updated based on the 
 * **Pass**: The output meets the evaluation criteria (for example, no bias, no toxicity)
 * **Fail**: The output does not meet the evaluation criteria (for example, contains bias, contains toxicity).
 
-    <img src="../../images/bias.png" alt="Evaluator" title="Evaluator" style="border: 1px solid gray; zoom:50%;"/>
+
+    ![Evaluator](./../images/bias.png "Evaluator")
+
+
 
 **Quality evaluators** like Groundness, Query Relevance, Coherence, Fluency, Paraphrasing, and Completeness generally use *Continuous Scoring*. This method uses a numerical scale (for example, 1-5 or 1-10). When you set a threshold, records above the threshold are marked as 'Pass', and those below the threshold are marked as 'Fail'.
 
@@ -38,7 +41,10 @@ You can export the evaluation table to a CSV file for offline analysis or furthe
 3. Click the **three-dot menu** at the top-right corner of the evaluation table.
 4. Select **Export**.
 
- <img src="../../images/export_new.png" alt="Export" title="Export"/>
+
+ ![Export](./../images/export_new.png "Export")
+
+
 
 A CSV file containing the evaluation table is automatically downloaded to your system. The CSV file includes:
 

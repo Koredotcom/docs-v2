@@ -15,7 +15,10 @@ Both paradigms leverage the platform's core AI capabilities, which include Searc
 
 The Platform's key components provide comprehensive capabilities that empower organizations to efficiently scale and manage AI deployments across the AI lifecycle.
 
-<img src="../images/agent-platform-components.png" alt="Components of the Platform" title="Components of the Platform" />
+
+![Components of the Platform](./images/agent-platform-components.png "Components of the Platform")
+
+
 
 
 ### Multi-Agent Orchestration

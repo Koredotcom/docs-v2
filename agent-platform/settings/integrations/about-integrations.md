@@ -13,11 +13,8 @@ The Platform supports 120+ integrations with different authorization types. To e
 * **Bearer**: Use a bearer token in the request header, usually within an OAuth2 workflow, to access protected resources. The server validates the token before granting access.
 * **Basic Auth**: Authenticate using username and password in the request header. Credentials are sent with each request. Supported for ServiceNow, Freshdesk, Snowflake, Amplitude, and Mixpanel integrations.
 
-<div class="admonition note">
-<p class="admonition-title">Note</p>
-<p><ul><li>Other authentication methods for certain integrations include: <b>Basic</b>, <b>Basic with JWT</b>, <b>OAuth1</b>, and <b>custom authentication</b> defined by the service provider.</li>
-<li>Some providers may support <b>multiple authentication methods</b>, allowing flexibility based on your integration needs.</li></ul></p>
-</div>
+<Note><ul><li>Other authentication methods for certain integrations include: <b>Basic</b>, <b>Basic with JWT</b>, <b>OAuth1</b>, and <b>custom authentication</b> defined by the service provider.</li>
+<li>Some providers may support <b>multiple authentication methods</b>, allowing flexibility based on your integration needs.</li></ul></Note>
 
 ## Access Integrations
 
@@ -25,7 +22,10 @@ To access the feature, follow the steps below:
 
 1. Log into the the Platform and select **Autonomous Agents** under modules.
 2. Select **Settings** > **Integrations**.
-    <img src="../images/access-integrations.png" alt="access integrations" title="access integrations" style="border: 1px solid gray; zoom:75%;"/>
+
+    ![access integrations](./images/access-integrations.png "access integrations")
+
+
 
 ## Key Features
 
@@ -36,17 +36,29 @@ The features supported on the **Integrations** page include:
     Select the **All Integrations** tab to see available integrations grouped by category. You can add a connection to these integrations using a supported authentication method, such as API, OAuth2, Bearer Token, or Basic Auth. AI-based integrations you can connect to include [AWS S3 Bucket](../integrations/integrate-with-s3-bucket.md), [Weight & Biases](../integrations/integrate-with-wandb.md), and [Hugging Face](../integrations/enable-hugging-face.md). The category you select filters which integrations are shown in this list.
 
      Once you configure and connect to a third-party service, that integration appears in the **Connected** section and is no longer visible in the **All Integrations** list. If you delete the connection, the integration will return to the **All Integrations** list, allowing you to reconnect in the future.
-     <img src="../images/all-integrations-tab.png" alt="all integrations" title="all integrations" style="border: 1px solid gray; zoom:75%;"/>
+
+     ![all integrations](./images/all-integrations-tab.png "all integrations")
+
+
 
 * **Search Integration**: Enter the name in the **Search** field for full or partial matches.
-<img src="../images/search-integration.png" alt="search integration" title="search integration" style="border: 1px solid gray; zoom:75%;"/>
+
+![search integration](./images/search-integration.png "search integration")
+
+
 
 * **Category Dropdown List**: The Platform supports multiple categories based on the purpose of the integration, such as AI and Machine Learning, Marketing and Social Media, E-commerce, and more. Select the relevant category or categories in the list and click **Apply** to view the corresponding integrations.
-<img src="../images/select-category-of-integration.png" alt="change category" title="change category" style="border: 1px solid gray; zoom:75%;"/>
+
+![change category](./images/select-category-of-integration.png "change category")
+
+
 
 
 * **Authorization Dropdown List**: The available types for authentication methods are API, OAuth2, Bearer, and Basic Auth. Refer to the introduction of this article for more details. Select the required option(s) and click **Apply** to view the relevant integrations.
-<img src="../images/select-category-integration.png" alt="select auth" title="select auth" style="border: 1px solid gray; zoom:75%;"/>
+
+![select auth](./images/select-category-integration.png "select auth")
+
+
 
 * **List View**: Click this icon to view the available integration options as a list with the following information:
     * **Connection Name**: The service provider’s name.
@@ -54,7 +66,10 @@ The features supported on the **Integrations** page include:
     * **Type**: The authorization method.<img src="../images/list-view.png" alt="list view" title="list view" style="border: 1px solid gray; zoom:75%;"/>
 
 * **Tile View**: This is the default view. Click this icon to view all the integrations as individual cards.
-<img src="../images/tile-view.png" alt="tile view" title="tile view" style="border: 1px solid gray; zoom:75%;"/>
+
+![tile view](./images/tile-view.png "tile view")
+
+
 
 ## Supported Integrations
 
@@ -211,10 +226,7 @@ The following third-party integrations are available on the Platform:
 
 To add a connection and configure an integration, follow the steps below:
 
-<div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>You can also add a connection directly from the <b>Integration node</b> on the Tool Flow canvas. <a href="../../../ai-agents/tools/tool-flows/types-of-nodes/integration-node/">Learn more</a>.</p>
-</div>
+<Note>You can also add a connection directly from the <b>Integration node</b> on the Tool Flow canvas. <a href="../../../ai-agents/tools/tool-flows/types-of-nodes/integration-node/">Learn more</a>.</Note>
 
 1. [Access](../integrations/about-integrations.md#access-integrations) **Integrations**.
 2. The next steps depend on whether you are setting up a connection for the first time or want to use an existing connection. <br />
@@ -226,19 +238,22 @@ To add a connection and configure an integration, follow the steps below:
      **Case 2**: To select an existing/connected provider, click the **Connected** tab, and click the required provider.
 
 3. Click **Add Connection** on the next page or the integrations listing page.
-<img src="../images/add-new-conn.png" alt="add connection" title="add connection" style="border: 1px solid gray; zoom:75%;"/>
 
-<img src="../images/connected-integration-add.png" alt="connected integration" title="connected integration" style="border: 1px solid gray; zoom:75%;"/>
+![add connection](./images/add-new-conn.png "add connection")
+
+
+
+
+![connected integration](./images/connected-integration-add.png "connected integration")
+
+
 
 4. The Configuration window is displayed, where you must enter the following information:
     * **Connection Name**: A unique name to identify the integration.
     * **Authorization Details** 
         * Configure the required authorization details in this section to securely connect to the tool and access external services. A provider may support more than one auth type. In this case, you must select the authentication type you want to set up for the integration, such as *OAuth2*, *Bearer Token*, *Basic Auth*, or *API*.
 
-        <div class="admonition note">
-        <p class="admonition-title">Note</p>
-        <p>You are allowed to select only one auth type for a connection.</p>
-        </div>
+        <Note>You are allowed to select only one auth type for a connection.</Note>
 
         * The **Pre-authorize the integration** option is auto-selected, indicating that you must provide authentication credentials to interact with the tool or service. You can select the preferred authentication method, such as *OAuth2*, *Bearer*, or *Basic Auth*, from the available options to configure the credentials. 
 
@@ -253,7 +268,10 @@ To add a connection and configure an integration, follow the steps below:
         * Connecting to a provider with a deleted auth profile results in an error.
         * Deleted auth profiles no longer display in the **Custom** window during configuration
         * Click **Authorize** to test the integration for the selected Auth profile.
-        <img src="../images/click-authorize.png" alt="click authorize" title="click authorize" style="border: 1px solid gray; zoom:75%;"/>
+
+        ![click authorize](./images/click-authorize.png "click authorize")
+
+
 
         **Bearer Token**
 
@@ -261,7 +279,10 @@ To add a connection and configure an integration, follow the steps below:
         * The required fields depend on the bearer authentication framework supported by the selected service provider.
         * Retrieve these values from the provider’s Admin console > **Settings** section.
         * Click **Test** to validate the connection. A success message is displayed once the connection is set up.
-        <img src="../images/click-test-oauth.png" alt="test oauth" title="test oauth" style="border: 1px solid gray; zoom:75%;"/>
+
+        ![test oauth](./images/click-test-oauth.png "test oauth")
+
+
 
         **API**
 
@@ -269,12 +290,12 @@ To add a connection and configure an integration, follow the steps below:
         * Additional field inputs may be required based on the specific parameters needed to configure the provider.
         * Retrieve these values from the Admin console > **Settings** of your provider’s site.
         * Click **Test** to validate the connection.  A success message is displayed once the connection is set up.
-        <img src="../images/test-validation.png" alt="test validation" title="test validation" style="border: 1px solid gray; zoom:75%;"/>
 
-      <div class="admonition note">
-      <p class="admonition-title">Note</p>
-      <p>For other Authentication types, such as OAuth1, retrieve the required values from the admin console of your account on the provider’s site to configure the integration.</p>
-      </div>
+        ![test validation](./images/test-validation.png "test validation")
+
+
+
+      <Note>For other Authentication types, such as OAuth1, retrieve the required values from the admin console of your account on the provider’s site to configure the integration.</Note>
 
       **Basic Auth**
 
@@ -282,19 +303,22 @@ To add a connection and configure an integration, follow the steps below:
       * Retrieve these values from the Admin console > **Settings** of your provider’s site.
       * Click **Test** to validate the connection. A success message is displayed once the connection is set up.
 
-         <img src="../images/basic-auth-set-up.png" alt="test validation for basic auth" title="test validation for basic auth" style="border: 1px solid gray; zoom:75%;"/>
+
+         ![test validation for basic auth](./images/basic-auth-set-up.png "test validation for basic auth")
+
+
 
 
 <ol start="5"><li>Click <b>Save</b> after successfully testing the connection.</li>
-<div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>The <b>Save</b> button will not appear until all required inputs have been provided.</p>
-</div></ol>
+<Note>The <b>Save</b> button will not appear until all required inputs have been provided.</Note></ol>
 
 A success message appears after setup.
 
 You will be redirected to the following page, where all the connections for the provider are listed.
-<img src="../images/integration-summary.png" alt="integration summary" title="integration summary" style="border: 1px solid gray; zoom:75%;"/>
+
+![integration summary](./images/integration-summary.png "integration summary")
+
+
 
 ### Manage Connection Errors
 
@@ -305,11 +329,17 @@ You will be redirected to the following page, where all the connections for the 
     * Select the connection.
     * Click the **Play** icon to test the connection.
     * Hover over the **warning sign**, which will display the reason for the issue.
-    <img src="../images/hover-over-error-connection.png" alt="hover over error icon" title="hover over error icon"  style="border: 1px solid gray; zoom:75%;"/>
+
+    ![hover over error icon](./images/hover-over-error-connection.png "hover over error icon")
+
+
 
     You can also click **Edit**, go to the configuration window, and click **Test** to view the error.
       
-    <img src="../images/view-connection-error.png" alt="view error" title="view error" style="border: 1px solid gray; zoom:75%;"/>
+
+    ![view error](./images/view-connection-error.png "view error")
+
+
 
 * **Resolve the error**
     * Use the **Edit** functionality to provide the correct credentials in the configuration window.
@@ -319,7 +349,10 @@ You will be redirected to the following page, where all the connections for the 
 ## Manage Connected Integrations
 
 You can view, edit, delete, and perform additional actions with connected integrations to your account in the **Connected** section.
-<img src="../images/click-connected-tab.png" alt="click connected tab" title="click connected tab" style="border: 1px solid gray; zoom:75%;"/>
+
+![click connected tab](./images/click-connected-tab.png "click connected tab")
+
+
 
 ### View Summary
 
@@ -332,26 +365,32 @@ Once you click the integration in the **Connected** section, the list of configu
 * **Added on**: The date when the connection was added.
 * **Action**: Allows you to test the connection or enable/disable it.
 
-  <img src="../images/view-summary.png" alt="view summary" title="view summary" style="border: 1px solid gray; zoom:75%;"/>
+
+  ![view summary](./images/view-summary.png "view summary")
+
+
 
 ### Edit Integration
 
 To edit the configuration for a connection, follow the steps below:
 
-<div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>You cannot modify the connection name.</p>
-</div>
+<Note>You cannot modify the connection name.</Note>
 
 1. [Access](../integrations/about-integrations.md#access-integrations) **Integrations** → Click **Connected** → Select a connection.
 2. For the connection, click the **Ellipses** icon → Select **Edit**.
-<img src="../images/select-edit-int.png" alt="select edit integration" title="select edit integration" style="border: 1px solid gray; zoom:75%;"/>
+
+![select edit integration](./images/select-edit-int.png "select edit integration")
+
+
 
 3. In the configuration window, modify the required fields in the **Authorization Details** section.
 4. (Optional) Click **Test** to validate the connection.
 5. Click **Save**.
      
-     <img src="../images/save-edited-integration.png" alt="save edited integration" title="save edited integration" style="border: 1px solid gray; zoom:75%;"/>
+
+     ![save edited integration](./images/save-edited-integration.png "save edited integration")
+
+
 
 A success message is displayed once the connection is updated.
 
@@ -361,14 +400,18 @@ To delete an integration, follow the steps below:
 
 1. [Access](../integrations/about-integrations.md#access-integrations) **Integrations** → Click **Connected** → Select a connection.
 2. Click the **Ellipses** icon → Select **Delete**.
-   <img src="../images/select-delete-integration.png" alt="select delete" title="select delete" style="border: 1px solid gray; zoom:75%;"/>
+
+   ![select delete](./images/select-delete-integration.png "select delete")
+
+
 
 3. Click **Delete**.
 
-  <div class="admonition warning">
-  <p class="admonition-title">Caution</p>
-  <p>This action is irreversible and will remove all associations of the connection from the the Platform.</p></div>
-  <img src="../images/delete-connection.png" alt="delete connection" title="delete connection" style="border: 1px solid gray; zoom:75%;"/>
+  <Danger>This action is irreversible and will remove all associations of the connection from the the Platform.</Danger>
+
+  ![delete connection](./images/delete-connection.png "delete connection")
+
+
 
   A success message appears, and the connection is removed from the system.
 
@@ -378,11 +421,17 @@ To test a configured connection, follow the steps below:
 
 1. [Access](../integrations/about-integrations.md#access-integrations) **Integrations** → Click **Connected** → Select a connection.
 2. Click **Play** for the connection.
-   <img src="../images/action-play-icon.png" alt="test action" title="test action" style="border: 1px solid gray; zoom:75%;"/>
+
+   ![test action](./images/action-play-icon.png "test action")
+
+
 
 The connection is validated in the background, and any errors are highlighted with a **warning** icon. [Learn more](../integrations/about-integrations.md#manage-connection-errors) about managing errors.
 
-<img src="../images/manage-integration-error.png" alt="manage error" title="manage error" style="border: 1px solid gray; zoom:75%;"/>
+
+![manage error](./images/manage-integration-error.png "manage error")
+
+
 
 If there are no errors, a success message is displayed when the connection is established.
 
@@ -391,4 +440,7 @@ If there are no errors, a success message is displayed when the connection is es
 Enabling a connection makes it available for **user authentication** with the service provider. It also becomes accessible for use in the **Integration node** on the Tool Flow canvas. 
 
 Use the toggle switch to enable (default setting) or disable the connection as needed.
-<img src="../images/enable-integration.png" alt="enable integration" title="enable integration" style="border: 1px solid gray; zoom:75%;"/>
+
+![enable integration](./images/enable-integration.png "enable integration")
+
+

@@ -29,7 +29,10 @@ Results can be emailed, mapped to a dashboard, or used to trigger follow-up acti
 
 The **Integration Node** integrates seamlessly into your tool flows, using configured connections and authentication mechanisms to securely interact with external services. It accepts inputs from previous nodes, executes third-party actions based on the selected service and parameters, and passes results to subsequent nodes. You can configure actions through the UI, use context variables for dynamic inputs, and customize prebuilt JSON code, making it ideal for automating a wide range of integration scenarios.
 
-<img src="../images/how-integration-node-works.png" alt="how integration node works" title="how integration node works"/>
+
+![how integration node works](./images/how-integration-node-works.png "how integration node works")
+
+
 
 In this document, you will learn how to add Integration Nodes to your flows, configure them with connections and action parameters, handle inputs and outputs, and test your implementations.
 
@@ -48,52 +51,68 @@ In this document, you will learn how to add Integration Nodes to your flows, con
 ### Step 2: Add the Node
 
 * Click **Integration** > **+ New Integration** in the **Assets** panel. Alternatively, drag the node from the panel onto the canvas. You can also click **Integration** in the pop-up menu.
-  <img src="../images/add-int-node.png" alt="add node" title="add node"/>
+
+  ![add node](./images/add-int-node.png "add node")
+
+
 
 ### Step 3: Configure the Node
 
 * In the **Integration** window, either search for the required service or select from the listed options. [See](../../../../settings/integrations/about-integrations.md#supported-integrations) the list of supported pre-built integrations.
-   <img src="../images/integrations-list.png" alt="integrations list" title="integrations list"/>
+
+   ![integrations list](./images/integrations-list.png "integrations list")
+
+
 
 * Click the added node to open its properties dialog box. The **General Settings** for the node are displayed.
 
-    <div class="admonition note">
-    <p class="admonition-title">Note</p>
-    <p>The node uses the service provider’s name by default. You can rename the node if needed.</p>
-    </div>
+    <Note>The node uses the service provider’s name by default. You can rename the node if needed.</Note>
 
 * Enter or select inputs for the following fields:
      * <b>Node Name</b>: Enter an appropriate name for the node. For example, “<i>Ahrefslinkbuilder</i>” (Only letters and numbers are allowed).
      * <b>Connection Name</b>: Select a connection from the listed options. The list includes all the active connections you have added and configured under <b>Settings</b> > <b>Integrations</b>.
-      <img src="../images/select-connection-name.png" alt="select connection" title="select connection"/>
+
+      ![select connection](./images/select-connection-name.png "select connection")
+
+
 
 * Click <b>Add Action</b> to add and configure the required actions or tasks from the service provider.
 
-    <div class="admonition note">
-    <p class="admonition-title">Note</p>
-    <p>Only one action can be added and configured at a time.</p>
-    </div>
+    <Note>Only one action can be added and configured at a time.</Note>
 
-    <img src="../images/add-action-click.png" alt="click add action" title="click add action"/>  
+
+    ![click add action](./images/add-action-click.png "click add action")
+
+  
 
 * In the <b>Add Action</b> window, select the required action to be linked to the node.
-   <img src="../images/add-action.png" alt="add action" title="add action"/>
+
+   ![add action](./images/add-action.png "add action")
+
+
 
 * In the action settings window, add inputs for the action fields and click <b>Save</b>. These parameters define how the action is executed for the connection.
 
-    <div class="admonition note">
-    <p class="admonition-title">Note</p>
-    <p>The action parameters vary depending on the specific action and provider. See the tooltip for more information.</p></div>
+    <Note>The action parameters vary depending on the specific action and provider. See the tooltip for more information.</Note>
 
-    <img src="../images/action-parameters.png" alt="action parameters" title="action parameters"/>
+
+    ![action parameters](./images/action-parameters.png "action parameters")
+
+
      
 * The added action is listed in the <b>General Properties</b> window of the node. This action is applied to all the connections available for the provider.
-   <img src="../images/integration-gen-properties.png" alt="gen properties" title="gen properties"/>
+
+   ![gen properties](./images/integration-gen-properties.png "gen properties")
+
+
 
 * Click the <b>Connections</b> icon and select <b>Go to Node</b> for success and failure conditions.
      * <b>On Success</b> > <b>Go to Node</b>: After the current node is successfully executed, go to a selected node in the flow to execute next, such as an AI node, Function node, Condition node, API node, or End node.
      * <b>On Failure</b> > <b>Go to Node</b>: If the execution of the current node fails, go to the End node to display any custom error message from the AI node.
-     <img src="../images/success-failure-flow.png" alt="node flow" title="node flow"/>
+
+     ![node flow](./images/success-failure-flow.png "node flow")
+
+
 
     The node connects to the service using the selected connection and performs the configured action when the flow is run.
 
@@ -106,16 +125,19 @@ You can either **change** or **edit** an action for an integration. However, you
 ### Change Action
 
 To configure a different action, click the **Change Action** button.
-<img src="../images/change-action.png" alt="change action" title="change action"/>
+
+![change action](./images/change-action.png "change action")
+
+
 
 Then, select another action in the **Change Action** window.     
 
-<img src="../images/select-action-change.png" alt="select action" title="select action"/>
 
-<div class="admonition warning">
-<p class="admonition-title">Caution</p>
-<p>If you change or replace the existing action, any configuration changes made to the previous action will be lost.</p>
-</div>
+![select action](./images/select-action-change.png "select action")
+
+
+
+<Danger>If you change or replace the existing action, any configuration changes made to the previous action will be lost.</Danger>
 
 The new action replaces the existing one for the connection. Please configure the action parameters for this action to work properly.
 
@@ -124,7 +146,10 @@ The new action replaces the existing one for the connection. Please configure th
 To modify the parameters for an action, follow the steps below:
 
 <ol><li>Click the <b>Edit</b> icon.</li>
-<img src="../images/edit-action.png" alt="edit action" title="edit action"/></ol>
+
+![edit action](./images/edit-action.png "edit action")
+
+</ol>
 <ol start="2"><li>Modify the required values and click <b>Save</b>.</li></ol>
 
 ### View the JSON Code
@@ -133,11 +158,17 @@ In addition to defining action parameters in the configuration window, you can v
 
 To access the code, enable the **JSON switch** at the top right of the action configuration window. 
 
-<img src="../images/enable-json.png" alt="enable json" title="enable json"/>
+
+![enable json](./images/enable-json.png "enable json")
+
+
 
 This opens a **code viewer** where you can view the JSON that defines the current action and copy the code. The Integration node executes this action code for the connection when you run the flow. 
 
-<img src="../images/json-code-viewer.png" alt="json code viewer" title="json code viewer" />
+
+![json code viewer](./images/json-code-viewer.png "json code viewer")
+
+
 
 ## Test the Flow for the Node
 
@@ -148,14 +179,20 @@ After adding and configuring the node as mentioned [here](./integration-node.md#
 
 * Click the <b>Input</b> tab of the <b>Start</b> node, and click <b>Add Input Variable</b> to configure the input for the flow’s test run. <a href="../../perform-other-actions-on-the-flow-builder/manage-input-and-output/#adding-input-variables">Learn more</a>
     
-    <img src="../images/start-node-io.png" alt="start node io" title="start node io"/>
+
+    ![start node io](./images/start-node-io.png "start node io")
+
+
 
 * In the <b>Enter input variable</b> window, select the appropriate data type for the <b>Type</b> field to define the input variable.
 * Click <b>Save</b>.
 
 Add all the required input variables to run the flow in the **Input** section of the **Start** node. 
 
-<img src="../images/add-input-var-integration.png" alt="add input variable" title="add input variable"/>
+
+![add input variable](./images/add-input-var-integration.png "add input variable")
+
+
 
 ### Step 2: Add Output Variable(s)
 
@@ -164,30 +201,42 @@ This step is required because the **Start node** must have at least one **output
 * Click the <b>Start</b> node and select the <b>Output</b> tab.
 * Click <b>Add Output Variable</b>.
   
-    <img src="../images/add-op-var.png" alt="add output variable" title="add output variable"/>
+
+    ![add output variable](./images/add-op-var.png "add output variable")
+
+
 
 * Enter the value for <b>Name (key)</b> and select <i>String</i> for <b>Type</b>.
 * Click <b>Save</b>. <a href="#access-the-nodes-output">Learn more</a> about accessing the node’s output.
-<img src="../images/output-variable.png" alt="op variable" title="op variable" style="border: 1px solid gray; zoom:75%;"/>
+
+![op variable](./images/output-variable.png "op variable")
+
+
 
 ### Step 3: Run the Flow
 
-<div class="admonition note">
-<p class="admonition-title">Important</p>
-<p>Before running the flow, resolve the tool flow errors that appear when you click the <b>Warning</b> icon.</p>
-</div>
+<Info>Before running the flow, resolve the tool flow errors that appear when you click the <b>Warning</b> icon.</Info>
 
-  <img src="../images/check-errors.png" alt="errors" title="errors"/>
+
+  ![errors](./images/check-errors.png "errors")
+
+
 
 To run and test the flow, follow the steps below:
 
 * Click the **Run Flow** button at the top-right corner of the flow builder. 
-    <img src="../images/click-run-flow.png" alt="click run flow" title="click run flow"/>
+
+    ![click run flow](./images/click-run-flow.png "click run flow")
+
+
 
 * (Optional) Add the value for the **Input Variable** if you have configured it to test the flow. Otherwise, go directly to the next step.
 * Click **Generate Output**.
    
-   <img src="../images/click-generate-op.png" alt="click settings" title="click settings"/>
+
+   ![click settings](./images/click-generate-op.png "click settings")
+
+
  
 
 The **Debug** window generates the flow log and output from the inputs provided. [Learn more](../perform-other-actions-on-the-flow-builder/run-the-flow.md) about running the tool flow.
@@ -196,7 +245,4 @@ The **Debug** window generates the flow log and output from the inputs provided.
 
 The node’s output is stored in a context variable. You can access the variable using the following syntax: `{{context.steps.IntegrationNodeName.output}}`
 
-<div class="admonition note">
-<p class="admonition-title">Important</p>
-<p>The Platform can automatically recognize variables and outputs. To do so, type "`context.steps.`" and you will see available variables and nodes, including the nodes' outputs.</p>
-</div>
+<Info>The Platform can automatically recognize variables and outputs. To do so, type "`context.steps.`" and you will see available variables and nodes, including the nodes' outputs.</Info>

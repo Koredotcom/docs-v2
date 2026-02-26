@@ -11,7 +11,10 @@ Each log entry includes the following to provide actionable insights on account 
 - Date and time of the event.
 - Detailed description of the action.
 
-<img src="../images/audit-logs-metadata.png" alt="audit logs metadata" title="audit logs metadata" style="border: 1px solid gray; zoom:75%;"/>
+
+![audit logs metadata](./images/audit-logs-metadata.png "audit logs metadata")
+
+
 
 The event metadata provides business users with actionable insights, helping them in efficiently identifying patterns in user activities within their accounts. It also aids in detecting anomalies, spotting unauthorized usage, and enhancing overall account security.
 
@@ -19,16 +22,12 @@ You can specify a **current** or **past period** to view the logs and have compl
 
 Additionally, you can set **custom filters** based on a specific category, event, or user value to view only the required audit logs. [Learn more](./audit-logs.md#steps-to-add-a-custom-filter).
 
-<div class="admonition note">
-<p class="admonition-title">Note</p>
-<p><ul><li>The <b>IP Address</b> is fetched from the user’s current network.</li>
-<li><b>User ID</b>, <b>Role ID</b>, <b>Model ID</b>, <b>Tool ID</b>, <b>Guardrail ID</b>, <b>Integration ID</b>, and <b>Experiment ID</b> pertain to the unique identifier associated with the module’s entity in the system.</li></ul></p></div>
+<Note><ul><li>The <b>IP Address</b> is fetched from the user’s current network.</li>
+<li><b>User ID</b>, <b>Role ID</b>, <b>Model ID</b>, <b>Tool ID</b>, <b>Guardrail ID</b>, <b>Integration ID</b>, and <b>Experiment ID</b> pertain to the unique identifier associated with the module’s entity in the system.</li></ul></Note>
 
 ## Account-Level Audit Logs
 
-<div class="admonition warning">
-<p class="admonition-title">Universal Metadata</p>
-<p>The <b>User ID</b> and <b>IP Address</b> are shown for audit log entries across all modules, in addition to module and category-specific metadata listed in the table below.</p></div>
+<Note>The <b>User ID</b> and <b>IP Address</b> are shown for audit log entries across all modules, in addition to module and category-specific metadata listed in the table below.</Note>
 
 | <strong>Category</strong>: Login/Logout |
 |:------ |
@@ -156,9 +155,7 @@ Additionally, you can set **custom filters** based on a specific category, event
 
 ## Tool-Level Audit Logs
 
-<div class="admonition warning">
-<p class="admonition-title">Universal Metadata</p>
-<p>The <b>User ID</b>, <b>IP Address</b>, and <b>Tool ID</b> are shown for audit log entries across all modules, in addition to module and category-specific metadata listed in the table below.</p></div>
+<Note>The <b>User ID</b>, <b>IP Address</b>, and <b>Tool ID</b> are shown for audit log entries across all modules, in addition to module and category-specific metadata listed in the table below.</Note>
 
 | <strong>Category</strong>: User Management |
 |:------ |
@@ -206,7 +203,10 @@ To access and view audit logs, follow the steps below:
 
 1. [Navigate](../../administration/overview.md#access-settings-console) to the **Settings** console.
 2. Click **Monitoring** > **Audit Logs** on the left navigation menu.
-<img src="../images/audit-logs-new-dashboard.png" alt="access audit logs" title="access audit logs" style="border: 1px solid gray; zoom:75%;"/>
+
+![access audit logs](./images/audit-logs-new-dashboard.png "access audit logs")
+
+
 
 ## Dashboard Information
 
@@ -232,28 +232,41 @@ This customization helps you focus on relevant audit logs, making it easier to t
 2. Navigate to **Monitoring** -> **Audit Logs**  on the left menu.
 3. Click the **Filter** icon -> **+Add Filter**.
 4. In the **Filter By** window, select the required option from the dropdown list for **Select Column**, **Select Operator**, and **Enter Value**.
-<img src="../images/select-filter-from-dropdown.png" alt="select filter" title="select filter" style="border: 1px solid gray; zoom:75%;"/>
 
-<div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>When you use "<b>Is Equal To</b>," the audit logs only show entries that match the specified value. Conversely, when you use "<b>Is Not Equal To</b>," the logs display all entries except those that match the specified value.</p></div>
+![select filter](./images/select-filter-from-dropdown.png "select filter")
+
+
+
+<Note>When you use "<b>Is Equal To</b>," the audit logs only show entries that match the specified value. Conversely, when you use "<b>Is Not Equal To</b>," the logs display all entries except those that match the specified value.</Note>
 
 For example, applying the filter <b>Event Is Equal To Role Created</b>, as shown below, displays only the logs for the role creation event.
 
-<img src="../images/example-filter.png" alt="example filter" title="example filter" style="border: 1px solid gray; zoom:75%;"/>
+
+![example filter](./images/example-filter.png "example filter")
+
+
 
 To view the logs for all the events except role creation, you must set the filter as follows:
 
-<img src="../images/view-all-logs.png" alt="view all logs" title="view all logs" style="border: 1px solid gray; zoom:75%;"/>
+
+![view all logs](./images/view-all-logs.png "view all logs")
+
+
 
 <ol start="6"><li>Click <b>Apply</b>.</li></ol>
 
 All the log entries relevant to the applied filter(s) are displayed, as shown below.
-<img src="../images/log-entries.png" alt="log entries" title="log entries" style="border: 1px solid gray; zoom:75%;"/>
+
+![log entries](./images/log-entries.png "log entries")
+
+
 
 To clear the filter settings, click **Clear All**.
 
-<img src="../images/clear-all-filters.png" alt="clear all filters" title="clear all filters" style="border: 1px solid gray; zoom:75%;"/>
+
+![clear all filters](./images/clear-all-filters.png "clear all filters")
+
+
 
 The number of filters you have applied is displayed on the **Filter** icon.
 
@@ -265,13 +278,14 @@ By combining filters, you can precisely focus on and analyze the audit log entri
 
 When adding multiple filters to refine your audit log queries, you can use the **AND** or **OR** operators in multiple filtering steps effectively. 
 
-<div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>Consistency in operator usage is required for each filtering step. This means you need to use either the AND operator or the OR operator throughout all criteria.
+<Note>Consistency in operator usage is required for each filtering step. This means you need to use either the AND operator or the OR operator throughout all criteria.
 
-Both operators cannot be used together.</p></div>
+Both operators cannot be used together.</Note>
 
-<img src="../images/operators-mutually-exclusive.png" alt="mutually exclusive operators" title="mutually exclusive operators" style="border: 1px solid gray; zoom:75%;"/>
+
+![mutually exclusive operators](./images/operators-mutually-exclusive.png "mutually exclusive operators")
+
+
 
 Using the AND operator ensures that all specified conditions must be met for an entry to be included in the results. 
 
@@ -282,7 +296,10 @@ On the other hand, using the OR operator broadens the criteria, allowing entries
 1. Follow **Steps 1 to 3** mentioned [here](./audit-logs.md#steps-to-add-a-custom-filter).
 2. Select the **AND/OR** operator tab in the **Filter by** window.
 
-    <img src="../images/filter-operators.png" alt="filter operators" title="filter operators" style="border: 1px solid gray; zoom:75%;"/>
+
+    ![filter operators](./images/filter-operators.png "filter operators")
+
+
 
 3. Follow **Steps 4 to 5** mentioned [here](./audit-logs.md#steps-to-add-a-custom-filter).
 
@@ -294,9 +311,7 @@ You can view and monitor audit logs within a specific period with the time selec
 
 Time selection is available for past and current time periods, including the ones listed below:
 
-<div class="admonition note">
-<p class="admonition-title">Note</p>
-<p><b>Last 30 Days</b> is the default selection, which displays logs for the past 30 days from the current date.</p></div>
+<Note><b>Last 30 Days</b> is the default selection, which displays logs for the past 30 days from the current date.</Note>
 
 * **All Time**: Displays logs since the time the account was created.
 * **Today**: Includes audit logs generated on the current day.
@@ -313,11 +328,17 @@ Time selection is available for past and current time periods, including the one
 
 1. [Navigate](./audit-logs.md#access-audit-logs) to the **Audit Logs** dashboard.
 2. Click the time selection button (displays **Last 30 Days**).
-<img src="../images/click-time-selection.png" alt="time selection" title="time selection" style="border: 1px solid gray; zoom:75%;"/>
+
+![time selection](./images/click-time-selection.png "time selection")
+
+
 
 3. Select the required period on the left panel, or select a specific date, month or year on the calendar widget (the current day is the default selection).
 4. Click **Apply**.
-<img src="../images/apply-changes.png" alt="apply changes" title="apply changes" style="border: 1px solid gray; zoom:75%;"/>
+
+![apply changes](./images/apply-changes.png "apply changes")
+
+
 
 The audit logs for events that occurred within the selected time period are displayed. 
 
@@ -325,17 +346,26 @@ The audit logs for events that occurred within the selected time period are disp
 
 The time range is automatically selected on the calendar widget once you select the period. Also, the date range is displayed at the bottom of the widget.
 
-<img src="../images/time-range-display.png" alt="time range display" title="time range display" style="border: 1px solid gray; zoom:75%;"/>
+
+![time range display](./images/time-range-display.png "time range display")
+
+
 
 You can select a specific month or year from the relevant dropdown list and switch to different months by clicking the **forward/backward** arrows.
 
-<img src="../images/forward-back-arrows.png" alt="pagination arrows" title="pagination arrows" style="border: 1px solid gray; zoom:75%;"/>
+
+![pagination arrows](./images/forward-back-arrows.png "pagination arrows")
+
+
 
 To set a specific date as the start date for viewing audit logs, click on the desired date in the widget. 
 
 By default, the current day will be set as the end date. This feature allows you to easily customize the period for which you want to monitor and analyze audit logs.
 
-<img src="../images/custom-start-date.png" alt="custom start date" title="custom start date" style="border: 1px solid gray; zoom:75%;"/>
+
+![custom start date](./images/custom-start-date.png "custom start date")
+
+
 
 ## Export Audit Logs
 
