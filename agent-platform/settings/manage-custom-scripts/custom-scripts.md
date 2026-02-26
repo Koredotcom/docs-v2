@@ -75,7 +75,7 @@ In the **General Details** window, follow these steps:
 
 <div class="admonition note">
 <p class="admonition-title">Important Considerations</p>
-<p><ul><li>Supported file formats include <code>.zip</code>, <code>.gz</code>, and <code>.tar</code>.</li>
+<p><ul><li>Supported file formats include `.zip`, `.gz`, and `.tar`.</li>
 <li>The max file size is 1 GB. Larger files will result in a validation error.</li>
 <li>Click <b>Validate</b> to check the file for errors.</li>
 <img src="../images/validate-file.png" alt="validate file" title="validate file" style="border: 1px solid gray; zoom:75%;"/></ul>
@@ -128,8 +128,8 @@ When importing between files in your project, make sure to use relative imports.
 
 Access environment variables in your scripts as follows:
 
-**Python**: <p><code>import os</code></p>
-             <p><code>os.getenv('<key_name>')</code></p>
+**Python**: <p>`import os`</p>
+             <p>`os.getenv('<key_name>')`</p>
 
 **JavaScript**: 
 
@@ -176,57 +176,13 @@ On this page, you define scaling parameters (minimum and maximum replicas) and h
      * **Average Compute Utilization**: A metric based on which scaling of the service happens. Indicates average compute utilization in percentage per pod. The **default value is 75**, and the **allowed range is between 1 and 100**. This metric is disabled when **Min replica** and **Max replica** are the same.
      * Select the required **hardware** for the deployment. The unit is **No. of vCPUs with memory**. The profiles are virtualized for standardization. The available profiles are listed below:
 
-         <table>
-
-  <tr>
-   <td><strong>Hardware configuration</strong>
-   </td>
-   <td><strong>Actual CPU Core and Memory Available</strong>
-   </td>
-   <td><strong>Credits per Hour</strong>
-   </td>
-  </tr>
-  <tr>
-   <td>2 vCPUs with 8GB memory
-   </td>
-   <td>1.5 vCPUs with 6.5GB memory
-   </td>
-      <td>0.144
-   </td>
-  </tr>
-  <tr>
-   <td>4 vCPUs with 16GB memory
-   </td>
-   <td>3.5 vCPUs with 13.5GB memory
-   </td>
-      <td>0.288
-   </td>
-  </tr>
-  <tr>
-   <td>1 vCPU with 2GB memory
-   </td>
-   <td>0.7 vCPUs with 1.1GB memory
-   </td>
-      <td>0.07698
-   </td>
-  </tr>
-  <tr>
-   <td>2 vCPUs with 4GB memory
-   </td>
-   <td>1.5 vCPUs with 2.5GB memory
-   </td>
-      <td>0.15396
-   </td>
-  </tr>
-  <tr>
-   <td>4 vCPUs with 8GB memory
-   </td>
-   <td>3.5 vCPUs with 6GB memory
-   </td>
-      <td>0.30792
-   </td>
-  </tr>
-</table>
+         | <strong>Hardware configuration</strong> | <strong>Actual CPU Core and Memory Available</strong> | <strong>Credits per Hour</strong> |
+|:------ |:------ |:------ |
+| 2 vCPUs with 8GB memory | 1.5 vCPUs with 6.5GB memory | 0.144 |
+| 4 vCPUs with 16GB memory | 3.5 vCPUs with 13.5GB memory | 0.288 |
+| 1 vCPU with 2GB memory | 0.7 vCPUs with 1.1GB memory | 0.07698 |
+| 2 vCPUs with 4GB memory | 1.5 vCPUs with 2.5GB memory | 0.15396 |
+| 4 vCPUs with 8GB memory | 3.5 vCPUs with 6GB memory | 0.30792 |
 
 <ol start="2"><li>Click <b>Next</b>.</li>
 <img src="../images/resource-allocation.png" alt="resource allocation" title="resource allocation" style="border: 1px solid gray; zoom:75%;"/></ol>
@@ -280,186 +236,14 @@ The summary table displays the following fields:
 
 The following table illustrates the various statuses and the actions that can be performed from the Overview, Deployment History, Endpoint, and API Keys pages.
 
-<table>
-  <tr>
-   <td rowspan="2" >
-    <strong>Status</strong>
-<p>
-   </td>
-   <td rowspan="2" >
-    <strong>Description</strong>
-   </td>
-   <td colspan="5" >
-    <strong>Actions you can perform </strong>
-   </td>
-  </tr>
-  <tr>
-   <td>
-<strong>Overview</strong>
-   </td>
-   <td><strong>Deployment history</strong>
-   </td>
-   <td><strong>Endpoint</strong>
-   </td>
-   <td><strong>API</strong>
-<p>
-<strong>keys</strong>
-   </td>
-   <td><strong>Re-deployment</strong>
-   </td>
-  </tr>
-  <tr>
-   <td><strong>Draft</strong>
-   </td>
-   <td>The draft copy of the custom script that you can modify and deploy later.
-   </td>
-   <td>
-<ul>
-
-<li>Export</li>
-
-<li>Delete</li>
-
-<li>Deploy</li>
-</ul>
-   </td>
-   <td>Deploy Custom Script
-   </td>
-   <td>Deploy Custom Script
-   </td>
-   <td>Create a New API Key
-   </td>
-   <td>No
-   </td>
-  </tr>
-  <tr>
-   <td><strong>Deploying</strong>
-   </td>
-   <td>The script is being deployed. A success message is displayed once the deployment completes successfully. If the deployment fails, a failure message is shown.
-   </td>
-   <td>
-<ul>
-
-<li>Export</li>
-
-<li>Delete</li>
-</ul>
-   </td>
-   <td>Rename deployment version
-   </td>
-   <td>Endpoint not activated
-   </td>
-   <td>
-    ·    Create API keys
-<p>
- 
-   </td>
-   <td>No
-   </td>
-  </tr>
-  <tr>
-   <td><strong>Ready to Deploy</strong>
-   </td>
-   <td>The script is set up and ready to deploy.
-   </td>
-   <td>
-<ul>
-
-<li>Export</li>
-
-<li>Delete</li>
-
-<li>Deploy</li>
-</ul>
-   </td>
-   <td>Rename deployment version
-   </td>
-   <td>Endpoint not activated
-   </td>
-   <td>
-    ·   Create API keys
-<p>
-   </td>
-   <td>Yes
-   </td>
-  </tr>
-  <tr>
-   <td><strong>Deployed</strong>
-   </td>
-   <td>The deployed custom script.
-   </td>
-   <td>
-<ul>
-
-<li>Redeploy</li>
-
-<li>Undeploy</li>
-
-<li>Export</li>
-</ul>
-   </td>
-   <td>
-<ul>
-
-<li>View configuration and deployment details.</li>
-
-<li>Rename deployment version</li>
-</ul>
-   </td>
-   <td>
-<ul>
-
-<li>Redeploy script</li>
-
-<li>View dedicated endpoint code (CURL, JS, and Python).</li>
-
-<li>Copy script code.</li>
-</ul>
-   </td>
-   <td>
-<ul>
-
-<li>Create API keys</li>
-
-<li>Manage API keys</li>
-</ul>
-   </td>
-   <td>Yes
-   </td>
-  </tr>
-  <tr>
-   <td><strong>Deployment failed</strong>
-   </td>
-   <td>The script deployment failed
-   </td>
-   <td>
-<ul>
-
-<li>Deploy</li>
-
-<li>Delete</li>
-
-<li>Export</li>
-</ul>
-   </td>
-   <td>
-<ul>
-
-<li>View configuration and deployment details except duration.</li>
-
-<li>Rename deployment version.</li>
-</ul>
-   </td>
-   <td>The endpoint is not activated since the script is not deployed.
-   </td>
-   <td>
-    Create API keys
-<p>   
-   </td>
-   <td>Yes
-   </td>
-  </tr>
-</table>
+| <strong>Status</strong> <p> | <strong>Description</strong> | <strong>Actions you can perform </strong> |
+|:------ |:------ |:------ |
+| <strong>Overview</strong> | <strong>Deployment history</strong> | <strong>Endpoint</strong> | <strong>API</strong> <p> <strong>keys</strong> | <strong>Re-deployment</strong> |
+| <strong>Draft</strong> | The draft copy of the custom script that you can modify and deploy later. | <ul> <li>Export</li> <li>Delete</li> <li>Deploy</li> </ul> | Deploy Custom Script | Deploy Custom Script | Create a New API Key | No |
+| <strong>Deploying</strong> | The script is being deployed. A success message is displayed once the deployment completes successfully. If the deployment fails, a failure message is shown. | <ul> <li>Export</li> <li>Delete</li> </ul> | Rename deployment version | Endpoint not activated | · Create API keys <p> | No |
+| <strong>Ready to Deploy</strong> | The script is set up and ready to deploy. | <ul> <li>Export</li> <li>Delete</li> <li>Deploy</li> </ul> | Rename deployment version | Endpoint not activated | · Create API keys <p> | Yes |
+| <strong>Deployed</strong> | The deployed custom script. | <ul> <li>Redeploy</li> <li>Undeploy</li> <li>Export</li> </ul> | <ul> <li>View configuration and deployment details.</li> <li>Rename deployment version</li> </ul> | <ul> <li>Redeploy script</li> <li>View dedicated endpoint code (CURL, JS, and Python).</li> <li>Copy script code.</li> </ul> | <ul> <li>Create API keys</li> <li>Manage API keys</li> </ul> | Yes |
+| <strong>Deployment failed</strong> | The script deployment failed | <ul> <li>Deploy</li> <li>Delete</li> <li>Export</li> </ul> | <ul> <li>View configuration and deployment details except duration.</li> <li>Rename deployment version.</li> </ul> | The endpoint is not activated since the script is not deployed. | Create API keys <p> | Yes |
 
 **Key Considerations**
 

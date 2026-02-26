@@ -65,7 +65,7 @@ In this document, you will learn how to add the node to your flows, configure it
        <p>Only the <b>OpenAI (gpt-4o and gpt-4o-mini)</b> and <b>Anthropic (Claude Sonnet Vision)</b> models are supported.</p>
        </div>
 
-    * Provide the <code>File URL</code> of the public repository where your image file exists or is returned by the Upload File API at the tool endpoint.
+    * Provide the `File URL` of the public repository where your image file exists or is returned by the Upload File API at the tool endpoint.
 
       <div class="admonition note">
       <p class="admonition-title">Key Considerations</p>

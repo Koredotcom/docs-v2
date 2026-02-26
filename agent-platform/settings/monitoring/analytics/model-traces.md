@@ -93,7 +93,7 @@ Once the file is downloaded, the following message is displayed.
 If any error occurs during the export process, the following message is displayed:
 <img src="../images/export-failed-notification.png" alt="export error" title="export error" style="border: 1px solid gray; zoom:75%;"/>
 
-Below is a sample of the export schema file. The file name is automatically saved in the format <code>modelname_traces_data</code>, such as <code>GPT4_traces_data</code>.
+Below is a sample of the export schema file. The file name is automatically saved in the format `modelname_traces_data`, such as `GPT4_traces_data`.
 <img src="../images/export-schema.png" alt="export schema" title="export schema" style="border: 1px solid gray; zoom:75%;"/>
 
 <div class="admonition note">
@@ -194,161 +194,28 @@ Filter customization streamlines tracking and debugging of model runs at a detai
 
 The table below summarizes the available columns along with their supported operators and values. 
 
-<table>
-  <tr>
-   <td>
-<strong>Column Name</strong>
-   </td>
-   <td><strong>Description</strong>
-   </td>
-   <td><strong>Comparison Operator</strong>
-   </td>
-   <td><strong>Input Type for Value</strong>
-   </td>
-   <td><strong>Value Options</strong>
-   </td>
-  </tr>
-  <tr>
-   <td rowspan="2" ><strong>Status</strong>
-   </td>
-   <td rowspan="2" >Indicates the status of the model’s executed run. 
-   </td>
-   <td>Is Equals To
-   </td>
-   <td rowspan="2" >List Selection
-   </td>
-   <td rowspan="2" >
-<ul>
-<li><strong>Failed</strong>: Indicates failed runs.</li>
-<li><strong>Success</strong>: Indicates successful runs.</li>
-</ul>
-   </td>
-  </tr>
-  <tr>
-   <td>Is Not Equals To
-   </td>
-  </tr>
-  <tr>
-   <td rowspan="3" ><strong>Request ID</strong>
-   </td>
-   <td rowspan="3" >The unique ID associated with the model run/request.
-   </td>
-   <td>Is Equals To
-   </td>
-   <td rowspan="3" >Enter manually
-   </td>
-   <td rowspan="3" >Any value
-   </td>
-  </tr>
-  <tr>
-   <td>Is Not Equals To
-   </td>
-  </tr>
-  <tr>
-   <td>Contains
-   </td>
-  </tr>
-  <tr>
-   <td rowspan="6" ><strong>Response Time</strong>
-   </td>
-   <td rowspan="6" >The response time of the model for the executed request.
-   </td>
-   <td>Is Equals To
-   </td>
-   <td rowspan="6" >Enter manually
-   </td>
-   <td rowspan="6" >Enter the numeric values for minutes,  seconds, and milliseconds in the m:s:ms format.
-   </td>
-  </tr>
-  <tr>
-   <td>Is Not Equals To
-   </td>
-   </tr>
-  <tr>
-   <td>Is Greater Than
-   </td>
-  </tr>
-  <tr>
-   <td>Is Less Than
-   </td>
-  </tr>
-  <tr>
-   <td>Is Greater Than Equals To
-   </td>
-  </tr>
-  <tr>
-   <td>Is Less Than Equals To
-   </td>
-  </tr>
-  <tr>
-   <td rowspan="3" ><strong>Deployment Version</strong>
-   </td>
-   <td rowspan="3" >The version of the model deployed for the specific run.
-   </td>
-   <td>Is Equals To
-   </td>
-   <td rowspan="3" >Enter manually
-   </td>
-   <td rowspan="3" >Any value
-   </td>
-  </tr>
-  <tr>
-   <td>Is Not Equals To
-   </td>
-  </tr>
-  <tr>
-   <td>Contains
-   </td>
-  </tr>
-  <tr>
-   <td rowspan="3" ><strong>Source Type</strong>
-   </td>
-   <td rowspan="3" >The source type from which the run request was sent to the model.
-   </td>
-   <td>Is Equals To
-   </td>
-   <td rowspan="3" >List Selection
-   </td>
-   <td rowspan="3" >
-<ul>
-
-<li><strong>Tool</strong>: The request was sent to the model from a tool. <a href="../../../../ai-agents/tools/overview/">Learn more</a>.</li>
-
-<li><strong>Prompts</strong>: The request was sent to the model from a Prompt experiment. <a href="../../../../prompts/using-prompt-studio/">Learn more</a>.</li>
-
-<li><strong>API Key</strong>: The request was sent to the (open-source) model using an API key. <a href="../../../../models/open-source-models/generate-an-api-key-open-source/">Learn more</a>.</li>
-</ul>
-   </td>
-  </tr>
-  <tr>
-   <td>Is Not Equals To
-   </td>
-  </tr>
-  <tr>
-   <td>Contains
-   </td>
-  </tr>
-  <tr>
-   <td rowspan="3" ><strong>Source</strong>
-   </td>
-   <td rowspan="3" >The source from which the model received the run request.
-   </td>
-   <td>Is Equals To
-   </td>
-   <td rowspan="3" >List Selection
-   </td>
-   <td rowspan="3" >Custom value(s) set by the user.
-   </td>
-  </tr>
-  <tr>
-   <td>Is Not Equals To
-   </td>
-  </tr>
-  <tr>
-   <td>Contains
-   </td>
-  </tr>
-</table>
+| <strong>Column Name</strong> | <strong>Description</strong> | <strong>Comparison Operator</strong> | <strong>Input Type for Value</strong> | <strong>Value Options</strong> |
+|:------ |:------ |:------ |:------ |:------ |
+| <strong>Status</strong> | Indicates the status of the model’s executed run. | Is Equals To | List Selection | <ul> <li><strong>Failed</strong>: Indicates failed runs.</li> <li><strong>Success</strong>: Indicates successful runs.</li> </ul> |
+| Is Not Equals To |
+| <strong>Request ID</strong> | The unique ID associated with the model run/request. | Is Equals To | Enter manually | Any value |
+| Is Not Equals To |
+| Contains |
+| <strong>Response Time</strong> | The response time of the model for the executed request. | Is Equals To | Enter manually | Enter the numeric values for minutes, seconds, and milliseconds in the m:s:ms format. |
+| Is Not Equals To |
+| Is Greater Than |
+| Is Less Than |
+| Is Greater Than Equals To |
+| Is Less Than Equals To |
+| <strong>Deployment Version</strong> | The version of the model deployed for the specific run. | Is Equals To | Enter manually | Any value |
+| Is Not Equals To |
+| Contains |
+| <strong>Source Type</strong> | The source type from which the run request was sent to the model. | Is Equals To | List Selection | <ul> <li><strong>Tool</strong>: The request was sent to the model from a tool. <a href="../../../../ai-agents/tools/overview/">Learn more</a>.</li> <li><strong>Prompts</strong>: The request was sent to the model from a Prompt experiment. <a href="../../../../prompts/using-prompt-studio/">Learn more</a>.</li> <li><strong>API Key</strong>: The request was sent to the (open-source) model using an API key. <a href="../../../../models/open-source-models/generate-an-api-key-open-source/">Learn more</a>.</li> </ul> |
+| Is Not Equals To |
+| Contains |
+| <strong>Source</strong> | The source from which the model received the run request. | Is Equals To | List Selection | Custom value(s) set by the user. |
+| Is Not Equals To |
+| Contains |
 
 <ol start="5"><li>Click <b>Apply</b>.</li>
 <img src="../images/apply-filter-model-traces.png" alt="apply filter" title="apply filter" style="border: 1px solid gray; zoom:75%;"/></ol>

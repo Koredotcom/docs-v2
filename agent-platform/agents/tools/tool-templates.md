@@ -122,7 +122,7 @@ To access a tool template, follow the steps below:
     * The first installation of a template retains its original name and description.
     <img src="../images/first-tool-installation.png" alt="first tool installation" title="first tool installation" style="border: 1px solid gray; zoom:75%;"/>
 
-    * When you reinstall the same template, the system notifies you of a duplicate and appends a unique number to the name to prevent conflicts in the format: <code><em>Tool Template Name + "_" + System-Generated Sequential Number</em></code>
+    * When you reinstall the same template, the system notifies you of a duplicate and appends a unique number to the name to prevent conflicts in the format: `<em>Tool Template Name + "_" + System-Generated Sequential Number</em>`
     * Example: <em>Automatic grading system_1743151769005</em>
       <img src="../images/tool-seq-numbering.png" alt="tool seq numbering" title="tool seq numbering" style="border: 1px solid gray; zoom:75%;"/>
 

@@ -30,51 +30,15 @@ Selecting a model opens its **Deployments** page, where you can view and manage 
 
 Each model can have multiple deployments, which are tracked independently. The Deployments page displays all deployments of a selected model along with the following details:
 
-<table>
-  <thead>
-    <tr>
-      <th style="width: 150px;" />Field</th>
-      <th style="width: 500px;" />Description</th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr>
-      <td><b>Deployment Name</b></td>
-      <td>Name given by the user during deployment.</td>
-    </tr>
-    <tr>
-      <td><b>Deployment ID</b></td>
-      <td>System-generated ID (not editable).</td>
-    </tr>
-    <tr>
-    <td><b>Status</b></td>
-    <td>
-    The status of deployment: Deploying, Optimizing, Failed, Ready to Deploy, or Deployed.
-  </ul>
-</td>
-    </tr>
-    <tr>
-      <td><b>Tags</b></td>
-      <td>Labels associated with the deployment.</td>
-    </tr>
-    <tr>
-      <td><b>Added By</b></td>
-      <td>User who performed the deployment.</td>
-    </tr>
-    <tr>
-      <td><b>Added On</b></td>
-      <td>Date and time of deployment.</td>
-    </tr>
-    <tr>
-      <td><b>Actions</b></td>
-      <td>
-        <b>Copy cURL</b> – Copies the cURL command for invoking this deployment.<br />
-        <b>Manage API Keys</b> – Opens the API key management tab.<br />
-        <b>Re-trigger</b> – Restarts the deployment (Option available only if it has failed or stopped).
-      </td>
-    </tr>
-  </tbody>
-</table>
+| Field | Description |
+|:------ |:------ |
+| <b>Deployment Name</b> | Name given by the user during deployment. |
+| <b>Deployment ID</b> | System-generated ID (not editable). |
+| <b>Status</b> | The status of deployment: Deploying, Optimizing, Failed, Ready to Deploy, or Deployed. </ul> |
+| <b>Tags</b> | Labels associated with the deployment. |
+| <b>Added By</b> | User who performed the deployment. |
+| <b>Added On</b> | Date and time of deployment. |
+| <b>Actions</b> | <b>Copy cURL</b> – Copies the cURL command for invoking this deployment.<br /> <b>Manage API Keys</b> – Opens the API key management tab.<br /> <b>Re-trigger</b> – Restarts the deployment (Option available only if it has failed or stopped). |
 
 <img src="../images/open-source_deployment_listing_view.png" alt="Open-source models table" title="Open-source models table"/>
 

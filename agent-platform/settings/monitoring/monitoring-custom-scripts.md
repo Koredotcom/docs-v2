@@ -38,7 +38,7 @@
 
         <img src="../images/in-progress-deployments.png" alt="in progress" title="in progress" style="border: 1px solid gray; zoom:75%;"/>
 
-* **Navigation**: Use arrow buttons or keyboard shortcuts (<code>K</code> for previous, <code>J</code> for next) to navigate records.
+* **Navigation**: Use arrow buttons or keyboard shortcuts (`K` for previous, `J` for next) to navigate records.
     <img src="../images/keyboard-shortcuts.png" alt="keyboard shortcuts" title="keyboard shortcuts" style="border: 1px solid gray; zoom:75%;"/>
 
 * Click on each script run record to see the record-level view of the log based on the **Run ID**. [Learn more](../monitoring/monitoring-custom-scripts.md#record-view).
@@ -48,7 +48,7 @@
 
     * For **in-progress** runs, logs using **default logging** appear only after the run completes. 
 
-    * With the **custom <code>korelogger</code> library**, logs populate in real-time, with support for structured log levels (for example, info, debug, error), making it ideal for live monitoring and debugging.
+    * With the **custom `korelogger` library**, logs populate in real-time, with support for structured log levels (for example, info, debug, error), making it ideal for live monitoring and debugging.
 
 * Export runs and logs as a dataset in .csv format, based on the applied filters and selected date range for further analysis, editing, and debugging.
 
@@ -132,60 +132,16 @@ It displays performance metrics and run-level metadata to analyze the script’s
 
 This section displays a dynamic table with the following data indicating the run-level performance of the script. 
 
-<table>
-  <tr>
-   <td><strong>Column Name</strong>
-   </td>
-   <td><strong>Description</strong>
-   </td>
-  </tr>
-  <tr>
-   <td><strong>Run ID</strong>
-   </td>
-   <td>Unique identifier for the script run.</td>
-  </tr>
-  <tr>
-   <td><strong>Status</strong>
-   </td>
-   <td>Success, Failed, or In Progress.
-   </td>
-  </tr>
-  <tr>
-   <td><strong>Deployment Version</strong>
-   </td>
-   <td>Version number (increments with each deployment).
-   </td>
-  </tr>
-  <tr>
-   <td><strong>Response Time</strong>
-   </td>
-   <td>Execution duration (empty for failed/in-progress runs).
-   </td>
-  </tr>
-  <tr>
-   <td><strong>Function</strong>
-   </td>
-   <td>Executed function name.
-   </td>
-  </tr>
-  <tr>
-   <td><strong>Executed on</strong>
-   </td>
-   <td>Date and time of execution.
-   </td>
-  </tr>
-  <tr>
-   <td><strong>Source Type</strong>
-   </td>
-   <td>Tool (from tool flow) or API (from endpoint).
-   </td>
-  </tr>
-  <tr>
-   <td><strong>Source</strong>
-   </td>
-   <td>Name of the triggering source.</td>
-  </tr>
-</table>
+| <strong>Column Name</strong> | <strong>Description</strong> |
+|:------ |:------ |
+| <strong>Run ID</strong> | Unique identifier for the script run. |
+| <strong>Status</strong> | Success, Failed, or In Progress. |
+| <strong>Deployment Version</strong> | Version number (increments with each deployment). |
+| <strong>Response Time</strong> | Execution duration (empty for failed/in-progress runs). |
+| <strong>Function</strong> | Executed function name. |
+| <strong>Executed on</strong> | Date and time of execution. |
+| <strong>Source Type</strong> | Tool (from tool flow) or API (from endpoint). |
+| <strong>Source</strong> | Name of the triggering source. |
 
 ### Logs Section
 
@@ -216,34 +172,12 @@ The **Total Logs** metric helps determine:
 This section displays a dynamic table with the following log-level data:
 
 
-<table>
-  <tr>
-   <td><strong>Column</strong>
-   </td>
-   <td><strong>Description</strong>
-   </td>
-  </tr>
-  <tr>
-   <td><strong>Log ID</strong>
-   </td>
-   <td>Unique log identifier.</td>
-  </tr>
-  <tr>
-   <td ><strong>Log level</strong>
-   </td>
-   <td>Stdout, Stderr, Info, Debug, Warning, or Error. <a href="#enhanced-logging-for-gvisor-monitoring">Learn more</a> about the supported logging options for the gVisor service.</td>
-  </tr>
-  <tr>
-   <td><strong>Log Message</strong>
-   </td>
-   <td>Recorded message for specific actions.</td>
-  </tr>
-  <tr>
-   <td><strong>Timestamp</strong>
-   </td>
-   <td>Date and time of log entry.</td>
-  </tr>
-  </table>
+| <strong>Column</strong> | <strong>Description</strong> |
+|:------ |:------ |
+| <strong>Log ID</strong> | Unique log identifier. |
+| <strong>Log level</strong> | Stdout, Stderr, Info, Debug, Warning, or Error. <a href="#enhanced-logging-for-gvisor-monitoring">Learn more</a> about the supported logging options for the gVisor service. |
+| <strong>Log Message</strong> | Recorded message for specific actions. |
+| <strong>Timestamp</strong> | Date and time of log entry. |
 
 ## Time-based Filtering
 
@@ -451,7 +385,7 @@ Each log entry is organized using the following identifying markers for tracking
 * **source** - Shows where the log came from.
 * **source_type** - Categorizes the type of source.
 
-Log messages and levels are available as `log.message` and <code>log.level</code> in the attributes field.
+Log messages and levels are available as `log.message` and `log.level` in the attributes field.
 
 <div class="admonition note">
 <p class="admonition-title">Note</p>

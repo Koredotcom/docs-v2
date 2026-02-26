@@ -16,45 +16,11 @@ SSO is a powerful option for organizations looking to balance convenience and se
 <p>Only account owners and admins can enable/disable SSO from the <b>Settings</b> console.</p></div>
 
 The Platform supports SSO for the following protocols and providers:
-<table>
-  <tr>
-   <td><strong>Protocol</strong>
-   </td>
-   <td><strong>Provider</strong>
-   </td>
-  </tr>
-  <tr>
-   <td>
-<a href="#saml">SAML</a>
-   </td>
-   <td>
-<ul>
-<li><a href="#okta-configuration">Okta</a></li>
-<li><a href="#onelogin-configuration">OneLogin</a></li>
-<li><a href="#other-configuration">Other</a></li>
-</ul>
-   </td>
-  </tr>
-  <tr>
-   <td><a href="#ws-federation">WS-Federation</a>
-   </td>
-   <td>
-<ul>
-<li><a href="#windows-azure-configuration">Windows Azure</a></li>
-<li><a href="#other-configuration_1">Other</a></li>
-</ul>
-   </td>
-  </tr>
-  <tr>
-   <td><a href="#openid-connect-configuration">OpenID Connect</a>
-   </td>
-   <td>
-<ul>
-<li><a href="#google-configuration">Google account</a></li>
-</ul>
-   </td>
-  </tr>
-</table>
+| <strong>Protocol</strong> | <strong>Provider</strong> |
+|:------ |:------ |
+| <a href="#saml">SAML</a> | <ul> <li><a href="#okta-configuration">Okta</a></li> <li><a href="#onelogin-configuration">OneLogin</a></li> <li><a href="#other-configuration">Other</a></li> </ul> |
+| <a href="#ws-federation">WS-Federation</a> | <ul> <li><a href="#windows-azure-configuration">Windows Azure</a></li> <li><a href="#other-configuration_1">Other</a></li> </ul> |
+| <a href="#openid-connect-configuration">OpenID Connect</a> | <ul> <li><a href="#google-configuration">Google account</a></li> </ul> |
 
 ## How SSO Works
 
@@ -90,101 +56,14 @@ Depending on your company's security requirements, you can enable SSO for your a
 
 The following parameters should be configured on the Platform based on the protocol and IDP you select:
 
-<table>
-  <tr>
-   <td><strong>Protocol</strong>
-   </td>
-   <td><strong>IDP</strong>
-   </td>
-   <td><strong>Parameters</strong>
-   </td>
-  </tr>
-  <tr>
-   <td>SAML
-   </td>
-   <td>Okta
-   </td>
-   <td>
-<ul>
-
-<li><strong>Okta single sign-on url</strong>: The SSO endpoint URL for <em>Okta</em> to enable Service Provider initiated SAML flow.</li>
-
-<li><strong>Identity provider issuer: </strong>The entity (URL) that provides the user identities, including the ability to authenticate a user.</li>
-
-<li><strong>Certificate: </strong>The public certificate stored by the service provider from the IDP is used to validate a user signature. You can add multiple (a maximum of 2) certificates and delete already added invalid certificates. </li>
-</ul>
-   </td>
-  </tr>
-  <tr>
-   <td>SAML
-   </td>
-   <td>Onelogin
-   </td>
-   <td>
-<ul>
-
-<li><strong>SAML 2.0 endpoint</strong>: The SSO endpoint URL for <em>Onelogin</em> to enable Service Provider-initiated SAML flow.</li>
-
-<li><strong>Issuer url</strong>: The same as the <strong>Identity provider issuer </strong>for Okta.</li>
-
-<li><strong>X.509 certificate</strong>: The same as the <strong>Certificate</strong> for Okta.</li>
-</ul>
-   </td>
-  </tr>
-  <tr>
-   <td>SAML
-   </td>
-   <td>Other
-   </td>
-   <td>
-<ul>
-
-<li><strong>Single sign-on url: </strong>The SSO endpoint URL for <em>the IDP</em> to enable Service Provider initiated SAML flow.</li>
-
-<li><strong>Issuer url: </strong>The same as the <strong>Identity provider issuer </strong>for Okta.</li>
-
-<li><strong>Certificate: </strong>The same as the <strong>Certificate</strong> for Okta.</li>
-</ul>
-   </td>
-  </tr>
-  <tr>
-   <td>WS-Federation
-   </td>
-   <td>Windows Azure
-   </td>
-   <td>
-<ul>
-
-<li><strong>Azure AD sign-on end point url</strong>:  The URL that the Platform sends sign-on and sign-off requests using <em>Azure</em>. The response for the authentication is sent to the <strong>Reply URL</strong> defined in your <em>Azure</em> Active Directory configuration settings.</li>
-
-<li><strong>Azure AD federation metadata document</strong>: The URL for the federation metadata document used for authentication with <em>Azure</em> Active Directory.</li>
-</ul>
-   </td>
-  </tr>
-  <tr>
-   <td>WS-Federation
-   </td>
-   <td>Other
-   </td>
-   <td>
-<ul>
-
-<li><strong>AD sign-on end point url: </strong>The same as <strong>Azure AD sign-on end point url </strong>for Windows Azure.</li>
-
-<li><strong>AD federation metadata document url</strong>: The same as <strong>Azure AD federation metadata document for </strong>Windows Azure.</li>
-</ul>
-   </td>
-  </tr>
-  <tr>
-   <td>OpenID Connect
-   </td>
-   <td>Google
-   </td>
-   <td>
-No additional configuration is required. Your users will be authenticated based on their valid Google credentials.
-   </td>
-  </tr>
-</table>
+| <strong>Protocol</strong> | <strong>IDP</strong> | <strong>Parameters</strong> |
+|:------ |:------ |:------ |
+| SAML | Okta | <ul> <li><strong>Okta single sign-on url</strong>: The SSO endpoint URL for <em>Okta</em> to enable Service Provider initiated SAML flow.</li> <li><strong>Identity provider issuer: </strong>The entity (URL) that provides the user identities, including the ability to authenticate a user.</li> <li><strong>Certificate: </strong>The public certificate stored by the service provider from the IDP is used to validate a user signature. You can add multiple (a maximum of 2) certificates and delete already added invalid certificates. </li> </ul> |
+| SAML | Onelogin | <ul> <li><strong>SAML 2.0 endpoint</strong>: The SSO endpoint URL for <em>Onelogin</em> to enable Service Provider-initiated SAML flow.</li> <li><strong>Issuer url</strong>: The same as the <strong>Identity provider issuer </strong>for Okta.</li> <li><strong>X.509 certificate</strong>: The same as the <strong>Certificate</strong> for Okta.</li> </ul> |
+| SAML | Other | <ul> <li><strong>Single sign-on url: </strong>The SSO endpoint URL for <em>the IDP</em> to enable Service Provider initiated SAML flow.</li> <li><strong>Issuer url: </strong>The same as the <strong>Identity provider issuer </strong>for Okta.</li> <li><strong>Certificate: </strong>The same as the <strong>Certificate</strong> for Okta.</li> </ul> |
+| WS-Federation | Windows Azure | <ul> <li><strong>Azure AD sign-on end point url</strong>: The URL that the Platform sends sign-on and sign-off requests using <em>Azure</em>. The response for the authentication is sent to the <strong>Reply URL</strong> defined in your <em>Azure</em> Active Directory configuration settings.</li> <li><strong>Azure AD federation metadata document</strong>: The URL for the federation metadata document used for authentication with <em>Azure</em> Active Directory.</li> </ul> |
+| WS-Federation | Other | <ul> <li><strong>AD sign-on end point url: </strong>The same as <strong>Azure AD sign-on end point url </strong>for Windows Azure.</li> <li><strong>AD federation metadata document url</strong>: The same as <strong>Azure AD federation metadata document for </strong>Windows Azure.</li> </ul> |
+| OpenID Connect | Google | No additional configuration is required. Your users will be authenticated based on their valid Google credentials. |
 
 ### Steps to Enable SSO
 
@@ -255,27 +134,10 @@ To configure SSO using SAML and Okta, follow the steps below:
 <ul><li><b>ACS url for SP initiated SAML flow</b>: Paste into <i>Single sign-on URL</i>.</li>
 <li><b>ACS url for IDP initiated SAML flow</b>: Paste into <i>Audience URI (SP Entity ID)</i>.</li></ul></ol>
 
-<table>
-  <tr>
-   <td>
-<strong>Okta Parameter</strong>
-   </td>
-   <td><strong>Description</strong>
-   </td>
-  </tr>
-  <tr>
-   <td><strong>Single sign-on URL</strong>
-   </td>
-   <td>The location where the SAML assertion is sent with an HTTP POST. This is often called the SAML Assertion Consumer Service (ACS) URL for your application.
-   </td>
-  </tr>
-  <tr>
-   <td><strong>Audience URI (SP Entity ID)</strong>
-   </td>
-   <td>The application-defined unique identifier that is the intended audience of the SAML assertion. This is most often the SP Entity ID of your application.
-   </td>
-  </tr>
-</table>
+| <strong>Okta Parameter</strong> | <strong>Description</strong> |
+|:------ |:------ |
+| <strong>Single sign-on URL</strong> | The location where the SAML assertion is sent with an HTTP POST. This is often called the SAML Assertion Consumer Service (ACS) URL for your application. |
+| <strong>Audience URI (SP Entity ID)</strong> | The application-defined unique identifier that is the intended audience of the SAML assertion. This is most often the SP Entity ID of your application. |
 
 <ol start="10"><li>Click <b>Next</b>.</li>
 <li>Click <b>Finish</b> under <b>Feedback</b> on Okta’s <b>Create SAML Integration</b> page.</li>

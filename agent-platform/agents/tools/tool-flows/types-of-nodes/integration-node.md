@@ -198,5 +198,5 @@ The node’s output is stored in a context variable. You can access the variable
 
 <div class="admonition note">
 <p class="admonition-title">Important</p>
-<p>The Platform can automatically recognize variables and outputs. To do so, type "<code>context.steps.</code>" and you will see available variables and nodes, including the nodes' outputs.</p>
+<p>The Platform can automatically recognize variables and outputs. To do so, type "`context.steps.`" and you will see available variables and nodes, including the nodes' outputs.</p>
 </div>

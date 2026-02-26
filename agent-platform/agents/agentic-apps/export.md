@@ -46,5 +46,5 @@ To export an Agentic app or an agent, follow these steps:
 
 Exporting an app or an agent downloads all configurations as a JSON file to your local system. You can use this exported file to import the same configuration into another environment or restore it in the same environment to recreate the app setup. Follow the naming conventions below when saving the downloaded file:
 
-* App export filename: app-&lt;app-name>-&lt;date-time>.json
-* Agent export file: agents-&lt;app-name>-&lt;date-time>.json
+* App export filename: `app-<app-name>-<date-time>.json`
+* Agent export file: `agents-<app-name>-<date-time>.json`

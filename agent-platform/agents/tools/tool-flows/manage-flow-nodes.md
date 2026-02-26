@@ -81,110 +81,12 @@ These execution patterns define how tasks run across a workflow—either one aft
 ### Understanding Execution Structures
 
 
-<table>
-  <tr>
-   <td><strong>Feature</strong>
-   </td>
-   <td><strong>Sequential Execution</strong>
-   </td>
-   <td><strong>Parallel Execution</strong>
-   </td>
-  </tr>
-  <tr>
-   <td><strong>Use When</strong>
-   </td>
-   <td>
-<ul>
-
-<li>Tasks depend on previous steps and must be run one after another.</li>
-</ul>
-   </td>
-   <td>
-<ul>
-
-<li>Multiple tasks are independent and can run at the same time.</li>
-
-<li>Speed up workflows with tasks that do not rely on each other's output.</li>
-</ul>
-   </td>
-  </tr>
-  <tr>
-   <td><strong>How It Works</strong>
-   </td>
-   <td>
-<ul>
-
-<li>Execution starts at the Start node.</li>
-
-<li>Each node runs only after the prior node finishes.</li>
-
-<li>The flow moves forward through connected nodes in a top-down or left-to-right sequence.</li>
-
-<li>All paths eventually connect to an End node to mark flow completion.</li>
-</ul>
-   </td>
-   <td>
-<ul>
-
-<li>All connected branches from a single node execute at the same time.</li>
-
-<li>Each branch works independently of the others.</li>
-
-<li>You can add up to <strong>10 branches</strong> from a single node.</li>
-
-<li>Each branch continues its own path until it reaches an End node or another connection.</li>
-</ul>
-   </td>
-  </tr>
-  <tr>
-   <td><strong>Benefits</strong>
-   </td>
-   <td>
-<ul>
-
-<li>Predictable and controlled execution</li>
-
-<li>Easier debugging and maintenance</li>
-
-<li>Clear task-to-task dependency</li>
-</ul>
-   </td>
-   <td>
-<ul>
-
-<li>Reduces total execution time</li>
-
-<li>Boosts performance with simultaneous operations</li>
-
-<li>Enables independent task handling</li>
-</ul>
-   </td>
-  </tr>
-  <tr>
-   <td><strong>Ideal for workflows that require</strong>
-   </td>
-   <td>
-<ul>
-
-<li>Step-by-step task execution</li>
-
-<li>Strict data or logic dependencies</li>
-
-<li>Ordered, linear processing</li>
-</ul>
-   </td>
-   <td>
-<ul>
-
-<li>Concurrent task execution</li>
-
-<li>Multi-channel or multi-path logic</li>
-
-<li>Faster processing of unrelated tasks</li>
-</ul>
-   </td>
-  </tr>
-</table>
+| <strong>Feature</strong> | <strong>Sequential Execution</strong> | <strong>Parallel Execution</strong> |
+|:----- |:----- |:----- |
+| <strong>Use When</strong> | <ul> <li>Tasks depend on previous steps and must be run one after another.</li> </ul> | <ul> <li>Multiple tasks are independent and can run at the same time.</li> <li>Speed up workflows with tasks that do not rely on each other's output.</li> </ul> |
+| <strong>How It Works</strong> | <ul> <li>Execution starts at the Start node.</li> <li>Each node runs only after the prior node finishes.</li> <li>The flow moves forward through connected nodes in a top-down or left-to-right sequence.</li> <li>All paths eventually connect to an End node to mark flow completion.</li> </ul> | <ul> <li>All connected branches from a single node execute at the same time.</li> <li>Each branch works independently of the others.</li> <li>You can add up to <strong>10 branches</strong> from a single node.</li> <li>Each branch continues its own path until it reaches an End node or another connection.</li> </ul> |
+| <strong>Benefits</strong> | <ul> <li>Predictable and controlled execution</li> <li>Easier debugging and maintenance</li> <li>Clear task-to-task dependency</li> </ul> | <ul> <li>Reduces total execution time</li> <li>Boosts performance with simultaneous operations</li> <li>Enables independent task handling</li> </ul> |
+| <strong>Ideal for workflows that require</strong> | <ul> <li>Step-by-step task execution</li> <li>Strict data or logic dependencies</li> <li>Ordered, linear processing</li> </ul> | <ul> <li>Concurrent task execution</li> <li>Multi-channel or multi-path logic</li> <li>Faster processing of unrelated tasks</li> </ul> |
 
 
 ### Designing Sequential Flows
@@ -335,48 +237,12 @@ You can also manage connections from the Configuration Panel:
 
 ## Common Issues and How to Resolve Them
 
-<table>
-  <tr>
-   <td><strong>Issue</strong>
-   </td>
-   <td><strong>Cause</strong>
-   </td>
-   <td><strong>Resolution</strong>
-   </td>
-  </tr>
-  <tr>
-   <td>Can't add a new connection
-   </td>
-   <td>Node has 10 outgoing connections
-   </td>
-   <td>Delete a connection to add more
-   </td>
-  </tr>
-  <tr>
-   <td>“No available nodes” in the dropdown
-   </td>
-   <td>All valid nodes are already linked
-   </td>
-   <td>Create a new node or unlink existing ones
-   </td>
-  </tr>
-  <tr>
-   <td>Flow doesn't execute
-   </td>
-   <td>Broken or incomplete connections
-   </td>
-   <td>Check for stray nodes or missing End Nodes
-   </td>
-  </tr>
-  <tr>
-   <td>Error when connecting to a previous node
-   </td>
-   <td>Backward looping is not allowed
-   </td>
-   <td>Reconnect the node to a valid forward step in the flow
-   </td>
-  </tr>
-</table>
+| <strong>Issue</strong> | <strong>Cause</strong> | <strong>Resolution</strong> |
+|:----- |:----- |:----- |
+| Can't add a new connection | Node has 10 outgoing connections | Delete a connection to add more |
+| “No available nodes” in the dropdown | All valid nodes are already linked | Create a new node or unlink existing ones |
+| Flow doesn't execute | Broken or incomplete connections | Check for stray nodes or missing End Nodes |
+| Error when connecting to a previous node | Backward looping is not allowed | Reconnect the node to a valid forward step in the flow |
 
 
 ## Tips for Better Flow Design
