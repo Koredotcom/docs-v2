@@ -9,7 +9,7 @@ You can use the Email Templates feature to:
 * Preview emails before you send them to invited users.
 * Maintain consistent messaging across all applications that you provision to your account.
 
-<img src="../images/email-template.png" alt="email-template" title="email-template" class="border-2 border-gray-300 rounded-xl" />
+<img src="../images/email-template.png" alt="email-template" title="email-template"/>
 
 ## Accessing Email Templates
 

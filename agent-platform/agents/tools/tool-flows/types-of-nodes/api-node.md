@@ -74,7 +74,7 @@ Click the added node to open its properties dialog box. The General Settings for
 
    </td>
   <td>
-  Select the integration type: <strong>Synchronous</strong> or <strong>Asynchronous</strong>.<br <br />r>
+  Select the integration type: <strong>Synchronous</strong> or <strong>Asynchronous</strong>.<br />
 
   <strong>Synchronous</strong>: Waits for a response before proceeding.
   <ul>
@@ -142,7 +142,7 @@ Click the added node to open its properties dialog box. The General Settings for
 
 Click the **Connections** icon in the left navigation and select **Go to Node** for success and failure conditions.
 
-<img src="./../images/api-node-connections.png" alt="API node Connections Properties" title="API node Connections Properties" class="border-2 border-gray-300 rounded-xl" />
+<img src="./../images/api-node-connections.png" alt="API node Connections Properties" title="API node Connections Properties"/>
 
 * **On Success** > **Go to Node**: After the current node is successfully executed, go to a selected node in the flow to execute next. For example, you can process the data from this node into a Function node and then use it further. In this case, select the Function node. 
 * **On Failure** > **Go to Node**: If the execution of the current node fails, go to an appropriate node having a custom error message configured.

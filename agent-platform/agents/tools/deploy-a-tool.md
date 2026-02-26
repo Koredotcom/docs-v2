@@ -2,9 +2,7 @@
 
 Agent Platform supports both synchronous and asynchronous tool deployment modes.
 
-!!! Note
-
-    Before deploying the tool, you must fix any errors or warnings in the Tool Flow.
+<Note> Before deploying the tool, you must fix any errors or warnings in the Tool Flow. </Note>
 
 ## Synchronous Endpoint
 
@@ -58,9 +56,7 @@ Steps to deploy a tool:
                 * **No timeout**: This allows the tool to process the request without a time limit.  
                 <img src="../images/async-mode-configuration.png" alt="Async Mode Configuration" title="Async Mode Configuration" style="border: 1px solid gray; zoom:60%;"/>
            
-        !!! note
-
-            Timeout precedence: Tool timeout > Node timeout > Model timeout.
+        <Note> Timeout precedence: Tool timeout > Node timeout > Model timeout. </Note>
 
     4. Click **Save**. The async push endpoint is created.  
     <img src="../images/async-push-endpoint.png" alt="Deploy Button" title="Deploy Button" style="border: 1px solid gray; zoom:70%;"/>
@@ -68,6 +64,6 @@ Steps to deploy a tool:
 ## Redeploy a Tool for the Changes in the Flow
 
 The Deployed version of your tool's flow is accessible from the **Tool Flow** page. You can click the **View the Flow** button to view the flow in read-only mode.  
-<img src="../images/deployed-version.png" alt="Deployed Version" title="Deployed Version" class="border-2 border-gray-300 rounded-xl" />
+<img src="../images/deployed-version.png" alt="Deployed Version" title="Deployed Version"/>
 
 You can change the in-development version of the flow. To redeploy the tool with the updated flow, click the **Deploy** button at the top-right corner of the **Tool endpoint** page. The redeployment doesn't change the tool's endpoint.

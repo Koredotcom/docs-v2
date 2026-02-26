@@ -9,7 +9,7 @@ Steps to add the Anthropic Claude-V1 model using easy integration:
 1. Click **Models** on the top navigation bar of the application. The **Models** page is displayed.
 2. Click the **External models** tab on the **Models** page.
 
-    <img src="../images/navigating-to-external-models.png" alt="Navigating to External Models" title="Navigating to External Models" class="border-2 border-gray-300 rounded-xl" />
+    <img src="../images/navigating-to-external-models.png" alt="Navigating to External Models" title="Navigating to External Models"/>
 
 3. Click **Add a model** under the **External models** tab. The **Add an external model** dialog is displayed.
 
@@ -34,10 +34,7 @@ Steps to add the Anthropic Claude-V1 model using easy integration:
 
 The model is integrated and is listed in the External models list.
 
-!!! note
-
-    * You can click the 3 dots icon corresponding to the Model name in the list of external models and edit or delete the model.
-    * You can set the Inference option using the toggle button corresponding to the Model name. If the Inferencing toggle is ON, you can use this model across the Platform. If the toggle button is OFF, it means you cannot infer it anywhere in the Platform. For example, if you turn OFF the toggle button, then in the playground, an error message is displayed that the model is not active even though you have added it in the external models tab.
+<Note> * You can click the 3 dots icon corresponding to the Model name in the list of external models and edit or delete the model. * You can set the Inference option using the toggle button corresponding to the Model name. If the Inferencing toggle is ON, you can use this model across the Platform. If the toggle button is OFF, it means you cannot infer it anywhere in the Platform. For example, if you turn OFF the toggle button, then in the playground, an error message is displayed that the model is not active even though you have added it in the external models tab. </Note>
 
 
 ## Integrate a Model from Amazon Bedrock

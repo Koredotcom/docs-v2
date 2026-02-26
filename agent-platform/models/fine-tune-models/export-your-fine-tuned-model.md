@@ -5,6 +5,6 @@ You can export your fine-tuned model for reference.
 Steps to export your fine-tuned model:
 
 1. On the **Models** page, click the three dots icon corresponding to the **Model name** . A pop-up with a list of options is displayed.  
-<img src="../images/export-fine-tuned-model.png" alt="Export Fine-Tuned Model" title="Export Fine-Tuned Model" class="border-2 border-gray-300 rounded-xl" />
+<img src="../images/export-fine-tuned-model.png" alt="Export Fine-Tuned Model" title="Export Fine-Tuned Model"/>
 
 2. Click **Export model** from the list of options. The exported zip file is saved in your downloads folder.

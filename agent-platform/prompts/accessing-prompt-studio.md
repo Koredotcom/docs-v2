@@ -9,44 +9,40 @@ Steps to access Prompts:
     * **My prompts**: Displays only the prompts that you have created or saved.
     * **Shared prompts**: Displays prompts that others have shared with you for use or collaboration. 
 
-    <img src="../images/prompt_dashboard.png" alt="Prompts dashboard" title="Prompts dashboard" class="border-2 border-gray-300 rounded-xl" /> 
+    <img src="../images/prompt_dashboard.png" alt="Prompts dashboard" title="Prompts dashboard"/> 
 
     Each tab displays the title or name of each prompt, the exact text of the prompt, and the name of the individual who created the prompt.
 
 3. To create a new prompt, click **New prompt**.
 4. On the **New prompt** dialog, enter a name for your prompt, and click **Proceed**. The Prompt landing page is displayed.
 
-    <img src="../images/prompt_entertext.png" alt="New prompt dialog" title="New Prompt dialog" class="border-2 border-gray-300 rounded-xl" />
+    <img src="../images/prompt_entertext.png" alt="New prompt dialog" title="New Prompt dialog"/>
 
 5. On the Prompts landing page, choose one of the three options to start your prompt creation journey:
     * **Generate a prompt**
     * **Start from scratch**
     * **Prompt library**  
 
-    <img src="../images/prompts_landing_page.png" alt="Prompts landing page" title="Prompts landing page" class="border-2 border-gray-300 rounded-xl" />
+    <img src="../images/prompts_landing_page.png" alt="Prompts landing page" title="Prompts landing page"/>
  
 
 ## Generate a Prompt
 
 The Generate a prompt option takes a basic prompt (one or two sentences) and expands it into a more detailed and elaborative prompt. This helps create prompts that are more comprehensive, allowing large language models (LLMs) to better understand the full context and perform the task more effectively. It simplifies the prompt creation process and improves the quality of results by providing a clearer, more structured prompt.
 
-!!! note
-
-    Currently, only OpenAI and Anthropic models are supported for both generative tasks: prompt generation and test data generation.
+<Note> Currently, only OpenAI and Anthropic models are supported for both generative tasks: prompt generation and test data generation. </Note>
 
 Steps to create prompts using the Generate a prompt option:
 
 1. On the Prompts landing page, click **Generate a prompt**.
 2. In the Prompt generator dialog, select a model and enter your instruction.  
 
-    <img src="../images/generate_a_prompt.png" alt="Generate prompt" title="Generate prompt" class="border-2 border-gray-300 rounded-xl" />
+    <img src="../images/generate_a_prompt.png" alt="Generate prompt" title="Generate prompt"/>
 
 3. Review the AI-generated prompt.
 4. Once you click **Proceed**, the prompt will be copied to the prompt canvas. You can then customize the prompt as needed.
 
-!!! note
-
-    You also have the option to generate prompts directly on the Prompt Canvas. You can click the **Generate Prompt** option in the Prompt field. This feature assists users in creating more elaborate and comprehensive prompts, helping to enhance the prompt creation process and ensure more detailed and effective results.
+<Note> You also have the option to generate prompts directly on the Prompt Canvas. You can click the **Generate Prompt** option in the Prompt field. This feature assists users in creating more elaborate and comprehensive prompts, helping to enhance the prompt creation process and ensure more detailed and effective results. </Note>
 
 
 ## Start From Scratch
@@ -82,8 +78,6 @@ Steps to create prompts from prompt library:
 
     <img src="../images/prompt_canvas_library.png" alt="Prompt library canvas" title="Prompt library canvas" style="border: 1px solid gray; zoom:30%;"/>
   
-!!! note
-
-    All the prompt templates are read-only, preventing direct editing of predefined prompts. You can edit the content only when you use the template in the prompt canvas.
+<Note> All the prompt templates are read-only, preventing direct editing of predefined prompts. You can edit the content only when you use the template in the prompt canvas. </Note>
 
 For more information on how to create prompts on the prompts canvas, see [Using Prompt Studio](./using-prompt-studio.md).

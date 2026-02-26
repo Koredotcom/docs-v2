@@ -17,7 +17,7 @@ Key highlights
 * Agents needing LLM configuration show a **Configure LLM** button for quick setup.
 * Displays the total agent count in the page header, with **Explore Marketplace** and **New Agent** options always visible.
 
-<img src="../images/agents-listing-page.png" alt="Agent Listing Page" title="Agent Listing Page" style="zoom:70%; border: 1px solid gray;" />
+<img src="../images/agents-listing-page.png" alt="Agent Listing Page" title="Agent Listing Page"/>
 -->
 
 ## Agent Setup Overview

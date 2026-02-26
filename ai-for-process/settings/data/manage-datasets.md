@@ -9,7 +9,7 @@ You can upload a dataset of your choice in CSV, JSON, or JSONL format.
 Steps to upload a dataset:
 
 1. Log in → In AI for Process Modules top menu → Click **Data**.
-   <img src="../images/navigate-to-data-module.png" alt="Navigate to Data Module" title="Navigate to Data Module" style="border: 1px solid gray; zoom:50%;"/>
+   <img src="../images/navigate-to-data-module.png" alt="Navigate to Data Module" title="Navigate to Data Module"/>
    
 3. Click **Upload dataset** and select your file. The uploaded file will appear on the Data page.
 
@@ -23,5 +23,5 @@ Steps to upload a dataset:
 You can download or delete the dataset if it’s no longer used on the platform. Deleting a dataset used in Playground experiments may cause errors.
 
 * Click the three dots icon in the last column, and choose **Download** or **Delete** as required.  
-<img src="../images/download-or-delete-datasets.png" alt="Navigate to Data Module" title="Navigate to Data Module" style="border: 1px solid gray; zoom:50%;"/>
+<img src="../images/download-or-delete-datasets.png" alt="Navigate to Data Module" title="Navigate to Data Module"/>
 

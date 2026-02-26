@@ -12,9 +12,7 @@ Steps to upload a dataset:
 2. Click **Data** on the top navigation bar. The **Data** page is displayed.   
 3. Click **Upload dataset** and select your file. The uploaded file will appear on the Data page.
 
-    !!! note
-
-        Files uploaded in Prompts Studio or Models fine-tuning wizard are automatically saved in the Data tab for future use.
+    <Note> Files uploaded in Prompts Studio or Models fine-tuning wizard are automatically saved in the Data tab for future use. </Note>
 
 
 ## Download or Delete a Dataset

@@ -79,6 +79,4 @@ Click on New API Key , provide a name for the key, and click Create. This genera
 
 When you revoke a key, it becomes invalid and can no longer be used to access any application resources.
 
-!!!note
-    
-    Keys are not revoked automatically. There is no expiration time associated with them, and they remain valid until explicitly revoked.
+<Note> Keys are not revoked automatically. There is no expiration time associated with them, and they remain valid until explicitly revoked. </Note>

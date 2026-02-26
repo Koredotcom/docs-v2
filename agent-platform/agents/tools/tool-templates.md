@@ -83,7 +83,7 @@ To access a tool template, follow the steps below:
 4. Scroll down to the **Tools** section.
 5. Select the required **Categories** and **Tasks** from the left filter to view the relevant templates.
 
-    <img src="../images/select-category-tasks.png" alt="Select category and task" title="Select category and task" style="border: 1px solid gray; zoom:60%;" />
+    <img src="../images/select-category-tasks.png" alt="Select category and task" title="Select category and task"/>
 
 6. Click the required template to view its information window.
 

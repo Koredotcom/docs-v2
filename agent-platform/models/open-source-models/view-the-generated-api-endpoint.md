@@ -6,9 +6,7 @@ After the open-source model is deployed, the API endpoint is generated which imp
 
 The API endpoint is available in 3 formats.
 
-!!! note
-
-    You will receive an email notification after your model deployment is completed and an API is generated, and it is ready to use.
+<Note> You will receive an email notification after your model deployment is completed and an API is generated, and it is ready to use. </Note>
 
 To view the API Endpoint, follow these steps:
 
@@ -16,11 +14,9 @@ To view the API Endpoint, follow these steps:
 
 1. To use this model as a service, the generated code is helpful. Click the **Copy** icon to copy and share the API Endpoint.
 
-    <img src="../images/new_endpoint.png" alt="Deployed Model API Endpoint" title="Deployed Model API Endpoint" class="border-2 border-gray-300 rounded-xl" />
+    <img src="../images/new_endpoint.png" alt="Deployed Model API Endpoint" title="Deployed Model API Endpoint"/>
 
-!!! note
-
-    Click the **Deployment history** tab on the Deploy page to view the history. This can be particularly useful for auditing and accountability purpose.
+<Note> Click the **Deployment history** tab on the Deploy page to view the history. This can be particularly useful for auditing and accountability purpose. </Note>
 
 
 You can either embed the curl or the code that is generated into your own applications or use it externally. 
@@ -45,9 +41,7 @@ Supported schema data types include: string, number, boolean, integer, object, a
 * If not provided, the model responds with standard text output.
 
 
-!!! note
-
-    If a model supports both tool calls and JSON Schema, tool calls take precedence, and the schema will be ignored.
+<Note> If a model supports both tool calls and JSON Schema, tool calls take precedence, and the schema will be ignored. </Note>
 
 
 ## Deployment History
@@ -60,7 +54,7 @@ For example, if a model named "Flan T5" is deployed for the first time, it will 
 
 The most recent deployment is marked with a green ticket next to the model name. Click on any deployment version to view the details.
 
- <img src="../images/deployment-history.png" alt="Deployment History" title="Deployment History" class="border-2 border-gray-300 rounded-xl" />
+ <img src="../images/deployment-history.png" alt="Deployment History" title="Deployment History"/>
 
 **General details**: This section displays the model's basic information, such as its name, description, tags, optimization technique, parameters, the hardware used, and deployment duration.
 

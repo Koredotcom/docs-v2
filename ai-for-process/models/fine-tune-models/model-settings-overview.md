@@ -5,7 +5,7 @@ The model overview page displays real-time progress of the Fine-tuned models.
 To access the model’s overview page, log in to your account and click **Model Hub** under AI for Process.
 
 On the Fine-tuned models tab, click the desired model to view the following information:  
-<img src="../images/model-overview.png" alt="Model Overview" title="Model Overview" style="border: 1px solid gray; zoom:60%;"/>
+<img src="../images/model-overview.png" alt="Model Overview" title="Model Overview"/>
 
 * **General Information**: This section displays the model's progress status, Total time, and Author details.  
 

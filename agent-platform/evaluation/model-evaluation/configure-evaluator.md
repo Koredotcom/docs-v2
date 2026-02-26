@@ -17,9 +17,7 @@ There are two types of AI evaluators:
 * **System AI Evaluators**: These are pre-built evaluators provided by the platform to assess common aspects of model performance, such as quality, correctness, and safety. These evaluators are ready-to-use and cannot be modified, providing a quick and efficient way for users to evaluate models.
 * **Custom AI Evaluators**: Users can create custom evaluators tailored to their specific needs. These evaluators allow users to define their own evaluation prompts and scoring mechanisms, offering more flexibility. Custom AI evaluators are particularly useful for evaluating unique datasets or specialized tasks, giving users full control over how models are assessed.
 
-!!! note
-
-    Users can access all the available system evaluators through the global Evaluators page located at the project level. Simply click the Evaluators tab, located next to the Projects tab. This page provides an overview of available evaluators that can be applied to datasets for evaluation.
+<Note> Users can access all the available system evaluators through the global Evaluators page located at the project level. Simply click the Evaluators tab, located next to the Projects tab. This page provides an overview of available evaluators that can be applied to datasets for evaluation. </Note>
 
 
 System Evaluators are grouped into three categories: **Quality**, **Safety**, and **RAGAS** evaluators.
@@ -224,7 +222,7 @@ Steps to add an evaluator:
 
 1. On the Evaluations page, click the **+** button, and select the **Add evaluator** option.
 
-    <img src="../../images/import_dataset_options.png" alt="Configure evaluator" title="Configure evaluator" class="border-2 border-gray-300 rounded-xl" />
+    <img src="../../images/import_dataset_options.png" alt="Configure evaluator" title="Configure evaluator"/>
 
 2. From the list of Quality and Safety evaluators, select the desired evaluator.
 3. In the Evaluators dialog, fill in these details:
@@ -241,7 +239,7 @@ Steps to add an evaluator:
 
 4. Click **Save** to save the evaluator configuration.
 
-    <img src="../../images/evaluators_config.png" alt="Configure evaluator" title="Configure evaluator" class="border-2 border-gray-300 rounded-xl" />
+    <img src="../../images/evaluators_config.png" alt="Configure evaluator" title="Configure evaluator"/>
 
 
 ## Adding a Custom Evaluator
@@ -252,13 +250,13 @@ Steps to add an evaluator:
 
 1. On the Evaluations page, click the **+** button, and select the **Add evaluator** option.
 
-    <img src="../../images/import_dataset_options.png" alt="Configure evaluator" title="Configure evaluator" class="border-2 border-gray-300 rounded-xl" />
+    <img src="../../images/import_dataset_options.png" alt="Configure evaluator" title="Configure evaluator"/>
 
     The list of Quality and Safety evaluators are displayed.
 
 2. To add a custom evaluator, click **Add evaluator**.  
 
-    <img src="../../images/add_custom_evaluator.png" alt="Add evaluator" title="Add evaluator" class="border-2 border-gray-300 rounded-xl" />
+    <img src="../../images/add_custom_evaluator.png" alt="Add evaluator" title="Add evaluator"/>
 
 3. In the Custom evaluators dialog, fill in these details:  
 
@@ -269,8 +267,7 @@ Steps to add an evaluator:
     5. **Model Configuration**: Select the appropriate model hyperparameters such as Temperature, Output token limit, Top P etc.
     6. **Prompt**: Enter the prompt that will guide the model in evaluating the input/output. You can also click ‘Template’ to use built-in evaluator templates, which you can then customize as needed.  
 
-        !!! note
-            Do not specify the format of the score in the prompt. The format is automatically determined by the selected output type (Score or Boolean). If there is a mismatch between the output type and the score format, an error may occur.  
+        <Note> Do not specify the format of the score in the prompt. The format is automatically determined by the selected output type (Score or Boolean). If there is a mismatch between the output type and the score format, an error may occur. </Note>
 
     7. **Save as a Global Evaluator**: Check this box to save the evaluator as a global evaluator. This will add the custom evaluator to the global evaluator page. The global evaluator will also appear on the project-level evaluator page for other users to access and use, without affecting the original evaluator.
     8. **Map variables**: Map the variables in the prompt to the corresponding columns in your imported dataset. This ensures the evaluator uses the right data for its analysis. [Learn more](./configure-evaluator.md#mapping-variables-link-evaluator-prompts-to-your-dataset).
@@ -283,9 +280,9 @@ Steps to add an evaluator:
 
 4. Click **Save** to save the evaluator configuration.
 
-    <img src="../../images/custom_eval_dialog_filled1.png" alt="Custom evaluator" title="Custom evaluator" class="border-2 border-gray-300 rounded-xl" /> 
+    <img src="../../images/custom_eval_dialog_filled1.png" alt="Custom evaluator" title="Custom evaluator"/> 
 
-    <img src="../../images/custom_eval_dialog_filled2.png" alt="Custom evaluator" title="Custom evaluator" class="border-2 border-gray-300 rounded-xl" /> 
+    <img src="../../images/custom_eval_dialog_filled2.png" alt="Custom evaluator" title="Custom evaluator"/> 
 
 
 

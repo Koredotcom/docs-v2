@@ -23,10 +23,7 @@ Banners will appear at the top of the page in the following cases:
 
 **Email Notifications:** The system automatically sends email notifications to users when their credit levels fall below a specified threshold, including warnings for both model credits and tool runs. Emails will be sent at 50%, 70%, 80%, and 90% exhaustion of model credits and tool runs, giving users ample notice to take action. These emails include instructions on the next steps to resolve the issue, such as adding more credits by contacting the Platform support.
 
-!!! note
-
-    Billing usage is tracked and displayed on the Billing Usage page. This page displays tool runs and model credit consumption, allowing users to easily track and adjust their usage as necessary.
-    
+<Note> Billing usage is tracked and displayed on the Billing Usage page. This page displays tool runs and model credit consumption, allowing users to easily track and adjust their usage as necessary. </Note>
 ## Credit Usage Summary
 
 Users can easily track their usage and know when to take action. A **Clock** icon on the top right of the page visually represents credit usage. Click to view the following usage summary information:

@@ -121,11 +121,11 @@ Deploy and undeploy guardrail models to apply scanners to prompt input and outpu
 To access the **Settings** Console on AI for Process, follow the steps below:
 
 1. Log in → In AI for Process Modules top menu → Click **Settings**.
-   <img src="../images/aip-settings-access.png" alt="access settings" title="access settings" style="border: 1px solid gray; zoom:75%;"/>
+   <img src="../images/aip-settings-access.png" alt="access settings" title="access settings"/>
 
    The system redirects to the **Users** page under **Users Management**.
 
-   <img src="../images/access-settings-menu-aip.png" alt="access settings menu" title="access settings menu" style="border: 1px solid gray; zoom:75%;"/>
+   <img src="../images/access-settings-menu-aip.png" alt="access settings menu" title="access settings menu"/>
 
 ## Modules and Features
 

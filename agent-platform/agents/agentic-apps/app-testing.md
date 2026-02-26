@@ -18,9 +18,7 @@ Whenever a user clicks on the Playground option, by default, a new user session 
 
 **Query Input**: Enter your query in the designated input field to initiate the simulation. In addition to typing, users can also provide **voice input** using their browser’s built-in speech recognition capabilities. The Playground uses browser-based Automatic Speech Recognition (ASR) functionality. Click the microphone icon next to the input field, provide speech input, which is automatically converted to text. The recognized text is then populated in the input field, ready to be submitted as a query.
 
-!!!note
-    * Voice output isn't supported. The application only provides text-based responses. 
-    * For voice input, the application uses the built-in voice capabilities of the browser, which is supported by default on most of the commonly used browsers like Chrome, Firefox, Safari, and Edge.
+<Note> * Voice output isn't supported. The application only provides text-based responses. * For voice input, the application uses the built-in voice capabilities of the browser, which is supported by default on most of the commonly used browsers like Chrome, Firefox, Safari, and Edge. </Note>
 
 **Response Display**: The agent's response is displayed, providing immediate feedback on the input provided.
 
@@ -46,10 +44,7 @@ This detailed layout enables users to understand the sequence of operations and 
 
 **Attachment Support**: Users can also pass contextual information to the agent through attachments. Users can upload files to the conversation using the attach icon in the query input box. 
 
-!!!note
-    * Attachments are only allowed if the Document Upload option is enabled under Playground Settings on the Configurations page.
-    * The maximum number of files and file size limits are controlled by the Attachment Configurations under General Settings. [Learn More](settings/app-configurations.md).
-    * When a file is uploaded in the Playground, a preview icon is automatically displayed next to the file name. This allows users to quickly identify the uploaded file before continuing the conversation.  ![Document Preview](images/playground/preview.png "Document preview")
+<Note> * Attachments are only allowed if the Document Upload option is enabled under Playground Settings on the Configurations page. * The maximum number of files and file size limits are controlled by the Attachment Configurations under General Settings. [Learn More](settings/app-configurations.md). * When a file is uploaded in the Playground, a preview icon is automatically displayed next to the file name. This allows users to quickly identify the uploaded file before continuing the conversation.  ![Document Preview](images/playground/preview.png "Document preview") </Note>
 
 
 **Document Context Management**
@@ -98,8 +93,7 @@ The system evaluates whether the authorization has already been completed.
 * **If already authorized:** The status is shown as **"Authorized"** (as displayed in the image), and the agent proceeds with responding to the user's query.
 * **If not authorized:** The user is prompted to **authorize access** before the agent can proceed further. A secure redirect URL will be presented for the user to complete the authorization process.
 
-!!!note
-    The agent can't execute the required actions until you complete authorization because it lacks access to protected services. In this situation, the tool fails and returns errors. If it needs more than one authorization, the interface lists all required authorizations in the table at the beginning of the interaction.
+<Note> The agent can't execute the required actions until you complete authorization because it lacks access to protected services. In this situation, the tool fails and returns errors. If it needs more than one authorization, the interface lists all required authorizations in the table at the beginning of the interaction. </Note>
 
 **Example**
 

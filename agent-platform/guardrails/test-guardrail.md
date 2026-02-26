@@ -5,13 +5,13 @@ After enabling and configuring the necessary scanners, you can verify that they 
 Steps to test the Guardrails or Scanners:
 
 1. On the Guardrails page, click **Test**.  
-<img src="./../images/test-guardrails.png" alt="Test Guardrails" title="Test Guardrails" class="border-2 border-gray-300 rounded-xl" />
+<img src="./../images/test-guardrails.png" alt="Test Guardrails" title="Test Guardrails"/>
 
 2. On the Test Guardrails page, in the **Prompt input** box, enter a prompt or select **Input template** to choose a template.  
-<img src="./../images/test-guardrails-prompt-input.png" alt="Prompt to Test a Scanner" title="Prompt to Test a Scanner" class="border-2 border-gray-300 rounded-xl" />
+<img src="./../images/test-guardrails-prompt-input.png" alt="Prompt to Test a Scanner" title="Prompt to Test a Scanner"/>
 
 3. Select Test. Under Scores and Results, review the following results:  
-<img src="./../images/guardrails-test-results.png" alt="Guardrails Test Results" title="Guardrails Test Results" class="border-2 border-gray-300 rounded-xl" /> 
+<img src="./../images/guardrails-test-results.png" alt="Guardrails Test Results" title="Guardrails Test Results"/> 
 
     * **Validity**: Indicates whether the prompt is valid based on the scanner's criteria. (For example, if Toxicity is not found in the prompt, the prompt is valid, and the Validity is set to True.)
 
@@ -19,10 +19,9 @@ Steps to test the Guardrails or Scanners:
 
     * **Duration**: Displays the time taken by the scanner to process the prompt.
 
-    !!! note
+    <Note>
+    * The **Risk Score** is calculated using the following formula: (Threshold - Scanner Score) / Threshold.
+    * For the **Relevance Scanner**, if the similarity between the prompt and generated answer is below the user-defined threshold, the Risk Score is 1; otherwise, it's 0.
+    </Note>
 
-        * The **Risk Score** is calculated using the following formula: (Threshold - Scanner Score) / Threshold. 
-
-        * For the **Relevance Scanner**, if the similarity between the prompt and generated answer is below the user-defined threshold, the Risk Score is 1; otherwise, it's 0.
-
-4. Based on the results, you can adjust the Scanner's settings and test them again if required.
+1. Based on the results, you can adjust the Scanner's settings and test them again if required.
