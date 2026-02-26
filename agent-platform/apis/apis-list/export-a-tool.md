@@ -4,36 +4,15 @@
 
 This API exports a tool's configuration and associated data, including its flow  for backup, sharing, or reuse. It allows users to generate an export of a specific tool along with its deployed call flow.
 
-When an export request is initiated, the API triggers the export process and returns a <code>dockStatusId</code>, which can be used with the [Get Dock Status API](../apis-list/get-dock-status.md) to track the export progress. The API response also includes an <code>exportJobId</code> for tracking the specific export job.
+When an export request is initiated, the API triggers the export process and returns a `dockStatusId`, which can be used with the [Get Dock Status API](../apis-list/get-dock-status.md) to track the export progress. The API response also includes an `exportJobId` for tracking the specific export job.
 
 Additionally, the response provides a **download URL**. Copy and paste this URL into a browser or API client to download the exported tool file.
 
-<table>
-  <tr>
-   <td><strong>Method</strong>
-   </td>
-   <td>POST
-   </td>
-  </tr>
-  <tr>
-   <td><strong>Endpoint</strong>
-   </td>
-   <td><code>https://{host}/api/public/tools/:{toolId}/export?flowId={callflowId}</code>
-   </td>
-  </tr>
-  <tr>
-   <td><strong>Content Type</strong>
-   </td>
-   <td>application/json
-   </td>
-  </tr>
-  <tr>
-   <td><strong>Authorization</strong>
-   </td>
-   <td><strong><code>X-api-key</code></strong> - The API key used for authentication.
-   </td>
-  </tr>
-</table>
+| Method | POST |
+| --- | --- |
+| Endpoint | `https://{host}/api/public/tools/:{toolId}/export?flowId={callflowId}` |
+| Content Type | application/json |
+| Authorization | `X-api-key` - The API key used for authentication. |
 
 **Where can I find the API key?**
 
@@ -45,54 +24,17 @@ To use the API, you will need an API key. [Learn more](../../apis/overview.md#ho
 2. Open developer tools.
 3. Select the **Network** tab.
 <img src="../images/developer-tools.png" alt="developer tools" title="developer tools" style="border: 1px solid gray; zoom:60%;"/>
-4. Monitor the Export API to capture <code>toolId</code> and <code>callflowId</code>.
+4. Monitor the Export API to capture `toolId` and `callflowId`.
 
 
 ## Query Parameters
 
 
-<table>
-  <tr>
-   <td><strong>PARAMETER</strong>
-   </td>
-   <td><strong>DESCRIPTION</strong>
-   </td>
-   <td><strong>TYPE</strong>
-   </td>
-   <td><strong>REQUIRED/OPTIONAL</strong>
-   </td>
-  </tr>
-  <tr>
-   <td><strong>host</strong>
-   </td>
-   <td>The environment URL. For example, <code> https://agent-platform.domain.ai/</code>
-   </td>
-   <td>String
-   </td>
-   <td>Required
-   </td>
-  </tr>
-  <tr>
-   <td><strong>toolId</strong>
-   </td>
-   <td>The tool ID of the tool being exported.
-   </td>
-   <td>String
-   </td>
-   <td>Required
-   </td>
-  </tr>
-  <tr>
-   <td><strong>callflowId</strong>
-   </td>
-   <td>The callflow ID for the deployed tool.
-   </td>
-   <td>String
-   </td>
-   <td>Required
-   </td>
-  </tr>
-</table>
+| PARAMETER | DESCRIPTION | TYPE | REQUIRED/OPTIONAL |
+| --- | --- | --- | --- |
+| host | The environment URL. For example, ` https://agent-platform.domain.ai/` | String | Required |
+| toolId | The tool ID of the tool being exported. | String | Required |
+| callflowId | The callflow ID for the deployed tool. | String | Required |
 
 ## Sample Request
 
@@ -124,69 +66,12 @@ No parameters are passed.
 
 ## Response Parameters
 
-<table>
-  <tr>
-   <td><strong>PARAMETER</strong>
-   </td>
-   <td><strong>DESCRIPTION</strong>
-   </td>
-   <td><strong>TYPE</strong>
-   </td>
-  </tr>
-  <tr>
-   <td><strong>dockStatusId</strong>
-   </td>
-   <td>The unique identifier to track the status of the tool export process. 
-   </td>
-   <td>String
-   </td>
-  </tr>
-  <tr>
-   <td><strong>toolId</strong>
-   </td>
-   <td>The unique identifier for the tool.
-   </td>
-   <td>String
-   </td>
-  </tr>
-  <tr>
-   <td><strong>jobType</strong>
-   </td>
-   <td>The type of job being performed.
-   </td>
-   <td>String
-   </td>
-  </tr>
-  <tr>
-   <td><strong>action</strong>
-   </td>
-   <td>The action that is performed on the tool.
-   </td>
-   <td>String
-   </td>
-  </tr>
-  <tr>
-   <td><strong>status</strong>
-   </td>
-   <td>The current status of the job.
-   </td>
-   <td>String
-   </td>
-  </tr>
-  <tr>
-   <td><strong>exportJobId</strong>
-   </td>
-   <td>The unique Identifier to track the specific export job.
-   </td>
-   <td>String
-   </td>
-  </tr>
-  <tr>
-   <td><strong>downloadURL</strong>
-   </td>
-   <td>The url to download the exported tool file.
-   </td>
-   <td>String
-   </td>
-  </tr>
-</table>
+| PARAMETER | DESCRIPTION | TYPE |
+| --- | --- | --- |
+| dockStatusId | The unique identifier to track the status of the tool export process. | String |
+| toolId | The unique identifier for the tool. | String |
+| jobType | The type of job being performed. | String |
+| action | The action that is performed on the tool. | String |
+| status | The current status of the job. | String |
+| exportJobId | The unique Identifier to track the specific export job. | String |
+| downloadURL | The url to download the exported tool file. | String |

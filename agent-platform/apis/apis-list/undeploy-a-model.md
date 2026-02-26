@@ -2,35 +2,14 @@
 
 # Undeploy a Model API
 
-This API undeploys a model from the environment. The API response includes the model ID, model undeployment status, and the dockStatusId. After receiving the response, use the <code>dockStatusId</code> to call the [Get Dock Status API](../apis-list/get-dock-status.md) and verify successful model undeployment.
+This API undeploys a model from the environment. The API response includes the model ID, model undeployment status, and the dockStatusId. After receiving the response, use the `dockStatusId` to call the [Get Dock Status API](../apis-list/get-dock-status.md) and verify successful model undeployment.
 
 
-<table>
-  <tr>
-   <td><strong>Method</strong>
-   </td>
-   <td>POST
-   </td>
-  </tr>
-  <tr>
-   <td><strong>Endpoint</strong>
-   </td>
-   <td><strong> </strong><code>https://{host}/api/public/models/:{<i>modelId</i>}/undeploy</code>
-   </td>
-  </tr>
-  <tr>
-   <td><strong>Content Type</strong>
-   </td>
-   <td>application/json
-   </td>
-  </tr>
-  <tr>
-   <td><strong>Authorization</strong>
-   </td>
-   <td><strong><code>X-api-key</code></strong> - The API key used for authentication.
-   </td>
-  </tr>
-</table>
+| Method | POST |
+| --- | --- |
+| Endpoint |  `https://{host}/api/public/models/:{<i>modelId</i>}/undeploy` |
+| Content Type | application/json |
+| Authorization | `X-api-key` - The API key used for authentication. |
 
 **Where can I find the API key?**
 
@@ -38,38 +17,10 @@ To use the API, you will need an API key. [Learn more](../../apis/overview.md#ho
 
 ## Path Parameters
 
-<table>
-  <tr>
-   <td><strong>PARAMETER</strong>
-   </td>
-   <td><strong>DESCRIPTION</strong>
-   </td>
-   <td><strong>TYPE</strong>
-   </td>
-   <td><strong>REQUIRED/OPTIONAL</strong>
-   </td>
-  </tr>
-  <tr>
-   <td><strong>host</strong>
-   </td>
-   <td>The environment URL. For example, <code>https://agent-platform.domain.ai/</code>
-   </td>
-   <td>String
-   </td>
-   <td>Required
-   </td>
-  </tr>
-  <tr>
-   <td><strong>modelId</strong>
-   </td>
-   <td>The unique identifier of the model to deploy.
-   </td>
-   <td>String
-   </td>
-   <td>Required
-   </td>
-  </tr>
-</table>
+| PARAMETER | DESCRIPTION | TYPE | REQUIRED/OPTIONAL |
+| --- | --- | --- | --- |
+| host | The environment URL. For example, `https://agent-platform.domain.ai/` | String | Required |
+| modelId | The unique identifier of the model to deploy. | String | Required |
 
 ## Sample Request
 
@@ -96,53 +47,10 @@ No parameters are passed.
 
 ## Response Parameters
 
-<table>
-  <tr>
-   <td><strong>PARAMETER</strong>
-   </td>
-   <td><strong>DESCRIPTION</strong>
-   </td>
-   <td><strong>TYPE</strong>
-   </td>
-  </tr>
-  <tr>
-   <td><strong>dockStatusId</strong>
-   </td>
-   <td>The unique identifier to track the model undeployment status.
-   </td>
-   <td>String
-   </td>
-  </tr>
-  <tr>
-   <td><strong>modelId</strong>
-   </td>
-   <td>The unique identifier for the model.
-   </td>
-   <td>String
-   </td>
-  </tr>
-  <tr>
-   <td><strong>jobType</strong>
-   </td>
-   <td>Type of job being performed (“<em>MODELS</em>”).
-   </td>
-   <td>String
-   </td>
-  </tr>
-  <tr>
-   <td><strong>action</strong>
-   </td>
-   <td>The action performed on the model, that is “<em>UNDEPLOY</em>”).
-   </td>
-   <td>String
-   </td>
-  </tr>
-  <tr>
-   <td><strong>status</strong>
-   </td>
-   <td>The current status of the job ("<em>SUCCESS</em>", "<em>IN_PROGRESS</em>", or "<em>FAILED</em>").
-   </td>
-   <td>String
-   </td>
-  </tr>
-</table>
+| PARAMETER | DESCRIPTION | TYPE |
+| --- | --- | --- |
+| dockStatusId | The unique identifier to track the model undeployment status. | String |
+| modelId | The unique identifier for the model. | String |
+| jobType | Type of job being performed (“<em>MODELS</em>”). | String |
+| action | The action performed on the model, that is “<em>UNDEPLOY</em>”). | String |
+| status | The current status of the job ("<em>SUCCESS</em>", "<em>IN_PROGRESS</em>", or "<em>FAILED</em>"). | String |

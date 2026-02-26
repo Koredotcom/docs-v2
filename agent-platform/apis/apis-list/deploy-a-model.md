@@ -4,34 +4,13 @@
 
 This API deploys an open-source or fine-tuned model in the ***Ready to Deploy*** state. Users can configure deployment parameters, including hyperparameters, scaling, and optimization settings, allowing for flexible model scaling and performance tuning.
 
-The API response includes the **model ID** and the **model deployment status**. After receiving the response, use the <code>dockStatusId</code> to call the [Get Dock Status API](../apis-list/get-dock-status.md)  and verify the successful deployment of the model.
+The API response includes the **model ID** and the **model deployment status**. After receiving the response, use the `dockStatusId` to call the [Get Dock Status API](../apis-list/get-dock-status.md)  and verify the successful deployment of the model.
 
-<table>
-  <tr>
-   <td><strong>Method</strong>
-   </td>
-   <td>POST
-   </td>
-  </tr>
-  <tr>
-   <td><strong>Endpoint</strong>
-   </td>
-   <td><code>https://{host}/api/public/models/:{<i>modelId</i>}/deploy?modelType={<i>modelType</i>}</code>
-   </td>
-  </tr>
-  <tr>
-   <td><strong>Content Type</strong>
-   </td>
-   <td>application/json
-   </td>
-  </tr>
-  <tr>
-   <td><strong>Authorization</strong>
-   </td>
-   <td><strong><code>X-api-key</code></strong> - The API key used for authentication.
-   </td>
-  </tr>
-</table>
+| Method | POST |
+| --- | --- |
+| Endpoint | `https://{host}/api/public/models/:{<i>modelId</i>}/deploy?modelType={<i>modelType</i>}` |
+| Content Type | application/json |
+| Authorization | `X-api-key` - The API key used for authentication. |
 
 **Where can I find the API key?**
 
@@ -39,56 +18,11 @@ To use the API, you will need an API key. [Learn more](../../apis/overview.md#ho
 
 ## Query Parameters
 
-<table>
-  <tr>
-   <td><strong>PARAMETER</strong>
-   </td>
-   <td><strong>DESCRIPTION</strong>
-   </td>
-   <td><strong>TYPE</strong>
-   </td>
-   <td><strong>REQUIRED/OPTIONAL</strong>
-   </td>
-   <td><strong>ENUM VALUES</strong>
-   </td>
-  </tr>
-  <tr>
-   <td><strong>host</strong>
-   </td>
-   <td>The environment URL. For example, <code>https://agent-platform.domain.ai/</code>.
-   </td>
-   <td>String
-   </td>
-   <td>Required
-   </td>
-   <td>N/A
-   </td>
-  </tr>
-  <tr>
-   <td><strong>modelId</strong>
-   </td>
-   <td>The model ID to deploy.
-   </td>
-   <td>String
-   </td>
-   <td>Required
-   </td>
-   <td>N/A
-   </td>
-  </tr>
-  <tr>
-   <td><strong>modelType</strong>
-   </td>
-   <td>Type of model being deployed.
-   </td>
-   <td>String
-   </td>
-   <td>Required
-   </td>
-   <td>["openSource", "fineTune"]
-   </td>
-  </tr>
-</table>
+| PARAMETER | DESCRIPTION | TYPE | REQUIRED/OPTIONAL | ENUM VALUES |
+| --- | --- | --- | --- | --- |
+| host | The environment URL. For example, `https://agent-platform.domain.ai/`. | String | Required | N/A |
+| modelId | The model ID to deploy. | String | Required | N/A |
+| modelType | Type of model being deployed. | String | Required | ["openSource", "fineTune"] |
 
 ## Sample Request
 
@@ -160,269 +94,45 @@ The following deployment parameters can be configured and passed in the body:
 
 **General Parameters**
 
-<table>
-  <tr>
-   <td><strong>PARAMETER</strong>
-   </td>
-   <td><strong>DESCRIPTION</strong>
-   </td>
-   <td><strong>TYPE</strong>
-   </td>
-   <td><strong>REQUIRED/OPTIONAL</strong>
-   </td>
-   <td><strong>ENUM VALUES</strong>
-   </td>
-  </tr>
-  <tr>
-   <td><strong>name</strong>
-   </td>
-   <td>Name of the model to deploy.
-   </td>
-   <td>String
-   </td>
-   <td>Required
-   </td>
-   <td>N/A
-   </td>
-  </tr>
-  <tr>
-   <td><strong>isDeployedPreviously</strong>
-   </td>
-   <td>Indicates if the model was deployed before.
-   </td>
-   <td>Boolean
-   </td>
-   <td>Optional
-   </td>
-   <td>[true, false]
-   </td>
-  </tr>
-</table>
+| PARAMETER | DESCRIPTION | TYPE | REQUIRED/OPTIONAL | ENUM VALUES |
+| --- | --- | --- | --- | --- |
+| name | Name of the model to deploy. | String | Required | N/A |
+| isDeployedPreviously | Indicates if the model was deployed before. | Boolean | Optional | [true, false] |
 
 
 **Hyperparameters**
 
 
-<table>
-  <tr>
-   <td><strong>PARAMETER</strong>
-   </td>
-   <td><strong>DESCRIPTION</strong>
-   </td>
-   <td><strong>TYPE</strong>
-   </td>
-   <td><strong>REQUIRED/OPTIONAL</strong>
-   </td>
-   <td><strong>ENUM VALUES</strong>
-   </td>
-  </tr>
-  <tr>
-   <td><strong>temperature</strong>
-   </td>
-   <td>Controls randomness of output.
-   </td>
-   <td>Float
-   </td>
-   <td>Required
-   </td>
-   <td>0-2
-   </td>
-  </tr>
-  <tr>
-   <td><strong>maxTokens</strong>
-   </td>
-   <td>Maximum tokens allowed.
-   </td>
-   <td>Int
-   </td>
-   <td>Required
-   </td>
-   <td>0-512
-   </td>
-  </tr>
-  <tr>
-   <td><strong>topP</strong>
-   </td>
-   <td>Controls nucleus sampling.
-   </td>
-   <td>Float
-   </td>
-   <td>Required
-   </td>
-   <td>0-1
-   </td>
-  </tr>
-  <tr>
-   <td><strong>topK</strong>
-   </td>
-   <td>Controls top-K sampling.
-   </td>
-   <td>Int
-   </td>
-   <td>Required
-   </td>
-   <td>1-100
-   </td>
-  </tr>
-  <tr>
-   <td><strong>stopSequence</strong>
-   </td>
-   <td>Stop sequences for the model.
-   </td>
-   <td>Array
-   </td>
-   <td>Optional
-   </td>
-   <td>N/A
-   </td>
-  </tr>
-</table>
+| PARAMETER | DESCRIPTION | TYPE | REQUIRED/OPTIONAL | ENUM VALUES |
+| --- | --- | --- | --- | --- |
+| temperature | Controls randomness of output. | Float | Required | 0-2 |
+| maxTokens | Maximum tokens allowed. | Int | Required | 0-512 |
+| topP | Controls nucleus sampling. | Float | Required | 0-1 |
+| topK | Controls top-K sampling. | Int | Required | 1-100 |
+| stopSequence | Stop sequences for the model. | Array | Optional | N/A |
 
 
 **Scaling Parameters**
 
 
-<table>
-  <tr>
-   <td><strong>PARAMETER</strong>
-   </td>
-   <td><strong>DESCRIPTION</strong>
-   </td>
-   <td><strong>TYPE</strong>
-   </td>
-   <td><strong>REQUIRED/OPTIONAL</strong>
-   </td>
-   <td><strong>RANGE</strong>
-   </td>
-  </tr>
-  <tr>
-   <td><strong>maxBatchSize</strong>
-   </td>
-   <td>Maximum batch size.
-   </td>
-   <td>Int
-   </td>
-   <td>Optional
-   </td>
-   <td>1-256
-   </td>
-  </tr>
-  <tr>
-   <td><strong>minReplicas</strong>
-   </td>
-   <td>Minimum replicas.
-   </td>
-   <td>Int
-   </td>
-   <td>Optional
-   </td>
-   <td>1-10
-   </td>
-  </tr>
-  <tr>
-   <td><strong>maxReplicas</strong>
-   </td>
-   <td>Maximum replicas.
-   </td>
-   <td>Int
-   </td>
-   <td>Optional
-   </td>
-   <td>1-50
-   </td>
-  </tr>
-  <tr>
-   <td><strong>scaleUpDelay</strong>
-   </td>
-   <td>Delay before scaling up (ms).
-   </td>
-   <td>Int
-   </td>
-   <td>Optional
-   </td>
-   <td>1-1000
-   </td>
-  </tr>
-  <tr>
-   <td><strong>scaleDownDelay</strong>
-   </td>
-   <td>Delay before scaling down (ms).
-   </td>
-   <td>Int
-   </td>
-   <td>Optional
-   </td>
-   <td>50-2000
-   </td>
-  </tr>
-</table>
+| PARAMETER | DESCRIPTION | TYPE | REQUIRED/OPTIONAL | RANGE |
+| --- | --- | --- | --- | --- |
+| maxBatchSize | Maximum batch size. | Int | Optional | 1-256 |
+| minReplicas | Minimum replicas. | Int | Optional | 1-10 |
+| maxReplicas | Maximum replicas. | Int | Optional | 1-50 |
+| scaleUpDelay | Delay before scaling up (ms). | Int | Optional | 1-1000 |
+| scaleDownDelay | Delay before scaling down (ms). | Int | Optional | 50-2000 |
 
 
 **Deployment Device & Optimization**
 
 
-<table>
-  <tr>
-   <td><strong>PARAMETER</strong>
-   </td>
-   <td><strong>DESCRIPTION</strong>
-   </td>
-   <td><strong>TYPE</strong>
-   </td>
-   <td><strong>REQUIRED/OPTIONAL</strong>
-   </td>
-   <td><strong>ENUM VALUES</strong>
-   </td>
-  </tr>
-  <tr>
-   <td><strong>deviceType</strong>
-   </td>
-   <td>Device type for deployment.
-   </td>
-   <td>String
-   </td>
-   <td>Required
-   </td>
-   <td>["g4dn.xlarge", "g5.xlarge", "g5.2xlarge", "g6e.xlarge", "g4dn.12xlarge", "g5.12xlarge", "g5.48xlarge", "g4dn.metal"]
-   </td>
-  </tr>
-  <tr>
-   <td><strong>optimizationInfo</strong>
-   </td>
-   <td>Optimization details.
-   </td>
-   <td>Object
-   </td>
-   <td>Optional
-   </td>
-   <td>N/A
-   </td>
-  </tr>
-  <tr>
-   <td><strong>optimizationType</strong>
-   </td>
-   <td>Type of optimization.
-   </td>
-   <td>String
-   </td>
-   <td>Optional
-   </td>
-   <td>["ctranslate2", "vllm"]
-   </td>
-  </tr>
-  <tr>
-   <td><strong>quantizationType</strong>
-   </td>
-   <td>Type of quantization.
-   </td>
-   <td>String
-   </td>
-   <td>Optional
-   </td>
-   <td>["no_quantization", "int8_float16"]
-   </td>
-  </tr>
-</table>
+| PARAMETER | DESCRIPTION | TYPE | REQUIRED/OPTIONAL | ENUM VALUES |
+| --- | --- | --- | --- | --- |
+| deviceType | Device type for deployment. | String | Required | ["g4dn.xlarge", "g5.xlarge", "g5.2xlarge", "g6e.xlarge", "g4dn.12xlarge", "g5.12xlarge", "g5.48xlarge", "g4dn.metal"] |
+| optimizationInfo | Optimization details. | Object | Optional | N/A |
+| optimizationType | Type of optimization. | String | Optional | ["ctranslate2", "vllm"] |
+| quantizationType | Type of quantization. | String | Optional | ["no_quantization", "int8_float16"] |
 
 ## Sample Response
 
@@ -438,53 +148,10 @@ The following deployment parameters can be configured and passed in the body:
 
 ## Response Parameters
 
-<table>
-  <tr>
-   <td><strong>PARAMETER</strong>
-   </td>
-   <td><strong>DESCRIPTION</strong>
-   </td>
-   <td><strong>TYPE</strong>
-   </td>
-  </tr>
-  <tr>
-   <td><b>dockStatusId</b>
-   </td>
-   <td>The unique identifier for tracking the model deployment.
-   </td>
-   <td>String
-   </td>
-  </tr>
-  <tr>
-   <td><b>modelId</b>
-   </td>
-   <td>The model that was deployed.
-   </td>
-   <td>String
-   </td>
-  </tr>
-  <tr>
-   <td><b>jobType</b>
-   </td>
-   <td>Specifies the type of job (for example, "<em>MODELS</em>").
-   </td>
-   <td>String
-   </td>
-  </tr>
-  <tr>
-   <td><b>action</b>
-   </td>
-   <td>Indicates the performed action ("<em>DEPLOY</em>").
-   </td>
-   <td>String
-   </td>
-  </tr>
-  <tr>
-   <td><b>status</b>
-   </td>
-   <td>Deployment status ("<em>SUCCESS</em>", "<em>IN_PROGRESS</em>", or "<em>FAILED</em>").
-   </td>
-   <td>String
-   </td>
-  </tr>
-</table>
+| PARAMETER | DESCRIPTION | TYPE |
+| --- | --- | --- |
+| <b>dockStatusId</b> | The unique identifier for tracking the model deployment. | String |
+| <b>modelId</b> | The model that was deployed. | String |
+| <b>jobType</b> | Specifies the type of job (for example, "<em>MODELS</em>"). | String |
+| <b>action</b> | Indicates the performed action ("<em>DEPLOY</em>"). | String |
+| <b>status</b> | Deployment status ("<em>SUCCESS</em>", "<em>IN_PROGRESS</em>", or "<em>FAILED</em>"). | String |

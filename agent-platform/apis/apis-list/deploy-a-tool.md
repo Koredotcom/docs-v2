@@ -2,37 +2,16 @@
 
 # Deploy a Tool API
 
-This API deploys a specific tool into an environment. It allows the user to control the deployment process either synchronously or asynchronously, depending on the value of the <code>isAsync</code> parameter.
+This API deploys a specific tool into an environment. It allows the user to control the deployment process either synchronously or asynchronously, depending on the value of the `isAsync` parameter.
 
-The API response includes the **tool ID** and the **tool deployment status**. After receiving the response, use the <code>dockStatusId</code> to call the [Get Dock Status API](../apis-list/get-dock-status.md) and verify the tool deployment status.
+The API response includes the **tool ID** and the **tool deployment status**. After receiving the response, use the `dockStatusId` to call the [Get Dock Status API](../apis-list/get-dock-status.md) and verify the tool deployment status.
 
 
-<table>
-  <tr>
-   <td><strong>Method</strong>
-   </td>
-   <td>POST
-   </td>
-  </tr>
-  <tr>
-   <td><strong>Endpoint</strong>
-   </td>
-   <td><code>https://{host}/api/public/tools/:{<em>toolId</em>}/deploy</code>
-   </td>
-  </tr>
-  <tr>
-   <td><strong>Content Type</strong>
-   </td>
-   <td>application/json
-   </td>
-  </tr>
-  <tr>
-   <td><strong>Authorization</strong>
-   </td>
-   <td><strong><code>X-api-key</code></strong> - The API key used for authentication.
-   </td>
-  </tr>
-</table>
+| Method | POST |
+| --- | --- |
+| Endpoint | `https://{host}/api/public/tools/:{<em>toolId</em>}/deploy` |
+| Content Type | application/json |
+| Authorization | `X-api-key` - The API key used for authentication. |
 
 **Where can I find the API key?**
 
@@ -40,38 +19,10 @@ To use the API, you will need an API key. [Learn more](../../apis/overview.md#ho
 
 ## Path Parameters
 
-<table>
-  <tr>
-   <td><strong>PARAMETER</strong>
-   </td>
-   <td><strong>DESCRIPTION</strong>
-   </td>
-   <td><strong>TYPE</strong>
-   </td>
-   <td><strong>REQUIRED/OPTIONAL</strong>
-   </td>
-  </tr>
-  <tr>
-   <td><strong>host</strong>
-   </td>
-   <td>The environment URL. For example, <code>https://agent-platform.domain.ai/</code>
-   </td>
-   <td>String
-   </td>
-   <td>Required
-   </td>
-  </tr>
-  <tr>
-   <td><strong>toolId</strong>
-   </td>
-   <td>The unique identifier of the tool being deployed.
-   </td>
-   <td>String
-   </td>
-   <td>Required
-   </td>
-  </tr>
-</table>
+| PARAMETER | DESCRIPTION | TYPE | REQUIRED/OPTIONAL |
+| --- | --- | --- | --- |
+| host | The environment URL. For example, `https://agent-platform.domain.ai/` | String | Required |
+| toolId | The unique identifier of the tool being deployed. | String | Required |
 
 ## Sample Request
 
@@ -86,28 +37,9 @@ curl --location 'https://{host}/api/public/tools/a-0xxxxxxxxxxxxxxxxxxe/deploy'
 
 ## Body Parameters
 
-<table>
-  <tr>
-   <td><strong>PARAMETER</strong>
-   </td>
-   <td><strong>DESCRIPTION</strong>
-   </td>
-   <td><strong>TYPE</strong>
-   </td>
-   <td><strong>REQUIRED/OPTIONAL</strong>
-   </td>
-  </tr>
-  <tr>
-   <td><strong>isAsync</strong>
-   </td>
-   <td>Indicates if the deployment is asynchronous (true) or synchronous (false).
-   </td>
-   <td>Boolean
-   </td>
-   <td>Required
-   </td>
-  </tr>
-</table>
+| PARAMETER | DESCRIPTION | TYPE | REQUIRED/OPTIONAL |
+| --- | --- | --- | --- |
+| isAsync | Indicates if the deployment is asynchronous (true) or synchronous (false). | Boolean | Required |
 
 
 
@@ -128,53 +60,10 @@ curl --location 'https://{host}/api/public/tools/a-0xxxxxxxxxxxxxxxxxxe/deploy'
 ## Response Parameters
 
 
-<table>
-  <tr>
-   <td><strong>PARAMETER</strong>
-   </td>
-   <td><strong>DESCRIPTION</strong>
-   </td>
-   <td><strong>TYPE</strong>
-   </td>
-  </tr>
-  <tr>
-   <td><strong>dockStatusId</strong>
-   </td>
-   <td>The unique identifier for tracking the tool deployment.
-   </td>
-   <td>String
-   </td>
-  </tr>
-  <tr>
-   <td><strong>toolId</strong>
-   </td>
-   <td>The unique identifier of the tool being deployed.
-   </td>
-   <td>String
-   </td>
-  </tr>
-  <tr>
-   <td><strong>jobType</strong>
-   </td>
-   <td>The type of job being performed (“<em>TOOLS</em>”).
-   </td>
-   <td>String
-   </td>
-  </tr>
-  <tr>
-   <td><strong>action</strong>
-   </td>
-   <td>The action being performed ("<em>DEPLOY</em>").
-   </td>
-   <td>String
-   </td>
-  </tr>
-  <tr>
-   <td><strong>status</strong>
-   </td>
-   <td>The deployment status ("<em>SUCCESS</em>", "<em>IN_PROGRESS</em>", or "<em>FAILED</em>").
-   </td>
-   <td>String
-   </td>
-  </tr>
-</table>
+| PARAMETER | DESCRIPTION | TYPE |
+| --- | --- | --- |
+| dockStatusId | The unique identifier for tracking the tool deployment. | String |
+| toolId | The unique identifier of the tool being deployed. | String |
+| jobType | The type of job being performed (“<em>TOOLS</em>”). | String |
+| action | The action being performed ("<em>DEPLOY</em>"). | String |
+| status | The deployment status ("<em>SUCCESS</em>", "<em>IN_PROGRESS</em>", or "<em>FAILED</em>"). | String |

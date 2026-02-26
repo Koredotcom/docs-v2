@@ -19,7 +19,7 @@ Replace `<agent-platform-env>` with your specific environment name and `<domain>
 
 ### Authentication
 
-All API requests must include an **API Key** in the **<code>Authorization</code>** header. You can generate the API key from the application. Refer to [this](../../ai-agents/agentic-apps/deployment/access-deployed-version.md#generate-the-api-key-for-app-authentication) to learn more about generating an API Key. 
+All API requests must include an **API Key** in the **`Authorization`** header. You can generate the API key from the application. Refer to [this](../../ai-agents/agentic-apps/deployment/access-deployed-version.md#generate-the-api-key-for-app-authentication) to learn more about generating an API Key. 
 
 
 ```json
@@ -51,57 +51,16 @@ Below is a list of important terms used across the API documentation.
 
 ## Session Resolution Process
 
-Each session is uniquely identified by **sessionId**. **sessionReference** is used as a secondary way to refer to the session. It can be particularly useful when the app invoking Agentic App APIs needs to maintain its own session tracking. Each session is owned by a user, identified by a system-generated **<code>userId</code>**, which is typically derived from the provided **<code>userReference</code>**.
+Each session is uniquely identified by **sessionId**. **sessionReference** is used as a secondary way to refer to the session. It can be particularly useful when the app invoking Agentic App APIs needs to maintain its own session tracking. Each session is owned by a user, identified by a system-generated **`userId`**, which is typically derived from the provided **`userReference`**.
 
 Session resolution follows a **priority-based approach** to determine how a session is created or reused. When more than one identifier is provided as input, the platform checks them in order of priority, starting with the highest. The session is resolved using the first identifier that matches. If no match is found, the platform moves on to the next identifier in the input.
 
 
-<table>
-  <tr>
-   <td><strong>Identifier</strong>
-   </td>
-   <td><strong>Priority</strong>
-   </td>
-   <td><strong>Purpose</strong>
-   </td>
-  </tr>
-  <tr>
-   <td>sessionId
-   </td>
-   <td>Highest
-   </td>
-   <td>Used only to retrieve an existing session. This identifier cannot be used to create new sessions. If a <code>userReference</code> is provided, it is validated against the session owner for security purposes. 
-   </td>
-  </tr>
-  <tr>
-   <td>sessionReference
-   </td>
-   <td>Medium
-   </td>
-   <td>Attempts to find an existing session with the given sessionReference.
-<ul>
-
-<li>If a session with the given sessionReference exists, it's retrieved.</li>
-
-<li>If no session is found, a new session is created using the sessionReference.</li>
-
-<li>If both sessionReference and userReference are provided, the userReference is validated to ensure it matches the session owner.</li>
-
-<li>If only sessionReference is provided, the session owner is automatically mapped as the user.</li>
-
-<li>When creating a new session, if no user mapping exists, the sessionReference is used as the userReference for the new session.   </li>
-</ul>
-   </td>
-  </tr>
-  <tr>
-   <td>userReference
-   </td>
-   <td>Lowest
-   </td>
-   <td>Always creates a <strong>new session</strong> associated with the specified user. Does not check for existing sessions.
-   </td>
-  </tr>
-</table>
+| Identifier | Priority | Purpose |
+| --- | --- | --- |
+| sessionId | Highest | Used only to retrieve an existing session. This identifier cannot be used to create new sessions. If a `userReference` is provided, it is validated against the session owner for security purposes. |
+| sessionReference | Medium | Attempts to find an existing session with the given sessionReference. <ul> <li>If a session with the given sessionReference exists, it's retrieved.</li> <li>If no session is found, a new session is created using the sessionReference.</li> <li>If both sessionReference and userReference are provided, the userReference is validated to ensure it matches the session owner.</li> <li>If only sessionReference is provided, the session owner is automatically mapped as the user.</li> <li>When creating a new session, if no user mapping exists, the sessionReference is used as the userReference for the new session. </li> </ul> |
+| userReference | Lowest | Always creates a new session associated with the specified user. Does not check for existing sessions. |
 
 
 The above session resolution steps are summarized using the flow chart below. 

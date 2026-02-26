@@ -5,119 +5,33 @@
 Provides an endpoint to create a new Agentic App. 
 
 
-<table>
-  <tr>
-   <td>Method
-   </td>
-   <td>POST
-   </td>
-  </tr>
-  <tr>
-   <td>Endpoint
-   </td>
-   <td>https://&lt;agent-platform-env>.&lt;domain>.ai/api/public/apps/createApp  </td>
-  </tr>
-  <tr>
-   <td>Content-type 
-   </td>
-   <td>application/json
-   </td>
-  </tr>
-  <tr>
-   <td>Authorization Header
-   </td>
-   <td>x-api-key: &lt;API-KEY>
-   </td>
-  </tr>
-</table>
+| Method | POST |
+| --- | --- |
+| Endpoint | `https://<platform-domain.com>/api/public/apps/createApp` |
+| Content-type | application/json |
+| Authorization Header | x-api-key: `<API-KEY>` |
 
 
 
 ### Additional Request Headers
 
 
-<table>
-  <tr>
-   <td>Fields
-   </td>
-   <td>Description
-   </td>
-   <td>Mandatory
-   </td>
-  </tr>
-  <tr>
-   <td>accountid
-   </td>
-   <td>Account Id to be used for app creation.
-   </td>
-   <td>Yes
-   </td>
-  </tr>
-  <tr>
-   <td>userid
-   </td>
-   <td>Unique user Id to be used for app creation.
-   </td>
-   <td>Yes
-   </td>
-  </tr>
-</table>
+| Fields | Description | Mandatory |
+| --- | --- | --- |
+| accountid | Account Id to be used for app creation. | Yes |
+| userid | Unique user Id to be used for app creation. | Yes |
 
 
 
 ### Request Parameters
 
 
-<table>
-  <tr>
-   <td>Fields
-   </td>
-   <td>Description
-   </td>
-   <td>Mandatory
-   </td>
-  </tr>
-  <tr>
-   <td>name
-   </td>
-   <td>Unique name of the app to be created
-   </td>
-   <td>Yes
-   </td>
-  </tr>
-  <tr>
-   <td>description
-   </td>
-   <td>Brief description of the purpose of the app. 
-   </td>
-   <td>Yes
-   </td>
-  </tr>
-  <tr>
-   <td>appIcon
-   </td>
-   <td>Details of the icon to be used for the app. Use the following fields to describe the app icon. If this field isn't provided, a random icon is used for the app. 
-<ul>
-
-<li>name (required, string): Identifier for the logo to be used as the app icon; allowed values are “logo1-logo10.”</li>
-
-<li>type(required, string): Must always be set to "logo."</li>
-
-<li>color(required, string): Hexadecimal color code for the icon. Example: #RRGGBB. </li>
-</ul>
-   </td>
-   <td>No
-   </td>
-  </tr>
-  <tr>
-   <td>
-   </td>
-   <td>
-   </td>
-   <td>
-   </td>
-  </tr>
-</table>
+| Fields | Description | Mandatory |
+| --- | --- | --- |
+| name | Unique name of the app to be created | Yes |
+| description | Brief description of the purpose of the app. | Yes |
+| appIcon | Details of the icon to be used for the app. Use the following fields to describe the app icon. If this field isn't provided, a random icon is used for the app. <ul> <li>name (required, string): Identifier for the logo to be used as the app icon; allowed values are “logo1-logo10.”</li> <li>type(required, string): Must always be set to "logo."</li> <li>color(required, string): Hexadecimal color code for the icon. Example: #RRGGBB. </li> </ul> | No |
+|  |  |  |
 
 
 
@@ -127,10 +41,10 @@ Provides an endpoint to create a new Agentic App.
 
 
 ```curl
-curl --location 'https://&lt;agent-platform-env>.&lt;domain>.ai/api/public/apps/createApp' \ 
+curl --location 'https://<platform-domain.com>/api/public/apps/createApp' \ 
 --header 'Content-Type: application/json' \ 
 --header 'x-api-key: your-api-key' \ 
-</code>--header 'accountid: axxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx45' \ 
+`--header 'accountid: axxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx45' \ 
 --header 'userid: uxxxxxxxxxxxxxxxxxxx' \ 
 --header 'authorization: bearer xxxxxxxxxxxxxxxxxxx' \ 
 --data '{ \
@@ -197,111 +111,17 @@ On successful creation of the app, response in the following format is received.
 Where ERROR_CODE is one of the following.
 
 
-<table>
-  <tr>
-   <td>HTTP Status
-   </td>
-   <td>Error Code
-   </td>
-   <td>Description
-   </td>
-  </tr>
-  <tr>
-   <td>400
-   </td>
-   <td>VALIDATION_ERROR
-   </td>
-   <td>One or more request parameters are invalid.
-   </td>
-  </tr>
-  <tr>
-   <td>400
-   </td>
-   <td>INVALID_APP_ICON
-   </td>
-   <td>App icon name, type, or color is invalid. When this error occurs, a random icon is added to the app. 
-   </td>
-  </tr>
-  <tr>
-   <td>400
-   </td>
-   <td>INVALID_NAME_FORMAT
-   </td>
-   <td>App name contains special characters or an invalid format.
-   </td>
-  </tr>
-  <tr>
-   <td>401
-   </td>
-   <td>UNAUTHORIZED
-   </td>
-   <td>API key is missing, invalid, or expired.
-   </td>
-  </tr>
-  <tr>
-   <td>401
-   </td>
-   <td>API_KEY_EXPIRED
-   </td>
-   <td>The provided API key is no longer valid.
-   </td>
-  </tr>
-  <tr>
-   <td>401
-   </td>
-   <td>API_KEY_REVOKED
-   </td>
-   <td>The API key has been manually revoked.
-   </td>
-  </tr>
-  <!--
-  <tr>
-   <td>403
-   </td>
-   <td>INSUFFICIENT_SCOPE
-   </td>
-   <td>The API key does not have the required scope
-   </td>
-  </tr>
-  -->
-  <tr>
-   <td>403
-   </td>
-   <td>ACCOUNT_ACCESS_DENIED
-   </td>
-   <td>The user does not have access to the account. 
-   </td>
-  </tr>
-  <tr>
-   <td>403
-   </td>
-   <td>USER_PERMISSION_DENIED
-   </td>
-   <td>User does not have permission to create apps.
-   </td>
-  </tr>
-  <tr>
-   <td>409
-   </td>
-   <td>RESOURCE_CONFLICT
-   </td>
-   <td>An app with this name already exists in the workspace.
-   </td>
-  </tr>
-  <tr>
-   <td>500
-   </td>
-   <td>INTERNAL_ERROR
-   </td>
-   <td>Unexpected server error during processing.
-   </td>
-  </tr>
-  <tr>
-   <td>503
-   </td>
-   <td>SERVICE_UNAVAILABLE
-   </td>
-   <td>The API service is temporarily down for maintenance.
-   </td>
-  </tr>
-</table>
+| HTTP Status | Error Code | Description |
+| --- | --- | --- |
+| 400 | VALIDATION_ERROR | One or more request parameters are invalid. |
+| 400 | INVALID_APP_ICON | App icon name, type, or color is invalid. When this error occurs, a random icon is added to the app. |
+| 400 | INVALID_NAME_FORMAT | App name contains special characters or an invalid format. |
+| 401 | UNAUTHORIZED | API key is missing, invalid, or expired. |
+| 401 | API_KEY_EXPIRED | The provided API key is no longer valid. |
+| 401 | API_KEY_REVOKED | The API key has been manually revoked. |
+| 403 | INSUFFICIENT_SCOPE | The API key does not have the required scope |
+| 403 | ACCOUNT_ACCESS_DENIED | The user does not have access to the account. |
+| 403 | USER_PERMISSION_DENIED | User does not have permission to create apps. |
+| 409 | RESOURCE_CONFLICT | An app with this name already exists in the workspace. |
+| 500 | INTERNAL_ERROR | Unexpected server error during processing. |
+| 503 | SERVICE_UNAVAILABLE | The API service is temporarily down for maintenance. |

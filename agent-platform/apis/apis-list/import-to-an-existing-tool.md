@@ -4,34 +4,13 @@
 
 This API enables users to import configurations, datasets, or updates into an existing tool, allowing modifications without creating a new one. It ensures seamless integration by updating the tool with the provided tool data, flow data, and environment variables files.
 
-After triggering the import, the response returns a <code>dockStatusId</code>. Use this ID to call the [Get Dock Status API](../apis-list/get-dock-status.md) and verify the status of the tool import process.
+After triggering the import, the response returns a `dockStatusId`. Use this ID to call the [Get Dock Status API](../apis-list/get-dock-status.md) and verify the status of the tool import process.
 
-<table>
-  <tr>
-   <td><strong>Method</strong>
-   </td>
-   <td>POST
-   </td>
-  </tr>
-  <tr>
-   <td><strong>Endpoint</strong>
-   </td>
-   <td><code>https://{host}/api/public/tools/:{toolId}/import</code>
-   </td>
-  </tr>
-  <tr>
-   <td><strong>Content Type</strong>
-   </td>
-   <td>application/json
-   </td>
-  </tr>
-  <tr>
-   <td><strong>Authorization</strong>
-   </td>
-   <td><strong><code>X-api-key</code></strong> - The API key used for authentication.
-   </td>
-  </tr>
-</table>
+| Method | POST |
+| --- | --- |
+| Endpoint | `https://{host}/api/public/tools/:{toolId}/import` |
+| Content Type | application/json |
+| Authorization | `X-api-key` - The API key used for authentication. |
 
 **Where can I find the API key?**
 
@@ -39,38 +18,10 @@ To use the API, you will need an API key. [Learn more](../../apis/overview.md#ho
 
 ## Query Parameters
 
-<table>
-  <tr>
-   <td><strong>PARAMETER</strong>
-   </td>
-   <td><strong>DESCRIPTION</strong>
-   </td>
-   <td><strong>TYPE</strong>
-   </td>
-   <td><strong>REQUIRED/OPTIONAL</strong>
-   </td>
-  </tr>
-  <tr>
-   <td><strong>host</strong>
-   </td>
-   <td>The environment URL. For example, <code>https://agent-platform.domain.ai/</code></td>
-   <td>String
-   </td>
-   <td>Required
-   </td>
-  </tr>
-  <tr>
-   <td>
-    <strong>toolId</strong>
-   </td>
-   <td>The tool ID of the tool being imported 
-   </td>
-   <td>String
-   </td>
-   <td>Required
-   </td>
-  </tr>
-</table>
+| PARAMETER | DESCRIPTION | TYPE | REQUIRED/OPTIONAL |
+| --- | --- | --- | --- |
+| host | The environment URL. For example, `https://agent-platform.domain.ai/` | String | Required |
+| toolId | The tool ID of the tool being imported | String | Required |
 
 ## Sample Request
 
@@ -87,48 +38,11 @@ curl --location 'https://{host}/api/public/tools/a-fbxxxxxf4-20x5-58xb-8b94-00xx
 
 ## Body Parameters
 
-<table>
-  <tr>
-   <td><strong>PARAMETER</strong>
-   </td>
-   <td><strong>DESCRIPTION</strong>
-   </td>
-   <td><strong>TYPE</strong>
-   </td>
-   <td><strong>REQUIRED/OPTIONAL</strong>
-   </td>
-  </tr>
-  <tr>
-   <td><strong>toolDataFileId</strong>
-   </td>
-   <td>The identifier for the tool data file being imported.
-   </td>
-   <td>String
-   </td>
-   <td>Required
-   </td>
-  </tr>
-  <tr>
-   <td><strong>flowDataFileId</strong>
-   </td>
-   <td>The identifier for the flow data file.
-   </td>
-   <td>String
-   </td>
-   <td>Required
-   </td>
-  </tr>
-  <tr>
-   <td><strong>envVariablesFileId</strong>
-   </td>
-   <td>The identifier for the environment variables file.
-   </td>
-   <td>String
-   </td>
-   <td>Required
-   </td>
-  </tr>
-</table>
+| PARAMETER | DESCRIPTION | TYPE | REQUIRED/OPTIONAL |
+| --- | --- | --- | --- |
+| toolDataFileId | The identifier for the tool data file being imported. | String | Required |
+| flowDataFileId | The identifier for the flow data file. | String | Required |
+| envVariablesFileId | The identifier for the environment variables file. | String | Required |
 
 ## Sample Response
 
@@ -144,65 +58,10 @@ curl --location 'https://{host}/api/public/tools/a-fbxxxxxf4-20x5-58xb-8b94-00xx
 
 ## Response Parameters
 
-<table>
-  <tr>
-   <td><strong>PARAMETER</strong>
-   </td>
-   <td><strong>DESCRIPTION</strong>
-   </td>
-   <td><strong>TYPE</strong>
-   </td>
-   <td><strong>SAMPLE VALUE</strong>
-   </td>
-  </tr>
-  <tr>
-   <td><strong>dockStatusId</strong>
-   </td>
-   <td>The unique identifier to track the status of action. for example import, export, deploy, etc.
-   </td>
-   <td>String
-   </td>
-   <td>for example, ds-c6xxxxx5-dxxd-5xxf-9xxd-0xxxxx6xxxx8
-   </td>
-  </tr>
-  <tr>
-   <td><strong>toolId</strong>
-   </td>
-   <td>The unique identifier for the tool.
-   </td>
-   <td>String
-   </td>
-   <td>for example, a-8xxxxxbe-6xxe-5xx1-8xxc-bxxxxxx80xx6
-   </td>
-  </tr>
-  <tr>
-   <td><strong>jobType</strong>
-   </td>
-   <td>The type of job being performed.
-   </td>
-   <td>String
-   </td>
-   <td><em>TOOLS</em>
-   </td>
-  </tr>
-  <tr>
-   <td><strong>action</strong>
-   </td>
-   <td>The action being performed on the tool/model.
-   </td>
-   <td>String
-   </td>
-   <td><em>IMPORT </em>
-   </td>
-  </tr>
-  <tr>
-   <td><strong>status</strong>
-   </td>
-   <td>The current status of the job.
-   </td>
-   <td>String
-   </td>
-   <td><em>IN_PROGRESS</em>, <em>SUCCESS</em>, or <em>FAILED</em>
-   </td>
-  </tr>
-</table>
+| PARAMETER | DESCRIPTION | TYPE | SAMPLE VALUE |
+| --- | --- | --- | --- |
+| dockStatusId | The unique identifier to track the status of action. for example import, export, deploy, etc. | String | for example, ds-c6xxxxx5-dxxd-5xxf-9xxd-0xxxxx6xxxx8 |
+| toolId | The unique identifier for the tool. | String | for example, a-8xxxxxbe-6xxe-5xx1-8xxc-bxxxxxx80xx6 |
+| jobType | The type of job being performed. | String | <em>TOOLS</em> |
+| action | The action being performed on the tool/model. | String | <em>IMPORT </em> |
+| status | The current status of the job. | String | <em>IN_PROGRESS</em>, <em>SUCCESS</em>, or <em>FAILED</em> |

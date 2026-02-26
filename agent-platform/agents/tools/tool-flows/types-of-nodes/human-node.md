@@ -376,8 +376,8 @@ Once the reviewer responds, the Human node captures the input and makes it avail
 * **Capture Response:** Reviewer input is collected as JSON key–value pairs.
 * **Workflow Branching:** Execution continues along the configured Success, Timeout, or Failure path. Branching can be based on the input values.
 * **Accessing Input**: Responses are accessible in downstream nodes via context variables:
-    * Full payload: `{{context.steps.&lt;Nodename>.output}}`
-    * Specific fields: `{{context.steps.&lt;Nodename>.output.Approval}}` or `{{context.steps.&lt;Nodename>.output.Comments}}`
+    * Full payload: `{{context.steps.<Nodename>.output}}`
+    * Specific fields: `{{context.steps.<Nodename>.output.Approval}}` or `{{context.steps.<ename>.output.Comments}}`
 
 <img src="../images/human_node_success.png" alt="Human Node" title="Human Node" style="border: 1px solid gray; zoom:60%;"/>
 

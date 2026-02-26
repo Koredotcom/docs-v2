@@ -2,36 +2,15 @@
 
 # Export a Model API
 
-This API exports a trained AI model from the system. Once initiated, the export process runs in the background. Use the <code>dockStatusId</code> from the API response to call the [Get Dock Status API](../apis-list/get-dock-status.md) and track the export status.
+This API exports a trained AI model from the system. Once initiated, the export process runs in the background. Use the `dockStatusId` from the API response to call the [Get Dock Status API](../apis-list/get-dock-status.md) and track the export status.
 
 Additionally, the response provides a **download URL**. Copy and paste this URL into a browser or API client to download the exported model’s file.
 
-<table>
-  <tr>
-   <td><strong>Method</strong>
-   </td>
-   <td>POST
-   </td>
-  </tr>
-  <tr>
-   <td><strong>Endpoint</strong>
-   </td>
-   <td><code>https://{host}/api/public/models/:{<em>modelId</em>}/export</code>
-   </td>
-  </tr>
-  <tr>
-   <td><strong>Content Type</strong>
-   </td>
-   <td>application/json
-   </td>
-  </tr>
-  <tr>
-   <td><strong>Authorization</strong>
-   </td>
-   <td><strong><code>X-api-key</code></strong> - The API key used for authentication.
-   </td>
-  </tr>
-</table>
+| Method | POST |
+| --- | --- |
+| Endpoint | `https://{host}/api/public/models/:{<em>modelId</em>}/export` |
+| Content Type | application/json |
+| Authorization | `X-api-key` - The API key used for authentication. |
 
 **Where can I find the API key?**
 
@@ -39,38 +18,10 @@ To use the API, you will need an API key. [Learn more](../../apis/overview.md#ho
 
 ## Path Parameters
 
-<table>
-  <tr>
-   <td><strong>PARAMETER</strong>
-   </td>
-   <td><strong>DESCRIPTION</strong>
-   </td>
-   <td><strong>TYPE</strong>
-   </td>
-   <td><strong>REQUIRED/OPTIONAL</strong>
-   </td>
-  </tr>
-  <tr>
-   <td><strong>host</strong>
-   </td>
-   <td>The environment URL. For example, <code>https://agent-platform.domain.ai/</code>
-   </td>
-   <td>String
-   </td>
-   <td>Required
-   </td>
-  </tr>
-  <tr>
-   <td>modelId
-   </td>
-   <td>The unique identifier of the model you want to export.
-   </td>
-   <td>String
-   </td>
-   <td>Required
-   </td>
-  </tr>
-</table>
+| PARAMETER | DESCRIPTION | TYPE | REQUIRED/OPTIONAL |
+| --- | --- | --- | --- |
+| host | The environment URL. For example, `https://agent-platform.domain.ai/` | String | Required |
+| modelId | The unique identifier of the model you want to export. | String | Required |
 
 
 
@@ -108,69 +59,12 @@ No parameters are passed.
 ## Response Parameters
 
 
-<table>
-  <tr>
-   <td><strong>PARAMETER</strong>
-   </td>
-   <td><strong>DESCRIPTION</strong>
-   </td>
-   <td><strong>TYPE</strong>
-   </td>
-  </tr>
-  <tr>
-   <td><strong>dockStatusId</strong>
-   </td>
-   <td>The unique identifier to track the status of action. For example: import, export, deploy, etc.
-   </td>
-   <td>String
-   </td>
-  </tr>
-  <tr>
-   <td><strong>modelId</strong>
-   </td>
-   <td>The unique identifier for the model.
-   </td>
-   <td>String
-   </td>
-  </tr>
-  <tr>
-   <td><strong>jobType</strong>
-   </td>
-   <td>Type of job being performed.
-   </td>
-   <td>String
-   </td>
-  </tr>
-  <tr>
-   <td><strong>action</strong>
-   </td>
-   <td>The action that is performed on the model.
-   </td>
-   <td>String
-   </td>
-  </tr>
-  <tr>
-   <td><strong>status</strong>
-   </td>
-   <td>The current status of the job (<em>IN_PROGRESS</em>, <em>SUCCESS</em>, or <em>FAILED</em>).
-   </td>
-   <td>String
-   </td>
-  </tr>
-  <tr>
-   <td><strong>percentageComplete</strong>
-   </td>
-   <td>The percentage of the model export process that is complete.
-   </td>
-   <td>Number
-   </td>
-  </tr>
-  <tr>
-   <td><strong>downloadURL</strong>
-   </td>
-   <td>The URL to download the exported model file.
-   </td>
-   <td>String
-   </td>
-  </tr>
-</table>
+| PARAMETER | DESCRIPTION | TYPE |
+| --- | --- | --- |
+| dockStatusId | The unique identifier to track the status of action. For example: import, export, deploy, etc. | String |
+| modelId | The unique identifier for the model. | String |
+| jobType | Type of job being performed. | String |
+| action | The action that is performed on the model. | String |
+| status | The current status of the job (<em>IN_PROGRESS</em>, <em>SUCCESS</em>, or <em>FAILED</em>). | String |
+| percentageComplete | The percentage of the model export process that is complete. | Number |
+| downloadURL | The URL to download the exported model file. | String |

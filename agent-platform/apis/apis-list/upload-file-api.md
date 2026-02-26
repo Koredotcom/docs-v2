@@ -2,7 +2,7 @@
 
 # File Upload API
 
-The API uploads a file to the server for seamless usage in multi modal nodes and across the Platform. The API returns a unique <code><em>file URL</em></code> and <code><em>file ID</em></code> for further action on the file.
+The API uploads a file to the server for seamless usage in multi modal nodes and across the Platform. The API returns a unique `<em>file URL</em>` and `<em>file ID</em>` for further action on the file.
 
 The following file extensions are currently supported:
 
@@ -29,60 +29,20 @@ The following file upload modes are supported:
 
 ## Mode 1: Upload a Single File As Is
 
-This method directly calls the endpoint and returns the <code>fileId</code> and `fileURL` in the response.
+This method directly calls the endpoint and returns the `fileId` and `fileURL` in the response.
 
 
-<table>
-  <tr>
-   <td><strong>Method</strong>
-   </td>
-   <td>POST
-   </td>
-  </tr>
-  <tr>
-   <td><strong>Endpoint</strong>
-   </td>
-   <td><strong><code>https://{host}/api/public/files</code></strong>
-   </td>
-  </tr>
-  <tr>
-   <td><strong>Content Type</strong>
-   </td>
-   <td>application/json
-   </td>
-  </tr>
-  <tr>
-   <td><strong>Authorization</strong>
-   </td>
-   <td><strong><code>X-api-key</code></strong> - The API key used for authentication.
-   </td>
-  </tr>
-</table>
+| Method | POST |
+| --- | --- |
+| Endpoint | `https://{host}/api/public/files` |
+| Content Type | application/json |
+| Authorization | `X-api-key` - The API key used for authentication. |
 
 ### Path Parameters
 
-<table>
-  <tr>
-   <td><strong>PARAMETER</strong>
-   </td>
-   <td><strong>DESCRIPTION</strong>
-   </td>
-   <td><strong>TYPE</strong>
-   </td>
-   <td><strong>REQUIRED/OPTIONAL</strong>
-   </td>
-  </tr>
-  <tr>
-   <td><strong>host</strong>
-   </td>
-   <td>The environment URL. For example, <code>https://agent-platform.domain.ai/</code>.
-   </td>
-   <td>String
-   </td>
-   <td>Required
-   </td>
-  </tr>
-</table>
+| PARAMETER | DESCRIPTION | TYPE | REQUIRED/OPTIONAL |
+| --- | --- | --- | --- |
+| host | The environment URL. For example, `https://agent-platform.domain.ai/`. | String | Required |
 
 ### Sample Request
 
@@ -95,38 +55,10 @@ curl --location 'https://{host}/api/public/files'
 
 ### Body Parameters
 
-<table>
-  <tr>
-   <td><strong>PARAMETER</strong>
-   </td>
-   <td><strong>DESCRIPTION</strong>
-   </td>
-   <td><strong>TYPE</strong>
-   </td>
-   <td><strong>REQUIRED/OPTIONAL</strong>
-   </td>
-  </tr>
-  <tr>
-   <td><strong>file</strong>
-   </td>
-   <td>The file being uploaded.
-   </td>
-   <td>File
-   </td>
-   <td>Required
-   </td>
-  </tr>
-  <tr>
-   <td><strong>fileContext</strong>
-   </td>
-   <td>The context of the file (for example, <code>bulkImport</code>).
-   </td>
-   <td>String
-   </td>
-   <td>Required
-   </td>
-  </tr>
-</table>
+| PARAMETER | DESCRIPTION | TYPE | REQUIRED/OPTIONAL |
+| --- | --- | --- | --- |
+| file | The file being uploaded. | File | Required |
+| fileContext | The context of the file (for example, `bulkImport`). | String | Required |
 
 ### Sample Response
 
@@ -139,32 +71,10 @@ curl --location 'https://{host}/api/public/files'
 
 ### Response Parameters
 
-<table>
-  <tr>
-   <td><strong>PARAMETER</strong>
-   </td>
-   <td><strong>DESCRIPTION</strong>
-   </td>
-   <td><strong>TYPE</strong>
-   </td>
-  </tr>
-  <tr>
-   <td><strong>url</strong>
-   </td>
-   <td>The URL to access the uploaded file.
-   </td>
-   <td>String
-   </td>
-  </tr>
-  <tr>
-   <td><strong>fileId</strong>
-   </td>
-   <td>Unique identifier for the uploaded file
-   </td>
-   <td>String
-   </td>
-  </tr>
-</table>
+| PARAMETER | DESCRIPTION | TYPE |
+| --- | --- | --- |
+| url | The URL to access the uploaded file. | String |
+| fileId | Unique identifier for the uploaded file | String |
 
 ## Mode 2: Upload a File in Chunks
 
@@ -176,59 +86,19 @@ This method requires the following three APIs to upload a large file:
 
 ### Start Session API
 
-This API starts the upload process, returning a <code>session ID</code>. The file is split into chunks linked to this ID, which are then merged and uploaded through other APIs.
+This API starts the upload process, returning a `session ID`. The file is split into chunks linked to this ID, which are then merged and uploaded through other APIs.
 
-<table>
-  <tr>
-   <td><strong>Method</strong>
-   </td>
-   <td>POST
-   </td>
-  </tr>
-  <tr>
-   <td><strong>Endpoint</strong>
-   </td>
-   <td><code>http://{host}/api/public/files/session/start</code>
-   </td>
-  </tr>
-  <tr>
-   <td><strong>Content Type</strong>
-   </td>
-   <td>application/json
-   </td>
-  </tr>
-  <tr>
-   <td><strong>Authorization</strong>
-   </td>
-   <td><strong><code>X-api-key</code></strong> - The API key used for authentication.
-   </td>
-  </tr>
-</table>
+| Method | POST |
+| --- | --- |
+| Endpoint | `http://{host}/api/public/files/session/start` |
+| Content Type | application/json |
+| Authorization | `X-api-key` - The API key used for authentication. |
 
 #### Path Parameters
 
-<table>
-  <tr>
-   <td><strong>PARAMETER</strong>
-   </td>
-   <td><strong>DESCRIPTION</strong>
-   </td>
-   <td><strong>TYPE</strong>
-   </td>
-   <td><strong>REQUIRED/OPTIONAL</strong>
-   </td>
-  </tr>
-  <tr>
-   <td><strong>host</strong>
-   </td>
-   <td>The environment URL. For example, <code>https://agent-platform.domain.ai</code>
-   </td>
-   <td>String
-   </td>
-   <td>Required
-   </td>
-  </tr>
-</table>
+| PARAMETER | DESCRIPTION | TYPE | REQUIRED/OPTIONAL |
+| --- | --- | --- | --- |
+| host | The environment URL. For example, `https://agent-platform.domain.ai` | String | Required |
 
 #### Sample Request
 
@@ -247,68 +117,13 @@ curl --location 'https://{host}/api/public/files/session/start'
 
 #### Body Parameters
 
-<table>
-  <tr>
-   <td><strong>PARAMETER</strong>
-   </td>
-   <td><strong>DESCRIPTION</strong>
-   </td>
-   <td><strong>TYPE</strong>
-   </td>
-   <td><strong>REQUIRED/OPTIONAL</strong>
-   </td>
-  </tr>
-  <tr>
-   <td><strong>fileContext</strong>
-   </td>
-   <td>The context of the file (for example, <code>bulkImport</code>).
-   </td>
-   <td>String
-   </td>
-   <td>Required
-   </td>
-  </tr>
-  <tr>
-   <td><strong>totalChunks</strong>
-   </td>
-   <td>The total number of chunks created for the file upload.
-   </td>
-   <td>Number
-   </td>
-   <td>Required
-   </td>
-  </tr>
-  <tr>
-   <td><strong>fileExtension</strong>
-   </td>
-   <td>The file extension based on the file type.
-   </td>
-   <td>String
-   </td>
-   <td>Required
-   </td>
-  </tr>
-  <tr>
-   <td><strong>fileName</strong>
-   </td>
-   <td>The file name.
-   </td>
-   <td>String
-   </td>
-   <td>Required
-   </td>
-  </tr>
-  <tr>
-   <td><strong>fileSize</strong>
-   </td>
-   <td>The size of the file.
-   </td>
-   <td>Number
-   </td>
-   <td>Required
-   </td>
-  </tr>
-</table>
+| PARAMETER | DESCRIPTION | TYPE | REQUIRED/OPTIONAL |
+| --- | --- | --- | --- |
+| fileContext | The context of the file (for example, `bulkImport`). | String | Required |
+| totalChunks | The total number of chunks created for the file upload. | Number | Required |
+| fileExtension | The file extension based on the file type. | String | Required |
+| fileName | The file name. | String | Required |
+| fileSize | The size of the file. | Number | Required |
 
 #### Sample Response
 
@@ -321,99 +136,27 @@ curl --location 'https://{host}/api/public/files/session/start'
 
 #### Response Parameters
 
-<table>
-  <tr>
-   <td><strong>PARAMETER</strong>
-   </td>
-   <td><strong>DESCRIPTION</strong>
-   </td>
-   <td><strong>TYPE</strong>
-   </td>
-  </tr>
-  <tr>
-   <td><strong>sessionId</strong>
-   </td>
-   <td>The file upload <code>session id</code>.
-   </td>
-   <td>String
-   </td>
-  </tr>
-  <tr>
-   <td><strong>expirationDate</strong>
-   </td>
-   <td>The date and time of the session expiration.
-   </td>
-   <td>Date
-   </td>
-  </tr>
-</table>
+| PARAMETER | DESCRIPTION | TYPE |
+| --- | --- | --- |
+| sessionId | The file upload `session id`. | String |
+| expirationDate | The date and time of the session expiration. | Date |
 
 ### Chunk Upload API
 
-The API uploads the file in multiple chunks. The <code>session ID</code> from the [Start Session](./upload-file-api.md#start-session-api) API must be used in this step.
+The API uploads the file in multiple chunks. The `session ID` from the [Start Session](./upload-file-api.md#start-session-api) API must be used in this step.
 
-<table>
-  <tr>
-   <td>
-<strong>Method</strong>
-   </td>
-   <td>POST
-   </td>
-  </tr>
-  <tr>
-   <td><strong>Endpoint</strong>
-   </td>
-   <td><code>https://{host}/api/public/files/session/{sessionId}</code>
-   </td>
-  </tr>
-  <tr>
-   <td><strong>Content Type</strong>
-   </td>
-   <td>application/json
-   </td>
-  </tr>
-  <tr>
-   <td><strong>Authorization</strong>
-   </td>
-   <td><strong><code>X-api-key</code></strong> - The API key used for authentication.
-   </td>
-  </tr>
-</table>
+| Method | POST |
+| --- | --- |
+| Endpoint | `https://{host}/api/public/files/session/{sessionId}` |
+| Content Type | application/json |
+| Authorization | `X-api-key` - The API key used for authentication. |
 
 #### Path Parameters
 
-<table>
-  <tr>
-   <td><strong>PARAMETER</strong>
-   </td>
-   <td><strong>DESCRIPTION</strong>
-   </td>
-   <td><strong>TYPE</strong>
-   </td>
-   <td><strong>REQUIRED/OPTIONAL</strong>
-   </td>
-  </tr>
-  <tr>
-   <td><strong>host</strong>
-   </td>
-   <td>The environment URL. For example, <code>https://agent-platform.domain.ai</code>
-   </td>
-   <td>String
-   </td>
-   <td>Required
-   </td>
-  </tr>
-  <tr>
-   <td><strong>sessionId</strong>
-   </td>
-   <td>The file upload <code>session id</code> fetched from the <strong>Start Session</strong> API.
-   </td>
-   <td>String
-   </td>
-   <td>Required
-   </td>
-  </tr>
-</table>
+| PARAMETER | DESCRIPTION | TYPE | REQUIRED/OPTIONAL |
+| --- | --- | --- | --- |
+| host | The environment URL. For example, `https://agent-platform.domain.ai` | String | Required |
+| sessionId | The file upload `session id` fetched from the Start Session API. | String | Required |
 
 #### Sample Request
 
@@ -427,38 +170,10 @@ curl --location 'https://{host}/api/public/files/session/14xxxxxd-0xx4-4xxf-axx1
 
 #### Body Parameters
 
-<table>
-  <tr>
-   <td><strong>PARAMETER</strong>
-   </td>
-   <td><strong>DESCRIPTION</strong>
-   </td>
-   <td><strong>TYPE</strong>
-   </td>
-   <td><strong>REQUIRED/OPTIONAL</strong>
-   </td>
-  </tr>
-  <tr>
-   <td><strong>file</strong>
-   </td>
-   <td>The file being uploaded.
-   </td>
-   <td>File
-   </td>
-   <td>Required
-   </td>
-  </tr>
-  <tr>
-   <td><strong>chunkNumber</strong>
-   </td>
-   <td>The uploaded chunk number.
-   </td>
-   <td>Number
-   </td>
-   <td>Required
-   </td>
-  </tr>
-</table>
+| PARAMETER | DESCRIPTION | TYPE | REQUIRED/OPTIONAL |
+| --- | --- | --- | --- |
+| file | The file being uploaded. | File | Required |
+| chunkNumber | The uploaded chunk number. | Number | Required |
 
 #### Sample Response
 
@@ -471,98 +186,27 @@ curl --location 'https://{host}/api/public/files/session/14xxxxxd-0xx4-4xxf-axx1
 
 #### Response Parameters
 
-<table>
-  <tr>
-   <td><strong>PARAMETER</strong>
-   </td>
-   <td><strong>DESCRIPTION</strong>
-   </td>
-   <td><strong>TYPE</strong>
-   </td>
-  </tr>
-  <tr>
-   <td><strong>chunkNumber</strong>
-   </td>
-   <td>The uploaded chunk number.
-   </td>
-   <td>Number
-   </td>
-  </tr>
-  <tr>
-   <td><strong>sessionId</strong>
-   </td>
-   <td>The file upload <code>session id</code>.
-   </td>
-   <td>String
-   </td>
-  </tr>
-</table>
+| PARAMETER | DESCRIPTION | TYPE |
+| --- | --- | --- |
+| chunkNumber | The uploaded chunk number. | Number |
+| sessionId | The file upload `session id`. | String |
 
 ### Complete The Process
 
-This API merges the uploaded chunks and finalizes the process using the `session Id` from the [Start Session](./upload-file-api.md#start-session-api) API. It returns the <code>file URL</code> and <code>file ID</code>. Missing chunk numbers are identified after the merge.
+This API merges the uploaded chunks and finalizes the process using the `session Id` from the [Start Session](./upload-file-api.md#start-session-api) API. It returns the `file URL` and `file ID`. Missing chunk numbers are identified after the merge.
 
-<table>
-  <tr>
-   <td><strong>Method</strong>
-   </td>
-   <td>POST
-   </td>
-  </tr>
-  <tr>
-   <td><strong>Endpoint</strong>
-   </td>
-   <td><code>https://{host}/api/public/files/session/{sessionid}/complete</code>
-   </td>
-  </tr>
-  <tr>
-   <td><strong>Content Type</strong>
-   </td>
-   <td>application/json
-   </td>
-  </tr>
-  <tr>
-   <td><strong>Authorization</strong>
-   </td>
-   <td><strong><code>X-api-key</code></strong> - The API key used for authentication.
-   </td>
-  </tr>
-</table>
+| Method | POST |
+| --- | --- |
+| Endpoint | `https://{host}/api/public/files/session/{sessionid}/complete` |
+| Content Type | application/json |
+| Authorization | `X-api-key` - The API key used for authentication. |
 
 #### Path Parameters
 
-<table>
-  <tr>
-   <td><strong>PARAMETER</strong>
-   </td>
-   <td><strong>DESCRIPTION</strong>
-   </td>
-   <td><strong>TYPE</strong>
-   </td>
-   <td><strong>REQUIRED/OPTIONAL</strong>
-   </td>
-  </tr>
-  <tr>
-   <td><strong>host</strong>
-   </td>
-   <td>The environment URL. For example, <code>https://agent-pxxxxxxxm.kxxe.ai</code>
-   </td>
-   <td>String
-   </td>
-   <td>Required
-   </td>
-  </tr>
-  <tr>
-   <td><strong>sessionID</strong>
-   </td>
-   <td>The file upload <code>session ID</code>.
-   </td>
-   <td>String
-   </td>
-   <td>Required
-   </td>
-  </tr>
-</table>
+| PARAMETER | DESCRIPTION | TYPE | REQUIRED/OPTIONAL |
+| --- | --- | --- | --- |
+| host | The environment URL. For example, `https://agent-pxxxxxxxm.kxxe.ai` | String | Required |
+| sessionID | The file upload `session ID`. | String | Required |
 
 #### Sample Request
 
@@ -586,29 +230,7 @@ No parameters are passed.
 
 #### Response Parameters
 
-<table>
-  <tr>
-   <td><strong>PARAMETER</strong>
-   </td>
-   <td><strong>DESCRIPTION</strong>
-   </td>
-   <td><strong>TYPE</strong>
-   </td>
-  </tr>
-  <tr>
-   <td><strong>url</strong>
-   </td>
-   <td>The uploaded file’s URL.
-   </td>
-   <td>String
-   </td>
-  </tr>
-  <tr>
-   <td><strong>fileId</strong>
-   </td>
-   <td>The file ID of the uploaded file.
-   </td>
-   <td>String
-   </td>
-  </tr>
-</table>
+| PARAMETER | DESCRIPTION | TYPE |
+| --- | --- | --- |
+| url | The uploaded file’s URL. | String |
+| fileId | The file ID of the uploaded file. | String |

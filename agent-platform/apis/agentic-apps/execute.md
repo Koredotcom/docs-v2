@@ -9,58 +9,21 @@ Provides API endpoints to execute the Agentic application within a session.
 Sends input to the Agentic app within a specific session and retrieves the response. This endpoint supports multiple execution modes - **synchronous, asynchronous, and streaming.**
 
 
-<table>
-  <tr>
-   <td><strong>Method</strong>
-   </td>
-   <td>POST
-   </td>
-  </tr>
-  <tr>
-   <td><strong>Endpoint</strong>
-   </td>
-   <td>/apps/&lt;AppID>/environments/&lt;EnvName>/runs/execute
-   </td>
-  </tr>
-  <tr>
-   <td><strong>Content-type</strong>
-   </td>
-   <td>application/json
-   </td>
-  </tr>
-  <tr>
-   <td><strong>Authorization Header</strong>
-   </td>
-   <td>x-api-key: &lt;API-KEY>
-   </td>
-  </tr>
-</table>
+| Method | POST |
+| --- | --- |
+| Endpoint | `/apps/<AppID>/environments/<EnvName>/runs/execute` |
+| Content-type | application/json |
+| Authorization Header | x-api-key: `<API-KEY>` |
 
 
 
 ### Path Parameters
 
 
-<table>
-  <tr>
-   <td></strong>Fields</strong>
-   </td>
-   <td><strong>Description
-   </td></strong>
-  </tr>
-  <tr>
-   <td>AppID
-   </td>
-   <td>Unique Identifier for the app. 
-   </td>
-  </tr>
-  <tr>
-   <td>EnvName
-   </td>
-   <td>Name of the environment to be used for the agent. 
-   </td>
-  </tr>
-</table>
+| Fields | Description |
+| --- | --- |
+| AppID | Unique Identifier for the app. |
+| EnvName | Name of the environment to be used for the agent. |
 
 
 
@@ -135,7 +98,7 @@ If debug mode is enabled and set to thoughts, irrespective of streamMode, though
 Indicates whether the API should execute asynchronously.
 
 * false (default): Executes synchronously and returns the result immediately.
-* true: Executes asynchronously. If the callbackURL is provided, the response is shared on the URL else this API returns a <code>runId</code> that can be used to retrieve the status or result later.
+* true: Executes asynchronously. If the callbackURL is provided, the response is shared on the URL else this API returns a `runId` that can be used to retrieve the status or result later.
 
 <hr/>
 
@@ -293,49 +256,12 @@ Recommended Values:
 Returns the agent's response to the query along with the session details. 
 
 
-<table>
-  <tr>
-   <td><strong>Field</strong>
-   </td>
-   <td><strong>Description</strong>
-   </td>
-  </tr>
-  <tr>
-   <td>messageId
-   </td>
-   <td>Unique identifier for the response message
-   </td>
-  </tr>
-  <tr>
-   <td>output
-   </td>
-   <td>Array of agent responses. Each object includes: 
-<p>
-- type: "text" 
-<p>
-- content: agent's response
-   </td>
-  </tr>
-  <tr>
-  <td>Artifacts</td>
-  <td>Array of responses from the tools in the order of execution. For example, if tool 1 was executed followed by tool 2, artifacts[0] will contain the response from tool 1 and artifacts[1] will contain the response from tool 2. 
-  <p>
-  Note that the response from a tool is updated in this array only if the ‘Include tool response in artifacts’ flag is enabled in the corresponding tool. Learn More.
-  </td> 
-</tr>
-  <tr>
-   <td>sessionInfo
-   </td>
-   <td>Object containing session metadata such as: 
-<p>
-- status: current session state 
-<p>
-- conversationState: for example, COMPLETED 
-<p>
-- userReference, sessionReference, userId, sessionId, runId, appId
-   </td>
-  </tr>
-</table>
+| Field | Description |
+| --- | --- |
+| messageId | Unique identifier for the response message |
+| output | Array of agent responses. Each object includes: <p> - type: "text" <p> - content: agent's response |
+| Artifacts | Array of responses from the tools in the order of execution. For example, if tool 1 was executed followed by tool 2, artifacts[0] will contain the response from tool 1 and artifacts[1] will contain the response from tool 2. <p> Note that the response from a tool is updated in this array only if the ‘Include tool response in artifacts’ flag is enabled in the corresponding tool. Learn More. |
+| sessionInfo | Object containing session metadata such as: <p> - status: current session state <p> - conversationState: for example, COMPLETED <p> - userReference, sessionReference, userId, sessionId, runId, appId |
 
 
 
@@ -645,32 +571,10 @@ Key Configurations:
 
 
 
-<table>
-  <tr>
-   <td><strong>debugMode</strong>
-   </td>
-   <td><strong>Streaming Enabled?</strong>
-   </td>
-   <td><strong>Behavior</strong>
-   </td>
-  </tr>
-  <tr>
-   <td><code>thoughts</code>
-   </td>
-   <td>No
-   </td>
-   <td>Thoughts are received as part of the response as an array. 
-   </td>
-  </tr>
-  <tr>
-   <td><code>thoughts</code>
-   </td>
-   <td>Yes
-   </td>
-   <td>The thoughts and responses are sent back as separate events 
-   </td>
-  </tr>
-</table>
+| debugMode | Streaming Enabled? | Behavior |
+| --- | --- | --- |
+| `thoughts` | No | Thoughts are received as part of the response as an array. |
+| `thoughts` | Yes | The thoughts and responses are sent back as separate events |
 
 
 **Example - Thoughts enabled, streaming disabled.**
@@ -1020,96 +924,31 @@ curl --location 'https://{domain}/api/v2/apps/aa-0959e994-xxxx-xxxx-9217-45653a6
 Returns the status and response of a run. It is useful for asynchronous runs. 
 
 
-<table>
-  <tr>
-   <td><strong>Method</strong>
-   </td>
-   <td>POST
-   </td>
-  </tr>
-  <tr>
-   <td><strong>Endpoint</strong>
-   </td>
-   <td>/apps/&lt;AppID>/environments/&lt;EnvName>/runs/&lt;runId>/status
-   </td>
-  </tr>
-  <tr>
-   <td><strong>Content-type </strong>
-   </td>
-   <td>application/json
-   </td>
-  </tr>
-  <tr>
-   <td><strong>Authorization Header</strong>
-   </td>
-   <td>x-api-key: &lt;API-KEY>
-   </td>
-  </tr>
-</table>
+| Method | POST |
+| --- | --- |
+| Endpoint | `/apps/<AppID>/environments/<EnvName>/runs/<runId>/status` |
+| Content-type  | application/json |
+| Authorization Header | x-api-key: `<API-KEY>` |
 
 
 
 ### Path Parameters
 
 
-<table>
-  <tr>
-   <td><strong>Fields</strong>
-   </td>
-   <td><strong>Description</strong>
-   </td>
-  </tr>
-  <tr>
-   <td>AppID
-   </td>
-   <td>Unique Identifier for the app. 
-   </td>
-  </tr>
-  <tr>
-   <td>EnvName
-   </td>
-   <td>Name of the environment to be used for the agent. 
-   </td>
-  </tr>
-  <tr>
-   <td>RunID
-   </td>
-   <td>Unique identifier of the run 
-   </td>
-  </tr>
-</table>
+| Fields | Description |
+| --- | --- |
+| AppID | Unique Identifier for the app. |
+| EnvName | Name of the environment to be used for the agent. |
+| RunID | Unique identifier of the run |
 
 
 
 ### Request Parameters
 
 
-<table>
-  <tr>
-   <td><strong>Fields</strong>
-   </td>
-   <td><strong>Description</strong>
-   </td>
-  </tr>
-  <tr>
-   <td>sessionIdentity
-   </td>
-   <td>This is an array of objects with a <code>type</code> and <code>value</code> used to identify or create sessions and manage user session mappings. The three supported identifier types are: The objects can be of three types:
-<ol>
-
-<li>userReference (highest priority)</li>
-
-<li>sessionReference</li>
-
-<li>sessionIdentity(lowest priority)</li>
-
-Refer to this for a detailed description.
-<p>
-This is useful for verifying the context and permissions on the run. 
-</ol>
-   </td>
-  </tr>
-</table>
+| Fields | Description |
+| --- | --- |
+| sessionIdentity | This is an array of objects with a `type` and `value` used to identify or create sessions and manage user session mappings. The three supported identifier types are: The objects can be of three types: <ol> <li>userReference (highest priority)</li> <li>sessionReference</li> <li>sessionIdentity(lowest priority)</li> Refer to this for a detailed description. <p> This is useful for verifying the context and permissions on the run. </ol> |
 
 
 #### Sample Request

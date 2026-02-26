@@ -19,32 +19,10 @@ https://{host}/api/public
 
 ### Common Request Headers
 
-<table>
-  <tr>
-   <td><strong>Header</strong>
-   </td>
-   <td><strong>Required</strong>
-   </td>
-   <td><strong>Description</strong>
-   </td>
-  </tr>
-  <tr>
-   <td><code>x-api-key</code>
-   </td>
-   <td>Yes
-   </td>
-   <td>API key for authentication
-   </td>
-  </tr>
-  <tr>
-   <td><code>Content-Type</code>
-   </td>
-   <td>Yes
-   </td>
-   <td><code>application/json</code>
-   </td>
-  </tr>
-</table>
+| Header | Required | Description |
+| --- | --- | --- |
+| `x-api-key` | Yes | API key for authentication |
+| `Content-Type` | Yes | `application/json` |
 
 ## API List
 
@@ -60,65 +38,17 @@ https://{host}/api/public
 Retrieves a list of all configured connections with optional filtering.
 
 
-<table>
-  <tr>
-   <td><strong>Method</strong>
-   </td>
-   <td><strong>Endpoint</strong>
-   </td>
-  </tr>
-  <tr>
-   <td>GET
-   </td>
-   <td><code>https://{{host}}/api/public/connections</code>
-   </td>
-  </tr>
-</table>
+| Method | Endpoint |
+| --- | --- |
+| GET | `https://{{host}}/api/public/connections` |
 
 #### Query Parameters
 
-<table>
-  <tr>
-   <td><strong>Parameter</strong>
-   </td>
-   <td><strong>Required</strong>
-   </td>
-   <td><strong>Type</strong>
-   </td>
-   <td><strong>Description</strong>
-   </td>
-  </tr>
-  <tr>
-   <td><code>provider</code>
-   </td>
-   <td>No
-   </td>
-   <td>String
-   </td>
-   <td>Filter by provider. Accepted values: <code>Open AI</code>, <code>Anthropic</code>, <code>Azure Open AI</code>, <code>API</code>
-   </td>
-  </tr>
-  <tr>
-   <td><code>status</code>
-   </td>
-   <td>No
-   </td>
-   <td>String
-   </td>
-   <td>Filter by status. Accepted values: <code>ACTIVE</code>, <code>INACTIVE</code>
-   </td>
-  </tr>
-  <tr>
-   <td><code>limit</code>
-   </td>
-   <td>No
-   </td>
-   <td>Integer
-   </td>
-   <td>Maximum number of results to return
-   </td>
-  </tr>
-</table>
+| Parameter | Required | Type | Description |
+| --- | --- | --- | --- |
+| `provider` | No | String | Filter by provider. Accepted values: `Open AI`, `Anthropic`, `Azure Open AI`, `API` |
+| `status` | No | String | Filter by status. Accepted values: `ACTIVE`, `INACTIVE` |
+| `limit` | No | Integer | Maximum number of results to return |
 
 #### Sample Request
 
@@ -157,47 +87,17 @@ curl --location 'https://{{host}}/api/public/connections?limit=10' \
 Retrieves the details of a specific connection using its unique identifier.
 
 
-<table>
-  <tr>
-   <td><strong>Method</strong>
-   </td>
-   <td><strong>Endpoint</strong>
-   </td>
-  </tr>
-  <tr>
-   <td>GET
-   </td>
-   <td><code>https://{{host}}/api/public/connections/{connectionId}</code>
-   </td>
-  </tr>
-</table>
+| Method | Endpoint |
+| --- | --- |
+| GET | `https://{{host}}/api/public/connections/{connectionId}` |
 
 
 #### Path Parameters
 
 
-<table>
-  <tr>
-   <td><strong>Parameter</strong>
-   </td>
-   <td><strong>Required</strong>
-   </td>
-   <td><strong>Type</strong>
-   </td>
-   <td><strong>Description</strong>
-   </td>
-  </tr>
-  <tr>
-   <td><code>connectionId</code>
-   </td>
-   <td>Yes
-   </td>
-   <td>String
-   </td>
-   <td>The unique identifier of the connection
-   </td>
-  </tr>
-</table>
+| Parameter | Required | Type | Description |
+| --- | --- | --- | --- |
+| `connectionId` | Yes | String | The unique identifier of the connection |
 
 
 
@@ -234,87 +134,21 @@ curl --location 'https://{{host}}/api/public/connections/{{connectionId}}` \
 Creates a new connection to an external model provider. Supports creation of Custom API, OpenAI, Azure OpenAI, Anthropic, and other external model connections.
 
 
-<table>
-  <tr>
-   <td><strong>Method</strong>
-   </td>
-   <td><strong>Endpoint</strong>
-   </td>
-  </tr>
-  <tr>
-   <td>POST
-   </td>
-   <td><code>https://{{host}}/api/public/connections</code>
-   </td>
-  </tr>
-</table>
+| Method | Endpoint |
+| --- | --- |
+| POST | `https://{{host}}/api/public/connections` |
 
 
 **Body Parameters**
 
 
-<table>
-  <tr>
-   <td><strong>Parameter</strong>
-   </td>
-   <td><strong>Required</strong>
-   </td>
-   <td><strong>Type</strong>
-   </td>
-   <td><strong>Description</strong>
-   </td>
-  </tr>
-  <tr>
-   <td><code>provider</code>
-   </td>
-   <td>Yes
-   </td>
-   <td>String
-   </td>
-   <td>The provider type. Accepted values: <code>API</code>, <code>Open AI</code>, <code>Azure Open AI</code>, or <code>Anthropic</code>
-   </td>
-  </tr>
-  <tr>
-   <td><code>connectionName</code>
-   </td>
-   <td>Yes
-   </td>
-   <td>String
-   </td>
-   <td>Display name for the connection
-   </td>
-  </tr>
-  <tr>
-   <td><code>model</code>
-   </td>
-   <td>Conditional
-   </td>
-   <td>String
-   </td>
-   <td>Model identifier. Required for <code>Open AI</code>, <code>Azure Open AI</code>, and <code>Anthropic </code>providers
-   </td>
-  </tr>
-  <tr>
-   <td><code>modelType</code>
-   </td>
-   <td>Conditional
-   </td>
-   <td>String
-   </td>
-   <td>Set to <code>EASY_INTEGRATION</code> for <code>Azure Open AI</code> and <code>Anthropic</code> providers
-   </td>
-  </tr>
-  <tr>
-   <td><code>fields</code>
-   </td>
-   <td>Yes
-   </td>
-   <td>Object
-   </td>
-   <td>Provider-specific configuration fields
-   </td>
-  </tr>
-</table>
+| Parameter | Required | Type | Description |
+| --- | --- | --- | --- |
+| `provider` | Yes | String | The provider type. Accepted values: `API`, `Open AI`, `Azure Open AI`, or `Anthropic` |
+| `connectionName` | Yes | String | Display name for the connection |
+| `model` | Conditional | String | Model identifier. Required for `Open AI`, `Azure Open AI`, and `Anthropic `providers |
+| `modelType` | Conditional | String | Set to `EASY_INTEGRATION` for `Azure Open AI` and `Anthropic` providers |
+| `fields` | Yes | Object | Provider-specific configuration fields |
 
 
 
@@ -384,71 +218,16 @@ curl --location '{{BASE_URL}}/api/public/connections' \
 }'
 ```
 
-**Custom API Fields (<code>provider: "API"</code>)**
+**Custom API Fields (`provider: "API"`)**
 
 
-<table>
-  <tr>
-   <td><strong>Field</strong>
-   </td>
-   <td><strong>Required</strong>
-   </td>
-   <td><strong>Type</strong>
-   </td>
-   <td><strong>Description</strong>
-   </td>
-  </tr>
-  <tr>
-   <td><code>fields.BASE_URL</code>
-   </td>
-   <td>Yes
-   </td>
-   <td>String
-   </td>
-   <td>Base URL of the API endpoint
-   </td>
-  </tr>
-  <tr>
-   <td><code>fields.API_KEY</code>
-   </td>
-   <td>Yes
-   </td>
-   <td>String
-   </td>
-   <td>API key for authentication
-   </td>
-  </tr>
-  <tr>
-   <td><code>fields.MODEL_NAME</code>
-   </td>
-   <td>Yes
-   </td>
-   <td>String
-   </td>
-   <td>Model name
-   </td>
-  </tr>
-  <tr>
-   <td><code>LLM_API_URL</code>
-   </td>
-   <td>Yes
-   </td>
-   <td>String
-   </td>
-   <td>URL for the model endpoint
-   </td>
-  </tr>
-  <tr>
-   <td><code>LLM_API_KEY</code>
-   </td>
-   <td>Yes
-   </td>
-   <td>String
-   </td>
-   <td>API key of the model
-   </td>
-  </tr>
-</table>
+| Field | Required | Type | Description |
+| --- | --- | --- | --- |
+| `fields.BASE_URL` | Yes | String | Base URL of the API endpoint |
+| `fields.API_KEY` | Yes | String | API key for authentication |
+| `fields.MODEL_NAME` | Yes | String | Model name |
+| `LLM_API_URL` | Yes | String | URL for the model endpoint |
+| `LLM_API_KEY` | Yes | String | API key of the model |
 
 ---
 
@@ -489,84 +268,17 @@ curl --location '{{BASE_URL}}/api/public/connections' \
 }'
 ```
 
-**Custom API Fields (<code>provider: "API"</code>)**
+**Custom API Fields (`provider: "API"`)**
 
-<table>
-  <tr>
-   <td><strong>Field</strong>
-   </td>
-   <td><strong>Required</strong>
-   </td>
-   <td><strong>Type</strong>
-   </td>
-   <td><strong>Description</strong>
-   </td>
-  </tr>
-  <tr>
-   <td><code>fields.BASE_URL</code>
-   </td>
-   <td>Yes
-   </td>
-   <td>String
-   </td>
-   <td>Base URL of the API endpoint
-   </td>
-  </tr>
-  <tr>
-   <td><code>fields.API_KEY</code>
-   </td>
-   <td>Yes
-   </td>
-   <td>String
-   </td>
-   <td>API key for authentication
-   </td>
-  </tr>
-  <tr>
-   <td><code>fields.MODEL_NAME</code>
-   </td>
-   <td>Yes
-   </td>
-   <td>String
-   </td>
-   <td>Model name
-   </td>
-  </tr>
-  <tr>
-   <td><code>LLM_API_URL</code>
-   </td>
-   <td>Yes
-   </td>
-   <td>String
-   </td>
-   <td>URL for the model endpoint
-   </td>
-  </tr>
-  <tr>
-   <td><code>LLM_API_KEY</code>
-   </td>
-   <td>Yes
-   </td>
-   <td>String
-   </td>
-   <td>API key of the model
-   </td>
-  </tr>
-  <tr>
-    <td><code>fields.IOMapping</code>
-    </td>
-    <td>Yes</td>
-    <td>String</td>
-    <td>Supported values: "textToText", "textToImage", "imageToText", and "audioToText"</td>
-  </tr>
-  <tr>
-    <td><code>fields.mapProvider</code>
-    </td>
-    <td>Yes</td>
-    <td>String</td>
-    <td>Supported values: "anthropicModel", "geminiModel", and "openAIModel"</td>
-  </tr>
-</table>
+| Field | Required | Type | Description |
+| --- | --- | --- | --- |
+| `fields.BASE_URL` | Yes | String | Base URL of the API endpoint |
+| `fields.API_KEY` | Yes | String | API key for authentication |
+| `fields.MODEL_NAME` | Yes | String | Model name |
+| `LLM_API_URL` | Yes | String | URL for the model endpoint |
+| `LLM_API_KEY` | Yes | String | API key of the model |
+| `fields.IOMapping` | Yes | String | Supported values: "textToText", "textToImage", "imageToText", and "audioToText" |
+| `fields.mapProvider` | Yes | String | Supported values: "anthropicModel", "geminiModel", and "openAIModel" |
 
 ---
 
@@ -587,31 +299,12 @@ curl --location 'https://{{host}}/api/public/connections' \
 ```
 
 
-**OpenAI Field (<code>provider: "Open AI"</code>)**
+**OpenAI Field (`provider: "Open AI"`)**
 
 
-<table>
-  <tr>
-   <td><strong>Field</strong>
-   </td>
-   <td><strong>Required</strong>
-   </td>
-   <td><strong>Type</strong>
-   </td>
-   <td><strong>Description</strong>
-   </td>
-  </tr>
-  <tr>
-   <td><code>fields.API_KEY</code>
-   </td>
-   <td>Yes
-   </td>
-   <td>String
-   </td>
-   <td>Your OpenAI API key
-   </td>
-  </tr>
-</table>
+| Field | Required | Type | Description |
+| --- | --- | --- | --- |
+| `fields.API_KEY` | Yes | String | Your OpenAI API key |
 
 
 
@@ -638,61 +331,15 @@ curl --location 'https://{{host}}/api/public/connections' \
 }'
 ```
 
-**Azure OpenAI Fields (<code>provider: "Azure Open AI"</code>)**
+**Azure OpenAI Fields (`provider: "Azure Open AI"`)**
 
 
-<table>
-  <tr>
-   <td><strong>Field</strong>
-   </td>
-   <td><strong>Required</strong>
-   </td>
-   <td><strong>Type</strong>
-   </td>
-   <td><strong>Description</strong>
-   </td>
-  </tr>
-  <tr>
-   <td><code>fields.API_KEY</code>
-   </td>
-   <td>Yes
-   </td>
-   <td>String
-   </td>
-   <td>Your Azure OpenAI API key
-   </td>
-  </tr>
-  <tr>
-   <td><code>fields.api_version</code>
-   </td>
-   <td>Yes
-   </td>
-   <td>String
-   </td>
-   <td>API version (for example, <code>2024-08-01-preview</code>)
-   </td>
-  </tr>
-  <tr>
-   <td><code>fields.your_resource_name</code>
-   </td>
-   <td>Yes
-   </td>
-   <td>String
-   </td>
-   <td>Your Azure resource name
-   </td>
-  </tr>
-  <tr>
-   <td><code>fields.deployment_id</code>
-   </td>
-   <td>Yes
-   </td>
-   <td>String
-   </td>
-   <td>Your deployment ID
-   </td>
-  </tr>
-</table>
+| Field | Required | Type | Description |
+| --- | --- | --- | --- |
+| `fields.API_KEY` | Yes | String | Your Azure OpenAI API key |
+| `fields.api_version` | Yes | String | API version (for example, `2024-08-01-preview`) |
+| `fields.your_resource_name` | Yes | String | Your Azure resource name |
+| `fields.deployment_id` | Yes | String | Your deployment ID |
 
 
 
@@ -717,31 +364,12 @@ curl --location 'https://{{host}}/api/public/connections' \
 ```
 
 
-**Anthropic Field (<code>provider: "Anthropic"</code>)**
+**Anthropic Field (`provider: "Anthropic"`)**
 
 
-<table>
-  <tr>
-   <td><strong>Field</strong>
-   </td>
-   <td><strong>Required</strong>
-   </td>
-   <td><strong>Type</strong>
-   </td>
-   <td><strong>Description</strong>
-   </td>
-  </tr>
-  <tr>
-   <td><code>fields.API_KEY</code>
-   </td>
-   <td>Yes
-   </td>
-   <td>String
-   </td>
-   <td>Your Anthropic API key
-   </td>
-  </tr>
-</table>
+| Field | Required | Type | Description |
+| --- | --- | --- | --- |
+| `fields.API_KEY` | Yes | String | Your Anthropic API key |
 
 
 
@@ -772,47 +400,17 @@ curl --location 'https://{{host}}/api/public/connections' \
 Updates the configuration of an existing connection. Supported only for external provider connections where `provider` is not `API`.
 
 
-<table>
-  <tr>
-   <td><strong>Method</strong>
-   </td>
-   <td><strong>Endpoint</strong>
-   </td>
-  </tr>
-  <tr>
-   <td>PATCH
-   </td>
-   <td><code>https://{{host}}/api/public/connections/{connectionId}</code>
-   </td>
-  </tr>
-</table>
+| Method | Endpoint |
+| --- | --- |
+| PATCH | `https://{{host}}/api/public/connections/{connectionId}` |
 
 
 **Path Parameters**
 
 
-<table>
-  <tr>
-   <td><strong>Parameter</strong>
-   </td>
-   <td><strong>Required</strong>
-   </td>
-   <td><strong>Type</strong>
-   </td>
-   <td><strong>Description</strong>
-   </td>
-  </tr>
-  <tr>
-   <td><code>connectionId</code>
-   </td>
-   <td>Yes
-   </td>
-   <td>String
-   </td>
-   <td>The unique identifier of the connection
-   </td>
-  </tr>
-</table>
+| Parameter | Required | Type | Description |
+| --- | --- | --- | --- |
+| `connectionId` | Yes | String | The unique identifier of the connection |
 
 
 
@@ -832,28 +430,9 @@ curl --location --request PATCH 'https://{{host}}/api/public/connections/{{conne
 **Body Parameters**
 
 
-<table>
-  <tr>
-   <td><strong>Parameter</strong>
-   </td>
-   <td><strong>Required</strong>
-   </td>
-   <td><strong>Type</strong>
-   </td>
-   <td><strong>Description</strong>
-   </td>
-  </tr>
-  <tr>
-   <td><code>fields</code>
-   </td>
-   <td>Yes
-   </td>
-   <td>Object
-   </td>
-   <td>Updated configuration field, API_KEY
-   </td>
-  </tr>
-</table>
+| Parameter | Required | Type | Description |
+| --- | --- | --- | --- |
+| `fields` | Yes | Object | Updated configuration field, API_KEY |
 
 
 #### Sample Response
