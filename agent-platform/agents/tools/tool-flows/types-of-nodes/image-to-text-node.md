@@ -70,16 +70,14 @@ In this document, you will learn how to add the node to your flows, configure it
 
     * Provide the `File URL` of the public repository where your image file exists or is returned by the Upload File API at the tool endpoint.
 
-      <div class="admonition note">
-      <p class="admonition-title">Key Considerations</p>
-      <p><ul><li>The user can provide only one file URL at a time for processing.</li>
+      <ul><li>The user can provide only one file URL at a time for processing.</li>
       <li>The file source url must be valid for the node to function properly.</li>
       <li>Only PNG, JPEG, and JPG file formats are supported.</li>
       <li>Except for image input handling, the OCR node functions like the existing AI node.</li>
       <li>Sending images and related settings are handled by the <a href="../../../../../apis/apis-list/upload-file-api/">File Upload API</a>.</li>
       <li>Image input preprocessing is supported in the following formats:</li>
-     <ul><li>Binary, base64-encoded for Anthropic models.</li>
-     <li>Both binary, base64-encoded, and image URLs for OpenAI models.</li></ul></p></div>
+      <li>Binary, base64-encoded for Anthropic models.</li>
+      <li>Both binary, base64-encoded, and image URLs for OpenAI models.</li></ul>
 
 * <b>System Prompt</b>: System prompts guide the model’s behavior and response style. Enter a system prompt to define its role for your use case. For example: "<i>You are a vehicle insurance assistant that analyzes uploaded vehicle images to assess damage and estimate repair costs in USD</i>."
 * <b>Prompt</b>: User prompts define specific questions or requests for the model. Provide clear instructions for the model to follow, using context variables for dynamic inputs in the syntax: `{{context.variable_name}}`. <b>Example:</b> `Check the image provided for the damaged parts in the car and select what parts are affected from the list below - {{context.parts_list}}`</li>

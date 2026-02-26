@@ -27,9 +27,7 @@ Additionally, you can set **custom filters** based on a specific category, event
 
 ## Account-Level Audit Logs
 
-<div class="admonition warning">
-<p class="admonition-title">Universal Metadata</p>
-<p>The <b>User ID</b> and <b>IP Address</b> are shown for audit log entries across all modules, in addition to module and category-specific metadata listed in the table below.</p></div>
+<Note>The <b>User ID</b> and <b>IP Address</b> are shown for audit log entries across all modules, in addition to module and category-specific metadata listed in the table below.</Note>
 
 | <strong>Category</strong>: Login/Logout |
 |:------ |
@@ -157,9 +155,7 @@ Additionally, you can set **custom filters** based on a specific category, event
 
 ## Tool-Level Audit Logs
 
-<div class="admonition warning">
-<p class="admonition-title">Universal Metadata</p>
-<p>The <b>User ID</b>, <b>IP Address</b>, and <b>Tool ID</b> are shown for audit log entries across all modules, in addition to module and category-specific metadata listed in the table below.</p></div>
+<Note>The <b>User ID</b>, <b>IP Address</b>, and <b>Tool ID</b> are shown for audit log entries across all modules, in addition to module and category-specific metadata listed in the table below.</Note>
 
 | <strong>Category</strong>: User Management |
 |:------ |

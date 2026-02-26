@@ -96,17 +96,11 @@ This step is necessary to complete the app creation process. To create an API Ke
 
    ![create new api key](./images/create-new-api-key-window.png "create new api key")
 
-
-
-
 A success message is displayed after the key is copied. Additionally, the API key appears for the app on the summary page.
 
-<div class="admonition note">
-<p class="admonition-title">Important information on API Keys</p>
-<p>For security reasons, the API key is only shown once and is not stored or displayed again. Copy and save it in a secure location for future reference.</p>
+<Note>For security reasons, the API key is only shown once and is not stored or displayed again. Copy and save it in a secure location for future reference.</p>
 <p><b>What Happens If You Lose It?</b></p>
-<p>You’ll need to revoke the old key and <b>generate a new one</b>. This could disrupt services if the key is in use.</p>
-</div>   
+<p>You’ll need to revoke the old key and <b>generate a new one</b>. This could disrupt services if the key is in use.</Note> 
 
 <ol start="4"><li>Click <b>Done</b>.</li>
 

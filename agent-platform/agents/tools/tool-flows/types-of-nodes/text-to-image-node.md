@@ -138,9 +138,7 @@ The metrics include:
 
 
 
-       <div class="admonition warning" bgcolor="blue">
-       <p class="admonition-title">Standard Error</p>
-       <p>When the Model isn't selected, the prompt details aren't provided, or both, the error message “<i>Proper data needs to be provided in the LLM node</i>” is displayed.</p></div>
+       <Note>When the Model isn't selected, the prompt details aren't provided, or both, the error message “<i>Proper data needs to be provided in the LLM node</i>” is displayed.</Note>
 
 
 * Click the <b>Connections</b> icon and select the <b>Go to Node</b> for success and failure conditions.
@@ -165,9 +163,7 @@ The metrics include:
 
 After adding and configuring the node as mentioned [here](./text-to-image-node.md#add-and-configure-a-text-to-image-node), follow the steps below to test the flow.
 
-<div class="admonition note">
-<p class="admonition-title">Dynamic Prompt Inputs</p>
-<p>Before you <a href="#step-3-run-the-flow">run the flow</a>, provide clear instructions for the model to follow using the <b>input variable(s)</b> you add in the following step with the help of <b>context variables</b>. Context variables add dynamic values to the prompt instructions that the model will follow. The recommended syntax is: `{{context.variable_name}}`. For example, you can store the generated image URL in a variable named “<i>Imaggenerated</i>” and pass it on in the prompt when you mention <q><i>Generate an image based on the below description</i>: `{{context.steps.Start.Imaggenerated}}` </q>, as shown in the image below.</p></div>
+<Note>Before you <a href="#step-3-run-the-flow">run the flow</a>, provide clear instructions for the model to follow using the <b>input variable(s)</b> you add in the following step with the help of <b>context variables</b>. Context variables add dynamic values to the prompt instructions that the model will follow. The recommended syntax is: `{{context.variable_name}}`. For example, you can store the generated image URL in a variable named “<i>Imaggenerated</i>” and pass it on in the prompt when you mention <q><i>Generate an image based on the below description</i>: `{{context.steps.Start.Imaggenerated}}` </q>, as shown in the image below.</Note>
 
 
 ![dynamic prompt input](./images/dynamic-prompt-input.png "dynamic prompt input")

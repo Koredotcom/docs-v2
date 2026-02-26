@@ -131,12 +131,8 @@ Below is a sample of the export schema file. The file name is automatically save
 
 ![export schema](./images/export-schema.png "export schema")
 
-
-
-<div class="admonition note">
-<p class="admonition-title">Key Considerations</p>
-<p><ul><li>Each user’s export process is implemented separately, ensuring that one user's cancellations or adjustments do not interfere with another user’s export pipeline.</li>
-<li>Users can cancel an ongoing export operation, if required.</li></ul></p></div>
+<Note><ul><li>Each user’s export process is implemented separately, ensuring that one user's cancellations or adjustments do not interfere with another user’s export pipeline.</li>
+<li>Users can cancel an ongoing export operation, if required.</li></ul></Note>
 
 * **Search**: You can locate specific model traces records on the UI by entering the run's *Request* *ID* in the **Search** textbox. The system returns matching results, as shown below.
 

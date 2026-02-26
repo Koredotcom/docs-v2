@@ -64,23 +64,19 @@ In the **General Details** window, follow these steps:
 
 1. Add a **Script name**.
 2. Add a **Description** to define the purpose and capabilities of your custom script.
-3. Select **Base Language** (the language in which the script is imported and executed) and **Language Version**. The available options are **JavaScript 20.19.0** and **Python 3.10.15**. More versions will be supported soon.
+3. Select **Base Language** (the language in which the script is imported and executed) and **Language Version**. The available options are **JavaScript 20.19.0** and **Python 3.10.15**.
 
 <Note>The default version is auto-selected when you select the language.</Note>
 
 <ol start="4"><li>To upload the script, click <b>Choose File</b> under <b>Project File</b>, then select the file from your local system.</li></ol>
 
-<div class="admonition note">
-<p class="admonition-title">Important Considerations</p>
-<p><ul><li>Supported file formats include `.zip`, `.gz`, and `.tar`.</li>
-<li>The max file size is 1 GB. Larger files will result in a validation error.</li>
+<Note><ul><li>Supported file formats include `.zip`, `.gz`, and `.tar`.</li>
+<li>The max file size is 1 GB. Larger files result in a validation error.</li>
 <li>Click <b>Validate</b> to check the file for errors.</li>
 
 ![validate file](./images/validate-file.png "validate file")
 
-</ul>
-</p>
-</div>
+</ul></Note>
 
 <Info><ul><li>The uploaded file must match the recommended project structure. Click <b>Download sample project</b> to access the <i>.zip</i> folder of the script definitions and follow its structure when uploading your file.</li>
 <li>The structure is different for different base languages. Ensure that the correct file structure is followed for the chosen language.</li>
@@ -294,13 +290,11 @@ To see when **Export** is available, please refer to the table [here](../manage-
 
 This action lets you undeploy the script from all its deployed locations on the platform.
 
-<div class="admonition note">
-<p class="admonition-title">Key Considerations</p>
-<p><ul><li>An undeployed script can be redeployed. <a href="#redeploy-script">Learn more</a>.</li>
+<Note><ul><li>An undeployed script can be redeployed. <a href="#redeploy-script">Learn more</a>.</li>
 <li>Once a script is redeployed, its data and configurations are restored. You can edit the script name and other parameters in the <a href="#import-and-deploy-a-custom-script">deployment flow</a>.</li>
 <li>The message “<i>No custom scripts deployed yet</i>” is displayed for the <b>Function</b> node if there are no deployed scripts.</li>
 <li>A script does not appear in the <b>Script</b> dropdown list for the <b>Function</b> node if it is not deployed.</li>
-</ul></p></div>
+</ul></Note>
 
 
 To undeploy, follow the steps below on the **Manage Custom Scripts** page:

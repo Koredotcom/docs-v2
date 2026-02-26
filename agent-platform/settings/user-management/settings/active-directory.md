@@ -149,12 +149,9 @@ To enable and configure auto sync, follow the steps below:
 * **Sync Start**: Click the Calendar icon and choose a date from the widget to start the Active Directory sync. The default selection is the current date. 
 * **Time**: According to the selected sync frequency, select when the Active Directory sync should occur. The default setting is 12:00 PM.
 
-<div class="admonition note">
-<p class="admonition-title">Constraints</p>
-<ul><li>You can select only one date from the calendar for weekly and monthly syncs.</li>
+<Note><ul><li>You can select only one date from the calendar for weekly and monthly syncs.</li>
 <li>You can schedule the sync only with a future date and time from the default selections.</li>
-<li>The default selection for <b>Start Sync</b> is the current date, which you can change.</li></ul>
-</div>
+<li>The default selection for <b>Start Sync</b> is the current date, which you can change.</li></ul> </Note>
 
 <ol start="3"><li>Click <b>Save</b>.</li></ol>
 

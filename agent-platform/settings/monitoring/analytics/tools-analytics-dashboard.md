@@ -107,12 +107,9 @@ Use the top-panel filters to scope account- and tool-level data by time.
 
 * **Last Year**: Full previous calendar year.
 
-<div class="admonition note">
-<p class="admonition-title">Constraints</p>
-<p><ul><li>Only current and past dates are supported (no future dates).</li>
+<Note><ul><li>Only current and past dates are supported (no future dates).</li>
 <li>Historical data is available up to one year back.</li>
-<li>Date ranges must be consecutive; multiple or non-contiguous ranges aren’t supported.</li></ul></p>
-</div>
+<li>Date ranges must be consecutive; multiple or non-contiguous ranges aren’t supported.</li></ul></Note>
 
 ## Tool Performance Filters
 
