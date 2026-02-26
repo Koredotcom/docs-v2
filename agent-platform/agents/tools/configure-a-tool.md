@@ -27,9 +27,7 @@ Steps to enable and configure the asynchronous mode:
             <img src="../images/async-mode-configuration.png" alt="Async Mode Configuration" title="Async Mode Configuration" style="border: 1px solid gray; zoom:70%;"/>
         4. Click **Save**.
 
-    !!! note 
-
-        Timeout precedence: Tool timeout > Node timeout > Model timeout.
+    <Note> Timeout precedence: Tool timeout > Node timeout > Model timeout. </Note>
 
 4. If you have changed the mode, you must redeploy the tool: Go to **Tool endpoint** in the left navigation and click the **Deploy** button on the top-right corner of the page.
 

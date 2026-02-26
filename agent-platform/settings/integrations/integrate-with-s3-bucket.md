@@ -6,11 +6,11 @@ The S3 Storage Integration functionality broadens the Platform's capabilities by
 
 1. Click the **Settings** icon on the top navigation bar. The **Integrations** page is displayed.
 
-    <img src="../images/navigate-to-settings.png" alt="Navigate to Settings" title="Navigate to Settings" class="border-2 border-gray-300 rounded-xl" />
+    <img src="../images/navigate-to-settings.png" alt="Navigate to Settings" title="Navigate to Settings"/>
 
 1. Click the **AWS S3 bucket** option from the list of Integrations. The AWS S3 bucket section is expanded.
 
-    <img src="../images/add-s3-connection.png" alt="Add S3 Connection" title="Add S3 Connection" class="border-2 border-gray-300 rounded-xl" />
+    <img src="../images/add-s3-connection.png" alt="Add S3 Connection" title="Add S3 Connection"/>
 
 1. Click **Add connection**. The **AWS S3 bucket** dialog is displayed.
 
@@ -38,9 +38,7 @@ You can test your connection after you provide the details to verify the accurac
 2. If the connection fails, you can verify the details entered or cancel the set-up process.
 3. From the connections table, you can test the connection by clicking the **▶** icon.
 
-    !!! note
-
-        If the connection fails a red icon is displayed corresponding to the name of the connection on the Connections list.
+    <Note> If the connection fails a red icon is displayed corresponding to the name of the connection on the Connections list. </Note>
 
 
 ## How to use files from the connected S3 Buckets in the Tool Flow Builder

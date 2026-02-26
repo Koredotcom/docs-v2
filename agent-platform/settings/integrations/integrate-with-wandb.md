@@ -7,11 +7,11 @@ Connecting with Weights and Biases (WandB) allows users to link to the platform,
 
 1. Click the **Settings** icon on the top navigation bar. The **Integrations** page is displayed.
 
-    <img src="../images/navigate-to-settings.png" alt="Navigate to Settings" title="Navigate to Settings" class="border-2 border-gray-300 rounded-xl" />
+    <img src="../images/navigate-to-settings.png" alt="Navigate to Settings" title="Navigate to Settings"/>
 
 1. Click the **Weights & Biases** option from the list of Integrations. The Weights & Biases section is expanded.
 
-    <img src="../images/add-w&b-connection.png" alt="Add W&B Connection" title="Add W&B Connection" class="border-2 border-gray-300 rounded-xl" />
+    <img src="../images/add-w&b-connection.png" alt="Add W&B Connection" title="Add W&B Connection"/>
 
 1. Click **Add connection**. The **Weights & Biases** dialog is displayed.
 
@@ -39,16 +39,12 @@ You can test your connection after you provide the details to verify the accurac
 2. If the connection fails, you can verify the details entered or cancel the set-up process.
 3. You can test the connection by clicking the **▶** icon on the connections list.
 
-    !!! note
-
-        If the connection fails a red icon is displayed corresponding to the name of the connection on the Connections list.
+    <Note> If the connection fails a red icon is displayed corresponding to the name of the connection on the Connections list. </Note>
 
 
 1. Hover over the connection name and click the three dots icon corresponding to the **Connection name**. The list of options is displayed. Click **Edit** to modify the connection details and **Delete** to delete the connection.
 
-    <img src="../images/manage-wandb-connection.png" alt="Manage WandB Connection" title="Manage WandB Connection" class="border-2 border-gray-300 rounded-xl" />
+    <img src="../images/manage-wandb-connection.png" alt="Manage WandB Connection" title="Manage WandB Connection"/>
 
 
-!!! note
-
-    Once the WandB connection is completed, you can see your connection name in the drop-down box in the **Create a fine-tuned model** wizard in the **Weights and Biases** section.  For more information about the fine-tuning wizard, see [Create a Fine-Tuned Model](../../models/fine-tune-models/create-a-fine-tuned-model.md).
+<Note> Once the WandB connection is completed, you can see your connection name in the drop-down box in the **Create a fine-tuned model** wizard in the **Weights and Biases** section.  For more information about the fine-tuning wizard, see [Create a Fine-Tuned Model](../../models/fine-tune-models/create-a-fine-tuned-model.md). </Note>

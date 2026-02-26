@@ -35,7 +35,7 @@ The **Audio to Text** node processes uploaded customer service call recordings a
 
 The Audio to Text Node integrates seamlessly into your workflows, accepting audio inputs, whether as files or URLs from previous nodes and passing the transcribed text to subsequent nodes. You can configure parameters such as the processing model, translation preferences, timestamp inclusion, and prompt instructions to tailor the transcription process to your specific needs. The node supports both static and dynamic inputs via context variables, making it highly adaptable for a wide range of voice-driven automation scenarios.
 
-<img src="../images/how-audio-to-text-works.png" alt="how audio to text works" title="how audio to text works" style="border: 1px solid gray; zoom:75%;"/>
+<img src="../images/how-audio-to-text-works.png" alt="how audio to text works" title="how audio to text works"/>
 
 In this document, you will learn how to add the node to your flow, configure it with audio inputs and transcription settings, manage outputs such as text or translated content, and test the results within your workflow.
 
@@ -49,7 +49,7 @@ You can add audio input in one of the following ways:
 
    You must provide the audio file URL when running the flow, as mentioned [here](../../../workflows/workflow-builder/types-of-nodes/audio-to-text-node.md#step-3-run-the-flow).
 
-   <img src="../images/select-text-input-type.png" alt="select text type input" title="select text type input" style="border: 1px solid gray; zoom:75%;"/>
+   <img src="../images/select-text-input-type.png" alt="select text type input" title="select text type input"/>
 
    <div class="admonition note">
    <p class="admonition-title">Note</p>
@@ -126,20 +126,20 @@ Metrics include:
 
 * Log in → In AI for Process Modules top menu and click **Workflows**.
 
-    <img src="../images/access-workflows.png" alt="access workflows" title="access workflows" style="border: 1px solid gray; zoom:75%;"/>
+    <img src="../images/access-workflows.png" alt="access workflows" title="access workflows"/>
 
 * Select your workflow and click **Go to Flow**.
 
 ### Step 2: Add the Node
 
 * Click the "**+**" icon for **Audio to Text** under **AI** in the **Assets** panel. Alternatively, drag the node from the panel onto the canvas. You can also click **AI** in the pop-up menu and click **Audio to text**.
-    <img src="../images/select-audio-to-text.png" alt="add node" title="add node" style="border: 1px solid gray; zoom:75%;"/>
+    <img src="../images/select-audio-to-text.png" alt="add node" title="add node"/>
 
 ### Step 3: Configure the Node
 
 * Click the added node to open its properties dialog box. The **General Settings** for the node are displayed.
 
-    <img src="../images/properties-dialog-audio-to-text.png" alt="properties dialog" title="properties dialog" style="border: 1px solid gray; zoom:75%;"/>
+    <img src="../images/properties-dialog-audio-to-text.png" alt="properties dialog" title="properties dialog"/>
 
 * Enter or select the following **General Settings**:
     * **Node Name**: Enter an appropriate name for the node. For example, “*CustomerSupportConversation*.”
@@ -156,7 +156,7 @@ Metrics include:
       
       For example, if `ConversationFile` stores the audio file URL (passed dynamically during runtime), you can reference it in the prompt using the syntax `{{context.steps.Start.ConversationFile}}`.
 
-         <img src="../images/dynamic-prompt-example.png" alt="dynamic prompt example" title="dynamic prompt example" style="border: 1px solid gray; zoom:75%;"/>
+         <img src="../images/dynamic-prompt-example.png" alt="dynamic prompt example" title="dynamic prompt example"/>
     
       You may include simple instructions regarding the style of the transcription, correct words or proper nouns, in case the model couldn't figure out what the spoken word was, fix punctuations, add context, and more. 
       
@@ -174,7 +174,7 @@ Metrics include:
 
 
 * Click the **Connections** icon and select the **Go to Node** for success and failure conditions. 
-   <img src="../images/connections-audio-to-text.png" alt="click connections" title="click connections" style="border: 1px solid gray; zoom:75%;"/>
+   <img src="../images/connections-audio-to-text.png" alt="click connections" title="click connections"/>
 
      * **On Success** > **Go to Node**: After the current node is successfully executed, go to a selected node in the flow to execute next, such as an AI node, Function node, Condition node, API node, or End node.
      * **On Failure** > **Go to Node**: If the execution of the current node fails, go to the End node to display any custom error message from the **Audio to Text** node.
@@ -187,13 +187,13 @@ Metrics include:
 
 * Click the **Input** tab of the **Start** node, and click **Add Input Variable** to configure the input for the flow’s test run. [Learn more](../perform-other-actions-on-the-flow-builder/manage-input-and-output.md#adding-input-variables).
 
-    <img src="../images/add-input-variable-audio-to-text.png" alt="add input variable" title="add input variable" style="border: 1px solid gray; zoom:75%;"/>
+    <img src="../images/add-input-variable-audio-to-text.png" alt="add input variable" title="add input variable"/>
 
 * Select <b><i>Text</i></b> for the <b>Type</b> field in the <b>Enter input variable</b> window to define a text input variable.
 
 * Click **Save**.
     
-    <img src="../images/select-text-type-input.png" alt="select text and save" title="select text and save" style="border: 1px solid gray; zoom:75%;"/>
+    <img src="../images/select-text-type-input.png" alt="select text and save" title="select text and save"/>
 
 Add all the required input variables to run the flow in the **Input** section of the **Start** node.
 
@@ -203,13 +203,13 @@ Add all the required input variables to run the flow in the **Input** section of
 
 * Click **Add Output Variable**.
     
-    <img src="../images/click-add-output-variable.png" alt="click add output variable" title="click add output variable" style="border: 1px solid gray; zoom:75%;"/>
+    <img src="../images/click-add-output-variable.png" alt="click add output variable" title="click add output variable"/>
 
 * Enter the value for <b>Name (key)</b> and select <b><i>String</i></b> for <b>Type</b> to generate the transcribed text output.
 
 * Click <b>Save</b>. <a href="../text-to-text-node/#access-the-ai-nodes-output" >Learn more</a> about accessing the node’s output.
 
-    <img src="../images/save-output-variable.png" alt="save output variable" title="save output variable" style="border: 1px solid gray; zoom:75%;"/>
+    <img src="../images/save-output-variable.png" alt="save output variable" title="save output variable"/>
 
 ### Step 3: Run the Flow
 
@@ -217,14 +217,14 @@ To run and test the flow, follow the steps below:
 
 * Click the **Run Flow** button at the top-right corner of the flow builder.
 
-    <img src="../images/click-run-button.png" alt="click run button" title="click run button" style="border: 1px solid gray; zoom:75%;"/>
+    <img src="../images/click-run-button.png" alt="click run button" title="click run button"/>
 
 * (Optional) Add the value for **Input Variable** if you have configured it to test the flow. Otherwise, go directly to the next step.
     
-    <img src="../images/gen-output-audio-to-text.png" alt="generate output" title="generate output" style="border: 1px solid gray; zoom:75%;"/>
+    <img src="../images/gen-output-audio-to-text.png" alt="generate output" title="generate output"/>
 
 * Click <b>Generate Output</b>.
 
   The **Debug** window generates the flow log and results, as shown below. [Learn more](../perform-other-actions-on-the-flow-builder/run-the-flow.md) about running the workflow.
 
-    <img src="../images/debug-window-audio-to-text.png" alt="debug window" title="debug window" style="border: 1px solid gray; zoom:75%;"/>
+    <img src="../images/debug-window-audio-to-text.png" alt="debug window" title="debug window"/>

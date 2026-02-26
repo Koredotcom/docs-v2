@@ -47,5 +47,4 @@ In addition to the configurations discussed above, configure the following for t
 
 For this pattern, configure the agents with the delegation rules. [Refer to this to learn more](../network-orchestration.md). 
 
-!!!note
-    Currently, Adaptive Network doesn't support realtime models.
+<Note> Currently, Adaptive Network doesn't support realtime models. </Note>

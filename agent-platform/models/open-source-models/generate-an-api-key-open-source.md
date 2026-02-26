@@ -6,7 +6,7 @@ You can generate an API key for your open-source model and share it with other t
 
 1. Click the **API keys** tab from the left panel on the **Models** page.
 
-    <img src="../images/generate-an-api-key.png" alt="Generate an API Key" title="Generate an API Key" class="border-2 border-gray-300 rounded-xl" />
+    <img src="../images/generate-an-api-key.png" alt="Generate an API Key" title="Generate an API Key"/>
 
 1. Click the **Create a new API key** button. The **Create new API key** dialog is displayed.
 

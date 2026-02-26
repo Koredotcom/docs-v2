@@ -107,7 +107,7 @@ The following API scopes are available for this feature.
 To access this feature, follow the steps below:
 
 1. Log in → In AI for Process Modules top menu → Click **Settings**.
-   <img src="../images/aip-settings-access.png" alt="access settings" title="access settings" style="border: 1px solid gray; zoom:75%;"/>
+   <img src="../images/aip-settings-access.png" alt="access settings" title="access settings"/>
 
 2. Click **Security & Control** > **API Scopes** on the left navigation menu.
 
@@ -125,20 +125,20 @@ To create an app, follow the steps below:
 
 1. [Access](../security-and-control/api-scopes.md#access-api-scopes) **API Scopes**.
 2. Click **Create an API App** or **Create an App**.
-   <img src="../images/create-an-api-app.png" alt="create api app" title="create api app" style="border: 1px solid gray; zoom:75%;"/>
+   <img src="../images/create-an-api-app.png" alt="create api app" title="create api app"/>
 
 3. Click **Untitled app** and provide the app name.
-    <img src="../images/provide-app-name.png" alt="provide app name" title="provide app name" style="border: 1px solid gray; zoom:75%;"/>
+    <img src="../images/provide-app-name.png" alt="provide app name" title="provide app name"/>
 
 4. Select the required scopes from the list.
-    <img src="../images/scopes-selection.png" alt="select scopes" title="select scopes" style="border: 1px solid gray; zoom:75%;"/>
+    <img src="../images/scopes-selection.png" alt="select scopes" title="select scopes"/>
  
 5. Click **Next**. 
 
 
     A success message is displayed, and the following window is displayed. Follow the steps in the [next section](../security-and-control/api-scopes.md#create-an-api-key) to complete the process.
 
-     <img src="../images/api-app-creation-success.png" alt="success app creation" title="success app creation" style="border: 1px solid gray; zoom:75%;"/>
+     <img src="../images/api-app-creation-success.png" alt="success app creation" title="success app creation"/>
 
 ### Create an API Key
 
@@ -146,10 +146,10 @@ This step is necessary to complete the app creation process. To create an API Ke
 
 1. Click **Create API Key**.
 2. In the **Create new API key** dialog, provide a name and click **Generate Key**.
-    <img src="../images/generate-your-new-api-key.png" alt="generate new api key" title="generate new api key" style="border: 1px solid gray; zoom:75%;"/>
+    <img src="../images/generate-your-new-api-key.png" alt="generate new api key" title="generate new api key"/>
 
 3. Once the key is successfully generated, click **Copy and Close** to copy the API key.
-   <img src="../images/create-new-api-key-window.png" alt="create new api key" title="create new api key" style="border: 1px solid gray; zoom:75%;"/>
+   <img src="../images/create-new-api-key-window.png" alt="create new api key" title="create new api key"/>
 
 
 A success message is displayed once the key is copied.
@@ -162,7 +162,7 @@ A success message is displayed once the key is copied.
 </div>   
  
 The API key is listed for the app, as shown below.
-<img src="../images/api-keys-list-for-apps.png" alt="api keys list" title="api keys list" style="border: 1px solid gray; zoom:75%;"/>
+<img src="../images/api-keys-list-for-apps.png" alt="api keys list" title="api keys list"/>
 
 <ol start="4"><li>Click <b>Done</b></li>. 
 
@@ -172,7 +172,7 @@ The summary on the app displays the following information:
 <li><b>Scopes</b>: The selected API scopes.</li>
 <li><b>Created by</b>: The name of the user who created the app.</li>
 <li><b>Created on</b>: The date when the app was created.</li>
-<img src="../images/api-apps-list.png" alt="apps list" title="apps list" style="border: 1px solid gray; zoom:75%;"/></ul></ol> 
+<img src="../images/api-apps-list.png" alt="apps list" title="apps list"/></ul></ol> 
 
 ## Manage API App and Key
 
@@ -183,22 +183,22 @@ You can edit or delete an API app, including its name and scopes. However, you c
 To edit an API app, follow the steps below:
 
 1. Hover over and click the **Edit** icon for the required app.
-    <img src="../images/hover-edit-api-scopes.png" alt="access edit icon" title="access edit icon" style="border: 1px solid gray; zoom:75%;"/>
+    <img src="../images/hover-edit-api-scopes.png" alt="access edit icon" title="access edit icon"/>
 
 2. In the App’s configuration window, do the following:
 
     * To change the app name, click and modify the title.
     * To change the scopes, click the **API Scopes** tab and select/unselect the listed scopes.
-        <img src="../images/edit-api-app-name.png" alt="change api config" title="change api config" style="border: 1px solid gray; zoom:75%;"/>
+        <img src="../images/edit-api-app-name.png" alt="change api config" title="change api config"/>
          
     * To delete an API key, follow the steps below:
          * Click the **API Keys** tab.
          * Hover over and click the **Delete** icon for the required key.
-           <img src="../images/hover-delete-api-key.png" alt="access delete icon" title="access delete icon" style="border: 1px solid gray; zoom:75%;"/>
+           <img src="../images/hover-delete-api-key.png" alt="access delete icon" title="access delete icon"/>
 
          * Click **Delete** in the confirmation window.
             
-            <img src="../images/del-api-key.png" alt="delete api keys" title="delete api keys" style="border: 1px solid gray; zoom:75%;"/>
+            <img src="../images/del-api-key.png" alt="delete api keys" title="delete api keys"/>
             
             <div class="admonition warning">
             <p class="admonition-title">Caution</p>
@@ -211,17 +211,17 @@ To edit an API app, follow the steps below:
 
 A success message is displayed once the app is edited. The changes are updated in the summary page.
 
-<img src="../images/edit-success-message-api-app.png" alt="edit success message" title="edit success message" style="border: 1px solid gray; zoom:75%;"/></ol>
+<img src="../images/edit-success-message-api-app.png" alt="edit success message" title="edit success message"/></ol>
 
 ### Delete App
 
 To delete an API app, follow the steps below:
 
 1. Hover over and click the **Delete** icon for the required app.
-   <img src="../images/delete-api-app-icon.png" alt="access delete" title="access delete" style="border: 1px solid gray; zoom:105%;"/>
+   <img src="../images/delete-api-app-icon.png" alt="access delete" title="access delete"/>
 
 2. Click **Delete** in the confirmation window.
 
-      <img src="../images/delete-api-app.png" alt="delete api app" title="delete api app" style="border: 1px solid gray; zoom:55%;"/>
+      <img src="../images/delete-api-app.png" alt="delete api app" title="delete api app"/>
 
 A success message is displayed, and the app is removed from the list.

@@ -2,15 +2,13 @@
 
 On the Configurations page, you can edit the model name and description, add tags, adjust the model endpoint timeout duration, undeploy, or delete the model.
 
-<img src="../images/configure-fine-tuned-model-1.png" alt="Configure Fine-Tuned Model" title="Configure Fine-Tuned Model" class="border-2 border-gray-300 rounded-xl" />
+<img src="../images/configure-fine-tuned-model-1.png" alt="Configure Fine-Tuned Model" title="Configure Fine-Tuned Model"/>
 
 ## Model Endpoint Timeout
 
 You can configure a specific timeout for your model's endpoint. Enter the timeout duration from the allowed range - 30 to 180 seconds (3 minutes). The default is 60 Seconds (1 minute). If the request is't completed within the specified time frame, a timeout error will be triggered for the endpoint.
 
-!!! note 
-
-    Timeout precedence: Tool timeout > Node timeout > Model timeout.
+<Note> Timeout precedence: Tool timeout > Node timeout > Model timeout. </Note>
 
 
 ## Undeploy the Model 

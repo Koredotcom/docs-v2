@@ -70,17 +70,17 @@ AI for Process supports SSO for the following protocols and providers:
 To access the SSO feature, follow the steps below:
 
 1. Log in → In AI for Process Modules top menu → Click **Settings**.
-   <img src="../images/aip-settings-access.png" alt="access settings" title="access settings" style="border: 1px solid gray; zoom:75%;"/>
+   <img src="../images/aip-settings-access.png" alt="access settings" title="access settings"/>
 
 2. Go to **Security & Control** > **Single Sign On** on the left menu.
 
 If you’re using this feature for the first time, the following screen appears.
 
-<img src="../images/access-single-sign-on.png" alt="access sso" title="access sso" style="border: 1px solid gray; zoom:75%;"/>
+<img src="../images/access-single-sign-on.png" alt="access sso" title="access sso"/>
 
 If SSO is already configured, the **Single sign-on** setup page is displayed, as shown below.
 
-<img src="../images/sso-set-up.png" alt="sso setup" title="sso setup" style="border: 1px solid gray; zoom:75%;"/>
+<img src="../images/sso-set-up.png" alt="sso setup" title="sso setup"/>
 
 ## Enable SSO
 
@@ -196,7 +196,7 @@ To enable SSO on the **Settings** console, follow the steps below:
 
 1. Access the **Single sign on** page.
 2. If no SSO is enabled, click **Enable SSO**.
-<img src="../images/enable-sso.png" alt="enable sso" title="enable sso" style="border: 1px solid gray; zoom:75%;"/>
+<img src="../images/enable-sso.png" alt="enable sso" title="enable sso"/>
 
 3. If SSO is already enabled for a provider, click the **Enable SSO** tab and do one of the following:
 
@@ -214,10 +214,10 @@ To enable SSO on the **Settings** console, follow the steps below:
 <ol start="9"><li>Click <b>Save</b>.</li></ol>
 
 A success message is displayed once the SSO setup is complete.
-<img src="../images/sso-configuration-updated-successfully.png" alt="sso updated successfully message" title="sso updated successfully message" style="border: 1px solid gray; zoom:75%;"/>
+<img src="../images/sso-configuration-updated-successfully.png" alt="sso updated successfully message" title="sso updated successfully message"/>
 
 Additionally, the timestamp of when you enabled SSO is displayed as shown below:
-<img src="../images/sso-timestamp.png" alt="sso timestamp" title="sso timestamp" style="border: 1px solid gray; zoom:75%;"/>
+<img src="../images/sso-timestamp.png" alt="sso timestamp" title="sso timestamp"/>
 
 ## SAML
 
@@ -247,7 +247,7 @@ To configure SSO using SAML and Okta, follow the steps below:
 1. Go to AI for Process’ **Single sign-on** page.
 2. Select the **Enable SSO** tab.
 3. Select **SAML** for **Sign-on protocol** and **Okta** for **SSO provider**.
-<img src="../images/saml-okta-selection.png" alt="saml-okta-selection" title="saml-okta-selection" style="border: 1px solid gray; zoom:75%;"/>
+<img src="../images/saml-okta-selection.png" alt="saml-okta-selection" title="saml-okta-selection"/>
 
 <div class="admonition note">
 <p class="admonition-title">Note</p>
@@ -256,12 +256,12 @@ To configure SSO using SAML and Okta, follow the steps below:
 <ol start="4"><li>Login to the <a href="https://developer.okta.com/login/" >Okta developer portal</a>.</li>
 <li>On the dashboard, click <b>Applications</b> on the left menu.</li>
 <li>Click <b>Create App Integration</b>.</li>
-<img src="../images/okta-create-app-integration.png" alt="okta create app integration" title="okta create app integration" style="border: 1px solid gray; zoom:75%;"/></ol>
+<img src="../images/okta-create-app-integration.png" alt="okta create app integration" title="okta create app integration"/></ol>
 
 <ol start="7"><li>In the <b>Create a new app integration</b> window, select <b>SAML 2.0</b> and click <b>Next</b>.
-<img src="../images/create-a-new-app-integration.png" alt="create a new app integration" title="create a new app integration" style="border: 1px solid gray; zoom:75%;"/></li>
+<img src="../images/create-a-new-app-integration.png" alt="create a new app integration" title="create a new app integration"/></li>
 <li>On the <b>Create SAML Integration</b> page, provide the <b>App Name</b> under <b>General Settings</b>, and click <b>Next</b>.
-<img src="../images/create-saml-integration.png" alt="create saml integration" title="create saml integration" style="border: 1px solid gray; zoom:75%;"/></li>
+<img src="../images/create-saml-integration.png" alt="create saml integration" title="create saml integration"/></li>
 <li>Copy the following values from AI for Process’ SSO setup page and paste them into Okta under <b>Configure SAML</b>:</li>
 <ul><li><b>ACS url for SP initiated SAML flow</b>: Paste into <i>Single sign-on URL</i>.</li>
 <li><b>ACS url for IDP initiated SAML flow</b>: Paste into <i>Audience URI (SP Entity ID)</i>.</li></ul></ol>
@@ -294,14 +294,14 @@ To configure SSO using SAML and Okta, follow the steps below:
 <li>On the <b>How to Configure SAML 2.0 for <app-name> Application</b> page, do the following from Okta into AI for Process:</li>
 <ul><li>Copy the <b>Identity Provider Single Sign-On URL</b> value and paste it into the <b>Okta Single Sign-On URL</b>.</li>
 <li>Copy the <b>Identity Provider Issuer</b> value into the <b>Identity provider issuer</b>.</li>
-    <img src="../images/copy-Identity-Provider-Issuer.png" alt="copy identity provider issuer" title="copy identity provider issuer" style="border: 1px solid gray; zoom:75%;"/></ul>
+    <img src="../images/copy-Identity-Provider-Issuer.png" alt="copy identity provider issuer" title="copy identity provider issuer"/></ul>
 <li>Go to <b>Sign On</b> > <b>SAML Signing Certificates</b> on your Okta app.</li>
 <li>Click <b>Download certificate</b> under <b>Actions</b> for the required certificate.
-<img src="../images/download-certificate-saml.png" alt="download certificate" title="download certificate" style="border: 1px solid gray; zoom:75%;"/></li>
+<img src="../images/download-certificate-saml.png" alt="download certificate" title="download certificate"/></li>
 <li>Once the certificate is downloaded, open it in Notepad and copy the data between the <b>BEGIN CERTIFICATE</b> header and <b>END CERTIFICATE</b> footer.
-<img src="../images/okta-certificate-notepad.png" alt="okta certificate" title="okta certificate" style="border: 1px solid gray; zoom:75%;"/></li>
+<img src="../images/okta-certificate-notepad.png" alt="okta certificate" title="okta certificate"/></li>
 <li>Paste the value into the <b>Certificate</b> field on AI for Process’ SSO setup page.
-<img src="../images/paste-okta-certificate.png" alt="paste okta certificate" title="paste okta certificate" style="border: 1px solid gray; zoom:75%;"/></li>
+<img src="../images/paste-okta-certificate.png" alt="paste okta certificate" title="paste okta certificate"/></li>
 
 To add a new certificate, click <b>+ Add new</b>.</ol>
 
@@ -311,7 +311,7 @@ To add a new certificate, click <b>+ Add new</b>.</ol>
 
 <ol start="18"><li>Click <b>Save</b>.
 Once SSO for Okta is complete, the system will redirect to the <b>Okta Sign in</b> page for AI for Process account authentication.</li>
-<img src="../images/okta-sign-in-page.png" alt="okta sign in page" title="okta sign in page" style="border: 1px solid gray; zoom:75%;"/></ol>
+<img src="../images/okta-sign-in-page.png" alt="okta sign in page" title="okta sign in page"/></ol>
 
 ### Onelogin Configuration
 
@@ -324,7 +324,7 @@ To configure SSO using SAML and Onelogin, follow the steps below:
 3. Select **SAML** for **Sign-on protocol** and **Onelogin** for **SSO provider**.
 4. Login into the [Onelogin developer portal](https://app.onelogin.com/login).
 5. Go to **Applications** > **Add Apps** to access your app.
-<img src="../images/onelogin-add-app.png" alt="onelogin add app" title="onelogin add app" style="border: 1px solid gray; zoom:75%;"/>
+<img src="../images/onelogin-add-app.png" alt="onelogin add app" title="onelogin add app"/>
 
 <ul><li>To learn how to <b>add a new app</b>, click <a href="https://onelogin.service-now.com/support?id=kb_article&sys_id=9bf39e0047ccbd509d8dfd1f536d431c&kb_category=e9866930db185340d5505eea4b9619b7#manage-add" >here</a>.</li>
 <li>To learn how to <b>configure apps</b>, click <a href="https://onelogin.service-now.com/support?id=kb_article&sys_id=9bf39e0047ccbd509d8dfd1f536d431c&kb_category=e9866930db185340d5505eea4b9619b7#config" >here</a>.</li></ul>
@@ -334,10 +334,10 @@ To configure SSO using SAML and Onelogin, follow the steps below:
 <li>Copy the following values from <b>SSO</b> > <b>Enable SAML2.0</b> on Onelogin and paste them into the relevant fields on AI for Process’ SSO setup page:</li>
     <ul><li><b>OneLogin SAML 2.0 Endpoint (HTTP)</b>: Paste into <b>SAML 2.0 endpoint</b>.</li>
     <li><b>OneLogin Issuer URL</b>: Paste into <b>Issuer URL</b>.</li>
-    <img src="../images/paste-onelogin-issuer-url.png" alt="paste one login issuer url" title="paste one login issuer url" style="border: 1px solid gray; zoom:75%;"/></ul>
+    <img src="../images/paste-onelogin-issuer-url.png" alt="paste one login issuer url" title="paste one login issuer url"/></ul>
 
 <li>In the <b>OneLogin X.509 Certificate</b> field, click <b>View Details</b>. The <b>Standard Strength Certificate (2048-bit)</b> page is displayed.
-<img src="../images/onelogin-view-details.png" alt="one login view details" title="one login view details" style="border: 1px solid gray; zoom:75%;"/></li>
+<img src="../images/onelogin-view-details.png" alt="one login view details" title="one login view details"/></li>
 <li>In the <b>X.509 Certificate</b> section, copy the certificate data and then paste it into the <b>X.509 Certificate</b> field on AI for Process’ SSO setup page.</li>
 
 <div class="admonition note">
@@ -345,7 +345,7 @@ To configure SSO using SAML and Onelogin, follow the steps below:
 <p>Copy data after the <b>BEGIN CERTIFICATE</b> header and before the <b>END CERTIFICATE</b> footer.</p></div>
 
 To add a new certificate, click <b>+Add new</b>.
-<img src="../images/add-new-x-509-certificate.png" alt="add new x 509 certificate" title="add new x 509 certificate" style="border: 1px solid gray; zoom:75%;"/></ol>
+<img src="../images/add-new-x-509-certificate.png" alt="add new x 509 certificate" title="add new x 509 certificate"/></ol>
 
 <div class="admonition note">
 <p class="admonition-title">Note</p>
@@ -355,13 +355,13 @@ To add a new certificate, click <b>+Add new</b>.
 
 <ul><li>ACS URL for SP Initiated SAML Flow.</li>
 <li>ACS URL for IDP Initiated SAML Flow.</li>
-<img src="../images/copy-acs-urls.png" alt="copy acs urls" title="copy acs urls" style="border: 1px solid gray; zoom:75%;"/></ul>
+<img src="../images/copy-acs-urls.png" alt="copy acs urls" title="copy acs urls"/></ul>
 
 <li>Click <b>Save</b> on AI for Process and Onelogin.</li></ol>
 
 Once SSO for Onelogin is complete, the system redirects to the **Onelogin Sign in** page for AI for Process account authentication.
 
-<img src="../images/onelogin-sign-in-page.png" alt="one login sign in page" title="one login sign in page" style="border: 1px solid gray; zoom:75%;"/>
+<img src="../images/onelogin-sign-in-page.png" alt="one login sign in page" title="one login sign in page"/>
 
 ### Other Configuration
 
@@ -370,13 +370,13 @@ To configure and enable SSO using SAML for other IDPs of your choice, follow the
 1. Go to AI for Process’ **Single sign-on** page.
 2. Select the **Enable SSO** tab.
 3. Select **SAML** for **Sign-on protocol** and **Other** for **SSO provider**.
-<img src="../images/other-sso-provider.png" alt="other sso provider" title="other sso provider" style="border: 1px solid gray; zoom:75%;"/>
+<img src="../images/other-sso-provider.png" alt="other sso provider" title="other sso provider"/>
 
 4. Fetch the necessary SSO configuration parameters listed in [this](../security-and-control/single-sign-on.md#configuration-parameters) table from your app's **Settings** page within the IDP developer portal. 
 5. Paste them into the relevant fields on AI for Process’ SSO setup page.
 
 To add a new certificate, click **+Add new**.
-<img src="../images/paste-parameters-other-configuration.png" alt="paste parameters for other provider" title="paste parameters for other provider" style="border: 1px solid gray; zoom:75%;"/>
+<img src="../images/paste-parameters-other-configuration.png" alt="paste parameters for other provider" title="paste parameters for other provider"/>
 
 <div class="admonition note">
 <p class="admonition-title">Note</p>
@@ -411,11 +411,11 @@ To configure SSO using WS-Federation and Windows Azure, follow the steps below:
 3. Select **WS-Federation** for **Sign-on protocol** and **Windows Azure** to **Configure SSO for WS-Federation**.
 4. Open **Server Manager** on the computer running AD FS, then choose **AD FS** > **Workflows** > **AD FS Management**.
 5. Copy **IdP URL** from your IdP metadata (FederationMetadata.xml). You can find your ADFS Federation Metadata file URL on the AD FS server through **ADFS Management** in **ADFS** > **Service** > **Endpoints** > **Metadata**. It should look like this:
-<img src="../images/copy-idp-url.png" alt="copy idp url" title="copy idp url"  style="border: 1px solid gray; zoom:75%;"/>
+<img src="../images/copy-idp-url.png" alt="copy idp url" title="copy idp url" />
 
 6. Paste this value into the **Azure AD sign-on end point url** field on AI for Process' SSO setup page.
 7. Copy and paste [this](https://login.microsoftonline.com/common/FederationMetadata/2007-06/FederationMetadata.xml) URL link into the **Azure AD federation metadata document** field on AI for Process' SSO setup page.
-<img src="../images/paste-azure-parameters.png" alt="paste azure parameters" title="paste azure parameters"  style="border: 1px solid gray; zoom:75%;"/>
+<img src="../images/paste-azure-parameters.png" alt="paste azure parameters" title="paste azure parameters" />
 
 8. Click **Save**.
 
@@ -428,7 +428,7 @@ To configure and enable SSO using WS-Federation and other IDPs of your choice, f
 3. Select **WS-Federation** for **Sign-on protocol** and **Other** to **Configure SSO for WS-Federation**.
 4. Copy and paste the SSO endpoint URL from the IDP’s portal into **AD sign-on end point url** on AI for Process' SSO setup page.
 5. Then, copy and paste the URL for the WS-Federation metadata document from the IDP’s portal into the **AD federation metadata document url** on AI for Process' SSO setup page.
-<img src="../images/paste-ws-federation-data.png" alt="paste ws federation data" title="paste ws federation data"  style="border: 1px solid gray; zoom:75%;"/>
+<img src="../images/paste-ws-federation-data.png" alt="paste ws federation data" title="paste ws federation data" />
 
 6. Click **Save**.
 
@@ -454,7 +454,7 @@ To configure SSO using OpenId Connect and Google, follow the steps below:
 1. Go to AI for Process’s **Single sign-on** page.
 2. Select the **Enable SSO** tab.
 3. Select **OpenId Connect** for **Sign-on protocol** and **Sign in with Google** to **Configure SSO for OpenId connect**.
-<img src="../images/sign-in-with-google.png" alt="sign in with google" title="sign in with google"  style="border: 1px solid gray; zoom:75%;"/>
+<img src="../images/sign-in-with-google.png" alt="sign in with google" title="sign in with google" />
 
 4. Click **Save**.
 
@@ -472,13 +472,13 @@ However, you can still view the previously configured SSO parameters for a speci
 
 1. [Access](../security-and-control/single-sign-on.md#access-single-sign-on) the **Single sign on** page.
 2. Click the **Disable SSO** tab.
-<img src="../images/click-disable-sso.png" alt="click disable sso" title="click disable sso" style="border: 1px solid gray; zoom:75%;"/>
+<img src="../images/click-disable-sso.png" alt="click disable sso" title="click disable sso"/>
 
 3. In the **Disable SSO** confirmation window, click **Yes**.
-<img src="../images/disable-sso-screen.png" alt="disable sso screen" title="disable sso screen" style="border: 1px solid gray; zoom:75%;"/>
+<img src="../images/disable-sso-screen.png" alt="disable sso screen" title="disable sso screen"/>
 
 The following screen is displayed after SSO is disabled.
-<img src="../images/enable-sso-screen.png" alt="enable sso screen" title="enable sso screen" style="border: 1px solid gray; zoom:75%;"/>
+<img src="../images/enable-sso-screen.png" alt="enable sso screen" title="enable sso screen"/>
 
 ## Exclude Users from the SSO Requirement
 
@@ -504,10 +504,10 @@ To exclude a user from the SSO requirement, follow the steps below:
 
 1. [Navigate](../security-and-control/single-sign-on.md#access-single-sign-on) to the **Single Sign-on** page.
 2. Type and add an email address or select from the dropdown in the **Manage Users** textbox.
-<img src="../images/manage-users-sso.png" alt="manage sso users" title="manage sso users" style="border: 1px solid gray; zoom:75%;"/>
+<img src="../images/manage-users-sso.png" alt="manage sso users" title="manage sso users"/>
 
 You can add multiple users to the list, as shown below:
-<img src="../images/add-multiple-users-to-exclude.png" alt="exclude multiple users" title="exclude multiple users" style="border: 1px solid gray; zoom:75%;"/>
+<img src="../images/add-multiple-users-to-exclude.png" alt="exclude multiple users" title="exclude multiple users"/>
 
 <ol start="3"><li>Click <b>Save</b>.</li></ol>
 
@@ -516,18 +516,18 @@ A success message is displayed, and the SSO sign-in is made optional for the use
 ### Sign-In Flow for the Excluded User
 
 During sign-in, the following screen is displayed for the excluded user. 
-<img src="../images/screen-for-excluded-user.png" alt="screen for excluded user" title="screen for excluded user" style="border: 1px solid gray; zoom:75%;"/>
+<img src="../images/screen-for-excluded-user.png" alt="screen for excluded user" title="screen for excluded user"/>
 
 When the user clicks **Continue**, one of the following happens:
 
 When **SSO is enabled**, the following page is displayed.
-<img src="../images/login-with-sso.png" alt="login with sso" title="login with sso" style="border: 1px solid gray; zoom:75%;"/>
+<img src="../images/login-with-sso.png" alt="login with sso" title="login with sso"/>
 
 The user can do one of the following:
 
 * Click **Continue** to log in using the configured SSO provider service's sign-in page, for example, OKTA, as shown below:
 
-<img src="../images/connect-to-okta.png" alt="connect to okta" title="connect to okta" style="border: 1px solid gray; zoom:75%;"/>
+<img src="../images/connect-to-okta.png" alt="connect to okta" title="connect to okta"/>
 
 * Click “**Having trouble logging in with SSO?**” to sign in using the default option (email and password, Google, Windows, etc.) set during AI for Process sign-up.
 

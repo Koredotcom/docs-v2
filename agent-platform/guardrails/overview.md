@@ -2,9 +2,7 @@
 
 Guardrails are safety measures that ensure AI-generated responses from large language models (LLMs) remain appropriate and aligned with organizational or regulatory standards. The Platform includes pre-deployed guardrails that scan both user inputs and model outputs to help maintain safe, responsible, and compliant AI interactions.
 
-!!! note
-
-    Guardrails are pre-deployed by the platform. You can simply enable the scanners you want to use. [Learn more](./enable-a-scanner.md).
+<Note> Guardrails are pre-deployed by the platform. You can simply enable the scanners you want to use. [Learn more](./enable-a-scanner.md). </Note>
 
 
 ## Supported Scanners

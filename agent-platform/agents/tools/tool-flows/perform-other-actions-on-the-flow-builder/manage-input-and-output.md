@@ -18,7 +18,7 @@ Steps to add input variables:
 
 1. On the top of the Tool flow canvas, click the **Manage I/O** button.
 Alternatively, you can click the **Start** node. The **Manage Input & Output** dialog is displayed.  
-<img src="../images/adding_input_output_variables.png" alt="Manage Input Output Variables" title="Manage Input Output Variables" class="border-2 border-gray-300 rounded-xl" />
+<img src="../images/adding_input_output_variables.png" alt="Manage Input Output Variables" title="Manage Input Output Variables"/>
 
 
 2. On the **Input** tab, click the **+ Add input variable** button.

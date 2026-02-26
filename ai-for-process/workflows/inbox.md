@@ -22,7 +22,7 @@ When a workflow reaches a Human node, an approval request automatically appears 
     * **Group** – Displays requests assigned to a team or group. You can assign a request to yourself to take ownership.
 
 4. You can filter requests by Status: **Pending for Approval** (default), **Approved**, **Declined**, and **Expired**.
-<img src="../workflow-builder/types-of-nodes/images/inbox.png" alt="Inbox" title="Inbox" style="border: 1px solid gray; zoom:60%;"/>
+<img src="../workflow-builder/types-of-nodes/images/inbox.png" alt="Inbox" title="Inbox"/>
 
 
 ## Respond to Requests
@@ -53,7 +53,7 @@ To respond to a group request:
 
 1. Open the **Group** tab and locate the pending request.
 2. Assign the request to yourself. Once claimed, the request moves to your **Personal** tab.
-<img src="../workflow-builder/types-of-nodes/images/inbox_assign.png" alt="Inbox" title="Inbox" style="border: 1px solid gray; zoom:60%;"/>
+<img src="../workflow-builder/types-of-nodes/images/inbox_assign.png" alt="Inbox" title="Inbox"/>
 3. Open the request from your Personal tab and review its details.
 4. Click **Approve** or **Decline**, and optionally add comments to explain your decision.
 

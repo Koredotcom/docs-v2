@@ -11,9 +11,7 @@ On the Fine-tuned models tab, click the desired model to view the following info
 
     * The progress statuses include Initializing, Training in progress, Testing in progress, Fine-tuning completed, Stopped, and Failed.
 
-        !!! note
-
-            If fine-tuning fails, the status changes to "Failed." View the reason, make necessary changes, and click the Re-trigger to restart fine-tuning.
+        <Note> If fine-tuning fails, the status changes to "Failed." View the reason, make necessary changes, and click the Re-trigger to restart fine-tuning. </Note>
 
     * If necessary, you can stop the process in the middle and resume it later; then, the status is changed to “Stopped.” Click Re-trigger to initiate the fine-tuning process again from the beginning.
 

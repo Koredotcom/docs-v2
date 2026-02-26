@@ -9,7 +9,7 @@ The output includes key information such as the start and end times, the total t
 
 1. On the top right corner of the tool canvas, click the **Run flow** icon.
 
-    <img src="./../images/run-the-flow.png" alt="Run the Flow" title="Run the Flow" class="border-2 border-gray-300 rounded-xl" />
+    <img src="./../images/run-the-flow.png" alt="Run the Flow" title="Run the Flow"/>
 
     The Run dialog opens, displaying the Input, Flow log, and Output sections.
 
@@ -22,9 +22,7 @@ The output includes key information such as the start and end times, the total t
     * Flow Errors: If errors occur, an error message will be displayed. Additionally, the output key will appear empty, and the output will be shown in JSON format, indicating a failure within the flow.  
 
 
-!!! note
-
-    You can stop the flow at any point during the execution and restart it by clicking the **Run flow** icon again.
+<Note> You can stop the flow at any point during the execution and restart it by clicking the **Run flow** icon again. </Note>
 
 
 ## Debug Log Overview

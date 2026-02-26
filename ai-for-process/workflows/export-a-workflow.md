@@ -26,16 +26,16 @@ To export an workflow's version, follow the steps below:
 2. Select the workflow you want to export. The Workflow flow page is displayed. 
 3. Click **Configurations** on the left navigation menu.
 4. Scroll down to the **Export workflow** section. By default, the currently deployed version is selected in the dropdown.
-<img src="../images/export-agent.png" alt="export agent" title="export agent" style="border: 1px solid gray; zoom:75%;"/>
+<img src="../images/export-agent.png" alt="export agent" title="export agent"/>
 
 5. To change, click and choose another version from the list.
-<img src="../images/choose-another-version.png" alt="change version" title="change version" style="border: 1px solid gray; zoom:75%;"/>
+<img src="../images/choose-another-version.png" alt="change version" title="change version"/>
 
 6. Click the **Export** button.
 
 The export process begins, and a success message is displayed after the workflow validation is completed and the export process finishes.
 
-<img src="../images/agent-export-success.png" alt="export success" title="export success" style="border: 1px solid gray; zoom:75%;"/>
+<img src="../images/agent-export-success.png" alt="export success" title="export success"/>
 
 <Note>Once export begins, the selected version can't be changed.</Note>
 
@@ -47,15 +47,15 @@ The exported package includes the following JSON files encapsulating the workflo
 * ***app_definition.json:*** It includes general information about the workflow version and guardrails.
 * ***env_variables.json***: It includes the environment variables set for the workflow. [Learn more](../workflows/configure-a-workflow.md).
 
-<img src="../images/exported-files.png" alt="exported files" title="exported files" style="border: 1px solid gray; zoom:75%;"/>
+<img src="../images/exported-files.png" alt="exported files" title="exported files"/>
 
 To view the files, right-click and select **View file**.
 
-<img src="../images/view-exported-file.png" alt="view exported file" title="view exported file" style="border: 1px solid gray; zoom:75%;"/>
+<img src="../images/view-exported-file.png" alt="view exported file" title="view exported file"/>
 
 The file information is displayed as follows:
 
-<img src="../images/app-definition-file-example.png" alt="file example" title="file example" style="border: 1px solid gray; zoom:75%;"/>
+<img src="../images/app-definition-file-example.png" alt="file example" title="file example"/>
 
 <hr />
 

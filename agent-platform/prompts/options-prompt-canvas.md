@@ -6,7 +6,7 @@ The Prompt canvas offers a range of options to help you customize the generated 
 
 The options in the Model column enable users to tailor their experience based on specific needs, providing flexibility and control over how the outputs are produced.
 
-<img src="../images/model_column_options.png" alt="Model column options" title="Model column options" class="border-2 border-gray-300 rounded-xl" />
+<img src="../images/model_column_options.png" alt="Model column options" title="Model column options"/>
 
 The following table lists the options available in the Model column:
 
@@ -164,7 +164,7 @@ Clicking this icon opens a separate dialog displaying the request and response i
 
 The options available in the top toolbar of the prompt canvas are essential for efficiently generating and managing outputs. These options help to organize and share generated data, enhancing the overall user experience in the output generation process.
 
-<img src="../images/top_toolbar_options.png" alt="Top toolbar options" title="Top toolbar options" class="border-2 border-gray-300 rounded-xl" />
+<img src="../images/top_toolbar_options.png" alt="Top toolbar options" title="Top toolbar options"/>
 
 The following table lists the options available on the top toolbar of the prompt canvas:
 

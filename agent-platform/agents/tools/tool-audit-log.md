@@ -28,7 +28,7 @@ Steps to access and view tool audit logs:
 3. In the left navigation pane, click **Audit logs**. The Audit logs page is displayed.
 4. Click each row to view more details about the event. For more information, see Tool-Level Audit Logs. [Learn more](../../settings/monitoring/audit-logs.md#tool-level-audit-logs).
 
-    <img src="../images/agent_audit_log.png" alt="agent audit logs" title="agent audit logs" class="border-2 border-gray-300 rounded-xl" />
+    <img src="../images/agent_audit_log.png" alt="agent audit logs" title="agent audit logs"/>
 
 ## Dashboard Information
 

@@ -23,7 +23,7 @@ Each row in the list shows:
 
 Click a model from the list to view or manage its connections.
 
-<img src="../images/external_models_list.png" alt="External models table" title="External models table" class="border-2 border-gray-300 rounded-xl" />
+<img src="../images/external_models_list.png" alt="External models table" title="External models table"/>
 
 ## Managing Connections 
 
@@ -37,7 +37,7 @@ Each external model can have one or more associated connections, listed in the C
 | Actions         | - Toggle for Inference – Enable or disable usage of this connection for inference.<br /> - Edit – Update the API key or credentials.<br /> - Delete – Remove the connection from the workspace. |
 
 
-<img src="../images/external_models_connections.png" alt="External models connections" title="External models connections" class="border-2 border-gray-300 rounded-xl" />
+<img src="../images/external_models_connections.png" alt="External models connections" title="External models connections"/>
 
 
 ## Adding Connections

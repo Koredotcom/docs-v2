@@ -8,21 +8,21 @@ To deploy your fine-tuned model, follow these steps:
 1. Do one of the following:
 
     * Go to **Models** > **Fine-tuned models** and click the required model from the list.  
-    <img src="../images/deploy-a-fine-tuned-model-new.png" alt="Deploy-Fine-Tuned Model" title="Deploy-Fine-Tuned Model" class="border-2 border-gray-300 rounded-xl" /> 
+    <img src="../images/deploy-a-fine-tuned-model-new.png" alt="Deploy-Fine-Tuned Model" title="Deploy-Fine-Tuned Model"/> 
     
     The model's **Overview** page is displayed. Click **Deploy model** at the top-right corner of the page.  
-    <img src="../images/deploy-fine-tuned-model.png" alt="Deploy-Fine-Tuned Model" title="Deploy-Fine-Tuned Model" class="border-2 border-gray-300 rounded-xl" />
+    <img src="../images/deploy-fine-tuned-model.png" alt="Deploy-Fine-Tuned Model" title="Deploy-Fine-Tuned Model"/>
 
     Or
 
     * Click **Model Endpoint** in the left navigation and then click **Deploy model** at the top-right corner of the page.  
-    <img src="../images/deploy-fine-tuned-model-from-overview.png" alt="Deploy Fine-Tuned Model from Overview" title="Deploy Fine-Tuned Model from Overview" class="border-2 border-gray-300 rounded-xl" />
+    <img src="../images/deploy-fine-tuned-model-from-overview.png" alt="Deploy Fine-Tuned Model from Overview" title="Deploy Fine-Tuned Model from Overview"/>
 
 2. The **Deploy** dialog is displayed. In the **General details** section:
 
     * Enter a **Deployment name** and **Description** for your model.
 
-        <img src="../images/deploy-fine-tuned-general-details-section.png" alt="Deploy Fine-Tuned General Details Section" title="Deploy Fine-Tuned General Details Section" class="border-2 border-gray-300 rounded-xl" />
+        <img src="../images/deploy-fine-tuned-general-details-section.png" alt="Deploy Fine-Tuned General Details Section" title="Deploy Fine-Tuned General Details Section"/>
 
     * Add tags and click **Next**. Tags can help search the model quickly.
 
@@ -47,19 +47,17 @@ To deploy your fine-tuned model, follow these steps:
     * Select the **Scale up delay (in seconds)** which is how long to wait before scaling-up replicas.
 
     * Select the **Scale down replicas (in seconds)** which is how long to wait before scaling down replicas.  
-    <img src="../images/deploy-fine-tuned-parameters-section.png" alt="Deploy Fine-Tuned Parameters Section" title="Deploy Fine-Tuned Parameters Section" class="border-2 border-gray-300 rounded-xl" />
+    <img src="../images/deploy-fine-tuned-parameters-section.png" alt="Deploy Fine-Tuned Parameters Section" title="Deploy Fine-Tuned Parameters Section"/>
 
 4. Click **Next**.
 
 5. Select the required **Hardware** for deployment from the dropdown menu and click **Next**.  
-<img src="../images/deploy-fine-tuned-hardware-section.png" alt="Deploy Fine-Tuned Hardware Section" title="Deploy Fine-Tuned Hardware Section" class="border-2 border-gray-300 rounded-xl" />
+<img src="../images/deploy-fine-tuned-hardware-section.png" alt="Deploy Fine-Tuned Hardware Section" title="Deploy Fine-Tuned Hardware Section"/>
 
 6. In the **Review** step, verify all the details that you provided earlier. Select the **I accept all the terms and conditions** check box.  
-<img src="../images/deploy-fine-tuned-review-section.png" alt="Deploy Fine-Tuned Review Section" title="Deploy Fine-Tuned Review Section" class="border-2 border-gray-300 rounded-xl" />
+<img src="../images/deploy-fine-tuned-review-section.png" alt="Deploy Fine-Tuned Review Section" title="Deploy Fine-Tuned Review Section"/>
 
-    !!! note
-
-        If you want to make any modifications, you can go to the previous step by clicking the **Back** button or a particular step indicator on the left panel.
+    <Note> If you want to make any modifications, you can go to the previous step by clicking the **Back** button or a particular step indicator on the left panel. </Note>
 
 7. Click **Deploy**.
 

@@ -16,7 +16,7 @@ The pattern provides a structured framework for building complex agentic systems
 
 The Supervisor Pattern implements a systematic workflow with clearly defined stages:
 
-<img src="../../ai-agents/images/supervisor-pattern.png" alt="Supervisor Pattern Architecture" title="Supervisor Pattern Architecture" />
+<img src="../../ai-agents/images/supervisor-pattern.png" alt="Supervisor Pattern Architecture" title="Supervisor Pattern Architecture"/>
 
 1. **User Input Reception**:
     * The system receives an initial query or request from the user.

@@ -4,9 +4,7 @@ Once sessions are imported (either simulated or production) and you have added e
 
 The system runs all applicable evaluators, processes the data, and computes scores for each relevant session or trace segment. Evaluation results are displayed in the session grid, with each evaluator contributing one or more dedicated column.
 
-<img src="../../agentic-evaluation/images/run_evaluation.png" alt="Run evaluation" title="Run evaluation" class="border-2 border-gray-300 rounded-xl" />
+<img src="../../agentic-evaluation/images/run_evaluation.png" alt="Run evaluation" title="Run evaluation"/>
 
 
-!!! note
-
-    Evaluations can be run multiple times, for example, after updating agent logic, adding new simulated sessions, or importing additional production data. This allows developers to benchmark performance across different agent versions and testing conditions.
+<Note> Evaluations can be run multiple times, for example, after updating agent logic, adding new simulated sessions, or importing additional production data. This allows developers to benchmark performance across different agent versions and testing conditions. </Note>

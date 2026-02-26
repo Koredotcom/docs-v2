@@ -1,7 +1,7 @@
 # MCP Server 
 
 The MCP Server feature enables users to manage Model Context Protocol (MCP) servers with agents as tools. This feature provides access to agents through the server for task execution and workflow management.
-<img src="../images/mcp-server-home.png" alt="mcp-server-home" title="mcp-server-home" class="border-2 border-gray-300 rounded-xl" />
+<img src="../images/mcp-server-home.png" alt="mcp-server-home" title="mcp-server-home"/>
 
 ## Default MCP Server
 
@@ -27,7 +27,7 @@ To view the Default MCP Server configuration:
 1. Navigate to the **MCP Server** page.
 2. Select the **Default MCP Server** option.
 3. The system displays a dialog box containing server details.
-<img src="../images/mcp-server-url.png" alt="mcp-server-url" title="mcp-server-url" class="border-2 border-gray-300 rounded-xl" />
+<img src="../images/mcp-server-url.png" alt="mcp-server-url" title="mcp-server-url"/>
 
 Each MCP Server provides a unique URL that enables external applications and services to connect. Users can copy this URL directly from the interface for integration purposes.
 

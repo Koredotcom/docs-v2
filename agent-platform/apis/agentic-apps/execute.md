@@ -222,8 +222,7 @@ Example: To directly invoke the leaveBalanceById tool in a specific agent, set t
   }
 ```
 
-!!!note
-    The first agent/tool in the tasks array is used for handling the query. If more than one agent/tool is given in this array, the first one is used, and the others are ignored. 
+<Note> The first agent/tool in the tasks array is used for handling the query. If more than one agent/tool is given in this array, the first one is used, and the others are ignored. </Note>
 
 
 <hr/>
@@ -779,14 +778,7 @@ You can attach a file to a session and use it in the current execution. This is 
     Add the file details while invoking the execute API in the attachments field. You can use the include and exclude arrays to specify the list of files to be added to the current run of the execute API. 
 
 
-!!!note
-
-    * Files are **not automatically included** in the current execution after upload. They must be explicitly listed in the includeFiles array.
-    * The **isActive** field in the response indicates whether a file was used in the current run:
-        
-        * true → File was included in the execution.
-        * false → File was excluded. 
-    * Once a file is added to the **includeFiles** list, it remains associated with the **session** for its duration unless it is explicitly removed by listing it in **excludeFiles**.
+<Note> * Files are **not automatically included** in the current execution after upload. They must be explicitly listed in the includeFiles array. * The **isActive** field in the response indicates whether a file was used in the current run: * true → File was included in the execution. * false → File was excluded. * Once a file is added to the **includeFiles** list, it remains associated with the **session** for its duration unless it is explicitly removed by listing it in **excludeFiles**. </Note>
 
 **Sample Request**
 
@@ -1206,6 +1198,4 @@ Returns the current status and details of the run. The important fields include:
 }
 ```
 
-!!!note
-    * Check the output only if the status is ‘success’. The output field may contain error details if the status field is otherwise. 
-    * If status is "pending" or "running", poll again after a suitable delay.
+<Note> * Check the output only if the status is ‘success’. The output field may contain error details if the status field is otherwise. * If status is "pending" or "running", poll again after a suitable delay. </Note>

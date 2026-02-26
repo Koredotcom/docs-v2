@@ -2,7 +2,7 @@
 
 The **Announcements** feature in the **Admin Hub** under **Assistant Configurations** allows administrators to create, manage, and publish organizational messages. Announcements appear as banners at the top of the user interface, ensuring important updates are delivered in a clear and timely manner.
 
-<img src="../images/announcement_1.png" alt="action" title="action" class="border-2 border-gray-300 rounded-xl" />
+<img src="../images/announcement_1.png" alt="action" title="action"/>
 
 ## Creating Announcements
 
@@ -17,7 +17,7 @@ Build engaging announcements with rich formatting options and precise audience t
         1. Everyone in the account
         2. Agent specific users
 
-<img src="../images/announcement_2.png" alt="action" title="action" class="border-2 border-gray-300 rounded-xl" />
+<img src="../images/announcement_2.png" alt="action" title="action"/>
 
 
 ## Actions and Controls
@@ -39,7 +39,7 @@ Make changes to published announcements with clear prompts that help you manage 
 !!! note
     You must publish again to push your changes to users. The system will prompt you to either publish or discard your modifications. This ensures updates are intentional and controlled.
     
-<img src="../images/announcement_3.png" alt="action" title="action" class="border-2 border-gray-300 rounded-xl" />
+<img src="../images/announcement_3.png" alt="action" title="action"/>
 
 ## End User Experience
 

@@ -28,7 +28,7 @@ Steps to import a dataset:
 2. Click the Projects tab, and choose the relevant project.
 3. Select the specific evaluation to which you want to add datasets.
 4. Choose one of the following import methods to import the dataset for evaluation:  
-    <img src="../../images/import_dataset_new.png" alt="Upload file" title="Upload file" class="border-2 border-gray-300 rounded-xl" />  
+    <img src="../../images/import_dataset_new.png" alt="Upload file" title="Upload file"/>  
 
     1. **Upload from device**: Click the Upload file link and select your CSV file saved on your local machine.
     2. **Import production data**: Click Proceed and fill in the required fields in the Import production data dialog:
@@ -40,10 +40,10 @@ Steps to import a dataset:
 
 
 5. Check the preview of the dataset (first 10 rows). To confirm and finalize the import, click **Proceed**.
-    <img src="../../images/preview_import_dataset.png" alt="Preview dataset" title="Preview dataset" class="border-2 border-gray-300 rounded-xl" />
+    <img src="../../images/preview_import_dataset.png" alt="Preview dataset" title="Preview dataset"/>
 
     The dataset is imported into Evaluation Studio and linked to the selected evaluation. You can then view your data in a tabular format in the evaluation table.
-    <img src="../../images/uploaded_dataset_table.png" alt="Evaluation table" title="Evaluation table" class="border-2 border-gray-300 rounded-xl" />
+    <img src="../../images/uploaded_dataset_table.png" alt="Evaluation table" title="Evaluation table"/>
 
 6. Click the **+** button on the Evaluations page to access additional dataset actions:
     * **Run a prompt**: Run a prompt by selecting model name and configurations.
@@ -72,7 +72,7 @@ For instance, if you want to replace the manual effort of summarizing customer c
 **Steps to run a prompt:**
 
 1. On the Evaluations page, click the **+** button and select the **Run a Prompt** option.  
-    <img src="../../images/run_a_prompt_option.png" alt="run a prompt" title="Run a prompt" class="border-2 border-gray-300 rounded-xl" />
+    <img src="../../images/run_a_prompt_option.png" alt="run a prompt" title="Run a prompt"/>
 
 2. In the Run a Prompt dialog:
     1. Enter the **Column Name** for the output data.
@@ -80,7 +80,7 @@ For instance, if you want to replace the manual effort of summarizing customer c
     3. Type the prompt that describes the data you want to generate, making sure to include any mapped variables.
 3. Click **Run** to generate a new output column in your data table with the results.
 
-    <img src="../../images/run_prompt.png" alt="Run a prompt" title="Run a prompt" class="border-2 border-gray-300 rounded-xl" />
+    <img src="../../images/run_prompt.png" alt="Run a prompt" title="Run a prompt"/>
 
 
 After running the prompt, the following additional options are available:
@@ -108,7 +108,7 @@ This functionality enhances the evaluation process by providing greater flexibil
 
 1. On the Evaluations page, click the **+** button, and select the **Run an API** option.
 
-    <img src="../../images/run_an_api.png" alt="Run a prompt" title="Run a prompt" class="border-2 border-gray-300 rounded-xl" />
+    <img src="../../images/run_an_api.png" alt="Run a prompt" title="Run a prompt"/>
 
 2. **Configure the API call**: In the Run an API dialog, specify the following:
     * **Column Name**: Enter a name for the column where the API output will be displayed.
@@ -119,7 +119,7 @@ This functionality enhances the evaluation process by providing greater flexibil
     * **Response**: The response is automatically generated and displayed to show the result of the API call. When testing the API call, the system uses the input from the first row, makes the API request using the provided cURL, and displays the response.
     * **JSON Output Path**: Define the path to the specific data within the JSON response that you want to display. This is useful when the API returns complex JSON data, and you need to extract specific fields or values.
 
-    <img src="../../images/run_an_api_dialog.png" alt="Run a prompt" title="Run a prompt" class="border-2 border-gray-300 rounded-xl" />
+    <img src="../../images/run_an_api_dialog.png" alt="Run a prompt" title="Run a prompt"/>
 
 3. **Test the API call**: Click Test to verify the API setup. The response from the test will be displayed in the Response tab of the properties panel. If the JSON Output Path is incorrect, an error message will appear:
 4. **Fetch content from the API:** After configuring the API, click Run to trigger the request. The system will send the API call to the deployed tool, retrieve the output, and automatically add the response as a new column in the evaluation dataset.
@@ -132,17 +132,17 @@ Follow this example to set up and run an API call inside Evaluation Studio:
 
 1. **Create and deploy a tool:** Set up your tool and deploy it in the Platform.
 2. **Copy the tool endpoint:** From the **Tool Endpoint** tab, copy the deployed API's URL.  
-<img src="../../images/tool_endpoint.png" alt="Copy tool endpoint" title="Copy tool endpoint" class="border-2 border-gray-300 rounded-xl" />
+<img src="../../images/tool_endpoint.png" alt="Copy tool endpoint" title="Copy tool endpoint"/>
 
 3. **Upload a dataset:** In Evaluation Studio, upload a dataset containing only the input columns.
 4. **Initiate ‘Run an API’:** Click the **+** button, select **Run an API**, add a column name, and paste the copied endpoint URL in the **Request URL** field.
-<img src="../../images/run_api_paste_curl.png" alt="Run an API" title="Run an API" class="border-2 border-gray-300 rounded-xl" />
+<img src="../../images/run_api_paste_curl.png" alt="Run an API" title="Run an API"/>
 
 5. **Generate API key:** Go back to the tool, navigate to the **API Keys** tab, create a new key, and copy it.
-<img src="../../images/create_api_key.png" alt="Generate API key" title="Generate API key" class="border-2 border-gray-300 rounded-xl" />
+<img src="../../images/create_api_key.png" alt="Generate API key" title="Generate API key"/>
 
 6. **Set the authorization header:** In Evaluation Studio, in the **Headers** tab, paste the copied API key in the Value field for the Key `x-api-key`.
-<img src="../../images/paste_api_key.png" alt="Auth header" title="Auth header" class="border-2 border-gray-300 rounded-xl" />
+<img src="../../images/paste_api_key.png" alt="Auth header" title="Auth header"/>
 
 7. **Configure the API body:** Click the **Body** tab. Under the `"input"` key, replace `{{example_text}}` with your input column name. For example, `{{Input}}`.
 <img src="../../images/example_text.png" alt="Body tab" title="Body tab" style="border: 1px solid gray; zoom:50%;"/>
@@ -169,7 +169,7 @@ Follow this example to set up and run an API call inside Evaluation Studio:
 
 10. **Run the API call:** After successful testing, click **Run** to fetch outputs for all the dataset rows. A new column will be added with the populated API responses/results.
 
-    <img src="../../images/populating_responses.png" alt="Results" title="Results" class="border-2 border-gray-300 rounded-xl" />
+    <img src="../../images/populating_responses.png" alt="Results" title="Results"/>
 
 
 ✅ **Tip:** Make sure the column name exactly matches the input column in your dataset to dynamically send each row's input to the API.
@@ -197,15 +197,15 @@ This functionality helps users test how effectively their RAG system uses extern
 
 1. **Initiate Search AI connection**: Click the **“+”** icon in Evaluation Studio and select **Run Search AI**.
 
-    <img src="../../images/run_searchai.png" alt="Run Search AI" title="Run Search AI" class="border-2 border-gray-300 rounded-xl" />
+    <img src="../../images/run_searchai.png" alt="Run Search AI" title="Run Search AI"/>
 
 2. **Select a pre-configured connection**: In the **Connection name** field, select a Search AI connection. Only integrations that are pre-configured and successfully tested via the **Integrations** page will appear in the dropdown. For more information on setting up a Search AI connection, see [Setting up Search AI](../../ai-agents/tools/tool-flows/types-of-nodes/docsearch-node.md#step-1-set-up-search-ai-app).
 
-    <img src="../../images/select_connection.png" alt="Select connection" title="Select connection" class="border-2 border-gray-300 rounded-xl" />
+    <img src="../../images/select_connection.png" alt="Select connection" title="Select connection"/>
 
 3. **Map the input column**: In the **Map Variables** section, specify the input column to use for querying the retrieval system. 
 
-    <img src="../../images/input.png" alt="Map input column" title="Map input column" class="border-2 border-gray-300 rounded-xl" />
+    <img src="../../images/input.png" alt="Map input column" title="Map input column"/>
 
 4. **Apply meta filters (Optional)**: Set Meta filters to define rules that will narrow down the search results. For example, if the sources have multiple files, you can define the specific file names to look up in the meta filters code. [Learn more](https://docs.kore.ai/xo/apis/searchai/answer-generation/#body-parameters). 
 
@@ -218,19 +218,17 @@ The Response tab shows whether the first-row query is returning an answer, allow
     * **Answers**– RAG responses based on the retrieved context.
     * **Retrieved Contexts**– Supporting text chunks used to generate the answer.
 
-    <img src="../../images/answers_ret_contexts.png" alt="Answers and Retrieved Contexts" title="Answers and Retrieved Contexts" class="border-2 border-gray-300 rounded-xl" />
+    <img src="../../images/answers_ret_contexts.png" alt="Answers and Retrieved Contexts" title="Answers and Retrieved Contexts"/>
 
     In the **Retrieved Contexts** column, click the **Show JSON** link to open the Response JSON schema. In the opened JSON, retrieved contexts appear under the `chunkText` key. The number of entries under `chunkText` corresponds to the number of retrieved chunks for that row. To understand the context used for a given answer, inspect the values under the `chunkText` key in the response JSON.
 
-    <img src="../../images/show_json.png" alt="JSON chunk text" title="JSON chunk text" class="border-2 border-gray-300 rounded-xl" />
+    <img src="../../images/show_json.png" alt="JSON chunk text" title="JSON chunk text"/>
 
 7. **Attach Evaluators:** Once the Search AI columns are populated, you can attach any built-in or custom evaluators to the Answers or Retrieved Contexts columns. Click the **“+”** icon and select **Add Evaluator**.  
 
-    !!! note
+    <Note> The **RAGAS evaluators** are specifically designed to test RAG systems. It is advisable to attach them as evaluators and run an evaluation to thoroughly assess the RAG pipeline's performance. </Note>
 
-        The **RAGAS evaluators** are specifically designed to test RAG systems. It is advisable to attach them as evaluators and run an evaluation to thoroughly assess the RAG pipeline's performance. 
-
-    <img src="../../images/ragas.jpg" alt="RAGAS evaluators" title="RAGAS evaluators" class="border-2 border-gray-300 rounded-xl" />
+    <img src="../../images/ragas.jpg" alt="RAGAS evaluators" title="RAGAS evaluators"/>
 
     Users can add an empty column, which is inline-editable and supports both text and numeric values, for manually inputting ground truth in RAGAS evaluations.
 

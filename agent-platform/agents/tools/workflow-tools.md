@@ -95,8 +95,7 @@ Workflow Tools inherit the application’s PII protection capabilities, ensuring
 * The tool can securely unredact and use the PII internally for execution.
 * All monitoring, debugging logs, and execution traces continue to display only masked values.
 
-!!!note
-    PII handling applies only to workflow tools associated with agentic apps. Tools in the library operate independently and do not apply sensitization to PII inputs.
+<Note> PII handling applies only to workflow tools associated with agentic apps. Tools in the library operate independently and do not apply sensitization to PII inputs. </Note>
 
 #### Accessing App Environment Variables in Workflow Tools
 

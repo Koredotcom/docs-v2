@@ -7,7 +7,7 @@ The dashboard organizes analytics into two primary categories:
 * **Session-level insights**: User activity and engagement metrics.
 * **Run-level insights**: Execution performance and resource consumption.
 
-<img src="../images/analytics-dashboard.png" alt="Analytics Dashboard" title="Analytics Dashboard" style="border: 1px solid gray; zoom:50%;" />
+<img src="../images/analytics-dashboard.png" alt="Analytics Dashboard" title="Analytics Dashboard"/>
 
 ## Key Features
 
@@ -101,7 +101,7 @@ Analyzes tool utilization across all agents:
 * Breakdown by tool type: Workflow, Code, MCP (Model Context Protocol), and Knowledge
 * Tool-specific metrics: Tool name, Run frequency, Average response time, and Tool category
 
-<img src="../images/tool-runs.png" alt="Tool Runs" title="Tool Runs" style="border: 1px solid gray; zoom:65%;" />
+<img src="../images/tool-runs.png" alt="Tool Runs" title="Tool Runs"/>
 
 #### Model Runs
 
@@ -111,4 +111,4 @@ Tracks model API calls from Agents and Supervisors:
 * Performance trends over time
 * Model-level details: Model name, Execution count, Average response time, and Token usage
 
-<img src="../images/model-runs.png" alt="Model Runs" title="Model Runs" style="border: 1px solid gray; zoom:65%;" />
+<img src="../images/model-runs.png" alt="Model Runs" title="Model Runs"/>

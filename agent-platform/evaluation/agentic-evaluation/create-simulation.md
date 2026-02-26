@@ -47,9 +47,7 @@ You can create multiple personas to represent different user types. Each persona
 After creating personas, you can edit, duplicate, or delete them anytime from the Personas page. When a persona is deleted, any active simulations using it automatically switch to the default Unidentified Persona.
 
 
-!!! note
-
-    Personas are reusable across multiple simulations within the same Agentic Evaluation project.
+<Note> Personas are reusable across multiple simulations within the same Agentic Evaluation project. </Note>
 
 
 ## Create Test Scenarios
@@ -81,9 +79,7 @@ To manually create a test scenario:
 
 After creation, you can edit, duplicate, or delete scenarios anytime from the Test Scenarios page.
 
-!!! note
-
-    Make sure you provide any specific test scenario details required for the task, such as account numbers, external links, ticket IDs, or user IDs. The simulation agent requires these details to supply the necessary context to the Agentic App so the multi-turn conversation can complete successfully.
+<Note> Make sure you provide any specific test scenario details required for the task, such as account numbers, external links, ticket IDs, or user IDs. The simulation agent requires these details to supply the necessary context to the Agentic App so the multi-turn conversation can complete successfully. </Note>
 
 <img src="../../agentic-evaluation/images/write_test_scenario.png" alt="write test scenario" title="write test scenario" style="border: 1px solid gray; zoom:60%;"/>
 
@@ -99,9 +95,7 @@ To automatically generate test scenarios:
     * Information provided to the persona, such as background or knowledge context.
 3. Click **Generate**.
 
-!!! note
-
-    Provide any required details - such as account numbers, external links, ticket IDs, or user IDs - when generating scenarios. These details are appended to all generated scenarios and are used only if needed by the simulation agent to successfully complete the multi-turn conversation.
+<Note> Provide any required details - such as account numbers, external links, ticket IDs, or user IDs - when generating scenarios. These details are appended to all generated scenarios and are used only if needed by the simulation agent to successfully complete the multi-turn conversation. </Note>
 
 <img src="../../agentic-evaluation/images/generate_test_scenario.png" alt="generate test scenario" title="generate test scenario" style="border: 1px solid gray; zoom:60%;"/>
 
@@ -109,9 +103,7 @@ The system automatically generates multiple varied test queries for each capabil
 
 After creation, you can edit, duplicate, or delete scenarios anytime from the Test Scenarios page.
 
-!!! note 
-
-    Manual and AI-generated scenarios can coexist and are reusable across multiple simulations within the Agentic Project.
+<Note> Manual and AI-generated scenarios can coexist and are reusable across multiple simulations within the Agentic Project. </Note>
 
 <img src="../../agentic-evaluation/images/generate_test_scenario.png" alt="generate test scenario" title="generate test scenario" style="border: 1px solid gray; zoom:60%;"/>
 
@@ -127,9 +119,7 @@ After creation, you can edit, duplicate, or delete scenarios anytime from the Te
 
 After creating personas and test scenarios, you can run a simulation to generate realistic interaction sessions that test how your agent performs across different user types and situations. Simulations produce mock conversations (simulation sessions) that help you evaluate agent responses, measure consistency, track goal completion, and identify areas for improvement. The outputs of these simulations can later be used with Evaluators for automated scoring and performance benchmarking.
 
-!!! note
-
-    The Simulation module becomes active only when at least one *persona* and one *test scenario* exist in your workspace.
+<Note> The Simulation module becomes active only when at least one *persona* and one *test scenario* exist in your workspace. </Note>
 
 To create and run a simulation:
 

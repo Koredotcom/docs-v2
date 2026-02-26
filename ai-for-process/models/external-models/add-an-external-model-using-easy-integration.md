@@ -9,28 +9,28 @@ Steps to add the Anthropic Claude-V1 model using easy integration:
 1. Click **Models** on the top navigation bar of the application. The **Models** page is displayed.
 2. Click the **External models** tab on the **Models** page.
 
-    <img src="../images/navigating-to-external-models.png" alt="Navigating to External Models" title="Navigating to External Models" class="border-2 border-gray-300 rounded-xl" />
+    <img src="../images/navigating-to-external-models.png" alt="Navigating to External Models" title="Navigating to External Models"/>
 
 3. Click **Add a model** under the **External models** tab. The **Add an external model** dialog is displayed.
 
-    <img src="../images/add-external-model-easy-integration.png" alt="Add External Model Easy Integration" title="Add External Model Easy Integration" style="border: 1px solid gray; zoom:40%;"/>
+    <img src="../images/add-external-model-easy-integration.png" alt="Add External Model Easy Integration" title="Add External Model Easy Integration"/>
 
 4. Select the **Easy integration** option to integrate models from Open AI, Anthropic, Google, or Cohere and click **Next**.
 5. Select a provider to integrate with and click **Next**.
 
-    <img src="../images/easy-integration.png" alt="Easy Integration" title="Easy Integration" style="border: 1px solid gray; zoom:50%;"/>
+    <img src="../images/easy-integration.png" alt="Easy Integration" title="Easy Integration"/>
 
     A pop-up with the list of all the Anthropic models that are supported in AI for Process is displayed.
     
     For more information on the list of external models supported, see [Supported models](../supported-models.md).
 
-    <img src="../images/select-model.png" alt="Select Model" title="Select Model" style="border: 1px solid gray; zoom:50%;"/>
+    <img src="../images/select-model.png" alt="Select Model" title="Select Model"/>
 
 6. Select the required **Model** from the options listed and click **Next**.
 
 7. Enter the respective API key you have received from the provider in the **API key** field and click **Confirm** to start the integration.
 
-      <img src="../images/api-key-for-model.png" alt="API Key for Model" title="API Key for Model" style="border: 1px solid gray; zoom:50%;"/></ol>
+      <img src="../images/api-key-for-model.png" alt="API Key for Model" title="API Key for Model"/></ol>
 
 The model is integrated and is listed in the External models list.
 
@@ -57,14 +57,14 @@ Steps to add Amazon Bedrock models using easy integration:
 2. Go to the **External Models** tab and click **Add a model**.
 3. Select **Easy integration** > **AWS Bedrock** and click **Next**.
 
-      <img src="../images/aws_dialog.png" alt="Select AWS Bedrock" title="Select AWS Bedrock" style="border: 1px solid gray; zoom:50%;"/>
+      <img src="../images/aws_dialog.png" alt="Select AWS Bedrock" title="Select AWS Bedrock"/>
 
 
 <font size="4">**2. Configure the Integration**</font> 
 
 In the AWS Bedrock dialog, configure the following:
 
-   <img src="../images/aws_bedrock_config.png" alt="AWS Bedrock" title="AWS Bedrock" style="border: 1px solid gray; zoom:50%;"/>
+   <img src="../images/aws_bedrock_config.png" alt="AWS Bedrock" title="AWS Bedrock"/>
 
 * **Credentials**: 
     * **Identity Access Management (IAM) Role ARN**: Enter the full ARN of your IAM role that has permission to invoke Amazon Bedrock models. This role allows secure cross-account access following least-privilege principles.  

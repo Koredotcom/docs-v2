@@ -14,7 +14,7 @@ Make sure you have already interacted with the app and generated conversation se
 Steps to import production data:
 
 1. Open your evaluation from **Evaluation Studio → Agentic Evaluation → Evaluations**.
-<img src="../../agentic-evaluation/images/evaluations_listing_page.png" alt="evaluation list" title="evaluation list" class="border-2 border-gray-300 rounded-xl" />
+<img src="../../agentic-evaluation/images/evaluations_listing_page.png" alt="evaluation list" title="evaluation list"/>
 
 2. Select the evaluation where you want to import data, and then select **Import sessions** to import the relevant session.
 <img src="../../agentic-evaluation/images/import_live_data.png" alt="import data" title="import data" style="border: 1px solid gray; zoom:60%;"/>
@@ -37,7 +37,7 @@ To import simulated data, at least one simulation run with the relevant personas
 Steps to import simulated data:
 
 1. Open your evaluation from **Evaluation Studio → Agentic Evaluation → Evaluations**.
-<img src="../../agentic-evaluation/images/evaluations_listing_page.png" alt="evaluation list" title="evaluation list" class="border-2 border-gray-300 rounded-xl" />
+<img src="../../agentic-evaluation/images/evaluations_listing_page.png" alt="evaluation list" title="evaluation list"/>
 
 2. Select the evaluation where you want to import data, and then select **Import simulated data** to import the simulated data.
 <img src="../../agentic-evaluation/images/import_simulated_data.png" alt="import data" title="import data" style="border: 1px solid gray; zoom:60%;"/>
@@ -54,4 +54,4 @@ Imported data is organized into two tabs: Sessions and Traces. These tabs reflec
 * **Sessions**: Displays the list of sessions with details like session ID, number of traces, creation time, and duration. Users can add session-level evaluators here to measure overall outcomes. [Learn more about Session evaluators](./configure-evaluators.md#session-evaluators).
 * **Traces**: Breaks sessions into individual traces, each representing one pair of user input and agentic app response from the whole session. Users can add trace-level evaluators to check specific actions, like whether the correct agent or tool was used. [Learn more about Trace evaluators](./configure-evaluators.md#trace-evaluators).
 
-<img src="../../agentic-evaluation/images/imported_sessions_new.png" alt="Imported sessions" title="Imported sessions" class="border-2 border-gray-300 rounded-xl" />
+<img src="../../agentic-evaluation/images/imported_sessions_new.png" alt="Imported sessions" title="Imported sessions"/>

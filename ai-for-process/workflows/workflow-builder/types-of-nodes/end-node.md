@@ -11,7 +11,7 @@ Steps to add and configure the node:
 ### Step 1: Open Workflow Builder
 
 * Log in to your AI for Process account.
-  <img src="../images/access-workflows.png" alt="access workflows" title="access workflows" style="border: 1px solid gray; zoom:75%;"/>
+  <img src="../images/access-workflows.png" alt="access workflows" title="access workflows"/>
 
 * Select your workflow → Click **Go to Flow**.
 
@@ -23,20 +23,20 @@ Steps to add and configure the node:
 ### Step 3: Configure the Node
 
 * Click the added node to open its properties dialog box. The General Settings for the node are displayed.  
-<img src="./../images/end-node-configure.png" alt="Configure End Node" title="Configure End Node" class="border-2 border-gray-300 rounded-xl" />
+<img src="./../images/end-node-configure.png" alt="Configure End Node" title="Configure End Node"/>
 
 * Enter or select the following information:
 
     * **Custom Name**: Enter an appropriate name for the node.
     
     * **Name (key)**: Select a key from the drop-down list. All defined keys in the Manage Output section are displayed here. You can select a variable and assign a value to it. (You can also add a new key. For more information, see [Manage Input and Output variable](./../perform-other-actions-on-the-flow-builder/manage-input-and-output.md).)  
-    <img src="./../images/select-a-key.png" alt="Select a Key" title="Select a Key" class="border-2 border-gray-300 rounded-xl" />
+    <img src="./../images/select-a-key.png" alt="Select a Key" title="Select a Key"/>
     
     * **Value**: Select an appropriate variable or node as the value. Enter “{{context.” and select the node/variable from the list and then close the braces with “}}”.
     
         Example: `{{context.steps.summarization.output}}`
 
-        <img src="./../images/end-node-success-output.png" alt="Configure End Node" title="Configure End Node" class="border-2 border-gray-300 rounded-xl" />
+        <img src="./../images/end-node-success-output.png" alt="Configure End Node" title="Configure End Node"/>
 
         !!! note
 

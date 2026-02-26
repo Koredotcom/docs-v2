@@ -53,7 +53,7 @@ The **Send & wait for response** field specifies where the request will be sent 
 
 For details on how to view, assign, and act on approval requests, see **[Inbox](../../inbox.md)**. 
 
-<img src="../images/workflow_everyone.png" alt="Human Node" title="Human Node" style="border: 1px solid gray; zoom:60%;"/>
+<img src="../images/workflow_everyone.png" alt="Human Node" title="Human Node"/>
 
 ### 2. Configure the Review Note
 
@@ -62,7 +62,7 @@ Define how the request will appear to the reviewer:
 * **Subject line** - Email subject or message title.
 * **Message body** - Instructions or context for the reviewer. The context is resolved at run-time.
 
-<img src="../images/workflow_reviewnote.png" alt="Human Node" title="Human Node" style="border: 1px solid gray; zoom:60%;"/>
+<img src="../images/workflow_reviewnote.png" alt="Human Node" title="Human Node"/>
 
 ### 3. Configure Timeout Behavior
 
@@ -71,7 +71,7 @@ In the Wait for response field, choose how long the node should wait for a respo
 * **No timeout** – Workflow waits indefinitely until the reviewer responds.
 * **Set timeout** – Default 120 seconds (you can customize the value and unit: seconds, minutes, hours, days).
 
-<img src="../images/workflow_wait for response.png" alt="Human Node" title="Human Node" style="border: 1px solid gray; zoom:60%;"/>
+<img src="../images/workflow_wait for response.png" alt="Human Node" title="Human Node"/>
 
 ### 4. Define Node Outcomes
 

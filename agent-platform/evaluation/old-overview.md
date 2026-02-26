@@ -37,4 +37,4 @@ Agentic Evaluation enables multi-level evaluation across sessions and traces, of
  
 2. On the Evaluation page, select **Model evaluation** or **Agentic evaluation** to begin.
 
-    <img src="../images/eval_studio_page.png" alt="Evaluation page" title="Evaluation page" class="border-2 border-gray-300 rounded-xl" />
+    <img src="../images/eval_studio_page.png" alt="Evaluation page" title="Evaluation page"/>
