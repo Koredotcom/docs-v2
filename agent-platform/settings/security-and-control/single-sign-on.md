@@ -11,50 +11,14 @@ SSO is a powerful option for organizations looking to balance convenience and se
 * **Improved User Experience**: Reduces the need for multiple logins into an account.
 * **Centralized Access Control**: Admins can monitor and enforce security policies across all applications more efficiently.
 
-<div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>Only account owners and admins can enable/disable SSO from the <b>Settings</b> console.</p></div>
+<Note>Only account owners and admins can enable/disable SSO from the <b>Settings</b> console.</Note>
 
 The Platform supports SSO for the following protocols and providers:
-<table>
-  <tr>
-   <td><strong>Protocol</strong>
-   </td>
-   <td><strong>Provider</strong>
-   </td>
-  </tr>
-  <tr>
-   <td>
-<a href="#saml">SAML</a>
-   </td>
-   <td>
-<ul>
-<li><a href="#okta-configuration">Okta</a></li>
-<li><a href="#onelogin-configuration">OneLogin</a></li>
-<li><a href="#other-configuration">Other</a></li>
-</ul>
-   </td>
-  </tr>
-  <tr>
-   <td><a href="#ws-federation">WS-Federation</a>
-   </td>
-   <td>
-<ul>
-<li><a href="#windows-azure-configuration">Windows Azure</a></li>
-<li><a href="#other-configuration_1">Other</a></li>
-</ul>
-   </td>
-  </tr>
-  <tr>
-   <td><a href="#openid-connect-configuration">OpenID Connect</a>
-   </td>
-   <td>
-<ul>
-<li><a href="#google-configuration">Google account</a></li>
-</ul>
-   </td>
-  </tr>
-</table>
+| <strong>Protocol</strong> | <strong>Provider</strong> |
+|:------ |:------ |
+| <a href="#saml">SAML</a> | <ul> <li><a href="#okta-configuration">Okta</a></li> <li><a href="#onelogin-configuration">OneLogin</a></li> <li><a href="#other-configuration">Other</a></li> </ul> |
+| <a href="#ws-federation">WS-Federation</a> | <ul> <li><a href="#windows-azure-configuration">Windows Azure</a></li> <li><a href="#other-configuration_1">Other</a></li> </ul> |
+| <a href="#openid-connect-configuration">OpenID Connect</a> | <ul> <li><a href="#google-configuration">Google account</a></li> </ul> |
 
 ## How SSO Works
 
@@ -74,7 +38,10 @@ To access the SSO feature, follow the steps below:
 3. Go to **Security & Control** > **Single Sign On** on the left menu.
 
    If you’re using this feature for the first time, the following screen appears.
-     <img src="../images/access-single-sign-on.png" alt="access sso" title="access sso" style="border: 1px solid gray; zoom:75%;"/>
+
+     ![access sso](./images/access-single-sign-on.png "access sso")
+
+
 
 If SSO is already configured, the **Single sign-on** setup page is displayed.
 
@@ -82,109 +49,20 @@ If SSO is already configured, the **Single sign-on** setup page is displayed.
 
 Depending on your company's security requirements, you can enable SSO for your account users. Enabling SSO includes selecting the protocol and IDP and providing the [parameters](../security-and-control/single-sign-on.md#configuration-parameters) to integrate with the IDP service.
 
-<div class="admonition warning">
-<p class="admonition-title">Important</p>
-<p>If you already have the required parameters for Okta, move directly to Step 18.</p></div>
+<Info>If you already have the required parameters for Okta, move directly to Step 18.</Info>
 
 ### Configuration Parameters
 
 The following parameters should be configured on the Platform based on the protocol and IDP you select:
 
-<table>
-  <tr>
-   <td><strong>Protocol</strong>
-   </td>
-   <td><strong>IDP</strong>
-   </td>
-   <td><strong>Parameters</strong>
-   </td>
-  </tr>
-  <tr>
-   <td>SAML
-   </td>
-   <td>Okta
-   </td>
-   <td>
-<ul>
-
-<li><strong>Okta single sign-on url</strong>: The SSO endpoint URL for <em>Okta</em> to enable Service Provider initiated SAML flow.</li>
-
-<li><strong>Identity provider issuer: </strong>The entity (URL) that provides the user identities, including the ability to authenticate a user.</li>
-
-<li><strong>Certificate: </strong>The public certificate stored by the service provider from the IDP is used to validate a user signature. You can add multiple (a maximum of 2) certificates and delete already added invalid certificates. </li>
-</ul>
-   </td>
-  </tr>
-  <tr>
-   <td>SAML
-   </td>
-   <td>Onelogin
-   </td>
-   <td>
-<ul>
-
-<li><strong>SAML 2.0 endpoint</strong>: The SSO endpoint URL for <em>Onelogin</em> to enable Service Provider-initiated SAML flow.</li>
-
-<li><strong>Issuer url</strong>: The same as the <strong>Identity provider issuer </strong>for Okta.</li>
-
-<li><strong>X.509 certificate</strong>: The same as the <strong>Certificate</strong> for Okta.</li>
-</ul>
-   </td>
-  </tr>
-  <tr>
-   <td>SAML
-   </td>
-   <td>Other
-   </td>
-   <td>
-<ul>
-
-<li><strong>Single sign-on url: </strong>The SSO endpoint URL for <em>the IDP</em> to enable Service Provider initiated SAML flow.</li>
-
-<li><strong>Issuer url: </strong>The same as the <strong>Identity provider issuer </strong>for Okta.</li>
-
-<li><strong>Certificate: </strong>The same as the <strong>Certificate</strong> for Okta.</li>
-</ul>
-   </td>
-  </tr>
-  <tr>
-   <td>WS-Federation
-   </td>
-   <td>Windows Azure
-   </td>
-   <td>
-<ul>
-
-<li><strong>Azure AD sign-on end point url</strong>:  The URL that the Platform sends sign-on and sign-off requests using <em>Azure</em>. The response for the authentication is sent to the <strong>Reply URL</strong> defined in your <em>Azure</em> Active Directory configuration settings.</li>
-
-<li><strong>Azure AD federation metadata document</strong>: The URL for the federation metadata document used for authentication with <em>Azure</em> Active Directory.</li>
-</ul>
-   </td>
-  </tr>
-  <tr>
-   <td>WS-Federation
-   </td>
-   <td>Other
-   </td>
-   <td>
-<ul>
-
-<li><strong>AD sign-on end point url: </strong>The same as <strong>Azure AD sign-on end point url </strong>for Windows Azure.</li>
-
-<li><strong>AD federation metadata document url</strong>: The same as <strong>Azure AD federation metadata document for </strong>Windows Azure.</li>
-</ul>
-   </td>
-  </tr>
-  <tr>
-   <td>OpenID Connect
-   </td>
-   <td>Google
-   </td>
-   <td>
-No additional configuration is required. Your users will be authenticated based on their valid Google credentials.
-   </td>
-  </tr>
-</table>
+| <strong>Protocol</strong> | <strong>IDP</strong> | <strong>Parameters</strong> |
+|:------ |:------ |:------ |
+| SAML | Okta | <ul> <li><strong>Okta single sign-on url</strong>: The SSO endpoint URL for <em>Okta</em> to enable Service Provider initiated SAML flow.</li> <li><strong>Identity provider issuer: </strong>The entity (URL) that provides the user identities, including the ability to authenticate a user.</li> <li><strong>Certificate: </strong>The public certificate stored by the service provider from the IDP is used to validate a user signature. You can add multiple (a maximum of 2) certificates and delete already added invalid certificates. </li> </ul> |
+| SAML | Onelogin | <ul> <li><strong>SAML 2.0 endpoint</strong>: The SSO endpoint URL for <em>Onelogin</em> to enable Service Provider-initiated SAML flow.</li> <li><strong>Issuer url</strong>: The same as the <strong>Identity provider issuer </strong>for Okta.</li> <li><strong>X.509 certificate</strong>: The same as the <strong>Certificate</strong> for Okta.</li> </ul> |
+| SAML | Other | <ul> <li><strong>Single sign-on url: </strong>The SSO endpoint URL for <em>the IDP</em> to enable Service Provider initiated SAML flow.</li> <li><strong>Issuer url: </strong>The same as the <strong>Identity provider issuer </strong>for Okta.</li> <li><strong>Certificate: </strong>The same as the <strong>Certificate</strong> for Okta.</li> </ul> |
+| WS-Federation | Windows Azure | <ul> <li><strong>Azure AD sign-on end point url</strong>: The URL that the Platform sends sign-on and sign-off requests using <em>Azure</em>. The response for the authentication is sent to the <strong>Reply URL</strong> defined in your <em>Azure</em> Active Directory configuration settings.</li> <li><strong>Azure AD federation metadata document</strong>: The URL for the federation metadata document used for authentication with <em>Azure</em> Active Directory.</li> </ul> |
+| WS-Federation | Other | <ul> <li><strong>AD sign-on end point url: </strong>The same as <strong>Azure AD sign-on end point url </strong>for Windows Azure.</li> <li><strong>AD federation metadata document url</strong>: The same as <strong>Azure AD federation metadata document for </strong>Windows Azure.</li> </ul> |
+| OpenID Connect | Google | No additional configuration is required. Your users will be authenticated based on their valid Google credentials. |
 
 ### Steps to Enable SSO
 
@@ -238,44 +116,34 @@ To configure SSO using SAML and Okta, follow the steps below:
 2. Select the **Enable SSO** tab.
 3. Select **SAML** for **Sign-on protocol** and **Okta** for **SSO provider**.
 
-<div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>If you already have the required parameters for Okta, move directly to Step 18.</p></div>
+<Note>If you already have the required parameters for Okta, move directly to Step 18.</Note>
 
 <ol start="4"><li>Login to the <a href="https://developer.okta.com/login/">Okta developer portal</a>.</li>
 <li>On the dashboard, click <b>Applications</b> on the left menu.</li>
 <li>Click <b>Create App Integration</b>.</li>
-<img src="../images/okta-create-app-integration.png" alt="okta create app integration" title="okta create app integration" style="border: 1px solid gray; zoom:75%;"/></ol>
+
+![okta create app integration](./images/okta-create-app-integration.png "okta create app integration")
+
+</ol>
 
 <ol start="7"><li>In the <b>Create a new app integration</b> window, select <b>SAML 2.0</b> and click <b>Next</b>.
-<img src="../images/create-a-new-app-integration.png" alt="create a new app integration" title="create a new app integration" style="border: 1px solid gray; zoom:75%;"/></li>
+
+![create a new app integration](./images/create-a-new-app-integration.png "create a new app integration")
+
+</li>
 <li>On the <b>Create SAML Integration</b> page, provide the <b>App Name</b> under <b>General Settings</b>, and click <b>Next</b>.
-<img src="../images/create-saml-integration.png" alt="create saml integration" title="create saml integration" style="border: 1px solid gray; zoom:75%;"/></li>
+
+![create saml integration](./images/create-saml-integration.png "create saml integration")
+
+</li>
 <li>Copy the following values from the Platform’s SSO setup page and paste them into Okta under <b>Configure SAML</b>:</li>
 <ul><li><b>ACS url for SP initiated SAML flow</b>: Paste into <i>Single sign-on URL</i>.</li>
 <li><b>ACS url for IDP initiated SAML flow</b>: Paste into <i>Audience URI (SP Entity ID)</i>.</li></ul></ol>
 
-<table>
-  <tr>
-   <td>
-<strong>Okta Parameter</strong>
-   </td>
-   <td><strong>Description</strong>
-   </td>
-  </tr>
-  <tr>
-   <td><strong>Single sign-on URL</strong>
-   </td>
-   <td>The location where the SAML assertion is sent with an HTTP POST. This is often called the SAML Assertion Consumer Service (ACS) URL for your application.
-   </td>
-  </tr>
-  <tr>
-   <td><strong>Audience URI (SP Entity ID)</strong>
-   </td>
-   <td>The application-defined unique identifier that is the intended audience of the SAML assertion. This is most often the SP Entity ID of your application.
-   </td>
-  </tr>
-</table>
+| <strong>Okta Parameter</strong> | <strong>Description</strong> |
+|:------ |:------ |
+| <strong>Single sign-on URL</strong> | The location where the SAML assertion is sent with an HTTP POST. This is often called the SAML Assertion Consumer Service (ACS) URL for your application. |
+| <strong>Audience URI (SP Entity ID)</strong> | The application-defined unique identifier that is the intended audience of the SAML assertion. This is most often the SP Entity ID of your application. |
 
 <ol start="10"><li>Click <b>Next</b>.</li>
 <li>Click <b>Finish</b> under <b>Feedback</b> on Okta’s <b>Create SAML Integration</b> page.</li>
@@ -285,15 +153,19 @@ To configure SSO using SAML and Okta, follow the steps below:
 <li>Copy the <b>Identity Provider Issuer</b> value into the <b>Identity provider issuer</b>.</li></ul>
 <li>Go to <b>Sign On</b> > <b>SAML Signing Certificates</b> on your Okta app.</li>
 <li>Click <b>Download certificate</b> under <b>Actions</b> for the required certificate.
-<img src="../images/download-certificate-saml.png" alt="download certificate" title="download certificate" style="border: 1px solid gray; zoom:75%;"/></li>
+
+![download certificate](./images/download-certificate-saml.png "download certificate")
+
+</li>
 <li>Once the certificate is downloaded, open it in Notepad and copy the data between the <b>BEGIN CERTIFICATE</b> header and <b>END CERTIFICATE</b> footer.
-<img src="../images/okta-certificate-notepad.png" alt="okta certificate" title="okta certificate" style="border: 1px solid gray; zoom:75%;"/></li>
+
+![okta certificate](./images/okta-certificate-notepad.png "okta certificate")
+
+</li>
 <li>Paste the value into the <b>Certificate</b> field on the Platform’s SSO setup page.</li>
 To add a new certificate, click <b>+ Add new</b>.</ol>
 
-<div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>When multiple certificates are provided, the system uses the latest one. If the latest certificate is invalid, it automatically switches to other available certificates.</p></div>
+<Note>When multiple certificates are provided, the system uses the latest one. If the latest certificate is invalid, it automatically switches to other available certificates.</Note>
 
 <ol start="18"><li>Click <b>Save</b>.
 Once SSO for Okta is complete, the system will redirect to the <b>Okta Sign in</b> page for the Platform account authentication.</li></ol>
@@ -309,7 +181,10 @@ To configure SSO using SAML and Onelogin, follow the steps below:
 3. Select **SAML** for **Sign-on protocol** and **Onelogin** for **SSO provider**.
 4. Login into the [Onelogin developer portal](https://app.onelogin.com/login).
 5. Go to **Applications** > **Add Apps** to access your app.
-<img src="../images/onelogin-add-app.png" alt="onelogin add app" title="onelogin add app" style="border: 1px solid gray; zoom:75%;"/>
+
+![onelogin add app](./images/onelogin-add-app.png "onelogin add app")
+
+
 
 <ul><li>To learn how to <b>add a new app</b>, click <a href="https://onelogin.service-now.com/support?id=kb_article&sys_id=9bf39e0047ccbd509d8dfd1f536d431c&kb_category=e9866930db185340d5505eea4b9619b7#manage-add">here</a>.</li>
 <li>To learn how to <b>configure apps</b>, click <a href="https://onelogin.service-now.com/support?id=kb_article&sys_id=9bf39e0047ccbd509d8dfd1f536d431c&kb_category=e9866930db185340d5505eea4b9619b7#config">here</a>.</li></ul>
@@ -321,19 +196,21 @@ To configure SSO using SAML and Onelogin, follow the steps below:
     <li><b>OneLogin Issuer URL</b>: Paste into <b>Issuer URL</b>.</li></ul>
 
 <li>In the <b>OneLogin X.509 Certificate</b> field, click <b>View Details</b>. The <b>Standard Strength Certificate (2048-bit)</b> page is displayed.
-<img src="../images/onelogin-view-details.png" alt="one login view details" title="one login view details" style="border: 1px solid gray; zoom:75%;"/></li>
+
+![one login view details](./images/onelogin-view-details.png "one login view details")
+
+</li>
 <li>In the <b>X.509 Certificate</b> section, copy the certificate data and then paste it into the <b>X.509 Certificate</b> field on the Platform’s SSO setup page.</li>
 
-<div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>Copy data after the <b>BEGIN CERTIFICATE</b> header and before the <b>END CERTIFICATE</b> footer.</p></div>
+<Note>Copy data after the <b>BEGIN CERTIFICATE</b> header and before the <b>END CERTIFICATE</b> footer.</Note>
 
 To add a new certificate, click <b>+Add new</b>.
-<img src="../images/add-new-x-509-certificate.png" alt="add new x 509 certificate" title="add new x 509 certificate" style="border: 1px solid gray; zoom:75%;"/></ol>
 
-<div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>When multiple certificates are provided, the system uses the latest one. If the latest certificate is invalid, it automatically switches to other available certificates.</p></div>
+![add new x 509 certificate](./images/add-new-x-509-certificate.png "add new x 509 certificate")
+
+</ol>
+
+<Note>When multiple certificates are provided, the system uses the latest one. If the latest certificate is invalid, it automatically switches to other available certificates.</Note>
 
 <ol start="11"><li>Copy the following field values from the Platform’s SSO setup page into the relevant fields in Onelogin:</li>
 
@@ -356,10 +233,7 @@ To configure and enable SSO using SAML for other IDPs of your choice, follow the
 
 To add a new certificate, click **+Add new**.
 
-<div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>When multiple certificates are provided, the system uses the latest one. If the latest certificate is invalid, it automatically switches to other available certificates.
-</p></div>
+<Note>When multiple certificates are provided, the system uses the latest one. If the latest certificate is invalid, it automatically switches to other available certificates.</Note>
 
 <ol start="6"><li>Copy and paste <b>ACS url for SP initiated SAML flow</b> and <b>ACS url for IDP initiated SAML flow</b> values from the Platform into the relevant app fields within the IDP’s developer portal.</li>
 <li>Click <b>Save</b>.</li></ol>
@@ -390,7 +264,10 @@ To configure SSO using WS-Federation and Windows Azure, follow the steps below:
 4. Open **Server Manager** on the computer running AD FS, then choose **AD FS** > **Tools** > **AD FS Management**.
 5. Copy **IdP URL** from your IdP metadata (FederationMetadata.xml). You can find your ADFS Federation Metadata file URL on the AD FS server through **ADFS Management** in **ADFS** > **Service** > **Endpoints** > **Metadata**. It should look like this:
 
-   <img src="../images/copy-idp-url.png" alt="copy idp url" title="copy idp url"  style="border: 1px solid gray; zoom:75%;"/>
+
+   ![copy idp url](./images/copy-idp-url.png "copy idp url")
+
+
 
 6. Paste this value into the **Azure AD sign-on end point url** field on the Platform’s SSO setup page.
 7. Copy and paste [this](https://login.microsoftonline.com/common/FederationMetadata/2007-06/FederationMetadata.xml) URL link into the **Azure AD federation metadata document** field on the Platform’s SSO setup page.
@@ -431,9 +308,7 @@ To configure SSO using OpenId Connect and Google, follow the steps below:
 3. Select **OpenId Connect** for **Sign-on protocol** and **Sign in with Google** to **Configure SSO for OpenId connect**.
 4. Click **Save**.
 
-<div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>No further configuration is needed. Users will be authenticated using their Google account’s username and password.</p></div>
+<Note>No further configuration is needed. Users will be authenticated using their Google account’s username and password.</Note>
 
 ## Disable SSO
 
@@ -480,12 +355,18 @@ A success message is displayed, and the SSO sign-in is made optional for the use
 ### Sign-In Flow for the Excluded User
 
 During sign-in, the following screen is displayed for the excluded user. 
-<img src="../images/screen-for-excluded-user.png" alt="screen for excluded user" title="screen for excluded user" style="border: 1px solid gray; zoom:75%;"/>
+
+![screen for excluded user](./images/screen-for-excluded-user.png "screen for excluded user")
+
+
 
 When the user clicks **Continue**, one of the following happens:
 
 When **SSO is enabled**, the following page is displayed.
-<img src="../images/login-with-sso.png" alt="login with sso" title="login with sso" style="border: 1px solid gray; zoom:75%;"/>
+
+![login with sso](./images/login-with-sso.png "login with sso")
+
+
 
 The user can do one of the following:
 

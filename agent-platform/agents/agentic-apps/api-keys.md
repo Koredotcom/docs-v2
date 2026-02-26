@@ -21,38 +21,12 @@ To set access permissions, create a new API Scope. Enter the permissions for the
 Agents: Configure the level of access granted to manage agents within the app.
 
 
-<table>
-  <tr>
-   <td>Permission Level
-   </td>
-   <td>Description
-   </td>
-  </tr>
-  <tr>
-   <td>None
-   </td>
-   <td>No access to agents.
-   </td>
-  </tr>
-  <tr>
-   <td>View
-   </td>
-   <td>Can view the list of agents in the application and the details of an agent.
-   </td>
-  </tr>
-  <tr>
-   <td>Edit
-   </td>
-   <td>Can edit and update existing agents.
-   </td>
-  </tr>
-  <tr>
-   <td>Full
-   </td>
-   <td>Full administrative access, including creation, updates, and deletion of agents.
-   </td>
-  </tr>
-</table>
+| Permission Level | Description |
+|:------ |:------ |
+| None | No access to agents. |
+| View | Can view the list of agents in the application and the details of an agent. |
+| Edit | Can edit and update existing agents. |
+| Full | Full administrative access, including creation, updates, and deletion of agents. |
 
 
 **Execute Runtime Permissions**

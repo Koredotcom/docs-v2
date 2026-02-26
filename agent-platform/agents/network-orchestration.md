@@ -36,14 +36,6 @@ Configure the delegation rules for all the agents in the app:
 
     **Note**: When an event is selected as the delegation rule, subsequent request handling depends on the event configuration. For example, if an agent handoff event is set up to escalate to a human agent through AI for Service, the delegation will trigger that specific behavior.
 
-<!--
-Fallback Behavior: Select an agent or event to take over the conversation when this agent can't complete a task itself and can't identify any other agent that can complete the task. You can configure another agent or event to automatically take over the conversation. This ensures that unresolved tasks are always routed to the correct fallback, and no task or conversation remains unresolved.
-
-Click on Add Fallback Delegation.
-Select the fallback agent or event from the list.
-Set the condition under which it should be triggered.
--->
-
 ## Passing Information Between Agents
 
 When the control passes from one agent to another, the application saves the data, including the context info, summary, and pending tasks, to the `sessionMeta` memory under the `delegationContext` field. The next agent can use this field to get the required information. 

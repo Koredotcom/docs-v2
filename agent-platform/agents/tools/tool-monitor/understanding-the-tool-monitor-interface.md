@@ -8,7 +8,10 @@ The Tool Monitor capabilities are shown on the following tabs:
 
 Both tabs include summary metrics at the top of the page, including total runs/requests, average response times (P90 and P99), and failure rates.
 
-<img src="../images/new_agent_monitor.png" alt="All runs and Model runs tabs" title="All runs and Model runs tabs"/>
+
+![All runs and Model runs tabs](./images/new_agent_monitor.png "All runs and Model runs tabs")
+
+
 
 ## All Runs
 
@@ -28,10 +31,7 @@ The All runs tab provides the following information for each tool run:
     * **Agentic App** - The name of the Agentic App used to run the tool.
     * **API Key**: The API key name used to execute the tool. (This is the name provided in the API keys page when you created a new API key. If you didn't provide a name, the system uses the default name ‘*Secret Key*’. You can have multiple API keys for a single tool).
 
-<div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>When there is a nested (multi-level) tool calling, the immediate tool (parent) is displayed as the source.</p>
-</div>
+<Note>When there is a nested (multi-level) tool calling, the immediate tool (parent) is displayed as the source.</Note>
 
 You can also see the following metrics on the top of the page: 
 
@@ -77,7 +77,10 @@ These metrics are dependent on the selected date range, filters, and search crit
 
 Clicking each row in either the All runs tab or the Model runs tab opens a detailed view panel on the right. This view is similar to the Run dialog panel on the Tool flow canvas. [Learn more](../tool-flows/perform-other-actions-on-the-flow-builder/run-the-flow.md).
 
-<img src="../images/agent_monitor_viewing_run_information.png" alt="Viewing detailed run information" title="Viewing detailed run information"/>
+
+![Viewing detailed run information](./images/agent_monitor_viewing_run_information.png "Viewing detailed run information")
+
+
 
 The panel displays the following details:
 
@@ -93,7 +96,10 @@ The panel displays the following details:
 
 *  **Output section**: The Output section displays the tool's output (for successful runs). You can copy the output and view tokens.
 
-    <img src="../images/agent_monitor_viewing_run_information_detailed.png" alt="Viewing detailed run information" title="Viewing detailed run information"/>
+
+    ![Viewing detailed run information](./images/agent_monitor_viewing_run_information_detailed.png "Viewing detailed run information")
+
+
 
 
 ## Understanding the Impact of Timeouts on Tool Endpoints
@@ -185,77 +191,14 @@ The errors are classified as follows:
 The table below lists the errors that can occur in the **Tool Monitoring** dashboard, including the error categories and HTTP status codes:
 
 
-<table>
-  <tr>
-   <td><strong>Error Scenario</strong>
-   </td>
-   <td><strong>Description</strong>
-   </td>
-   <td><strong>Category</strong>
-   </td>
-   <td><strong>HTTP Status Code</strong>
-   </td>
-  </tr>
-  <tr>
-   <td>Mandatory input field
-   </td>
-   <td>A mandatory input field is missing for the tool run.
-   </td>
-   <td rowspan="4" >Data Validation
-   </td>
-   <td rowspan="3" >400 Bad Request
-   </td>
-  </tr>
-  <tr>
-   <td>Invalid data type for input field
-   </td>
-   <td>An incorrect data type is provided for a field input.
-   </td>
-  </tr>
-  <tr>
-   <td>Empty Input Object
-   </td>
-   <td>A field input is missing a value or has an empty value.
-   </td>
-  </tr>
-  <tr>
-   <td>Large Request Payload
-   </td>
-   <td>The request payload exceeds the server's size limit.
-   </td>
-   <td>413 Payload Too Large
-   </td>
-  </tr>
-  <tr>
-   <td>Any Server side issues
-   </td>
-   <td>A technical issue caused the server to fail.
-   </td>
-   <td>Internal Server
-   </td>
-   <td>500 Internal Server Error
-   </td>
-  </tr>
-  <tr>
-   <td>Network Issues:- Request timeout on the server
-   </td>
-   <td>Temporary network or the Platform server connection issue.
-   </td>
-   <td>Network
-   </td>
-   <td>408 Request Timeout
-   </td>
-  </tr>
-  <tr>
-   <td>Guardrail Failure
-   </td>
-   <td>The flow execution was aborted at the <strong>AI node</strong> due to a guardrail violation, as the risk score exceeded the threshold.
-   </td>
-   <td>Content Filter
-   </td>
-   <td>403 Forbidden
-   </td>
-  </tr>
-</table>
+| <strong>Error Scenario</strong> | <strong>Description</strong> | <strong>Category</strong> | <strong>HTTP Status Code</strong> |
+|:----- |:----- |:----- |:----- |
+| Mandatory input field | A mandatory input field is missing for the tool run. | Data Validation | 400 Bad Request |
+| Invalid data type for input field | An incorrect data type is provided for a field input. |
+| Empty Input Object | A field input is missing a value or has an empty value. |
+| Large Request Payload | The request payload exceeds the server's size limit. | 413 Payload Too Large |
+| Any Server side issues | A technical issue caused the server to fail. | Internal Server | 500 Internal Server Error |
+| Network Issues:- Request timeout on the server | Temporary network or the Platform server connection issue. | Network | 408 Request Timeout |
+| Guardrail Failure | The flow execution was aborted at the <strong>AI node</strong> due to a guardrail violation, as the risk score exceeded the threshold. | Content Filter | 403 Forbidden |
 
 

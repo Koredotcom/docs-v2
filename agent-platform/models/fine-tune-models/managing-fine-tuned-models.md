@@ -22,7 +22,10 @@ The Fine-Tuned Models listing page displays all available models along with the 
 | **Added by**        | User who created or imported the model. |
 | **Updated on**      | Date of the deployment. |
 
-<img src="../images/fine_tune_models_new.png" alt="Fine-tune models table" title="Fine-tune models table"/>
+
+![Fine-tune models table](./images/fine_tune_models_new.png "Fine-tune models table")
+
+
 
 Select a model in the list to open the model’s detail view. By default, this opens the Overview page. The left navigation pane includes the following sections:
 
@@ -36,48 +39,18 @@ Each model can have multiple deployments, which are tracked independently.
 
 Click the Deployments tab to see all deployments for the selected model, along with the following details:
 
-<table>
-  <thead>
-    <tr>
-      <th style="width: 150px;" />Field</th>
-      <th style="width: 500px;" />Description</th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr>
-      <td><b>Deployment Name</b></td>
-      <td>Name given by the user during deployment.</td>
-    </tr>
-    <tr>
-      <td><b>Deployment ID</b></td>
-      <td>System-generated ID (not editable).</td>
-    </tr>
-    <tr>
-    <td><b>Status</b></td>
-    <td>
-    The status of deployment: Deploying, Optimizing, Failed, Ready to Deploy, or Deployed.
-  </ul>
-</td>
-    </tr>
-          <td><b>Deployed By</b></td>
-      <td>User who performed the deployment.</td>
-    </tr>
-    <tr>
-      <td><b>Added On</b></td>
-      <td>Date of deployment.</td>
-    </tr>
-    <tr>
-      <td><b>Actions</b></td>
-      <td>
-        <b>Copy cURL</b> – Copies the cURL command for invoking this deployment.<br />
-        <b>Manage API Keys</b> – Opens the API key management tab.<br />
-        <b>Re-trigger</b> – Restarts the deployment (Option available only if it has failed or stopped).
-      </td>
-    </tr>
-  </tbody>
-</table>
+| Field | Description |
+|:------ |:------ |
+| <b>Deployment Name</b> | Name given by the user during deployment. |
+| <b>Deployment ID</b> | System-generated ID (not editable). |
+| <b>Status</b> | The status of deployment: Deploying, Optimizing, Failed, Ready to Deploy, or Deployed. </ul> |
+| <b>Added On</b> | Date of deployment. |
+| <b>Actions</b> | <b>Copy cURL</b> – Copies the cURL command for invoking this deployment.<br /> <b>Manage API Keys</b> – Opens the API key management tab.<br /> <b>Re-trigger</b> – Restarts the deployment (Option available only if it has failed or stopped). |
 
-<img src="../images/fine_tune_deployments.png" alt="Fine-tune deployments table" title="Fine-tune deployments table"/>
+
+![Fine-tune deployments table](./images/fine_tune_deployments.png "Fine-tune deployments table")
+
+
 
 
 ## Managing Deployment Details
@@ -88,4 +61,7 @@ Selecting a specific deployment on the Deployment page opens its detail view, wh
 - **[API Keys](./generate-an-api-key.md)** – Generate and manage keys scoped to this deployment. API keys are isolated per deployment for secure access control.
 - **[Configurations](./configure-your-fine-tuned-model.md)** – Edit the description and tags, or undeploy/delete the model.
 
-<img src="../images/fine_tuned_deployment_detailed.png" alt="Fine-tune deployments" title="Fine-tune deployments"/>
+
+![Fine-tune deployments](./images/fine_tuned_deployment_detailed.png "Fine-tune deployments")
+
+

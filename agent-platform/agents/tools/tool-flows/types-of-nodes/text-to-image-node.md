@@ -55,7 +55,10 @@ A creative marketing team can use the system to instantly generate images for em
 
 The **Text to Image** node fits seamlessly into your tool flows, accepting descriptive inputs from previous nodes and returning AI-generated image URLs as outputs. You can define prompts directly within the node, select the processing model, and specify what the image should include or exclude, along with aspect ratio, steps, and batch count. The node supports both static and dynamic inputs via context variables, enabling automated image generation across a wide range of use cases, from marketing creatives to content illustration.
 
-<img src="../images/how-text-to-image-works.png" alt="how text to image works" title="how text to image works"/>
+
+![how text to image works](./images/how-text-to-image-works.png "how text to image works")
+
+
 
 In this document, you will learn how to add the node to your flows, configure it with descriptive prompts and generation settings, manage inputs and outputs, and test the generated image results.
 
@@ -74,10 +77,7 @@ The key node inputs include:
 3. The **Aspect Ratio**, including the width and height of the image. The **maximum limit is  2048 x 2048**, depending on the GPU specifications.
 4. The number of **Steps** to improve the image generation. Each step includes enhancements or improvements that align the output as closely as possible with the positive prompt instructions. This ensures that the generated image meets expectations by refining details, adjusting parameters, and optimizing quality while maintaining relevance to the intended prompt.
 
-   <div class="admonition note">
-   <p class="admonition-title">Important</p>
-   <p>Image generation depends on the number of steps in the process. While more steps add details, they also increase generation time and may cause the model to hallucinate, leading to deviations from the prompt instructions. To balance quality and efficiency, a maximum of 25-30 steps is recommended, minimizing unnecessary details (noise) and hallucinations in the final output.</p>
-   </div>
+   <Info>Image generation depends on the number of steps in the process. While more steps add details, they also increase generation time and may cause the model to hallucinate, leading to deviations from the prompt instructions. To balance quality and efficiency, a maximum of 25-30 steps is recommended, minimizing unnecessary details (noise) and hallucinations in the final output.</Info>
 
 <ol start="5"><li><b>Batch Count</b> to define the limit on the number of image versions/variants the node generates sequentially. A <b>maximum of 5 images</b> can be generated. For example, you can create the color and black-and-white versions of the same image sequentially in a batch and use each version for different purposes. For example, generate a Christmas greeting for employees and another for customers.</li></ol>
 
@@ -100,10 +100,7 @@ The metrics include:
 
 ## Add and Configure a Text to Image Node
 
-<div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>Before proceeding, you must add an external LLM to your account.</p>
-</div>
+<Note>Before proceeding, you must add an external LLM to your account.</Note>
 
 
 ### Step 1: Open Flow Builder
@@ -114,7 +111,10 @@ The metrics include:
 ### Step 2: Add the Node
 
 * Click the "**+**" icon for **Text to Image** under **AI** in the **Assets** panel. Alternatively, drag the node from the panel onto the canvas. You can also click **AI** in the pop-up menu and click **Text to Image**.
-  <img src="../images/text-to-image-add-node.png" alt="add node" title="add node"/>
+
+  ![add node](./images/text-to-image-add-node.png "add node")
+
+
 
 ### Step 3: Configure the Node
 
@@ -133,22 +133,29 @@ The metrics include:
     * **Steps**: Add the number of times the model will go back to the image and add more details/enhancements to get it as close to the prompt as possible. 25-30 steps are recommended for any image generation. Increasing the steps might add unwanted elements or model hallucinations and increase the time of generation.
     * **Batch Count**: The number of images to be generated sequentially.
 
-        <img src="../images/properties-panel-text-to-image.png" alt="properties panel" title="properties panel"/>
 
-       <div class="admonition warning" bgcolor="blue">
-       <p class="admonition-title">Standard Error</p>
-       <p>When the Model isn't selected, the prompt details aren't provided, or both, the error message “<i>Proper data needs to be provided in the LLM node</i>” is displayed.</p></div>
+        ![properties panel](./images/properties-panel-text-to-image.png "properties panel")
+
+
+
+       <Note>When the Model isn't selected, the prompt details aren't provided, or both, the error message “<i>Proper data needs to be provided in the LLM node</i>” is displayed.</Note>
 
 
 * Click the <b>Connections</b> icon and select the <b>Go to Node</b> for success and failure conditions.
-  <img src="../images/connection-text-to-image.png" alt="click connections" title="click connections"/>
+
+  ![click connections](./images/connection-text-to-image.png "click connections")
+
+
 
     * <b>On Success</b> -> <b>Go to Node</b>: After the current node is successfully executed, go to a selected node in the flow to execute next, such as an AI node, Function node, Condition node, API node, or End node.
     * <b>On Failure</b> -> <b>Go to Node</b>: If the execution of the current node fails, go to the End node to display any custom error message from the <b>Text to Image</b> node.
 
     For the configured inputs, the following image is generated.
     
-     <img src="../images/node-output-image.png" alt="output image" title="output image"/>
+
+     ![output image](./images/node-output-image.png "output image")
+
+
 
 * Finally, <a href="#step-3-run-the-flow">run the flow</a> and fix any issues found.
 
@@ -156,21 +163,28 @@ The metrics include:
 
 After adding and configuring the node as mentioned [here](./text-to-image-node.md#add-and-configure-a-text-to-image-node), follow the steps below to test the flow.
 
-<div class="admonition note">
-<p class="admonition-title">Dynamic Prompt Inputs</p>
-<p>Before you <a href="#step-3-run-the-flow">run the flow</a>, provide clear instructions for the model to follow using the <b>input variable(s)</b> you add in the following step with the help of <b>context variables</b>. Context variables add dynamic values to the prompt instructions that the model will follow. The recommended syntax is: `{{context.variable_name}}`. For example, you can store the generated image URL in a variable named “<i>Imaggenerated</i>” and pass it on in the prompt when you mention <q><i>Generate an image based on the below description</i>: `{{context.steps.Start.Imaggenerated}}` </q>, as shown in the image below.</p></div>
+<Note>Before you <a href="#step-3-run-the-flow">run the flow</a>, provide clear instructions for the model to follow using the <b>input variable(s)</b> you add in the following step with the help of <b>context variables</b>. Context variables add dynamic values to the prompt instructions that the model will follow. The recommended syntax is: `{{context.variable_name}}`. For example, you can store the generated image URL in a variable named “<i>Imaggenerated</i>” and pass it on in the prompt when you mention <q><i>Generate an image based on the below description</i>: `{{context.steps.Start.Imaggenerated}}` </q>, as shown in the image below.</Note>
 
-<img src="../images/dynamic-prompt-input.png" alt="dynamic prompt input" title="dynamic prompt input"/> 
+
+![dynamic prompt input](./images/dynamic-prompt-input.png "dynamic prompt input")
+
+ 
 
 ### Step 1: (Optional) Add Input Variable(s)
 
 * Click the **Input** tab of the **Start** node, and click **Add Input Variable** to configure the input for the flow’s test run. [Learn more](../perform-other-actions-on-the-flow-builder/manage-input-and-output.md#adding-input-variables).
 
-     <img src="../images/add-input-variable-text-to-image.png" alt="add input variable" title="add input variable"/>
+
+     ![add input variable](./images/add-input-variable-text-to-image.png "add input variable")
+
+
 
 * Select <b><i>Text</i></b> for the <b>Type</b> field in the <b>Enter input variable window</b> to define a text input variable.
 * Click <b>Save</b>. <a href="../text-to-text-node/#access-the-ai-nodes-output">Learn more</a> about accessing the node’s output.
-   <img src="../images/select-text-for-input.png" alt="click add output variable" title="click add output variable" style="border: 1px solid gray; zoom:75%;"/>
+
+   ![click add output variable](./images/select-text-for-input.png "click add output variable")
+
+
 
 Add all the required input variables to run the flow in the **Input** section of the **Start** node.
 
@@ -180,25 +194,40 @@ Add all the required input variables to run the flow in the **Input** section of
 * Click the **Output** tab for the **Start** node.
 * Click **Add Output Variable**.
 
-    <img src="../images/click-add-output-variable.png" alt="click add output variable" title="click add output variable"/>
+
+    ![click add output variable](./images/click-add-output-variable.png "click add output variable")
+
+
 
 * Enter the value for <b>Name (key)</b> and select <b><i>String</i></b> for <b>Type</b> to generate the image URL.
 * Click <b>Save</b>. <a href="../text-to-text-node/#access-the-ai-nodes-output">Learn more</a> about accessing the node’s output.
      
-   <img src="../images/output-var.png" alt="save output variable" title="save output variable"/>
+
+   ![save output variable](./images/output-var.png "save output variable")
+
+
 
 ### Step 3: Run the Flow
 
 To run and test the flow, follow the steps below:
 
 * Click the **Run Flow** button at the top-right corner of the flow builder.
-   <img src="../images/run-the-flow-text-to-image.png" alt="run the flow" title="run the flow"/>
+
+   ![run the flow](./images/run-the-flow-text-to-image.png "run the flow")
+
+
     
 * (Optional) Add the value for **Input Variable** if you have configured it to test the flow. Otherwise, go directly to the next step.
 * Click **Generate Output**.
 
-     <img src="../images/generate-output-text-to-image.png" alt="generate output" title="generate output"/>
+
+     ![generate output](./images/generate-output-text-to-image.png "generate output")
+
+
 
 The **Debug** window generates the flow log and results, as shown below. [Learn more](../types-of-nodes/text-to-image-node.md#step-3-run-the-flow) about running the tool flow.
 
-<img src="../images/debug-window-text-to-image.png" alt="debug window" title="debug window"/>
+
+![debug window](./images/debug-window-text-to-image.png "debug window")
+
+

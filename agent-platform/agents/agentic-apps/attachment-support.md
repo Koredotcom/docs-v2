@@ -89,88 +89,17 @@ To refer to the uploaded file information in the supervisor and agent prompts, u
 ## Supported File formats for Document upload
 
 
-<table>
-  <tr>
-   <td><strong>File Formats</strong>
-   </td>
-   <td><strong>Content Extraction</strong>
-   </td>
-   <td><strong>URL Generation</strong>
-   </td>
-  </tr>
-  <tr>
-   <td>PDF (.pdf)
-   </td>
-   <td>✅ Yes
-   </td>
-   <td>✅ Yes
-   </td>
-  </tr>
-  <tr>
-   <td>Microsoft Word (.docx)
-   </td>
-   <td>✅ Yes
-   </td>
-   <td>✅ Yes
-   </td>
-  </tr>
-  <tr>
-   <td>Text files (.txt)
-   </td>
-   <td>✅ Yes
-   </td>
-   <td>✅ Yes
-   </td>
-  </tr>
-  <tr>
-   <td>JSON files (.json)
-   </td>
-   <td> ✅Yes
-   </td>
-   <td>✅ Yes
-   </td>
-  </tr>
-  <tr>
-   <td>Spreadsheets (.csv, .xls, .xlsx)
-   </td>
-   <td>❌ No
-   </td>
-   <td>✅ Yes
-   </td>
-  </tr>
-  <tr>
-   <td>Presentations (.ppt, .pptx)
-   </td>
-   <td>❌ No
-   </td>
-   <td>✅ Yes
-   </td>
-  </tr>
-  <tr>
-   <td>Web files(.htm, .html)
-   </td>
-   <td>❌ No
-   </td>
-   <td>✅ Yes
-   </td>
-  </tr>
-  <tr>
-   <td>Images(.gif, .png, .jpg, .jpeg, .bmp)
-   </td>
-   <td>❌ No
-   </td>
-   <td>✅ Yes
-   </td>
-  </tr>
-  <tr>
-   <td>Rich Text(.rtf)
-   </td>
-   <td>❌ No
-   </td>
-   <td>✅ Yes
-   </td>
-  </tr>
-</table>
+| <strong>File Formats</strong> | <strong>Content Extraction</strong> | <strong>URL Generation</strong> |
+|:------ |:------ |:------ |
+| PDF (.pdf) | ✓ | ✓ |
+| Microsoft Word (.docx) | ✓ | ✓ |
+| Text files (.txt) | ✓ | ✓ |
+| JSON files (.json) | ✓ | ✓ |
+| Spreadsheets (.csv, .xls, .xlsx) | ✗ | ✓ |
+| Presentations (.ppt, .pptx) | ✗ | ✓ |
+| Web files(.htm, .html) | ✗ | ✓ |
+| Images(.gif, .png, .jpg, .jpeg, .bmp) | ✗ | ✓ |
+| Rich Text(.rtf) | ✗ | ✓ |
 
 
 

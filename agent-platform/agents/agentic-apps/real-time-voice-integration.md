@@ -6,7 +6,10 @@ Agent Platform supports real-time voice interaction powered by advanced Voice AI
 
 Navigate to the Agentic app’s Configuration and enable Realtime Voice. This feature uses AI models to perform voice tasks. Select the appropriate model to be used for this integration. 
 
-   <img src="../images/enabling-voice-support.png" alt="Enabling Voice Support" title="Enabling Voice Support"/>
+
+   ![Enabling Voice Support](./images/enabling-voice-support.png "Enabling Voice Support")
+
+
 
 Click the settings icon to customize the configuration of the AI model. 
 

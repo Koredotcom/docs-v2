@@ -100,7 +100,10 @@ You can rename the node (for example, ManagerApproval, QualityCheck) or add a de
 
 In the **Send & wait for response** field, the currently supported option is *Custom Request*. This specifies where the request will be sent for human review.
 
-<img src="../images/human_node_request.png" alt="Human Node" title="Human Node" style="border: 1px solid gray; zoom:60%;"/>
+
+![Human Node](./images/human_node_request.png "Human Node")
+
+
 
 **2. Define Request details**
 
@@ -135,7 +138,10 @@ For example, you can create two fields for an approval flow:
 * Approval (dropdown: Approved / Rejected)
 * Comments (text field for reviewer notes)
 
-<img src="../images/human_node_inputfields.png" alt="Human Node" title="Human Node" style="border: 1px solid gray; zoom:60%;"/>
+
+![Human Node](./images/human_node_inputfields.png "Human Node")
+
+
 
 **4. Configure the Review Note**
 
@@ -144,7 +150,10 @@ For example, you can create two fields for an approval flow:
     * **Message body** - Instructions or context for the reviewer. The context is resolved at run-time.
     * **Assign to** - Reviewer’s email address.
 
-<img src="../images/human_node_review_note.png" alt="Human Node" title="Human Node" style="border: 1px solid gray; zoom:60%;"/>
+
+![Human Node](./images/human_node_review_note.png "Human Node")
+
+
 
 **5. Configure Timeout Behavior**
 
@@ -199,79 +208,14 @@ Here is a step-by-step execution of the Human node in Sync mode:
     * A failure occurs → follows the Failure path.
 5. **Final output**: The tool’s final output - including the reviewer’s response (or error/timeout details) - is returned as the sync response and displayed in the Debug Panel.
 
-<table>
-  <tr>
-   <td>
-<strong>Scenarios in sync mode</strong>
-   </td>
-   <td><strong>What Happens</strong>
-   </td>
-   <td><strong>Debug Panel Output</strong>
-   </td>
-   <td><strong>Flow Outcome</strong>
-   </td>
-  </tr>
-  <tr>
-   <td>1. Reviewer responds successfully
-   </td>
-   <td>Downstream sends the reviewer’s input back before the timeout
-   </td>
-   <td>Response JSON with key–value pairs
-   </td>
-   <td>Workflow continues along the Success path
-   </td>
-  </tr>
-  <tr>
-   <td>2. Channel/platform failure
-   </td>
-   <td>Communication issue prevents response delivery
-   </td>
-   <td>Error message in the Response section
-   </td>
-   <td>Workflow continues along the Failure path
-   </td>
-  </tr>
-  <tr>
-   <td>3. Timeout – Terminate flow option
-   </td>
-   <td>No response before timeout; flow set to Terminate
-   </td>
-   <td>Response JSON with null values
-   </td>
-   <td>Workflow ends along the End/Terminate path
-   </td>
-  </tr>
-  <tr>
-   <td>4. Timeout – Skip & Continue option
-   </td>
-   <td>No response before timeout; flow set to Skip
-   </td>
-   <td>Response JSON with null values
-   </td>
-   <td>Workflow skips the Human node and continues to the next configured node
-   </td>
-  </tr>
-  <tr>
-   <td>5. Sync endpoint timeout (before reviewer response)
-   </td>
-   <td>The endpoint itself times out before the human replies
-   </td>
-   <td>Timeout error JSON
-   </td>
-   <td>Workflow stops with a Timeout error
-   </td>
-  </tr>
-  <tr>
-   <td>6. Sync endpoint timeout (after reviewer response)
-   </td>
-   <td>The reviewer responded, but the endpoint timed out before the tool could finally end execution
-   </td>
-   <td>Timeout error JSON
-   </td>
-   <td>Workflow stops with Timeout error
-   </td>
-  </tr>
-</table>
+| Scenarios in sync mode | What Happens | Debug Panel Output | Flow Outcome |
+|:----- |:----- |:----- |:----- |
+| 1. Reviewer responds successfully | Downstream sends the reviewer’s input back before the timeout | Response JSON with key–value pairs | Workflow continues along the Success path |
+| 2. Channel/platform failure | Communication issue prevents response delivery | Error message in the Response section | Workflow continues along the Failure path |
+| 3. Timeout – Terminate flow option | No response before timeout; flow set to Terminate | Response JSON with null values | Workflow ends along the End/Terminate path |
+| 4. Timeout – Skip & Continue option | No response before timeout; flow set to Skip | Response JSON with null values | Workflow skips the Human node and continues to the next configured node |
+| 5. Sync endpoint timeout (before reviewer response) | The endpoint itself times out before the human replies | Timeout error JSON | Workflow stops with a Timeout error |
+| 6. Sync endpoint timeout (after reviewer response) | The reviewer responded, but the endpoint timed out before the tool could finally end execution | Timeout error JSON | Workflow stops with Timeout error |
 
 
 #### Running in Async Mode
@@ -295,79 +239,14 @@ Here is the execution of the Human node in Async mode:
 8. **Final output**: The tool’s final output - including the reviewer’s response, or error/timeout details - is sent to the pre-configured callback URL and logged in the Debug Panel.
 
 
-<table>
-  <tr>
-   <td>
-<strong>Scenario</strong>
-   </td>
-   <td><strong>What Happens</strong>
-   </td>
-   <td><strong>Debug Panel Output</strong>
-   </td>
-   <td><strong>Flow Outcome</strong>
-   </td>
-  </tr>
-  <tr>
-   <td>1. Reviewer responds successfully
-   </td>
-   <td>Downstream sends the reviewer’s input back before the timeout
-   </td>
-   <td>Response JSON with key–value pairs
-   </td>
-   <td>Workflow continues along the Success path
-   </td>
-  </tr>
-  <tr>
-   <td>2. Channel/platform failure
-   </td>
-   <td>Communication issue prevents response delivery
-   </td>
-   <td>Error message in the Response section
-   </td>
-   <td>Workflow continues along the Failure path
-   </td>
-  </tr>
-  <tr>
-   <td>3. Timeout – Terminate option
-   </td>
-   <td>No response before timeout; flow set to Terminate
-   </td>
-   <td>Response JSON with null values
-   </td>
-   <td>Workflow ends along the Terminate path
-   </td>
-  </tr>
-  <tr>
-   <td>4. Timeout – Skip & Continue option
-   </td>
-   <td>No response before timeout; flow set to Skip
-   </td>
-   <td>Response JSON with null values
-   </td>
-   <td>Workflow skips the Human node and continues to the next configured node
-   </td>
-  </tr>
-  <tr>
-   <td>5. Async endpoint timeout (before reviewer input)
-   </td>
-   <td>The endpoint itself times out before the human replies
-   </td>
-   <td>Timeout error JSON
-   </td>
-   <td>Workflow stops with a Timeout error
-   </td>
-  </tr>
-  <tr>
-   <td>6. Async endpoint timeout (after reviewer input)
-   </td>
-   <td>The reviewer responded, but the endpoint timed out after
-   </td>
-   <td>Timeout error JSON
-   </td>
-   <td>Workflow stops with a Timeout error
-   </td>
-  </tr>
-</table>
+| Scenario | What Happens | Debug Panel Output | Flow Outcome |
+|:----- |:----- |:----- |:----- |
+| 1. Reviewer responds successfully | Downstream sends the reviewer’s input back before the timeout | Response JSON with key–value pairs | Workflow continues along the Success path |
+| 2. Channel/platform failure | Communication issue prevents response delivery | Error message in the Response section | Workflow continues along the Failure path |
+| 3. Timeout – Terminate option | No response before timeout; flow set to Terminate | Response JSON with null values | Workflow ends along the Terminate path |
+| 4. Timeout – Skip & Continue option | No response before timeout; flow set to Skip | Response JSON with null values | Workflow skips the Human node and continues to the next configured node |
+| 5. Async endpoint timeout (before reviewer input) | The endpoint itself times out before the human replies | Timeout error JSON | Workflow stops with a Timeout error |
+| 6. Async endpoint timeout (after reviewer input) | The reviewer responded, but the endpoint timed out after | Timeout error JSON | Workflow stops with a Timeout error |
 
 ### Step 3: Capturing and Using Reviewer Responses in the Workflow
 
@@ -376,10 +255,13 @@ Once the reviewer responds, the Human node captures the input and makes it avail
 * **Capture Response:** Reviewer input is collected as JSON key–value pairs.
 * **Workflow Branching:** Execution continues along the configured Success, Timeout, or Failure path. Branching can be based on the input values.
 * **Accessing Input**: Responses are accessible in downstream nodes via context variables:
-    * Full payload: `{{context.steps.&lt;Nodename>.output}}`
-    * Specific fields: `{{context.steps.&lt;Nodename>.output.Approval}}` or `{{context.steps.&lt;Nodename>.output.Comments}}`
+    * Full payload: `{{context.steps.<Nodename>.output}}`
+    * Specific fields: `{{context.steps.<Nodename>.output.Approval}}` or `{{context.steps.<ename>.output.Comments}}`
 
-<img src="../images/human_node_success.png" alt="Human Node" title="Human Node" style="border: 1px solid gray; zoom:60%;"/>
+
+![Human Node](./images/human_node_success.png "Human Node")
+
+
 
 
 ## Use Case – Content Publishing Workflow

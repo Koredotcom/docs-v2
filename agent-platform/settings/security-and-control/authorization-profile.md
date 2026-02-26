@@ -70,30 +70,45 @@ To add a new Auth profile, you must first set up the required auth fields with t
 
 1. [Navigate](../security-and-control/authorization-profile.md#access-authorization-profile) to the **Authorization Profile** feature.
 2. Click **Create Authorization Profile** if this is your first auth profile.
-<img src="../images/click-create-auth-profile.png" alt="create auth profile" title="create auth profile"/>  
+
+![create auth profile](./images/click-create-auth-profile.png "create auth profile")
+
+  
 
 Otherwise, click **Add new auth**.
-<img src="../images/add-new-auth-profile.png" alt="add new auth profile" title="add new auth profile"/>  
+
+![add new auth profile](./images/add-new-auth-profile.png "add new auth profile")
+
+  
 
 <ol start="3"><li>In the <b>New Authorization Mechanism</b> dialog, select the required option for <b>Authorization Type</b>.</li> 
-<img src="../images/select-oauthv2.png" alt="select oauth v2" title="select oauth v2"/></ol>  
+
+![select oauth v2](./images/select-oauthv2.png "select oauth v2")
+
+</ol>  
 <ol start="4"><li>In the <b>Identity Provider Name</b> field, enter a name for the authorization type, which is mandatory.
-<img src="../images/identity-provider.png" alt="identity provider" title="identity provider" style="border: 1px solid gray; zoom:75%;"/></li>
+
+![identity provider](./images/identity-provider.png "identity provider")
+
+</li>
 <li>Provide the values for the mandatory authorization fields. For details, refer to the <a href="#define-authorization-fields">Define Authorization Fields</a> section. 
 
 If the mandatory fields are left blank, validation error messages appear, as shown below.
 
-<img src="../images/form-validation-errors.png" alt="validation errors" title="validation errors" style="border: 1px solid gray; zoom:75%;"/></li>
+
+![validation errors](./images/form-validation-errors.png "validation errors")
+
+</li>
 <li>(Optional) Click <b>+ Add Additional Field</b> to add additional fields for authorization. See the <a href="#add-additional-field">Add Additional Field</a> section.</li></ol>
 
-<div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>If the default <b>Username</b> and <b>Password</b> fields do not meet your authorization requirements, you can add <b>custom fields</b> using additional fields or authorization IDP form fields to the authorization process. For example, if a <b>PIN code</b> is required in addition to the standard login fields, you can include it as an extra input for the end user.</p>
-</div>
+<Note>If the default <b>Username</b> and <b>Password</b> fields do not meet your authorization requirements, you can add <b>custom fields</b> using additional fields or authorization IDP form fields to the authorization process. For example, if a <b>PIN code</b> is required in addition to the standard login fields, you can include it as an extra input for the end user.</Note>
     
 <ol start="7"><li>(Optional step to be executed only when you select <b><i>OAuth V2</i></b> as the Authorization type) Click <b>+ Add Authorization Field</b> to add additional auth fields to your profile. This is required For more information, see the <a href="#add-authorization-field">Add Authorization Field</a> section.</li>
 <li>Click <b>Save new Auth</b>.</li>
-<img src="../images/save-new-auth.png" alt="save new auth" title="save new auth"/></ol>
+
+![save new auth](./images/save-new-auth.png "save new auth")
+
+</ol>
 
 A success message is displayed, and the new auth profile is added to the **Authorization Profile** page.
 
@@ -101,180 +116,24 @@ A success message is displayed, and the new auth profile is added to the **Autho
 
 To configure the OAuth2 profile, define the fields described in the table below:
 
- <div class="admonition note">
-    <p class="admonition-title">Note</p>
-    <p>Except for <b>Scope</b>, <b>Description</b>, <b>Refresh Token URL</b>, <b>Additional fields</b>, <b>Authorization fields</b>, and <b>Auth Error Status Code</b>, all the fields are mandatory.</p>
-    </div>
+ <Note>Except for <b>Scope</b>, <b>Description</b>, <b>Refresh Token URL</b>, <b>Additional fields</b>, <b>Authorization fields</b>, and <b>Auth Error Status Code</b>, all the fields are mandatory.</Note>
 
-<table>
-  <tr>
-   <td>FIELD NAME
-   </td>
-   <td>DESCRIPTION
-   </td>
-   <td>MANDATE
-   </td>
-   <td>AUTH TYPE</td>
-  </tr>
-  <tr>
-   <td><strong>Authorization Type</strong>
-   </td>
-   <td>Select an option from the dropdown. <i>OAuth V2</i> and <i>OAuth v2 Client Credential</i> are currently supported.
-   </td>
-   <td>Required
-   </td>
-   <td>OAuth V2 and OAuth v2 Client Credential</td>
-  </tr>
-  <tr>
-   <td><strong>Identity Provider Name</strong>
-   </td>
-   <td>The name of the identity provider or service, for example, <em>Okta.</em>
-   </td>
-   <td>Required
-   </td>
-   <td>OAuth V2 and OAuth v2 Client Credential</td>
-  </tr>
-  <tr>
-   <td><strong>Description</strong>
-   </td>
-   <td>Enter a description for your auth profile.
-   </td>
-   <td>Optional
-   </td>
-   <td>OAuth V2 and OAuth v2 Client Credential</td>
-  </tr>
-  <tr>
-   <td><strong>Callback URL</strong>
-   </td>
-   <td>The endpoint in an OAuth 2.0 flow where the authorization server redirects the user after they grant or deny permission. It is used to return the authorization code or access token to the client application. The default URL is provided in the form. 
-   </td>
-   <td>Required
-   </td>
-   <td>OAuth V2 and OAuth v2 Client Credential</td>
-  </tr>
-  <tr>
-   <td><strong>Client ID</strong>
-   </td>
-   <td>
-    A unique identifier assigned that helps the authorization server recognize the application making authorization or API access requests. It helps in the following:
-<ul>
-
-<li>Used in <strong>OAuth flows</strong> to obtain access tokens</li>
-
-<li>Helps in tracking and logging API requests</li>
-
-<li>Ensures security by linking requests to a registered client.</li>
-</ul>
-   </td>
-   <td>Required
-   </td>
-   <td>OAuth V2 and OAuth v2 Client Credential</td>
-  </tr>
-  <tr>
-   <td><strong>Client Secret</strong>
-   </td>
-   <td>
-    A confidential key assigned to an application to authenticate its identity when requesting access tokens from the authorization server, ensuring secure and authorized API access.
-   </td>
-   <td>Required
-   </td>
-   <td>OAuth V2 and OAuth v2 Client Credential</td>
-  </tr>
-  <tr>
-   <td><strong>Authorization URL</strong>
-   </td>
-   <td>
-    The endpoint where users are redirected to authenticate and grant permissions to an application before it can access protected resources on their behalf. Example: <code>https://auth.example.com/oauth/authorize</code>
-   </td>
-   <td>Required
-   </td>
-   <td>OAuth V2</td>
-  </tr>
-  <tr>
-   <td><strong>Subdomain(aka tenancy URL)</strong>
-   </td>
-   <td>
-    A unique URL assigned to a specific tenant (organization, customer, or user group) within a multi-tenant system. It is used to differentiate and isolate data, authorization, and access for each tenant. You must select one of the following options based on your auth profile:
-<ul>
-
-<li>No, this tool and all of its tasks do not have tenancy URLs.</li>
-
-<li>Yes, some tasks will have tenancy URLs and the user will need to provide that to successfully authenticate.</li>
-</ul>
-   </td>
-   <td>Required
-   </td>
-   <td>OAuth V2</td>
-  </tr>
-  <tr>
-   <td><strong>Token request URL</strong>
-   </td>
-   <td>
-    The endpoint where a client application exchanges an <strong>authorization code</strong> or <strong>refresh token</strong> for an <strong>access token</strong>. This token allows the client to authenticate API requests on behalf of the user.
-   </td>
-   <td>Required
-   </td>
-   <td>OAuth V2 and OAuth v2 Client Credential</td>
-  </tr>
-  <tr>
-   <td><strong>Scope</strong>
-   </td>
-   <td>
-    Defines the level of access that a client application is requesting from the resource owner (user). It specifies what <strong>actions</strong> the application is allowed to perform and what <strong>resources</strong> it can access.  
-Example: <code>read_profile</code>.
-   </td>
-   <td>Optional
-   </td>
-   <td>OAuth V2 and OAuth v2 Client Credential</td>
-  </tr>
-  <tr>
-   <td><strong>Additional Fields</strong>
-   </td>
-   <td>
-    Refer <a href="#add-additional-field">here</a>.
-   </td>
-   <td>Optional
-   </td>
-   <td>OAuth V2</td>
-  </tr>
-  <tr>
-   <td><strong>Authorization Fields</strong>
-   </td>
-   <td>
-    Refer <a href="#add-authorization-field">here</a>.</td>
-   <td>Optional
-   </td>
-   <td>OAuth V2</td>
-  </tr>
-  <tr>
-   <td><strong>Refresh token URL</strong>
-   </td>
-   <td>
-    The endpoint where a client application sends a request to obtain a new <strong>access token</strong> using a <strong>refresh token</strong> (whenever the access token expires). Example: <code>https://auth.example.com/oauth/access</code>
-
-<p><strong>Note</strong>: When the <strong>Refresh Token URL</strong> or refresh token expires, the following happens:
-<ul>
-
-<li>The auth profile starts failing everywhere it is used.</li>
-
-<li>The user will receive an email to reconfigure a new URL or refresh token to ensure continuous and uninterrupted service.</li>
-</ul></p>
-   </td>
-   <td>Optional
-   </td>
-   <td>OAuth V2</td>
-  </tr>
-  <tr>
-   <td><strong>Auth Error Status Code</strong>
-   </td>
-   <td>
-    When authorization fails in OAuth 2.0, the server returns an HTTP status code along with an error message to indicate the issue.
-   </td>
-   <td>Optional
-   </td>
-   <td>OAuth V2 and OAuth v2 Client Credential</td>
-  </tr>
-</table>
+| FIELD NAME | DESCRIPTION | MANDATE | AUTH TYPE |
+|:------ |:------ |:------ |:------ |
+| <strong>Authorization Type</strong> | Select an option from the dropdown. <i>OAuth V2</i> and <i>OAuth v2 Client Credential</i> are currently supported. | Required | OAuth V2 and OAuth v2 Client Credential |
+| <strong>Identity Provider Name</strong> | The name of the identity provider or service, for example, <em>Okta.</em> | Required | OAuth V2 and OAuth v2 Client Credential |
+| <strong>Description</strong> | Enter a description for your auth profile. | Optional | OAuth V2 and OAuth v2 Client Credential |
+| <strong>Callback URL</strong> | The endpoint in an OAuth 2.0 flow where the authorization server redirects the user after they grant or deny permission. It is used to return the authorization code or access token to the client application. The default URL is provided in the form. | Required | OAuth V2 and OAuth v2 Client Credential |
+| <strong>Client ID</strong> | A unique identifier assigned that helps the authorization server recognize the application making authorization or API access requests. It helps in the following: <ul> <li>Used in <strong>OAuth flows</strong> to obtain access tokens</li> <li>Helps in tracking and logging API requests</li> <li>Ensures security by linking requests to a registered client.</li> </ul> | Required | OAuth V2 and OAuth v2 Client Credential |
+| <strong>Client Secret</strong> | A confidential key assigned to an application to authenticate its identity when requesting access tokens from the authorization server, ensuring secure and authorized API access. | Required | OAuth V2 and OAuth v2 Client Credential |
+| <strong>Authorization URL</strong> | The endpoint where users are redirected to authenticate and grant permissions to an application before it can access protected resources on their behalf. Example: `https://auth.example.com/oauth/authorize` | Required | OAuth V2 |
+| <strong>Subdomain(aka tenancy URL)</strong> | A unique URL assigned to a specific tenant (organization, customer, or user group) within a multi-tenant system. It is used to differentiate and isolate data, authorization, and access for each tenant. You must select one of the following options based on your auth profile: <ul> <li>No, this tool and all of its tasks do not have tenancy URLs.</li> <li>Yes, some tasks will have tenancy URLs and the user will need to provide that to successfully authenticate.</li> </ul> | Required | OAuth V2 |
+| <strong>Token request URL</strong> | The endpoint where a client application exchanges an <strong>authorization code</strong> or <strong>refresh token</strong> for an <strong>access token</strong>. This token allows the client to authenticate API requests on behalf of the user. | Required | OAuth V2 and OAuth v2 Client Credential |
+| <strong>Scope</strong> | Defines the level of access that a client application is requesting from the resource owner (user). It specifies what <strong>actions</strong> the application is allowed to perform and what <strong>resources</strong> it can access. Example: `read_profile`. | Optional | OAuth V2 and OAuth v2 Client Credential |
+| <strong>Additional Fields</strong> | Refer <a href="#add-additional-field">here</a>. | Optional | OAuth V2 |
+| <strong>Authorization Fields</strong> | Refer <a href="#add-authorization-field">here</a>. | Optional | OAuth V2 |
+| <strong>Refresh token URL</strong> | The endpoint where a client application sends a request to obtain a new <strong>access token</strong> using a <strong>refresh token</strong> (whenever the access token expires). Example: `https://auth.example.com/oauth/access` <p><strong>Note</strong>: When the <strong>Refresh Token URL</strong> or refresh token expires, the following happens: <ul> <li>The auth profile starts failing everywhere it is used.</li> <li>The user will receive an email to reconfigure a new URL or refresh token to ensure continuous and uninterrupted service.</li> </ul></p> | Optional | OAuth V2 |
+| <strong>Auth Error Status Code</strong> | When authorization fails in OAuth 2.0, the server returns an HTTP status code along with an error message to indicate the issue. | Optional | OAuth V2 and OAuth v2 Client Credential |
 
 ## Add Additional Field
 
@@ -285,42 +144,17 @@ To add additional fields, follow the steps below:
 
 1. Click **+ Add Additional Field** in the **New Authorization Mechanism** window and enter one or more key-value pairs.
 
-    <img src="../images/add-additional-field-click.png" alt="add additional field" title="add additional field"/>
+
+    ![add additional field](./images/add-additional-field-click.png "add additional field")
+
+
 
 2. Add values for the following fields:
 
-<table>
-  <tr>
-   <td>PARAMETER
-   </td>
-   <td>DESCRIPTION
-   </td>
-   <td>REQUIRED/OPTIONAL
-   </td>
-   <td>EXAMPLE
-   </td>
-  </tr>
-  <tr>
-   <td><strong>Field Key</strong>
-   </td>
-   <td>The name of the additional field. 
-   </td>
-   <td>Required
-   </td>
-   <td>Pin code
-   </td>
-  </tr>
-  <tr>
-   <td><strong>Field Value</strong>
-   </td>
-   <td>The value for the additional field.
-   </td>
-   <td>Required
-   </td>
-   <td>2344567
-   </td>
-  </tr>
-</table>
+| PARAMETER | DESCRIPTION | REQUIRED/OPTIONAL | EXAMPLE |
+|:------ |:------ |:------ |:------ |
+| <strong>Field Key</strong> | The name of the additional field. | Required | Pin code |
+| <strong>Field Value</strong> | The value for the additional field. | Required | 2344567 |
 
 <ol start="3"><li>Click <b>Done</b>.</li></ol>
 
@@ -334,63 +168,32 @@ Authorization fields are data fields used in API requests to verify the identity
 To add auth fields, follow the steps below:
 
 1. Click **+ Add Authorization Field** in the **New Authorization Mechanism** window and enter one or more key/value pairs.
-<img src="../images/add-auth-field-new.png" alt="add new auth field" title="add new auth field"/>
+
+![add new auth field](./images/add-auth-field-new.png "add new auth field")
+
+
 
 2. Add values for the following fields:
 
-<table>
-  <tr>
-   <td>
-<strong>PARAMETER</strong>
-   </td>
-   <td><strong>DESCRIPTION</strong>
-   </td>
-   <td><strong>REQUIRED/OPTIONAL</strong>
-   </td>
-  </tr>
-  <tr>
-   <td>Field Type
-   </td>
-   <td>Defines how authorization data is sent and verified in an API request within the Platform for token-based authorization. The supported types include:
-<ul>
-
-<li><strong>Header</strong>: Used to send authorization credentials, such as API tokens.</li>
-
-<li><strong>Payload</strong>: Used in <code>POST</code> or <code>PUT</code> requests, sending credentials in the request body.</li>
-
-<li><strong>Query String</strong><em>:</em> Credentials are passed in the URL.</li>
-
-<li><strong>Path Param</strong>: Credentials or tokens are included in the URL path.</li>
-</ul>
-   </td>
-   <td>Required
-   </td>
-  </tr>
-  <tr>
-   <td>Field Key
-   </td>
-   <td>The name of the auth field. Example: <em>Profile_id.</em>
-   </td>
-   <td>Required
-   </td>
-  </tr>
-  <tr>
-   <td>Field Value
-   </td>
-   <td>The value of the auth field. Example: <em>123_xyz</em>.
-   </td>
-   <td>Optional
-   </td>
-  </tr>
-</table>
+| <strong>PARAMETER</strong> | <strong>DESCRIPTION</strong> | <strong>REQUIRED/OPTIONAL</strong> |
+|:------ |:------ |:------ |
+| Field Type | Defines how authorization data is sent and verified in an API request within the Platform for token-based authorization. The supported types include: <ul> <li><strong>Header</strong>: Used to send authorization credentials, such as API tokens.</li> <li><strong>Payload</strong>: Used in `POST` or `PUT` requests, sending credentials in the request body.</li> <li><strong>Query String</strong><em>:</em> Credentials are passed in the URL.</li> <li><strong>Path Param</strong>: Credentials or tokens are included in the URL path.</li> </ul> | Required |
+| Field Key | The name of the auth field. Example: <em>Profile_id.</em> | Required |
+| Field Value | The value of the auth field. Example: <em>123_xyz</em>. | Optional |
 
 
 <ol start="3"><li>Click <b>Done</b>.</li></ol>
 
-<img src="../images/auth-field-form.png" alt="auth field form" title="auth field form"/>  
+
+![auth field form](./images/auth-field-form.png "auth field form")
+
+  
 
 The new field is added to the Authorization Fields list.  You can edit or delete this custom field.
-<img src="../images/new-auth-field-listing.png" alt="new auth field" title="new auth field"/>
+
+![new auth field](./images/new-auth-field-listing.png "new auth field")
+
+
 
 
 ## Authorization Profile Summary
@@ -402,7 +205,10 @@ Each authorization you add to your account is displayed in the **Authorization P
 * **Test auth**: Click the **Test** button corresponding to a configured profile to check if it establishes a connection with an external service based on the configured profile.
 * **Status**: Displays **Configured** or **Not Configured** based on the configuration status.
     
-<img src="../images/auth-profile-summary.png" alt="auth profile summary" title="auth profile summary"/>  
+
+![auth profile summary](./images/auth-profile-summary.png "auth profile summary")
+
+  
 
 ## Test the Auth Profile
 
@@ -412,7 +218,10 @@ A new window appears where the Platform tries to establish a connection with the
 
 A successful connection is shown below:
 
-<img src="../images/successful-oauth-connection.png" alt="successful connection" title="successful connection"/>  
+
+![successful connection](./images/successful-oauth-connection.png "successful connection")
+
+  
 
 If the connection fails, edit the auth profile with the correct information and test the connection again. 
 
@@ -424,30 +233,30 @@ You can either edit the configured values of an auth profile or delete it from t
 
 1. Click the **Ellipses** icon for an Auth profile on the **Authorization Profile** page. 
 2. Click **Edit**.
-<img src="../images/edit-auth-profile.png" alt="edit auth profile" title="edit auth profile"/>  
+
+![edit auth profile](./images/edit-auth-profile.png "edit auth profile")
+
+  
 
 3. Modify the required fields in the **Update authorization mechanism** window.
 4. Click **Update new auth**.
 
    A success message appears when the auth profile information is updated.
 
-<div class="admonition note">
-<p class="admonition-title">Important</p>
-<p>The <b>Authorization Type</b> and <b>Name</b> fields cannot be edited, but all other parameters can be modified.</p>
-</div>
+<Info>The <b>Authorization Type</b> and <b>Name</b> fields cannot be edited, but all other parameters can be modified.</Info>
 
 ### Delete
 
 To delete an Auth profile, follow the steps below:
 
 1. Click the **Ellipses** icon and select **Delete**.
-<img src="../images/delete-auth-profile.png" alt="delete auth profile" title="delete auth profile"/>  
+
+![delete auth profile](./images/delete-auth-profile.png "delete auth profile")
+
+  
 
 2. Click **Delete** in the confirmation window.
 
    A success message is displayed, and the profile is removed from the **Authorization profile** page.
 
-<div class="admonition warning">
-<p class="admonition-title">Caution</p>
-<p>Deleted profiles cannot be recovered. Proceed with caution.</p>
-</div>
+<Danger>Deleted profiles cannot be recovered. Proceed with caution.</Danger>

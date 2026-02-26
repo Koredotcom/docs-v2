@@ -8,10 +8,16 @@ Steps to access the tool monitor page:
 
     Ensure that the status of the selected tool is ‘Deployed’. Tool monitoring is only available for tool deployed in production. Tools that are in debugging or design phases aren't tracked here. 
 
-    <img src="../images/agent_monitor_new.png" alt="All agents" title="All agents"/>
+
+    ![All agents](./images/agent_monitor_new.png "All agents")
+
+
 
 4. In the left navigation pane, click **Tool monitor**. The Tool monitor page is displayed.  
-<img src="../images/agent_monitor_dashboard.png" alt="Agent monitor dashboard" title="Agent monitor dashboard"/>
+
+![Agent monitor dashboard](./images/agent_monitor_dashboard.png "Agent monitor dashboard")
+
+
 
 5. Click one of the following tabs to see the data for the deployed tools:
     * **All runs**

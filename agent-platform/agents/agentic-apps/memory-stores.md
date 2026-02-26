@@ -81,48 +81,11 @@ This section is used to control data access and retention.
 <Note> Set appropriate retention periods based on specific usage of the data to balance performance, cost, and compliance. </Note>
 
 
-<table>
-  <tr>
-   <td><strong>Access Type</strong>
-   </td>
-   <td><strong>Scope</strong>
-   </td>
-   <td><strong>Identifiers</strong>
-   </td>
-   <td><strong>Use Case Example</strong>
-   </td>
-  </tr>
-  <tr>
-   <td><strong>User-specific</strong>
-   </td>
-   <td>Data tied to individual users
-   </td>
-   <td>AppId and UserId
-   </td>
-   <td>Store employee language preference for each user
-   </td>
-  </tr>
-  <tr>
-   <td><strong>Application-wide</strong>
-   </td>
-   <td>Shared across the application
-   </td>
-   <td>AppId
-   </td>
-   <td>Store announcement message to be displayed to all employees upon login.
-   </td>
-  </tr>
-  <tr>
-   <td><strong>Session-level</strong>
-   </td>
-   <td>Valid only during the active session
-   </td>
-   <td>AppId and SessionId
-   </td>
-   <td>Store intermediate steps in a multi-turn dialog
-   </td>
-  </tr>
-</table>
+| <strong>Access Type</strong> | <strong>Scope</strong> | <strong>Identifiers</strong> | <strong>Use Case Example</strong> |
+|:------ |:------ |:------ |:------ |
+| <strong>User-specific</strong> | Data tied to individual users | AppId and UserId | Store employee language preference for each user |
+| <strong>Application-wide</strong> | Shared across the application | AppId | Store announcement message to be displayed to all employees upon login. |
+| <strong>Session-level</strong> | Valid only during the active session | AppId and SessionId | Store intermediate steps in a multi-turn dialog |
 
 
 Review and Save the configuration to create the memory store. 

@@ -26,7 +26,10 @@ You can add nodes to the canvas in three ways:
     * **Add new node** – Instantly places a new node on the canvas and connects it.
     * **Add existing node** – Allows you to select a previously added node.
 
-  <img src="../images/start_node_new.png" alt="Add a new Node" title="Add a new Node"/>
+
+  ![Add a new Node](./images/start_node_new.png "Add a new Node")
+
+
 
 ## Rename Nodes
 
@@ -38,7 +41,10 @@ To rename a node:
 
 Use clear, descriptive names to make your flow easy to understand. For example, Rename a generic “Function Node” to something meaningful like “Validate Email Input”.
 
-<img src="../images/rename_node_new.png" alt="Rename a Node" title="Rename a Node"/>
+
+![Rename a Node](./images/rename_node_new.png "Rename a Node")
+
+
 
 ## Delete Nodes
 
@@ -54,7 +60,10 @@ You can rearrange nodes for visual clarity without affecting their logical conne
 To move a node, click and drag the node to the desired location on the canvas.
 Only the selected node will move—connected lines will automatically adjust to maintain the connection, while other nodes remain fixed.
 
-<img src="../images/rearrange-a-node-new.gif" alt="Rearrange a Node" title="Rearrange a Node"/>
+
+![Rearrange a Node](./images/rearrange-a-node-new.gif "Rearrange a Node")
+
+
 
 Optional layout options:
 
@@ -81,110 +90,12 @@ These execution patterns define how tasks run across a workflow—either one aft
 ### Understanding Execution Structures
 
 
-<table>
-  <tr>
-   <td><strong>Feature</strong>
-   </td>
-   <td><strong>Sequential Execution</strong>
-   </td>
-   <td><strong>Parallel Execution</strong>
-   </td>
-  </tr>
-  <tr>
-   <td><strong>Use When</strong>
-   </td>
-   <td>
-<ul>
-
-<li>Tasks depend on previous steps and must be run one after another.</li>
-</ul>
-   </td>
-   <td>
-<ul>
-
-<li>Multiple tasks are independent and can run at the same time.</li>
-
-<li>Speed up workflows with tasks that do not rely on each other's output.</li>
-</ul>
-   </td>
-  </tr>
-  <tr>
-   <td><strong>How It Works</strong>
-   </td>
-   <td>
-<ul>
-
-<li>Execution starts at the Start node.</li>
-
-<li>Each node runs only after the prior node finishes.</li>
-
-<li>The flow moves forward through connected nodes in a top-down or left-to-right sequence.</li>
-
-<li>All paths eventually connect to an End node to mark flow completion.</li>
-</ul>
-   </td>
-   <td>
-<ul>
-
-<li>All connected branches from a single node execute at the same time.</li>
-
-<li>Each branch works independently of the others.</li>
-
-<li>You can add up to <strong>10 branches</strong> from a single node.</li>
-
-<li>Each branch continues its own path until it reaches an End node or another connection.</li>
-</ul>
-   </td>
-  </tr>
-  <tr>
-   <td><strong>Benefits</strong>
-   </td>
-   <td>
-<ul>
-
-<li>Predictable and controlled execution</li>
-
-<li>Easier debugging and maintenance</li>
-
-<li>Clear task-to-task dependency</li>
-</ul>
-   </td>
-   <td>
-<ul>
-
-<li>Reduces total execution time</li>
-
-<li>Boosts performance with simultaneous operations</li>
-
-<li>Enables independent task handling</li>
-</ul>
-   </td>
-  </tr>
-  <tr>
-   <td><strong>Ideal for workflows that require</strong>
-   </td>
-   <td>
-<ul>
-
-<li>Step-by-step task execution</li>
-
-<li>Strict data or logic dependencies</li>
-
-<li>Ordered, linear processing</li>
-</ul>
-   </td>
-   <td>
-<ul>
-
-<li>Concurrent task execution</li>
-
-<li>Multi-channel or multi-path logic</li>
-
-<li>Faster processing of unrelated tasks</li>
-</ul>
-   </td>
-  </tr>
-</table>
+| <strong>Feature</strong> | <strong>Sequential Execution</strong> | <strong>Parallel Execution</strong> |
+|:----- |:----- |:----- |
+| <strong>Use When</strong> | <ul> <li>Tasks depend on previous steps and must be run one after another.</li> </ul> | <ul> <li>Multiple tasks are independent and can run at the same time.</li> <li>Speed up workflows with tasks that do not rely on each other's output.</li> </ul> |
+| <strong>How It Works</strong> | <ul> <li>Execution starts at the Start node.</li> <li>Each node runs only after the prior node finishes.</li> <li>The flow moves forward through connected nodes in a top-down or left-to-right sequence.</li> <li>All paths eventually connect to an End node to mark flow completion.</li> </ul> | <ul> <li>All connected branches from a single node execute at the same time.</li> <li>Each branch works independently of the others.</li> <li>You can add up to <strong>10 branches</strong> from a single node.</li> <li>Each branch continues its own path until it reaches an End node or another connection.</li> </ul> |
+| <strong>Benefits</strong> | <ul> <li>Predictable and controlled execution</li> <li>Easier debugging and maintenance</li> <li>Clear task-to-task dependency</li> </ul> | <ul> <li>Reduces total execution time</li> <li>Boosts performance with simultaneous operations</li> <li>Enables independent task handling</li> </ul> |
+| <strong>Ideal for workflows that require</strong> | <ul> <li>Step-by-step task execution</li> <li>Strict data or logic dependencies</li> <li>Ordered, linear processing</li> </ul> | <ul> <li>Concurrent task execution</li> <li>Multi-channel or multi-path logic</li> <li>Faster processing of unrelated tasks</li> </ul> |
 
 
 ### Designing Sequential Flows
@@ -202,14 +113,20 @@ A sales assistant agent uses a sequential pattern to assess and score leads. Fir
 2. Click and **drag a line** to the destination node.
 3. A connection line is drawn between the nodes, with an arrow indicating the direction of the node connection.
 
-<img src="../images/connect-nodes-new.gif" alt="Connect Nodes" title="Connect Nodes"/>
+
+![Connect Nodes](./images/connect-nodes-new.gif "Connect Nodes")
+
+
 
 **Option 2: Use the Blue + Icon**
 
 1. Hover over the existing node, click the **blue + icon,** and then choose **Add New** or **Add Existing**.
 The selected node is added and connected in sequence.
 
-<img src="../images/blue_plus_icon.png" alt="Blue plus icon" title="Blue plus icon"/>
+
+![Blue plus icon](./images/blue_plus_icon.png "Blue plus icon")
+
+
 
 **Option 3: Use the Connections Panel**
 
@@ -220,7 +137,10 @@ The selected node is added and connected in sequence.
     * Connect to an existing, unused node.
 4. A sequential connection is automatically created and reflected on the canvas.
 
-<img src="../images/sequential_connection.png" alt="Sequential connection" title="Sequential connection"/>
+
+![Sequential connection](./images/sequential_connection.png "Sequential connection")
+
+
 
 **Key Considerations**
 
@@ -248,19 +168,28 @@ Flow Builder supports several ways to structure parallel logic, depending on how
 A single node branches out to multiple child nodes, each running independently.
 *Use this when tasks can occur simultaneously without any dependencies.*
 
-<img src="../images/simple_parallel.png" alt="Simple parallel" title="Simple parallel"/>
+
+![Simple parallel](./images/simple_parallel.png "Simple parallel")
+
+
 
 * **Nested Parallel**
 A parallel branch contains its own parallel branches. 
 *Useful for multi-step logic where each level does independent work.
 
-<img src="../images/nested_parallel.png" alt="Nested parallel" title="Nested parallel"/>
+
+![Nested parallel](./images/nested_parallel.png "Nested parallel")
+
+
 
 * **Conditional + Parallel**
 Combine condition nodes with parallel execution. Based on logic (for example, if/else), different sets of parallel branches are triggered.
 *Example: If status is "new", run onboarding tasks in parallel. If "existing", skip them.*
 
-<img src="../images/conditional_parallel.png" alt="Conditional parallel" title="Conditional parallel"/>
+
+![Conditional parallel](./images/conditional_parallel.png "Conditional parallel")
+
+
 
 **Steps to create a parallel connection:**
 
@@ -275,7 +204,10 @@ You can design parallel execution using either the Canvas or the Connections Pan
 
 The selected node is added, and a connection line is automatically drawn between the nodes.
 
-<img src="../images/blue_icon_parallel.png" alt="Blue icon" title="Blue icon"/>
+
+![Blue icon](./images/blue_icon_parallel.png "Blue icon")
+
+
 
 
 **Option 2: Drag-to-Connect on the canvas**
@@ -285,7 +217,10 @@ The selected node is added, and a connection line is automatically drawn between
 3. A connection line is drawn between the nodes, with an arrow indicating the direction of the node connection. 
 4. To form a fork for parallel execution, repeat the process by adding and connecting more nodes from the same parent.
 
-<img src="../images/parallel_dragtoconnect.png" alt="Drag to connect" title="Drag to connect"/>
+
+![Drag to connect](./images/parallel_dragtoconnect.png "Drag to connect")
+
+
 
 
 **Option 3: Use the Connections Panel**
@@ -297,7 +232,10 @@ Nodes that are already connected will be disabled.
 4. Click **+ Parallel Node** to add more branches.
 5. As soon as you select a node, it’s added as a parallel path. A connection line appears on the canvas to reflect the update.
 
-<img src="../images/parallel_connections_panel.png" alt="Drag to connect" title="Drag to connect"/>
+
+![Drag to connect](./images/parallel_connections_panel.png "Drag to connect")
+
+
 
 
 
@@ -323,7 +261,10 @@ To delete a connection between nodes:
 2. Click the Delete icon. The nodes remain on the canvas but are no longer linked.
 3. Deleting a connection breaks the flow until the nodes are reconnected.
 
-<img src="../images/delete_connection.png" alt="Delete icon" title="Delete icon"/>
+
+![Delete icon](./images/delete_connection.png "Delete icon")
+
+
 
 You can also manage connections from the Configuration Panel:
 
@@ -331,52 +272,19 @@ You can also manage connections from the Configuration Panel:
 2. In the Connections tab, click the Delete icon next to the connection you want to remove.
 3. The connection is deleted instantly from both the panel and the canvas.
 
-<img src="../images/delete_icon.png" alt="Delete icon" title="Delete icon"/>
+
+![Delete icon](./images/delete_icon.png "Delete icon")
+
+
 
 ## Common Issues and How to Resolve Them
 
-<table>
-  <tr>
-   <td><strong>Issue</strong>
-   </td>
-   <td><strong>Cause</strong>
-   </td>
-   <td><strong>Resolution</strong>
-   </td>
-  </tr>
-  <tr>
-   <td>Can't add a new connection
-   </td>
-   <td>Node has 10 outgoing connections
-   </td>
-   <td>Delete a connection to add more
-   </td>
-  </tr>
-  <tr>
-   <td>“No available nodes” in the dropdown
-   </td>
-   <td>All valid nodes are already linked
-   </td>
-   <td>Create a new node or unlink existing ones
-   </td>
-  </tr>
-  <tr>
-   <td>Flow doesn't execute
-   </td>
-   <td>Broken or incomplete connections
-   </td>
-   <td>Check for stray nodes or missing End Nodes
-   </td>
-  </tr>
-  <tr>
-   <td>Error when connecting to a previous node
-   </td>
-   <td>Backward looping is not allowed
-   </td>
-   <td>Reconnect the node to a valid forward step in the flow
-   </td>
-  </tr>
-</table>
+| <strong>Issue</strong> | <strong>Cause</strong> | <strong>Resolution</strong> |
+|:----- |:----- |:----- |
+| Can't add a new connection | Node has 10 outgoing connections | Delete a connection to add more |
+| “No available nodes” in the dropdown | All valid nodes are already linked | Create a new node or unlink existing ones |
+| Flow doesn't execute | Broken or incomplete connections | Check for stray nodes or missing End Nodes |
+| Error when connecting to a previous node | Backward looping is not allowed | Reconnect the node to a valid forward step in the flow |
 
 
 ## Tips for Better Flow Design
@@ -402,7 +310,10 @@ In sequential flows, node execution is logged in the exact order of operation in
 * Each node appears one after another based on the flow sequence.
 * This view helps track the step-by-step progression of the flow and isolate issues in linear flows.
 
-<img src="../images/sequential_log.png" alt="Sequential log" title="Sequential log"/>
+
+![Sequential log](./images/sequential_log.png "Sequential log")
+
+
 
 ### View Parallel Execution in Logs
 
@@ -414,7 +325,10 @@ When a flow includes parallel branches, the Debug Logs panel helps you trace eac
 * Branches are labeled (for example, A, B, C) to show separate paths.
 * You can expand or collapse each branch to view or hide its details.
 
-<img src="../images/debug_log_new.png" alt="Parallel log" title="Parallel log"/>
+
+![Parallel log](./images/debug_log_new.png "Parallel log")
+
+
 
 **Behavior**
 

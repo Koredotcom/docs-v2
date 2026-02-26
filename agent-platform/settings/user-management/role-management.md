@@ -80,116 +80,28 @@ For example, The **Admin** role typically has full access to all tool/account fe
 
 The following table summarizes the scope for different system roles supported for Account, Tool, and Agentic App types:
 
-<table>
-  <tr>
-   <td colspan="2" ><strong>Account</strong>
-   </td>
-  </tr>
-  <tr>
-   <td><strong>Role</strong>
-   </td>
-   <td><strong>Description</strong>
-   </td>
-  </tr>
-  <tr>
-   <td><strong>Master Admin</strong>
-   </td>
-   <td>Users have complete control over tool and model management, and access to all the core features and functionalities of the Settings console.</td>
-  </tr>
-  <tr>
-   <td><strong>Admin</strong>
-   </td>
-   <td>Users have access to all the permissions except model deletion, billing, and connectors.
-   </td>
-  </tr>
-  <tr>
-   <td><strong>Member</strong>
-   </td>
-   <td>Users can create tools, add external models, and modify only specific integrations. This is the default role assigned to new users.</td>
-  </tr>
-  <tr>
-   <td><strong>Viewer</strong>
-   </td>
-   <td>Users can only view the modules across the platform.
-   </td>
-  </tr>
-</table>
+| <strong>Account</strong> |
+|:------ |
+| <strong>Role</strong> | <strong>Description</strong> |
+| <strong>Master Admin</strong> | Users have complete control over tool and model management, and access to all the core features and functionalities of the Settings console. |
+| <strong>Admin</strong> | Users have access to all the permissions except model deletion, billing, and connectors. |
+| <strong>Member</strong> | Users can create tools, add external models, and modify only specific integrations. This is the default role assigned to new users. |
+| <strong>Viewer</strong> | Users can only view the modules across the platform. |
 
-<table>
-  <tr>
-   <td colspan="2" ><strong>Tool</strong>
-   </td>
-  </tr>
-  <tr>
-   <td><strong>Role</strong>
-   </td>
-   <td><strong>Description</strong>
-   </td>
-  </tr>
-  <tr>
-   <td><strong>Tool Admin</strong>
-   </td>
-   <td>Users have complete control over tool management, versioning, sharing, deployment, deletion, configuration, monitoring, and API key creation.
-   </td>
-  </tr>
-  <tr>
-   <td><strong>Tool Manager</strong>
-   </td>
-   <td>Users have access to all the permissions except for tool deletion.
-   </td>
-  </tr>
-  <tr>
-   <td><strong>Tool Editor</strong>
-   </td>
-   <td>Users can create new versions and deploy, monitor, and export tools.
-   </td>
-  </tr>
-  <tr>
-   <td><strong>Tool Viewer</strong>
-   </td>
-   <td>Users can only view the node details and generate output in the tool.
-   </td>
-  </tr>
-    <tr>
-   <td colspan="2" ><strong>App</strong>
-   </td>
-  </tr>
-  <tr>
-   <td><strong>Role</strong>
-   </td>
-   <td><strong>Description</strong>
-   </td>
-  </tr>
-  <tr>
-   <td><strong>App Owner</strong>
-   </td>
-   <td>Users have complete administrative access across all Platform features and configurations. This user cannot be removed from the system, and can manage all other roles.
-   </td>
-  </tr>
-    <tr>
-   <td><strong>App Admin</strong>
-   </td>
-   <td>Users have full administrative access across most system features of Agentic Apps. This user has privileges similar to the owner. The app admins can modify all the other roles except the permissions of the app owner.</td>
-  </tr>
-  <tr>
-   <td><strong>App Developer</strong>
-   </td>
-   <td>Users have full access to core development features of Agentic Apps including configurations, tools, guardrails, and data. There is limited access to the admin features.
-   </td>
-  </tr>
-    <tr>
-   <td><strong>App Viewer</strong>
-   </td>
-   <td>Users have basic view-only access to specific and essential features of Agentic Apps including configurations, tools, guardrails, and simulation capabilities.
-   </td>
-  </tr>
-      <tr>
-   <td><strong>App Tester</strong>
-   </td>
-   <td>Users have view-only access to most system features of Agentic Apps allowing them to observe and test agents and analytics. The user cannot write or modify the production features.
-   </td>
-  </tr>
-</table>
+| <strong>Tool</strong> |
+|:------ |
+| <strong>Role</strong> | <strong>Description</strong> |
+| <strong>Tool Admin</strong> | Users have complete control over tool management, versioning, sharing, deployment, deletion, configuration, monitoring, and API key creation. |
+| <strong>Tool Manager</strong> | Users have access to all the permissions except for tool deletion. |
+| <strong>Tool Editor</strong> | Users can create new versions and deploy, monitor, and export tools. |
+| <strong>Tool Viewer</strong> | Users can only view the node details and generate output in the tool. |
+| <strong>App</strong> |
+| <strong>Role</strong> | <strong>Description</strong> |
+| <strong>App Owner</strong> | Users have complete administrative access across all Platform features and configurations. This user cannot be removed from the system, and can manage all other roles. |
+| <strong>App Admin</strong> | Users have full administrative access across most system features of Agentic Apps. This user has privileges similar to the owner. The app admins can modify all the other roles except the permissions of the app owner. |
+| <strong>App Developer</strong> | Users have full access to core development features of Agentic Apps including configurations, tools, guardrails, and data. There is limited access to the admin features. |
+| <strong>App Viewer</strong> | Users have basic view-only access to specific and essential features of Agentic Apps including configurations, tools, guardrails, and simulation capabilities. |
+| <strong>App Tester</strong> | Users have view-only access to most system features of Agentic Apps allowing them to observe and test agents and analytics. The user cannot write or modify the production features. |
 
 #### Custom Roles 
 
@@ -202,10 +114,16 @@ For example, a custom role, “_Banking Tool Conversation Moderator_,” can be 
 #### Key Considerations
 
 * After creating a custom role, it will appear in the dropdown menu of the email invitation template. You can then select and assign this role to the user you invite to your account.
-<img src="../images/custom-role-listing.png" alt="custom role listing" title="custom role listing"/>
+
+![custom role listing](./images/custom-role-listing.png "custom role listing")
+
+
 
 * You cannot delete a custom role if it is currently assigned to active users or included in an email invitation. The system displays an error message, as shown in the screenshot below.
-<img src="../images/error-custom-role.png" alt="error custom role deletion" title="error custom role deletion" style="border: 1px solid gray; zoom:50%;"/>
+
+![error custom role deletion](./images/error-custom-role.png "error custom role deletion")
+
+
 
 To proceed, you must first unassign the role or assign an alternative role to these users, and then you can delete the custom role.
 
@@ -255,1578 +173,154 @@ The following table summarizes the module-wise permissions and access levels for
 
 <b>Admin Role</b>
 
-<table>
-  <tr bgcolor="#ECECEC">
-   <td rowspan="3" ><strong>Module</strong>
-   </td>
-   <td rowspan="3" ><strong>Permission</strong>
-   </td>
-   <td colspan="4" ><strong>Default Admin Role</strong>
-   </td>
-  </tr>
-  <tr>
-   <td><strong>Master Admin</strong>
-   </td>
-   <td><strong>Admin</strong>
-   </td>
-   <td><strong>Member</strong>
-   </td>
-   <td><strong>Viewer</strong>
-   </td>
-  </tr>
-  <tr bgcolor="#ECECEC">
-   <td colspan="4" ><strong>Access Level</strong>
-   </td>
-  </tr>
-  <tr>
-   <td rowspan="2"><strong>Tools</strong>
-<p>
-<strong> </strong>
-   </td>
-   <td>Create a Tool
-   </td>
-   <td>✓
-   </td>
-   <td>✓</td>
-   <td>✓</td>
-   <td>✗</td>
-  </tr>
-  <tr>
-     <td>Tool Import
-   </td>
-   <td>✓</td>
-   <td>✓</td>
-   <td>✓</td>
-   <td>✗
-   </td>
-  </tr>
-  <tr>
-   <td rowspan="9" ><strong>Models</strong>
-   </td>
-   <td>Access to Model (“View” is the default access for a custom role)
-   </td>
-   <td>Full
-   </td>
-   <td>Custom
-   </td>
-   <td>Custom
-   </td>
-   <td>View
-   </td>
-  </tr>
-  <tr>
-   <td>Add an external model
-   </td>
-   <td>✓
-   </td>
-   <td>✓
-   </td>
-   <td>✓
-   </td>
-   <td>✗
-   </td>
-  </tr>
-  <tr>
-   <td>Create a custom model and perform fine tuning
-   </td>
-   <td>✓
-   </td>
-   <td>✓
-   </td>
-   <td>✗
-   </td>
-   <td>✗
-   </td>
-  </tr>
-  <tr>
-   <td>Add open-source model
-   </td>
-   <td>✓
-   </td>
-   <td>✓
-   </td>
-   <td>✗
-   </td>
-   <td>✗
-   </td>
-  </tr>
-  <tr>
-   <td>Manage Deployment - deploy/undeploy/redeploy
-   </td>
-   <td>✓
-   </td>
-   <td>✓
-   </td>
-   <td>✗
-   </td>
-   <td>✗
-   </td>
-  </tr>
-  <tr>
-   <td>Create or Delete an API Key for a model
-   </td>
-   <td>✓
-   </td>
-   <td>✓
-   </td>
-   <td>✗
-   </td>
-   <td>✗
-   </td>
-  </tr>
-  <tr>
-   <td>Export Model
-   </td>
-   <td>✓
-   </td>
-   <td>✓
-   </td>
-   <td>✗
-   </td>
-   <td>✗
-   </td>
-  </tr>
-  <tr>
-   <td>Delete Model
-   </td>
-   <td>✓
-   </td>
-   <td>✗
-   </td>
-   <td>✗
-   </td>
-   <td>✗
-   </td>
-  </tr>
-  <tr>
-   <td>Model Configuration
-   </td>
-   <td>✓
-   </td>
-   <td>✓
-   </td>
-   <td>✗
-   </td>
-   <td>✗
-   </td>
-  </tr>
-  <tr>
-   <td rowspan="5" ><strong>Prompts</strong>
-   </td>
-   <td>Access to a Prompt
-   </td>
-   <td>✓
-   </td>
-   <td>✓
-   </td>
-   <td>✓
-   </td>
-   <td>✓
-   </td>
-  </tr>
-  <tr>
-   <td>Create an Experiment
-<p>
- 
-   </td>
-   <td>✓
-   </td>
-   <td>✓
-   </td>
-   <td>✓
-   </td>
-   <td>✗
-   </td>
-  </tr>
-  <tr>
-   <td><strong>Access to Settings</strong> (Only if the settings permission is 'Yes' the user will see all the permissions)
-   </td>
-   <td>Full
-   </td>
-   <td>Custom
-   </td>
-   <td>Custom
-   </td>
-   <td>No Access
-   </td>
-  </tr>
-  <tr>
-   <td><strong>Access to guardrails at the account level</strong>
-   </td>
-   <td>✓
-   </td>
-   <td>✓
-   </td>
-   <td>✓
-   </td>
-   <td>✓
-   </td>
-  </tr>
-    <tr>
-   <td><strong>Access to Integrations</strong> (“Full” is the default access)
-   </td>
-   <td>Full
-   </td>
-   <td>Full
-   </td>
-   <td>Custom
-   </td>
-   <td>View
-   </td>
-  </tr>
-  <tr>
-   <td rowspan="6" ><strong>Integrations</strong>
-   </td>
-   <td>Access
-   </td>
-   <td>Full
-   </td>
-   <td>Full
-   </td>
-   <td>Custom
-   </td>
-   <td>View
-   </td>
-  </tr>
-  <tr>
-   <td>Delete an Integration
-   </td>
-   <td>✓
-   </td>
-   <td>✓
-   </td>
-   <td>✓
-   </td>
-   <td>✗
-   </td>
-  </tr>
-  <tr>
-   <td>Test an Integration
-   </td>
-   <td>✓
-   </td>
-   <td>✓
-   </td>
-   <td>✓
-   </td>
-   <td>✗
-   </td>
-  </tr>
-  <tr>
-   <td>Update an Integration
-   </td>
-   <td>✓
-   </td>
-   <td>✓
-   </td>
-   <td>✓
-   </td>
-   <td>✗
-   </td>
-  </tr>
-  <tr>
-   <td>Create an Integration
-   </td>
-   <td>✓
-   </td>
-   <td>✓
-   </td>
-   <td>✓
-   </td>
-   <td>✗
-   </td>
-  </tr>
-    <tr>
-   <td>Disable an Integration
-   </td>
-   <td>✓
-   </td>
-   <td>✓
-   </td>
-   <td>✓
-   </td>
-   <td>✗
-   </td>
-  </tr>
-  <tr>
-   <td rowspan="11" ><strong>Users Management</strong>
-   </td>
-   <td>Access
-   </td>
-   <td>Full
-   </td>
-   <td>Full
-   </td>
-   <td>No access
-   </td>
-   <td>No access
-   </td>
-  </tr>
-  <tr>
-   <td>Invite User (via email or import)
-   </td>
-   <td>✓
-   </td>
-   <td>✓
-   </td>
-   <td>✗
-   </td>
-   <td>✗
-   </td>
-  </tr>
-  <tr>
-   <td>Bulk Import Users via files
-   </td>
-   <td>✓
-   </td>
-   <td>✓
-   </td>
-   <td>✗
-   </td>
-   <td>✗
-   </td>
-  </tr>
-  <tr>
-   <td>Assign/revoke system roles to users & manage profile and status
-   </td>
-   <td>✓
-   </td>
-   <td>✓
-   </td>
-   <td>✗
-   </td>
-   <td>✗
-   </td>
-  </tr>
-  <tr>
-   <td>Groups
-   </td>
-   <td>✓
-   </td>
-   <td>✓
-   </td>
-   <td>✗
-   </td>
-   <td>✗
-   </td>
-  </tr>
-  <tr>
-   <td>Enrolment
-   </td>
-   <td>✓
-   </td>
-   <td>✓
-   </td>
-   <td>✗
-   </td>
-   <td>✗
-   </td>
-  </tr>
-  <tr>
-   <td>Directory Sync to enroll users
-   </td>
-   <td>✓
-   </td>
-   <td>✓
-   </td>
-   <td>✗
-   </td>
-   <td>✗
-   </td>
-  </tr>
-  <tr>
-   <td>Manage Tool Roles (Create and edit Custom roles), assign/revoke users
-   </td>
-   <td>✓
-   </td>
-   <td>✓
-   </td>
-   <td>✗
-   </td>
-   <td>✗
-   </td>
-  </tr>
-  <tr>
-   <td>Manage Admin Roles (Create and edit Custom roles), assign/revoke users
-   </td>
-   <td>✓
-   </td>
-   <td>✓
-   </td>
-   <td>✗
-   </td>
-   <td>✗
-   </td>
-  </tr>
-  <tr>
-   <td>Remove Users
-   </td>
-   <td>✓
-   </td>
-   <td>✓
-   </td>
-   <td>✗
-   </td>
-   <td>✗
-   </td>
-  </tr>
-    <tr>
-   <td><strong>Manage User Settings (profile fields): </strong>Users with the permissions to manage user settings can bulk change permissions.
-   </td>
-   <td>✓
-   </td>
-   <td>✓
-   </td>
-   <td>✗
-   </td>
-   <td>✗
-   </td>
-  </tr>
-  <tr>
-   <td rowspan="5"><strong>Security and Control</strong>
-   </td>
-   <td>Access
-   </td>
-   <td>✓
-   </td>
-   <td>✓
-   </td>
-   <td>✗</td>
-   <td>✗</td>
-  </tr>
-  <tr>
-   <td>Create API App
-   </td>
-   <td>✓
-   </td>
-   <td>✓
-   </td>
-   <td>✗
-   </td>
-   <td>✗
-   </td>
-  </tr>
-  <tr>
-   <td>Delete API App
-   </td>
-   <td>✓
-   </td>
-   <td>✗
-   </td>
-   <td>✗
-   </td>
-   <td>✗
-   </td>
-  </tr>
-  <tr>
-   <td>Update API App
-   </td>
-   <td>✓
-   </td>
-   <td>✓
-   </td>
-   <td>✗
-   </td>
-   <td>✗
-   </td>
-  </tr>
-    <tr>
-   <td>Create or Delete an API Key
-   </td>
-   <td>✓
-   </td>
-   <td>✓
-   </td>
-   <td>✗
-   </td>
-   <td>✗
-   </td>
-  </tr>
-  <tr>
-   <td><b>Monitoring</b>
-   </td>
-   <td>All actions</td>
-   <td>✓
-   </td>
-   <td>✓
-   </td>
-   <td>✗
-   </td>
-   <td>✗
-<p>
-   </td>
-  </tr>
-  <tr>
-   <td><b>Billing: Plans, invoice, subscribe & unsubscribe, token usage</b>
-   </td>
-   <td>All actions</td>
-   <td>✓
-   </td>
-   <td>✗
-   </td>
-   <td>✗
-   </td>
-   <td>✗
-   </td>
-  </tr>
-  <tr>
-   <td><b>Tool Management</b>
-   </td>
-   <td>All actions</td>
-   <td>✓
-   </td>
-   <td>✓
-   </td>
-   <td>✗
-   </td>
-   <td>✗
-   </td>
-  </tr>
-  <tr>
-   <td rowspan="5"><strong>Evaluations</strong>
-   </td>
-   <td>Access</td>
-   <td>Full
-   </td>
-   <td>Custom
-   </td>
-   <td>Custom
-   </td>
-   <td>View
-   </td>
-  </tr>
-  <tr>
-   <td>Create projects
-   </td>
-   <td>✓
-   </td>
-   <td>✓
-   </td>
-   <td>✓
-   </td>
-   <td>✗
-   </td>
-  </tr>
-  <tr>
-   <td>Create Global Evaluators.</td>
-   <td>✓
-   </td>
-   <td>✓
-   </td>
-   <td>✓
-   </td>
-   <td>✗
-   </td>
-  </tr>
-  <tr>
-   <td>Delete Global Evaluators
-   </td>
-   <td>✓
-   </td>
-   <td>✗
-   </td>
-   <td>✗
-   </td>
-   <td>✗
-   </td>
-  </tr>
-  <tr>
-   <td>Edit Global Evaluators</td>
-   <td>✓
-   </td>
-   <td>✓
-   </td>
-   <td>✗
-   </td>
-   <td>✗
-   </td>
-  </tr>
-   <tr>
-   <td rowspan="8"><strong>Manage Custom Scripts</strong>
-   </td>
-   <td>Access</td>
-   <td>Full
-   </td>
-   <td>Custom
-   </td>
-   <td>Custom
-   </td>
-   <td>View
-   </td>
-  </tr>
-  <tr>
-   <td>Import New Custom Script
-   </td>
-   <td>✓
-   </td>
-   <td>✓
-   </td>
-   <td>✓
-   </td>
-   <td>✗
-   </td>
-  </tr>
-  <tr>
-   <td>Deploy/Re-deploy custom script</td>
-   <td>✓
-   </td>
-   <td>✓
-   </td>
-   <td>✓
-   </td>
-   <td>✗
-   </td>
-  </tr>
-  <tr>
-   <td>Undeploy Custom Script
-   </td>
-   <td>✓
-   </td>
-   <td>✓
-   </td>
-   <td>✗
-   </td>
-   <td>✗
-   </td>
-  </tr>
-  <tr>
-   <td>Delete Custom Script</td>
-   <td>✓
-   </td>
-   <td>✗
-   </td>
-   <td>✗
-   </td>
-   <td>✗
-   </td>
-  </tr>
-  <tr>
-   <td>Export Project</td>
-   <td>✓
-   </td>
-   <td>✓
-   </td>
-   <td>✗
-   </td>
-  <td>✗</td>
-   </tr>
-     <tr>
-   <td>Overview and Other Details</td>
-   <td>✓
-   </td>
-   <td>✓
-   </td>
-   <td>✓
-   </td>
-  <td>✓</td>
-   </tr>
-       <tr>
-   <td>Create/Delete an API Key</td>
-   <td>✓
-   </td>
-   <td>✓
-   </td>
-   <td>✗
-   </td>
-  <td>✗
-   </td>
-   </tr>
-  </table>
+| <strong>Module</strong> | <strong>Permission</strong> | <strong>Default Admin Role</strong> |
+|:------ |:------ |:------ |
+| <strong>Master Admin</strong> | <strong>Admin</strong> | <strong>Member</strong> | <strong>Viewer</strong> |
+| <strong>Access Level</strong> |
+| <strong>Tools</strong> <p> <strong> </strong> | Create a Tool | ✓ | ✓ | ✓ | ✗ |
+| Tool Import | ✓ | ✓ | ✓ | ✗ |
+| <strong>Models</strong> | Access to Model (“View” is the default access for a custom role) | Full | Custom | Custom | View |
+| Add an external model | ✓ | ✓ | ✓ | ✗ |
+| Create a custom model and perform fine tuning | ✓ | ✓ | ✗ | ✗ |
+| Add open-source model | ✓ | ✓ | ✗ | ✗ |
+| Manage Deployment - deploy/undeploy/redeploy | ✓ | ✓ | ✗ | ✗ |
+| Create or Delete an API Key for a model | ✓ | ✓ | ✗ | ✗ |
+| Export Model | ✓ | ✓ | ✗ | ✗ |
+| Delete Model | ✓ | ✗ | ✗ | ✗ |
+| Model Configuration | ✓ | ✓ | ✗ | ✗ |
+| <strong>Prompts</strong> | Access to a Prompt | ✓ | ✓ | ✓ | ✓ |
+| Create an Experiment <p> | ✓ | ✓ | ✓ | ✗ |
+| <strong>Access to Settings</strong> (Only if the settings permission is 'Yes' the user will see all the permissions) | Full | Custom | Custom | No Access |
+| <strong>Access to guardrails at the account level</strong> | ✓ | ✓ | ✓ | ✓ |
+| <strong>Access to Integrations</strong> (“Full” is the default access) | Full | Full | Custom | View |
+| <strong>Integrations</strong> | Access | Full | Full | Custom | View |
+| Delete an Integration | ✓ | ✓ | ✓ | ✗ |
+| Test an Integration | ✓ | ✓ | ✓ | ✗ |
+| Update an Integration | ✓ | ✓ | ✓ | ✗ |
+| Create an Integration | ✓ | ✓ | ✓ | ✗ |
+| Disable an Integration | ✓ | ✓ | ✓ | ✗ |
+| <strong>Users Management</strong> | Access | Full | Full | No access | No access |
+| Invite User (via email or import) | ✓ | ✓ | ✗ | ✗ |
+| Bulk Import Users via files | ✓ | ✓ | ✗ | ✗ |
+| Assign/revoke system roles to users & manage profile and status | ✓ | ✓ | ✗ | ✗ |
+| Groups | ✓ | ✓ | ✗ | ✗ |
+| Enrolment | ✓ | ✓ | ✗ | ✗ |
+| Directory Sync to enroll users | ✓ | ✓ | ✗ | ✗ |
+| Manage Tool Roles (Create and edit Custom roles), assign/revoke users | ✓ | ✓ | ✗ | ✗ |
+| Manage Admin Roles (Create and edit Custom roles), assign/revoke users | ✓ | ✓ | ✗ | ✗ |
+| Remove Users | ✓ | ✓ | ✗ | ✗ |
+| <strong>Manage User Settings (profile fields): </strong>Users with the permissions to manage user settings can bulk change permissions. | ✓ | ✓ | ✗ | ✗ |
+| <strong>Security and Control</strong> | Access | ✓ | ✓ | ✗ | ✗ |
+| Create API App | ✓ | ✓ | ✗ | ✗ |
+| Delete API App | ✓ | ✗ | ✗ | ✗ |
+| Update API App | ✓ | ✓ | ✗ | ✗ |
+| Create or Delete an API Key | ✓ | ✓ | ✗ | ✗ |
+| <b>Monitoring</b> | All actions | ✓ | ✓ | ✗ | ✗ <p> |
+| <b>Billing: Plans, invoice, subscribe & unsubscribe, token usage</b> | All actions | ✓ | ✗ | ✗ | ✗ |
+| <b>Tool Management</b> | All actions | ✓ | ✓ | ✗ | ✗ |
+| <strong>Evaluations</strong> | Access | Full | Custom | Custom | View |
+| Create projects | ✓ | ✓ | ✓ | ✗ |
+| Create Global Evaluators. | ✓ | ✓ | ✓ | ✗ |
+| Delete Global Evaluators | ✓ | ✗ | ✗ | ✗ |
+| Edit Global Evaluators | ✓ | ✓ | ✗ | ✗ |
+| <strong>Manage Custom Scripts</strong> | Access | Full | Custom | Custom | View |
+| Import New Custom Script | ✓ | ✓ | ✓ | ✗ |
+| Deploy/Re-deploy custom script | ✓ | ✓ | ✓ | ✗ |
+| Undeploy Custom Script | ✓ | ✓ | ✗ | ✗ |
+| Delete Custom Script | ✓ | ✗ | ✗ | ✗ |
+| Export Project | ✓ | ✓ | ✗ | ✗ |
+| Overview and Other Details | ✓ | ✓ | ✓ | ✓ |
+| Create/Delete an API Key | ✓ | ✓ | ✗ | ✗ |
 
 <b>Tool Role</b>
 
-<table>
-  <tr bgcolor="#ECECEC">
-   <td rowspan="3" ><strong>Module</strong>
-   </td>
-   <td rowspan="3" ><strong>Permission</strong>
-   </td>
-   <td colspan="4" ><strong>Default Tool Role</strong>
-   </td>
-  </tr>
-  <tr>
-   <td><strong>Tool Admin</strong>
-   </td>
-   <td><strong>Tool Manager</strong>
-   </td>
-   <td><strong>Tool Editor</strong>
-   </td>
-   <td><strong>Tool Viewer</strong>
-   </td>
-  </tr>
-  <tr bgcolor="#ECECEC">
-   <td colspan="4" ><strong>Access Level</strong>
-   </td>
-  </tr>
-  <tr>
-   <td rowspan="10" ><strong>Tools</strong>
-   </td>
-   <td><strong>Access to Tool </strong>(“Custom” is the default access for a custom role)
-   </td>
-   <td>Full
-   </td>
-   <td>Custom
-   </td>
-   <td>Custom
-   </td>
-   <td>View
-   </td>
-  </tr>
-  <tr>
-   <td>Create a Tool Version
-   </td>
-   <td>✓
-   </td>
-   <td>✓
-   </td>
-   <td>✓
-   </td>
-   <td>✗
-   </td>
-  </tr>
-  <tr>
-   <td>Import as a Version
-   </td>
-   <td>✓
-   </td>
-   <td>✓
-   </td>
-   <td>✗
-   </td>
-   <td>✗
-   </td>
-  </tr>
-  <tr>
-   <td>Share Tools/ Unshare Tools/ Assign Tool Roles/ Remove users
-   </td>
-   <td>✓
-   </td>
-   <td>✓
-   </td>
-   <td>✗
-   </td>
-   <td>✗
-   </td>
-  </tr>
-  <tr>
-   <td>Delete Tool
-   </td>
-   <td>✓
-   </td>
-   <td>✗
-   </td>
-   <td>✗
-   </td>
-   <td>✗
-   </td>
-  </tr>
-  <tr>
-   <td>Export Tool
-   </td>
-   <td>✓
-   </td>
-   <td>✓
-   </td>
-   <td>✓
-   </td>
-   <td>✗
-   </td>
-  </tr>
-  <tr>
-   <td>Monitoring Trace of a Tool
-   </td>
-   <td>✓
-   </td>
-   <td>✓
-   </td>
-   <td>✓
-   </td>
-   <td>✓
-   </td>
-  </tr>
-  <tr>
-   <td>Editing Tool Workflow
-   </td>
-   <td>✓
-   </td>
-   <td>✓
-   </td>
-   <td>✓
-   </td>
-   <td>✗
-   </td>
-  </tr>
-  <tr>
-   <td>Tool configurations
-   </td>
-   <td>✓
-   </td>
-   <td>✓
-   </td>
-   <td>✓
-   </td>
-   <td>✗
-   </td>
-  </tr>
-  <tr>
-   <td>Create/Delete an API Key
-   </td>
-   <td>✓
-   </td>
-   <td>✓
-   </td>
-   <td>✗
-   </td>
-   <td>✗
-   </td>
-  </tr>
-  <tr>
-   <td>
-   </td>
-   <td>Log list
-   </td>
-   <td>✓
-   </td>
-   <td>✓
-   </td>
-   <td>✓
-   </td>
-   <td>✗
-   </td>
-  </tr>
-  </tr>
-  <tr>
-   <td>
-   </td>
-   <td>Detailed logs
-   </td>
-   <td>✓
-   </td>
-   <td>✓
-   </td>
-   <td>✓
-   </td>
-   <td>✗
-   </td>
-  </tr>
-  </tr>
-  <tr>
-   <td><strong>Deployment</strong>
-   </td>
-   <td>Manage Deployment - deploy/undeploy/redeploy
-   </td>
-   <td>✓
-   </td>
-   <td>✓
-   </td>
-   <td>✓
-   </td>
-   <td>✗
-   </td>
-  </tr>
-  <tr>
-   <td><strong>Guardrails</strong>
-   </td>
-   <td>Manage Guardrails Configuration
-   </td>
-   <td>✓
-   </td>
-   <td>✓
-   </td>
-   <td>✓
-   </td>
-   <td>✗
-   </td>
-  </tr>
-  <tr>
-   <td><strong>Monitoring</strong>
-   </td>
-   <td>Audit Log
-   </td>
-   <td>✓
-   </td>
-   <td>✓
-   </td>
-   <td>✗
-   </td>
-   <td>✗
-   </td>
-  </tr>
-</table>
+| <strong>Module</strong> | <strong>Permission</strong> | <strong>Default Tool Role</strong> |
+|:------ |:------ |:------ |
+| <strong>Tool Admin</strong> | <strong>Tool Manager</strong> | <strong>Tool Editor</strong> | <strong>Tool Viewer</strong> |
+| <strong>Access Level</strong> |
+| <strong>Tools</strong> | <strong>Access to Tool </strong>(“Custom” is the default access for a custom role) | Full | Custom | Custom | View |
+| Create a Tool Version | ✓ | ✓ | ✓ | ✗ |
+| Import as a Version | ✓ | ✓ | ✗ | ✗ |
+| Share Tools/ Unshare Tools/ Assign Tool Roles/ Remove users | ✓ | ✓ | ✗ | ✗ |
+| Delete Tool | ✓ | ✗ | ✗ | ✗ |
+| Export Tool | ✓ | ✓ | ✓ | ✗ |
+| Monitoring Trace of a Tool | ✓ | ✓ | ✓ | ✓ |
+| Editing Tool Workflow | ✓ | ✓ | ✓ | ✗ |
+| Tool configurations | ✓ | ✓ | ✓ | ✗ |
+| Create/Delete an API Key | ✓ | ✓ | ✗ | ✗ |
+|  | Log list | ✓ | ✓ | ✓ | ✗ |
+|  | Detailed logs | ✓ | ✓ | ✓ | ✗ |
+| <strong>Deployment</strong> | Manage Deployment - deploy/undeploy/redeploy | ✓ | ✓ | ✓ | ✗ |
+| <strong>Guardrails</strong> | Manage Guardrails Configuration | ✓ | ✓ | ✓ | ✗ |
+| <strong>Monitoring</strong> | Audit Log | ✓ | ✓ | ✗ | ✗ |
 
 
 <b>App Role - Agentic Apps</b>
 
-<table>
-  <tr bgcolor="#ECECEC">
-   <td rowspan="3" ><strong>Permission</strong>
-   </td>
-   <td colspan="5" align="center"><strong>Default App Role</strong>
-   </td>
-  </tr>
-  <tr>
-   <td><strong>App Owner</strong>
-   </td>
-   <td><strong>App Admin</strong>
-   </td>
-   <td><strong>App Developer</strong>
-   </td>
-   <td><strong>App Tester</strong>
-   </td>
-   <td><strong>App Viewer</strong>
-   </td>
-  </tr>
-  <tr bgcolor="#ECECEC">
-   <td colspan="5" align="center"><strong>Access Level</strong>
-   </td>
-  </tr>
-  <tr>
-   <td>App Configuration
-   </td>
-   <td>Full
-   </td>
-   <td>Full
-   </td>
-   <td>Full
-   </td>
-   <td>View
-   </td>
-   <td>View
-   </td>
-  </tr>
-  <tr>
-   <td>Agents
-   </td>
-   <td>Full
-   </td>
-   <td>Full
-   </td>
-   <td>Full
-   </td>
-   <td>View
-   </td>
-   <td>View
-   </td>
-  </tr>
-  <tr>
-   <td>Code Tools
-   </td>
-   <td>Full
-   </td>
-   <td>Full
-   </td>
-   <td>Full
-   </td>
-   <td>View
-   </td>
-   <td>View
-   </td>
-  </tr>
-  <tr>
-   <td>Simulate
-   </td>
-   <td>Full
-   </td>
-   <td>View
-   </td>
-   <td>View
-   </td>
-   <td>View
-   </td>
-   <td>View
-   </td>
-  </tr>
-  <tr>
-   <td>Analytics
-   </td>
-   <td>Full
-   </td>
-   <td>Full
-   </td>
-   <td>Full
-   </td>
-   <td>View
-   </td>
-   <td>No Access
-   </td>
-  </tr>
-  <tr>
-   <td>Environments
-   </td>
-   <td>Full
-   </td>
-   <td>Full
-   </td>
-   <td>View
-   </td>
-   <td>View
-   </td>
-   <td>No Access
-   </td>
-  </tr>
-  <tr>
-   <td>API Keys
-   </td>
-   <td>Full
-   </td>
-   <td>Full
-   </td>
-   <td>View
-   </td>
-   <td>View
-   </td>
-   <td>No Access
-   </td>
-  </tr>
-  <tr>
-   <td>Audit Logs
-   </td>
-   <td>Full
-   </td>
-   <td>View
-   </td>
-   <td>View
-   </td>
-   <td>View
-   </td>
-   <td>No Access
-   </td>
-  </tr>
-  <tr>
-   <td>Guardrails
-   </td>
-   <td>Full
-   </td>
-   <td>Full
-   </td>
-   <td>Full
-   </td>
-   <td>View
-   </td>
-   <td>View
-   </td>
-  </tr>
-  <tr>
-   <td>Sharing & Permissions
-   </td>
-   <td>Full
-   </td>
-   <td>Full
-   </td>
-   <td>Full
-   </td>
-   <td>View
-   </td>
-   <td>No Access
-   </td>
-  </tr>
-  <tr>
-   <td>Versions
-   </td>
-   <td>Full
-   </td>
-   <td>Full
-   </td>
-   <td>Full
-   </td>
-   <td>View
-   </td>
-   <td>No Access
-   </td>
-  </tr>
-  <tr>
-   <td>Tools Library
-   </td>
-   <td>Full
-   </td>
-   <td>Full
-   </td>
-   <td>Full
-   </td>
-   <td>View
-   </td>
-   <td>View
-   </td>
-  </tr>
-  <tr>
-   <td>Export Tool
-   </td>
-   <td>Full
-   </td>
-   <td>Full
-   </td>
-   <td>Full
-   </td>
-   <td>View
-   </td>
-   <td>No Access
-   </td>
-  </tr>
-</table>
+| <strong>Permission</strong> | <strong>Default App Role</strong> |
+|:------ |:------ |
+| <strong>App Owner</strong> | <strong>App Admin</strong> | <strong>App Developer</strong> | <strong>App Tester</strong> | <strong>App Viewer</strong> |
+| <strong>Access Level</strong> |
+| App Configuration | Full | Full | Full | View | View |
+| Agents | Full | Full | Full | View | View |
+| Code Tools | Full | Full | Full | View | View |
+| Simulate | Full | View | View | View | View |
+| Analytics | Full | Full | Full | View | No Access |
+| Environments | Full | Full | View | View | No Access |
+| API Keys | Full | Full | View | View | No Access |
+| Audit Logs | Full | View | View | View | No Access |
+| Guardrails | Full | Full | Full | View | View |
+| Sharing & Permissions | Full | Full | Full | View | No Access |
+| Versions | Full | Full | Full | View | No Access |
+| Tools Library | Full | Full | Full | View | View |
+| Export Tool | Full | Full | Full | View | No Access |
 
 <br />
 
-<table>
-  <tr bgcolor="#ECECEC">
-   <td rowspan="3" ><strong>Module</strong>
-   </td>
-   <td rowspan="3" ><strong>Permission</strong>
-   </td>
-   <td colspan="5" align="center"><strong>Default Role</strong>
-   </td>
-  </tr>
-  <tr>
-   <td><strong>App Owner</strong>
-   </td>
-   <td><strong>App Admin</strong>
-   </td>
-   <td><strong>App Developer</strong>
-   </td>
-   <td><strong>App Tester</strong>
-   </td>
-   <td><strong>App Viewer</strong>
-   </td>
-  </tr>
-  <tr>
-   <td colspan="5" bgcolor="#ECECEC" align="center"><strong>Access</strong>
-   </td>
-  </tr>
-  <tr>
-   <td rowspan="2" >App Configurations
-   </td>
-   <td>View Profile, View Config, view app versions
-   </td>
-   <td>✓
-   </td>
-   <td>✓
-   </td>
-   <td>✓
-   </td>
-   <td>✓
-   </td>
-   <td>✓
-   </td>
-  </tr>
-  <tr>
-   <td>Edit Profile, Edit Config, Import App version, Delete App version
-   </td>
-   <td>✓
-   </td>
-   <td>✓
-   </td>
-   <td>✓
-   </td>
-   <td>✗
-   </td>
-   <td>✗
-   </td>
-  </tr>
-  <tr>
-   <td rowspan="2" >Agents
-   </td>
-   <td>View Agent
-   </td>
-   <td>✓
-   </td>
-   <td>✓
-   </td>
-   <td>✓
-   </td>
-   <td>✓
-   </td>
-   <td>✓
-   </td>
-  </tr>
-  <tr>
-   <td>Add Agent, Edit Agent, Link Tools, Unlink Tools, Restore Agent Version, Restore App Version, Create Agent Version
-   </td>
-   <td>✓
-   </td>
-   <td>✓
-   </td>
-   <td>✓
-   </td>
-   <td>✗
-   </td>
-   <td>✗
-   </td>
-  </tr>
-  <tr>
-   <td rowspan="2" >Tools
-   </td>
-   <td>View Tool
-   </td>
-   <td>✓
-   </td>
-   <td>✓
-   </td>
-   <td>✓
-   </td>
-   <td>✓
-   </td>
-   <td>✓
-   </td>
-  </tr>
-  <tr>
-   <td>Add Tool, Edit Tool, Create In-line tool, Edit Inline Tool, Delete Inline Tool
-   </td>
-   <td>✓
-   </td>
-   <td>✓
-   </td>
-   <td>✓
-   </td>
-   <td>✗
-   </td>
-   <td>✗
-   </td>
-  </tr>
-  <tr>
-   <td>Simulate
-   </td>
-   <td>Test
-   </td>
-   <td>✓
-   </td>
-   <td>✓
-   </td>
-   <td>✓
-   </td>
-   <td>✓
-   </td>
-   <td>✓
-   </td>
-  </tr>
-  <tr>
-   <td>Analytics
-   </td>
-   <td>View Sessions, Traces, Generations
-   </td>
-   <td>✓
-   </td>
-   <td>✓
-   </td>
-   <td>✓
-   </td>
-   <td>✓
-   </td>
-   <td>✗
-   </td>
-  </tr>
-  <tr>
-   <td rowspan="2" >Environments
-   </td>
-   <td>View Environment
-   </td>
-   <td>✓
-   </td>
-   <td>✓
-   </td>
-   <td>✓
-   </td>
-   <td>✓
-   </td>
-   <td>✗
-   </td>
-  </tr>
-  <tr>
-   <td>Create Environment, Delete Environment, Deploy Version
-   </td>
-   <td>✓
-   </td>
-   <td>✓
-   </td>
-   <td>✗
-   </td>
-   <td>✗
-   </td>
-   <td>✗
-   </td>
-  </tr>
-  <tr>
-   <td rowspan="2" >API Keys
-   </td>
-   <td>View List
-   </td>
-   <td>✓
-   </td>
-   <td>✓
-   </td>
-   <td>✓
-   </td>
-   <td>✓
-   </td>
-   <td>✗
-   </td>
-  </tr>
-  <tr>
-   <td>Add Key
-   </td>
-   <td>✓
-   </td>
-   <td>✓
-   </td>
-   <td>✗
-   </td>
-   <td>✗
-   </td>
-   <td>✗
-   </td>
-  </tr>
-  <tr>
-   <td>Audit Logs
-   </td>
-   <td>View Logs
-   </td>
-   <td>✓
-   </td>
-   <td>✓
-   </td>
-   <td>✓
-   </td>
-   <td>✓
-   </td>
-   <td>✗
-   </td>
-  </tr>
-  <tr>
-   <td rowspan="2" >Guardrails
-   </td>
-   <td>View Guardrails
-   </td>
-   <td>✓
-   </td>
-   <td>✓
-   </td>
-   <td>✓
-   </td>
-   <td>✓
-   </td>
-   <td>✓
-   </td>
-  </tr>
-  <tr>
-   <td>Add Guardrails, Edit Guardrails
-   </td>
-   <td>✓
-   </td>
-   <td>✓
-   </td>
-   <td>✓
-   </td>
-   <td>✗
-   </td>
-   <td>✗
-   </td>
-  </tr>
-  <tr>
-   <td rowspan="2" >Sharing & Permissions
-   </td>
-   <td>View Users
-   </td>
-   <td>✓
-   </td>
-   <td>✓
-   </td>
-   <td>✓
-   </td>
-   <td>✓
-   </td>
-   <td>✗
-   </td>
-  </tr>
-  <tr>
-   <td>Add Users, Update Role
-   </td>
-   <td>✓
-   </td>
-   <td>✓
-   </td>
-   <td>✓
-   </td>
-   <td>✗
-   </td>
-   <td>✗
-   </td>
-  </tr>
-</table>
+| <strong>Module</strong> | <strong>Permission</strong> | <strong>Default Role</strong> |
+|:------ |:------ |:------ |
+| <strong>App Owner</strong> | <strong>App Admin</strong> | <strong>App Developer</strong> | <strong>App Tester</strong> | <strong>App Viewer</strong> |
+| <strong>Access</strong> |
+| App Configurations | View Profile, View Config, view app versions | ✓ | ✓ | ✓ | ✓ | ✓ |
+| Edit Profile, Edit Config, Import App version, Delete App version | ✓ | ✓ | ✓ | ✗ | ✗ |
+| Agents | View Agent | ✓ | ✓ | ✓ | ✓ | ✓ |
+| Add Agent, Edit Agent, Link Tools, Unlink Tools, Restore Agent Version, Restore App Version, Create Agent Version | ✓ | ✓ | ✓ | ✗ | ✗ |
+| Tools | View Tool | ✓ | ✓ | ✓ | ✓ | ✓ |
+| Add Tool, Edit Tool, Create In-line tool, Edit Inline Tool, Delete Inline Tool | ✓ | ✓ | ✓ | ✗ | ✗ |
+| Simulate | Test | ✓ | ✓ | ✓ | ✓ | ✓ |
+| Analytics | View Sessions, Traces, Generations | ✓ | ✓ | ✓ | ✓ | ✗ |
+| Environments | View Environment | ✓ | ✓ | ✓ | ✓ | ✗ |
+| Create Environment, Delete Environment, Deploy Version | ✓ | ✓ | ✗ | ✗ | ✗ |
+| API Keys | View List | ✓ | ✓ | ✓ | ✓ | ✗ |
+| Add Key | ✓ | ✓ | ✗ | ✗ | ✗ |
+| Audit Logs | View Logs | ✓ | ✓ | ✓ | ✓ | ✗ |
+| Guardrails | View Guardrails | ✓ | ✓ | ✓ | ✓ | ✓ |
+| Add Guardrails, Edit Guardrails | ✓ | ✓ | ✓ | ✗ | ✗ |
+| Sharing & Permissions | View Users | ✓ | ✓ | ✓ | ✓ | ✗ |
+| Add Users, Update Role | ✓ | ✓ | ✓ | ✗ | ✗ |
 
 <b>Evaluation Role</b>
 
-<table>
-  <tr bgcolor="#ECECEC">
-   <td><strong>Permission</strong>
-   </td>
-   <td><strong>Full</strong>
-   </td>
-      <td><strong>Edit</strong>
-   </td>
-      <td><strong>View</strong>
-   </td>
-  </tr>
-  <tr>
-   <td>Edit a project.</td>
-   <td>✓
-   </td>
-   <td>✓
-   </td>
-   <td>✗
-   </td>
-  </tr>
-  <tr>
-   <td>Share a project.</td>
-   <td>✓
-   </td>
-   <td>✓
-   </td>
-   <td>✗
-   </td>
-  </tr>
-  <tr>
-   <td>User management - invite/delete users from project</td>
-   <td>✓
-   </td>
-   <td>✗
-   </td>
-   <td>✗
-   </td>
-  </tr>
-    <tr>
-   <td>Delete a project.</td>
-   <td>✓
-   </td>
-   <td>✗
-   </td>
-   <td>✗
-   </td>
-  </tr>
-  <tr>
-   <td>Create/delete custom evaluators</td>
-   <td>✓
-   </td>
-   <td>✓
-   </td>
-   <td>✗
-   </td>
-  </tr>
-  <tr>
-   <td>Create/rename evaluations</td>
-   <td>✓
-   </td>
-   <td>✓
-   </td>
-   <td>✗
-   </td>
-  </tr>
-      <tr>
-   <td>Delete Evaluations</td>
-   <td>✓
-   </td>
-   <td>✗
-   </td>
-   <td>✗
-   </td>
-  </tr>
-  <tr>
-   <td>Run an Evaluation</td>
-   <td>✓
-   </td>
-   <td>✓
-   </td>
-   <td>✗
-   </td>
-  </tr>
-  <tr>
-   <td>Add, edit and delete evaluator columns and run evaluation</td>
-   <td>✓
-   </td>
-   <td>✓
-   </td>
-   <td>✗
-   </td>
-  </tr>
-  <tr>
-   <td>Create a custom evaluator</td>
-   <td>✓
-   </td>
-   <td>✓
-   </td>
-   <td>✗
-   </td>
-  </tr>
-    <tr>
-   <td>Save as a global evaluator</td>
-   <td>✓
-   </td>
-   <td>✓
-   </td>
-   <td>✗
-   </td>
-  </tr>
-    <tr>
-   <td>Export evaluation</td>
-   <td>✓
-   </td>
-   <td>✓
-   </td>
-   <td>✗
-   </td>
-  </tr>
-    <tr>
-   <td>Automate evaluation</td>
-   <td>✓
-   </td>
-   <td>✓
-   </td>
-   <td>✗
-   </td>
-  </tr>
-    <tr>
-   <td>Import rows</td>
-   <td>✓
-   </td>
-   <td>✓
-   </td>
-   <td>✗
-   </td>
-  </tr>
-    <tr>
-   <td>Add, edit and delete evaluator columns and run evaluation</td>
-   <td>✓
-   </td>
-   <td>✓
-   </td>
-   <td>✗
-   </td>
-  </tr>
-    <tr>
-   <td>Add production data(model traces)</td>
-   <td>✓
-   </td>
-   <td>✓
-   </td>
-   <td>✗
-   </td>
-  </tr>
-    <tr>
-   <td>Run a prompt</td>
-   <td>✓
-   </td>
-   <td>✓
-   </td>
-   <td>✗
-   </td>
-  </tr>
-    <tr>
-   <td>Table options(user specific)</td>
-   <td>✓
-   </td>
-   <td>✓
-   </td>
-   <td>✓
-   </td>
-  </tr>
-  </table>
+| <strong>Permission</strong> | <strong>Full</strong> | <strong>Edit</strong> | <strong>View</strong> |
+|:------ |:------ |:------ |:------ |
+| Edit a project. | ✓ | ✓ | ✗ |
+| Share a project. | ✓ | ✓ | ✗ |
+| User management - invite/delete users from project | ✓ | ✗ | ✗ |
+| Delete a project. | ✓ | ✗ | ✗ |
+| Create/delete custom evaluators | ✓ | ✓ | ✗ |
+| Create/rename evaluations | ✓ | ✓ | ✗ |
+| Delete Evaluations | ✓ | ✗ | ✗ |
+| Run an Evaluation | ✓ | ✓ | ✗ |
+| Add, edit and delete evaluator columns and run evaluation | ✓ | ✓ | ✗ |
+| Create a custom evaluator | ✓ | ✓ | ✗ |
+| Save as a global evaluator | ✓ | ✓ | ✗ |
+| Export evaluation | ✓ | ✓ | ✗ |
+| Automate evaluation | ✓ | ✓ | ✗ |
+| Import rows | ✓ | ✓ | ✗ |
+| Add, edit and delete evaluator columns and run evaluation | ✓ | ✓ | ✗ |
+| Add production data(model traces) | ✓ | ✓ | ✗ |
+| Run a prompt | ✓ | ✓ | ✗ |
+| Table options(user specific) | ✓ | ✓ | ✓ |
 
 ### Role Management Dashboard
 
@@ -1837,7 +331,10 @@ To access the dashboard, follow the steps below:
 1. Log in to your account and click **Autonomous Agents** from the list of modules.
 2. Click **Settings** on the top navigation bar.
 3. Click **Users Management** > **Role Management** on the left menu.
-<img src="../images/access-role-management.png" alt="access role management" title="access role management"/>
+
+![access role management](./images/access-role-management.png "access role management")
+
+
 
 The **Role Management** dashboard displays the following:
 
@@ -1846,7 +343,10 @@ The **Role Management** dashboard displays the following:
     * **Total Roles**: The total count of system and custom roles in the system.
     * **System Roles**: The count of the pre-defined, system-generated user roles.
     * **Custom Roles**: The count of the user roles created and configured by the system admin.
-    <img src="../images/summary-of-counts.png" alt="summary of counts" title="summary of counts"/>
+
+    ![summary of counts](./images/summary-of-counts.png "summary of counts")
+
+
 
 2. A Table view of the following system and custom role details:
 
@@ -1854,7 +354,10 @@ The **Role Management** dashboard displays the following:
     * **Role Type**: The role type defines its scope, including **Account**, **Tool**, and **Agentic App**.
     * **Description**: This is the description of the role. System roles are pre-defined, while you must provide custom role descriptions. Hover over the description text to view the entire description.
     * **Created by**: For system-generated roles, _System_ is displayed. For custom roles, the name of the user who created the role is displayed, as shown in the image below. This user can be the account owner or another user in the admin’s account.
-    <img src="../images/custom-and-system-roles.png" alt="custom and system roles" title="custom and system roles"/>
+
+    ![custom and system roles](./images/custom-and-system-roles.png "custom and system roles")
+
+
 
     * **Last Updated On**: The local time and date when the custom role was last updated are displayed. This information doesn't appear for system roles, as they can't be modified.
 
@@ -1865,19 +368,22 @@ To look up a system or custom role, follow the steps below:
 1. [Navigate](../user-management/role-management.md#role-management-dashboard) to the **Role Management** dashboard.
 2. Click the **Search** text field.
 3. Enter the role you want to search for. All the matching results are displayed.
-<img src="../images/search-role.png" alt="search role" title="search role"/>
+
+![search role](./images/search-role.png "search role")
+
+
 
    If no results are found, the following message is displayed.
-   <img src="../images/no-results-found.png" alt="no results found" title="no results found"/>
+
+   ![no results found](./images/no-results-found.png "no results found")
+
+
 
 ### Manage System Roles
 
 You can perform the following actions on the [system-generated roles](./role-management.md#system-defined-roles).
 
-<div class="admonition warning">
-<p class="admonition-title">Important</p>
-<p>System roles cannot be created, modified, or deleted since the role and its permissions are pre-defined in the system. However, they can be duplicated as <b>Custom Roles</b> and modified.</p>
-</div>
+<Info>System roles cannot be created, modified, or deleted since the role and its permissions are pre-defined in the system. However, they can be duplicated as <b>Custom Roles</b> and modified.</Info>
 
 #### View Role Information
 
@@ -1886,7 +392,10 @@ To view the details of a [system-defined role](./role-management.md#system-defin
 1. [Navigate](../user-management/role-management.md#role-management-dashboard) to the **Role Management** dashboard,
 2. Click the **Ellipses** icon for a system role.
 3. Select **View**.
-<img src="../images/click-view.png" alt="select view" title="select view"/>
+
+![select view](./images/click-view.png "select view")
+
+
 
 The following information is displayed:
 
@@ -1894,17 +403,17 @@ The following information is displayed:
 * Role Name
 * Role Description
 * Configuration panel to enable/disable access and set access levels for the listed permissions at the account/tool level. Click [here](./role-management.md#module-wise-permissions-and-access-levels) to see the module-wise permissions and access levels for different roles.
-<img src="../images/module-wise-permissions-new.png" alt="module-wise permissions" title="module-wise permissions"/>
+
+![module-wise permissions](./images/module-wise-permissions-new.png "module-wise permissions")
+
+
 
 #### Duplicate System Role
 
 If you want to add a custom role by copying the scope and permissions of a system role, you can use the Duplicate functionality. This feature automatically duplicates the system role, copying its name, role type, and permission/access configurations, and creates it as a custom role. You can then modify, delete, or duplicate this custom role to create multiple copies and add module-wise permissions/access for each.
 
-<div class="admonition note">
-<p class="admonition-title">Note</p>
-<p><ul><li>The changes you make to the duplicate role do not apply to the original system role.</li>
-<li>The Last Updated On value is displayed for duplicate roles and shows the date and time when the duplicate was created.</li></ul></p>
-</div>
+<Note><ul><li>The changes you make to the duplicate role do not apply to the original system role.</li>
+<li>The Last Updated On value is displayed for duplicate roles and shows the date and time when the duplicate was created.</li></ul></Note>
 
 **Steps to Create a Duplicate Role**
 
@@ -1913,10 +422,16 @@ To duplicate a system role, follow the steps below:
 1. [Navigate](../user-management/role-management.md#role-management-dashboard) to the **Role Management** dashboard.
 2. Click the **Ellipses** icon for a system role.
 3. Select **Duplicate**.
-<img src="../images/select-duplicate.png" alt="select duplicate" title="select duplicate"/>
+
+![select duplicate](./images/select-duplicate.png "select duplicate")
+
+
 
 The duplicate custom role displays the system role name followed by a suffix “**_copy_**,” as shown below. You can edit the name if required.
-<img src="../images/duplicate-role.png" alt="duplicate role" title="duplicate role"/>
+
+![duplicate role](./images/duplicate-role.png "duplicate role")
+
+
 
 ### Manage Custom Roles
 
@@ -1929,14 +444,23 @@ To add a custom role, follow the steps below:
 
 1. [Navigate](../user-management/role-management.md#role-management-dashboard) to **Role Management** on the **Settings** console.
 2. Click **Add New Role**.
-<img src="../images/add-new-role.png" alt="add new role" title="add new role"/>
+
+![add new role](./images/add-new-role.png "add new role")
+
+
 
 3. Follow the steps below in the **New Role** window:
 
     * Enter **Role Name** (should be unique) & **Role Description**.
-    <img src="../images/enter-role-name-and-description.png" alt="enter role name and description" title="enter role name and description"/>
+
+    ![enter role name and description](./images/enter-role-name-and-description.png "enter role name and description")
+
+
     * Select the **Role Type** from the dropdown.
-    <img src="../images/select-role-type.png" alt="select role type" title="select role type"/>
+
+    ![select role type](./images/select-role-type.png "select role type")
+
+
     * Follow the steps below if you select **Role Type** as **_Account_**.
         * Enable/select the access level for module-wise permissions in the **Enable/Disable tool access** section. [Learn more](../user-management/role-management.md#module-wise-permissions-and-access-levels) about module-wise permissions and access levels you can configure for a custom role.
         * If you select *Custom*, Select the checkbox to enable the permissions (set to _Yes_) or unselect to disable (set to _No_) for the following:
@@ -1970,7 +494,10 @@ To add a custom role, follow the steps below:
             * Monitoring
             * Billing
 
-          <img src="../images/enable-permissions.png" alt="enable permissions" title="enable permissions"/>       
+
+          ![enable permissions](./images/enable-permissions.png "enable permissions")
+
+       
 
        * Select the access level for **Models**, **Settings**, **Integrations**, and **User Management** from the following options:
         * **Full**: The users can access all the module permissions (view & edit).
@@ -1981,21 +508,33 @@ To add a custom role, follow the steps below:
 **Important Considerations**
 
 * First, select the access level for **Models** to enable its permissions.
-<img src="../images/select-access-for-models.png" alt="set models access" title="set models access"/>
+
+![set models access](./images/select-access-for-models.png "set models access")
+
+
 
     Missing this step automatically disables the permissions.
 
 * Selecting **_Full_** automatically selects all the module permissions.
-<img src="../images/select-full-auto-select.png" alt="full auto select" title="full auto select"/>
+
+![full auto select](./images/select-full-auto-select.png "full auto select")
+
+
 
 * Selecting **_Custom_** allows you to enable only the required module permissions.  <img src="../images/select-custom-access.png" alt="select custom access" title="select custom access"/>
 
 * Selecting **_View_** and **_No Access_** disables permissions selection.
-<img src="../images/select-view-and-no-access.png" alt="select view and no access" title="select view and no access"/>       
+
+![select view and no access](./images/select-view-and-no-access.png "select view and no access")
+
+       
 
 * Selecting **_Full_** for **Settings** automatically sets the access levels of **Integrations** and **User Management** to **_Full_**.
 
-<img src="../images/select-full-access.png" alt="select full access" title="select full access"/>
+
+![select full access](./images/select-full-access.png "select full access")
+
+
 
 Additionally, it automatically enables all the permissions for the following modules:
 
@@ -2007,7 +546,10 @@ Additionally, it automatically enables all the permissions for the following mod
    * Billing
 
 * Selecting **_No Access_** for **Settings** automatically sets the access levels of **Integrations** to **_View_** and **User Management** to **_No Access_**.
-<img src="../images/select-no-access.png" alt="no access" title="no access"/>
+
+![no access](./images/select-no-access.png "no access")
+
+
 
 Additionally, it disables all the permissions for the following modules:
 
@@ -2027,7 +569,10 @@ Selecting **_Custom_** for **Settings** automatically sets the **Integrations** 
 * Monitoring
 * Billing
 
-<img src="../images/select-custom.png" alt="select custom" title="select custom"/>
+
+![select custom](./images/select-custom.png "select custom")
+
+
 
 You can change **_Custom_** to **_Full_** or **_View_** for **Integrations** and **_Full_** or **_No Access_** for **User Management**.
 
@@ -2037,7 +582,10 @@ If you select **Role Type** as **_Tool_**, follow the steps below:
 * Select **_Custom_**, **_View_**, or **_Full_** for **Access**. [Learn more](../user-management/role-management.md#access-levels). 
 
 **_Custom_** is the default selection.
-<img src="../images/access-options.png" alt="access options" title="access options"/>
+
+![access options](./images/access-options.png "access options")
+
+
                      
 * Set up the tool permissions as follows in the **Enable/Disable tool access** section:
 * If you select **_View_** for **Access**, all the permissions are automatically disabled.
@@ -2048,24 +596,27 @@ If you select **Role Type** as **_Tool_**, follow the steps below:
 
 The new custom role is created and listed on the **Role Management** dashboard.
 
-<img src="../images/list-new-custom-role.png" alt="list new custom role" title="list new custom role"/>
+
+![list new custom role](./images/list-new-custom-role.png "list new custom role")
+
+
 
 #### Edit a Custom Role
 
 You can modify the role name, description, and access levels for account type or tool type roles’ permissions on the Settings console.
 
-<div class="admonition note">
-<p class="admonition-title">Note</p>
-<p><ul><li>The system does not allow changing the <b>Role Type</b> once it is set. You must create a new custom role to assign a different role type.</li>
-<li>When a custom role is updated, it changes the permissions for the assigned users.</li></ul></p>
-</div>
+<Note><ul><li>The system does not allow changing the <b>Role Type</b> once it is set. You must create a new custom role to assign a different role type.</li>
+<li>When a custom role is updated, it changes the permissions for the assigned users.</li></ul></Note>
 
 To update a role, follow the steps below:
 
 1. [Navigate](../user-management/role-management.md#role-management-dashboard) to the **Role Management** dashboard on the **Settings** console.
 2. Click the **Ellipses** icon for the custom role you want to modify.
 3. Select **Edit**.
-<img src="../images/edit-role.png" alt="edit role" title="edit role"/>
+
+![edit role](./images/edit-role.png "edit role")
+
+
 
 4. Edit the required values for the following In the **Update Role** window:
 
@@ -2073,26 +624,26 @@ To update a role, follow the steps below:
     * Role Description
     * Access: Select either *Custom*, *Full*, or *View*.
 
-<div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>You cannot reset the access levels for module-wise Permissions in the <b>Enable/disable tool access</b> section.</p>
-</div> 
+<Note>You cannot reset the access levels for module-wise Permissions in the <b>Enable/disable tool access</b> section.</Note> 
 
 <ol start="5"><li>Click <b>Update</b>.</li>
-<img src="../images/update-role-window.png" alt="update role window" title="update role window"/></ol>
+
+![update role window](./images/update-role-window.png "update role window")
+
+</ol>
 
 A success message is displayed upon completing the role edit, and the updated role details appear on the dashboard.
 
-<img src="../images/role-updated-message.png" alt="role updated message" title="role updated message"/>
+
+![role updated message](./images/role-updated-message.png "role updated message")
+
+
 
 #### Delete a Custom Role
 
 You can delete a custom role if you want to permanently remove it from the system and unassign it from users.
 
-<div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>You can only delete one role at a time. Bulk delete is not supported.</p>
-</div> 
+<Note>You can only delete one role at a time. Bulk delete is not supported.</Note> 
 
 **Prerequisite**
 
@@ -2107,17 +658,26 @@ To delete a role, follow the steps below:
 1. [Navigate](../user-management/role-management.md#role-management-dashboard) to the **Role Management** dashboard on the **Settings** console.
 2. Click the **Ellipses** icon for the custom role you want to delete.
 3. Select **Delete**.
-<img src="../images/select-delete-role.png" alt="select delete role" title="select delete role"/>
+
+![select delete role](./images/select-delete-role.png "select delete role")
+
+
 
 4. Click **Confirm** in the **Delete Role** confirmation window.
-<img src="../images/delete-role-confirm.png" alt="confirm delete role" title="confirm delete role"/>
+
+![confirm delete role](./images/delete-role-confirm.png "confirm delete role")
+
+
 
 A success message is displayed, and the role is deleted from the **Role Management** dashboard.
 
 #### Role Deletion Error and Workaround 
 
 The **Settings** console allows you to delete only unassigned roles. If a role is assigned to active/inactive users during deletion, the following error message is displayed.
-<img src="../images/role-deletion-error.png" alt="role deletion error" title="role deletion error"/>
+
+![role deletion error](./images/role-deletion-error.png "role deletion error")
+
+
 
 You must perform one of the following workarounds.
 
@@ -2126,12 +686,18 @@ You must perform one of the following workarounds.
 1. [Navigate](../user-management/role-management.md#role-management-dashboard) to **Users Management** > **Users** on the **Settings** Console.
 2. Click the **Account Role** entry for the user.
 3. Select the role you want to reassign.
-<img src="../images/select-role-to-reassign.png" alt="reassign role" title="reassign role"/>
+
+![reassign role](./images/select-role-to-reassign.png "reassign role")
+
+
 
 Once you reassign the role for the user, go to the **Role Management** dashboard and delete the role using the steps mentioned [here](../user-management/role-management.md#delete-a-custom-role).
 
 The role is deleted successfully from the **Role Management** dashboard and the count for custom roles is updated (decreased).
-<img src="../images/custom-role-deleted.png" alt="custom role deleted" title="custom role deleted"/>
+
+![custom role deleted](./images/custom-role-deleted.png "custom role deleted")
+
+
 
 ##### Delete Assigned Users
 
@@ -2142,7 +708,10 @@ Deleting the assigned users removes their association with the role you want to 
 #### Duplicate a Custom Role
 
 Like a system role, you can duplicate a custom role, which copies the name, role type, and configurations for permissions and access. Follow the steps mentioned [here](../user-management/role-management.md#duplicate-system-role) to complete the process for a custom role.
-<img src="../images/duplicate-custom-role.png" alt="duplicate custom role" title="duplicate custom role"/>
+
+![duplicate custom role](./images/duplicate-custom-role.png "duplicate custom role")
+
+
 
 <hr/> 
 

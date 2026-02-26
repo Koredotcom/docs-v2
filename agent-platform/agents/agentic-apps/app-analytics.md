@@ -15,7 +15,10 @@ Click on a trace to view the details.
 
 The timeline view provides a chronological view of all the steps within a trace.
 
-<img src="../images/trace-details.png" alt="Traces" title="Traces" style="border: 1px solid gray; zoom:65%;"/>
+
+![Traces](./images/trace-details.png "Traces")
+
+
 
 
 **How is tracing useful?** 
@@ -31,7 +34,10 @@ The timeline view provides a chronological view of all the steps within a trace.
 
 Each session consists of one or more traces. The detailed view of a session shows the number of traces involved, the input and output of each trace from the session, and the total cost incurred during this session.
 
-<img src="../images/session-details.png" alt="Sessions" title="Sessions" style="border: 1px solid gray; zoom:65%;"/>
+
+![Sessions](./images/session-details.png "Sessions")
+
+
 
 
 ## Generations

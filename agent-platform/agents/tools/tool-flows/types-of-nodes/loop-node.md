@@ -42,7 +42,10 @@ The Loop node runs a defined set of steps repeatedly—once for each item in an 
 
 You can configure how the loop handles errors during execution and define what should happen when the loop completes successfully or encounters a failure.
 
-<img src="../images/loop_node_flow.png" alt="loop node" title="loop node"/>
+
+![loop node](./images/loop_node_flow.png "loop node")
+
+
 
 In this document, you’ll learn how to add a Loop node to your canvas, place and connect steps inside it, configure input and output variables, and customize error-handling behavior.
 
@@ -67,7 +70,10 @@ You can insert a Loop node on the canvas using any of the following methods:
 
 By default, the Loop node is added in *expanded mode*, allowing you to start building the logic inside immediately.
 
-<img src="../images/loop_node.png" alt="loop node" title="loop node"/>
+
+![loop node](./images/loop_node.png "loop node")
+
+
 
 ### Step 3: Add Nodes Inside the Loop
 
@@ -79,7 +85,10 @@ You can define the repeated steps by placing nodes inside the loop structure. Su
 
 You can add any supported child nodes inside the Loop node, including Function Nodes, Text-to-Text AI Nodes, API Nodes, Condition Nodes, and others. Each child node runs once per item in the loop's input list. Use `{{currentItem}}` (or a custom alias if defined) to reference the current iteration item inside these nodes.
 
-<img src="../images/loop_add_nodes_inside.png" alt="loop node" title="loop node"/>
+
+![loop node](./images/loop_add_nodes_inside.png "loop node")
+
+
 
 <Note> Only nodes placed inside the loop block will execute per iteration. Nodes connected outside the Loop node will run after the loop completes. </Note>
 
@@ -95,7 +104,10 @@ Click on the Loop node to open its configuration panel. The following options ar
     * An output field from a previous node
 * **Output Field**: Define a variable to store the results from each iteration into the node’s output array (for example, `context.result`). This output array is available for downstream nodes after the loop completes.
 
-<img src="../images/loop_config_panel.png" alt="loop node config panel" title="loop node config panel"/>
+
+![loop node config panel](./images/loop_config_panel.png "loop node config panel")
+
+
 
 **2. Define Success and Error Paths**
 
@@ -118,7 +130,10 @@ Think of these like array processing methods:
 * `terminateOnError` = like throwing an exception that stops everything.
 * `filterErrors` = like `map().filter()` that removes the bad ones.
 
-<img src="../images/loop_errors.png" alt="loop errors" title="loop errors"/>
+
+![loop errors](./images/loop_errors.png "loop errors")
+
+
 
 ### Step 5: Run Workflow with Loops
 
@@ -146,49 +161,16 @@ After running the workflow, use the Debug panel to inspect loop behavior, debug 
     * The result reflects your selected error-handling option
     * Total execution time is displayed
 
-<img src="../images/loop_debug.png" alt="loop node debug panel" title="loop node debug panel"/>
+
+![loop node debug panel](./images/loop_debug.png "loop node debug panel")
+
+
 
 ## Troubleshooting Common Issues
 
-<table>
-  <tr>
-   <td><strong>Issue</strong>
-   </td>
-   <td><strong>Cause</strong>
-   </td>
-   <td><strong>How to Fix</strong>
-   </td>
-  </tr>
-  <tr>
-   <td><strong>Loop input is missing or empty</strong>
-   </td>
-   <td>Input list is undefined or resolves to <code>null</code>/empty
-   </td>
-   <td>Ensure the Loop Input Source is set to a valid array (for example, `{{inputs.items}}`. Verify it in the Debug Log.
-   </td>
-  </tr>
-  <tr>
-   <td><strong>Child nodes not executing</strong>
-   </td>
-   <td>Nodes are placed outside the loop container
-   </td>
-   <td>Only nodes inside the loop container run per iteration. Drag nodes into the loop box on the canvas.
-   </td>
-  </tr>
-  <tr>
-   <td><strong>Loop stops when one item fails</strong>
-   </td>
-   <td>The error handling option could be incorrect.
-   </td>
-   <td>Change the error handling option to 'Continue on error' to skip failed iterations.
-   </td>
-  </tr>
-  <tr>
-   <td><strong>Output variable conflicts</strong>
-   </td>
-   <td>Output field name is reused elsewhere in the flow
-   </td>
-   <td>Use a unique name for the Output field to avoid overwriting data.
-   </td>
-  </tr>
-</table>
+| <strong>Issue</strong> | <strong>Cause</strong> | <strong>How to Fix</strong> |
+|:----- |:----- |:----- |
+| <strong>Loop input is missing or empty</strong> | Input list is undefined or resolves to `null`/empty | Ensure the Loop Input Source is set to a valid array (for example, `{{inputs.items}}`. Verify it in the Debug Log. |
+| <strong>Child nodes not executing</strong> | Nodes are placed outside the loop container | Only nodes inside the loop container run per iteration. Drag nodes into the loop box on the canvas. |
+| <strong>Loop stops when one item fails</strong> | The error handling option could be incorrect. | Change the error handling option to 'Continue on error' to skip failed iterations. |
+| <strong>Output variable conflicts</strong> | Output field name is reused elsewhere in the flow | Use a unique name for the Output field to avoid overwriting data. |

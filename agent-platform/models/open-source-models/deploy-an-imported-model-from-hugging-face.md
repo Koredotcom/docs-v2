@@ -11,18 +11,27 @@ To deploy a model from Hugging Face, follow these steps:
 1. Click **Models** on the top navigation bar of the application. The **Models** page is displayed.
 2. Click the **Open-source models** tab on the **Models** page.
 
-    <img src="../images/deploy-a-model.png" alt="Deploy a Model" title="Deploy a Model"/>
+
+    ![Deploy a Model](./images/deploy-a-model.png "Deploy a Model")
+
+
 
 1. Click the **Deploy a model**. A pop-up with a list of available models is displayed.
 
-    <img src="../images/deploy-using-hugging-face.png" alt="Deploy using Hugging Face" title="Deploy using Hugging Face"/>
+
+    ![Deploy using Hugging Face](./images/deploy-using-hugging-face.png "Deploy using Hugging Face")
+
+
 
 1. Click the **Hugging Face** option from the list. The **Hugging Face** dialog is displayed.
 1. In the **General details** section:
 
     * Enter a **Deployment name** and **Description** for your model.
 
-        <img src="../images/deploy-hugging-face-general-details-section.png" alt="Deploy Hugging Face General Details Section" title="Deploy Hugging Face General Details Section"/>
+
+        ![Deploy Hugging Face General Details Section](./images/deploy-hugging-face-general-details-section.png "Deploy Hugging Face General Details Section")
+
+
 
     * Provide tags to ease the search for the model and click **Next**.
 
@@ -30,7 +39,10 @@ To deploy a model from Hugging Face, follow these steps:
 
     * Select the **Hugging Face connection to use** from the drop-down list.  For more information about enabling your Hugging Face account, see [How to Connect to your Hugging Face Account](../../settings/integrations/enable-hugging-face.md).
 
-        <img src="../images/deploy-hugging-face-import-model-section.png" alt="Deploy Hugging Face Import Model Section" title="Deploy Hugging Face Import Model Section"/>
+
+        ![Deploy Hugging Face Import Model Section](./images/deploy-hugging-face-import-model-section.png "Deploy Hugging Face Import Model Section")
+
+
 
     * Enter the **Hugging Face model name** from Hugging Face that you wish to import and click **Next**.
 
@@ -56,16 +68,25 @@ To deploy a model from Hugging Face, follow these steps:
 
     * Select the **Scale down replicas (in seconds)** which is how long to wait before scaling down replicas.
 
-        <img src="../images/deploy-hugging-face-parameters-section.png" alt="Deploy Hugging Face Parameters Section" title="Deploy Hugging Face Parameters Section"/>
+
+        ![Deploy Hugging Face Parameters Section](./images/deploy-hugging-face-parameters-section.png "Deploy Hugging Face Parameters Section")
+
+
 
 2. Click **Next**.
 3. Select the required **Hardware** for deployment from the dropdown menu and click **Next**. 
 
-     <img src="../images/deploy-hugging-face-hardware-section.png" alt="Deploy Hugging Face Hardware Section" title="Deploy Hugging Face Hardware Section"/>
+
+     ![Deploy Hugging Face Hardware Section](./images/deploy-hugging-face-hardware-section.png "Deploy Hugging Face Hardware Section")
+
+
 
 1. In the **Review** step, verify all the details that you provided earlier. Select the **I accept all the terms and conditions** check box.
 
-    <img src="../images/deploy-hugging-face-review-section.png" alt="Deploy Hugging Face Review Section" title="Deploy Hugging Face Review Section"/>
+
+    ![Deploy Hugging Face Review Section](./images/deploy-hugging-face-review-section.png "Deploy Hugging Face Review Section")
+
+
 
     <Note> If you want to make any modifications, you can go to the previous step by clicking the **Back** button or a particular step indicator on the left panel. </Note>
 

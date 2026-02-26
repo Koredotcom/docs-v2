@@ -16,7 +16,10 @@ The **Model Analytics Dashboard** is a comprehensive analysis and monitoring sol
 * **Hover-enabled data points** for instant metric insights.
 * Support for both hourly and daily performance trends.
 * Dashboard **Refresh capability** to update the latest data on the dashboard.
-<img src="../images/model-analytics-dashboard-refresh.png" alt="dashboard refresh" title="dashboard refresh" style="border: 1px solid gray; zoom:75%;"/>
+
+![dashboard refresh](./images/model-analytics-dashboard-refresh.png "dashboard refresh")
+
+
 
 * Widget-wise **Tooltip support** to get quick summaries of the monitored metrics.
 * Ability to analyze model deployment and fine-tuning data based on the credit usage summary. 
@@ -37,7 +40,10 @@ To access the **Model Analytics** dashboard, follow the steps below:
 1. [Navigate](../../../administration/overview.md#access-settings-console) to the **Settings** Console.
 2. On the left menu, select **Monitoring** > **Analytics**.
 3. Click the **Model Analytics** tab on the right-hand side screen.
-<img src="../images/model-analysis-dashboard-access.png" alt="model analytics dashboard" title="model analytics dashboard" style="border: 1px solid gray; zoom:75%;"/>
+
+![model analytics dashboard](./images/model-analysis-dashboard-access.png "model analytics dashboard")
+
+
 
 The system loads the **Model Analytics** dashboard with data for the last 7 days, which is the default time range selection. You can select the required period to generate data.
 
@@ -52,12 +58,12 @@ The following metrics summarize the **credit usage** and **counts** for [fine-tu
 * **Number of Deployed Models**: The number of models deployed in your account.
 * **Number of Fine-tuned models**: The count of the models fine-tuned in your account.
 
-<div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>Hover over the "<b><i>i</i></b>" icon to view the information summary for the metric.</p>
-</div>
+<Note>Hover over the "<b><i>i</i></b>" icon to view the information summary for the metric.</Note>
 
-<img src="../images/hover-over-icon.png" alt="hover over icon" title="hover over icon" style="border: 1px solid gray; zoom:75%;"/>
+
+![hover over icon](./images/hover-over-icon.png "hover over icon")
+
+
 
 To generate and view the required model analytics data, use the **Global Timeline Filters**. [Learn more](../analytics/model-analytics-dashboard.md#global-timeline-filters).
 
@@ -85,9 +91,7 @@ Use the options on the top panel to generate account-level and model-level data 
 
 The following widget-level filters apply exclusively to model-specific metrics, providing real-time analytics when used with a [Global Timeline filter](../analytics/tools-analytics-dashboard.md#global-timeline-filters). The available filters depend on the selected  model type.
 
-<div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>If multiple deployments exist for the same model name, they are listed along with their respective deployment timestamps.</p></div>
+<Note>If multiple deployments exist for the same model name, they are listed along with their respective deployment timestamps.</Note>
 
 **Fine-tuned and Open-source Models**
 
@@ -95,19 +99,23 @@ The following widget-level filters apply exclusively to model-specific metrics, 
 * **Select Deployment**: Choose the model’s deployment name from the list.
 * **Select Filter (version)**: Choose the model’s deployment version from the list to view the associated data.
 
-    <div class="admonition note">
-    <p class="admonition-title">Note</p>
-    <p><ul><li>If no versions exist for a model, the dropdown list is empty.</li>
-    <li> By default, data for all model versions is displayed unless a specific version is selected.</li></ul></p></div>
+    <Note><ul><li>If no versions exist for a model, the dropdown list is empty.</li>
+    <li> By default, data for all model versions is displayed unless a specific version is selected.</li></ul></Note>
 
-    <img src="../images/fine-tuned-model-filters.png" alt="model name and version filter" title="model name and version filter" style="border: 1px solid gray; zoom:75%;"/>
+
+    ![model name and version filter](./images/fine-tuned-model-filters.png "model name and version filter")
+
+
 
 **External Models**
 
 * **Select Model (Model Name)**: Select the deployed model from the list to see the associated analytics data.
 * **Select Connection**: Select the third-party service connection name for the external model.
 
-    <img src="../images/external-model-filters.png" alt="model name and version filter" title="model name and version filter" style="border: 1px solid gray; zoom:75%;"/>
+
+    ![model name and version filter](./images/external-model-filters.png "model name and version filter")
+
+
 
 ## How it Works
 
@@ -116,10 +124,8 @@ The following widget-level filters apply exclusively to model-specific metrics, 
 3. For Fine-tuned or Open-source models, choose the *model name* and optionally the *deployment name* and *version*. Alternatively, for External Models, select the *model name* and *connection name* from the dropdown lists.
 4. The widgets display an hourly graph for 24 hours per day and a daily graph for the respective metrics for a date range.
 
-<div class="admonition warning">
-<p class="admonition-title">Important</p>
-<p><ul><li>The widget shows data only for the duration that the model was deployed in your account. For instance, if Model A was active for 4 days last week and undeployed for the next 3 days, selecting a 7-day view will display data solely for those 4 active days and the associated request times.</li>
-<li>The graph will show curves only when requests are processed by the model. If no requests are processed during an hour or day, no data points will appear.</li></ul></p></div>
+<Info><ul><li>The widget shows data only for the duration that the model was deployed in your account. For instance, if Model A was active for 4 days last week and undeployed for the next 3 days, selecting a 7-day view will display data solely for those 4 active days and the associated request times.</li>
+<li>The graph will show curves only when requests are processed by the model. If no requests are processed during an hour or day, no data points will appear.</li></ul></Info>
 
 ## Model Performance Data Widgets
 
@@ -135,7 +141,10 @@ This widget is available for **Fine-tuned**, **Open-source**, and **External** m
 * The **Latency** (Y-axis) automatically scales according to the requests the model executes for the selected period.
 * Hover over a data point on the line graph to view the latency for a specific request when selecting a 24-hour or 7-day period or the average latency for a specific date and time when using a longer date range. For example, you can check the latency for an individual request in the last 24 hours or the average latency (aggregated for all requests per day) on January 16, 2024, at 11:35 AM.
 
-<img src="../images/hover-over-info.png" alt="hover over info" title="hover over info" style="border: 1px solid gray; zoom:75%;"/>
+
+![hover over info](./images/hover-over-info.png "hover over info")
+
+
 
 **Best Practices**
 
@@ -157,11 +166,12 @@ This widget is available for **Fine-tuned**, **Open-source**, and **External** m
 * **Total Requests** represents the total of successful and failed requests executed by the model during the selected period.
 * **Avg. credits per request**: The value is calculated by dividing the total number of credits consumed by the model by the total number of responses generated by the model for the requests it processed.
 
-<div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>Avg. credits per request is not displayed for external models.</p></div>
+<Note>Avg. credits per request is not displayed for external models.</Note>
 
-<img src="../images/requests-hover-info.png" alt="requests hover info" title="requests hover info" style="border: 1px solid gray; zoom:75%;"/>
+
+![requests hover info](./images/requests-hover-info.png "requests hover info")
+
+
 
 **Best Practices**
 
@@ -180,22 +190,26 @@ This widget is available for **Fine-tuned** and **Open-source** models. It featu
 
 * A blue step graph represents the **Number of Replicas** for the specified hardware configuration deployed in your account. It shows when fewer, more, or the same number of model replicas are deployed to generate responses.
 
-<div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>"<b>Multiple Hardware</b>" is displayed when replicas with more than one hardware configuration are deployed across a date range.</p></div>
+<Note>"<b>Multiple Hardware</b>" is displayed when replicas with more than one hardware configuration are deployed across a date range.</Note>
 
 
 * The Y-axis automatically adjusts based on the increase in the deployed replicas during the selected period.
 * Each upward step in the graph represents the generation of additional model replicas, continuing until deployment is complete (indicated by the Max Replicas line). The downward steps show the undeployment of replicas.
 * Hover over a data point on the step graph to view the timestamp, deployment version name, number of replicas, and hardware configuration deployed at that point by the model version. For example, you can check the replicas and hardware usage on January 16, 2024, at 11:35 AM for the last 30 days.
 
-<img src="../images/model-scaling-hover-info.png" alt="model scaling hover info" title="model scaling hover info" style="border: 1px solid gray; zoom:75%;"/>
+
+![model scaling hover info](./images/model-scaling-hover-info.png "model scaling hover info")
+
+
 
 #### Maximum Replicas Limit for a Single-Day Selection
 
 The **Model Scaling and Usage** widget displays the graph with the Y axis set up to the maximum number of replicas configured during the model deployment. This limit is indicated by a red line. 
 
-<img src="../images/max-replicas.png" alt="max replicas" title="max replicas" style="border: 1px solid gray; zoom:75%;"/> 
+
+![max replicas](./images/max-replicas.png "max replicas")
+
+ 
 
 **Best Practices**
 
@@ -215,10 +229,16 @@ This widget is available exclusively for external models. It displays bar graphs
 * The Y-axis automatically adjusts to reflect the increase in the number of tokens processed by the model.
 * The widget displays the total sum of input and output tokens, as shown below.
 
-<img src="../images/input-output-tokens.png" alt="input output tokens" title="input output tokens" style="border: 1px solid gray; zoom:75%;"/>
+
+![input output tokens](./images/input-output-tokens.png "input output tokens")
+
+
 
 * Hover over a data point on the graph to view the timestamp and the input and output tokens processed at that point by the model version. For example, you can check the input and output token counts on January 16, 2024, at 11:35 AM for the last 30 days.
-<img src="../images/tokens-hover-info.png" alt="tokens hover info" title="tokens hover info" style="border: 1px solid gray; zoom:75%;"/>
+
+![tokens hover info](./images/tokens-hover-info.png "tokens hover info")
+
+
 
 **Best Practices**
 
@@ -239,32 +259,45 @@ The widget-level filters include the following:
 
 * [Model Performance Filters](../analytics/model-analytics-dashboard.md#model-performance-filters) for Open-source and Fine-tuned models.
 
-<div class="admonition warning">
-<p class="admonition-title">Important</p>
-<p><ul><li>Changes made to the filters in the expanded view of a widget do not affect the main dashboard or the global filters.</li>
-<li>Hover over the required data point to view widget analytics data.</li></ul></p></div>
+<Info><ul><li>Changes made to the filters in the expanded view of a widget do not affect the main dashboard or the global filters.</li>
+<li>Hover over the required data point to view widget analytics data.</li></ul></Info>
 
 To expand a widget, hover over the top-right corner of the widget and click the **Double-arrow** icon.
 
-<img src="../images/model-latency-info.png" alt="model latency expand arrow" title="model latency expand arrow" style="border: 1px solid gray; zoom:75%;"/>
+
+![model latency expand arrow](./images/model-latency-info.png "model latency expand arrow")
+
+
 
 The expanded views of all the widgets are shown below:
 
 **Model Latency**
 
-<img src="../images/model-latency-time-filter.png" alt="model latency time filter" title="model latency time filter" style="border: 1px solid gray; zoom:75%;"/>
+
+![model latency time filter](./images/model-latency-time-filter.png "model latency time filter")
+
+
 
 **Requests**
 
-<img src="../images/requests-expanded-view.png" alt="requests expanded view" title="requests expanded view" style="border: 1px solid gray; zoom:75%;"/>
+
+![requests expanded view](./images/requests-expanded-view.png "requests expanded view")
+
+
 
 **Model Scaling and Usage**
 
-<img src="../images/model-scaling-and-usage-expanded-view.png" alt="model scaling expanded view" title="model scaling expanded view" style="border: 1px solid gray; zoom:75%;"/>
+
+![model scaling expanded view](./images/model-scaling-and-usage-expanded-view.png "model scaling expanded view")
+
+
 
 **Tokens**
 
-<img src="../images/tokens-expanded-view.png" alt="tokens expanded view" title="tokens expanded view" style="border: 1px solid gray; zoom:75%;"/>
+
+![tokens expanded view](./images/tokens-expanded-view.png "tokens expanded view")
+
+
 
 With intuitive data visualization and dynamic filtering capabilities, the **Model Analysis Dashboard** enables data-driven decisions for model optimization, resource allocation, and performance monitoring.
 
