@@ -287,13 +287,11 @@ To undeploy, follow the steps below on the **Manage Custom Scripts** page:
 
 ![access undeploy](./images/access-undeploy.png "access undeploy")
 
-
-
    You can also select a script entry and click **Proceed to Undeploy** on its **Overview** page. 
 
 2. Click <b>Undeploy</b> in the confirmation window.
 
-A success message is displayed, and the script’s status changes to <b>Ready to Deploy</b>.</li>
+A success message is displayed, and the script’s status changes to <b>Ready to Deploy</b>.
 
 ![ready to deploy](./images/ready-to-deploy-success.png "ready to deploy")
 

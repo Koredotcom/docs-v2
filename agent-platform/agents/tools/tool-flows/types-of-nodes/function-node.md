@@ -444,24 +444,18 @@ To run the flow for dynamic inputs, follow the steps below:
 
 1. Click the **Input** tab of the **Start** node, and click **Add Input Variable** to configure the input for the flow’s test run. [Learn more](../../tool-flows/perform-other-actions-on-the-flow-builder/manage-input-and-output.md#adding-input-variables).
 
+    ![add input variable](./images/add-input-variable-button.png "add input variable")
 
-![add input variable](./images/add-input-variable-button.png "add input variable")
+1. Add the <b>Name(key)</b> value, select the data type for <b>Type</b>, and provide a description in the <b>Enter input variable</b> window. For example, in the banking flow, to get the sum of two balances, one in Q3 and the other in Q4, you must define two input variables, “<i>Q3balance</i>” and “<i>Q4balance</i>,” as shown below.
 
+    ![add input var](./images/add-input-vars-function-node.png "add input var")
 
+1. Click <b>Save</b>.
 
-2. Add the <b>Name(key)</b> value, select the data type for <b>Type</b>, and provide a description in the <b>Enter input variable</b> window. For example, in the banking flow, to get the sum of two balances, one in Q3 and the other in Q4, you must define two input variables, “<i>Q3balance</i>” and “<i>Q4balance</i>,” as shown below.
+After you define the input variables, you must [add the output variable(s)](../types-of-nodes/function-node.md#step-2-add-the-output-variable) and [run the flow](../types-of-nodes/function-node.md#step-3-run-the-tool-flow).
 
-![add input var](./images/add-input-vars-function-node.png "add input var")
-3. Click <b>Save</b>.
-
-Once you define the input variables, you must [add the output variable(s)](../types-of-nodes/function-node.md#step-2-add-the-output-variable) and [run the flow](../types-of-nodes/function-node.md#step-3-run-the-tool-flow).
-
-<Info><ul><li>You can use the <b>Start</b> node’s input variables as context variables in the script editor to accept dynamic values and generate the output. To refer to the input variable, follow the syntax mentioned <a href="#syntaxes-for-the-context-input">here</a>.</li>
-<li>Once you run the node’s flow, the result gets stored in the output variable of the <b>Start</b> node. Additionally, this key is mapped to the <b>End</b> node, where you can define its value.</li>
-
-![end node key](./images/output-variable-start-node.png "end node key")
-
-</ul></Info>
+* You can use the <b>Start</b> node’s input variables as context variables in the script editor to accept dynamic values and generate the output. To refer to the input variable, follow the syntax mentioned <a href="#syntaxes-for-the-context-input">here</a>.
+* Once you run the node’s flow, the result gets stored in the output variable of the <b>Start</b> node. Additionally, this key is mapped to the <b>End</b> node, where you can define its value.
 
 ### Step 2: Add the Output Variable
 
