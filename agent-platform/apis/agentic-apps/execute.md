@@ -259,14 +259,11 @@ Returns the agent's response to the query along with the session details.
 | Field | Description |
 |:------ |:------ |
 | messageId | Unique identifier for the response message |
-| output | Array of agent responses. Each object includes: <p> - type: "text" <p> - content: agent's response |
-| Artifacts | Array of responses from the tools in the order of execution. For example, if tool 1 was executed followed by tool 2, artifacts[0] will contain the response from tool 1 and artifacts[1] will contain the response from tool 2. <p> Note that the response from a tool is updated in this array only if the ‘Include tool response in artifacts’ flag is enabled in the corresponding tool. Learn More. |
-| sessionInfo | Object containing session metadata such as: <p> - status: current session state <p> - conversationState: for example, COMPLETED <p> - userReference, sessionReference, userId, sessionId, runId, appId |
-
-
+| output | Array of agent responses. Each object includes: <br /> - type: "text" <br /> - content: agent's response |
+| Artifacts | Array of responses from the tools in the order of execution. For example, if tool 1 was executed followed by tool 2, artifacts[0] will contain the response from tool 1 and artifacts[1] will contain the response from tool <br /> 2. Note that the response from a tool is updated in this array only if the ‘Include tool response in artifacts’ flag is enabled in the corresponding tool. Learn More. |
+| sessionInfo | Object containing session metadata such as: <br /> - status: current session state <br /> - conversationState: for example, COMPLETED <br /> - userReference, sessionReference, userId, sessionId, runId, appId |
 
 #### Sample Response
-
 
 ```json
 {
@@ -290,9 +287,7 @@ Returns the agent's response to the query along with the session details.
 }
 ```
 
-
 If debug is enabled, the response has additional information as shown below. 
-
 
 ```json
 {

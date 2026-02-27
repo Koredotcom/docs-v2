@@ -28,18 +28,18 @@ Moreover, the automatic synchronization (auto sync) feature ensures that Setting
 
 1. Configure the Active Directory connection by providing the following mandatory fields:
 
-<ul><li><b>Host Name</b>: The domain's hostname or IP address where Active Directory services run.</li>
-<li><b>Server Port</b>: The network port number used by the domain host to communicate over the network.</li>
-<li><b>Base DN</b>: The server location for users and groups in a domain.</li>
-<li><b>User ID</b>: The identity used to log into the Active Directory.</li>
-<li><b>Password</b>: The password used to log into the Active Directory.</li>
-<li><b>(Optional) SSL</b>: Enable this option to secure communications over the web, particularly for services and applications that interact with Active Directory via HTTPS.</li>
+    <ul><li><b>Host Name</b>: The domain's hostname or IP address where Active Directory services run.</li>
+    <li><b>Server Port</b>: The network port number used by the domain host to communicate over the network.</li>
+    <li><b>Base DN</b>: The server location for users and groups in a domain.</li>
+    <li><b>User ID</b>: The identity used to log into the Active Directory.</li>
+    <li><b>Password</b>: The password used to log into the Active Directory.</li>
+    <li><b>(Optional) SSL</b>: Enable this option to secure communications over the web, particularly for services and applications that interact with Active Directory via HTTPS.</li>
 
-![configure ad connection](./images/configure-ad-connection.png "configure ad connection")
+    ![configure ad connection](./images/configure-ad-connection.png "configure ad connection")
 
-</ul>
+    </ul>
 
-<ol start="2"><li>Click <b>Next</b> to confirm the credentials before proceeding. If validation errors occur, they will be displayed on the screen so you can correct them before continuing.</li></ol>
+2. Click <b>Next</b> to confirm the credentials before proceeding. If validation errors occur, they will be displayed on the screen so you can correct them before continuing.
 
 ### Step 2: Import Organization Units
 
@@ -51,11 +51,9 @@ Follow the steps below to configure and import user data from key organizational
 <li><b>Do not import organization units</b>: Do not import user information from any organization units in the Active Directory.</li>
 <li><b>Import only the following organization units</b>: Imports user information only from the organization unit you select.</li></ul>
 
-<ol start="2"><li>Click <b>Next</b> to proceed to user profile fields mapping.
+1. Click <b>Next</b> to proceed to user profile fields mapping.
 
-![manage org units](./images/org-units.png "manage org units")
-
-</li></ol>
+    ![manage org units](./images/org-units.png "manage org units")
 
 ### Step 3: Specify User Attributes and Configure Rules for Selective Import from Active Directory
 
@@ -67,46 +65,34 @@ In this configuration step, you can do the following:
 To define both default (pre-defined) and custom fields during setup, follow the steps below:
 
 1. (Optional) Select **Import users from active directory** to fetch the user default fields from the Active Directory.
-2. Click the **User Attributes** tab and select the value from the dropdown to map the field from the Active Directory to the user attribute for all the fields under **Default Fields**.
+1. Click the **User Attributes** tab and select the value from the dropdown to map the field from the Active Directory to the user attribute for all the fields under **Default Fields**.
 
-![default fields](./images/default-fields.png "default fields")
+    ![default fields](./images/default-fields.png "default fields")
 
+1. (Optional) In addition to the default fields, you can add custom fields for your user profile information and map them to a corresponding field in the Active Directory. To add a custom field mapping, follow the steps below:
 
+    <ul><li>Click <b>Add Field</b> in the <b>Custom Fields</b> section.</li>
+    <li>Enter the custom field you want to map to your user profile in the <b>Custom field name</b> textbox.</li>
+    <li>Enter the corresponding Active Directory field in the <b>Field from Active Directory</b> textbox.</li>
+    <li>(Optional) Click the <b>tag</b> icon to set the custom field as the primary field. However, to delete this field, you must first remove the primary field tag.</li>
+    <li>Click <b>Next</b> to complete user profile fields' mapping and proceed.</li>
 
-3. (Optional) In addition to the default fields, you can add custom fields for your user profile information and map them to a corresponding field in the Active Directory. To add a custom field mapping, follow the steps below:
+    ![manage custom field](./images/custom-field-management.png "manage custom field")</ul>
 
-<ul><li>Click <b>Add Field</b> in the <b>Custom Fields</b> section.</li>
-<li>Enter the custom field you want to map to your user profile in the <b>Custom field name</b> textbox.</li>
-<li>Enter the corresponding Active Directory field in the <b>Field from Active Directory</b> textbox.</li>
-<li>(Optional) Click the <b>tag</b> icon to set the custom field as the primary field. However, to delete this field, you must first remove the primary field tag.</li>
-<li>Click <b>Next</b> to complete user profile fields' mapping and proceed.</li>
+    To remove a field, click the **Delete** icon as shown below.
 
-![manage custom field](./images/custom-field-management.png "manage custom field")
+    ![delete custom field](./images/delete-custom-field.png "delete custom field")
 
+    <Note>Deleting a custom field is allowed only if you have added multiple fields.</Note>
 
-</ul>
+1. Next, define the rules and sync criteria to import specific users from your Active Directory server. To do this, click the <b>Manage Inclusion & Exclusion Rules</b> tab.
+1. Under <b>Inclusion Rules</b>, you can sync specific users from your Active Directory Server by defining criteria or filters using profile parameters. Enter the rule expression using the user profile parameters in the <b>Rule Definition</b> textbox according to the LDAP filter syntax mentioned <a href="https://social.technet.microsoft.com/wiki/contents/articles/5392.active-directory-ldap-syntax-filters.aspx">here</a>.
 
-To remove a field, click the **Delete** icon as shown below.
+1. (Optional) An <b>Exclusion Rule</b> includes the <b>AD/LDAP field</b>, <b>Match Type</b>, and <b>Value</b>. You must set <b>Match Type</b> for one of the following options:
 
-
-![delete custom field](./images/delete-custom-field.png "delete custom field")
-
-
-
-<Note>Deleting a custom field is allowed only if you have added multiple fields.</Note>
-
-<ol start="4"><li>Next, define the rules and sync criteria to import specific users from your Active Directory server. To do this, click the <b>Manage Inclusion & Exclusion Rules</b> tab.</li>
-<li>Under <b>Inclusion Rules</b>, you can sync specific users from your Active Directory Server by defining criteria or filters using profile parameters. Enter the rule expression using the user profile parameters in the <b>Rule Definition</b> textbox according to the LDAP filter syntax mentioned <a href="https://social.technet.microsoft.com/wiki/contents/articles/5392.active-directory-ldap-syntax-filters.aspx">here</a>.</li>
-
-![manage rules](./images/manage-rules.png "manage rules")
-
-</ol>
-
-<ol start="6"><li>(Optional) An <b>Exclusion Rule</b> includes the <b>AD/LDAP field</b>, <b>Match Type</b>, and <b>Value</b>. You must set <b>Match Type</b> for one of the following options:</li></ol>
-
-* **Exact Match**: The user profile Active Directory field must exactly match the **Value** field you specify. For example, if **Employee Vertical** must precisely match “Sales,” use this option.
-* **Partial Match**: The user profile Active Directory field can partially match or include the **Value** field you specify. For instance, if **Employee Vertical** should match part of “Product Sales” (such as “Product” or “Sales”), choose this option.
-* **Multiple Matches**: The user profile Active Directory field must match all the values you set in the **Value** field. For example, if **Employee Vertical** should match both “Product Sales” and “Service Sales,” select this option.
+    * **Exact Match**: The user profile Active Directory field must exactly match the **Value** field you specify. For example, if **Employee Vertical** must precisely match “Sales,” use this option.
+    * **Partial Match**: The user profile Active Directory field can partially match or include the **Value** field you specify. For instance, if **Employee Vertical** should match part of “Product Sales” (such as “Product” or “Sales”), choose this option.
+    * **Multiple Matches**: The user profile Active Directory field must match all the values you set in the **Value** field. For example, if **Employee Vertical** should match both “Product Sales” and “Service Sales,” select this option.
 
 **Steps to Set Exclusion Rules**
 
@@ -118,10 +104,7 @@ To set an **Exclusion Rules**, follow the steps below:
 
 <Note>All mandatory fields must be filled in before you can proceed to the next step. Deleting a custom field is allowed only if you have added multiple fields.</Note>
 
-
 ![add exclusion](./images/add-exclusion.png "add exclusion")
-
-
 
 To delete a rule, hover over the entry, click the **Delete** icon, and confirm.
 
@@ -137,23 +120,21 @@ To enable and configure auto sync, follow the steps below:
 
 1. Click the **Enable auto-sync** toggle.
 
-![enable auto sync](./images/enable-auto-sync.png "enable auto sync")
+    ![enable auto sync](./images/enable-auto-sync.png "enable auto sync")
 
+    <Note>You can run AD-Sync anytime by choosing the run now option on the settings page.</Note>
 
+1. Select the following sync fields:
 
-<Note>You can run AD-Sync anytime by choosing the run now option on the settings page.</Note>
+    * **Sync Frequency**: Select from _daily_, _weekly_ (use the *Repeat on* option), _monthly_ (choose a specific day for each month), or _other_ (custom) sync periods. The default selection is _Daily_ and the syncs continue for the selected period until the connection is active.
+    * **Sync Start**: Click the Calendar icon and choose a date from the widget to start the Active Directory sync. The default selection is the current date. 
+    * **Time**: According to the selected sync frequency, select when the Active Directory sync should occur. The default setting is 12:00 PM.
 
-<ol start="2"><li>Select the following sync fields:</li></ol>
+       <Note><ul><li>You can select only one date from the calendar for weekly and monthly syncs.</li>
+       <li>You can schedule the sync only with a future date and time from the default selections.</li>
+       <li>The default selection for <b>Start Sync</b> is the current date, which you can change.</li></ul> </Note>
 
-* **Sync Frequency**: Select from _daily_, _weekly_ (use the *Repeat on* option), _monthly_ (choose a specific day for each month), or _other_ (custom) sync periods. The default selection is _Daily_ and the syncs continue for the selected period until the connection is active.
-* **Sync Start**: Click the Calendar icon and choose a date from the widget to start the Active Directory sync. The default selection is the current date. 
-* **Time**: According to the selected sync frequency, select when the Active Directory sync should occur. The default setting is 12:00 PM.
-
-<Note><ul><li>You can select only one date from the calendar for weekly and monthly syncs.</li>
-<li>You can schedule the sync only with a future date and time from the default selections.</li>
-<li>The default selection for <b>Start Sync</b> is the current date, which you can change.</li></ul> </Note>
-
-<ol start="3"><li>Click <b>Save</b>.</li></ol>
+1. Click <b>Save</b>.
 
 If auto sync is disabled, clicking **Save** only saves the Active Directory sync configuration. Enabling auto-sync saves the configuration and initiates syncing at the scheduled date and time.
 
@@ -177,8 +158,6 @@ When you set up Active Directory sync for the first time, the following options 
 
 
 ![configure sync with directory](./images/configure-sync-with-directory.png "configure sync with directory")
-
-
 
 ### User Settings
 

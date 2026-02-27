@@ -93,8 +93,6 @@ Steps to add output variables:
 <li>If a type mismatch occurs, the endpoint still succeeds but includes a warning in the response along with the key name and the nature of the mismatch.</li>
 <li>If one or more keys fail validation, the response includes warnings for the failed keys and outputs for the valid ones.</li></ul></Note>
 
-<ol start="5"><li>Click <b>Save</b>.</li>
-
-The output variable is displayed on the Output tab of the <b>Manage Input & Output</b> dialog.</ol>
+5. Click <b>Save</b>.
 
 <Note>You can also add an output variable in the End node using the <b>Add a Key</b> option on the node's interface.</Note>

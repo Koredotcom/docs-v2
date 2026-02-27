@@ -83,7 +83,7 @@ To enable SSO on the **Settings** console, follow the steps below:
 <li><b>WS-Federation</b>: <a href="#windows-azure-configuration">Windows Azure</a> or <a href="#other-configuration">Other</a>. <a href="#ws-federation">Learn more</a>.</li>
 <li><b>OpenId connect</b>: <a href="#google-configuration">Google</a>. <a href="#openid-connect-configuration">Learn more</a></li></ul>
 
-<ol start="9"><li>Click <b>Save</b>.</li></ol>
+9. Click <b>Save</b>.
 
 A success message is displayed once the SSO setup is complete along with the timestamp of when you enabled SSO.
 
@@ -118,57 +118,44 @@ To configure SSO using SAML and Okta, follow the steps below:
 
 <Note>If you already have the required parameters for Okta, move directly to Step 18.</Note>
 
-<ol start="4"><li>Login to the <a href="https://developer.okta.com/login/">Okta developer portal</a>.</li>
-<li>On the dashboard, click <b>Applications</b> on the left menu.</li>
-<li>Click <b>Create App Integration</b>.</li>
+4. Login to the <a href="https://developer.okta.com/login/">Okta developer portal</a>.
+5. On the dashboard, click <b>Applications</b> on the left menu.
+6. Click <b>Create App Integration</b>.
 
-![okta create app integration](./images/okta-create-app-integration.png "okta create app integration")
-
-</ol>
-
-<ol start="7"><li>In the <b>Create a new app integration</b> window, select <b>SAML 2.0</b> and click <b>Next</b>.
+7. In the <b>Create a new app integration</b> window, select <b>SAML 2.0</b> and click <b>Next</b>.
 
 ![create a new app integration](./images/create-a-new-app-integration.png "create a new app integration")
-
-</li>
-<li>On the <b>Create SAML Integration</b> page, provide the <b>App Name</b> under <b>General Settings</b>, and click <b>Next</b>.
+8. On the <b>Create SAML Integration</b> page, provide the <b>App Name</b> under <b>General Settings</b>, and click <b>Next</b>.
 
 ![create saml integration](./images/create-saml-integration.png "create saml integration")
-
-</li>
-<li>Copy the following values from the Platform’s SSO setup page and paste them into Okta under <b>Configure SAML</b>:</li>
-<ul><li><b>ACS url for SP initiated SAML flow</b>: Paste into <i>Single sign-on URL</i>.</li>
-<li><b>ACS url for IDP initiated SAML flow</b>: Paste into <i>Audience URI (SP Entity ID)</i>.</li></ul></ol>
+9. Copy the following values from the Platform’s SSO setup page and paste them into Okta under <b>Configure SAML</b>:
+10. <b>ACS url for SP initiated SAML flow</b>: Paste into <i>Single sign-on URL</i>.
+11. <b>ACS url for IDP initiated SAML flow</b>: Paste into <i>Audience URI (SP Entity ID)</i>.
 
 | <strong>Okta Parameter</strong> | <strong>Description</strong> |
 |:------ |:------ |
 | <strong>Single sign-on URL</strong> | The location where the SAML assertion is sent with an HTTP POST. This is often called the SAML Assertion Consumer Service (ACS) URL for your application. |
 | <strong>Audience URI (SP Entity ID)</strong> | The application-defined unique identifier that is the intended audience of the SAML assertion. This is most often the SP Entity ID of your application. |
 
-<ol start="10"><li>Click <b>Next</b>.</li>
-<li>Click <b>Finish</b> under <b>Feedback</b> on Okta’s <b>Create SAML Integration</b> page.</li>
-<li>Once the app is created, go to the <b>Sign On</b> tab and click <b>View Setup Instructions</b>.</li>
-<li>On the <b>How to Configure SAML 2.0 for <app-name> Application</b> page, do the following from Okta into the Platform:</li>
-<ul><li>Copy the <b>Identity Provider Single Sign-On URL</b> value and paste it into the <b>Okta Single Sign-On URL</b>.</li>
-<li>Copy the <b>Identity Provider Issuer</b> value into the <b>Identity provider issuer</b>.</li></ul>
-<li>Go to <b>Sign On</b> > <b>SAML Signing Certificates</b> on your Okta app.</li>
-<li>Click <b>Download certificate</b> under <b>Actions</b> for the required certificate.
+10. Click <b>Next</b>.
+11. Click <b>Finish</b> under <b>Feedback</b> on Okta’s <b>Create SAML Integration</b> page.
+12. Once the app is created, go to the <b>Sign On</b> tab and click <b>View Setup Instructions</b>.
+13. On the <b>How to Configure SAML 2.0 for <app-name> Application</b> page, do the following from Okta into the Platform:
+14. Copy the <b>Identity Provider Single Sign-On URL</b> value and paste it into the <b>Okta Single Sign-On URL</b>.
+15. Copy the <b>Identity Provider Issuer</b> value into the <b>Identity provider issuer</b>.
+16. Go to <b>Sign On</b> > <b>SAML Signing Certificates</b> on your Okta app.
+17. Click <b>Download certificate</b> under <b>Actions</b> for the required certificate.
 
 ![download certificate](./images/download-certificate-saml.png "download certificate")
-
-</li>
-<li>Once the certificate is downloaded, open it in Notepad and copy the data between the <b>BEGIN CERTIFICATE</b> header and <b>END CERTIFICATE</b> footer.
+18. Once the certificate is downloaded, open it in Notepad and copy the data between the <b>BEGIN CERTIFICATE</b> header and <b>END CERTIFICATE</b> footer.
 
 ![okta certificate](./images/okta-certificate-notepad.png "okta certificate")
-
-</li>
-<li>Paste the value into the <b>Certificate</b> field on the Platform’s SSO setup page.</li>
-To add a new certificate, click <b>+ Add new</b>.</ol>
+19. Paste the value into the <b>Certificate</b> field on the Platform’s SSO setup page.
 
 <Note>When multiple certificates are provided, the system uses the latest one. If the latest certificate is invalid, it automatically switches to other available certificates.</Note>
 
-<ol start="18"><li>Click <b>Save</b>.
-Once SSO for Okta is complete, the system will redirect to the <b>Okta Sign in</b> page for the Platform account authentication.</li></ol>
+18. Click <b>Save</b>.
+Once SSO for Okta is complete, the system will redirect to the <b>Okta Sign in</b> page for the Platform account authentication.
 
 ### Onelogin Configuration
 
@@ -189,35 +176,22 @@ To configure SSO using SAML and Onelogin, follow the steps below:
 <ul><li>To learn how to <b>add a new app</b>, click <a href="https://onelogin.service-now.com/support?id=kb_article&sys_id=9bf39e0047ccbd509d8dfd1f536d431c&kb_category=e9866930db185340d5505eea4b9619b7#manage-add">here</a>.</li>
 <li>To learn how to <b>configure apps</b>, click <a href="https://onelogin.service-now.com/support?id=kb_article&sys_id=9bf39e0047ccbd509d8dfd1f536d431c&kb_category=e9866930db185340d5505eea4b9619b7#config">here</a>.</li></ul>
 
-<ol start="6"><li>Search for your Platform app and click <b>Enter</b>.</li>
-<li>Click your app to view the <b>Add App</b> page. Optionally, change the display name or the icons displayed to your users in the <i>OneLogin</i> portal, and then click <b>SAVE</b>. The Platform app has been added to your company apps for <i>OneLogin</i> and is listed on the app page.</li>
-<li>Copy the following values from <b>SSO</b> > <b>Enable SAML2.0</b> on Onelogin and paste them into the relevant fields on the Platform’s SSO setup page:</li>
-    <ul><li><b>OneLogin SAML 2.0 Endpoint (HTTP)</b>: Paste into <b>SAML 2.0 endpoint</b>.</li>
-    <li><b>OneLogin Issuer URL</b>: Paste into <b>Issuer URL</b>.</li></ul>
-
-<li>In the <b>OneLogin X.509 Certificate</b> field, click <b>View Details</b>. The <b>Standard Strength Certificate (2048-bit)</b> page is displayed.
+6. Search for your Platform app and click <b>Enter</b>.
+7. Click your app to view the <b>Add App</b> page. Optionally, change the display name or the icons displayed to your users in the <i>OneLogin</i> portal, and then click <b>SAVE</b>. The Platform app has been added to your company apps for <i>OneLogin</i> and is listed on the app page.
+8. Copy the following values from <b>SSO</b> > <b>Enable SAML2.0</b> on Onelogin and paste them into the relevant fields on the Platform’s SSO setup page:
+9. <b>OneLogin SAML 2.0 Endpoint (HTTP)</b>: Paste into <b>SAML 2.0 endpoint</b>.
+10. <b>OneLogin Issuer URL</b>: Paste into <b>Issuer URL</b>.
+11. In the <b>OneLogin X.509 Certificate</b> field, click <b>View Details</b>. The <b>Standard Strength Certificate (2048-bit)</b> page is displayed.
 
 ![one login view details](./images/onelogin-view-details.png "one login view details")
-
-</li>
-<li>In the <b>X.509 Certificate</b> section, copy the certificate data and then paste it into the <b>X.509 Certificate</b> field on the Platform’s SSO setup page.</li>
-
-<Note>Copy data after the <b>BEGIN CERTIFICATE</b> header and before the <b>END CERTIFICATE</b> footer.</Note>
-
-To add a new certificate, click <b>+Add new</b>.
-
-![add new x 509 certificate](./images/add-new-x-509-certificate.png "add new x 509 certificate")
-
-</ol>
+12. In the <b>X.509 Certificate</b> section, copy the certificate data and then paste it into the <b>X.509 Certificate</b> field on the Platform’s SSO setup page.
 
 <Note>When multiple certificates are provided, the system uses the latest one. If the latest certificate is invalid, it automatically switches to other available certificates.</Note>
 
-<ol start="11"><li>Copy the following field values from the Platform’s SSO setup page into the relevant fields in Onelogin:</li>
-
-<ul><li>ACS URL for SP Initiated SAML Flow.</li>
-<li>ACS URL for IDP Initiated SAML Flow.</li></ul>
-
-<li>Click <b>Save</b> on the Platform and Onelogin.</li></ol>
+11. Copy the following field values from the Platform’s SSO setup page into the relevant fields in Onelogin:
+12. ACS URL for SP Initiated SAML Flow.
+13. ACS URL for IDP Initiated SAML Flow.
+14. Click <b>Save</b> on the Platform and Onelogin.
 
 Once SSO for Onelogin is complete, the system redirects to the **Onelogin Sign in** page for the the Platform account authentication.
 
@@ -235,8 +209,8 @@ To add a new certificate, click **+Add new**.
 
 <Note>When multiple certificates are provided, the system uses the latest one. If the latest certificate is invalid, it automatically switches to other available certificates.</Note>
 
-<ol start="6"><li>Copy and paste <b>ACS url for SP initiated SAML flow</b> and <b>ACS url for IDP initiated SAML flow</b> values from the Platform into the relevant app fields within the IDP’s developer portal.</li>
-<li>Click <b>Save</b>.</li></ol>
+6. Copy and paste <b>ACS url for SP initiated SAML flow</b> and <b>ACS url for IDP initiated SAML flow</b> values from the Platform into the relevant app fields within the IDP’s developer portal.
+7. Click <b>Save</b>.
 
 ## WS-Federation
 

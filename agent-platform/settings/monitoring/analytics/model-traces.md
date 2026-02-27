@@ -103,11 +103,7 @@ The key features for customizing the model traces data include:
 <li>You can adjust visibility for 8 columns in open-source and fine-tuned models and 7 columns for other model types.</li>
 <li>The <b>Deployment Type</b> filter is available only for open-source and fine-tuned models, not for external or custom API types.</li></ul></Note>
 
-<ul><li><b>Export Data</b>: Click <b>Export</b> to generate a <i>CSV</i> file of your model traces records based on the selected date range and filters. Note that all eight columns in the table are prepared and exported, irrespective of the applied visibility filter.</li>
-
-![export](./images/click-export.png "export")
-
-</ul>
+<ul><li><b>Export Data</b>: Click <b>Export</b> to generate a <i>CSV</i> file of your model traces records based on the selected date range and filters. Note that all eight columns in the table are prepared and exported, irrespective of the applied visibility filter.</li> </ul>
 
 The progress status is displayed in the UI when preparing and exporting data.
 
@@ -267,11 +263,7 @@ The table below summarizes the available columns along with their supported oper
 | Is Not Equals To |
 | Contains |
 
-<ol start="5"><li>Click <b>Apply</b>.</li>
-
-![apply filter](./images/apply-filter-model-traces.png "apply filter")
-
-</ol>
+5. Click <b>Apply</b>.
 
 The UI displays all the relevant model traces' records that align with the applied filter(s). The number of filters you have applied is displayed on the **Filter** icon.
 

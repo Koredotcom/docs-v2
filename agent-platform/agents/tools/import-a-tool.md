@@ -32,16 +32,12 @@ To initiate a tool creation journey through the import functionality, follow the
 2. Click the **Tools** tab on the top navigation bar.
 3. Do one of the following based on your requirements:
 
-<ul><li>If you don't have any existing tools and want to create one by importing from another environment, click <b>Import Tool</b>.
-<li>If you already have tools deployed, the following page is displayed. To import a tool, select the relevant tab on the <b>Tools</b> dashboard and click the <b>Import tool</b> icon.
+<ul><li>If you don't have any existing tools and want to create one by importing from another environment, click <b>Import Tool</b>.</li>
+<li>If you already have tools deployed, the following page is displayed. To import a tool, select the relevant tab on the <b>Tools</b> dashboard and click the <b>Import tool</b> icon.</li></ul>
 
-![click import tool](./images/agent_platform/import_tool.png "click import tool")
-
-</li></ul>
-
-<ol start="4"><li>In the <b>Import tool</b> window, providing the following information is mandatory.</li>
-<ul><li><b>Tool Name</b>: Provide a unique tool name.</li>
-<li><b>Flow definition file</b>: Upload the required <b>flow_definition.json</b> file from your local directory. The file includes the tool's canvas definitions (node definitions) and AI node configurations, including prompts, hyperparameters, and timeout information.</li></ul></ol>
+1. In the <b>Import tool</b> window, providing the following information is mandatory.
+2. <b>Tool Name</b>: Provide a unique tool name.
+3. <b>Flow definition file</b>: Upload the required <b>flow_definition.json</b> file from your local directory. The file includes the tool's canvas definitions (node definitions) and AI node configurations, including prompts, hyperparameters, and timeout information.
 
 Providing the following information is optional:
 
@@ -53,11 +49,7 @@ Providing the following information is optional:
 <li>The model name from the original tool is imported as a placeholder into the AI node's <b>Select Model</b> field. Later, you can assign a value from the available options.</li>
 <li>The values for <b>System Prompt</b>, <b>Prompt</b>, <b>Timeout</b>, and <b>Hyperparameters</b> are imported for the AI node.</li></ul></Note>
 
-<ol start="5"><li>Click <b>Import</b>.</li>
-
-![click import](./images/agent_platform/click-import-new.png "click import")
-
-</ol>
+5. Click <b>Import</b>.
 
 Once the import is complete, the system will redirect you to the **Tool Flow** page, where you can access the new tool’s flow canvas by clicking **Go to flow**.
 

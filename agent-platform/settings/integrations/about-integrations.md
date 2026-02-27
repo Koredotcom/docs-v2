@@ -6,10 +6,12 @@ The Platform supports 120+ integrations with different authorization types. To e
 
 * **API**: Authenticate by passing a token (usually in headers or query parameters). Used for API Key or Access Token integrations.
 * **OAuth2**: Uses the OAuth2 industry-standard authorization framework to grant limited access to resources on a service without sharing passwords. The auth method uses the following concepts:
+
     * **Access Token**: A temporary token that the app uses to access the user’s resources.
     * **Scopes**: Specific permissions attached to the token. For example, a token may have a 'read email' scope, which allows an app to access your email data, or a 'write files' scope, which allows it to upload or edit files.
     * **Expires**: Tokens often have a time limit to increase security, meaning they become invalid after a set time period.
     * **Refresh Token**: Allows the app to obtain a new access token when the old one expires. No need to log in again.
+
 * **Bearer**: Use a bearer token in the request header, usually within an OAuth2 workflow, to access protected resources. The server validates the token before granting access.
 * **Basic Auth**: Authenticate using username and password in the request header. Credentials are sent with each request. Supported for ServiceNow, Freshdesk, Snowflake, Amplitude, and Mixpanel integrations.
 
@@ -25,8 +27,6 @@ To access the feature, follow the steps below:
 
     ![access integrations](./images/access-integrations.png "access integrations")
 
-
-
 ## Key Features
 
 The features supported on the **Integrations** page include:
@@ -39,28 +39,20 @@ The features supported on the **Integrations** page include:
 
      ![all integrations](./images/all-integrations-tab.png "all integrations")
 
-
-
 * **Search Integration**: Enter the name in the **Search** field for full or partial matches.
 
 ![search integration](./images/search-integration.png "search integration")
-
-
 
 * **Category Dropdown List**: The Platform supports multiple categories based on the purpose of the integration, such as AI and Machine Learning, Marketing and Social Media, E-commerce, and more. Select the relevant category or categories in the list and click **Apply** to view the corresponding integrations.
 
 ![change category](./images/select-category-of-integration.png "change category")
 
-
-
-
 * **Authorization Dropdown List**: The available types for authentication methods are API, OAuth2, Bearer, and Basic Auth. Refer to the introduction of this article for more details. Select the required option(s) and click **Apply** to view the relevant integrations.
 
 ![select auth](./images/select-category-integration.png "select auth")
 
-
-
 * **List View**: Click this icon to view the available integration options as a list with the following information:
+
     * **Connection Name**: The service provider’s name.
     * **Description**: A brief description of the purpose or type of integration.
     * **Type**: The authorization method.<img src="../images/list-view.png" alt="list view" title="list view" style="border: 1px solid gray; zoom:75%;"/>
@@ -69,14 +61,12 @@ The features supported on the **Integrations** page include:
 
 ![tile view](./images/tile-view.png "tile view")
 
-
-
 ## Supported Integrations
 
 The following third-party integrations are available on the Platform:
 
-| <strong>INTEGRATION</strong> | <strong>DESCRIPTION</strong> | <strong>SUPPORTED ACTIONS</strong> | <strong>SUPPORTED AUTHORIZATION TYPE(S)</strong> |
-|:------ |:------ |:------ |:------ |
+| INTEGRATION | DESCRIPTION | SUPPORTED ACTIONS | SUPPORTED AUTHORIZATION TYPE(S) |
+| :------ | :------ | :------ | :------ |
 | Acculynx | Using the AccuLynx API, data can be seamlessly exchanged between AccuLynx and other applications for greater efficiency and productivity. | 8 | API |
 | Active_campaign | ActiveCampaign provides APIs for marketing automation, customer relationship management (CRM), and email marketing. | 7 | API |
 | Affinity | CRM focused on relationship intelligence, with other tools and systems. This allows for data synchronization, workflow automation, and the sharing of relationship insights across different platforms. | 20 | API |
@@ -161,9 +151,9 @@ The following third-party integrations are available on the Platform:
 | Mailchimp | Mailchimp is an email marketing and automation platform providing campaign templates, audience segmentation, and performance analytics to drive engagement and conversions. | 271 | OAUTH2 |
 | Mem0 | Mem0 assists with AI-driven note-taking, knowledge recall, and productivity tools, allowing users to organize, search, and generate content from stored information. | 43 | API |
 | Metaads | Meta Ads Marketing API Integration This tool provides access to Meta's Marketing API for managing ad campaigns, ad sets, ads, and custom audiences, as well as retrieving insights and analytics. | 16 | <ul> <li> OAUTH2</li> <li>API</li> </ul> |
-| Microsoft_clarity | Microsoft Clarity is a free, easy-to-use tool that captures how real people use your site. <p> | 1 | BEARER |
+| Microsoft_clarity | Microsoft Clarity is a free, easy-to-use tool that captures how real people use your site. | 1 | BEARER |
 | Microsoft_teams | Connect to Microsoft Teams to manage channels. | 13 | OAUTH2 |
-| Mixpanel | Mixpanel is an analytics platform that helps companies measure user engagement and retention. <p> | 19 | BASIC |
+| Mixpanel | Mixpanel is an analytics platform that helps companies measure user engagement and retention. | 19 | BASIC |
 | Monday | Monday is a cloud-based work operating system where teams create workflow apps in minutes to run their processes, projects, and everyday work. | 21 | OAUTH2 |
 | Neon | Postgres, on a serverless platform designed to help you build reliable and scalable applications faster. | 69 | API |
 | Notion | Notion centralizes notes, docs, wikis, and tasks in a unified workspace, letting teams build custom workflows for collaboration and knowledge management. | 23 | <ul> <li> OAUTH2</li> <li>API</li> </ul> |
@@ -220,7 +210,6 @@ The following third-party integrations are available on the Platform:
 | Zoom | Zoom is a video conferencing and online meeting platform featuring breakout rooms, screen sharing, and integrations with various enterprise tools. | 172 | OAUTH2 |
 | Zoominfo | ZoomInfo is a multi-platform operating system that revenue teams use to deliver business growth. | 14 | BASIC WITH JWT |
 | Zoho | Zoho actions to interact with their CRM. | 6 | OAUTH2 |
-
 
 ## Add a Connection to Set Up Integration
 
@@ -309,8 +298,7 @@ To add a connection and configure an integration, follow the steps below:
 
 
 
-<ol start="5"><li>Click <b>Save</b> after successfully testing the connection.</li>
-<Note>The <b>Save</b> button will not appear until all required inputs have been provided.</Note></ol>
+5. Click <b>Save</b> after successfully testing the connection.
 
 A success message appears after setup.
 
@@ -325,6 +313,7 @@ You will be redirected to the following page, where all the connections for the 
 * During or after setting up a connection, errors may occur due to invalid credentials when [adding a connection](../../settings/integrations/about-integrations.md#add-a-connection-to-set-up-integration). 
 
 * **View the error**
+
     * Navigate to the **Connected** section.
     * Select the connection.
     * Click the **Play** icon to test the connection.
@@ -442,5 +431,3 @@ Enabling a connection makes it available for **user authentication** with the se
 Use the toggle switch to enable (default setting) or disable the connection as needed.
 
 ![enable integration](./images/enable-integration.png "enable integration")
-
-
