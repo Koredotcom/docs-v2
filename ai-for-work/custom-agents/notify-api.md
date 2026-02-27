@@ -52,118 +52,18 @@ curl --location --request POST 'https://work.example.ai/api/1.1/public/agents/ag
 
 ### Request Body Parameters
 
-<table>
-  <tr>
-   <td><strong>Parameter</strong>
-   </td>
-   <td><strong>Type</strong>
-   </td>
-   <td><strong>Required/Optional</strong>
-   </td>
-   <td><strong>Description</strong>
-   </td>
-  </tr>
-  <tr>
-   <td>to
-   </td>
-   <td>string
-   </td>
-   <td>Required
-   </td>
-   <td>Email address of the application user (single recipient)
-   </td>
-  </tr>
-  <tr>
-   <td>message
-   </td>
-   <td>object
-   </td>
-   <td>Required
-   </td>
-   <td>Contains notification title and body text
-   </td>
-  </tr>
-  <tr>
-   <td>category
-   </td>
-   <td>string
-   </td>
-   <td>Required
-   </td>
-   <td>Category of the notification (e.g., "agent")
-   </td>
-  </tr>
-  <tr>
-   <td>action
-   </td>
-   <td>array
-   </td>
-   <td>Required
-   </td>
-   <td>Array of interactive response buttons
-   </td>
-  </tr>
-  <tr>
-   <td>title
-   </td>
-   <td>string
-   </td>
-   <td>Required
-   </td>
-   <td>Notification Title
-   </td>
-  </tr>
-  <tr>
-   <td>body
-   </td>
-   <td>string
-   </td>
-   <td>Required
-   </td>
-   <td>Notification Message
-   </td>
-  </tr>
-  <tr>
-   <td>title
-   </td>
-   <td>string
-   </td>
-   <td>Required
-   </td>
-   <td>Button text
-   </td>
-  </tr>
-  <tr>
-   <td>type
-   </td>
-   <td>string
-   </td>
-   <td>Required
-   </td>
-   <td>Action type (e.g., "postback")
-   </td>
-  </tr>
-  <tr>
-   <td>utterance
-   </td>
-   <td>string
-   </td>
-   <td>Required
-   </td>
-   <td>Text to be sent when button is clicked
-   </td>
-  </tr>
-  <tr>
-   <td>payload
-   </td>
-   <td>object
-   </td>
-   <td>Required
-   </td>
-   <td>Custom data passed with the action
-   </td>
-  </tr>
-</table>
+| <strong>Parameter</strong> | <strong>Type</strong> | <strong>Required/Optional</strong> | <strong>Description</strong> |
+| --- | --- | --- | --- |
+| to | string | Required | Email address of the application user (single recipient) |
+| message | object | Required | Contains notification title and body text |
+| category | string | Required | Category of the notification (e.g., "agent") |
+| action | array | Required | Array of interactive response buttons |
+| title | string | Required | Notification Title |
+| body | string | Required | Notification Message |
+| title | string | Required | Button text |
+| type | string | Required | Action type (e.g., "postback") |
+| utterance | string | Required | Text to be sent when button is clicked |
+| payload | object | Required | Custom data passed with the action |
 
 ## Sample Response
 

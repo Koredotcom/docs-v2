@@ -6,38 +6,12 @@ On the **User groups** page in the **User management** module, you can create an
 
 The following list describes the columns displayed in the groups listing.
 
-<table>
-  <tr>
-   <td><strong>COLUMN</strong>
-   </td>
-   <td><strong>DESCRIPTION</strong>
-   </td>
-  </tr>
-  <tr>
-   <td>GROUP NAME
-   </td>
-   <td>Displays the group name. Click a group name to edit the selected group – name, description, and members.
-   </td>
-  </tr>
-  <tr>
-   <td>DESCRIPTION
-   </td>
-   <td>Displays the description of the group. This is an optional field.
-   </td>
-  </tr>
-  <tr>
-   <td>CREATED BY
-   </td>
-   <td>Name of the user who created this group .
-   </td>
-  </tr>
-  <tr>
-   <td>CREATED ON
-   </td>
-   <td>Date and time when the group was created.
-   </td>
-  </tr>
-</table>
+| <strong>COLUMN</strong> | <strong>DESCRIPTION</strong> |
+| --- | --- |
+| GROUP NAME | Displays the group name. Click a group name to edit the selected group – name, description, and members. |
+| DESCRIPTION | Displays the description of the group. This is an optional field. |
+| CREATED BY | Name of the user who created this group . |
+| CREATED ON | Date and time when the group was created. |
 
 ## Using the Search Field
 

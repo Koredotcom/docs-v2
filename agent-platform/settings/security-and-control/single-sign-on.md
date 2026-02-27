@@ -140,7 +140,7 @@ To configure SSO using SAML and Okta, follow the steps below:
 10. Click <b>Next</b>.
 11. Click <b>Finish</b> under <b>Feedback</b> on Okta’s <b>Create SAML Integration</b> page.
 12. Once the app is created, go to the <b>Sign On</b> tab and click <b>View Setup Instructions</b>.
-13. On the <b>How to Configure SAML 2.0 for <app-name> Application</b> page, do the following from Okta into the Platform:
+13. On the <b>How to Configure SAML 2.0 for `<app-name>` Application</b> page, do the following from Okta into the Platform:
 14. Copy the <b>Identity Provider Single Sign-On URL</b> value and paste it into the <b>Okta Single Sign-On URL</b>.
 15. Copy the <b>Identity Provider Issuer</b> value into the <b>Identity provider issuer</b>.
 16. Go to <b>Sign On</b> > <b>SAML Signing Certificates</b> on your Okta app.
