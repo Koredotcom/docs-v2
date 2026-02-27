@@ -98,18 +98,13 @@ This step is necessary to complete the app creation process. To create an API Ke
 
 A success message is displayed after the key is copied. Additionally, the API key appears for the app on the summary page.
 
-<Note>For security reasons, the API key is only shown once and is not stored or displayed again. Copy and save it in a secure location for future reference.</p>
-<p><b>What Happens If You Lose It?</b></p>
-<p>You’ll need to revoke the old key and <b>generate a new one</b>. This could disrupt services if the key is in use.</Note> 
+<Note>For security reasons, the API key is only shown once and is not stored or displayed again. Copy and save it in a secure location for future reference. If you lose it, you’ll need to revoke the old key and <b>generate a new one</b>. This could disrupt services if the key is in use.</Note> 
 
-<ol start="4"><li>Click <b>Done</b>.</li>
-
-The app summary page displays the following information:
-
-<ul><li><b>Name</b>: The API app name.</li>
-<li><b>Scopes</b>: The selected API scopes.</li>
-<li><b>Created by</b>: The name of the user who created the app.</li>
-<li><b>Created on</b>: The date when the app was created.</li></ul></ol>
+4. Click <b>Done</b>.
+5. <b>Name</b>: The API app name.
+6. <b>Scopes</b>: The selected API scopes.
+7. <b>Created by</b>: The name of the user who created the app.
+8. <b>Created on</b>: The date when the app was created.
 
 ## Manage API App and Key
 
@@ -148,10 +143,7 @@ To edit an API app, follow the steps below:
 
             The deleted key is removed from the app in the **API Keys** section and is no longer associated with the app.  
 
-<ol start="3"><li>Click <b>Save</b>.</li>
-
-A success message is displayed once the app is edited. The changes are updated in the summary page.
-</ol>
+3. Click <b>Save</b>.
 
 ### Delete App
 

@@ -14,22 +14,16 @@ To invite a user, follow the steps below:
 3. Click **Invite**.
 4. Enter a valid email address of the user you want to invite. 
 
-<ol start="5"><li>Select a role from the dropdown to define the user’s access to modules and features.
+5. Select a role from the dropdown to define the user’s access to modules and features.
 
    ![role selection](./images/role-drop-down.png "role selection")
 
-</li>
- 
-<Note>System-defined and custom roles available in the inviter’s account can be assigned. <a href="../role-management/">Learn more</a> about roles and permissions.</Note></ol>
-
-<ol start="6"><li>To invite multiple users, click <b>+ Add another member</b>. Then, follow steps 4 and 5.
+6. To invite multiple users, click <b>+ Add another member</b>. Then, follow steps 4 and 5.
 
    To remove an invitation row, click the <b>Delete</b> icon.
 
 
    ![delete email row](./images/delete-email-row.png "delete email row")
-
-</li></ol>
 
 **Key Information On Adding Email Addresses**
 
@@ -52,11 +46,9 @@ Please note the following when adding an email address:
 
 
 
-<ol start="7"><li>Click <b>Send invitation(s)</b>. As you add or remove invites, the displayed count of invited persons updates accordingly.
+7. Click <b>Send invitation(s)</b>. As you add or remove invites, the displayed count of invited persons updates accordingly.
 
 ![send invitation](./images/send-invitation-to-member.png "send invitation")
-
-</li></ol>
 
 You’ll see a success message when the invite is sent. If it fails, check the highlighted email addresses and try again.
 

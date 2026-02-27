@@ -42,10 +42,7 @@ Steps to add the Anthropic Claude-V1 model using easy integration:
 
 7. Enter the respective API key you have received from the provider in the **API key** field and click **Confirm** to start the integration.
 
-
       ![API Key for Model](./images/api-key-for-model.png "API Key for Model")
-
-</ol>
 
 The model is integrated and is listed in the External models list.
 

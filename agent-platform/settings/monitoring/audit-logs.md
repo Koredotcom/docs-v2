@@ -253,7 +253,7 @@ To view the logs for all the events except role creation, you must set the filte
 
 
 
-<ol start="6"><li>Click <b>Apply</b>.</li></ol>
+6. Click <b>Apply</b>.
 
 All the log entries relevant to the applied filter(s) are displayed, as shown below.
 

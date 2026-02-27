@@ -80,7 +80,7 @@ In this document, you will learn how to add the node to your flows, configure it
       <li>Both binary, base64-encoded, and image URLs for OpenAI models.</li></ul>
 
 * <b>System Prompt</b>: System prompts guide the model’s behavior and response style. Enter a system prompt to define its role for your use case. For example: "<i>You are a vehicle insurance assistant that analyzes uploaded vehicle images to assess damage and estimate repair costs in USD</i>."
-* <b>Prompt</b>: User prompts define specific questions or requests for the model. Provide clear instructions for the model to follow, using context variables for dynamic inputs in the syntax: `{{context.variable_name}}`. <b>Example:</b> `Check the image provided for the damaged parts in the car and select what parts are affected from the list below - {{context.parts_list}}`</li>
+* <b>Prompt</b>: User prompts define specific questions or requests for the model. Provide clear instructions for the model to follow, using context variables for dynamic inputs in the syntax: `{{context.variable_name}}`. <b>Example:</b> `Check the image provided for the damaged parts in the car and select what parts are affected from the list below - {{context.parts_list}}`
 
          ![configurations tab](./images/configuration-set.png "configurations tab")
 
