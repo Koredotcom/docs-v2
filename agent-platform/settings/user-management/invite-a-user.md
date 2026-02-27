@@ -33,10 +33,7 @@ Please note the following when adding an email address:
 * The system does't accept a space in front, between, or after the mail ID.
 * Enter a valid email address, including a domain (for example, `[john@doe.com](mailto:john@doe.com)`), which must be provided. 
 
-
     ![valid email address error](./images/valid-email-address.png "valid email address error")
-
-</ol>
 
 * Double-check the recipient’s email address before sending the invite.
 * Duplicate invitations are't allowed. The system displays: “*This email has already been added*."
@@ -46,7 +43,7 @@ Please note the following when adding an email address:
 
 
 
-7. Click <b>Send invitation(s)</b>. As you add or remove invites, the displayed count of invited persons updates accordingly.
+1. Click <b>Send invitation(s)</b>. As you add or remove invites, the displayed count of invited persons updates accordingly.
 
 ![send invitation](./images/send-invitation-to-member.png "send invitation")
 

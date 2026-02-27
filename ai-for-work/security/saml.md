@@ -23,56 +23,13 @@ Choose from the supported identity providers or use a custom SAML configuration.
 
 Okta provides enterprise-grade identity management with robust security features and seamless user experience. This configuration enables both Service Provider and Identity Provider initiated authentication flows.
 
-<table>
-  <tr>
-   <td><strong>Field</strong>
-   </td>
-   <td><strong>Description</strong>
-   </td>
-   <td><strong>Required</strong>
-   </td>
-  </tr>
-  <tr>
-   <td><strong>Okta Single Sign-On URL</strong>
-   </td>
-   <td>The SSO URL for Okta to enable Service Provider-initiated SAML flow.
-   </td>
-   <td>Yes
-   </td>
-  </tr>
-  <tr>
-   <td><strong>Identity Provider Issuer</strong>
-   </td>
-   <td>The entity that provides user identities, including the ability to authenticate users.
-   </td>
-   <td>Yes
-   </td>
-  </tr>
-  <tr>
-   <td><strong>Certificate</strong>
-   </td>
-   <td>The public certificate stored by the service provider from the identity provider is used to validate user signatures. You can add multiple certificates (max 2). The platform uses the latest certificate for authorization; if invalid, it falls back to the older certificate.
-   </td>
-   <td>Yes
-   </td>
-  </tr>
-  <tr>
-   <td><strong>ACS URL for SP-Initiated SAML Flow</strong>
-   </td>
-   <td>The redirect URL for Service Provider-initiated SAML flow (automatically generated).
-   </td>
-   <td>Read only
-   </td>
-  </tr>
-  <tr>
-   <td><strong>ACS URL for IDP Initiated SAML Flow</strong>
-   </td>
-   <td>The account-specific URL for Identity Provider-initiated SAML flow (automatically generated).
-   </td>
-   <td>Read only
-   </td>
-  </tr>
-</table>
+| <strong>Field</strong> | <strong>Description</strong> | <strong>Required</strong> |
+| --- | --- | --- |
+| <strong>Okta Single Sign-On URL</strong> | The SSO URL for Okta to enable Service Provider-initiated SAML flow. | Yes |
+| <strong>Identity Provider Issuer</strong> | The entity that provides user identities, including the ability to authenticate users. | Yes |
+| <strong>Certificate</strong> | The public certificate stored by the service provider from the identity provider is used to validate user signatures. You can add multiple certificates (max 2). The platform uses the latest certificate for authorization; if invalid, it falls back to the older certificate. | Yes |
+| <strong>ACS URL for SP-Initiated SAML Flow</strong> | The redirect URL for Service Provider-initiated SAML flow (automatically generated). | Read only |
+| <strong>ACS URL for IDP Initiated SAML Flow</strong> | The account-specific URL for Identity Provider-initiated SAML flow (automatically generated). | Read only |
 
 **Setting up Okta for SSO**
 
@@ -112,56 +69,13 @@ To set up the application in your Okta environment, you need to create and confi
 
 OneLogin offers a comprehensive identity platform with advanced user provisioning and access management capabilities. Configure these essential fields to establish secure communication between OneLogin and AI for Work.
 
-<table>
-  <tr>
-   <td><strong>Field</strong>
-   </td>
-   <td><strong>Description</strong>
-   </td>
-   <td><strong>Required</strong>
-   </td>
-  </tr>
-  <tr>
-   <td><strong>SAML 2.0 Endpoint</strong>
-   </td>
-   <td>The HTTP SSO endpoint for OneLogin to enable Service Provider-initiated SAML flow. (e.g., <code>https://app.onelogin.com/trust/saml2/http-post/sso/358111</code>)
-   </td>
-   <td>Yes
-   </td>
-  </tr>
-  <tr>
-   <td><strong>Issuer URL</strong>
-   </td>
-   <td>The URL for the OneLogin issuer. (e.g., <code>https://app.onelogin.com/saml/metadata/358111</code>)
-   </td>
-   <td>Yes
-   </td>
-  </tr>
-  <tr>
-   <td><strong>X.509 Certificate</strong>
-   </td>
-   <td>The public certificate from OneLogin is used to validate user signatures. You can add multiple certificates (max 2).
-   </td>
-   <td>Yes
-   </td>
-  </tr>
-  <tr>
-   <td><strong>ACS URL for SP-Initiated SAML Flow</strong>
-   </td>
-   <td>The redirect URL for Service Provider-initiated SAML flow (automatically generated).
-   </td>
-   <td>Read only
-   </td>
-  </tr>
-  <tr>
-   <td><strong>ACS URL for IDP Initiated SAML Flow</strong>
-   </td>
-   <td>The account-specific URL for Identity Provider-initiated SAML flow (automatically generated).
-   </td>
-   <td>Read only
-   </td>
-  </tr>
-</table>
+| <strong>Field</strong> | <strong>Description</strong> | <strong>Required</strong> |
+| --- | --- | --- |
+| <strong>SAML 2.0 Endpoint</strong> | The HTTP SSO endpoint for OneLogin to enable Service Provider-initiated SAML flow. (e.g., <code>https://app.onelogin.com/trust/saml2/http-post/sso/358111</code>) | Yes |
+| <strong>Issuer URL</strong> | The URL for the OneLogin issuer. (e.g., <code>https://app.onelogin.com/saml/metadata/358111</code>) | Yes |
+| <strong>X.509 Certificate</strong> | The public certificate from OneLogin is used to validate user signatures. You can add multiple certificates (max 2). | Yes |
+| <strong>ACS URL for SP-Initiated SAML Flow</strong> | The redirect URL for Service Provider-initiated SAML flow (automatically generated). | Read only |
+| <strong>ACS URL for IDP Initiated SAML Flow</strong> | The account-specific URL for Identity Provider-initiated SAML flow (automatically generated). | Read only |
 
 **Setting up OneLogin for SSO**
 
@@ -183,56 +97,13 @@ To set up the application in your OneLogin environment, you need to create and c
 
 Bitium specializes in cloud-based identity and access management with a focus on simplicity and security. These configuration parameters establish the trust relationship between Bitium and AI for Work for seamless authentication.
 
-<table>
-  <tr>
-   <td><strong>Field</strong>
-   </td>
-   <td><strong>Description</strong>
-   </td>
-   <td><strong>Required</strong>
-   </td>
-  </tr>
-  <tr>
-   <td><strong>Single Sign-On URL</strong>
-   </td>
-   <td>The HTTP SSO endpoint for Bitium to enable Service Provider-initiated SAML flow. (e.g., <code>https://www.bitium.com/7655</code>)
-   </td>
-   <td>Yes
-   </td>
-  </tr>
-  <tr>
-   <td><strong>Issuer URL</strong>
-   </td>
-   <td>The URL for the Bitium issuer. (e.g., <code>https://bitium.com/7655/saml/82456/metadata.xml</code>)
-   </td>
-   <td>Yes
-   </td>
-  </tr>
-  <tr>
-   <td><strong>Certificate</strong>
-   </td>
-   <td>The public certificate from Bitium used tis o validate user signatures. You can add multiple certificates (max 2).
-   </td>
-   <td>Yes
-   </td>
-  </tr>
-  <tr>
-   <td><strong>ACS URL for SP-Initiated SAML Flow</strong>
-   </td>
-   <td>The redirect URL for Service Provider-initiated SAML flow (automatically generated).
-   </td>
-   <td>Read only
-   </td>
-  </tr>
-  <tr>
-   <td><strong>ACS URL for IDP Initiated SAML Flow</strong>
-   </td>
-   <td>The account-specific URL for Identity Provider-initiated SAML flow (automatically generated).
-   </td>
-   <td>Read only
-   </td>
-  </tr>
-</table>
+| <strong>Field</strong> | <strong>Description</strong> | <strong>Required</strong> |
+| --- | --- | --- |
+| <strong>Single Sign-On URL</strong> | The HTTP SSO endpoint for Bitium to enable Service Provider-initiated SAML flow. (e.g., <code>https://www.bitium.com/7655</code>) | Yes |
+| <strong>Issuer URL</strong> | The URL for the Bitium issuer. (e.g., <code>https://bitium.com/7655/saml/82456/metadata.xml</code>) | Yes |
+| <strong>Certificate</strong> | The public certificate from Bitium used tis o validate user signatures. You can add multiple certificates (max 2). | Yes |
+| <strong>ACS URL for SP-Initiated SAML Flow</strong> | The redirect URL for Service Provider-initiated SAML flow (automatically generated). | Read only |
+| <strong>ACS URL for IDP Initiated SAML Flow</strong> | The account-specific URL for Identity Provider-initiated SAML flow (automatically generated). | Read only |
 
 **Setting up Bitium for SSO**
 
@@ -252,54 +123,11 @@ To set up the application in your Bitium environment, you need to create and con
 Use this option for any SAML 2.0 compliant identity provider not specifically listed above. This flexible configuration supports custom enterprise identity solutions and third-party SAML providers.
 
 
-<table>
-  <tr>
-   <td><strong>Field</strong>
-   </td>
-   <td><strong>Description</strong>
-   </td>
-   <td><strong>Required</strong>
-   </td>
-  </tr>
-  <tr>
-   <td><strong>Single Sign-On URL</strong>
-   </td>
-   <td>The HTTP SSO endpoint enables Service Provider-initiated SAML flow.
-   </td>
-   <td>Yes
-   </td>
-  </tr>
-  <tr>
-   <td><strong>Issuer URL</strong>
-   </td>
-   <td>The URL for the identity provider issuer.
-   </td>
-   <td>Yes
-   </td>
-  </tr>
-  <tr>
-   <td><strong>Certificate</strong>
-   </td>
-   <td>The public certificate from your identity provider is used to validate user signatures. You can add multiple certificates (max 2).
-   </td>
-   <td>Yes
-   </td>
-  </tr>
-  <tr>
-   <td><strong>ACS URL for SP-Initiated SAML Flow</strong>
-   </td>
-   <td>The redirect URL for Service Provider-initiated SAML flow (automatically generated).
-   </td>
-   <td>Read only
-   </td>
-  </tr>
-  <tr>
-   <td><strong>ACS URL for IDP Initiated SAML Flow</strong>
-   </td>
-   <td>The account-specific URL for Identity Provider-initiated SAML flow (automatically generated).
-   </td>
-   <td>Read only
-   </td>
-  </tr>
-</table>
+| <strong>Field</strong> | <strong>Description</strong> | <strong>Required</strong> |
+| --- | --- | --- |
+| <strong>Single Sign-On URL</strong> | The HTTP SSO endpoint enables Service Provider-initiated SAML flow. | Yes |
+| <strong>Issuer URL</strong> | The URL for the identity provider issuer. | Yes |
+| <strong>Certificate</strong> | The public certificate from your identity provider is used to validate user signatures. You can add multiple certificates (max 2). | Yes |
+| <strong>ACS URL for SP-Initiated SAML Flow</strong> | The redirect URL for Service Provider-initiated SAML flow (automatically generated). | Read only |
+| <strong>ACS URL for IDP Initiated SAML Flow</strong> | The account-specific URL for Identity Provider-initiated SAML flow (automatically generated). | Read only |
 

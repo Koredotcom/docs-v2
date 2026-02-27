@@ -22,50 +22,13 @@ Platform supports a range of models from leading providers, each offering differ
 
 ### Pre-Built LLM Providers
 
-<table>
-  <tr>
-   <td><strong>Provider</strong>
-   </td>
-   <td><strong>Available Models</strong>
-   </td>
-   <td><strong>Access Method</strong>
-   </td>
-   <td><strong>Recommended For</strong>
-   </td>
-  </tr>
-  <tr>
-   <td><strong>OpenAI</strong>
-   </td>
-   <td>GPT-5-mini, GPT-5-nano, GPT-5, GPT-4.1, GPT-4.1- mini, GPT-4o, GPT-3.5-turbo, o3, o3-mini, o4-mini
-   </td>
-   <td>Direct API integration through OpenAI API key
-   </td>
-   <td>General-purpose tasks, conversational AI, complex reasoning, and content generation
-   </td>
-  </tr>
-  <tr>
-   <td><strong>Azure OpenAI</strong>
-   </td>
-   <td>GPT-5-mini, GPT-5-nano, GPT-5, GPT-4.1, GPT-4.1- mini, GPT-4o, GPT-3.5-turbo, o3, o3-mini, o4-mini
-   </td>
-   <td>Azure Portal integration through Azure OpenAI Service
-   </td>
-   <td>Enterprise deployments requiring Azure infrastructure, enhanced security, and compliance
-   </td>
-  </tr>
-  <tr>
-   <td><strong>Google Gemini</strong>
-   </td>
-   <td>Gemini 2.5 Pro (Recommended), Gemini 2.5 Flash (Recommended), 
+| <strong>Provider</strong> | <strong>Available Models</strong> | <strong>Access Method</strong> | <strong>Recommended For</strong> |
+| --- | --- | --- | --- |
+| <strong>OpenAI</strong> | GPT-5-mini, GPT-5-nano, GPT-5, GPT-4.1, GPT-4.1- mini, GPT-4o, GPT-3.5-turbo, o3, o3-mini, o4-mini | Direct API integration through OpenAI API key | General-purpose tasks, conversational AI, complex reasoning, and content generation |
+| <strong>Azure OpenAI</strong> | GPT-5-mini, GPT-5-nano, GPT-5, GPT-4.1, GPT-4.1- mini, GPT-4o, GPT-3.5-turbo, o3, o3-mini, o4-mini | Azure Portal integration through Azure OpenAI Service | Enterprise deployments requiring Azure infrastructure, enhanced security, and compliance |
+| <strong>Google Gemini</strong> | Gemini 2.5 Pro (Recommended), Gemini 2.5 Flash (Recommended), 
 <p>
-Gemini 2.5 Flash Lite, Gemini 2.0 Flash, Gemini 2.0 Flash Lite
-   </td>
-   <td>Google Vertex AI integration, Gemini Studio
-   </td>
-   <td>Multi-modal tasks, fast response times, and Google Cloud-based deployments
-   </td>
-  </tr>
-</table>
+Gemini 2.5 Flash Lite, Gemini 2.0 Flash, Gemini 2.0 Flash Lite | Google Vertex AI integration, Gemini Studio | Multi-modal tasks, fast response times, and Google Cloud-based deployments |
 
 ### Model Tier Recommendations
 
