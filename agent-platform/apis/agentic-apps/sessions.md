@@ -258,7 +258,7 @@ Fetches the details of a given session. You must provide either a *sessionId* or
 
 | Method | GET |
 |:------ |:------ |
-| Endpoint | `/apps/<AppID>/environments/<EnvName>/sessions?sessionId={sessionId}` <p> `/apps/<AppID>/environments/<EnvName>/sessions?sessionReference={sessionReference}` |
+| Endpoint | `/apps/<AppID>/environments/<EnvName>/sessions?sessionId={sessionId}`, `/apps/<AppID>/environments/<EnvName>/sessions?sessionReference={sessionReference}` |
 | Content-type | application/json |
 | Authorization Header | x-api-key:`<API-KEY>` |
 

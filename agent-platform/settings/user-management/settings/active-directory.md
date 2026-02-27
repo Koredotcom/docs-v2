@@ -67,24 +67,20 @@ To define both default (pre-defined) and custom fields during setup, follow the 
 
 1. (Optional) In addition to the default fields, you can add custom fields for your user profile information and map them to a corresponding field in the Active Directory. To add a custom field mapping, follow the steps below:
 
-    <ul><li>Click <b>Add Field</b> in the <b>Custom Fields</b> section.</li>
-    <li>Enter the custom field you want to map to your user profile in the <b>Custom field name</b> textbox.</li>
-    <li>Enter the corresponding Active Directory field in the <b>Field from Active Directory</b> textbox.</li>
-    <li>(Optional) Click the <b>tag</b> icon to set the custom field as the primary field. However, to delete this field, you must first remove the primary field tag.</li>
-    <li>Click <b>Next</b> to complete user profile fields' mapping and proceed.</li>
+    * Click <b>Add Field</b> in the <b>Custom Fields</b> section.
+    * Enter the custom field you want to map to your user profile in the <b>Custom field name</b> textbox.
+    * Enter the corresponding Active Directory field in the <b>Field from Active Directory</b> textbox.
+    * (Optional) Click the <b>tag</b> icon to set the custom field as the primary field. However, to delete this field, you must first remove the primary field tag.
+    * Click <b>Next</b> to complete user profile fields' mapping and proceed.
 
-    ![manage custom field](./images/custom-field-management.png "manage custom field")</ul>
+    ![manage custom field](./images/custom-field-management.png "manage custom field")
 
-    To remove a field, click the **Delete** icon as shown below.
+    To remove a field, click the **Delete** icon. Deleting a custom field is allowed only if you have added multiple fields.
 
-    ![delete custom field](./images/delete-custom-field.png "delete custom field")
+2. Next, define the rules and sync criteria to import specific users from your Active Directory server. To do this, click the <b>Manage Inclusion & Exclusion Rules</b> tab.
+3. Under <b>Inclusion Rules</b>, you can sync specific users from your Active Directory Server by defining criteria or filters using profile parameters. Enter the rule expression using the user profile parameters in the <b>Rule Definition</b> textbox according to the LDAP filter syntax mentioned <a href="https://social.technet.microsoft.com/wiki/contents/articles/5392.active-directory-ldap-syntax-filters.aspx">here</a>.
 
-    <Note>Deleting a custom field is allowed only if you have added multiple fields.</Note>
-
-1. Next, define the rules and sync criteria to import specific users from your Active Directory server. To do this, click the <b>Manage Inclusion & Exclusion Rules</b> tab.
-1. Under <b>Inclusion Rules</b>, you can sync specific users from your Active Directory Server by defining criteria or filters using profile parameters. Enter the rule expression using the user profile parameters in the <b>Rule Definition</b> textbox according to the LDAP filter syntax mentioned <a href="https://social.technet.microsoft.com/wiki/contents/articles/5392.active-directory-ldap-syntax-filters.aspx">here</a>.
-
-1. (Optional) An <b>Exclusion Rule</b> includes the <b>AD/LDAP field</b>, <b>Match Type</b>, and <b>Value</b>. You must set <b>Match Type</b> for one of the following options:
+4. (Optional) An <b>Exclusion Rule</b> includes the <b>AD/LDAP field</b>, <b>Match Type</b>, and <b>Value</b>. You must set <b>Match Type</b> for one of the following options:
 
     * **Exact Match**: The user profile Active Directory field must exactly match the **Value** field you specify. For example, if **Employee Vertical** must precisely match “Sales,” use this option.
     * **Partial Match**: The user profile Active Directory field can partially match or include the **Value** field you specify. For instance, if **Employee Vertical** should match part of “Product Sales” (such as “Product” or “Sales”), choose this option.

@@ -116,8 +116,10 @@ When importing between files in your project, make sure to use relative imports.
 
 Access environment variables in your scripts as follows:
 
-**Python**: <p>`import os`</p>
-             <p>`os.getenv('<key_name>')`</p>
+**Python**:
+
+`import os`
+`os.getenv('<key_name>')`
 
 **JavaScript**: 
 
@@ -159,7 +161,7 @@ On this page, you define scaling parameters (minimum and maximum replicas) and h
      * **Average Compute Utilization**: A metric based on which scaling of the service happens. Indicates average compute utilization in percentage per pod. The **default value is 75**, and the **allowed range is between 1 and 100**. This metric is disabled when **Min replica** and **Max replica** are the same.
      * Select the required **hardware** for the deployment. The unit is **No. of vCPUs with memory**. The profiles are virtualized for standardization. The available profiles are listed below:
 
-         | <strong>Hardware configuration</strong> | <strong>Actual CPU Core and Memory Available</strong> | <strong>Credits per Hour</strong> |
+         | Hardware configuration | Actual CPU Core and Memory Available | Credits per Hour |
 |:------ |:------ |:------ |
 | 2 vCPUs with 8GB memory | 1.5 vCPUs with 6.5GB memory | 0.144 |
 | 4 vCPUs with 16GB memory | 3.5 vCPUs with 13.5GB memory | 0.288 |
@@ -230,14 +232,14 @@ The summary table displays the following fields:
 
 The following table illustrates the various statuses and the actions that can be performed from the Overview, Deployment History, Endpoint, and API Keys pages.
 
-| <strong>Status</strong> <p> | <strong>Description</strong> | <strong>Actions you can perform </strong> |
+| Status | Description | Actions you can perform  |
 |:------ |:------ |:------ |
-| <strong>Overview</strong> | <strong>Deployment history</strong> | <strong>Endpoint</strong> | <strong>API</strong> <p> <strong>keys</strong> | <strong>Re-deployment</strong> |
-| <strong>Draft</strong> | The draft copy of the custom script that you can modify and deploy later. | <ul> <li>Export</li> <li>Delete</li> <li>Deploy</li> </ul> | Deploy Custom Script | Deploy Custom Script | Create a New API Key | No |
-| <strong>Deploying</strong> | The script is being deployed. A success message is displayed once the deployment completes successfully. If the deployment fails, a failure message is shown. | <ul> <li>Export</li> <li>Delete</li> </ul> | Rename deployment version | Endpoint not activated | · Create API keys <p> | No |
-| <strong>Ready to Deploy</strong> | The script is set up and ready to deploy. | <ul> <li>Export</li> <li>Delete</li> <li>Deploy</li> </ul> | Rename deployment version | Endpoint not activated | · Create API keys <p> | Yes |
-| <strong>Deployed</strong> | The deployed custom script. | <ul> <li>Redeploy</li> <li>Undeploy</li> <li>Export</li> </ul> | <ul> <li>View configuration and deployment details.</li> <li>Rename deployment version</li> </ul> | <ul> <li>Redeploy script</li> <li>View dedicated endpoint code (CURL, JS, and Python).</li> <li>Copy script code.</li> </ul> | <ul> <li>Create API keys</li> <li>Manage API keys</li> </ul> | Yes |
-| <strong>Deployment failed</strong> | The script deployment failed | <ul> <li>Deploy</li> <li>Delete</li> <li>Export</li> </ul> | <ul> <li>View configuration and deployment details except duration.</li> <li>Rename deployment version.</li> </ul> | The endpoint is not activated since the script is not deployed. | Create API keys <p> | Yes |
+| Overview | Deployment history | Endpoint | API keys | Re-deployment |
+| Draft | The draft copy of the custom script that you can modify and deploy later. | <ul> <li>Export</li> <li>Delete</li> <li>Deploy</li> </ul> | Deploy Custom Script | Deploy Custom Script | Create a New API Key | No |
+| Deploying | The script is being deployed. A success message is displayed once the deployment completes successfully. If the deployment fails, a failure message is shown. | <ul> <li>Export</li> <li>Delete</li> </ul> | Rename deployment version | Endpoint not activated | · Create API keys  | No |
+| Ready to Deploy | The script is set up and ready to deploy. | <ul> <li>Export</li> <li>Delete</li> <li>Deploy</li> </ul> | Rename deployment version | Endpoint not activated | · Create API keys  | Yes |
+| Deployed | The deployed custom script. | <ul> <li>Redeploy</li> <li>Undeploy</li> <li>Export</li> </ul> | <ul> <li>View configuration and deployment details.</li> <li>Rename deployment version</li> </ul> | <ul> <li>Redeploy script</li> <li>View dedicated endpoint code (CURL, JS, and Python).</li> <li>Copy script code.</li> </ul> | <ul> <li>Create API keys</li> <li>Manage API keys</li> </ul> | Yes |
+| Deployment failed | The script deployment failed | <ul> <li>Deploy</li> <li>Delete</li> <li>Export</li> </ul> | <ul> <li>View configuration and deployment details except duration.</li> <li>Rename deployment version.</li> </ul> | The endpoint is not activated since the script is not deployed. | Create API keys  | Yes |
 
 **Key Considerations**
 

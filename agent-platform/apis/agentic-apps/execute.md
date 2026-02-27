@@ -943,7 +943,7 @@ Returns the status and response of a run. It is useful for asynchronous runs.
 
 | Fields | Description |
 |:------ |:------ |
-| sessionIdentity | This is an array of objects with a `type` and `value` used to identify or create sessions and manage user session mappings. The three supported identifier types are: The objects can be of three types: <ol> <li>userReference (highest priority)</li> <li>sessionReference</li> <li>sessionIdentity(lowest priority)</li> Refer to this for a detailed description. <p> This is useful for verifying the context and permissions on the run. </ol> |
+| sessionIdentity | This is an array of objects with a `type` and `value` used to identify or create sessions and manage user session mappings. The three supported identifier types are: The objects can be of three types: <ol> <li>userReference (highest priority)</li> <li>sessionReference</li> <li>sessionIdentity(lowest priority)</li> Refer to this for a detailed description. <br />This is useful for verifying the context and permissions on the run. </ol> |
 
 
 #### Sample Request
