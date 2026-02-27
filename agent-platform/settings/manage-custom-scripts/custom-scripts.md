@@ -72,9 +72,7 @@ In the **General Details** window, follow these steps:
 
 <Note><ul><li>Supported file formats include `.zip`, `.gz`, and `.tar`.</li>
 <li>The max file size is 1 GB. Larger files result in a validation error.</li>
-<li>Click <b>Validate</b> to check the file for errors.</li>
-
-</ul></Note>
+<li>Click <b>Validate</b> to check the file for errors.</li> </ul></Note>
 
 <Info><ul><li>The uploaded file must match the recommended project structure. Click <b>Download sample project</b> to access the <i>.zip</i> folder of the script definitions and follow its structure when uploading your file.</li>
 <li>The structure is different for different base languages. Ensure that the correct file structure is followed for the chosen language.</li>

@@ -33,8 +33,7 @@ The following table lists the options available on the top toolbar of the prompt
 
 | Icon | Feature | Description |
 |:------ |:------ |:------ |
-| ![](./images/prompt_library.png) | Prompt library | Access a collection of around 70 templates for prompt creation, providing users with ready-to-use options. <p> Click the icon to browse and select a template to customize or use as a base for your prompt. |
-</p>
+| ![](./images/prompt_library.png) | Prompt library | Access a collection of around 70 templates for prompt creation, providing users with ready-to-use options. Click the icon to browse and select a template to customize or use as a base for your prompt. |
 | ![](./images/prompt_api.png) | Prompt API | Enable seamless sharing of prompts using version-specific API keys. Fetch and manage prompts through API calls without repetitive copying. <p> Click to open a dialog with API endpoints and select your preferred format (cURL, Python, Node.js) to integrate with your applications. |
 | ![](./images/three_dots.png) | Save to prompt library | Saves the current prompt to the library for future use. Click the three dots icon and save your prompt as a template in the "My Templates" section of the prompt library. |
 | ![](./images/three_dots.png) | Draft history | Capture and restore the state of the prompt canvas at different times, including inputs and outputs. Click the three dots icon and save the prompt canvas in draft history. <p> |

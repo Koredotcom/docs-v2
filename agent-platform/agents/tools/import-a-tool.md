@@ -33,15 +33,11 @@ To initiate a tool creation journey through the import functionality, follow the
 3. Do one of the following based on your requirements:
 
 <ul><li>If you don't have any existing tools and want to create one by importing from another environment, click <b>Import Tool</b>.</li>
-<li>If you already have tools deployed, the following page is displayed. To import a tool, select the relevant tab on the <b>Tools</b> dashboard and click the <b>Import tool</b> icon.
+<li>If you already have tools deployed, the following page is displayed. To import a tool, select the relevant tab on the <b>Tools</b> dashboard and click the <b>Import tool</b> icon.</li></ul>
 
-![click import tool](./images/agent_platform/import_tool.png "click import tool")
-
-</li></ul>
-
-4. In the <b>Import tool</b> window, providing the following information is mandatory.
-5. <b>Tool Name</b>: Provide a unique tool name.
-6. <b>Flow definition file</b>: Upload the required <b>flow_definition.json</b> file from your local directory. The file includes the tool's canvas definitions (node definitions) and AI node configurations, including prompts, hyperparameters, and timeout information.
+1. In the <b>Import tool</b> window, providing the following information is mandatory.
+2. <b>Tool Name</b>: Provide a unique tool name.
+3. <b>Flow definition file</b>: Upload the required <b>flow_definition.json</b> file from your local directory. The file includes the tool's canvas definitions (node definitions) and AI node configurations, including prompts, hyperparameters, and timeout information.
 
 Providing the following information is optional:
 

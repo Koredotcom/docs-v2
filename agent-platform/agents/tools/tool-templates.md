@@ -109,10 +109,7 @@ To access a tool template, follow the steps below:
 
 7. Click **Install** to connect to the Marketplace and import the tool template, including its pre-configured flow.
 
-
     ![install tool](./images/click-tool-install.png "install tool")
-
-</ol>
 
     The system redirects you to the **Tool Flow** page. Click **Go to Flow** to view and manage the prebuilt tool flow canvas. [Learn more](../tools/tool-templates.md#view-and-manage-tool-flow).
 

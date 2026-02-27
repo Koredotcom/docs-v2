@@ -73,8 +73,6 @@ Click the **Connections** icon in the left navigation and select **Go to Node** 
 
 ![Configure Connection Settings](./../images/function-node-connections.png "Configure Connection Settings")
 
-</ol>
-
 * **On Success** > **Go to Node**: After the current node is successfully executed, go to a selected node in the flow to execute next. For example, you can go to an AI node to use the processed data from the Function node.
 * **On Failure** > **Go to Node**: If the execution of the current node fails, go to an appropriate node having a custom error message configured for this node.
 

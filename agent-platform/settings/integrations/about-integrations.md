@@ -153,8 +153,7 @@ The following third-party integrations are available on the Platform:
 | Metaads | Meta Ads Marketing API Integration This tool provides access to Meta's Marketing API for managing ad campaigns, ad sets, ads, and custom audiences, as well as retrieving insights and analytics. | 16 | <ul> <li> OAUTH2</li> <li>API</li> </ul> |
 | Microsoft_clarity | Microsoft Clarity is a free, easy-to-use tool that captures how real people use your site. | 1 | BEARER |
 | Microsoft_teams | Connect to Microsoft Teams to manage channels. | 13 | OAUTH2 |
-| Mixpanel | Mixpanel is an analytics platform that helps companies measure user engagement and retention. <p> | 19 | BASIC |
-</p>
+| Mixpanel | Mixpanel is an analytics platform that helps companies measure user engagement and retention. | 19 | BASIC |
 | Monday | Monday is a cloud-based work operating system where teams create workflow apps in minutes to run their processes, projects, and everyday work. | 21 | OAUTH2 |
 | Neon | Postgres, on a serverless platform designed to help you build reliable and scalable applications faster. | 69 | API |
 | Notion | Notion centralizes notes, docs, wikis, and tasks in a unified workspace, letting teams build custom workflows for collaboration and knowledge management. | 23 | <ul> <li> OAUTH2</li> <li>API</li> </ul> |
@@ -211,7 +210,6 @@ The following third-party integrations are available on the Platform:
 | Zoom | Zoom is a video conferencing and online meeting platform featuring breakout rooms, screen sharing, and integrations with various enterprise tools. | 172 | OAUTH2 |
 | Zoominfo | ZoomInfo is a multi-platform operating system that revenue teams use to deliver business growth. | 14 | BASIC WITH JWT |
 | Zoho | Zoho actions to interact with their CRM. | 6 | OAUTH2 |
-
 
 ## Add a Connection to Set Up Integration
 
