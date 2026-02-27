@@ -60,7 +60,7 @@ You can create variables anywhere in the prompt window or system prompt window. 
 
 **Steps to add variables:**
 
-1. In the **Prompt** field, add the variables in double curly braces. For example, {{**xyz**}}.
+1. In the **Prompt** field, add the variables in double curly braces. For example, `{{**xyz**}}`.
 When you add variables in the Prompt field, the **Variables** column appears, displaying the added variables.
 
 2. In the **Variables** window, assign the variables a value (name/text).

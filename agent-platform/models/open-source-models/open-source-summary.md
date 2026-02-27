@@ -37,7 +37,7 @@ Each model can have multiple deployments, which are tracked independently. The D
 |:------ |:------ |
 | <b>Deployment Name</b> | Name given by the user during deployment. |
 | <b>Deployment ID</b> | System-generated ID (not editable). |
-| <b>Status</b> | The status of deployment: Deploying, Optimizing, Failed, Ready to Deploy, or Deployed. </ul> |
+| <b>Status</b> | The status of deployment: Deploying, Optimizing, Failed, Ready to Deploy, or Deployed. |
 | <b>Tags</b> | Labels associated with the deployment. |
 | <b>Added By</b> | User who performed the deployment. |
 | <b>Added On</b> | Date and time of deployment. |

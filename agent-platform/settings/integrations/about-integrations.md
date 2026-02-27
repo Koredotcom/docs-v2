@@ -161,7 +161,7 @@ The following third-party integrations are available on the Platform:
 | Mailchimp | Mailchimp is an email marketing and automation platform providing campaign templates, audience segmentation, and performance analytics to drive engagement and conversions. | 271 | OAUTH2 |
 | Mem0 | Mem0 assists with AI-driven note-taking, knowledge recall, and productivity tools, allowing users to organize, search, and generate content from stored information. | 43 | API |
 | Metaads | Meta Ads Marketing API Integration This tool provides access to Meta's Marketing API for managing ad campaigns, ad sets, ads, and custom audiences, as well as retrieving insights and analytics. | 16 | <ul> <li> OAUTH2</li> <li>API</li> </ul> |
-| Microsoft_clarity | Microsoft Clarity is a free, easy-to-use tool that captures how real people use your site. <p> | 1 | BEARER |
+| Microsoft_clarity | Microsoft Clarity is a free, easy-to-use tool that captures how real people use your site. | 1 | BEARER |
 | Microsoft_teams | Connect to Microsoft Teams to manage channels. | 13 | OAUTH2 |
 | Mixpanel | Mixpanel is an analytics platform that helps companies measure user engagement and retention. <p> | 19 | BASIC |
 | Monday | Monday is a cloud-based work operating system where teams create workflow apps in minutes to run their processes, projects, and everyday work. | 21 | OAUTH2 |

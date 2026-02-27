@@ -74,8 +74,6 @@ In the **General Details** window, follow these steps:
 <li>The max file size is 1 GB. Larger files result in a validation error.</li>
 <li>Click <b>Validate</b> to check the file for errors.</li>
 
-![validate file](./images/validate-file.png "validate file")
-
 </ul></Note>
 
 <Info><ul><li>The uploaded file must match the recommended project structure. Click <b>Download sample project</b> to access the <i>.zip</i> folder of the script definitions and follow its structure when uploading your file.</li>

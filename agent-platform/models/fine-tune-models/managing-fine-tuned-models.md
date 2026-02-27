@@ -43,7 +43,7 @@ Click the Deployments tab to see all deployments for the selected model, along w
 |:------ |:------ |
 | <b>Deployment Name</b> | Name given by the user during deployment. |
 | <b>Deployment ID</b> | System-generated ID (not editable). |
-| <b>Status</b> | The status of deployment: Deploying, Optimizing, Failed, Ready to Deploy, or Deployed. </ul> |
+| <b>Status</b> | The status of deployment: Deploying, Optimizing, Failed, Ready to Deploy, or Deployed.  |
 | <b>Added On</b> | Date of deployment. |
 | <b>Actions</b> | <b>Copy cURL</b> – Copies the cURL command for invoking this deployment.<br /> <b>Manage API Keys</b> – Opens the API key management tab.<br /> <b>Re-trigger</b> – Restarts the deployment (Option available only if it has failed or stopped). |
 

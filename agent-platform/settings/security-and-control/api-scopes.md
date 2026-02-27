@@ -98,9 +98,7 @@ This step is necessary to complete the app creation process. To create an API Ke
 
 A success message is displayed after the key is copied. Additionally, the API key appears for the app on the summary page.
 
-<Note>For security reasons, the API key is only shown once and is not stored or displayed again. Copy and save it in a secure location for future reference.</p>
-<p><b>What Happens If You Lose It?</b></p>
-<p>You’ll need to revoke the old key and <b>generate a new one</b>. This could disrupt services if the key is in use.</Note> 
+<Note>For security reasons, the API key is only shown once and is not stored or displayed again. Copy and save it in a secure location for future reference. If you lose it, you’ll need to revoke the old key and <b>generate a new one</b>. This could disrupt services if the key is in use.</Note> 
 
 4. Click <b>Done</b>.
 5. <b>Name</b>: The API app name.

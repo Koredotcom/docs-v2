@@ -17,7 +17,7 @@ The following table lists the options available in the Model column:
 |:------ |:------ |:------ |
 | <img src="../images/drag_drop.png"/> | Rearrange | Move the model column anywhere on the canvas by clicking and dragging the icon. |
 | <img src="../images/remove_model.png"/> | Remove Model | Remove a model from comparison. |
-| <img src="../images/bookmark.png"/> | Bookmark a model | Set a model as your preferred model for consistent output. If no model is bookmarked, you must select one when committing a prompt version. <p> |
+| <img src="../images/bookmark.png"/> | Bookmark a model | Set a model as your preferred model for consistent output. If no model is bookmarked, you must select one when committing a prompt version. |
 | <img src="../images/model_settings.png"/> | Model Settings | Customize output generation by adjusting model parameters like temperature, top k, top p, and max tokens. The default values are top p: 1, top k: 5, temperature: 1, and max tokens: 256. |
 | <img src="../images/play.png"/> | Play | Regenerates the output for that single column. |
 | <img src="../images/avg_response_time.png"/> | Average Response Time | Displays the average time taken for the model to generate a response. |

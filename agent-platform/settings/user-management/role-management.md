@@ -177,7 +177,7 @@ The following table summarizes the module-wise permissions and access levels for
 |:------ |:------ |:------ |
 | <strong>Master Admin</strong> | <strong>Admin</strong> | <strong>Member</strong> | <strong>Viewer</strong> |
 | <strong>Access Level</strong> |
-| <strong>Tools</strong> <p> <strong> </strong> | Create a Tool | ✓ | ✓ | ✓ | ✗ |
+| <strong>Tools</strong> <strong> </strong> | Create a Tool | ✓ | ✓ | ✓ | ✗ |
 | Tool Import | ✓ | ✓ | ✓ | ✗ |
 | <strong>Models</strong> | Access to Model (“View” is the default access for a custom role) | Full | Custom | Custom | View |
 | Add an external model | ✓ | ✓ | ✓ | ✗ |
