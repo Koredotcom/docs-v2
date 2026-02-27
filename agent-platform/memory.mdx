@@ -1,4 +1,7 @@
-# Memory Stores
+---
+title: Memory Stores
+sidebarTitle: Memory
+---
 
 Persist data across interactions and sessions.
 
@@ -16,6 +19,8 @@ User Request → Agent → Memory Store → Context-Aware Response
 
 ## Memory Types
 
+Agentic Apps support two main types of memory: Session Meta Memory and Custom Memory Stores.
+
 ### Session Meta (Default)
 
 A built-in, read-only store for session-specific data.
@@ -25,20 +30,18 @@ A built-in, read-only store for session-specific data.
 - **Access**: Read-only in prompts; writable via API
 
 **Contents**:
-```json
-{
-  "metadata": {
-    "userId": "user_123",
-    "channel": "web",
-    "customField": "value"
-  },
-  "sessionInfo": {
-    "sessionId": "sess_abc",
-    "appId": "app_xyz",
-    "timestamp": "2024-01-15T14:30:00Z"
-  }
-}
-```
+
+- **`metadata`**: Contextual data passed via API (e.g., userId, channel, custom fields). Developers can update this field only via API.
+- **`sessionInfo`**: System-populated object with the following fields:
+  - `sessionId` — Unique identifier for the session
+  - `appId` — Identifier of the application
+  - `sessionReference` — Reference string for tracking the session
+  - `userReference` — Reference string associated with the user
+  - `userId` — Unique identifier for the user
+  - `runId` — Identifier for the specific execution run
+  - `timestamp` — Date and time when session info was recorded
+
+> **Note**: `sessionMeta` is read-only within code tools and cannot be updated or deleted programmatically. The `metadata` field can be updated via API only.
 
 ### Custom Memory Stores
 
@@ -52,16 +55,21 @@ User-defined stores for persistent data.
 
 ## Creating a Memory Store
 
+Define custom memory stores in your agentic app configuration. Each store has a unique technical name and a JSON schema that defines the structure of the data it holds.
+
+Navigation: Go to **Agentic app** > **Memory** > **Create new**.
+
 ### Configuration Fields
 
 | Field | Description |
 |-------|-------------|
 | **Name** | User-friendly display name |
-| **Technical Name** | Unique identifier for code/prompts (immutable) |
+| **Technical Name** | Unique identifier for code/prompts (immutable after creation) |
 | **Description** | Purpose documentation |
 | **Schema** | JSON Schema defining data structure |
 | **Access Type** | User, application, or session scope |
 | **Retention** | Session, 1 day, 1 week, or 1 month |
+| **Require Strict Adherence** | Enforce exact schema match; updates that don't conform to the schema will fail |
 
 ### Example Schema
 
@@ -96,7 +104,7 @@ User-defined stores for persistent data.
 
 Use the template syntax:
 
-```markdown
+```json
 Welcome back! Your preferred language is {{memory.userPrefs.preferences.language}}.
 
 Your recent orders:
@@ -118,7 +126,8 @@ const partial = await memory.get_content("userPrefs", {
   "lastVisit": 1
 });
 
-// Write to memory
+// Write to memory (creates a new record if none exists; updates existing record if found)
+// Fields not included in the update are retained as-is
 await memory.set_content("userPrefs", {
   preferences: { language: "en", notifications: true },
   lastVisit: new Date().toISOString()
@@ -143,7 +152,7 @@ partial = memory.get_content("userPrefs", {
     "lastVisit": 1
 })
 
-# Write to memory
+# Write to memory (creates if not exists; updates existing; unspecified fields are retained)
 memory.set_content("userPrefs", {
     "preferences": {"language": "en", "notifications": True},
     "lastVisit": datetime.now().isoformat()
@@ -153,9 +162,9 @@ memory.set_content("userPrefs", {
 memory.delete_content("userPrefs")
 ```
 
-### In Function Nodes
+### In Function Nodes of Workflow Tools
 
-Same syntax as code tools, within workflow tool flows.
+Same syntax as code tools. Memory can be read, updated, or deleted using the **Function Node** within Workflow Tools.
 
 ---
 
@@ -177,7 +186,7 @@ const sessionId = sessionMeta.sessionInfo.sessionId;
 
 ### In Prompts
 
-```markdown
+```json
 Hello {{memory.sessionMeta.metadata.userName}}!
 
 You're connecting via {{memory.sessionMeta.metadata.channel}}.
@@ -202,11 +211,11 @@ You're connecting via {{memory.sessionMeta.metadata.channel}}.
 
 ## Access Scopes
 
-| Scope | Description | Use Case |
-|-------|-------------|----------|
-| **Session** | Data for current session only | Conversation context |
-| **User** | Data persists across user sessions | Preferences, history |
-| **Application** | Shared across all users | Global settings, counters |
+| Scope | Description | Identifiers | Use Case |
+|-------|-------------|-------------|----------|
+| **Session** | Data for current session only | AppId + SessionId | Conversation context, multi-turn dialog state |
+| **User** | Data persists across user sessions | AppId + UserId | Preferences, history |
+| **Application** | Shared across all users | AppId | Global settings, counters |
 
 ### Scope Selection
 
@@ -334,10 +343,3 @@ Memory store configurations are included in app exports:
 Data content is **not** exported for security.
 
 ---
-
-## Related
-
-- [Agents Overview](/agents)
-- [Code Tools](/tools/code)
-- [Function Nodes](/tools/nodes#function-node)
-- [API Reference](/api)
