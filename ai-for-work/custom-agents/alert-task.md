@@ -34,58 +34,12 @@ When the bot encounters a situation requiring a pause (e.g., awaiting an alert),
 
 #### Required Parameters
 
-<table>
-  <tr>
-   <td><strong>Parameter</strong>
-   </td>
-   <td><strong>Type</strong>
-   </td>
-   <td><strong>Required/Optional</strong>
-   </td>
-   <td><strong>Description</strong>
-   </td>
-  </tr>
-  <tr>
-   <td>type
-   </td>
-   <td>string
-   </td>
-   <td>Required
-   </td>
-   <td>Action type (e.g., "hold_conversation")
-   </td>
-  </tr>
-  <tr>
-   <td>title
-   </td>
-   <td>string
-   </td>
-   <td>Required
-   </td>
-   <td>Title of the hold message.
-   </td>
-  </tr>
-  <tr>
-   <td>description
-   </td>
-   <td>string
-   </td>
-   <td>Required
-   </td>
-   <td>Description of the hold message.
-   </td>
-  </tr>
-  <tr>
-   <td>conversation_reference_id
-   </td>
-   <td>string
-   </td>
-   <td>Required
-   </td>
-   <td>The unique identifier for this specific conversation.
-   </td>
-  </tr>
-</table>
+| <strong>Parameter</strong> | <strong>Type</strong> | <strong>Required/Optional</strong> | <strong>Description</strong> |
+| --- | --- | --- | --- |
+| type | string | Required | Action type (e.g., "hold_conversation") |
+| title | string | Required | Title of the hold message. |
+| description | string | Required | Description of the hold message. |
+| conversation_reference_id | string | Required | The unique identifier for this specific conversation. |
 
 #### Example Hold Template Code
 
@@ -123,38 +77,10 @@ Removes the hold template and continues the conversation with the alert or messa
 
 #### Required Parameters
 
-<table>
-  <tr>
-   <td><strong>Parameter</strong>
-   </td>
-   <td><strong>Type</strong>
-   </td>
-   <td><strong>Required/Optional</strong>
-   </td>
-   <td><strong>Description</strong>
-   </td>
-  </tr>
-  <tr>
-   <td>conversation_reference_id
-   </td>
-   <td>string
-   </td>
-   <td>Required
-   </td>
-   <td>The unique identifier of the paused conversation.
-   </td>
-  </tr>
-  <tr>
-   <td>text
-   </td>
-   <td>string
-   </td>
-   <td>Required
-   </td>
-   <td>Response content to display upon resumption.
-   </td>
-  </tr>
-</table>
+| <strong>Parameter</strong> | <strong>Type</strong> | <strong>Required/Optional</strong> | <strong>Description</strong> |
+| --- | --- | --- | --- |
+| conversation_reference_id | string | Required | The unique identifier of the paused conversation. |
+| text | string | Required | Response content to display upon resumption. |
 
 #### Example Resume Response Code
 

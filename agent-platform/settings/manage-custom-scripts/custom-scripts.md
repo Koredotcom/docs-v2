@@ -70,20 +70,16 @@ In the **General Details** window, follow these steps:
 
 4. To upload the script, click <b>Choose File</b> under <b>Project File</b>, then select the file from your local system.
 
-<Note><ul><li>Supported file formats include `.zip`, `.gz`, and `.tar`.</li>
-<li>The max file size is 1 GB. Larger files result in a validation error.</li>
-<li>Click <b>Validate</b> to check the file for errors.</li> </ul></Note>
-
-<Info><ul><li>The uploaded file must match the recommended project structure. Click <b>Download sample project</b> to access the <i>.zip</i> folder of the script definitions and follow its structure when uploading your file.</li>
-<li>The structure is different for different base languages. Ensure that the correct file structure is followed for the chosen language.</li>
-<li>The file naming convention should be followed to avoid any errors.</li>
+* Supported file formats include `.zip`, `.gz`, and `.tar`.
+* The max file size is 1 GB. Larger files result in a validation error.
+* Click <b>Validate</b> to check the file for errors.
+* The uploaded file must match the recommended project structure. Click <b>Download sample project</b> to access the archive of the script definitions and follow its structure when uploading your file.
+* The structure is different for different base languages. Ensure that the correct file structure is followed for the chosen language.
+* The file naming convention should be followed to avoid any errors.
 
 ![file naming convention error](./images/file-naming-convention.png "file naming convention error")
 
-</ul>
-</Info>
-
-**Key Considerations for File Validations**:
+**Key Considerations for File Validations**
 
 * Validation checks confirm if the file matches the sample project structure.
 * Errors during validation are displayed via messages.
@@ -120,8 +116,10 @@ When importing between files in your project, make sure to use relative imports.
 
 Access environment variables in your scripts as follows:
 
-**Python**: <p>`import os`</p>
-             <p>`os.getenv('<key_name>')`</p>
+**Python**:
+
+`import os`
+`os.getenv('<key_name>')`
 
 **JavaScript**: 
 
@@ -163,7 +161,7 @@ On this page, you define scaling parameters (minimum and maximum replicas) and h
      * **Average Compute Utilization**: A metric based on which scaling of the service happens. Indicates average compute utilization in percentage per pod. The **default value is 75**, and the **allowed range is between 1 and 100**. This metric is disabled when **Min replica** and **Max replica** are the same.
      * Select the required **hardware** for the deployment. The unit is **No. of vCPUs with memory**. The profiles are virtualized for standardization. The available profiles are listed below:
 
-         | <strong>Hardware configuration</strong> | <strong>Actual CPU Core and Memory Available</strong> | <strong>Credits per Hour</strong> |
+         | Hardware configuration | Actual CPU Core and Memory Available | Credits per Hour |
 |:------ |:------ |:------ |
 | 2 vCPUs with 8GB memory | 1.5 vCPUs with 6.5GB memory | 0.144 |
 | 4 vCPUs with 16GB memory | 3.5 vCPUs with 13.5GB memory | 0.288 |
@@ -234,14 +232,14 @@ The summary table displays the following fields:
 
 The following table illustrates the various statuses and the actions that can be performed from the Overview, Deployment History, Endpoint, and API Keys pages.
 
-| <strong>Status</strong> <p> | <strong>Description</strong> | <strong>Actions you can perform </strong> |
+| Status | Description | Actions you can perform  |
 |:------ |:------ |:------ |
-| <strong>Overview</strong> | <strong>Deployment history</strong> | <strong>Endpoint</strong> | <strong>API</strong> <p> <strong>keys</strong> | <strong>Re-deployment</strong> |
-| <strong>Draft</strong> | The draft copy of the custom script that you can modify and deploy later. | <ul> <li>Export</li> <li>Delete</li> <li>Deploy</li> </ul> | Deploy Custom Script | Deploy Custom Script | Create a New API Key | No |
-| <strong>Deploying</strong> | The script is being deployed. A success message is displayed once the deployment completes successfully. If the deployment fails, a failure message is shown. | <ul> <li>Export</li> <li>Delete</li> </ul> | Rename deployment version | Endpoint not activated | · Create API keys <p> | No |
-| <strong>Ready to Deploy</strong> | The script is set up and ready to deploy. | <ul> <li>Export</li> <li>Delete</li> <li>Deploy</li> </ul> | Rename deployment version | Endpoint not activated | · Create API keys <p> | Yes |
-| <strong>Deployed</strong> | The deployed custom script. | <ul> <li>Redeploy</li> <li>Undeploy</li> <li>Export</li> </ul> | <ul> <li>View configuration and deployment details.</li> <li>Rename deployment version</li> </ul> | <ul> <li>Redeploy script</li> <li>View dedicated endpoint code (CURL, JS, and Python).</li> <li>Copy script code.</li> </ul> | <ul> <li>Create API keys</li> <li>Manage API keys</li> </ul> | Yes |
-| <strong>Deployment failed</strong> | The script deployment failed | <ul> <li>Deploy</li> <li>Delete</li> <li>Export</li> </ul> | <ul> <li>View configuration and deployment details except duration.</li> <li>Rename deployment version.</li> </ul> | The endpoint is not activated since the script is not deployed. | Create API keys <p> | Yes |
+| Overview | Deployment history | Endpoint | API keys | Re-deployment |
+| Draft | The draft copy of the custom script that you can modify and deploy later. | <ul> <li>Export</li> <li>Delete</li> <li>Deploy</li> </ul> | Deploy Custom Script | Deploy Custom Script | Create a New API Key | No |
+| Deploying | The script is being deployed. A success message is displayed once the deployment completes successfully. If the deployment fails, a failure message is shown. | <ul> <li>Export</li> <li>Delete</li> </ul> | Rename deployment version | Endpoint not activated | · Create API keys  | No |
+| Ready to Deploy | The script is set up and ready to deploy. | <ul> <li>Export</li> <li>Delete</li> <li>Deploy</li> </ul> | Rename deployment version | Endpoint not activated | · Create API keys  | Yes |
+| Deployed | The deployed custom script. | <ul> <li>Redeploy</li> <li>Undeploy</li> <li>Export</li> </ul> | <ul> <li>View configuration and deployment details.</li> <li>Rename deployment version</li> </ul> | <ul> <li>Redeploy script</li> <li>View dedicated endpoint code (CURL, JS, and Python).</li> <li>Copy script code.</li> </ul> | <ul> <li>Create API keys</li> <li>Manage API keys</li> </ul> | Yes |
+| Deployment failed | The script deployment failed | <ul> <li>Deploy</li> <li>Delete</li> <li>Export</li> </ul> | <ul> <li>View configuration and deployment details except duration.</li> <li>Rename deployment version.</li> </ul> | The endpoint is not activated since the script is not deployed. | Create API keys  | Yes |
 
 **Key Considerations**
 
@@ -277,11 +275,10 @@ To see when **Export** is available, please refer to the table [here](../manage-
 
 This action lets you undeploy the script from all its deployed locations on the platform.
 
-<Note><ul><li>An undeployed script can be redeployed. <a href="#redeploy-script">Learn more</a>.</li>
-<li>Once a script is redeployed, its data and configurations are restored. You can edit the script name and other parameters in the <a href="#import-and-deploy-a-custom-script">deployment flow</a>.</li>
-<li>The message “<i>No custom scripts deployed yet</i>” is displayed for the <b>Function</b> node if there are no deployed scripts.</li>
-<li>A script does not appear in the <b>Script</b> dropdown list for the <b>Function</b> node if it is not deployed.</li>
-</ul></Note>
+* An undeployed script can be redeployed. <a href="#redeploy-script">Learn more</a>.
+* Once a script is redeployed, its data and configurations are restored. You can edit the script name and other parameters in the <a href="#import-and-deploy-a-custom-script">deployment flow</a>.
+* The message “<i>No custom scripts deployed yet</i>” is displayed for the <b>Function</b> node if there are no deployed scripts.
+* A script does not appear in the <b>Script</b> dropdown list for the <b>Function</b> node if it is not deployed.
 
 
 To undeploy, follow the steps below on the **Manage Custom Scripts** page:
@@ -290,13 +287,11 @@ To undeploy, follow the steps below on the **Manage Custom Scripts** page:
 
 ![access undeploy](./images/access-undeploy.png "access undeploy")
 
-
-
    You can also select a script entry and click **Proceed to Undeploy** on its **Overview** page. 
 
 2. Click <b>Undeploy</b> in the confirmation window.
 
-A success message is displayed, and the script’s status changes to <b>Ready to Deploy</b>.</li>
+A success message is displayed, and the script’s status changes to <b>Ready to Deploy</b>.
 
 ![ready to deploy](./images/ready-to-deploy-success.png "ready to deploy")
 

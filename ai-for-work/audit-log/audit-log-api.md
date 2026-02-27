@@ -2,33 +2,11 @@
 
 Audit Log API enables developers and administrators to retrieve and manage detailed logs of activities, events, or actions performed within a system. These logs are used to track user behavior, system events, and other critical actions such as data changes, security events, or administrative actions. Audit logs are essential for monitoring system usage, ensuring compliance with regulations, detecting suspicious activity, and troubleshooting issues.
 
-<table>
-  <tr>
-   <td><b>Method</b>
-   </td>
-   <td>GET
-   </td>
-  </tr>
-  <tr>
-   <td><b>Endpoint</b>
-   </td>
-   <td>`https://{{host}}/api/public/auditlogs`
-   </td>
-  </tr>
-  <tr>
-   <td><b>Content-Type</b>
-   </td>
-   <td>application/json
-   </td>
-  </tr>
-  <tr>
-   <td><b>Authorization</b>
-   </td>
-
-   <td>auth: `{{Admin’s Personalkey}}`
-   </td>
-  </tr>
-</table>
+| <b>Method</b> | GET |
+| --- | --- |
+| <b>Endpoint</b> | `https://{{host}}/api/public/auditlogs` |
+| <b>Content-Type</b> | application/json |
+| <b>Authorization</b> | auth: `{{Admin’s Personalkey}}` |
 
 
 ## Query Parameters

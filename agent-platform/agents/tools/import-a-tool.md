@@ -59,12 +59,11 @@ Once the import is complete, the system will redirect you to the **Tool Flow** p
 
 The imported tool is listed under **All tools** and **My tools** on the **Tools** dashboard.
 
-
-<Info><ul><li>The status of the imported tool is set to <b>In Development</b>.</li>
-<li>The node types, tool descriptions, input and output variables, scanners, and sync/async setup are kept intact during the import.</li>
-<li>If the AI node's model doesn't match any available models in the current account, the model field is kept empty, but all prompt definitions are imported.</li>
-<li>API keys are not transferred during the import process.</li>
-<li>The imported tool cannot be shared with other users.</li></Info>
+* The status of the imported tool is set to <b>In Development</b>.
+* The node types, tool descriptions, input and output variables, scanners, and sync/async setup are kept intact during the import.
+* If the AI node's model doesn't match any available models in the current account, the model field is kept empty, but all prompt definitions are imported.
+* API keys are not transferred during the import process.
+* The imported tool cannot be shared with other users.
 
 **Failure Scenarios**
 
