@@ -292,23 +292,16 @@ To deploy a custom script, follow the steps below:
 
 #### Step 2: Select a Function from the Script
 
-To select a function the node must execute, follow the steps below:
+To select a function the node must execute, choose the function the node should invoke from the list for **Function name**.
 
-1.  Choose the function the node should invoke from the list for **Function name**.
+![select function](./images/select-function.png "select function")
 
-    ![select function](./images/select-function.png "select function")
+* All the functions defined in the main file are automatically listed in the dropdown.
+* Only one function can be selected at a time.
+* Functions from undeployed or draft script versions cannot be selected. Only deployed scripts are supported.
+* You can look up a specific function using the <b>search</b> option.
 
- 
-
-    <Note><ul><li>All the functions defined in the main file are automatically listed in the dropdown.</li>
-    <li>Only one function can be selected at a time.</li>
-    <li>Functions from undeployed or draft script versions cannot be selected. Only deployed scripts are supported.</li>
-    <li>You can look up a specific function using the <b>search</b> option.</li>
-
-    ![search function](./images/search-function.png "search function")
-
-</ul></Note>
- 
+![search function](./images/search-function.png "search function")
  
 When you select a function, the **Input Arguments** section appears. Arguments are automatically detected from the script and filled in the UI for you if specified in the function. If not, you must add values for each input parameter defined in the function, as discussed below.
 
@@ -318,10 +311,7 @@ The next step is to map input arguments of the selected function to static or dy
 
 <Info>By default, all arguments passed to the function are currently sent as 'string'. If your function requires other data types, please select the required type from the data type dropdown list in the <b>Input Arguments</b> section. The supported types include <i>String</i>, <i>Number</i>, <i>JSON</i>, and <i>Boolean</i>.</Info>
 
-
-   ![select data type](./images/data-type-dropdown.png "select data type")
-
-
+![select data type](./images/data-type-dropdown.png "select data type")
 
 **Key Considerations**
 

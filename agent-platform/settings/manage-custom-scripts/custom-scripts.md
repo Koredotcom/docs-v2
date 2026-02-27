@@ -275,11 +275,10 @@ To see when **Export** is available, please refer to the table [here](../manage-
 
 This action lets you undeploy the script from all its deployed locations on the platform.
 
-<Note><ul><li>An undeployed script can be redeployed. <a href="#redeploy-script">Learn more</a>.</li>
-<li>Once a script is redeployed, its data and configurations are restored. You can edit the script name and other parameters in the <a href="#import-and-deploy-a-custom-script">deployment flow</a>.</li>
-<li>The message “<i>No custom scripts deployed yet</i>” is displayed for the <b>Function</b> node if there are no deployed scripts.</li>
-<li>A script does not appear in the <b>Script</b> dropdown list for the <b>Function</b> node if it is not deployed.</li>
-</ul></Note>
+* An undeployed script can be redeployed. <a href="#redeploy-script">Learn more</a>.
+* Once a script is redeployed, its data and configurations are restored. You can edit the script name and other parameters in the <a href="#import-and-deploy-a-custom-script">deployment flow</a>.
+* The message “<i>No custom scripts deployed yet</i>” is displayed for the <b>Function</b> node if there are no deployed scripts.
+* A script does not appear in the <b>Script</b> dropdown list for the <b>Function</b> node if it is not deployed.
 
 
 To undeploy, follow the steps below on the **Manage Custom Scripts** page:
