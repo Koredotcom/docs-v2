@@ -81,34 +81,22 @@ Otherwise, click **Add new auth**.
 
   
 
-<ol start="3"><li>In the <b>New Authorization Mechanism</b> dialog, select the required option for <b>Authorization Type</b>.</li> 
-
-![select oauth v2](./images/select-oauthv2.png "select oauth v2")
-
-</ol>  
-<ol start="4"><li>In the <b>Identity Provider Name</b> field, enter a name for the authorization type, which is mandatory.
+3. In the <b>New Authorization Mechanism</b> dialog, select the required option for <b>Authorization Type</b>.  
+4. In the <b>Identity Provider Name</b> field, enter a name for the authorization type, which is mandatory.
 
 ![identity provider](./images/identity-provider.png "identity provider")
-
-</li>
-<li>Provide the values for the mandatory authorization fields. For details, refer to the <a href="#define-authorization-fields">Define Authorization Fields</a> section. 
+5. Provide the values for the mandatory authorization fields. For details, refer to the <a href="#define-authorization-fields">Define Authorization Fields</a> section. 
 
 If the mandatory fields are left blank, validation error messages appear, as shown below.
 
 
 ![validation errors](./images/form-validation-errors.png "validation errors")
-
-</li>
-<li>(Optional) Click <b>+ Add Additional Field</b> to add additional fields for authorization. See the <a href="#add-additional-field">Add Additional Field</a> section.</li></ol>
+6. (Optional) Click <b>+ Add Additional Field</b> to add additional fields for authorization. See the <a href="#add-additional-field">Add Additional Field</a> section.
 
 <Note>If the default <b>Username</b> and <b>Password</b> fields do not meet your authorization requirements, you can add <b>custom fields</b> using additional fields or authorization IDP form fields to the authorization process. For example, if a <b>PIN code</b> is required in addition to the standard login fields, you can include it as an extra input for the end user.</Note>
     
-<ol start="7"><li>(Optional step to be executed only when you select <b><i>OAuth V2</i></b> as the Authorization type) Click <b>+ Add Authorization Field</b> to add additional auth fields to your profile. This is required For more information, see the <a href="#add-authorization-field">Add Authorization Field</a> section.</li>
-<li>Click <b>Save new Auth</b>.</li>
-
-![save new auth](./images/save-new-auth.png "save new auth")
-
-</ol>
+7. (Optional step to be executed only when you select <b><i>OAuth V2</i></b> as the Authorization type) Click <b>+ Add Authorization Field</b> to add additional auth fields to your profile. This is required For more information, see the <a href="#add-authorization-field">Add Authorization Field</a> section.
+8. Click <b>Save new Auth</b>.
 
 A success message is displayed, and the new auth profile is added to the **Authorization Profile** page.
 
@@ -156,7 +144,7 @@ To add additional fields, follow the steps below:
 | <strong>Field Key</strong> | The name of the additional field. | Required | Pin code |
 | <strong>Field Value</strong> | The value for the additional field. | Required | 2344567 |
 
-<ol start="3"><li>Click <b>Done</b>.</li></ol>
+3. Click <b>Done</b>.
 
 The new custom field is added to the Additional Fields list, where you can edit or delete it.
 
@@ -182,7 +170,7 @@ To add auth fields, follow the steps below:
 | Field Value | The value of the auth field. Example: <em>123_xyz</em>. | Optional |
 
 
-<ol start="3"><li>Click <b>Done</b>.</li></ol>
+3. Click <b>Done</b>.
 
 
 ![auth field form](./images/auth-field-form.png "auth field form")

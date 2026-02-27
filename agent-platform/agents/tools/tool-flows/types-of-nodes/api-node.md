@@ -54,7 +54,7 @@ Click the added node to open its properties dialog box. The General Settings for
 
 
 **General Settings**
-| <strong>Field<strong> | <strong>Description<strong> |
+| Field | Description |
 |:----- |:----- |
 | Node Name | Enter an appropriate name for the node. |
 | Type | Select the API type from the drop-down: <strong>REST</strong> or <strong>SOAP</strong>. |

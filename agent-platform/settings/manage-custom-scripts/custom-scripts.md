@@ -68,15 +68,11 @@ In the **General Details** window, follow these steps:
 
 <Note>The default version is auto-selected when you select the language.</Note>
 
-<ol start="4"><li>To upload the script, click <b>Choose File</b> under <b>Project File</b>, then select the file from your local system.</li></ol>
+4. To upload the script, click <b>Choose File</b> under <b>Project File</b>, then select the file from your local system.
 
 <Note><ul><li>Supported file formats include `.zip`, `.gz`, and `.tar`.</li>
 <li>The max file size is 1 GB. Larger files result in a validation error.</li>
-<li>Click <b>Validate</b> to check the file for errors.</li>
-
-![validate file](./images/validate-file.png "validate file")
-
-</ul></Note>
+<li>Click <b>Validate</b> to check the file for errors.</li> </ul></Note>
 
 <Info><ul><li>The uploaded file must match the recommended project structure. Click <b>Download sample project</b> to access the <i>.zip</i> folder of the script definitions and follow its structure when uploading your file.</li>
 <li>The structure is different for different base languages. Ensure that the correct file structure is followed for the chosen language.</li>
@@ -147,16 +143,11 @@ Configure **Runtime variables** (environment variables and execution timeout) to
 <li><b>WORKSPACE_DIR</b>: Read-write directory for your function's file operations. Any data your function needs to store or modify will be saved here.</li>
 <li>Both directories are accessible only while your container is deployed. Once undeployed, these storage locations will no longer be available.</li></ul></Note>
 
-<ol start="3"><li>Define the <b>Execution timeout</b> in seconds. The allowed range is <b>30 to 600 seconds</b>.</li>
-<p><b>Why Script Timeout?</b></p>
-<ul><li><b>Prevents resource overuse</b>: Stops long-running or infinite-loop scripts from consuming excessive memory or CPU.</li>
-<li><b>Ensures responsiveness</b>: Keeps systems responsive by limiting how long a task can delay other operations.</li>
-<li><b>Supports fail-safe mechanisms</b>: If a script fails to complete in time, the timeout can trigger error handling or retries.</li></ul>
-<li>Click <b>Next</b>.</li>
-
-![runtime settings](./images/runtime-settings.png "runtime settings")
-
-</ol>
+3. Define the <b>Execution timeout</b> in seconds. The allowed range is <b>30 to 600 seconds</b>.
+4. <b>Prevents resource overuse</b>: Stops long-running or infinite-loop scripts from consuming excessive memory or CPU.
+5. <b>Ensures responsiveness</b>: Keeps systems responsive by limiting how long a task can delay other operations.
+6. <b>Supports fail-safe mechanisms</b>: If a script fails to complete in time, the timeout can trigger error handling or retries.
+7. Click <b>Next</b>.
 
 ### Step 3: Resource Allocation
 
@@ -180,11 +171,7 @@ On this page, you define scaling parameters (minimum and maximum replicas) and h
 | 2 vCPUs with 4GB memory | 1.5 vCPUs with 2.5GB memory | 0.15396 |
 | 4 vCPUs with 8GB memory | 3.5 vCPUs with 6GB memory | 0.30792 |
 
-<ol start="2"><li>Click <b>Next</b>.</li>
-
-![resource allocation](./images/resource-allocation.png "resource allocation")
-
-</ol>
+2. Click <b>Next</b>.
 
 
 ### Step 4: Review the Provided Details
@@ -307,11 +294,7 @@ To undeploy, follow the steps below on the **Manage Custom Scripts** page:
 
    You can also select a script entry and click **Proceed to Undeploy** on its **Overview** page. 
 
-<ol start="2"><li>Click <b>Undeploy</b> in the confirmation window.</li>
-
-![undeploy script confirm](./images/undeploy-script-confirmation.png "undeploy script confirm")
-
-</ol>
+2. Click <b>Undeploy</b> in the confirmation window.
 
 A success message is displayed, and the script’s status changes to <b>Ready to Deploy</b>.</li>
 
@@ -347,11 +330,7 @@ To delete, follow the steps below on the **Manage Custom Scripts** page:
 
    Alternatively, select a script entry and click **Proceed to Delete** on its **Overview** page.
 
-<ol start="2"><li>Click <b>Delete</b> in the confirmation window.</li> 
-
-![delete the script](./images/delete-the-script.png "delete the script")
-
-</ol>
+2. Click <b>Delete</b> in the confirmation window.
 
 A success message is displayed, and the script is permanently removed. 
 
@@ -592,11 +571,7 @@ To add an API secret key, follow these steps:
 
 
 
-<ol start="5"><li>Click <b>Copy and Close</b>.</li>   
-
-![create new api copy](./images/create-new-api-copy.png "create new api copy")
-
-</ol>  
+5. Click <b>Copy and Close</b>.  
  
 <Info><ul><li>Your secret API key is shown only once when generated. Save the key in a safe location. Do not share it or expose it in browsers or other client-side code.</li>
 <li>If you lose a secret key, a new one must be generated.</li></ul></Info>

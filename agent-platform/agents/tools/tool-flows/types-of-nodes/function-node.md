@@ -73,8 +73,6 @@ Click the **Connections** icon in the left navigation and select **Go to Node** 
 
 ![Configure Connection Settings](./../images/function-node-connections.png "Configure Connection Settings")
 
-</ol>
-
 * **On Success** > **Go to Node**: After the current node is successfully executed, go to a selected node in the flow to execute next. For example, you can go to an AI node to use the processed data from the Function node.
 * **On Failure** > **Go to Node**: If the execution of the current node fails, go to an appropriate node having a custom error message configured for this node.
 
@@ -374,8 +372,8 @@ To test the custom function configuration, follow the steps below:
 
 
 
-<ol start="2"><li>In the <b>Input</b> panel, enter values to test the code. Configured values appear by default, but you can edit or reset them as needed.</li>
-<li>Click <b>Execute</b> to run the function with the configured input arguments.</li></ol>
+2. In the <b>Input</b> panel, enter values to test the code. Configured values appear by default, but you can edit or reset them as needed.
+3. Click <b>Execute</b> to run the function with the configured input arguments.
 
 
 ### Results Panel
@@ -465,12 +463,10 @@ To run the flow for dynamic inputs, follow the steps below:
 
 
 
-<ol start="2"><li>Add the <b>Name(key)</b> value, select the data type for <b>Type</b>, and provide a description in the <b>Enter input variable</b> window. For example, in the banking flow, to get the sum of two balances, one in Q3 and the other in Q4, you must define two input variables, “<i>Q3balance</i>” and “<i>Q4balance</i>,” as shown below.
+2. Add the <b>Name(key)</b> value, select the data type for <b>Type</b>, and provide a description in the <b>Enter input variable</b> window. For example, in the banking flow, to get the sum of two balances, one in Q3 and the other in Q4, you must define two input variables, “<i>Q3balance</i>” and “<i>Q4balance</i>,” as shown below.
 
 ![add input var](./images/add-input-vars-function-node.png "add input var")
-
-</li>
-<li>Click <b>Save</b>.</li></ol>
+3. Click <b>Save</b>.
 
 Once you define the input variables, you must [add the output variable(s)](../types-of-nodes/function-node.md#step-2-add-the-output-variable) and [run the flow](../types-of-nodes/function-node.md#step-3-run-the-tool-flow).
 
@@ -490,13 +486,9 @@ To define the output variable, follow the steps below:
 ![output tab](./images/output-tab.png "output tab")
 
 </ol>
-<ol start="2"><li>Click <b>Add Output Variable</b>.</li>
-<li>Enter the value for <b>Name (key)</b> and select the data type for <b>Type</b>.</li>
-<li>Click <b>Save</b>.</li>
-
-![save output variable](./images/save-output-variable-window.png "save output variable")
-
-</ol>
+2. Click <b>Add Output Variable</b>.
+3. Enter the value for <b>Name (key)</b> and select the data type for <b>Type</b>.
+4. Click <b>Save</b>.
 
 ### Step 3: Run the Tool Flow
 
