@@ -25,32 +25,10 @@ Windows Azure Active Directory (now Microsoft Entra ID) provides comprehensive i
 
 #### Configuration Fields
 
-<table>
-  <tr>
-   <td>Field
-   </td>
-   <td>Description
-   </td>
-   <td>Required
-   </td>
-  </tr>
-  <tr>
-   <td>Azure AD Sign-On Endpoint URL
-   </td>
-   <td>The URL that platform must use for sign-on and sign-off/out requests using Azure. This is the WS-Federation passive endpoint. (e.g., https://login.microsoftonline.com/&lt;tenant-id>/wsfed)
-   </td>
-   <td>Yes
-   </td>
-  </tr>
-  <tr>
-   <td>Azure AD Federation Metadata Document
-   </td>
-   <td>The URL for the federation metadata document used for authentication with Azure Active Directory. This XML document contains configuration details and certificates. (e.g., https://login.microsoftonline.com/&lt;tenant-id>/FederationMetadata/2007-06/FederationMetadata.xml)
-   </td>
-   <td>Yes
-   </td>
-  </tr>
-</table>
+| Field | Description | Required |
+| --- | --- | --- |
+| Azure AD Sign-On Endpoint URL | The URL that platform must use for sign-on and sign-off/out requests using Azure. This is the WS-Federation passive endpoint. (e.g., https://login.microsoftonline.com/&lt;tenant-id>/wsfed) | Yes |
+| Azure AD Federation Metadata Document | The URL for the federation metadata document used for authentication with Azure Active Directory. This XML document contains configuration details and certificates. (e.g., https://login.microsoftonline.com/&lt;tenant-id>/FederationMetadata/2007-06/FederationMetadata.xml) | Yes |
 
 #### Configuration Steps
 
@@ -115,32 +93,10 @@ Use this option for any WS-Federation compliant identity provider not specifical
 
 #### Configuration Fields
 
-<table>
-  <tr>
-   <td>Field
-   </td>
-   <td>Description
-   </td>
-   <td>Required
-   </td>
-  </tr>
-  <tr>
-   <td>AD Sign-On Endpoint URL
-   </td>
-   <td>The URL that application must use for sign-on and sign-off/out requests using the WS-Federation identity provider. This is the WS-Federation passive endpoint. (e.g., <code>https://adfs.yourcompany.com/adfs/ls/</code>)
-   </td>
-   <td>Yes
-   </td>
-  </tr>
-  <tr>
-   <td>AD Federation Metadata Document URL
-   </td>
-   <td>The URL for the federation metadata document used for authentication with Active Directory. This XML document contains configuration details and certificates. (e.g., <code>https://adfs.yourcompany.com/FederationMetadata/2007-06/FederationMetadata.xml</code>)
-   </td>
-   <td>Yes
-   </td>
-  </tr>
-</table>
+| Field | Description | Required |
+| --- | --- | --- |
+| AD Sign-On Endpoint URL | The URL that application must use for sign-on and sign-off/out requests using the WS-Federation identity provider. This is the WS-Federation passive endpoint. (e.g., <code>https://adfs.yourcompany.com/adfs/ls/</code>) | Yes |
+| AD Federation Metadata Document URL | The URL for the federation metadata document used for authentication with Active Directory. This XML document contains configuration details and certificates. (e.g., <code>https://adfs.yourcompany.com/FederationMetadata/2007-06/FederationMetadata.xml</code>) | Yes |
 
 #### Configuration Steps
 

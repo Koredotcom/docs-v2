@@ -25,34 +25,11 @@ Administrators can add domains to extend access to approved domains within the o
 
 ## Sign-In and Access Rules
 
-<table>
-  <tr>
-   <td>
-        <strong>Company Domain Users</strong>
-   </td>
-   <td>
-        <strong>Partner Domain Users</strong>
-   </td>
-  </tr>
-  <tr>
-   <td>Can sign in when domain-based user enrollment is enabled
-   </td>
-   <td>Cannot sign in even if domain-based enrollment is enabled
-   </td>
-  </tr>
-  <tr>
-   <td>Cannot be associated with more than one tenant (single-account restriction)
-   </td>
-   <td>Can be associated with multiple tenants (multi-account access)
-   </td>
-  </tr>
-  <tr>
-   <td>Automatically gain access to the account once domain-based enrollment is configured
-   </td>
-   <td>Must be explicitly invited to each account
-   </td>
-  </tr>
-</table>
+| <strong>Company Domain Users</strong> | <strong>Partner Domain Users</strong> |
+| --- | --- |
+| Can sign in when domain-based user enrollment is enabled | Cannot sign in even if domain-based enrollment is enabled |
+| Cannot be associated with more than one tenant (single-account restriction) | Can be associated with multiple tenants (multi-account access) |
+| Automatically gain access to the account once domain-based enrollment is configured | Must be explicitly invited to each account |
 
 ## User Management Features
 
