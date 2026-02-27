@@ -1,370 +1,192 @@
-# API Reference
-
-Integrate your applications with the Agent Platform API.
-
+---
+title: API Reference
+sidebarTitle: APIs
 ---
 
-## Overview
+The Agent Platform provides two sets of APIs:
 
-The Agent Platform API enables programmatic access to your agentic apps. Use it to:
-
-- Execute conversations
-- Manage sessions
-- Retrieve analytics
-- Configure apps programmatically
-
----
-
-## Base URL
-
-```
-https://api.platform.kore.ai/v1
-```
-
----
+- **Agentic App APIs**: The Agent Protocol API enables programmatic interaction with your agents, allowing you to manage conversational sessions, execute agent logic, retrieve responses, and track asynchronous tasks.
+- **Tools APIs**: Secured APIs to manage files, tools, models, and guardrails. Developers can perform key activities like deployment, import/export, monitoring, analytics, billing, and reporting using these APIs.
 
 ## Authentication
 
-All API requests require authentication via API key.
+### Agentic App APIs
 
-### Headers
+All Agentic App API requests are made to the following base URL:
 
-```http
-Authorization: Bearer sk-app-xxxxxxxxxxxxx
-Content-Type: application/json
+```json
+https://<agent-platform-env>.<domain>.com/api/v2/
 ```
 
-### Getting API Keys
+Replace `<agent-platform-env>` with your specific environment name and `<domain>` with your domain name.
 
-1. Navigate to **Deploy** → **API Keys**
-2. Click **Generate Key**
-3. Copy and store securely
+All requests must include an **API Key** in the **`Authorization`** header. You can generate the API key from the application. Refer to [this](../ai-agents/agentic-apps/deployment/access-deployed-version.md#generate-the-api-key-for-app-authentication) to learn more about generating an API Key.
 
----
-
-## Endpoints
-
-### Execute Conversation
-
-Send a message and receive an agent response.
-
-```http
-POST /apps/{app_id}/execute
+```json
+x-api-key: YOUR_API_KEY
 ```
 
-**Request**:
+Note: API keys are **app-specific**. They're not shared across accounts or workspaces. Ensure that you use the API key associated with the correct app when making requests.
+
+### Tools APIs
+
+Public APIs require an API key for authentication and authorization. The account owner or admin can generate this key in the **Settings** console.
+
+An API key serves as a unique identifier for the client or application accessing the API, ensuring security and access control. It helps:
+
+* Authenticate requests – Verify the identity of the client.
+* Control access – Restrict API usage based on permissions or rate limits.
+* Monitor usage – Track API calls for analytics, billing, or debugging.
+* Prevent abuse – Protect against unauthorized or excessive use.
+
+API keys are typically included in request headers or parameters to validate access.
+
+<Note> Each API key includes created on and last used dates to track its usage history. </Note>
+
+#### How to Create the API Key
+
+1. [Login](../getting-started/sign-up-sign-in.md) to the Platform and [access](../administration/overview#access-settings-console) the Settings Console.
+2. On the left menu, click **Security & Control** > **API Scopes**.
+3. Create an API app and include all the required scopes, and the API keys as mentioned [here](../administration/security-and-control#create-an-api-app).
+
+<Note> You can copy the API key only once and must not lose it. Save the key in a secure location for future use. </Note>
+
+## Key Concepts and Terminologies
+
+Below is a list of important terms used across the API documentation.
+
+* **App (AppId)**: Represents a specific app created for the Platform.
+* **Environment (envName)**: Refers to a deployment environment for the app. The environment name must match the exact name as configured in the application.
+* **Session (sessionId)**: A unique ID representing a single conversation between a user and the agent. Sessions allow multi-turn conversations by preserving context.
+* **Session Identity**: Used to reference a session or user. You can refer to the session in one or more of the following ways:
+    * sessionId: The unique, platform-generated ID for the session.
+    * sessionReference: A custom session identifier. If not set, it defaults to the userReference. This can be the session identifier for the application from which the Agentic App API is invoked.
+    * userReference: A unique identifier from your system that ties all sessions to a specific user. This must be unique to your system. It's a crucial identifier.
+
+    Refer to [Session Resolution Steps](#session-resolution-process) for more information.
+
+* **Run (runId)**: Represents a single execution step within a session, typically triggered by user input and resulting in the agent's response.
+
+## Session Resolution Process
+
+Each session is uniquely identified by **sessionId**. **sessionReference** is used as a secondary way to refer to the session. It can be particularly useful when the app invoking Agentic App APIs needs to maintain its own session tracking. Each session is owned by a user, identified by a system-generated **`userId`**, which is typically derived from the provided **`userReference`**.
+
+Session resolution follows a **priority-based approach** to determine how a session is created or reused. When more than one identifier is provided as input, the platform checks them in order of priority, starting with the highest. The session is resolved using the first identifier that matches. If no match is found, the platform moves on to the next identifier in the input.
+
+| Identifier | Priority | Purpose |
+|:------ |:------ |:------ |
+| sessionId | Highest | Used only to retrieve an existing session. This identifier cannot be used to create new sessions. If a `userReference` is provided, it is validated against the session owner for security purposes. |
+| sessionReference | Medium | Attempts to find an existing session with the given sessionReference. <ul> <li>If a session with the given sessionReference exists, it's retrieved.</li> <li>If no session is found, a new session is created using the sessionReference.</li> <li>If both sessionReference and userReference are provided, the userReference is validated to ensure it matches the session owner.</li> <li>If only sessionReference is provided, the session owner is automatically mapped as the user.</li> <li>When creating a new session, if no user mapping exists, the sessionReference is used as the userReference for the new session. </li> </ul> |
+| userReference | Lowest | Always creates a new session associated with the specified user. Does not check for existing sessions. |
+
+The above session resolution steps are summarized using the flow chart below.
+
+![Session Resolution using Identify fields](agentic-apps/images/session-resolution.png "Session resolution")
+
+## Authorization Process for API Calls
+
+If an agent in an Agentic App includes tools that require authorization to execute APIs, the platform ensures that the necessary authorizations are completed before any API calls are made during the agent's execution.
+
+**When OAuth Authorization is Required**
+
+At the **first invocation** of the session (via the **Session** or **Execute API**), if any required authorization is pending, the API will return a response containing a special event type: **IDP_Redirect**. This indicates that the user needs to complete an authorization flow before the agent can proceed. The response includes:
+
+* An IDP_Redirect event.
+* A URL for the user to complete the authorization process.
+* The identity provider (IDP) name and the authentication method.
+
+Sample Response
+
 ```json
 {
-  "message": "What's my order status?",
-  "session_id": "sess_abc123",
-  "metadata": {
-    "user_id": "user_456",
-    "channel": "web"
-  }
-}
-```
-
-**Response**:
-```json
-{
-  "response": "I found your order #12345. It shipped yesterday and should arrive by Friday.",
-  "session_id": "sess_abc123",
-  "trace_id": "trace_xyz789",
-  "agent": "support_agent",
-  "tools_used": ["get_order_status"],
-  "usage": {
-    "input_tokens": 145,
-    "output_tokens": 52
-  }
-}
-```
-
-### Create Session
-
-Start a new conversation session.
-
-```http
-POST /apps/{app_id}/sessions
-```
-
-**Request**:
-```json
-{
-  "user_id": "user_456",
-  "metadata": {
-    "channel": "mobile_app",
-    "language": "en"
-  }
-}
-```
-
-**Response**:
-```json
-{
-  "session_id": "sess_abc123",
-  "created_at": "2024-01-15T14:30:00Z",
-  "expires_at": "2024-01-15T15:30:00Z"
-}
-```
-
-### Get Session History
-
-Retrieve conversation history for a session.
-
-```http
-GET /apps/{app_id}/sessions/{session_id}/history
-```
-
-**Response**:
-```json
-{
-  "session_id": "sess_abc123",
-  "messages": [
-    {
-      "role": "user",
-      "content": "What's my order status?",
-      "timestamp": "2024-01-15T14:30:00Z"
-    },
-    {
-      "role": "assistant",
-      "content": "I found your order #12345...",
-      "timestamp": "2024-01-15T14:30:02Z",
-      "agent": "support_agent"
+    "messageId": "msg-260f4d3c-5b8c-4056-af97-11317fc28c8d",
+    "events": [
+        {
+            "type": "IDP_Redirect",
+            "content": {
+                "auth_profiles": [
+                    {
+                        "url": "https://{host}/r/396c63515671634648357955",
+                        "idpName": "Google",
+                        "isAuthorized": false,
+                        "sso_type": "oauth2"
+                    }
+                ]
+            }
+        }
+    ],
+    "output": [
+        {
+            "type": "text",
+            "content": "Hello! How can I assist you today with HR, Finance, or IT queries?"
+        }
+    ],
+    "sessionInfo": {
+        "status": "idle",
+        "userReference": "s-b8987503-696b-4111-a006-49c0cbcf0fb9",
+        "sessionReference": "s-b8987503-696b-4111-a006-49c0cbcf0fb9",
+        "userId": "u-f5e5e830-70d4-53d6-8034-86bfa765c04a",
+        "sessionId": "s-54f40bda-1505-4f9e-b38e-88d39ea36d58",
+        "runId": "r-41ad20e0-6295-4f0e-9b04-e51875356107",
+        "appId": "aa-c31cccce-d0bf-4db5-a177-7ff45941c2d8",
+        "attachments": []
     }
-  ]
 }
 ```
 
-### End Session
+**Next Steps**
 
-Explicitly close a session.
+* Go to the URL in the events object and complete the authorization.
+* Reinvoke the API after successful authorization.
 
-```http
-DELETE /apps/{app_id}/sessions/{session_id}
-```
+**Important Notes**
 
----
-
-## Streaming
-
-For real-time responses, use Server-Sent Events.
-
-### Streaming Execute
-
-```http
-POST /apps/{app_id}/execute/stream
-```
-
-**Request** (same as execute):
-```json
-{
-  "message": "Explain your return policy",
-  "session_id": "sess_abc123"
-}
-```
-
-**Response** (SSE stream):
-```
-event: start
-data: {"trace_id": "trace_xyz789"}
-
-event: token
-data: {"content": "Our"}
-
-event: token
-data: {"content": " return"}
-
-event: token
-data: {"content": " policy"}
-
-event: tool_call
-data: {"tool": "search_knowledge", "status": "started"}
-
-event: tool_call
-data: {"tool": "search_knowledge", "status": "completed"}
-
-event: token
-data: {"content": " allows..."}
-
-event: done
-data: {"usage": {"input_tokens": 45, "output_tokens": 128}}
-```
+* Authorization is only required once per user (across sessions) or until the token expires.
+* If one or more authorizations are pending, all of them must be completed before continuing. If the required authorization is not completed, the associated tools will return an error upon invocation.
 
 ---
 
-## Metadata
+## APIs list
 
-Pass contextual information with requests.
+### Agentic App APIs
 
-### Session Metadata
+The following APIs let users interact with agents and manage sessions.
 
-Stored in `sessionMeta` memory:
+| Use Cases   | APIs     |
+|--------|----------|
+|  Create, retrieve, or end a session with an agent to maintain conversation context.     |     [Sessions API](./agentic-apps/sessions)     |
+|  Send user input to an agent within a session and receive the agent's response.      |  [Runs API](./agentic-apps/execute) |
+|  Upload or delete attachments to a conversation. You can reference these attachments as context during an agent run.   |   [File Attachment APIs](./agentic-apps/upload)       |
+|    Create a new Agentic App.    |  [Create App API](./agentic-apps/create-app)   |
 
-```json
-{
-  "metadata": {
-    "userProfile": {
-      "name": "John",
-      "tier": "premium",
-      "preferences": {
-        "language": "en",
-        "notifications": true
-      }
-    }
-  }
-}
-```
+### File Management API
 
-### Accessing in Prompts
+| Use Cases   | API     |
+|--------|----------|
+| Upload a small or large public file in the [supported formats](./apis-list/upload-file-api). | [File Upload API](./apis-list/upload-file-api) |
 
-```
-Welcome back, {{memory.sessionMeta.metadata.userProfile.name}}!
-```
+### View Process Status API
 
----
+| Use Cases   | API     |
+|--------|----------|
+| Check the status of an ongoing or completed job related to tools or models. | [Get Dock Status API](./apis-list/get-dock-status) |
 
-## Error Handling
+### Manage Tools APIs
 
-### Error Response Format
+| Use Cases   | APIs    |
+|--------|----------|
+| Import a new tool.     |  [Import a New Tool API](./apis-list/import-a-new-tool) |
+| Import new configurations, datasets, or updates into a tool.      |   [Import to an Existing Tool API](./apis-list/import-to-an-existing-tool) |
+| Export a tool's configuration and associated data, including its flow, for backup, sharing, or reuse.      | [Export a Tool API](./apis-list/export-a-tool) |
+| Deploy a specific tool into an environment. | [Deploy a Tool API](./apis-list/deploy-a-tool) |
+| Undeploy a specific tool from an environment. | [Undeploy a Tool API](./apis-list/undeploy-a-tool) |
 
-```json
-{
-  "error": {
-    "code": "invalid_request",
-    "message": "Session not found",
-    "details": {
-      "session_id": "sess_invalid"
-    }
-  }
-}
-```
+### Manage Models APIs
 
-### Error Codes
-
-| Code | HTTP Status | Description |
-|------|-------------|-------------|
-| `invalid_request` | 400 | Malformed request |
-| `authentication_error` | 401 | Invalid API key |
-| `not_found` | 404 | Resource not found |
-| `rate_limited` | 429 | Too many requests |
-| `internal_error` | 500 | Server error |
-
----
-
-## Rate Limits
-
-| Plan | Requests/minute | Requests/day |
-|------|-----------------|--------------|
-| Free | 60 | 1,000 |
-| Pro | 600 | 50,000 |
-| Enterprise | Custom | Custom |
-
-### Rate Limit Headers
-
-```http
-X-RateLimit-Limit: 600
-X-RateLimit-Remaining: 599
-X-RateLimit-Reset: 1705330260
-```
-
----
-
-## SDKs
-
-### JavaScript/TypeScript
-
-```bash
-npm install @kore/agent-platform
-```
-
-```typescript
-import { AgentPlatform } from '@kore/agent-platform';
-
-const client = new AgentPlatform({
-  apiKey: 'sk-app-xxxxx'
-});
-
-const response = await client.execute({
-  appId: 'app_123',
-  message: "What's my order status?",
-  sessionId: 'sess_abc123'
-});
-
-console.log(response.response);
-```
-
-### Python
-
-```bash
-pip install kore-agent-platform
-```
-
-```python
-from kore_platform import AgentPlatform
-
-client = AgentPlatform(api_key="sk-app-xxxxx")
-
-response = client.execute(
-    app_id="app_123",
-    message="What's my order status?",
-    session_id="sess_abc123"
-)
-
-print(response.response)
-```
-
----
-
-## Webhooks
-
-Receive notifications for events.
-
-### Configure Webhook
-
-```json
-{
-  "url": "https://your-app.com/webhooks/kore",
-  "events": [
-    "session.started",
-    "session.ended",
-    "conversation.escalated"
-  ],
-  "secret": "whsec_xxxxx"
-}
-```
-
-### Webhook Payload
-
-```json
-{
-  "event": "conversation.escalated",
-  "timestamp": "2024-01-15T14:30:00Z",
-  "data": {
-    "session_id": "sess_abc123",
-    "reason": "user_requested",
-    "context": {...}
-  }
-}
-```
-
-### Verify Signatures
-
-```javascript
-const signature = req.headers['x-kore-signature'];
-const expected = crypto
-  .createHmac('sha256', webhookSecret)
-  .update(req.body)
-  .digest('hex');
-
-if (signature !== expected) {
-  throw new Error('Invalid signature');
-}
-```
-
----
-
-## Related
-
-- [Deployment](/docs/deploy)
-- [Authentication](/docs/security/auth)
-- [Rate Limits](/docs/api/rate-limits)
+| Use Cases  | APIs     |
+|--------|----------|
+|  Import a model in chunks.     |    [Import a Model API](./apis-list/import-a-model)      |
+|  Export a trained AI model.     |   [Export a Model API](./apis-list/export-a-model)       |
+| Deploy a model into the environment in the Ready to Deploy state and configure its parameters. You must perform the initial deployment manually in the Platform account. Consecutive deployments must happen via the public API.      | [Deploy a Model API](./apis-list/deploy-a-model)         |
+| Undeploy a model from the environment.      |   [Undeploy a Model API](./apis-list/undeploy-a-model) |
+| Manage external model connections.      |   [External Model Connection APIs](./apis-list/connections-api) |
