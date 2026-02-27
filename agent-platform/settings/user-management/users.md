@@ -181,10 +181,7 @@ The following window is displayed with the import date and time, the importing u
 
 The **Delete** feature removes a user you’re managing from your Platform account.
 
-<Info>Only users included as Admin in the system with the required permissions can access the <b>Settings</b> Console.
-
-<ul><li>Deleting a user revokes their access and removes their data from your account. However, the user can still access their personal account on the Platform. To rejoin your account, you must invite them again via email.</li>
-<li>You cannot delete users if they have created and manage tools in your account. The user must first remove all active tools before they can be deleted.</li></ul></Info>
+<Info>Only users included as Admin in the system with the required permissions can access the <b>Settings</b> Console. <ul><li>Deleting a user revokes their access and removes their data from your account. However, the user can still access their personal account on the Platform. To rejoin your account, you must invite them again via email.</li> <li>You cannot delete users if they have created and manage tools in your account. The user must first remove all active tools before they can be deleted.</li></ul></Info>
 
 **Steps to delete a user**
 

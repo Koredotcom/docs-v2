@@ -109,10 +109,7 @@ To access a tool template, follow the steps below:
 
 7. Click **Install** to connect to the Marketplace and import the tool template, including its pre-configured flow.
 
-
     ![install tool](./images/click-tool-install.png "install tool")
-
-</ol>
 
     The system redirects you to the **Tool Flow** page. Click **Go to Flow** to view and manage the prebuilt tool flow canvas. [Learn more](../tools/tool-templates.md#view-and-manage-tool-flow).
 
@@ -187,7 +184,7 @@ Once you install a tool template, you can access its prebuilt flow and modify it
 
 
 
-<ol start="3"><li><a href="../tool-flows/manage-flow-nodes/">Manage nodes and their configurations</a> in the flow, <a href="../tool-flows/perform-other-actions-on-the-flow-builder/manage-input-and-output">edit input and output</a>, and <a href="../tool-flows/perform-other-actions-on-the-flow-builder/run-the-flow">run the flow</a> as required to customize the tool flow. To view the changes made to the tool flow, use the change log. <a href="../tool-flows/tool-canvas-change-log">Learn more</a>.</li></ol>
+3. <a href="../tool-flows/manage-flow-nodes/">Manage nodes and their configurations</a> in the flow, <a href="../tool-flows/perform-other-actions-on-the-flow-builder/manage-input-and-output">edit input and output</a>, and <a href="../tool-flows/perform-other-actions-on-the-flow-builder/run-the-flow">run the flow</a> as required to customize the tool flow. To view the changes made to the tool flow, use the change log. <a href="../tool-flows/tool-canvas-change-log">Learn more</a>.
 
 ### Delete a Tool Template
 

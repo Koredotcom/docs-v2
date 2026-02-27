@@ -259,7 +259,7 @@ Filter customization streamlines tracking and debugging of script runs at a deta
 
 
 
-<ol start="6"><li>Click <b>Apply</b>.</li></ol>
+6. Click <b>Apply</b>.
 
 The UI displays all the relevant run and log records that align with the applied filter(s). The number of filters you have applied is displayed on the **Filter** icon.
 

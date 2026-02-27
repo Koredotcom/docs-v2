@@ -68,26 +68,18 @@ In the **General Details** window, follow these steps:
 
 <Note>The default version is auto-selected when you select the language.</Note>
 
-<ol start="4"><li>To upload the script, click <b>Choose File</b> under <b>Project File</b>, then select the file from your local system.</li></ol>
+4. To upload the script, click <b>Choose File</b> under <b>Project File</b>, then select the file from your local system.
 
-<Note><ul><li>Supported file formats include `.zip`, `.gz`, and `.tar`.</li>
-<li>The max file size is 1 GB. Larger files result in a validation error.</li>
-<li>Click <b>Validate</b> to check the file for errors.</li>
-
-![validate file](./images/validate-file.png "validate file")
-
-</ul></Note>
-
-<Info><ul><li>The uploaded file must match the recommended project structure. Click <b>Download sample project</b> to access the <i>.zip</i> folder of the script definitions and follow its structure when uploading your file.</li>
-<li>The structure is different for different base languages. Ensure that the correct file structure is followed for the chosen language.</li>
-<li>The file naming convention should be followed to avoid any errors.</li>
+* Supported file formats include `.zip`, `.gz`, and `.tar`.
+* The max file size is 1 GB. Larger files result in a validation error.
+* Click <b>Validate</b> to check the file for errors.
+* The uploaded file must match the recommended project structure. Click <b>Download sample project</b> to access the archive of the script definitions and follow its structure when uploading your file.
+* The structure is different for different base languages. Ensure that the correct file structure is followed for the chosen language.
+* The file naming convention should be followed to avoid any errors.
 
 ![file naming convention error](./images/file-naming-convention.png "file naming convention error")
 
-</ul>
-</Info>
-
-**Key Considerations for File Validations**:
+**Key Considerations for File Validations**
 
 * Validation checks confirm if the file matches the sample project structure.
 * Errors during validation are displayed via messages.
@@ -124,8 +116,10 @@ When importing between files in your project, make sure to use relative imports.
 
 Access environment variables in your scripts as follows:
 
-**Python**: <p>`import os`</p>
-             <p>`os.getenv('<key_name>')`</p>
+**Python**:
+
+`import os`
+`os.getenv('<key_name>')`
 
 **JavaScript**: 
 
@@ -147,16 +141,11 @@ Configure **Runtime variables** (environment variables and execution timeout) to
 <li><b>WORKSPACE_DIR</b>: Read-write directory for your function's file operations. Any data your function needs to store or modify will be saved here.</li>
 <li>Both directories are accessible only while your container is deployed. Once undeployed, these storage locations will no longer be available.</li></ul></Note>
 
-<ol start="3"><li>Define the <b>Execution timeout</b> in seconds. The allowed range is <b>30 to 600 seconds</b>.</li>
-<p><b>Why Script Timeout?</b></p>
-<ul><li><b>Prevents resource overuse</b>: Stops long-running or infinite-loop scripts from consuming excessive memory or CPU.</li>
-<li><b>Ensures responsiveness</b>: Keeps systems responsive by limiting how long a task can delay other operations.</li>
-<li><b>Supports fail-safe mechanisms</b>: If a script fails to complete in time, the timeout can trigger error handling or retries.</li></ul>
-<li>Click <b>Next</b>.</li>
-
-![runtime settings](./images/runtime-settings.png "runtime settings")
-
-</ol>
+3. Define the <b>Execution timeout</b> in seconds. The allowed range is <b>30 to 600 seconds</b>.
+4. <b>Prevents resource overuse</b>: Stops long-running or infinite-loop scripts from consuming excessive memory or CPU.
+5. <b>Ensures responsiveness</b>: Keeps systems responsive by limiting how long a task can delay other operations.
+6. <b>Supports fail-safe mechanisms</b>: If a script fails to complete in time, the timeout can trigger error handling or retries.
+7. Click <b>Next</b>.
 
 ### Step 3: Resource Allocation
 
@@ -172,7 +161,7 @@ On this page, you define scaling parameters (minimum and maximum replicas) and h
      * **Average Compute Utilization**: A metric based on which scaling of the service happens. Indicates average compute utilization in percentage per pod. The **default value is 75**, and the **allowed range is between 1 and 100**. This metric is disabled when **Min replica** and **Max replica** are the same.
      * Select the required **hardware** for the deployment. The unit is **No. of vCPUs with memory**. The profiles are virtualized for standardization. The available profiles are listed below:
 
-         | <strong>Hardware configuration</strong> | <strong>Actual CPU Core and Memory Available</strong> | <strong>Credits per Hour</strong> |
+         | Hardware configuration | Actual CPU Core and Memory Available | Credits per Hour |
 |:------ |:------ |:------ |
 | 2 vCPUs with 8GB memory | 1.5 vCPUs with 6.5GB memory | 0.144 |
 | 4 vCPUs with 16GB memory | 3.5 vCPUs with 13.5GB memory | 0.288 |
@@ -180,11 +169,7 @@ On this page, you define scaling parameters (minimum and maximum replicas) and h
 | 2 vCPUs with 4GB memory | 1.5 vCPUs with 2.5GB memory | 0.15396 |
 | 4 vCPUs with 8GB memory | 3.5 vCPUs with 6GB memory | 0.30792 |
 
-<ol start="2"><li>Click <b>Next</b>.</li>
-
-![resource allocation](./images/resource-allocation.png "resource allocation")
-
-</ol>
+2. Click <b>Next</b>.
 
 
 ### Step 4: Review the Provided Details
@@ -247,14 +232,14 @@ The summary table displays the following fields:
 
 The following table illustrates the various statuses and the actions that can be performed from the Overview, Deployment History, Endpoint, and API Keys pages.
 
-| <strong>Status</strong> <p> | <strong>Description</strong> | <strong>Actions you can perform </strong> |
+| Status | Description | Actions you can perform  |
 |:------ |:------ |:------ |
-| <strong>Overview</strong> | <strong>Deployment history</strong> | <strong>Endpoint</strong> | <strong>API</strong> <p> <strong>keys</strong> | <strong>Re-deployment</strong> |
-| <strong>Draft</strong> | The draft copy of the custom script that you can modify and deploy later. | <ul> <li>Export</li> <li>Delete</li> <li>Deploy</li> </ul> | Deploy Custom Script | Deploy Custom Script | Create a New API Key | No |
-| <strong>Deploying</strong> | The script is being deployed. A success message is displayed once the deployment completes successfully. If the deployment fails, a failure message is shown. | <ul> <li>Export</li> <li>Delete</li> </ul> | Rename deployment version | Endpoint not activated | · Create API keys <p> | No |
-| <strong>Ready to Deploy</strong> | The script is set up and ready to deploy. | <ul> <li>Export</li> <li>Delete</li> <li>Deploy</li> </ul> | Rename deployment version | Endpoint not activated | · Create API keys <p> | Yes |
-| <strong>Deployed</strong> | The deployed custom script. | <ul> <li>Redeploy</li> <li>Undeploy</li> <li>Export</li> </ul> | <ul> <li>View configuration and deployment details.</li> <li>Rename deployment version</li> </ul> | <ul> <li>Redeploy script</li> <li>View dedicated endpoint code (CURL, JS, and Python).</li> <li>Copy script code.</li> </ul> | <ul> <li>Create API keys</li> <li>Manage API keys</li> </ul> | Yes |
-| <strong>Deployment failed</strong> | The script deployment failed | <ul> <li>Deploy</li> <li>Delete</li> <li>Export</li> </ul> | <ul> <li>View configuration and deployment details except duration.</li> <li>Rename deployment version.</li> </ul> | The endpoint is not activated since the script is not deployed. | Create API keys <p> | Yes |
+| Overview | Deployment history | Endpoint | API keys | Re-deployment |
+| Draft | The draft copy of the custom script that you can modify and deploy later. | <ul> <li>Export</li> <li>Delete</li> <li>Deploy</li> </ul> | Deploy Custom Script | Deploy Custom Script | Create a New API Key | No |
+| Deploying | The script is being deployed. A success message is displayed once the deployment completes successfully. If the deployment fails, a failure message is shown. | <ul> <li>Export</li> <li>Delete</li> </ul> | Rename deployment version | Endpoint not activated | · Create API keys  | No |
+| Ready to Deploy | The script is set up and ready to deploy. | <ul> <li>Export</li> <li>Delete</li> <li>Deploy</li> </ul> | Rename deployment version | Endpoint not activated | · Create API keys  | Yes |
+| Deployed | The deployed custom script. | <ul> <li>Redeploy</li> <li>Undeploy</li> <li>Export</li> </ul> | <ul> <li>View configuration and deployment details.</li> <li>Rename deployment version</li> </ul> | <ul> <li>Redeploy script</li> <li>View dedicated endpoint code (CURL, JS, and Python).</li> <li>Copy script code.</li> </ul> | <ul> <li>Create API keys</li> <li>Manage API keys</li> </ul> | Yes |
+| Deployment failed | The script deployment failed | <ul> <li>Deploy</li> <li>Delete</li> <li>Export</li> </ul> | <ul> <li>View configuration and deployment details except duration.</li> <li>Rename deployment version.</li> </ul> | The endpoint is not activated since the script is not deployed. | Create API keys  | Yes |
 
 **Key Considerations**
 
@@ -290,11 +275,10 @@ To see when **Export** is available, please refer to the table [here](../manage-
 
 This action lets you undeploy the script from all its deployed locations on the platform.
 
-<Note><ul><li>An undeployed script can be redeployed. <a href="#redeploy-script">Learn more</a>.</li>
-<li>Once a script is redeployed, its data and configurations are restored. You can edit the script name and other parameters in the <a href="#import-and-deploy-a-custom-script">deployment flow</a>.</li>
-<li>The message “<i>No custom scripts deployed yet</i>” is displayed for the <b>Function</b> node if there are no deployed scripts.</li>
-<li>A script does not appear in the <b>Script</b> dropdown list for the <b>Function</b> node if it is not deployed.</li>
-</ul></Note>
+* An undeployed script can be redeployed. <a href="#redeploy-script">Learn more</a>.
+* Once a script is redeployed, its data and configurations are restored. You can edit the script name and other parameters in the <a href="#import-and-deploy-a-custom-script">deployment flow</a>.
+* The message “<i>No custom scripts deployed yet</i>” is displayed for the <b>Function</b> node if there are no deployed scripts.
+* A script does not appear in the <b>Script</b> dropdown list for the <b>Function</b> node if it is not deployed.
 
 
 To undeploy, follow the steps below on the **Manage Custom Scripts** page:
@@ -303,17 +287,11 @@ To undeploy, follow the steps below on the **Manage Custom Scripts** page:
 
 ![access undeploy](./images/access-undeploy.png "access undeploy")
 
-
-
    You can also select a script entry and click **Proceed to Undeploy** on its **Overview** page. 
 
-<ol start="2"><li>Click <b>Undeploy</b> in the confirmation window.</li>
+2. Click <b>Undeploy</b> in the confirmation window.
 
-![undeploy script confirm](./images/undeploy-script-confirmation.png "undeploy script confirm")
-
-</ol>
-
-A success message is displayed, and the script’s status changes to <b>Ready to Deploy</b>.</li>
+A success message is displayed, and the script’s status changes to <b>Ready to Deploy</b>.
 
 ![ready to deploy](./images/ready-to-deploy-success.png "ready to deploy")
 
@@ -347,11 +325,7 @@ To delete, follow the steps below on the **Manage Custom Scripts** page:
 
    Alternatively, select a script entry and click **Proceed to Delete** on its **Overview** page.
 
-<ol start="2"><li>Click <b>Delete</b> in the confirmation window.</li> 
-
-![delete the script](./images/delete-the-script.png "delete the script")
-
-</ol>
+2. Click <b>Delete</b> in the confirmation window.
 
 A success message is displayed, and the script is permanently removed. 
 
@@ -592,11 +566,7 @@ To add an API secret key, follow these steps:
 
 
 
-<ol start="5"><li>Click <b>Copy and Close</b>.</li>   
-
-![create new api copy](./images/create-new-api-copy.png "create new api copy")
-
-</ol>  
+5. Click <b>Copy and Close</b>.  
  
 <Info><ul><li>Your secret API key is shown only once when generated. Save the key in a safe location. Do not share it or expose it in browsers or other client-side code.</li>
 <li>If you lose a secret key, a new one must be generated.</li></ul></Info>

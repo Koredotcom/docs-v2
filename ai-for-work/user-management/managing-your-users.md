@@ -8,69 +8,27 @@ All users across your network accounts are listed here.
 
 The following list describes the columns displayed for each user.
 
-<table>
-  <tr>
-   <td>COLUMN
-   </td>
-   <td>DESCRIPTION
-   </td>
-  </tr>
-  <tr>
-   <td>USERS
-   </td>
-   <td>Displays the username, admin indicator, and selection box.
-   </td>
-  </tr>
-  <tr>
-   <td>DESIGNATION
-   </td>
-   <td>Designation of the user.
-   </td>
-  </tr>
-  <tr>
-   <td>STATUS
-   </td>
-   <td>Displays the user status. 
-<ul>
-
-<li>Active: The user is active and can interact with other users.</li>
-
-<li>Invited: Users invited by the Admin, but who are yet to join or accept the invitation.</li>
-
-<li>Suspended: The user is suspended by an administrator. The user cannot log in. The status of a Suspended user can be Activated anytime by admin.</li>
-
-<li>Removed: A user deleted by an admin enters a "soft delete" state for 60 days, after which they are permanently deleted. During this period, the user's status can be changed back to "Active."</li>
-
-<li>Remove Permanently: Available only for users in the "Removed" state, this action deletes them permanently from the list.
-</li>
-</ul>
-   </td>
-  </tr>
-  <tr>
-   <td>ROLE
-   </td>
-   <td>Displays the user's role, indicating whether they are an admin or a member. Click on the role to navigate to the role management section, where you can add a custom role.
-   </td>
-  </tr>
-  <tr>
-   <td>USER GROUP
-   </td>
-   <td>Displays the names of all the groups the user belongs to.
-   </td>
-  </tr>
-</table>
-
+* **USERS**:  Displays the username, admin indicator, and selection box.
+* **DESIGNATION**: Designation of the user.
+* **STATUS**: Displays the user status. 
+    * `Active`: The user is active and can interact with other users.
+    * `Invited`: Users invited by the Admin, but who are yet to join or accept the invitation.
+    * `Suspended`: The user is suspended by an administrator. The user cannot log in. The status of a Suspended user can be Activated anytime by admin.
+    * `Removed`: A user deleted by an admin enters a soft delete state for 60 days, after which they are permanently deleted. During this period, the user's status can be changed back to `Active`.
+    * Remove Permanently: Available only for users in the "Removed" state, this action deletes them permanently from the list.
+* **ROLE**: Displays the user's role, indicating whether they are an admin or a member. Click on the role to navigate to the role management section, where you can add a custom role.
+* **USER GROUP**: Displays the names of all the groups the user belongs to.
 
 To view the user details page:
 
-* Hover over the specific username, the **Open** icon will appear. Click **Open**.
-* Click **More** in the last column of the specific user row.  
+* Hover the pointer over the specific username and click **Open**.
+* Click **More** in the last column of the specific user row.
 
 From the user details page, you can access the following fields:
 
 * Personal Details
 * Application Details
-* Log details  
+* Log details
 
 <img src="../images/user-details.png" alt="user-details" title="user-details"/> 
 
@@ -89,7 +47,8 @@ The User Roles feature allows administrators to control user access through pred
 1. Click **Manage role** from the user management interface.
 2. Select **Add Role** or equivalent option to create a new role.
 3. **Role name**: Enter a descriptive name for the custom role. Use clear, meaningful names that reflect the role's purpose 
-<img src="../images/user-role-2.png" alt="user-details" title="user-details"/> 
+
+    <img src="../images/user-role-2.png" alt="user-details" title="user-details"/> 
 
     **Access Permissions**: Choose one or multiple permissions from the provided list. Users will only see the modules corresponding to the permissions they are granted.
 
@@ -100,6 +59,7 @@ The User Roles feature allows administrators to control user access through pred
     * Analytics
 
     **Color**: Choose a unique color identifier for the role, this color serves as a visual indicator throughout the system.
+
 !!! note
 
     At least one Access Permission must be selected to enable role creation.

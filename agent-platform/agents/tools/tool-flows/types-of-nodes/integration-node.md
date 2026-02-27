@@ -145,12 +145,8 @@ The new action replaces the existing one for the connection. Please configure th
 
 To modify the parameters for an action, follow the steps below:
 
-<ol><li>Click the <b>Edit</b> icon.</li>
-
-![edit action](./images/edit-action.png "edit action")
-
-</ol>
-<ol start="2"><li>Modify the required values and click <b>Save</b>.</li></ol>
+1. Click the <b>Edit</b> icon.
+1. Modify the required values and click <b>Save</b>.
 
 ### View the JSON Code
 
