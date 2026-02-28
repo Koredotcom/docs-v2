@@ -1,4 +1,7 @@
-# Rate Limits 
+---
+title: Rate Limits
+description: This documentation outlines the point consumption system for
+---
 
 This documentation outlines the point consumption system for user queries, detailing how different types of queries consume points and the various user categories that can be managed within the account.
 
@@ -22,10 +25,11 @@ Users can increase or decrease points based on their selected timeline, which ca
 * 6 hours
 * 12 hours
 
-<img src="../images/rate-limit.png" alt="email-template" title="email-template"/>
+
+![email-template](./images/rate-limit.png "email-template")
+
+
 
 In the **Logs** tab of the dashboard, you can see the number of points consumed for each question when viewing a specific log entry.
 
-!!!Note 
-    
-    Any query, whether simple talk or an interrupted query, will still consume points. However, if an error occurs while answering a query, the points for that query will not be counted as consumed.
+<Note> Any query, whether simple talk or an interrupted query, will still consume points. However, if an error occurs while answering a query, the points for that query will not be counted as consumed. </Note>

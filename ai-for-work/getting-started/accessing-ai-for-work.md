@@ -1,4 +1,7 @@
-# Accessing AI for Work
+---
+title: Accessing AI for Work
+description: Admins configure user enrollments user management user enrollments
+---
 
 Admins configure [user enrollments](../user-management/user-enrollments.md) to let users log in to the Platform at [https://work.kore.ai/login/](https://work.kore.ai/login/).
 

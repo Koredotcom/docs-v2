@@ -1,7 +1,13 @@
-# MCP Agents
+---
+title: MCP Agents
+description: MCP Agents enable your AI agents to interact
+---
 
 MCP Agents enable your AI agents to interact with external systems through tools hosted on MCP servers. By configuring MCP tools within your agents, you empower them to execute complex workflows spanning multiple external services through a standardized interface.
-<img src="../images/mcp-agents-home.png" alt="mcp-agents-home" title="mcp-agents-home" style="border: 1px solid gray; zoom:70%;"/>
+
+![mcp-agents-home](./images/mcp-agents-home.png "mcp-agents-home")
+
+
 
 ## How MCP Agents Work?
 
@@ -22,7 +28,10 @@ The following workflow describes how MCP Agents interact with MCP servers to pro
 ## Creating an MCP Agent
 
 You create MCP Agents to enable your AI agents to use tools from MCP servers. During agent creation, you select which MCP tools the agent can access and configure how the agent uses those tools.
-<img src="../images/mcp-agents-creation.png" alt="mcp-agents-creation" title="mcp-agents-creation" style="border: 1px solid gray; zoom:70%;"/>
+
+![mcp-agents-creation](./images/mcp-agents-creation.png "mcp-agents-creation")
+
+
 
 **To create an MCP Agent:**
 
@@ -83,7 +92,10 @@ Dynamic values facilitate conversational interactions, allowing users to provide
     * **Description**: Information about the parameter's purpose and expected input.
     * **Field Type**: The system shows the expected data type (string, number, boolean, etc.).
     * **Required/Optional**: The platform indicates whether the parameter is mandatory.
-    <img src="../images/mcp-agents-config.png" alt="mcp-agents-config" title="mcp-agents-config" style="border: 1px solid gray; zoom:70%;"/>
+
+    ![mcp-agents-config](./images/mcp-agents-config.png "mcp-agents-config")
+
+
 
 4. Choose the input type:
     * For **Static Values**:
@@ -95,8 +107,7 @@ Dynamic values facilitate conversational interactions, allowing users to provide
         * The system uses entity extraction to identify the value from user input.
 5. Save the tool configuration.
 
-!!! note
-    You can configure multiple tools from the same MCP connection or from different connections within a single agent.
+<Note> You can configure multiple tools from the same MCP connection or from different connections within a single agent. </Note>
 
 ### Enabling and Disabling Tools
 
@@ -155,7 +166,10 @@ To edit an MCP Agent:
 1. Navigate to the **MCP Agents** section.
 2. Select the agent you want to modify.
 3. Click **Edit**.
-<img src="../images/mcp-agents-manage.png" alt="Details and Purpose" title="Details and Purpose" style="border: 1px solid gray; zoom:70%;"/>
+
+![Details and Purpose](./images/mcp-agents-manage.png "Details and Purpose")
+
+
 
 1. Update any of the following:
     * Agent name, description, or instructions
@@ -194,7 +208,6 @@ To apply connection updates to your agent:
 5. Reselect or reconfigure tools as needed.
 6. Save the agent.
 
-!!! note
-    The platform does not automatically update agents when MCP server definitions change. You must manually review and update agent configurations to ensure compatibility with the latest tool schemas.
+<Note> The platform does not automatically update agents when MCP server definitions change. You must manually review and update agent configurations to ensure compatibility with the latest tool schemas. </Note>
 
  

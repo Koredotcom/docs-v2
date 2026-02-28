@@ -1,10 +1,11 @@
-# Notify API
+---
+title: Notify API
+description: The Notify API enables developers to send interactive
+---
 
 The Notify API enables developers to send interactive notifications to the users. These notifications can include customizable response options and action buttons.
   
-!!! note
-
-    Applicable only for Bot, Autonomous, and Workflow Agents.
+<Note> Applicable only for Bot, Autonomous, and Workflow Agents. </Note>
 
 | Method           | Post                                                                                                                                               |
 |----------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------|
@@ -52,7 +53,7 @@ curl --location --request POST 'https://work.example.ai/api/1.1/public/agents/ag
 
 ### Request Body Parameters
 
-| <strong>Parameter</strong> | <strong>Type</strong> | <strong>Required/Optional</strong> | <strong>Description</strong> |
+| Parameter | Type | Required/Optional | Description |
 | --- | --- | --- | --- |
 | to | string | Required | Email address of the application user (single recipient) |
 | message | object | Required | Contains notification title and body text |

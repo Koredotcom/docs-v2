@@ -1,4 +1,7 @@
-# Connect Amazon Q
+---
+title: Connect Amazon Q
+description: The Amazon Q configuration is a pivotal component
+---
 
 The Amazon Q configuration is a pivotal component for establishing seamless integration with Amazon Q Index, thereby unlocking robust enterprise search capabilities. This integration empowers organizations to harness their existing Amazon Q Business applications and associated retrievers, transforming them into a comprehensive knowledge source.
 
@@ -30,5 +33,4 @@ To connect Amazon Q, follow these steps:
 7. Click **Save** to complete the configuration.
 8. Mark this new source as **Active** to enable it for Enterprise Knowledge queries.
 
-!!! note
-     Application integrates with Amazon Q Index for enterprise search. If configured as the primary knowledge source, non-agent queries route to Q Index, which is recommended when it's your main search index. ***Enterprise Workspace*** is the default for Amazon Q access for all users, controlled by role-based access. A different workspace can be chosen during setup.
+<Note> Application integrates with Amazon Q Index for enterprise search. If configured as the primary knowledge source, non-agent queries route to Q Index, which is recommended when it's your main search index. ***Enterprise Workspace*** is the default for Amazon Q access for all users, controlled by role-based access. A different workspace can be chosen during setup.</Note>

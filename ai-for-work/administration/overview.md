@@ -1,4 +1,7 @@
-# Admin Console Overview
+---
+title: Admin Console Overview
+description: The Admin Console is a centralized management interface
+---
 
 The  Admin Console is a centralized management interface for administrators to configure, monitor, and manage system settings, including:
 
@@ -19,7 +22,13 @@ To access the **Admin Console**, follow the steps below:
 
 1. Log in to [AI for Work](https://work.kore.ai/login/) using your credentials.
 2. Click **Admin Console** under your user account menu.  
-<img src="../images/admin-console.png" alt="admin-console" title="admin-console"/>
+
+![admin-console](./images/admin-console.png "admin-console")
+
+
 
 1. The system redirects to the **Workspace** page.  
-<img src="../images/dashboard.png" alt="dashboard" title="dashboard"/>  
+
+![dashboard](./images/dashboard.png "dashboard")
+
+  

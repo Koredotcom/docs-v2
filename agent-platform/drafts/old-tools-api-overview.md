@@ -19,13 +19,14 @@ API keys are typically included in request headers or parameters to validate acc
 
 ## How to Create the API Key?
 
-1. [Login](../getting-started/sign-up-sign-in.md) to the Platform and [access](../administration/overview.md#access-settings-console) the Settings Console.
+1. [Login](/agent-platform/getting-started) to the Platform and [access](/agent-platform/administration/overview) the Settings Console.
 
 2. On the left menu, click Security & Control -> API Scopes.
 
-3. Create an API app and include all the required scopes, and the API keys as mentioned [here](../settings/security-and-control/api-scopes.md).
+3. Create an API app and include all the required scopes, and the API keys as mentioned [here](/agent-platform/administration/security-and-control#api-scopes).
 
 <Note> You can copy the API key only once and must not lose it. Save the key in a secure location for future use. </Note>
+
 <hr/> 
 
 **Related resource**

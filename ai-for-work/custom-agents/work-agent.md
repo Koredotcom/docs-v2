@@ -1,4 +1,7 @@
-# Work - Agentic Search
+---
+title: Work - Agentic Search
+description: Work Agentic Search transforms how you interact with
+---
 
 Work - Agentic Search transforms how you interact with enterprise data by providing an intelligent search and orchestration layer across your organization's knowledge sources. Platform now delivers improved source attribution, comprehensive citations, and native document generation capabilities, including PDF and PowerPoint exports.
 
@@ -27,7 +30,10 @@ You'll start by importing a pre-configured base application that provides the fo
 1. Open **Agent Platform** → **Create App.**
 2. Select **Import Existing App**.
 3. Upload the base app provided by your administrator.
-<img src="../images/work-agent-home.png" alt="work-agent-home" title="work-agent-home" style="border: 1px solid gray; zoom:70%;"/>
+
+![work-agent-home](./images/work-agent-home.png "work-agent-home")
+
+
 
 The import process establishes your working environment with the core components already in place. You'll customize these components in the subsequent steps to match your organization's specific requirements and tool ecosystem.
 
@@ -55,7 +61,10 @@ First, retrieve the Server URL from your environment.
 1. Log into the Platform and go to **Admin Hub** > **Assistant Configuration**.
 2. Select **MCP Server** > **Default Server**.
 3. Copy the Server URL displayed.
-<img src="../images/work-agent-url.png" alt="work-agent-url" title="work-agent-url" style="border: 1px solid gray; zoom:70%;"/>
+
+![work-agent-url](./images/work-agent-url.png "work-agent-url")
+
+
 
 Now, create the MCP tool in the Agent Platform.
 
@@ -65,7 +74,10 @@ Now, create the MCP tool in the Agent Platform.
     * Key: `auth`
     * Value: `{{memory.sessionMeta.metadata.aiForWork.sessionToken}}`
 4. Save the tool configuration.
-<img src="../images/work-agent-tool.png" alt="work-agent-tool" title="work-agent-tool" style="border: 1px solid gray; zoom:70%;"/>
+
+![work-agent-tool](./images/work-agent-tool.png "work-agent-tool")
+
+
 
 ### Enable Tool Integrations
 
@@ -76,7 +88,10 @@ After saving your MCP tool configuration, you'll enable specific tool integratio
     * Google Connector tools (Contact Lookup, Send Email, Read Emails, Calendar).
     * Outlook tools (if your organization uses Outlook).
     * Active Search Apps (based on your tenant configuration).
-<img src="../images/work-agent-select-tools.png" alt="work-agent-select-tools" title="work-agent-select-tools" style="border: 1px solid gray; zoom:70%;"/>
+
+![work-agent-select-tools](./images/work-agent-select-tools.png "work-agent-select-tools")
+
+
 
 ## Configure Agent Workflow
 
@@ -114,13 +129,22 @@ The Data Assistant agent requires access to all configured tools. Open its confi
 With your application configured, you'll create a deployable version and establish an environment for production use. The versioning system allows you to maintain multiple configurations and roll back if needed.
 
 1. Go to **Deployment** → **Versions** → **+ New Version**.
-<img src="../images/work-agent-new-version.png" alt="work-agent-version" title="work-agent-version" style="border: 1px solid gray; zoom:70%;"/>
+
+![work-agent-version](./images/work-agent-new-version.png "work-agent-version")
+
+
 
 2. Save the version to capture your current configuration.
-<img src="../images/work-agent-version.png" alt="work-agent-version" title="work-agent-version" style="border: 1px solid gray; zoom:70%;"/>
+
+![work-agent-version](./images/work-agent-version.png "work-agent-version")
+
+
 
 1. Navigate to **Deployment** → **Environments** → **+ New Environment**.
-<img src="../images/work-agent-environment.png" alt="work-agent-environment" title="work-agent-environment" style="border: 1px solid gray; zoom:70%;"/>
+
+![work-agent-environment](./images/work-agent-environment.png "work-agent-environment")
+
+
 
 2. Deploy your version to the new environment.
 
@@ -131,13 +155,22 @@ Create the API credentials that the Platform uses to communicate with your deplo
 
 1. Copy the **deployment cURL** from your environment.
 2. Go to **API Scoping** → **+ New API Scope**.
-<img src="../images/work-agent-new-api-scope.png" alt="work-agent-api-scope" title="work-agent-api-scope" style="border: 1px solid gray; zoom:70%;"/>
+
+![work-agent-api-scope](./images/work-agent-new-api-scope.png "work-agent-api-scope")
+
+
 
 3. Fill in the required fields.
-<img src="../images/work-agent-api-scope.png" alt="work-agent-api-scope" title="work-agent-api-scope" style="border: 1px solid gray; zoom:70%;"/>
+
+![work-agent-api-scope](./images/work-agent-api-scope.png "work-agent-api-scope")
+
+
 
 3. Navigate to **API Keys → Create Key** using your scope.
-<img src="../images/work-agent-key.png" alt="work-agent-key" title="work-agent-key" style="border: 1px solid gray; zoom:70%;"/>
+
+![work-agent-key](./images/work-agent-key.png "work-agent-key")
+
+
 
 4. Replace the placeholder API key in the cURL with your generated key.
 
@@ -154,11 +187,17 @@ The final configuration step connects your deployed Agentic Search instance to t
 4. Locate the streaming configuration and change:
     * From: `"stream": {"enable": false}`
     * To: `"stream": {"enable": true}`
-   <img src="../images/work-agent-agentic-app.png" alt="work-agent-agentic-app" title="work-agent-agentic-app" style="border: 1px solid gray; zoom:70%;"/> 
+
+   ![work-agent-agentic-app](./images/work-agent-agentic-app.png "work-agent-agentic-app")
+
+ 
 
 5. Before saving, you must update the streaming configuration.
 6. Inside the **Add Agentic App Source** window, scroll to the JSON body and modify. This activates real-time token-level streaming so users can see responses as they generate.
-<img src="../images/work-agent-agentic-app-source.png" alt="work-agent-agentic-app-source" title="work-agent-agentic-app-source" style="border: 1px solid gray; zoom:70%;"/>
+
+![work-agent-agentic-app-source](./images/work-agent-agentic-app-source.png "work-agent-agentic-app-source")
+
+
 
 1. Click **Save.**
 
@@ -176,7 +215,10 @@ In platform, navigate to the Work tab's search interface. Submit a test query th
 2. Submit a test query.
 3. Verify the results appear correctly.
 4. Check **Agent Platform** → **Traces** to review the execution flow.
-<img src="../images/work-agent-trace.png" alt="work-agent-trace" title="work-agent-trace" style="border: 1px solid gray; zoom:70%;"/>
+
+![work-agent-trace](./images/work-agent-trace.png "work-agent-trace")
+
+
 
 The traces show how your query moved through the agent architecture, which tools were invoked, and how the response was generated. Use this diagnostic view to troubleshoot any issues.
 

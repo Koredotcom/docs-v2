@@ -1,4 +1,7 @@
-# AI for Work Overview
+---
+title: AI for Work Overview
+description: AI for Work is a unified enterprise platform
+---
 
 AI for Work is a unified enterprise platform that significantly enhances enterprise productivity by automating routine tasks and enabling employees to focus on high-value work. The platform addresses three critical enterprise challenges:
 
@@ -31,7 +34,10 @@ The Platform is designed to provide a unified and flexible framework for impleme
 
 **Key Layers and Components of the Platform**:
 
-<img src="../images/ai-for-work-architecture-diagram.svg" alt="Platform Architecture" title="Platform Architecture" style="border: 1px solid gray; zoom:100;"/>
+
+![Platform Architecture](./images/ai-for-work-architecture-diagram.svg "Platform Architecture")
+
+
 
 1. **Access Points**: Users can access the Platform through a web-based interface or mobile applications.   
     

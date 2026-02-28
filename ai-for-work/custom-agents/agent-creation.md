@@ -1,4 +1,7 @@
-# Agent Creation
+---
+title: Agent Creation
+description: The agent creation feature provides a streamlined interface
+---
 
 The agent creation feature provides a streamlined interface that enables the creation of new agents. The system adapts its behavior based on workspace access and permissions.
 
@@ -13,11 +16,17 @@ The agent creation feature provides a streamlined interface that enables the cre
 Select Agent type:
 
 1. Navigate to the Agent and Flow section and click **Manage**.
-<img src="../images/agent_creation_1.png" alt="Agent Management" title="Agent Management" style="border: 1px solid gray; zoom:70%;"/>
+
+![Agent Management](./images/agent_creation_1.png "Agent Management")
+
+
 
 2. Click **Create Agent** to display a list of available agent types.
 3. Select the desired agent type.
-<img src="../images/agent_creation_2.png" alt="Agent Management" title="Agent Management" style="border: 1px solid gray; zoom:70%;"/>
+
+![Agent Management](./images/agent_creation_2.png "Agent Management")
+
+
 
 4. **Create from Scratch** or **Use Marketplace** option appears.
 5. Choose a preferred creation method.

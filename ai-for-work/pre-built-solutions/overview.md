@@ -1,4 +1,7 @@
-# Pre-built Solutions Overview
+---
+title: Pre-built Solutions Overview
+description: Pre Built Solutions offer a suite of AI
+---
 
 **Pre-Built Solutions** offer a suite of AI-powered tools designed to streamline various organizational workflows, reduce repetitive tasks, and improve operational efficiency. These solutions come with core features tailored to automate and enhance specific departments.
 

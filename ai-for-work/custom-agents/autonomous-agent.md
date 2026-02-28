@@ -1,4 +1,7 @@
-# Autonomous Agents
+---
+title: Autonomous Agents
+description: Autonomous Agents are AI powered agents that leverage
+---
 
 Autonomous Agents are AI-powered agents that leverage Agent Platform to autonomously manage complex business tasks and workflows. These agents can rapidly respond to evolving business requirements and circumstances in real time by employing adaptive algorithms for dynamic decision-making. They can significantly increase your organization's operational efficiency and decision-making capabilities by integrating artificial intelligence with business process automation.
 
@@ -14,7 +17,10 @@ Follow these steps to create a new Autonomous Agent:
 2. Initiate Agent Creation:
     * Click **+Create Agent** on the Autonomous Agents page.
     * The **Agent Creation Wizard** guides you through the setup process.
-    <img src="../images/Advance_Agentic_App_1.png" alt="Admin Console" title="Admin Console" style="border: 1px solid gray; zoom:70%;"/>
+
+    ![Admin Console](./images/Advance_Agentic_App_1.png "Admin Console")
+
+
 3. Details and Purpose: Define your agent's name and purpose for optimal performance.
     * **Icon**: Choose from the predefined icon library or upload a custom icon.
     * **Agent Name**: Enter a unique and meaningful name for your agent.
@@ -36,7 +42,10 @@ Follow these steps to create a new Autonomous Agent:
         back to the specified endpoint.
 
      For Async Mode, enter the **POST URL** and **Access token**.
-     <img src="../images/async.png" alt="Admin Console" title="Admin Console" style="border: 1px solid gray; zoom:70%;"/>
+
+     ![Admin Console](./images/async.png "Admin Console")
+
+
 
      * **URL**: Enter the endpoint URL of the agent obtained from the Agentic Platform.
   
@@ -55,14 +64,20 @@ Follow these steps to create a new Autonomous Agent:
      1. Click **Curl Import** to open the import interface.
      2. Paste your CURL command into the text box.
      3. Click **Import** to extract API details.
-     <img src="../images/Advance_Agentic_App_2.png" alt="Admin Console" title="Admin Console" style="border: 1px solid gray; zoom:70%;"/>
+
+     ![Admin Console](./images/Advance_Agentic_App_2.png "Admin Console")
+
+
 
 5. Appearance and Behavior: The **Appearance and Behavior** section displays sample queries to test the agent’s behavior.
      1. Click **+Add Query** to input additional test queries.
      2. Enable **Allow End User Notification** toggle to enable notification configuration and agent trigger setup, For detailed instructions, refer [Notifications](../custom-agents/notify-api.md).
      3. Enable **Clear End-User Chat History** toggle to automatically delete the agent's chat history for end users after a specified period.
      4. Once validated, click **Publish** to move to the final step.
-     <img src="../images/Advance_Agentic_App_3.png" alt="Admin Console" title="Admin Console" style="border: 1px solid gray; zoom:70%;"/>
+
+     ![Admin Console](./images/Advance_Agentic_App_3.png "Admin Console")
+
+
 
 6. Publish: Publish your agent and define access permissions and enablement.
 
@@ -85,9 +100,7 @@ To import an existing Autonomous Agent:
 2. Select the .ZIP file of the existing agent.
 3. Click **Import** to complete the process. The imported agent will appear on the Autonomous Agent page.
 
-!!!note
-
-    You cannot directly import agents exported from the Agent Platform. Only Autonomous Agents that were originally created and exported from application can be imported using this feature.
+<Note> You cannot directly import agents exported from the Agent Platform. Only Autonomous Agents that were originally created and exported from application can be imported using this feature.</Note>
 
 ## Usage
 
@@ -95,4 +108,7 @@ Autonomous Agents integrate seamlessly with the Agent Platform to provide intell
 
 When deployed, the Autonomous Agent appears as an interactive agent within the AI Work interface. As shown in the example screenshot, users can engage in natural conversations with the agent to accomplish specific tasks. The agent understands the context, process requests, and provides relevant responses based on its configured capabilities.
 
-<img src="../images/Advance_Agentic_App_5.png" alt="Admin Console" title="Admin Console" style="border: 1px solid gray; zoom:70%;"/>
+
+![Admin Console](./images/Advance_Agentic_App_5.png "Admin Console")
+
+

@@ -1,8 +1,14 @@
-# WS-Federation Configuration
+---
+title: WS-Federation Configuration
+description: WS Federation is a protocol that enables identity
+---
 
 WS-Federation is a protocol that enables identity federation across different security realms, allowing users to authenticate once and access multiple applications. This configuration is commonly used with Active Directory Federation Services (ADFS) and provides enterprise-grade security for organizations using Windows-based identity infrastructure.
 
-<img src="../images/wsfc_overview.png" alt="open-id-connect" title="open-id-connect"/>
+
+![open-id-connect](./images/wsfc_overview.png "open-id-connect")
+
+
 
 ## Getting Started
 
@@ -21,7 +27,10 @@ Choose from the supported identity providers or use a custom WS-Federation confi
 
 Windows Azure Active Directory (now Microsoft Entra ID) provides comprehensive identity federation capabilities with seamless integration for Azure-based organizations. Configure these essential fields to establish secure communication between Azure and AI for Work.
 
-<img src="../images/wsfc_azure.png" alt="open-id-connect" title="open-id-connect"/>
+
+![open-id-connect](./images/wsfc_azure.png "open-id-connect")
+
+
 
 #### Configuration Fields
 
@@ -88,15 +97,18 @@ To set up the application in your Microsoft Entra ID (formerly Azure AD) environ
 
 Use this option for any WS-Federation compliant identity provider not specifically listed above, including on-premises Active Directory Federation Services (ADFS) deployments. This flexible configuration supports custom enterprise identity solutions and third-party WS-Federation providers.
 
-<img src="../images/wsfc_others.png" alt="open-id-connect" title="open-id-connect"/>
+
+![open-id-connect](./images/wsfc_others.png "open-id-connect")
+
+
 
 
 #### Configuration Fields
 
 | Field | Description | Required |
 | --- | --- | --- |
-| AD Sign-On Endpoint URL | The URL that application must use for sign-on and sign-off/out requests using the WS-Federation identity provider. This is the WS-Federation passive endpoint. (e.g., <code>https://adfs.yourcompany.com/adfs/ls/</code>) | Yes |
-| AD Federation Metadata Document URL | The URL for the federation metadata document used for authentication with Active Directory. This XML document contains configuration details and certificates. (e.g., <code>https://adfs.yourcompany.com/FederationMetadata/2007-06/FederationMetadata.xml</code>) | Yes |
+| AD Sign-On Endpoint URL | The URL that application must use for sign-on and sign-off/out requests using the WS-Federation identity provider. This is the WS-Federation passive endpoint. (e.g., `https://adfs.yourcompany.com/adfs/ls/`) | Yes |
+| AD Federation Metadata Document URL | The URL for the federation metadata document used for authentication with Active Directory. This XML document contains configuration details and certificates. (e.g., `https://adfs.yourcompany.com/FederationMetadata/2007-06/FederationMetadata.xml`) | Yes |
 
 #### Configuration Steps
 

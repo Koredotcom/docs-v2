@@ -1,4 +1,7 @@
-# Handling Alert Tasks for Agents
+---
+title: Handling Alert Tasks for Agents
+description: The Bot Workflow and Autonomous Agents module of
+---
 
 The Bot, Workflow, and Autonomous Agents module of the application allows developers to integrate conversation hold and resume functionality within AI for Service Bots. This document provides a procedural overview of how Dialogflow handles brief pauses (holds) and subsequent resumption.
 
@@ -34,7 +37,7 @@ When the bot encounters a situation requiring a pause (e.g., awaiting an alert),
 
 #### Required Parameters
 
-| <strong>Parameter</strong> | <strong>Type</strong> | <strong>Required/Optional</strong> | <strong>Description</strong> |
+| Parameter | Type | Required/Optional | Description |
 | --- | --- | --- | --- |
 | type | string | Required | Action type (e.g., "hold_conversation") |
 | title | string | Required | Title of the hold message. |
@@ -67,9 +70,7 @@ Upon receiving the hold template, the user interface in the application:
 * Pauses the ongoing conversation.
 * Displays the hold template to the user, including the customized title and description.
 
-!!! note
-
-    You must first activate the alert service before displaying the hold template.
+<Note> You must first activate the alert service before displaying the hold template.</Note>
 
 ### Resuming the Conversation
 
@@ -77,7 +78,7 @@ Removes the hold template and continues the conversation with the alert or messa
 
 #### Required Parameters
 
-| <strong>Parameter</strong> | <strong>Type</strong> | <strong>Required/Optional</strong> | <strong>Description</strong> |
+| Parameter | Type | Required/Optional | Description |
 | --- | --- | --- | --- |
 | conversation_reference_id | string | Required | The unique identifier of the paused conversation. |
 | text | string | Required | Response content to display upon resumption. |
@@ -95,10 +96,7 @@ print(response); \
 
 ```
 
-!!! note
-
-    * The `conversation_reference_id` ensures that the response is correctly associated with the paused conversation.
-    * Any text or template that includes `conversation_reference_id` can be used as an alert response or message to help start a new conversation.
+<Note> The `conversation_reference_id` ensures that the response is correctly associated with the paused conversation. Any text or template that includes `conversation_reference_id` can be used as an alert response or message to help start a new conversation. </Note>
 
 #### Removing the Hold Template
 

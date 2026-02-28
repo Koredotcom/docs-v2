@@ -1,4 +1,7 @@
-# Workspace
+---
+title: Workspace
+description: Workspace provides dedicated environments where teams can collaborate
+---
 
 Workspace provides dedicated environments where teams can collaborate on AI initiatives while maintaining robust security and governance. This fundamental shift in AI management enables your organization to:
 

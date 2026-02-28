@@ -1,5 +1,7 @@
-
-# General Purpose
+---
+title: General Purpose
+description: Configure Large Language Models LLMs for your deployment
+---
 
 Configure Large Language Models (LLMs) for your deployment.
 
@@ -22,12 +24,12 @@ Platform supports a range of models from leading providers, each offering differ
 
 ### Pre-Built LLM Providers
 
-| <strong>Provider</strong> | <strong>Available Models</strong> | <strong>Access Method</strong> | <strong>Recommended For</strong> |
+| Provider | Available Models | Access Method | Recommended For |
 | --- | --- | --- | --- |
-| <strong>OpenAI</strong> | GPT-5-mini, GPT-5-nano, GPT-5, GPT-4.1, GPT-4.1- mini, GPT-4o, GPT-3.5-turbo, o3, o3-mini, o4-mini | Direct API integration through OpenAI API key | General-purpose tasks, conversational AI, complex reasoning, and content generation |
-| <strong>Azure OpenAI</strong> | GPT-5-mini, GPT-5-nano, GPT-5, GPT-4.1, GPT-4.1- mini, GPT-4o, GPT-3.5-turbo, o3, o3-mini, o4-mini | Azure Portal integration through Azure OpenAI Service | Enterprise deployments requiring Azure infrastructure, enhanced security, and compliance |
-| <strong>Google Gemini</strong> | Gemini 2.5 Pro (Recommended), Gemini 2.5 Flash (Recommended), 
-<p>
+| OpenAI | GPT-5-mini, GPT-5-nano, GPT-5, GPT-4.1, GPT-4.1- mini, GPT-4o, GPT-3.5-turbo, o3, o3-mini, o4-mini | Direct API integration through OpenAI API key | General-purpose tasks, conversational AI, complex reasoning, and content generation |
+| Azure OpenAI | GPT-5-mini, GPT-5-nano, GPT-5, GPT-4.1, GPT-4.1- mini, GPT-4o, GPT-3.5-turbo, o3, o3-mini, o4-mini | Azure Portal integration through Azure OpenAI Service | Enterprise deployments requiring Azure infrastructure, enhanced security, and compliance |
+| Google Gemini | Gemini 2.5 Pro (Recommended), Gemini 2.5 Flash (Recommended), 
+
 Gemini 2.5 Flash Lite, Gemini 2.0 Flash, Gemini 2.0 Flash Lite | Google Vertex AI integration, Gemini Studio | Multi-modal tasks, fast response times, and Google Cloud-based deployments |
 
 ### Model Tier Recommendations
@@ -52,12 +54,18 @@ Pre-built integrations offer the fastest path to leveraging leading AI models wi
 **Configuration Steps:**
 
 1. Navigate to **Admin Console > Assist Configuration > General Purpose**.
-   <img src="../images/general-purpose-llm.png" alt="general-purpose-llm" title="general-purpose-llm"/>
+
+   ![general-purpose-llm](./images/general-purpose-llm.png "general-purpose-llm")
+
+
 2. Click **New** and select your desired LLM provider from the dropdown menu:
     * OpenAI
     * Azure OpenAI
     * Google Gemini
-    <img src="../images/general-purpose-llm-new.png" alt="general-purpose-llm" title="general-purpose-llm"/>
+
+    ![general-purpose-llm](./images/general-purpose-llm-new.png "general-purpose-llm")
+
+
 3. Enter the required authorization details:
     * **Integration Name**: A unique identifier for this configuration (e.g., "OpenAI-Production").
     * **API Key**: Your provider-specific API key obtained from their portal.
@@ -66,10 +74,16 @@ Pre-built integrations offer the fastest path to leveraging leading AI models wi
     * Understand data usage and retention policies.
     * Ensure compliance with your organization's governance requirements.
     * Acknowledge the terms by selecting the checkbox.
-    <img src="../images/open-ai.png" alt="open-ai" title="open-ai"/>
+
+    ![open-ai](./images/open-ai.png "open-ai")
+
+
 5. Click **Save** to activate the configuration.
 6. Verify the integration appears in the **General LLM Integrations** list with an active status.
-<img src="../images/configured-model.png" alt="configured-model" title="configured-model"/>
+
+![configured-model](./images/configured-model.png "configured-model")
+
+
 
 **Provider-Specific Configuration Notes**:
 
@@ -107,7 +121,10 @@ Custom LLM configuration provides maximum flexibility for organizations with uni
     * **Integration Name**: A descriptive name for this custom integration.
     * **Model Name**: The specific model identifier.
     * **Endpoint URL**: The full API endpoint URL where your model is hosted.
-    <img src="../images/custom-llm.png" alt="custom-llm" title="custom-llm"/>
+
+    ![custom-llm](./images/custom-llm.png "custom-llm")
+
+
 4. **API Configuration**:
     * **Method**: Select the HTTP method (typically POST or GET) from the dropdown.
     * **Max Request Tokens**: Set the maximum number of tokens for each request to control costs and response size.
@@ -118,14 +135,20 @@ Custom LLM configuration provides maximum flexibility for organizations with uni
     * Click **+ Add a Header** to add additional HTTP headers.
     * Enter key-value pairs for each required header (e.g., "Content-Type: application/json").
     * Add multiple headers as needed for your integration.
-    <img src="../images/add-header.png" alt="add-header.png" title="add-header"/>
+
+    ![add-header.png](./images/add-header.png "add-header")
+
+
 7. Test the connection:
     * Enter a sample test payload in the provided field.
     * Click **Test** to verify connectivity and model response.
     * Review the response to ensure proper configuration:
         * **Success**: Connection is validated, and you can proceed to save.
         * **Error**: Review error messages to troubleshoot connection issues, authentication problems, or endpoint configuration.
-    <img src="../images/success-message.png" alt="success-message" title="success-message"/>
+
+    ![success-message](./images/success-message.png "success-message")
+
+
 8. Review and accept:
     * Read the **Policy Guidelines**.
     * Select the checkbox to acknowledge compliance.
@@ -140,8 +163,7 @@ Embedding models generate vector representations of text, enabling semantic sear
 
 Embeddings are numerical representations of text that capture semantic meaning. Unlike traditional keyword matching, embeddings allow AI systems to understand context, intent, and relationships between concepts. This enables more intelligent search results, better content recommendations, and improved natural language understanding.
 
-!!!note
-     Embedding models are required for the attachments functionality, where end users can attach files and ask questions about them.
+<Note> Embedding models are required for the attachments functionality, where end users can attach files and ask questions about them.  </Note>
 
 ## Managing LLM Integrations
 

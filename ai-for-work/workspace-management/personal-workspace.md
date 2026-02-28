@@ -1,4 +1,7 @@
-# Personal Workspace
+---
+title: Personal Workspace
+description: Personal Workspace is an environment that empowers end
+---
 
 Personal Workspace is an environment that empowers end users to create, manage, and publish custom agents within their dedicated workspace environment. This feature provides administrators with granular control over user permissions, agent types, and publishing capabilities while maintaining security and governance standards.
 
@@ -6,7 +9,10 @@ Personal Workspace is an environment that empowers end users to create, manage, 
 
 Personal Workspace enables organizations to democratize agent creation by allowing end users to build custom agents tailored to their specific needs. Administrators retain full oversight and control through comprehensive management tools, usage analytics, and configurable permissions.
 
-<img src="../images/personal_workspace_1.png" alt="admin-console" title="admin-console"/>
+
+![admin-console](./images/personal_workspace_1.png "admin-console")
+
+
 
 Key Benefits
 
@@ -37,7 +43,10 @@ Access Control Options:
 * Selected users: Only designated users can access personal workspaces.
 * Excluded users: All users except selected ones receive access.
 
-<img src="../images/personal_workspace_2.png" alt="admin-console" title="admin-console"/>
+
+![admin-console](./images/personal_workspace_2.png "admin-console")
+
+
 
 **Publishing Configuration**
 
@@ -55,7 +64,10 @@ Publishing Limit Settings:
 * 20 users
 * 30 users
 
-<img src="../images/personal_workspace_3.png" alt="admin-console" title="admin-console"/>
+
+![admin-console](./images/personal_workspace_3.png "admin-console")
+
+
 
 **Agent Type Restrictions**
 
@@ -73,7 +85,10 @@ Available Agent Types:
 * Bot Agent
 * Workflow Agent
 
-<img src="../images/personal_workspace_4.png" alt="admin-console" title="admin-console"/>
+
+![admin-console](./images/personal_workspace_4.png "admin-console")
+
+
 
 ## Collaboration and Sharing
 

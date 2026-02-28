@@ -461,11 +461,10 @@ After you define the input variables, you must [add the output variable(s)](../t
 
 To define the output variable, follow the steps below:
 
-<ol><li>Select the <b>Start</b> node and click the <b>Output</b> tab.</li>
+1. Select the <b>Start</b> node and click the <b>Output</b> tab.
 
-![output tab](./images/output-tab.png "output tab")
+    ![output tab](./images/output-tab.png "output tab")
 
-</ol>
 2. Click <b>Add Output Variable</b>.
 3. Enter the value for <b>Name (key)</b> and select the data type for <b>Type</b>.
 4. Click <b>Save</b>.

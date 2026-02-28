@@ -1,4 +1,7 @@
-# Custom Agents
+---
+title: Custom Agents
+description: Configurable AI agents designed for quick deployment and
+---
 
 Configurable AI agents designed for quick deployment and workflow integration with minimal setup:
 

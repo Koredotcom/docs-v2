@@ -1,8 +1,14 @@
-# Service Account Configuration
+---
+title: Service Account Configuration
+description: AI for Work integrates with external identity providers
+---
 
 AI for Work integrates with external identity providers through service accounts. These accounts authenticate the application and grant access to user directories, groups, and organizational data. You can configure multiple service accounts and designate one as the default for system-wide operations.
 
-<img src="../images/service-account.png" alt="service-account" title="service-account"/>
+
+![service-account](./images/service-account.png "service-account")
+
+
 
 
 ## Supported Service Account Types
@@ -98,6 +104,4 @@ Remove a service account:
 2. Select **Delete.**
 3. Confirm the deletion when prompted.
 
-!!! note
-
-    Platform prevents deletion of service accounts that link to active user enrollment. If you attempt to delete a linked account, the system displays a warning message explaining the restriction.
+<Note> Platform prevents deletion of service accounts that link to active user enrollment. If you attempt to delete a linked account, the system displays a warning message explaining the restriction. </Note>

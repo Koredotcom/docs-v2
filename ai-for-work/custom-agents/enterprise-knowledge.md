@@ -1,4 +1,7 @@
-# Enterprise Knowledge
+---
+title: Enterprise Knowledge
+description: Enterprise Knowledge represents a Search AI app Agentic
+---
 
 Enterprise Knowledge represents a **Search AI** app, **Agentic** App, or **Amazon Q** Index application provisioned for every enterprise  workspace. It serves as a fallback response repository, ensuring the system can generate responses by searching enterprise data when no specific agents align with the user's intent. Enterprise Knowledge enhances response accuracy and relevance by retrieving content from various sources and generating contextual responses based on that information. The system automatically makes it available to users when no custom or specific agents handle a user query.
 
@@ -7,8 +10,7 @@ Enterprise Knowledge represents a **Search AI** app, **Agentic** App, or **Amazo
 * **Fallback Search Response**: It activates when no specific agent matches the user's query, ensuring the system can still provide useful responses.
 * **Multiple Data Sources**: It retrieves information from various sources, including webpages, local files, third-party knowledge systems, and structured data, and combines them for a holistic response.
 
-!!!note
-    Enterprise Knowledge is only available in enterprise workspaces. Users in standard or other workspace  wont have access to this feature.
+<Note> Enterprise Knowledge is only available in enterprise workspaces. Users in standard or other workspace  wont have access to this feature.</Note>
 
 ## How Does Enterprise Knowledge Work?
 
@@ -27,25 +29,23 @@ Configure enterprise knowledge sources that activate when no agent triggers. Set
 * [Configure Agentic App](../custom-agents/connect-agentic-app.md)
 * [Configure Amazon Q](../custom-agents/connect-amazon-q.md)
 
-!!! note
-     * Configured sources become available to all the users within the selected workspace.
-     * For restricted access, choose the specific workspace that matches the user access requirements.
+* Configured sources become available to all the users within the selected workspace.
+* For restricted access, choose the specific workspace that matches the user access requirements.
 
+    ![Details and Purpose](./images/enterprise_knowledge_1.png "Details and Purpose")
 
-<img src="../images/enterprise_knowledge_1.png" alt="Details and Purpose" title="Details and Purpose" style="border: 1px solid gray; zoom:70%;"/>
-
-
-!!! note
-     * Maximum Sources: Up to 5 sources can be created.
-     * Active Source: Only 1 source can be active at any time.
-     * Configuration Types: Choose between Search AI app, Agentic App, or Amazon Q (not multiple simultaneously).
-
+* Maximum Sources: Up to 5 sources can be created.
+* Active Source: Only 1 source can be active at any time.
+* Configuration Types: Choose between Search AI app, Agentic App, or Amazon Q (not multiple simultaneously).
 
 ## Managing Knowledge Sources
 
 Access the Enterprise Knowledge configuration through **Enterprise Knowledge** > **Configure** to view all configured sources and their current status.
 
-<img src="../images/enterprise_knowledge_2.png" alt="Details and Purpose" title="Details and Purpose" style="border: 1px solid gray; zoom:70%;"/>
+
+![Details and Purpose](./images/enterprise_knowledge_2.png "Details and Purpose")
+
+
 
 ### Source Operations
 

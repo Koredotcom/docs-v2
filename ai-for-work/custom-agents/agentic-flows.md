@@ -1,4 +1,7 @@
-# Agentic Flows
+---
+title: Agentic Flows
+description: Agentic Flow enables the sequential execution of multiple
+---
 
 Agentic Flow enables the sequential execution of multiple AI agents to accomplish and automate complex tasks efficiently using AI agents. These flows streamline workflows by automating interactions and decision-making processes based on predefined logic and user input.
 
@@ -9,12 +12,18 @@ Follow these steps to create a new Agentic Flow:
 1. Access the Admin Console
     * Navigate to **AI Agents** in the left pane.
     * Select **Agentic Flow** to view the list of existing flows.
-    <img src="../images/Agentic_App_1.png" alt="Admin Console" title="Admin Console" style="border: 1px solid gray; zoom:70%;"/>
+
+    ![Admin Console](./images/Agentic_App_1.png "Admin Console")
+
+
 
 2. Initiate Agent Creation
     * Click **+Create Agent** on the Agentic Flow page.
     * The **Prompt Agentic Flow Creation Wizard** guides you through the setup process.
-    <img src="../images/Agentic_App_2.png" alt="Admin Creation" title="Admin Creation" style="border: 1px solid gray; zoom:70%;"/>
+
+    ![Admin Creation](./images/Agentic_App_2.png "Admin Creation")
+
+
 
 ### Step 1: Details and Purpose
 
@@ -22,11 +31,12 @@ Define your agent's name and purpose for optimal performance.
 
 * **agent Name**: Enter a unique and meaningful name for your agent.
 * **Purpose**: Defines the intended functionality of the agent for query routing and training. This field specifies both the default prompt and sample queries that help the system in correctly routing user queries to the appropriate flow.  
-<img src="../images/Agentic_App_3.png" alt="Details and Purpose" title="Details and Purpose" style="border: 1px solid gray; zoom:70%;"/>
 
-!!! note
+![Details and Purpose](./images/Agentic_App_3.png "Details and Purpose")
 
-    A well-defined purpose enhances the agent’s ability to correctly interpret and execute tasks, ensuring precise and effective responses to user queries.
+
+
+<Note> A well-defined purpose enhances the agent’s ability to correctly interpret and execute tasks, ensuring precise and effective responses to user queries. </Note>
 
 ### Step 2: Build Agentic Flow
 
@@ -59,9 +69,7 @@ Publish your agent and define access permissions and enablement.
     * **Always Enabled**: The agent remains active and cannot be disabled.
     * **Users Choice**: Users can enable or disable the agent as needed.
 
-!!! note
-
-    The publishing options are defined in the Workspace settings. For additional information, [Workspace](../Administration/workspace.md).
+<Note> The publishing options are defined in the Workspace settings. For additional information, [Workspace](../Administration/workspace.md). </Note>
 
 **Finalize deployment**:
 
@@ -106,8 +114,4 @@ The final step automatically generates a professional email that synthesizes all
 * Data visualizations and tables where applicable.
 * Formal closing with contact details.
 
-!!! note
-
-    The email can be edited and customized before sending to ensure it meets specific communication requirements and organizational standard.
-
-    
+<Note> The email can be edited and customized before sending to ensure it meets specific communication requirements and organizational standard. </Note>

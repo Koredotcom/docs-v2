@@ -1,4 +1,7 @@
-# AI for Work Release Notes
+---
+title: AI for Work Release Notes
+description: This document provides information on the feature updates
+---
 
 This document provides information on the feature updates and enhancements introduced in the recent release of the Platform.
 
@@ -54,8 +57,7 @@ Agents and attachments added to the compose bar now remain visible until manuall
 
 The HubSpot connector in Work - Agentic Search is optimized for improved query performance. The integration now utilizes API-based agents that excel at aggregation and lookup queries, ensuring faster and more reliable data retrieval from your HubSpot instance. 
 
-!!!note
-     Semantic search and advanced reasoning queries are not currently supported for HubSpot integration. We recommend using dedicated search connectors for these query types. Support for semantic search and advanced reasoning in HubSpot integration is coming soon.
+<Note> Semantic search and advanced reasoning queries are not currently supported for HubSpot integration. We recommend using dedicated search connectors for these query types. Support for semantic search and advanced reasoning in HubSpot integration is coming soon.  </Note>
 
 <hr />
 
@@ -117,9 +119,7 @@ Key Improvements
 * Account-Level Intelligence: Search results are tailored to your organization's specific data and system.
 * Connected Systems and Data Sources: Omni Search integrates with Google Calendar, Gmail, Jira, HubSpot, Zendesk, and Company Policies.
 
-!!!note
-     * This beta feature is available only for internal accounts.
-     * To use Omni Search, users must add connections (for Gmail, Google Calendar). Without these, the system can't retrieve or link data across services.
+<Note> This beta feature is available only for internal accounts. To use Omni Search, users must add connections (for Gmail, Google Calendar). Without these, the system can't retrieve or link data across services </Note>
 
 **Agent Version Control System**
 

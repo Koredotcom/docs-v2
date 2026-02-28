@@ -1,4 +1,7 @@
-# Using AI for Work Assistant
+---
+title: Using AI for Work Assistant
+description: Log in to the Platform https work kore
+---
 
 Log in to [the Platform](https://work.kore.ai/login/).
 
@@ -19,8 +22,7 @@ Files uploaded through the Assistant chat interface are stored in managed cloud 
 * All file uploads in the Platform chat sessions.
 * Documents processed through Search AI functionality.
 
-!!!note
-    Files uploaded during chat sessions are stored in the platform's cloud infrastructure.  
+<Note> Files uploaded during chat sessions are stored in the platform's cloud infrastructure. </Note>
 
 **Data Security**
 
@@ -36,7 +38,10 @@ All files stored in the platform's managed storage infrastructure are protected 
 2. **Google Calendar:** Checks John Doe’s availability for a specified time.
 3. **Gmail:** Sends the fetched Jira issues to John Doe via email. 
 
-<img src="../images/agentic-flow.png" alt="agentic-flow" title="agentic-flow"/>
+
+![agentic-flow](./images/agentic-flow.png "agentic-flow")
+
+
 
 **Steps to execute the flow:**
 

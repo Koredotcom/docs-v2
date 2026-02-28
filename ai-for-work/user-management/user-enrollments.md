@@ -1,8 +1,14 @@
-# User Enrollments
+---
+title: User Enrollments
+description: User enrollments simplify managing account access by clearly
+---
 
 User enrollments simplify managing account access by clearly defining who can join and how they are invited. This functionality is essential for maintaining security and organization within the account. Three main enrollment options are available:  Open to Domain, Invite Only, and Manage users with AD Sync.
 
-<img src="../images/user-enrollment.png" alt="user-enrollment" title="user-enrollment"/> 
+
+![user-enrollment](./images/user-enrollment.png "user-enrollment")
+
+ 
 
 ## Open to Domain
 
@@ -25,7 +31,10 @@ This option allows the admin to manage accounts using Active Directory synchroni
 4. Click **Sync now** to view the account delta, which shows the number of users to be newly added, those to be removed, and any role updates for existing users.  
 
 5. Click **Set Sync Now** to choose the frequency and start time for auto-syncing and then click **Confirm**. The auto sync is configured to run daily, updating and managing user information at the designated time. This includes sending invites to new users, removing users who are no longer part of the groups, and updating roles for existing users. 
-<img src="../images/set-time-for-auto-sync.png" alt="set-time-for-auto-sync" title="set-time-for-auto-sync"/> 
+
+![set-time-for-auto-sync](./images/set-time-for-auto-sync.png "set-time-for-auto-sync")
+
+ 
 
 6. Click **Save Configuration** to apply and update all the respective changes. 
 Note: The configuration cannot be saved if the current admin making the changes is not included in the admin DL.  

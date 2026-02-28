@@ -1,4 +1,7 @@
-# Azure Key Vault BYOK Integration Setup
+---
+title: Azure Key Vault BYOK Integration Setup
+description: Integrating Azure Key Vault with our application establishes
+---
 
 Integrating Azure Key Vault with our application establishes a secure connection between your encryption keys and our multi-tenant platform, enabling Bring Your Own Key (BYOK) functionality. This document provides step-by-step instructions for the following:
 

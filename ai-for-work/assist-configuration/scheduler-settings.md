@@ -1,8 +1,14 @@
-# Scheduler Settings
+---
+title: Scheduler Settings
+description: Scheduler Settings allow administrators to configure account wide
+---
 
 Scheduler Settings allow administrators to configure account-wide controls for automated agent execution. These settings determine scheduler availability, usage limits, and workspace-level permissions across the organization.
 
-<img src="../images/rate-limit.png" alt="email-template" title="email-template"/>
+
+![email-template](./images/rate-limit.png "email-template")
+
+
 
 ## Enable Scheduler
 

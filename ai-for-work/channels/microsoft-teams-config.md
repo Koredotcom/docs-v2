@@ -1,4 +1,6 @@
-# Microsoft Teams and Copilot Integration - Configuration 
+---
+title: Microsoft Teams and Copilot Integration - Configuration
+---
 
 This document provides detailed step-by-step instructions for implementing AI for Work integration with Microsoft Teams. Follow these phases sequentially to ensure proper deployment and functionality.
 
@@ -43,10 +45,16 @@ This phase varies based on your chosen App Type (MultiTenant vs SingleTenant).
 **Generate Client Secret**
 
 1. In **Configuration**, click **Manage Password** next to the Microsoft App ID.
-<img src="../images/teams_1.png" alt="teams_1" title="teams_1" style="border: 1px solid gray; zoom:70%;"/>
+
+![teams_1](./images/teams_1.png "teams_1")
+
+
 
 2. Go to **Certificates & secrets** → **+ New client secret**.
-<img src="../images/teams_2.png" alt="teams_1" title="teams_1" style="border: 1px solid gray; zoom:70%;"/>
+
+![teams_1](./images/teams_2.png "teams_1")
+
+
 
 1. Enter description and expiry → **Add**.
 2. Copy the **Value** of the client secret (App Password).
@@ -62,11 +70,12 @@ Configure the bot to communicate with Microsoft Teams and enable Copilot integra
 
 1. Navigate to **Channels** in the bot resource menu and locate the **Available Channels** section.
 2. Select the **Microsoft Teams** channel and **M365 Extensions** channel (required for Copilot integration), review channel information, and select **Save**.
-<img src="../images/teams_3.png" alt="teams_1" title="teams_1" style="border: 1px solid gray; zoom:70%;"/>
 
-!!!note
+![teams_1](./images/teams_3.png "teams_1")
 
-    The Web Chat channel isn't supported for this integration, so keep it disabled.
+
+
+<Note> The Web Chat channel isn't supported for this integration, so keep it disabled. </Note>
 
 ### Phase 5: Proactive Notifications Setup
 
@@ -81,12 +90,18 @@ Enable the bot to send proactive notifications to users, which is essential for 
     * **Redirect URI**: Leave blank for this use case.
 3. Select **Register.**
 
-<img src="../images/teams_4.png" alt="teams_1" title="teams_1" style="border: 1px solid gray; zoom:70%;"/>
+
+![teams_1](./images/teams_4.png "teams_1")
+
+
 
 **Add Microsoft Graph Permissions**
 
 1. In the app registration, navigate to **API permissions** and select **Add a permission**.
-<img src="../images/teams_5.png" alt="teams_1" title="teams_1" style="border: 1px solid gray; zoom:70%;"/>
+
+![teams_1](./images/teams_5.png "teams_1")
+
+
 
 2. Select **Microsoft Graph** → **Application permissions.**
 
@@ -117,13 +132,19 @@ Provide Azure Bot credentials to the Platform to establish secure communication.
      * **Microsoft App Tenant ID**: (SingleTenant only) The tenant ID from the bot's app registration.
     * **Microsoft App ID**: The App ID from your Azure Bot resource.
     * **App Password**: The client secret from the bot's app registration.
-    <img src="../images/teams_6.png" alt="teams_1" title="teams_1" style="border: 1px solid gray; zoom:70%;"/>
+
+    ![teams_1](./images/teams_6.png "teams_1")
+
+
 
     * **App ID of the Microsoft Teams App**:  The additional app credentials for sending the Proactive Notifications.
     * **Application (Client) ID**: From the notifications app registration.
     * **Client Secret**: From the notifications app registration.
     * **Delivery (Tenant) ID**: From the notifications app registration.
-    <img src="../images/teams_7.png" alt="teams_1" title="teams_1" style="border: 1px solid gray; zoom:70%;"/>
+
+    ![teams_1](./images/teams_7.png "teams_1")
+
+
 
 **Customization Options**
 
@@ -146,16 +167,23 @@ Deploy the the Platform app to Microsoft Teams for user access.
 
 **Download Manifest**: Upon configuring credentials in the Platform, generate and download the Microsoft Teams application manifest file. This manifest file contains all the necessary configurations for integrating with Microsoft Teams.
 
-<img src="../images/teams_8.png" alt="teams_1" title="teams_1" style="border: 1px solid gray; zoom:70%;"/>
+
+![teams_1](./images/teams_8.png "teams_1")
+
+
 
 **Upload to Microsoft Teams Admin Center**
 
 **Prerequisites Verification**: Ensure you have **Upload Custom App** permissions in the Microsoft Teams Admin Center. Verify organizational policies allow custom app installations.
 
-1. Sign in to[ Microsoft Teams Admin Center](https://admin.teams.microsoft.com/)<span style="text-decoration:underline;" />.</span>
+1. Sign in to [Microsoft Teams Admin Center](https://admin.teams.microsoft.com/)
 2. Navigate to **Microsoft Teams apps** → **Manage apps.**
 3. Click **Upload new app**.
-<img src="../images/teams_9.png" alt="teams_1" title="teams_1" style="border: 1px solid gray; zoom:70%;"/>
+
+
+    ![teams_1](./images/teams_9.png "teams_1")
+
+
 
 1. Select the downloaded manifest file from the Platform.
 2. Wait for upload and validation to complete.
@@ -175,9 +203,7 @@ You can decide how to distribute the Platform app in Microsoft Teams:
     * Automatically adds the Platform app for all employees in the organization.
     * All users receive a notification in Microsoft Teams and a **welcome message** when the app is added.
 
-!!!note
-
-    Users must also be provisioned in the **Account Hub** of the Platform to access the app.
+<Note> Users must also be provisioned in the **Account Hub** of the Platform to access the app. </Note>
 
 * **Let Users Add App Themselves**
 
@@ -185,9 +211,7 @@ You can decide how to distribute the Platform app in Microsoft Teams:
     * Users need to **search for the app** in Microsoft Teams and add it manually.
     * No automatic notifications or installations occur. 
 
-!!!note
-
-    Users must be present in the **Account Hub** to use the app.
+<Note> Users must be present in the **Account Hub** to use the app.  </Note>
 
 * **Add App for Selected Users or User Groups**
 
@@ -195,10 +219,7 @@ You can decide how to distribute the Platform app in Microsoft Teams:
     * Selected users are automatically notified in Microsoft Teams and receive the welcome message.
     * Other users must find and install the app manually from the Marketplace. 
 
-!!!note
-
-    Selected users must also exist in the **Account Hub** for access.  
-    
+<Note> Selected users must also exist in the **Account Hub** for access. </Note>
 ## Troubleshooting Guide
 
 **Bot Not Responding in Microsoft Teams**

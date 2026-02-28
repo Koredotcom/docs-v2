@@ -1,8 +1,14 @@
-# Audit Log Management
+---
+title: Audit Log Management
+description: Audit Log is a tracking mechanism designed to
+---
 
 Audit Log is a tracking mechanism designed to monitor and record all administrative and operational activities across your platform. This system creates a comprehensive trail of user actions, providing enhanced security, accountability, and compliance capabilities for enterprise environments.
 
-<img src="../images/audit_log_home.png" alt="audit_log_home" title="audit_log_home" style="border: 1px solid gray; zoom:70%;"/>
+
+![audit_log_home](./images/audit_log_home.png "audit_log_home")
+
+
 
 ## Core Functionality
 
@@ -44,7 +50,10 @@ Agent logs record:
 
 Each log entry contains comprehensive metadata to facilitate detailed analysis and investigation.
 
-<img src="../images/audit_log_details.png" alt="audit_log_details" title="audit_log_details" style="border: 1px solid gray; zoom:70%;"/>
+
+![audit_log_details](./images/audit_log_details.png "audit_log_details")
+
+
 
 **User Information**
 
@@ -73,7 +82,10 @@ Each log entry contains comprehensive metadata to facilitate detailed analysis a
 
 The system provides powerful filtering tools that enable efficient log analysis and investigation:
 
-<img src="../images/audit_log_filters.png" alt="audit_log_filters" title="audit_log_filters" style="border: 1px solid gray; zoom:70%;"/>
+
+![audit_log_filters](./images/audit_log_filters.png "audit_log_filters")
+
+
 
 * **Date Range Filtering**: Narrow log view to specific time periods using intuitive date selection controls.
 * **User Filtering**: Focus on activities performed by specific individuals.
@@ -84,7 +96,10 @@ The system provides powerful filtering tools that enable efficient log analysis 
 
 For compliance reporting, investigations, or record-keeping, the system supports exporting filtered log data:
 
-<img src="../images/audit_log_download.png" alt="audit_log_download" title="audit_log_download" style="border: 1px solid gray; zoom:70%;"/>
+
+![audit_log_download](./images/audit_log_download.png "audit_log_download")
+
+
 
 * Export to CSV format with a single click.
 * Maintain all data fields and relationships in the exported file.

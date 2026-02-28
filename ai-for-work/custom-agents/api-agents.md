@@ -1,5 +1,7 @@
-
-# API Agents
+---
+title: API Agents
+description: API Agents builder is a powerful feature that
+---
 
 API Agents builder is a powerful feature that allows users to build API agents and integrate them with their legacy systems using APIs and a no-code builder. API agent enable business users to interact seamlessly with their data through natural language queries.
 
@@ -40,7 +42,10 @@ Before setting up API Agents, ensure your system meets the following requirement
 Users can create a API Agent from the **User Profile** > **Admin Console**> **AI Search** > **API Agents**> **+ Create Agent**. The setup wizard guides you through the entire process, from initial setup to deployment.
 
 
-<img src="../images/image9.png" alt="API Agent" title="" style="border: 1px solid gray; zoom:70%;"/>
+
+![API Agent](./images/image9.png)
+
+
 
 The API agent creation process consists of the following steps:
 
@@ -70,7 +75,10 @@ Briefly describe the system you want to integrate and the desired actions you wa
 
 Enter the purpose and click **Continue**.
 
-<img src="../images/image11.png" alt="API Agent" title="" style="border: 1px solid gray; zoom:70%;"/>
+
+![API Agent](./images/image11.png)
+
+
 
 ## Step 2: Basic Details
 
@@ -78,7 +86,10 @@ In the Basic Details step, you can provide the Agent's name and select a logo. Y
 
 Enter a name for the **Agent** **Name**, select an appropriate **Logo**, and click **Continue**.
 
-<img src="../images/image10.png" alt="API Agent" title="" style="border: 1px solid gray; zoom:70%;"/>
+
+![API Agent](./images/image10.png)
+
+
 
 ## Step 3: Connection Setup
 
@@ -95,7 +106,10 @@ Currently, the Agent supports GET and POST actions, meaning the Agent can be con
 
 Add the Purpose of action and click **Continue**.
 
-<img src="../images/image13.png" alt="API Agent" title="" style="border: 1px solid gray; zoom:70%;"/>
+
+![API Agent](./images/image13.png)
+
+
 
 ### Step 4.2: Data
 
@@ -108,9 +122,7 @@ You can choose one of the following options to define the data structure:
 * **API defining the fields**: Select this if you have an API that explicitly defines data fields.  This helps with field names in the actual API and prefills values for single-select and multi-select.
 * **Continue with Data API**: Select this if you don't have a data-defining API.
 
-!!! note
-
-    This option disables the "Schema API" and "Label Selection" steps in the setup process. You can directly go to the Data API tab.
+<Note> This option disables the "Schema API" and "Label Selection" steps in the setup process. You can directly go to the Data API tab.</Note>
 
 Select the option that best matches your API resources. The system will adapt to your chosen structure, ensuring an appropriate setup path.
 
@@ -123,9 +135,7 @@ To configure the schema API, provide the details - define it manually or use the
 
 This process ensures accurate data structure information for proper integration and handling.
 
-!!! note
-
-    Authorization in the CURL URL overrides the previous user auth selection.
+<Note> Authorization in the CURL URL overrides the previous user auth selection.</Note>
 
 Follow these steps to add schema API:
 
@@ -221,9 +231,7 @@ Each option includes a label, value, display order, and visibility status. This 
 
 A crucial feature of Field Options is the mapping between user-friendly labels and technical keys required for API requests. For example, while a user might see a "Priority" field with options like "High," "Medium," and "Low," the API might use corresponding numerical or string values. This mapping ensures accurate data retrieval by configuring what is displayed to the user and what is sent in API requests.
 
-!!! note
-
-    This field is applicable only if the Field Type is Single Select or Multi Select.
+<Note> This field is applicable only if the Field Type is Single Select or Multi Select.</Note>
 
 Follow these steps to add field options:
 
@@ -245,27 +253,34 @@ This resolver includes an API module for defining and testing with sample input.
 
 A key function of the Field Meta Resolver is retrieving the id of entities extracted from the user query.
 
-!!! note
-
-    This field is applicable only if the Field Type is Object.
+<Note> This field is applicable only if the Field Type is Object.</Note>
 
 Follow these steps to add a field meta resolver:
 
 1. Click the **+** (Plus) icon in the field meta resolver for the field type object.
 
 2. Click **CURL Import**. You can also use a dictionary instead of a CURL import. Learn [how to create one](#dictionary).
-<img src="../images/agent(28).png" alt="API Agent" title="" style="border: 1px solid gray; zoom:70%;"/>
+
+![API Agent](./images/agent(28).png)
+
 
 3. The import URL pop-up is displayed. Paste the URL and click **Import**.
-<img src="../images/image15.png" alt="API Agent" title="" style="border: 1px solid gray; zoom:70%;"/>
+
+![API Agent](./images/image15.png)
+
+
 
 4. Type in the **Sample Input** and click **Run**.
-<img src="../images/agent(29).png" alt="API Agent" title="" style="border: 1px solid gray; zoom:70%;"/>
+
+![API Agent](./images/agent(29).png)
+
 
 5. The Output Fields are displayed.
 
 6. Close the pop-up. The ID resolver is displayed.
-<img src="../images/agent(26).png" alt="API Agent" title="" style="border: 1px solid gray; zoom:70%;"/>
+
+![API Agent](./images/agent(26).png)
+
 
 7. Click **Continue**.
 
@@ -275,20 +290,28 @@ If API support is unavailable, you can use a dictionary as a local data store to
 
 You can use the existing dictionary if any. To select, toggle **Use Dictionary**, select the dictionary, and click **Run**. The output fields are displayed.
 
-<img src="../images/agent(21).png" alt="API Agent" title="" style="border: 1px solid gray; zoom:70%;"/>
+
+![API Agent](./images/agent(21).png)
+
 
 Follow these steps to create a dictionary:
 
 1. On the field value resolver or field meta resolver popup, toggle the **Use Dictionary**.
-<img src="../images/agent(24).png" alt="API Agent" title="" style="border: 1px solid gray; zoom:70%;"/>
+
+![API Agent](./images/agent(24).png)
+
 
 2. Click **+ Create**.
 3. On the Name & API tab, enter the **dictionary name**, **API call details** to feed the dictionary, and **pagination** details if required.  
-<img src="../images/agent(9).png" alt="API Agent" title="" style="border: 1px solid gray; zoom:70%;"/>
+
+![API Agent](./images/agent(9).png)
+
 
 4. Click **Run API**. The field selection tab is displayed.
 5. On the Field Selection tab, **select the fields** to be searched, **ID resolver field**, **Schedule to Pool data** frequency, and enter the **meta resolver field**.
-<img src="../images/agent(17).png" alt="API Agent" title="" style="border: 1px solid gray; zoom:70%;"/>
+
+![API Agent](./images/agent(17).png)
+
 
 6. Click **Pool data into the dictionary**. The preview tab is displayed.
 7. On the Preview tab, the pooled data is displayed.
@@ -298,7 +321,9 @@ Follow these steps to create a dictionary:
 
 Displays processed data to users, initially showing five records with an option to load more. Users can configure an “open” option that appears when hovering over any record. Clicking it will open a record in a new tab. 
 
-<img src="../images/agent(7).png" alt="API Agent" title="" style="border: 1px solid gray; zoom:70%;"/>
+
+![API Agent](./images/agent(7).png)
+
 
 
 
@@ -308,12 +333,12 @@ Follow these steps to create a URL:
 2. The Open URL pop-up is displayed.  
 3. Enter the Static URL. For example, `https://team.atlassian.net/browse/`.
 
-    !!! note
-
-        You can create a Dynamic URL using the response objects.
+    <Note> You can create a Dynamic URL using the response objects.</Note>
 
 4. The Variable mapper pop-up is displayed. Select the dynamic part of the URL i,e **Key,** and close the pop-up.  
-<img src="../images/agent(6).png" alt="API Agent" title="" style="border: 1px solid gray; zoom:70%;"/>
+
+![API Agent](./images/agent(6).png)
+
 
 1. Click **Done**. The Open option and the configured link are displayed.  
 2.  Click **Continue**.
@@ -355,9 +380,7 @@ Follow these steps to configure the filters:
     * For a GET call, the "query parameters" section is displayed. Uploading the API documentation pre-fills this section. Click the query parameters section to edit the configuration and view the variable mapper. You add additional query parameters as needed.
     * For a POST call, the "body" section is displayed. Uploading the API documentation pre-fills this section. Click the body section to edit the configuration and view the variable mapper.
 
-        !!! note
-
-            Ensure that the configuration includes only variables in place of entities. This allows the APIs to be dynamically generated during runtime.
+        <Note> Ensure that the configuration includes only variables in place of entities. This allows the APIs to be dynamically generated during runtime.</Note>
 
 6. Scroll down and click **Run**. The configuration builder script is generated. This script runs on the sample query and displays the API response.
 
@@ -749,7 +772,10 @@ The rule fills entities in a query when specific keywords are detected. Set rule
 
 You have options to set either an Entity Rule or Answering Rule.
 
-<img src="../images/api_business.png" alt="API Agent" title="" style="border: 1px solid gray; zoom:70%;"/>
+
+![API Agent](./images/api_business.png)
+
+
 
 ## Step 6: Publish
 
@@ -764,7 +790,7 @@ Publish your agent and define access permissions and enablement.
     * **Always Enabled**: The agent remains active and cannot be disabled.
     * **Users Choice**: Users can enable or disable the agent as needed.
 
-Note: The publishing options are defined in the Workspace settings. For additional information, [Workspace](../Administration/workspace.md).
+<Note>The publishing options are defined in the Workspace settings. For additional information, [Workspace](../Administration/workspace.md).</Note>
 
 ## User Interaction
 

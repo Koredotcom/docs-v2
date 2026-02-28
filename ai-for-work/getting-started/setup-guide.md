@@ -1,4 +1,7 @@
-# AI for Work Setup Guide
+---
+title: AI for Work Setup Guide
+description: This setup guide helps administrators quickly configure the
+---
 
 This setup guide helps administrators quickly configure the AI for Work Platform for their users. Learn how to sign up, set up, configure, and invite users to the Platform.
 

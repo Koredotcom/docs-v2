@@ -1,4 +1,7 @@
-# Enterprise Directory
+---
+title: Enterprise Directory
+description: Enterprise Directory enables centralized employee contact management across
+---
 
 Enterprise Directory enables centralized employee contact management across your organization. This feature streamlines workflows by providing users with quick access to colleague information through intelligent search, customizable filters, and rich contact profiles, while giving administrators flexible configuration options for data sources, field mapping, and display settings.
 
@@ -29,7 +32,10 @@ Search results display compact contact cards showing Name, Designation, Team, Ph
 
 The detailed contact view displays the Profile Picture, default fields (Name, Designation, Team, Email, Phone, Location, Time Zone, Employee ID, Manager, Reportees, and Team Members), and any additional custom fields that the admin configures.
 
-<img src="../images/view-details-ed.png" alt="user-details" title="user-details"/> 
+
+![user-details](./images/view-details-ed.png "user-details")
+
+ 
 
 ## Admin Setup and Configuration
 
@@ -49,7 +55,10 @@ Configure the directory using the Push Data to Directory through the API method.
 
 1. Select **Push Data to Directory through API** as your data source method.
 2. Click **Get API Details to Push Data** to view integration instructions, including API endpoint URL, authentication credentials, required data format and schema, and sample API request payload.
-<img src="../images/ed-1.png" alt="user-details" title="user-details"/> 
+
+![user-details](./images/ed-1.png "user-details")
+
+ 
 
 3. Implement the API integration in your system to push employee data to the directory.
 

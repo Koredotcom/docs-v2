@@ -1,8 +1,14 @@
-# OpenID Connect (OIDC)
+---
+title: OpenID Connect (OIDC)
+description: OpenID Connect OIDC is a modern authentication protocol
+---
 
 OpenID Connect (OIDC) is a modern authentication protocol built on OAuth 2.0 that provides simple identity verification and enables applications to obtain basic profile information about users. This configuration allows seamless integration with popular identity providers like Google and Microsoft Azure.
 
-<img src="../images/oidc_overview.png" alt="open-id-connect" title="open-id-connect"/>
+
+![open-id-connect](./images/oidc_overview.png "open-id-connect")
+
+
 
 ## Getting Started
 
@@ -21,7 +27,10 @@ Choose from the supported identity providers. Each provider offers specific feat
 
 Google's OpenID Connect implementation provides enterprise-grade authentication with seamless integration for G Suite domains. Configure these essential fields to establish secure communication between Google and AI for Work.
 
-<img src="../images/oidc_overview_2.png" alt="open-id-connect" title="open-id-connect"/>
+
+![open-id-connect](./images/oidc_overview_2.png "open-id-connect")
+
+
 
 #### Configuration Steps
 
@@ -31,7 +40,7 @@ Google's OpenID Connect implementation provides enterprise-grade authentication 
     * Turn on the toggle **Configure service account for your G-Suite domain**.
 3. **Configure Required Fields**:
 
-| <strong>Field</strong> | <strong>Description</strong> | <strong>Required</strong> |
+| Field | Description | Required |
 | --- | --- | --- |
 | Client Email | The service account email address from your Google Cloud project is used for authentication | Yes |
 | Admin Email | The G Suite administrator email address that has permissions to manage user access. | Yes |
@@ -83,7 +92,10 @@ To set up the application in your Google Workspace environment, you need to crea
 
 Microsoft Azure Active Directory (now Microsoft Entra ID) provides comprehensive identity and access management with robust security features. This configuration enables secure authentication for your organization's users.
 
-<img src="../images/oidc_overview_3.png" alt="open-id-connect" title="open-id-connect"/>
+
+![open-id-connect](./images/oidc_overview_3.png "open-id-connect")
+
+
 
 #### Configuration Steps
 

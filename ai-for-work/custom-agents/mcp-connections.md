@@ -1,4 +1,7 @@
-# MCP Connections
+---
+title: MCP Connections
+description: The Model Context Protocol MCP is an open
+---
 
 The Model Context Protocol (MCP) is an open standard that enables AI Agents to interact with external tools, data, and services. MCP acts as a universal translator or connector for AI agents, making it easy for LLMs to communicate with any tool without custom integration, using a standard interface.
 
@@ -28,7 +31,10 @@ Workspace-level connections provide isolated access to MCP tools within a specif
 * You can create connections with MCP servers that are accessible only within a specific workspace.
 * The platform makes connections available to all agents within that specific workspace.
 * These connections remain private to the workspace. The system does not make them visible or accessible outside of it.
-<img src="../images/mcp-connections-home.png" alt="mcp-agents-creation" title="mcp-agents-creation" style="border: 1px solid gray; zoom:70%;"/>
+
+![mcp-agents-creation](./images/mcp-connections-home.png "mcp-agents-creation")
+
+
 
 ### Account-Level Connections
 
@@ -39,7 +45,10 @@ Account-level connections provide broad access to MCP tools across your entire o
 * When you view account-level connections from within a workspace:
     * The system displays them but prevents editing.
     * The platform hides authentication profiles and URLs for security.
-<img src="../images/mcp-connections-account-level.png" alt="mcp-agents-creation" title="mcp-agents-creation" style="border: 1px solid gray; zoom:70%;"/>
+
+![mcp-agents-creation](./images/mcp-connections-account-level.png "mcp-agents-creation")
+
+
 
 ## Creating an MCP Connection
 
@@ -55,7 +64,10 @@ To create an MCP connection:
     * **MCP URL**: Enter the endpoint URL of the MCP server.
     * **Authentication Profile**: Select or configure the authentication method required by the MCP server.
     * **Custom Headers** (optional): Add any custom headers required for server communication. 
-  <img src="../images/mcp-connections-create.png" alt="mcp-agents-creation" title="mcp-agents-creation" style="border: 1px solid gray; zoom:70%;"/>
+
+  ![mcp-agents-creation](./images/mcp-connections-create.png "mcp-agents-creation")
+
+
 
 1. Click **Save Changes**.
 
@@ -84,8 +96,7 @@ To refresh an MCP connection:
 
 The system contacts the MCP server, fetches the updated list of tools, and displays any changes to tool schemas or added tools.
 
-!!! note
-    The Platform does not automatically reflect dynamic updates from the MCP server. You must manually reconfigure the MCP connection and reselect tools in your agents to apply updates.
+<Note> The Platform does not automatically reflect dynamic updates from the MCP server. You must manually reconfigure the MCP connection and reselect tools in your agents to apply updates.</Note>
 
 ### Viewing Tool Details
 
@@ -96,7 +107,10 @@ When you view an MCP connection, the platform displays:
 * **Input**: The parameters the tool requires, including data types and whether fields are mandatory.
 * **Output**: The structure of data the tool returns.
 
-<img src="../images/mcp-connections-tools.png" alt="mcp-agents-creation" title="mcp-agents-creation" style="border: 1px solid gray; zoom:70%;"/>
+
+![mcp-agents-creation](./images/mcp-connections-tools.png "mcp-agents-creation")
+
+
 
 This information helps you understand tool capabilities and configure them correctly in your agents.
 
@@ -114,8 +128,7 @@ To edit an MCP connection:
 
 The system validates the updated configuration and retrieves the current tool list from the server.
 
-!!! note
-    You cannot edit account-level connections from the workspace view. You must access them from the account-level Connections section.
+<Note> You cannot edit account-level connections from the workspace view. You must access them from the account-level Connections section. </Note>
 
 ### Deleting a Connection
 
@@ -128,6 +141,5 @@ To delete an MCP connection:
 3. Click **Delete**.
 4. Confirm the deletion.
 
-!!! note
-    Deleting a connection affects all agents that use tools from that MCP server. The platform disables those tools in the affected agents.
+<Note> Deleting a connection affects all agents that use tools from that MCP server. The platform disables those tools in the affected agents. </Note>
 

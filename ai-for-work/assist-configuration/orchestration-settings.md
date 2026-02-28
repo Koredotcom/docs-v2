@@ -1,4 +1,7 @@
-﻿# Orchestration Settings
+---
+title: Orchestration Settings
+description: Orchestration Settings Orchestration Settings provides a comprehensive pipeline
+---
 
 Orchestration Settings provides a comprehensive pipeline management framework that allows organizations to customize their AI query processing workflow. The system operates as a central control hub, enabling administrators to selectively activate, configure, and manage individual components of the AI interaction pipeline. This feature transforms how organizations deploy AI capabilities by providing granular control over each processing step.
 
@@ -14,7 +17,7 @@ Orchestration Settings provides a comprehensive pipeline management framework th
 4. Test the pipeline configuration using sample queries.
 5. Monitor performance and adjust settings as needed.
 
-<img src="../images/orchestration-settings.png" alt="action" title="action"/>
+![action](./images/orchestration-settings.png "action")
 
 ## Understanding the Interface Layout
 
@@ -30,7 +33,10 @@ The Orchestration Settings interface is organized into five main pipeline compon
 
 Guardrail Enforcement provides automated security policy application across all AI interactions through intelligent synchronization with your [Guardrails](./guardrails.md).
 
-<img src="../images/guardrails-enforcement.png" alt="action" title="action"/>
+
+![action](./images/guardrails-enforcement.png "action")
+
+
 
 **Configuration Options:**
 
@@ -47,7 +53,10 @@ Guardrail Enforcement provides automated security policy application across all 
 
 Small Talk Handling enables AI systems to engage in casual, contextual conversations that improve user experience and interaction quality.
 
-<img src="../images/small-talk-handling.png" alt="action" title="action"/>
+
+![action](./images/small-talk-handling.png "action")
+
+
 
 **Configuration Options:**
 
@@ -64,7 +73,10 @@ Small Talk Handling enables AI systems to engage in casual, contextual conversat
 
 Intelligent Agent Routing automatically analyzes incoming queries and directs them to the most appropriate AI agent or processing system for optimal response quality.
 
-<img src="../images/intelligent-agent.png" alt="action" title="action"/>
+
+![action](./images/intelligent-agent.png "action")
+
+
 
 **Configuration Options:**
 
@@ -81,7 +93,10 @@ Intelligent Agent Routing automatically analyzes incoming queries and directs th
 
 Enterprise Knowledge Lookup seamlessly integrates your organization's knowledge base with AI processing, ensuring responses draw from authoritative internal sources.
 
-<img src="../images/enterprise-knowledge.png" alt="action" title="action"/>
+
+![action](./images/enterprise-knowledge.png "action")
+
+
 
 **Configuration Options:**
 
@@ -95,14 +110,16 @@ Enterprise Knowledge Lookup seamlessly integrates your organization's knowledge 
 * **Configured but Disabled**: Knowledge base appears as available agent but requires manual selection.
 * **Not Configured**: Component remains inactive until Enterprise Knowledge is properly set up.
 
-!!! note
-    Enterprise Knowledge remains accessible through the compose bar's agent selector, despite being disabled in the query pipeline.
+<Note> Enterprise Knowledge remains accessible through the compose bar's agent selector, despite being disabled in the query pipeline. </Note>
 
 ### Fallback to AI Knowledge
 
 Fallback to AI Knowledge ensures continuous AI availability by providing alternative response generation when primary systems are unavailable or insufficient.
 
-<img src="../images/fallback-ai.png" alt="action" title="action"/>
+
+![action](./images/fallback-ai.png "action")
+
+
 
 **Configuration Options:**
 

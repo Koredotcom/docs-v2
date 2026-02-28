@@ -1,4 +1,7 @@
-# Email Templates
+---
+title: Email Templates
+description: Email Templates allows you to customize invitation emails
+---
 
 Email Templates allows you to customize invitation emails that you send to users when you add them to the account, workspace, or specific applications. These templates provide a consistent communication experience while allowing you to tailor messages to your organization's needs.
 
@@ -9,7 +12,10 @@ You can use the Email Templates feature to:
 * Preview emails before you send them to invited users.
 * Maintain consistent messaging across all applications that you provision to your account.
 
-<img src="../images/email-template.png" alt="email-template" title="email-template"/>
+
+![email-template](./images/email-template.png "email-template")
+
+
 
 ## Accessing Email Templates
 
