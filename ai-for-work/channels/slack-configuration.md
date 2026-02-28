@@ -28,9 +28,7 @@ Define how your app appears to users in Slack.
 
 
 
-!!! note
-    * You can modify these values to match your organization's terminology and branding.
-    * If you change the app name or description after deployment, you must generate a new manifest and update your Slack app configuration in the Developer Portal.
+<Note> You can modify these values to match your organization's terminology and branding. If you change the app name or description after deployment, you must generate a new manifest and update your Slack app configuration in the Developer Portal. </Note>
 
 ## Step 2: Generate App Manifest
 
@@ -146,9 +144,7 @@ Configure the introduction message and sample prompts that users see when they f
 1. After you customize the welcome experience, click **Save and Update**.
 2. The system immediately reflects the updated welcome message and prompts in the Slack app for all users.
 
-!!!note
-
-    You can update the welcome experience at any time. Changes take effect immediately and apply to all users.
+<Note> You can update the welcome experience at any time. Changes take effect immediately and apply to all users. </Note>
 
 ## Step 6: App Icon Customization (Optional)
 

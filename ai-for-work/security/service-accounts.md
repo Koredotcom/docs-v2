@@ -104,6 +104,4 @@ Remove a service account:
 2. Select **Delete.**
 3. Confirm the deletion when prompted.
 
-!!! note
-
-    Platform prevents deletion of service accounts that link to active user enrollment. If you attempt to delete a linked account, the system displays a warning message explaining the restriction.
+<Note> Platform prevents deletion of service accounts that link to active user enrollment. If you attempt to delete a linked account, the system displays a warning message explaining the restriction. </Note>

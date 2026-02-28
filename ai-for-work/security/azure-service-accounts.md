@@ -123,9 +123,7 @@ Azure generates the secret and displays it in the client secrets list.
 
 **Copy Secret Value**
 
-!!! note
-    
-     Azure displays the secret value only once at creation. If you lose the secret value, you must create a new client secret and update the configuration.
+<Note> Azure displays the secret value only once at creation. If you lose the secret value, you must create a new client secret and update the configuration. </Note>
 
 1. Locate the **Value** column in the client secrets list.
 2. Click the copy icon next to the secret value.

@@ -56,9 +56,7 @@ Open the downloaded JSON key file and locate the following values:
 * **Private Key** -- The complete private key string, including the `-----BEGIN PRIVATE KEY-----` and `-----END PRIVATE KEY-----` markers.
 * **Client ID** -- The unique identifier for this service account (you'll use this in the next section).
 
-!!! note
-
-    Keep this JSON file secure. Anyone with access to this file can authenticate as this service account.
+<Note> Keep this JSON file secure. Anyone with access to this file can authenticate as this service account. </Note>
 
 
 ## Configure Domain-Wide Delegation
@@ -84,9 +82,7 @@ Domain-wide delegation grants the service account permission to access user data
 
 Google Workspace grants the service account domain-wide access with the specified scopes.
 
-!!! note
-
-    Refer to the [Google Workspace API documentation](https://developers.google.com/workspace) for additional scopes based on your integration requirements.
+<Note> Refer to the [Google Workspace API documentation](https://developers.google.com/workspace) for additional scopes based on your integration requirements. </Note>
 
 ## Retrieve Admin Email
 

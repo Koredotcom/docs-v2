@@ -70,9 +70,7 @@ Upon receiving the hold template, the user interface in the application:
 * Pauses the ongoing conversation.
 * Displays the hold template to the user, including the customized title and description.
 
-!!! note
-
-    You must first activate the alert service before displaying the hold template.
+<Note> You must first activate the alert service before displaying the hold template.</Note>
 
 ### Resuming the Conversation
 
@@ -98,10 +96,7 @@ print(response); \
 
 ```
 
-!!! note
-
-    * The `conversation_reference_id` ensures that the response is correctly associated with the paused conversation.
-    * Any text or template that includes `conversation_reference_id` can be used as an alert response or message to help start a new conversation.
+<Note> The `conversation_reference_id` ensures that the response is correctly associated with the paused conversation. Any text or template that includes `conversation_reference_id` can be used as an alert response or message to help start a new conversation. </Note>
 
 #### Removing the Hold Template
 

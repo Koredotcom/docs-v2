@@ -96,8 +96,7 @@ To refresh an MCP connection:
 
 The system contacts the MCP server, fetches the updated list of tools, and displays any changes to tool schemas or added tools.
 
-!!! note
-    The Platform does not automatically reflect dynamic updates from the MCP server. You must manually reconfigure the MCP connection and reselect tools in your agents to apply updates.
+<Note> The Platform does not automatically reflect dynamic updates from the MCP server. You must manually reconfigure the MCP connection and reselect tools in your agents to apply updates.</Note>
 
 ### Viewing Tool Details
 
@@ -129,8 +128,7 @@ To edit an MCP connection:
 
 The system validates the updated configuration and retrieves the current tool list from the server.
 
-!!! note
-    You cannot edit account-level connections from the workspace view. You must access them from the account-level Connections section.
+<Note> You cannot edit account-level connections from the workspace view. You must access them from the account-level Connections section. </Note>
 
 ### Deleting a Connection
 
@@ -143,6 +141,5 @@ To delete an MCP connection:
 3. Click **Delete**.
 4. Confirm the deletion.
 
-!!! note
-    Deleting a connection affects all agents that use tools from that MCP server. The platform disables those tools in the affected agents.
+<Note> Deleting a connection affects all agents that use tools from that MCP server. The platform disables those tools in the affected agents. </Note>
 

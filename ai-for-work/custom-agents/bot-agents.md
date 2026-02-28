@@ -11,9 +11,13 @@ For example, consider a Fund Transfer Bot Agent. By creating this bot on the AI 
 
 Create a new agent or import an existing one.
 
-- [Import existing bot agent](#import-existing-bot-agent)
-
-- [Create a bot agent](#create-a-bot-agent)
+- [Import existing Bot Agent](#import-existing-bot-agent)
+- [Create a Bot Agent](#create-a-bot-agent)
+    - [Step 1: Details and Purpose](#step-1-details-and-purpose)
+    - [Step 2: Add Bot](#step-2-add-bot)
+    - [Step 3: Appearance and Behavior](#step-3-appearance-and-behavior)
+    - [Step 4: Publish](#step-4-publish)
+- [User Interaction](#user-interaction)
 
 ## Import existing Bot Agent
 
@@ -74,9 +78,7 @@ To create a webhook channel on the Bot and complete the integration process, fol
 
 1. Under the **Configured Channels** section, click the name of the bot you have created and want to integrate, enables the channel.
 
-!!! note
-
-    Create a new client app for your app by providing the JWT tokens generated using the **Post URL** and **Access tokens** available in the **Add bot agents** dialog in the **Add Bot** section.
+<Note> Create a new client app for your app by providing the JWT tokens generated using the **Post URL** and **Access tokens** available in the **Add bot agents** dialog in the **Add Bot** section.</Note>
 
 The **Prompt Agent creation** wizard will take you through the following steps:
 
@@ -132,15 +134,11 @@ Publish your agent and define access permissions and enablement.
     * **Always Enabled**: The agent remains active and cannot be disabled.
     * **Users Choice**: Users enable or disable the agent as needed.
 
-!!! note
-
-    The publishing options are defined in the Workspace settings. For additional information, [Workspace](../Administration/workspace.md).   
+<Note> The publishing options are defined in the Workspace settings. For additional information, [Workspace](../Administration/workspace.md).</Note>
 
 View this agent in the **Agents list** on the **Agents** page.
 
-!!! note
-
-    On the Agents list page, click the three dots icon next to the agent's name and publish the agent later if necessary.
+<Note> On the Agents list page, click the three dots icon next to the agent's name and publish the agent later if necessary.</Note>
 
 
 ## User Interaction

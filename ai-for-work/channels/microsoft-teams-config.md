@@ -75,9 +75,7 @@ Configure the bot to communicate with Microsoft Teams and enable Copilot integra
 
 
 
-!!!note
-
-    The Web Chat channel isn't supported for this integration, so keep it disabled.
+<Note> The Web Chat channel isn't supported for this integration, so keep it disabled. </Note>
 
 ### Phase 5: Proactive Notifications Setup
 
@@ -205,9 +203,7 @@ You can decide how to distribute the Platform app in Microsoft Teams:
     * Automatically adds the Platform app for all employees in the organization.
     * All users receive a notification in Microsoft Teams and a **welcome message** when the app is added.
 
-!!!note
-
-    Users must also be provisioned in the **Account Hub** of the Platform to access the app.
+<Note> Users must also be provisioned in the **Account Hub** of the Platform to access the app. </Note>
 
 * **Let Users Add App Themselves**
 
@@ -215,9 +211,7 @@ You can decide how to distribute the Platform app in Microsoft Teams:
     * Users need to **search for the app** in Microsoft Teams and add it manually.
     * No automatic notifications or installations occur. 
 
-!!!note
-
-    Users must be present in the **Account Hub** to use the app.
+<Note> Users must be present in the **Account Hub** to use the app.  </Note>
 
 * **Add App for Selected Users or User Groups**
 
@@ -225,10 +219,7 @@ You can decide how to distribute the Platform app in Microsoft Teams:
     * Selected users are automatically notified in Microsoft Teams and receive the welcome message.
     * Other users must find and install the app manually from the Marketplace. 
 
-!!!note
-
-    Selected users must also exist in the **Account Hub** for access.  
-    
+<Note> Selected users must also exist in the **Account Hub** for access. </Note>
 ## Troubleshooting Guide
 
 **Bot Not Responding in Microsoft Teams**

@@ -26,8 +26,7 @@ You need to associate four [API Scope](https://docs.kore.ai/xo/apis/automation/a
 * Document Management
 * Facets
 
-!!! note
-     These details are available in the **Search AI app** on the **Credentials** page under the **Manage** tab. Refer to [this](https://docs.kore.ai/xo/searchai/about-search-ai/) for more details.
+<Note> These details are available in the **Search AI app** on the **Credentials** page under the **Manage** tab. Refer to [this](https://docs.kore.ai/xo/searchai/about-search-ai/) for more details.</Note>
 
 **Access associated Apps**
 

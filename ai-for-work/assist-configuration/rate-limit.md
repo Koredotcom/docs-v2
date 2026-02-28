@@ -32,6 +32,4 @@ Users can increase or decrease points based on their selected timeline, which ca
 
 In the **Logs** tab of the dashboard, you can see the number of points consumed for each question when viewing a specific log entry.
 
-!!!Note 
-    
-    Any query, whether simple talk or an interrupted query, will still consume points. However, if an error occurs while answering a query, the points for that query will not be counted as consumed.
+<Note> Any query, whether simple talk or an interrupted query, will still consume points. However, if an error occurs while answering a query, the points for that query will not be counted as consumed. </Note>

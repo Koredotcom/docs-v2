@@ -100,9 +100,7 @@ To import an existing Autonomous Agent:
 2. Select the .ZIP file of the existing agent.
 3. Click **Import** to complete the process. The imported agent will appear on the Autonomous Agent page.
 
-!!!note
-
-    You cannot directly import agents exported from the Agent Platform. Only Autonomous Agents that were originally created and exported from application can be imported using this feature.
+<Note> You cannot directly import agents exported from the Agent Platform. Only Autonomous Agents that were originally created and exported from application can be imported using this feature.</Note>
 
 ## Usage
 

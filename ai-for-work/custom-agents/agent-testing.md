@@ -36,9 +36,7 @@ Out-of-scope queries trigger an **Improve Purpose based on Query** button that o
 
 
 
-!!! note
-
-    Agent responses with submission actions show disabled execution buttons in testing mode to prevent unintended actions.
+<Note> Agent responses with submission actions show disabled execution buttons in testing mode to prevent unintended actions. </Note>
 
 ## Response Management
 

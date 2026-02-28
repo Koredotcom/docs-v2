@@ -163,8 +163,7 @@ Embedding models generate vector representations of text, enabling semantic sear
 
 Embeddings are numerical representations of text that capture semantic meaning. Unlike traditional keyword matching, embeddings allow AI systems to understand context, intent, and relationships between concepts. This enables more intelligent search results, better content recommendations, and improved natural language understanding.
 
-!!!note
-     Embedding models are required for the attachments functionality, where end users can attach files and ask questions about them.
+<Note> Embedding models are required for the attachments functionality, where end users can attach files and ask questions about them.  </Note>
 
 ## Managing LLM Integrations
 

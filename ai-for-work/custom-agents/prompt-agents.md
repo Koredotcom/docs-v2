@@ -162,9 +162,8 @@ To configure user input, follow the steps outlined below:
 
 
 
-    !!! note
-
-        If the file size exceeds the context size limitation, it impacts the models, and an error message is displayed along with a list of models. Only a limited amount of information is used as context for generation. However, when the file limit is exceeded, all uploaded knowledge files are referenced for answering but not for generation.
+    <Note> If the file size exceeds the context size limitation, it impacts the models, and an error message is displayed along with a list of models. Only a limited amount of information is used as context for generation. However, when the file limit is exceeded, all uploaded knowledge files are referenced for answering but not for generation.
+ </Note>
 
 2.  Select the model required from the **Model selection** drop-down list, which
     displays all the integrated
@@ -252,7 +251,7 @@ Publish your agent and define access permissions and enablement.
     * **Always Enabled**: The agent remains active and cannot be disabled.
     * **Users Choice**: Users can enable or disable the agent as needed.
 
-Note: The publishing options are defined in the Workspace settings. For additional information, [Workspace](../Administration/workspace.md).
+<Note>The publishing options are defined in the Workspace settings. For additional information, [Workspace](../Administration/workspace.md).</Note>
 
 ## User Interaction
 

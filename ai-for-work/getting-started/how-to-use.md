@@ -22,8 +22,7 @@ Files uploaded through the Assistant chat interface are stored in managed cloud 
 * All file uploads in the Platform chat sessions.
 * Documents processed through Search AI functionality.
 
-!!!note
-    Files uploaded during chat sessions are stored in the platform's cloud infrastructure.  
+<Note> Files uploaded during chat sessions are stored in the platform's cloud infrastructure. </Note>
 
 **Data Security**
 

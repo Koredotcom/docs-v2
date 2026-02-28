@@ -23,9 +23,7 @@ The default encryption key is displayed in the main interface, providing immedia
 * **Copy** -- Click **Copy** to add the key to your clipboard.
 * **Refresh** -- Click **Refresh** to generate a new key instantly.
 
-!!! note
-
-    Default keys remain active and functional only when BYOK is not activated.
+<Note> Default keys remain active and functional only when BYOK is not activated. </Note>
 
 ## Bring Your Own Key (BYOK) Configuration
 
@@ -75,9 +73,8 @@ Follow this guided configuration to integrate your cloud provider's encryption s
     2. If successful, click **Next**.
 4. **Finalize Setup**: Click **Proceed** to complete the configuration.
 
-!!!note
-    The pre-populated values (Service Role ARN, External ID for AWS; Client ID, App Name for Azure) are provided by the system and must be used when configuring your cloud provider settings. Use the copy button to ensure accuracy.
-   
+<Note> The pre-populated values (Service Role ARN, External ID for AWS; Client ID, App Name for Azure) are provided by the system and must be used when configuring your cloud provider settings. Use the copy button to ensure accuracy.</Note>
+
 ## Post-Activation Key Management
 
 Once BYOK is active:

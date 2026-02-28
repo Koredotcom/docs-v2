@@ -17,10 +17,7 @@ Orchestration Settings provides a comprehensive pipeline management framework th
 4. Test the pipeline configuration using sample queries.
 5. Monitor performance and adjust settings as needed.
 
-
 ![action](./images/orchestration-settings.png "action")
-
-
 
 ## Understanding the Interface Layout
 
@@ -113,8 +110,7 @@ Enterprise Knowledge Lookup seamlessly integrates your organization's knowledge 
 * **Configured but Disabled**: Knowledge base appears as available agent but requires manual selection.
 * **Not Configured**: Component remains inactive until Enterprise Knowledge is properly set up.
 
-!!! note
-    Enterprise Knowledge remains accessible through the compose bar's agent selector, despite being disabled in the query pipeline.
+<Note> Enterprise Knowledge remains accessible through the compose bar's agent selector, despite being disabled in the query pipeline. </Note>
 
 ### Fallback to AI Knowledge
 

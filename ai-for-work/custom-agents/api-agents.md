@@ -122,9 +122,7 @@ You can choose one of the following options to define the data structure:
 * **API defining the fields**: Select this if you have an API that explicitly defines data fields.  This helps with field names in the actual API and prefills values for single-select and multi-select.
 * **Continue with Data API**: Select this if you don't have a data-defining API.
 
-!!! note
-
-    This option disables the "Schema API" and "Label Selection" steps in the setup process. You can directly go to the Data API tab.
+<Note> This option disables the "Schema API" and "Label Selection" steps in the setup process. You can directly go to the Data API tab.</Note>
 
 Select the option that best matches your API resources. The system will adapt to your chosen structure, ensuring an appropriate setup path.
 
@@ -137,9 +135,7 @@ To configure the schema API, provide the details - define it manually or use the
 
 This process ensures accurate data structure information for proper integration and handling.
 
-!!! note
-
-    Authorization in the CURL URL overrides the previous user auth selection.
+<Note> Authorization in the CURL URL overrides the previous user auth selection.</Note>
 
 Follow these steps to add schema API:
 
@@ -235,9 +231,7 @@ Each option includes a label, value, display order, and visibility status. This 
 
 A crucial feature of Field Options is the mapping between user-friendly labels and technical keys required for API requests. For example, while a user might see a "Priority" field with options like "High," "Medium," and "Low," the API might use corresponding numerical or string values. This mapping ensures accurate data retrieval by configuring what is displayed to the user and what is sent in API requests.
 
-!!! note
-
-    This field is applicable only if the Field Type is Single Select or Multi Select.
+<Note> This field is applicable only if the Field Type is Single Select or Multi Select.</Note>
 
 Follow these steps to add field options:
 
@@ -259,9 +253,7 @@ This resolver includes an API module for defining and testing with sample input.
 
 A key function of the Field Meta Resolver is retrieving the id of entities extracted from the user query.
 
-!!! note
-
-    This field is applicable only if the Field Type is Object.
+<Note> This field is applicable only if the Field Type is Object.</Note>
 
 Follow these steps to add a field meta resolver:
 
@@ -341,9 +333,7 @@ Follow these steps to create a URL:
 2. The Open URL pop-up is displayed.  
 3. Enter the Static URL. For example, `https://team.atlassian.net/browse/`.
 
-    !!! note
-
-        You can create a Dynamic URL using the response objects.
+    <Note> You can create a Dynamic URL using the response objects.</Note>
 
 4. The Variable mapper pop-up is displayed. Select the dynamic part of the URL i,e **Key,** and close the pop-up.  
 
@@ -390,9 +380,7 @@ Follow these steps to configure the filters:
     * For a GET call, the "query parameters" section is displayed. Uploading the API documentation pre-fills this section. Click the query parameters section to edit the configuration and view the variable mapper. You add additional query parameters as needed.
     * For a POST call, the "body" section is displayed. Uploading the API documentation pre-fills this section. Click the body section to edit the configuration and view the variable mapper.
 
-        !!! note
-
-            Ensure that the configuration includes only variables in place of entities. This allows the APIs to be dynamically generated during runtime.
+        <Note> Ensure that the configuration includes only variables in place of entities. This allows the APIs to be dynamically generated during runtime.</Note>
 
 6. Scroll down and click **Run**. The configuration builder script is generated. This script runs on the sample query and displays the API response.
 
@@ -802,7 +790,7 @@ Publish your agent and define access permissions and enablement.
     * **Always Enabled**: The agent remains active and cannot be disabled.
     * **Users Choice**: Users can enable or disable the agent as needed.
 
-Note: The publishing options are defined in the Workspace settings. For additional information, [Workspace](../Administration/workspace.md).
+<Note>The publishing options are defined in the Workspace settings. For additional information, [Workspace](../Administration/workspace.md).</Note>
 
 ## User Interaction
 

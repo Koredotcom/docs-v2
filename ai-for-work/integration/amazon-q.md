@@ -84,9 +84,7 @@ Use this configuration when Amazon Q Index should serve as your primary knowledg
 
 
 
-!!!note
-     * Enterprise Knowledge becomes the default knowledge source accessible to all users in that workspace, when configured within a specific workspace.
-     * You can select alternative workspaces during initial setup depending on who needs data access. Select Enterprise Workspace if you want all users in the organization to access the data.
+<Note> Enterprise Knowledge becomes the default knowledge source accessible to all users in that workspace, when configured within a specific workspace. You can select alternative workspaces during initial setup depending on who needs data access. Select Enterprise Workspace if you want all users in the organization to access the data.</Note>
 
 ### Search Agent
 

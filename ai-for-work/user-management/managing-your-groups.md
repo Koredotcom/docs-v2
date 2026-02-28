@@ -42,10 +42,7 @@ You may want to create one or more groups of users in your account for users wit
 
         2. To add users by importing from a file, **Click to upload** the files.  
         
-            !!!Note
-    
-                Only XLS, and CSV File types are supported.  
-                
+            <Note> Only XLS, and CSV File types are supported.</Note>
 
             ![import-from-file](./images/import-from-file.png "import-from-file")
 

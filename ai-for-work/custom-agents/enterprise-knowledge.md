@@ -10,8 +10,7 @@ Enterprise Knowledge represents a **Search AI** app, **Agentic** App, or **Amazo
 * **Fallback Search Response**: It activates when no specific agent matches the user's query, ensuring the system can still provide useful responses.
 * **Multiple Data Sources**: It retrieves information from various sources, including webpages, local files, third-party knowledge systems, and structured data, and combines them for a holistic response.
 
-!!!note
-    Enterprise Knowledge is only available in enterprise workspaces. Users in standard or other workspace  wont have access to this feature.
+<Note> Enterprise Knowledge is only available in enterprise workspaces. Users in standard or other workspace  wont have access to this feature.</Note>
 
 ## How Does Enterprise Knowledge Work?
 
@@ -30,22 +29,14 @@ Configure enterprise knowledge sources that activate when no agent triggers. Set
 * [Configure Agentic App](../custom-agents/connect-agentic-app.md)
 * [Configure Amazon Q](../custom-agents/connect-amazon-q.md)
 
-!!! note
-     * Configured sources become available to all the users within the selected workspace.
-     * For restricted access, choose the specific workspace that matches the user access requirements.
+* Configured sources become available to all the users within the selected workspace.
+* For restricted access, choose the specific workspace that matches the user access requirements.
 
+    ![Details and Purpose](./images/enterprise_knowledge_1.png "Details and Purpose")
 
-
-![Details and Purpose](./images/enterprise_knowledge_1.png "Details and Purpose")
-
-
-
-
-!!! note
-     * Maximum Sources: Up to 5 sources can be created.
-     * Active Source: Only 1 source can be active at any time.
-     * Configuration Types: Choose between Search AI app, Agentic App, or Amazon Q (not multiple simultaneously).
-
+* Maximum Sources: Up to 5 sources can be created.
+* Active Source: Only 1 source can be active at any time.
+* Configuration Types: Choose between Search AI app, Agentic App, or Amazon Q (not multiple simultaneously).
 
 ## Managing Knowledge Sources
 

@@ -41,9 +41,7 @@ When creating a workspace, admin must provide:
     * Everyone in the Account toggle allows agents to be published to all users in the organization. Only administrators can modify publishing settings for workspaces.
     * User Group toggle allows to select specific user groups who should receive access to agents.
 
-!!! note
-
-    The settings configured within the Agent Publishing section will directly affect the permissions necessary to successfully deploy and publish an agent.
+<Note> The settings configured within the Agent Publishing section will directly affect the permissions necessary to successfully deploy and publish an agent. </Note>
 
 * **Allowed Agent/Apps**: Workspaces can be configured to allow specific types of agents:
     * By default, all agent types are permitted.

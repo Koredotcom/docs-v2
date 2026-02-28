@@ -107,8 +107,7 @@ Dynamic values facilitate conversational interactions, allowing users to provide
         * The system uses entity extraction to identify the value from user input.
 5. Save the tool configuration.
 
-!!! note
-    You can configure multiple tools from the same MCP connection or from different connections within a single agent.
+<Note> You can configure multiple tools from the same MCP connection or from different connections within a single agent. </Note>
 
 ### Enabling and Disabling Tools
 
@@ -209,7 +208,6 @@ To apply connection updates to your agent:
 5. Reselect or reconfigure tools as needed.
 6. Save the agent.
 
-!!! note
-    The platform does not automatically update agents when MCP server definitions change. You must manually review and update agent configurations to ensure compatibility with the latest tool schemas.
+<Note> The platform does not automatically update agents when MCP server definitions change. You must manually review and update agent configurations to ensure compatibility with the latest tool schemas. </Note>
 
  

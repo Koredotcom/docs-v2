@@ -72,9 +72,7 @@ The User Roles feature allows administrators to control user access through pred
 
     **Color**: Choose a unique color identifier for the role, this color serves as a visual indicator throughout the system.
 
-!!! note
-
-    At least one Access Permission must be selected to enable role creation.
+<Note> At least one Access Permission must be selected to enable role creation. </Note>
 
 ## Top Navigation Menu
 

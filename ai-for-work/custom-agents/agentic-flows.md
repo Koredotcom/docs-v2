@@ -36,9 +36,7 @@ Define your agent's name and purpose for optimal performance.
 
 
 
-!!! note
-
-    A well-defined purpose enhances the agent’s ability to correctly interpret and execute tasks, ensuring precise and effective responses to user queries.
+<Note> A well-defined purpose enhances the agent’s ability to correctly interpret and execute tasks, ensuring precise and effective responses to user queries. </Note>
 
 ### Step 2: Build Agentic Flow
 
@@ -71,9 +69,7 @@ Publish your agent and define access permissions and enablement.
     * **Always Enabled**: The agent remains active and cannot be disabled.
     * **Users Choice**: Users can enable or disable the agent as needed.
 
-!!! note
-
-    The publishing options are defined in the Workspace settings. For additional information, [Workspace](../Administration/workspace.md).
+<Note> The publishing options are defined in the Workspace settings. For additional information, [Workspace](../Administration/workspace.md). </Note>
 
 **Finalize deployment**:
 
@@ -118,8 +114,4 @@ The final step automatically generates a professional email that synthesizes all
 * Data visualizations and tables where applicable.
 * Formal closing with contact details.
 
-!!! note
-
-    The email can be edited and customized before sending to ensure it meets specific communication requirements and organizational standard.
-
-    
+<Note> The email can be edited and customized before sending to ensure it meets specific communication requirements and organizational standard. </Note>
