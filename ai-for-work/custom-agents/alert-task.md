@@ -37,7 +37,7 @@ When the bot encounters a situation requiring a pause (e.g., awaiting an alert),
 
 #### Required Parameters
 
-| <strong>Parameter</strong> | <strong>Type</strong> | <strong>Required/Optional</strong> | <strong>Description</strong> |
+| Parameter | Type | Required/Optional | Description |
 | --- | --- | --- | --- |
 | type | string | Required | Action type (e.g., "hold_conversation") |
 | title | string | Required | Title of the hold message. |
@@ -78,7 +78,7 @@ Removes the hold template and continues the conversation with the alert or messa
 
 #### Required Parameters
 
-| <strong>Parameter</strong> | <strong>Type</strong> | <strong>Required/Optional</strong> | <strong>Description</strong> |
+| Parameter | Type | Required/Optional | Description |
 | --- | --- | --- | --- |
 | conversation_reference_id | string | Required | The unique identifier of the paused conversation. |
 | text | string | Required | Response content to display upon resumption. |

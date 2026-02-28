@@ -12,7 +12,7 @@ On the **User groups** page in the **User management** module, you can create an
 
 The following list describes the columns displayed in the groups listing.
 
-| <strong>COLUMN</strong> | <strong>DESCRIPTION</strong> |
+| COLUMN | DESCRIPTION |
 | --- | --- |
 | GROUP NAME | Displays the group name. Click a group name to edit the selected group – name, description, and members. |
 | DESCRIPTION | Displays the description of the group. This is an optional field. |

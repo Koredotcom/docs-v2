@@ -34,7 +34,7 @@ Administrators can add domains to extend access to approved domains within the o
 
 ## Sign-In and Access Rules
 
-| <strong>Company Domain Users</strong> | <strong>Partner Domain Users</strong> |
+| Company Domain Users | Partner Domain Users |
 | --- | --- |
 | Can sign in when domain-based user enrollment is enabled | Cannot sign in even if domain-based enrollment is enabled |
 | Cannot be associated with more than one tenant (single-account restriction) | Can be associated with multiple tenants (multi-account access) |

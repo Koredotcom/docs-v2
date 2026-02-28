@@ -40,7 +40,7 @@ Google's OpenID Connect implementation provides enterprise-grade authentication 
     * Turn on the toggle **Configure service account for your G-Suite domain**.
 3. **Configure Required Fields**:
 
-| <strong>Field</strong> | <strong>Description</strong> | <strong>Required</strong> |
+| Field | Description | Required |
 | --- | --- | --- |
 | Client Email | The service account email address from your Google Cloud project is used for authentication | Yes |
 | Admin Email | The G Suite administrator email address that has permissions to manage user access. | Yes |

@@ -53,7 +53,7 @@ curl --location --request POST 'https://work.example.ai/api/1.1/public/agents/ag
 
 ### Request Body Parameters
 
-| <strong>Parameter</strong> | <strong>Type</strong> | <strong>Required/Optional</strong> | <strong>Description</strong> |
+| Parameter | Type | Required/Optional | Description |
 | --- | --- | --- | --- |
 | to | string | Required | Email address of the application user (single recipient) |
 | message | object | Required | Contains notification title and body text |

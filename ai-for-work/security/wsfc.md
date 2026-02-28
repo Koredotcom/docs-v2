@@ -107,8 +107,8 @@ Use this option for any WS-Federation compliant identity provider not specifical
 
 | Field | Description | Required |
 | --- | --- | --- |
-| AD Sign-On Endpoint URL | The URL that application must use for sign-on and sign-off/out requests using the WS-Federation identity provider. This is the WS-Federation passive endpoint. (e.g., <code>https://adfs.yourcompany.com/adfs/ls/</code>) | Yes |
-| AD Federation Metadata Document URL | The URL for the federation metadata document used for authentication with Active Directory. This XML document contains configuration details and certificates. (e.g., <code>https://adfs.yourcompany.com/FederationMetadata/2007-06/FederationMetadata.xml</code>) | Yes |
+| AD Sign-On Endpoint URL | The URL that application must use for sign-on and sign-off/out requests using the WS-Federation identity provider. This is the WS-Federation passive endpoint. (e.g., `https://adfs.yourcompany.com/adfs/ls/`) | Yes |
+| AD Federation Metadata Document URL | The URL for the federation metadata document used for authentication with Active Directory. This XML document contains configuration details and certificates. (e.g., `https://adfs.yourcompany.com/FederationMetadata/2007-06/FederationMetadata.xml`) | Yes |
 
 #### Configuration Steps
 
