@@ -1,4 +1,7 @@
-# Prompt Agents
+---
+title: Prompt Agents
+description: As an administrator you can create Prompt Agents
+---
 
 As an administrator, you can create Prompt Agents in the prompt agent builder that users can utilize. These agents collect specific user inputs as variables to customize prompts, enabling various use cases such as content generation, language translation, and text summarization.
 

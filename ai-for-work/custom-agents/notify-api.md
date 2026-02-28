@@ -1,4 +1,7 @@
-# Notify API
+---
+title: Notify API
+description: The Notify API enables developers to send interactive
+---
 
 The Notify API enables developers to send interactive notifications to the users. These notifications can include customizable response options and action buttons.
   

@@ -1,4 +1,7 @@
-# Business Rules
+---
+title: Business Rules
+description: Define business rules by setting rules for entity
+---
 
 Define business rules by setting rules for entity selection and responses based on keywords. Business rules serve as guidelines or policies that ensure generated answers meet specific criteria and align with organizational goals.
 

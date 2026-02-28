@@ -1,4 +1,7 @@
-# Work - Agentic Search
+---
+title: Work - Agentic Search
+description: Work Agentic Search transforms how you interact with
+---
 
 Work - Agentic Search transforms how you interact with enterprise data by providing an intelligent search and orchestration layer across your organization's knowledge sources. Platform now delivers improved source attribution, comprehensive citations, and native document generation capabilities, including PDF and PowerPoint exports.
 

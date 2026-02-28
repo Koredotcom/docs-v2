@@ -1,4 +1,7 @@
-# Agent Creation
+---
+title: Agent Creation
+description: The agent creation feature provides a streamlined interface
+---
 
 The agent creation feature provides a streamlined interface that enables the creation of new agents. The system adapts its behavior based on workspace access and permissions.
 

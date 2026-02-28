@@ -1,5 +1,7 @@
-
-# API Agents
+---
+title: API Agents
+description: API Agents builder is a powerful feature that
+---
 
 API Agents builder is a powerful feature that allows users to build API agents and integrate them with their legacy systems using APIs and a no-code builder. API agent enable business users to interact seamlessly with their data through natural language queries.
 

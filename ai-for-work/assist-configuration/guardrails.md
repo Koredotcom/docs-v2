@@ -1,4 +1,7 @@
-# Guardrails
+---
+title: Guardrails
+description: Guardrails is an advanced security and compliance framework
+---
 
 Guardrails is an advanced security and compliance framework designed to protect sensitive information and enforce content policies in AI-powered applications. The system operates as a multi-layered defense mechanism, automatically scanning inputs and outputs to ensure data privacy and content appropriateness.
 

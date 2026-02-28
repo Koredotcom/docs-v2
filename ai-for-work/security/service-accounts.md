@@ -1,4 +1,7 @@
-# Service Account Configuration
+---
+title: Service Account Configuration
+description: AI for Work integrates with external identity providers
+---
 
 AI for Work integrates with external identity providers through service accounts. These accounts authenticate the application and grant access to user directories, groups, and organizational data. You can configure multiple service accounts and designate one as the default for system-wide operations.
 

@@ -1,4 +1,7 @@
-# SAML
+---
+title: SAML
+description: Security Assertion Markup Language SAML is a standard
+---
 
 Security Assertion Markup Language (SAML) is a standard protocol for web browser Single Sign-On (SSO) using secure tokens. SAML eliminates passwords and uses standard cryptography and digital signatures to pass secure sign-in tokens from an identity provider to a SaaS application.
 

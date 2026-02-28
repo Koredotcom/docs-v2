@@ -1,4 +1,7 @@
-# Enterprise Directory
+---
+title: Enterprise Directory
+description: Enterprise Directory enables centralized employee contact management across
+---
 
 Enterprise Directory enables centralized employee contact management across your organization. This feature streamlines workflows by providing users with quick access to colleague information through intelligent search, customizable filters, and rich contact profiles, while giving administrators flexible configuration options for data sources, field mapping, and display settings.
 

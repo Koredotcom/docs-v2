@@ -1,4 +1,7 @@
-# Scheduled Agents 
+---
+title: Scheduled Agents
+description: The Schedule Agents feature enables you to automate
+---
 
 The Schedule Agents feature enables you to automate agent execution at predefined intervals. You can configure schedulers to run agents automatically without manual intervention, streamlining recurring tasks and workflows.
 

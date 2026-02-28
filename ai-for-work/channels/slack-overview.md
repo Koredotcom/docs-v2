@@ -1,4 +1,7 @@
-# Slack Channel - Overview
+---
+title: Slack Channel - Overview
+description: AI for Work integrates seamlessly with Slack enabling
+---
 
 AI for Work integrates seamlessly with Slack, enabling employees to access AI-powered assistance directly within their collaboration environment. This integration streamlines productivity by enabling users to perform work-related tasks, query enterprise knowledge sources, and interact with AI agents all within Slack. 
 

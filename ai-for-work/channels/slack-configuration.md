@@ -1,4 +1,7 @@
-# Slack Integration - Configuration
+---
+title: Slack Integration - Configuration
+description: This document provides detailed step by step instructions
+---
 
 This document provides detailed step-by-step instructions to integrate AI for Work platform with Slack. Follow these steps sequentially to ensure proper deployment and functionality.
 

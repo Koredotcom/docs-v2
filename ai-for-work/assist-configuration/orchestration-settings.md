@@ -1,4 +1,7 @@
-﻿# Orchestration Settings
+---
+title: Orchestration Settings
+description: Orchestration Settings Orchestration Settings provides a comprehensive pipeline
+---
 
 Orchestration Settings provides a comprehensive pipeline management framework that allows organizations to customize their AI query processing workflow. The system operates as a central control hub, enabling administrators to selectively activate, configure, and manage individual components of the AI interaction pipeline. This feature transforms how organizations deploy AI capabilities by providing granular control over each processing step.
 

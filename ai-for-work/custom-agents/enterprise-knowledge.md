@@ -1,4 +1,7 @@
-# Enterprise Knowledge
+---
+title: Enterprise Knowledge
+description: Enterprise Knowledge represents a Search AI app Agentic
+---
 
 Enterprise Knowledge represents a **Search AI** app, **Agentic** App, or **Amazon Q** Index application provisioned for every enterprise  workspace. It serves as a fallback response repository, ensuring the system can generate responses by searching enterprise data when no specific agents align with the user's intent. Enterprise Knowledge enhances response accuracy and relevance by retrieving content from various sources and generating contextual responses based on that information. The system automatically makes it available to users when no custom or specific agents handle a user query.
 

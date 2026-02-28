@@ -1,4 +1,7 @@
-# Connect Search AI
+---
+title: Connect Search AI
+description: The Search AI configuration establishes a connection to
+---
 
 The Search AI configuration establishes a connection to a dedicated search application that indexes your content and retrieves relevant information based on user queries. This approach excels at finding specific information across large document repositories and structured data sources.
 

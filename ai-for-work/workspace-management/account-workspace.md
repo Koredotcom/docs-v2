@@ -1,4 +1,7 @@
-# Account Workspace
+---
+title: Account Workspace
+description: Account Workspace is a collaborative environment for building
+---
 
 Account Workspace is a collaborative environment for building and deploying custom AI agents. This enterprise-grade feature allows administrators to create secure, team-based workspaces with strict governance and security. It offers role-based access, granular publishing controls, and analytics. Each workspace is an isolated environment for collaborators to create, manage, and share agents, ensuring innovation with oversight.
 

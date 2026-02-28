@@ -1,4 +1,7 @@
-# Agentic Flows
+---
+title: Agentic Flows
+description: Agentic Flow enables the sequential execution of multiple
+---
 
 Agentic Flow enables the sequential execution of multiple AI agents to accomplish and automate complex tasks efficiently using AI agents. These flows streamline workflows by automating interactions and decision-making processes based on predefined logic and user input.
 

@@ -1,4 +1,7 @@
-# Audit Log Management
+---
+title: Audit Log Management
+description: Audit Log is a tracking mechanism designed to
+---
 
 Audit Log is a tracking mechanism designed to monitor and record all administrative and operational activities across your platform. This system creates a comprehensive trail of user actions, providing enhanced security, accountability, and compliance capabilities for enterprise environments.
 

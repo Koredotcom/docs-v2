@@ -1,4 +1,7 @@
-# Connect Amazon Q
+---
+title: Connect Amazon Q
+description: The Amazon Q configuration is a pivotal component
+---
 
 The Amazon Q configuration is a pivotal component for establishing seamless integration with Amazon Q Index, thereby unlocking robust enterprise search capabilities. This integration empowers organizations to harness their existing Amazon Q Business applications and associated retrievers, transforming them into a comprehensive knowledge source.
 

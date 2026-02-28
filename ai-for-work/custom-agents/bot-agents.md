@@ -1,4 +1,7 @@
-# Bot Agents
+---
+title: Bot Agents
+description: Administrators create bot agents for users using the
+---
 
 Administrators create bot agents for users using the bot agent builder, significantly improving overall efficiency. Workflows designed on the AI for Service Platform integrate seamlessly, allowing actions to execute directly when a workflow triggers, eliminating the need for other platforms.
 

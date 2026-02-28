@@ -1,4 +1,7 @@
-# Managing Your Users
+---
+title: Managing Your Users
+description: You can manage users in Admin Console from
+---
 
 You can manage users in **Admin Console** from the **User Management > Users section**.
 

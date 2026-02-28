@@ -1,4 +1,7 @@
-# Workflow Agent
+---
+title: Workflow Agent
+description: The Workflow Agent allows users to integrate tools
+---
 
 The Workflow Agent allows users to integrate tools in Agent Platform to deliver precise, contextually relevant responses to user queries in real time. This streamlined approach simplifies the process of creating intelligent agents, enabling businesses to deploy solutions quickly and efficiently.
 

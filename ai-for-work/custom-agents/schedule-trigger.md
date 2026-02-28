@@ -1,4 +1,7 @@
-# Schedule Trigger
+---
+title: Schedule Trigger
+description: The Schedule Trigger feature enables automated execution of
+---
 
 The Schedule Trigger feature enables automated execution of agentic flows at predefined intervals. By configuring a schedule, you can automate routine tasks without manual intervention, allowing the agent to run autonomously based on your specified timing and frequency. The Schedule Trigger is optional and disabled by default. When enabled, it provides end users with the ability to configure and manage automated executions.
 

@@ -1,4 +1,7 @@
-# Agent Options
+---
+title: Agent Options
+description: Manage your agent s deployment data and availability
+---
 
 Manage your agent’s deployment, data, and availability post-publication. Agent options are enabled after publishing your agent. You can perform the following actions on published agents:
 

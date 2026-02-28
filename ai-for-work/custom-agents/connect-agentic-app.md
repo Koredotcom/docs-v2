@@ -1,4 +1,7 @@
-# Connect Agentic App
+---
+title: Connect Agentic App
+description: The Agentic App configuration connects your system to
+---
 
 The Agentic App configuration connects your system to more specialized, action-oriented services that can perform complex operations in response to user needs. These connections allow your AI system to not just retrieve information but also potentially take appropriate actions on behalf of users.
 

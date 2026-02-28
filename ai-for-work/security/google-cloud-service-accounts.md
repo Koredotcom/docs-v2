@@ -1,4 +1,7 @@
-# Configure Google Console
+---
+title: Configure Google Console
+description: This guide walks you through creating a Google
+---
 
 This guide walks you through creating a Google Cloud service account with the required permissions for integration. Complete these steps in the Google Cloud Console and Google Admin Console before configuring the service account.
 

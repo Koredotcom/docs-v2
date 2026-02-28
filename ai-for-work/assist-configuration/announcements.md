@@ -1,4 +1,7 @@
-# Announcements
+---
+title: Announcements
+description: The Announcements feature in the Admin Hub under
+---
 
 The **Announcements** feature in the **Admin Hub** under **Assistant Configurations** allows administrators to create, manage, and publish organizational messages. Announcements appear as banners at the top of the user interface, ensuring important updates are delivered in a clear and timely manner.
 

@@ -1,4 +1,7 @@
-# Agent Version Control
+---
+title: Agent Version Control
+description: The Agent Version Control system allows you to
+---
 
 The Agent Version Control system allows you to safely develop and test agent configurations without affecting your live, published agents. This dual-version approach ensures production stability while enabling continuous improvement and experimentation.
 <img src="../images/agent_version_1.png" alt="Details and Purpose" title="Details and Purpose" style="border: 1px solid gray; zoom:70%;"/>

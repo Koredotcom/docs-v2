@@ -1,4 +1,7 @@
-# Microsoft Teams and Copilot Integration - Overview
+---
+title: Microsoft Teams and Copilot Integration - Overview
+description: AI for Work integrates seamlessly with Microsoft Teams
+---
 
 AI for Work integrates seamlessly with Microsoft Teams, enabling employees to access AI-powered assistance directly within their collaboration environment. This integration streamlines productivity by allowing users to perform work-related tasks, receive proactive notifications, and utilize Copilot features all within Microsoft Teams. The following guide provides step-by-step instructions for deploying AI for Work as a custom Microsoft Teams application, covering Microsoft Azure Bot Service setup, authentication, configuration, and organizational rollout.
 

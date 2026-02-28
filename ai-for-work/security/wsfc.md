@@ -1,4 +1,7 @@
-# WS-Federation Configuration
+---
+title: WS-Federation Configuration
+description: WS Federation is a protocol that enables identity
+---
 
 WS-Federation is a protocol that enables identity federation across different security realms, allowing users to authenticate once and access multiple applications. This configuration is commonly used with Active Directory Federation Services (ADFS) and provides enterprise-grade security for organizations using Windows-based identity infrastructure.
 

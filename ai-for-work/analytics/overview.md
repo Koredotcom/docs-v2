@@ -1,4 +1,7 @@
-# Analytics Overview
+---
+title: Analytics Overview
+description: The Analytics provides a history of all administrative
+---
 
 The Analytics provides a history of all administrative tasks via the Dashboard view and the Data view. The views display the key performance metrics, trends, and reports, enabling you to gauge its real-time usage and performance. 
 

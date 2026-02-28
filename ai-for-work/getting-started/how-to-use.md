@@ -1,4 +1,7 @@
-# Using AI for Work Assistant
+---
+title: Using AI for Work Assistant
+description: Log in to the Platform https work kore
+---
 
 Log in to [the Platform](https://work.kore.ai/login/).
 

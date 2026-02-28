@@ -1,4 +1,7 @@
-# AI for Work Overview
+---
+title: AI for Work Overview
+description: AI for Work is a unified enterprise platform
+---
 
 AI for Work is a unified enterprise platform that significantly enhances enterprise productivity by automating routine tasks and enabling employees to focus on high-value work. The platform addresses three critical enterprise challenges:
 

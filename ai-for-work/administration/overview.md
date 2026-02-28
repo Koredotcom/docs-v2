@@ -1,4 +1,7 @@
-# Admin Console Overview
+---
+title: Admin Console Overview
+description: The Admin Console is a centralized management interface
+---
 
 The  Admin Console is a centralized management interface for administrators to configure, monitor, and manage system settings, including:
 

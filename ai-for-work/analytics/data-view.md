@@ -1,4 +1,7 @@
-# Data View
+---
+title: Data View
+description: The different parameters under the Data view are
+---
 
 The different parameters under the Data view are:
 

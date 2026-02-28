@@ -1,4 +1,7 @@
-# User Enrollments
+---
+title: User Enrollments
+description: User enrollments simplify managing account access by clearly
+---
 
 User enrollments simplify managing account access by clearly defining who can join and how they are invited. This functionality is essential for maintaining security and organization within the account. Three main enrollment options are available:  Open to Domain, Invite Only, and Manage users with AD Sync.
 

@@ -1,4 +1,7 @@
-# Amazon Q Integration with AI for Work Platform
+---
+title: Amazon Q Integration with AI for Work Platform
+description: In addition to Search and Data AI solution
+---
 
 In addition to Search and Data AI solution, AI for Work Platform connects with external search indexes such as Amazon Q. This integration allows customers to leverage connectors configured in their Amazon Q Index application on top of the ones available.
 

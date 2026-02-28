@@ -1,4 +1,7 @@
-# OpenID Connect (OIDC)
+---
+title: OpenID Connect (OIDC)
+description: OpenID Connect OIDC is a modern authentication protocol
+---
 
 OpenID Connect (OIDC) is a modern authentication protocol built on OAuth 2.0 that provides simple identity verification and enables applications to obtain basic profile information about users. This configuration allows seamless integration with popular identity providers like Google and Microsoft Azure.
 

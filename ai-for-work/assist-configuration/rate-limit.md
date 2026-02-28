@@ -1,4 +1,7 @@
-# Rate Limits 
+---
+title: Rate Limits
+description: This documentation outlines the point consumption system for
+---
 
 This documentation outlines the point consumption system for user queries, detailing how different types of queries consume points and the various user categories that can be managed within the account.
 

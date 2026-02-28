@@ -1,4 +1,7 @@
-# MCP Server 
+---
+title: MCP Server
+description: The MCP Server feature enables users to manage
+---
 
 The MCP Server feature enables users to manage Model Context Protocol (MCP) servers with agents as tools. This feature provides access to agents through the server for task execution and workflow management.
 <img src="../images/mcp-server-home.png" alt="mcp-server-home" title="mcp-server-home"/>

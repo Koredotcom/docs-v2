@@ -1,4 +1,7 @@
-# Domain Management
+---
+title: Domain Management
+description: This document provides instructions on managing domains within
+---
 
 This document provides instructions on managing domains within your account. Domain management allows administrators to configure domains, enabling controlled access to the account via organization SSO for verified domains.
 

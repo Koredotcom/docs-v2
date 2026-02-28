@@ -1,4 +1,6 @@
-# Microsoft Teams and Copilot Integration - Configuration 
+---
+title: Microsoft Teams and Copilot Integration - Configuration
+---
 
 This document provides detailed step-by-step instructions for implementing AI for Work integration with Microsoft Teams. Follow these phases sequentially to ensure proper deployment and functionality.
 
@@ -152,10 +154,11 @@ Deploy the the Platform app to Microsoft Teams for user access.
 
 **Prerequisites Verification**: Ensure you have **Upload Custom App** permissions in the Microsoft Teams Admin Center. Verify organizational policies allow custom app installations.
 
-1. Sign in to[ Microsoft Teams Admin Center](https://admin.teams.microsoft.com/)<span style="text-decoration:underline;" />.</span>
+1. Sign in to [Microsoft Teams Admin Center](https://admin.teams.microsoft.com/)
 2. Navigate to **Microsoft Teams apps** → **Manage apps.**
 3. Click **Upload new app**.
-<img src="../images/teams_9.png" alt="teams_1" title="teams_1" style="border: 1px solid gray; zoom:70%;"/>
+
+    <img src="../images/teams_9.png" alt="teams_1" title="teams_1" style="border: 1px solid gray; zoom:70%;"/>
 
 1. Select the downloaded manifest file from the Platform.
 2. Wait for upload and validation to complete.

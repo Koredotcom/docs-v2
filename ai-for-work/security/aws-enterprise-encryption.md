@@ -1,4 +1,7 @@
-# AWS KMS BYOK Integration Setup
+---
+title: AWS KMS BYOK Integration Setup
+description: Integrating AWS Key Management Service KMS with our
+---
 
 Integrating AWS Key Management Service (KMS) with our application establishes a secure connection between your encryption keys and our multi-tenant platform, enabling Bring Your Own Key (BYOK) functionality.
 

@@ -1,4 +1,7 @@
-# Account Data Settings
+---
+title: Account Data Settings
+description: Data Settings feature in the Admin Console gives
+---
 
 **Data Settings** feature in the Admin Console gives you complete control over your information's journey through the system. These settings are important because they help you understand and address your organization's data management requirements.
 

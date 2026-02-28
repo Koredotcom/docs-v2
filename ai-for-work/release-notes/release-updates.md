@@ -1,4 +1,7 @@
-# AI for Work Release Notes
+---
+title: AI for Work Release Notes
+description: This document provides information on the feature updates
+---
 
 This document provides information on the feature updates and enhancements introduced in the recent release of the Platform.
 

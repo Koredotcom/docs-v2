@@ -1,4 +1,7 @@
-# Scheduler Settings
+---
+title: Scheduler Settings
+description: Scheduler Settings allow administrators to configure account wide
+---
 
 Scheduler Settings allow administrators to configure account-wide controls for automated agent execution. These settings determine scheduler availability, usage limits, and workspace-level permissions across the organization.
 

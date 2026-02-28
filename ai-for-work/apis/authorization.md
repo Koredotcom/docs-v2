@@ -1,4 +1,7 @@
-# Authorization
+---
+title: Authorization
+description: An API key identifies and authorizes users granting
+---
 
 An API key identifies and authorizes users, granting access rights to the API.
 It simplifies the authentication process by allowing users to provide a single

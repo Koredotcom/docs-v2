@@ -1,4 +1,7 @@
-# MCP Agents
+---
+title: MCP Agents
+description: MCP Agents enable your AI agents to interact
+---
 
 MCP Agents enable your AI agents to interact with external systems through tools hosted on MCP servers. By configuring MCP tools within your agents, you empower them to execute complex workflows spanning multiple external services through a standardized interface.
 <img src="../images/mcp-agents-home.png" alt="mcp-agents-home" title="mcp-agents-home" style="border: 1px solid gray; zoom:70%;"/>

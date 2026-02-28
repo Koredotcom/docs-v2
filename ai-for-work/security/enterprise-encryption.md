@@ -1,4 +1,7 @@
-# Enterprise Encryption
+---
+title: Enterprise Encryption
+description: Enterprise Encryption secures organizational data with flexible enterprise
+---
 
 **Enterprise Encryption** secures organizational data with flexible, enterprise-grade encryption options that meet both compliance and operational needs. Administrators can choose between a **system-generated Default Key** for quick setup or **Bring Your Own Key (BYOK)** for maximum control.
 

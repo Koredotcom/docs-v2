@@ -1,4 +1,7 @@
-# Dashboard View
+---
+title: Dashboard View
+description: The different types of reports generated under the
+---
 
 The different types of reports generated under the Dashboard view are:
 

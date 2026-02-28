@@ -1,4 +1,7 @@
-# AI for Work in Marketplace
+---
+title: AI for Work in Marketplace
+description: The Marketplace https kore ai marketplace offers AI
+---
 
 The [Marketplace](https://kore.ai/marketplace/) offers **AI for Work**, a central hub where users can discover, understand, and implement various AI-powered work agents.
 

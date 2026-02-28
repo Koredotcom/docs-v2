@@ -1,4 +1,7 @@
-# Search Agents
+---
+title: Search Agents
+description: Search agents combine retrieval and generation techniques to
+---
 
 Search agents combine retrieval and generation techniques to provide accurate and contextually relevant answers to user queries. Search agents leverage existing knowledge bases to find and retrieve relevant information and then use LLM models to generate an accurate and precise response.
 

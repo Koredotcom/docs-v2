@@ -1,4 +1,7 @@
-# What is IT Assist
+---
+title: What is IT Assist
+description: IT Assist is an AI powered all in
+---
 
 IT Assist is an AI-powered all-in-one solution that provides a customizable virtual assistant to handle various IT needs, from access and request management to incident management. The virtual assistant is an interactive tool that can be integrated seamlessly with any preferred communication channel, making it easier and more effective for employees to ask questions, raise issues, and obtain personalized solutions.
 
