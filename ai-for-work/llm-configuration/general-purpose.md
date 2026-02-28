@@ -29,7 +29,7 @@ Platform supports a range of models from leading providers, each offering differ
 | OpenAI | GPT-5-mini, GPT-5-nano, GPT-5, GPT-4.1, GPT-4.1- mini, GPT-4o, GPT-3.5-turbo, o3, o3-mini, o4-mini | Direct API integration through OpenAI API key | General-purpose tasks, conversational AI, complex reasoning, and content generation |
 | Azure OpenAI | GPT-5-mini, GPT-5-nano, GPT-5, GPT-4.1, GPT-4.1- mini, GPT-4o, GPT-3.5-turbo, o3, o3-mini, o4-mini | Azure Portal integration through Azure OpenAI Service | Enterprise deployments requiring Azure infrastructure, enhanced security, and compliance |
 | Google Gemini | Gemini 2.5 Pro (Recommended), Gemini 2.5 Flash (Recommended), 
-<p>
+
 Gemini 2.5 Flash Lite, Gemini 2.0 Flash, Gemini 2.0 Flash Lite | Google Vertex AI integration, Gemini Studio | Multi-modal tasks, fast response times, and Google Cloud-based deployments |
 
 ### Model Tier Recommendations

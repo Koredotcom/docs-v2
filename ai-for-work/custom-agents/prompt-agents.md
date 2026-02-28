@@ -162,8 +162,7 @@ To configure user input, follow the steps outlined below:
 
 
 
-    <Note> If the file size exceeds the context size limitation, it impacts the models, and an error message is displayed along with a list of models. Only a limited amount of information is used as context for generation. However, when the file limit is exceeded, all uploaded knowledge files are referenced for answering but not for generation.
- </Note>
+    <Note> If the file size exceeds the context size limitation, it impacts the models, and an error message is displayed along with a list of models. Only a limited amount of information is used as context for generation. However, when the file limit is exceeded, all uploaded knowledge files are referenced for answering but not for generation. </Note>
 
 2.  Select the model required from the **Model selection** drop-down list, which
     displays all the integrated
