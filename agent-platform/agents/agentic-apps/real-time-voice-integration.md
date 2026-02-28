@@ -30,3 +30,5 @@ Click the settings icon to customize the configuration of the AI model.
     * Type: Select the type of voice activity detection to use
 
 When an Agentic app is integrated with an AI for Service application through the Automation Node and is configured for voice channels, the Voice Gateway utilizes the voice capabilities of the model set up in the Agentic app. For more information on integrating AI for Service app with the Platform app, please refer to [this documentation](https://docs.kore.ai/xo/flows/node-types/automation/#full-autonomy).
+
+{/* AG: TBD relative link later */}

@@ -30,7 +30,6 @@ Users can create or select an existing app and configure it using the **Automati
 
     Open the settings for the Automation Node. Under Autonomy Level for Automation AI, select **Full Autonomy.** This setting enables integration with the Agentic Apps in the same workspace as that of AI for Service. The Agentic Apps offer fully autonomous AI Agents that adapt dynamically to the user's interactions.  ![alt_text](./images/integration/xo/autonomy.png "Autonomy")
 
-
     Provide the following Agentic App Configurations:
 
     1. **Agentic App**: Select the app to be integrated that will handle all the interactions on the given communication channel. The dropdown lists all the existing Agentic Apps in the same workspace. You can also create an Agentic App from scratch. 
@@ -48,6 +47,7 @@ Users can create or select an existing app and configure it using the **Automati
 
     Refer to [this ](https://docs.kore.ai/xo/flows/node-types/automation/)for other node configurations. 
 
+{/* AG: TBD relative links later */}
 
 ### Handling Agent Transfer Event from Agent Platform
 
