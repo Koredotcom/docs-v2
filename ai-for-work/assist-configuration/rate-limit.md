@@ -25,7 +25,10 @@ Users can increase or decrease points based on their selected timeline, which ca
 * 6 hours
 * 12 hours
 
-<img src="../images/rate-limit.png" alt="email-template" title="email-template"/>
+
+![email-template](./images/rate-limit.png "email-template")
+
+
 
 In the **Logs** tab of the dashboard, you can see the number of points consumed for each question when viewing a specific log entry.
 

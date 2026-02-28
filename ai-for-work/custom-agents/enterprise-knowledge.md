@@ -35,7 +35,10 @@ Configure enterprise knowledge sources that activate when no agent triggers. Set
      * For restricted access, choose the specific workspace that matches the user access requirements.
 
 
-<img src="../images/enterprise_knowledge_1.png" alt="Details and Purpose" title="Details and Purpose" style="border: 1px solid gray; zoom:70%;"/>
+
+![Details and Purpose](./images/enterprise_knowledge_1.png "Details and Purpose")
+
+
 
 
 !!! note
@@ -48,7 +51,10 @@ Configure enterprise knowledge sources that activate when no agent triggers. Set
 
 Access the Enterprise Knowledge configuration through **Enterprise Knowledge** > **Configure** to view all configured sources and their current status.
 
-<img src="../images/enterprise_knowledge_2.png" alt="Details and Purpose" title="Details and Purpose" style="border: 1px solid gray; zoom:70%;"/>
+
+![Details and Purpose](./images/enterprise_knowledge_2.png "Details and Purpose")
+
+
 
 ### Source Operations
 

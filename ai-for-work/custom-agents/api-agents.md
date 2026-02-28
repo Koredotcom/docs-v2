@@ -42,7 +42,10 @@ Before setting up API Agents, ensure your system meets the following requirement
 Users can create a API Agent from the **User Profile** > **Admin Console**> **AI Search** > **API Agents**> **+ Create Agent**. The setup wizard guides you through the entire process, from initial setup to deployment.
 
 
-<img src="../images/image9.png" alt="API Agent" title="" style="border: 1px solid gray; zoom:70%;"/>
+
+![API Agent](./images/image9.png)
+
+
 
 The API agent creation process consists of the following steps:
 
@@ -72,7 +75,10 @@ Briefly describe the system you want to integrate and the desired actions you wa
 
 Enter the purpose and click **Continue**.
 
-<img src="../images/image11.png" alt="API Agent" title="" style="border: 1px solid gray; zoom:70%;"/>
+
+![API Agent](./images/image11.png)
+
+
 
 ## Step 2: Basic Details
 
@@ -80,7 +86,10 @@ In the Basic Details step, you can provide the Agent's name and select a logo. Y
 
 Enter a name for the **Agent** **Name**, select an appropriate **Logo**, and click **Continue**.
 
-<img src="../images/image10.png" alt="API Agent" title="" style="border: 1px solid gray; zoom:70%;"/>
+
+![API Agent](./images/image10.png)
+
+
 
 ## Step 3: Connection Setup
 
@@ -97,7 +106,10 @@ Currently, the Agent supports GET and POST actions, meaning the Agent can be con
 
 Add the Purpose of action and click **Continue**.
 
-<img src="../images/image13.png" alt="API Agent" title="" style="border: 1px solid gray; zoom:70%;"/>
+
+![API Agent](./images/image13.png)
+
+
 
 ### Step 4.2: Data
 
@@ -256,18 +268,27 @@ Follow these steps to add a field meta resolver:
 1. Click the **+** (Plus) icon in the field meta resolver for the field type object.
 
 2. Click **CURL Import**. You can also use a dictionary instead of a CURL import. Learn [how to create one](#dictionary).
-<img src="../images/agent(28).png" alt="API Agent" title="" style="border: 1px solid gray; zoom:70%;"/>
+
+![API Agent](./images/agent(28).png)
+
 
 3. The import URL pop-up is displayed. Paste the URL and click **Import**.
-<img src="../images/image15.png" alt="API Agent" title="" style="border: 1px solid gray; zoom:70%;"/>
+
+![API Agent](./images/image15.png)
+
+
 
 4. Type in the **Sample Input** and click **Run**.
-<img src="../images/agent(29).png" alt="API Agent" title="" style="border: 1px solid gray; zoom:70%;"/>
+
+![API Agent](./images/agent(29).png)
+
 
 5. The Output Fields are displayed.
 
 6. Close the pop-up. The ID resolver is displayed.
-<img src="../images/agent(26).png" alt="API Agent" title="" style="border: 1px solid gray; zoom:70%;"/>
+
+![API Agent](./images/agent(26).png)
+
 
 7. Click **Continue**.
 
@@ -277,20 +298,28 @@ If API support is unavailable, you can use a dictionary as a local data store to
 
 You can use the existing dictionary if any. To select, toggle **Use Dictionary**, select the dictionary, and click **Run**. The output fields are displayed.
 
-<img src="../images/agent(21).png" alt="API Agent" title="" style="border: 1px solid gray; zoom:70%;"/>
+
+![API Agent](./images/agent(21).png)
+
 
 Follow these steps to create a dictionary:
 
 1. On the field value resolver or field meta resolver popup, toggle the **Use Dictionary**.
-<img src="../images/agent(24).png" alt="API Agent" title="" style="border: 1px solid gray; zoom:70%;"/>
+
+![API Agent](./images/agent(24).png)
+
 
 2. Click **+ Create**.
 3. On the Name & API tab, enter the **dictionary name**, **API call details** to feed the dictionary, and **pagination** details if required.  
-<img src="../images/agent(9).png" alt="API Agent" title="" style="border: 1px solid gray; zoom:70%;"/>
+
+![API Agent](./images/agent(9).png)
+
 
 4. Click **Run API**. The field selection tab is displayed.
 5. On the Field Selection tab, **select the fields** to be searched, **ID resolver field**, **Schedule to Pool data** frequency, and enter the **meta resolver field**.
-<img src="../images/agent(17).png" alt="API Agent" title="" style="border: 1px solid gray; zoom:70%;"/>
+
+![API Agent](./images/agent(17).png)
+
 
 6. Click **Pool data into the dictionary**. The preview tab is displayed.
 7. On the Preview tab, the pooled data is displayed.
@@ -300,7 +329,9 @@ Follow these steps to create a dictionary:
 
 Displays processed data to users, initially showing five records with an option to load more. Users can configure an “open” option that appears when hovering over any record. Clicking it will open a record in a new tab. 
 
-<img src="../images/agent(7).png" alt="API Agent" title="" style="border: 1px solid gray; zoom:70%;"/>
+
+![API Agent](./images/agent(7).png)
+
 
 
 
@@ -315,7 +346,9 @@ Follow these steps to create a URL:
         You can create a Dynamic URL using the response objects.
 
 4. The Variable mapper pop-up is displayed. Select the dynamic part of the URL i,e **Key,** and close the pop-up.  
-<img src="../images/agent(6).png" alt="API Agent" title="" style="border: 1px solid gray; zoom:70%;"/>
+
+![API Agent](./images/agent(6).png)
+
 
 1. Click **Done**. The Open option and the configured link are displayed.  
 2.  Click **Continue**.
@@ -751,7 +784,10 @@ The rule fills entities in a query when specific keywords are detected. Set rule
 
 You have options to set either an Entity Rule or Answering Rule.
 
-<img src="../images/api_business.png" alt="API Agent" title="" style="border: 1px solid gray; zoom:70%;"/>
+
+![API Agent](./images/api_business.png)
+
+
 
 ## Step 6: Publish
 

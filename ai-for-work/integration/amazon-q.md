@@ -47,19 +47,28 @@ Use this configuration when Amazon Q Index should serve as your primary knowledg
 1. Navigate to Enterprise Knowledge
     * Access the **Admin Console**.
     * Select **Enterprise Knowledge** from the left navigation pane.
-    <img src="../images/AmazonQ_2.png" alt="Platform Architecture" title="Platform Architecture" style="border: 1px solid gray; zoom:100;"/>
+
+    ![Platform Architecture](./images/AmazonQ_2.png "Platform Architecture")
+
+
 2. Create New Configuration
     * Click **Configure**.
     * Select **Create New**.
     * Choose **Amazon Q** as the knowledge source type.
-    <img src="../images/AmazonQ_3.png" alt="Platform Architecture" title="Platform Architecture" style="border: 1px solid gray; zoom:100;"/>
+
+    ![Platform Architecture](./images/AmazonQ_3.png "Platform Architecture")
+
+
 3. Configure Basic Settings
     * **Source Name**: Enter a unique, descriptive identifier for this knowledge source.
     * **Description**: Provide a clear explanation of the source content and purpose.
 4. Record Tenant ID
     * Copy the displayed **Tenant ID**.
     * You need this ID during AWS data accessor setup.
-    <img src="../images/AmazonQ_3.5.png" alt="Platform Architecture" title="Platform Architecture" style="border: 1px solid gray; zoom:100;"/>
+
+    ![Platform Architecture](./images/AmazonQ_3.5.png "Platform Architecture")
+
+
 5. Configure AWS Connection Details 
  Enter the following information from your AWS environment:
     * **Application ID**: Unique identifier of our Amazon Q Business application.
@@ -70,7 +79,10 @@ Use this configuration when Amazon Q Index should serve as your primary knowledg
 1. Complete Configuration
     * Click **Save** to store the configuration.
     * Mark the source as *Active* to enable it as the default source for queries.
-    <img src="../images/AmazonQ_3.75.png" alt="Platform Architecture" title="Platform Architecture" style="border: 1px solid gray; zoom:100;"/>
+
+    ![Platform Architecture](./images/AmazonQ_3.75.png "Platform Architecture")
+
+
 
 !!!note
      * Enterprise Knowledge becomes the default knowledge source accessible to all users in that workspace, when configured within a specific workspace.
@@ -83,15 +95,27 @@ Use this configuration when integrating Amazon Q as an additional search capabil
 1. Access Search Agent Configuration
     * Navigate to the **Search Agents** section.
     * Click **Create**.
-    <img src="../images/AmazonQ_4.png" alt="Platform Architecture" title="Platform Architecture" style="border: 1px solid gray; zoom:100;"/>
+
+    ![Platform Architecture](./images/AmazonQ_4.png "Platform Architecture")
+
+
     * Provide input for **Agent Name and Purpose**. This helps the to invoke the agent for relevant user queries.
-    <img src="../images/AmazonQ_4.5.png" alt="Platform Architecture" title="Platform Architecture" style="border: 1px solid gray; zoom:100;"/>
+
+    ![Platform Architecture](./images/AmazonQ_4.5.png "Platform Architecture")
+
+
     * Select **Amazon Q** as the Index type.
-    <img src="../images/AmazonQ_4.6.png" alt="Platform Architecture" title="Platform Architecture" style="border: 1px solid gray; zoom:100;"/>
+
+    ![Platform Architecture](./images/AmazonQ_4.6.png "Platform Architecture")
+
+
 2. Use Tenant ID
     * Refer to the **Tenant ID** displayed in the configuration screen.
     * Provide this ID during AWS data accessor setup.
-    <img src="../images/AmazonQ_4.7.png" alt="Platform Architecture" title="Platform Architecture" style="border: 1px solid gray; zoom:100;"/>
+
+    ![Platform Architecture](./images/AmazonQ_4.7.png "Platform Architecture")
+
+
 3. Configure AWS Integration Details
 Complete the following fields with information from your AWS setup:
     * **Application ID**: Unique identifier of your Amazon Q Business application.
@@ -128,7 +152,10 @@ Step 1: Set Up a Trusted Token Issuer (OIDC IdP) in IAM Identity Center
     * **User attributes**: Map the required user attributes according to your organization's needs.
 5. Save the configuration and confirm the trusted token issuer has been successfully added.
 
-<img src="../images/AmazonQ_5.png" alt="Platform Architecture" title="Platform Architecture" style="border: 1px solid gray; zoom:100;"/>
+
+![Platform Architecture](./images/AmazonQ_5.png "Platform Architecture")
+
+
 
 Step 2: Configure Audience Claims
 
@@ -136,7 +163,10 @@ Step 2: Configure Audience Claims
 2. Add or update the claim mapping from the IdP admin interface as needed.
 3. Ensure proper attribute mapping is established between your external IdP and AWS Identity Center.
 
-<img src="../images/AmazonQ_6.png" alt="Platform Architecture" title="Platform Architecture" style="border: 1px solid gray; zoom:100;"/>
+
+![Platform Architecture](./images/AmazonQ_6.png "Platform Architecture")
+
+
 
 Step 3: Add and Assign Users in IAM Identity Center
 
@@ -150,7 +180,10 @@ Step 3: Add and Assign Users in IAM Identity Center
     * Navigate to **IAM Identity Center** → **Applications** → **[Your Q App].**
     * Select **Assign Users/Groups** and complete the assignment configuration.
 
-<img src="../images/AmazonQ_7.png" alt="Platform Architecture" title="Platform Architecture" style="border: 1px solid gray; zoom:100;"/>
+
+![Platform Architecture](./images/AmazonQ_7.png "Platform Architecture")
+
+
 
 Step 4: Create or Configure Q Business Application
 
@@ -160,7 +193,10 @@ Step 4: Create or Configure Q Business Application
 2. **Add users for search access**:
     * Within the Q Business application, add all users who need search access.
     * Ensure these users correspond to the data sources you'll be adding.
-<img src="../images/AmazonQ_8.png" alt="Platform Architecture" title="Platform Architecture" style="border: 1px solid gray; zoom:100;"/>
+
+![Platform Architecture](./images/AmazonQ_8.png "Platform Architecture")
+
+
 
 Step 5: Add Required Data Sources to Amazon Q Index
 
@@ -172,7 +208,10 @@ Step 5: Add Required Data Sources to Amazon Q Index
     * Other enterprise systems as needed
 3. **Configure data source connections** following the [AWS documentation](https://docs.aws.amazon.com/amazonq/latest/qbusiness-ug/isv-creating-index.html)
 
-  <img src="../images/AmazonQ_9.png" alt="Platform Architecture" title="Platform Architecture" style="border: 1px solid gray; zoom:100;"/>
+
+  ![Platform Architecture](./images/AmazonQ_9.png "Platform Architecture")
+
+
 
 Step 6: Add Kore.ai as a Data Accessor
 
@@ -186,12 +225,18 @@ This final step completes the integration by configuring Kore.ai as a data acces
 
 2. **Select Kore.ai as the data accessor**:
     * Choose **Kore.ai** from the available data accessor options.
-    <img src="../images/AmazonQ_11.png" alt="Platform Architecture" title="Platform Architecture" style="border: 1px solid gray; zoom:100;"/>
+
+    ![Platform Architecture](./images/AmazonQ_11.png "Platform Architecture")
+
+
 
 3. **Configure the External ID**:
     * Locate the **Tenant ID** displayed in your Platform configuration screen.
     * Paste this **Tenant ID** into the **External ID** field in the AWS console.
-    <img src="../images/AmazonQ_12.png" alt="Platform Architecture" title="Platform Architecture" style="border: 1px solid gray; zoom:100;"/>
+
+    ![Platform Architecture](./images/AmazonQ_12.png "Platform Architecture")
+
+
 
 4. **Configure Trusted Token Issuer**: Choose one of the following options:
     * **Use an existing TTI** that you configured.
@@ -199,7 +244,10 @@ This final step completes the integration by configuring Kore.ai as a data acces
 5. **Set Data Source Access permissions**:
     * **All data sources**: Grant Kore.ai access to all current and future data sources.
     * **Specific data sources**: Select only the data sources that Kore.ai should access.
-    <img src="../images/AmazonQ_13.png" alt="Platform Architecture" title="Platform Architecture" style="border: 1px solid gray; zoom:100;"/>
+
+    ![Platform Architecture](./images/AmazonQ_13.png "Platform Architecture")
+
+
 
 6. **Configure User Access**:
     * **All Users**: Grant access to all users (ensure that you add the users to the application).
@@ -207,7 +255,10 @@ This final step completes the integration by configuring Kore.ai as a data acces
 7. **Complete the integration**:
     * Copy the **Data Accessor Details** from the AWS console.
     * Return to your Platform configuration screen. Paste the Data Accessor Details to complete the linkage.
-    <img src="../images/AmazonQ_14.png" alt="Platform Architecture" title="Platform Architecture" style="border: 1px solid gray; zoom:100;"/>
+
+    ![Platform Architecture](./images/AmazonQ_14.png "Platform Architecture")
+
+
 
 ## Technical Details
 
@@ -221,7 +272,10 @@ When processing queries, the data flow begins with user input at the Platform ap
 
 Query responses from Amazon Q Index contain relevant document snippets with source references rather than complete documents, maintaining both security and performance optimization.
 
-<img src="../images/AmazonQ_1.png" alt="Platform Architecture" title="Platform Architecture" style="border: 1px solid gray; zoom:100;"/>
+
+![Platform Architecture](./images/AmazonQ_1.png "Platform Architecture")
+
+
 
 ### Security and User Authentication
 

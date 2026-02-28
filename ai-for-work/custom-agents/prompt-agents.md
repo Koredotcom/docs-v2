@@ -96,7 +96,10 @@ To create a new Prompt Agent, follow these steps:
 Provide a suitable and unique name for the agent and describe its purpose. Defining the agent’s purpose enables the system to accurately recognize the agent’s capabilities and effectively utilize them to respond to user queries aligned with the specified intent. It is essential to clearly outline the specific use cases for which the agent is designed, as all the fields, queries, and prompts are auto-generated based on the purpose provided. 
 
 To change the agent icon, click on the agent logo located above the agent's name. You can choose from a list of predefined logos or upload a custom logo.  Once you're ready, click **Continue** to proceed to the next step.
-<img src="../images/detail_and_purpose.png" alt="Details and Purpose" title="Details and Purpose" style="border: 1px solid gray; zoom:70%;"/>
+
+![Details and Purpose](./images/detail_and_purpose.png "Details and Purpose")
+
+
 
 #### Step 2: Source
 
@@ -138,7 +141,10 @@ To configure user input, follow the steps outlined below:
 8.  Toggle the **Allow Upload Files** or **Allow URL Content** option to ON to
     enable file uploads or retrieval from URLs. This option is available only
     for Single-line and Multiline text field types.
-    <img src="../images/URL_content_gpt.png" alt="URL_content_gpt" title="URL_content_gpt" style="border: 1px solid gray; zoom:70%;"/>
+
+    ![URL_content_gpt](./images/URL_content_gpt.png "URL_content_gpt")
+
+
 
 9.  Click the mandatory toggle button ON if you want the field to be mandatory
     and click **Done**.
@@ -151,7 +157,10 @@ To configure user input, follow the steps outlined below:
     be utilized in prompts. For example, if you uploaded a “Sample JD template”
     file, you can write a prompt that says, “Create a JD which is in the same
     format as in the Sample JD template file.”
-    <img src="../images/Knowledge_gpt.png" alt="URL_content_gpt" title="URL_content_gpt" style="border: 1px solid gray; zoom:70%;"/>
+
+    ![URL_content_gpt](./images/Knowledge_gpt.png "URL_content_gpt")
+
+
 
     !!! note
 
@@ -161,10 +170,16 @@ To configure user input, follow the steps outlined below:
     displays all the integrated
     models. To know more about model integration, click
     [here](../llm-configuration/general-purpose.md#custom-llm-configuration).
-    <img src="../images/model.png" alt="URL_content_gpt" title="URL_content_gpt" style="border: 1px solid gray; zoom:70%;"/>
+
+    ![URL_content_gpt](./images/model.png "URL_content_gpt")
+
+
 
 3. Toggle the **Show to users** button to display this prompt to the user. After switching the toggle to ON, you can choose between **Read-only** or **Editable** modes.
-    <img src="../images/show_to_users.png" alt="URL_content_gpt" title="URL_content_gpt" style="border: 1px solid gray; zoom:70%;"/>
+
+    ![URL_content_gpt](./images/show_to_users.png "URL_content_gpt")
+
+
 
 ##### Prompts
 
@@ -199,7 +214,10 @@ To allow users to generate multiple responses,
     the output settings.  
 
 2. Enable **Skip Form Display** to automatically bypass forms. This feature intelligently prevents conflicts with Multi-Response and shows messages for incompatible settings. Smart query analysis now identifies when all required entities are present initially, and forms will only appear if mandatory fields are missing.
- <img src="../images/output_settings.png" alt="URL_content_gpt" title="URL_content_gpt" style="border: 1px solid gray; zoom:70%;"/>
+
+ ![URL_content_gpt](./images/output_settings.png "URL_content_gpt")
+
+
 
 3. Click **Continue** to move to the next step.
 
@@ -211,7 +229,10 @@ The rule fills entities in a query when specific keywords are detected. Set rule
 
 You have options to set either an Entity Rule or Answering Rule.
 
-<img src="../images/Business_Rule.png" alt="URL_content_gpt" title="URL_content_gpt" style="border: 1px solid gray; zoom:70%;"/>
+
+![URL_content_gpt](./images/Business_Rule.png "URL_content_gpt")
+
+
 
 #### Step 4: Appearance and Behavior
 

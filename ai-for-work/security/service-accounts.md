@@ -5,7 +5,10 @@ description: AI for Work integrates with external identity providers
 
 AI for Work integrates with external identity providers through service accounts. These accounts authenticate the application and grant access to user directories, groups, and organizational data. You can configure multiple service accounts and designate one as the default for system-wide operations.
 
-<img src="../images/service-account.png" alt="service-account" title="service-account"/>
+
+![service-account](./images/service-account.png "service-account")
+
+
 
 
 ## Supported Service Account Types

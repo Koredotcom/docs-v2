@@ -5,13 +5,19 @@ description: The Agent Testing provides a controlled environment for
 
 The Agent Testing provides a controlled environment for testing and refining agents before deployment, ensuring optimal performance in production environments.
 
-<img src="../images/Agent_Testing_1.png" alt="Details and Purpose" title="Details and Purpose" style="border: 1px solid gray; zoom:70%;"/>
+
+![Details and Purpose](./images/Agent_Testing_1.png "Details and Purpose")
+
+
 
 ## Accessing the Testing Panel
 
 The Test button becomes active after administrators complete the agent basic details step. When administrators click this button, the system opens the Agent Testing Panel with a compose bar scoped strictly to the selected agent. The system prevents administrators from changing agents or adding attachments within this testing mode.
 
-<img src="../images/Agent_Testing_2.png" alt="Details and Purpose" title="Details and Purpose" style="border: 1px solid gray; zoom:70%;"/>
+
+![Details and Purpose](./images/Agent_Testing_2.png "Details and Purpose")
+
+
 
 ## Testing Capabilities
 
@@ -25,7 +31,10 @@ The Test button becomes active after administrators complete the agent basic det
 
 Out-of-scope queries trigger an **Improve Purpose based on Query** button that opens a modal displaying the current agent purpose alongside the problematic query. Administrators can generate a revised purpose based on the query and save the updated configuration directly to the agent.
 
-<img src="../images/Agent_Testing_3.png" alt="Details and Purpose" title="Details and Purpose" style="border: 1px solid gray; zoom:70%;"/>
+
+![Details and Purpose](./images/Agent_Testing_3.png "Details and Purpose")
+
+
 
 !!! note
 

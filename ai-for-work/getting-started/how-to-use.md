@@ -39,7 +39,10 @@ All files stored in the platform's managed storage infrastructure are protected 
 2. **Google Calendar:** Checks John Doe’s availability for a specified time.
 3. **Gmail:** Sends the fetched Jira issues to John Doe via email. 
 
-<img src="../images/agentic-flow.png" alt="agentic-flow" title="agentic-flow"/>
+
+![agentic-flow](./images/agentic-flow.png "agentic-flow")
+
+
 
 **Steps to execute the flow:**
 
