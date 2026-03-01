@@ -99,7 +99,6 @@ Workflow Tools inherit the application’s PII protection capabilities, ensuring
 
 #### Accessing App Environment Variables in Workflow Tools
 
-Environment variables defined at the application level can be accessed by workflow tools through namespaces. To make a variable available within a workflow tool, add the variable to a namespace and associate that namespace with the workflow agent. Once associated, all variables associated with the namespace can be referenced with the keyword 
-`env.<variable-name>`. 
+Environment variables defined at the application level can be accessed by workflow tools through namespaces. To make a variable available within a workflow tool, add the variable to a namespace and associate that namespace with the workflow agent. Once associated, all variables associated with the namespace can be referenced with the keyword `env.<variable-name>`.
 
-[Learn More](../agentic-apps/settings/variables.md). 
+[Learn More](/agent-platform/agents/agentic-apps/settings/variables).
