@@ -1,0 +1,51 @@
+sequenceDiagram
+    participant Dev as Developer
+    participant WS as Workspace CLI
+    participant PL as Platform
+    participant PS as Proxy Supervisor
+    participant CI as CI/CD Service
+    participant GV as Gvisor Service
+    participant MCP as MCP Server
+
+    %% Development Phase
+    Dev->>WS: Define models, tools, orchestrators
+    Dev->>WS: Configure environment (dev/staging/prod)
+    
+    %% Packaging Phase
+    WS->>WS: Generate application.config.json
+    WS->>WS: Create KAR archive
+    WS->>WS: Validate dependencies
+    
+    %% Deployment Phase
+    WS->>PL: Call /deploy (upload config + archive)
+    PL->>PL: Validate configuration
+    PL->>PL: Store archive + metadata
+    PL->>CI: Trigger deployment
+    CI->>GV: Provision container
+    GV->>MCP: Launch server with archive
+    MCP->>MCP: Bootstrap environment
+    MCP->>MCP: Install dependencies
+    MCP->>MCP: Register tools & orchestrators
+    MCP->>PL: Report ready/healthy
+    
+    %% Runtime Phase
+    Note over PL,PS: For each runtime request
+    PL->>PS: Forward event payload
+    PS->>MCP: MCP Client: Connect
+    PS->>MCP: MCP Client: Discover tools
+    PS->>MCP: MCP Client: Send request
+    MCP->>MCP: Process request
+    MCP->>MCP: Execute tools/orchestrators
+    MCP->>PS: Stream response chunks
+    PS->>PL: Aggregate response
+    
+    %% Monitoring Phase
+    Note over PL,GV: Continuous monitoring
+    GV->>PL: Health status
+    PL->>PL: Log monitoring data
+    
+    %% Undeployment Phase
+    WS->>PL: Call /undeploy
+    PL->>GV: Trigger container cleanup
+    GV->>MCP: Stop server
+    GV->>PL: Report cleanup complete
