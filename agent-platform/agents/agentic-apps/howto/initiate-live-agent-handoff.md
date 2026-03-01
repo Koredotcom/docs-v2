@@ -30,3 +30,5 @@ This document provides step-by-step instructions for configuring and invoking a 
 ## Handling Agent Transfer Requests in AI for Service
 
 When an agent transfer event is triggered, the Platform passes control and relevant context data to the AI for Service app. To process these agent transfer requests, set up the Agent Transfer connection configuration for the automation node. When the Platform triggers the agent handoff event, the request, along with AI-collected and system-defined parameters, is delegated to the automation node. The automation node then routes the request to the appropriate node as defined by its connection rules. Configure an Agent Transfer Node to transfer the communications from the AI Agent to a live agent. [Learn More](https://docs.kore.ai/xo/automation/use-cases/dialogs/node-types/working-with-the-agent-transfer-node/).
+
+{/* AG: TBD relative link later */}
