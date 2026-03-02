@@ -14,7 +14,7 @@ AI Evaluators are predefined sets of instructions provided to a large language m
 
 There are two types of AI evaluators: 
 
-* **System AI Evaluators**: These are pre-built evaluators provided by the platform to assess common aspects of model performance, such as quality, correctness, and safety. These evaluators are ready-to-use and cannot be modified, providing a quick and efficient way for users to evaluate models.
+* **System AI Evaluators**: These are pre-built evaluators provided by the Platform to assess common aspects of model performance, such as quality, correctness, and safety. These evaluators are ready-to-use and cannot be modified, providing a quick and efficient way for users to evaluate models.
 * **Custom AI Evaluators**: Users can create custom evaluators tailored to their specific needs. These evaluators allow users to define their own evaluation prompts and scoring mechanisms, offering more flexibility. Custom AI evaluators are particularly useful for evaluating unique datasets or specialized tasks, giving users full control over how models are assessed.
 
 <Note> Users can access all the available system evaluators through the global Evaluators page located at the project level. Simply click the Evaluators tab, located next to the Projects tab. This page provides an overview of available evaluators that can be applied to datasets for evaluation. </Note>

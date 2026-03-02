@@ -2,7 +2,7 @@
 
 The Agent Diagnostics feature helps you validate the health and readiness of an Agentic App. It performs a comprehensive check across all the components, including agents, tools, events, memory, and orchestration logic. Diagnostics supports all types of orchestration patterns including  Supervisor Orchestration and the Adaptive Agent Network.
 
-When you run Diagnostics from the Agentic App Overview page, the platform scans the entire app configuration and identifies issues that may affect functionality, stability, or deployment readiness.
+When you run Diagnostics from the Agentic App Overview page, the Platform scans the entire app configuration and identifies issues that may affect functionality, stability, or deployment readiness.
 
 <Note> Diagnostics performs static and logical validation. It evaluates configuration health and doesn't test conversational outcomes. </Note>
 
@@ -17,7 +17,7 @@ When you run Diagnostics from the Agentic App Overview page, the platform scans 
 ## Steps to Run Diagnostics
 
 1. From the Agentic App Overview page, go to *Run Diagnostics* to start the validation scan. ![Create App](images/createapp/diagnostics-button.png "Diagnostics button")
-2. After the scan completes, the platform generates a structured report that categorizes findings as informational messages, warnings, or errors. 
+2. After the scan completes, the Platform generates a structured report that categorizes findings as informational messages, warnings, or errors. 
 3. Review the *Diagnostic Summary*, which displays informational messages, warnings, errors, and the timestamp of the latest run.
 3. Navigate through the component-level views *Overview, Agents, and Tools* to understand issues in each part of the app.
 1. Use *Fix now* on any issue to open the corresponding configuration screen and resolve it immediately.
