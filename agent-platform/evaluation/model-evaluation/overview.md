@@ -19,7 +19,7 @@ Model Evaluation is a comprehensive tool in the Platform for assessing LLM perfo
 Model Evaluation is an essential tool for managing, evaluating, and optimizing Large Language Models. It simplifies the process of model evaluation and provides flexible options for data import and analysis. This makes it an invaluable resource for data scientists, machine learning engineers, and teams working on model development and optimization.
 
 1. **Streamlined Workflow:** Evaluation Studio captures the model evaluation through datasets with various pre-built evaluators. Users can manage projects, upload data, perform evaluations, and track results, all in one place.
-2. **Customizability:** Users can define evaluation criteria that suit their specific needs. The platform adapts to different evaluation scenarios, from simple to complex use cases.
+2. **Customizability:** Users can define evaluation criteria that suit their specific needs. The Platform adapts to different evaluation scenarios, from simple to complex use cases.
 3. **Collaboration**: Projects can be shared with collaborators, supporting team-based evaluation and model testing in a centralized environment.
 4. **Continuous Improvement:** Regular evaluations allow users to track model performance over time, ensuring that models are updated or fine-tuned as needed for ongoing optimization.
 5. **Seamless Integration**: Evaluation Studio is designed to integrate with production models seamlessly. It supports importing data from deployed models and exporting custom trace data in the studio to be further analyzed.

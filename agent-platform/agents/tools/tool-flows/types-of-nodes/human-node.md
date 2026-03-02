@@ -211,7 +211,7 @@ Here is a step-by-step execution of the Human node in Sync mode:
 | Scenarios in sync mode | What Happens | Debug Panel Output | Flow Outcome |
 |:----- |:----- |:----- |:----- |
 | 1. Reviewer responds successfully | Downstream sends the reviewer’s input back before the timeout | Response JSON with key–value pairs | Workflow continues along the Success path |
-| 2. Channel/platform failure | Communication issue prevents response delivery | Error message in the Response section | Workflow continues along the Failure path |
+| 2. Channel/Platform failure | Communication issue prevents response delivery | Error message in the Response section | Workflow continues along the Failure path |
 | 3. Timeout – Terminate flow option | No response before timeout; flow set to Terminate | Response JSON with null values | Workflow ends along the End/Terminate path |
 | 4. Timeout – Skip & Continue option | No response before timeout; flow set to Skip | Response JSON with null values | Workflow skips the Human node and continues to the next configured node |
 | 5. Sync endpoint timeout (before reviewer response) | The endpoint itself times out before the human replies | Timeout error JSON | Workflow stops with a Timeout error |
@@ -242,7 +242,7 @@ Here is the execution of the Human node in Async mode:
 | Scenario | What Happens | Debug Panel Output | Flow Outcome |
 |:----- |:----- |:----- |:----- |
 | 1. Reviewer responds successfully | Downstream sends the reviewer’s input back before the timeout | Response JSON with key–value pairs | Workflow continues along the Success path |
-| 2. Channel/platform failure | Communication issue prevents response delivery | Error message in the Response section | Workflow continues along the Failure path |
+| 2. Channel/Platform failure | Communication issue prevents response delivery | Error message in the Response section | Workflow continues along the Failure path |
 | 3. Timeout – Terminate option | No response before timeout; flow set to Terminate | Response JSON with null values | Workflow ends along the Terminate path |
 | 4. Timeout – Skip & Continue option | No response before timeout; flow set to Skip | Response JSON with null values | Workflow skips the Human node and continues to the next configured node |
 | 5. Async endpoint timeout (before reviewer input) | The endpoint itself times out before the human replies | Timeout error JSON | Workflow stops with a Timeout error |

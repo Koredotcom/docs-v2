@@ -85,7 +85,7 @@ Each node’s entry in steps represents its execution context, including:
 
 ## How the steps Map Evolves
 
-The platform populates the steps map sequentially as the workflow executes:
+The Platform populates the steps map sequentially as the workflow executes:
 
 1. Initialization: The steps object starts empty.
 2. Node Execution: Entry created for each running node.

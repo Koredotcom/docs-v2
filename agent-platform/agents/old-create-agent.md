@@ -13,7 +13,7 @@ An AI Agent is a configurable, goal-driven component that can understand user in
 Before setting up an agent, ensure the following: 
 
 * [Create an Agentic App](agentic-apps/create-app.md) to add the agent to. Agents must be associated with an app and cannot exist independently.
-* Configure at least one AI Model with tool-calling support. The platform supports OpenAI, Gemini, Anthropic, and Azure OpenAI. [See Add an External Model](../models/external-models/add-an-external-model-using-easy-integration.md).
+* Configure at least one AI Model with tool-calling support. The Platform supports OpenAI, Gemini, Anthropic, and Azure OpenAI. [See Add an External Model](../models/external-models/add-an-external-model-using-easy-integration.md).
 * Verify you have the App Owner or App Developer role in the workspace. Users with Viewer access can't create agents. 
 * Review the [App Component Limits](agentic-apps/settings/app-component-limits.md) to confirm that the app hasn't reached the maximum number of agents allowed. 
 
@@ -50,7 +50,7 @@ The Agent Definition is the system prompt for the agent. Write clear, scoped ins
 
 ## Adding Knowledge
 
-The platform provides powerful search functionality across diverse content sources using the Search AI application, which supports Retrieval-Augmented Generation (RAG)-based search across enterprise knowledge bases, document repositories, FAQs, and external systems. You can link to one or more Search AI applications in the same workspace and account and access them as Knowledge Tools for the agent to answer user queries.
+The Platform provides powerful search functionality across diverse content sources using the Search AI application, which supports Retrieval-Augmented Generation (RAG)-based search across enterprise knowledge bases, document repositories, FAQs, and external systems. You can link to one or more Search AI applications in the same workspace and account and access them as Knowledge Tools for the agent to answer user queries.
 
 ---
 

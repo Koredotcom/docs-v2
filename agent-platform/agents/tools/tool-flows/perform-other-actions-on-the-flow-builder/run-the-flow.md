@@ -69,7 +69,7 @@ API nodes can be configured in either synchronous or asynchronous mode:
 * **Node paused at**: The timestamp when the node paused waiting for the asynchronous response.
 * **Node resumed at**: The timestamp is when the node resumes after receiving the response.
 * **Total wait time**: The total duration between the node pausing and resuming, indicating the time spent waiting for the API.
-* **Node processing time**: The time the platform spends processing the node after it resumes from the pause.
+* **Node processing time**: The time the Platform spends processing the node after it resumes from the pause.
 
 
 ### Time Breakdown for AI Nodes

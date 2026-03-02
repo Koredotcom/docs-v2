@@ -21,7 +21,7 @@ The tool calling process follows a consistent sequence across the platform:
 
 3. **Parameter Preparation**: The LLM extracts relevant entities from the user input (such as location, date, or preferences) and maps them to the required input format for the tool.
 
-4. **Tool Invocation**: The platform triggers the mapped tool with the prepared arguments.
+4. **Tool Invocation**: The Platform triggers the mapped tool with the prepared arguments.
 
 5. **Execution**: The tool performs its designated task—such as calling an external API, querying a database, or running a script—and returns the result.
 

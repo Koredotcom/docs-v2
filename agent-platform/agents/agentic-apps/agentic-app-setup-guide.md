@@ -15,9 +15,9 @@ The Agentic App setup process consists of the following phases:
 
 ### 1. Foundation Phase
 
-1. **Sign Up for the Platform**: The Platform onboarding journey begins by creating an account in the Kore.ai ecosystem. Upon successful sign up, the platform will automatically provision a dedicated workspace for your projects.
+1. **Sign Up for the Platform**: The Platform onboarding journey begins by creating an account in the Kore.ai ecosystem. Upon successful sign up, the Platform will automatically provision a dedicated workspace for your projects.
 If you've set up XO, both your existing workspaces and shared workspaces will be visible, but you'll need separate access permission from workspace owners to use shared workspaces in the Platform. [Learn more](../../getting-started/sign-up-sign-in.md).
-2. **Configuring Large Language Models (LLMs)**: The Platform leverages the power of LLMs to enable the intelligence of your agents. The platform supports integration with various LLM providers, including OpenAI, Azure OpenAI, Anthropic, and Gemini. Select the preferred model based on your specific use case and configure it. [Learn more](../../models/overview.md).
+2. **Configuring Large Language Models (LLMs)**: The Platform leverages the power of LLMs to enable the intelligence of your agents. The Platform supports integration with various LLM providers, including OpenAI, Azure OpenAI, Anthropic, and Gemini. Select the preferred model based on your specific use case and configure it. [Learn more](../../models/overview.md).
 3. **Create an Agentic App**: An Agentic App is the core application you will build on the Platform. You can create an Agentic App from scratch on the platform, import a pre-built app, or install an existing one from the marketplace. [Learn more](create-app.md).
 
 ### 2. Configuration Phase

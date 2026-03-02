@@ -1,6 +1,6 @@
 # Agent Platform Overview
 
-The all-new Agent Platform is an enterprise-grade multi-agent orchestration platform. The platform is a comprehensive solution for enterprises to develop, deploy, and manage AI-powered business applications. It enables the orchestration of intelligent agents across service, work, and process automation while upholding enterprise-grade security and governance.
+The all-new Agent Platform is an enterprise-grade multi-agent orchestration platform. The Platform is a comprehensive solution for enterprises to develop, deploy, and manage AI-powered business applications. It enables the orchestration of intelligent agents across service, work, and process automation while upholding enterprise-grade security and governance.
 
 The Platform supports two distinct paradigms for building intelligent AI applications:
 
@@ -30,7 +30,7 @@ It also provides real-time streaming of agent interactions across voice and chat
 
 ### Tools
 
-Tools are reusable components that agents can invoke to perform specific tasks or access external systems and data sources. The platform supports various methods for creating Tools:
+Tools are reusable components that agents can invoke to perform specific tasks or access external systems and data sources. The Platform supports various methods for creating Tools:
 
 * Visual Workflow Builders for low-code Tool development
 
@@ -70,7 +70,7 @@ It ensures responsible and safe agent operations while maintaining user trust an
 
 ### Analytics and Observability
 
-The platform offers deep insights into agent performance and usage through detailed analytics and end-to-end observability. Key capabilities include:
+The Platform offers deep insights into agent performance and usage through detailed analytics and end-to-end observability. Key capabilities include:
 
 * Detailed activity data capture from underlying models and applications.
 * Session logs, conversation histories, and usage metrics.
@@ -81,7 +81,7 @@ The platform offers deep insights into agent performance and usage through detai
 
 ### Agent Protocol
 
-The platform provides a standardized Agent Protocol for seamless communication and integration between agents, tools, and external systems. The protocol supports multi-modal content, real-time streaming, and flexible API design. This enables agents to comprehend and generate various data types, process information in real-time, and seamlessly integrate with external systems.
+The Platform provides a standardized Agent Protocol for seamless communication and integration between agents, tools, and external systems. The protocol supports multi-modal content, real-time streaming, and flexible API design. This enables agents to comprehend and generate various data types, process information in real-time, and seamlessly integrate with external systems.
 
 ### SDKs
 
@@ -89,11 +89,11 @@ Comprehensive SDKs are available for developers to efficiently build and integra
 
 ### Enterprise Grade CI/CD
 
-The platform offers granular versioning and multi-stage deployment capabilities to support a rigorous software development lifecycle for agent-based solutions. It allows organizations to establish separate environments (for example, QA, UAT, Prod) for thorough testing and validation, ensures consistent deployments, and streamlines the development process to deliver high-quality, reliable solutions.
+The Platform offers granular versioning and multi-stage deployment capabilities to support a rigorous software development lifecycle for agent-based solutions. It allows organizations to establish separate environments (for example, QA, UAT, Prod) for thorough testing and validation, ensures consistent deployments, and streamlines the development process to deliver high-quality, reliable solutions.
 
 ### Collaboration and Audit
 
-The platform facilitates streamlined collaboration among teams, enabling them to efficiently develop, test, and deploy agent-based solutions. It offers customizable roles and permissions to ensure clear responsibilities and access levels, promoting transparency and accountability within the team. Additionally, comprehensive audit logs track all activities, maintaining traceability, accountability, and compliance.
+The Platform facilitates streamlined collaboration among teams, enabling them to efficiently develop, test, and deploy agent-based solutions. It offers customizable roles and permissions to ensure clear responsibilities and access levels, promoting transparency and accountability within the team. Additionally, comprehensive audit logs track all activities, maintaining traceability, accountability, and compliance.
 
 ### Marketplace
 
