@@ -1,0 +1,498 @@
+---
+title: Script Nodes, Call Flows, Agent Utils, and userSessionUtils
+---
+
+This document covers script nodes, call flows, and supported utility functions with examples.
+
+## Conversation Flows — Script Node
+
+### Context: Instance Bot
+
+All `{{context.session}}` variables from the instance bot are accessible under `context`.
+
+**Example**: Access the user ID in a message node:
+
+```
+{{context.UserContext._id}}
+```
+
+Or set it as a call flow variable in a script node, then reference it in a message node:
+
+```
+setCallFlowVariable("user_id", context.UserContext._id);
+```
+
+In the message node: `{{context.user_id}}`
+
+### Context: Child Bot
+
+Access a child bot's context using either of the following:
+
+```
+getChildBotContextById("st-924bd71e-247e-58ec-bfe4-81e0f8b3xxxx")
+```
+
+or
+
+```
+context.childBotsContext["st-924bd71e-247e-58ec-bfe4-81e0f8b3xxxx"]
+```
+
+**Example**: Access the child bot's user ID.
+
+Get the full context:
+
+```
+var cbCtx = getChildBotContextById("st-924bd71e-247e-58ec-bfe4-81e0f8b3xxxx")
+```
+
+or
+
+```
+var cbCtx = context.childBotsContext["st-924bd71e-247e-58ec-bfe4-81e0f8b3xxxx"]
+```
+
+Then access a property:
+
+```
+var userId = cbCtx.UserContext._id
+```
+
+### Context: Identify Returning Customers Within 24 Hours
+
+This context variable identifies whether a Contact Center AI customer is a returning caller within 24 hours of their previous interaction. It applies to both digital and voice channels.
+
+**Digital**:
+
+```
+context.session.BotUserSession.isReturn24hCC
+```
+
+**Voice**:
+
+```
+{{JSON.stringify(context.session.UserSession.isRepeatedVoiceUser)}}
+```
+
+* Returns `true` if the same user contacts the contact center within 24 hours of their last interaction.
+* Returns `false` for first-time or non-returning users.
+
+## Content Variables
+
+Access content variables defined in the instance bot using the `content` keyword:
+
+```
+content.DAI_CF_CHAT_AGENT
+```
+
+## Environment Variables
+
+Access environment variables defined in the instance or parent bot using the `env` keyword:
+
+```
+env.botId
+```
+
+## Call Flow Variables
+
+Use these functions to get and set variables within the call flow context, making them available in Split or Message nodes later:
+
+```
+setCallFlowVariable(keyName, value);
+getCallFlowVariable(keyName);
+```
+
+**Example**:
+
+```
+setCallFlowVariable("user_id", context.UserContext._id)
+var userId = getCallFlowVariable("user_id")
+```
+
+## Set Voice Chat on Voice Gateway Account
+
+Use this script in a script node to set up voice chat for accounts configured with Voice Gateway:
+
+```
+userSessionUtils.setConversationType('voiceChat');
+userSessionUtils.setLanguageTranslationAPIKey("AIzaSyBnk4hBmHuLjeIzScNAx0RExxxx");
+userSessionUtils.setVoiceChatAgentLang("en");
+userSessionUtils.setVoiceChatUserLang("de");
+```
+
+## Set Preferred Language for Translation
+
+During automation, the system can detect the user's language and set it as the preferred translation language. Add this to a script node:
+
+```
+agentUtils.setUserPreferredLanguage("langCode");
+```
+
+**Example**:
+
+```
+agentUtils.setUserPreferredLanguage("fr")
+```
+
+## Agent Utils
+
+Agent Utils is a library for programmatic modifications to agent and flow behavior.
+
+### Change SIP URI, Phone Number, and Referred By
+
+```
+agentUtils.setTransferSipURI(sipURI)
+agentUtils.setTransferPhoneNumber(phoneNumber)
+agentUtils.setReferredBy("+1xxxxxxxxx")
+```
+
+**Example**:
+
+```
+agentUtils.setTransferSipURI("sip:+123344234000@2.3.4.5:5060")
+agentUtils.setTransferPhoneNumber("+12345434000")
+agentUtils.setReferredBy("+1902323242424")
+```
+
+### Set User Info
+
+Set or add customer information in the instance bot. Add this script inside the `connectToAgent` node:
+
+```
+const userInfo = {
+  "firstName": "<value>",
+  "lastName": "<value>",
+  "email": "<value>",
+  "phoneNumber": "<value>",
+  "country": "<value>",
+  "city": "<value>",
+  "Unit Address": "<value>"
+};
+agentUtils.setUserInfo(userInfo);
+```
+
+**Example 1 — Static data**:
+
+```
+const userInfo = {
+  "firstName": "John",
+  "lastName": "Doe",
+  "email": "john.doe@example.com",
+  "phoneNumber": "407-876-8654",
+  "country": "USA",
+  "city": "Philadelphia",
+  "Unit Address": "Unit 12 - Philadelphia"
+};
+agentUtils.setUserInfo(userInfo);
+```
+
+**Example 2 — Dynamic data from context**:
+
+```
+const userInfo = {
+  "firstName": context.session.BotUserSession.memberData.firstName,
+  "lastName": context.session.BotUserSession.memberData.lastName,
+  "email": context.session.BotUserSession.memberData.email,
+  "phoneNumber": context.session.BotUserSession.memberData.phoneNumber,
+  "country": context.session.BotUserSession.memberData.country,
+  "city": context.session.BotUserSession.memberData.city,
+  "Unit Address": context.session.BotUserSession.memberData["Unit Address"]
+};
+agentUtils.setUserInfo(userInfo);
+```
+
+### Set / Get Bot Languages
+
+```
+agentUtils.setBotLanguage(langCode)
+agentUtils.getBotLanguage()
+```
+
+**Example**:
+
+```
+agentUtils.setBotLanguage("en")
+agentUtils.getBotLanguage()
+```
+
+### Set Queue
+
+Use `agentUtils.setQueue()` to assign a queue at any point before agent transfer. Use it in a [Script Node](../../automation/use-cases/dialogs/node-types/working-with-the-script-node.md) within a bot action or a [Script Task](../node-types/script-task.md) in a Contact Center AI flow:
+
+```
+agentUtils.setQueue(queueId);
+agentUtils.setQueue(queueName);
+```
+
+### Set Live Chat Agent Transfer
+
+Override the agent system for dynamic (multiple) live chat agent transfers:
+
+```
+agentUtils.setLiveChatAgentOutGoingSetup({"name": "<<system name>>", "config": {"": ""}})
+```
+
+**Example (Salesforce)**:
+
+```
+agentUtils.setLiveChatAgentOutGoingSetup({
+  "name": "salesforce",
+  "config": {
+    "liveAgentUrl": "https://d.la2-c1-ph2.salesforceliveagent.com/chat/rest",
+    "organizationId": "00D5g00000KClxx",
+    "deploymentId": "5725g000000QKxx",
+    "buttonId": "5735g000000QQxx"
+  }
+});
+```
+
+### Set Named Agents
+
+Restrict conversation assignment to one or more specific agents. The system assigns the conversation only to the specified agents.
+
+You can optionally configure the system to wait for a named agent to become available before falling back to queue routing.
+
+```
+agentUtils.setNamedAgents(agentIds, options)
+```
+
+| Parameter | Description |
+|-----------|-------------|
+| `agentIds` | Array of agent IDs eligible to receive the conversation. |
+| `options` | Optional configuration for wait behavior before queue fallback. |
+
+#### Optional Wait Configuration
+
+| Option | Description |
+|--------|-------------|
+| `waitForAgent` | When `true`, the system waits for a named agent before applying fallback routing. |
+| `waitDurationSeconds` | Maximum wait time in seconds. Default maximum is 3600s. If not specified or exceeds 3600s, defaults to 30s. |
+
+**Behavior**
+
+* Without wait options: the conversation routes immediately to the queue if no named agent is available.
+* With `waitForAgent: true`:
+    * The conversation enters a *waiting for named agent* state.
+    * It does not route to the queue during the wait period.
+    * If a named agent accepts within the wait duration, the conversation is assigned to that agent.
+    * If no named agent accepts in time, the conversation routes via normal queue logic.
+* Standard availability rules (login state, capacity) apply.
+* A maximum wait duration prevents indefinite waits.
+
+**Example — Basic named-agent assignment**:
+
+```
+agentUtils.setNamedAgents([
+  'a-e1427c4-8e7d-4728-8e6c-64281b23xxxx',
+  'a-f1538d5-9f8e-5839-9f7d-75392c34xxxx'
+])
+```
+
+**Example — Named-agent assignment with wait before queue fallback**:
+
+```
+agentUtils.setNamedAgents(
+  [
+    'a-e1427c4-8e7d-4728-8e6c-64281b23xxxx',
+    'a-f1538d5-9f8e-5839-9f7d-75392c34xxxx'
+  ],
+  {
+    waitForAgent: true,
+    waitDurationSeconds: 90
+  }
+)
+```
+
+### Set Agent Matching Conditions
+
+Add skills, skill groups, and agent groups to the script task to generate a matching set of agent IDs:
+
+```
+agentUtils.setAgentMatchingConditions({
+  skills: ["skillId"],
+  agentGroups: ["agentGroupId"],
+  skillGroups: ["skillGroupId"],
+})
+```
+
+**Example**:
+
+```
+agentUtils.setAgentMatchingConditions({
+  skills: ["63b2c180ab43c287acabxxxx"],
+  agentGroups: ["ag-6b135b4-b03a-461d-b33d-dd5189cbxxxx"],
+  skillGroups: ["6390989f1d00e75d5df4xxxx"],
+})
+```
+
+### Set Waiting Experience
+
+Override the waiting experience at runtime:
+
+```
+agentUtils.setWaitingExperience(waitingExperienceId);
+```
+
+The system applies waiting experiences in the following priority order (highest to lowest):
+
+1. Waiting experience overridden at the Agent Transfer node
+2. Waiting experience set via `agentUtils.setWaitingExperience()` in the flow
+3. Waiting experience configured within the dialog
+
+If an invalid ID is provided, the system falls back to the default behavior and logs an error.
+
+**Example**:
+
+```
+agentUtils.setWaitingExperience("premium_wait_experience");
+```
+
+If the Agent Transfer node specifies a different waiting experience, that takes precedence. Otherwise, the Agent Utils value is used; if neither is set, the dialog-level configuration applies.
+
+### Recording Control
+
+Control interaction recordings from a script node:
+
+```
+agentUtils.setExternalAgentRecordingControl({record: "start"})
+agentUtils.setExternalAgentRecordingControl({record: "stop"})
+agentUtils.setExternalAgentRecordingControl({record: "pause"})
+agentUtils.setExternalAgentRecordingControl({record: "resume"})
+```
+
+### Enable/Disable Transcripts and Recordings
+
+Control transcript and recording availability for agent transfers to the Contact Center AI Desktop.
+
+#### Disable Transcripts
+
+```
+agentUtils.setAgentTranscribe({transcribe: false});
+```
+
+* Transcripts are not accessible to the agent on the **Live Interaction** or **Interactions** pages.
+* The following note appears near the transcripts widget: *"Note: Certain parts of this call weren't transcribed due to the applied transcription settings."*
+
+#### Disable Recordings
+
+```
+agentUtils.setAgentRecordingControl({record: "stop"});
+```
+
+* Voice call recordings are not generated for that agent interaction.
+* The following note appears near the recording widget: *"Note: Certain parts of this call were not recorded due to the applied recording settings."*
+* If recordings are disabled globally, the existing global note is displayed instead.
+
+#### Disable Both
+
+```
+agentUtils.setAgentTranscribe({transcribe: false});
+agentUtils.setAgentRecordingControl({record: "stop"});
+```
+
+**Example**:
+
+```
+// In a script node before agent transfer
+try {
+  agentUtils.setAgentTranscribe({transcribe: false});
+  agentUtils.setAgentRecordingControl({record: "stop"});
+  // Proceed with agent transfer...
+}
+```
+
+!!! Notes
+
+    * Apply these controls before initiating the agent transfer.
+    * These functions work only with transfers to Kore Agent Desktop.
+    * Controls affect only the specified agent interaction, not the entire conversation.
+
+## userSessionUtils
+
+### Get
+
+Retrieve a value from the `userSession` object in the conversation context:
+
+```
+userSessionUtils.get(key)
+```
+
+**Example**:
+
+```
+userSessionUtils.get('Caller');
+```
+
+### Put
+
+Store a key-value pair in the `userSession` object:
+
+```
+userSessionUtils.put(key, value)
+```
+
+**Example**:
+
+```
+var caller = getCallFlowVariable('caller');
+userSessionUtils.put('Caller', caller);
+```
+
+This adds the key `Caller` to `userSession` and stores the value of the `caller` variable.
+
+### Delete
+
+Remove a key from the `userSession` object:
+
+```
+userSessionUtils.delete(key)
+```
+
+**Example**:
+
+```
+userSessionUtils.delete('Caller');
+```
+
+## Pass Data from Experience Flow to Dialog in a Child Bot
+
+Use this script to pass data from an experience flow to a dialog in a child bot. The script node sets a variable using information from the current user session and stores it using `userSessionUtils`.
+
+```
+setCallFlowVariable('caller', context.BotUserSession.<context variable>);
+var caller = getCallFlowVariable('caller');
+userSessionUtils.put("Caller", caller);
+```
+
+### Access the Variable in a Child Bot Dialog
+
+Reference the stored variable using:
+
+```
+context.session.UserSession.Caller
+```
+
+### Store a Value from a Child Bot Dialog
+
+To transfer data from a child bot dialog back to the experience flow:
+
+1. Store a value inside the child bot dialog:
+
+    ```
+    BotUserSession.put("key", "value")
+    ```
+
+2. Retrieve the context in the experience flow script node:
+
+    ```
+    const cb = getChildBotContextById(<childBotId>);
+    setCallFlowVariable('testvar', cb.BotUserSession.key)
+    ```
+
+### Print the Value in the End Node
+
+Reference the variable in the End Flow node using:
+
+```
+{{context.testvar}}
+```

@@ -1,0 +1,543 @@
+---
+title: Security and Control
+sidebarTitle: Security and Control
+---
+
+Configure authentication, encryption, service integrations, data retention, and domain access for your AI for Work account.
+
+---
+
+| Feature | Description |
+|---------|-------------|
+| [Single Sign-On (SSO)](#single-sign-on-sso) | Authenticate users through an external Identity Provider using SAML, WS-Federation, or OpenID Connect |
+| [Service Accounts](#service-accounts) | Connect to Google, Azure, or LDAP directories for user and group management |
+| [Enterprise Encryption](#enterprise-encryption) | Use platform-managed keys or bring your own encryption key (BYOK) |
+| [Data Settings](#data-settings) | Control what conversation data is stored and how long it is retained |
+| [Domain Management](#domain-management) | Add and verify company and partner domains for controlled account access |
+| [Personal API Key](#personal-api-key) | Generate and use a personal API key to authenticate API requests |
+
+
+## Single Sign-On (SSO)
+
+SSO lets users authenticate through an external Identity Provider (IdP) instead of the default sign-in flow. Only account admins can enable or disable SSO.
+
+| Protocol | Providers |
+|----------|-----------|
+| [SAML](#saml) | Okta, OneLogin, Bitium, Other |
+| [WS-Federation](#ws-federation) | Windows Azure, Other (ADFS) |
+| [OpenID Connect (OIDC)](#openid-connect-oidc) | Google, Microsoft Azure |
+
+### Enable SSO
+
+1. Go to **Admin Console > Security > Single Sign-On**.
+2. Turn on the **Enable SSO** toggle.
+3. Select a sign-on protocol.
+4. Select your identity provider and enter the configuration details.
+5. Click **Save**.
+
+---
+
+### SAML
+
+SAML uses signed XML tokens to authenticate users. The IdP authenticates the user and sends a signed response; the platform validates it using the certificate and grants access.
+
+#### Okta
+
+**Configuration fields:**
+
+| Field | Description | Required |
+|-------|-------------|----------|
+| Okta Single Sign-On URL | SSO endpoint for SP-initiated flow | Yes |
+| Identity Provider Issuer | Entity URL of the authenticating IdP | Yes |
+| Certificate | Public certificate to validate user signatures (max 2) | Yes |
+| ACS URL for SP-Initiated SAML Flow | Auto-generated redirect URL | Read only |
+| ACS URL for IDP-Initiated SAML Flow | Auto-generated account-specific URL | Read only |
+
+**Configure Okta:**
+
+1. Log in to the [Okta Admin Dashboard](https://developer.okta.com/login/).
+2. Go to **Applications > Add Application > Create Application**.
+3. Enter an App Name and click **Next**.
+4. Under **Configure SAML**, paste the **ACS URL for SP-Initiated SAML Flow** from the platform into the Okta **Single Sign-On URL** field.
+   - For on-premise accounts, use `https://idproxy-dev.<platform>.com/authorize/callback` as the SSO URL and `https://idproxy-dev.<platform>.com` as the Audience URL.
+5. Click **Finish**.
+6. On the **Sign On** tab, click **View Setup Instructions** and copy:
+   - **Identity Provider Single Sign-On URL** → **Okta Single Sign-On URL** on the platform
+   - **Identity Provider Issuer** → **Identity Provider Issuer** on the platform
+   - **X.509 Certificate** → **Certificate** on the platform
+7. Click **Save**.
+
+#### OneLogin
+
+**Configuration fields:**
+
+| Field | Description | Required |
+|-------|-------------|----------|
+| SAML 2.0 Endpoint | HTTP SSO endpoint for SP-initiated flow | Yes |
+| Issuer URL | OneLogin issuer URL | Yes |
+| X.509 Certificate | Public certificate to validate user signatures (max 2) | Yes |
+| ACS URL for SP-Initiated SAML Flow | Auto-generated redirect URL | Read only |
+| ACS URL for IDP-Initiated SAML Flow | Auto-generated account-specific URL | Read only |
+
+**Configure OneLogin:**
+
+1. In the [OneLogin Portal](https://app.onelogin.com/login), go to **Applications > Add Apps**, search for your app, and save it.
+2. On the **SSO** tab, copy:
+   - **OneLogin SAML 2.0 Endpoint (HTTP)** → **SAML 2.0 Endpoint** on the platform
+   - **OneLogin Issuer URL** → **Issuer URL** on the platform
+3. Click **View Details** on the X.509 Certificate field. Copy the certificate data (between the header and footer lines) and paste it into the **X.509 Certificate** field on the platform.
+4. Copy the **ACS URL for SP-Initiated SAML Flow** and **ACS URL for IDP-Initiated SAML Flow** from the platform and paste them into the corresponding fields in OneLogin.
+5. Click **Save** in both the platform and OneLogin.
+
+#### Bitium
+
+**Configuration fields:**
+
+| Field | Description | Required |
+|-------|-------------|----------|
+| Single Sign-On URL | HTTP SSO endpoint for SP-initiated flow | Yes |
+| Issuer URL | Bitium issuer URL | Yes |
+| Certificate | Public certificate to validate user signatures (max 2) | Yes |
+| ACS URL for SP-Initiated SAML Flow | Auto-generated redirect URL | Read only |
+| ACS URL for IDP-Initiated SAML Flow | Auto-generated account-specific URL | Read only |
+
+**Configure Bitium:**
+
+1. In Bitium, go to **Manage Organization > Manage Apps > App**.
+2. On the **Single Sign-On** tab, select **SAML Authentication**.
+3. Copy:
+   - **Bitium Login URL** → **Single Sign-On URL** on the platform
+   - **Bitium Logout URL** → **Issuer URL** on the platform
+   - **X.509 Certificate** → **Certificate** on the platform
+4. Click **Save**.
+
+#### Other SAML Providers
+
+Use this option for any SAML 2.0-compliant provider not listed above.
+
+**Configuration fields:**
+
+| Field | Description | Required |
+|-------|-------------|----------|
+| Single Sign-On URL | HTTP SSO endpoint for SP-initiated flow | Yes |
+| Issuer URL | IdP issuer URL | Yes |
+| Certificate | Public certificate to validate user signatures (max 2) | Yes |
+| ACS URL for SP-Initiated SAML Flow | Auto-generated redirect URL | Read only |
+| ACS URL for IDP-Initiated SAML Flow | Auto-generated account-specific URL | Read only |
+
+Fetch the SSO parameters from your IdP portal, paste them into the platform, then copy the ACS URLs from the platform back into your IdP app settings.
+
+<Note>When multiple certificates are added, the platform uses the most recent valid certificate. If it's invalid, it falls back to the other certificate.</Note>
+
+---
+
+### WS-Federation
+
+WS-Federation uses signed security tokens to authenticate users across security domains. Commonly used with Active Directory Federation Services (ADFS).
+
+#### Windows Azure
+
+**Configuration fields:**
+
+| Field | Description | Required |
+|-------|-------------|----------|
+| Azure AD Sign-On Endpoint URL | WS-Federation passive endpoint for sign-on/sign-off (e.g., `https://login.microsoftonline.com/<tenant-id>/wsfed`) | Yes |
+| Azure AD Federation Metadata Document | URL for the Azure federation metadata XML document (e.g., `https://login.microsoftonline.com/<tenant-id>/FederationMetadata/2007-06/FederationMetadata.xml`) | Yes |
+
+**Configure Windows Azure:**
+
+1. Log in to the [Azure Portal](https://portal.azure.com/) and go to **Microsoft Entra ID > Enterprise Applications > New Application > Create your own application**.
+2. Enter the application name and click **Create**.
+3. Go to **Single sign-on** and select **WS-Fed**.
+4. Configure the **Identifier (Entity ID)** and **Reply URL** provided by the platform.
+5. Go to **Users and Groups** and assign users or groups.
+6. Go to **App Registrations > Endpoints** and copy:
+   - **WS-Federation Sign-On Endpoint** → **Azure AD Sign-On Endpoint URL** on the platform
+   - **Federation Metadata Document** URL → **Azure AD Federation Metadata Document** on the platform
+7. Click **Save**.
+
+#### Other WS-Federation Providers (ADFS)
+
+**Configuration fields:**
+
+| Field | Description | Required |
+|-------|-------------|----------|
+| AD Sign-On Endpoint URL | WS-Federation passive endpoint (e.g., `https://adfs.yourcompany.com/adfs/ls/`) | Yes |
+| AD Federation Metadata Document URL | URL for the ADFS federation metadata XML (e.g., `https://adfs.yourcompany.com/FederationMetadata/2007-06/FederationMetadata.xml`) | Yes |
+
+**Configure ADFS:**
+
+1. Open **ADFS Management** on your ADFS server. Right-click **Relying Party Trusts** and select **Add Relying Party Trust**.
+2. Choose **Enter data about the relying party manually** and click **Next**.
+3. Select **AD FS profile** and skip certificate configuration.
+4. Enable **WS-Federation Passive protocol** and enter the Relying Party WS-Federation Passive protocol URL provided by the platform.
+5. Enter the relying party trust identifier provided by the platform.
+6. In **Edit Claim Rules**, click **Add Rule**, select **Send LDAP Attributes as Claims**, and map:
+   - E-Mail-Addresses → E-Mail Address
+   - Given-Name → Given Name
+   - Surname → Surname
+   - User-Principal-Name → UPN
+7. Add another rule: select **Transform an Incoming Claim**, set Incoming claim type to **E-Mail Address**, Outgoing claim type to **Name ID**, and Outgoing name ID format to **Email**.
+8. In **Service > Endpoints**, copy:
+   - WS-Federation Passive Endpoint (`/adfs/ls/`) → **AD Sign-On Endpoint URL** on the platform
+   - Federation Metadata URL → **AD Federation Metadata Document URL** on the platform
+9. Click **Save**.
+
+---
+
+### OpenID Connect (OIDC)
+
+OIDC is an authentication layer on top of OAuth 2.0 that supports identity verification and user profile access. Supported providers are Google and Microsoft Azure.
+
+#### Google
+
+**Configuration fields:**
+
+| Field | Description | Required |
+|-------|-------------|----------|
+| Client Email | Service account email from your Google Cloud JSON key file | Yes |
+| Admin Email | Google Workspace administrator email | Yes |
+| Private Key | Private key from your Google service account JSON file | Yes |
+
+**Configure Google:**
+
+1. Log in to [Google Cloud Console](https://console.cloud.google.com/).
+2. Go to **IAM & Admin > Service Accounts > Create Service Account**. Enter a name, click **Create and Continue**, then **Done**.
+3. Click the service account → **Keys > Add Key > Create New Key** → select **JSON** → **Create**. Save the downloaded file securely.
+4. In the service account details, enable **Google Workspace Domain-wide Delegation** and note the **Client ID**.
+5. Log in to [Google Admin Console](https://admin.google.com/).
+6. Go to **Security > API Controls > Domain-wide Delegation > Add new**.
+7. Enter the **Client ID** and add the following OAuth scopes as a comma-separated list:
+   - `https://www.googleapis.com/auth/admin.directory.user.readonly`
+   - `https://www.googleapis.com/auth/admin.directory.group.readonly`
+   - `https://www.googleapis.com/auth/admin.directory.orgunit.readonly`
+   - `https://www.googleapis.com/auth/admin.directory.domain.readonly`
+8. Click **Authorize**.
+9. In the platform, select **Sign in with Google**, enable **Configure service account for your G-Suite domain**, and enter the values from the JSON key file:
+   - `client_email` → **Client Email**
+   - `private_key` → **Private Key**
+   - Admin email → **Admin Email**
+10. Click **Save**.
+
+#### Microsoft Azure
+
+**Configuration fields:**
+
+| Field | Description | Required |
+|-------|-------------|----------|
+| Client ID | Application (client) ID from your Azure app registration | Yes |
+| Tenant ID | Directory (tenant) ID from your Azure app registration | Yes |
+| Client Secret | Client secret value from your Azure app registration | Yes |
+| Redirect URL | Auto-generated — copy this to use when registering your Entra ID app | Read only |
+
+**Configure Microsoft Azure:**
+
+1. Log in to the [Azure Portal](https://portal.azure.com/) and go to **Microsoft Entra ID > App Registrations > New Registration**.
+2. Enter an application name and add the **Redirect URL** from the platform as the redirect URI. Click **Register**.
+3. Under **Authentication**, enable **ID Tokens** under Implicit grant and hybrid flows.
+4. Under **Certificates & Secrets**, create a new client secret. Copy the **Value** immediately — it is shown only once.
+5. Under **API Permissions**, add Microsoft Graph delegated permissions: User.Read, email, openid, profile. Click **Grant Admin Consent**.
+6. From the app Overview page, copy the **Application (client) ID** and **Directory (tenant) ID**.
+7. In the platform, select **Microsoft Azure**, enter the credentials, and click **Save**.
+
+---
+
+## Service Accounts
+
+Service accounts connect the platform to external identity providers to access user directories, groups, and organizational data. You can configure multiple accounts and designate one as the default for system-wide operations.
+
+Go to **Admin Console > Security > Connections > Service Account**.
+
+**Supported providers:**
+
+| Provider | Use Case |
+|----------|----------|
+| Google | Connect to Google Workspace for user and group management |
+| Microsoft Azure | Integrate with Azure Active Directory |
+| LDAP | Connect to on-premises directory services |
+
+### Add a Service Account
+
+Click the provider type to open the configuration form.
+
+#### Google
+
+Before configuring, complete the Google Cloud setup (see [Configure Google](#google-1) under OIDC for the required service account and domain delegation steps).
+
+| Field | Description |
+|-------|-------------|
+| Account Name | A descriptive name for this service account |
+| Client Email | Service account email from the Google Cloud JSON key file |
+| Admin Email | Google Workspace administrator email |
+| Private Key | Complete private key from the JSON key file (including BEGIN and END markers) |
+
+Click **Save**.
+
+#### Microsoft Azure
+
+Before configuring, complete the Azure app registration (see [Configure Microsoft Azure](#microsoft-azure-1) under OIDC, or follow the steps below).
+
+| Field | Description |
+|-------|-------------|
+| Account Name | A descriptive name for this service account |
+| Client ID | Application (client) ID from your Azure app registration |
+| Tenant ID | Directory (tenant) ID from your Azure app registration |
+| Client Secret | Client secret value from your Azure app registration |
+
+Click **Save**.
+
+**Required Microsoft Graph permissions** (Application permissions, not Delegated):
+
+| Permission | Purpose | Required |
+|------------|---------|----------|
+| User.Read.All | Read user profile attributes | Yes |
+| Group.Read.All | Read group metadata and membership | Yes |
+| Directory.Read.All | Traverse directory relationships | Yes |
+| AuditLog.Read.All | Detect group membership changes via audit logs | Yes |
+| People.Read.All | Search for people by name via People API | Optional |
+| GroupMember.Read.All | Enumerate group members directly | Optional |
+| User.ReadBasic.All | Retrieve basic user identity fields | Optional |
+
+After adding permissions, click **Grant Admin Consent** in the Azure Portal.
+
+**Azure app registration steps:**
+
+1. Log in to the [Azure Portal](https://portal.azure.com/) and search for **App Registrations**.
+2. Click **New Registration**, enter an application name, select the tenant type (Single or Multi-tenant), and click **Register**.
+3. Go to **API Permissions > Add a Permission > Microsoft Graph > Application Permissions** and add the required permissions above.
+4. Click **Grant Admin Consent for [Your Organization]**.
+5. Go to **Certificates & Secrets > New Client Secret**. Select an expiration period and click **Add**. Copy the **Value** immediately.
+6. From the app Overview, copy the **Application (client) ID** and **Directory (tenant) ID**.
+
+<Note>Set calendar reminders to rotate client secrets before they expire — 30 days before to plan, 7 days before to create and test a new secret, and 2 days before to update production.</Note>
+
+#### LDAP
+
+| Field | Description |
+|-------|-------------|
+| Account Name | A descriptive name for this service account |
+| URL | LDAP server URL |
+| Base DN | Base distinguished name for directory searches |
+| Authentication Type | LDAP authentication method |
+| Person Filter | LDAP filter to identify user objects |
+| Group Filter | LDAP filter to identify group objects |
+
+Click **Save**.
+
+### Manage Service Accounts
+
+Click the **three-dot menu** next to any service account to access these options:
+
+| Action | Description |
+|--------|-------------|
+| Edit | Update configuration fields and save changes |
+| Set as Default | Designate this account for system-wide operations (e.g., user suggestions during account invitations). Only one account can be the default at a time. |
+| Delete | Permanently remove the service account |
+
+<Note>You cannot delete a service account linked to active user enrollment. The platform displays a warning if you attempt this.</Note>
+
+---
+
+## Enterprise Encryption
+
+All account data is encrypted by default. You can use the platform-managed default key or bring your own encryption key (BYOK) for full organizational control.
+
+Go to **Admin Console > Enterprise Encryption**.
+
+### Default Key
+
+The platform automatically manages encryption — no configuration required. You can:
+- **Copy** — Copy the current key to your clipboard.
+- **Refresh** — Generate a new default key.
+
+<Note>Default key actions are disabled once BYOK is activated.</Note>
+
+### Bring Your Own Key (BYOK)
+
+BYOK lets you use your own Customer Master Keys (CMKs) from AWS KMS or Azure Key Vault for all encryption operations. The platform communicates with your external KMS for cryptographic operations.
+
+**Supported providers:** AWS KMS, Azure Key Vault
+
+<Note>BYOK is permanent. Once activated, you cannot revert to the default key, and the configuration cannot be modified. Contact [Kore.ai support](https://support.kore.ai/) if changes are needed.</Note>
+
+#### Configure BYOK
+
+1. Go to **Admin Console > Enterprise Encryption**.
+2. Under **Bring Your Own Key**, click **Create Key**.
+3. Select your cloud provider (**AWS** or **Azure**).
+4. Note the pre-populated values shown by the platform — these are required when configuring your cloud provider.
+5. Enter the required identifiers (see provider sections below).
+6. Click **Test Connection** to validate key access and permissions.
+7. Click **Next**, then **Proceed** to activate.
+
+#### AWS KMS
+
+**Values the platform provides:**
+
+| Value | How It's Used |
+|-------|---------------|
+| Service Role ARN | Required when configuring your IAM role trust policy |
+| External ID | Add to your IAM role trust policy to securely allow role assumption |
+
+**Values you provide:**
+
+| Field | Description |
+|-------|-------------|
+| Key ARN | Your KMS Customer Managed Key ARN (e.g., `arn:aws:kms:<region>:<account-id>:key/<key-id>`) |
+| Assume Role ARN | The IAM role ARN you create for the platform (e.g., `arn:aws:iam::<account-id>:role/<role-name>`) |
+
+**AWS setup steps:**
+
+1. In the **AWS KMS console**, note your **CMK ARN** from the key's details page.
+2. In **IAM > Roles > Create Role**, select **Another AWS account**, enter the Service Role ARN provided by the platform, and name the role.
+3. Set the trust policy on the role (replace placeholders with actual values):
+   ```json
+   {
+     "Version": "2012-10-17",
+     "Statement": [{
+       "Effect": "Allow",
+       "Principal": { "AWS": "<Service-Role-ARN>" },
+       "Action": "sts:AssumeRole",
+       "Condition": { "StringEquals": { "sts:ExternalId": "<External-ID>" } }
+     }]
+   }
+   ```
+4. Create and attach a permissions policy to the role:
+   ```json
+   {
+     "Version": "2012-10-17",
+     "Statement": [{
+       "Effect": "Allow",
+       "Action": ["kms:Encrypt", "kms:Decrypt", "kms:ReEncrypt*", "kms:GenerateDataKey*", "kms:DescribeKey"],
+       "Resource": "<your-cmk-arn>"
+     }]
+   }
+   ```
+5. In the KMS console, add the IAM role to the CMK's key policy:
+   ```json
+   {
+     "Effect": "Allow",
+     "Principal": { "AWS": "<your-role-arn>" },
+     "Action": ["kms:Encrypt", "kms:Decrypt", "kms:ReEncrypt*", "kms:GenerateDataKey*", "kms:DescribeKey"],
+     "Resource": "*"
+   }
+   ```
+6. Contact [Kore.ai support](https://support.kore.ai/) and share your **CMK ARN** and **Role ARN** to complete the integration.
+
+#### Azure Key Vault
+
+**Values the platform provides:**
+
+| Value | How It's Used |
+|-------|---------------|
+| Client ID | Required when granting the platform's service principal access to your Key Vault |
+| App Name | The platform's registered application name in your Azure tenant |
+
+**Values you provide:**
+
+| Field | Description |
+|-------|-------------|
+| Key Vault URL | Your Azure Key Vault URI (e.g., `https://<vault-name>.vault.azure.net/`) |
+| Tenant ID | Your Azure Directory (tenant) ID |
+
+**Azure setup steps:**
+
+1. Sign in to the Azure portal as a Global Administrator and grant admin consent for the platform's application using one of:
+   - **Admin Consent URL**: Navigate to `https://login.microsoftonline.com/<your-tenant-id>/adminconsent?client_id=<platform-client-id>`
+   - **Azure CLI**: Run `az ad sp create --id '<platform-client-id>'`
+2. In your Key Vault, go to **Access Control (IAM) > Add Role Assignment** and assign the platform's service principal:
+   - **Key Vault Crypto User** — for cryptographic operations (wrap/unwrap keys)
+   - **Key Vault Reader** — for reading Key Vault metadata
+3. Share the following with [Kore.ai support](https://support.kore.ai/): Tenant ID, Key Vault URI, and Key Name.
+4. After the team configures the connection, go to **Key Vault > Networking > Private Endpoint Connections** and approve the pending request.
+
+---
+
+## Data Settings
+
+Control what conversation data is stored and how long it is retained.
+
+Go to **Admin Console > Security > Data Settings**.
+
+### Conversation Data Storage
+
+| Option | What Is Stored |
+|--------|----------------|
+| Store full conversation data | Complete records: questions, responses, and context |
+| Do not store full conversation data | Metadata only: timestamps, user IDs, and technical details |
+
+When **Do not store full conversation data** is selected, apply the policy at one of three levels:
+
+| Level | Scope |
+|-------|-------|
+| All Agents | No-storage policy applies to all agents |
+| All Agents Except Selected | All agents use no-storage by default; selected agents retain full data |
+| Only Selected Agents | No-storage policy applies only to designated agents |
+
+### Data Retention Period
+
+| Option | Description |
+|--------|-------------|
+| Default (7 years) | Data is automatically deleted after 7 years |
+| Custom | Set a specific retention duration before automatic deletion |
+
+
+
+## Domain Management
+
+Add and verify company and partner domains to enable controlled account access via SSO.
+
+Go to **Admin Console > Security > Domain Management**.
+
+### Domain Types
+
+| Type | Description |
+|------|-------------|
+| Company Domain | Domains owned by your organization |
+| Partner Domain | External domains used by trusted partners, vendors, or collaborators |
+
+### Add a Domain
+
+1. Click **Add New**.
+2. Select the domain type (Company or Partner).
+3. Enter the domain details and submit for verification.
+4. Verified domains are added to the account. Rejected domains remain listed with a **Rejected** status.
+
+### Access Rules
+
+| Rule | Company Domain Users | Partner Domain Users |
+|------|---------------------|---------------------|
+| SSO enrollment access | Yes, when domain-based enrollment is enabled | No, even when domain enrollment is enabled |
+| Multiple accounts | Restricted to one tenant | Can access multiple tenants |
+| Account access | Automatic once domain enrollment is configured | By explicit invitation only |
+| Label in User Management | — | Shown with a **Partner** label |
+
+### Switching Accounts (Partner Users)
+
+Partner domain users with access to multiple accounts can switch between them by clicking the **profile icon** in the top-right corner and selecting **Switch Account**. This option is available from both the Admin Console and the application UI.
+
+---
+
+## Personal API Key
+
+A personal API key identifies and authorizes users for API access, replacing username and password credentials in each request.
+
+To generate your key, go to **My Profile** — accessible via the profile icon in the lower-left of the Admin Console or the upper-right corner of the application homepage — then open the **Personal API Key** section and click to generate.
+
+### Manage Your Key
+
+| Action | Description |
+|--------|-------------|
+| Copy | Copy the key for immediate use |
+| Regenerate | Generate a new key, replacing the current one |
+| Delete | Remove the key when no longer needed |
+
+### Authenticate API Requests
+
+Include the key in the `auth` header of every API request:
+
+```json
+--header 'auth: {{Admin's Personalkey}}'
+```
+
+---
