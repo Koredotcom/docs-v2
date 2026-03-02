@@ -53,7 +53,7 @@ Below is a list of important terms used across the API documentation.
 
 Each session is uniquely identified by **sessionId**. **sessionReference** is used as a secondary way to refer to the session. It can be particularly useful when the app invoking Agentic App APIs needs to maintain its own session tracking. Each session is owned by a user, identified by a system-generated **`userId`**, which is typically derived from the provided **`userReference`**.
 
-Session resolution follows a **priority-based approach** to determine how a session is created or reused. When more than one identifier is provided as input, the platform checks them in order of priority, starting with the highest. The session is resolved using the first identifier that matches. If no match is found, the platform moves on to the next identifier in the input.
+Session resolution follows a **priority-based approach** to determine how a session is created or reused. When more than one identifier is provided as input, the Platform checks them in order of priority, starting with the highest. The session is resolved using the first identifier that matches. If no match is found, the Platform moves on to the next identifier in the input.
 
 
 | Identifier | Priority | Purpose |
@@ -70,7 +70,7 @@ The above session resolution steps are summarized using the flow chart below.
 
 ## Authorization Process for API Calls
 
-If an agent in an Agentic App includes tools that require authorization to execute APIs, the platform ensures that the necessary authorizations are completed before any API calls are made during the agent’s execution.
+If an agent in an Agentic App includes tools that require authorization to execute APIs, the Platform ensures that the necessary authorizations are completed before any API calls are made during the agent’s execution.
 
 **When OAuth Authorization is Required**
 

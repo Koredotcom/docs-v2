@@ -28,7 +28,7 @@ A retail bank uses the **DocSearch Node** to automate responses to frequently as
 
 ## How It Works
 
-The **DocSearch Node** integrates seamlessly into your tool flows, accepting user queries as static text or dynamic variables referencing other node outputs. It connects to a pre-configured Search AI App on the platform to retrieve relevant content from your Sources repository using a Retrieval-Augmented Generation (RAG) framework. You can define meta filters manually or fetch them via the Answer Generation API to generate refined, context-aware responses. The node fully integrates within the canvas and optionally allows redirection to the full Search AI interface.
+The **DocSearch Node** integrates seamlessly into your tool flows, accepting user queries as static text or dynamic variables referencing other node outputs. It connects to a pre-configured Search AI App on the Platform to retrieve relevant content from your Sources repository using a Retrieval-Augmented Generation (RAG) framework. You can define meta filters manually or fetch them via the Answer Generation API to generate refined, context-aware responses. The node fully integrates within the canvas and optionally allows redirection to the full Search AI interface.
 
 
 ![how doc search works](./images/how-doc-search-works.png "how doc search works")

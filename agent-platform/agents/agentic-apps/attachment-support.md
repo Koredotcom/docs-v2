@@ -2,19 +2,19 @@
 
 Agentic Applications support real-time document sharing during interactions. Users can upload files directly into the chat, allowing agents to analyze and use document content dynamically when generating responses.
 
-The platform handles uploaded files in two ways, depending on the file types:
+The Platform handles uploaded files in two ways, depending on the file types:
 
 * Content Extraction - For specific file types, extracts and uses content as context.
 * Metadata Storage - For all supported file types, stores file information for reference.
 
 ## Content Extraction and Contextual Use
 
-For selected file types, the platform extracts the content and uses it as context to generate accurate and personalized agent responses. This allows the assistant to dynamically understand and respond based on the content of the uploaded file. This feature reduces the manual effort of users and eliminates the need for them to summarize or type out content from documents. It saves time and improves response accuracy. 
+For selected file types, the Platform extracts the content and uses it as context to generate accurate and personalized agent responses. This allows the assistant to dynamically understand and respond based on the content of the uploaded file. This feature reduces the manual effort of users and eliminates the need for them to summarize or type out content from documents. It saves time and improves response accuracy. 
 
 **How it works**:
 
 1. Users upload documents using the attachment option.
-2. The platform automatically extracts content from supported files.
+2. The Platform automatically extracts content from supported files.
 3. Agents use the extracted content to provide contextually relevant responses.
 
 
@@ -24,7 +24,7 @@ For selected file types, the platform extracts the content and uses it as contex
 
 ## File Metadata extraction
 
-For all supported file types, the platform captures and stores file metadata as **artifacts** in the metadata field of the system memory, sessionMeta. It captures the following metadata fields for each uploaded file.
+For all supported file types, the Platform captures and stores file metadata as **artifacts** in the metadata field of the system memory, sessionMeta. It captures the following metadata fields for each uploaded file.
 
 ### Stored Metadata Fields
 

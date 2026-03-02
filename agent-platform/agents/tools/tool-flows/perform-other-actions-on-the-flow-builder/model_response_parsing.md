@@ -30,7 +30,7 @@ This schema guides the model to return its response in a structured JSON format 
 
 #### Step 2: Automatic Parsing of the Model Response
 
-Once the model generates a response, the platform automatically parses the structured JSON output according to the schema you've defined. No manual parsing or code is needed—this happens in the background.
+Once the model generates a response, the Platform automatically parses the structured JSON output according to the schema you've defined. No manual parsing or code is needed—this happens in the background.
 
 #### Step 3: Automatic Storage in Context
 
