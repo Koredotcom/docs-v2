@@ -1,0 +1,201 @@
+---
+title: Get Started with AgenticAI Core SDK
+sidebarTitle: SDK
+---
+
+This guide provides a structured and technically complete reference for building, testing, packaging, and deploying multi-agent applications using the AgenticAI Core SDK. It consolidates architecture, workspace setup, runtime execution, and operational practices into a single production-oriented reference.
+
+---
+
+# Prerequisites
+
+Python 3.10+, pip, and Git must be installed. You must have access to the private AgenticAI workspace repository and permission to create applications and API keys in the AgenticAI platform.
+
+---
+
+# Assumptions
+
+This guide assumes familiarity with Python project structure, virtual environments, CLI-driven workflows, REST-style APIs, and LLM-based application patterns. Basic Python and async concepts are not explained.
+
+---
+
+# Platform and SDK Overview
+
+AgenticAI Core is a Python SDK for building structured multi-agent AI systems that execute through an MCP-based runtime and deploy to the AgenticAI platform. The SDK supports multi-agent orchestration, tool-based execution (Python and external integrations), scoped memory persistence, custom orchestration strategies, and deterministic packaging via `.kar` deployment archives.
+
+A strict separation exists between design-time configuration (application structure) and runtime execution (request handling and routing).
+
+---
+
+# Architecture Model
+
+Design-time defines the static structure of the application (App → Agents → LLM/Prompt/Tools → Memory). Runtime handles request execution via the MCP server, which forwards requests to an orchestrator that selects an agent, invokes LLM reasoning and tool calls, and returns a final response to the client.
+
+The MCP server acts as the execution boundary, and the orchestrator controls routing, continuation, and multi-agent coordination.
+
+---
+
+# Core Components
+
+## Application (App)
+
+The `App` object is the root container that defines application metadata, agent composition, memory stores, and orchestration strategy.
+
+```python
+app = App(
+    name="My Application",
+    description="Multi-agent system",
+    agents=[...],
+    memory_stores=[...]
+)
+```
+
+## Agents
+
+Agents encapsulate reasoning and domain behavior. Key configuration fields include `type` (AUTONOMOUS or PROXY), `sub_type` (REACT or PROXY), `role` (SUPERVISOR or WORKER), `llm_model`, and associated `tools`.
+
+```python
+agent = Agent(
+    name="CustomerService",
+    role="WORKER",
+    type="AUTONOMOUS",
+    sub_type="REACT",
+    llm_model=llm_model,
+    tools=[...]
+)
+```
+
+## Tools
+
+Tools provide structured execution interfaces callable by agents. They may be MCP tools defined via `@Tool.register`, knowledge/RAG-backed tools, or external integrations. Tools should be atomic, deterministic, and explicitly described to improve invocation reliability.
+
+```python
+@Tool.register(name="get_data", description="Fetch data")
+def get_data(query: str):
+    return fetch_from_api(query)
+```
+
+## LLM Models
+
+LLM models define inference behavior and runtime limits such as temperature and token count. Configuration directly affects latency, cost, and determinism.
+
+```python
+llm = LlmModel(
+    model="gpt-4o",
+    provider="Open AI",
+    modelConfig=LlmModelConfig(
+        temperature=0.7,
+        max_tokens=1600
+    )
+)
+```
+
+## Prompts
+
+Prompts combine system instructions, domain-specific constraints, and optional rule sets to shape reasoning boundaries and tool invocation discipline.
+
+## Memory Stores
+
+Memory stores persist state across conversations and support SESSION_LEVEL, USER_SPECIFIC, and APPLICATION_WIDE scopes with configurable retention policies.
+
+## Orchestration
+
+Orchestration governs routing and execution flow and can use SUPERVISOR or CUSTOM_SUPERVISOR strategies. Custom implementations inspect conversation context and dynamically select agents.
+
+```python
+class MyOrchestrator(AbstractOrchestrator):
+    def route(self, request):
+        return selected_agent
+```
+
+---
+
+# Workspace Structure and Installation
+
+The workspace includes SDK wheels in `lib/`, a CLI entry point (`run.py`), a structured `src/` directory for application code, environment configuration under `.env/`, and packaging utilities.
+
+Typical structure:
+
+```
+workspace/
+ ├── .venv/
+ ├── lib/
+ ├── src/
+ ├── .env/
+ ├── run.py
+ └── .setup.sh
+```
+
+Setup procedure:
+
+```bash
+git clone <workspace-repository-url>
+cd workspace
+./.setup.sh
+```
+
+The setup script creates `.venv` and installs dependencies from local wheels and `requirements.txt`. The virtual environment must remain named `.venv` to avoid oversized deployment archives.
+
+Platform configuration requires defining environment variables such as:
+
+```bash
+KORE_HOST=https://agent-platform.kore.ai
+APP_API_KEY=<api_key>
+TRACING_ENABLED=True
+```
+
+Separate environment files for dev, staging, and production are recommended.
+
+---
+
+# Application Development Workflow
+
+Development typically follows this sequence: define tools under `src/tools/`, optionally implement a custom orchestrator under `src/orchestrator/`, implement `create_app()` in `src/app.py`, run locally, then package and deploy.
+
+Example tool:
+
+```python
+@Tool.register(name="Get_Balance", description="Get account balance")
+async def get_balance(account_id: str):
+    return {"account_id": account_id, "balance": 1000}
+```
+
+Local execution:
+
+```bash
+python run.py start -H localhost -P 8080
+```
+
+The runtime exposes MCP endpoints for agent execution and tool discovery.
+
+---
+
+# Packaging and Deployment
+
+Packaging produces a `.kar` archive:
+
+```bash
+python run.py package -o myApp
+```
+
+Output artifacts are placed under `bin/<project>/` and include `application.kar` and `application.config.json`.
+
+Deployment sequence:
+
+```bash
+python run.py config -u dev
+python run.py deploy -f bin/myApp/application.kar
+python run.py publish -a <appId> -n development
+```
+
+Deployment returns identifiers such as `appId` and `streamId` for monitoring and testing.
+
+---
+
+# Testing and Operations
+
+Local validation should be completed before packaging by using the start command and an MCP client to verify routing and tool invocation.
+
+Deployment archives should remain under 1MB; verify that `.venv` or unintended directories are not included.
+
+Common issues include inactive virtual environments causing import errors, incorrect environment variables causing deployment failures, and missing module imports preventing tool registration.
