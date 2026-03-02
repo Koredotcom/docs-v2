@@ -11,8 +11,8 @@ When users upload documents to the agent, the Platform stores them and makes the
 
 1. Users upload documents to the the Platform. Files can be uploaded via the Agentic App Playground or programmatically using APIs.
 2. The Platform handles uploaded files in two ways, depending on the file types: 
-    1. **Content Extraction** - [For specific file types](../attachment-support.md#supported-file-formats-for-document-upload), the platform extracts the content and uses it as context.
-    2. **Metadata Storage** - [For all supported file types](../attachment-support.md#supported-file-formats-for-document-upload), the platform captures and stores file metadata as artifacts in the metadata field of the system memory, sessionMeta. It captures the following metadata fields for each uploaded file.
+    1. **Content Extraction** - [For specific file types](../attachment-support.md#supported-file-formats-for-document-upload), the Platform extracts the content and uses it as context.
+    2. **Metadata Storage** - [For all supported file types](../attachment-support.md#supported-file-formats-for-document-upload), the Platform captures and stores file metadata as artifacts in the metadata field of the system memory, sessionMeta. It captures the following metadata fields for each uploaded file.
         * fileId: Unique identifier for the uploaded file
         * type: Type of data.
         * filename: Original filename as uploaded by the user.

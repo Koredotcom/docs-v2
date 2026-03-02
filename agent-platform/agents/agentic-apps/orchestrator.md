@@ -24,7 +24,7 @@ For each orchestration pattern, configure the following.
 
 In a Single Agent setup, all user requests are routed directly to the agent. Since no supervisor agent is involved, the agent’s prompt serves as the primary instruction set for the underlying model.
 
-When processing a request, the platform constructs a single consolidated prompt by combining the following components in order, and sends it to the model:
+When processing a request, the Platform constructs a single consolidated prompt by combining the following components in order, and sends it to the model:
 
 * Agent Prompt - The core instructions that define the agent’s role and behavior.
 * Behavioral Instructions - Guidelines that control tone, constraints, and response style.

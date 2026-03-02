@@ -53,4 +53,4 @@ A CSV file containing the evaluation table is automatically downloaded to your s
     * Boolean columns: pass%, fail%
     * Score columns: pass%, fail%, average, min, max
 
-**Note:** The exported CSV file follows the same format and structure used across the platform for consistency.
+**Note:** The exported CSV file follows the same format and structure used across the Platform for consistency.

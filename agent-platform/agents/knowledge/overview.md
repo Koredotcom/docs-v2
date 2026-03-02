@@ -4,12 +4,12 @@ The **Search and Data AI** is a critical enterprise context layer for AI agents,
 
 Without rich, relevant context, even the most sophisticated AI agents operate with significant limitations, resulting in uninformed decisions, generic responses, and failure to deliver business value. Search and Data addresses this challenge by connecting AI agents to an organization's complete knowledge ecosystem through the following key capabilities:
 
-* **Extensive Data Connectivity**: The platform offers 100+ connectors to various content repositories and knowledge bases, including SharePoint, Confluence, ServiceNow, OneDrive, Google Drive, Slack, and Teams. This allows AI agents to access a wide range of enterprise knowledge sources.
+* **Extensive Data Connectivity**: The Platform offers 100+ connectors to various content repositories and knowledge bases, including SharePoint, Confluence, ServiceNow, OneDrive, Google Drive, Slack, and Teams. This allows AI agents to access a wide range of enterprise knowledge sources.
 * **Enterprise Application Integration**: Structured data connectors to business applications like Salesforce, ServiceNow, Jira, and HubSpot enable agents to access real-time business data. This integration ensures that AI agents have the most up-to-date information to respond accurately.
-* **Advanced Hybrid Search Capabilities**: The platform features hybrid text and multi-vector weighted search, programmable intelligent extraction pipelines, and customizable query pipelines. These advanced search capabilities allow AI agents to retrieve the most relevant information from the indexed content.
-* **Enterprise Security Compliance**: The platform integrates with existing access control mechanisms to ensure data governance and maintain security protocols. This ensures that AI agents operate within the organization's security framework.
-* **Contextual Intelligence Engine**: The platform provides AI agents with dynamic enterprise and user context essential for effective operations. This contextual intelligence enables agents to deliver personalized and relevant responses.
-* **Seamless Agent Enablement**: The platform supplies AI agents with relevant contextual information for handling complex tasks. This seamless integration allows agents to leverage the full potential of the organization's knowledge ecosystem.
+* **Advanced Hybrid Search Capabilities**: The Platform features hybrid text and multi-vector weighted search, programmable intelligent extraction pipelines, and customizable query pipelines. These advanced search capabilities allow AI agents to retrieve the most relevant information from the indexed content.
+* **Enterprise Security Compliance**: The Platform integrates with existing access control mechanisms to ensure data governance and maintain security protocols. This ensures that AI agents operate within the organization's security framework.
+* **Contextual Intelligence Engine**: The Platform provides AI agents with dynamic enterprise and user context essential for effective operations. This contextual intelligence enables agents to deliver personalized and relevant responses.
+* **Seamless Agent Enablement**: The Platform supplies AI agents with relevant contextual information for handling complex tasks. This seamless integration allows agents to leverage the full potential of the organization's knowledge ecosystem.
 
 ## Knowledge Integration
 
