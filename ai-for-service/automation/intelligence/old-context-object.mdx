@@ -1,0 +1,137 @@
+---
+title: Context Object
+sidebarTitle: Context Object
+---
+
+The `Context` object is a persistent container that holds data throughout dialog execution and across all intents — dialog tasks, action tasks, alert tasks, info tasks, and FAQs. The NLP engine populates it with the identified intent, extracted entities, and conversation history.
+
+Use `Context` object keys in:
+- Dialog task and intent transition conditions
+- Script nodes, dynamic entity values, and SDK payload responses
+- URL parameters (enclose key names in double brackets): `https://example.com/{{context.entities.topic}}/rss`
+
+> **Note:** The context object has a **1024 KB size limit**. The Platform notifies app designers when this limit is exceeded. Review these notifications and modify your app definition to stay within the limit.
+
+The Platform also maintains Session Variables. [Learn more](../../automation/use-cases/using-session-and-context-variables.md)
+
+---
+
+## Context Object Keys
+
+Keys are classified as **Global** (available across all intents) or **Dialog** (scoped to the current dialog).
+
+| Key | Category | Description | Usage Example |
+|---|---|---|---|
+| `intent` | Dialog | The intent recognized by the NLP interpreter. | `context.intent.<intentName>` |
+| `entities` | Dialog | Key/value pairs of user-provided entity values. Use `reuseEntityWords: true` in preconditions to auto-reuse entity values from parent dialogs in downstream dialogs. | `context.entities.<entityName>` |
+| `traits` | Dialog | Traits set for the current context. | — |
+| `currentLanguage` | Global | The current conversation language. | — |
+| `suggestedLanguages` | Global | All languages detected from the user's first utterance, ordered by confidence. Reset at the start of each conversation. | — |
+| `history` | Global | Array of node execution history. Each entry includes: `nodeId`, `state`, `type`, `componentName`, `timestamp`. | See [History States](#history-states) |
+| `onHoldTasks` | Dialog | Read-only array of tasks currently on hold. | — |
+| `<serviceNodeName>` | Dialog | Service node execution data. Contains `response.statusCode` and `response.body`. | `context.<nodeName>.response.body` |
+| `resultsFound` | Dialog | `true` if results were returned. | — |
+| `message_tone` | Global | Array of recognized tone emotions and scores for the current dialog node. | See [Tone Object](#tone-object) |
+| `dialog_tone` | Global | Array of average tone emotions and scores for the entire dialog session. | See [Tone Object](#tone-object) |
+| `<nodeName>.response.body` | Dialog | HTTP JSON response from a Service node. | `print(JSON.stringify(context.fetchopportunitiesnode.response.body))` |
+| Developer-defined key | Dialog | Custom key/value pair set by the developer. | `context.customerId` |
+| `UserQuery` | Dialog | Original and rephrased user queries. | `context.UserQuery.originalUserQuery` / `context.UserQuery.rephrasedUserQuery` |
+
+---
+
+### History States
+
+The `history` array tracks the sequential path executed in a dialog. Each entry can have the following `state` values:
+
+| State | Description |
+|---|---|
+| `processing` | Platform has started processing the node. |
+| `processed` | Node and connections are processed; the next node is identified but not yet active. |
+| `waitingForUserInput` | User was prompted but has not yet responded. |
+| `pause` | Current dialog is paused while another task runs. |
+| `resume` | Paused dialog continues at the same point after the interrupting task completes. |
+| `waitingForServerResponse` | Pending an asynchronous server response. |
+| `error` | An error occurred (loop limit reached, script/service node failure, etc.). |
+| `end` | Dialog reached the end of the flow. |
+
+`type` values: `intent` (user intent or task), `faq` (Knowledge Graph).
+
+---
+
+### Tone Object
+
+Both `message_tone` and `dialog_tone` share the same structure:
+
+| Field | Description |
+|---|---|
+| `tone_name` | Detected tone: `angry`, `disgust`, `fear`, `sad`, `joy`, or `positive` (general positivity). |
+| `count` | Number of tone occurrences. |
+| `level` | Score from **-3** (definitely suppressed) to **+3** (definitely expressed). **0** = neutral. |
+
+---
+
+## Sample Context Object
+
+```json
+{
+  "context": {
+    "bot": "Travel Planning Assistant",
+    "botid": "st-b4a22e86-XXXX-575c-b888-e106d083a251",
+    "taskid": "dg-df510618-XXXX-5a0b-8370-ee042b3e5b47",
+    "intent": "Agent",
+    "intentType": "dialog",
+    "entities": {
+      "Name": 12345,
+      "number": 1234
+    },
+    "userInputs": {
+      "originalInput": {
+        "sentence": "agent",
+        "timestamp": 1501244143000
+      }
+    },
+    "history": [
+      { "originalSentence": "agent", "timestamp": 1501244143000 },
+      { "dialogState": "started", "timestamp": 1501244143000 },
+      { "nodeId": "intent0", "state": "processed", "type": "intent", "componentName": "Agent", "timestamp": 1501244143000 },
+      { "nodeId": "entity1", "state": "processing", "type": "entity", "componentName": "Name", "timestamp": 1501244143000 },
+      { "nodeId": "entity1", "state": "waitingForUserInput", "type": "entity", "componentName": "Name", "timestamp": 1501244143000 },
+      { "nodeId": "entity1", "state": "processed", "type": "entity", "componentName": "Name", "timestamp": 1501244149000 },
+      { "nodeId": "entity4", "state": "processing", "type": "entity", "componentName": "number", "timestamp": 1501244149000 },
+      { "nodeId": "entity4", "state": "waitingForUserInput", "type": "entity", "componentName": "number", "timestamp": 1501244149000 },
+      { "nodeId": "entity4", "state": "processed", "type": "entity", "componentName": "number", "timestamp": 1501244156000 },
+      { "nodeId": "agentTransfer3", "state": "processing", "type": "agentTransfer", "componentName": "agenttransfer", "timestamp": 1501244156000 },
+      { "dialogState": "transferredToAgent", "timestamp": 1501244156000 }
+    ],
+    "dialog_tone": [{ "tone_name": "positive", "level": 1 }],
+    "message_tone": [{ "tone_name": "positive", "level": 1 }],
+    "currentTags": { "tags": ["name"] },
+    "historicTags": [{ "tags": ["name"] }],
+    "session": {
+      "EnterpriseContext": {
+        "ec1": "Enterprise Context session variable from processor",
+        "Enterprise_J_Doe_Email": "john.doe@example.com"
+      },
+      "BotContext": {},
+      "UserContext": {
+        "dept": "Product Development",
+        "emailId": "john.doe@example.com",
+        "firstName": "Help",
+        "lastName": "Docs"
+      },
+      "UserSession": {},
+      "BotUserSession": {
+        "isReturningUser": true,
+        "lastMessage": {
+          "channel": "rtm",
+          "messagePayload": {
+            "message": { "body": "1234" },
+            "botInfo": { "chatBot": "Travel Planning Assistant" }
+          }
+        },
+        "lastUserMessageTime": "2021-07-12T07:07:17.278Z"
+      }
+    }
+  }
+}
+```
