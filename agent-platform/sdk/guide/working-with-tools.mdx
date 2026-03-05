@@ -1,0 +1,256 @@
+---
+title: "Working with Tools"
+description: "Learn how to create and use tools in the AgenticAI Core SDK, including custom MCP tools, inline tools, platform tool library references, and knowledge tools."
+---
+
+# Working with Tools
+
+Tools are functions that agents invoke to perform specific operations. The SDK supports four tool types: custom Python tools (MCP), inline JavaScript tools, platform tool library references, and knowledge tools.
+
+## Prerequisites
+
+- AgenticAI Core SDK installed and configured.
+- Python 3.8+ for custom tool development.
+- Familiarity with `async`/`await` in Python.
+
+## Tool types
+
+### Custom tools (MCP)
+
+Create Python functions using the `@Tool.register` decorator. These tools register automatically to `ToolsRegistry` and support request context, logging, tracing, and type-safe parameters:
+
+```python
+from agenticai_core.designtime.models.tool import Tool
+from agenticai_core.runtime.sessions.request_context import RequestContext, Logger
+
+@Tool.register(name="AddNumbers", description="Add two numbers together")
+async def add(x: int, y: int) -> int:
+    """Add two numbers and return the result."""
+    logger = Logger('AddTool')
+    request = RequestContext()
+
+    await logger.info(f"Add operation: {x} + {y}")
+    result = x + y
+    await logger.info(f"Result: {result}")
+
+    return result
+```
+
+### Inline tools
+
+Define tools directly in configuration with JavaScript code:
+
+```python
+from agenticai_core.designtime.models.tool import Tool, ToolBuilder
+
+tool_config = ToolBuilder() \
+    .set_name("InlineTool") \
+    .set_code_type("javascript") \
+    .set_type("inline") \
+    .set_description("Inline JavaScript tool") \
+    .set_func("return 'Hello World'") \
+    .build()
+
+tool = Tool(**tool_config)
+```
+
+### Tool library
+
+Reference pre-built platform tools:
+
+```python
+tool = Tool(
+    name="Transfer_Funds",
+    description="Transfer funds between accounts",
+    type="toolLibrary"
+)
+```
+
+### Knowledge tools
+
+Access knowledge bases and RAG systems:
+
+```python
+tool = Tool(
+    name="Banking_Knowledge",
+    description="Search banking policies and procedures",
+    type="KNOWLEDGE"
+)
+```
+
+## Use request context
+
+Access request metadata inside any tool using `RequestContext`:
+
+```python
+from agenticai_core.runtime.sessions.request_context import RequestContext
+
+@Tool.register()
+async def my_tool(param: str):
+    context = RequestContext()
+
+    # Get request metadata
+    request_id = context.request_id
+    headers = context.headers
+
+    # Available headers:
+    app_id = headers.get('appId')
+    user_id = headers.get('userId')
+    session_id = headers.get('sessionId')
+    env_id = headers.get('envId')
+    trace_id = headers.get('trace_id')
+
+    # Access memory
+    memory = context.get_memory()
+
+    return result
+```
+
+## Memory operations
+
+Use `context.get_memory()` to store and retrieve session data:
+
+```python
+@Tool.register(description="Save user preferences")
+async def save_preferences(theme: str, language: str):
+    context = RequestContext()
+    memory = context.get_memory()
+
+    # Save data
+    result = await memory.set_content('user_prefs', {
+        'theme': theme,
+        'language': language
+    })
+
+    if result.success:
+        return "Preferences saved"
+    else:
+        return "Failed to save preferences"
+
+@Tool.register(description="Get user greeting")
+async def get_greeting():
+    context = RequestContext()
+    memory = context.get_memory()
+
+    # Read with projection
+    result = await memory.get_content('user_prefs', {
+        'theme': 1,
+        'language': 1
+    })
+
+    if result.success and result.data:
+        theme = result.data.get('theme', 'light')
+        language = result.data.get('language', 'en')
+        return f"Hello! Theme: {theme}, Language: {language}"
+
+    return "Hello! Please set your preferences first."
+```
+
+Always check `result.success` before accessing data. Provide fallback values for missing data and use projections to retrieve only the fields you need.
+
+## Logging
+
+Use the `Logger` class for structured logging. Initialize it with a tool name and call the appropriate log level method:
+
+```python
+from agenticai_core.runtime.sessions.request_context import Logger
+
+@Tool.register()
+async def example_tool(param: str):
+    logger = Logger('ExampleTool')
+
+    await logger.info(f"Tool called with: {param}")
+    await logger.debug("Processing...")
+
+    try:
+        result = process(param)
+        await logger.info("Completed successfully")
+        return result
+    except Exception as e:
+        await logger.error(f"Failed: {str(e)}")
+        raise
+```
+
+Available log levels:
+
+| Level | Use for |
+|-------|---------|
+| `DEBUG` | Detailed diagnostic information. |
+| `INFO` | General execution flow. |
+| `WARNING` | Potentially problematic situations. |
+| `ERROR` | Serious failures. |
+
+## Distributed tracing
+
+Decorate tools with `@tracer.observe` to capture execution spans:
+
+```python
+from agenticai_core.runtime.trace._langfuse_tracer import Tracer
+
+tracer = Tracer()
+
+@Tool.register(description="Calculator tool")
+@tracer.observe(span_name="Tool:calculator", kind="Tool")
+async def calculator(operation: str, x: str, y: str):
+    """Perform calculations with tracing."""
+    logger = Logger('Calculator')
+
+    await logger.info(f"Operation: {operation}")
+
+    num_x = float(x)
+    num_y = float(y)
+
+    if operation == "add":
+        result = num_x + num_y
+    elif operation == "multiply":
+        result = num_x * num_y
+    else:
+        raise ValueError(f"Unsupported: {operation}")
+
+    return str(result)
+```
+
+## Add tools to agents
+
+Pass tools to `AgentBuilder` during configuration. Custom tools registered with `@Tool.register` are available automatically at runtime:
+
+```python
+from agenticai_core.designtime.models.agent import AgentBuilder
+from agenticai_core.designtime.models.tool import Tool, ToolsRegistry
+
+# Define custom tools
+@Tool.register(name="GetBalance")
+async def get_balance(account_id: str):
+    return {"balance": 1000}
+
+# Create inline tool
+inline_tool = Tool(name="ProcessData", type="inline", ...)
+
+# Add to agent
+agent_config = AgentBuilder() \
+    .set_name("BankingAgent") \
+    .set_tools([inline_tool]) \
+    .build()
+
+# Tools are automatically registered via @Tool.register decorator
+
+app.start(
+    orchestrator_cls=CustomOrchestrator,
+
+    port=8080
+)
+```
+
+## Best practices
+
+- **Tool design**: Keep tools focused on a single operation. Write clear, detailed descriptions — the agent uses these to decide when to call a tool. Use meaningful parameter names. Handle errors explicitly.
+- **Logging**: Log tool entry, exit, and parameter values. Log errors with enough context to diagnose the issue. Use the appropriate log level for each message.
+- **Memory**: Always check `result.success` before using returned data. Use projections to fetch only required fields. Handle missing or null data with fallback values.
+- **Error handling**: Catch and log exceptions. Return meaningful error messages. Avoid exposing sensitive data in error responses.
+- **Performance**: Keep tools lightweight and focused. Use `async`/`await` correctly — avoid blocking calls. Monitor execution times with distributed tracing.
+
+## Related resources
+
+- [Tool API Reference](/agent-platform/sdk/api/designtime/tool)
+- [Memory Stores](/agent-platform/sdk/guide/memory-stores)
+- [Building Applications](/agent-platform/sdk/guide/building-apps)

@@ -1,0 +1,268 @@
+---
+title: "Creating Agents"
+description: "Create and configure AI agents in the AgenticAI Core SDK, including roles, sub-types, tools, prompts, and orchestrator registration."
+---
+
+# Creating Agents
+
+Agents are the autonomous units of your application. Each agent has a role, an LLM for decision-making, tools to act with, and a prompt that defines its behavior.
+
+## Prerequisites
+
+- AgenticAI Core SDK installed and configured.
+- An LLM model and prompt configured. See [Prompts and LLM Configuration](/agent-platform/sdk/guide/prompts-llm).
+- Tools defined if the agent needs to perform actions. See [Working with Tools](/agent-platform/sdk/guide/working-with-tools).
+
+## Agent types
+
+### Autonomous agents
+
+AI-powered agents that use LLM-based decision-making. Most agents use this type:
+
+```python
+from agenticai_core.designtime.models.agent import Agent
+from agenticai_core.designtime.models.llm_model import LlmModel, LlmModelConfig
+from agenticai_core.designtime.models.prompt import Prompt
+
+agent = Agent(
+    name="FinanceAssist",
+    description="Banking assistant for account management",
+    role="WORKER",
+    sub_type="REACT",
+    type="AUTONOMOUS",
+    llm_model=LlmModel(
+        model="gpt-4o",
+        provider="Open AI",
+        connection_name="Default Connection",
+        modelConfig=LlmModelConfig(
+            temperature=0.7,
+            max_tokens=1600
+        )
+    ),
+    prompt=Prompt(
+        system="You are a helpful banking assistant.",
+        custom="Assist with account inquiries and transactions."
+    )
+)
+```
+
+### Proxy agents
+
+Agents that delegate processing to an external system:
+
+```python
+agent = Agent(
+    name="ExternalService",
+    description="Integrates with external API",
+    role="WORKER",
+    sub_type="PROXY",
+    type="AUTONOMOUS",
+    llm_model=...,
+    prompt=...
+)
+```
+
+## Agent sub-types
+
+### REACT (ReAct pattern)
+
+The REACT sub-type uses a Reasoning + Acting loop. The agent iterates through:
+
+1. Reason about the task.
+2. Select an action (tool).
+3. Observe the result.
+4. Continue until complete.
+
+Best suited for general-purpose tasks, interactive problem-solving, and tool-heavy workflows.
+
+```python
+agent = Agent(
+    name="ReactAgent",
+    sub_type="REACT",
+    ...
+)
+```
+
+## Agent roles
+
+| Role | Description |
+|------|-------------|
+| `WORKER` | Executes specific tasks delegated by the orchestrator. |
+| `SUPERVISOR` | Coordinates other agents; typically used for the orchestrator agent. |
+
+```python
+# Worker
+agent = Agent(
+    name="BillingWorker",
+    role="WORKER",
+    description="Handles billing and payment tasks",
+    ...
+)
+
+# Supervisor
+agent = Agent(
+    name="Supervisor",
+    role="SUPERVISOR",
+    description="Routes requests to appropriate workers",
+    ...
+)
+```
+
+## Add tools to agents
+
+### Builder pattern
+
+```python
+from agenticai_core.designtime.models.agent import AgentBuilder
+from agenticai_core.designtime.models.tool import Tool
+
+# Define tools
+tool1 = Tool(name="GetBalance", type="toolLibrary", ...)
+tool2 = Tool(name="Transfer", type="toolLibrary", ...)
+
+# Build agent with tools
+agent_config = AgentBuilder() \
+    .set_name("BankingAgent") \
+    .set_description("Banking operations agent") \
+    .set_role("WORKER") \
+    .set_sub_type("REACT") \
+    .set_type("AUTONOMOUS") \
+    .set_llm_model(llm_model) \
+    .set_prompt(prompt) \
+    .set_tool(tool1) \
+    .set_tool(tool2) \
+    .build()
+
+agent = Agent(**agent_config)
+```
+
+### Direct assignment
+
+```python
+agent = Agent(
+    name="BankingAgent",
+    tools=[tool1, tool2, tool3],
+    ...
+)
+```
+
+## Configure prompts
+
+### Basic prompt
+
+```python
+prompt = Prompt(
+    system="You are a helpful assistant.",
+    custom="You help with banking operations."
+)
+```
+
+### With instructions
+
+```python
+prompt = Prompt(
+    system="You are a banking assistant.",
+    custom="""You help customers manage accounts and transactions.
+
+    ## Your Capabilities
+    - Check account balances
+    - Process transactions
+    - Answer policy questions
+    """,
+    instructions=[
+        "Never ask for passwords or PINs",
+        "Always confirm transaction amounts",
+        "Be professional and courteous"
+    ]
+)
+```
+
+### With memory context
+
+Use `{{memory.store.field}}` template variables to inject stored data directly into the prompt, reducing unnecessary tool calls:
+
+```python
+prompt = Prompt(
+    system="You are a helpful assistant.",
+    custom="""You have access to customer information:
+
+    <AccountInfo>
+    {{memory.accountInfo.accounts}}
+    </AccountInfo>
+
+    Use this to provide quick responses without invoking tools.
+    """
+)
+```
+
+For full prompt and LLM configuration options, see [Prompts and LLM Configuration](/agent-platform/sdk/guide/prompts-llm).
+
+## Additional configuration
+
+### Agent icon
+
+```python
+from agenticai_core.designtime.models.icon import Icon
+
+agent = Agent(
+    name="FinanceAssist",
+    icon=Icon(
+        name="avatar3",
+        color="#D9D6FE",
+        type="human"
+    ),
+    ...
+)
+```
+
+### Real-time (voice/audio)
+
+```python
+agent = Agent(
+    name="VoiceAgent",
+    is_real_time_enabled=True,
+    ...
+)
+```
+
+### Custom metadata
+
+```python
+agent = Agent(
+    name="CustomAgent",
+    metadata={
+        "versionInfo": "Draft version",
+        "customField": "value"
+    },
+    ...
+)
+```
+
+## Register with the orchestrator
+
+Convert an `Agent` to a lightweight `AgentMeta` for orchestrator registration:
+
+```python
+# Convert full Agent to lightweight AgentMeta
+agent_meta = agent.to_agent_meta()
+
+# Use in orchestrator
+app_agents = [agent.to_agent_meta() for agent in agents]
+orchestrator = CustomOrchestrator(agents=app_agents)
+```
+
+## Best practices
+
+- **Naming**: Use descriptive names that reflect the agent's purpose. The orchestrator uses names for routing.
+- **Descriptions**: Write detailed capability descriptions so the orchestrator knows when to use the agent. Include known limitations and constraints.
+- **LLM configuration**: Match temperature to the task type. Set token limits appropriate to expected response length. Consider cost versus quality trade-offs.
+- **Prompts**: Be specific about the agent's role. Include relevant context and clear guidelines. Use memory template variables to reduce unnecessary tool calls.
+- **Tools**: Only assign tools relevant to the agent's scope. Avoid tool overload — too many tools increase latency and reduce routing precision.
+- **Testing**: Test agents individually before wiring them into a multi-agent system. Verify tool integration, memory access, and prompt effectiveness separately.
+
+## Related resources
+
+- [Agent API Reference](/agent-platform/sdk/api/designtime/agent)
+- [Working with Tools](/agent-platform/sdk/guide/working-with-tools)
+- [Prompts and LLM Configuration](/agent-platform/sdk/guide/prompts-llm)
+- [Building Applications](/agent-platform/sdk/guide/building-apps)
