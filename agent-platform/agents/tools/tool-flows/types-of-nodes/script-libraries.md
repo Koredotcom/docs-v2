@@ -2,12 +2,26 @@
 
 The following pre-existing libraries can be selected for use in the script editor of the [Function Node](./function-node.md).
 
-* [json](#json)
-* [enum](#enum)
-* **Numerical Libraries**: [numPy](#numpy), [pandas](#pandas), [collections](#collections), [math](#math), [cmath](#cmath), [statistics](#statistics), and [random](#statistics).
-* **String Manipulation Libraries**: [re](#re) and [textwrap](#textwrap).
-* **Date-time Libraries**: [datetime](#datetime), [time](#time), and [calendar](#calendar).
-* [Itertools](#itertools)
+- [List of Supported Libraries](#list-of-supported-libraries)
+  - [Functions of Supported Libraries](#functions-of-supported-libraries)
+    - [json](#json)
+    - [enum](#enum)
+  - [Numerical Libraries](#numerical-libraries)
+    - [numPy](#numpy)
+    - [pandas](#pandas)
+    - [collections](#collections)
+    - [math](#math)
+    - [cmath](#cmath)
+    - [statistics](#statistics)
+    - [random](#random)
+  - [String Manipulation Libraries](#string-manipulation-libraries)
+    - [re](#re)
+    - [textwrap](#textwrap)
+  - [Date-time Libraries](#date-time-libraries)
+    - [datetime](#datetime)
+    - [time](#time)
+    - [calendar](#calendar)
+  - [Itertools](#itertools)
 
 <hr />
 
