@@ -257,7 +257,7 @@ Debug output includes:
 
 ### Span Overhead
 
-- Minimal performance impact (<1ms per span)
+- Minimal performance impact (less than 1 ms per span)
 - Automatic batching of span data
 - Async transmission to Langfuse
 

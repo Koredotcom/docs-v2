@@ -1,0 +1,141 @@
+---
+title: Zoho Connector
+sidebarTitle: Zoho Connector
+---
+
+Zoho CRM is a customer relationship management platform for managing sales, marketing, and customer support. Search AI can ingest key data from Zoho CRM — **Leads**, **Accounts**, **Contacts**, and **Deals** — enabling users to search and access this information quickly.
+
+| Specification | Details |
+|---------------|---------|
+| Repository type | Cloud |
+| Supported content | Leads, Accounts, Contacts, and Deals |
+| RACL support | Yes |
+| Content filtering | No |
+
+
+## Connector Configuration
+
+Search AI interacts with Zoho CRM via its APIs, which use OAuth 2.0 for authentication. Create an OAuth client in the Zoho API console to generate the required credentials.
+
+
+## Add an OAuth Client in Zoho
+
+1. Go to the [Zoho Developer Console](https://api-console.zoho.com/).
+2. Select the client type **Server-based Applications**.
+3. Set the **Authorized Redirect URIs** to one of the following based on your region or deployment:
+   - JP Region: `https://jp-bots-idp.kore.ai/workflows/callback`
+   - DE Region: `https://de-bots-idp.kore.ai/workflows/callback`
+   - Production: `https://idp.kore.com/workflows/callback`
+4. Click **Create**. The client credentials appear in the **Client Secret** tab.
+
+Search AI uses the following OAuth scopes to access Zoho CRM data:
+
+- `ZohoCRM.org.READ`
+- `ZohoCRM.apis.READ`
+- `ZohoCRM.users.READ`
+- `ZohoCRM.coql.READ`
+- `ZohoCRM.modules.READ`
+- `ZohoCRM.modules.entity_scores.READ`
+
+
+## Configure the Zoho Connector in Search AI
+
+On the **Authorization** tab of the connector, provide the following details and click **Connect**.
+
+| Field | Description |
+|-------|-------------|
+| **Name** | Unique name for the connector |
+| **Region** | Domain of your Zoho account — check your account URL (format: `https://crm.zoho.<domain>/`) |
+| **Authorization Type** | OAuth 2.0 |
+| **Grant Type** | Authorization Code (only supported option) |
+| **Client ID** | Client ID from the OAuth client created above |
+| **Client Secret** | Client secret from the OAuth client created above |
+
+
+## Content Ingestion
+
+The Zoho connector ingests **Leads**, **Accounts**, **Contacts**, and **Deals** from your Zoho account. Each record is ingested as a separate document in Search AI. The `doc_source_type` field indicates the type of ingested content.
+
+The `content` field for each type includes:
+
+| Content Type | Fields Ingested |
+|--------------|-----------------|
+| **Leads** | Name, lead status, source, company, email, phone, lead owner, and other contact details |
+| **Contacts** | Name, title, email, phone, account, owner, and contact information |
+| **Accounts** | Website, number of employees, annual revenue, and other account details |
+| **Deals** | Name, stage, contact details, associated account, and total deal amount |
+
+Additional metadata for each content type is stored in dedicated fields within the ingested document.
+
+
+## RACL Support
+
+Zoho CRM access control is determined by two factors:
+
+- **Profile** — defines a user's permissions at the module level (e.g., Leads, Deals, Contacts), specifying which actions (view, edit, delete) a user can perform and which modules they can access
+- **Role** — establishes a user's position in the organizational hierarchy (e.g., Employee, Manager, CEO)
+
+### Default Record Access
+
+For each ingested record, the `sys_racl` field contains:
+
+- The **creator's email ID** — the creator always has access to their own records
+- **Role IDs for all superior roles** — Zoho CRM follows a role hierarchy, so all users with roles above the creator's role can access the record if their profile permits
+
+Example:
+
+```json
+{
+    "sys_racl": ["Manager_roleId", "CEO_roleId"]
+}
+```
+
+### Record Sharing
+
+Records can be public or private, with additional sharing configured at three levels.
+
+**Public Records**
+
+A public record is accessible to all users whose profile grants access to that module. For example, if a Lead record is shared publicly and the following profiles have access to the Leads module:
+
+| Profile Name | Accessible Modules |
+|--------------|-------------------|
+| Administrator | Leads, Deals, Contacts, Accounts |
+| Standard | Leads, Deals, Contacts |
+| Marketing | Deals, Leads |
+
+The `sys_racl` field would be:
+
+```json
+{
+    "sys_racl": ["leads_<Administrator_ProfileId>", "leads_<Standard_ProfileId>", "leads_<Marketing_ProfileId>"]
+}
+```
+
+**Private Records**
+
+Private records restrict access to the creator and their superiors by default. Additional sharing can be configured at three levels:
+
+1. **Users** — direct access to individual users; the user's email is added to `sys_racl`:
+
+```json
+{
+    "sys_racl": ["john.doe@example.com"]
+}
+```
+
+2. **Roles** — access based on user roles; the module name and role ID are added to `sys_racl`:
+
+```json
+{
+    "sys_racl": ["Leads_roleId"]
+}
+```
+
+3. **Groups** — access based on predefined groups; the module name and group ID are added to `sys_racl`:
+
+```json
+{
+    "sys_racl": ["Deals_GroupId"]
+}
+```

@@ -1,0 +1,1026 @@
+---
+title: Entity Node
+sidebarTitle: Entity Node
+---
+
+The **Entity Node** extracts specific data from user utterances to fulfill intents in a dialog task. For every critical data point you need from a user, create a corresponding entity node with a prompt.
+
+**Example:** For the utterance *"Book me a flight from LA to NYC on Sunday"*, the agent needs to extract `source_city` (LA), `destination_city` (NYC), and `departure_date` (Sunday) — each via a separate entity node.
+
+The platform supports ~30 entity types (Address, Airport, Date, Currency, and more), custom regex patterns, and PII masking at the node level.
+
+<Note>Chain multiple entity nodes to collect a series of inputs (username, location, amount, due date). Follow them with a Webhook node to process an API request.</Note>
+
+---
+
+## Add the Node
+
+1. Open the dialog task.
+2. Add the **Entity** node. See [Add a Node](../using-the-dialog-builder-tool.md).
+3. The Entity window opens with **Component Properties** selected by default.
+
+**Multilingual agents:** Adding a new entity applies it across all languages (shared flow definition). Language-specific properties — prompts, error messages, synonym lists — require separate values per language.
+
+---
+
+## Configure the Node
+
+### Component Properties
+
+<Note>Changes here apply across all dialog tasks that use this node.</Note>
+
+1. Enter a **Name** and **Display Name**. Entity names cannot include spaces.
+2. Select an **Entity Type** from the dropdown. See [Entity Types](#entity-types).
+3. If the type supports it, enable **Multi-item** to allow multiple values separated by commas, semicolons, or "and".
+4. Under **User Prompt**, enter the prompt shown to the user (for example, *Enter the Departure Date*).
+   - Click **Manage** for channel-specific prompts. See [Prompt Editor](../prompt-editor.md).
+   - Click **Settings** > enable **Override for this instance** to set an instance-specific prompt. Disabling the toggle deletes the override and restores the component-level prompt.
+5. Under **Error Prompts**, review and modify default error messages.
+   - Click **Manage** to edit. See [User Prompts](../prompt-editor.md).
+   - Enable **Override for this instance** for instance-specific error messages.
+   - Enable **Present Prompts in the Order of Retries** to reorder error messages using drag handles.
+6. Toggle **Rephrase Responses** to rewrite agent replies using AI based on conversation context and user emotion. See [GenAI Features](../../../../generative-ai-tools/genai-features.md).
+7. Under **Redaction of PII Data**, set how PII entity values appear in prompts and messages at runtime:
+   - **De-identify PII data** — shows the redacted value.
+   - **Use the original value** — shows the actual value (useful for user confirmation).
+
+   <Note>These options affect only runtime display. PII data is always redacted in chat history and internal logs, regardless of this setting.</Note>
+
+8. Enable **Sensitive Entity** to mask, redact, or replace sensitive input at the node level. Disabled by default. When enabled:
+   - Check **Transient Entity** to clear the data on session close. Chat history shows `data_purge` instead of the value.
+   - Click **+Add Pattern** to add a regex for identifying sensitive data (for example, `[a-zA-Z]{3}[-]\d{4}`).
+   - Select how to display sensitive data to unauthorized users:
+     - **Redaction** — replace with a unique random alphanumeric value.
+     - **Replacement** — replace with a static value you define.
+     - **Mask with character** — mask leading and trailing characters with `+` or `#`.
+
+   See [Redacting PII Data](../../../../app-settings/advanced-settings/pii-data-masking.md).
+
+9. Under **Variable Namespaces**, associate namespaces to scope this node's execution. Visible only when Variable Namespace is enabled for the agent. See [Managing Namespace](../../../../app-settings/managing-namespace.md).
+
+---
+
+### Instance Properties
+
+Settings here apply only to this dialog task instance — not to other tasks using this node.
+
+#### User Input
+
+| Option | Description |
+|---|---|
+| **Mandatory** | User must provide a valid value before the flow continues. |
+| **Optional** | User is prompted once; flow continues with any input. Set a **Default Value** as fallback when the user provides no input. |
+| **Hidden** | Agent does not prompt; captures value only if the user volunteered it in a prior utterance. Set a **Default Value** as fallback. |
+
+**Mandatory-only settings:**
+
+| Setting | Description |
+|---|---|
+| **Allowed Retries** | Max re-prompts for invalid input (1–5, default 5). After all retries are exhausted, triggers **Behavior on Exceeding Retries**. |
+| **Voice channel exception** | On voice channels, when input doesn't match the entity type and a Node Grammar is defined, the platform uses the **No Match** retry count from Voice Call Properties instead of Allowed Retries. |
+| **Behavior on Exceeding Retries** | **End of Dialog** or **Transition to a Node**. Creates a "Behavior on Exceeding Retries" connection rule. Customize the message in [Standard Responses](../../../intelligence/conversation-management/standard-responses.md). |
+
+#### User Input Correction (v7.3, String entities only)
+
+| Option | Description |
+|---|---|
+| **Auto-correct user input** (default) | Platform builds a custom dictionary from synonyms, task names, pattern words, and small talk utterances. Not supported in all languages. |
+| **Do not auto-correct user input** | Disables autocorrection. Applied automatically for existing agents with pre-v7.3 entity extraction settings. |
+
+#### Entity Extraction
+
+| Option | Description |
+|---|---|
+| **Evaluate unused text from previous utterance** (default) | Uses text not already consumed by another entity in this dialog. |
+| **Evaluate unused and used text from previous utterances** | Can reuse values already extracted by another entity node. |
+| **Do not evaluate previous utterances** | Ignores prior utterances; always prompts the user explicitly. |
+
+- **Do not reuse**: Prevents this entity's input from being reused to extract other entities.
+- **Entity Rules**: Configure JSON-based validation rules. Click **Add Rules** and enter JSON. See [Entity Rules](#entity-rules).
+
+#### Advanced Controls
+
+| Setting | Options |
+|---|---|
+| **Intent Detection** (String/Description entities only) | Accept as entity value (ignore intent) \| Prefer as intent and use Hold & Resume settings \| Ask the user |
+| **Interruptions Behavior** | Use task-level setting \| Customize for this node. See [Interruption Handling](../../../intelligence/conversation-management/manage-interruptions.md). |
+| **Analytics - Containment Type** | Use task-level default \| Customize (Self Service or Drop-off) |
+| **Precedence** (all types except String/Description) | **Intent over Entity** or **Entity over Intent** when the user's input contains both. See [NLU Configurations](../../../natural-language/nlu-configurations/engine-tuning.md). |
+| **Custom Tags** | Add tags for custom analytics profiles. See [Custom Meta Tags](../../../../analytics/automation/custom-dashboard/custom-meta-tags.md). |
+
+#### User Input Flow
+
+At each entity prompt, the platform processes input as follows:
+
+1. **Valid value** → entity populated; dialog continues.
+2. **Ambiguous value** → platform shows an ambiguity resolution prompt.
+3. **Invalid input at the ambiguity prompt:**
+   - If valid for the entity type → used as-is; dialog continues.
+   - If invalid and triggers an intent/FAQ/small talk → handles per Hold & Resume; entity is re-prompted when dialog resumes.
+   - If invalid and no intent triggered → entity left blank; dialog continues from transitions.
+4. **Retry limit exceeded** → triggers Behavior on Exceeding Retries. For child tasks set to End of Dialog, the parent task also terminates.
+
+---
+
+### NLP Properties
+
+1. Under **Suggested Synonyms**, enter synonyms for the entity and press **Enter** after each. See [Managing Synonyms](../../../natural-language/training/fundamental-meaning.md#manage-synonyms).
+2. Under **Suggested Patterns**, click **+ Add Pattern** to add extraction patterns. See [Managing Patterns](../../../natural-language/training/fundamental-meaning.md#navigate-to-the-patterns-tab).
+3. Under **Manage Context > Context Output**, define context tags set when this entity is populated.
+4. Enable **Auto emits the entity values captured** to add entity values to the context object automatically. See [Context Management](../../../intelligence/context-management.md).
+
+---
+
+### IVR Properties
+
+Configure input mode, grammar, prompts, and call behavior for IVR channels. See [Configure Dialog Node IVR Properties](../../../../channels/IVR-integration.md#configure-dialog-node-ivr-properties).
+
+---
+
+### Connection Properties
+
+<Note>If this node is last in the sequence, only the connection property is visible.</Note>
+
+Define which node executes next using conditions based on entity values or context objects. These conditions are instance-specific and do not affect other dialog tasks.
+
+See [Adding IF-Else Conditions to Node Connections](../node-connections/nodes-conditions.md). To delete a condition, hover over it and click the bin icon. Deleted conditions cannot be restored.
+
+**Default connection variants:**
+
+| Variant | Behavior |
+|---|---|
+| **Not Connected** | No next node defined. |
+| **End of Dialog** | Explicitly ends the dialog. |
+| **Return to Flow** | Ends the Dialog Task; returns control to Flow Builder at the next node. |
+
+**Deflect to Chat** (Return to Flow only): Transitions voice interactions to chat. Types: Automation or Agent Transfer.
+
+<Note>Deflect to Chat works only with Kore Voice Gateway channels (Phone number or SIP Transfer).</Note>
+
+---
+
+## Entity Types
+
+The entity type tells the NLP interpreter what data to expect from user input, improving recognition accuracy.
+
+| Entity Type | Returns | Description |
+|---|---|---|
+| [Address](#address) | String | US and Germany standard address formats |
+| [Airport](#airport) | JSON | City, airport name, IATA, ICAO |
+| [Attachment](#attachment) | String | File, image, or email up to 25 MB |
+| [City](#city) | String | City name (population > 5,000) |
+| [Color](#color) | String | Named colors with variants |
+| [Company](#company) | String | Company or organization names |
+| [Composite](#composite) | Mixed | Multiple entity values in one entity |
+| [Country](#country) | JSON | Country name with alpha-2, alpha-3, and numeric codes |
+| [Currency](#currency) | JSON | Amount and currency type |
+| [Custom](#custom) | String | User-defined regex, concept, or variable |
+| [Date](#date) | String (ISO8601) | Date: `YYYY-MM-DD` |
+| [Date Period](#date-period) | JSON | Start and end date |
+| [Date Time](#date-time) | String (ISO8601) | Date + time: `YYYY-MM-DDThh:mm:ss.sTZD` |
+| [Description](#description) | String | Multi-sentence free text |
+| [Email](#email) | String | Email address |
+| [List of Items (enumerated)](#list-of-items-enumerated) | String | Static or context-based selection list |
+| [List of Items (lookup)](#list-of-items-lookup) | String | Static or remote lookup list |
+| [Location](#location) | JSON | City/state with address and coordinates |
+| [Number](#number) | Number | Numeric value (max 18 digits) |
+| [Person Name](#person-name) | String | Full name of a person |
+| [Percentage](#percentage) | Float (0.0–1.0) | Percentage value |
+| [Phone Number](#phone-number) | String | 3–12 digit phone numbers |
+| [Quantity](#quantity) | JSON | Amount, unit, and quantity type |
+| [String](#string) | String | Single-sentence free text |
+| [Time](#time) | String (ISO8601) | Time: `HH:MM:SS.sZD` |
+| [Time Zone](#time-zone) | String | Timezone as GMT offset |
+| [URL](#url) | String | Web URL |
+| [Zip Code](#zip-code) | String | Postal/zip code |
+
+---
+
+### Address
+
+Captures US and Germany standard address formats. For other countries, captures strings ending with a recognizable city or country name.
+
+Format: *Street Name, City (required), Country (required), Zip Code*
+
+```json
+{ "AddressEntity": "200 E Main ST Phoenix AZ USA 85123" }
+```
+
+---
+
+### Airport
+
+Captures airport details via city name, airport name, IATA/ICAO code, or US city abbreviations. Data source: [opentraveldata](https://github.com/opentraveldata/opentraveldata).
+
+```json
+{
+  "AirportEntity": {
+    "IATA": "LHR",
+    "AirportName": "London Heathrow Airport",
+    "City": "London",
+    "ICAO": "EGLL"
+  }
+}
+```
+
+| Input | Behavior |
+|---|---|
+| City name | Identifies airport; shows list if the city has multiple airports |
+| Airport name | Matches full or partial name with a prominent keyword |
+| IATA code | Identifies airport by IATA code |
+| ICAO code | Identifies airport by ICAO code |
+| City abbreviation | Uses [geonames.org](https://www.geonames.org) abbreviations |
+
+---
+
+### Attachment
+
+Captures a file, image, or email attachment up to 25 MB.
+
+```json
+{ "AttachmentEntity": "send" }
+```
+
+<Note>Supported channels only: Facebook, Twitter, Web/Mobile, Slack.</Note>
+
+---
+
+### City
+
+Captures any city with population > 5,000 as a string. Data source: [geonames.org](https://www.geonames.org).
+
+```json
+{ "CityEntity": "New York" }
+```
+
+<Note>City disambiguation is not performed. Cities are prioritized by population (for example, Portland OR ranks above Portland ME).</Note>
+
+---
+
+### Color
+
+Captures color names from utterances. Returns as a string.
+
+```json
+{ "ColorEntity": "green" }
+```
+
+| Color | Recognized variants (sample) |
+|---|---|
+| green | celadon, chartreuse, emerald, lime, mint, olive, sage |
+| brown | amber, bronze, mahogany, russet, tan, chocolate, cinnamon |
+| orange | auburn, orangish |
+| blue | aqua, azure, cerulean, navy, teal, turquoise, sapphire |
+| purple | magenta, mauve, orchid, lavender, lilac, violet |
+| red | crimson, fuchsia, maroon, pink, scarlet, vermilion |
+| yellow | beige, gold, lemon, mustard, peach, saffron |
+| black | ebony, jet black, licorice |
+| white | chalk, cream, ivory, off-white |
+| grey | ashen, gray, grayish, hoary, taupe |
+| metallic | argent, brass, bronze, copper, gold, platinum, silver |
+| transparent | — |
+| reflective | — |
+
+---
+
+### Company
+
+Captures company or organization names. Returns as a string.
+
+```json
+{ "OrganizationEntity": "amazon" }
+```
+
+Recognizes:
+- A large corpus of known global companies, mapping name variants to a canonical name (for example, Amazon, Amazon.com, Amazon Inc → "amazon").
+- Any capitalized word followed by a legal suffix: Inc, Incorporated, Corp, Corporation, Group, Ltd, Limited, Co, Company, LP, LLP, LLLP, LLC, PLLC.
+
+---
+
+### Composite
+
+Captures multiple entity values in a single entity. Use when a user utterance contains a combination of related data points.
+
+**Example:** *"I want to fly first class from LA to NYC tomorrow"* — captures flight class, departure city, destination city, and travel date in one composite entity.
+
+---
+
+### Country
+
+Captures country names from utterances. Returns as JSON.
+
+```json
+{
+  "CountryEntity": {
+    "alpha3": "USA",
+    "alpha2": "US",
+    "localName": "United States of America",
+    "shortName": "United States",
+    "numericalCode": 840
+  }
+}
+```
+
+| Field | Description | Example |
+|---|---|---|
+| alpha3 | Three-letter code | USA, GBR, IND |
+| alpha2 | Two-letter code | US, GB, IN |
+| localName | Full country name | United States of America |
+| shortName | Short name | United States |
+| numericalCode | UN M49 code | 840, 826, 356 |
+
+<Note>Avoid special characters (`&`, `()`) in inputs. Use commas or "and" to separate list items.</Note>
+
+---
+
+### Currency
+
+Captures amount and currency type from utterances. Returns as JSON.
+
+```json
+{ "CurrencyEntity": { "code": "SGD", "amount": 20 } }
+```
+
+Recognizes: full names (Dollar, Rupees), symbols ($, £), abbreviations (INR, USD), and slang (Buck, Quid, Loonie, Benjamin).
+
+<Note>Currency is not disambiguated by prior usage. USD may rank above SGD for "dollar" unless the user explicitly says SGD.</Note>
+
+---
+
+### Custom
+
+Validates user input against a regex, concept variable, or content/context/environment variable.
+
+| Type | Example input | Acceptable input |
+|---|---|---|
+| Regular Expression | `[a-zA-Z]{3}[-]\d{4}` | NLP-1234 |
+| Concept Variable | `~car_brands` | Tesla |
+| Content/Context/Env Variable | `content.TicketNumber` (containing a regex) | NLP-1234 |
+
+<Note>The dialog fails if the expression resolves to null. Use the `preConditions` entity rule to conditionally skip the node instead.</Note>
+
+See [Regex Expressions](https://en.wikipedia.org/wiki/Regular_expression).
+
+---
+
+### Date
+
+Captures a date from utterances. Returns ISO8601 format: `YYYY-MM-DD`.
+
+```json
+{ "DateEntity": "1982-04-13" }
+```
+
+Recognizes formatted dates, number-only dates, named months, relative dates (today, in 3 days, last Thanksgiving), and weekdays (next Saturday, first Sunday of next month).
+
+---
+
+### Date Period
+
+Captures a start date and end date. Prompts separately for each missing date.
+
+```json
+{ "DatePeriodEntity": { "from": "2024-11-05", "to": "2024-11-10" } }
+```
+
+| Input | Behavior |
+|---|---|
+| Neither date | Prompts for From Date |
+| One date missing | Prompts for the missing date |
+| Implicit reference + duration (*5 days from Tuesday*) | Calculates both dates |
+| From date + duration (*5 days from Nov 15*) | Calculates both dates |
+| Both dates explicit (*from 5th to 10th*) | Captures both |
+
+<Note>Date Period supports two separate user and error prompt sets: one for From Date and one for To Date.</Note>
+
+---
+
+### Date Time
+
+Captures date and time combined. Returns ISO8601 format: `YYYY-MM-DDThh:mm:ss.sTZD`.
+
+```json
+{ "DateEntity": "2017-10-10T18:00:00+05:30" }
+```
+
+---
+
+### Description
+
+Captures statements or paragraphs of free text. Returns as a string (supports wildcard characters).
+
+```json
+{ "Description": "text here" }
+```
+
+<Note>Multi-item is not available for Description.</Note>
+
+---
+
+### Email
+
+Captures email addresses from utterances. Returns as a string.
+
+```json
+{ "Email": "help@example.com" }
+```
+
+---
+
+### List of Items (enumerated)
+
+Displays a defined list of values to the user for selection. Click **Customise The List Of Items** to configure.
+
+| List type | Configuration |
+|---|---|
+| **Static List** | Enter Display Name, Value, and Synonyms per item. Set Auto-Correction threshold. |
+| **List from Context** | Specify a context variable, display name key, value key, and synonyms key. |
+
+**Auto-Correction:** Accepts closest-match inputs based on a configurable character-similarity threshold. Does not apply to dictionary words or alphanumeric inputs.
+
+Context object keys (added post-v7.1):
+- `ambiguousEntityValues` — array of ambiguous matches (title, value, synonym). Reset on re-prompt.
+- `synonymsUsed` — synonym used to identify the matched item. Reset on re-prompt.
+
+<Note>To show the list of values in the prompt, set **Display List of Values** to the channel-formatted option. Works with Plain Text prompts only — not JavaScript templates.</Note>
+
+---
+
+### List of Items (lookup)
+
+Displays a list defined via static configuration or a remote service call. Click **Customise The List Of Items** to configure.
+
+#### Static List
+
+| Tab | Description |
+|---|---|
+| **List of Values** | Enter Display Name, Value, and Synonyms per item |
+| **JSON Preview** | Enter key/value/synonym pairs as JSON |
+| **Upload** | Upload a JSON or CSV file |
+
+#### Remote List
+
+Use for large datasets or security-restricted lookups via an external service.
+
+**Step 1 — Define the service call.** The platform populates `context.inputData` before calling the service:
+
+```json
+{
+  "inputData": {
+    "input": ["get account"],
+    "usedUp": ["0-x-x"],
+    "isMultiItem": false
+  }
+}
+```
+
+| Field | Description |
+|---|---|
+| `input` | Array of user inputs for the current dialog |
+| `usedUp` | Index of words already used by other entities. Format: `sentenceIndex-startIndex-endIndex` |
+| `isMultiItem` | Set to `true` if multiple values are expected |
+
+**Step 2 — Map the response.** Configure how to read the service response:
+
+| Field | Access path |
+|---|---|
+| Context variable (array) | Contains service response data |
+| Display Key Name | `{{context.entities.<entity-name>.title}}` |
+| Value Key | `{{context.entities.<entity-name>.value}}` |
+| Synonyms Key | `{{context.entities.<entity-name>.synonym}}` |
+| Matched Word Index | Same format as `usedUp` in `context.inputData` |
+
+**Step 3 — Runtime flow.**
+1. Platform populates `context.inputData` and calls the service.
+2. One value returned → assigned to entity.
+3. Multiple values returned → platform extracts match from the list. No match → user selects from the list.
+4. Ambiguous values → user selects one.
+5. Multi-item entity → all valid values assigned; invalid values discarded.
+6. Empty or malformed response → falls back to User Prompt.
+
+Context keys added post-v7.1: `ambiguousEntityValues`, `synonymsUsed` (same as enumerated).
+
+---
+
+### Location
+
+Captures city or state location with address and coordinates. Returns as JSON.
+
+```json
+{
+  "Location": {
+    "formatted_address": "Las Vegas, NV, USA",
+    "lat": 36.1699412,
+    "lng": -115.1398296
+  }
+}
+```
+
+---
+
+### Number
+
+Captures a numeric value from utterances. Recognizes spelled-out numbers and abbreviations (1M). Consecutive number words are combined ("one two three" → 123).
+
+```json
+{ "NumberEntity": 16 }
+```
+
+<Note>Maximum 18 digits.</Note>
+
+---
+
+### Person Name
+
+Captures a person's full name. Returns as a string. Platform identifies capitalized words as names, taking up to three consecutive capitalized words.
+
+```json
+{ "PersonName": "John Smith" }
+```
+
+---
+
+### Percentage
+
+Captures percentage values. Returns as a float in range 0.0–1.0.
+
+```json
+{ "PercentageEntity": 0.6 }
+```
+
+Supports: `percent`, `percentage`, `%`.
+
+---
+
+### Phone Number
+
+Captures 3–12 digit phone numbers. Returns as a string. Handles non-standard formats like `(407)-407-4077` and `407.407.4077`. Supports Arabic phone numbers spelled out in words.
+
+```json
+{ "PhoneNumber": "+4075551212" }
+```
+
+---
+
+### Quantity
+
+Captures amount, unit, and quantity type from utterances.
+
+```json
+{
+  "Quantity": {
+    "unit": "milliliter",
+    "amount": 500,
+    "type": "volume",
+    "source": "500 ml"
+  }
+}
+```
+
+Select a **Unit Type** and **Default Unit** when configuring the entity.
+
+| Type | Supported units |
+|---|---|
+| Length | kilometer, meter, centimeter, inch, foot, yard, mile |
+| Area | square kilometer, square meter, square mile, square yard, square foot |
+| Volume | cubic meter, liter, milliliter, gallon, ounce |
+| Time | hour, minute, second, millisecond |
+| Speed | meters/second, km/hour, miles/hour |
+| Pressure | pascal, atmosphere, bar |
+| Energy | calorie, kilocalorie, watt-hour, kilowatt-hour |
+| Memory | bit, byte, kilobyte, megabyte, gigabyte, terabyte |
+| Weight | ton, kilogram, gram, pound, ounce |
+| Angle | degree |
+| Age | day, week, month, year, decade, century |
+| Temperature | celsius, fahrenheit |
+
+---
+
+### String
+
+Identical to [Description](#description) but limited to one sentence. No validation is applied unless the entity is trained. Use as a last resort when no other entity type fits.
+
+---
+
+### Time
+
+Captures time from utterances. Returns ISO8601 format: `HH:MM:SS.sZD`.
+
+```json
+{ "TimeEntity": "T06:00:00+05:30" }
+```
+
+Recognizes: am/pm, spelled-out numbers (Six AM), and context phrases (Six in the evening).
+
+---
+
+### Time Zone
+
+Captures a timezone and converts it to GMT offset.
+
+```json
+{ "TimeZoneEntity": "-06:00" }
+```
+
+Recognizes standard timezone names (Eastern Standard Time → `-6:00`).
+
+---
+
+### URL
+
+Captures web URLs from utterances. Returns as a string.
+
+```json
+{ "URLEntity": "www.kore.ai" }
+```
+
+---
+
+### Zip Code
+
+Captures postal/zip codes. Returns as a string. Handles hyphens, spaces, and leading zeros. Does not extract codes from regex-like patterns (for example, `#$A1B2%`).
+
+```json
+{ "ZipcodeEntity": "32746" }
+```
+
+---
+
+## Entity Rules
+
+Entity rules add validation and processing hints beyond basic type restrictions. Apply rules in two ways:
+
+**Via the UI:** Go to **Instance Properties > Entity Rules** and enter JSON in the editor.
+
+**Via a Script Node** (placed before the entity node in the dialog):
+
+```javascript
+context.entityRules.<entityName> = {
+  "ruleName": "value"
+}
+```
+
+For subentity rules in a composite entity:
+
+```javascript
+context.entityRules.<compositeEntityName> = {
+  <subentityName>: {
+    "ruleName": "value"
+  }
+}
+```
+
+---
+
+### Generic Rules
+
+Apply to all entity types.
+
+| Rule | Values | Description |
+|---|---|---|
+| `allowConfirmation` | true/false | Presents the extracted value to the user for confirmation before continuing. Currently applies to LoV enumerated types only. |
+| `confirmYesSynonyms` | `["~concept1", "~concept2"]` | Additional words/phrases to confirm an entity value. Use with `allowConfirmation`. |
+| `confirmNoSynonyms` | `["~concept1", "~concept2"]` | Words/phrases to cancel confirmation; sets entity value to null. Use with `allowConfirmation`. |
+| `processLatestSentence` | true/false | Restricts entity extraction to sentences from the current volley only. |
+| `patternsOnly` | true/false | Restricts extraction to defined entity patterns only; disables the default NLP fallback. |
+| `preConditions` | `["contextTag"]` or `["( pattern )"]` | Extracts the entity only when a specified context tag/trait is set or a pattern matches. Skips extraction entirely if the condition is not met. |
+| `isCurrencyCode` | true/false | Enables (true) or disables (false) currency code identification in multilingual setups. |
+
+**`preConditions` examples:**
+
+```json
+{ "preConditions": ["isCustomerX"] }
+```
+Extracts entity only if the `isCustomerX` context tag is set.
+
+```json
+{ "preConditions": ["( buy )"] }
+```
+Extracts entity only if the word "buy" appears in the utterance. Utterance `buy 10 apples` → `10`; utterance `search for 10 apples` → no extraction.
+
+---
+
+### String and Description Rules
+
+| Rule | Values | Description |
+|---|---|---|
+| `discardAsCommand` | true | Treats discard commands (abort, cancel, exit, quit, stop, and synonyms) as dialog discard, not as string input. |
+| `stripLeading` | `["~concept"]` | Removes words in the concept from the start of the extracted string. |
+| `stripTrailing` | `"~concept ~concept2"` | Removes words in the concept from the end of the extracted string. Value can be a string, space-separated concepts, or an array. |
+| `avoidSingleWord` | `"~concept"` | Ignores any single-word value belonging to the concept, unless it is the entire input. |
+| `avoidSingleVerb` | true | Ignores single-verb values unless the entire input is a verb. |
+| `extractOnlyNumbers` | true | Extracts only the numbers present in the string. |
+| `letters` | `2` or `"5-8"` | Extracts words composed of exactly N alphabetic letters, or within a range. Punctuation and numbers are excluded. Returns uppercase. |
+
+**`letters` examples:**
+
+```json
+{ "letters": 2 }
+```
+
+| Utterance | Extracted |
+|---|---|
+| `234 XY` | `XY` |
+| `234 x y` | `XY` |
+| `234 alpha bravo` | `AB` (phonetic alphabet) |
+| `234 X Y Z` | nothing (no 2-letter match) |
+
+```json
+{ "letters": "5-8" }
+```
+
+Utterance: `Kore.ai is the best platform in artificial intelligence of recent times.`
+Extracted: `platform, recent, times`
+
+---
+
+### Number Rules
+
+| Rule | Values | Description |
+|---|---|---|
+| `asString` | true | Captures the number as a string, preserving leading zeros. |
+| `digits` | `"3"` or `"13-17"` | Enforces exact digit count or a valid range. Preserves leading zeros. Implies `asString=true` and `integerOnly=true`. Decimals and ordinals are not matched. |
+
+<Note>`digits` does not split spoken number groups. For input `"two thousand and twenty three"`, the rule `"digits": 4` will not match. Use individual spoken digit groups like `"twenty twenty three"` for a 4-digit match.</Note>
+
+**Examples:**
+
+```json
+{ "asString": true }
+```
+Utterance: `OTP is 009944` → Extracted: `"009944"` (without rule: `9944`)
+
+```json
+{ "digits": "3" }
+```
+Utterance: `CVV is 034` → Extracted: `"034"`
+
+```json
+{ "digits": "13-17" }
+```
+Utterance: `My credit card number is 4012 8888 8888 1881` → Extracted: `"4012 8888 8888 1881"` (16 digits, within range)
+
+---
+
+### Currency Rules
+
+| Rule | Values | Description |
+|---|---|---|
+| `defaultCode` | `"NZD"` or `"NZ"` | Default currency when none is specified. Accepts 3-letter currency code or 2-letter country alpha-2 code. |
+| `maxDigits` | number | Max digits allowed in the amount. Exceeding amounts are discarded. |
+| `currencyCodes` | `["USD", "INR", "NZD"]` | Restricts accepted currencies to this list. |
+| `ignoreOnlyCode` | true/false | `true`: requires both code and amount; code alone is rejected. `false`: accepts code without amount. |
+
+**Examples:**
+
+```json
+{ "defaultCode": "NZD" }
+```
+Utterance: `Pay 30` → Extracted: `NZD30`; utterance `Pay USD30` → Extracted: `USD30`
+
+```json
+{ "maxDigits": 3 }
+```
+Utterance: `Pay USD3000` → Prompts for value (exceeds 3 digits)
+
+```json
+{ "currencyCodes": ["USD", "INR", "NZD"] }
+```
+Utterance: `Pay AUD30` → Prompts for value (AUD not in list)
+
+```json
+{ "ignoreOnlyCode": true }
+```
+Utterance: `Pay AUD` → Error: amount required
+
+---
+
+### Composite Entity Rules (Model Number)
+
+| Rule | Values | Description |
+|---|---|---|
+| `modelNumber` | true or `<separator char>` | Captures structured IDs (membership number, SSN, seat) from a composite entity. Concatenates matched subentity values into a single string instead of a JSON object. |
+
+`modelNumber` is a voice-compatible alternative to custom regex. Regex requires exact character matching, which breaks on ASR transcription variations (for example, "C" → "sea", or a pause splitting "23" → "20 3"). Using `Number` and `String` entity types with the `digits` and `letters` rules handles all these variations.
+
+**Example:** Pattern `@AccountNumbers @AccountSuffix` where:
+- `@AccountNumbers`: Number entity with `"digits": 8`
+- `@AccountSuffix`: String entity with `"letters": 2`
+
+| Utterance | Extracted |
+|---|---|
+| `3 3 1 3 4 2 1 2 X Y` | `33134212XY` |
+| `33134212 – XY` | `33134212XY` |
+| `33134212 alpha bravo` | `33134212AB` |
+| `thirty three thirteen forty two twelve a like apple b as in boy` | `33134212AB` |
+
+<Note>A `modelNumber` composite entity is a voice-compatible replacement for a custom regex entity like `\d{8}\-?[a-zA-Z]{2}`.</Note>
+
+---
+
+### Person Name Rules
+
+| Rule | Values | Description |
+|---|---|---|
+| `disablePatterns` | `["possessive"]` | Disables the possessive pattern so "Bob's" extracts "Bob" instead of "Bob's". |
+| `ignoreWords` | `["word", "~concept"]` | Words/concepts not treated as names even when capitalized. Value can be a string, space-separated concepts, or an array. |
+| `negativePatterns` | `["about *"]` | Patterns that prevent extraction (for example, "about Philip" → Philip is not captured). |
+| `ignorePunctuation` | `["-", ","]` | Punctuation to ignore in person name extraction. Applies to non-English languages (excludes German, French, Spanish). |
+
+**Examples:**
+
+```json
+{ "disablePatterns": ["possessive"] }
+```
+Utterance: `schedule Bob's review at 9 am` → Extracted: `Bob`
+
+```json
+{ "ignoreWords": ["review", "~prepositionList"] }
+```
+Utterance: `meeting for Bob Review` → Extracted: `Bob` (without rule: `Bob Review`)
+
+```json
+{ "negativePatterns": ["about *"] }
+```
+Utterance: `schedule a meeting about Philip with Fred` → Extracted: `Fred` (without rule: `Philip`)
+
+---
+
+### Company Rules
+
+| Rule | Values | Description |
+|---|---|---|
+| `ignoreWords` | `["atm"]` | Words/concepts not treated as company names even when capitalized. |
+| `negativePatterns` | array of patterns | Patterns that prevent company name extraction in specific scenarios. |
+
+**Example:**
+
+```json
+{ "ignoreWords": ["atm"] }
+```
+Utterance: `find ATM` → Extracted: nothing (without rule: `ATM`, recognized as an Italian company)
+
+---
+
+### Date Rules
+
+| Rule | Values | Description |
+|---|---|---|
+| `range` | `{"from": "2020-01-01", "to": "today"}` | Accepts dates only within the range. Either endpoint is optional. Values: `YYYY-MM-DD` or keywords: `today`, `tomorrow`, `yesterday`. Endpoints are inclusive. |
+| `referenceDate` | `"2020-07-09"` | Sets a fixed reference date for relative date calculations. Values: `YYYY-MM-DD` or keywords. |
+| `preferredDateFormat` | `"mm-dd-yyyy"` | Resolves ambiguous date input using the specified format. Options: `yyyy-mm-dd`, `yyyy-dd-mm`, `dd-mm-yyyy`, `mm-dd-yyyy`. Overridden by the user's in-conversation preference. |
+| `returnOnlyMonthYear` | true/false | Captures only month and year; ignores the day even if provided. |
+
+**Examples:**
+
+```json
+{ "range": {"from": "2020-01-01", "to": "today"} }
+```
+Utterance: `show schedule for 2019-02-03` → Prompts for value (out of range)
+Utterance: `show schedule for 2020-02-03` → Extracted: `2020-02-03`
+
+```json
+{ "referenceDate": "2020-07-09" }
+```
+Utterance: `schedule after two days` → Extracted: `2020-07-11`
+
+```json
+{ "returnOnlyMonthYear": true }
+```
+Utterance: `03-04-2021` → Extracted: `04-2021`
+
+---
+
+### Date Period Rules
+
+| Rule | Values | Description |
+|---|---|---|
+| `range` | `{"from": "...", "to": "..."}` | Same as Date `range` rule. |
+| `range` with `strict` | `{"from": "...", "to": "...", "strict": true}` | `true`: accepts only dates strictly within the range. `false`: accepts dates overlapping the range. |
+| `referenceDate` | `"<date>"` | Sets a reference date for relative calculations. |
+| `tense` | `"past"` or `"future"` | Forces year resolution when the year is absent. Without this rule, the platform uses the current year if the date falls within 90 days, otherwise the previous year. |
+| `preferredDateFormat` | `"mm-dd-yyyy"` | Same as Date rule. Options: `yyyy-mm-dd`, `yyyy-dd-mm`, `ddmmyyyy`, `mmddyyyy`. |
+
+---
+
+### Date Time Rules
+
+| Rule | Values | Description |
+|---|---|---|
+| `range` | `{"from": "2020-01-01T00:00:00+05:30", "to": "..."}` | Accepts date-times only within the range. Values: date (`YYYY-MM-DD`), datetime (`YYYY-MM-DDTHH:MM:SS`), or keywords: `today`, `tomorrow`, `yesterday`, `now`. |
+| `preferredTimes` | `{"from": "T12:00:00", "to": "T18:00:00"}` | Default preferred time range for all days. Resolves ambiguous times (for example, "3" → 3 PM if range is 9 AM–6 PM). Times in ISO 8601 format `THH:MM`. |
+| `preferredTimes` (per day) | `{"from": ["", "T09:00", ...], "to": ["", "T18:00", ...]}` | Arrays of 7 values (Sun–Sat) for day-specific time preferences. Empty string = no preference for that day. |
+| `preferredTimes` (favor) | `{"favor": "pm"}` | Sets preference by keyword: `future`, `past`, `am`, or `pm`. |
+| `timeRangePossible` | true/false | If true, "10 to 4" resolves to two times (10:00 and 16:00) instead of 3:50. |
+| `preferredDateFormat` | `"mm-dd-yyyy"` | Same as Date rule. Options: `yyyy-mm-dd`, `yyyy-dd-mm`, `ddmmyyyy`, `mmddyyyy`. |
+
+---
+
+### Time Rules
+
+| Rule | Values | Description |
+|---|---|---|
+| `preferredTimes` | Same as DateTime | Sets preferred time range or day-specific preferences. |
+| `timeRangePossible` | true/false | Same as DateTime rule. |
+| `range` | `{"from": "now"}` or `{"to": "now"}` | Restricts to times after or before now. Currently, only `"now"` is supported as a value. |
+| `timeOnly` | true/false | `true`: returns time without "T" prefix or offset (for example, `18:00:00`). `false`: returns full ISO format (for example, `T18:00:00+5:30`). Supported in multilingual setups except English, German, French, and Spanish. |
+
+---
+
+### City Rules
+
+| Rule | Values | Description |
+|---|---|---|
+| `ignoreWords` | `"Send"` | Words not treated as city names. Value can be a string, space-separated concepts, or an array. |
+
+**Example:**
+
+```json
+{ "ignoreWords": "Send" }
+```
+Utterance: `Send destination to my email` → Prompts for entity value (without rule: captures "Send" as a city)
+
+---
+
+### Zip Code Rules
+
+| Rule | Values | Description |
+|---|---|---|
+| `preferredCountries` | `["GB"]` | Restricts zip code extraction to specified countries (alpha-2 codes) plus the user's location country. |
+
+**Example:**
+
+```json
+{ "preferredCountries": ["GB"] }
+```
+Utterance: `check delivery to PO16 7GZ` → Extracted: `PO16 7GZ`
+
+---
+
+### Location Rules
+
+| Rule | Values | Description |
+|---|---|---|
+| `preferredCountries` | `["GB"]` | Restricts location extraction to specified countries (alpha-2 codes) plus the user's location country. |
+
+---
+
+### List of Values (LoV) Rules
+
+| Rule | Values | Description |
+|---|---|---|
+| `ignoreLemmaWords` | true/false | `false` (default): lemmatization applied — "tickets" matches "ticket". `true`: exact match only — "tickets" does not match "ticket". |
+| `ignoreWords` | `["~size"]` | Ignores specified words during LoV matching. Reduces false matches or ambiguity caused by common synonyms shared across multiple choices. |
+
+**Examples:**
+
+```json
+{ "ignoreLemmaWords": true }
+```
+Input options: "ticket", "tickets"
+- Input `I need a ticket` → Extracted: `ticket`
+- Input `I need tickets` → Error: not a valid option
+
+```json
+{ "ignoreWords": ["~size"] }
+```
+Input options: "extra large size t-shirt", "large size t-shirt", "medium size t-shirt"
+- Input `I need extra large size t-shirt` → Extracted: `extra large size t-shirt` (ignores "size" during matching)
+
+---
+
+### List of Items (enum) Rules
+
+| Rule | Values | Description |
+|---|---|---|
+| `ownership` | `"include"` or `"exclude"` | Detects ownership phrases ("is mine", "belongs to me") to include or exclude matched items from the entity value. |
+| `includeWords` | `"great"` or `["word"]` | Additional words treated as ownership indicators. Use with `ownership: include`. |
+| `excludeWords` | `"~lovConcept"` or `["word"]` | Additional words treated as non-ownership indicators. Use with `ownership: exclude`. |
+| `noIndexMatch` | true | Disables selection by alphabetic or numeric index. |
+
+**Examples:**
+
+Items: pen, watch, bottle, book, cap
+
+```json
+{ "ownership": "include" }
+```
+Utterance: `first two are mine` → Extracted: `["pen", "watch"]`
+
+```json
+{ "ownership": "exclude" }
+```
+Utterance: `first two are mine` → Extracted: `["bottle", "book", "cap"]`
+
+```json
+{ "ownership": "include", "includeWords": "great" }
+```
+Utterance: `first two are great` → Extracted: `["pen", "watch"]`
+
+```json
+{ "noIndexMatch": "true" }
+```
+Utterance: `a` → Prompts for input (without rule: extracts `["pen"]`)
+
+---
+

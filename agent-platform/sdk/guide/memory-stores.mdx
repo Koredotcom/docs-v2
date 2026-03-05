@@ -1,0 +1,288 @@
+---
+title: "Memory Stores"
+description: "Configure and use persistent memory stores in the AgenticAI Core SDK to maintain state across user interactions, sessions, and applications."
+---
+
+# Memory Stores
+
+Memory stores provide persistent data storage scoped to a user, session, or application. Use them to maintain state and share data between agents and tools across interactions.
+
+## Prerequisites
+
+- AgenticAI Core SDK installed and configured.
+- An `App` instance to attach memory stores to. See [Building Applications](/agent-platform/sdk/guide/building-apps).
+
+## Configure a memory store
+
+Define memory stores at design time and attach them to your application:
+
+```python
+from agenticai_core.designtime.models.memory_store import (
+    MemoryStore, Namespace, NamespaceType,
+    RetentionPolicy, RetentionPeriod, Scope
+)
+
+user_preferences = MemoryStore(
+    name="User Preferences",
+    technical_name="user_preferences",
+    type="hotpath",
+    description="Stores user-specific preferences",
+    schema_definition={
+        "type": "object",
+        "properties": {
+            "firstname": {"type": "string"},
+            "lastname": {"type": "string"},
+            "theme": {"type": "string"},
+            "language": {"type": "string"}
+        }
+    },
+    strict_schema=False,
+    namespaces=[
+        Namespace(
+            name="session_id",
+            type=NamespaceType.DYNAMIC,
+            value="{session_id}",
+            description="Session identifier"
+        )
+    ],
+    scope=Scope.USER_SPECIFIC,
+    retention_policy=RetentionPolicy(
+        type=RetentionPeriod.MONTH,
+        value=6
+    )
+)
+```
+
+Attach the store to your application:
+
+```python
+from agenticai_core.designtime.models.app import AppBuilder
+
+app_config = AppBuilder() \
+    .set_name("My App") \
+    .set_memory_store(user_preferences) \
+    .build()
+
+app = App(**app_config)
+```
+
+## Memory store scopes
+
+| Scope | Description | Use for |
+|-------|-------------|---------|
+| `USER_SPECIFIC` | Data unique to each user. | Preferences, history, personalization. |
+| `APPLICATION_WIDE` | Global data shared across all users. | Shared configuration, lookup tables. |
+| `SESSION_LEVEL` | Temporary data cleared when the session ends. | Caching, in-progress task state. |
+
+```python
+# User-specific
+MemoryStore(name="User Data", scope=Scope.USER_SPECIFIC, ...)
+
+# Application-wide
+MemoryStore(name="App Config", scope=Scope.APPLICATION_WIDE, ...)
+
+# Session-level
+MemoryStore(name="Session Cache", scope=Scope.SESSION_LEVEL, ...)
+```
+
+## Retention policies
+
+| Period | Example |
+|--------|---------|
+| Session (clears on session end) | `RetentionPolicy(type=RetentionPeriod.SESSION, value=1)` |
+| Days | `RetentionPolicy(type=RetentionPeriod.DAY, value=7)` |
+| Weeks | `RetentionPolicy(type=RetentionPeriod.WEEK, value=2)` |
+| Months | `RetentionPolicy(type=RetentionPeriod.MONTH, value=6)` |
+
+```python
+# 7 days
+RetentionPolicy(type=RetentionPeriod.DAY, value=7)
+
+# 2 weeks
+RetentionPolicy(type=RetentionPeriod.WEEK, value=2)
+
+# 6 months
+RetentionPolicy(type=RetentionPeriod.MONTH, value=6)
+```
+
+## Runtime usage in tools
+
+Access memory stores at runtime using `RequestContext`:
+
+### Write data
+
+```python
+from agenticai_core.designtime.models.tool import Tool
+from agenticai_core.runtime.sessions.request_context import RequestContext
+
+@Tool.register(description="Save user preferences")
+async def save_preferences(firstname: str, lastname: str, theme: str = "light"):
+    context = RequestContext()
+    memory = context.get_memory()
+
+    user_data = {
+        "firstname": firstname,
+        "lastname": lastname,
+        "theme": theme
+    }
+
+    result = await memory.set_content('user_preferences', user_data)
+
+    if result.success:
+        return f"Preferences saved for {firstname} {lastname}"
+    else:
+        return "Failed to save preferences"
+```
+
+### Read data
+
+Use projections to retrieve only the fields you need (`1` = include field):
+
+```python
+@Tool.register(description="Get user greeting")
+async def get_greeting():
+    context = RequestContext()
+    memory = context.get_memory()
+
+    # Read with projections (1 = include field)
+    result = await memory.get_content('user_preferences', {
+        'firstname': 1,
+        'lastname': 1,
+        'theme': 1
+    })
+
+    if result.success and result.data:
+        firstname = result.data.get('firstname', 'Guest')
+        lastname = result.data.get('lastname', '')
+        theme = result.data.get('theme', 'light')
+
+        greeting = f"Hello {firstname} {lastname}!"
+        if theme == 'dark':
+            greeting += " 🌙"
+        else:
+            greeting += " ☀️"
+
+        return greeting
+
+    return "Hello Guest! Please set your preferences first."
+```
+
+### Delete data
+
+```python
+@Tool.register(description="Clear user data")
+async def clear_data():
+    context = RequestContext()
+    memory = context.get_memory()
+
+    result = await memory.delete_content('user_preferences')
+
+    if result.success:
+        return "Data cleared successfully"
+    else:
+        return "Failed to clear data"
+```
+
+## Schema definition
+
+Define a JSON Schema to validate data before storage:
+
+```python
+schema_definition = {
+    "type": "object",
+    "properties": {
+        "user_data": {
+            "type": "object",
+            "properties": {
+                "name": {"type": "string"},
+                "email": {"type": "string", "format": "email"},
+                "age": {"type": "integer", "minimum": 0}
+            },
+            "required": ["name", "email"]
+        },
+        "preferences": {
+            "type": "array",
+            "items": {"type": "string"}
+        }
+    }
+}
+```
+
+Set `strict_schema=True` in production to enforce schema validation.
+
+## Namespaces
+
+Namespaces partition stored data within a store. Use dynamic namespaces for runtime values (user ID, session ID) and static namespaces for fixed values (environment, version).
+
+### Dynamic namespaces
+
+```python
+Namespace(
+    name="session_id",
+    type=NamespaceType.DYNAMIC,
+    value="{session_id}",
+    description="Session identifier"
+)
+
+Namespace(
+    name="user_id",
+    type=NamespaceType.DYNAMIC,
+    value="{user_id}",
+    description="User identifier"
+)
+```
+
+### Static namespaces
+
+```python
+Namespace(
+    name="app_version",
+    type=NamespaceType.STATIC,
+    value="v1.0",
+    description="Application version"
+)
+```
+
+### Multiple namespaces
+
+```python
+memory_store = MemoryStore(
+    name="Conversation History",
+    namespaces=[
+        Namespace(
+            name="user_id",
+            type=NamespaceType.DYNAMIC,
+            value="{user_id}",
+            description="User identifier"
+        ),
+        Namespace(
+            name="session_id",
+            type=NamespaceType.DYNAMIC,
+            value="{session_id}",
+            description="Session identifier"
+        ),
+        Namespace(
+            name="environment",
+            type=NamespaceType.STATIC,
+            value="production",
+            description="Deployment environment"
+        )
+    ],
+    ...
+)
+```
+
+## Best practices
+
+- **Schema design**: Define specific schemas with required fields. Use `strict_schema=True` in production to prevent unexpected data. Validate data types explicitly.
+- **Scope selection**: Use `USER_SPECIFIC` for personal data. Use `APPLICATION_WIDE` only for data genuinely shared across all users. Use `SESSION_LEVEL` for temporary data.
+- **Retention**: Match retention period to actual data needs. Short-lived data (cart state, current step) should use session retention. Consider data privacy requirements.
+- **Error handling**: Always check `result.success` before accessing `result.data`. Provide fallback values for missing fields. Log errors with enough context to diagnose the issue.
+- **Performance**: Use projections when reading — fetch only the fields you need. Avoid memory reads in hot paths where possible. Cache frequently accessed data locally.
+- **Security**: Do not store sensitive data (passwords, tokens, PINs) in memory stores. Use appropriate scopes to isolate user data. Set conservative retention policies to limit exposure.
+
+## Related resources
+
+- [Memory Store API Reference](/agent-platform/sdk/api/designtime/memory_store)
+- [Working with Tools](/agent-platform/sdk/guide/working-with-tools)
+- [Building Applications](/agent-platform/sdk/guide/building-apps)
