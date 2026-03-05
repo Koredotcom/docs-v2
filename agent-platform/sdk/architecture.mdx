@@ -1,29 +1,20 @@
 ---
-title: AgenticAI SDK — Architecture & Developer Reference
-description: Technical architecture, component design, deployment workflow, logging, and memory store reference for the AgenticAI SDK.
+title: "SDK Architecture"
+description: "Understand the AgenticAI SDK structure, including design-time and runtime components, the workspace CLI, deployment workflow, memory stores, and logging."
 ---
 
-# AgenticAI SDK — Architecture & Developer Reference
+# SDK Architecture
 
-The AgenticAI SDK provides a framework for building, packaging, and deploying AI agent applications on the Kore.ai platform. It separates concerns into two phases:
+The AgenticAI SDK separates operations into two phases: **design-time** (configuration) and **runtime** (execution). During design-time, you define your app, agents, and tools. At runtime, those definitions execute as a deployed application.
 
-- **Design-time** — Define apps, agents, tools, and models programmatically using builder APIs.
-- **Runtime** — Deploy and execute agents in containerized environments with MCP-based communication.
+The SDK has two major components:
 
-**Target audience:** Core developers, maintainers, and contributors.
+- **agentic-core** — A Python library that provides design-time configuration models and runtime interfaces.
+- **Workspace** — A project scaffold with a CLI for building, packaging, and deploying your app.
 
----
+## Component Interaction
 
-## System Architecture
-
-The SDK ecosystem consists of four major components:
-
-| Component                   | Role                                                                             |
-|-----------------------------|----------------------------------------------------------------------------------|
-| **agentic-core**            | Core library for design-time models, runtime interfaces, and platform API client |
-| **Workspace**               | Developer project scaffold with CLI, sample code, and build tooling              |
-| **Dockerized gVisor Image** | Containerized runtime environment for secure agent execution                     |
-| **Platform**                | Manages app deployment, lifecycle, and MCP client integration                    |
+The diagram below shows how SDK components interact with the platform.
 
 ```mermaid
 graph TD
@@ -98,43 +89,58 @@ graph TD
     SDK -->|Configure| Environments
 ```
 
----
+![Component interaction diagram](/agent-platform/sdk/design-decisions/assets/component_interaction.svg)
 
 ## agentic-core Library
 
-The `agentic-core` library handles both design-time configuration and runtime execution. It also includes a REST client for platform API operations.
+`agentic-core` is the foundational library for both design-time and runtime needs.
+
+### Design-Time Module
+
+`agenticai_core.designtime` provides builder-pattern classes for configuring entities. The builder classes capture entity relationships and offer an autocomplete-friendly API for configuring:
+
+- Apps with custom orchestrators.
+- Agents with specific roles and capabilities.
+- Tools with various implementations.
+- LLM models with configurable parameters.
+
+### Runtime Module
+
+`agenticai_core.runtime` provides:
+
+- **Abstract interfaces** — Base classes (`abstract_agent`, `abstract_orchestrator`) that your custom implementations must extend.
+- **Request/response classes** — Classes that parse and encapsulate agentic conversation state across a session.
+- **MCP server** — An SSE (Server-Sent Events) transport server for real-time communication. The MCP server lifecycle is tied to the application — calling `app.start()` automatically starts the MCP server.
 
 ### Library Structure
 
 ```
-agenticai_core/
-├── api/
-│   └── kore_client.py              # REST client for platform CI/CD operations
+src/agenticai_core/
 ├── designtime/
 │   └── models/
-│       ├── app.py
 │       ├── agent.py
-│       ├── tool.py
+│       ├── app.py
+│       ├── icon.py
 │       ├── llm_model.py
 │       ├── prompt.py
-│       └── icon.py
+│       └── tool.py
 └── runtime/
-    ├── agents/
-    │   ├── abstract_agent.py       # Base class all agents must implement
-    │   ├── abstract_orchestrator.py # Base class for custom orchestrators
-    │   ├── agent_runtime.py        # MCP server: registers and dispatches agents & tools
-    │   ├── agent_message.py
-    │   ├── agent_request.py
-    │   └── agent_response.py
-    └── message_item.py
+    └── agents/
+        ├── abstract_agent.py          # Base class for custom agents
+        ├── abstract_orchestrator.py   # Base class for custom orchestrators
+        ├── agent_message.py
+        ├── agent_request.py
+        ├── agent_response.py
+        └── agent_runtime.py           # MCP server: registers and invokes agents and tools
 ```
 
-### Design-Time Class Model
+## Design-Time Model
 
-Builder classes capture entity relationships and provide IDE-friendly autocomplete when configuring apps.
+The following class diagram shows the relationships between design-time entities.
 
 ```mermaid
 classDiagram
+    %% Designtime Package
     class App {
         +String name
         +String description
@@ -202,6 +208,7 @@ classDiagram
         +String type
     }
 
+    %% Relationships
     App "1" *-- "many" Agent : contains
     Agent "1" *-- "1" AgentConfig : has
     Agent "1" *-- "1" LlmModel : uses
@@ -211,12 +218,15 @@ classDiagram
     Agent ..> AgentMeta : creates
 ```
 
-### Runtime Class Model
+![Design-time class diagram](/agent-platform/sdk/design-decisions/assets/designtime_class_diagram-1.svg)
 
-At runtime, `MCPRuntime` registers agents and tools and serves them over MCP. `AbstractAgent` must be implemented for any custom orchestration logic.
+## Runtime Model
+
+At runtime, a separate set of classes manages agent execution and message passing. The following class diagram shows the runtime components and their relationships.
 
 ```mermaid
 classDiagram
+    %% Runtime Package
     class AbstractAgent {
         #String _name
         #String _description
@@ -285,6 +295,7 @@ classDiagram
         +__init__(error, sender_name)
     }
 
+    %% Relationships
     AbstractAgent "1" *-- "many" AgentMeta : manages
     MCPRuntime "1" *-- "many" AbstractAgent : manages
     AgentRequest "1" *-- "1" AgentMessage : contains
@@ -298,77 +309,80 @@ classDiagram
     ErrorMessage --|> MessageItem : extends
 ```
 
----
+![Runtime class diagram](/agent-platform/sdk/design-decisions/assets/runtime_class_diagram-1.svg)
 
 ## Workspace
 
-The Workspace is the developer's project directory. It provides a bootstrap scaffold, example implementations, and a CLI for managing the full app lifecycle.
+The Workspace is a project scaffold that includes:
+
+- A skeleton project structure to bootstrap new apps.
+- Example implementations for custom orchestrators and tools.
+- Environment configuration management for dev, staging, and production.
+- A CLI (`run.py`) for common development and deployment tasks.
 
 ### Workspace Structure
 
 ```
-├── bin/
-│   ├── application.config.json         # Serialized app configuration
-│   └── myproject.kar                   # Deployable archive
 ├── .env/
-│   ├── dev                             # Dev environment variables
-│   └── local                           # Local environment variables
-├── lib/
-│   ├── agenticai_core-0.1.0-py3-none-any.whl
-│   └── kore_api-1.0.0-py3-none-any.whl
+│   ├── dev                              # Environment variables for development
+│   └── local                            # Environment variables for local
+├── bin/
+│   ├── application.config.json          # Serialized app configuration
+│   └── myproject.kar                    # Packaged source archive
+├── lib/                                 # Core dependency wheel files
 ├── requirements.txt
-├── run.py                              # CLI entry point
+├── run.py                               # CLI entry point
 └── src/
-    ├── app.py                          # App configuration and setup
+    ├── app.py                           # App configuration
     ├── orchestrator/
-    │   └── round_robin_orchestrator.py # Example custom orchestrator
+    │   └── round_robin_orchestrator.py  # Example custom orchestrator
     └── tools/
-        ├── add.py                      # Example tool
-        └── greet.py                    # Example tool
+        ├── add.py                       # Example tool
+        └── greet.py                     # Example tool
 ```
 
 ### CLI Reference
 
-| Command                        | Description                                           |
-|--------------------------------|-------------------------------------------------------|
-| `config -u <name>`             | Set the active `.env` config file                     |
-| `package -o <name>`            | Generate `application.config.json` and `.kar` archive |
-| `start`                        | Start the MCP server with registered agents and tools |
-| `test`                         | Test the deployed app end-to-end                      |
-| `deploy -f <kar>`              | Create platform resources and deploy the package      |
-| `publish -a <appId> -n <name>` | Create a new app environment                          |
-| `status -a <appId> -n <name>`  | Check the status of an app environment                |
-| `undeploy -f <path>`           | Undeploy an app environment                           |
+```bash
+usage: run.py [-h] {config,package,start,test,deploy,publish,status,undeploy} ...
+```
 
----
+The commands and their purposes are summarized below.
 
-## Platform Integration
+<div class="ascii-art">
 
-### API Endpoints
+┌─────────────────────────────────────────────────────────────────────┐
+│                           CLI COMMANDS                              │
+├──────────────────────────────┬──────────────────────────────────────┤
+│  config -u `<name>`          │  Selects the `.env` config file to   │
+│                              │  use as default.                     │
+├──────────────────────────────┼──────────────────────────────────────┤
+│  package -o `<name>`         │  Generates `application.config.json` │
+│                              │  and bundles source code into a      │
+│                              │  `.kar` archive.                     │
+├──────────────────────────────┼──────────────────────────────────────┤
+│  start                       │  Starts the MCP server with          │
+│                              │  registered agents and tools.        │
+├──────────────────────────────┼──────────────────────────────────────┤
+│  test                        │  Tests the deployed app end to end.  │
+├──────────────────────────────┼──────────────────────────────────────┤
+│  deploy -f `<kar>`           │  Creates resources on the Platform   │
+│                              │  and triggers package deployment.    │
+├──────────────────────────────┼──────────────────────────────────────┤
+│  publish -a `<appId>`        │  Creates an environment for the      │
+│         -n `<name>`          │  deployed app.                       │
+├──────────────────────────────┼──────────────────────────────────────┤
+│  status -a `<appId>`         │  Checks the status of an app         │
+│         -n `<name>`          │  environment.                        │
+├──────────────────────────────┼──────────────────────────────────────┤
+│  undeploy -f `<path>`        │  Undeploys the app environment.      │
+└──────────────────────────────┴──────────────────────────────────────┘
 
-| Endpoint          | Description                                                      |
-|-------------------|------------------------------------------------------------------|
-| `POST /deploy/`   | Unified endpoint: upload, validate, and import app configuration |
-| `POST /undeploy/` | Remove a deployed app                                            |
-| `POST /execute/`  | Interact with a running app                                      |
-
-The `/deploy/` endpoint performs three operations atomically:
-
-1. **Upload** — accepts `appSpec` (serialized config JSON) and `archiveSpec` (KAR archive)
-2. **Validate** — verifies configuration, dependencies, custom tools, and orchestrators
-3. **Import** — creates platform resources and configures access controls
-
-### MCP Client
-
-The platform implements an MCP client using the LangGraph framework to connect with the deployed MCP server. It handles tool discovery, tool execution, conversation state, and agent response processing.
-
-### gVisor Service
-
-The gVisor service manages the Kubernetes container lifecycle for each deployed app: provisioning on deploy, health monitoring during runtime, and cleanup on undeploy.
-
----
+</div>
 
 ## Deployment Workflow
+
+The following sequence diagram shows the complete lifecycle from development to undeployment.
 
 ```mermaid
 sequenceDiagram
@@ -418,120 +432,40 @@ sequenceDiagram
     GV->>PL: Report cleanup complete
 ```
 
-### Phase Summary
+![Deployment sequence diagram](/agent-platform/sdk/design-decisions/assets/sequence.svg)
 
-| Phase            | What happens                                                                                                        |
-|------------------|---------------------------------------------------------------------------------------------------------------------|
-| **Development**  | Define entities; implement orchestrators and tools; test locally with MCP client                                    |
-| **Packaging**    | `package` generates `application.config.json` and `.kar` archive                                                    |
-| **Deployment**   | `deploy` sends config + archive to platform; gVisor provisions a Kubernetes container and bootstraps the MCP server |
-| **Runtime**      | Platform connects to MCP server per request; tool discovery and execution via MCP protocol                          |
-| **Monitoring**   | gVisor reports health; platform collects logs                                                                       |
-| **Undeployment** | `undeploy` triggers container cleanup and stops the MCP server                                                      |
+The workflow has five phases:
 
----
+| Phase               | Description                                                                                                                  |
+|---------------------|------------------------------------------------------------------------------------------------------------------------------|
+| 1. **Development**  | Define entity models, implement custom orchestrators and tools, configure environments.                                      |
+| 2. **Packaging**    | Run `package` to generate `application.config.json` and bundle source into a `.kar` archive.                                 |
+| 3. **Deployment**   | Run `deploy` to upload the package. The platform validates configuration, provisions a container, and starts the MCP server. |
+| 4. **Runtime**      | The platform routes user requests to the MCP server, which executes tools and orchestrators and streams responses.           |
+| 5. **Undeployment** | Run `undeploy` to stop and clean up the deployed environment.                                                                |
 
-## Logging
+### Platform APIs
 
-The logging system sends structured messages from tool code to the platform via SSE.
-
-### Usage in Tools
-
-```python
-from agenticai_core.runtime.sessions.request_context import Logger
-
-logger = Logger('YourToolName')
-
-await logger.debug("Debug message")
-await logger.info("Info message")
-await logger.warning("Warning message")
-await logger.error("Error message")
-```
-
-Each log message is automatically structured with:
-
-```json
-{
-    "timestamp": "ISO-8601 UTC",
-    "sessionId": "...",
-    "userId": "...",
-    "message": "..."
-}
-```
-
-**Example — logging within a registered tool:**
-
-```python
-from agenticai_core.designtime.models.tool import Tool
-from agenticai_core.runtime.sessions.request_context import Logger
-
-@Tool.register(name="ExampleTool", description="Example tool with logging")
-async def example_tool(param1: str):
-    logger = Logger('ExampleTool')
-    await logger.info(f"ExampleTool called with: {param1}")
-    # tool logic here
-    await logger.info("Tool execution completed")
-    return "Result"
-```
-
-### Log Levels
-
-| Level     | Use for                                                  |
-|-----------|----------------------------------------------------------|
-| `DEBUG`   | Diagnostic detail: variable values, entry/exit points    |
-| `INFO`    | Normal flow: tool start/end, successful operations       |
-| `WARNING` | Non-fatal issues: deprecated usage, performance concerns |
-| `ERROR`   | Failures that prevent normal operation                   |
-
-### Platform Log Integration
-
-**Option 1 — SSE event listener (current implementation):**
-
-```typescript
-const eventSource = new EventSource(
-    'http://your-server:8080/notifications/message',
-    { withCredentials: true }
-);
-
-eventSource.addEventListener('notification/message', (event) => {
-    const log = JSON.parse(event.data);
-    console.log(`[${log.logger}] ${log.level}: ${log.message}`);
-});
-```
-
-**Option 2 — MCP client logging callback:**
-
-```typescript
-import { ClientSession } from 'mcp';
-
-async function logger(params: LoggingMessageNotificationParams) {
-    params.logger = params.logger || 'Server';
-    console.log(`[${params.logger}] ${params.level}: ${params.data}`);
-}
-
-const session = new ClientSession(streams[0], streams[1], {
-    logging_callback: logger
-});
-```
-
-The MCP client approach provides built-in session management, automatic reconnection, and tighter integration with the MCP event system.
-
----
+| Endpoint          | Purpose                                                                        |
+|-------------------|--------------------------------------------------------------------------------|
+| `POST /deploy/`   | Uploads the app config and archive, validates, and creates platform resources. |
+| `POST /undeploy/` | Undeploys the app.                                                             |
+| `POST /execute/`  | Sends requests to the running app.                                             |
 
 ## Memory Stores
 
-Memory stores provide persistent, scoped data storage across user, session, or application boundaries.
+Memory stores provide persistent data storage scoped to the user, application, or session. You configure them at design-time and access them in your tools at runtime.
 
-### Quick Start
+### Configuration
 
-**Step 1 — Define a memory store:**
+Define a memory store using the `MemoryStore` class:
 
-```python
+```python expandable=true
 from agenticai_core.designtime.models.memory_store import MemoryStore, Scope, RetentionPolicy
 
 user_preferences_store = MemoryStore(
     name="User Preferences",
-    technical_name="user_preferences",       # identifier used in tool code
+    technical_name="user_preferences",
     description="Stores user-specific preferences",
     schema_definition={
         "type": "object",
@@ -547,27 +481,50 @@ user_preferences_store = MemoryStore(
 )
 ```
 
-**Step 2 — Add to your app:**
+Add the store to your app configuration:
 
 ```python
 from agenticai_core.designtime.models.app import AppBuilder
 
 app_config = (AppBuilder()
     .set_name("MyApp")
-    .set_description("Example app")
+    .set_description("Example app with memory store")
     .set_memory_store(user_preferences_store)
     .build())
 ```
 
-**Step 3 — Use in a tool:**
+Call `.set_memory_store()` for each store to add multiple stores to the same app.
 
-```python
+### Scopes
+
+| Scope                    | Description                                                                |
+|--------------------------|----------------------------------------------------------------------------|
+| `Scope.USER_SPECIFIC`    | Data unique to each user. Recommended for most cases.                      |
+| `Scope.APPLICATION_WIDE` | Data shared across all users. Use for global settings or shared resources. |
+| `Scope.SESSION_LEVEL`    | Temporary data cleared when the session ends.                              |
+
+### Retention Policies
+
+| Policy                    | Duration                |
+|---------------------------|-------------------------|
+| `RetentionPolicy.DAY`     | 24 hours.               |
+| `RetentionPolicy.WEEK`    | 7 days.                 |
+| `RetentionPolicy.MONTH`   | 30 days.                |
+| `RetentionPolicy.SESSION` | Until the session ends. |
+
+### Runtime Usage
+
+Access memory stores in your tools through `RequestContext`:
+
+```python expandable=true
 from agenticai_core.designtime.models.tool import Tool
-from agenticai_core.runtime.sessions.request_context import RequestContext
+from agenticai_core.runtime.sessions.request_context import RequestContext, Logger
 
-@Tool.register(name="GreetUser", description="Greet the user by name")
+@Tool.register(name="GreetUser", description="Greet the user with their name")
 async def greet_user():
-    memory = RequestContext().get_memory()
+    logger = Logger('GreetUser')
+    context = RequestContext()
+    memory = context.get_memory()
 
     result = await memory.get_content('user_preferences', {
         'firstname': 1,
@@ -575,90 +532,143 @@ async def greet_user():
     })
 
     if result.success and result.data:
-        return f"Hello {result.data.get('firstname', 'Guest')} {result.data.get('lastname', '')}!"
+        firstname = result.data.get('firstname', 'Guest')
+        lastname = result.data.get('lastname', '')
+        return f"Hello {firstname} {lastname}!"
+
     return "Hello Guest!"
 ```
 
-### Scopes
-
-| Scope              | Description                                  |
-|--------------------|----------------------------------------------|
-| `USER_SPECIFIC`    | Data isolated per user — recommended default |
-| `APPLICATION_WIDE` | Shared across all users                      |
-| `SESSION_LEVEL`    | Temporary; cleared when session ends         |
-
-### Retention Policies
-
-| Policy    | Duration           |
-|-----------|--------------------|
-| `DAY`     | 24 hours           |
-| `WEEK`    | 7 days             |
-| `MONTH`   | 30 days            |
-| `SESSION` | Until session ends |
-
-### Runtime CRUD Operations
-
-Access memory via `RequestContext` in any tool:
+The memory manager supports full CRUD operations:
 
 ```python
-from agenticai_core.runtime.sessions.request_context import RequestContext
+# Read data (use projections to fetch only needed fields)
+result = await memory.get_content(store_name, projections)
 
-memory = RequestContext().get_memory()
+# Write data
+result = await memory.set_content(store_name, content)
 
-# Read — use projections to retrieve only needed fields
-result = await memory.get_content(store_name, {'field1': 1, 'field2': 1})
-
-# Write
-result = await memory.set_content(store_name, {'field1': 'value'})
-
-# Delete
+# Delete data
 result = await memory.delete_content(store_name)
-```
-
-For operations across multiple stores, use the context manager pattern:
-
-```python
-async with context.get_memory_store_manager('user_preferences') as prefs, \
-           context.get_memory_store_manager('shopping_cart') as cart:
-
-    user_prefs = await prefs.get({'firstname': 1, 'lastname': 1})
-    cart_data = await cart.get({'items': 1, 'total': 1})
 ```
 
 ### Best Practices
 
-- Use `strict_schema=True` in production to enforce data contracts.
-- Choose `USER_SPECIFIC` unless data is truly shared or temporary.
-- Always provide fallback values — memory operations can fail if a store is empty or unavailable.
-- Use projections to read only the fields you need.
-- Log memory operations to aid debugging.
+- Define clear, focused schemas. Use `strict_schema=True` in production.
+- Use `USER_SPECIFIC` for personal data, `APPLICATION_WIDE` for shared resources, and `SESSION_LEVEL` for temporary state.
+- Choose retention policies based on data sensitivity and privacy requirements.
+- Use projections in `get_content()` to retrieve only the fields you need.
+- Always handle memory access errors and provide fallback values.
 
----
+## Logging
 
-## Local Testing
+The SDK provides a structured logging system for tools. Logs are sent to the platform in real-time over SSE.
 
-The SDK includes a Python MCP client for local development and end-to-end testing before deployment.
+### Usage in Tools
 
-### Features
+Import and initialize `Logger` with the name of your tool:
 
-- Tool discovery and listing
-- Interactive tool call testing
-- Real-time response streaming
-- Error reporting
+```python
+from agenticai_core.runtime.sessions.request_context import Logger
 
-### Setup
-
-```bash
-# Create virtual environment and install dependencies
-uv venv
-uv pip install mcp httpx
-uv pip install lib/agenticai_core-0.1.0-py3-none-any.whl
+logger = Logger('YourToolName')
 ```
 
-### Workflow
+Log messages at the appropriate severity level:
 
-1. Start the server in one terminal: `python run.py start`
-2. Start the MCP client in a separate terminal
-3. Verify available tools are discovered
-4. Send test requests and inspect responses
-5. Use server and client logs to debug issues
+```python
+await logger.debug("Debug message")
+await logger.info("Info message")
+await logger.warning("Warning message")
+await logger.error("Error message")
+```
+
+### Log Levels
+
+| Level | When to use |
+|---|---|
+| `DEBUG` | Detailed diagnostic information — variable values, function entry/exit points. |
+| `INFO` | Normal operation tracking — tool start, successful operations, completion. |
+| `WARNING` | Situations that don't prevent execution but may need attention. |
+| `ERROR` | Errors that prevent normal operation. |
+
+### Log Message Structure
+
+Each log message is automatically structured with these fields:
+
+```json
+{
+    "timestamp": "ISO-8601 formatted UTC timestamp",
+    "sessionId": "Unique session identifier",
+    "userId": "User identifier",
+    "message": "Your log message content"
+}
+```
+
+The logger automatically includes the current UTC timestamp, session ID, and user ID from the request context.
+
+### Example
+
+```python
+from agenticai_core.designtime.models.tool import Tool
+from agenticai_core.runtime.sessions.request_context import Logger
+
+@Tool.register(name="ExampleTool", description="Example tool with logging")
+async def example_tool(param1: str):
+    logger = Logger('ExampleTool')
+
+    await logger.info(f"ExampleTool called with: {param1}")
+    await logger.debug(f"Processing parameter: {param1}")
+
+    # Tool logic here
+
+    await logger.info("Tool execution completed successfully")
+    return "Result"
+```
+
+### Receiving Logs
+
+Logs are delivered via SSE. Use a raw SSE client or the MCP client to receive them.
+
+**SSE client:**
+
+```typescript
+const eventSource = new EventSource(
+    'http://your-server:8080/notifications/message',
+    { withCredentials: true }
+);
+
+eventSource.addEventListener('notification/message', (event) => {
+    const log = JSON.parse(event.data);
+    console.log(`[${log.logger}] ${log.level}: ${log.message}`);
+});
+
+eventSource.onerror = (error) => {
+    console.error('SSE connection error:', error);
+    eventSource.close();
+};
+```
+
+**MCP client:**
+
+```typescript
+import { ClientSession } from 'mcp';
+
+async function logger(params: LoggingMessageNotificationParams) {
+    params.logger = params.logger || 'Server';
+    console.log(`[${params.logger}] ${params.level}: ${params.data}`);
+}
+
+const session = new ClientSession(streams[0], streams[1], {
+    logging_callback: logger
+});
+```
+
+The MCP client approach provides built-in session management, automatic reconnection handling, and integration with MCP's event system.
+
+### Best Practices
+
+- Use descriptive logger names that identify the tool or component — for example, `'GreetTool'` or `'MultiplyMatricesTool'`.
+- Include relevant context (parameters, request IDs) in log messages.
+- Log errors with enough detail to diagnose the issue, including stack traces when available.
+- Use `DEBUG` for troubleshooting, `INFO` for normal flow, and reserve `WARNING` and `ERROR` for actionable conditions.
