@@ -1,0 +1,173 @@
+---
+title: NLP Settings and Guidelines
+sidebarTitle: NLP Guidelines
+---
+<Badge icon="arrow-left" color="gray">[Back to NLP Topics](/ai-for-service/automation/natural-language/nlp-topics)</Badge>
+
+Best practices for intent naming, ML training, patterns, synonyms, and concepts. Follow these guidelines before building or training your assistant.
+
+---
+
+## Intent Naming
+
+**Do:**
+- Use 2–4 words: action verb + object + optional modifier. Example: `Send Detailed Report`, `Get 3 Day Forecast`.
+- Use the same verb across similar tasks: `Show Issue` / `Show Report`, not `Show Issue` / `Get Report`.
+- Use numerical form for digits: `Get 3 Day Forecast`.
+
+**Don't:**
+- Use single-word actions.
+- Use determiners (the, a, my, that) or pronouns.
+- Use platform terms: task, alert, action, cancel, discard, amend, webhook.
+- Use entity values in intent names (e.g., avoid "Get Weather Today" where "Today" is an entity).
+- Use special characters: `() & / \ $ [ ] + *`
+- Use punctuation: `– , . ! ? ' "`
+- Use the app name or task type as part of the intent name.
+- Use the same word as both verb and noun across tasks (e.g., `Update Issue` / `Get Updates`).
+
+**Dialog Tasks:** Map to `verb + object` — "the goal is to Do Something."
+
+**Alerts:** Map to `object` only (no verbs) — "alert me on: Status Updates."
+
+---
+
+## ML Training
+
+**General:**
+- Use batch test suites to compare ML models — there's no fixed best configuration; iterate and compare.
+- Prepare utterances that are as diverse as possible.
+- Avoid noise (pleasantries); if unavoidable, spread it evenly across intents.
+- For large datasets, stop words and synonyms are auto-recognized by ML — explicit configuration is not required.
+
+**Using the Confusion Matrix:**
+- Reassign utterances in False quadrants to the correct intent.
+- Improve cohesion by rephrasing or adding synonyms.
+- Avoid phrases that are similar across different intents.
+
+**Using K-fold Validation:**
+- Ideal for large datasets (minimum 250 utterances total, 5 per intent).
+- Track Precision, Recall, and F1. Prioritize a higher Recall score.
+
+---
+
+## Patterns
+
+Patterns match idiomatic or non-obvious expressions that synonyms can't cover. Pattern matches take priority over synonym matches.
+
+**General rules:**
+- Use at minimum 3 words.
+- Use canonical forms: infinitive verbs, singular nouns.
+- Use lowercase; use US spelling.
+- Avoid determiners, pronouns, digits.
+- Don't use elision (`what's`), special characters, or punctuation.
+
+### Pattern Operators
+
+| Operator | Syntax | Description |
+|---|---|---|
+| AND (ordered) | `(X Y)` | Words must appear in sequence. Default. Allows up to 3 wildcards between words. |
+| OR | `[X Y Z]` | Any of the listed words can appear. |
+| NOT | `!X` | Word must not appear. Applies "not after this point." |
+| Optional | `{X}` | Word is optional. |
+| Enforce phrase | `X_Y` | Words must appear together with no words in between. |
+| Concept | `~concept` | Matches any member of the concept group. |
+| Unordered | `<<X Y>>` | Words can appear in any order. |
+| Start of statement | `<` | Match must begin at the start of the input. |
+| End of statement | `>` | Match must end at the end of the input. |
+| Quote | `'word'` | Matches the exact word; disables canonical form matching. |
+
+### Entity Patterns
+
+- Include the positional wildcard `*` to mark where the entity appears.
+- Use surrounding words to delimit the entity search range.
+- Use `<` and `>` to mark sentence boundaries.
+- Don't use field names or their synonyms in entity patterns.
+- Only the first instance with a valid value is extracted.
+
+**Example** — Extracting `ToFlight` and `FromFlight`:
+- `ToFlight` pattern: `to *1`
+- `FromFlight` pattern: `from * to` and `to from *1`
+
+### Negative Patterns
+
+Negative patterns prevent false intent matches.
+
+**Example:** `was trying to *` — prevents triggering `Book a Flight` when the user says "I was trying to book a flight when I faced an issue."
+
+To enable: **Natural Language > NLU Config > Ranking and Resolver Engine > Negative Patterns**.
+
+---
+
+## Synonyms
+
+Use synonyms when the same concept can be expressed with different words. Synonyms are unidirectional (`tool=bar` ≠ `bar=tool`).
+
+**Do:**
+- Use canonical forms (infinitive verbs, singular nouns).
+- Use lowercase and US spelling.
+- Keep phrases under 5 words.
+- Use intent-driven synonyms: `get` is a synonym for `show` if the action means "find and display."
+
+**Don't:**
+- Add synonyms to determiners, pronouns, or digits.
+- Use a synonym that could match conflicting tasks.
+- Use special characters or punctuation.
+- Assign synonyms to multiple words in a single entry.
+- Abbreviate to fewer than 2 letters.
+
+### Synonym Match Types
+
+| Type | Behavior |
+|---|---|
+| **Partial Match** (default) | One or more words in the input match one or more synonym words. |
+| **Exact Match** | Input must contain all words in the synonym. Enclose synonym in `"double quotes"`. |
+| **Full Match** | Entire input must match the synonym. Enclose in `<angular brackets>`. |
+| **Canonical Form Match** (default) | Matches the synonym or its canonical form. Prefix with `'` to disable. |
+
+<Note>
+Synonyms apply to both intent and entity identification. Entity identification is triggered only after an intent is matched.
+</Note>
+
+---
+
+## Concepts
+
+Concepts group related terms under a single label, usable in patterns.
+
+**Naming rules:**
+- Must start with `~`.
+- Allowed characters: `a–z`, `A–Z`, `0–9`, `_`.
+- At least one letter after `~`.
+- Cannot start or end with `_`.
+- Case-insensitive.
+
+**Valid:** `~my_concept`, `~Sample`, `~test123`
+**Invalid:** `~_concept`, `~concept_`, `~a-concept`, `~123test`
+
+Use concepts in patterns: `buy ~fruit` matches `buy orange`, `buy banana`, etc.
+
+**System concepts:** Pre-built by the platform (e.g., `~emohello`, `~yes`, `~no`). Add the `~disable_help` concept to disable the default help response.
+
+---
+
+## Standard Responses
+
+Standard responses are template messages for common conversational situations: ambiguity resolution, authorization requests, confirmations, interruptions.
+
+Customize them at **Natural Language > Standard Responses**. Responses support:
+- Plain text or JavaScript for dynamic content.
+- Contextual tags replaced at runtime (e.g., `<list-of-tasks>`).
+- Channel-specific formatting.
+
+---
+
+## Knowledge Graph — Key Considerations
+
+The KG model adds domain intelligence on top of ML and FM. Assign FAQs to nodes based on key domain terms to improve disambiguation.
+
+**Traits in KG:** Use when FAQs are mutually exclusive in nature. For example, "booking process" vs. "booking issues" — creating separate traits ensures the engine doesn't suggest booking process FAQs for issue-related queries.
+
+Use traits judiciously — overuse causes false negatives. Ensure:
+- Good trait coverage across utterances.
+- Traits are mutually exclusive where intended.
+- All relevant FAQs are tagged to the correct trait.

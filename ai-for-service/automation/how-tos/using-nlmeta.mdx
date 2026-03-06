@@ -1,0 +1,143 @@
+---
+title: Using nlMeta
+sidebarTitle: Using nlMeta
+---
+<Badge icon="arrow-left" color="gray">[Back to How-to Guides](/ai-for-service/automation/how-tos/guide)</Badge>
+
+`nlMeta` lets you programmatically control the AI Agent's conversation flow. Use it to trigger a specific intent, pre-populate entity values, or override the NLP engine's detection—based on external data such as backend system responses or the hosting webpage.
+
+**Common scenarios:**
+
+- A backend system provides context suggesting a different task than what the NLP engine identified.
+- A welcome message shows flight deals; when a user selects one, the "Book Flight" task is triggered with pre-filled travel details.
+
+You can send `nlMeta` via the BotKit SDK, Widget SDK, or Web SDK.
+
+---
+
+## nlMeta Object
+
+The `nlMeta` object is processed by the AI Agent before any other NLP evaluation. If the specified task is not found, the agent responds: *"Dialog task required for conversation not available."*
+
+### Structure
+
+```json
+{
+  "nlMeta": {
+    "intent": "<intent_name>",
+    "childBotName": "<child_bot_name>",
+    "isRefresh": true,
+    "entities": {
+      "<entity1_name>": "value1",
+      "<entity2_name>": "value2"
+    },
+    "interruptionOptions": {
+      "hr": {
+        "h": 1,
+        "r": 1,
+        "nn": true
+      }
+    }
+  }
+}
+```
+
+### Parameters
+
+| Parameter | Description |
+|---|---|
+| `nlMeta` | Container object for natural language metadata. |
+| `intent` | Intent to trigger, identified externally. |
+| `entities` | Key-value pairs of entity names and values for the triggered intent. |
+| `isRefresh` | `true` — ends the current task and starts the new task. `false` (default) — follows hold and resume settings. |
+| `interruptionOptions` | Controls behavior when a task is already in progress. Options: `discardAll` (discard all tasks) or `hr` (hold and resume). |
+
+### interruptionOptions: hr
+
+| Property | Value | Behavior |
+|---|---|---|
+| `h` (hold) | `1` | Hold current task; resume after new task completes. |
+| | `2` | Discard current task; switch to new. |
+| | `3` | Switch to new task silently; discard current. |
+| | `4` | Continue current task; add new task to follow-up list. |
+| | `5` | Let the user choose. |
+| `r` (resume) | `1` | Confirm with user before resuming held task. |
+| | `2` | Notify user that held task is resuming. |
+| | `3` | Resume held task silently. |
+| `nn` (neverNotify) | `true` | Always resume silently if task ended in a single response. |
+| | `false` | Notify the user. |
+
+---
+
+## Usage
+
+### BotKit SDK
+
+Pass `nlMeta` as part of the `metaInfo` object:
+
+```json
+data.metaInfo = {
+  "nlMeta": {
+    "intent": "Authenticate User",
+    "isRefresh": true,
+    "entities": {
+      "Name": "John"
+    },
+    "interruptionOptions": "discardAll"
+  }
+}
+```
+
+### Web SDK
+
+Send `nlMeta` using the `sendMessage` function in `chatWindow.js`:
+
+```javascript
+if (_this.text() == "Existing") {
+  me.sendMessage(_this, attachmentinfo, {
+    "nlMeta": { "intent": "Authenticate User" }
+  });
+} else {
+  me.sendMessage(_this, attachmentinfo);
+}
+```
+
+The `Authenticate User` intent is triggered when the `text` field equals `"Existing"`.
+
+### Widget SDK
+
+Include `nlMeta` in the payload for templates such as button, menu, or list. See [Widget SDK Message Formatting and Templates](../sdk/widget-sdk-message-formatting-and-templates.md).
+
+---
+
+## FAQs
+
+**Does the platform honor interruption settings when receiving a new intent via NLMeta from BotKit?**
+
+Yes. All interruption settings are honored.
+
+**Does BotKit provide access to the current node and dialog name?**
+
+Yes. BotKit has full access to the context object, which includes the current task and entity details.
+
+**Can I set an entity value directly from BotKit using NLMeta?**
+
+Yes. You can set entity values for an ongoing dialog task.
+
+**Can I trigger an FAQ using NLMeta?**
+
+Yes. Add `"intentType": "KG"` to the `nlMeta` object. By default, NLMeta triggers dialog tasks; this key triggers FAQs from the Knowledge Graph instead.
+
+```json
+if (data.message === "TriggerFAQFromNLMeta") {
+  let metaInfo = {
+    "nlMeta": {
+      "intent": "How do I open savings bank account?",
+      "intentType": "KG"
+    }
+  };
+  data.metaInfo = metaInfo;
+  return sdk.sendBotMessage(data, callback);
+}
+```
+---
