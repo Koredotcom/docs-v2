@@ -16,8 +16,6 @@ AI for Service offers a wizard-based approach that will take you through the pro
 
 Configure a cloud-based connector to access your Active Directory (AD) server securely over the internet.
 
-## Configuration
-
 To configure Active Directory, log on to the Admin Console and complete the following steps to access the configuration settings for your company's Active Directory sync.
 
 1. In the User Management module, on the Directory Sync page, select **Configure**.
@@ -37,9 +35,9 @@ To configure Active Directory, log on to the Admin Console and complete the foll
         style="border: 1px solid gray; zoom:70%" />
 
 
-    a.   **Host Name**: The name of the domain host, for example, `www.example.org` or `10.12.6.151`.
+    a.  **Host Name**: The name of the domain host, for example, `www.example.org` or `10.12.6.151`.
 
-    b.   **Server Port**: The port number for the domain host, for example, 10042.
+    b.  **Server Port**: The port number for the domain host, for example, 10042.
 
     c. **Base DN**: The server location for users and groups in a domain, for example, dc=kore,dc=com.
 
@@ -68,7 +66,7 @@ To configure Active Directory, log on to the Admin Console and complete the foll
 
       a. On the **User Attributes** child tab you can import the user profile information
 
-      * using predefined Default mapping of Kore.ai user profile fields to relevant LDAP attributes or
+      * using predefined Default mapping of AI for Service user profile fields to relevant LDAP attributes or
 
       * create your own custom mapping with the Customer Attribute name and values.
 
@@ -96,46 +94,29 @@ To configure Active Directory, log on to the Admin Console and complete the foll
 
 You may want to view the results of Active Directory sync, [see here](#view-report).
 
-Notes regarding deleted users:
+!!! Notes "Deleted users":
 
-* Users who are deleted or marked as deleted in the AD Server will be deleted from the Bots Platform as well and will be not available in the list of users during AD sync process
+* Users who are deleted or marked as deleted in the AD Server will be deleted from the Platform as well and will be not available in the list of users during AD sync process
 * The user record will be retained in the database for any cross-reference and audit purposes
 * Any login attempts by such users will be blocked by the system
-* Deletion would be against a specific Account to which the user belongs to i.e. if the user is part of multiple accounts, then the user will be able to access any other accounts in which the user is still an active state
+* Deletion would be against a specific Account to which the user belongs to. For example, if the user is part of multiple accounts, then the user will be able to access any other accounts in which the user is still an active state
 * The following user can't be deleted from the account
-    * User is Bot Owner for one or more bots
+    * User is the Owner for one or more apps.
     * User is Account Owner
 
     Such users won't be deleted from the account during the AD Sync process. The AD Sync logs will contain the list of such users who couldn't be deleted along with the reason.
-
-
-## Manual Sync
-
-You may want to initiate manual sync with your Active Directory to update when there are many changes between scheduled syncs.
-To complete this procedure, you must have already defined synchronization settings for your account.
-
-How you access the Active Directory Sync configuration depends which type of connector you are using. Complete one of the following procedures to access the Kore.ai Active Directory configuration dialog.
-
-
-**To manually start an Active Directory sync using the cloud-based connector**
-
-* In the **Enrollment > Directory Sync** page, in the **Current Settings** section, click **Run Now** as shown in the following illustration.  
-
-<img src="../images/synchronizing-users-from-active-directory-img6.png" alt="Run manual sync" title="Run manual sync" style="border: 1px solid gray;zoom:70%;"/>
-
-The _Directory Synchronization is in-progress_ message is displayed at the top of the page.
 
 
 ## View Report
 
 After you configure and run an Active Directory sync for your account, you must review the results of the sync. This topic describes how to access and view a report for the current Active Directory sync.
 
-How you access the last run results for your Active Directory sync runs depends on which type of connector you are using. Complete one of the following procedures to access the last run results for Kore.ai Active Directory sync.
+How you access the last run results for your Active Directory sync runs depends on which type of connector you are using. Complete one of the following procedures to access the last run results for  Active Directory sync.
 
 
 **To view the last run report for an Active Directory sync using the cloud-based connector**
 
-* In the Bots Admin Console **Enrollment** module, on the **Directory Sync** page, click _here_ as shown in the following illustration.
+* In theAdmin Console **User Management** module, on the **Directory Sync** page, click _here_ as shown in the following illustration.
 
 ### Viewing the Last Run Report
 
@@ -146,12 +127,12 @@ The **Report on Active Directory Sync** dialog is displayed as shown in the foll
 
 You can review all historical Active Directory sync operations along with the results of that sync. This topic describes how to access the report and how to retrieve details about the synchronization.
 
-How you access the history for your Active Directory sync runs depends which type of connector you are using. Complete one of the following procedures to access the history results for Kore.ai Active Directory sync.
+How you access the history for your Active Directory sync runs depends which type of connector you are using. Complete one of the following procedures to access the history results for Active Directory sync.
 
 
 **To view historical reports for Active Directory sync using the cloud-based connector**
 
-* In the Bots Admin Console **Enrollment** module, on the **Directory Sync** page, in the **Current Settings** section, click  **Sync History**  as shown in the following illustration.  
+* In the Admin Console **User Management** module, on the **Directory Sync** page, in the **Current Settings** section, click  **Sync History**  as shown in the following illustration.  
 
 
 ### Viewing a Report

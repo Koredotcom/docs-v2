@@ -2,6 +2,53 @@
 
 This document provides information on the feature updates and enhancements introduced in the **Platform Services** of AI for Service (XO) v11.x releases.
 
+## v11.22.0 February 28, 2026
+
+<u>Minor Release</u>  
+
+This update includes enhancements and bug fixes. The key enhancements included in this release are summarized below.
+
+
+<font size="4">LLM & Generative AI</font>
+
+**Change Log Enhancement**
+
+Change Logs will track the entire prompt lifecycle, including creation, updates, and deletions, providing a clear, auditable history of all prompt changes. 
+
+<font size="4">API</font>
+
+**Enhanced User Engagement Trend API (v2)**
+
+The User Engagement Trend API now delivers all user engagement metrics through a single endpoint. This includes counts for unique, new, and returning users, along with daily or hourly averages for each category. [Learn more :octicons-arrow-right-24:](../../apis/automation/user-engagement-trend-v2.md)
+
+
+<font size="4">App Settings</font>
+
+
+**Auto-Token Regeneration for OAuth2 Password Grant Type**
+
+The Platform now automatically regenerates Auth and Refresh tokens for the OAuth 2.0 Password Grant Type using stored credentials, ensuring uninterrupted service when tokens expire. [Learn more :octicons-arrow-right-24:](../../app-settings/dev-tools/bot-authorization/setting-up-authorization-using-oauth-v2-password-grant.md#selecting-authorization-mode)
+
+
+**End-to-End Payload Encryption Extended to Additional APIs**
+
+Payload encryption is now supported for the LLM and Generative AI Usage Logs API and the Conversation Details and Summary API. When the ‘Enforce Request and Response Payload Encryption’ setting is enabled in the JWT application, and the relevant scopes — Gen AI and LLM Usage Logs and Chat History — are selected, request and response payloads are automatically encrypted and decrypted using the symmetric key associated with those scopes. [Learn more :octicons-arrow-right-24:](../../apis/automation/api-introduction.md#how-request-and-response-payload-encryption-works)
+
+
+<font size="4">Channels</font>
+
+**Typing Indicator Support for MS Teams**
+
+The platform now shows typing indicators in MS Teams, providing users with real-time visual feedback as an AI or human agent composes a response. This keeps users informed during the interaction and makes conversations feel more natural. [Learn more :octicons-arrow-right-24:](../../channels/add-microsoft-teams-channel.md#typing-indicator)
+
+**Proactive Welcome Message for MS Teams Validation**
+
+The MS Teams Channel Adapter now automatically sends a welcome message when the app is installed in the personal scope. This ensures compliance with  Microsoft Teams Marketplace validation and certification requirements. As a result, the app distribution process is smoother. [Learn more :octicons-arrow-right-24:](../../channels/add-microsoft-teams-channel.md#proactive-welcome-message-for-ms-teams-validation)
+
+
+
+<hr>
+
 ## v11.21.1 January 31, 2026
 
 <u> Patch Release </u>

@@ -22,7 +22,7 @@ The Users section includes the features in the table below.
 You can add a user to CCAI by following the steps:
 
 1. Select **Invite Users**.  
-  <img src="../images/invite-user-button.png" alt="Invite Users Button" title="Invite Users Button" style="border: 1px solid gray; zoom:80%;"/>
+  <img src="../images/invite-user-button.png" alt="Invite Users Button" title="Invite Users Button" style="border: 1px solid gray; zoom:80%;">
 
 2. The Invite User window displays. Here, you can configure the following:
     1. **Email**: Enter the users email ID.
@@ -34,7 +34,7 @@ You can add a user to CCAI by following the steps:
     5. **Attributes**: You can edit the user details or delete the users.
 
 Disabled users are displayed with a “Disabled” tag beside their name. Contact Center permissions are disabled when a new user invite is sent by a user whose Contact Center permission is disabled.  
-<img src="../images/user-page-disabled-user.png" alt="Disabled User" title="Disabled User" style="border: 1px solid gray; zoom:80%;"/>
+<img src="../images/user-page-disabled-user.png" alt="Disabled User" title="Disabled User" style="border: 1px solid gray; zoom:80%;">
 
 ## Attributes
 
@@ -48,7 +48,7 @@ In the user attributes window, configure the following:
 
 This section helps configure general settings.
 
-In the General Settings section, You can enable the **Allow agent permissions** toggle to set the following:
+In the General Settings section, You can enable the **Allow Contact Center Permissions** toggle to set the following:
 
 * Set the Agent Console as the default in Contact Center AI - Enable this option to set **Agent Console** as the default landing page. This Dynamic Navigation Control feature determines the appropriate landing page based on user permissions rather than hardcoded role names. 
 * Group
