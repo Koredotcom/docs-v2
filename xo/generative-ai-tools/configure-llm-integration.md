@@ -19,6 +19,14 @@ The Platform offers seamless integration with leading AI services like Azure Ope
 
 The Platform now provides Azure OpenAI as an out-of-the-box (OOB) integration. This integration enables users to access Azure OpenAI models directly from the Platform. You can authorize all models using variables and integrate newly launched language models into the OOB integration. For newly launched models, the Platform doesn't provide system prompts or templates, so you must use custom prompts.
 
+
+!!! note "Integrating the Latest Models"
+ 
+    The platform regularly integrates new models from providers like OpenAI, Azure OpenAI, and Anthropic. To use a model that isn't yet available as a prebuilt integration, add the model using [Provider's New LLM Integration](#providers-new-llm).
+
+
+
+
 Steps to configure an Azure OpenAI:
 
 
@@ -40,6 +48,11 @@ Steps to configure an Azure OpenAI:
 
 The Platform now provides OpenAI as an out-of-the-box (OOB) integration. This integration enables users to access OpenAI models directly from the Platform. You can authorize all models using variables and integrate newly launched language models into the OOB integration. For newly launched models, the Platform doesn't provide system prompts or templates, so you must use custom prompts.
 
+!!! note "Integrating the Latest Models"
+ 
+    The platform regularly integrates new models from providers like OpenAI, Azure OpenAI, and Anthropic. To use a model that isn't yet available as a prebuilt integration, add the model using [Provider's New LLM Integration](#providers-new-llm).
+
+
 Steps to configure an OpenAI:
 
 1. Go to **Generative AI Tools** > **Models Library** > **Configure Now** for OpenAI, then click **Next**.
@@ -58,6 +71,11 @@ Steps to configure an OpenAI:
 ###	Anthropic Integration
 
 The Platform now provides Anthropic as an out-of-the-box (OOB) integration. This integration enables users to access newly launched Anthropic models directly from the Platform. You can authorize models using variables. The Platform doesn't provide system prompts or templates for these models, so you must use custom prompts.
+
+!!! note "Integrating the Latest Models"
+ 
+    The platform regularly integrates new models from providers like OpenAI, Azure OpenAI, and Anthropic. To use a model that isn't yet available as a prebuilt integration, add the model using [Provider's New LLM Integration](#providers-new-llm).
+
 
 Steps to configure an Anthropic:
 
@@ -207,6 +225,9 @@ Steps to integrate an Amazon Bedrock:
 
 ### Provider's New LLM
 
+!!! note "Feature Availability"
+ 
+    The Provider's New LLM integration is available only for Automation AI and Search AI.
 
 The Platform enables you to integrate newly launched language models into the out-of-box integration framework (OpenAI, Azure OpenAI, and Anthropic) with the required authentication. This ensures that newly launched models are immediately available without waiting for the platform to add them. Initially, these models don't include a pre-built/system prompt template, but you must create custom prompts for immediate use. Over time, the platform adds system prompts and templates while maintaining security and ensuring seamless adoption.
 

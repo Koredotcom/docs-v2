@@ -27,44 +27,20 @@ To retrieve the raw data for all conversations in a detailed view. The days’ r
 
 ## Sample Request  
 
-``` 
-curl --location 'https://{{host}}/agentassist/api/public/analytics/account/{{accountId}}/calldetails?limit=100&offset=0' \
---header 'authority: {{domain}}' \
+```json 
+curl --location 'https://{{host}}/agentassist/api/public/analytics/account/{{accountId}}/callDetails?offset=0&limit=100' \
+--header 'authority: staging-smartassist.kore.ai' \
 --header 'accept: application/json, text/plain, /' \
---header 'accept-language: en-US,en;q=0.9' \
---header 'accountid: {{accountId}}' \
---header 'app-language: en' \
---header 'auth: <token>' \
---header 'bot-language: en' \
 --header 'content-type: application/json;charset=UTF-8' \
---header 'cookie: _gcl_au=1.11502438879.1669621549; hubspotutk=ef24820cc39323476019ea81d073bc01; __hssrc=1; _hjSessionUser_1992177=eyJpZCI6ImYxYWQ2MWUyLTUxODItNWJjMy05ZGI1LWU1ZjE2ZmViYTE5YiIsImNyZWF0ZWQiOjE2Njk2MjE1NDzxxxxxsImV4aXN0aW5nIjp0cnVlfQ==; __hstc=59894770.ef24820cc39323476019ea81d073xxxx.1669621552766.1670332174995.1670395535267.15; _ga=GA1.2.174434293.1669621538; _ga_JW3PWR1JKY=GS1.11670419410.15.01670419410.0.0.0; mp_7888bdd5fedfd65f44bb9a3100faxxxx_mixpanel=%7B%22distinct_id%22%3A%20%22184f0fdd19c11-0ccd03f799cfb8-26021151-e1000-184f0fdd19da01%22%2C%22%24device_id%22%3A%20%22184f0fdd19c11-0ccd03f799cfb8-26021151-e1000-184f0fdd19da01%2xxxx' \
---header 'referer: https://uat-smartassist.kore.ai/smartassist/config/queues' \
---header 'sec-ch-ua: "Not?A_Brand";v="8", "Chromium";v="108", "Google Chrome";v="108"' \
---header 'sec-ch-ua-mobile: ?0' \
---header 'sec-ch-ua-platform: "Windows"' \
---header 'sec-fetch-dest: empty' \
---header 'sec-fetch-mode: cors' \
---header 'sec-fetch-site: same-origin' \
---header 'smartassist: true' \
---header 'state: configured' \
---header 'user-agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 Safari/537.36' \
---header 'x-request-id: 5912cf37-667a-484e-b075-2c42114dxxxx' \
---header 'x-timezone: Asia/Calcutta' \
---header 'x-timezone-offset: -330' \
---header 'iId: st-ceb5fb14-37eb-54a8-a32d-1d751c10xxxx' \
+--header 'auth: <token>' \
+--header 'iId: {{streamId}}' \
 --data '{
-"startDate":"2025-10-01",
-"endDate":"2025-10-01",
-"selectedFields": [
-        "skills",
-        "customerinfo",
-        "userleveltags",
-        "sessionleveltags"
-    ],
-"queues":[],
-"channels": [],
-"timeZoneOffset":-330
-
+    "startDate": "2026-02-23",
+    "endDate": "2026-02-26",
+    "selectedFields": ["skills", "customerinfo", "userleveltags", "sessionleveltags"],
+    "queues":[],
+    "channels": [], 
+    "timeZoneOffset": -330
 }'
 
 ``` 
@@ -628,7 +604,7 @@ curl --location 'https://{{host}}/agentassist/api/public/analytics/account/{{acc
             },
             "sessionStartTime": "2025-10-01T02:02:10",
             "sessionEndTime": "2025-10-01T02:03:49",
-            "userId": "u-9e13de55-bba4-5052-8055-137b5955xxxx",
+            "userId": "u-9e13de55-bba4-5052-8055-137b595xxxxx",
             "destinations": [
                 {
                     "destinationType": "QueueEntry",
@@ -653,6 +629,382 @@ curl --location 'https://{{host}}/agentassist/api/public/analytics/account/{{acc
             ],
             "userleveltags": [],
             "sessionleveltags": []
+        },
+        {
+            "conversationId": "c-325251a-278e-45e8-8b09-54513e0xxxxx",
+            "sessionId": "699c24d4f3d060c0e08xxxxx",
+            "channel": "Web/Mobile Client",
+            "skills": [],
+            "finalStatus": "CLOSED",
+            "disconnectingEvent": "Agent Closed",
+            "botId": "st-8e0bc152-9cfc-5b48-b8b0-41e4d2axxxxx",
+            "dispositions": [
+                "Resolved"
+            ],
+            "dispositionRemarks": [
+                "The bot initiated a transfer to an agent and thanked the customer for waiting. The agent then joined the conversation but did not provide any specific assistance or details. The bot informed the customer that Uat has now closed the conversation and encouraged them to reach out again if needed."
+            ],
+            "metaInfo": {
+                "workinghours": {
+                    "workdays": "mon,tue,wed,thu,fri",
+                    "workstart": "8:00 AM",
+                    "workend": "5:00 PM"
+                },
+                "profImage": "no-avatar",
+                "profColour": "#2e8b57",
+                "jTitle": "",
+                "dept": "",
+                "activationStatus": "active",
+                "firstName": "",
+                "lastName": "",
+                "orgId": "o-2b41857b-a1cb-5862-8faf-e3d99c3xxxxx",
+                "_id": "u-fb18cc28-6eca-51f4-8fff-cae558dxxxxx",
+                "identities": [
+                    {
+                        "val": "cs-325638a4-3312-5624-b19a-bbbc150xxxxx/520b515f-06e6-4aac-9784-9a7adcd697a73383382d-3611-4920-8a28-3ee7607xxxxx",
+                        "type": "mapped"
+                    }
+                ],
+                "agentTransferConfig": {
+                    "overrideAgents": false,
+                    "overrideValues": [],
+                    "assistEvents": {
+                        "startEvent": {
+                            "botId": "st-8e0bc152-9cfc-5b48-b8b0-41e4d2axxxxx",
+                            "isEnabled": false
+                        }
+                    },
+                    "lastIntentName": "ConnectToAgent",
+                    "automationBotId": "st-8e0bc152-9cfc-5b48-b8b0-41e4d2axxxxx"
+                },
+                "ipAddress": "115.114.88.222",
+                "hostDomain": "{{hostDomain}}",
+                "os": "Windows"
+            },
+            "customerinfo": {
+                "CustomerPhone": "",
+                "CenterPhone": "",
+                "CustomerFirstName": "",
+                "CustomerLastName": "",
+                "CustomerEmail": "",
+                "Direction": "Inbound"
+            },
+            "sessionStartTime": "2026-02-23T15:28:44",
+            "sessionEndTime": "2026-02-23T15:29:56",
+            "channelSpecificUserId": "cs-325638a4-3312-5624-b19a-bbbc150xxxxx/520b515f-06e6-4aac-9784-9a7adcd697a73383382d-3611-4920-8a28-3ee7607xxxxx",
+            "userId": "u-fb18cc28-6eca-51f4-8fff-cae558dxxxxx",
+            "destinations": [
+                {
+                    "destinationType": "QueueEntry",
+                    "queueId": "qu-52d7969-7e11-45e6-867b-cda9ccdxxxxx",
+                    "queueName": "Default Queue",
+                    "CallbackOpted": false,
+                    "EnterTime": "2026-02-23T15:28:44",
+                    "respondingAgent": {
+                        "agentId": "u-d289fb12-bf8a-53d7-9a96-998b156xxxxx",
+                        "agentNotes": [
+                            "The bot initiated a transfer to an agent and thanked the customer for waiting. The agent then joined the conversation but did not provide any specific assistance or details. The bot informed the customer that Uat has now closed the conversation and encouraged them to reach out again if needed."
+                        ],
+                        "destinationType": "AgentSegment",
+                        "status": "Answered",
+                        "firstResponseTime": "2026-02-23T15:29:01",
+                        "firstResponseDuration": 5,
+                        "interactionEndTime": "2026-02-23T15:29:26",
+                        "interactionDuration": 30,
+                        "afterCallWorkDuration": 6,
+                        "afterCallWorkEndTime": "2026-02-23T15:29:32",
+                        "email": "john.doe@example.com",
+                        "name": "john doe",
+                        "acceptedTime": "2026-02-23T15:28:56",
+                        "assignedAt": "2026-02-23T15:28:45"
+                    }
+                }
+            ],
+            "likeDislikeScore": 1,
+            "surveyType": "likeDislike",
+            "userleveltags": [],
+            "sessionleveltags": []
+        },
+        {
+            "conversationId": "c-b7c6e45-76d9-4b32-b1e9-1167a58xxxxx",
+            "sessionId": "699c028c28f2a5aae9bxxxxx",
+            "channel": "Web/Mobile Client",
+            "skills": [],
+            "finalStatus": "CLOSED",
+            "disconnectingEvent": "System Hangup",
+            "botId": "st-8e0bc152-9cfc-5b48-b8b0-41e4d2axxxxx",
+            "dispositions": [
+                "DROP-OFF"
+            ],
+            "dispositionRemarks": [
+                "-"
+            ],
+            "metaInfo": {
+                "workinghours": {
+                    "workdays": "mon,tue,wed,thu,fri",
+                    "workstart": "8:00 AM",
+                    "workend": "5:00 PM"
+                },
+                "profImage": "no-avatar",
+                "profColour": "#ff8c00",
+                "jTitle": "",
+                "dept": "",
+                "activationStatus": "active",
+                "firstName": "",
+                "lastName": "",
+                "orgId": "o-2b41857b-a1cb-5862-8faf-e3d99c3xxxxx",
+                "_id": "u-7433f073-d7b7-56f5-a79f-a33093cxxxxx",
+                "identities": [
+                    {
+                        "val": "cs-325638a4-3312-5624-b19a-bbbc150xxxxx/eb82c503-ae89-4e28-b9bc-3c9d1ccda70c0e080af2-9aee-42f7-a221-70a7b59xxxxx",
+                        "type": "mapped"
+                    }
+                ],
+                "agentTransferConfig": {
+                    "overrideAgents": false,
+                    "overrideValues": [],
+                    "assistEvents": {
+                        "startEvent": {
+                            "botId": "st-8e0bc152-9cfc-5b48-b8b0-41e4d2axxxxx",
+                            "isEnabled": false
+                        }
+                    },
+                    "lastIntentName": "ConnectToAgent",
+                    "automationBotId": "st-8e0bc152-9cfc-5b48-b8b0-41e4d2axxxxx"
+                },
+                "ipAddress": "115.114.88.222",
+                "hostDomain": "{{hostDomain}}",
+                "os": "Windows"
+            },
+            "customerinfo": {
+                "CustomerPhone": "",
+                "CenterPhone": "",
+                "CustomerFirstName": "",
+                "CustomerLastName": "",
+                "CustomerEmail": "",
+                "Direction": "Inbound"
+            },
+            "sessionStartTime": "2026-02-23T13:02:28",
+            "sessionEndTime": "2026-02-23T13:02:39",
+            "channelSpecificUserId": "cs-325638a4-3312-5624-b19a-bbbc150xxxxx/eb82c503-ae89-4e28-b9bc-3c9d1ccda70c0e080af2-9aee-42f7-a221-70a7b59xxxxx",
+            "userId": "u-7433f073-d7b7-56f5-a79f-a33093cxxxxx",
+            "destinations": [
+                {
+                    "destinationType": "QueueEntry",
+                    "queueId": "qu-52d7969-7e11-45e6-867b-cda9ccdxxxxx",
+                    "queueName": "Default Queue",
+                    "CallbackOpted": false,
+                    "EnterTime": "2026-02-23T13:02:28"
+                }
+            ],
+            "npsScore": 2,
+            "surveyType": "nps",
+            "csatFeedback": "services",
+            "userleveltags": [],
+            "sessionleveltags": []
+        },
+        {
+            "conversationId": "c-0ac330d-0c53-4edc-a4d4-23d3a91xxxxx",
+            "sessionId": "699c020c28f2a5aae9bxxxxx",
+            "channel": "Web/Mobile Client",
+            "skills": [],
+            "finalStatus": "CLOSED",
+            "disconnectingEvent": "System Hangup",
+            "botId": "st-8e0bc152-9cfc-5b48-b8b0-41e4d2axxxxx",
+            "dispositions": [
+                "DROP-OFF"
+            ],
+            "dispositionRemarks": [
+                "-"
+            ],
+            "metaInfo": {
+                "workinghours": {
+                    "workdays": "mon,tue,wed,thu,fri",
+                    "workstart": "8:00 AM",
+                    "workend": "5:00 PM"
+                },
+                "profImage": "no-avatar",
+                "profColour": "#00ff7f",
+                "jTitle": "",
+                "dept": "",
+                "activationStatus": "active",
+                "firstName": "",
+                "lastName": "",
+                "orgId": "o-2b41857b-a1cb-5862-8faf-e3d99c3xxxxx",
+                "_id": "u-4b8a2d08-bf57-520f-8ee2-1669d8axxxxx",
+                "identities": [
+                    {
+                        "val": "cs-325638a4-3312-5624-b19a-bbbc150xxxxx/d6b37c15-d2b1-4953-bbb7-3bca16a4ec94aa5feec4-cb64-4412-85f6-0beb679xxxxx",
+                        "type": "mapped"
+                    }
+                ],
+                "agentTransferConfig": {
+                    "overrideAgents": false,
+                    "overrideValues": [],
+                    "assistEvents": {
+                        "startEvent": {
+                            "botId": "st-8e0bc152-9cfc-5b48-b8b0-41e4d2axxxxx",
+                            "isEnabled": false
+                        }
+                    },
+                    "lastIntentName": "ConnectToAgent",
+                    "automationBotId": "st-8e0bc152-9cfc-5b48-b8b0-41e4d2axxxxx"
+                },
+                "ipAddress": "115.114.88.222",
+                "hostDomain": "{{hostDomain}}",
+                "os": "Windows"
+            },
+            "customerinfo": {
+                "CustomerPhone": "",
+                "CenterPhone": "",
+                "CustomerFirstName": "",
+                "CustomerLastName": "",
+                "CustomerEmail": "",
+                "Direction": "Inbound"
+            },
+            "sessionStartTime": "2026-02-23T13:00:20",
+            "sessionEndTime": "2026-02-23T13:00:36",
+            "channelSpecificUserId": "cs-325638a4-3312-5624-b19a-bbbc150xxxxx/d6b37c15-d2b1-4953-bbb7-3bca16a4ec94aa5feec4-cb64-4412-85f6-0beb679xxxxx",
+            "userId": "u-4b8a2d08-bf57-520f-8ee2-1669d8axxxxx",
+            "destinations": [
+                {
+                    "destinationType": "QueueEntry",
+                    "queueId": "qu-52d7969-7e11-45e6-867b-cda9ccdxxxxx",
+                    "queueName": "Default Queue",
+                    "CallbackOpted": false,
+                    "EnterTime": "2026-02-23T13:00:20"
+                }
+            ],
+            "csatScore": 4,
+            "surveyType": "csat",
+            "userleveltags": [],
+            "sessionleveltags": []
+        },
+        {
+            "conversationId": "c-27da782-594e-4e1d-8012-ca87492xxxxx",
+            "sessionId": "699bff7628f2a5aae9bxxxxx",
+            "channel": "Voice",
+            "skills": [],
+            "finalStatus": "CLOSED",
+            "disconnectingEvent": "Bot Hangup",
+            "botId": "st-8e0bc152-9cfc-5b48-b8b0-41e4d2axxxxx",
+            "dispositions": [
+                "Resolved"
+            ],
+            "dispositionRemarks": [
+                "The conversation began with the bot initiating an agent transfer. The customer responded with greetings, and the bot acknowledged them with a friendly greeting."
+            ],
+            "metaInfo": {
+                "caller": "+132136xxxxx",
+                "callee": "+147890xxxxx",
+                "callerHost": "54.xxx.xx.2",
+                "userId": "u-c1dce3f7-863c-5b1f-a80e-daa27cfxxxxx",
+                "dialedNumber": "+147890xxxxx",
+                "agentTransferConfig": {
+                    "skillsIds": [],
+                    "overrideAgents": false,
+                    "overrideValues": [],
+                    "assistEvents": {
+                        "startEvent": {
+                            "botId": "st-8e0bc152-9cfc-5b48-b8b0-41e4d2axxxxx",
+                            "isEnabled": false
+                        }
+                    },
+                    "lastIntentName": "ConnectToAgent",
+                    "automationBotId": "st-8e0bc152-9cfc-5b48-b8b0-41e4d2axxxxx",
+                    "accountId": "68920d3f8ea2b7852d4xxxxx"
+                },
+                "workinghours": {
+                    "workdays": "mon,tue,wed,thu,fri",
+                    "workstart": "8:00 AM",
+                    "workend": "5:00 PM"
+                },
+                "profImage": "no-avatar",
+                "profColour": "#ff8c00",
+                "jTitle": "",
+                "dept": "",
+                "activationStatus": "active",
+                "firstName": "",
+                "lastName": "",
+                "orgId": "o-2b41857b-a1cb-5862-8faf-e3d99c3xxxxx",
+                "_id": "u-c1dce3f7-863c-5b1f-a80e-daa27cfxxxxx",
+                "identities": [
+                    {
+                        "val": "cs-325638a4-3312-5624-b19a-bbbc150xxxxx/d2270c86-d811-4cb2-bf6a-6cb8fd6xxxxx",
+                        "type": "mapped"
+                    },
+                    {
+                        "val": "68920d3f8ea2b7852d4xxxxx/korevg/d2270c86-d811-4cb2-bf6a-6cb8fd6xxxxx",
+                        "type": "mapped"
+                    }
+                ],
+                "transcribeConfig": {
+                    "transcribe": true
+                }
+            },
+            "customerinfo": {
+                "CustomerPhone": "+132136xxxxx",
+                "CenterPhone": "+147890xxxxx",
+                "CustomerFirstName": "",
+                "CustomerLastName": "",
+                "CustomerEmail": "",
+                "Direction": "Inbound"
+            },
+            "sessionStartTime": "2026-02-23T12:49:18",
+            "sessionEndTime": "2026-02-23T12:50:04",
+            "channelSpecificUserId": "cs-325638a4-3312-5624-b19a-bbbc150f7a2a/d2270c86-d811-4cb2-bf6a-6cb8fd6xxxxx",
+            "userId": "u-c1dce3f7-863c-5b1f-a80e-daa27cfxxxxx",
+            "destinations": [
+                {
+                    "destinationType": "QueueEntry",
+                    "queueId": "qu-52d7969-7e11-45e6-867b-cda9ccdxxxxx",
+                    "queueName": "Default Queue",
+                    "CallbackOpted": false,
+                    "EnterTime": "2026-02-23T12:49:20",
+                    "respondingAgent": {
+                        "agentId": "u-92b5cb3b-b0cc-5e37-b321-31c3255xxxxx",
+                        "agentNotes": [
+                            "The conversation began with the bot initiating an agent transfer. The customer responded with greetings, and the bot acknowledged them with a friendly greeting."
+                        ],
+                        "destinationType": "AgentSegment",
+                        "status": "Answered",
+                        "interactionEndTime": "2026-02-23T12:49:36",
+                        "interactionDuration": 11,
+                        "afterCallWorkDuration": 4,
+                        "afterCallWorkEndTime": "2026-02-23T12:49:40",
+                        "email": "john.doe@example.com",
+                        "name": "john doe",
+                        "acceptedTime": "2026-02-23T12:49:24",
+                        "assignedAt": "2026-02-23T12:49:21"
+                    }
+                }
+            ],
+            "likeDislikeScore": 0,
+            "surveyType": "likeDislike",
+            "csatFeedback": "Services.",
+            "userleveltags": [],
+            "sessionleveltags": [
+                {
+                    "name": "audioCodesCallDisconnect",
+                    "value": "1"
+                },
+                {
+                    "name": "callerNumber",
+                    "value": "+132136xxxxx"
+                },
+                {
+                    "name": "voiceAgentTransferStart",
+                    "value": "1"
+                },
+                {
+                    "name": "voiceAutomationSuccess",
+                    "value": "1"
+                },
+                {
+                    "name": "welcomeMessageTwilio",
+                    "value": "1"
+                }
+            ]
         }
     ]
 }
@@ -758,5 +1110,10 @@ curl --location 'https://{{host}}/agentassist/api/public/analytics/account/{{acc
 | `destinations.nonRespondingAgents.name` | string | Full name of the assigned agent. | Jane doe |
 | `destinations.nonRespondingAgents.assignedAt` | string (ISO 8601 datetime) | Timestamp when the agent was assigned. | 2025-10-01T13:08:55 |
 | `destinations.nonRespondingAgents.nonResponseEvent` | string | The reason the agent didn't respond. | Ignored |
+| `csatScore` | integer | Customer Satisfaction (CSAT) score submitted for the call. This field is displayed only when the survey type is `csat`. | 4 |
+| `npsScore` | integer | Net Promoter Score (NPS) rating submitted for the call, typically on a scale of 0–10, indicating the likelihood of the customer recommending the service. This field is displayed only when the survey type is `nps`. | 2 |
+| `likeDislikeScore` | integer | Indicates whether the customer liked or disliked the interaction. A value of `1` represents `Like`, `0` represents `Dislike`. Displayed only when the survey type is like/dislike. This field is displayed only when the survey type is `likeDislike`. | 0 |
+| `surveyType` | string | Type of post-call survey associated with the call. For CSAT surveys, the value is `csat`, `likeDislike`, `nps`. | csat |
+| `csatFeedback` | string | Optional textual feedback provided by the customer as part of the CSAT survey. Displayed only when the survey type is `csat`. | services |
 | `userleveltags` | array of tag objects | All user-level tags associated with this session. | {"name": "accountnum","value": "121413243141234132"} |
 | `sessionleveltags` | array of tag objects | All session-level tags associated with this session. | {"name": "audioCodesCallDisconnect","value": "1"} |

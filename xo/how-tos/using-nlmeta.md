@@ -1,12 +1,16 @@
 
 # Using nlMeta
 
-Sometimes, one wants to control the flow of the assistant by taking an alternate path to improve the user’s experience.
+Sometimes, one wants to control the flow of the AI Agent by taking an alternate path to improve the user’s experience.
+
+DialogGPT-based apps support handling interruptions across linked apps using the nlMeta object. It allows you to pass information directly to the AI Agent, which prioritizes and executes the specified intent before processing any other input.
+
+
 
 Consider the following scenarios:
 
 
-1. The NLP engine might have identified an intent based on the user's utterance. However, based on additional information gathered from the backend systems, the webpage where the SDK is hosted, or any other external information, a different task might be more suitable.
+1. The DialogGPT-based app has identified an intent based on the user's utterance. However, based on additional information gathered from the backend systems, the webpage where the SDK is hosted, or any other external information, a different task might be more suitable.
 
 2. Consider a flight booking assistant that greets the user with the best ongoing deals as part of the Welcome message. Based on the user selection, the ‘book flight’ task can be programmatically invoked by prepopulating the travel details, like source city, destination city, travel, etc., from the deal information presented to the user.
 
@@ -22,24 +26,25 @@ The *nlMeta* is an object that can be used to pass information on to the AI Agen
 
 The following is a sample of how the *nlMeta* object needs to be populated:
 
-     'nlMeta': {
+``` json
+"nlMeta" :{
+                   "intent": "Login",
+                   "childBotName":"NL Meta_Test_1",
+                   "entities":{
+                    "Password":456
 
-            'intent': '<intent_name>',  
-            'childBotName': '<child_bot_name>',
-            'isRefresh': <true/false>, 
-            'entities': {      
-			'<entity1_value>': value1,
-                        '<entity2_value>': value2,
-			},
-      	    'interruptionOptions': {
-               'hr': {
-                 'h': 1;
-                 'r': 1;
-                 'nn': true
-
+                    
+                   },
+                   "hr": {
+                 "h": 4,
+                 "r": 1,
+                "nn":false
+                 
+                 
                 }
-              }
-      }
+               }
+           
+```
 
 
 ## Parameters

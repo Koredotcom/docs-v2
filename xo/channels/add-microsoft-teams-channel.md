@@ -265,9 +265,14 @@ if(channelActionMetadata){
 <img src="../images/update-delete4.png" alt="Update or Delete Message" title="Update or Delete Message" style="border: 1px solid gray; zoom:70%;">
 
 
+### Typing Indicator 
+
+The platform supports typing indicators in Microsoft Teams, providing end users with real-time visual feedback when an AI agent or human agent is composing a response. This enhancement keeps users informed during interactions and creates a more natural and responsive conversation experience.
 
 
+### Proactive Welcome Message for MS Teams Validation
 
+The Microsoft Teams Channel Adapter now automatically sends a welcome message when the app is installed in the personal scope. This ensures compliance with  Microsoft Teams Marketplace validation and certification requirements. As a result, the app distribution process is smoother.
 
 ### Related Links
 

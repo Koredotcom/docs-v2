@@ -39,7 +39,7 @@ This API returns the complete list of chunks that satisfy the given condition in
   </tr>
 </table>
 
-## Query Parameters
+### Query Parameters
 
 
 <table>
@@ -61,8 +61,7 @@ This API returns the complete list of chunks that satisfy the given condition in
   </tr>
 </table>
 
-## Request Parameters
-
+### Request Parameters
 
 <table>
   <tr>
@@ -155,7 +154,7 @@ For instance, if the value of the filter field is set as shown below, then a log
 
 
 
-## Sample Response
+### Sample Response
 
 
 ```
@@ -232,10 +231,7 @@ This API is used to update a given chunk. The parameters provided in the request
   </tr>
 </table>
 
-
-
-## Query Parameters
-
+### Query Parameters
 
 <table>
   <tr>
@@ -266,11 +262,11 @@ This API is used to update a given chunk. The parameters provided in the request
 
 
 
-## Request Parameters
+### Request Parameters
 
-It is mandatory to pass the whole of this chunk info in the request body.  The field names should match as in the example below. 
+It is mandatory to pass the whole of this chunk info in the request body. The field names should match as in the example below. 
 
-## Sample Request
+#### Sample Request
 
 
 ```
@@ -285,7 +281,7 @@ It is mandatory to pass the whole of this chunk info in the request body.  The f
 ```
 
 
-## Sample Response
+### Sample Response
 
 ```json
 {
@@ -295,4 +291,225 @@ It is mandatory to pass the whole of this chunk info in the request body.  The f
     "updated_documents": 1
 }
 ```
+
+## Delete Chunks by ID API
+
+This API enables targeted deletion of indexed content without requiring a full re-index. You can remove specific chunks from the Search Index by providing a list of *chunk IDs*, which the system uses to identify and delete the corresponding chunks.
+
+This is useful for incremental cleanup, partial refresh scenarios, and lifecycle management of structured uploads.
+
+
+<table>
+  <tr>
+   <td><strong>Component</strong>
+   </td>
+   <td><strong>Value</strong>
+   </td>
+  </tr>
+  <tr>
+   <td><strong>Method</strong>
+   </td>
+   <td>POST
+   </td>
+  </tr>
+  <tr>
+   <td><strong>URL</strong>
+   </td>
+   <td><code>/api/public/bot/{AppId}/search/delete-chunks-by-cond</code>
+   </td>
+  </tr>
+  <tr>
+   <td><strong>Content-Type</strong>
+   </td>
+   <td>application/json
+   </td>
+  </tr>
+  <tr>
+   <td><strong>Authentication</strong>
+   </td>
+   <td>auth: &lt;JWT Token>
+   </td>
+  </tr>
+  <tr>
+   <td><strong>API Scope</strong>
+   </td>
+   <td>Chunk Management
+   </td>
+  </tr>
+</table>
+
+
+
+### Path Parameters
+
+<table>
+  <tr>
+   <td><strong>Parameter</strong>
+   </td>
+   <td><strong>Type</strong>
+   </td>
+   <td><strong>Required</strong>
+   </td>
+   <td><strong>Description</strong>
+   </td>
+  </tr>
+  <tr>
+   <td>AppId
+   </td>
+   <td>string
+   </td>
+   <td>Yes
+   </td>
+   <td>Provide your application ID here. To view your App ID, go to the <strong>Dev Tools </strong>under <strong>App Settings. </strong>You can view the AppID under the API scopes.
+   </td>
+  </tr>
+</table>
+
+
+### Request Body Parameters
+
+
+<table>
+  <tr>
+   <td><strong>Field</strong>
+   </td>
+   <td><strong>Type</strong>
+   </td>
+   <td><strong>Required</strong>
+   </td>
+   <td><strong>Description</strong>
+   </td>
+  </tr>
+  <tr>
+   <td>chunkId
+   </td>
+   <td>string[]
+   </td>
+   <td>No
+   </td>
+   <td>An array of chunk IDs to delete.
+   </td>
+  </tr>
+</table>
+
+### Sample Requests
+
+**Example: Delete by chunkId**
+
+```json
+curl --location 'https://<HOST>/api/public/bot/<BOT_ID>/search/delete-chunks-by-cond' \
+--header 'auth: <JWT_TOKEN>' \
+--header 'Content-Type: application/json' \
+--data '{
+ "chunkId": [
+   "chk-xxxx1", "chk-xxxx2"
+ ]
+}'
+```
+### Response
+
+**Response Fields**
+
+
+<table>
+  <tr>
+   <td><strong>Field</strong>
+   </td>
+   <td><strong>Description</strong>
+   </td>
+  </tr>
+  <tr>
+   <td>status
+   </td>
+   <td>Status of the chunk deletion job. 
+   </td>
+  </tr>
+  <tr>
+   <td>totalRequested
+   </td>
+   <td>Number of chunks requested for deletion.
+   </td>
+  </tr>
+  <tr>
+   <td>totalDeleted
+   </td>
+   <td>Number of chunks successfully deleted.
+   </td>
+  </tr>
+  <tr>
+   <td>totalNotFound
+   </td>
+   <td>Number of chunks that weren't found.
+   </td>
+  </tr>
+</table>
+
+
+
+#### Sample Response
+
+```json
+{
+"Status": "success",   //status of the deletion action
+"Data":
+   { 
+     "totalRequested":4,
+     "totalDeleted":4, 
+     "totalNotFound":0 
+   } 
+}
+```
+### Error Messages 
+
+
+<table>
+  <tr>
+   <td><strong>Error Code</strong>
+   </td>
+   <td><strong>Message</strong>
+   </td>
+   <td><strong>When It Occurs</strong>
+   </td>
+   <td><strong>Recommended Action</strong>
+   </td>
+  </tr>
+  <tr>
+   <td>400</td>
+   <td>One or more chunkIds don't exist. </td>
+   <td> <code>chunkId</code> is not provided in the request body. </td>
+   <td>Provide exactly one of the required fields.</td>
+  </tr>
+  <tr>
+   <td>401
+   </td>
+   <td>Unauthorized
+   </td>
+   <td>Missing, invalid, or expired JWT token.
+   </td>
+   <td>Verify the <code>auth</code> header and regenerate the token.
+   </td>
+  </tr>
+  <tr>
+   <td>404
+   </td>
+   <td>Resource not found
+   </td>
+   <td>Invalid <code>AppId</code> or resource doesn't exist
+   </td>
+   <td>Verify the AppID
+   </td>
+  </tr>
+  <tr>
+   <td>500
+   </td>
+   <td>Internal server error
+   </td>
+   <td>Unexpected server-side failure
+   </td>
+   <td>Retry the request or contact support if the issue persists.
+   </td>
+  </tr>
+</table>
+
+
 
