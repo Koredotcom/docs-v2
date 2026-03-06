@@ -1,0 +1,157 @@
+---
+title: Configuring Amazon Bedrock Models
+sidebarTitle: Configuring Amazon Bedrock
+---
+
+Set up secure cross-account access to invoke Amazon Bedrock models via IAM Role and AWS STS.
+
+---
+
+## Overview
+
+Integrating Bedrock requires three steps:
+
+| Step | What you do |
+|------|-------------|
+| 1. Set up IAM credentials | Create an IAM role with Bedrock permissions and a trust policy |
+| 2. Find the model ID | Identify the correct model ID and deployment region |
+| 3. Test and map the model | Send a test request and configure response mapping |
+
+
+
+## Step 1. Set Up IAM Credentials and Trust Policy
+
+### A. Create the IAM Role
+
+Create an IAM role in your AWS account that grants the platform permission to invoke Bedrock models on your behalf.
+
+> See the [AWS IAM role creation guide](https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_create.html) and [Bedrock IAM policy examples](https://docs.aws.amazon.com/bedrock/latest/userguide/security_iam_id-based-policy-examples.html) for reference.
+
+Assign the following permissions to the role:
+
+```json
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": [
+        "bedrock:InvokeModel",
+        "bedrock:ListFoundationModels"
+      ],
+      "Resource": "*"
+    }
+  ]
+}
+```
+
+### B. Set the Trust Policy
+
+Add a trust policy that allows the platform to assume the IAM role via AWS STS. Replace `<domain-arn>` with the AWS account ID provided by the platform.
+
+```json
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Principal": {
+        "AWS": "<domain-arn>"
+      },
+      "Action": "sts:AssumeRole"
+    }
+  ]
+}
+```
+
+> For private or on-premises deployments, point the trust policy to your internal AWS IAM role.
+
+### C. Set the STS Endpoint
+
+Use the STS endpoint for the region where your IAM role resides. The STS region must match the IAM role region — not necessarily the model's region.
+
+```
+https://sts.us-east-1.amazonaws.com/
+```
+
+See the full list of [STS regional endpoints](https://docs.aws.amazon.com/general/latest/gr/sts.html).
+
+### D. Register Your IAM Role (Support Ticket)
+
+After creating the IAM role, raise a support ticket to register it with the platform.
+
+1. Submit your IAM role ARN via a support ticket, requesting it be added to the trust policy.
+2. Wait for confirmation that the role has been registered.
+
+<Note>Both your AWS account and the platform environment must explicitly trust each other. Without this step, the platform cannot assume your IAM role.</Note>
+
+
+
+## Step 2. Find the Model ID and Region
+
+The correct Model ID format depends on how the model is deployed in Bedrock.
+
+| Deployment type | How to find the Model ID |
+|-----------------|--------------------------|
+| **Base foundation models** | Use the standard model ID from the [AWS supported models list](https://docs.aws.amazon.com/bedrock/latest/userguide/models-supported.html) |
+| **Marketplace-deployed models** | Go to **Bedrock Console → Model Access → Subscriptions**, locate the Model ARN, and enter only the model name after `foundation-model/` |
+| **Provisioned throughput models** | Go to **Bedrock Console → Provisioned Throughput**, select or create an inference configuration, copy the Inference ARN, and use the ID portion as the Model ID |
+
+**Example ARN formats:**
+
+```
+# Marketplace model ARN
+arn:aws:bedrock:us-east-1::foundation-model/your-model-id
+
+# Provisioned throughput ARN
+bedrock:provisioned-model-inference/my-throughput-id
+```
+
+> Models that don't support on-demand throughput (such as Claude 3) require a Provisioned Throughput inference configuration.
+
+
+
+## Step 3. Test and Map the Model
+
+Once credentials and model details are configured, test the connection and map the response output.
+
+**1. Define Prompt Variables**
+
+In the Prompt Variables section, declare the variables used in your request payload:
+
+| Variable | Purpose |
+|----------|---------|
+| `prompt` | User input |
+| `system.prompt` | System instructions |
+
+**2. Define the Request Body**
+
+Use `{{variableName}}` syntax to bind variables dynamically in the JSON payload:
+
+```json
+{
+  "prompt": "{{prompt}}",
+  "max_tokens": 200,
+  "temperature": 0.8
+}
+```
+
+**3. Test the Configuration**
+
+1. Enter test values for the input variables.
+2. Click **Test** to invoke the model.
+3. Review the raw response returned.
+
+> If the test fails, verify that the IAM Role ARN, STS endpoint, and Model ID are all correct.
+
+**4. Map Output Fields**
+
+Configure JSON paths to extract the model's output and token usage from the response:
+
+| Field | JSONPath |
+|-------|----------|
+| Output Text | `$.output.text` |
+| Input Token Count | `$.usage.input_tokens` |
+| Output Token Count | `$.usage.output_tokens` |
+
+---
