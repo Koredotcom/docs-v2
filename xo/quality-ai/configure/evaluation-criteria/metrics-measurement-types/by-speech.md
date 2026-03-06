@@ -1,38 +1,32 @@
-# By Speech Metric
+# By Speech Evaluation Metrics
 
-Speech evaluation metrics assess agent performance during voice interactions in the contact center using intelligent speech analytics. These metrics evaluate conversational behaviors such as crosstalk (overlapping speech), dead air (silence), and speaking rate to support effective coaching, making sure about consistent quality evaluations, and maintaining compliance adherence. Evaluators use each speech metric for assessment purposes and assign it to a single agent attribute.
+Speech evaluation metrics assess agent performance in the Contact Center during voice interactions using intelligent speech analytics. These metrics evaluate conversational behaviors such as Crosstalk, Dead Air, and Speaking Rate Violation to support effective coaching, consistent quality evaluations, and compliance adherence.
 
 ## Why to Use This Metric
 
-Use speech evaluation metrics to:
-
-* Monitor and evaluate agent behavior based on voice characteristics.
-* Detect issues such as dead air, cross talk (overlapping speech), or inappropriate speaking rates (periods of silence).
-* Enable automated and unbiased quality scoring.
-* Identify coaching and training opportunities.
-* Improve customer experience and operational efficiency.
-* Analyze speaking patterns and interaction trends.
-
-## When to Use This Metric
-
 Use speech evaluation metrics when:
 
-* Setting up automated quality scoring for voice interactions.
+* Monitor and evaluate agent behavior based on voice characteristics.
 
-* Defining agent performance baselines.
+* Detect issues such as Crosstalk (overlapping speech), Dead Air, or any inappropriate Speaking Rate Violation (periods of silence).
 
-* Identifying areas for coaching and improvement.
+* Enable automated and unbiased quality scoring across voice interactions.
 
-* Measuring compliance with communication standards.
+* Identify coaching and training opportunities for agents.
+
+* Improve overall customer experience and operational efficiency.
+
+* Analyze speaking patterns and interaction trends.
 
 ## Prerequisites
 
-Before you configure speech metrics, make sure that:
+* Have admin or configuration permissions
 
-* You have admin or configuration permissions.
-* You create agent attribute definitions.
-* You have evaluation forms available or in a draft state.
-* You have speech data available for Quality AI analysis.
+* Create agent attribute definitions
+
+* Evaluation forms available or in a draft state
+
+* Speech data available for Quality AI analysis
 
 ## Configure by Speech Metric
 
@@ -43,60 +37,45 @@ Before you configure speech metrics, make sure that:
 3. From the **Evaluation Metrics Measurement Type**, select **By Playbook Adherence**.  
 <img src="../images/by-speech-dropdown.png" alt="default scorecard" title="default scorecard" style="border: 1px solid gray; zoom:100%;">  
 
+    !!! Note
+
+        Assign each metric to a single agent attribute for evaluation.
+
 4. Enter a descriptive **Name** for the future audit and reporting purposes.   
 
 * Select and configure one of the following **Speech Type** options.  
-<img src="../images/by-speech-crosstalk.png" alt="Crosstalk" title="Crosstalk" style="border: 1px solid gray; zoom:60%;"> 
 
-    * **Cross Talk**: Set the maximum number of instances. If the count exceeds this limit (the configured count), the metric fails. By default, the crosstalk duration is two seconds, but you can customize both the instance limit and duration.
+    * **Crosstalk**: Tracks simultaneous agent–customer speech. Configure overlap duration, maximum instances, and instance control (agent-only or both). The metric qualifies when instances stay within the set limit; exceeding the limit fails the metric.      
+    <img src="../images/by-speech-crosstalk.png" alt="Crosstalk" title="Crosstalk" style="border: 1px solid gray; zoom:100%;"> 
 
-    * **Cross Talk Duration (Metric Qualification)**: This metric is included in the evaluation if the number of cross talk instances stays below the set limit. The system counts an occurrence as crosstalk if it meets or exceeds the configured duration. If the number of instances goes over the limit, the metric fails, and the agent is penalized.
+    * **Dead Air**: Tracks silence periods. Set minimum and maximum duration and allowed instances. The metric fails if silence exceeds the configured limits.              
+    <img src="../images/by-speech-dead-air.png" alt="Dead air" title="Dead air" style="border: 1px solid gray; zoom:50%;"> 
 
-    * **Dead Air**: This defines the period of silence during a contact center interaction when neither the customer nor the agent is speaking. By default, the minimum dead air time is 30 seconds, and the maximum is 300 seconds. It allows you to customize the instance limit and dead air duration.
+    * **No. of Instances**: Monitors the agent's speaking rate using Word Per Minute (WPM). The metric fails if the rate falls outside the defined range.         
+    <img src="../images/by-speech-speaking-rate-violation.png" alt="Speaking Rate" title="Speaking Rate" style="border: 1px solid gray; zoom:50%;"> 
 
-    * **Dead Air Time (Metric Qualification)**
-
-    The metric qualifies if the number of dead air instances is below the acceptable limit set in the configuration. If the number of instances exceeds the limit, the system marks the interaction as a failure for the dead air metric. An instance is counted as dead air if it exceeds the specified dead air duration.       
-    <img src="../images/by-speech-dead-air.png" alt="Dead air" title="Dead air" style="border: 1px solid gray; zoom:60%;"> 
-
-    * **No. of Instances**: Enter the minimum allowed Cross Talk instances per second. 
-
-    * **Speaking Rate Violation**: This displays the average daily conversation sessions and comparison analysis for the selected period. A violation is flagged when the agent's speaking pace is outside the configured acceptable range. 
-
-        * **Words Per Minute (WPM)**: Select the expected speaking rate. If the agent doesn't adhere to the configured rate, the system marks the metric as failed.  
-        <img src="../images/by-speech-speaking-rate-violation.png" alt="Speaking Rate" title="Speaking Rate" style="border: 1px solid gray; zoom:60%;"> 
-
-5. Click **Create** to save the new metric for the Speech.
+5. Select **Create** to save the Speech metric.
 
 ## Edit or Delete By Speech Metric
 
-Steps to edit or delete any existing **By Speech** evaluation metrics:
+1. Select a metric under the **By Speech** category. 
+ 
+1. Select **Edit**.
 
-1. Right-click on a desired evaluation metric name under the **By Speech** category.  
-<img src="../images/by-speech-edit.png" alt="Edit Metric" title="Edit Metric"   style="border: 1px solid gray; zoom:70%;">    
+1. Update the metric configuration as needed.    
 
-2. Choose an option:
+1. Select **Delete** to remove the selected evaluation metric.   
 
-    * Click **Edit** to modify the selected metric details.    
-    <img src="../images/by-speech-edit-screen.png" alt="By Speech edit Screen" title="By Speech edit Screen" style="border: 1px solid gray; zoom:60%;">
+1. Select **Update** to save the changes.
 
-    * Click **Delete** to remove the selected metric.   
+### Speech Metric Addition Limitation
 
-3. Click **Update** to save the changes.
+During evaluation form configuration, you can add only one speech metric per subtype (Crosstalk, Dead Air, or Speaking Rate) to a form. If you try to add another metric of the same subtype, the system displays an error pop-up under the Evaluation Metrics checkbox.
 
-### Language Dependency Warnings
+!!! Note
 
-This section outlines the limitations and dependencies associated with modifying language settings in evaluation metrics. 
+    Only you can add one metric of each type at a time. To add another metric of the same subtype, you must first remove the existing one.
 
-#### Deletion Warnings
+### Speech Metric Errors
 
-This section describes the warnings and prerequisites you must address before deleting a metric.	
-
-* If the metric is used in any evaluation form, the system displays a warning message.
-
-* Remove the metric from all associated evaluation forms before you delete it.
-
-* If any attributes are linked to the metric, assign a different metric to those attributes before proceeding with deletion.
-
-* The system allows you to delete the metric only after resolving all dependencies.   
-<img src="../images/delete-speech-metric.png" alt="Delete Warnings" title="Delete Warnings" style="border: 1px solid gray; zoom:70%;">
+The system displays an error message if you add a duplicate **Crosstalk**, **Dead Air**, or **Speaking Rate Violation** metric.

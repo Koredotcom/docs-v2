@@ -485,7 +485,7 @@ If fewer than 60% of words in longer texts match the Tagalog dictionary, the utt
     2. **Per Session**: Detects the user’s language at the beginning of every session and responds accordingly.
     3. **Every User Message**: Identifies the user’s language from every utterance. In case a change is detected, the AI Agent will get a confirmation from the user regarding the switch and proceed as per the user response.  
       
-      **Note:** The current conversation will be discarded in case the user wants to switch languages. This feature was introduced in release 7.2 and is the default setting for multilingual AI Agent.  
+      **Note:** The current conversation will be discarded in case the user wants to switch languages. This is the default setting for multilingual AI Agent.  
 
     <img src="../images/get-started-img1-language-selection-logic.png" alt="Language selection logic" title="Language selection logic" style="border: 1px solid gray;zoom:50%;"/>  
      

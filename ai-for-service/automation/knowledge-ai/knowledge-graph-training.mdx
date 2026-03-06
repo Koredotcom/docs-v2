@@ -1,0 +1,203 @@
+---
+title: Knowledge Graph Training
+sidebarTitle: KG Training
+---
+<Badge icon="arrow-left" color="gray">[Back to NLP Topics](/ai-for-service/automation/natural-language/nlp-topics)</Badge>
+
+Training the KG engine improves your assistant's ability to match user queries to the right FAQs. Both Ontology and Few-Shot KG types require training, but the approach differs.
+
+
+**Few-Shot KG training notes:**
+
+- No ontology or path qualification needed—FAQs are matched by semantic similarity.
+- Default Terms are unavailable (exception: migrated terms from Ontology KG, which become Organizer terms on update).
+- Organizer Terms do not support Path-Level or KG Synonyms, but do support Intent Preconditions and Context Output.
+- Mandatory Terms support Traits, Path-Level and KG Synonyms, Intent Preconditions, and Context Output.
+- Unsupported configs: Path Coverage, Lemmatization using POS, Search in Answer, Qualify Contextual Paths.
+- Embedding models available: BGE M3, MPNet, LaBSE.
+
+See [Knowledge Graph Types Comparison](/ai-for-service/automation/knowledge-ai/knowledge-graph-overview#feature-comparison).
+
+
+---
+
+## KG Engine Capabilities
+
+| Capability | Description |
+|---|---|
+| Synonyms | Associate synonyms with graph nodes to handle query variations. |
+| Alternate Questions | Cover multiple phrasings for the same FAQ. |
+| Accuracy | Ontology-driven Q&A reduces false positives. |
+| Traits | Filter irrelevant suggestions using user utterance patterns. |
+| Mandatory Terms | Require a specific term to be present in the utterance for a path to qualify. |
+| Organizer Nodes | Group related child nodes under a parent to manage large graphs. |
+
+---
+
+## FAQ Detection Steps (Ontology KG)
+
+1. **Extract nodes** — Tokenize user utterance; match against KG nodes, synonyms, traits, and tags.
+2. **Query graph** — Fetch all paths containing the extracted nodes.
+3. **Shortlist paths** — Keep paths where ≥50% of terms match the utterance. (Root node excluded from path coverage calculation.)
+4. **Filter with traits** — Further filter shortlisted paths using trait classification confidence.
+5. **Send to ranker** — Pass shortlisted paths to the Ontology Ranker.
+6. **Score by cosine similarity** — Rank paths using synonyms, lemma forms, n-grams, and stop words.
+7. **Qualify matches:** 
+   - Score ≥ upper threshold → definitive match.
+   - lower threshold &lt; score &lt; upper threshold → probable match (suggestion).
+   - Score ≤ lower threshold → ignored.
+
+---
+
+## Training Guidelines
+
+1. Identify unique words across FAQs and build a term hierarchy.
+2. Keep each node under 25 questions (training fails if any node exceeds 100).
+3. Associate traits with terms for intent filtering.
+4. Define synonyms for each term (all ways to express the term).
+5. Mark terms as Mandatory or Default based on their importance.
+6. Add alternate questions for better utterance coverage.
+7. Manage context for accurate responses.
+8. Use Stop Words to filter noise.
+
+---
+
+## Training Configuration
+
+### Term Types
+
+Go to the term/node settings to configure:
+
+| Type | Behavior |
+|---|---|
+| **Default** | No special path qualification consideration. |
+| **Mandatory** | Path qualifies only if the utterance contains this term or its synonyms. |
+| **Organizer** | Groups questions; term presence in utterance is not required. (Terms only, not tags.) |
+
+### Tags
+
+While adding an intent, the KG suggests tags based on the question text. Select suggested tags or type custom ones. Tags work like terms but are hidden in the ontology view.
+
+### Synonyms
+
+Add synonyms per term from the term's **Settings (gear icon)** window.
+
+| Synonym Type | Scope |
+|---|---|
+| **Path-Level (Local)** | Applies only in the current path. |
+| **Knowledge Graph (Global)** | Applies everywhere the term appears. |
+| **Bot Synonyms** | App-level synonyms reused in the KG. Enable from Threshold & Configurations or **More Options > Manage Synonyms**. When a node matches both a bot synonym and a bot concept, the concept takes priority. |
+
+**To add synonyms:**
+1. Hover over the node and click the **gear icon**.
+2. Enter synonyms under **Path Level Synonyms** (local) or click **Edit > Add** under **Knowledge Graph Synonyms** (global).
+3. Press **Enter** after each synonym—multiple synonyms without Enter are treated as one.
+4. For child node synonyms, enter them in the **Child Terms** section at the bottom of the settings window.
+
+### Traits
+
+Create traits from common user utterances and attach them to relevant KG terms.
+
+**To create a trait:**
+1. Click **⋯ (More Options) > Manage Traits** from the KG page.
+2. Click **New Trait**.
+3. Enter a **Trait Type** and **Trait Name**.
+4. Add utterances in the **Utterances** field.
+5. Click **Save & Add Rule** or **Save & Exit**.
+
+Traits created in the Natural Language section are available here automatically.
+
+### Context
+
+Per term/tag, configure:
+- **Intent Precondition** — Context that must exist for this node/tag to qualify.
+- **Context Output** — Context populated when this node/tag is matched.
+
+
+### Stop Words
+
+Stop words in user utterances are excluded from scoring, even if they match a node name.
+
+**To edit stop words:**
+1. Click **⋯ (More Options) > Manage Stop Words** from the KG page.
+2. Add or remove stop words.
+
+---
+
+## Training Process
+
+After creating or editing the KG, click **Train** (top-right). All paths, synonyms, and Q&A sets are sent to the KG engine.
+
+<Note>
+Every change (synonyms, term names, FAQs, etc.) requires a re-train to take effect in bot responses.
+</Note>
+
+Training fails if any single node has more than 100 questions. Click **Download Errors** to get a CSV listing paths that exceed this limit.
+
+---
+
+## Testing
+
+After training, test using **Talk to Bot** with varied utterances to identify gaps in terms, questions, alternates, synonyms, and traits. See [Testing Your Bot with NLP](/ai-for-service/automation/testing/testing-your-bot-with-nlp.mdx).
+
+---
+
+## NLU Config — KG Engine Tuning
+
+Go to **Natural Language > NLU Config > Engine Tuning** to configure KG-specific thresholds.
+
+<Note>
+For multilingual AI Agents, thresholds can be set per language. Default settings apply if not configured.
+</Note>
+
+| Setting | Description |
+|---|---|
+| **Auto-Correction** | Spell-corrects user input against the KG domain dictionary (terms, alternates, nodes, synonyms). |
+| **Bot Synonyms** | Enables Bot Synonyms in KG processing. Requires re-training when enabled. |
+| **Lemmatization using POS** | Uses parts-of-speech to lemmatize utterance tokens for better term matching. (Ontology KG only.) |
+| **Path Coverage** | Min % of utterance terms that must match a path (default: 50%). (Ontology KG only.) |
+| **Min/Definitive Level for KG Intent** | Confidence thresholds: Definitive (93–100%), Probable (80–93%), Low Confidence (60–80%), Not Matching (&lt;60%). |
+| **KG Suggestions Count** | Max FAQ suggestions when no definitive match (up to 5; default: 3). |
+| **Proximity of Suggested Matches** | Max score gap between top and next suggestions to treat as equally important (up to 50%; default: 5%). Applies to the probable range. |
+| **Manage Long Responses** | When response exceeds channel limits: truncate or add a **Read More** link. Configurable with a custom URL. |
+| **Search in Answer** | Fallback: search user input against the answer text if no FAQ matches by question. (Ontology KG only.) |
+| **Qualify Contextual Paths** | Shortlist paths using context tags from previous matched intents or custom-defined tags. (Ontology KG only.) |
+
+### Search in Answer
+
+When enabled, the KG engine also matches user input against answer text (fallback only—runs after question matching fails).
+
+**Response rendering options:**
+- **Show Complete Response** — Full answer text.
+- **Show only the Relevant Paragraph** — Paragraph where the match was found.
+- **Show only the Relevant Paragraph with Read More link** — Paragraph + link to full response in browser.
+
+**Custom URL API to retrieve full FAQ response:**
+
+```
+GET https://<host>/api/1.1/public/users/<userId>/faqs/resolvedResponse/<respId>
+Headers: { auth: JWT }
+```
+
+Sample response:
+
+```json
+{
+  "response": "You can contact our Branch officials...",
+  "primaryQuestion": "How to check the status of my account opening?"
+}
+```
+
+---
+
+## Lemmatization
+
+Lemmatization groups inflected word forms to their base (lemma) for improved term matching. Using parts-of-speech (POS) data from the utterance produces more accurate results.
+
+| User Utterance | Without POS | With POS |
+|---|---|---|
+| What is my outstanding booking invoice balance | `outstand`, `book` | `outstanding`, `booking` |
+| I am filing for a visa so that I can travel | `file` | `filing` |
+| What happens if my luggage exceeds the maximum weight? | `happen`, `exceed` | `happens`, `exceeds` |
+
+---

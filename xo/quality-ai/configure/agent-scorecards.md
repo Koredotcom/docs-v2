@@ -4,7 +4,7 @@ Agent scorecards enable you to define evaluation criteria at the individual agen
 
 !!! note
 
-    To view **Agent Scorecards** and **Agent Attributes**, you must have to enable the **Agent Scorecards** toggle key in the **Settings** of Quality AI.
+    To view **Agent Scorecards** and **Agent Attributes**, you must enable the **Agent Scorecards** toggle in **Quality AI > Settings**. 
 
 A Supervisor has the following types of permissions for the agent scorecards:
 

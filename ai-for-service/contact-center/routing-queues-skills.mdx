@@ -1,0 +1,843 @@
+---
+title: Routing, Queues, and Skills
+sidebarTitle: Routing
+---
+
+Contact Center AI routes conversations to the best available agents using intelligent, configurable logic based on skills, language, availability, and business rules.
+
+| Feature | Description |
+|---------|-------------|
+| [How Routing Works](#how-routing-works) | How incoming conversations pass through queues and the routing engine before reaching an agent. |
+| [Routing Methods](#routing-methods) | Overview of Named, Standard, Advanced, and Load Balanced routing methods. |
+| [Standard Routing](#standard-routing) | Routes conversations to the agent with the highest skill and proficiency match. |
+| [Advanced Routing](#advanced-routing) | Prioritizes a preferred agent, then falls back to skill-based routing if unavailable. |
+| [Load Balanced Routing (V3)](#load-balanced-routing-v3) | Distributes conversations evenly across agents without proficiency weighting. |
+| [Conditional Group Routing](#conditional-group-routing) | Expands the agent pool beyond a single queue to reduce wait times while maintaining service levels. |
+| [Priority-Based Routing](#priority-based-routing) | Assigns priority levels (1–10) to conversations so higher-priority conversations are matched to agents first. |
+| [Language-Based Routing](#language-based-routing) | Routes conversations to agents proficient in the customer's detected language. |
+| [Winning Agent Selection](#winning-agent-selection) | How the routing engine ranks and selects the best available agent for a conversation. |
+| [Percentage-Based Routing](#percentage-based-routing) | Splits conversations across destinations by percentage using a Script node. |
+| [Routing Fallbacks](#routing-fallbacks) | Handles scenarios when no agents are available, including wait messages, callbacks, and voicemail. |
+| [Routing Rules](#routing-rules) | Creates complex routing logic using conditions and actions. |
+| [Queues](#queues) | Virtual waiting areas that hold conversations until an agent is assigned. |
+| [Skills](#skills) | Agent attributes used to route conversations to the most qualified agent. |
+| [Testing Routing](#testing-routing) | Validates routing configuration using the Routing Simulator before deployment. |
+
+
+## How Routing Works
+
+Incoming conversations pass through the following stages before reaching an agent:
+
+<div class="ascii-art">
+
+┌───────────────────────────────────────────────────────────┐
+│                   Incoming Conversation                   │
+│                  (with skills & language)                 │
+└───────────────────────────┬───────────────────────────────┘
+│                           │
+│                           ▼
+┌───────────────────────────────────────────────────────────┐
+│                         Queue                             │
+│              (Virtual waiting area)                       │
+└───────────────────────────┬───────────────────────────────┘
+│                           │
+│                           ▼
+┌───────────────────────────────────────────────────────────┐
+│                    Routing Engine                         │
+│                                                           │
+│  1. Check preferred agent (if configured)                 │
+│  2. Match required skills                                 │
+│  3. Match language                                        │
+│  4. Consider proficiency levels                           │
+│  5. Check availability & capacity                         │
+│  6. Apply routing strategy                                │
+└───────────────────────────┬───────────────────────────────┘
+│                           │
+│                           ▼
+┌────────────────────────────────────────────────────────────┐
+│                    Agent Assignment                        │
+└────────────────────────────────────────────────────────────┘
+
+</div>
+
+**Before transfer:** Conversations are queued and required skills are attached. Queues are holding areas independent of skills. Skills represent agent attributes such as expertise or language.
+
+**During transfer:** The routing engine selects the best agent based on the configured routing method.
+
+---
+
+## Routing Methods
+
+| Method | Description | Best For |
+|--------|-------------|----------|
+| **Named** | Routes directly to a specific agent | Account managers |
+| **Standard (V2)** | Matches all required skills and language; ranks by proficiency | Most use cases |
+| **Advanced (V2)** | Adds preferred-agent priority and time-based skill relaxation | VIP customers |
+| **Load Balanced (V3)** | Distributes by oldest last-assignment time; ignores proficiency | High-volume, similar-skill teams |
+
+
+
+## Standard Routing
+
+Routes conversations to the agent with the highest skill and proficiency match.
+
+### How It Works
+
+1. Find agents with all required skills.
+2. Filter by language match.
+3. Rank by proficiency level.
+4. Apply tiebreakers for equal proficiency:
+   - Fewest active conversations (lowest utilization)
+   - Longest idle time
+
+### Configuration Reference
+
+```yaml
+Standard Routing:
+  matching:
+    skills: all_required    # All required skills must match
+    language: required      # Language must match
+    proficiency: weighted   # Higher proficiency preferred
+
+  tiebreakers:
+    1: highest_proficiency  # Most skilled agent
+    2: lowest_utilization   # Fewest active conversations
+    3: longest_idle         # Waiting longest
+```
+
+
+
+## Advanced Routing
+
+Prioritizes a preferred agent, then falls back to skill-based routing if the preferred agent is unavailable.
+
+### Preferred Agent Flow
+
+<div class="ascii-art">
+
+┌──────────────────┐
+|  Customer Calls  |
+└──────────────────┘
+|         |
+|         ▼
+┌────────────────────────┐
+|  Check Preferred Agent |
+└────────────────────────┘
+|            |
+|       ┌─────────┐
+|       ▼         ▼
+┌───────────┐ ┌─────────────┐
+| Available | | Unavailable |
+└───────────┘ └─────────────┘
+|    |               |
+|    ▼               ▼
+┌────────────┐ ┌────────────────┐
+| Route to   | | Wait up to 30s |
+| Preferred  | └────────────────┘
+└────────────┘          |
+|                       ▼
+|              ┌───────────────────┐
+|              | Still Unavailable |
+|              └───────────────────┘
+|                       |
+|                       ▼
+|          ┌────────────────────────────┐
+|          | Standard Skill-Based Route |
+|          └────────────────────────────┘
+</div>
+
+<br />
+<Note>While checking for a preferred agent, the system ignores skills. If the preferred agent times out, the system expands to all agents and applies skill matching.</Note>
+
+### Skill Relaxation
+
+When no agents match all required skills, the system progressively relaxes requirements over time:
+
+| Time | Relaxation |
+|------|------------|
+| 0–60s | Full requirements enforced |
+| 60–120s | Optional skills dropped |
+| 120–180s | Proficiency requirement dropped |
+| 180s+ | Secondary skills dropped |
+
+### Configuration Reference
+
+```yaml
+Advanced Routing:
+  preferred_agent:
+    enabled: true
+    timeout: 30s
+    ignore_skills: true    # Skills checked only on fallback
+
+  skill_relaxation:
+    enabled: true
+    intervals:
+      - after: 60s
+        relax: optional_skills
+      - after: 120s
+        relax: proficiency_requirement
+      - after: 180s
+        relax: secondary_skills
+```
+
+---
+
+## Load Balanced Routing (V3)
+
+Distributes conversations evenly without proficiency weighting.
+
+### How It Works
+
+- Routes to the agent with the **oldest last-assignment time**.
+- Checks skill eligibility only — proficiency ranking is not applied.
+- Prevents recently assigned agents from being prioritized again.
+
+### Use Cases
+
+- High-volume queues requiring even workload distribution
+- Teams with similar skill levels
+- Reducing the risk of agent burnout
+
+### Configuration Reference
+
+```yaml
+Load Balanced Routing:
+  strategy: oldest_last_assignment
+  skill_matching: eligible_only    # No proficiency ranking
+  distribution: even_across_agents
+
+  considerations:
+    - agent_capacity
+    - current_workload
+    - channel_limits
+```
+
+---
+
+## Conditional Group Routing
+
+Conditional Group Routing (CGR) reduces customer wait times by expanding the agent pool beyond a single queue — without affecting other queues' service levels.
+
+Configure CGR at the queue level for queues with a single channel type. Enable it using the toggle in the queue's routing settings.
+
+![Enable CGR](/ai-for-service/contact-center/routing/images/cgr-toggle.png)
+
+### How It Works
+
+1. **Initial routing:** The system attempts to route within the originating queue (for example, Queue A) using standard skill and proficiency matching. This runs for a configurable period, such as 30 seconds.
+2. **Conditional expansion:** If no eligible agent is found, the system checks other queues based on KPI conditions such as Estimated Wait Time (EWT) or Average Handle Time (AHT).
+
+    ![CGR Options](/ai-for-service/contact-center/routing/images/options.png)
+
+**Eligibility rules:**
+
+- Only queues meeting configured KPI conditions are considered.
+- Agents must satisfy the skill and proficiency requirements for the conversation.
+- Queues with EWT above the threshold are skipped to avoid service-level impact.
+
+### Example
+
+| Step | Action |
+|------|--------|
+| Conversation arrives at Queue A (EWT = 5 min) | System searches for an agent in Queue A for 30s |
+| After 30s, checks Queue B | If QB EWT < 1 min → adds QB agents to the pool |
+| If QB EWT ≥ 1 min | Evaluates Queue C |
+| Agent found | Routes to the most suitable agent in the expanded pool |
+
+### Benefits
+
+- Reduces wait times in high-load queues
+- Maintains service levels using KPI-based conditions
+- Preserves service quality by considering skill and proficiency
+
+---
+
+## Priority-Based Routing
+
+Assigns priority levels (1–10) to conversations. Higher-priority conversations are matched to agents first.
+
+### Priority Factors
+
+| Factor | Example |
+|--------|---------|
+| **Intent** | Account closure requests routed to expert agents at priority 1 |
+| **Ticket value** | VIP customers with transactions > $10,000 given higher priority |
+| **Location** | Specific regions prioritized for faster or localized response |
+| **Wait time** | Conversations waiting longer than 5 minutes automatically escalated |
+
+### Multi-Queue Agent Assignment
+
+When agents belong to multiple queues:
+
+- Higher-priority conversations are matched first.
+- For equal priority, preference goes to conversations with a preferred agent match.
+- If no preferred agent exists, skill match determines assignment.
+
+### Dynamic Priority Adjustment
+
+Priorities can change while a conversation waits in queue:
+
+```yaml
+Priority Escalation:
+  rules:
+    - condition: wait_time > 120
+      action: increase_priority
+      amount: 1
+      max_priority: 2
+
+    - condition: sentiment == "very_negative"
+      action: set_priority
+      value: 2
+```
+
+### Configuration Reference
+
+```yaml
+Priority Rules:
+  - name: VIP Customers
+    condition: customer_tier == "platinum"
+    priority: 1    # Highest (1-10 scale)
+    queue_jump: true
+
+  - name: High Value Transaction
+    condition: ticket_value > 10000
+    priority: 2
+
+  - name: Critical Intent
+    condition: intent in ["complaint", "cancellation", "legal"]
+    priority: 2
+
+  - name: Long Wait Time
+    condition: wait_time > 300
+    priority: 3
+
+  - name: Standard
+    condition: default
+    priority: 5
+```
+
+To implement flexible prioritization, use the **Set Queue** node and **Script node** in the Flow Editor.
+
+---
+
+## Language-Based Routing
+
+Routes conversations to agents who speak the customer's language. Both conversations and agents are assigned language attributes. Only agents proficient in the detected language are eligible for assignment.
+
+### Configuration Reference
+
+```yaml
+Language Routing:
+  detection:
+    method: auto    # auto, specified, ask
+    fallback: en
+
+  agent_languages:
+    - agent_id: agent_001
+      languages:
+        - language: en
+          proficiency: native
+        - language: es
+          proficiency: fluent
+
+  matching:
+    mode: required    # required, preferred, none
+    fallback_language: en
+    allow_translation: false
+```
+
+---
+
+## Winning Agent Selection
+
+The routing engine selects the best agent based on:
+
+1. Routing method — preferred agent, skill-based, or skill relaxation over time
+2. Agent availability
+3. Skill and language match
+4. If enabled: skill proficiency and current load (for digital interactions)
+
+Agents are ranked by these parameters. The top-ranked available agent receives the conversation.
+
+<Note>If a preferred agent is configured, the conversation waits until the preferred agent's timeout expires before routing to other agents.</Note>
+
+---
+
+## Percentage-Based Routing
+
+Use a Script node in the flow to split conversations across destinations by percentage.
+
+### Example: 60/40 Split
+
+1. Add a **Script node** that generates a random integer between 0 and 9.
+2. Map values 0–5 (60%) to Destination A.
+3. Map values 6–9 (40%) to Destination B.
+4. Add a **Split node** (If-Else) to evaluate the generated number.
+5. Route to the appropriate destination based on the result.
+
+---
+
+## Routing Fallbacks
+
+Handle scenarios when no agents are available.
+
+### Configuration Reference
+
+```yaml
+Fallback Configuration:
+  no_agents_available:
+    wait_time: 300s
+    actions:
+      - type: message
+        content: "All agents are currently busy. Estimated wait: {{estimated_wait}}"
+      - type: offer_callback
+        after: 120s
+      - type: voicemail
+        after: 300s
+
+  out_of_hours:
+    actions:
+      - type: message
+        content: "We're closed. Hours: Mon-Fri 9am-6pm EST"
+      - type: route_to_flow
+        flow: after_hours_ivr
+      - type: voicemail
+        enabled: true
+
+  skill_timeout:
+    timeout: 300s
+    actions:
+      - type: relax_skills
+        after: 60s
+      - type: expand_queues
+        after: 180s
+        queues: [overflow_support]
+      - type: escalate
+        after: 300s
+```
+
+---
+
+## Routing Rules
+
+Create complex routing logic using conditions and actions.
+
+### Example Rules
+
+```yaml
+Routing Rules:
+  - name: Enterprise Technical Support
+    conditions:
+      - field: customer.tier
+        operator: equals
+        value: enterprise
+      - field: intent
+        operator: in
+        value: [technical_issue, bug_report]
+    actions:
+      - type: set_queue
+        queue: enterprise_tech_support
+      - type: add_skill
+        skill: enterprise_products
+        required: true
+      - type: set_priority
+        priority: 2
+
+  - name: Billing Disputes
+    conditions:
+      - field: intent
+        operator: equals
+        value: billing_dispute
+      - field: amount
+        operator: greater_than
+        value: 500
+    actions:
+      - type: set_queue
+        queue: billing_escalations
+      - type: set_priority
+        priority: 1
+```
+
+---
+
+## Queues
+
+Queues are virtual waiting areas that hold conversations until the system assigns an agent. A conversation can only be in one queue at a time.
+
+To access Queues, go to **Contact Center AI** > **ROUTING** > **Queues**.
+
+![Queues Page](/ai-for-service/contact-center/routing/images/queues-page.png)
+
+The Queues live board displays:
+
+| Column | Description |
+|--------|-------------|
+| **Queue** | Name and description of the queue |
+| **Actions** | Edit Queue option |
+| **Agents** | Agents available for the queue |
+| **Mode** | Simple or Advanced routing mode |
+| **ACW** | After Call Work configuration |
+| **Status** | Active or Inactive |
+
+Use the **Search** field to find queues by name.
+
+---
+
+### Add a Queue
+
+1. Select **New Queue** at the top-right of the Configuration page.
+    ![New Queue](/ai-for-service/contact-center/routing/images/new-queue-button.png)
+2. Configure the queue using the tabs below.
+
+#### Settings
+
+Available in both Simple and Advanced routing modes.
+
+| Setting | Description |
+|---------|-------------|
+| **Name** | Identifies the queue |
+| **Description** | Optional short description |
+| **Hours of Operation** | Select from configured hours |
+| **Transfer Rules** | Restrict agents to transfer only to specified queues; if disabled, agents can transfer to any queue |
+| **Maximum Wait Time** | Maximum time a conversation waits before the No Available Agent flow is triggered |
+| **After Call Work (ACW)** | See ACW options below |
+| **Advanced Routing** | Enable to configure preferred agents and skill drop-offs |
+
+**Transfer Rules:** Enable the toggle, select the target queues, and select **Done**.
+
+![Transfer Rules](/ai-for-service/contact-center/routing/images/transfer-rules.png)
+
+<Note>If the customer ends the chat before transfer completes, the transfer is dropped and the interaction is not assigned to any queue or agent. This applies to chat conversations using WebSDK v1.0.</Note>
+
+**ACW Options:**
+
+| Option | Behavior |
+|--------|----------|
+| **Immediate Slot Release** | Slot opens as soon as the conversation ends; agents finalize disposition at their convenience |
+| **Timed Slot Release** | Slot remains occupied until the agent completes disposition or the timer (10 seconds–15 minutes) expires |
+| **Indefinite Slot Release** | Slot remains occupied until the agent submits the disposition |
+
+#### Assignments
+
+Assign agents, agent groups, or both to the queue.
+
+**To assign agents:**
+
+1. Select **Add Agent**.
+2. Select the checkbox next to an agent's name and select **Done**.
+
+**To assign agent groups:**
+
+1. Select **Add Agent Group**.
+2. Select the checkbox next to a group name and select **Done**.
+
+> **Note:** Agents added through an agent group are not displayed in the agents list. Both individual agents and agent groups are listed separately.
+
+#### Preferred Agents (Advanced Routing only)
+
+1. In the **Preferred** tab, find the agent and select the **Preferred** checkbox.
+2. Under **Advanced Settings**, configure the preferred agent timeout.
+
+<Note>During a preferred agent check, skills are ignored. If the preferred agent times out, the system expands to all agents and applies skill matching.</Note>
+
+#### Skills (Advanced Routing only)
+
+1. In the **Skills** tab, search for a skill to assign to the queue.
+2. Choose whether the skill should expire and set the expiry time. When a skill expires, the conversation routes based on remaining assigned skills.
+
+Select **Create** to save the queue.
+
+#### Additional Configuration
+
+**Outbound Phone Numbers:**
+
+1. Enter phone numbers or select from the list.
+2. Select **Apply**.
+
+**Outbound Email IDs:**
+
+1. Enter email IDs or select from the list.
+2. Select **Apply**.
+
+Administrators can enable Queue-level Outbound Numbers or Emails in **System Settings** to restrict agents to only see outbound contacts assigned to their queue.
+
+---
+
+### Edit a Queue
+
+1. Select the **Edit** icon next to the queue.
+2. Make your changes and select **Save**.
+
+---
+
+### Delete a Queue
+
+1. Select the **Edit** icon next to the queue.
+2. Select **Delete** on the left side and confirm.
+
+<Note>Deleting a queue removes all corresponding routing rules. A queue cannot be deleted if an active campaign is associated with it — deactivate all campaigns first.</Note>
+
+---
+
+### Assign a Conversation to a Queue
+
+You can assign a conversation to a queue in two ways:
+
+- Using the **Set Queue** node in an experience flow.
+- Using the `agentUtils.setQueue()` method in a script.
+
+---
+
+### Route to Queue Override for Out-of-Hours
+
+Enable the **Route to Queue** toggle to transfer conversations to a target queue when a queue enters out-of-hours. Selecting a target queue is required. The transfer preserves routing logic, metrics, and conversation history.
+
+To prevent queue bouncing across time zones, the system tracks an **Out-of-Hours Count** per conversation. Administrators set a **Max Out-of-Hours Transfer Limit** (default: 10) at the environment level. If the count exceeds this limit, the system closes the conversation gracefully.
+
+---
+
+### When Contact Center Permission Is Disabled
+
+Administrators can restrict selected users from participating in contact center interactions. Disabled users:
+
+- Cannot access contact center functionality or appear in agent status lists.
+- Can still access Automation AI, Agent AI, or Search AI based on their assigned roles.
+- Appear with a **Disabled** tag in user management and agent selection lists.
+- Do not appear in active analytics dashboards.
+
+A pop-up message appears when selecting queues, with a disabled tag displayed next to the user.
+
+<Note>Agent permissions cannot be disabled if the agent is the only member of the queue or is engaged in an active conversation.</Note>
+
+---
+
+## Skills
+
+Skills represent agent attributes — such as product expertise, process knowledge, or language proficiency — used to route conversations to the most qualified agent. Language is a default skill that every agent must have.
+
+**Examples:**
+
+- **Languages:** English, Hindi, Spanish
+- **Customer interactions:** Retention, upselling, cross-selling
+
+To access Skills, go to **Contact Center** > **ROUTING** > **Skills**.
+
+![Skills Page](/ai-for-service/contact-center/routing/images/skills-page.png)
+
+Skills are organized by Skill Groups. Select a group to expand it and view associated skills. Use the **Search** field to find skills or groups by name.
+
+---
+
+### Proficiency Levels
+
+Every skill has four proficiency levels that determine agent ranking during routing:
+
+| Level | Name | Description |
+|-------|------|-------------|
+| 1 | Novice | Basic knowledge, needs guidance |
+| 2 | Average | Handles common scenarios |
+| 3 | Good | Handles complex issues |
+| 4 | Expert | Deep expertise, can train others |
+
+---
+
+### Add a Skill
+
+Before adding a skill, create a skill group (see [Skill Groups](#skill-groups)). Contact Center AI includes a **Default Skill Group** out of the box.
+
+1. Select the skill group to expand it.
+2. Select **+ New Skill**.
+
+    ![New Skill Button](/ai-for-service/contact-center/routing/images/new-skill-button.png)
+
+3. In the **Add New Skill** window, enter:
+   - **Skill Name**
+   - **Description**
+   - **Agent Assignments**: Select agents and assign a proficiency level — Novice, Average, Good, or Expert.
+
+    ![Add New Skill](/ai-for-service/contact-center/routing/images/add-new-skill.png)
+
+4. Select **Create**.
+
+    ![Skill Created](/ai-for-service/contact-center/routing/images/skill-created.png)
+
+---
+
+### Add a Skill Using a Script
+
+You can add skills dynamically using Script nodes in dialog flows or Contact Center AI flows.
+
+**Available methods:**
+
+| Method | Description |
+|--------|-------------|
+| `setSkills(skillsInfo)` | Appends skills to the current conversation. `skillsInfo` is an array. |
+| `getSkills()` | Returns an array of skills in the current conversation. |
+| `getSkillById(skillId)` | Returns a skill by its ID. |
+| `deleteSkillById(skillId)` | Deletes a skill from the current conversation by ID. |
+| `deleteSkills(skillsToDelete)` | Deletes one or more skills using an ID or array of IDs. |
+| `clearSkills()` | Removes all skills from the current conversation. |
+
+**Example: `setSkills()`**
+
+```javascript
+var loanType = {
+    "Car Loan": {
+         name: "Car Loan",
+         id: "60b50becxxxxxxxx95b55d88",
+    },
+    "House Loan": {
+         name: "House Loan",
+         id: "60b50cxxxxxxxx4195b55d89",
+    },
+    "Education Loan": {
+         name: "Education Loan",
+         id: "60b894xxxxxxxx6accc5f466",
+    },
+    "Gold Loan": {
+         name: "Gold Loan",
+         id: "60b8943xxxxxxxxaccc5f467",
+    },
+};
+
+agentUtils.setSkills([loanType[a]]);
+```
+
+**Example: `deleteSkills()`**
+
+```javascript
+agentUtils.deleteSkills(["skillAId", "skillBId"]);
+```
+
+**Example: Setting skills based on conversation context**
+
+```javascript
+// Set skills based on customer input collected earlier in the flow
+if (context.session.product === "enterprise") {
+  agentUtils.setSkills([{ skillId: "enterprise_software", required: true }]);
+}
+
+if (context.session.issue_type === "billing") {
+  agentUtils.setSkills([{ skillId: "billing", required: true }]);
+}
+
+// Transfer to queue with skills attached
+agentUtils.transferToQueue("support");
+```
+
+---
+
+### Edit a Skill
+
+1. Select the skill group to see its skills.
+2. Select the **Edit** icon next to the skill.
+
+![Edit Skill Button](/ai-for-service/contact-center/routing/images/edit-skill-button.png)
+
+3. Make your changes in the **Edit Skill** window.
+4. Select **Save**.
+
+---
+
+### Delete a Skill
+
+<Note>Deleted skills cannot be restored.</Note>
+
+1. Select the skill group to see its skills.
+2. Select the **Edit** icon next to the skill.
+3. Remove all agent assignments:
+   - Scroll to **Agent Assignments**.
+   - Select the **Delete** icon for each agent and confirm each deletion.
+   - Select **Save**.
+4. Select the **Delete Skill** icon and confirm.
+
+    ![Delete Skill Button](/ai-for-service/contact-center/routing/images/delete-skill-button.png)
+
+---
+
+### Skill Groups
+A Skill Group organizes similar skills. For example, _Sales_ is a skill group containing skills like upselling, cross-selling, and presales.
+
+![Skill Group](/ai-for-service/contact-center/routing/images/skill-group.png)
+
+<Note>Skill groups and skills can share names across groups. Within the same group, skill names must be unique.</Note>
+
+Organize skills into groups for better management:
+
+```
+Skill Groups
+├── Languages
+│   ├── English
+│   ├── Spanish
+│   ├── French
+│   └── German
+├── Products
+│   ├── Enterprise Software
+│   ├── Consumer Products
+│   └── Hardware
+├── Expertise
+│   ├── Technical Support
+│   ├── Billing
+│   ├── Sales
+│   └── Account Management
+└── Certifications
+    ├── Product Certified
+    └── Advanced Support
+```
+
+#### Add a Skill Group
+
+1. Select **+ New Skill Group**.
+
+    ![New Skill Group Button](/ai-for-service/contact-center/routing/images/new-skill-group-button.png)
+
+2. In the **Add New Skill Group** window, enter:
+   - **Skill Group Name**
+   - **Description**
+   - **Color**: Use the color picker, hex value, or preset palette.
+3. Select **Create**.
+
+    ![Create Skill Group](/ai-for-service/contact-center/routing/images/create-new-skill-group.png)
+
+    ![Skill Group Created](/ai-for-service/contact-center/routing/images/skill-group-created.png)
+
+#### Edit a Skill Group
+
+1. Select the **Edit** icon next to the group.
+
+![Edit Skill Group Button](/ai-for-service/contact-center/routing/images/edit-skill-group-button.png)
+
+2. Make your changes and select **Save**.
+
+#### Delete a Skill Group
+
+<Note>Deleted skill groups cannot be restored. You must delete all associated skills before deleting the group.</Note>
+
+1. Delete all skills in the group (see [Delete a Skill](#delete-a-skill)).
+2. Select the **Edit** icon next to the group.
+3. In the **Edit Skill Group** window, select **Delete Skill Group** and confirm.
+
+    ![Delete Skill Group](/ai-for-service/contact-center/routing/images/delete-skill-group.png)
+
+---
+
+## Skill Expiration
+
+Skills can be configured to expire automatically. When a skill expires, it is removed from the agent and the agent is notified. This is useful for time-limited certifications or role-specific training.
+
+To configure expiration, set an expiry time when assigning a skill to a queue (see [Skills tab in queue configuration](#skills-advanced-routing-only)). When a skill expires, the conversation routes based on the remaining assigned skills.
+
+---
+
+## Testing Routing
+
+Use the **Routing Simulator** to validate your configuration before deployment.
+
+1. Enter test conversation attributes.
+2. Select skills and language.
+3. Run the simulation.
+4. View matched agents and their ranking.
+5. Verify the expected routing behavior.
+
+---
+

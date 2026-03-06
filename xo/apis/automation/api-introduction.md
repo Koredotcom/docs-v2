@@ -34,9 +34,9 @@ Steps to create a JWT Client App from the Platform:
     * **Enforce Request and Response Payload Encryption**: Provide the symmetric encryption key used by the Platform to encrypt Public API request and response payloads that include Token Introspection and User Information data. Use the same key to decrypt the payloads. Refer [How Request and Response Payload Encryption Works](#how-request-and-response-payload-encryption-works).    
      <img src="../images/create-a-jwt-app.png" alt="Create a new JWT App" title="Create a new JWT App" style="border: 1px solid gray; zoom:50%;">  
 
-5. Select **Next** and **Done**.
+6. Select **Next** and **Done**.
 
-6. Select the app name from the JWT App drop-down list to see the app’s details, such as App name and its ID, client ID and its Secret. 
+7. Select the app name from the JWT App drop-down list to see the app’s details, such as App name and its ID, client ID and its Secret. 
 
     !!! note
 
@@ -53,6 +53,7 @@ The request and response payload encryption option is supported only for the fol
 * [Get Analytics](../../apis/automation/get-analytics.md)
 * [Get Conversation Details](../../apis/contact-center/get-conversation-details.md)
 * [Get All Conversation Data Call Details](../../apis/contact-center/get-all-conversations-data-call-details-v1.md)
+* [LLM and Generative AI Usage Logs API](../../apis/automation/llm-usage-logs-api.md)
 
 When you enable this option, the platform:
 
@@ -87,6 +88,8 @@ The request and response payload encryption option is supported only for the fol
 * [Update User](../../apis/automation/update-user.md)
 * [Update User Access](../../apis/automation/update-user-access.md)
 * [Delete Users](../../apis/automation/delete-users.md)
+* [LLM and Generative AI Usage Logs API](../../apis/automation/llm-usage-logs-api.md)
+* [Conversation Details and Summary API](../../apis/automation/conversation-details-and-summary.md)
 
 ## Data Tables
 

@@ -4,7 +4,11 @@ Utilize generative AI features to supercharge your AI Agent with powerful tools 
 
 ## Model Feature Matrix
 
-The following table displays the features and the supported models. 
+The following table displays the features and the supported models.
+
+!!! note "Integrating the Latest Models"
+ 
+    The platform regularly integrates new models from providers like OpenAI, Azure OpenAI, and Anthropic. To use a model that isn't yet available as a prebuilt integration, add the model using [Provider's New LLM Integration](configure-llm-integration.md#providers-new-llm).
 
 (✅ Supported | ❌ Not supported)
 

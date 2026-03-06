@@ -2,6 +2,21 @@
 
 This document provides information on the feature updates and enhancements introduced in **Search AI** of AI for Service (XO) v11.x releases.
 
+## v11.22.0 February 28, 2026
+<u>Minor Release</u>
+
+This update includes enhancements and bug fixes. The key enhancements included in this release are summarized below.
+
+<font size="4">Chunk-Level Deletion Support</font>
+
+Search AI now supports a Delete Chunks by Condition API, letting you remove individual chunks from the search index without deleting the parent document. The API filters chunks based on specified conditions and returns clear validation or partial success responses when inputs are invalid or conditions are only partially met. [Learn More](../../apis/searchai/chunk-apis.md).
+
+<font size="4">Batch Processing for Custom Embeddings</font>
+
+Search AI now supports batching for custom embedding models, grouping multiple inputs into a single request to improve ingestion speed and throughput. The feature automatically manages token limits, tokens-per-minute, and rate limits, so you get optimized performance without running into throttling errors. [Learn More](../../searchai/howto/batch-processing-vector-generation.md).
+
+<hr>
+
 ## v11.21.1 January 31, 2026
 <u>Patch Release</u>
 

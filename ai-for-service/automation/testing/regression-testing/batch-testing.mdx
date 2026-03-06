@@ -1,0 +1,223 @@
+---
+title: Batch Testing
+sidebarTitle: Batch Testing
+---
+<Badge icon="arrow-left" color="gray">[Back to NLP Topics](/ai-for-service/automation/natural-language/nlp-topics)</Badge>
+
+Batch Testing evaluates your app's ability to correctly identify expected intents and entities from a set of utterances. It provides statistical analysis of ML model performance.
+
+**Go to:** Automation AI > Virtual Assistant > Testing > Regression Testing > **Batch Testing**
+
+<Note>
+Batch Testing supports the Zero-shot Model for intent detection. Ensure the Zero-shot ML Model feature is enabled and the ML Network Type is set to Zero-shot model.
+</Note>
+
+---
+
+## Best Practices
+
+- Build a test suite of representative utterances first, then train against failures.
+- Update test suites regularly for high-usage utterances.
+- Publish only after thorough testing.
+- Keep intent names short (3–5 words), avoid special characters and stop words.
+- Batch tests do not consider conversation context — some False Negatives may be True Positives in live sessions.
+- The "count" in batch results refers to **unique assertion statements**, not CSV rows. Consecutive rows with the same utterance and different entity values count as one assertion.
+- Batch testing scores original input, not spell-corrected input.
+
+---
+
+## Test Suite Types
+
+| Suite | Description |
+|---|---|
+| **Developer Defined Utterances** | Validates all utterances added via the ML Utterances screen. |
+| **Successful User Utterances** | Includes end-user utterances that successfully matched an intent and completed execution. Also found in Analyze > Intent Found. |
+| **Custom Test Suite** | Developer-created suite for a specific set of utterances. |
+
+---
+
+## Creating a Test Suite
+
+1. Go to **Batch Testing** and click **New Test Suite**.
+2. Enter a **Name** and **Description**.
+3. Choose how to add test cases:
+   - **Add Manually** — enter cases by hand or auto-generate with LLM.
+   - **Upload a File** — import a CSV or JSON file (max 1000 utterances).
+
+### Adding Test Cases Manually
+
+1. In the test suite, click **+Add Test Case**.
+2. Fill in:
+   - **Intent** — the dialog task to test. You can tag up to 3 intents (Dialog, FAQ, Small Talk) per utterance for by-design ambiguity scenarios.
+   - **Parent Intent** — for child intents.
+   - **Test Utterances** — one per line.
+   - **Entity Order** — extraction order (not available when multiple intents are selected).
+3. Click **Save**.
+
+### Auto-Generating Test Cases
+
+Requires [LLM and Generative AI](../../../generative-ai-tools/introduction.mdx) to be enabled.
+
+1. Click **Generate Test Cases**.
+2. Select the **Dialog Task**.
+3. Click **Generate** and wait for results.
+4. Review suggestions; reject unwanted ones or click **Generate more**.
+5. Click **Add Test Cases**.
+
+---
+
+## Test Suite File Formats
+
+### JSON Format
+
+```json
+{
+  "testCases": [
+    {
+      "input": "Send 200 dollars to Leonardo",
+      "intent": "Transfer Funds",
+      "entities": [
+        { "entityValue": "200 USD", "entityName": "TransferAmount" },
+        { "entityValue": "Leonardo", "entityName": "PayeeName" }
+      ],
+      "entityOrder": ["TransferAmount", "PayeeName"]
+    },
+    {
+      "input": "What is the balance in my checking account",
+      "intent": "Show Balance",
+      "parentIntent": "Transfer Funds"
+    },
+    {
+      "input": "I need to pay my monthly credit card bill",
+      "intent": "Pay Bill | Setup Auto Pay | Transfer Funds"
+    },
+    {
+      "input": "looks like something is wrong in my statement",
+      "intent": "trait: Account Statement||Issue||Account Type"
+    }
+  ]
+}
+```
+
+**Multi-item entities:** `"entityValue": "Apples||Grapes"`
+**Composite entities:** `"entityValue": "City:Hyderabad|Date:2018-07-06|Curr:1200 INR"`
+
+**JSON properties:**
+
+| Property | Type | Description |
+|---|---|---|
+| `testCases` | Array | Array of test case objects. |
+| `input` | String | User utterance. Max 3000 characters. |
+| `intent` | String | Expected intent (task name, FAQ primary question, or `trait: Name1\|\|Name2`). Separate multiple intents with `\|`. |
+| `entities` | Array (Optional) | List of `{entityValue, entityName}` objects. |
+| `entityValue` | String | Expected entity value (string or regex). See Entity Format Conversions. |
+| `entityName` | String | Expected entity name. |
+| `entityOrder` | Array (Optional) | Entity names in extraction order. Platform uses shortest route if omitted. |
+| `parentIntent` | String (Optional) | Parent intent for sub-intents or contextual Small Talk. Use `\|\|` for multi-level parent chain. |
+
+### CSV Format
+
+```
+input,intent,parentIntent,entityName,entityValue,entityOrder
+Send 200 dollars to Leonardo,Transfer Funds,,TransferAmount,200 USD,
+,,,PayeeName,Leonardo,TransferAmount>PayeeName
+What is the balance in my checking account,Show Balance,Transfer Funds,,,
+Show my past 20 transactions,Show Account Statement,,HistorySize,20,
+```
+
+**CSV columns:**
+
+| Column | Type | Description |
+|---|---|---|
+| `input` | String | User utterance. Max 3000 characters. |
+| `intent` | String | Expected intent. Prefix with `trait:` for traits. |
+| `parentIntent` | String (Optional) | Parent intent for sub-intents or contextual Small Talk. |
+| `entityValue` | String (Optional) | Expected entity value. |
+| `entityName` | String (Optional) | Expected entity name. |
+| `entityOrder` | Array (Optional) | Entities in extraction order separated by `>`. |
+
+---
+
+## Entity Format Conversions
+
+| Entity Type | Sample Value | Flat Format | Key Order |
+|---|---|---|---|
+| Address | P.O. Box 3700 Eureka, CA 95502 | P.O. Box 3700 Eureka, CA 95502 | — |
+| Airport | `{IATA, AirportName, City, ...}` | AirportName IATA ICAO Lat Lng City CityLocal | AirportName IATA ICAO Latitude Longitude City CityLocal |
+| City | Washington | Washington | — |
+| Country | `{alpha3, alpha2, localName, ...}` | alpha2 alpha3 numericalCode localName shortName | alpha2 alpha3 numericalCode localName shortName |
+| Currency | `[{code, amount}]` | `10 USD` | amount code |
+| Date | 2018-10-25 | 2018-10-25 | — |
+| Date Period | `{fromDate, toDate}` | `2018-11-01 2018-11-30` | fromDate toDate |
+| Date Time | 2018-10-24T13:03:03+05:30 | 2018-10-24T13:03:03+05:30 | — |
+| Location | `{formatted_address, lat, lng}` | address lat lng | formatted_address lat lng |
+| Quantity | `{unit, amount, type, source}` | amount unit type source | amount unit type source |
+| Time | T13:15:55+05:30 | T13:15:55+05:30 | — |
+| Time Zone | -04:00 | -04:00 | — |
+| Simple types (Number, String, Email, etc.) | As-is | As-is | — |
+
+---
+
+## Running a Test Suite
+
+1. Click the test suite name in the Batch Testing window.
+2. Select **In Development** or **Published**.
+3. Click **Run Test Suite**.
+
+New test suites automatically trigger runs for both In-Development and Published versions.
+
+**Add notes:** Click the **Notes** icon during or after a run to record the purpose or changes. Max 1024 characters.
+
+### Cancel a Running Test
+
+1. Click the **Cancel** icon next to the running suite.
+2. Confirm with **Yes**.
+
+**Notes:**
+- Canceled tests cannot produce a downloadable CSV report.
+- Orange warning icon = canceled. Red warning icon = failed due to technical error.
+- Cannot cancel if another test execution or cancellation is in progress.
+- Cannot cancel a Published-mode run if the app has not been published.
+
+---
+
+## Test Results
+
+Each run shows:
+
+| Field | Description |
+|---|---|
+| **Last Run Date & Time** | Timestamp of the latest run. |
+| **F1 Score** | `(2 × Precision × Recall) / (Precision + Recall)` |
+| **Precision** | `TP / (TP + FP)` |
+| **Recall** | `TP / (TP + FN)` |
+| **Intent Success %** | Percentage of correct intent matches. |
+| **Entity Success %** | Percentage of correct entity matches. |
+| **Version Type** | In-development or published. |
+
+Run outcomes: **Success**, **Success with warning** (some records discarded), or **Failed** (system error).
+
+### Elimination Reason
+
+When expected intent ≠ winning intent, the Elimination Reason column shows why. R&R policy reasons take precedence; otherwise scores from each engine are shown (`FM: [score], ML: [score], FAQ: [score]`).
+
+| Reason | Description |
+|---|---|
+| `belowDependencyThreshold` | Score below minimum dependency threshold. |
+| `verbMatchOnly` | Only verb matched in a single-word match. |
+| `entityMatchOnly` | Only entity (number, date, etc.) matched. |
+| `foundDefinitive` | Definitive match found, possible matches discarded. |
+| `outsideProximity` | Score below minimum score threshold. |
+| `withinAnotherTask` | Task name found inside another task. |
+| `noWordMatch` | No word match found. |
+| `negationIntent` | Intent match has a negation. |
+| `taskNotAvailable` | Task not available in the bot. |
+| `subIntent` | Task is a sub-intent. |
+
+### CSV Report Fields
+
+Download the report using the **Download** icon.
+
+**Summary fields:** Bot Name, Report Name, Bot Language, Run Type, Threshold Settings (mode, minThreshold, maxThreshold, exactMatchThreshold, isActive, taskMatchTolerance, wordCoverage, suggestionsCount, pathCoverage), Last Tested, Utterance Count, Success/Failure Ratio, TP, TN, FP, FN.
+
+**Per-utterance fields:** Utterance, Expected Intent, Matched Intent, Parent Intent, Task State, Result Type, Entity Name, Expected EntityValue, Matched EntityValue, Entity Result, Expected Entity Order, Actual Entity Order, Matched Intent Score (FM/ML/KG), Expected Intent Score, Elimination Info.

@@ -37,7 +37,8 @@ The following tables list the APIs available for Automation AI, grouped by the f
 | [Proactive Notification Status V2](./proactive-notification-status-v2.md) | To fetch the status of a proactive notification triggered via the async webhook channel. | NA  | Channel Management > Proactive Messages |
 | [Publish Bot](./publish-bot.md) | To initiate a bot publish request. | NA  | Bot Publish > Publish |
 | [Bot Publish Status](./bot-publish-status.md) | Gets the publish status of the current application or the last completed status request of the agent. | NA  | Bot Publish > Publish |
-| [Bot Variables Import](./bot-variables-import.md) | To import global and content variables into the agent. | Import Variables | NA  |
+| [Bot Variables Import](./bot-variables-import.md) | To import global and content variables into a bot. | Import Variables | NA  |
+| [Bot Variables Export](./bot-variables-export.md) | To export all global, content (locale), and collection variables from a bot.| Export Variables | NA  |
 | [Batch Test Execution](./batch-test-execution.md) | To invoke the execution of a Batch Test suite. | Batch Tests Execution | NA  |
 | [Batch Test Execution Status](./batch-test-execution-status.md) | To know the status of the execution against a unique Test Request Id. | Batch Tests Execution | NA  |
 | [Get Batch Test Suites](./get-batch-test-suites.md) | To get the list of Batch Test Suites available. | Batch Tests Management | Batch Tests Management |

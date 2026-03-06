@@ -2,6 +2,44 @@
 
 This document provides information on the feature updates and enhancements introduced in the **Voice Gateway** of AI for Service (XO) v11.x releases.
 
+## v11.22.0 February 28, 2026
+
+<u>Minor Release</u>
+
+This update includes enhancements and bug fixes. The key enhancements included in this release are summarized below.
+
+
+<font size="4">ASR and TTS</font>
+
+**Google Cloud TTS Streaming Support**
+
+Google Cloud Text-to-Speech now supports both audio and text streaming. Audio streaming is enabled by default, while text streaming requires the TTS Streaming and Model Response Streaming flags. Streaming works across standard flows, Agent Node, and Agentic App use cases, with seamless playback, defined latency thresholds, fallback handling, and full backward compatibility. Support applies only to HD (Chirp) voices.
+
+**Azure TTS Text Streaming Support in Voice Gateway**
+
+Voice Gateway now supports Azure TTS text streaming, enabling progressive speech synthesis for real-time LLM responses. Streaming operates over WebSocket with seamless audio continuity, validation controls, and graceful fallback to non-streaming mode when needed.
+
+**Deepgram ASR: Flux Model Integration**
+
+Voice Gateway now supports the Deepgram Flux ASR model, delivering improved turn detection, lower latency, and better transcription quality. The ASR selection dropdown includes Deepgram ASR – Flux, supporting English across all accents.
+
+<font size="4">Agentic Apps</font>
+
+
+**Remove Tool-Call Audio in Agentic App**
+
+The system no longer plays default music when the Agentic App makes a tool call using real-time voice APIs. The platform remains silent during tool execution until the bot responds, preventing audio overlap—even if the response is delayed.
+
+<font size="4">Configuration</font>
+
+
+**SIP Trunk Configuration: Same DID Handling**
+
+If a SIP trunk uses the same DID with a different IP/FQDN, the system allows it across different accounts or apps, but prompts for confirmation within the same account and app. If both the DID and IP/FQDN match an existing entry, the system blocks creation and displays an error message. [Learn more :octicons-arrow-right-24:](../../channels/voice-gateway/configure-voice-gateway.md/#steps-to-configure-sip-trunk)
+
+
+<hr>
+
 ## v11.21.1 January 31, 2026
 
 <u>Patch Release</u>
