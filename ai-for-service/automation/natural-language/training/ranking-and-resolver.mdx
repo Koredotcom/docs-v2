@@ -1,0 +1,104 @@
+---
+title: Ranking and Resolver Engine
+sidebarTitle: Ranking and Resolver
+---
+<Badge icon="arrow-left" color="gray">[Back to NLP Topics](/ai-for-service/automation/natural-language/nlp-topics)</Badge>
+
+The Ranking and Resolver (R&R) engine receives outputs from the FM, ML, and KG engines and determines the single winning intent for each user utterance.
+
+---
+
+## R&R Versions
+
+| Version | Behavior |
+|---|---|
+| **Version 1** (default) | Rescores intents from all NLP engines and ranks them. Works with all ML models. |
+| **Version 2** | Ranks definitive matches from ML and KG only (no rescoring, no FM). Recommended for Few-shot ML models. |
+
+**Enable Version 2:**
+1. Go to **Natural Language > NLU Config > Ranking and Resolver Engine**.
+2. Set **Rank and Resolver Version** to **Version 2**.
+3. Confirm in the dialog.
+
+<Note>
+Version 2 works best with Few-shot ML and KG models. FM engine configurations are disabled in V2.
+Changing versions alters how winning intents are determined — verify with Utterance Testing before deploying.
+</Note>
+
+---
+
+## Engine Outputs (What R&R Receives)
+
+| Engine | Definitive Match | Probable Match |
+|---|---|---|
+| **ML** | Fuzzy score ≥ 95% against user input | Confidence scores per intent; top 5 matching utterances per intent (score > 0.3 threshold) |
+| **KG** | Fuzzy score ≥ 95% against user input | Confidence scores for questions matching ≥ 50% path terms + ≥ 60% word match; includes synonyms, nodes, paths, traits matched |
+| **FM** | Pattern match or exact task name match | Partial label matches including synonyms |
+
+---
+
+## How R&R Decides the Winning Intent
+
+**Definitive matches found:**
+- Single definitive match → that intent wins.
+- Multiple definitive matches from different engines → ambiguous; user is prompted to choose.
+
+**Only probable matches found:**
+1. Score each top-5 ML utterance against the probable intents; take highest per intent.
+2. Score alternate/modified KG questions; take highest per intent.
+3. Rank all scores; top scorer wins.
+4. If top two intents are within 2% of each other → ambiguous.
+5. If a definitive match exists → discard all probable matches.
+6. Only FM or ML found a probable match → that intent wins.
+7. Only KG found a probable match:
+   - Score > 80% → wins.
+   - 60% < score ≤ 80% → wins, shown as "Did you mean?" suggestion.
+
+**Ambiguity resolution:**
+- **Disambiguation Dialog** — multiple definitive matches; user chooses.
+- **Did You Mean Dialog** — multiple or low-confidence probable matches; user confirms.
+
+Both dialogs are customizable in NLP Standard Responses.
+
+---
+
+## Thresholds and Configuration
+
+Go to **Natural Language > NLU Config > Ranking and Resolver Engine**.
+
+| Setting | Description |
+|---|---|
+| **Prefer Definitive Matches** | When enabled (default), definitive matches win over probable. When disabled, all matches are rescored together. |
+| **Rescoring of Intents** | When disabled, all qualified intents are presented to the user for selection (no rescoring). |
+| **Negative Patterns** | Enable to filter out intents matched by FM or ML that match negative patterns. |
+| **Proximity of Probable Matches** | Max score gap between top and next probable intent to treat them as equally important. |
+
+### Dependency Parsing Model
+
+Enables intent scoring based on word dependencies (not just word presence and position).
+
+| Model | Description |
+|---|---|
+| **Model 1** (default) | Based on word presence and position; scored by FM only. |
+| **Model 2** | Based on dependency matrix; scored by FM then rescored by R&R. |
+
+Configure at **NLU Config > Ranking and Resolver Engine > Dependency Parsing Model**:
+- **Minimum Match Score**: threshold for a probable match (0.0–1.0; default 0.5).
+- **Advanced Configurations**: JSON editor for custom weights. Click **Restore to Default** to reset.
+
+<Note>
+Dependency Parsing Model is supported in select languages only.
+</Note>
+
+---
+
+## Detection Scenarios
+
+| Scenario | Result |
+|---|---|
+| FM definitive match | FM match wins; ML had no match; KG had a probable match (discarded). |
+| ML definitive match | ML wins; FM had a probable match (discarded). |
+| KG definitive match (100% path + 100% cosine score) | KG wins; ML/FM also found probable matches (discarded). |
+| Multiple probable matches across engines | R&R rescores all; top scorer wins; if within 2%, presented as ambiguous. |
+| Two probable intents, scores close | Both presented as "Did you mean?" |
+| No match from any engine | Default intent triggered. |
