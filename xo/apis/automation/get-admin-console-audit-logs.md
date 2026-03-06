@@ -4,8 +4,7 @@
 
 To retrieve the audit logs from the Admin Console.
 
-!!!note
-    This feature was introduced in ver7.2 of the platform.
+
 
 
 <table>

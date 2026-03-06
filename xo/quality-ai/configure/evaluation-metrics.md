@@ -16,16 +16,16 @@ Evaluation Metrics is a key component of the Quality AI module that enables supe
 
 * **Flexible Configuration**: Static and dynamic evaluation options for various use cases.
 
-## Access Evaluation Metrics
+## Accessing Evaluation Metrics
 
 Navigate to **Quality AI** > **CONFIGURE** > **Evaluation Forms** > **Evaluation Metrics**.    
 <img src="../evaluation-criteria/evaluation-metrics/images/common-eva-tab-for-metrics-type.png" alt="Evaluation Metrics" title="Evaluation Metrics" style="border: 1px solid gray; zoom:70%;">
 
-## Interface Elements
+## Evaluation Metrics Dashboard Elements
 
 The Interface displays the following elements:
 
-* **Name**: Shows the evaluation metric name.
+* **Name**: Shows the name of the evaluation metrics.
 
 * **Metric Type**: Indicates the measurement type.
 
@@ -42,12 +42,10 @@ The Interface displays the following elements:
 Steps to create new evaluation metric:
 
 1. Select the **Evaluation Metrics** tab.    
-<img src="../evaluation-criteria/evaluation-metrics/images/eva-metrics-tab-selection.png" alt="Evaluation Metric" title="Evaluation Metric" style="border: 1px solid gray; zoom:70%;">
 
-2. Select the **+ New Evaluation Metric**.    
-<img src="../evaluation-criteria/evaluation-metrics/images/new-eva-metrics.png" alt="New Evaluation Metric" title="New Evaluation Metric" style="border: 1px solid gray; zoom:70%;">
+2. Select **+ New Evaluation Metric**.    
 
-3. Configure the metrics for your selected measurement type.    
+3. Configure your chosen measurement type metrics.    
 <img src="../evaluation-criteria/evaluation-metrics/images/metric-pane.png" alt="Configure New Metric" title="Configure New Metric" style="border: 1px solid gray; zoom:60%;
 ">
 
@@ -72,184 +70,121 @@ Steps to create new evaluation metric:
 
 ## Metrics Measurement Types
 
-The following measurement types are:
+This section summarizes the system's supported measurement types, including core features, typical use cases, and how to edit or delete metrics. 
 
-1. **By Question**
-
-    Evaluates adherence to specific questions asked or answered during interactions.
+1. **By Question**: Evaluates adherence to specific questions asked or answered during interactions. 
 
     **Key Features**:
 
-    * **Static Adherence**: Universal application across all conversations.
+    * **Static Adherence**: Applies universally across all conversations.
 
-    * **Dynamic Adherence**: Trigger-based conditional evaluation.
+    * **Dynamic Adherence**: Performs conditional evaluation triggered by specific events or criteria.
 
-    * **GenAI Detection**: Contextual understanding without training samples.
+    * **GenAI Detection**: Uses contextual understanding without requiring training samples.
 
-    * **Deterministic Detection**: Semantic similarity matching with predefined utterances.
+    * **Deterministic Detection**: Matches utterances semantically with predefined patterns.
 
-    * **Flexible Thresholds**: 60% for greetings, 100% for compliance-critical statements.
+    * **Flexible Thresholds**: Enables variable scoring (for example, 60% for greetings, 100% for compliance-critical items).
 
-    **Use Cases**: 
-    
-    * **Script adherence**
-    
-    * **Greeting compliance**
-    
-    * **Policy verification**
-    
-    * **Response quality assessment**
-    
-    For the detailed configuration, see [By Question](../configure/evaluation-criteria/metrics-measurement-types/by-question.md).
+    **Common Use Cases**: Script adherence, greeting compliance, policy verification, and response quality assessment.    
+   
+    For full configuration details, see [By Question](../configure/evaluation-criteria/metrics-measurement-types/by-question.md).
 
-1. **By Speech**
 
-    Analyzes speech characteristics and audio quality metrics during voice interactions.
+1. **By Speech**: Analyzes speech characteristics and audio quality metrics during voice interactions.
 
     **Key Features**:
 
-    * **Cross Talk**: Monitors simultaneous speaking instances with customizable thresholds and duration limits.
+    * **Cross Talk**: Detects overlapping speech with configurable thresholds.
 
-    * **Dead Air**: Tracks unproductive silence periods with configurable thresholds (30-300 seconds). 
+    * **Dead Air**: Monitors periods of silence based on set limits (for example, 30-300 seconds).  
 
-    * **Speaking Rate**: Monitors speech pace trends to flag coaching opportunities, measuring Words Per Minute (WPM).
+    * **Speaking Rate**: Tracks Words Per Minute (WPM) to identify pacing issues.
 
-    **Use Cases**: 
-    
-    * **Voice interaction quality**
-
-    * **Conversation flow analysis**
-
-    * **Speaking pace optimization**
+    **Use Cases**: Voice interaction quality, conversation flow analysis, and speaking pace optimization.    
         
-    For the detailed configuration, see [By Speech](../configure/evaluation-criteria/metrics-measurement-types/by-speech.md).
+    For full configuration details, see [By Speech](../configure/evaluation-criteria/metrics-measurement-types/by-speech.md).
 
-1. **By Value**
-
-    Verifies agent-shared customer-specific information against trusted data sources.
+1. **By Value**: Verifies customer-specific information shared by an agent vs. trusted data sources.
 
     **Key Features**:
 
-    * **API Integration**: Real-time verification with Customer Relationship Management (CRM) and external systems.
+    * **API Integration**: Real-time verification with Customer Relationship Management (CRM) and external systems. 
 
-    * **Business Rules Engine**: Five rule types, including first or last value, negotiated value, and strict matching.
+    * **Business Rules Engine**: Five rule types, including first or last value, negotiated value, and strict matching. 
 
-    * **Compliance Tracking**: Automated deviation detection for regulatory requirements.
+    * **Compliance Tracking**: Detects deviations from expected values.
 
-    * **Audit Trails**: Detailed documentation for supervisory review.
+    * **Audit Trails**: Logs validation results for supervisory review
 
-    **Use Cases**: 
+
+    **Use Cases**: Pricing accuracy, interest rate verification, account balance confirmation, compliance validation.
     
-    * **Pricing accuracy**
+    For full configuration details, see [By Value](../configure/evaluation-criteria/metrics-measurement-types/by-value.md).
 
-    * **Interest rate verification**
-
-    * **Account balance confirmation**
-
-    * **compliance validation**
-
-    For the detailed configuration, see [By Value](../configure/evaluation-criteria/metrics-measurement-types/by-value.md).
-
-1. **By Dialog Task**
-
-    Evaluates completion and quality of specific dialog tasks and workflows.
+1. **By Dialog Task**: Assesses completion and quality of specific tasks or workflows within a conversation.
 
     **Key Features**:
 
-    * **Dialog Agent Selection**: Choose from available dialog agents.
+    * **Dialog Agent Selection**: Choose which dialog agent to evaluate.
 
-    * **Evaluation Scope**: Entire conversation or time-bound assessment.
+    * **Evaluation Scope**: Apply evaluation to the entire conversation or a time-bound segment.
 
-    * **Time Parameters**: Configurable seconds (voice) or messages (chat).
+    * **Time Parameters**: Configure limits in seconds (voice) or message count (chat).
 
-    **Use Cases**: 
+    **Use Cases**: Workflow adherence, task completion verification, and dialog flow optimization.
     
-    * **Workflow adherence**
+    For full configuration details, see [By Dialog Task](../configure/evaluation-criteria/metrics-measurement-types/by-dialog-task.md).
 
-    * **Task completion verification**
-
-    * **Dialog flow optimization**
-
-    For the detailed configuration, see [By Dialog Task](../configure/evaluation-criteria/metrics-measurement-types/by-dialog-task.md).
-
-1. **By Playbook Adherence**
-
-    Assesses compliance with predefined agent playbooks and procedures.
+1. **By Playbook Adherence**: Measures how well interactions follow predefined playbooks or procedures.
 
     **Key Features**:
 
-    * **Entire Playbook**: Comprehensive adherence across all playbook elements.
+    * **Entire Playbook**: Assess adherence across all playbook components.
 
-    * **Specific Steps**: Targeted evaluation of particular stages and steps.
+    * **Specific Steps**: Target evaluation at specific stages or steps.
 
-    * **Percentage Thresholds**: Configurable minimum adherence requirements.
+    * **Percentage Thresholds**: Define minimum adherence levels required.
 
-    **Use Cases**:
-
-    * **Process compliance**
-
-    * **Procedure adherence**
-
-    * **Standardization enforcement**
+    **Use Cases**: Process compliance, procedure adherence, and enforcement of standards.
     
-    For the detailed configuration, see [By Playbook Adherence](../configure/evaluation-criteria/metrics-measurement-types/by-playbook-adherence.md).
+    For full configuration details, see [By Playbook Adherence](../configure/evaluation-criteria/metrics-measurement-types/by-playbook-adherence.md).
 
-1. **By AI Agent**
-
-    Enables sophisticated evaluations using AI Agents capable of multistep reasoning and autonomous decision-making.
+1. **By AI Agent**: Enables sophisticated evaluations using AI Agents capable of multistep reasoning and autonomous decision-making.
 
     **Key Features**:
 
     * **Complex Analysis**: Multi-step reasoning connecting conversation elements.
 
-    * **Domain Expertise**: Specialized knowledge requirements (compliance, technical support).
+    * **Domain Expertise**: Supports specialized evaluation contexts (for example, compliance, technical support).
 
     * **Contextual Understanding**: Nuanced evaluation requiring full conversation context.
 
-    * **Advanced Decision-Making**: Sophisticated judgment calls beyond pattern matching.
+    * **Advanced Decision-Making**: Goes beyond pattern matches for judgment calls.
 
-    **Use Cases**: 
-    
-    * **Complex compliance assessments**
-    
-    * **Technical troubleshooting evaluation**
-    
-    * **Sophisticated quality analysis**
+    **Use Cases**: Complex compliance assessments, technical troubleshooting evaluation, and sophisticated quality analysis.    
 
-    For the detailed configuration, see [By AI Agent](../configure/evaluation-criteria/metrics-measurement-types/by-ai-agent.md).
+    For full configuration details, see [By AI Agent](../configure/evaluation-criteria/metrics-measurement-types/by-ai-agent.md).
 
-## Manage Evaluation Metrics
 
-The process of managing evaluation metrics includes the following sections:
+### Edit or Delete Evaluation Metrics
 
-**Metric Lifecycle Management**
+1. Search and select the desired metrics. 
 
-* **Create**: Step-by-step configuration wizard
+1. Select any existing **Evaluation Metrics Type**.   
 
-* **Edit**: Real-time updates with validation
+1. Select the three-dot (⋮) menu next to the metric name.  
 
-* **Delete**: Dependency resolution and cleanup
+1. Select **Edit** to modify the metric configuration.   
 
-* **Language Management**: Multilingual configuration and updates
+1. Adjust percentage-based weights so they total 100 %. 
 
-**Dependency Management**
+1. Update the metric configuration as needed.
 
-* **Form Associations**: Evaluation form linkage requirements
+1. Select **Delete** if you want to remove any metric.
 
-* **Attribute Assignments**: Metric-to-attribute mapping
+1. Update the required metric weights as prompted if any warning prompt appears.
 
-* **Language Dependencies**: Active language protection
-
-* **Deletion Prerequisites**: Dependency resolution before removal
-
-### Edit or Delete Evaluation Metrics Type
-
-Steps to edit or delete existing evaluation metrics types:
-
-1. Select any existing **Evaluation Metrics Type**.    
-<img src="../evaluation-criteria/evaluation-metrics/images/edit-metric.png" alt="Edit Metric" title="Edit Metric" style="border: 1px solid gray; zoom:70%;">
-
-2. Select **Edit** to update measurement type fields or **Delete** to remove.   
-<img src="../evaluation-criteria/evaluation-metrics/images/edit-metric-fields.png" alt="Edit Metric Fields" title="Edit Metric Fields" style="border: 1px solid gray; zoom:70%;">
-
-3. Select **Update** to save changes.
+1. Select **Update** to save changes.
+<img src="../evaluation-criteria/evaluation-metrics/images/edit-metric-fields.png" alt="Crosstalk Warning" title="Crosstalk Warning" style="border: 1px solid gray; zoom:70%;">  
+#### Speech Metric Errors

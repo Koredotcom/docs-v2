@@ -2,200 +2,79 @@
 
 # Bot Variables Import API
 
-To import global and content variables into the bot.
+Import environment and content (locale) variables into a bot.
+
+| Field          | Value                                                                 |
+|----------------|-----------------------------------------------------------------------|
+| **Method**     | POST                                                                  |
+| **Endpoint**   | `https://{{host}}/api/{{version}}/public/builder/bot/{{botId}}/variables/import` |
+| **Content Type** | `application/json`                                                   |
+| **Authorization** | `auth: {{JWT}}`<br/>See [How to generate the JWT Token.](../automation/api-introduction.md#generating-the-jwt-token) |
+| **API Scope**  | App Builder: Import Variables <br/> Admin Console: Not Applicable       |
 
 
-<table>
-  <tr>
-   <td><strong>Method</strong>
-   </td>
-   <td>POST
-   </td>
-  </tr>
-  <tr>
-   <td><strong>Endpoint</strong>
-   </td>
-   <td><code>https://{{host}}/api/{{version}}/public/builder/bot/{{BotID}}/variables/import</code>
-   </td>
-  </tr>
-  <tr>
-   <td><strong>Content Type</strong>
-   </td>
-   <td><code>application/json</code>
-   </td>
-  </tr>
-  <tr>
-   <td><strong>Authorization</strong>
-   </td>
-   <td><code>auth: {{JWT}}</code>
-<p>
-See <a href="../api-introduction/#generating-the-jwt-token">How to generate the JWT Token</a>.
-   </td>
-  </tr>
-  <tr>
-   <td><strong>API Scope</strong>
-   </td>
-   <td>
-<ul>
+## Path Parameters
 
-<li>App Builder: Import Variables
-
-<li>Admin Console: Not Applicable
-</li>
-</ul>
-   </td>
-  </tr>
-</table>
-
-## Query Parameters
-
-
-<table>
-  <tr>
-   <td><strong>PARAMETER</strong>
-   </td>
-   <td><strong>REQUIRED</strong>
-   </td>
-   <td><strong>DESCRIPTION</strong>
-   </td>
-  </tr>
-  <tr>
-   <td>host
-   </td>
-   <td>Required
-   </td>
-   <td>The environment URL. For example, <code>https://platform.kore.ai</code>
-   </td>
-  </tr>
-  <tr>
-   <td>BotID
-   </td>
-   <td>Required
-   </td>
-   <td>The identifier can be accessed under <strong>General Settings</strong> on the App Builder.
-   </td>
-  </tr>
-</table>
-
-## Body Parameters
-
-<table>
-  <tr>
-   <td><strong>PARAMETER</strong>
-   </td>
-   <td><strong>REQUIRED</strong>
-   </td>
-   <td><strong>DESCRIPTION</strong>
-   </td>
-  </tr>
-  <tr>
-   <td>key
-   </td>
-   <td>Required
-   </td>
-   <td>Name of the variable.
-   </td>
-  </tr>
-  <tr>
-   <td>value
-   </td>
-   <td>Required
-   </td>
-   <td>Value for the variable.
-   </td>
-  </tr>
-  <tr>
-   <td>hint
-   </td>
-   <td>Required
-   </td>
-   <td>Description of the variable.
-   </td>
-  </tr>
-  <tr>
-   <td>variableType
-   </td>
-   <td>Required
-   </td>
-   <td>The type of variable can be as follows:
-<ul>
-
-<li><strong>env</strong> for global variable or
-
-<li><strong>locale</strong> for content variable
-</li>
-</ul>
-   </td>
-  </tr>
-  <tr>
-   <td>scope
-   </td>
-   <td>Required
-   </td>
-   <td>The scope of the variable corresponds to the <strong>Setup</strong> Option at the time of variable declaration and can be one of the following:
-<ul>
-
-<li>prePopulated
-
-<li>askOnInstall
-
-<li>hidden
-</li>
-</ul>
-   </td>
-  </tr>
-  <tr>
-   <td>localeData
-   </td>
-   <td>Required
-   </td>
-   <td>For the variables of type locale, additional language data needs to be passed in the following format for each language:
-    <pre>
-    {
-        "en": {
-            "value": "english language prompt",
-            "hint": ""
-        }
-    }
-    </pre>
-   </td>
-  </tr>
-</table>
+| Parameter | Required | Description                                                                 |
+|-----------|----------|-----------------------------------------------------------------------------|
+| `host`      | Required | The environment URL, for example: `https://platform.kore.ai`.              |
+| `botId/streamId `    | Required | App ID or Bot ID. You can access it by navigating to **App Settings** → **App Profile** in the app.     |
+| `version`    | Required          | API version, for example: 1.1. |
 
 ## Sample Request
 
 ```json
-curl -X POST 'https://{{host}}/api/1.1/public/builder/bot/{{BotId}}/variables/import' \
-  -H 'Content-Type: application/json' \
-  -H 'auth: {{YOUR_JWT_ACCESS_TOKEN}}' \
-  -d '[
-    {
-        "key": "Global",
-        "value": "Globalkey-prePopulated",
-        "hint": "",
-        "variableType": "env",
-        "scope": "prePopulated"
-    },
-	{
-    "key": "Lang",
-    "variableType": "locale",
-    "scope": "prePopulated",
-    "localeData": {
-      "en": {
-        "value": "english language prompt",
-        "hint": ""
-      }
-    }
-  }
+curl --location 'https://{{host}}/api/1.1/public/builder/bot/{{botId}}/variables/import' \
+--header 'Content-Type: application/json' \
+--header 'auth: {{YOUR_JWT_ACCESS_TOKEN}}' \
+--data '[
+   {
+       "key": "Global",
+       "value": "Globalkey-prePopulated",
+       "hint": "",
+       "variableType": "env",
+       "scope": "prePopulated"
+   },
+   {
+   "key": "Lang",
+   "variableType": "locale",
+   "scope": "prePopulated",
+   "localeData": {
+     "en": {
+       "value": "english language prompt",
+       "hint": ""
+
+     }
+
+   }
+
+ }
+
 ]'
+
 ```
 
-## Sample Request when Collections are enabled
+### Body Parameters
+
+| **PARAMETER**      | **REQUIRED** | **DESCRIPTION** |
+|---------------|----------|-------------|
+| `key`           | Required | Name of the variable. |
+| `value`         | Required | Value for the variable.|
+| `hint`          | Required | Description of the variable. |
+| `variableType`  | Required | Type of the variable:<br>- **env**: Environment (Global) variable<br>- **locale**: Content variable |
+| `scope`        | Required | Scope of the variable (corresponds to the **Setup** option at declaration):<br>- prePopulated<br>- askOnInstall<br>- hidden |
+| `localeData`                     | Required | **Applicable only when `variableType = locale`.** For locale variables, language-specific data must be provided in the following format:<br><br>```json<br>{<br>  "en": {<br>    "value": "english language prompt",<br>    "hint": ""<br>  }<br>}<br>``` |
+| `localeData.localeCode`          | Required   | Applicable only when `variableType = locale`. Locale identifier (for example, `en`, `fr`, `ja`, `zh_cn`). |
+| `localeData.localeCode.hint`     | Optional   | Applicable only when `variableType = locale`. Optional hint for the localized value. |
+| `localeData.localeCode.value`    | Required   | Applicable only when `variableType = locale`. Localized message or text for the locale. |
+
+
+## Sample Request When Collections Are Enabled
 
 
 ```json
 curl -X POST \
-  https://{{host}}/api/1.1/public/builder/bot/{{BotId}}/variables/import \
+  https://{{host}}/api/1.1/public/builder/bot/{{botId}}/variables/import \
 --header 'auth: {{YOUR_JWT_ACCESS_TOKEN}}' \
 --header 'Content-Type: application/json' \
 --data-raw '{
@@ -346,16 +225,46 @@ curl -X POST \
     ]
 }'
 ```
+!!! note
+    The `botCollections` and `botCollectionVariables` fields are required only when importing bot collection variables.
 
-## Body Parameters
+### Body Parameters
 
-No body parameters are passed.
+| **PARAMETER** | **TYPE** | **DESCRIPTION** |
+|----------|------|-------------|
+| `botVariables` | array | List of bot-level variables to be created or imported. |
+| `botVariables.key` | string | Name of the variable. |
+| `botVariables.value` | string | Default value of the variable. |
+| `botVariables.hint` | string | Description or notes for the variable. |
+| `botVariables.audioTag` | string | Optional audio tag associated with the variable (used for voice experiences). |
+| `botVariables.variableType` | string | Type of variable. Supported values:<br>- `env` (environment variable)<br>- `locale` (content variable) |
+| `botVariables.scope` | string | Scope of the variable. Supported values:<br>- `prePopulated`<br>- `askOnInstall`<br>- `hidden` |
+| `botVariables.localeData` | object | Applicable only when `variableType = locale`. Contains language-specific values and metadata for the variable. |
+| `botVariables.localeData.localeCode` | object | Applicable only when `variableType = locale`. Locale identifier (for example, `en`, `fr`, `ja`, `zh_cn`). |
+| `botVariables.localeData.localeCode.value` | string | Applicable only when `variableType = locale`. Localized value for the variable. |
+| `botVariables.localeData.localeCode.hint` | string | Applicable only when `variableType = locale`. Optional hint for the localized value. |
+| `botVariables.localeData.localeCode.audioTag` | string | Applicable only when `variableType = locale`. Optional audio tag for the localized value. |
+| `botVariables.group` | string | Logical grouping for the variable (if applicable). |
+| `botVariables.propagateValue` | boolean | Indicates whether the variable value should be propagated across environments or namespaces. |
+| `botVariables.vNameSpace` | array | Namespace mapping for the variable. |
+| `botVariables.vNameSpace.name` | string | Name of the namespace (for example, `default`). |
+| `botVariables.vNameSpace.refId` | string | Unique identifier of the namespace. |
+| `botCollections` | array | Required only when importing bot collection variables. Defines available bot collections. |
+| `botCollections.name` | string | Name of the bot collection (for example, `Default`, `Staging`). |
+| `botCollections.description` | string | Description of the bot collection. |
+| `botCollections.refId` | string | Unique identifier of the bot collection. Used to map variables to collections. |
+| `botCollectionVariables` | array | Required only when importing bot collection variables. Defines collection-specific variable values. |
+| `botCollectionVariables.key` | string | Name of the variable within the bot collection. Must match a variable defined in `botVariables`. |
+| `botCollectionVariables.value` | string | Value assigned to the variable for the specified bot collection. |
+| `botCollectionVariables.audioTag` | string | Optional audio tag associated with the collection-specific variable value. |
+| `botCollectionVariables.refId` | string | Reference ID of the bot collection. Must match a `refId` from `botCollections`. |
+
 
 ## Sample Response
-
 
 ```json
 {
   "message": "2 Variables imported/updated successfully."
 }
+
 ```
