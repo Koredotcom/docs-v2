@@ -2,7 +2,7 @@
 
 Indexing is the process of generating vectors or embeddings from the extracted chunks and creating a knowledge Index that can be used for generating answers. 
 
-Vectors or Embeddings are multidimensional numerical representations of the chunks that carry their semantic information. Embedding Models are algorithms that can translate data into those multidimensional numbers. The Kore XO platform features support for embedding models, including BGE-M3, VDR, and custom models, allowing you to select a model tailored to your specific needs.
+Vectors or Embeddings are multidimensional numerical representations of the chunks that carry their semantic information. Embedding Models are algorithms that can translate data into those multidimensional numbers. The platform features support for embedding models, including BGE-M3, VDR, and custom models, allowing you to select a model tailored to your specific needs.
 
 **By default, when a new app is created, the BGE-M3 vector model is selected for generating embeddings.** 
 
@@ -232,7 +232,7 @@ To assign weights:
 
 Example Configuration
 
-Use case: A company wants to enhance semantic search across its content repository by capturing different aspects of the same document. The goal is to prioritize high-value technical summaries while still maintaining broad contextual coverage and supporting product-specific queries.
+Use case: A company wants to enhance semantic search across its content repository by capturing different aspects of the same document. The goal is to prioritize high-value technical summaries while maintaining broad contextual coverage and supporting product-specific queries.
 
 
 <table>
@@ -392,3 +392,9 @@ This configuration is required only when content is extracted using the Image-ba
 
 !!!note 
       Any changes made to the prompt for this feature automatically reflect in the Vector Generation - Image feature under the Gen AI page. 
+
+## Batch Processing of Vector Generation
+
+Search AI supports Batch processing of vector generation, which groups multiple content chunks into a single API request, rather than sending each chunk individually, significantly reducing API overhead and improving throughput. The system dynamically packs chunks up to a configured token limit per request, then throttles the outgoing batches according to token-per-minute and request-per-minute rate limits to stay within provider constraints. 
+
+Learn more about how to [Configure Batch Processing](howto/batch-processing-vector-generation.md).

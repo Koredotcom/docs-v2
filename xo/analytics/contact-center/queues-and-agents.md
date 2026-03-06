@@ -6,7 +6,7 @@ The Queues & Agents dashboard displays the Overview, Efficiency, Agent Performan
 
 1. Select **Analytics** on the left navigation pane. The **Analytics** panel displays with the list of reports.
 
-    <img src="../images/navigating-to-queues-agents-report.png" alt="Navigating to Queues Agents Report" title="Navigating to Queues Agents Report" style="border: 1px solid gray; zoom:80%;"/>
+    <img src="../images/navigating-to-queues-agents-report.png" alt="Navigating to Queues Agents Report" title="Navigating to Queues Agents Report" style="border: 1px solid gray; zoom:80%;">
 
 2. Select **Queues & Agents** under the **Contact Center** section of the **Analytics** panel. The **Queues & Agents** dashboard displays on the right side of the page.
 
@@ -14,7 +14,7 @@ The Queues & Agents dashboard displays the Overview, Efficiency, Agent Performan
 
 You can filter Queues & Agents data for a specific time range. You can choose a particular time range and select Apply.
 
-<img src="../images/time-selection.png" alt="Time Selection" title="Time Selection" style="border: 1px solid gray; zoom:80%;"/>
+<img src="../images/time-selection.png" alt="Time Selection" title="Time Selection" style="border: 1px solid gray; zoom:80%;">
 
 ## Filters
 
@@ -28,7 +28,7 @@ To avoid repeatedly filtering your choices, you can create and save multiple fil
 
 3. Select the Queues, Channels, Direction, and Agents.
 
-    <img src="../images/create-filter-3.png" alt="Create Filters 3" title="Create Filters 3" style="border: 1px solid gray; zoom:80%;"/>
+    <img src="../images/create-filter-3.png" alt="Create Filters 3" title="Create Filters 3" style="border: 1px solid gray; zoom:80%;">
 
    Select from the following available options:
 
@@ -98,7 +98,7 @@ Clicking the percentage value on the Abandon Rate widget shows the following inf
 * `Abandoned while in Queue`-Count of conversations (NNNN) that were abandoned while waiting in the queue.
 * `Abandoned while with Agent`-Count of conversations (NNNN) that where abandoned while being attended by an Agent.
 
-    <img src="../images/abandon-rate.png" alt="Abandon Rate" title="Abandon Rate" style="border: 1px solid gray; zoom:80%;"/>
+    <img src="../images/abandon-rate.png" alt="Abandon Rate" title="Abandon Rate" style="border: 1px solid gray; zoom:80%;">
 
 The formula for measuring the Abandon Count:
 
@@ -111,7 +111,7 @@ Overdue-This live metric shows the number of conversations in the overdue state.
 
 System Terminations: Count of conversations terminated by the System. This metric appears based on selected queues only. Clicking on the number displays the details of the system terminations.
 
-<img src="../images/system-terminations.png" alt="System Terminations" title="System Terminations" style="border: 1px solid gray; zoom:80%;"/>
+<img src="../images/system-terminations.png" alt="System Terminations" title="System Terminations" style="border: 1px solid gray; zoom:80%;">
 
 Average Speed to Answer-The average time it takes an agent to respond to a conversation assigned to them.
 
@@ -121,7 +121,7 @@ Queue Load-Displays the current load on the system as a percentage of its capaci
 
 Resolved Rate-Percentage of resolved conversations.
 
-<img src="../images/resolved-rate.png" alt="Resolved Rate" title="Resolved Rate" style="border: 1px solid gray; zoom:80%;"/>
+<img src="../images/resolved-rate.png" alt="Resolved Rate" title="Resolved Rate" style="border: 1px solid gray; zoom:80%;">
 
 ## Efficiency
 
@@ -162,206 +162,58 @@ Conversations by &lt; List-of-all-Disposition Sets>: Displays the Conversations 
 * The multi-colored progress bar appears only for the codes in the selected Disposition Set.
 * Separate progress bars appear under each Disposition Code.
 
-**Average Satisfaction Rating**: Displays the customer satisfaction rating based on the count of survey responses.
+**Satisfaction Rating**: Displays the results of the selected feedback survey (CSAT, NPS, Like/Dislike).
 
-   <img src="../images/average-satisfaction-rating.png" alt="Average Satisfaction Rating" title="Average Satisfaction Rating" style="border: 1px solid gray; zoom:80%;"/>
+   <img src="../images/average-satisfaction-rating.png" alt="Average Satisfaction Rating" title="Average Satisfaction Rating" style="border: 1px solid gray; zoom:80%;">
 
 **Customer Satisfaction by Channel**: This section displays channel-wise customer satisfaction metrics based on survey responses.
 
-   <img src="../images/customer-satisfaction-by-channel.png" alt="Customer Satisfaction by Channel" title="Customer Satisfaction by Channel" style="border: 1px solid gray; zoom:80%;"/>
+   <img src="../images/customer-satisfaction-by-channel.png" alt="Customer Satisfaction by Channel" title="Customer Satisfaction by Channel" style="border: 1px solid gray; zoom:80%;">
 
 ## Agent Performance
 
 This section displays agent performance metrics for all conversations (call, chat, e-mail).
 
-   <img src="../images/agent-performance.png" alt="Agent Performance" title="Agent Performance" style="border: 1px solid gray; zoom:80%;"/>
+   <img src="../images/agent-performance.png" alt="Agent Performance" title="Agent Performance" style="border: 1px solid gray; zoom:80%;">
 
-<table>
-  <tr>
-   <td colspan="2" >Agent Performance Metrics
-   </td>
-   <td>
-   </td>
-  </tr>
-  <tr>
-   <td>Offered
-   </td>
-   <td>Number of conversations that were assigned to the agent.
-   </td>
-   <td>NA
-   </td>
-  </tr>
-  <tr>
-   <td>Answered
-   </td>
-   <td>Number of conversations answered by the agent.
-   </td>
-   <td>NA
-   </td>
-  </tr>
-  <tr>
-   <td>Unanswered
-   </td>
-   <td>Number of conversations assigned but not answered by the agent.
-   </td>
-   <td>NA
-   </td>
-  </tr>
-  <tr>
-   <td>Abandoned
-   </td>
-   <td>Number of conversations where the user dropped off while conversing with the agent.
-   </td>
-   <td>NA
-   </td>
-  </tr>
-  <tr>
-   <td>Transferred
-   </td>
-   <td>Number of conversations that got transferred by the agent.
-   </td>
-   <td>NA
-   </td>
-  </tr>
-  <tr>
-   <td>Logged In
-   </td>
-   <td>Agent Login time between start and end filters.
-   </td>
-   <td>NA
-   </td>
-  </tr>
-  <tr>
-   <td>Closed/Hour
-   </td>
-   <td>Number of conversations closed per hour.
-   </td>
-   <td>NA
-   </td>
-  </tr>
-  <tr>
-   <td>AHT
-   </td>
-   <td>Average Handle Time of the conversation by the agent.
-   </td>
-   <td>NA
-   </td>
-  </tr>
-  <tr>
-   <td>CSAT
-   </td>
-   <td>Average CSAT score the of agent.
-   </td>
-   <td>NA
-   </td>
-  </tr>
-</table>
+### Agent Performance Metrics
+
+| Metric        | Description | Value |
+|---------------|-------------|-------|
+| Offered | Number of conversations assigned to the agent. | NA |
+| Answered | Number of conversations answered by the agent. | NA |
+| Unanswered | Number of conversations assigned but not answered by the agent. | NA |
+| Abandoned | Number of conversations where the user dropped off while conversing with the agent. | NA |
+| Transferred | Number of conversations transferred by the agent. | NA |
+| Logged In | Agent login time between the selected start and end filters. | NA |
+| Closed/Hour | Number of conversations closed per hour. | NA |
+| AHT | Average Handle Time of the conversation by the agent. | NA |
+| CSAT | Average CSAT score of the agent. | NA |
+| NPS | Average NPS score of the agent. | NA |
+| Like/Dislike | Average Like/Dislike score of the agent. | NA |
 
 ## Queue Performance
 
 This section displays queue performance metrics for all conversations (call, chat, e-mail).
 
-   <img src="../images/queue-performance.png" alt="Queue Performance" title="Queue Performance" style="border: 1px solid gray; zoom:80%;"/>
+   <img src="../images/queue-performance.png" alt="Queue Performance" title="Queue Performance" style="border: 1px solid gray; zoom:80%;">
 
-<table>
-  <tr>
-   <td colspan="3" >Queue Performance Metrics
-   </td>
-  <tr>
-   <td>Incoming
-   </td>
-   <td>NA
-   </td>
-   <td>Incoming = InQueue + Active + Idle + Expired + Completed + Transferred Out (The Q&A dashboard shows all transferred, even those back to the same queue).
+### Queue Performance Metrics
 
-   Completed = AbandonedInQueue + SystemTerminated + All-Conversations-With-Resolutions.
-
-   **Note**: This formula is applicable when a call doesn't return to the same queue multiple times. If it does, it gets counted multiple times and doesn't add up correctly.
-
-   **Question**. Does the Incoming count include Inbound and Outbound calls?<br>
-   **Answer**: Yes, if the conversations (calls/chats) entered that queue.
-
-   **Question**. Is the Incoming call count taken from the queue?<br>
-   **Answer**: Yes. However, for `No-Filters`, the incoming call count includes conversations directly transferred from the AI Agents to the Agent, without entering a queue.
-   </td>
-  </tr>
-  <tr>
-   <td>Answered
-   </td>
-   <td>NA
-   </td>
-   <td>Number of conversations answered by the agent in the queue.
-   </td>
-  </tr>
-  <tr>
-   <td>Abandoned
-   </td>
-   <td>NA
-   </td>
-   <td>Number of conversations where the user dropped off while conversing with the agent in the queue.
-   </td>
-  </tr>
-  <tr>
-   <td>Transferred
-   </td>
-   <td>NA
-   </td>
-   <td>Number of conversations that got transferred from the queue.
-   </td>
-  </tr>
-  <tr>
-   <td>Voicemails
-   </td>
-   <td>NA
-   </td>
-   <td>Number of voicemails in the queue.
-   </td>
-  </tr>
-  <tr>
-   <td>Terminated
-   </td>
-   <td>NA
-   </td>
-   <td>Conversations (call/chat) terminated by the system.
-
-This can happen when no agents are available, outside of working hours, voice gateway failures, network errors, or other errors.
-   </td>
-  </tr>
-  <tr>
-   <td>Closed
-   </td>
-   <td>NA
-   </td>
-   <td>Conversations (calls/chats) that an agent has properly closed.
-
-The agent ends the conversation, performs any After-call work, assigns dispositions, writes any notes, and clicks “Close."
-   </td>
-  </tr>
-  <tr>
-   <td>ASA
-   </td>
-   <td>NA
-   </td>
-   <td>Average Speed to Answer by the agent in the queue.
-   </td>
-  </tr>
-  <tr>
-   <td>AHT
-   </td>
-   <td>NA
-   </td>
-   <td>Average Handle Time of conversation by the agent in the queue.
-   </td>
-  </tr>
-  <tr>
-   <td>CSAT
-   </td>
-   <td>NA
-   </td>
-   <td>Average CSAT score in the queue.
-   </td>
-  </tr>
-</table>
+| Metric        | Value | Description |
+|---------------|-------|-------------|
+| Incoming | NA | Incoming = InQueue + Active + Idle + Expired + Completed + Transferred Out (The Q&A dashboard shows all transferred, even those back to the same queue).<br><br>Completed = AbandonedInQueue + SystemTerminated + All-Conversations-With-Resolutions.<br><br>**Note**: This formula applies when a call does not return to the same queue multiple times. If it does, it is counted multiple times and may not add up correctly.<br><br>**Question**: Does the Incoming count include Inbound and Outbound calls?<br>**Answer**: Yes, if the conversations (calls/chats) entered that queue.<br><br>**Question**: Is the Incoming call count taken from the queue?<br>**Answer**: Yes. However, for `No-Filters`, the incoming call count includes conversations directly transferred from AI Agents to the agent without entering a queue. |
+| Answered | NA | Number of conversations answered by the agent in the queue. |
+| Abandoned | NA | Number of conversations where the user dropped off while conversing with the agent in the queue. |
+| Transferred | NA | Number of conversations transferred from the queue. |
+| Voicemails | NA | Number of voicemails in the queue. |
+| Terminated | NA | Conversations (call/chat) terminated by the system.<br><br>This can occur when no agents are available, outside working hours, due to voice gateway failures, network errors, or other system errors. |
+| Closed | NA | Conversations (calls/chats) that an agent closed.<br><br>The agent ends the conversation, performs after-call work, assigns dispositions, writes notes, and clicks **Close**. |
+| ASA | NA | Average Speed to Answer by the agent in the queue. |
+| AHT | NA | Average Handle Time of the conversation by the agent in the queue. |
+| CSAT | NA | Average CSAT score in the queue. |
+| NPS | NA | Average NPS score in the queue. |
+| Like/Dislike | NA | Average Like/Dislike score in the queue. |
 
 ## About Queues and Agents Fields
 
