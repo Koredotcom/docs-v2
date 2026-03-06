@@ -2,6 +2,27 @@
 
 This document provides information on the feature updates and enhancements introduced in **Automation AI** of AI for Service (XO) v11.x releases.
 
+## v11.22.0 February 28, 2026
+
+<u>Minor Release</u>  
+
+This update includes enhancements and bug fixes. The key enhancements included in this release are summarized below.
+
+<font size="4">DialogGPT</font> 
+
+**DialogGPT-Based Apps now support nlMeta**
+
+DialogGPT-based apps now support handling interruptions across linked apps using the `nlMeta` object. It allows you to pass information directly to the AI Agent, which prioritizes and executes the specified intent before processing any other input. [Learn more :octicons-arrow-right-24:](../../how-tos/using-nlmeta.md)
+
+<font size="4">Agent Flow</font> 
+
+**Context-Aware Custom Prompts in Agent Node**
+
+The context object is now supported in pre-processor and post-processor scripts within Agent Node custom prompts. Previously, these scripts only supported static content. With this update, developers can render templates dynamically using real-time context data, enabling greater flexibility across pre- and post-processor features. 
+
+<hr>
+
+
 ## v11.21.1 January 31, 2026
 
 <u> Patch Release </u>

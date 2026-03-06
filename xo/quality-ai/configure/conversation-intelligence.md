@@ -1,8 +1,8 @@
-# Settings
+# Settings Configuration
 
-The **Settings** lets you make app-level changes to **Conversation Intelligence**.
+Use the **Settings** section to make app-level changes to **Conversation Intelligence**. 
 
-The Settings has the following three sections:
+The Settings section includes the following three sections:
 
 * Conversation Intelligence
 
@@ -17,7 +17,7 @@ This extracts valuable insights from customer interactions across various commun
 ## Access Settings - Conversation Intelligence
 
 Navigate to **Quality AI** > **CONFIGURE** > **Settings** > **Conversation Intelligence**.  
-<img src="../settings/images/default-settings.png" alt="Settings" title="Settings" style="border: 1px solid gray; zoom:80%;"/>
+<img src="../settings/images/default-settings.png" alt="Settings" title="Settings" style="border: 1px solid gray; zoom:80%;">
 
 ### Conversation Intelligence Dashboard
 
@@ -32,10 +32,10 @@ For more information about the Conversation Intelligence Dashboard, see [Convers
 Steps to enable the Conversation Intelligence:
 
 1. Expand the **Conversation Intelligence** collapse icon to view the **Conversation Intelligence Dashboard**.  
-<img src="../settings/images/converse-intelligence.png" alt="Conversation Intelligence Dashboard" title="Conversation Intelligence Dashboard" style="border: 1px solid gray; zoom:80%;"/>
+<img src="../settings/images/converse-intelligence.png" alt="Conversation Intelligence Dashboard" title="Conversation Intelligence Dashboard" style="border: 1px solid gray; zoom:80%;">
 
 2. Enable the **Conversation Intelligence Dashboard** toggle to set the **Script adherence configuration** details.  
-<img src="../settings/conversation-intelligence/images/converse-intelligence-dashboard.png" alt="Conversation Intelligence Dashboard Toggle" title="Conversation Intelligence Dashboard Toggle" style="border: 1px solid gray; zoom:80%;"/>
+<img src="../settings/conversation-intelligence/images/converse-intelligence-dashboard.png" alt="Conversation Intelligence Dashboard Toggle" title="Conversation Intelligence Dashboard Toggle" style="border: 1px solid gray; zoom:80%;">
 
     !!! Note
     
@@ -43,10 +43,11 @@ Steps to enable the Conversation Intelligence:
 
 ### Interaction Level Resolution Detection Methods
 
-This Setting defines how the system determines contact-level resolution across all conversations. Select the method that aligns with your quality standards and reporting needs. The system controls how resolution is calculated, while Taxonomy Builder defines success and failure criteria for topics.
+This Setting defines how the system determines contact-level resolution across all conversations. Select the method that aligns with your quality standards and reporting needs. The system calculates resolution, while the Taxonomy Builder defines success and failure criteria for topics.
 
 #### Method 1: Topic-Based Resolution (Strict)
-The Taxonomy Builder integrates with Conversation Intelligence settings at the application level. These settings control conversation analysis and resolution detection. The system evaluates resolution using AND logic across all L3 topics discussed in a conversation. A contact is marked as resolved only when every topic is successfully resolved.
+
+The Taxonomy Builder integrates with Conversation Intelligence settings at the application level. These settings control conversation analysis and resolution detection. The system evaluates resolution across all L3 topics in a conversation and marks a contact as resolved only when it successfully resolves every topic.
 
 **Use this method when:**
 
@@ -55,15 +56,15 @@ The Taxonomy Builder integrates with Conversation Intelligence settings at the a
 * Prevent minor mentions from affecting resolution metrics.
 * Configure resolution logic in Taxonomy Builder.
 
-**Example**: If the system resolves a customer’s payment issue but not a casual rewards question, it still marks the contact as resolved.
+**Example**: If the system resolves a customer’s payment issue but doesn't resolve a casual rewards question, it doesn't mark the contact as resolved.
 
 **Configuration Flow**
 
 1. Navigate to **Settings > Conversation Intelligence**.
-1. Select the **Topic-based Resolution (Strict)** radio button.
+1. Select the **Topic-based Resolution (Strict)** radio option.
 1. Select **Save** to apply the setting change.
 
-No Resolution configuration appears in Taxonomy Builder, and no further setup is required.
+Taxonomy Builder doesn't display a Resolution configuration, and the system requires no further setup.
 
 #### Method 2: Overall Contact Level Resolution (Holistic Resolution Assessment)
 
@@ -83,9 +84,9 @@ If the system resolves a customer’s payment issue but not a casual rewards que
 **Configuration Flow**
 
 1. Navigate to **Settings > Conversation Intelligence**.
-1. Select the **Overall Contact Level Resolution (Holistic Resolution Assessment)** radio button.
+1. Select the **Overall Contact Level Resolution (Holistic Resolution Assessment)** option.
 1. Select **Save** to apply the setting change.
-1. The system automatically applies **AND logic** and requires resolution for all L3 topics.
+1. The system requires resolution for all L3 topics before marking a contact as resolved.
 1. Navigate to **Quality AI > Configure > Taxonomy Builder**.
 1. Navigate to the **Resolution** tab.
 1. Configure the **Successful**, **Unsuccessful**, and **Overall Resolution** descriptions.
@@ -102,7 +103,7 @@ If the system resolves a customer’s payment issue but not a casual rewards que
             * Real-time dashboards and reports.
             * Agent performance metrics.
             * Quality assurance workflows.
-    <img src="../settings/conversation-intelligence/images/interaction-level-resolution-detection-method.png" alt="Interaction Level Detection Method" title="Interaction Level Detection Method" style="border: 1px solid gray; zoom:80%;"/>
+    <img src="../settings/conversation-intelligence/images/interaction-level-resolution-detection-method.png" alt="Interaction Level Detection Method" title="Interaction Level Detection Method" style="border: 1px solid gray; zoom:80%;">
 
 #### Settings vs. Taxonomy Configuration
 
@@ -115,9 +116,9 @@ If the system resolves a customer’s payment issue but not a casual rewards que
 
 **Taxonomy Builder (Taxonomy Level)**
 
-* Defines individual topic structures and classifications.
-* Configures topic-specific resolution criteria (L3 only).
-* Manages contact-level resolution descriptions (available when Overall Contact Level Resolution is enabled).
+* Define individual topic structures and classifications.
+* Configure topic-specific resolution criteria (L3 only).
+* Manage contact-level resolution descriptions when you enable Overall Contact Level Resolution.
 * Supports version-controlled changes.
 
 #### Disable Conversation Intelligence
@@ -132,7 +133,7 @@ Steps to disable the Conversation Intelligence dashboard:
         The Conversation Intelligence dashboard is not be visible to users throughout the application if the admin has disabled Conversation Intelligence. If it is enabled, then the user can view the insights on contact center efficiency, agent efficacy, and customer experience.
 
 2. Select **Confirm** to disable the entire Conversation Intelligence application. The following screen appears.  
-<img src="../settings/images/confirm-conversation-intelligence.png" alt="Confirm Disable Converstion Intelligence" title="Confirm Disable Conversation Intelligence" style="border: 1px solid gray; zoom:60%;">
+<img src="../settings/images/confirm-conversation-intelligence.png" alt="Confirm Disable Conversation Intelligence" title="Confirm Disable Conversation Intelligence" style="border: 1px solid gray; zoom:60%;">
 
 3. Select **Save** to save the settings.
 
@@ -147,26 +148,24 @@ Steps to enable the Script Adherence configuration:
 
 2. Define the scripts for the following attributes to check the agent adherence. 
 
-    * **Attribute**: Shows script steps like Greeting, Branding, and so on, where you can add custom messages.
+    * **Attribute**: Shows script steps like Greeting and Branding where you can add custom messages.
 
-    * **Action**: Enables you to enter messages for the agent by toggling the action button.
-
-        By default, the action button is disabled but the user can enter the custom message for any of the desired attributes.
+    * **Action**: Enables you to enter messages for the agent by turning on the action toggle. By default, the system disables the action toggle, but users can enter a custom message for any selected attribute.
     
-        Upon enabling, the system checks for adherence to the configured messages of the script adherence section of conversation intelligence instead of the default messages.
+    Upon enabling, the system checks for adherence to the configured messages of the script adherence section of conversation intelligence instead of the default messages.
 
-    * **Message**: Allows you to define specified attribute messages for the agent or user. You can add more than one message for the user for the same attribute and delete the defined messages.
+    * **Message**: Lets you define specified attribute messages for the agent or user. You can add more than one message for the user for the same attribute and delete the defined messages.
     <img src="../settings/conversation-intelligence/images/conv-warning-message.png" alt="Script Adherence Toggle" title="Script Adherence Toggle" style="border: 1px solid gray; zoom:60%;">
     
         !!! Note
 
             If you are enabling this message box, you must enter a message in the corresponding attribute warning message box. You need to save and proceed before moving on to the next attribute message. A warning message appears if you fail to enter a message for the corresponding attribute. 
 
-    * **Save**: Allows you to save the defined messages.
+    * **Save**: Lets you save the defined messages.
 
         At the agent account level, the agent can only check the following options defined by the supervisor or app owner or administrator in the **Settings**:
 
-        * In the **Conversation Intelligence** Dashboard, the agent can check the post-interaction analytics, such as brand tags, greetings, questions, emotions, interactions, and so on. 
+        * In the **Conversation Intelligence** Dashboard, the agent can check the post-interaction analytics, such as brand tags, greetings, questions, emotions, interactions. 
 
-        * In the **Script Adherence** configuration, the agent can visualize the specific messages or scripts that are defined by the supervisor or app owner or administrator.  
+        * In the **Script Adherence** configuration, the system shows agents the messages or scripts defined by the supervisor, app owner, or administrator. 
 

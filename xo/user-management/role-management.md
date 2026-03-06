@@ -1377,7 +1377,7 @@ Allow user to Access and Manage AgentAI Module
    <br>
 Enable and Disable access for Auto QA
    </td>
-   <td>No
+   <td>Yes
    </td>
 </tr>
 <tr>
@@ -1385,7 +1385,7 @@ Enable and Disable access for Auto QA
    <br>
 Configuration and view access to conversational Intelligence
    </td>
-   <td>No
+   <td>Full
    </td>
 </tr>
 <tr>
@@ -1393,7 +1393,15 @@ Configuration and view access to conversational Intelligence
    <br>
 Creation and edit access to evaluation forms and evaluation metrics
    </td>
-   <td>No
+   <td>Full
+   </td>
+</tr>
+<tr>
+   <td><strong>Agent Scorecards and Attributes</strong>
+   <br>
+Creation and edit access to Agent scorecards and agent attributes
+   </td>
+   <td>Full
    </td>
 </tr>
 <tr>
@@ -1401,7 +1409,7 @@ Creation and edit access to evaluation forms and evaluation metrics
    <br>
 Access to create and assign interactions for audit to other users
    </td>
-   <td>No
+   <td>Full
    </td>
 </tr>
 <tr>
@@ -1409,7 +1417,23 @@ Access to create and assign interactions for audit to other users
    <br>
 Access to scored interactions, submit audits & QA dashboard
    </td>
-   <td>No
+   <td>Full
+   </td> 
+</tr>
+<tr>
+   <td><strong>Agent access to dashboard & coaching assignments</strong>
+   <br>
+Enable user agent-level access to their dashboard and to access the coaching sessions assigned to them
+   </td>
+   <td>Full
+   </td> 
+</tr>
+<tr>
+   <td><strong>Quality AI Reporting</strong>
+   <br>
+Create, view and run Quality AI Reporting
+   </td>
+   <td>Full
    </td> 
 </tr>
 </table>
@@ -2038,7 +2062,7 @@ Enable and Disable access for Auto QA
    <br>
 Configuration and view access to conversational Intelligence
    </td>
-   <td>No
+   <td>View
    </td>
 </tr>
 <tr>
@@ -2046,7 +2070,15 @@ Configuration and view access to conversational Intelligence
    <br>
 Creation and edit access to evaluation forms and evaluation metrics
    </td>
-   <td>No
+   <td>View
+   </td>
+</tr>
+<tr>
+   <td><strong>Agent Scorecards and Attributes</strong>
+   <br>
+Creation and edit access to Agent scorecards and agent attributes
+   </td>
+   <td>View
    </td>
 </tr>
 <tr>
@@ -2062,12 +2094,24 @@ Access to create and assign interactions for audit to other users
    <br>
 Access to scored interactions, submit audits & QA dashboard
    </td>
-   <td>No
-
+   <td>Full
    </td>
-   <td>Yes
-
+</tr>
+<tr>
+   <td><strong>Agent access to dashboard & coaching assignments</strong>
+   <br>
+Enable user agent-level access to their dashboard and to access the coaching sessions assigned to them
    </td>
+   <td>Full
+   </td> 
+</tr>
+<tr>
+   <td><strong>Quality AI Reporting</strong>
+   <br>
+Create, view and run Quality AI Reporting
+   </td>
+   <td>Full
+   </td> 
 </tr>
 <tr>
    <td><strong>Agent Dashboard</strong>

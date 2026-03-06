@@ -5,19 +5,19 @@
 ### Compose Responses
 
 Agents can respond to customers by typing their messages in the text editor.  
-<img src="../images/compose-bar-blank.png" alt="Blank Text Editor" title="Blank Text Editor" style="border: 1px solid gray; zoom:80%;"/>
+<img src="../images/compose-bar-blank.png" alt="Blank Text Editor" title="Blank Text Editor" style="border: 1px solid gray; zoom:80%;">
 
 Agents can type their responses in the text editor and send the message by selecting **Send**. Pressing **Tab** on your keyboard shifts the focus to the Send icon. You can also press **Tab + Enter** to send a message.  
-<img src="../images/send-response.png" alt="Send Response" title="Send Response" style="border: 1px solid gray; zoom:80%;"/>
+<img src="../images/send-response.png" alt="Send Response" title="Send Response" style="border: 1px solid gray; zoom:80%;">
 
 !!! Note
 
     You can press **Enter** to send messages. Pressing (ctrl+enter or shift+enter) on Windows and (ctrl+return or shift+return) on Mac creates a new line.
 
-Agents can send a standard response to the customer from a pre-configured library. Press **/** in the text editor to display the standard response templates window.  
-<img src="../images/standard-response-prompt.png" alt="Standard Response Library" title="Standard Response Library" style="border: 1px solid gray; zoom:80%;"/>
+Agents can send a standard response to the customer from a pre-configured library. Press / in the text editor to display the standard response templates window.  
+<img src="../images/standard-response-prompt.png" alt="Standard Response Library" title="Standard Response Library" style="border: 1px solid gray; zoom:80%;">
 
-Pressing **Escape** after typing “**/**” closes the standard response window.
+Pressing Escape after typing / closes the standard response window.
 
 **Translation enabled**: Responses appear in the agent’s selected target language in both the text editor shortcut command and the response widget.
 
@@ -27,7 +27,7 @@ Pressing **Escape** after typing “**/**” closes the standard response window
 
 Using the AI-enhanced compose text box, agents can create customized responses to address customer inquiries, concerns, or issues. They can also add personal touches to their messages to make the communication more human and empathetic.
 There are three choices available:  
-<img src="../images/ai-options-compose-bar.png" alt="AI Enhanced Options" title="AI Enhanced Options" style="border: 1px solid gray; zoom:80%;"/>
+<img src="../images/ai-options-compose-bar.png" alt="AI Enhanced Options" title="AI Enhanced Options" style="border: 1px solid gray; zoom:80%;">
 
 1. **Make more friendly**: This option rephrases the draft response to make it more friendly and informal.
 This option rephrases the draft response to make it more friendly and informal. For example, it rephrases the formal draft response “Your mortgage appointment is scheduled for Jun 24, 2023, 1 PM” to “Great news! We’ve scheduled your mortgage appointment for Jun 24, 2023, at 1 PM.”
@@ -39,12 +39,12 @@ This option rephrases the draft response to make it more friendly and informal. 
 
 ### Add/Delete Hyperlinks in the Text Editor
 
-Agents can add/delete hyperlinks in the text editor while responding to the messages.
+Agents can add or delete hyperlinks in the text editor while responding to the messages.
 
-Steps to add/remove hyperlinks:
+Steps to add or remove hyperlinks:
 
 1. Highlight the text that you want to hyperlink and select the **Add Link** icon.  
-    <img src="../images/highlight.png" alt="Highlight Text" title="Highlight Text" style="border: 1px solid gray; zoom:80%;"/>
+    <img src="../images/highlight.png" alt="Highlight Text" title="Highlight Text" style="border: 1px solid gray; zoom:80%;">
 
 2. In the **Add Link** dialog box, do the following:
 
@@ -59,7 +59,7 @@ Steps to add/remove hyperlinks:
             The highlighted text appears in the Text to display field.
 
 3. Select **Ok** to hyperlink the selected text.  
-    <img src="../images/hyperlinked.png" alt="Hyperlinked Text" title="Hyperlinked Text" style="border: 1px solid gray; zoom:80%;"/>
+    <img src="../images/hyperlinked.png" alt="Hyperlinked Text" title="Hyperlinked Text" style="border: 1px solid gray; zoom:80%;">
 
 4. Hover over the hyperlinked text to view the following options:
 
@@ -68,7 +68,7 @@ Steps to add/remove hyperlinks:
     * Edit
 
 5. Press **Enter** to send the message.  
-    <img src="../images/send-message.png" alt="Send Message" title="Send Message" style="border: 1px solid gray; zoom:80%;"/>
+    <img src="../images/send-message.png" alt="Send Message" title="Send Message" style="border: 1px solid gray; zoom:80%;">
 
 ## Viewing New Messages in the Console
 
@@ -257,7 +257,7 @@ During the consult, the agent can use existing call control features such as Swa
 ##### Queue Level Consult Without Selecting an Agent
 
 The platform lets agents to initiate a consult call by selecting a queue without specifying a particular agent. After the agent starts the consult, the system automatically connects the consult to an available agent in the selected queue.
-Use a queue-based consult when you are handling an active interaction and need assistance without knowing which agent to contact. You must have access to one or more consult-enabled queues. This option helps you reduce time spent searching for agents and allows the system to route the consult based on skills, availability, and capacity.
+Use a queue-based consult when you are handling an active interaction and need assistance without knowing which agent to contact. You must have access to one or more consult-enabled queues. This option helps you reduce time spent searching for agents and lets the system route the consult based on skills, availability, and capacity.
 
 Steps to Initiate a Queue-Based Consult call:
 
@@ -312,13 +312,13 @@ Following the consult or conference call, the initiating agent can proceed with 
 Steps to initiate a Call Transfer:
 
 1. Select the **Transfer** option to initiate the transfer.  
-    <img src="../images/transfer-consult-call.png" alt="Transfer" title="Transfer" style="border: 1px solid gray; zoom:80%;"/>
+    <img src="../images/transfer-consult-call.png" alt="Transfer" title="Transfer" style="border: 1px solid gray; zoom:80%;">
 
     Recent transfer results appear.  
-    <img src="../images/transfer-results.png" alt="Recent Transfer Results" title="Recent Transfer Results" style="border: 1px solid gray; zoom:80%;"/>
+    <img src="../images/transfer-results.png" alt="Recent Transfer Results" title="Recent Transfer Results" style="border: 1px solid gray; zoom:80%;">
 
 2. You can search for an **Agent** or **Queue** to transfer the call.  
-    <img src="../images/agent-queue-transfer.png" alt="Agent/Queue Transfer" title="Agent/Queue Transfer" style="border: 1px solid gray; zoom:80%;"/>
+    <img src="../images/agent-queue-transfer.png" alt="Agent/Queue Transfer" title="Agent/Queue Transfer" style="border: 1px solid gray; zoom:80%;">
 
 ### Agent Transfer
 
@@ -338,10 +338,10 @@ Steps to initiate a Call Transfer:
     <img src="../images/consult-button.png" alt="Consult" title="Consult" style="border: 1px solid gray; zoom:30%;">
 
 * A consult call initiates, and the places external call on hold.  
-    <img src="../images/connecting-consult-call.png" alt="Initiate Consult Call" title="Initiate Consult Call" style="border: 1px solid gray; zoom:80%;"/>
+    <img src="../images/connecting-consult-call.png" alt="Initiate Consult Call" title="Initiate Consult Call" style="border: 1px solid gray; zoom:80%;">
 
 * The consult call displays on the conversation tray of the receiving agent.  
-    <img src="../images/accept-consult-call.png" alt="Conversation Tray" title="Conversation Tray" style="border: 1px solid gray; zoom:80%;"/>
+    <img src="../images/accept-consult-call.png" alt="Conversation Tray" title="Conversation Tray" style="border: 1px solid gray; zoom:80%;">
 
 * On accepting the call it appears on the Live Interaction pane of the receiving agent.  
     <img src="../images/consult-call-connected.png" alt="Consult Call Connected" title="Consult Call Connected" style="border: 1px solid gray; zoom:60%;">
@@ -444,7 +444,11 @@ Follow these steps to apply, change, or remove a virtual background during an ac
     * A blurred background
 
 5. Apply the selected background. The system applies the background immediately without disconnecting or pausing the call. The background updates only the agent’s video feed.  
-    <img src="../images/background-effects.png" alt="Background Effects" title="Background Effects" style="border: 1px solid gray; zoom:60%;">
+    <img src="../images/background-effects.png" alt="Background Effects" title="Background Effects" style="border: 1px solid gray; zoom:60%;">  
+
+    !!! note 
+        The system saves the selected video background at the browser level and reuses it for future calls, including after reload or logout and login in the same browser. The system skips the preview step, allows changes during live calls, and does not sync backgrounds across browsers.  
+
 6. To change the background during the same call, select a different background from the list. The system switches the background in real-time while the call remains active.
 7. To remove the virtual background, select the option to revert to the original camera feed. The system restores the agent’s live camera view instantly.
 
@@ -555,16 +559,16 @@ To initiate a Co-browse session when the connection between the agent and the cu
 1. In the Console, select **CoBrowse**.
 
 2. The agent generates a security code to establish a website-to-website connection.  
-    <img src="../images/generate-co-browser-code.png" alt="Generate Co-Browse Code" title="Generate Co-Browse Code" style="border: 1px solid gray; zoom:80%;"/>
+    <img src="../images/generate-co-browser-code.png" alt="Generate Co-Browse Code" title="Generate Co-Browse Code" style="border: 1px solid gray; zoom:80%;">
 
-    <img src="../images/security-code.png" alt="Co-Browse Security Code" title="Co-Browse Security Code" style="border: 1px solid gray; zoom:80%;"/>
+    <img src="../images/security-code.png" alt="Co-Browse Security Code" title="Co-Browse Security Code" style="border: 1px solid gray; zoom:80%;">
 
 3. Share the security code with the customer.
 4. The customer selects Co-browse. A prompt appears to enter the code shared by the agent during the voice call.  
-    <img src="../images/co-browse-page.png" alt="Co-Browse Page" title="Co-Browse Page" style="border: 1px solid gray; zoom:80%;"/>
+    <img src="../images/co-browse-page.png" alt="Co-Browse Page" title="Co-Browse Page" style="border: 1px solid gray; zoom:80%;">
 
 5. After entering the code, the system establishes an end-to-end connection between the agent and the customer desktops to initiate co-browsing.  
-    <img src="../images/co-browse-page-chat-window.png" alt="Chat Window in Co-Browse" title="Chat Window in Co-Browse" style="border: 1px solid gray; zoom:80%;"/>
+    <img src="../images/co-browse-page-chat-window.png" alt="Chat Window in Co-Browse" title="Chat Window in Co-Browse" style="border: 1px solid gray; zoom:80%;">
 
 ### Initiate a Co-browse on the Console When Connected to an External System
 
@@ -573,13 +577,13 @@ When the agent and user connect through an external system (for example, Genesys
 Steps to initiate co-browse session:
 
 1. Select **Co-browse** on the conversation tray.  
-    <img src="../images/co-browse-external-system.png" alt="Co-Browse Conversation Tray" title="Co-Browse Conversation Tray" style="border: 1px solid gray; zoom:80%;"/>
+    <img src="../images/co-browse-external-system.png" alt="Co-Browse Conversation Tray" title="Co-Browse Conversation Tray" style="border: 1px solid gray; zoom:80%;">
 
 2. The system generates a security code. Share the security code with the customer.  
-    <img src="../images/co-browse-security-code.png" alt="Co-Browse Security Code" title="Co-Browse Security Code" style="border: 1px solid gray; zoom:80%;"/>
+    <img src="../images/co-browse-security-code.png" alt="Co-Browse Security Code" title="Co-Browse Security Code" style="border: 1px solid gray; zoom:80%;">
 
     The system initiates a co-browse session .  
-        <img src="../images/co-browse-session-initiated.png" alt="Co-Browse Session Initiated" title="Co-Browse Session Initiated" style="border: 1px solid gray; zoom:80%;"/>
+        <img src="../images/co-browse-session-initiated.png" alt="Co-Browse Session Initiated" title="Co-Browse Session Initiated" style="border: 1px solid gray; zoom:80%;">
 
 ### Co-browse Limitations
 
@@ -596,7 +600,7 @@ Steps to initiate co-browse session:
 ## Sending Emojis
 
 During a conversation, agents can select the **Emoji** icon to react to the conversation.  
-<img src="../images/emoji-icon.png" alt="Emoji" title="Emoji" style="border: 1px solid gray; zoom:80%;"/>
+<img src="../images/emoji-icon.png" alt="Emoji" title="Emoji" style="border: 1px solid gray; zoom:80%;">
 
 ## Sending Attachments to Customers
 
@@ -605,12 +609,12 @@ During a conversation, agents can select the **Attachments** icon to share attac
 !!! Note
 
     Uploading files with malicious content (for example, HTML scripts) are blocked, irrespective of the file extension. Retry after removing any embedded elements in the attachments.  
-<img src="../images/attachment-icon.png" alt="Attachment" title="Attachment" style="border: 1px solid gray; zoom:80%;"/>
+<img src="../images/attachment-icon.png" alt="Attachment" title="Attachment" style="border: 1px solid gray; zoom:80%;">
 
 ## Agent Forms for Handling Sensitive Information
 
 Agents can guide customers to fill in data using agent forms. The agent forms option is an additional security layer that helps customers provide information faster while maintaining confidentiality.  
-<img src="../images/secure-forms-button.png" alt="Agent Forms" title="Agent Forms" style="border: 1px solid gray; zoom:80%;"/>
+<img src="../images/secure-forms-button.png" alt="Agent Forms" title="Agent Forms" style="border: 1px solid gray; zoom:80%;">
 
 When a user submits information on an agent form, the agent can't directly view the submitted information when trying to open the data in their console.
 While the form headers are visible, the data redacts. The system reveals the information to the agents when they select **view**.
@@ -680,7 +684,7 @@ Administrators can configure the snooze functionality from the [Agent Settings](
 Steps to snooze a conversation:
 
 1. Select **Snooze** at the top of the live interaction window.  
-    <img src="../images/snooze-button.png" alt="Snooze" title="Snooze" style="border: 1px solid gray; zoom:80%;"/>
+    <img src="../images/snooze-button.png" alt="Snooze" title="Snooze" style="border: 1px solid gray; zoom:80%;">
 
     !!! Note
 
@@ -689,7 +693,7 @@ Steps to snooze a conversation:
 2. On the **Snooze Conversation Until** pop-up window, select the snooze duration from the available options or select a custom snooze duration. To select a custom snooze duration, turn on the Custom Snooze toggle and configure the required duration. Agents can choose Today, Tomorrow, or Day After as quick snooze options, or define a custom Date and Time. You can set the maximum snooze date up to 30 days in advance.  
     <img src="../images/custom-snooze-without-note.png" alt="Snooze without note" title="Snooze without note" style="border: 1px solid gray; zoom:70%;">  
 
-    If Administrators turn on Make Snooze Notes Mandatory in [Agent Settings](../contactcenter/agent-and-supervisors/agent-management/agent-management.md#snooze), the Reason for Snoozing dialog box appears. Enter the message to display.  
+    If Administrators turn on Make Snooze Notes Mandatory in [Agent Settings](../contactcenter/agent-and-supervisors/agent-management/agent-management.md#snooze), the Reason for Snoozing dialog box appears. After the agent adds snooze notes, the agent can view them in the Notes section.  
     <img src="../images/reason-for-snoozing.png" alt="Reason for snooze" title="Reason for snooze" style="border: 1px solid gray; zoom:70%;">  
 
 3. To select a custom snooze duration, turn on the **Custom Snooze** toggle, configure your required snooze duration, and set the snooze duration.  
@@ -733,6 +737,19 @@ Agents can view and respond to emails on the console. The emails appear on the c
 <img src="../images/collapsible-email-tiles.png" alt="Collapsible Email Tiles" title="Collapsible Email Tiles" style="border: 1px solid gray; zoom:70%;">
 
 Admins can configure this from [Agent settings](../contactcenter/agent-and-supervisors/agent-management/agent-management.md#agent-settings).
+
+**Collapsible Thread View for Reply, Reply All, and Forward**: The system displays email conversations in a collapsible format during Reply, Reply All, and Forward actions to improve readability while preserving full context and enforcing visibility rules.
+
+Every outgoing email includes the original email, all subsequent replies, and any additional messages in the thread, subject to CC/BCC visibility rules. The system does not drop, modify, duplicate, or reorder content. Thread continuity persists even if recipients are removed and later re-added.
+
+By default, the system shows only the latest email content. Older emails remain collapsed behind an ellipsis.
+
+<img src="../images/collasbile-thread-save.png" alt="collasbile-thread-save" title="Collapsible Email Tiles" style="border: 1px solid gray; zoom:70%;">
+
+When users expand the chain, the system displays all eligible previous emails in chronological order, including sender, recipients (To/CC/BCC as applicable), timestamp, and message content.
+
+<img src="../images/collasible-thread-draft.png" alt="collasible-thread-draft" title="Collapsible Email Tiles" style="border: 1px solid gray; zoom:70%;">
+
 
 **Reply and Reply All**: Agents can select **Reply** to open a response window addressed only to the most recent sender. Clicking **Reply All** opens a response window addressed to all participants in the email thread, including the original sender and all CC’ed recipients.  
 <img src="../images/reply-all-email.png" alt="Reply and Reply All" title="Reply and Reply All" style="border: 1px solid gray; zoom:70%;">
@@ -845,16 +862,16 @@ Select the **Attachment** icon to select and upload files.
 To add a new note:
 
 1. Select **Notes**.  
-    <img src="../images/notes-icon.png" alt="Notes Icon" title="Notes Icon" style="border: 1px solid gray; zoom:80%;"/>
+    <img src="../images/notes-icon.png" alt="Notes Icon" title="Notes Icon" style="border: 1px solid gray; zoom:80%;">
 
 2. Select **+ Add New Note**.  
-    <img src="../images/add-new-note.png" alt="Add New Note" title="Add New Note" style="border: 1px solid gray; zoom:80%;"/>
+    <img src="../images/add-new-note.png" alt="Add New Note" title="Add New Note" style="border: 1px solid gray; zoom:80%;">
 
 3. Type the message and select **Save**. A confirmation message appears  
-    <img src="../images/notes-created-confirmation.png" alt="Note Added Confirmation" title="Note Added Confirmation" style="border: 1px solid gray; zoom:80%;"/>
+    <img src="../images/notes-created-confirmation.png" alt="Note Added Confirmation" title="Note Added Confirmation" style="border: 1px solid gray; zoom:80%;">
 
 4. **Drafts**: If you select the **Close** option on the email editor and there’s content inside, the system preserves mail  as a draft. Drafts are available at the bottom of the console.  
-    <img src="../images/draft.png" alt="Drafts" title="Drafts" style="border: 1px solid gray; zoom:80%;"/>
+    <img src="../images/draft.png" alt="Drafts" title="Drafts" style="border: 1px solid gray; zoom:80%;">
 
 ### Outbound Email
 
@@ -865,7 +882,7 @@ Outbound email functionality is a key feature within Contact Center AI designed 
 Steps to send an outbound email:
 
 1. Select the **+** on the right corner of the conversation tray.  
-    <img src="../images/button.png" alt="+ option" title="+ option" style="border: 1px solid gray; zoom:80%;"/>
+    <img src="../images/button.png" alt="+ option" title="+ option" style="border: 1px solid gray; zoom:80%;">
 
 2. Select the **New Mail** option.
 
@@ -879,16 +896,16 @@ Steps to send an outbound email:
     **Send**:
 
     * Select the **Send** option to send the email.  
-        <img src="../images/send-button.png" alt="Send" title="Send" style="border: 1px solid gray; zoom:80%;"/>
+        <img src="../images/send-button.png" alt="Send" title="Send" style="border: 1px solid gray; zoom:80%;">
 
         A confirmation appears, and sends the email.  
 
     **Send & Close**:
 
     Select the down arrow beside Send and select **Send & Close**. A confirmation appears and sends the email. A disposition window appears.   
-        <img src="../images/disposition-sent-mail.png" alt="Disposition Sent Mail" title="Disposition Sent Mail" style="border: 1px solid gray; zoom:80%;"/>
+        <img src="../images/disposition-sent-mail.png" alt="Disposition Sent Mail" title="Disposition Sent Mail" style="border: 1px solid gray; zoom:80%;">
     If Wrap-up Code prediction is enabled, a disclaimer appears requesting users to verify the content before using it.  
-        <img src="../images/ai-generated-content.png" alt="AI Generated Content" title="AI Generated Content" style="border: 1px solid gray; zoom:80%;"/>
+        <img src="../images/ai-generated-content.png" alt="AI Generated Content" title="AI Generated Content" style="border: 1px solid gray; zoom:80%;">
 
     !!! Note
 
@@ -901,10 +918,10 @@ Steps to send an outbound email:
     **Draft**:
 
     Select the **X** on the corner of the email editor window.  
-        <img src="../images/x-button.png" alt="X-icon" title="X-icon" style="border: 1px solid gray; zoom:80%;"/>
+        <img src="../images/x-button.png" alt="X-icon" title="X-icon" style="border: 1px solid gray; zoom:80%;">
 
     The editor window minimizes, and saves the mail as a draft.  
-        <img src="../images/draft-minimized.png" alt="Draft Minimized" title="Draft Minimized" style="border: 1px solid gray; zoom:80%;"/>
+        <img src="../images/draft-minimized.png" alt="Draft Minimized" title="Draft Minimized" style="border: 1px solid gray; zoom:80%;">
 
     Drafts are automatically saved and remain available in the following scenarios:
 
@@ -918,16 +935,109 @@ Steps to send an outbound email:
     **Delete**:
 
     Select the **Delete** icon on the left corner of the editor.  
-        <img src="../images/delete-button.png" alt="Delete" title="Delete" style="border: 1px solid gray; zoom:80%;"/>
+        <img src="../images/delete-button.png" alt="Delete" title="Delete" style="border: 1px solid gray; zoom:80%;">
 
     A confirmation message displays. Select **Delete**. 
+
+### Email Work Bin
+
+Administrators enable and control the Work Bin capability at the system level. [Learn more](./../console/interacting-with-customers.md/#send-outbound-email).
+
+When the administrator turns on the Work Bin setting:
+
+* The system displays the Work Bin icon in the Live Interaction pane.
+* The system makes Work Bin related controls available in the email interaction header.
+
+Agent Actions
+
+* The agent selects Work Bin in the email interaction header to park the conversation.
+* The system removes the conversation from the agent’s active tray.
+* The system releases the agent’s slot immediately.
+* The system stores the last handling agent on the conversation.
+
+If the agent sends an email without selecting Work Bin, the system keeps the conversation active with the agent.  
+<img src="../images/move-to-workbin.png" alt="move-to-workbin" title="move-to-workbin" style="border: 1px solid gray; zoom:80%;">   
+
+Customer Reply Handling
+
+When a customer replies:  
+
+* The system attempts to assign the conversation to the last handling agent.
+* If the agent is available, the system routes the conversation to that agent.
+* If the agent is unavailable and wait behavior is configured, the system waits for the defined duration.
+* If the agent remains unavailable after the wait duration, the system routes the conversation to the queue.  
+    <img src="../images/workbin-conversation.png" alt="workbin-conversation" title="workbin-conversation" style="border: 1px solid gray; zoom:80%;">   
+
+* If wait behavior is not configured, the system immediately applies standard queue routing. \
+
+**Supervisor Intervention**
+
+While the conversation remains in Work Bin:
+
+* A supervisor can assign the conversation directly to an agent.
+* A supervisor can transfer the conversation to a queue.
+
+When a supervisor transfers the conversation to a queue, the system does not wait for the initial handling agent.
+
+**Out-of-Hours (OOH) Handling**
+
+If OOH begins while the conversation remains in Work Bin:
+
+* The system does not move the conversation to the OOH flow during the wait period.
+* When the customer sends a new reply, the system applies routing logic based on configured OOH rules.
+
+The Work Bin capability ensures that agents release capacity immediately, supervisors retain operational control, and routing logic remains configurable and consistent with existing system behavior.  
+
+**Agent Actions**
+
+* The agent selects Work Bin in the email interaction header to park the conversation.
+* The system removes the conversation from the agent’s active tray.
+* The system releases the agent’s slot immediately.
+* The system stores the last handling agent on the conversation.
+
+If the agent sends an email without selecting Work Bin, the system keeps the conversation active with the agent.  
+<img src="../images/agent-actions.png" alt="Agent Actions" title="Agent Actions" style="border: 1px solid gray; zoom:80%;">
+
+
+**Customer Reply Handling**
+
+When a customer replies:
+
+
+
+* The system attempts to assign the conversation to the last handling agent.
+* If the agent is available, the system routes the conversation to that agent.
+* If the agent is unavailable and wait behavior is configured, the system waits for the defined duration.
+* If the agent remains unavailable after the wait duration, the system routes the conversation to the queue.  
+<img src="../images/customer-reply.png" alt="Customer Reply Handling" title="Customer Reply Handling" style="border: 1px solid gray; zoom:80%;">
+
+
+* If wait behavior is not configured, the system immediately applies standard queue routing. 
+
+**Supervisor Intervention**
+
+While the conversation remains in Work Bin:
+
+* A supervisor can assign the conversation directly to an agent.
+* A supervisor can transfer the conversation to a queue.
+
+When a supervisor transfers the conversation to a queue, the system does not wait for the initial handling agent.
+
+**Out-of-Hours (OOH) Handling**
+
+If OOH begins while the conversation remains in the Work Bin:
+
+* The system does not move the conversation to the OOH flow during the wait period.
+* When the customer sends a new reply, the system applies routing logic based on configured OOH rules.
+
+The Work Bin capability ensures that agents release capacity immediately, supervisors retain operational control, and routing logic remains configurable and consistent with existing system behavior.
 
 ## Color Codes
 
 Color codes help in easy identification and better readability of conversations on digital channels.
 
 * The blue dot represents a conversation in which an agent is engaged.  
-    <img src="../images/blue-dot.png" alt="Blue Dot" title="Blue Dot" style="border: 1px solid gray; zoom:80%;"/>
+    <img src="../images/blue-dot.png" alt="Blue Dot" title="Blue Dot" style="border: 1px solid gray; zoom:80%;">
 
 * The red dot represents an overdue conversation.  
     <img src="../images/red-dot.png" alt="Red Dot" title="Red Dot" style="border: 1px solid gray; zoom:60%;">
@@ -942,7 +1052,7 @@ You can add notes on the interaction (customer feedback, key points, next action
 To add a new note:
 
 1. Select **Notes**.  
-    <img src="../images/interactions-notes.png" alt="Notes" title="Notes" style="border: 1px solid gray; zoom:80%;"/>
+    <img src="../images/interactions-notes.png" alt="Notes" title="Notes" style="border: 1px solid gray; zoom:80%;">
 
 2. Select **+ Add New Note**.
 
@@ -953,10 +1063,10 @@ To add a new note:
 Modify skills in a live interaction by selecting the Live Interaction option in [Skill Modification](../contactcenter/agent-and-supervisors/agent-management/agent-management.md#skill-modification):
 
 1. Select the **Add Skills** option on the Skills bar.  
-    <img src="../images/add-skills-button.png" alt="Add Skills" title="Add Skills" style="border: 1px solid gray; zoom:80%;"/>
+    <img src="../images/add-skills-button.png" alt="Add Skills" title="Add Skills" style="border: 1px solid gray; zoom:80%;">
 
 2. Select the necessary skills from the drop-down.  
-    <img src="../images/skills.png" alt="Select Skills" title="Select Skills" style="border: 1px solid gray; zoom:80%;"/>
+    <img src="../images/skills.png" alt="Select Skills" title="Select Skills" style="border: 1px solid gray; zoom:80%;">
 
 ## Transfer Interactions
 
@@ -967,14 +1077,14 @@ Contact Center AI lets agents to transfer ongoing conversations to other queues,
 To transfer a conversation to another queue when the [Enforce Skill Match for Transfers](../contactcenter/agent-and-supervisors/agent-management/agent-management.md#enforce-skill-match-for-transfers) setting is enabled:
 
 1. Select **Transfer** at the top of the live interaction pane. You can also use the shortcut key **Alt + Shift + T** to open the transfer window.  
-    <img src="../images/transfer-shortcut.png" alt="Transfer" title="Transfer" style="border: 1px solid gray; zoom:80%;"/>
+    <img src="../images/transfer-shortcut.png" alt="Transfer" title="Transfer" style="border: 1px solid gray; zoom:80%;">
 
 2. Search for a queue in the search bar on the **Transfer to** window.
 3. Select a queue from the dropdown list. Agents with matching skills appear for the queue during the transfer.  
-    <img src="../images/transfer-to.png" alt="Transfer to Window" title="Transfer to Window" style="border: 1px solid gray; zoom:80%;"/>
+    <img src="../images/transfer-to.png" alt="Transfer to Window" title="Transfer to Window" style="border: 1px solid gray; zoom:80%;">
 
 4. Select **Transfer**. The conversation gets transferred to the selected queue.  
-    <img src="../images/conversation-transferred.png" alt="Conversation Transferred" title="Conversation Transferred" style="border: 1px solid gray; zoom:80%;"/>
+    <img src="../images/conversation-transferred.png" alt="Conversation Transferred" title="Conversation Transferred" style="border: 1px solid gray; zoom:80%;">
 
 !!! Note
 
@@ -985,29 +1095,29 @@ To transfer a conversation to another queue when the [Enforce Skill Match for Tr
 To transfer a conversation to another queue when the [Skill Modification](../contactcenter/agent-and-supervisors/agent-management/agent-management.md#skill-modification) setting is enabled:
 
 1. Select **Transfer** at the top of the live interaction pane. You can also use the shortcut key **Alt + Shift + T** to open the transfer window.  
-    <img src="../images/transfer-shortcut.png" alt="Transfer" title="Transfer" style="border: 1px solid gray; zoom:80%;"/>
+    <img src="../images/transfer-shortcut.png" alt="Transfer" title="Transfer" style="border: 1px solid gray; zoom:80%;">
 
 2. Search for a queue in the search bar on the **Transfer to** window. All matching queues appear.
 3. Select the queue and select **Next**.  
-    <img src="../images/transfer-to-queue.png" alt="Transfer to Window" title="Transfer to Window" style="border: 1px solid gray; zoom:80%;"/>
+    <img src="../images/transfer-to-queue.png" alt="Transfer to Window" title="Transfer to Window" style="border: 1px solid gray; zoom:80%;">
 
 4. You can add or delete skills to the interaction before transferring it to another queue.  
-    <img src="../images/add-skills.png" alt="Add or Delete Skills" title="Add or Delete Skills" style="border: 1px solid gray; zoom:80%;"/>
+    <img src="../images/add-skills.png" alt="Add or Delete Skills" title="Add or Delete Skills" style="border: 1px solid gray; zoom:80%;">
 
 5. Select **Transfer**. The conversation transfers to the selected queue.  
-    <img src="../images/conversation-transferred-confirmation.png" alt="Conversation Transferred Confirmation" title="Conversation Transferred Confirmation" style="border: 1px solid gray; zoom:80%;"/>
+    <img src="../images/conversation-transferred-confirmation.png" alt="Conversation Transferred Confirmation" title="Conversation Transferred Confirmation" style="border: 1px solid gray; zoom:80%;">
 
 **Transfer to Another Agent**
 
 To transfer a conversation to another agent:
 
 1. Select **Transfer** at the top of the live interaction pane. You can also use the shortcut key **Alt + Shift + T** to open the transfer window.  
-    <img src="../images/transfer-shortcut.png" alt="Transfer" title="Transfer" style="border: 1px solid gray; zoom:80%;"/>
+    <img src="../images/transfer-shortcut.png" alt="Transfer" title="Transfer" style="border: 1px solid gray; zoom:80%;">
 
 2. Search for an agent in the search bar on the **Transfer to** window.
 3. Select an available agent.
 4. Select **Transfer**. The conversation transfers to the selected agent.  
-    <img src="../images/transfer-to-agent.png" alt="Transfer to Window" title="Transfer to Window" style="border: 1px solid gray; zoom:80%;"/>
+    <img src="../images/transfer-to-agent.png" alt="Transfer to Window" title="Transfer to Window" style="border: 1px solid gray; zoom:80%;">
 
 !!! Note
 
@@ -1018,12 +1128,12 @@ To transfer a conversation to another agent:
 An agent can transfer the call to an external contact during a voice interaction. An administrator must enable this feature in [Agent Settings](../contactcenter/agent-and-supervisors/agent-management/agent-management.md#agent-settings) to let external transfer of ongoing customer calls. To transfer a conversation to an external contact from the Agent Console, follow these steps:
 
 1. Select **Transfer** at the top of the live interaction pane. You can also use the shortcut key **Alt + Shift + T** to open the transfer window.  
-    <img src="../images/transfer-shortcut.png" alt="Transfer" title="Transfer" style="border: 1px solid gray; zoom:80%;"/>
+    <img src="../images/transfer-shortcut.png" alt="Transfer" title="Transfer" style="border: 1px solid gray; zoom:80%;">
 
 2. Search for an external contact in the search bar on the **Transfer to** window.
 3. Select an available contact.
 4. Select **Transfer**. The conversation transfers to the selected contact.  
-    <img src="../images/transfer-to-external-contact.png" alt="Transfer to External Contact" title="Transfer to External Contact" style="border: 1px solid gray; zoom:80%;"/>
+    <img src="../images/transfer-to-external-contact.png" alt="Transfer to External Contact" title="Transfer to External Contact" style="border: 1px solid gray; zoom:80%;">
 
     !!! Note
 
@@ -1034,7 +1144,7 @@ An agent can transfer the call to an external contact during a voice interaction
 ## End Interactions
 
 1. To end an interaction session, select **End** in the _Live Interaction_ pane.  
-    <img src="../images/end-button.png" alt="End Interaction" title="End Interaction" style="border: 1px solid gray; zoom:80%;"/>
+    <img src="../images/end-button.png" alt="End Interaction" title="End Interaction" style="border: 1px solid gray; zoom:80%;">
 
 2. If selecting _End_, you must **confirm** that you want to end the interaction. Select **Yes** to do so, or otherwise, select **No**.  
     <img src="../images/end-interaction-window.png" alt="End Interaction pop-up" title="End Interaction pop-up" style="border: 1px solid gray; zoom:60%;">
@@ -1046,10 +1156,10 @@ An agent can transfer the call to an external contact during a voice interaction
 When a caller disconnects, agents can either call back or end the call. If an agent doesn't take any action, a depleting timer prompts the agent to act within a specified timeframe. By default, this feature is available for existing users. Administrators can enable this functionality from the [Agent Settings](../contactcenter/agent-and-supervisors/agent-management/agent-management.md).
 
 **Timer when the caller disconnects the call**: A depleting timer appears on the live interaction pane, with options to end the call or call back.  
-<img src="../images/end-call.png" alt="End Call" title="End Call" style="border: 1px solid gray; zoom:80%;"/>  
+<img src="../images/end-call.png" alt="End Call" title="End Call" style="border: 1px solid gray; zoom:80%;">  
 
 **Timer when the caller disconnects during a conference call**: A depleting timer appears on the live interaction pane, with options to close or rejoin the conference call.  
-<img src="../images/end-conference-call.png" alt="End Conference Call" title="End Conference Call" style="border: 1px solid gray; zoom:80%;"/>  
+<img src="../images/end-conference-call.png" alt="End Conference Call" title="End Conference Call" style="border: 1px solid gray; zoom:80%;">  
 
 The call transitions to After Call Work (ACW) at the end of the configured timeout duration.
 
@@ -1062,17 +1172,17 @@ If ACW is enabled, then the system manages the conversations based on the ACW co
 * Slots free up, and accepts other conversations.
 * The close option appears on selecting all the required disposition codes.
 * There is no time restriction for selecting the disposition codes and they're available until the agent manually closes them.  
-<img src="../images/immediate-slot-release.png" alt="Immediate Slot Release" title="Immediate Slot Release" style="border: 1px solid gray; zoom:80%;"/>
+<img src="../images/immediate-slot-release.png" alt="Immediate Slot Release" title="Immediate Slot Release" style="border: 1px solid gray; zoom:80%;">
 
 **Timed Slot Release**
 
 * Agents can see a countdown timer when the conversation ends, indicating the time left to provide a disposition.
 * The slot becomes available if the agent submits a disposition or when the timer elapses.
 * The system generates a disposition code and fills any empty disposition fields when agents don't provide dispositions within the allotted time.  
-    <img src="../images/timed-slot-release.png" alt="Timed Slot Release" title="Timed Slot Release" style="border: 1px solid gray; zoom:80%;"/>
+    <img src="../images/timed-slot-release.png" alt="Timed Slot Release" title="Timed Slot Release" style="border: 1px solid gray; zoom:80%;">
 
 * When the disposition timer expires, the system displays a message to the agent.  
-    <img src="../images/time-expired-message.png" alt="Time Expired Message" title="Time Expired Message" style="border: 1px solid gray; zoom:80%;"/>
+    <img src="../images/time-expired-message.png" alt="Time Expired Message" title="Time Expired Message" style="border: 1px solid gray; zoom:80%;">
 
 * For conversations transferred to another queue, the system applies the final queue’s disposition mode to determine the required dispositions.
 
@@ -1090,17 +1200,17 @@ There are two ways to assign a disposition:
 
 1. During the conversation (Dynamic):
     1. Select **+ Add Disposition**.  
-        <img src="../images/add-disposition.png" alt="+ Add Disposition" title="+ Add Disposition" style="border: 1px solid gray; zoom:80%;"/>
+        <img src="../images/add-disposition.png" alt="+ Add Disposition" title="+ Add Disposition" style="border: 1px solid gray; zoom:80%;">
 
     2. Select a disposition from the dropdown menu and select **Save**.
 
     3. The system assigns the disposition. You can either **Transfer** or **End** the conversation.  
-        <img src="../images/disposition-added.png" alt="Disposition Added" title="Disposition Added" style="border: 1px solid gray; zoom:80%;"/>
+        <img src="../images/disposition-added.png" alt="Disposition Added" title="Disposition Added" style="border: 1px solid gray; zoom:80%;">
 
     4. When you select **End**, a confirmation message appears. Select **Yes** to confirm.
 
     5. The **Disposition & Notes** window appears, and you can make any necessary changes. Select **Close**, and the conversation closes with the disposition attached.  
-        <img src="../images/disposition-and-notes.png" alt="Disposition and Notes" title="Disposition and Notes" style="border: 1px solid gray; zoom:80%;"/>
+        <img src="../images/disposition-and-notes.png" alt="Disposition and Notes" title="Disposition and Notes" style="border: 1px solid gray; zoom:80%;">
 
     !!! Note
 
@@ -1178,7 +1288,7 @@ Steps to translate real-time conversations:
 ## Information Provided to Agents and Customers During Live Interactions
 
 You can interact with customers within the **Live Interaction** area of the Agent Console.  
-<img src="../images/information-during-live-interaction.png" alt="Information Provided to Agents during Live Interactions" title="Information Provided to Agents during Live Interactions" style="border: 1px solid gray; zoom:80%;"/>
+<img src="../images/information-during-live-interaction.png" alt="Information Provided to Agents during Live Interactions" title="Information Provided to Agents during Live Interactions" style="border: 1px solid gray; zoom:80%;">
 
 The **Live Interaction** area provides access to features and information used during live conversations, as follows:
 
@@ -1246,19 +1356,21 @@ Steps to request supervisor assistance:
 
 ## Real Time Sentiment Capture
 
-Agents can view customers' real-time sentiments during conversations (Chat, Voice, and Email) on the [Conversation Tray](../console/conversation-tray.md#customer-sentiment) and the Live Interactions pane. Administrators can enable the real-time sentiment capture functionality. [Learn more](../contactcenter/configurations/settings/real-time-sentiment-analysis.md).
+Agents can view customer sentiment during Chat, Voice, and Email interactions from the [Conversation Tray](../console/conversation-tray.md#customer-sentiment) and Live Interactions pane. Administrators can enable this capability. [Learn more](../contactcenter/configurations/settings/real-time-sentiment-analysis.md).
 
-**Chat**:  
-<img src="../images/console-sentiment.png" alt="Chat Sentiment" title="Chat Sentiment" style="border: 1px solid gray; zoom:80%;"/>  
+The sentiment indicator (positive, negative, or neutral) reflects the overall sentiment of the entire conversation, not only the most recent message.  
+<img src="../images/console-sentiment.png" alt="Overall Sentiment" title="Overall Sentiment" style="border: 1px solid gray; zoom:70%;">  
 
-**Voice**:  
-<img src="../images/sentiment-voice.png" alt="Voice Sentiment" title="Voice Sentiment" style="border: 1px solid gray; zoom:80%;"/> 
+When agents select the sentiment indicator, a graph appears, visually representing emotional fluctuations per message. Agents gain immediate insight into customer emotions. This insight helps them adjust their tone, approach, and responses, leading to improved empathy and more effective issue resolution.
 
-**Email**:  
-<img src="../images/sentiment-email.png" alt="Email Sentiment" title="Email Sentiment" style="border: 1px solid gray; zoom:80%;"/> 
+Positive:  
+<img src="../images/sentiment-voice.png" alt="Voice Sentiment" title="Voice Sentiment" style="border: 1px solid gray; zoom:70%;">
 
-When agents select the sentiment indicator, a graph appears, visually representing emotional fluctuations throughout the interaction. Agents gain immediate insight into customer emotions. This insight helps them adjust their tone, approach, and responses, leading to improved empathy and more effective issue resolution. Agents can also customize the graph to focus on specific timeframes or sentiment ranges, allowing deeper analysis when needed.  
-<img src="../images/sentiment-analysis-graph.png" alt="Sentiment Graph" title="Sentiment Graph" style="border: 1px solid gray; zoom:80%;"/> 
+Negative:  
+<img src="../images/negative-sentiment.png" alt="Chat Sentiment" title="Chat Sentiment" style="border: 1px solid gray; zoom:70%;">    
+
+Neutral:  
+<img src="../images/sentiment-email.png" alt="Email Sentiment" title="Email Sentiment" style="border: 1px solid gray; zoom:70%;">  
 
 ## Stacked Messages, Timestamp, and Read Status
 
@@ -1266,14 +1378,14 @@ When agents select the sentiment indicator, a graph appears, visually representi
 * If the customer doesn't respond to the first message sent by an agent, the message displays a timestamp, and the following messages  won't show a timestamp until the clock minute changes. For example, If an agent sends a message at 11:30:24, the second message at 11:30:36, the third message at 11:30:45, and the fourth message at 11:31:08, then the first three messages get stacked under one timestamp, and the fourth message has a different timestamp.
 * If the customer responds in the same minute, the response displays the date and timestamp. The responses from the customer only show a timestamp once the clock minute changes.
 * Agents can see the read status on the last message sent. If the messages get stacked, the read status appears only against the most recent one.  
-<img src="../images/stacked-messages.png" alt="Stacked Messages, Timestamp, and Read Status" title="Stacked Messages, Timestamp, and Read Status" style="border: 1px solid gray; zoom:80%;"/>
+<img src="../images/stacked-messages.png" alt="Stacked Messages, Timestamp, and Read Status" title="Stacked Messages, Timestamp, and Read Status" style="border: 1px solid gray; zoom:80%;">
 
 ## Behavior When Login Prep Status is Enabled
 
 A message appears on the console for the duration configured on the [Agent Status](../contactcenter/agent-and-supervisors/agent-management/agent-management.md#agent-status-management) page. This status lets an agent to prepare themselves before they start receiving interactions.  
-<img src="../images/login-prep-status.png" alt="Login Prep Status Enabled" title="Login Prep Status Enabled" style="border: 1px solid gray; zoom:80%;"/>
+<img src="../images/login-prep-status.png" alt="Login Prep Status Enabled" title="Login Prep Status Enabled" style="border: 1px solid gray; zoom:80%;">
 
-<img src="../images/login-prep.png" alt="Login Prep Status" title="Login Prep Status" style="border: 1px solid gray; zoom:80%;"/>
+<img src="../images/login-prep.png" alt="Login Prep Status" title="Login Prep Status" style="border: 1px solid gray; zoom:80%;">
 
 At the end of the Login Preparation time slot, the system automatically marks the agent as ‘Away,’ and a pop-up message appears with the following content:  
 <img src="../images/marked-as-away.png" alt="Marked as Away" title="Marked as Away" style="border: 1px solid gray; zoom:60%;">
@@ -1291,10 +1403,10 @@ Agents can choose the following options:
 If the Auto Answer mode is enabled in [Agent Settings](../contactcenter/agent-and-supervisors/agent-management/agent-management.md#voice), the Transfer/End buttons don't display on the Live Interaction pane until the assigned agent sends the first message.
 
 This is what the Agent Console looks like **before the first message** from the agent:  
-<img src="../images/before-first-message-from-agent.png" alt="Before First Message From Agent" title="Marked as Away" style="border: 1px solid gray; zoom:80%;"/>
+<img src="../images/before-first-message-from-agent.png" alt="Before First Message From Agent" title="Marked as Away" style="border: 1px solid gray; zoom:80%;">
 
 This is what the Agent Console looks like **after the first message** from the agent:  
-<img src="../images/after-first-message-from-agent.png" alt="After First Message From Agent" title="After First Message From Agent" style="border: 1px solid gray; zoom:80%;"/>
+<img src="../images/after-first-message-from-agent.png" alt="After First Message From Agent" title="After First Message From Agent" style="border: 1px solid gray; zoom:80%;">
 
 ### Behavior When an Agent Changes Their Status
 
@@ -1314,7 +1426,7 @@ If an agent logs out suddenly (the browser closes or the system crashes, for exa
 
 If an agent doesn't accept or send a response within a specified time, the system automatically changes the status to **Away (Idle)**.
 This status isn't available for selection by an agent.  
-<img src="../images/away-idle.png" alt="Away (Idle)" title="Away (Idle)" style="border: 1px solid gray; zoom:80%;"/>
+<img src="../images/away-idle.png" alt="Away (Idle)" title="Away (Idle)" style="border: 1px solid gray; zoom:80%;">
 
 ### Behavior When No Agents are Available
 
@@ -1322,37 +1434,29 @@ The system keeps conversations in the queue until they reach the queue’s maxim
 After the queue’s maximum wait time expires, the system triggers the [No Agents Available](../contactcenter/flows-and-routing/conditional-flows.md#no-agents-available-flow)" flow. The system enables this behavior at the account level for new accounts, and it applies to all channels.
 For existing accounts, the existing routing logic is applicable. For accounts wanting to modify their routing logic, contact Support.
 
-## CSAT Survey
+## Feedback Surveys
 
-The CSAT (Customer Satisfaction) survey is essential for contact centers because it provides valuable feedback on customer satisfaction levels, enabling continuous improvement of service quality.
+The platform supports a Feedback framework to capture customer sentiment after interactions. You can configure feedback as CSAT, NPS, or Like or Dislike. You activate only one feedback type per channel at a time.
 
-CSAT surveys trigger based on the scenarios configured by administrators/supervisors while [Creating a Survey](../contactcenter/configurations/surveys/configure-surveys.md#create-a-survey):
+Supported Feedback Types: 
 
-* **Show to Everyone**: When administrators configure this scenario, the system automatically triggers a survey for every completed interaction between an agent and a customer on digital or voice channels.
-* **Show to Every nth User**: When administrators configure this scenario, the system automatically triggers a survey for every completed nth interaction between an agent and a customer on digital or voice channels. For example: If the set frequency is 2, then the system triggers the survey for every second customer.
-* **Agents can trigger**: When administrators configure this scenario, agents can trigger a survey at any point during the interaction:
-    * Select **Send Survey** on the right corner. Th s highlights the send survey and a survey icon appears on the **End** icon in the live interaction pane.  
-        <img src="../images/csat-button.png" alt="CSAT" title="CSAT" style="border: 1px solid gray; zoom:70%;">
+* **CSAT (Customer Satisfaction)** – Rating scale from 1 (extremely poor) to 5 (extremely good).
+* **NPS (Net Promoter Score)** – Rating scale from 0 to 10. The system classifies responses as Detractors (0–6), Passives (7–8), or Promoters (9–10).
+* **Like or Dislike** – Binary response (1 = Like, 0 = Dislike). 
 
-    * The system triggers the survey to the customer when the agent selects End with the survey selected.
+### Feedback Triggering and Assignment
 
-    * When you select Auto Trigger Survey, the system keeps the option disabled by default. Agents must explicitly disable it to trigger surveys automatically, and they can turn it off when needed.
+The system triggers feedback based on the configured rules and supported interaction scenarios. Feedback applies to both digital and voice interactions, including standard calls and eligible internal transfers or consults.
 
-For scenarios where the agent actively participates in interactions and the interactions end, the feedback from surveys contributes to their CSAT scores.
+Select **Send Survey** in the bottom right corner. This highlights the send survey, and a survey icon appears on the End icon in the live interaction pane.  
+<img src="../images/end-icon.png" alt="end-icon" title="end-icon" style="border: 1px solid gray; zoom:70%;">  
 
-The system also triggers CSAT surveys in scenarios when there are no active participants:
-
-* Outside hours of operation
-* No Agents Available flow
-* Agent/Customer side terminations or system terminations due to user inactivity
-* Sub-flows (No agents flow/Out of hours flow)
-
-For these scenarios, the system assigns the CSAT scores to the interaction.
+If feedback is triggered after an interaction without active agent participation (for example, outside business hours or in no-agent scenarios), the system assigns the feedback score to the interaction.
 
 ### Supported scenarios for CSAT in voice channels
 
-| **Scenario** | **Description** |
-|---------|-------------|
+| Scenario | Description  |
+|:---------|:-------------|
 | Inbound and outbound calls | The system triggers CSAT at the end of any standard inbound or outbound voice interaction. |
 | Inbound or outbound calls + internal agent transfer | When agents transfer a call internally, the system presents the CSAT survey after the final agent interaction. |
 | Inbound or outbound calls + callback triggered by agent | If an agent initiates a callback and the interaction completes, the system triggers a CSAT survey afterward. |
@@ -1364,19 +1468,19 @@ For these scenarios, the system assigns the CSAT scores to the interaction.
  
     CSAT surveys do not apply to inbound or outbound calls when the customer interacts with external agents or when an external consult occurs during the call. Only interactions handled fully within the internal agent ecosystem qualify for CSAT.
 
-### Viewing CSAT scores submitted by users
+### Viewing feedback scores submitted by users
 
-When callers complete CSAT surveys, the system automatically captures and stores their feedback and scores for review.
+When callers complete feedback surveys, the system automatically captures and stores their feedback and scores for review.
 
-How to view CSAT scores
+Steps to view feedback scores:
 
-1. Navigate to the [Interactions Dashboard](../analytics/overview/conversations.md).
+1. Navigate to the [Conversations Dashboard](../analytics/overview/conversations.md).
 
-2. Open the interaction for which you want to view CSAT details.
+2. Open the interaction you want to view the feedback details for.
 
-3. Select the Details tab to view all interaction information.
+3. Select the **Details** tab to view all interaction information.
 
-4. If the caller completed a CSAT survey, the CSAT Score field appears in the Details tab, as shown in the example.  
+4. If the caller completed a feedback survey, the **Feedback** field (CSAT/NPS/Like/Dislike) appears in the **Details** tab, as shown in the example:  
     <img src="../images/insights-to-logs-csat.png" alt="CSAT Score" title="CSAT Score" style="border: 1px solid gray; zoom:70%;">
 
 This view enables supervisors and administrators to assess caller satisfaction and evaluate agent performance.

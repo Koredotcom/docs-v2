@@ -6,6 +6,10 @@ Utilize generative AI features to supercharge your AI Agent with powerful tools 
 
 The following sections categorize model features and show feature support across supported models.
 
+!!! note "Integrating the Latest Models"
+ 
+    The platform regularly integrates new models from providers like OpenAI, Azure OpenAI, and Anthropic. To use a model that isn't yet available as a prebuilt integration, add the model using [Provider's New LLM Integration](configure-llm-integration.md#providers-new-llm).
+
 (✅ Supported | ❌ Not supported | ✅* - Supported but no default prompt | NA = Not Applicable)
 
 ### Answer Generation and Enrichment Features

@@ -45,6 +45,25 @@ In the following example configuration, the tenancy URL contains the {tenant} or
 
 <img src="../images/oauth-v2-password-grant-img3.png" alt="Defining Tenancy" title="Defining Tenancy" style="border: 1px solid gray;zoom:80%;"/>
 
+
+
+## Selecting Authorization Mode
+
+This section defines how authorization is handled for the integration.
+
+
+
+* **Allow users to authorize the integration**: End users are prompted to authorize the integration during the conversation with AI Agents.
+
+* **Pre-authorize the integration (Recommended)**: Authorization credentials are provided in advance. This authorization is reused whenever users interact with the AI Agent, eliminating the need for individual authorization.
+
+Auto-Refresh Token Regeneration can be enabled using the provided consent checkbox. When enabled, the platform automatically regenerates the Refresh Token using the stored OAuth credentials.
+
+If the Auth Token expires, the Refresh Token is used to generate a new Auth Token. If the Refresh Token itself expires, the platform automatically generates a new Refresh Token (when the checkbox is enabled), without requiring any manual intervention.
+
+<img src="../images/authorization-mode.png" alt="Authorization Mode" title="Authorization Mode" style="border: 1px solid gray;zoom:80%;"/>
+
+
 ## Adding Form Fields
 
 If, for example, the default username and password fields do not meet your needs for authorization input, you can add custom fields displayed to the end-user by adding authorization IDP form fields. You can use these form fields, for example, if PIN code is required in the authorization process.
