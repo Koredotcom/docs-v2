@@ -54,7 +54,3 @@ docs.json            # Config, TOC, home page design theme, analytics integratio
 home.mdx             # Docs home page
 README.md            # This file
 ```
-
-## License
-
-Copyright © Kore.ai, Inc. All rights reserved.
