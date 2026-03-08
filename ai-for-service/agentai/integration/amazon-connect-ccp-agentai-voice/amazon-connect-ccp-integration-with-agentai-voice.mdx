@@ -1,0 +1,177 @@
+# Amazon Connect CCP Integration: Agent AI Voice
+
+This document describes integrating Amazon Connect with Agent AI—Voice using the AWS CCP Integration approach. Amazon Connect receives voice calls while Agent AI provides real-time support to agents. Audio streams from both the user and agent are captured and processed using Amazon Kinesis Streams. AWS Lambda functions manage transcription and token generation. Agent AI provides AI-powered assistance, including [Agentic Copilot](./../../configuration/linked-services.md#agentic-configurations), [Next Best Action](../../agent-experience/agent-assist-widget-v3.md), [Agent Coaching](../../agent-experience/agent-realtime-coaching.md), [Agent Playbook](../../agent-experience/playbook.md), [sentiment analysis](../../agent-experience/agent-assist-widget-v3.md), [EOC Summary](../../agent-experience/agent-assist-widget-v3.md#assist-tab), and more throughout the conversation.
+
+## High-Level Architecture
+
+![architecture](/ai-for-service/agentai/integration/amazon-connect-ccp-agentai-voice/images/architecture_1.png)
+
+## Prerequisites
+
+| **Category** | **Requirement** |
+|----------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **AWS / Amazon Connect** | - An Amazon Connect instance with Administrator privileges.<br />- The instance should be in a region that supports the required services, such as Kinesis Video Streams and Lambda.<br />- If using Telephony: claimed phone numbers (DID or toll-free) as needed. |
+| **Contact Control Panel (CCP) / Agent Desktop** | - Supported browser for agents (latest version of Chrome recommended; Firefox may have limitations around sample rates and media usage). Refer to the [AWS Documentation](https://docs.aws.amazon.com/connect/latest/adminguide/ccp-agent-hardware.html?utm_source=chatgpt.com) for details.<br />- Workstations meeting minimum hardware/network standards (CPU, RAM, network bandwidth). Refer to the [AWS Documentation](https://docs.aws.amazon.com/connect/latest/adminguide/ccp-agent-hardware.html?utm_source=chatgpt.com) for details.<br />- Network/firewall settings configured: allow outbound HTTPS (443), WebRTC ports/domains, approved origins/domains in Connect for CCP, and any custom hosting of CCP. Refer to the [AWS Documentation](https://docs.aws.amazon.com/connect/latest/adminguide/ccp-networking.html?utm_source=chatgpt.com) for details. |
+| **Streaming and Transcription Components** | - Amazon Kinesis Video Streams (KVS) availability in region: permissions to create/stream video/audio data.<br />- AWS Lambda permissions to read from KVS, generate temporary AWS credentials for access, and trigger downstream processing such as the transcriber bot.<br />- Bot/webhook configuration to receive transcription/context.<br />- SSL/valid certificates for any custom-hosted CCP or widget, if hosted outside Amazon Connect's domain. |
+| **Components** | - Active Agent AI account with necessary roles/permissions for dialog tasks, webhook endpoints, and transcription configuration.<br />- Familiarity with dialog/task definitions and handling real-time input. |
+| **Security / Identity** | - Identity management in Amazon Connect / AWS IAM roles for Lambda and KVS.<br />- Approved origins configured for web apps (for custom CCP or embedded widget) in Amazon Connect.<br />- Appropriate policies for least-privilege on AWS services used. |
+| **Migration / Versioning** | - If accounts were using AudioSockets, migrate to Voice Gateway.<br />- Verify version compatibility of the custom CCP or Streams API when making customizations. |
+
+## Components Required
+
+The following components are required:
+
+* Agent AI
+* AWS Lambda
+* Amazon Kinesis Streams
+* Amazon Connect
+
+## Pricing and Cost Considerations
+
+When integrating Agent AI with Amazon Connect, consider potential AWS costs such as call usage (per-minute), phone number rental, Lambda executions, Kinesis Streams (ingestion/storage), transcription services, data storage/transfer, and regional telephony rates. Actual costs vary by usage and region.
+
+## Setup Guide
+
+### Agent AI
+
+To onboard the Agent AI account and create dialog tasks, refer to the [About Agent AI](../../about-agent-ai.md) doc.
+
+### AWS Lambda
+
+#### Function 1: KVS Trigger (Choose any other name)
+
+This function retrieves call stream metadata and AWS credentials from the environment, generates a credential set (SessionToken, AccessKeyId, SecretAccessKey) for KVS access, and triggers the Transcriber to send transcripts to the AI Agent with the current Conversation ID.
+
+1. Download the Lambda [from here](https://github.com/Koredotcom/korecc-twilio/raw/master/AmazonConnect/lambdas/KVS_Trigger.zip) and upload it to the function you create.
+2. Go to **Create function**.
+3. Enter a name in the **Function name** field.
+    ![create-function](/ai-for-service/agentai/integration/amazon-connect-ccp-agentai-voice/images/create-function_2.png)
+
+4. Go to **Upload from**.
+    ![upload-from](/ai-for-service/agentai/integration/amazon-connect-ccp-agentai-voice/images/upload-from_3.png)
+
+    * Upload the **Lambda** zipped file.
+    * Click **Save**.
+    * Go to **Runtime settings**.
+    * Click **Edit** and change the **Handler** name from **index.handler** to **kvs_trigger.handler**.
+        ![runtime-settings](/ai-for-service/agentai/integration/amazon-connect-ccp-agentai-voice/images/runtime-settings_4.png)
+
+5. Go to **Configuration** > **Environment variables**.
+    ![environment-variable](/ai-for-service/agentai/integration/amazon-connect-ccp-agentai-voice/images/environment-variable_5.png)
+
+6. Create the following environment variables in the Lambda:
+    * **kvsAccessKeyId** – AWS Client ID
+    * **kvsSecretAccessKey** – AWS Client Secret
+    * **region** – your AWS Region
+    * **transcriberURL** – [https://platform.kore.ai/integrations/amzn/voice/](https://agentassist.kore.ai/integrations/amzn/voice/)
+    * For regions other than **US-prod**, replace the above domain with your Agent AI domain.
+7. **Steps to get the AWS Client ID and Secret**
+    * Ensure the account associated with the AWS Client ID and Secret has **Read** permissions to Amazon KVS Kinesis Streams.
+    * Get your AWS Client ID and Secret from IAM:
+        * Go to **IAM** > **Users**.
+        * Click **Users** > **Security credentials** tab.
+        * Click **Create access key**.
+        * Select **Use case** as **Application running on an AWS compute service**.
+        * Click **Next**.
+        * Enter a description tag, then click **Create access key**.
+            ![create-access-key](/ai-for-service/agentai/integration/amazon-connect-ccp-agentai-voice/images/create-access-key_6.png)
+
+8. The final configuration appears as shown:
+![final-configuration](/ai-for-service/agentai/integration/amazon-connect-ccp-agentai-voice/images/final-configuration_7.png)
+
+#### Function 2: Retrieve Agent AI Widget Credentials
+
+This function returns all credentials required to render the Agent AI widget on the Amazon Connect desktop. Store all required data in environment variables and expose them via the API Gateway URL, which is used later in the CCP-voice configuration page.
+
+1. Download the Lambda [from here](https://github.com/Koredotcom/korecc-twilio/raw/master/AmazonConnect/lambdas/KoreAgentAssistCCP.zip) and upload it to a new Lambda function.
+2. **Environment variable list**:
+    * **agentassistUrl**: `https://agentassist.kore.ai/koreagentassist-sdk-v3/UI/agentassist-iframe.html`
+    * **botId**: [Agent AI Bot Id]
+    * **clientId**: [Agent AI Client Id]
+    * **clientSecret**: [Agent AI Client Secret]
+    * **languageCode**: en
+    * **awsConnectURL**: [Aws Connect Access URL]/connect/ccp-v2/
+
+    See the following image for the AWS Connect Access URL:
+    ![aws-connect-access-url](/ai-for-service/agentai/integration/amazon-connect-ccp-agentai-voice/images/aws-connect-access-url_8.png)
+
+3. Add an **API Gateway** to access this Lambda:
+    * Go to **Configuration** > **Triggers**.
+    * Click **Add trigger**.
+    * Select **API Gateway**.
+    * Select **Create a new API**. (API Type: HTTP API)
+        ![create-a-new-api](/ai-for-service/agentai/integration/amazon-connect-ccp-agentai-voice/images/create-a-new-api_9.png)
+
+    * Copy this **API endpoint URL** and paste it in the **URL** field of the [Contact Control Panel as Agent Desktop](#contact-control-panel-ccp-as-agent-desktop) section.
+
+## Amazon Connect
+
+1. Sign in to your **Amazon Connect instance**.
+2. Go to **Amazon Connect** > **Instances**.
+3. Create a new Amazon Connect instance or sign in to an existing one.
+    ![amazon-connect-instance](/ai-for-service/agentai/integration/amazon-connect-ccp-agentai-voice/images/amazon-connect-instance_10.png)
+
+4. Enable all required options under the **Telephony Options** section.
+    ![telephony-options](/ai-for-service/agentai/integration/amazon-connect-ccp-agentai-voice/images/telephony-options_11.png)
+
+5. Go to **Approved origins**, and add the domain(s) where you have hosted your CCP instance(s).
+    ![approved-origins](/ai-for-service/agentai/integration/amazon-connect-ccp-agentai-voice/images/approved-origins_12.png)
+
+6. Purchase/claim a **phone number** from Amazon Connect. Use [this guide](https://docs.aws.amazon.com/connect/latest/adminguide/ag-overview-numbers.html) for reference.
+    ![claim-phone-number](/ai-for-service/agentai/integration/amazon-connect-ccp-agentai-voice/images/claim-phone-number_13.png)
+
+7. Create or import a contact flow in the Amazon Connect instance. Refer to [this article](https://docs.aws.amazon.com/connect/latest/adminguide/contact-flow-import-export.html) for help.
+    ![import-contact-flow](/ai-for-service/agentai/integration/amazon-connect-ccp-agentai-voice/images/import-contact-flow_14.png)
+
+8. Import the contact flow from this [link](https://raw.githubusercontent.com/Koredotcom/korecc-twilio/master/AmazonConnect/flows/CCP-voice/KVSAgentAssist_CCP.json).
+9. Click **Set contact attributes**, and enter the required fields:
+    * **BotID**: Your Agent AI Bot ID.
+    * **ClientId**: Your Agent AI Client ID.
+    * **ClientSecret**: Your Agent AI Client Secret.
+    * **SipUri**: Add `sip:XXXX@savg-us-prod-sbc-in-nlb-0d9a4c651955ff47.elb.us-east-1.amazonaws.com` and replace **XXXX** with your SIPREC Configuration of Agent AI.
+
+    To get the SIP URI from [Agent AI](https://platform.kore.ai/):
+
+    1. Go to **Agent AI** > **Flows & Channels**, and click **Voice Gateway**.
+    2. Click **SIP Numbers** > **Configure SIP Trunk**.
+    3. On the **Configure SIP Trunk** page, in the **Product Selection** section, select **Agent AI**.
+    4. Click the **Copy** button next to the **SIP URI** field.
+        ![configure-sip-trunk](/ai-for-service/agentai/integration/amazon-connect-ccp-agentai-voice/images/configure-sip-trunk_15.png)
+
+    5. Paste the copied SIP URI value into the **contact attributes sipUri** field in the Amazon Connect flow.
+
+    To get the **agentassistURL** and **accountID** values:
+
+    1. **agentassistUrl**: Your **Agent AI URL**.
+    2. **wssUrl**: Add "wss://savg-webserver.kore.ai".
+    3. **accountId**: Your Agent AI **Account ID**.
+    4. **languageCode**: Add "en".
+        ![set-contact-attributes](/ai-for-service/agentai/integration/amazon-connect-ccp-agentai-voice/images/set-contact-attributes_16.png)
+
+    5. Click **Save**.
+    6. Click **Start Stream and Transcription in Kore** Lambda.
+        ![invoke-aws-lambda-function](/ai-for-service/agentai/integration/amazon-connect-ccp-agentai-voice/images/invoke-aws-lambda-function_17.png)
+
+    7. Select your **Trigger Lambda Function** from the dropdown list, and select the first function created in the [initial step](#function-1-kvs-trigger-choose-any-other-name).
+    8. Click **Save**.
+    9. For **Transfer to Flow**, select a flow to route the user to. For example, save [KVSQueueFlow.json](../amazon-connect-voice/amazon-connect-with-agentai-voice-via-aws-third-party-applications.md#kvsqueueflowjson) in a file, import this flow to **Flows**, and add **Queue** details for routing.
+    10. To use agent dispositions, configure the **Set Event Flow** block with **Disconnect** flow for Agent UI hook by importing this flow and selecting it. If not, delete the block and connect the remaining blocks to the disconnect block.
+
+        > **Note:** The disposition saving logic is at your discretion. Implement as per your use case.
+
+    11. Click **Save** and publish the flow.
+
+10. Attach the contact flow to the purchased phone number. Refer to [Attach a claimed or ported phone number to a flow](https://docs.aws.amazon.com/connect/latest/adminguide/associate-claimed-ported-phone-number-to-flow.html) for help.
+    ![amazon-connect-phone-number](/ai-for-service/agentai/integration/amazon-connect-ccp-agentai-voice/images/amazon-connect-phone-number_18.png)
+
+11. Use the phone number to test the Amazon Connect CCP solutions with the Agent AI widget.
+
+### Contact Control Panel (CCP) as Agent Desktop
+
+* The CCP solution is hosted at [https://agentassist.kore.ai/integrations/amzn/ccp-voice/](https://agentassist.kore.ai/integrations/amzn/ccp-voice/). Use this URL to load your Amazon Connect instance and Agent AI on the same page.
+* First-time users are redirected to the [configure](https://agentassist.kore.ai/integrations/amzn/ccp-voice/configure/) page, where they must paste the copied API Gateway URL.
+* After pasting the URL and clicking **SAVE DETAILS**, you are redirected to the CCP screen and a dummy Agent AI widget loads. Sign in with your Amazon Connect credentials to make the Amazon Connect CCP visible.
+* Amazon Connect Contact Control Panel is used as the Agent Desktop to track new conversations on the client side and render the conversation-specific Agent AI widget.
+    ![agentai-widget](/ai-for-service/agentai/integration/amazon-connect-ccp-agentai-voice/images/agentai-widget_20.png)
+
+> **Note:** Customers can host the above integration solution within their own domain by obtaining the Integration SDK from their representative.

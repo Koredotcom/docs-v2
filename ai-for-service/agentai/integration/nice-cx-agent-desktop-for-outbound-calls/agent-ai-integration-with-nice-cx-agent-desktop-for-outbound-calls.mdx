@@ -1,0 +1,158 @@
+# Agent AI Integration with NICE CXone Agent Desktop for Outbound Calls
+
+This guide covers integrating the Agent AI widget into the NICE Agent Desktop environment. The integration supports Automation, [Agent Coaching](./../../agent-experience/agent-realtime-coaching.md), [Agent Playbook](../../agent-experience/playbook.md), [Sentiment Analysis](../../agent-experience/agent-assist-widget-v3.md), and Transcription, along with end-of-call summary and custom data passing (such as agent name and ID) to the Agent AI widget.
+
+## Prerequisites
+
+Before beginning the integration, ensure you have the following:
+
+* NICE CXone
+    * A NICE CXone administrator account with privileges to:
+        * Configure automatic call distribution (ACD).
+        * Create campaigns, skills, and dispositions.
+        * Access NICE CX Studio and NICE Integration Hubs (Automation & AI > Agent Assist Hub)
+    * NICE CX Studio installed on your Windows system.
+    * Agent Assist Hub available for your NICE CXone account. (Contact NICE Support; additional license cost applies.)
+    * Ability to place outbound calls from NICE Agent Desktop.
+    * Voice Interaction Streams available for your NICE environment.
+* Agent AI
+    * Access to the Agent AI application.
+    * Access to the Agent AI configuration portal.
+    * An existing Agent configured with:
+        * Channels → Voice Gateway (KVG) set up
+        * Channels → Web/Mobile (for Client ID, Client Secret, Bot ID)
+    * Agent AI widget URL, Bot ID, Client ID, Client Secret, and Account ID.
+    * SIP Trunk + SIP URI configured under **Agent AI** > **Flows & Channels** > **Voice Gateway** > **SIP Numbers** > **Configure SIP Trunk**.
+    * Network/firewall rules that allow access to:
+        * HTTPS: `platform.kore.ai` (or your on-prem host)
+        * WSS (Voice WebSocket): `savg-webserver.kore.ai` or region equivalent.
+
+## Definitions
+
+| Section | Key | Definition | Reference |
+|---|---|---|---|
+| Nice CX Integration Hubs > Add Agent Assist App | Agent AI URL | The domain of the Agent AI widget. | URL is [https://platform.kore.ai](https://platform.kore.ai). If it is on-prem, the URL is the origin where your Agent AI widget is hosted. |
+| NICE CX Studio > Outbound Voice Script and Configure Parameters | AgentAssistWidgetURL | URL that points to the Agent AI widget. For example, [https://platform.kore.ai/koreagentassist-sdk-v3/UI/agentassist-iframe.html](https://platform.kore.ai/koreagentassist-sdk-v3/UI/agentassist-iframe.html) | Agent AI > Flows & Channels > Digital > Web/Mobile Client > JWT App Details |
+| Nice CX Integration Hubs > Add Agent Assist App + NICE CX Studio > Import Outbound Voice Script and Configure Parameters | BotId | A unique identifier assigned to an AI Agent. | Agent AI > Flows & Channels > Digital > Web/Mobile Client > JWT App Details |
+| Nice CX Integration Hubs > Add Agent Assist App + NICE CX Studio > Import Outbound Voice Script and Configure Parameters | ClientId | An identifier provided to a client application. | Agent AI > Flows & Channels > Digital > Web/Mobile Client > JWT App Details |
+| Nice CX Integration Hubs > Add Agent Assist App + NICE CX Studio > Import Outbound Voice Script and Configure Parameters | ClientSecret | A secret key or password associated with the ClientId. | Agent AI > Flows & Channels > Digital > Web/Mobile Client > JWT App Details configuration portal. |
+| Nice CX Integration Hubs > Add Agent Assist App | AccountID | A unique identifier assigned to an account. | Agent AI > Flows & Channels > Digital > Web/Mobile Client > JWT App Details |
+| Nice CX Integration Hubs > Add Agent Assist App | Voice Gateway (KVG) | For SaaS in the US region, the value is `wss://savg-webserver.kore.ai`. For on-prem, refer to the corresponding host. | |
+
+**Region-Specific URLs**
+
+| Region | Agent AI URL | WSS URL | DNS |
+|---|---|---|---|
+| US | [https://platform.kore.ai](https://platform.kore.ai) | `wss://savg-webserver.kore.ai` | `@savg-us-prod-sbc-in-nlb-0d9a4c651955ff47.elb.us-east-1.amazonaws.com` |
+| JP | [https://jp-platform.kore.ai](https://jp-platform.kore.ai) | `wss://jp-savg-audiosocket.kore.ai` | `@savg-jp-prod-int-nlb-3989d946fc1ced3b.elb.ap-northeast-1.amazonaws.com` |
+
+## Configuration Steps
+
+Complete the following steps to integrate Agent AI with NICE CXone Agent Desktop:
+
+* [NICE CX Integration Hubs, Add Agent Assist Hub](#step-1-nice-cx-integration-hubs-add-agent-assist-hub)
+* [NICE CX Studio, Import Outbound Voice Script and Configure Parameters](#step-2-nice-cx-studio-import-outbound-voice-script-and-configure-parameters)
+* [NICE CX Account Setup for Outbound Calls](#step-3-nice-cx-account-setup-for-outbound-calls)
+* [Outbound Voice Simulation](#outbound-call-simulation)
+
+### Step 1: NICE CX Integration Hubs > Add Agent Assist Hub
+
+1. Sign in to your **NICE** account with the user name and password provided by NICE Customer Support.
+2. Select the **Applications Launcher** button.
+    ![app-launcher-button](/ai-for-service/agentai/integration/nice-cx-agent-desktop-for-outbound-calls/images/app-launcher-button-1.png)
+
+3. Select **OTHERS** > **Automation & AI**.
+    ![automation-ai](/ai-for-service/agentai/integration/nice-cx-agent-desktop-for-outbound-calls/images/automation-ai-2.png)
+
+4. Select **Agent Assist Hub** > **Add Agent Assist App**.
+5. Enter the name of the **Agent Assist App** in the **AGENT ASSIST APP NAME** field.
+6. Select **Custom Agent Assist Endpoints**.
+7. Select **Next**.
+    ![agentassist-app](/ai-for-service/agentai/integration/nice-cx-agent-desktop-for-outbound-calls/images/add-agentassist-app-3.png)
+
+8. Add the following settings with config parameters:
+    * **Agent UI Option**: No Assist Panel shown to the agent
+    * **App Title**: Agent AI (change as needed)
+    * **Participants**: Both
+    * Turn on the **CTI EVENT** toggle.
+    ![config-parameters](/ai-for-service/agentai/integration/nice-cx-agent-desktop-for-outbound-calls/images/config-parameters-4.png)
+
+    * **Audio Relay Endpoint**: \{[Kore Voice Gateway(KVG)]\}/audiosocket/nice?sipuri=&lt;Bot SIP URI>&lt;DNS>&token=&lt;Token>&botId=&lt;Bot ID>&accountId=&lt;Account ID>&agentassist=true
+        * **Bot SIP URI**: Flows & Channels > Channels > Voice Gateway > SIP Numbers > Configure SIP Trunk > Agent AI section of the **[Agent AI](https://platform.kore.ai/)** configuration portal.
+            ![configure-sip-trunk](/ai-for-service/agentai/integration/nice-cx-agent-desktop-for-outbound-calls/images/configure-sip-trunk-5.png)
+
+        * **Bot ID and Account ID**: Flows & Channels > Channels > Digital > Web/Mobile Client > JWT App Details section of the **[Agent AI](https://platform.kore.ai/)** configuration portal.
+            ![web-mobile-client](/ai-for-service/agentai/integration/nice-cx-agent-desktop-for-outbound-calls/images/web-mobile-client-6.png)
+
+        * **Token**: Create a **JSON Web Token** on [jwt.io](https://www.jwt.io/) with the following details:
+            * Payload: \{"appId": &lt;Bot Client ID\>\}
+            * Header: \{"alg": "HS256″,"typ": "JWT"\}
+            * Secret: Bot Client Secret.
+
+9. Select **Create**.
+
+### Step 2: NICE CX Studio > Import Outbound Voice Script and Configure Parameters
+
+1. Download the script for outbound voice from the Agent AI repository.
+    * XML script [link](https://raw.githubusercontent.com/Koredotcom/korecc-twilio/refs/heads/master/Nice/NICE%20Agent%20Desktop%20Outbound%20Voice.XML)
+    * JSON script [link](https://raw.githubusercontent.com/Koredotcom/korecc-twilio/refs/heads/master/Nice/NICE%20Agent%20Desktop%20Outbound%20Voice.json)
+2. Open the **NICE CX Studio** app from your desktop.
+3. Select **File** > **Import from File**.
+4. Select the **downloaded outbound voice script**.
+5. Double-click the **Generate iframe params** tile.
+    ![generate-iframe-params](/ai-for-service/agentai/integration/nice-cx-agent-desktop-for-outbound-calls/images/generate-iframe-params-7.png)
+
+    ![script](/ai-for-service/agentai/integration/nice-cx-agent-desktop-for-outbound-calls/images/script-8.png)
+
+6. Update the values for the corresponding parameters:
+    * Agent AI Parameters
+        * Bot Client ID
+        * Bot Client Secret
+        * Bot ID
+        * Agent AI Widget URL
+        * Bot Language Code: **en** is set as the default language. Refer to the [Supported Languages](https://docs.kore.ai/xo/agentai/agent-experience/supported-languages/) doc to provide the language code for your AI Agent's language.
+    * Custom Data: Use the **customdata** object in the script to pass information to the AI Agent. At runtime, this customdata is accessible in the UserContext of the AI Agent. Refer to [Access Custom Data in Agent AI Bot](../../agent-experience/access-custom-data-in-agent-ai.md) for instructions on how to access customdata in the AI Agent. Include your data in the customdata object (one key-value pair per line). For example:
+        * `customdata.agentName="Agent"`
+        * `customdata.agentID="{__agentid}"`
+7. Double-click the **Agent Assist** tile.
+    ![agent-assist-tile](/ai-for-service/agentai/integration/nice-cx-agent-desktop-for-outbound-calls/images/agent-assist-tile-9.png)
+
+8. Select the **checkbox** next to the Agent Assist instance you created in the above step.
+    ![agent-assist-instance](/ai-for-service/agentai/integration/nice-cx-agent-desktop-for-outbound-calls/images/agent-assist-instance-10.png)
+
+9. Select **Yes**.
+10. After selecting **Agent Assist**, select the **Close** button on the bottom-right corner of the page.
+
+    > **Note:** Do not select the **X** button to close the window, as this does not save the changes.
+
+### Step 3: NICE CX Account Setup for Outbound Calls
+
+Follow [Set Up Manual Outbound Voice](https://help.nicecxone.com/content/acd/channels/voice/setupmanualobvoice.htm) to set up Outbound Voice in NICE CXOne.
+
+During Skill creation, select the **NICE Studio Script** created in the previous step as the custom script.
+
+> **Note:** To view the summary pop-up in the Agent AI widget, you must select either **Automatic Wrap-up** or **Disposition** for the **Post Contact** setting of the skill. If you don't select any, **None** is selected by default and the chat/voice screen automatically closes once the conversation ends.
+
+## Outbound Call Simulation
+
+1. Go to the **NICE** home page.
+2. Select **Application Launcher** > **Agent**.
+3. Select **Integrated Softphone**.
+4. Select **Connect**.
+5. Change the status to **Available**.
+    ![integrated-softphone-available](/ai-for-service/agentai/integration/nice-cx-agent-desktop-for-outbound-calls/images/integrated-softphone-available-11.png)
+
+6. Select **New Outbound** at the top-left of the desktop.
+    ![new-outbound](/ai-for-service/agentai/integration/nice-cx-agent-desktop-for-outbound-calls/images/new-outbound-12.png)
+
+7. Enter a phone number in the search bar, select **Voice Call**, and select the outbound skill created in the previous step.
+    ![making-outbound-call](/ai-for-service/agentai/integration/nice-cx-agent-desktop-for-outbound-calls/images/making-outbound-call-13.png)
+
+8. Select the **Call** button.
+9. When a customer accepts the call, the Agent AI widget loads automatically.
+    ![widget-loading-automatically](/ai-for-service/agentai/integration/nice-cx-agent-desktop-for-outbound-calls/images/widget-loading-automatically-14.png)
+
+10. Select **Hang Up** to disconnect the call.
+11. The **call summary** pop-up is triggered at the end of the call session.
+12. Select the disposition **(Submit or Copy)**, and select **Save & Close**.
+    ![call-summary](/ai-for-service/agentai/integration/nice-cx-agent-desktop-for-outbound-calls/images/call-summary-15.png)
