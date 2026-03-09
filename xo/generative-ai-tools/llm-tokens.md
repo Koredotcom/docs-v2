@@ -46,7 +46,7 @@ These tokens use OpenAI GPT-4o model from Azure by Kore.ai's enterprise account,
 
 * **Rephrase Dialog Responses**: Automatically rephrase responses for variety and naturalness in conversations.
 
-[Learn More](genai-features.md)
+[Learn More](genai-features.md).
 
 
 ## Transitioning to Your Own LLM Account

@@ -51,7 +51,7 @@ You can easily connect Amazon Bedrock models to the AI for Process using a guide
 
 Steps to add Amazon Bedrock models using easy integration:
 
-<font size="4">**1. Start the Integration**</font> 
+**1. Start the Integration**
 
 1. Click **Models** in the top navigation bar of the application.
 2. Go to the **External Models** tab and click **Add a model**.
@@ -60,7 +60,7 @@ Steps to add Amazon Bedrock models using easy integration:
       <img src="../images/aws_dialog.png" alt="Select AWS Bedrock" title="Select AWS Bedrock"/>
 
 
-<font size="4">**2. Configure the Integration**</font> 
+**2. Configure the Integration**
 
 In the AWS Bedrock dialog, configure the following:
 
@@ -95,12 +95,12 @@ For example:
 
     **Note**: The structure of the request body should follow the model-specific API schema. Use only supported parameters for the selected Amazon Bedrock model.
 
-<font size="4">**3. Test the Configuration**</font> 
+**3. Test the Configuration**
 
 * **Test Response**: Provide sample values for your variables and click **Test** to invoke the model and preview the response.
 * **Configure JSON Path**: Define JSON paths to extract relevant output fields (for example, response text, token usage) from the model response.
 
-<font size="4">**4. Finalize the Configuration**</font> 
+**4. Finalize the Configuration**
 
 * Click **Save as draft** to store the configuration without activating it.
 * Or, click **Confirm** to finalize and add the model connection.

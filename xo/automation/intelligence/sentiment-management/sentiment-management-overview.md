@@ -4,7 +4,7 @@ Emotion tones are critical indicators in understanding the attitudes and opinion
 
 !!!Note
 
-    This feature was introduced in v7.0 and is not supported in all languages. [Learn more](../../../app-settings/language-management/multi-lingual-bot-behavior.md).
+    This feature supports limited languages. [Learn more](../../../app-settings/language-management/multi-lingual-bot-behavior.md).
 
 Negative emotion scenarios like, anger or disgust, are typically considered factors that would determine a transfer of the conversation to a live agent.
 

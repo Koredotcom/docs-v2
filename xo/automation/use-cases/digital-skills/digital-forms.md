@@ -1030,9 +1030,9 @@ Use the **Branding** option to change the look and feel of the form to reflect y
 
 <img src="../../images/digital-form-branding.png" alt="branding" title="branding" style="border: 1px solid gray; zoom:75%;">
 
-An instant preview gives you an idea of how the form would look with the new colors and you have the option to **Save** or **Restore Default** scheme.
+Change the colors and click **Save**. To restore the original appearance, click **Restore Default**.
 
-<img src="../../images/branding-flight-search.gif" alt="branding" title="branding" style="border: 1px solid gray; zoom:75%;">
+<img src="../../images/branding-appearance.png" alt="branding" title="branding" style="border: 1px solid gray; zoom:75%;">
 
 #### Test
 
