@@ -8,7 +8,7 @@
 
 * **AI Agents**: Autonomous, task-focused software entities that perform specific functions. They serve as the building blocks of Agentic apps. [Learn more](./overview.md).
 
-* **Agentic App**: Higher-level systems that coordinate multiple AI agents to solve complex problems with greater autonomy, adaptability, and reasoning than individual agents. [Learn more](./agentic-apps/overview.md).
+* **Agentic App**: Higher-level systems that coordinate multiple AI agents to solve complex problems with greater autonomy, adaptability, and reasoning than individual agents. [Learn more](/agent-platform/concepts).
 
 ## Advantages Over Single-Agent System
 
