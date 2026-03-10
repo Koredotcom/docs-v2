@@ -1,0 +1,244 @@
+---
+title: Voice Automation with NICE CXOne – SIP Integration
+sidebarTitle: NICE CXOne SIP Integration
+---
+
+Integrate Kore with NICE CXOne using studio scripting to dispatch SIP headers, transfer calls from the bot, and transition to NICE CXOne after the app flow concludes. This approach does not require a VAH (Virtual Agent Hub) license or proxy.
+
+## Architecture
+
+![Architecture Diagram](../images/architecture.png)
+
+---
+
+## Reference Documentation
+
+| Document | Link |
+|----------|------|
+| SIP Headers | [SIP headers](https://help.incontact.com/Content/Studio/Actions/SIPPutHeader/SIPPutHeader.htm) |
+| Voicebot Conversation | [Voicebot Conversation](https://help.incontact.com/Content/Studio/Actions/VoiceBot%20Conversation/VoiceBot%20Conversation.htm) |
+| Signal API | [Admin API](https://developer.niceincontact.com/API/AdminAPI#/Contacts/Signal%20a%20Contact) |
+
+---
+
+## Shared Responsibilities
+
+| Activity | CXOne Customer | Kore |
+|----------|----------------|------|
+| NICE SIP Trunk Configuration | NA | NA |
+| DID Number Procurement | DID numbers from NICE | — |
+| ACD Configuration | Skills creation and mapping, Hours of Operation, Points of Contact, Campaign, Script customization (2) | Minimal functionality voice call scripts (2): Main Script (accept call on DID), Spawn Script (SIP trunk the call to Kore) |
+| CXOne Studio Script | Customize Main and Spawn Scripts: add SIP headers, add DID | Share sample scripts: [SIP Main Script](../voice-automation-nice-cxone-sip-integration/scripts/sip-main.pdf), [SIP Spawn Script](../voice-automation-nice-cxone-sip-integration/scripts/sip-spawn.pdf) |
+| Setup Authentication | Configure CXOne Authentication for Signal API access | — |
+| Setup Kore IVR | Create an AI for Service account | — |
+| SIP Trunk Configuration | Network IPs, DID number, Transport Type: TLS, Inbound forward-to-phone-number | SIP URI (pre-filled) |
+| SIP Trunk Attach Flow | Create a flow, attach SIP config to Experience Flow | — |
+| AI for Service App Flow | Create an AI Agent flow; read SIP headers from CXOne Studio script | — |
+| Signal API to return call | Get CXOne auth in Kore Bot; trigger Signal API (domain must match NICE account domain) | — |
+
+---
+
+## CXOne Channel Specifications
+
+ACD configuration requires:
+
+- 1 skill (created and mapped)
+- 1 Hours of Operation
+- 1 Point of Contact (Phone)
+- 1 Campaign
+- 2 minimal functionality voice call scripts
+
+---
+
+## Kore Bot Platform Requirements
+
+### Telephony Gateway
+
+- DID or TFN phone number to receive calls.
+- All SIP header information.
+- [Signal API](https://developer.niceincontact.com/API/AdminAPI#/Contacts/Signal%20a%20Contact) configuration to return control to NICE CXOne.
+
+### SIP Trunk Configuration
+
+1. [SIP Trunk Setup](../../../channels/voice-gateway/configure-voice-gateway.md#sip-trunk-setup)
+2. [Attach Flow](../../../channels/voice-gateway/configure-voice-gateway.md#attach-a-flow)
+
+---
+
+## CXOne Studio Configuration
+
+1. Download the [SIP Main Script](../voice-automation-nice-cxone-sip-integration/scripts/sip-main.pdf) and [SIP Spawn Script](../voice-automation-nice-cxone-sip-integration/scripts/sip-spawn.pdf) and save locally.
+2. Import the Studio Script:
+   1. Log in to NICE CXOne Studio.
+   2. Go to **File > Import from File**.
+
+      ![Import from File](../images/cxone-file-open.png)
+
+   3. Open the saved studio script.
+
+      ![Save Studio Script](../images/save-studio-script.png)
+
+      ![Entry Script Flow](../images/entry-script.png)
+
+      ![Spawn Place Call](../images/spawn-place-call.png)
+
+   4. In the SIP Main Script, select the **SIP Spawn Script** in the **Spawn** action.
+
+      ![Choose Script](../images/choose-script.png)
+
+   5. Add SIP headers in the **Sipputheader** actions:
+      - **headerName**: Key starting with `X-*`
+      - **headerValue**: The header value
+
+      ![SIP Put Header](../images/sip-put-header.png)
+
+   6. Add the SIP phone number in the **Placecall** action. Enter the SIP DID number configured in the AI for Service SIP Trunk.
+
+      ![Place Calls](../images/place-calls.png)
+
+      ![SIP Number](../images/sip-number.png)
+
+---
+
+## AI for Service Configuration
+
+Configure a flow with an app on AI for Service. In the **Script Task** window, add the following code before the **Run Automation** action to pass SIP headers to the AI Agent:
+
+```js
+setCallFlowVariable('sipHeaders', context.BotUserSession.channels[0].handle.sipHeaders);
+var headers = getCallFlowVariable('sipHeaders');
+userSessionUtils.put('sipHeaders', headers);
+```
+
+![Flow](../images/start-flow.png)
+
+![Script Task](../images/flow-script.png)
+
+---
+
+## NICE CXOne Authentication
+
+**Required parameters:**
+
+- Authentication API URL from NICE CXOne
+- Access Key ID
+- Access Key Secret
+
+**Steps:**
+
+1. Log in to the NICE Cluster.
+2. Click your profile (top right) and select **My Profile**.
+
+   ![My Profile](../images/nice-login.png)
+
+3. Go to the **ACCESS KEYS** tab and click **Add access key**.
+
+   ![Access Keys](../images/access-keys.png)
+
+4. Copy the **Access Key ID** and **Access Key Secret**.
+5. Send a POST request to the authentication URL (adjust the base URL for your region, for example `na1.nice-incontact.com`):
+
+   ```
+   POST https://{region}.nice-incontact.com/authentication/v1/token/access-key
+   ```
+
+   Request body:
+
+   ```json
+   {
+     "accessKeyId": "<Your Access Key ID>",
+     "accessKeySecret": "<Your Access Key Secret>"
+   }
+   ```
+
+6. The response returns an `access_token` used to authenticate the Signal API.
+
+---
+
+## Bot Configuration
+
+Configure a dialog task to transition to NICE CXOne when the customer requests an agent transfer.
+
+### Fetch the NICE Authentication Access Token
+
+1. Add a bot action with a **Service Node** to get the `access_token`.
+
+   ![Rest API Call](../images/bot-action-restapi-call.png)
+
+2. Set **Service Type** to **Custom Service** and **Sub Type** to **REST**.
+
+   ![Edit Request](../images/edit-request.png)
+
+3. Click **Edit Request**, select **POST**, and enter the authentication URL.
+
+   ![POST Method](../images/post-method.png)
+
+4. On the **Headers** tab, add `Content-Type: application/json`.
+
+   ![Content Type](../images/content-type.png)
+
+5. On the **Body** tab, add the request body.
+
+   ![Body](../images/body.png)
+
+6. Click **Test**, then **Save as Sample Response**.
+
+   ![Save as Sample Response](../images/save-as-sample-response.png)
+
+### Fetch SIP Headers in the AI Agent
+
+Use a **Script Node** in a bot action to extract headers:
+
+![Bot Action Script Node](../images/bot-action-script.png)
+
+![Script Node](../images/script.png)
+
+```js
+const headers = context.session.UserSession.sipHeaders;
+if (headers) {
+  let contactId = headers.find(o => o.name === 'X-ExternalCallId');
+  if (contactId && contactId.value) {
+    koreDebugger.log('Inbound SIP Contact ID: ' + contactId.value);
+    BotUserSession.put("ContactId", contactId.value);
+  }
+}
+```
+
+Save the SIP header value as `ContactId` in `BotUserSession` to use when triggering the Signal API.
+
+<Note>If the AI Agent triggers the Signal API to transfer to a live agent or end the conversation, the call must end from Kore, or the user must be disconnected from the Kore AI Agent and CCAI flow.</Note>
+
+### Trigger the Signal API
+
+1. Add a bot action with a **Service Node** to trigger the Signal API.
+
+   ![Signal API](../images/signal-api.png)
+
+2. Set **Service Type** to **Custom Service** and **Sub Type** to **REST**.
+
+   ![Signal API Edit Request](../images/edit-request-signal-api.png)
+
+3. Click **Edit Request**, select **POST**, and enter the Signal API URL (replace `{cluster}` with your NICE cluster, for example `api-b32`):
+
+   ```
+   POST https://api-{cluster}.nice-incontact.com/incontactapi/services/v28.0/interactions/{{context.session.BotUserSession.ContactId}}/signal?p1=AgentHandoff&p3={{context.session.BotUserSession.conversationSessionId}}
+   ```
+
+   <Note>`ContactId` is extracted from SIP headers and stored in `BotUserSession`. The `p1=AgentHandoff` parameter triggers the agent transfer.</Note>
+
+   ![Post Signal API](../images/post-signal-api.png)
+
+4. On the **Headers** tab, add:
+   - **Key**: `Authorization`
+   - **Value**: `Bearer {{context.RestAPICall.response.body.access_token}}`
+
+   ![Authorization Header](../images/header-signal-api.png)
+
+5. Click **Save**.
+
+---
+
+## Code Snippets
+
+- [Main Script](../voice-automation-nice-cxone-sip-integration/scripts/sip-main.pdf)
+- [Spawn Script](../voice-automation-nice-cxone-sip-integration/scripts/sip-spawn.pdf)

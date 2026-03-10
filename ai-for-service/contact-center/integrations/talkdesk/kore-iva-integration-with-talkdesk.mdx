@@ -1,0 +1,104 @@
+---
+title: Kore AI Agent Integration with Talkdesk
+sidebarTitle: Talkdesk Integration
+---
+
+Integrate Kore Voice Automation with Talkdesk using a WebSocket-based approach to enable AI-powered voice automation within Talkdesk's contact center.
+
+## Architecture
+
+![Architecture Diagram](../images/architecture-diagram-1.png)
+
+---
+
+## Prerequisites
+
+- Talkdesk account with a voice automation studio flow.
+- A Kore voice bot trained with use cases.
+
+---
+
+## How It Works
+
+| Step | Description |
+|------|-------------|
+| **Setup** | Kore configures bot details and voice stream URLs in Talkdesk's "Connect to Autopilot - Voice" flow. |
+| **Interaction** | Customer audio streams to Kore via the Conversation Orchestrator node. Kore handles automation and returns responses to Talkdesk. |
+| **Agent Handover** | If a transfer is requested, control returns to Talkdesk for human agent handling. |
+
+---
+
+## Voice Automation Process
+
+After a call is established between a user and Talkdesk:
+
+1. User audio is sent to the Conversation Orchestrator through the **Connect to Virtual Agent Voice** block.
+2. Audio is forwarded to the Voice Gateway (VG).
+3. VG transfers WSS traffic to Contact Center AI using SIP over TLS or UDP.
+4. CCAI converts speech to text and sends it to the Bots Platform.
+5. The Bots Platform generates a response; CCAI converts it to speech.
+6. CCAI returns the synthesized speech to VG via SIP. Talkdesk receives it through the **Connect to Virtual Agent Voice** block.
+7. The response is delivered to the user.
+8. If an agent transfer is required, Talkdesk Studio Flow handles it (optional).
+
+---
+
+## Configuration
+
+### Step 1: Create and Attach a Flow to a Phone Number
+
+Create a flow using the Flow Designer and attach a phone number to it. See [Create Flows](../../../flows/create-flows.md).
+
+![Flows and Channels Phone Number](../images/flows-and-channels-phone-number-2.png)
+
+<Note>This phone number is encrypted and used in the WSS URL for audio streaming.</Note>
+
+### Step 2: Create a WSS URL
+
+When a customer calls the Talkdesk number, audio streams to the audiosocket and a call is initiated to the bot based on the number in the URL.
+
+**WSS URL format:**
+
+```
+wss://korevg-np.kore.ai/audiosocket/talkdesk/?sipuri=<encoded-phone>&token=<jwt-token>&botId=<bot-id>&accountId=<account-id>&agentassist=false
+```
+
+| Parameter | Description |
+|-----------|-------------|
+| `sipuri` | URL-encoded phone number associated with the bot (for example, `%2B1234456xxxx`). Use [urlencoder.org](https://www.urlencoder.org/) to encode. |
+| `token` | JWT encrypted with the bot's client secret. Payload: `{"appId":"<Client ID>"}`. Get the Client ID from Bot details. |
+| `botId` | Bot ID (for example, `st-xxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxx`). |
+| `accountId` | Account ID of the bot owner. |
+
+### Step 3: Configure Audio Streaming in Talkdesk Studio
+
+![Talkdesk Studio Basic Flow](../images/talkdesk-studio-basic-flow-3.png)
+
+1. Download the [Studio Flow](https://raw.githubusercontent.com/Koredotcom/korecc-twilio/master/TalkDesk/SmartAssist/VoiceAutomation.json) and import it into Talkdesk Studio. See [Import a Flow](https://studio.talkdesk.com/docs/importing-and-exporting-flows#importing-a-flow).
+2. Click the **Connect to Autopilot Voice** block.
+3. Enter the WSS URL from Step 2 in the **Voice Stream URL** field.
+4. Save and publish the flow.
+
+### Step 4: Configure Agent Escalation
+
+#### Kore Side
+
+Go to **Settings > Integrations > Agent Transfer > Voice > SIP Transfer > Configuration** and configure **SIP BYE**.
+
+![SIP BYE Settings](../images/sip-bye-settings.png)
+
+#### Talkdesk Side
+
+Kore uses the **Connect to Autopilot Voice** node for voice automation. On agent escalation, Kore populates variables into **Ring Groups > Variables** in the flow context.
+
+![Agent Escalation Node – Exits Tab](../images/agent-escalation-node-exits-tab-4.png)
+
+![Agent Escalation Node – Preferences Tab](../images/agent-escalation-node-preferences-tab-5.png)
+
+![Agent Escalation Node – Ring Group](../images/agent-escalation-node-preferences-ring-group-6.png)
+
+<Note>Kore does not pass header information on Voice Automation Agent transfer. For escalation to human agents, Kore uses the "Agent Escalation" node in Talkdesk. See [Talkdesk documentation](https://support.talkdesk.com/hc/en-us/articles/9484798498587) for details.</Note>
+
+### Step 5: Test the Studio Flow
+
+Assign the published flow to one or more phone numbers and make a test call to verify automation. A phone number can only be assigned to one incoming call flow. See [Assign a Flow to a Number](https://studio.talkdesk.com/docs/assigning-a-flow-to-a-number).
