@@ -1,20 +1,45 @@
-# Workflow Nodes
+---
+title: Workflow Nodes
+description: Reference for all node types available in AI for Process workflows, including AI, agent, API, logic, control, human, utility, and scanner nodes.
+sidebarTitle: Nodes
+---
 
-Available node types for building workflows.
+Nodes are the building blocks of a workflow. Each node performs a specific operation—running an AI model, calling an API, routing execution, or handling human tasks—and passes its output to the next node through the workflow context.
+
+## How Nodes Perform Operations
+
+When a workflow runs, each node receives input from the workflow context, processes it, and writes its output back. Downstream nodes reference that output using the `{{context.steps.NodeName.output}}` syntax.
+
+The platform tracks each node's execution state in the `steps` object of the context:
+
+| Field                         | Description                                          |
+|-------------------------------|------------------------------------------------------|
+| `input`                       | Data received by the node at execution time.         |
+| `output`                      | Result produced by the node.                         |
+| `statusCode` / `isSuccessful` | Whether execution succeeded, failed, or was skipped. |
+| `logs`                        | Debug messages generated during execution.           |
+| `executionTime`               | Time taken to complete the node.                     |
+
+The `steps` map is populated sequentially as the workflow runs:
+
+1. The `steps` object starts empty.
+2. An entry is created for each node as it begins execution.
+3. Outputs and timing data are appended on completion.
+4. On failure, error logs and status are recorded, and execution follows the configured failure path.
 
 ---
 
-## Overview
+## Node Types at a Glance
 
-Workflow nodes are the building blocks of automation:
-
-| Category | Purpose |
-|----------|---------|
-| **Control** | Start, end, flow control |
-| **AI** | Text, image, audio, document AI |
-| **Integration** | API calls, external systems |
-| **Logic** | Conditions, loops, branching |
-| **Human** | Human-in-the-loop tasks |
+| Category        | Nodes                                                                                    | Purpose                                                       |
+|-----------------|------------------------------------------------------------------------------------------|---------------------------------------------------------------|
+| **Control**     | Start, End                                                                               | Define entry and exit points for the workflow.                |
+| **AI**          | Text-to-Text, Text-to-Image, Image-to-Text, Audio-to-Text, Doc Intelligence, Agentic App | Run AI model tasks across text, images, audio, and documents. |
+| **Integration** | API, Function, DocSearch                                                                 | Connect to external systems and run custom code.              |
+| **Logic**       | Condition, Loop, Split, Merge                                                            | Control branching, iteration, and parallel execution.         |
+| **Human**       | Human                                                                                    | Route tasks to people for review, approval, or input.         |
+| **Utility**     | Delay, Variable, Log                                                                     | Pause execution, transform variables, and add logging.        |
+| **Scanner**     | Input Scanner, Output Scanner                                                            | Validate prompts and responses using guardrail policies.      |
 
 ---
 
@@ -22,8 +47,9 @@ Workflow nodes are the building blocks of automation:
 
 ### Start Node
 
-Entry point for workflow execution:
+Every workflow begins with a Start Node. It defines how the workflow is triggered and validates the input schema. Configure triggers—API call, schedule, or event—directly in this node.
 
+<Accordion title="Start Node">
 ```yaml
 Start Node:
   trigger: api | schedule | event | manual
@@ -34,11 +60,13 @@ Start Node:
   validation:
     - required: document
 ```
+</Accordion>
 
 ### End Node
 
-Complete workflow and return output:
+The End Node terminates the workflow and returns the final output. Map outputs from any upstream node to the End Node's output schema.
 
+<Accordion title="End Node">
 ```yaml
 End Node:
   output_schema:
@@ -50,15 +78,17 @@ End Node:
     result: "{{ai_node.output}}"
     status: "completed"
 ```
-
----
+</Accordion>
 
 ## AI Nodes
 
+AI nodes are multimodal components that use LLMs and AI models for specialized tasks. Each node processes inputs—text, image, audio, or documents—and generates outputs that downstream nodes can reference.
+
 ### Text-to-Text
 
-Generate, transform, or analyze text:
+Generates, transforms, or analyzes text using an LLM.
 
+<Accordion title="Text-to-text">
 ```yaml
 Text-to-Text Node:
   model: gpt-4
@@ -70,18 +100,15 @@ Text-to-Text Node:
   max_tokens: 500
   output_variable: summary
 ```
+</Accordion>
 
-**Use cases:**
-- Text summarization
-- Content generation
-- Translation
-- Classification
-- Entity extraction
+Use cases: summarization, content generation, translation, classification, entity extraction.
 
 ### Text-to-Image
 
-Generate images from text prompts:
+Generates images from text prompts.
 
+<Accordion title="Text-to-image">
 ```yaml
 Text-to-Image Node:
   model: dall-e-3
@@ -90,16 +117,15 @@ Text-to-Image Node:
   quality: standard
   output_variable: generated_image
 ```
+</Accordion>
 
-**Use cases:**
-- Marketing visuals
-- Product mockups
-- Creative content
+Use cases: marketing visuals, product mockups, AI-driven design workflows.
 
 ### Image-to-Text
 
-Extract text or descriptions from images:
+Extracts text or descriptions from images using vision models.
 
+<Accordion title="Image-to-text">
 ```yaml
 Image-to-Text Node:
   model: gpt-4-vision
@@ -109,17 +135,15 @@ Image-to-Text Node:
     Extract any visible text.
   output_variable: image_analysis
 ```
+</Accordion>
 
-**Use cases:**
-- Image description
-- OCR
-- Visual QA
-- Content moderation
+Use cases: OCR, image captioning, visual QA, content moderation.
 
 ### Audio-to-Text
 
-Transcribe audio to text:
+Converts spoken audio to written text using OpenAI Whisper-1. Supports transcription in multiple languages and translation to English.
 
+<Accordion title="Audio-to-text">
 ```yaml
 Audio-to-Text Node:
   model: whisper-1
@@ -128,17 +152,23 @@ Audio-to-Text Node:
   timestamps: true
   output_variable: transcription
 ```
+</Accordion>
 
-**Use cases:**
-- Meeting transcription
-- Voice note processing
-- Podcast transcription
-- Call center analytics
+**Supported formats:** M4a, Mp3, Webm, Mp4, Mpga, Wav, Mpeg.
+
+**File size limit:** 25 MB maximum. Split larger files at logical points to prevent mid-sentence breaks and processing delays.
+
+**Translation:** Transcribes and translates non-English audio to English. Reverse translation (English to other languages) is not currently supported.
+
+**Note:** Whisper processes up to 224 tokens in the input prompt. Input exceeding this limit is ignored.
+
+Use cases: meeting transcription, customer support automation, subtitle generation, voice command processing.
 
 ### Doc Intelligence
 
-Extract structured data from documents:
+Extracts structured data from documents using OCR and AI models.
 
+<Accordion title="Doc Intelligence">
 ```yaml
 Doc Intelligence Node:
   document: "{{input.document_url}}"
@@ -152,17 +182,20 @@ Doc Intelligence Node:
   ocr_model: default
   output_variable: extracted_data
 ```
+</Accordion>
 
-**Use cases:**
-- Invoice processing
-- Form extraction
-- Contract analysis
-- Receipt processing
+Use cases: invoice processing, form extraction, contract analysis, receipt processing.
 
 ### Agentic App Node
 
-Call Agent Platform applications:
+Integrates a deployed Agentic App into the workflow. When the workflow reaches this node, input is passed to the Agentic App, which interprets the task, performs the required processing, and returns output for downstream nodes.
 
+**Key behaviors:**
+- Performs one turn of communication per execution. For multi-step interactions, add multiple Agentic App Nodes in sequence.
+- The Agentic App must be deployed and must belong to the same workspace as the workflow.
+- Output is accessible at `{{context.steps.NodeName.output}}`.
+
+<Accordion title="Agentic App Node">
 ```yaml
 Agentic App Node:
   app_id: "customer-support-bot"
@@ -171,6 +204,9 @@ Agentic App Node:
     context: "{{input.customer_info}}"
   output_variable: agent_response
 ```
+</Accordion>
+
+Use cases: incident triage, invoice review and routing, complex decisions on unstructured data.
 
 ---
 
@@ -178,8 +214,9 @@ Agentic App Node:
 
 ### API Node
 
-Call external APIs:
+Calls external REST or SOAP APIs. Supports both synchronous and asynchronous execution, flexible authentication, and custom headers and payloads.
 
+<Accordion title="API Node">
 ```yaml
 API Node:
   method: POST
@@ -196,11 +233,30 @@ API Node:
     delay: 1s
   output_variable: api_response
 ```
+</Accordion>
+
+**Integration types:**
+
+| Type             | Behavior                              | Timeout Range                                                                                            |
+|------------------|---------------------------------------|----------------------------------------------------------------------------------------------------------|
+| **Synchronous**  | Waits for response before proceeding. | 5–180 seconds (default: 60s).                                                                            |
+| **Asynchronous** | Continues processing without waiting. | 30–300 seconds (default: 60s). Use **No timeout** for long-running processes such as approval workflows. |
+
+**Body formats:** `application/json`, `application/xml`, `application/x-www-form-urlencoded`, Custom.
+
+**Authorization options:**
+- **Pre-authorize**: Use a system-level token or client credentials already authorized in advance. The same credentials apply to all users.
+- **Allow users to authorize**: Each user provides their own credentials at runtime. Useful for user-specific services such as Google Drive.
+
+Access API node output using: `{{context.steps.Start.APINodeName}}`.
+
+Use cases: data enrichment, document retrieval, webhook triggers, compliance checks, external notifications.
 
 ### Function Node
 
-Run custom code:
+Runs custom code within the workflow.
 
+<Accordion title="Function Node">
 ```yaml
 Function Node:
   runtime: python3.9
@@ -213,15 +269,15 @@ Function Node:
     value: "{{previous_node.output}}"
   output_variable: function_result
 ```
+</Accordion>
 
-Supported runtimes:
-- Python 3.9+
-- Node.js 18+
+Supported runtimes: Python 3.9+, Node.js 18+.
 
 ### DocSearch Node
 
-Search document repositories:
+Searches a document repository and returns relevant results.
 
+<Accordion title="DocSearch Node">
 ```yaml
 DocSearch Node:
   source: search_ai_app
@@ -231,6 +287,7 @@ DocSearch Node:
   top_k: 5
   output_variable: search_results
 ```
+</Accordion>
 
 ---
 
@@ -238,7 +295,9 @@ DocSearch Node:
 
 ### Condition Node
 
-Branch based on conditions:
+Routes workflow execution based on whether defined conditions are met. Supports `IF`, `ELSE IF`, and `ELSE` paths with `AND`/`OR` logic.
+
+<Accordion title="Condition Node">
 
 ```yaml
 Condition Node:
@@ -251,11 +310,23 @@ Condition Node:
       next: medium_value_path
   default: standard_path
 ```
+</Accordion>
+
+**Condition types:**
+
+- `IF`: Routes to a specific path when criteria are met.
+- `ELSE IF`: Evaluates additional criteria when the `IF` condition is not met.
+- `ELSE`: Fallback path when no conditions are satisfied.
+
+Conditions support context variables (`{{context.variable}}`), previous node outputs (`{{context.steps.NodeName.output}}`), and static values.
+
+<Note>A Condition Node can be called a maximum of 10 times in a single workflow run. Exceeding this limit results in an error.</Note>
 
 ### Loop Node
 
-Iterate over collections:
+Iterates over a collection, executing a set of nodes for each item.
 
+<Accordion title="Loop Node">
 ```yaml
 Loop Node:
   collection: "{{input.items}}"
@@ -266,11 +337,13 @@ Loop Node:
     - node: process_item
     - node: store_result
 ```
+</Accordion>
 
 ### Split Node
 
-Execute parallel branches:
+Executes multiple branches in parallel.
 
+<Accordion title="Split Node">
 ```yaml
 Split Node:
   branches:
@@ -282,11 +355,13 @@ Split Node:
       nodes: [db_update]
   wait_for_all: true
 ```
+</Accordion>
 
 ### Merge Node
 
-Combine parallel results:
+Combines results from parallel branches into a single output for downstream processing.
 
+<Accordion title="Merge Node">
 ```yaml
 Merge Node:
   inputs:
@@ -296,13 +371,13 @@ Merge Node:
       variable: slack_result
   output_variable: merged_results
 ```
-
----
+</Accordion>
 
 ## Human Node
 
-Route tasks to humans:
+Routes a task to a human for action. The workflow pauses at this node until the assigned person completes the task, then resumes from the next node.
 
+<Accordion title="Human Node">
 ```yaml
 Human Node:
   task_type: review | approval | input | classification
@@ -331,15 +406,16 @@ Human Node:
     assignees:
       - role: supervisor
 ```
+</Accordion>
 
-### Task Types
+**Task types:**
 
-| Type | Description |
-|------|-------------|
-| **Review** | Review and edit AI output |
-| **Approval** | Approve or reject |
-| **Input** | Provide missing information |
-| **Classification** | Categorize or label |
+| Type               | Description                                                    |
+|--------------------|----------------------------------------------------------------|
+| **Review**         | Review and edit AI-generated output.                           |
+| **Approval**       | Approve or reject a workflow decision.                         |
+| **Input**          | Provide missing information required to continue the workflow. |
+| **Classification** | Categorize or label data for downstream processing.            |
 
 ---
 
@@ -347,19 +423,22 @@ Human Node:
 
 ### Delay Node
 
-Pause execution:
+Pauses workflow execution for a fixed duration or until a scheduled time.
 
+<Accordion title="Delay Node">
 ```yaml
 Delay Node:
   duration: 5m
-  # Or wait until specific time
+  # Or wait until a specific time
   until: "{{input.scheduled_time}}"
 ```
+</Accordion>
 
 ### Variable Node
 
-Set or transform variables:
+Sets or transforms variables in the workflow context.
 
+<Accordion title="Variable Node">
 ```yaml
 Variable Node:
   operations:
@@ -368,11 +447,13 @@ Variable Node:
     - set: full_name
       value: "{{input.first_name}} {{input.last_name}}"
 ```
+</Accordion>
 
 ### Log Node
 
-Add logging for debugging:
+Logs messages and variable values for debugging.
 
+<Accordion title="Log Node">
 ```yaml
 Log Node:
   level: info | debug | warn | error
@@ -381,6 +462,27 @@ Log Node:
     - order_id
     - customer_email
 ```
+</Accordion>
+
+## Scanner Nodes
+
+Input and output scanners validate prompts and responses using guardrail policies configured in your workspace. Input scanners evaluate what is sent to an LLM node; output scanners evaluate what the LLM returns.
+
+**Prerequisite:** Scanners must be deployed before you can add them to a workflow.
+
+**To add a scanner:**
+
+1. Open your workflow and click **Guardrails** in the left navigation.
+2. In the **Input Scanners** section, click **Add Scanner**, select scanners from the list, and click **Done**.
+3. Click a scanner to configure its settings.
+4. Repeat for output scanners as needed.
+
+**Common scanner settings:**
+
+| Scanner      | Settings                                                           |
+|--------------|--------------------------------------------------------------------|
+| **Toxicity** | Risk score threshold; option to end flow if threshold is exceeded. |
+| **Regex**    | Patterns to ban, match type, end flow if threshold is exceeded.    |
 
 ---
 
@@ -388,6 +490,9 @@ Log Node:
 
 ### Try-Catch Pattern
 
+Use try-catch blocks to handle node failures and route execution based on the error type.
+
+<Accordion title="Try-Catch Pattern">
 ```yaml
 Error Handling:
   try:
@@ -403,9 +508,11 @@ Error Handling:
       action: fail_workflow
       message: "{{error.message}}"
 ```
+</Accordion>
 
 ### Retry Configuration
 
+<Accordion title="Retry Configuration">
 ```yaml
 Retry:
   enabled: true
@@ -418,11 +525,6 @@ Retry:
     - rate_limit
     - server_error
 ```
+</Accordion>
 
----
-
-## Related
-
-- [Workflows](/ai-for-process/workflows)
-- [Inbox](/ai-for-process/inbox)
-- [Model Hub](/ai-for-process/models)
+**Timeout precedence:** Workflow timeout > Node timeout > Model timeout.
