@@ -1,0 +1,349 @@
+---
+title: "XO GPT: DialogGPT Model"
+---
+<Badge icon="arrow-left" color="gray">[Back to XO GPT Model Specifications](/ai-for-service/generative-ai-tools/xo-gpt-module#xo-gpt-model-specifications)</Badge>
+
+The XO GPT DialogGPT model predicts user intent in multi-turn conversations. For each user query, it takes shortlisted RAG chunks (Dialog, FAQ, and Knowledge), conversation history, and the active dialog context to determine the most relevant intent and generate an accurate response.
+
+![RAG Framework](../images/answer01.png)
+
+---
+
+## Challenges with Commercial Models
+
+| Challenge | Impact |
+|-----------|--------|
+| **Latency** | High processing times affect user experience in real-time or high-volume scenarios. |
+| **Cost** | Per-request pricing scales poorly for large deployments. |
+| **Data Governance** | Sending queries to external models raises privacy and security concerns. |
+| **Lack of Customization** | General-purpose models are not tuned for specific industries or use cases. |
+| **Limited Control** | Minimal ability to correct or refine model behavior for incorrect outputs. |
+| **Compliance Constraints** | Some industries have regulatory requirements that commercial LLM providers don't fully support. |
+
+---
+
+## Key Assumptions
+
+- Scope: Supports text and voice-based conversations only.
+- All required pipeline inputs are available for the model to generate the expected output.
+
+---
+
+## Benefits
+
+![XO GPT Benefits](../images/answer03.png)
+
+### Consistent and Accurate
+
+Ensures accurate intent identification for every user input. See [Model Benchmarks](#model-benchmarks) for metrics.
+
+### Cost-Effective
+
+For Enterprise Tier customers, XO GPT eliminates commercial model usage costs.
+
+**DialogGPT without Search** (1,000 input tokens/utterance, 50,000 daily utterances, 10 output tokens/response):
+
+| Model | Input $/MTok | Output $/MTok | Input $/Year | Output $/Year | Total $/Year |
+|-------|-------------|--------------|-------------|--------------|-------------|
+| GPT-4 Turbo | $30 | $60 | $547,500 | $10,950 | $558,450 |
+| GPT-4 | $10 | $30 | $182,500 | $5,475 | $187,975 |
+| GPT-4o Mini | $0.15 | $0.60 | $2,738 | $110 | $2,847 |
+
+**DialogGPT with Search** (5,000 input tokens/utterance):
+
+| Model | Input $/MTok | Output $/MTok | Input $/Year | Output $/Year | Total $/Year |
+|-------|-------------|--------------|-------------|--------------|-------------|
+| GPT-4 Turbo | $30 | $60 | $2,737,500 | $10,950 | $2,748,450 |
+| GPT-4 | $10 | $30 | $912,500 | $5,475 | $917,975 |
+| GPT-4o Mini | $0.15 | $0.60 | $13,688 | $110 | $13,797 |
+
+### Enhanced Security
+
+No client or user data is used for model retraining.
+
+**Guardrails:** Content moderation, behavioral guidelines, response oversight, input validation, and usage controls.
+
+**AI Safety:** Ethical guidelines, bias monitoring, transparency, and continuous improvement.
+
+<Note>
+Performance, features, and language support may vary by implementation. Test thoroughly in your environment before production use.
+</Note>
+
+---
+
+## Use Cases
+
+| Domain | Use Cases |
+|--------|-----------|
+| Healthcare | Appointment booking, symptom checker, retrieving upcoming appointment details, accessing medical records |
+| Banking | Check balance, transfer funds, open or close accounts, and other retail banking tasks |
+| HR | Request time off, manage leaves, check company policies, raise HR issues |
+| Insurance | View policy details, modify insurance policies, file a claim, track claim updates |
+
+---
+
+## How It Works: Fulfillment Types
+
+The model classifies each user query into a fulfillment type and category, then identifies the winning intent(s).
+
+| Fulfillment Type | Category | Description | Behavior |
+|-----------------|----------|-------------|----------|
+| **Single Intent** | 1 | One intent identified from Dialog or FAQ Chunks. | The identified intent is directly executed. |
+| **Generate Answer** | 1 | One intent identified from Knowledge Chunks. | The Answer Generation model synthesizes a response from the Knowledge Chunks. |
+| **Multiple Intents** | 1 | Two or more intents identified from any chunk type; execution plan generated. | Intents are executed in the sequence specified by the execution plan. |
+| **Ambiguous Intents** | 1 | Multiple possible intents with insufficient confidence to prioritize one. | All winning intents are presented to the user for confirmation before execution. |
+| **Continue** | 2 | User query directly responds to an in-progress AI Agent inquiry. | Conversation continues seamlessly based on the input. |
+| **No Intent** | 2 | User input does not match any category. | A configured Fallback Intent is triggered. |
+| **Conversational Intents** | 3 | Input matches a predefined conversational intent (see below). | Corresponding event is automatically triggered in the conversation flow. |
+
+**Conversational intent types:**
+
+| Intent | Triggered When |
+|--------|---------------|
+| Answer from Context | User asks to repeat the last message or requests information from conversation history. |
+| Refuse to Answer | User declines to provide requested information. |
+| Pause Interaction | User requests a temporary halt in the conversation. |
+| Restart Interaction | User asks to start the conversation over. |
+| End Interaction | User indicates they are done with the interaction. |
+| Agent Transfer | User explicitly or implicitly requests escalation to a human agent. |
+
+---
+
+## Sample Outputs
+
+### Example 1: Ambiguous Intents
+
+**Conversation history:**
+```python
+[
+  "AI Agent: Hello! How can I assist you today?",
+  "User: I would like to schedule a virtual consultation with a healthcare provider.",
+  "AI Agent: Sure! Could you please provide a preferred date and time?",
+  "User: I am available on October 15th at 3 PM.",
+  "AI Agent: You are booked for a virtual consultation on October 15th at 3 PM. Is there anything else?"
+]
+```
+
+**Dialog Chunks:**
+```json
+[
+  {"ID": "kZryjJQBY6hZN8s7xxxx", "Name": "Virtual Consultation", "score": 0.5942571,
+   "Description": "Schedule or initiate virtual consultations with healthcare providers"},
+  {"ID": "jZryjJQBY6hZN8s7xxxx", "Name": "Get Definition of Disease", "score": 0.48599482,
+   "Description": "Get descriptions of a medical condition on request"}
+]
+```
+
+**FAQ Chunks:**
+```json
+[
+  {"ID": "lJryjJQBY6hZN8s7xxxx", "score": 0.63696957,
+   "Primary Question": "How can I find a doctor who specializes in my condition?"}
+]
+```
+
+**User Query:** `I want to consult a doctor online. How do I do it?`
+
+**Output:**
+```json
+{
+  "category": "Category 1",
+  "fulfillment_type": "ambiguous_intents",
+  "winning_intents": ["9Ham9fDB:Can I consult a doctor online?", "qxLm9qat:Virtual Consultation"]
+}
+```
+
+---
+
+### Example 2: Multiple Intents
+
+**Conversation history:**
+```python
+[
+  "AI Agent: Welcome to our banking service! How may I assist you today?",
+  "User: Hi, I'm interested in some financial products.",
+  "AI Agent: Certainly! What specific financial products are you interested in?"
+]
+```
+
+**Dialog Chunks:**
+```json
+[
+  {"ID": "eksOZ5MB5L_rgqT0xxxx", "Name": "Apply Credit Card", "score": 0.67097855},
+  {"ID": "e0sOZ5MB5L_rgqT0xxxx", "Name": "Apply Home Loan", "score": 0.64631605},
+  {"ID": "eUsOZ5MB5L_rgqT0xxxx", "Name": "Apply Car Loan", "score": 0.55991244}
+]
+```
+
+**User Query:** `I want to apply for a credit card and a home loan.`
+
+**Output:**
+```json
+{
+  "category": "Category 1",
+  "fulfillment_type": "multiple_intents",
+  "winning_intents": ["HvQ0049Q:Apply Home Loan", "RzWixwEa:Apply Credit Card"],
+  "execution_plan": ["RzWixwEa:Apply Credit Card", "HvQ0049Q:Apply Home Loan"]
+}
+```
+
+---
+
+### Example 3: Single Intent
+
+**Conversation history:**
+```python
+[
+  "AI Agent: Hello! How can I assist you with your banking needs today?",
+  "User: Hi, I'd like to set up automatic payments for my utility bills.",
+  "AI Agent: Could you please provide the payment type and account?",
+  "User: I'll be setting up payments for electricity and water. Use my checking account ending in 1234.",
+  "AI Agent: How much would you like to pay for each bill, and how often?"
+]
+```
+
+**Active dialog context:**
+```python
+{'dialog_name': 'Set Payments', 'current_node': {'name': 'payment_amount_and_frequency', 'type': 'entity'}}
+```
+
+**User Query:** `As of now, I need to update my mailing address.`
+
+**Output:**
+```json
+{
+  "category": "Category 1",
+  "fulfillment_type": "single_intent",
+  "winning_intents": ["ooNsySJK:Change Address"]
+}
+```
+
+---
+
+### Example 4: System Intent (Continue)
+
+**Conversation history:**
+```python
+[
+  "AI Agent: Welcome to ABC Bank. How can I assist you today?",
+  "User: Hi, I'd like to open a new account.",
+  "AI Agent: We offer savings, current, and fixed deposit accounts. Which would you like?",
+  "User: I would like to open a savings account.",
+  "AI Agent: We need some personal information. Could you please provide your full name and contact details?",
+  "User: Sure, my name is John Doe, and my contact number is 123-456-7890.",
+  "AI Agent: We also need proof of ID and proof of address. Do you have these ready?",
+  "User: Yes, I have my passport and a utility bill.",
+  "AI Agent: Lastly, what initial deposit amount would you like to make?"
+]
+```
+
+**Active dialog context:**
+```python
+{'dialog_name': 'Open Account', 'current_node': {'name': 'initial_deposit_amount', 'type': 'entity'}}
+```
+
+**User Query:** `The branch code is 00123.`
+
+**Output:**
+```json
+{
+  "category": "Category 2",
+  "fulfillment_type": "system_intent",
+  "winning_intents": ["NoIntent_Identified"]
+}
+```
+
+---
+
+### Example 5: Conversation Intent
+
+**Conversation history:**
+```python
+[
+  "AI Agent: Hello! How can I assist you today in managing your HR tasks?",
+  "User: change supervisor",
+  "AI Agent: I understand you want to update the reporting structure. Could you please provide the employee's name?"
+]
+```
+
+**Active dialog context:**
+```python
+{'dialog_name': 'Supervisor Change', 'current_node': {'name': 'employee_name', 'type': 'entity'}}
+```
+
+**User Query:** `I need to pause this for a moment.`
+
+**Output:**
+```json
+{
+  "category": "Category 3",
+  "fulfillment_type": "conversation_intent",
+  "winning_intents": ["Pause_Interaction"]
+}
+```
+
+<Note>
+When an AI Agent has PII masking enabled, masked input fields are not available for intent identification, which may affect the model's accuracy.
+</Note>
+
+---
+
+## Model Building Process
+
+See [Model Building Process](xogpt-model-specifications.mdx#model-building-process).
+
+---
+
+## Model Benchmarks
+
+| Version | Accuracy | TPS | Latency (s) | Benchmark | Test Data |
+|---------|----------|-----|-------------|-----------|-----------|
+| v1.0 | 95.8% | 35.1 | 1.57 | [Summary v1](#benchmarks-summary-v1) | [Results v1](./test-date-and-results/xogpt-dailoggpt-v1.0.xlsx) |
+
+---
+
+## Version 1.0
+
+### Model Choice
+
+Base model: [Llama-3.1-8B-Instruct](https://huggingface.co/meta-llama/Llama-3.1-8B-Instruct)
+
+| Base Model | Developer | Language | Release Date | Status | Knowledge Cutoff |
+|-----------|-----------|----------|--------------|--------|-----------------|
+| Llama-3.1-8B-Instruct | Meta | Multi-lingual | July 2024 | Static | December 2023 |
+
+### Fine-Tuning Parameters
+
+| Parameter | Description | Value |
+|-----------|-------------|-------|
+| Fine-Tuning Type | Method used | PEFT-QLoRA |
+| Quantization | Bits for loading parameters | 4-bit |
+| Rank | Number of trainable parameters | 32 |
+| LoRA Alpha | Scaling factor for LoRA updates | 16 |
+| LoRA Dropout | Prevents co-adaptation in neural network | 0.05 |
+| Learning Rate | Rate toward loss minimum | 2e-4 (0.0002) |
+| Batch Size | Examples per training step | 1 |
+| Epochs | Passes over training data | 5 |
+| Max Sequence Length | Maximum input length | 32768 |
+| Optimizer | Optimization algorithm | paged_adamw_8bit |
+| Task Type | LoRA task type | CAUSAL_LM |
+
+### General Parameters
+
+Infrastructure: 2× A10 GPUs.
+
+| Parameter | Description | Value |
+|-----------|-------------|-------|
+| Learning Rate | Rate toward loss minimum | 2e-4 (0.0002) |
+| Batch Size | Examples per training step | 1 |
+| Epochs | Passes over training data | 5 |
+| Max Sequence Length | Maximum input length | 32768 |
+| Optimizer | Optimization algorithm | paged_adamw_8bit |
+
+### Benchmarks Summary v1
+
+Comparison models: Phi4, GPT-4o, Llama 3.1 8B.
+
+![Benchmarks Summary v1](../images/benchmark-summary.png)
+
+See [Test Data and Results v1](./test-date-and-results/xogpt-dailoggpt-v1.0.xlsx) for full details.
