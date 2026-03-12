@@ -3838,7 +3838,7 @@ Steps to add output variables:
 1. On the top of the canvas of the Workflow page, click the **Manage I/O** button. The **Manage Input & Output** dialog is displayed.
 
 2. On the **Output** tab, click the **+ Add output variable** button. The **Enter output variable** dialog is displayed.  
- <img src="../images/enter-output-variable.png" alt="Enter Output Variable" title="Enter Output Variable"/>
+ <img src="./images/enter-output-variable.png" alt="Enter Output Variable" title="Enter Output Variable"/>
 
 3. In the **Name (key)** field, provide a name for the output variable.
 
@@ -3863,36 +3863,6 @@ The output variable is displayed on the Output tab of the <b>Manage Input & Outp
 
 
 
-
-
-
-
-# Manage User Roles and Permissions
-
-Account owners can invite users to collaborate on specific workflows. Invited users can access the Models and Data modules for the invited account but can only see the workflows they're invited to. 
-
-!!! note
-
-    You can only invite those users to an app, who have access to your account.
-
-Steps to invite users to your Workflow:
-
-1. Log in → AI for Process.
-2. Click the **Workflows** tab on the top navigation bar, and select the required Workflow.
-3. Click **Sharing & Permission** in the left navigation bar. The page lists the existing collaborators, if any.  
-<img src="../images/agent_platform/sharing_and_permission.png" alt="Sharing and Permissions" title="Sharing and Permissions"/>
-
-4. Click **Invite** to add users to your workflow. The Invite Users dialog box is displayed.  
-
-    !!! note
-
-        Only the account owners can view the Invite button and invite other users.    
-
-5. Enter users’ email addresses to invite them and click **Invite** to grant them access to collaborate on the workflow.  
-<img src="../images/invite-users.png" alt="Invite Users" title="Invite Users"/>
-
-
-﻿[:octicons-arrow-left-24: Back to AI node](../types-of-nodes/text-to-text-node.md)
 
 # Structured Response Parsing and Context Sharing in Workflows
 
