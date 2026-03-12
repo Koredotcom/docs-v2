@@ -1,0 +1,126 @@
+---
+title: Configuring Custom Agent Integration
+sidebarTitle: Custom Agent Integration
+---
+<Badge icon="arrow-left" color="gray">[Back to Agent Transfer Integrations](/ai-for-service/integrations/overview#agent-transfer)</Badge>
+
+The Custom Integration uses the BotKit SDK to configure agent transfer for any system not covered by a pre-built integration.
+
+BotKit source code is available at [https://github.com/Koredotcom/BotKit](https://github.com/Koredotcom/BotKit).
+
+---
+
+## Prerequisites
+
+- A fully functional AI Agent (example uses a Banking App)
+- [BotKit SDK](https://github.com/Koredotcom/BotKit) downloaded from GitHub
+- Node.js v10 or above — install from `https://nodejs.org/en/download/` and verify with `node -v`
+- [NGROK](https://dl.equinox.io/ngrok/ngrok/stable) to simulate the callback server:
+  - **Windows**: Download the zip, unzip, and run `ngrok.exe`
+  - **Mac**: Run `ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)" < /dev/null 2> /dev/null` in Terminal, then run `brew cask install ngrok`
+- A live agent platform (example uses [LiveChatInc.com](https://www.livechatinc.com/) — free 30-day trial available)
+
+---
+
+## Design and Configuration
+
+1. Open [Kore.ai App Builder](https://bots.kore.ai/botbuilder).
+2. Select the app to configure for Agent Transfer.
+3. Open or create a dialog task (e.g., `Support Call Back`) and add an **Agent Transfer** node.
+
+   ![Add Agent Transfer node](../images/configure%20agent-transfer-img1-at-node.png)
+
+4. Enter a **Name** (e.g., `LiveChat`) and **Description**. Click **Save**.
+5. If you see a message about SDK not being configured, proceed — SDK configuration is covered below.
+6. Go to **App Settings > Integration > Agent Transfer > Custom (BotKit)**.
+7. In the **App Name** section, select an existing app or click **Create App** to create a new one.
+
+   <Note>Note the **App ID**, **Client ID**, and **Client Secret** keys. **RS256 and RS512** JWT signing algorithms are **not supported** for Custom BotKit.</Note>
+
+8. Enter the Callback URL:
+   1. In a terminal, run `ngrok http 8003`.
+   2. Copy the ngrok forwarding URL (format: `https://XXXXXXaa.ngrok.io`).
+
+      ![NGROK forwarding URL](../images/configure%20agent-transfer-img2-ngrok.png)
+
+   3. Use this URL as the Callback URL and save.
+
+   <Note>The ngrok forwarding URL changes on every restart. Update the Callback URL each time ngrok is restarted.</Note>
+
+9. Open the dialog task and the agent transfer node to verify the configuration is saved. Select the required Events.
+
+   ![Agent transfer node configuration](../images/configure%20agent-transfer-img3-at-node-config.png)
+
+10. Get the LiveChat license code:
+    1. Sign in to your LiveChat account.
+    2. Go to **Settings** and select the **chat link**.
+    3. Copy the license code from the URL (e.g., from `https://lc.chat/now/104xx297/`, the code is `104xx297`).
+
+11. Edit the BotKit SDK files:
+
+    **`livechatapi.js`**
+    - Set the `appId` and `appName` from your app.
+    - This file contains the Kore Initialization, Send Message, and Get Message APIs. Add any new agent transfer APIs here.
+
+    ![livechatapi.js](../images/configure%20agent-transfer-img4-at-livechatapi.png)
+
+    **`config.json`**
+    - Set `Client ID`, `Client Secret`, server ports, and the live agent license.
+    - `Client ID` and `Client Secret` come from **Events and Extensions – Agent Transfer**.
+    - The ngrok URL is the Callback URL — enter it as the URL field.
+    - `liveagentlicense` is the LiveChat license code from the chat link.
+
+    ![config.json](../images/configure%20agent-transfer-img5-at-configjson.png)
+
+    **`LiveChat.js`**
+    - Set the `appId` and `appName` from your app.
+
+    ![LiveChat.js](../images/configure%20agent-transfer-img6-at-livechat.png)
+
+    **`app.js`**
+    - Add: `sdk.registerBot(require('./LiveChat.js'))`
+    - Remove any existing `sdk.registerBot` statements that are not needed.
+
+    ![app.js](../images/configure%20agent-transfer-img7-at-appjs.png)
+
+---
+
+## Execution
+
+1. In a terminal, run the BotKit SDK:
+   ```
+   node app.js
+   ```
+2. Install any missing modules if errors appear:
+   ```
+   npm install <module-name>       # Windows
+   sudo npm install <module-name>  # Mac
+   ```
+3. ngrok and Node.js will be running in separate terminals.
+4. When a user initiates chat, the app transfers to an agent and notifies the user.
+
+   ![Chat initiation](../images/configure%20agent-transfer-img8-at-chat1.png)
+
+5. The agent receives a notification on LiveChat.
+
+   ![Agent receives notification](../images/configure%20agent-transfer-img9-at-chat2.png)
+
+6. The connection is established and the conversation continues.
+
+   ![Connection established](../images/configure%20agent-transfer-img10-at-chat3.png)
+
+---
+
+## Events
+
+<Note>The events and methods for sending messages between user, app, and agent are defined in `LiveChat.js`.</Note>
+
+| Event / Method | Description |
+|---|---|
+| `on_user_message` | Triggered when a user sends a message. Sends it to the app via `sendBotMessage`. |
+| `on_bot_message` | Triggered when the app sends a message. Delivers it to the user via `SendUserMessage`. |
+| `on_agent_transfer` | Triggered when the agent transfer node fires. Connects to the agent via `connectToAgent`, which calls `initChat`. |
+| `gethistory` | Provides the user's prior chat history with the app to the transferred agent. |
+| `scheduleJob` | Polls for pending agent messages every 5 seconds via `getPendingMessages`. |
+| `getPendingMessages` | Retrieves all pending messages from the agent and delivers them to the user. |
+| `chat_closed` | Triggered when the agent closes the chat. |

@@ -1,0 +1,233 @@
+---
+title: Kore Voice Automation Integration with Zoom Contact Center
+sidebarTitle: Zoom Contact Center Integration
+---
+<Badge icon="arrow-left" color="gray">[Back to Integrations List](/ai-for-service/contact-center/integrations/overview)</Badge>
+
+Integrate Kore Voice Automation with Zoom Contact Center (ZCC) using SIP Integration to enable AI-powered voice assistance for incoming calls.
+
+---
+
+## How It Works
+
+| Phase | Description |
+|-------|-------------|
+| **Setup** | Kore configures the integration with ZCC using Zoom connectors. |
+| **Channel Integration** | The AI Agent uses ZCC as a communication channel. Calls from ZCC route to Kore IVR for voice automation. Supports "Transfer from IVR" and "Agent Transfer." |
+| **Routing** | Kore runs voice automation. If a human agent is needed, use the Agent Transfer Node to return the call to ZCC with optional SIP headers. |
+| **Agent Interaction** | Agents receive and respond to customer calls via ZCC. |
+
+---
+
+## Prerequisites
+
+- [Zoom App Marketplace Developer account](https://marketplace.zoom.us/)
+- Developer access to the XO Platform
+
+---
+
+## Architecture
+
+![Architecture Diagram](../images/architecture-diagram-1.png)
+
+---
+
+## Setup Overview
+
+1. Associate an app within an experience flow.
+2. Configure "Transfer from IVR."
+3. Configure "Agent Transfer."
+4. Create a Bot Connector instance on Zoom App Marketplace.
+5. Fetch conversation details and summary.
+
+---
+
+## Step 1: Associate an App with an Experience Flow
+
+In the Experience Flow, add an **Automation** node and attach the app to trigger when ZCC transfers a call to Kore. See [Create Flows](../../../flows/create-flows.md) and [Automation node](../../../flows/node-types/automation.md).
+
+<Note>If using the older "SmartAssist" version, follow the SmartAssist flow creation guide.</Note>
+
+---
+
+## Step 2: Configure Transfer from IVR
+
+Transfer from IVR routes calls from ZCC to Kore.
+
+1. Go to **Flows & Channels > Channels > Voice Gateway > SIP Numbers > Configure SIP Trunk**.
+
+   ![Transfer from IVR](../images/transfer-from-ivr-2.png)
+
+2. Select **Contact Center AI**. The **SIP URI** field auto-populates and is used for the ZCC-to-Kore transfer.
+3. Copy the **Domain** from Zoom Connector App > Configuration Details and paste it in **Fully Qualified Domain Name**.
+4. Copy the **DID Number** from Zoom Connector App > Configuration Details and paste it in **DID Number**.
+5. Configure:
+   - **DNS Resolve Method**: srv
+   - **SIP Transport Type**: TLS
+   - Enable **Pad Crypto**
+6. Click **Next**, then enable **Inbound Calls** and **Outbound Calls**.
+
+   ![Forward to Phone Number](../images/forward-to-phone-number-3.png)
+
+7. Click **Save**.
+
+   <Note>After saving, attach the flow from Step 1 to this SIP configuration.</Note>
+
+8. Click **Attach Flow** and attach the flow from Step 1. See [Attach Flow](../../../channels/voice-gateway/configure-voice-gateway.md#attach-flow).
+
+   ![Kore AI Voice Gateway](../images/koreai-voice-gateway-4.png)
+
+---
+
+## Step 3: Configure Agent Transfer
+
+After the customer interacts with the AI Agent, transfer to ZCC using one of these approaches:
+
+### Option A: Agent Transfer Node in Experience Flow
+
+1. Select **Agent Transfer** from **Action**.
+
+   ![Agent Transfer Node](../images/agent-transfer-node-5.png)
+
+2. Add the Agent Transfer configuration.
+
+   ![Agent Transfer Configuration](../images/adding-configuration-agent-transfer-node-6.png)
+
+3. Go to **App Settings > Integration > Agent Transfer > Voice** and create a SIP transfer.
+
+4. Select **SIP BYE** for ZCC agent transfer.
+
+   ![SIP Transfer](../images/sip-transfer-7.png)
+
+5. Configure SIP headers to pass to ZCC on agent transfer via SIP BYE.
+
+### Option B: Agent Transfer from a Dialog Task
+
+Add the following code to a Message Node:
+
+<Note>Agent transfer can target a phone number or any SIP URI.</Note>
+
+```js
+var message = "Transferring Call to xxxx number";
+var ReferTo = "+91xxxxxxxxxx"; // or SIP URL
+var headers = {
+  "X-Reason": "Call Received from Kore"
+};
+print(voiceUtils.refer(message, ExternalPhoneNumber, headers));
+```
+
+### Agent Transfer Scenarios
+
+| Scenario | What Happens |
+|----------|-------------|
+| Customer resolves query and hangs up | Zoom sends SIP BYE; Kore sends ACK; no SIP headers passed. |
+| Voice bot ends the call | Kore sends `kore-session_id` and `kore-bot_id` in INVITE's 200 OK; sends `kore-reason(HangUp)` in SIP BYE; any custom gateway headers are passed. |
+| Customer needs transfer to ZCC agent | Kore sends `kore-session_id` and `kore-bot_id` in INVITE's 200 OK; sends `kore-reason(TransferToAgent)` in SIP BYE. |
+
+---
+
+## Step 4: Create a Zoom Connector (Transfer from IVR)
+
+1. Sign in to [Zoom App Marketplace](https://marketplace.zoom.us/apps) as Admin.
+2. Go to **App Types > Connectors**, or search for "kore.ai."
+
+   ![Kore AI Virtual Assistant](../images/koreai-virtual-assistant-8.png)
+
+   ![Kore AI Virtual Assistant 2](../images/koreai-virtual-assistant2-9.png)
+
+3. Select the **Kore.ai** connector.
+
+   ![Connector Details](../images/connector-details-10.png)
+
+4. Click **Create Kore.ai Assistant Connector**.
+
+   ![Create Connector](../images/create-koreai-virtual-assistant-connector-11.png)
+
+5. Enter a **Connector Name**, select **Voicebot** from **Choose Bot Type**, and click **Next**.
+6. Select your region to auto-populate the Base URL.
+7. Copy **Bot ID**, **Client ID**, and **Client Secret** from AI for Service:
+   - Go to **Flows & Channels > Digital > Configured Channels > Web/Mobile Client > JWT App Details**.
+
+   ![Web Mobile Client](../images/web-mobile-client-screen-12.png)
+
+8. Paste the values into the **Authorization Parameters** section and click **Next**.
+
+   ![Zoom Kore.ai VA Connector](../images/zoom-koreai-va-connector-13.png)
+
+9. Copy the **Domain Name** and **DID Number** from the connector page.
+
+   ![Domain Name and DID Number](../images/domain-name-did-number-14.png)
+
+10. Paste them into the **Assistant Connector** configuration in ZCC.
+11. Click **Next** to authorize the connector with the Kore.ai platform.
+
+After creating the Experience Flow, attach a DID Number to the flow. Since Zoom integration uses DID numbers, no number purchase from Kore is required.
+
+---
+
+## Step 5: Fetch Conversation Details and Summary
+
+1. Sign in to AI for Service.
+2. Go to **Contact Center AI > Analytics > Contact Center > Interactions** and verify call records exist.
+
+   ![Contact Center Interactions](../images/contact-center-interactions-15.png)
+
+3. Go to **Settings > App Settings > Dev Tools > API Scopes**.
+
+   ![API Scopes](../images/api-scopes-16.png)
+
+4. Click **+ New Mapping**, then select an app from the **JWT App** list.
+
+   ![JWT App Name](../images/jwt-app-app-name-17.png)
+
+5. Enable **Chat History** under **Automation** and click **Save**.
+6. Go to **Generative AI > Models Library**, find **Kore.ai XO GPT**, and click **Enable Now**.
+
+   ![Enable XO GPT](../images/enable-koreai-xo-gpt-18.png)
+
+7. On the Kore.ai XO GPT page:
+   - Select a model.
+   - Select a fine-tuned model for **Summarizing Conversation**.
+   - Read and accept the LLM & Generative Policy guidelines.
+
+   ![LLM GenAI Policy Guidelines](../images/llm-genai-policy-guidelines-19.png)
+
+8. Click **Save**.
+9. Go to **Generative AI > GenAI Features**. Enable **Conversation Summary** by selecting a model and toggling it on.
+10. Go to **Deploy > Publish** and click **Proceed**.
+
+    ![Publish Bot](../images/publish-your-bot-20.png)
+
+11. Enter a comment and click **Confirm**.
+
+    ![Confirm Publishing](../images/confirm-publishing-your-bot-21.png)
+
+12. Close the confirmation message.
+
+    ![Close Confirmation](../images/closing-va-publishing-confirmation-message-22.png)
+
+13. Copy the `curl` from the [Conversation Details and Summary API](../../../apis/automation/conversation-details-and-summary.md).
+14. In Postman, paste the `curl` and replace the following values:
+
+    **Bot ID** — From AI for Service:
+    - Go to **Contact Center AI > Flows & Channels > Digital**.
+
+      ![Contact Center Digital](../images/contact-center-flows-and-channels-digital-23.png)
+
+    - Click **Web/Mobile Client** under **Configured**, expand **JWT App Details**, and copy the **Bot ID**.
+
+      ![JWT App Details](../images/expand-jwt-app-details-24.png)
+
+    **Session ID** — From AI for Service:
+    - Go to **Contact Center AI > Analytics > Contact Center > Interactions**.
+    - Click the interaction log.
+
+      ![Interaction Log Details](../images/interaction-log-details-25.png)
+
+    - On the **Insights to Logs** page, click **Identifiers** and copy the **Session ID**.
+
+      ![Insights to Logs Session ID](../images/insights-to-logs-sessionid-26.png)
+
+    **JWT Token** — Follow the [JWT token generation guide](../../../apis/automation/api-introduction.md#generating-the-jwt-token).
+
+15. Run the modified `curl` to retrieve conversation details and summary.
