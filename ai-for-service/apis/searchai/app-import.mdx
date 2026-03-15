@@ -1,0 +1,141 @@
+---
+title: App Import API
+sidebarTitle: App Import
+---
+<Badge icon="arrow-left" color="gray">[Back to API List](/ai-for-service/apis/searchai/api-list)</Badge>
+
+Use this API to import an existing Search AI app configuration from a JSON file.
+
+**Key behaviors:**
+
+- The import process overwrites existing configurations for the modules present in the file.
+- If a specific module configuration is not included in the uploaded file, the current configuration for that module remains unchanged.
+- Import is executed as an asynchronous job.
+
+## Import Workflow
+
+1. Upload the configuration file using the Upload File API.
+2. Initiate the import process using the uploaded file.
+3. Track the import status using the Job Status API.
+
+---
+
+## Step 1: Upload Config File
+
+Upload the app configuration file in JSON format.
+
+**Guidelines:**
+
+- Upload the file as `multipart/form-data`
+- Set `fileContext` = `findly`
+- Set `fileExtension` = `json`
+
+### Sample Request
+
+```bash
+curl --location --request POST 'https://host/api/public/uploadfile' \
+--header 'auth: <JWT_TOKEN>' \
+--form 'file=@"/C://searchConfig.json"' \
+--form 'fileContext="findly"' \
+--form 'fileExtension="json"'
+```
+
+### Sample Response
+
+```json
+{
+   "fileId": "692d7d03d8dcf09cff781d67",
+   "hash": "43e6c123a88511965203aa4e87fe38b563a04df1",
+   "fileName": "f-7c1f4767-416c-5c6c-af6d-928b28978312"
+}
+```
+
+---
+
+## Step 2: Initiate App Import
+
+Creates an asynchronous import job to apply configurations from the uploaded file to the specified Search AI app.
+
+- Uses the `fileId` returned by the Upload File API.
+- Overwrites existing configurations for the specified modules. Other modules remain unchanged.
+- Returns a `jobId` to track import progress.
+
+| | |
+|---|---|
+| **Method** | POST |
+| **Endpoint** | `{HOST_NAME}/api/public/bot/{botId}/search/app-import` |
+| **Content-Type** | `application/json` |
+| **Authorization** | `auth: {{JWT}}` |
+| **API Scope** | Search AI Import |
+
+### Query Parameters
+
+| Parameter | Description | Mandatory |
+|-----------|-------------|-----------|
+| Bot ID | Your application ID. | Yes |
+
+### Request Parameters
+
+| Parameter | Description | Mandatory |
+|-----------|-------------|-----------|
+| `fileId` | Unique identifier of the uploaded file. | Yes |
+| `features` | Array of features to import. Pass an empty array `[]` to import all features in the file. If omitted, all modules in the file are imported. Available values: `chunkStages`, `advancedConfig`, `businessRules`, `searchResultsConfig`, `answerConfig`, `answerRetrievals`. | No |
+
+### Sample Request
+
+```bash
+curl --location 'https://host/api/public/bot/st-f86b483d-1b39-5861-9926-fb1a6e54af17/search/app-import' \
+--header 'auth: <JWT_TOKEN>' \
+--header 'Content-Type: application/json' \
+--data '{
+    "fileId": "692d7d03d8dcf09cff781d67",
+    "features": []
+}'
+```
+
+### Sample Response
+
+```json
+{
+   "status": "success",
+   "jobId": "fj-ebc95cc6-d05f-59c8-8254-6ac08a3fb73d"
+}
+```
+
+---
+
+## Step 3: Find the Status of the Job
+
+Use the Jobs API to monitor the status of the import job. On success, the response includes per-module import status.
+
+### Sample Request
+
+```bash
+curl -X GET 'https://host/api/public/bot/st-3d7ffe93-c384-5d09-918c-c8438baef80d/search/app-export/jobs/fj-ebc95cc6-d05f-59c8-8254-6ac08a3fb73d' \
+  --header 'auth: <JWT_TOKEN>' \
+  --header 'Content-Type: application/json'
+```
+
+### Sample Response
+
+```json
+{
+   "_id": "fj-b504b6bd-39d1-5c7d-af7f-a2696db1fe3e",
+   "status": "SUCCESS",
+   "createdOn": "2025-11-21T11:58:27.913Z",
+   "searchIndexId": "sidx-9731bc5d-2b92-5587-ad80-56bf0c01f844",
+   "fileInfo": {
+       "fileId": "692053e43fe5d5ffd46dfbb6",
+       "fileName": "searchConfig",
+       "fileUrl": "http://host/api/internal/getMediaStream/findly/f-2a69ebb2-f23c-501f-8ad6-00b1428d49f4.json?...",
+       "externalFileURL": "http://host/api/getMediaStream/findly/f-2a69ebb2-f23c-501f-8ad6-00b1428d49f4.json?..."
+   },
+   "validation": [
+       { "feature": "chunkStages", "status": "success" },
+       { "feature": "advancedConfig", "status": "success" },
+       { "feature": "businessRules", "status": "success" },
+       { "feature": "answerConfig", "status": "success" },
+       { "feature": "answerRetrievals", "status": "success" }
+   ]
+}
+```

@@ -1,0 +1,208 @@
+---
+title: Advance Search API - V2
+sidebarTitle: Advance Search V2
+---
+<Badge icon="arrow-left" color="gray">[Back to API List](/ai-for-service/apis/searchai/api-list)</Badge>
+
+This API retrieves answers and search results for a specific query. By default, the API returns answers. Along with search results and answers, the API also provides details about the chunks used and their associated metadata.
+
+| | |
+|---|---|
+| **Method** | POST |
+| **Endpoint** | `https://{{host}}/api/public/bot/<AppId>/search/v2/advanced-search` |
+| **Content-Type** | `application/json` |
+| **Authorization** | `auth: <JWT Token>` |
+| **API Scope** | Answer Generation |
+
+## Query Parameters
+
+| Parameter | Description | Mandatory |
+|-----------|-------------|-----------|
+| AppID | Your application ID. To view your App ID, go to **Dev Tools** under **App Settings**. The AppID is listed under API scopes. | Yes |
+
+## Request Parameters
+
+| Parameter | Description | Mandatory |
+|-----------|-------------|-----------|
+| `query` | Query string for search. | Yes |
+| `answerSearch` | Set to `true` to include an answer in the response. | No |
+| `searchResults` | Set to `true` to include search results in the response. | No |
+| `metaFilters` | Array of rules to filter results from the Answer Index before generating the answer. For example, to use only web pages: `"metaFilters": [{"condition": "AND", "rules": [{"fieldName": "sourceType", "fieldValue": ["web"], "operator": "contains"}]}]` | No |
+| `isFacetsEnable` | Set to `true` to enable facets configured in the Search AI application. | No |
+| `customData` | Custom data to send with the request. Use this to pass previous conversations as context, set user context (identity, location, etc.), or filter search results. | No |
+| `raclEntityIds` | Array of RACL values specifying **Role-Based Access Control List** values to determine accessible content. Can include user identities (email addresses) and permission entity IDs (user groups). When provided, Search AI uses only these values and ignores RACL Resolver API configurations. | No |
+| `dynamicPromptSelection` | Specifies the prompt and model to use for answer generation. Overrides the default model and prompt set at the application level. Accepts `integrationName`, `model`, and `promptName`. Supported `integrationName` values: `"openai"`, `"azure"`, `"korexo"`, or a custom integration name. All values are case-sensitive. For Kore XO GPT, set `model` to `"XO-GPT"` and `promptName` to `"Default"`. | No |
+| `includeMetaDataAnswers` | Array of specific chunk metadata fields to include in the response. Fields are returned as part of `graph_answer`. For metadata fields, use the root name prefix (for example, `"chunkMeta.author"`). Missing fields are returned as `null`. | No |
+| `includeChunksInResponse` | Set to `true` to include the list of qualified chunks in the response. Chunk data is stored in the `chunk_result` field. | No |
+
+**Sample Request**
+
+```json
+{
+    "query": "History_of_Data_Science",
+    "answerSearch": true,
+    "searchResults": true,
+    "isFacetsEnable": true
+}
+```
+
+## Response
+
+The response is in JSON format. Key fields within the `template` field:
+
+- **`results`**: Search results grouped by source type. Chunks from the same document are grouped together.
+
+```json
+"results": {
+  "googleDrive": {
+    "data": [
+      {
+        "docId": "fc-4f2ef8b5-e05d-555a-8fb9-dc8a1ceb514b",
+        "recordTitle": "Copy of Microsoft.pdf",
+        "recordUrl": "https://drive.google.com/file/d/1vEZTjr9VtQxxxxxxxxxxxxxxxxxxxxxxTGP/view?usp=drivesdk",
+        "chunkResults": [
+          "chk-f6bf3fb8-5adf-427e-b97a-0893af7be94f",
+          "chk-864bf33b-bfad-4c08-9b93-bff1a663ae07",
+          "chk-6f949cdb-33c3-446b-8a20-9cdd7cdab9a4"
+        ]
+      }
+    ],
+    "doc_count": 1
+  },
+  "file": {
+    "data": [
+      {
+        "docId": "fc-e1d1181b-4b23-58df-8346-e4c728259c4d",
+        "recordTitle": "SampleFile_20230130_0000.pdf",
+        "recordUrl": "https://domain.com/api/getMediaStream/...",
+        "chunkResults": [
+          "chk-84e2c8ca-dc0f-4372-b3ff-36368ab4dea3"
+        ]
+      }
+    ],
+    "doc_count": 1
+  }
+}
+```
+
+- **`answer_details`**: The answer to the query along with metadata.
+
+```json
+"answer_details": {
+  "query": "Microsoft",
+  "requestType": "answer_search",
+  "response": {
+    "answer": "Microsoft is a multinational technology company...",
+    "answer_payload": {
+      "center_panel": {
+        "type": "citation_snippet",
+        "data": [...]
+      }
+    }
+  },
+  "resultType": "Answer",
+  "indexPipelineId": "fip-8918ab9c-522d-5802-add6-1ee06751490f",
+  "searchIndexId": "sidx-6dab30f2-450c-5272-8c5f-33ea7d96cc8f",
+  "searchRequestId": "fsh-49d40f77-3a8d-5747-91dd-4d1aa43a293d",
+  "queryPipelineId": "fqp-2641bfc8-2b02-5c6b-9335-d3076d7fbaf7"
+}
+```
+
+- **`chunk_result`**: Array of all chunks used for answers or search results. Each item contains chunk details and metadata.
+
+```json
+"chunk_result": [
+  {
+    "_index": "answer_index",
+    "_id": "2pxA1ZQBY6hZN8s7ElhV",
+    "_score": 2.9723904,
+    "_source": {
+      "chunkId": "chk-f6bf3fb8-5adf-427e-b97a-0893af7be94f",
+      "recordTitle": "Copy of Microsoft.pdf",
+      "sourceType": "googleDrive",
+      "chunkQualified": true,
+      "sentToLLM": true,
+      "usedInAnswer": false
+    }
+  }
+]
+```
+
+- **`facets`**: Filter information. Each unique value of the selected filter field creates a bucket with a key, chunk count, and document count.
+
+```json
+"facets": [
+  {
+    "fieldName": "createdBy",
+    "multiselect": false,
+    "name": "Created By",
+    "subtype": "value",
+    "buckets": [
+      {
+        "key": "u-fec9538c-xxxx-xxxx-xxxx-679de486e3d9",
+        "chunk_count": 240,
+        "doc_count": 14
+      }
+    ]
+  }
+]
+```
+
+- **`tabFacet`**: Content for the static filter used to create tabs. Each bucket corresponds to a unique value of the tab field.
+
+```json
+"tabFacet": {
+  "fieldName": "sourceType",
+  "buckets": [
+    { "key": "file", "name": "Files", "chunk_count": 347, "doc_count": 7 },
+    { "key": "googleDrive", "name": "Google Drive", "chunk_count": 168, "doc_count": 3 },
+    { "key": "web", "name": "Web Results", "chunk_count": 44, "doc_count": 10 }
+  ]
+}
+```
+
+Additional response fields (not within `template`):
+
+- **`llmResponseTime`**: Time (in milliseconds) taken by the language model to generate the response.
+- **`retrievalResponseTime`**: Time (in milliseconds) taken by Search AI to retrieve and process relevant chunks.
+
+## Custom Data Examples
+
+**Example 1: Pass user information**
+
+```json
+"customData": {
+  "userContext": {
+    "userName": "John",
+    "userId": "john.smith@example.com",
+    "emailId": "john.smith@example.com"
+  }
+}
+```
+
+**Example 2: Pass user location**
+
+```json
+"customData": {
+  "userContext": {
+    "location": "Germany"
+  }
+}
+```
+
+**Example 3: Pass previous conversation as context to the Query Rephrasing Agent**
+
+```json
+"customData": {
+  "previousConversation": [
+    {
+      "query": "What is the leave policy for America?",
+      "answer": "The leave policy in the U.S. varies by employer..."
+    },
+    {
+      "query": "How do I reset my company email password?",
+      "answer": "You can reset your company email password by visiting the IT support portal..."
+    }
+  ]
+}
+```

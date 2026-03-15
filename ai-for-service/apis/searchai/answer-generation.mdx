@@ -1,0 +1,161 @@
+---
+title: Answer Generation API
+sidebarTitle: Answer Generation
+---
+<Badge icon="arrow-left" color="gray">[Back to API List](/ai-for-service/apis/searchai/api-list)</Badge>
+
+This API fetches answers to a query from SearchAI based on the input query and meta filters sent in the request body. It also returns debug information about the qualified chunks used to generate answers.
+
+| | |
+|---|---|
+| **Method** | POST |
+| **Endpoint** | `https://{{host}}/api/public/stream/{{AppID}}/advancedSearch` |
+| **Content-Type** | `application/json` |
+| **Authorization** | `auth: {{JWT}}` |
+| **API Scope** | Answer Generation |
+
+## Query Parameters
+
+| Parameter | Required | Description |
+|-----------|----------|-------------|
+| `host` | Yes | The environment URL. For example, `https://platform.kore.ai` |
+| `App ID` | Yes | Unique identifier of your application. To view your App ID, go to **Dev Tools** under **App Settings**. The AppID is listed under API scopes. |
+
+## Sample Request
+
+```bash
+curl --location 'https://platform.kore.ai/api/public/stream/st-3beea617-cfd5-5224-b70b-656c4eef768e/advancedSearch' \
+--header 'auth: <your-auth-key>' \
+--header 'Content-Type: application/json' \
+--data '{
+ "query": "Info on Conversational AI",
+ "metaFilters": [{
+  "condition": "AND",
+  "rules": [
+    {
+      "fieldName": "sourceType",
+      "fieldValue": ["file"],
+      "operator": "contains"
+    }
+  ]
+}]
+}'
+```
+
+## Body Parameters
+
+| Parameter | Required | Description |
+|-----------|----------|-------------|
+| `query` | Yes | Query string for search. |
+| `metaFilters` | No | Array of rules to filter results from the Answer Index before generating the answer. For example: `"metaFilters": [{"condition": "AND", "rules": [{"fieldName": "sourceType", "fieldValue": ["web"], "operator": "contains"}]}]` |
+| `answerSearch` | No | Set to `true` to include answers in the response. Set to `false` to omit the answer (you can still use `includeChunksInResponse` to see qualified chunks). Defaults to `true`. |
+| `includeChunksInResponse` | No | Set to `true` to include qualified chunks in the response. Chunk data is stored in the `chunk_result` field. |
+| `IncludeMetaDataAnswers` | No | Array of specific chunk metadata fields to include in the response. Returned as part of `graph_answer`. Use the root name prefix for metadata fields (for example, `"chunkMeta.author"`). Missing fields return as `null`. |
+| `raclEntityIds` | No | Array of RACL values specifying **Role-Based Access Control List** values to determine accessible content. Can include user identities (email addresses) and permission entity IDs (user groups). When provided, takes precedence over any RACL Resolver API configuration. |
+| `customData` | No | Custom data for the request. Use to filter search results, pass previous conversations as context, or set user context (identity, location, etc.). See [examples below](#custom-data-examples). |
+| `dynamicPromptSelection` | No | Specifies the prompt and model for answer generation. Overrides the default application-level configuration. Accepts `integrationName`, `model`, and `promptName`. Supported `integrationName` values: `"openai"`, `"azure"`, `"korexo"`, or a custom integration name. All values are case-sensitive. For Kore XO GPT, set `model` to `"XO-GPT"` and `promptName` to `"Default"`. |
+
+### Sample Response
+
+```json
+{
+    "query": "What is RAG?",
+    "requestType": "answer_search",
+    "response": {
+        "answer": "RAG (Retrieval-Augmented Generation) is a technique where a language model retrieves relevant information from external sources and uses it to generate more accurate and context-aware responses.",
+        "isValidAnswer": true,
+        "answer_payload": {
+            "center_panel": {
+                "type": "active_citation_snippet",
+                "data": [
+                    {
+                        "snippet_content": [
+                            {
+                                "answer_fragment": "RAG (Retrieval-Augmented Generation)...",
+                                "sources": [
+                                    {
+                                        "title": "MyFile.pdf",
+                                        "url": "https://domain/file/d/...",
+                                        "chunk_id": "chk-1651c9c2-696e-44aa-bac7-29319c33e308",
+                                        "doc_id": "fc-4f2ef8b5-e05d-555a-8fb9-dc8a1ceb514b",
+                                        "source_id": "fs-bbb11259-a8a4-5863-90c9-179151592cd3",
+                                        "source_type": "googleDrive",
+                                        "image_url": ""
+                                    }
+                                ]
+                            }
+                        ],
+                        "snippet_type": "generative_model",
+                        "timeTaken": "5600.00ms",
+                        "isPresentedAnswer": true,
+                        "score": "0.0000%"
+                    }
+                ]
+            }
+        }
+    },
+    "resultType": "Answer",
+    "chunk_result": {
+        "extractive": [],
+        "generative": [
+            {
+                "_index": "answer_index",
+                "_score": 0.32623625,
+                "_source": {
+                    "chunkId": "chk-1651c9c2-696e-44aa-bac7-29319c33e308",
+                    "recordTitle": "MyFile.pdf",
+                    "sourceType": "googleDrive",
+                    "chunkQualified": true,
+                    "sentToLLM": true,
+                    "usedInAnswer": true
+                }
+            }
+        ]
+    },
+    "indexPipelineId": "fip-8918ab9c-522d-5802-add6-1ee06751490f",
+    "searchIndexId": "sidx-6dab30f2-450c-5272-8c5f-33ea7d96cc8f",
+    "searchRequestId": "fsh-ae4d8c24-7098-55ae-8324-3b778ceb76ae",
+    "queryPipelineId": "fqp-2641bfc8-2b02-5c6b-9335-d3076d7fbaf7"
+}
+```
+
+## Custom Data Examples
+
+**Example 1: Pass user information**
+
+```json
+"customData": {
+  "userContext": {
+    "userName": "John",
+    "userId": "john.smith@example.com",
+    "emailId": "john.smith@example.com"
+  }
+}
+```
+
+**Example 2: Pass user location**
+
+```json
+"customData": {
+  "userContext": {
+    "location": "Germany"
+  }
+}
+```
+
+**Example 3: Pass previous conversation as context to the Query Rephrasing Agent**
+
+```json
+"customData": {
+  "previousConversation": [
+    {
+      "query": "What is the leave policy for America?",
+      "answer": "The leave policy in the U.S. varies by employer, but the Family and Medical Leave Act (FMLA) allows eligible employees to take up to 12 weeks of unpaid leave for certain family and medical reasons."
+    },
+    {
+      "query": "How do I reset my company email password?",
+      "answer": "You can reset your company email password by visiting the IT support portal and selecting 'Forgot Password.'"
+    }
+  ]
+}
+```
