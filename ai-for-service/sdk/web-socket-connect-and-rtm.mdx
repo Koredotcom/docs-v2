@@ -1,0 +1,347 @@
+---
+title: WebSocket Connect and RTM
+sidebarTitle: WebSocket and RTM
+---
+<Badge icon="arrow-left" color="gray">[Back to Web SDK Overview](/ai-for-service/sdk/web-sdk)</Badge>
+
+Kore.ai SDK libraries use a WebSocket channel to communicate with the Platform. When using the Kore SDKs, you only need to generate and pass a JWT token to the client SDK — the SDK handles the rest.
+
+This page documents the WebSocket initialization flow, RTM events, and error codes for reference and custom client implementations.
+
+---
+
+## WebSocket Session Initialization
+
+### Prerequisites
+
+- Register the client app and generate a **Client ID** and **Secret Key** on the Platform.
+
+### Step 1 — Generate a JWT
+
+Generate the JWT on the server using the client app credentials and user identity. Pass it to the client app.
+
+### Step 2 — Exchange JWT for an Access Token
+
+**Endpoint:**
+
+```
+POST https://{{APIHost}}/api/1.1/oAuth/token/jwtgrant
+```
+
+**Request body:**
+
+```json
+{
+  "assertion": "{{JWT Token}}",
+  "botInfo": {
+    "chatBot": "{{Bot Name}}",
+    "taskBotId": "st-f74a3430-3b19-55a3-be41-1ab1a35cxxxx"
+  }
+}
+```
+
+**Sample cURL:**
+
+```bash
+curl 'https://{{APIHost}}/api/1.1/oAuth/token/jwtgrant' \
+  -H 'content-type: application/json' \
+  --data-binary '{"assertion":"{{JWT Token}}","botInfo":{"chatBot":"{{Bot Name}}","taskBotId":"st-f74a3430-3b19-55a3-be41-1ab1a35cxxxx"}}'
+```
+
+**Response:**
+
+```json
+{
+  "authorization": {
+    "accessToken": "ZdV2OL_UZ_MvHog-rs8k9KJFNWBICvquSc3xxxxxxx_-",
+    "token_type": "bearer",
+    "expiresDate": "2019-06-28T06:52:23.160Z",
+    "issuedDate": "2019-02-28T06:52:23.160Z"
+  },
+  "userInfo": {
+    "userId": "u-4f6c68e0-551a-5dd9-a33a-1af3dc9cxxxx",
+    "accountId": "5c66514d09ab3565debxxxxx",
+    "orgId": "o-88aad7f1-0d32-5765-93d7-f40c8040xxxx",
+    "identity": "cs-5b08ed1e-5fa7-5aaa-9c21-28bf8c90xxxx/admin@example.xyz",
+    "enrollType": "free",
+    "managedBy": "5c66514d09ab3565debxxxxa",
+    "fName": "",
+    "lName": ""
+  }
+}
+```
+
+### Step 3 — Get the WebSocket URL
+
+**Endpoint:**
+
+```
+POST https://{{APIHost}}/api/1.1/rtm/start
+```
+
+<Note>This URL is short-lived and expires in 30 seconds. Connect before it expires.</Note>
+
+**Request body:**
+
+```json
+{
+  "botInfo": {
+    "chatBot": "Twitter",
+    "taskBotId": "st-f74a3430-3b19-55a3-be41-1ab1a35cxxxx"
+  }
+}
+```
+
+Pass the `accessToken` as a Bearer token in the `Authorization` header.
+
+**Sample cURL:**
+
+```bash
+curl 'https://{{APIHost}}/api/1.1/rtm/start' \
+  -H 'content-type: application/json' \
+  -H 'Authorization: bearer {{accessToken}}' \
+  --data-binary '{"botInfo":{"chatBot":"{{Bot Name}}","taskBotId":"st-f74a3430-3b19-55a3-be41-1ab1a35cxxxx"}}'
+```
+
+**Response:**
+
+```json
+{
+  "url": "wss://xxx.yyy.com:443/rtm/bot?sid=GhKrtrEC61g7hAnmvKAVnJIHG0DSxxxx"
+}
+```
+
+---
+
+## RTM Channel Events
+
+### RTM Client Events
+
+**Event: `/bot.message`** — Sent when a user posts a message.
+
+```json
+{
+  "clientMessageId": 1466692440896,
+  "message": {
+    "body": "Here is the message.",
+    "attachments": []
+  },
+  "resourceid": "/bot.message",
+  "botInfo": {
+    "chatBot": "CNN",
+    "taskBotId": "st-8aaf0939-c34a-5976-8e2e-5c91e685xxxx"
+  },
+  "id": 1466692440896
+}
+```
+
+### RTM Server Events
+
+**Event: `ack`** — Acknowledgment sent when a client event is received.
+
+```json
+{
+  "ok": true,
+  "replyto": 1466692440896,
+  "message": "delivered",
+  "type": "ack"
+}
+```
+
+**Event: `bot_response`** — Sent when a client message is processed.
+
+```json
+{
+  "type": "bot_response",
+  "from": "bot",
+  "message": [{ "type": "text", "cInfo": { "body": "Hi." } }],
+  "botInfo": { "chatBot": "CNN", "taskBotId": "st-8aaf0939-..." },
+  "createdOn": "2016-06-23T14:34:00.025Z",
+  "icon": "https://devbots.kore.com/api/getMediaStream/..."
+}
+```
+
+**Event: `user_message`** — Sent to the client when the user sends a message from another simultaneous session.
+
+```json
+{
+  "botInfo": { "chatBot": "CNN", "taskBotId": "st-8aaf0939-..." },
+  "from": "self",
+  "message": { "body": "how are you doing", "attachments": [] },
+  "id": 1466692871803,
+  "type": "user_message"
+}
+```
+
+---
+
+## Bot Status Events
+
+**Event: `/bot_active`** — Triggered when a WebSocket connection is established with the bot.
+
+```json
+{
+  "type": "bot_active",
+  "from": "bot",
+  "botInfo": { "chatBot": "John", "taskBotId": "st-2e2663f4-..." },
+  "sessionId": "642d2f34f7eb45387a7xxxx",
+  "formMetaInfo": { "isSecured": true, "formLinkExpiry": 300, "submitExpiry": 600 },
+  "traceId": "4a663e27051cxxxx"
+}
+```
+
+**Event: `/botKitUnreachable`** — Sent to the WebSDK when BotKit is unreachable. Default message: `"Sorry, there was an error in continuing the conversation. Please retry."` Developers can customize this message.
+
+```json
+{
+  "type": "botKitUnreachable",
+  "from": "bot",
+  "botInfo": { "chatBot": "new bot hangouts", "taskBotId": "st-f3ad01a6-..." },
+  "message": "Sorry, there was an error in continuing the conversation. Please retry.",
+  "traceId": "c070f2b7de24xxxx",
+  "timestamp": 1693394943443
+}
+```
+
+---
+
+## Form Events
+
+**Event: `/form_delivered`** — Triggered when a form is delivered to a user.
+
+**Event: `/form_submitted`** — Triggered when a user submits a form.
+
+**Event: `/form_failure`** — Triggered when a form fails for any reason.
+
+All form events share the same payload structure:
+
+```json
+{
+  "type": "form_delivered|form_submitted|form_failure",
+  "from": "bot",
+  "botInfo": { "chatBot": "John", "taskBotId": "st-2e2663f4-..." },
+  "sessionId": "642d2f34f7eb45387a7bxxxx",
+  "formMetaInfo": { "isSecured": true, "formLinkExpiry": 300, "submitExpiry": 600 },
+  "traceId": "4a663e27051cxxxx"
+}
+```
+
+---
+
+## Session Events
+
+**Event: `/session_start`** — Triggered when a session starts.
+
+Triggers on:
+- On-Connect event (open, refresh, or disable chat window).
+- A message sent after 15 minutes of inactivity.
+- A message sent after the idle timeout configured in Manage Sessions.
+
+**Event: `/session_end`** — Triggered when a session ends.
+
+Triggers on:
+- On-Connect event (close, refresh, or disable chat window).
+- Session timeout after 15 minutes.
+
+Both share the same payload:
+
+```json
+{
+  "type": "session_start|session_end",
+  "from": "bot",
+  "botInfo": {
+    "chatBot": "jarvis_new_import",
+    "taskBotId": "st-496bf3e4-...",
+    "hostDomain": "https://localhost",
+    "os": "Linux",
+    "device": "Other"
+  },
+  "sessionId": "6426bf7e916562382331xxxx",
+  "traceId": "a33d81825f3bxxxx"
+}
+```
+
+---
+
+## Agent Transfer Events
+
+**Event: `/agent_session_start`** — Triggered when chat is handed off to an agent.
+
+**Event: `/agent_session_end`** — Triggered when the agent conversation ends.
+
+Both share the same payload:
+
+```json
+{
+  "type": "agent_session_start|agent_session_end",
+  "from": "bot",
+  "botInfo": { "chatBot": "John", "taskBotId": "st-2e2663f4-..." },
+  "sessionId": "642d2f34f7eb45387a7bxxxx",
+  "formMetaInfo": { "isSecured": true, "formLinkExpiry": 300, "submitExpiry": 600 },
+  "traceId": "4a663e27051cxxxx"
+}
+```
+
+For more, see [Agent Transfer Integrations](../app-settings/integrations/agents/agent-transfer-integrations.md).
+
+---
+
+## User Input Event
+
+**Event: `/waiting_for_user_input`** — Triggered when the VA waits for user input (from an Entity, Confirmation, or Standard Response node).
+
+```json
+{
+  "type": "waiting_for_user_input",
+  "from": "bot",
+  "botInfo": { "chatBot": "John", "taskBotId": "st-2e2663f4-..." },
+  "sessionId": "642d2f34f7eb45387a7bxxxx",
+  "formMetaInfo": { "isSecured": true, "formLinkExpiry": 300, "submitExpiry": 600 },
+  "traceId": "4a663e27051cxxxx"
+}
+```
+
+---
+
+## Get Conversation History
+
+**Endpoint:**
+
+```
+GET https://{{APIHost}}/api/botmessages/rtm?botId={{botId}}
+```
+
+**Query parameters:**
+
+| Parameter | Required | Description |
+|-----------|----------|-------------|
+| `botId` | Yes | Bot ID from General Settings |
+| `skip` / `offset` | No | Number of messages to skip |
+| `limit` | No | Number of messages to fetch |
+
+Pass `accessToken` as `Authorization: bearer <token>`.
+
+**Sample cURL:**
+
+```bash
+curl 'https://{{APIHost}}/api/botmessages/rtm?botId={{botId}}&limit=10' \
+  -H 'accept: application/json' \
+  -H 'Authorization: bearer {{accessToken}}' \
+  -H 'content-type: application/json'
+```
+
+---
+
+## WebSocket Error Codes
+
+| Code | Reason |
+|------|--------|
+| `1002` | Protocol error |
+| `1005` | User closed the chat window or reconnected |
+| `1006` | Server restarted |
+| `1007` | Bot received non-UTF-8 content instead of text |
+| `1008` | Rate limit exceeded, bot suspended, user blocked, or channel user ID blocked |
+| `1009` | Payload size exceeds the maximum limit |
+| `1011` | Unhandled exception while WebSocket connection is active |
+
+---

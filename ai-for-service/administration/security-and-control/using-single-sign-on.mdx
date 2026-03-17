@@ -1,0 +1,263 @@
+---
+title: Single Sign-On
+sidebarTitle: Single Sign-On
+---
+<Badge icon="arrow-left" color="gray">[Back to Admin Console](/ai-for-service/administration/overview)</Badge>
+
+Configure Single Sign-On (SSO) so that users can access AI for Service using your existing identity provider. SSO is configured from **Security & Control > Single Sign-On** in the Admin Console.
+
+Supported protocols:
+
+- OpenID Connect (OIDC)
+- Security Assertion Markup Language (SAML)
+- WS-Federation
+
+![Security & Control - Single Sign-On](../images/using-single-sign-on-img1.png)
+
+---
+
+## Enable or Disable SSO
+
+**To enable SSO:** On the **Single Sign On** page, select **Enable SSO**.
+
+**To disable SSO:** Select **Disable SSO**, then configure user password policies.
+
+When SSO is disabled or expires, users must log in with their Kore.ai credentials. If no account-specific password policies are defined, default AI for Service password policies apply automatically.
+
+<Note>SSO and 2FA are mutually exclusive — enabling one disables the other.</Note>
+
+---
+
+## OIDC
+
+1. On the **Single Sign On** page, select **Enable SSO**.
+2. Under **Select suitable Sign-On Protocol**, select **OpenID Connect**.
+3. Select an identity provider (for example, **Sign in with Google**).
+4. Select **Create**.
+
+---
+
+## WS-Federation
+
+1. On the **Single Sign On** page, select **Enable SSO**.
+2. Under **Select suitable Sign-On Protocol**, select **WS-Federation**.
+3. Select an identity provider and enter the required settings:
+
+   **Windows Azure:**
+
+   | Field | Description |
+   |-------|-------------|
+   | **Azure AD Sign-On End Point URL** | URL for sign-on and sign-off requests |
+   | **Azure AD Federation Metadata Document** | URL for the federation metadata document |
+
+   **Other (generic WS-Federation):**
+
+   | Field | Description |
+   |-------|-------------|
+   | **AD Sign-On End Point URL** | URL for sign-on and sign-off requests |
+   | **AD Federation Metadata Document URL** | URL for the WS-Federation metadata document |
+
+4. In your SSO provider's admin console, configure these exchange URLs:
+
+   | Protocol | LDAP Attribute | Claim Attribute |
+   |----------|---------------|-----------------|
+   | SAML 2.0 | nameId | uri |
+   | SAML 1.1 | nameId | emailAddress |
+
+   **Assertion Consumer Service (ACS) URL / Callback URL:** `https://idp.kore.com/authorize/callback`
+
+5. If using ADFS, pass the user's email address as an LDAP attribute. See [Attributes for ADFS](#attributes-for-adfs).
+6. Select **Create**.
+
+---
+
+## SAML
+
+SAML is a standard protocol for SSO using secure tokens. It eliminates passwords and uses cryptographic signatures to pass a sign-in token from the identity provider to the application.
+
+### How SAML Works
+
+1. The user accesses a remote application.
+2. The application redirects the user to the identity provider (IdP) with an authentication request.
+3. The user authenticates with the IdP.
+4. The IdP returns a signed XML response with the user's identity to the application.
+5. The application validates the response and grants access.
+
+### Use Cases in AI for Service
+
+| Use Case | Description |
+|----------|-------------|
+| **App Builder authentication** | Enterprise SSO for developers and admins accessing Bot Builder |
+| **End-user authentication** | Authenticate users accessing bots embedded in portals or mobile apps |
+
+For end-user authentication: retrieve the SSO token on the client side and pass it to the bot using the `secureCustomPayload` parameter in the Bot SDK API. Use service or webhook nodes in dialog tasks for custom API auth logic.
+
+---
+
+### Configuring SSO Using SAML
+
+#### Okta
+
+1. On the **Single Sign On** page, select **Enable SSO** > **SAML** > **Okta**.
+2. Configure:
+
+   | Field | Description |
+   |-------|-------------|
+   | **Okta Single Sign-On URL** | SP-initiated SAML flow SSO URL |
+   | **Identity Provider Issuer** | Entity that authenticates users |
+   | **Certificate** | Public certificate from Okta (max 2; platform uses latest valid) |
+   | **ACS URL for SP Initiated SAML Flow** | Redirect URL for SP-initiated flow |
+   | **ACS URL for IDP Initiated SAML Flow** | Account-specific URL for IdP-initiated flow |
+   | **SAML Attribute Mapping** | Map SAML attributes to AI for Service groups or admin roles |
+   | **Exclude RequestedAuthnContext** | Remove `RequestedAuthnContext` from SAML requests |
+
+**SAML Attribute Mapping modes:**
+
+| Mode | Behavior |
+|------|----------|
+| **Full Sync** | Replaces all existing group/role assignments with those in the SAML response on every login |
+| **Inclusion Only** | Adds new assignments from the SAML response while retaining existing ones |
+
+Each mapping pair includes: SAML Attribute Name, SAML Attribute Value, Attribute Type (Group Name or Role Name), and AI for Service Attribute.
+
+**To add the AI for Service app to Okta:**
+
+1. Log on to Okta, go to **Applications > Add Application > Create application**.
+2. In **General settings**, enter an app name.
+3. In **Configure SAML**, enter the **Single Sign-On URL** — get this from Admin Console > **Security & Control > Single Sign On > SAML > Okta > ACS URL for SP Initiated SAML Flow**.
+4. Configure the ACS URL for IDP-initiated flow; set the **Audience URI** to the SP-initiated ACS URL.
+5. Select **Finish**.
+6. On the **Sign On** tab, select **View Setup Instructions** and copy:
+   - **Identity Provider Single Sign-On URL** → paste into Okta Sign-On URL field in AI for Service
+   - **Identity Provider Issuer** → paste into Identity provider issuer field
+   - **X.509 Certificate** → copy data between `-----BEGIN CERTIFICATE-----` and `-----END CERTIFICATE-----` and paste into the Certificate field
+
+7. Select **Create** in AI for Service.
+
+<Note>The ACS URL for IDP-initiated flow shown during initial setup is temporary. After adding the app to Okta, copy the final ACS URL and update the field.</Note>
+
+---
+
+#### OneLogin
+
+Required fields:
+
+| Field | Description |
+|-------|-------------|
+| **SAML 2.0 Endpoint** | HTTP SSO endpoint for SP-initiated flow |
+| **Issuer URL** | OneLogin issuer URL |
+| **X.509 Certificate** | Public certificate (max 2) |
+| **ACS URL for SP Initiated SAML Flow** | Redirect URL |
+| **ACS URL for IDP Initiated SAML Flow** | Account-specific URL |
+| **SAML Attribute Mapping** | Map SAML attributes to groups or roles |
+
+**To add the AI for Service app to OneLogin:**
+
+1. Log on to OneLogin, go to **APPS > Add Apps**.
+2. Search for `AI for Service` and select the app.
+3. Optionally update the display name and select **SAVE**.
+4. On the **SSO** tab, copy:
+   - **OneLogin SAML 2.0 Endpoint (HTTP)** → paste into SAML 2.0 Endpoint field
+   - **OneLogin Issuer URL** → paste into Issuer URL field
+   - **X.509 Certificate** (click **View Details**) → copy the certificate data and paste into the Certificate field
+
+5. Select **Create** in the AI for Service Admin Console.
+
+![SSO OneLogin](../images/using-single-sign-on-img4.png)
+
+---
+
+#### Bitium
+
+Required fields:
+
+| Field | Description |
+|-------|-------------|
+| **Single Sign-On URL** | HTTP SSO endpoint for SP-initiated flow |
+| **Issuer URL** | Bitium issuer URL |
+| **Certificate** | Public certificate (max 2) |
+| **ACS URL for SP Initiated SAML Flow** | Redirect URL |
+| **ACS URL for IDP Initiated SAML Flow** | Account-specific URL |
+| **SAML Attribute Mapping** | Map SAML attributes to groups or roles |
+
+**To add the AI for Service app to Bitium:**
+
+1. Log on to Bitium, go to **Manage > Manage Apps > Add an App**.
+2. Search for `AI for Service` and install the app.
+3. On the **Single Sign-On** tab, select **SAML Authentication**.
+4. Copy from Bitium into AI for Service:
+   - **Bitium Login URL** → Single Sign-On URL field
+   - **Bitium Logout URL** → Issuer URL field
+   - **X.509 Certificate** → Certificate field (content between BEGIN/END headers only)
+5. Select **Save** in AI for Service.
+
+![Bitium Portal](../images/using-single-sign-on-img5.png)
+
+---
+
+#### Other (Generic SAML)
+
+Use this for any identity provider not covered by built-in configurations.
+
+Fields: Single Sign-On URL, Issuer URL, Certificate, ACS URLs, SAML Attribute Mapping (same structure as above).
+
+In your SSO provider's admin console, configure:
+- **ACS URL / Callback URL:** `https://idp.kore.com/authorize/callback`
+- **Identity URL / Sign On URL:** `https://idp.kore.com`
+
+---
+
+### Attributes for ADFS
+
+When using SAML or WS-Federation with ADFS, pass additional user attributes through the ACS or Callback URL.
+
+**Required attribute:** `EmailAddress`
+
+**Example attributes passed in the callback:**
+
+```xml
+<Attribute Name="FirstName" ...><AttributeValue>Michael</AttributeValue></Attribute>
+<Attribute Name="LastName" ...><AttributeValue>Doe</AttributeValue></Attribute>
+<Attribute Name="DisplayName" ...><AttributeValue>John Doe</AttributeValue></Attribute>
+<Attribute Name="EmailAddress" ...><AttributeValue>john.doe@example.com</AttributeValue></Attribute>
+```
+
+**NameID format:**
+
+| Protocol | Format |
+|----------|--------|
+| SAML 2.0 | `urn:oasis:names:tc:SAML:2.0:attrname-format:uri` |
+| SAML 1.1 | `urn:oasis:names:tc:SAML:1.1:nameid:format:emailAddress` |
+
+### Mapping Attributes in ADFS
+
+In ADFS Management, go to **Relying Party Trusts > Edit Claim Rules > Add Rule > Send LDAP Attributes**. Add the following mappings:
+
+| Protocol | LDAP Attribute | Claim Attribute |
+|----------|---------------|-----------------|
+| SAML 2.0 | nameId | uri |
+| SAML 1.1 | nameId | emailAddress |
+
+---
+
+## Bypass SSO with Admin Password
+
+If SSO fails or you forget SSO credentials, access the Admin Console directly at:
+
+`https://bots.kore.ai/admin`
+
+![Admin Console Login](../images/using-single-sign-on-img6.png)
+
+Log in using your Admin password credentials. If you've forgotten your Admin password, enter your email and select **Forgot your password?** to receive reset instructions.
+
+<Note>A custom admin can bypass SSO only if custom privileges are enabled for at least one module. To use the Directory Agent, the custom admin must have **Enrollment – Directory Sync** privileges.</Note>
+
+---
+
+## Logging Off
+
+Select your username in the Admin Console and select **Logout**.
+
+![Log Off](../images/using-single-sign-on-img7.png)
+
+Sessions idle for more than 15 minutes are automatically terminated. The next action opens the AI for Service web client. Select the **Admin Console** icon and sign in again to start a new session.

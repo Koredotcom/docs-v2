@@ -1,0 +1,188 @@
+---
+title: Proactive Notifications API v2
+sidebarTitle: Proactive Notifications V2
+---
+<Badge icon="arrow-left" color="gray">[Back to API List](/ai-for-service/apis/automation/api-list)</Badge>
+
+Sends various types of messages to users via `IVR`, `Hangout`, `Webhook`, and `WhatsApp` channels.
+
+Use cases include:
+- Nudge employees to reset their passwords before expiry.
+- Remind users to submit expense reports.
+- Inform customers about their order status.
+- Send other defined reminders.
+
+<Note>
+Webhook Proactive Notifications only support Asynchronous V2.
+</Note>
+
+| **Field** | **Value** |
+|---|---|
+| **Method** | POST |
+| **Endpoint** | `https://{{host}}/api/public/bot/{{streamId}}/notifyV2` |
+| **Content Type** | `application/json` |
+| **Authorization** | `auth: {{JWT}}` — See [How to generate the JWT Token](../automation/api-introduction.md#generating-the-jwt-token). |
+| **API Scope** | App Builder: Proactive Messages; Admin Console: Channel Management > Proactive Messages |
+
+## Path Parameters
+
+| **Parameter** | **Required/Optional** | **Description** |
+|---|---|---|
+| `host` | Required | The environment URL. For example, `https://platform.kore.ai` |
+| `BotId` | Required | Bot ID or Stream ID. Accessible under **General Settings** on the App Builder. **Note:** Required only for App Builder API scope of Proactive Messages. |
+
+## Sample Requests
+
+**Static Text Message** — Sends a non-personalized message to multiple users.
+
+```json
+{
+  "channel": "ivr",
+  "webhookInstanceName": "Webhook",
+  "userIdentityType": "resolve",
+  "content": {
+    "type": "text",
+    "value": "Hello! Your order has been shipped. Track it using the provided details."
+  },
+  "identities": [
+    { "email": "user1@example.com" },
+    { "email": "user2@example.com" }
+  ]
+}
+```
+
+Channel-specific adjustment for **hangoutchat**:
+
+```json
+"identities": [
+  { "spaceId": "AAQAPWixxxx" },
+  { "spaceId": "o7ZNt8Axxxx" }
+]
+```
+
+**Custom Message** — Sends a personalized message if `customMessage` is specified; otherwise uses the main message.
+
+```json
+{
+  "channel": "ivr",
+  "webhookInstanceName": "Webhook",
+  "userIdentityType": "resolve",
+  "content": {
+    "type": "text",
+    "value": "Hello! Your order has been shipped."
+  },
+  "identities": [
+    { "email": "user@example.com", "customMessage": "Hi John, your package is on the way!" },
+    { "email": "user@example.com" }
+  ]
+}
+```
+
+**Parameterized Message** — Personalizes the message using dynamic parameters.
+
+```json
+{
+  "channel": "ivr",
+  "webhookInstanceName": "Webhook",
+  "userIdentityType": "resolve",
+  "content": {
+    "type": "text",
+    "value": "Hello {name}! Your reference number is {refId}."
+  },
+  "identities": [
+    { "email": "user@example.com", "parameters": { "name": "Charlie", "refId": "XYZ-789" } },
+    { "email": "user@example.com", "parameters": { "name": "Diana", "refId": "UVW-012" } }
+  ]
+}
+```
+
+**Template-Based Message** — Uses templates with optional parameter substitution.
+
+```json
+{
+  "channel": "ivr",
+  "webhookInstanceName": "Webhook",
+  "userIdentityType": "resolve",
+  "content": {
+    "type": "template",
+    "value": "Hello {name}, your order ID is {orderId}."
+  },
+  "identities": [
+    { "email": "user@example.com", "parameters": { "name": "Alice", "orderId": "ABC-123" } },
+    { "email": "user@example.com", "parameters": { "name": "Bob", "orderId": "DEF-456" } }
+  ]
+}
+```
+
+**WhatsApp:**
+
+```json
+{
+    "channel": "whatsapp",
+    "userIdentityType": "resolve",
+    "message": {
+        "type": "template",
+        "value": {
+            "type": "image",
+            "image": {
+                "link": "https://imagej.net/images/2D_Gel.jpg",
+                "caption": "Random Image"
+            }
+        }
+    },
+    "identities": [
+        {
+            "phoneNumber": "91xxxxxxx4"
+        }
+    ]
+}
+```
+
+## Body Parameters
+
+| **Field** | **Type** | **Required/Optional** | **Description** |
+|---|---|---|---|
+| `channel` | `string` | Required | Name of the channel for notifications (for example, `ivr`, `hangouts`, `whatsapp`). |
+| `webhookInstanceName` | `string` | Optional | Name of the webhook instance. Applicable only for the `ivr` channel. |
+| `userIdentityType` | `string` | Optional | Identity resolution logic (for example, `resolve`). |
+| `message` | `object` | Required | Message object containing message type and content. |
+| `message.type` | `string` | Required | Message format: `text`, `template`, or `script`. |
+| `message.value` | `string` or `json` | Required | Actual message content to send. |
+| `identities` | `array` | Required | List of recipient identity objects. |
+
+### Identities Array
+
+| **Field** | **Type** | **Required/Optional** | **Description** |
+|---|---|---|---|
+| identity field | `string` | Required | Identity key depending on the channel: `ivr` uses `email`, `hangouts` uses `spaceId`, `whatsapp` uses `phoneNumber`. **Note:** Other channels (for example, `msteams`, `slack`) are not yet supported in public API v2. |
+| `customMessage` | `string` | Optional | Overrides the default message for this recipient. Supports placeholders like `{name}`, `{refId}`. |
+| `parameters` | `object` | Optional | Key-value map where each key corresponds to a placeholder in `customMessage`. If no `customMessage` is provided, this field is ignored for that identity. |
+
+### Schema Constraints
+
+- `identities` array: minimum 1 item, maximum 1000 items.
+- `parameters` object: maximum 20 properties; each value must be a string of 200 characters or fewer.
+- No additional properties are allowed at any level unless explicitly defined.
+
+## Sample Response
+
+```json
+{
+   "_id": "ds-d0f6fed2-87ff-52b7-bf2b-a15216f0xxxx",
+   "streamId": "st-736ff917-d836-55b4-9a6b-3dad20c0xxxx",
+   "jobType": "PROACTIVE_NOTIFICATIONS_API",
+   "action": "PROACTIVE_NOTIFICATIONS",
+   "status": "IN_PROGRESS",
+   "statusLogs": [],
+   "percentageComplete": 0,
+   "store": {
+       "identitiesCount": 2
+   },
+   "createdBy": "u-ecff03e8-ba90-532e-ab7b-209082d9xxxx",
+   "lMod": "2025-05-22T05:37:56.000Z",
+   "countOfDockStatuses": 1,
+   "createdOn": "2025-05-22T05:37:56.693Z",
+   "requestedTime": "2025-05-22T05:37:56.693Z",
+   "__v": 0
+}
+```
