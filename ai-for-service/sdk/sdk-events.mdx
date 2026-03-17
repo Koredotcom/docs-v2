@@ -1,0 +1,471 @@
+---
+title: BotKit SDK Events
+sidebarTitle: SDK Events
+---
+<Badge icon="arrow-left" color="gray">[Back to BotKit SDK Overview](/ai-for-service/sdk/botkit-sdk)</Badge>
+
+The BotKit SDK lets you handle Platform events to customize conversation behavior. Register handlers for the following events in your bot's Node.js module.
+
+**Supported events:**
+
+- [onMessage](#onmessage) — User or bot message
+- [onWebhook](#onwebhook) — Webhook node in dialog
+- [onAgentTransfer](#onagenttransfer) — Agent Transfer node
+- [onEvent](#onevent) — Dialog or FAQ ends
+- [onAlert](#onalert) — Alert message received
+- [onVariableUpdate](#onvariableupdate) — Bot published
+- [onClientEvent](#onclientevent) — Client event from third-party app
+
+---
+
+## onMessage
+
+Fired for every message exchange. Contains two sub-events:
+
+### onUserMessage
+
+Triggered when a user message is received by the channel adapter.
+
+**Syntax:**
+
+```javascript
+on_user_message: function(requestId, data, callback)
+```
+
+**Parameters:**
+
+| Parameter | Description |
+|-----------|-------------|
+| `requestId` | Unique ID for the message event |
+| `payload` | JSON payload (see below) |
+| `callback` | Call at completion to send updated message and context back to the Platform |
+
+```json
+{
+  "message": "message sent by the bot to the user",
+  "taskId": "Dialog task Id",
+  "nodeId": "current node id in the dialog flow",
+  "channel": "channel name",
+  "context": "context object"
+}
+```
+
+**Example** — Route to live agent or forward to bot:
+
+```javascript
+function onUserMessage(requestId, payload, callback) {
+    var visitorId = payload.context.session.UserContext._id;
+    var entry = _map[visitorId];
+
+    if (payload.message === "clearagent") {
+        sdk.clearAgentSession(payload);
+    }
+
+    if (entry) {
+        // Route to live agent
+        var formdata = {};
+        formdata.secured_session_id = entry.secured_session_id;
+        formdata.license_id = config.liveagentlicense;
+        formdata.message = payload.message;
+        return api.sendMsg(visitorId, formdata)
+            .catch(function(e) {
+                delete userDataMap[visitorId];
+                delete _map[visitorId];
+                return sdk.sendBotMessage(payload, callback);
+            });
+    } else {
+        return sdk.sendBotMessage(payload, callback);
+    }
+}
+```
+
+### onBotMessage
+
+Triggered when the bot sends a message to the user.
+
+**Syntax:**
+
+```javascript
+on_bot_message: function(requestId, data, callback)
+```
+
+**Parameters:**
+
+| Parameter | Description |
+|-----------|-------------|
+| `requestId` | Unique ID for the message event |
+| `payload` | JSON payload (see below) |
+| `callback` | Call at completion to send updated message and context back to the user |
+
+```json
+{
+  "message": "message sent to the user",
+  "channel": "channel name",
+  "context": "context object"
+}
+```
+
+**Example** — Switch to live agent when anger tone level ≥ 2:
+
+```javascript
+function onBotMessage(requestId, payload, callback) {
+    var visitorId = _.get(payload, 'channel.from');
+    var entry = _map[visitorId];
+
+    if (data.message.length === 0 || payload.message === '') return;
+
+    var message_tone = _.get(payload, 'context.message_tone');
+    if (message_tone && message_tone.length > 0) {
+        var angry = _.filter(message_tone, {tone_name: 'angry'});
+        if (angry.length && angry[0].level >= 2) {
+            return connectToAgent(requestId, data);
+        }
+    }
+
+    if (!entry) {
+        sdk.sendUserMessage(payload, callback);
+    }
+}
+```
+
+---
+
+## onWebhook
+
+Triggered when the Platform NL Engine reaches a Webhook node in the dialog flow. Execute business logic and send the updated context back.
+
+**Syntax:**
+
+```javascript
+on_webhook: function(requestId, componentId, payload, callback)
+```
+
+**Parameters:**
+
+| Parameter | Description |
+|-----------|-------------|
+| `requestId` | Unique ID for the webhook event |
+| `componentId` | Unique ID of the Webhook node |
+| `payload` | JSON payload including context |
+| `callback` | Call at completion to send updated context back to the Platform |
+
+**Example** — Return hotel results:
+
+```javascript
+on_webhook: function(requestId, payload, componentId, callback) {
+    if (componentId === 'sendResponse') {
+        var hotels = { "hotels": ["Taj Banjara", "Novotel"] };
+        payload.context.hotelResults = hotels;
+        callback(null, data);
+    }
+}
+```
+
+**Example** — Look up flight data by component:
+
+```javascript
+on_webhook: function(requestId, payload, componentId, callback) {
+    var context = payload.context;
+    if (componentId === 'FlightsInfo') {
+        findFlights(context.entities.Source, context.entities.Dest, context.entities.Date)
+            .then(function(flightResults) {
+                payload.context.flightResults = flightResults;
+                callback(null, data);
+            });
+    } else if (componentId === 'GetSourceAirports') {
+        findAirports(context.entities.SourceName)
+            .then(function(airportResults) {
+                payload.context.sourceAirports = airportResults;
+                callback(null, data);
+            });
+    } else if (componentId === 'GetDestAirports') {
+        findAirports(context.entities.DestName)
+            .then(function(airportResults) {
+                payload.context.destAirports = airportResults;
+                callback(null, data);
+            });
+    }
+}
+```
+
+---
+
+## onAgentTransfer
+
+Triggered when the Platform NL Engine reaches an Agent Transfer node. Use this to seamlessly hand off to a live agent.
+
+**Syntax:**
+
+```javascript
+function onAgentTransfer(requestId, data, callback) {
+    connectToAgent(requestId, data, callback);
+}
+```
+
+**Parameters:**
+
+| Parameter | Description |
+|-----------|-------------|
+| `requestId` | Unique ID for the event |
+| `payload` | JSON payload including `callbackUrl` and context |
+| `callback` | Call at completion to send updated context back to the Platform |
+
+**Example payload:**
+
+```json
+{
+  "requestId": "150124415xxxx",
+  "botId": "st-b4a22e86-e95b-575c-b888-e106d083xxxx",
+  "callbackUrl": "https://platform.kore.ai/api/botsdk/stream/.../serviceCallback/...",
+  "context": "..."
+}
+```
+
+**Example** — Connect user to LiveChat agent:
+
+```javascript
+function connectToAgent(requestId, data, cb) {
+    var formdata = {};
+    formdata.license_id = config.liveagentlicense;
+    formdata.welcome_message = "";
+    var visitorId = _.get(data, 'channel.channelInfos.from') || _.get(data, 'channel.from');
+    visitorId = data.context.session.UserContext._id;
+    userDataMap[visitorId] = data;
+    data.message = "A human Agent will be assigned to you shortly!";
+    sdk.sendUserMessage(data, cb);
+    formdata.welcome_message = "Chat history: " + config.app.url + "/history/index.html?visitorId=" + visitorId;
+    return api.initChat(visitorId, formdata)
+        .then(function(res) {
+            _map[visitorId] = {
+                secured_session_id: res.secured_session_id,
+                visitorId: visitorId,
+                last_message_id: 0
+            };
+        });
+}
+```
+
+---
+
+## onEvent
+
+Triggered when a Dialog Task or FAQ ends.
+
+**Syntax:**
+
+```javascript
+on_event: function(requestId, data, callback)
+```
+
+**Parameters:**
+
+| Parameter | Description |
+|-----------|-------------|
+| `requestId` | Unique ID for the event |
+| `data` | JSON payload including `event.eventType` (`"endDialog"` or `"endFAQ"`) |
+| `callback` | Call at completion |
+
+**Example:**
+
+```javascript
+on_event: function(requestId, data, callback) {
+    return sdk.sendAlertMessage(data, callback);
+}
+```
+
+The data object includes:
+
+```json
+{
+  "event": {
+    "eventType": "endDialog"
+  }
+}
+```
+
+---
+
+### Contact Center Events
+
+The Platform emits real-time Contact Center Events to the BotKit channel via `onEventNode`. These events cover agent actions and conversation lifecycle changes.
+
+<Note>These events are only emitted for bots connected to the BotKit channel.</Note>
+
+#### agent_accepted
+
+Triggered when an agent accepts an incoming conversation.
+
+**Payload fields:** `sessionId`, `agentId`, `agentName`, `assignedAt`, `acceptedAt`, `channelType`, `userId`, `conversationId`, `botId`, `queueId`
+
+```json
+"CCAIMetaInfo": {
+  "agentFullName": "agent_name",
+  "agentEmail": "agent@example.com",
+  "agentRole": "Administrator",
+  "agentId": "a-c0e6303-...",
+  "conversationId": "c-3043b67-...",
+  "botId": "st-82e472f0-...",
+  "orgId": "o-cf84dff6-...",
+  "agentAssignedTime": "2025-07-04T07:35:03.336Z",
+  "agentAcceptedTime": "2025-07-04T07:35:36.017Z",
+  "queueId": "qu-1a32679-...",
+  "sessionId": "686784207f066ea8e0a1xxxx",
+  "source": "rtm"
+}
+```
+
+#### conversation_transfer
+
+Triggered when an agent transfers the conversation to another agent or queue.
+
+**Payload fields:** `sessionId`, `fromAgentId`, `toAgentId` or `toQueueId`, `transferSummary`, `timestamp`
+
+```json
+"CCAIMetaInfo": {
+  "conversationId": "c-3043b67-...",
+  "sessionId": "686784207f066ea8e0a1xxxx",
+  "source": "rtm",
+  "transferSummary": {
+    "fromQueue": "qu-1a32679-...",
+    "transferredType": "OTHERS",
+    "transferredTo": [{ "type": "AGENT", "name": "agent_name" }],
+    "transferredAt": "2025-07-04T07:36:51.156Z",
+    "isWarmTransfer": false
+  }
+}
+```
+
+#### agent_joined_conversation
+
+Triggered when an agent joins an ongoing conference-style conversation.
+
+**Payload fields:** `sessionId`, `agentId`, `timestampJoin`, `timestampLeave`
+
+#### agent_exited_conversation
+
+Triggered when an agent exits a conference conversation.
+
+**Payload fields:** `sessionId`, `agentId`, `timestampJoin`, `timestampLeave`
+
+#### conversation_terminated
+
+Triggered when a conversation ends (by user, agent, or timeout).
+
+**Payload fields:** `sessionId`, `agentId`, `userId`, `timestamp`, `dispositionSummary`, `dispositionSets`
+
+#### disposition_submitted
+
+Triggered when a disposition code is submitted post-conversation.
+
+**Payload fields:** `sessionId`, `agentId`, `dispositionCode`, `dispositionSummary`, `timestamp`
+
+---
+
+## onAlert
+
+Triggered when a user receives an alert message.
+
+**Syntax:**
+
+```javascript
+on_alert: function(requestId, data, callback)
+```
+
+**Example:**
+
+```javascript
+on_alert: function(requestId, data, callback) {
+    return sdk.sendAlertMessage(data, callback);
+}
+```
+
+---
+
+## onVariableUpdate
+
+Triggered when the bot is published (`variable_update` event).
+
+**Syntax:**
+
+```javascript
+variable_update: function(requestId, data, callback)
+```
+
+**Example** — Fetch or update bot variables on publish:
+
+```javascript
+var event = data.eventType;
+if (first || event == "variable_update") {
+    sdk.fetchBotVariable(data, langArr, function(err, response) {
+        dataStore.saveAllVariables(response, langArr);
+        first = false;
+    });
+} else {
+    var lang = data.language;
+    updateBotVariableInDataStore(botVariables, data, event, lang);
+}
+```
+
+---
+
+## onClientEvent
+
+Triggered when the bot receives a client event from a third-party application. Used to handle typing indicators and read receipts.
+
+**Syntax:**
+
+```javascript
+on_client_event: function(requestId, data, callback)
+```
+
+**Example:**
+
+```javascript
+on_client_event: function(requestId, data, callback) {
+    console.log("on_client_event:", data.preDefinedEvent, data.customEvent);
+    return sdk.sendBotEvent(data, callback);
+}
+```
+
+**Supported predefined event types:**
+
+| Event | Request `preDefinedEvent.type` |
+|-------|-------------------------------|
+| User started typing | `TYPING_STARTED` |
+| User stopped typing | `TYPING_STOPPED` |
+| User read a message | `MESSAGE_READ` (include `"id": "<msg-id>"`) |
+
+**Example requests and responses:**
+
+_Typing started — Request:_
+
+```json
+{
+  "resourceid": "/bot.clientEvent",
+  "preDefinedEvent": { "type": "TYPING_STARTED" },
+  "customEvent": { "test": "test" },
+  "botInfo": { "chatBot": "<bot-name>", "taskBotId": "<bot-id>" }
+}
+```
+
+_Response (ack):_
+
+```json
+{ "ok": true, "type": "ack" }
+```
+
+_Response (event echo):_
+
+```json
+{
+  "type": "events",
+  "from": "bot",
+  "botInfo": { "chatBot": "<bot-name>", "taskBotId": "<bot-id>" },
+  "preDefinedEvent": { "type": "TYPING_STARTED" },
+  "customEvent": { "test": "test" },
+  "traceId": "6b12f4cc73c806dd"
+}
+```
+
+---
+

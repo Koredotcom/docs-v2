@@ -1,0 +1,485 @@
+---
+title: BotKit SDK Functions
+sidebarTitle: SDK Functions
+---
+<Badge icon="arrow-left" color="gray">[Back to BotKit SDK Overview](/ai-for-service/sdk/botkit-sdk)</Badge>
+
+The BotKit SDK provides functions for controlling message flow, managing agent sessions, and working with async webhook responses.
+
+**Available functions:**
+
+- [sdk.sendUserMessage](#sdk-sendusermessage)
+- [sdk.sendBotMessage](#sdk-sendbotmessage)
+- [sdk.AsyncResponse](#sdk-asyncresponse)
+- [sdk.respondToHook](#sdk-respondtohook)
+- [sdk.registerBot](#sdk-registerbot)
+- [sdk.saveData](#sdk-savedata)
+- [sdk.getSavedData](#sdk-getsaveddata)
+- [sdk.getMessages](#sdk-getmessages)
+- [sdk.clearAgentSession](#sdk-clearagentsession)
+- [sdk.startAgentSession](#sdks-tartagentsession)
+- [sdk.resetBot](#sdk-resetbot)
+- [sdk.extendRequestId](#sdk-extendrequestid)
+- [sdk.skipBotMessage](#sdk-skipbotmessage)
+- [sdk.skipUserMessage](#sdk-skipusermessage)
+- [sdk.closeConversationSession](#sdk-closeconversationsession)
+
+---
+
+## sdk.sendUserMessage
+
+Sends a message to the user. Use inside `on_bot_message` to modify the bot's reply before delivery.
+
+**Syntax:**
+
+```javascript
+sdk.sendUserMessage(payload, callback)
+```
+
+**Payload:**
+
+```json
+{
+  "message": "Spell-corrected message sent by the bot to the user",
+  "originalMessage": "Original message sent by the bot to the user",
+  "taskId": "Dialog task ID",
+  "nodeId": "Current node ID in the dialog flow",
+  "channel": "Channel name",
+  "context": "<context object>"
+}
+```
+
+When spell correction is unavailable:
+
+```json
+{
+  "message": "Original message",
+  "originalMessage": "Original message",
+  "languageInfo": {
+    "currentLanguage": "en",
+    "detectedLanguages": ["en", "fr"],
+    "spellCorrectedInput": { "en": "corrected input" }
+  }
+}
+```
+
+**Meta tags (v8.0+)** — Add to payload to tag the conversation:
+
+```json
+"metaTags": {
+  "userMetaTags":    [{ "name": "<string>", "value": "<string>" }],
+  "sessionMetaTags": [{ "name": "<string>", "value": "<string>" }],
+  "messageMetaTags": [{ "name": "<string>", "value": "<string>" }]
+}
+```
+
+**Examples:**
+
+```javascript
+// Return error to user
+return sdk.sendUserMessage(payload, function(err) {
+    if (err) console.log("err", err);
+});
+
+// Notify user of agent transfer
+data.message = "An Agent will be assigned to you shortly!";
+sdk.sendUserMessage(payload, callback);
+
+// Override message based on user selection
+if (message == "yes") {
+    payload.overrideMessagePayload = {
+        body: "Enter the currency code for conversion",
+        isTemplate: false
+    };
+    return sdk.sendUserMessage(payload);
+}
+```
+
+---
+
+## sdk.sendBotMessage
+
+Sends a message to the bot. Use inside `on_user_message` to modify or forward the user's message. Messages are validated: max 3000 characters total, max 1200 characters per word.
+
+**Syntax:**
+
+```javascript
+sdk.sendBotMessage(payload, callback)
+```
+
+**Payload:**
+
+```json
+{
+  "message": "Message sent by the user",
+  "channel": "Channel name",
+  "context": "<context object>"
+}
+```
+
+**Examples:**
+
+```javascript
+// Forward message to bot
+on_user_message: function(requestId, payload, callback) {
+    sdk.sendBotMessage(payload, callback);
+}
+
+// Intercept and reroute
+on_user_message: function(requestId, payload, callback) {
+    if (payload.message === "Hi") {
+        payload.message = "Hello";
+        return sdk.sendUserMessage(payload, callback);  // Return to user
+    } else if (!payload.agent_transfer) {
+        return sdk.sendBotMessage(payload, callback);   // Forward to bot
+    } else {
+        payload.message = "Agent Message";
+        return sdk.sendUserMessage(payload, callback);
+    }
+}
+```
+
+---
+
+## sdk.AsyncResponse
+
+Sends an HTTP 202 to the Platform to indicate an async webhook response is in progress. Call `sdk.respondToHook(payload)` when the response is ready.
+
+**Syntax:**
+
+```javascript
+callback(null, new sdk.AsyncResponse())
+```
+
+**Example** — Async cab booking:
+
+```javascript
+on_webhook: function(requestId, payload, componentName, callback) {
+    if (componentName === 'FindNearbyCabs') {
+        findCabs().then(function(cabList) {
+            payload.context.cabList = cabList;
+            callback(null, data);  // Synchronous
+        });
+    } else if (componentName === 'BookTheCab') {
+        sdk.saveData(requestId, payload).then(function() {
+            bookTheCab(requestId, ...);
+            callback(null, new sdk.AsyncResponse());  // Async
+        });
+    }
+}
+```
+
+---
+
+## sdk.respondToHook
+
+Sends the final webhook response to the Platform after async processing completes.
+
+**Syntax:**
+
+```javascript
+sdk.respondToHook(payload)
+```
+
+**Payload:**
+
+```json
+{
+  "taskId": "Dialog task ID",
+  "nodeId": "Current node ID in the dialog flow",
+  "channel": "Channel name",
+  "context": "<context object>"
+}
+```
+
+**Example:**
+
+```javascript
+function onBookingFailure(requestId) {
+    sdk.getSavedData(requestId).then(function(payload) {
+        payload.context.successful = false;
+        sdk.respondToHook(payload);
+    });
+}
+```
+
+---
+
+## sdk.registerBot
+
+Registers a bot and its event callbacks. Create one Node.js file per bot and export the required variables.
+
+**Module structure:**
+
+```javascript
+module.exports = {
+    botId: "xxxxx",
+    botName: "xxxxx",
+    on_user_message: function(requestId, data, callback) { /* ... */ },
+    on_bot_message: function(requestId, data, componentName, callback) { /* ... */ },
+    on_webhook: function(requestId, data, componentName, callback) { /* ... */ }
+}
+```
+
+**Register the bot:**
+
+```javascript
+sdk.registerBot(require('./<BotName>.js'));
+```
+
+**Example:**
+
+```javascript
+module.exports = {
+    botId: botId,
+    botName: botName,
+    on_user_message: function(requestId, payload, callback) {
+        onUserMessage(requestId, payload, callback);
+    },
+    on_bot_message: function(requestId, payload, callback) {
+        onBotMessage(requestId, payload, callback);
+    },
+    on_agent_transfer: function(requestId, payload, callback) {
+        onAgentTransfer(requestId, payload, callback);
+    },
+    gethistory: gethistory
+};
+```
+
+---
+
+## sdk.saveData
+
+Saves payload data to Redis by `requestId`. Use during async webhook handling to persist state between the initial event and the final response.
+
+**Syntax:**
+
+```javascript
+sdk.saveData(requestId, payload)
+```
+
+**Example:**
+
+```javascript
+on_webhook: function(requestId, payload, componentId, callback) {
+    if (componentId === 'BookTheCab') {
+        sdk.saveData(requestId, payload).then(function() {
+            payload.successful = 'true';
+            payload.bookedCab = context.entities.selectedCab || {};
+            callback(null, payload);
+        });
+    }
+}
+```
+
+---
+
+## sdk.getSavedData
+
+Reads payload data from Redis by `requestId`. Use when responding to an async webhook to retrieve the saved state.
+
+**Syntax:**
+
+```javascript
+sdk.getSavedData(requestId, payload)
+```
+
+**Example:**
+
+```javascript
+function onBookingSuccess(requestId) {
+    sdk.getSavedData(requestId).then(function(payload) {
+        payload.context.bookedCab = payload.entities.selectedCab;
+        payload.context.successful = true;
+        sdk.respondToHook(payload);
+    });
+}
+```
+
+---
+
+## sdk.getMessages
+
+Retrieves the conversation history between the bot and user in reverse chronological order. Supports pagination.
+
+**Syntax:**
+
+```javascript
+sdk.getMessages(requestData, callback)
+```
+
+**Parameters:**
+
+| Parameter | Description |
+|-----------|-------------|
+| `stream_id` | Bot ID (from Config Settings) |
+| `user_id` | User whose history to fetch |
+| `skip` | Number of messages to skip |
+| `limit` | Number of messages per page |
+| `channelType` | (Optional) channel filter |
+
+**Example:**
+
+```javascript
+data.limit = 100;
+sdk.getMessages(data, function(err, resp) {
+    if (err) { res.status(400); return res.json(err); }
+    res.status(200).json(resp.messages);
+});
+```
+
+---
+
+## sdk.clearAgentSession
+
+Clears the agent session and re-establishes the conversation with the bot. Call this when the live agent closes the chat (triggered by a `chat_closed` event from the third-party provider).
+
+**Syntax:**
+
+```javascript
+sdk.clearAgentSession(requestData, callback)
+```
+
+**Example:**
+
+```javascript
+if (event.type === "chat_closed") {
+    delete userResponseDataMap[visitorId];
+    delete _map[visitorId];
+    sdk.clearAgentSession(data);
+}
+```
+
+---
+
+## sdk.startAgentSession
+
+Notifies the Platform that an agent transfer is in progress. After calling this, the `data` object received by BotKit will have `agent_session: true`. When `sdk.clearAgentSession` is called, the Platform sets it back to `false`.
+
+**Syntax:**
+
+```javascript
+sdk.startAgentSession(requestData, callback)
+```
+
+**Example:**
+
+```javascript
+function connectToAgent(requestId, data, cb) {
+    data.message = "An Agent will be assigned to you shortly!";
+    sdk.sendUserMessage(data, cb);
+    sdk.startAgentSession(data, cb);  // Notify Platform before initChat
+    return api.initChat(visitorId, formdata).then(function(res) {
+        _map[visitorId] = { secured_session_id: res.secured_session_id, ... };
+    });
+}
+```
+
+---
+
+## sdk.resetBot
+
+Clears the bot context and silently discards the current task. Use when a user explicitly requests a reset.
+
+**Syntax:**
+
+```javascript
+sdk.resetBot(requestData, callback)
+```
+
+**Example:**
+
+```javascript
+on_user_message: function(requestId, data, callback) {
+    if (data.message === "reset bot") {
+        sdk.resetBot(data, callback);
+    }
+}
+```
+
+---
+
+## sdk.extendRequestId
+
+Extends the time window for BotKit to send messages to the Platform. Use during prolonged agent transfer sessions where the Platform might stop receiving messages.
+
+**Syntax:**
+
+```javascript
+sdk.extendRequestId(requestData, callback)
+```
+
+<Note>Extension is ineffective after 15 minutes of conversation inactivity. An inactive session resets agent_transfer mode regardless.</Note>
+
+**Example:**
+
+```javascript
+function onBotMessage(requestId, data, cb) {
+    event = schedular.scheduleJob("*/4 * * * *", function() {
+        sdk.extendRequestId(data, cb);
+    });
+}
+```
+
+---
+
+## sdk.skipBotMessage
+
+Skips a specific bot message and proceeds to the next dialog step without waiting for BotKit delivery.
+
+**Syntax:**
+
+```javascript
+sdk.skipBotMessage(requestData, callback)
+```
+
+**Example:**
+
+```javascript
+if (data.message === "skipBotMessage") {
+    sdk.skipBotMessage(data, cb);
+}
+```
+
+---
+
+## sdk.skipUserMessage
+
+Skips a specific user message and proceeds to the next dialog step without waiting for BotKit confirmation.
+
+**Syntax:**
+
+```javascript
+sdk.skipUserMessage(requestData, callback)
+```
+
+**Example:**
+
+```javascript
+if (data.message === "skipUserMessage") {
+    sdk.skipUserMessage(data, cb);
+}
+```
+
+---
+
+## sdk.closeConversationSession
+
+Closes the current conversation session.
+
+**Syntax:**
+
+```javascript
+sdk.closeConversationSession(requestData, callback)
+```
+
+**Example:**
+
+```javascript
+if (data.message === "closeConversationSession") {
+    sdk.closeConversationSession(data, cb);
+}
+```
+
+---
+

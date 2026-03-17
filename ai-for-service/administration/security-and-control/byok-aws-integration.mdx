@@ -1,0 +1,218 @@
+---
+title: BYOK Integration — AWS
+sidebarTitle: BYOK (AWS)
+---
+<Badge icon="arrow-left" color="gray">[Back to Admin Console](/ai-for-service/administration/overview)</Badge>
+
+Bring Your Own Key (BYOK) lets your enterprise retain control of encryption keys while protecting data on the Kore.ai platform. Kore.ai integrates with AWS Key Management Service (KMS) to use your Customer Master Keys (CMKs) for encrypting application and bot data.
+
+---
+
+## Prerequisites
+
+- Active Kore.ai subscription with BYOK enabled
+- AWS account with administrative access to IAM and KMS
+- Permissions to create IAM roles, policies, and KMS keys
+
+---
+
+## Information Exchange
+
+| Information | Description | Provided By |
+|-------------|-------------|-------------|
+| **Service Role ARN** | Kore.ai's IAM role ARN in their AWS account. Add this to your IAM role's trust policy. <br /> For `platform.kore.ai`: `arn:aws:iam::358587034707:role/SegBots-Servers-Role` <br />Contact [Kore.ai Support](https://support.kore.ai/) if your SaaS instance differs. | Kore.ai |
+| **External ID** | Unique identifier Kore.ai uses when assuming your IAM role. Auto-populated in the AI for Service Admin Console. | Kore.ai |
+| **Role ARN** | ARN of the IAM role you create in your AWS account. Example: `arn:aws:iam::<your-account-id>:role/BYOK_Role` | Customer |
+| **CMK ARN** | ARN of your Customer Managed Key in AWS KMS. Example: `arn:aws:kms:<region>:<your-account-id>:key/<key-id>` | Customer |
+
+---
+
+## Integration Process
+
+### Step 1: Create IAM Policy
+
+1. Go to **AWS Console > IAM > Policies**.
+2. Select **Create policy** and choose the **JSON** tab.
+3. Paste the following policy:
+
+   ```json
+   {
+     "Version": "2012-10-17",
+     "Statement": [
+       {
+         "Sid": "BYOKKMSPermissions",
+         "Effect": "Allow",
+         "Action": [
+           "kms:Encrypt",
+           "kms:Decrypt",
+           "kms:GenerateDataKey*",
+           "kms:DescribeKey"
+         ],
+         "Resource": "arn:aws:kms:REGION:ACCOUNT_ID:key/KEY_ID"
+       }
+     ]
+   }
+   ```
+
+4. Select **Next**, name the policy (for example, `BYOK_KMS_Policy`), add a description, and select **Create policy**.
+
+<Note>Replace `REGION`, `ACCOUNT_ID`, and `KEY_ID` with your values. You can use `"Resource": "*"` initially and update it after creating your KMS key.</Note>
+
+---
+
+### Step 2: Create IAM Role
+
+1. Go to **AWS Console > IAM > Roles** and select **Create role**.
+2. Select **AWS Account** as the trusted entity type, then **This account**.
+3. Attach the **BYOK_KMS_Policy** from Step 1.
+4. Name the role `BYOK_Role` and select **Create role**.
+
+**Update the Trust Policy:**
+
+1. Open the **BYOK_Role**, select the **Trust relationships** tab, then **Edit trust policy**.
+2. Replace the policy with:
+
+   ```json
+   {
+     "Version": "2012-10-17",
+     "Statement": [
+       {
+         "Effect": "Allow",
+         "Principal": {
+           "AWS": "arn:aws:iam::358587034707:role/SegBots-Servers-Role"
+         },
+         "Action": "sts:AssumeRole",
+         "Condition": {
+           "StringEquals": {
+             "sts:ExternalId": "<EXTERNAL-ID>"
+           }
+         }
+       }
+     ]
+   }
+   ```
+
+3. Select **Update policy**.
+
+---
+
+### Step 3: Create KMS Key
+
+1. Go to **AWS Console > KMS > Customer managed keys** and select **Create key**.
+2. Select **Symmetric** key type and **Encrypt and decrypt** key usage.
+3. Enter an alias (for example, `byok-kore-ai-key`) and a description.
+4. Add your administrator users or roles as key administrators.
+5. Add the **BYOK_Role** as a key user.
+6. Review and select **Finish**.
+
+---
+
+### Step 4: Update KMS Key Policy
+
+1. Open your KMS key and select the **Key policy** tab, then **Edit**.
+2. Add the following statement to the existing `Statement` array (do not remove other statements):
+
+   ```json
+   {
+     "Sid": "Allow use of the key",
+     "Effect": "Allow",
+     "Principal": {
+       "AWS": "arn:aws:iam::ACCOUNT_ID:role/BYOK_Role"
+     },
+     "Action": [
+       "kms:Encrypt",
+       "kms:Decrypt",
+       "kms:GenerateDataKey*",
+       "kms:DescribeKey"
+     ],
+     "Resource": "*"
+   }
+   ```
+
+3. **Save** the policy.
+
+<Note>Replace `ACCOUNT_ID` with your AWS account ID.</Note>
+
+---
+
+### Step 5: Verify Configuration
+
+| Item | Verification |
+|------|-------------|
+| IAM Policy | Confirm `BYOK_KMS_Policy` exists with correct KMS actions |
+| Policy Attachment | Verify policy is attached to `BYOK_Role` under the Permissions tab |
+| Trust Relationship | Confirm the Trust relationships tab shows Kore.ai's Service Role ARN |
+| KMS Key Policy | Verify key policy includes both root account and BYOK_Role statements |
+| Key Users | Confirm `BYOK_Role` appears under Key users in the KMS console |
+
+---
+
+### Step 6: Share with Kore.ai
+
+[Contact Kore.ai Support](https://support.kore.ai/) and provide:
+
+- **CMK ARN:** `arn:aws:kms:<region>:<your-account-id>:key/<key-id>`
+- **Role ARN:** `arn:aws:iam::<your-account-id>:role/BYOK_Role`
+
+Kore.ai configures the trust relationship on their end and notifies you when complete.
+
+---
+
+## Configure BYOK in AI for Service
+
+After Kore.ai confirms the integration, enable BYOK in the Admin Console.
+
+1. Go to **Admin Console > Enterprise Key**.
+2. Under **Bring Your Own Key**, select **Create Key**.
+
+   ![BYOK Create Key](../images/byok_1.png)
+
+3. Enter AWS details:
+
+   | Field | Value |
+   |-------|-------|
+   | **Cloud Provider** | Amazon Web Services (AWS) |
+   | **Assume Role External ID** | Auto-populated |
+   | **Provider ARN** | Your CMK ARN |
+   | **Role ARN** | Your Role ARN |
+
+4. Set the **Enforcement Date** — the date your CMK begins encrypting data.
+
+   <Note>You can modify the CMK and retest until the enforcement date. After this date, you can only rotate the key or update which apps/bots are encrypted.</Note>
+
+5. Select **Test Configuration** to validate the connection (tests connectivity, authentication, encryption, and decryption).
+
+6. Select **Next** to view all apps and bots.
+   - All apps and bots are selected by default.
+   - Deselect any that should remain on Kore.ai's default encryption.
+
+   ![Select Apps and Bots](../images/byok_2.png)
+
+7. Select **Proceed** to complete setup. Encryption begins on the enforcement date.
+
+---
+
+## Validation (Optional)
+
+After the enforcement date, verify encryption is working.
+
+**Option 1: View Analytics**
+Check analytics data for recent chat interactions to confirm encrypted data is accessible.
+
+**Option 2: Test Application Authorization**
+
+1. Open the application and run **Authorization Profiles and Dialogs**.
+2. Execute **BasicAuthValidationDialog**.
+3. When the bot shows the authorization link, select it and enter credentials (`admin/password`).
+
+   ![BYOK Validation](../images/byok_3.png)
+   ![BYOK Success](../images/byok_4.png)
+
+If successful, the system displays "Basic authentication successful."
+
+---
+
+## Related
+
+- [AWS KMS Developer Guide](https://docs.aws.amazon.com/kms/)
+- [Enterprise Key Management](./enterprise-key.mdx)
