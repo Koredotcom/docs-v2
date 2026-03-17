@@ -1,0 +1,164 @@
+---
+title: Answer Insights API
+sidebarTitle: Answer Insights
+---
+<Badge icon="arrow-left" color="gray">[Back to API List](/ai-for-service/apis/searchai/api-list)</Badge>
+
+This API initiates the export of answer insights data to a file in **JSON format**. You can apply filters to export specific results.
+
+<Note>
+This API can export analytics data for **up to one week at most**. To download data for a longer period, invoke the API multiple times. For example, to get data for an entire month, call the API four times — once per week.
+</Note>
+
+## How to Export Analytics Data
+
+1. Use this API to initiate an export job. This creates a job of type `DATA_EXPORT`.
+2. Use the [Jobs API](./jobs) with the returned job ID to retrieve the exported file details.
+3. The file URL is only generated after the job completes successfully.
+4. Once you have the file URL, download it through your browser.
+
+| | |
+|---|---|
+| **Method** | POST |
+| **Endpoint** | `<host_url>/api/public/bot/<AppID>/search/analytics-export` |
+| **Content-Type** | `application/json` |
+| **Authorization** | `auth: <JWT Token>` |
+| **API Scope** | Answer Insights |
+
+## Query Parameters
+
+| Parameter | Description | Mandatory |
+|-----------|-------------|-----------|
+| AppID | Your application ID. | Yes |
+
+## Request Parameters
+
+| Parameter | Description | Mandatory |
+|-----------|-------------|-----------|
+| `filters` | Date/time range for the export. Accepts `from` and `to` in UTC. Use ISO 8601 format when including time (for example, `"2025-01-25T07:32:58.611Z"`). | Yes |
+| `event` | Filter by feedback type. Accepted values: `thumbsUp`, `thumbsDown` (case-sensitive). When set, only data matching the event type is exported. | No |
+
+### Sample Request
+
+```json
+{
+  "filters": {
+    "from": "2025-01-25T07:32:58.611Z",
+    "to": "2025-01-31T07:32:58.611Z"
+  }
+}
+```
+
+## Response
+
+The API returns a job ID (`_id`) with job type `DATA_EXPORT`. The `fileInfo` object indicates the file type being generated. Use the job ID with the Jobs API to retrieve the file.
+
+### Sample Response — Creating Export Job
+
+```json
+{
+    "_id": "fj-2618a702-0211-50ca-8504-c1ac377a2402",
+    "status": "INPROGRESS",
+    "percentageDone": 0,
+    "title": "Exporting Analytics Data - JSON",
+    "jobType": "DATA_EXPORT",
+    "fileInfo": {
+        "ext": "json"
+    },
+    "createdOn": "2025-06-30T06:51:12.140Z"
+}
+```
+
+### Sample Response — Jobs API (Completed Export)
+
+When invoking the Jobs API for file export, the `fileInfo` field contains the link to the exported file.
+
+```json
+{
+    "_id": "fj-2618a702-0211-50ca-8504-c1ac377a2402",
+    "status": "SUCCESS",
+    "percentageDone": 100,
+    "message": "ANALYTICS DATA JSON Export Completed - 1 file(s) with 9 total records",
+    "jobType": "DATA_EXPORT",
+    "fileInfo": {
+        "fileId": "686233e0a4bca53b7f61c074",
+        "fileName": "analytics_data_1751266272195",
+        "fileUrl": "https://staging-xo.korebots.com/api/getMediaStream/findly/f-54847fe6-4c20-5a64-9a6d-b4b82afba169.json?..."
+    },
+    "analyticsFragments": [
+        {
+            "fileId": "686233e0a4bca53b7f61c074",
+            "fileName": "analytics_data_1751266272195",
+            "fileUrl": "https://staging-xo.korebots.com/...",
+            "recordCount": 9
+        }
+    ],
+    "hasAnalyticsFragments": false,
+    "store": {
+        "totalFiles": 1,
+        "totalRecords": 9
+    }
+}
+```
+
+Refer to the `fileInfo` field for the exported file details. Download the file from `fileUrl`. The file includes search query details, generated answers, and debug information such as relevant chunks, LLM request, and response parameters.
+
+<Note>
+For small datasets (fewer than 150 records), data is exported as a single file. For larger datasets, data is split into fragments of 150 records each, available as separate files.
+</Note>
+
+## Exporting Large Datasets
+
+When exporting large datasets, the data is split into multiple fragments (default: 150 records per file). The Jobs API response includes the following additional fields for managing fragments:
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `hasAnalyticsFragments` | Boolean | `true` for multi-file exports, `false` for single-file exports. |
+| `analyticsFragments` | Array | Metadata about all export fragments. Present for both single and multi-file exports. |
+| `store` | Object | Meta info including `totalRecords` and `totalFiles`. |
+| `percentageDone` | Number | Percentage-based progress for the analytics export. |
+
+### Sample Response — Large Dataset with Multiple Fragments
+
+```json
+{
+    "_id": "fj-4ccf7101-baf1-5729-9347-60deba1113c9",
+    "status": "SUCCESS",
+    "percentageDone": 100,
+    "message": "ANALYTICS DATA JSON Export Completed - 3 file(s) with 400 total records",
+    "jobType": "DATA_EXPORT",
+    "hasAnalyticsFragments": true,
+    "fileInfo": {},
+    "analyticsFragments": [
+        {
+            "fileId": "6848391f171ddc36802e20db",
+            "fileName": "analytics_data_1749563679586_part_1_of_3",
+            "fileUrl": "https://qa1-uxo.kore.ai:443/api/getMediaStream/...",
+            "recordCount": 150
+        },
+        {
+            "fileId": "68483929171ddc36802e216b",
+            "fileName": "analytics_data_1749563689734_part_2_of_3",
+            "fileUrl": "https://qa1-uxo.kore.ai:443/api/getMediaStream/...",
+            "recordCount": 150
+        },
+        {
+            "fileId": "68483933171ddc36802e2192",
+            "fileName": "analytics_data_1749563699827_part_3_of_3",
+            "fileUrl": "https://qa1-uxo.kore.ai:443/api/getMediaStream/...",
+            "recordCount": 100
+        }
+    ],
+    "store": {
+        "totalFiles": 3,
+        "totalRecords": 400
+    }
+}
+```
+
+## Key Notes
+
+- Always check the `hasAnalyticsFragments` field to determine if data is segmented.
+- Date ranges must be **within 7 days**.
+- Use **ISO 8601 format** for `from` and `to` timestamps.
+- Data is exported in **JSON format**.

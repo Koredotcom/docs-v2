@@ -1,0 +1,137 @@
+---
+title: Installing BotKit in AWS
+sidebarTitle: Installing BotKit in AWS
+---
+<Badge icon="arrow-left" color="gray">[Back to BotKit SDK Overview](/ai-for-service/sdk/botkit-sdk)</Badge>
+
+This guide walks through an automated, production-ready BotKit deployment on AWS using an Auto Scaling Group, Application Load Balancer, and optional ElastiCache for Redis.
+
+---
+
+## BotKit Overview
+
+BotKit extends the Platform's conversational AI by letting you:
+
+- Implement custom business logic in conversation flows via webhooks.
+- Integrate with unsupported messaging or voice channels.
+- Handle conversation lifecycle events for complex workflows.
+- Connect to external services not covered by the standard API node.
+
+**Example use cases:**
+
+| Use Case | Description |
+|----------|-------------|
+| **Channel integrations** | Add support for custom mobile SDKs or IoT devices |
+| **Custom NLU models** | Inject external NLP models tuned on proprietary data |
+| **Conversation lifecycle handlers** | Trigger custom logic on events like conversation start/close |
+| **Non-standard integrations** | Connect via webhooks to on-premise or legacy systems |
+| **Custom analytics** | Capture KPIs not available out-of-the-box; send to third-party analytics |
+
+**References:** [Using the BotKit SDK](using-the-botkit-sdk.mdx) · [SDK Events](sdk-events.mdx) · [SDK Functions](sdk-functions.mdx)
+
+---
+
+## Deployment Steps
+
+### Step 1 — Create a Golden Image
+
+1. Launch a new EC2 instance with one of the following base OS:
+   - Amazon Linux 2
+   - CentOS / Red Hat 7.x or above
+
+   **Recommended instance type:** `m5.xlarge` (4 vCPU, 16 GB RAM, 20 GB OS disk, 50 GB data disk)
+
+2. Update OS packages:
+   ```bash
+   yum update
+   ```
+
+3. Install [Node.js](https://nodejs.org/en/download) (supported version).
+
+4. Install [Nginx](https://docs.nginx.com/nginx/admin-guide/installing-nginx/installing-nginx-open-source/) (latest).
+
+5. Verify both installations:
+   ```bash
+   node -v
+   nginx --version
+   ```
+
+6. Create a deploy script to pull the build from your central repository and extract it to the data disk.
+
+7. Create startup scripts to bring up BotKit and Nginx services.
+
+8. Configure Nginx to listen on port 80 and proxy to the BotKit instance.
+
+9. Create the Golden Image (AMI) from this instance.
+
+---
+
+### Step 2 — Set Up an Application Load Balancer
+
+1. Create an external (internet-facing) **Application Load Balancer (ALB)**.
+2. Add a listener on **port 443** with an SSL certificate (use ACM).
+3. Create a target group targeting backend instances on **port 80** and assign it to the listener.
+
+---
+
+### Step 3 — Configure DNS
+
+1. Create an **A** or **CNAME** record in your external domain pointing to the ALB.
+
+---
+
+### Step 4 — Set Up ElastiCache for Redis (Optional)
+
+If BotKit uses Redis for async payload storage:
+
+1. Launch an **AWS ElastiCache** cluster for Redis with appropriate capacity.
+
+---
+
+### Step 5 — Create a Launch Template
+
+1. Create a Launch Template using the Golden AMI.
+2. Configure VPC settings: subnets, security groups, IAM role.
+3. In **User Data**, invoke the deploy script to pull the latest build and start services.
+4. Set this version as the default.
+
+---
+
+### Step 6 — Configure an Auto Scaling Group
+
+1. Create an Auto Scaling Group (ASG) using the Launch Template.
+2. Configure all required settings per your internal policies.
+3. Attach the target group so instances register with the ALB automatically.
+4. Enable **SNS notifications** for instance launch/termination events.
+5. Set a CPU utilization threshold for scale-out per your internal policies.
+
+---
+
+### Step 7 — Maintain a Configuration Repository
+
+1. Store all BotKit and Nginx configuration files in a central repository (Git, S3, etc.) separate from the application code.
+
+---
+
+### Step 8 — Implement a CI/CD Pipeline
+
+Use Jenkins or equivalent automation:
+
+1. Check out the BotKit codebase.
+2. Check out configuration files from the configuration repository.
+3. (Optional) Run `npm install` for dependencies.
+4. Create an archive and push it to S3 or Artifactory.
+5. Invoke the deploy script using a rolling deployment:
+   - Remove one server from the ALB.
+   - Deploy the build and restart services.
+   - Reattach the server to the ALB.
+   - Repeat for remaining servers.
+6. (Optional) Add a vulnerability scan step and gate the pipeline on the scan result.
+
+---
+
+## Security Patching
+
+1. Apply patches to the Golden Image.
+2. Launch a standalone server from the updated image and validate the application.
+3. On successful validation, launch new servers via the ASG and terminate the old ones.
