@@ -1,0 +1,348 @@
+---
+title: Hooks API for Internal Transfers
+sidebarTitle: Internal Transfers API
+---
+<Badge icon="arrow-left" color="gray">[Back to API List](/ai-for-service/apis/agent-ai/api-list)</Badge>
+
+Supports internal transfer events to reduce reliance on UI socket events. This API captures transfer data initiated outside the UI, accepts it via API payloads, and displays it in the Agent AI widget.
+
+---
+
+## API Details
+
+| **Field**        | **Value** |
+|------------------|-----------|
+| **Method**       | `POST` |
+| **Endpoint**     | `https://{{host}}/agentassist/api/v1/hooks/{{botId}}` |
+| **Content Type** | `application/json` |
+| **Authorization** | `auth: {{JWT}}` — See [How to generate the JWT Token](../automation/api-introduction.md#generating-the-jwt-token) |
+
+## Path Parameters
+
+| **Parameter** | **Required** | **Description** |
+|---------------|--------------|-----------------|
+| `host` | Yes | The environment URL. For example, `https://platform.kore.ai`. |
+| `botId` | Yes | Unique identifier of the bot. |
+
+## Header Parameters
+
+| **Header**       | **Type** | **Required** | **Description** |
+|------------------|----------|--------------|-----------------|
+| `Content-Type`   | String   | Yes          | Media type of the request body. Set to `application/json`. |
+| `token`          | String   | Yes          | Authentication token used to authorize the request. |
+
+## Sample Request
+
+```bash
+curl --location 'https://platform.kore.ai/agentassist/api/v1/hooks/st-XXXX-XXXX-XXXX-XXXX' \
+--header 'Content-Type: application/json' \
+--header 'token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...' \
+--data '{
+    "conversationId": "c-xxxx",
+    "botId": "st-XXXX-XXXX-XXXX-XXXX",
+    "events": [
+        {
+            "name": "INTERNAL_TRANSFER_EVENT",
+            "transfertype": "NA",
+            "transition": "entry",
+            "isExtAD": "true",
+            "language": "language",
+            "experience": "chat",
+            "participant": {
+                "identity": "xxxxxx",
+                "name": "Agent ai",
+                "type": "agent"
+            }
+        }
+    ]
+}'
+```
+
+## Request Body Parameters
+
+### Top-Level Parameters
+
+| **Parameter**  | **Type**         | **Required** | **Description** |
+|----------------|------------------|--------------|-----------------|
+| `conversationId` | String         | Yes          | Unique identifier of the conversation. |
+| `botId`        | String           | Yes          | Identifier of the bot associated with the event. |
+| `events`       | Array of Objects | Yes          | List of event objects describing actions or state transitions. |
+
+### Event Object Parameters
+
+| **Parameter** | **Type** | **Required** | **Description** |
+|---------------|----------|--------------|-----------------|
+| `name`        | String   | Yes          | Name of the event. Example: `INTERNAL_TRANSFER_EVENT`. |
+| `transfertype` | String  | Yes          | Specifies the transfer type. |
+| `transition`  | String   | Yes          | Indicates event transition. For example, `entry` or `exit`. |
+| `isExtAD`     | String   | Yes          | Indicates whether the transfer uses an external directory. |
+| `language`    | String   | No           | Language used during the event. |
+| `experience`  | String   | Yes          | Interaction mode. For example, `chat` or `voice`. |
+
+### Participant Object Parameters
+
+| **Parameter**                | **Type** | **Required** | **Description** |
+|------------------------------|----------|--------------|-----------------|
+| `participant`                | Object   | Yes          | Details about the participant involved in the event. |
+| `participant.identity`       | String   | Yes          | Unique identifier of the participant. |
+| `participant.name`           | String   | Yes          | Name of the participant. |
+| `participant.type`           | String   | Yes          | Type of participant. Example: `agent`. |
+| `participant.customFields`   | Object   | No           | Required only when using the Kore Quality Module with Agent AI for post-call analysis. Includes `agentEmail`, `queueId`, and `queueName`. |
+
+---
+
+## Types of Transfers
+
+The Hooks API supports the following transfer types:
+
+| **Transfer Type**        | **Description** |
+|--------------------------|-----------------|
+| NA Transfer (No Transfer) | The first agent accepts the conversation, or the last agent leaves the conversation. |
+| Cold Transfer            | Conversation moves from one agent to another — only one agent is active at a time. |
+| Warm Transfer            | A new agent joins while others remain in the conversation — multiple agents may be active. |
+
+<Note>The conversation ID remains the same throughout all transfer events to ensure continuity in Agent AI's context.</Note>
+
+---
+
+## Sending Transfer Events
+
+Use the following JavaScript code to send internal transfer events to the Agent AI backend.
+
+```javascript
+async function sendInternalTransferEvent(payload) {
+  await axios.post(
+    `<baseurl>/agentassist/api/v1/hooks/<botId>`,
+    payload,
+    {
+      headers: {
+        token: jwt.sign(
+          { appId: <clientId> },
+          <clientSecret>
+        ),
+      },
+    }
+  );
+}
+```
+
+The `payload` includes:
+- `Transfertype` — the type of transfer
+- `Transition` — whether the agent is entering or exiting
+- `Participant` — details of the agent involved
+
+---
+
+## Detailed Scenarios
+
+### NA Transfer (No Transfer)
+
+When a customer connects with the first agent and no transfer has occurred yet, send an `NA` entry event.
+
+```javascript
+const payload = {
+    conversationId: "atesta-xxxx",
+    botId: "st-XXXX-XXXX-XXXX-XXXX",
+    events: [
+        {
+            name: "INTERNAL_TRANSFER_EVENT",
+            transfertype: "NA",
+            transition: "entry",
+            isExtAD: true,
+            language: "en",
+            experience: "voice",
+            participant: {
+                identity: "agentId1",
+                name: "AgentName1",
+                type: "agent"
+            }
+        }
+    ]
+}
+sendInternalTransferEvent(payload);
+```
+
+- `transfertype: "NA"` — No transfer has occurred yet.
+- `transition: "entry"` — The agent has entered the conversation.
+
+### Cold Transfer
+
+A cold transfer moves the conversation from one agent to another, with only one agent active at any time.
+
+**New agent joins:**
+
+```javascript
+const payload = {
+    conversationId: "atesta-xxxx",
+    botId: "st-XXXX-XXXX-XXXX-XXXX",
+    events: [
+        {
+            name: "INTERNAL_TRANSFER_EVENT",
+            transfertype: "COLD",
+            transition: "entry",
+            isExtAD: true,
+            language: "en",
+            experience: "voice",
+            participant: {
+                identity: "agentId2",
+                name: "AgentName2",
+                type: "agent"
+            }
+        }
+    ]
+}
+sendInternalTransferEvent(payload);
+```
+
+**Previous agent leaves:**
+
+```javascript
+const payload = {
+    conversationId: "atesta-xxxx",
+    botId: "st-XXXX-XXXX-XXXX-XXXX",
+    events: [
+        {
+            name: "INTERNAL_TRANSFER_EVENT",
+            transfertype: "COLD",
+            transition: "exit",
+            isExtAD: true,
+            language: "en",
+            experience: "voice",
+            participant: {
+                identity: "agentId1",
+                name: "AgentName1",
+                type: "agent"
+            }
+        }
+    ]
+}
+sendInternalTransferEvent(payload);
+```
+
+Repeat the same pattern for additional transfers.
+
+### Warm Transfer
+
+A warm transfer allows one or more additional agents to join while others remain active.
+
+**Agent joins:**
+
+```javascript
+const payload = {
+    conversationId: "atesta-xxxx",
+    botId: "st-XXXX-XXXX-XXXX-XXXX",
+    events: [
+        {
+            name: "INTERNAL_TRANSFER_EVENT",
+            transfertype: "WARM",
+            transition: "entry",
+            isExtAD: true,
+            language: "en",
+            experience: "voice",
+            participant: {
+                identity: "agentId3",
+                name: "AgentName3",
+                type: "agent"
+            }
+        }
+    ]
+}
+sendInternalTransferEvent(payload);
+```
+
+**Agent leaves (not the last agent):**
+
+```javascript
+const payload = {
+    conversationId: "atesta-xxxx",
+    botId: "st-XXXX-XXXX-XXXX-XXXX",
+    events: [
+        {
+            name: "INTERNAL_TRANSFER_EVENT",
+            transfertype: "WARM",
+            transition: "exit",
+            isExtAD: true,
+            language: "en",
+            experience: "voice",
+            participant: {
+                identity: "agentId2",
+                name: "AgentName2",
+                type: "agent"
+            }
+        }
+    ]
+}
+sendInternalTransferEvent(payload);
+```
+
+**Final agent leaves at the end of the conversation:**
+
+```javascript
+const payload = {
+    conversationId: "atesta-xxxx",
+    botId: "st-XXXX-XXXX-XXXX-XXXX",
+    events: [
+        {
+            name: "INTERNAL_TRANSFER_EVENT",
+            transfertype: "NA",
+            transition: "exit",
+            isExtAD: true,
+            language: "en",
+            experience: "voice",
+            participant: {
+                identity: "agentId3",
+                name: "AgentName3",
+                type: "agent"
+            }
+        }
+    ]
+}
+sendInternalTransferEvent(payload);
+```
+
+---
+
+## Transfer Flow Examples
+
+### Cold Transfer Flow
+
+Agent-1 accepts the call and transfers it to Agent-2, then Agent-3.
+
+1. Customer connects to Agent-1 — `NA` + `entry`
+2. Agent-1 exits — `COLD` + `exit`
+3. Agent-2 accepts — `COLD` + `entry`
+4. Agent-2 exits — `COLD` + `exit`
+5. Agent-3 accepts — `COLD` + `entry`
+6. Conversation ends, Agent-3 exits — `NA` + `exit`
+
+### Warm Transfer Flow
+
+1. Customer connects to Agent-1 — `NA` + `entry`
+2. Agent-2 joins as consultant — `WARM` + `entry`
+3. Agent-3 joins as consultant — `WARM` + `entry`
+4. Agent-2 leaves — `WARM` + `exit`
+5. Agent-3 leaves — `WARM` + `exit`
+6. Conversation ends, Agent-1 exits — `NA` + `exit`
+
+### Key Takeaways
+
+- Always send the correct transfer events when agents join or leave.
+- Maintain a consistent conversation ID throughout the conversation.
+- Use `NA` for the first agent entry and last agent exit.
+- Use `COLD` for conversation handovers.
+- Use `WARM` for multi-agent participation.
+
+---
+
+## Sample Response
+
+A successful request returns `200 OK`.
+
+If the `botId` is incorrect, you receive a `400 Bad Request`:
+
+```json
+{
+    "code": 400,
+    "message": "Linked bot details could not be found. Please verify that the botId provided in the request body is correct."
+}
+```
