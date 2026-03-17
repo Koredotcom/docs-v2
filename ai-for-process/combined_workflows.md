@@ -835,7 +835,7 @@ When you share a workflow with another user within the same account, all configu
 
 * **Supported Libraries** - [Learn more](../types-of-nodes/script-libraries.md) about the list of supported libraries in the script editor of the Function node.
 
-<!-- Documented in /ai-for-process/nodes.mdx -->
+<!-- Not completely documented in /ai-for-process/nodes.mdx -->
 # Human Node – Pause for Review and Approval
 
 The Human Node introduces a human-in-the-loop capability within automation workflows. It allows workflows to pause and incorporate human judgment into automated processes. Designated users can review, approve, or provide input before the workflow continues, ensuring critical steps are validated, decisions are accurate, and compliance requirements are met. This capability is especially useful when certain decisions cannot be automated and require manual validation, oversight, or confirmation.
