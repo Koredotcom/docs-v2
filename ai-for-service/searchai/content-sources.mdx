@@ -8,7 +8,9 @@ Content Sources enable Search AI to ingest data from websites, documents, and th
 
 ## Websites
 
-Crawl and index web pages from any public or authenticated website. Navigate to **Content > Websites** to manage web sources.
+Crawl and index web pages from any public or authenticated website.
+
+Navigate to **Content > Websites** to manage web sources.
 
 ### Adding a Web Crawler
 
@@ -18,7 +20,7 @@ Click **+Web Crawl** and configure the following:
 |-------|-------------|
 | **Source Title** | Unique name for the web source |
 | **Description** | Information about the source and its purpose |
-| **Crawl Source** | URL, Upload Sitemap (CSV), or Upload URL (CSV) |
+| **Crawl Source** | **URL** — provide a base URL; the crawler automatically discovers linked pages within the domain. <br/> **Upload Sitemap (CSV)** — provide a CSV of sitemaps and a base URL; only URLs matching the base URL are crawled, others are skipped. Crawl options apply for further filtering. <br/> **Upload URL (CSV)** — provide a CSV of specific URLs and a base URL; only matching URLs are crawled. Crawl depth and max URL settings are not required for this method. |
 | **Crawl Depth** | Levels to traverse (1–10, default: 5) |
 | **Max URL Limit** | Maximum URLs to crawl (1–10,000, default: 10) |
 
@@ -27,7 +29,7 @@ Click **+Web Crawl** and configure the following:
 | Option | Purpose |
 |--------|---------|
 | **Use Cookies** | Crawl pages requiring cookie acceptance |
-| **JavaScript Rendered** | Capture dynamically rendered content (set crawl delay for full rendering) |
+| **JavaScript Rendered** | Capture content rendered dynamically via JavaScript. When enabled, set the **Crawl Delay** — the time in seconds the crawler waits before treating the page as fully rendered and beginning indexing. Recommended for JS-heavy pages.|
 | **Crawl Beyond Sitemap** | Include URLs not listed in the sitemap |
 | **Respect robots.txt** | Honor crawler directives in robots.txt |
 | **Automatic Cleaning** | Remove headers, footers, and head tags before ingestion |
@@ -58,16 +60,21 @@ Search AI supports two authentication methods for protected websites:
 - Session maintained after initial authentication
 - Same test options as Basic Auth
 
+<Note> The crawl source type cannot be changed after the crawler is created. All other configuration fields can be updated at any time.</Note>
+
 ### Managing Web Sources
 
 | Action | How To |
 |--------|--------|
 | **View crawled pages** | Go to source > **Pages** tab (shows Successful, Failed, Skipped) |
 | **View execution logs** | Go to source > **Executions** tab |
+| **View page JSON** | **Pages** tab > click page > **View JSON** — shows the raw ingested data for the page, useful for debugging what content was indexed |
 | **Recrawl entire source** | Click **Recrawl** action or use Re-Crawl button on configuration page |
 | **Recrawl specific page** | Pages tab > Actions > Recrawl |
 | **Schedule recrawl** | Set date, time, and frequency in crawl configuration |
 | **Delete source** | Click Delete action (removes all indexed content) |
+
+<Note> If a page is manually deleted and the source is recrawled, the page reappears unless the crawl options are updated to exclude it — for example, by adding it to the block list under URL Filtering. </Note>
 
 ### Troubleshooting
 
@@ -76,7 +83,6 @@ Search AI supports two authentication methods for protected websites:
 | **Crawl failure** | Permissions, credentials, invalid URL, domain not whitelisted | Verify access, credentials, and URL format |
 | **Crawl succeeds but no indexing** | JS-rendered pages, incorrect include/exclude rules, undiscoverable pages | Enable JavaScript Rendered, check rules, verify sitemap |
 | **Crawl takes too long** | Large content volume, JS pages returning no content | Adjust max URLs, enable JavaScript Rendered |
-
 
 
 ## Documents
@@ -132,7 +138,7 @@ Pre-built integrations for 60+ third-party applications. Navigate to **Content >
 
 **Filters**: Some connectors support selective ingestion by timeframe, category, user assignment, or other criteria.
 
-**Field Mapping**: Customize how source fields map to Search AI's schema using custom scripts for data transformation.
+**Field Mapping**: Customize how source fields map to Search AI's schema using custom scripts for data transformation. [Learn More](/ai-for-service/searchai/connectors/unified-schema).
 
 ### Sync Operations
 
@@ -157,9 +163,14 @@ For applications without a pre-built connector, the Custom Connector uses REST A
 2. Configure `config.json` with application details and content fields
 3. Set authentication in `.env` file
 4. Host the service and configure endpoint in Search AI
-5. Add headers (Authorization required for default implementation)
+5. Add headers (Authorization required for default implementation).
 
-The service processes content in batches of 30 documents. RACL support available via `sys_racl` field in config.
+<Note>
+- The service processes content in batches of 30 documents. 
+- RACL support available via `sys_racl` field in config file. Use the [Permission Entity APIs](/ai-for-service/apis/searchai/permission-entity-apis) to add list of permitted users for the content.
+</Note>
+
+[Learn More](/ai-for-service/searchai/connectors/custom-connector).
 
 ### JSON Connector
 
@@ -169,7 +180,7 @@ Upload structured data in JSON format for indexing.
 - Maximum 15 MB per file
 - Add to existing source or create new
 
-
+[Learn More](/ai-for-service/searchai/connectors/json).
 
 ## Supported Connectors
 
@@ -254,58 +265,142 @@ For any connectors not listed above, use the [Custom Connector](/ai-for-service/
 
 RACL ensures users only see content they're authorized to access by synchronizing permissions from source applications.
 
+For example, if User A has access to policy documents and User B can only view FAQs, and both query a policy description — User A receives an answer sourced from the policy document, while User B receives an answer sourced from the FAQs. The response content differs based on each user's access permissions.
+
+### RACL in Search AI
+
+```
+Ingest Content → Store Permissions in sys_racl → User Submits Query → Match User Identity to sys_racl → Return Answers from Accessible Content Only
+```
+
+<Note> RACL is supported for connector-sourced content only. It does not apply to websites or uploaded documents.</Note>
+
 ### How RACL Works
 
-1. **Ingestion**: Search AI imports permissions (users, groups, criteria) along with content
-2. **Storage**: Access information stored in the `sys_racl` field of each chunk
-3. **Access Control**: Only users whose identities appear in `sys_racl` can view answers from that content
+Search AI enforces access control in three steps:
 
-### Configuring RACL
+**Step 1 — Retrieve and Store Permissions**
 
-Go to **Permissions** page of the connector and select:
+During ingestion, the connector fetches permission data from the source application along with the content. This access information is stored in the `sys_racl` field of every indexed chunk.
 
-| Option | Behavior |
-|--------|----------|
-| **Same users as in source** | Syncs permissions from source application (Restricted Access) |
-| **Everyone (Public Access)** | Content accessible to all Search AI users (sets `sys_racl` to `*`) |
+Search AI handles two types of permissions:
 
-### Permission Entities
+| Type | Description | sys_racl Value |
+| --- | --- | --- |
+| **Individual** | The content specifies user identities directly (e.g. `user@example.com`) | User email addresses or IDs |
+| **Group / User Criteria** | The content specifies a group or user criterion (e.g. `devteam@example.com`) | A Permission Entity ID representing the group |
+| **Public** | No specific permissions; accessible to all users | `*` |
 
-Permission entities represent groups or user criteria from source applications. Search AI handles these in two ways:
+When group permissions are involved, Search AI creates a **Permission Entity** for each group and stores it in `sys_racl`. Individual users must then be associated with that Permission Entity — either automatically by the connector or manually via API.
+**Example — Group Permission**
 
-**Automatic Resolution** (supported by some connectors):
-- Fetches group membership data from source
-- Maintains up-to-date user-group mappings
-- Associates users with permission entities automatically
+Consider a Google Drive file shared with two individuals and one group:
 
-**Manual Resolution** (other connectors):
-- Use Permission Entity APIs to manage user associations
-- Required for connectors without automatic resolution support
+- `john.doe@example.com` (individual)
+- `smitha.joseph@example.com` (individual)
+- `testteam@example.com` (group)
 
-### Verifying Permissions
+Search AI stores the two user identities directly and creates a Permission Entity for the group. The `sys_racl` field for the indexed chunks would look like this:
+```json
+"sys_racl": [
+  "john.doe@example.com",
+  "smitha.joseph@example.com",
+  "testteam@example.com"
+]
+```
 
-1. Go to **Content** page
-2. Open JSON view for any file
-3. Check the `sys_racl` field contents
+At query time, `john.doe` and `smitha.joseph` are matched directly. For `testteam@example.com`, Search AI must resolve which individual users belong to that group — either automatically (for supported connectors) or via the Permission Entity APIs.
 
-The same information appears in individual chunks via Content Browser.
+**To verify stored permissions:**
+1. Go to **Content** and open the JSON view for any file.
+2. Check the `sys_racl` field to confirm what identities or entities are stored.
+3. The same information is available per chunk in the **Content Browser**.
 
-### Permission Sync Scheduling
+---
 
-Access permissions often change more frequently than content. Configure separate sync schedules:
+**Step 2 — Verify User Identity at Query Time**
 
-1. Open **Permissions** section of connector
-2. Enable **Permissions Sync Scheduled**
-3. Set time and frequency
+When a user submits a query, Search AI matches their identity against the `sys_racl` field of indexed chunks. Only chunks where the user's identity appears — directly or through a Permission Entity — are eligible to generate answers.
 
-The Sync Scope column shows "Permission Sync" for RACL-specific operations.
+<Note> **Access control rule:** Only users whose identities appear in the `sys_racl` field — directly or through a resolved Permission Entity — can view answers generated from that content. </Note>
+
+**Passing user identity in API requests**
+
+When using the Search API directly, user identity must be included in each request. If it is not passed, restricted content will not be returned.
+
+User identity can be passed via the **request header** or **request body**, depending on how the identity field is configured by your system admin. Contact your system admin to confirm the field name and format. [Learn More](/ai-for-service/apis/searchai/advance-search).
+
+**Example:**
+```curl
+curl --request POST \
+  'https://<domain>/api/public/stream/<streamId>/advancedSearch?useremail=user@example.com' \
+  --header 'Auth: <token>' \
+  --data-raw '{"query": "leave policy"}'
+```
+
+**Passing user identity via SDK**
+
+When using the Search AI SDK, embed the user identity in the SDK configuration so access checks are applied automatically on every search request.
+
+---
+
+**Step 3 — Resolve Group Identities**
+
+Group-level permissions store a Permission Entity in `sys_racl` rather than individual user identities. To enforce access at query time, Search AI must resolve which individual users belong to each Permission Entity.
+
+This resolution works in two ways:
+
+**Automatic Resolution** — For supported connectors, Search AI automatically fetches group membership data from the source and maintains up-to-date user-to-group mappings. No manual action is required.
+
+Refer to [this](/ai-for-service/searchai/content-sources#supported-connectors) to know the list of connectors that support automatic resolution of permission entities.
+
+**Manual Resolution** — For connectors without automatic resolution, use the [Permission Entity APIs](/ai-for-service/apis/searchai/permission-entity-apis) to manually associate users with each Permission Entity. Refer to individual connector documentation to confirm which method applies.
+
+---
+
+### Enabling RACL
+
+1. Go to the **Permissions** page of the connector.
+2. Select **Restricted Access**.
+
+If the connector supports automatic permission entity resolution, an additional checkbox is available to enable it.
+
+To disable RACL and make all content publicly accessible, select **Public Access**. This disables RACL automatically — no sync is required.
+
+---
+
+### Updating Permissions After Configuration Changes
+
+| Change | What To Do |
+| --- | --- |
+| **Public → Restricted Access** | Manually trigger a sync after enabling RACL to fetch and apply the latest permission data. Scheduled syncs will apply permissions at the next run. |
+| **Restricted → Public Access** | RACL is disabled automatically. No sync is required. All the content is publicly available. |
+
+---
+
+### RACL Scheduler
+
+Access permissions change more frequently than content. Configure a separate permission sync schedule to keep RACL data up to date without triggering a full content re-sync.
+
+1. Open the **Permissions** section of the connector.
+2. Enable **Permissions Sync Scheduled**.
+3. Set the desired time and frequency.
+
+The **Sync Scope** column shows **Permission Sync** for RACL-specific operations, keeping it distinct from content syncs for easier traceability.
+
+If the RACL scheduler is disabled, permissions are updated as part of the regular content sync.
+
+---
 
 ### RACL Limitations
 
-- Supported for connector content only (not websites or uploaded documents)
-- Switching from Restricted to Public Access automatically disables RACL
+- Supported for connector content only — not for websites or uploaded documents.
+- Switching from Restricted to Public Access automatically disables RACL.
+- For connectors without automatic resolution, manual Permission Entity management via API is required.
 
+---
 
+<Note > For complex RACL requirements or custom access control implementations, [contact us](https://kore.ai/contact-us/) for expert guidance. </Note>
 
 ## Quick Reference
 
