@@ -3,17 +3,15 @@ title: Index Configuration Guide
 sidebarTitle: Index Configuration
 ---
 
-
 Configure and manage the Search AI index, including content extraction, transformation, workbench processing, and content browsing.
-
 
 ## Overview
 
 The Index Configuration in Search AI encompasses the complete data processing pipeline that transforms raw content into searchable, high-quality chunks optimized for answer generation. This pipeline consists of three main phases:
 
-1. **Extraction** – Breaking down source content into manageable chunks using various extraction strategies
-2. **Transformation** – Enriching and refining extracted content through configurable processing stages
-3. **Indexing** – Storing processed chunks with vector embeddings for efficient retrieval
+1. **Extraction** - Breaking down source content into manageable chunks using various extraction strategies
+2. **Transformation** - Enriching and refining extracted content through configurable processing stages
+3. **Indexing** - Storing processed chunks with vector embeddings for efficient retrieval
 
 
 ## Content Extraction
@@ -24,121 +22,175 @@ Content extraction segments ingested data into smaller chunks to organize and ef
 
 #### Text Extraction Model
 
-Combines NLP and machine learning techniques based on tokenization, where text is segmented into smaller units.
+Combines NLP and machine learning techniques based on tokenization, where text is segmented into smaller units. 
 
 **Configuration Options:**
+
 - **Chunk Size (Pages):** Treats every page as a single chunk
 - **Chunk Size (Tokens):** Prepares chunks using:
-  - **Tokens:** Maximum tokens per chunk (up to 5000)
+
+  - **Tokens:** Maximum tokens per chunk (up to 5000). Smaller chunks suit granular tasks; larger chunks better preserve context.
   - **Chunk Overlap:** Number of tokens overlapping between consecutive chunks
 
 #### Layout Aware Extraction
 
-Extracts data by considering content layout and structure, improving precision for documents with tables, graphs, and charts.
+Extracts data by considering content layout and structure, improving precision for documents with tables, graphs, and charts. It identifies objects in documents by combining OCR technology, layout detection models, and layout awareness rules.
 
 **Configuration:**
 - **General Template:** Extracts content from complex PDFs and DOCX files including tables and images
-- Uses OCR technology, layout detection models, and layout awareness rules
 
 #### Advanced HTML Extraction
 
-Designed specifically for extracting data from HTML files, including tables, images, and textual content. Videos are included in chunks but transcripts are not extracted.
+Designed specifically for extracting data from HTML files, including tables, images, and textual content. Videos are included in chunks but transcripts aren't extracted.
 
 **Configuration Templates:**
-- **General:** Identifies different components and classes within HTML documents
-- **Token-Based:** Generates chunks based on token size (100-1000 tokens)
+- **General:** Identifies different components and classes within HTML documents. Tables and images present between the content are also extracted and stored as chunks. 
+- **Token-Based:** Generates chunks based on token size. Images within the content are extracted and stored in the chunk.
 
-> **Note:** Documents with content shorter than 60 characters are skipped when using the General template.
+   | Field         | Description                                | Range      | Default |
+   |---------------|--------------------------------------------|------------|---------|
+   | Tokens        | Max tokens per chunk                       | 100 - 1000 | 300     |
+   | Chunk Overlap | Overlapping tokens between adjacent chunks | 10 - 100   | —       |
+
+<Note>Documents with content shorter than 60 characters are skipped when using the General template.</Note>
 
 #### Markdown Extraction
 
 Transforms each page of a source document into structured Markdown format before processing. Effective for preserving semantic structure.
 
-**Supported formats:** PDF files (uploaded directly or via connectors)
+Supported formats: PDF files (uploaded directly or via connectors).
 
 #### Image-Based Document Extraction
 
 Handles complex PDFs with non-textual layouts such as forms, tables, or visually rich content. Each page is converted to an image and processed using VDR embedding models.
 
-**Supported formats:** PDF files
+**How it works:**
 
-> **Note:** Requires image-based embedding model selection in Vector Configuration. Answer generation not supported by Kore XO GPT with this strategy.
+- Each page in the PDF document is converted to an image, preserving visual structure and layout.
+- Pages are processed using a **VDR embedding model** that captures both textual and visual semantics.
+- Page contents are also extracted in **standard chunk format** alongside the visual embedding.
+- Each extracted chunk includes a `page_image_url` field referencing its corresponding page image.
+
+Supported formats: PDF files
+
+<Note>Requires image-based embedding model selection in Vector Configuration. Answer generation not supported by XO GPT with this strategy. This strategy is supported for a limited set of languages. [Learn More](/ai-for-service/searchai/tips-and-faqs#multilingual-support).</Note>
 
 #### Custom Extraction
 
 Enables integration with third-party services for custom content processing.
 
+**How it works:**
+
+- Ingested content is sent to an external service for processing.
+- The service structures the data into chunks and returns them to Search AI via a callback API.
+- Search AI indexes the returned chunks for search and retrieval.
+
 **Configuration:**
-- **Endpoint:** URL for sending content (POST endpoint)
-- **Concurrency:** Maximum API calls per second
-- **Headers:** Additional request headers
-- **Request Body:** Content fields to send to the service
+
+- **Endpoint:** URL for sending content (POST endpoint).
+- **Concurrency:** Maximum API calls per second.
+- **Headers:** Additional request headers. Default headers will be added automatically and can't be edited. 
+- **Request Body:** Content fields to send to the service.
+
+Click **Test** to send a sample request using the configured headers and body. Once invoked successfully:
+
+- Generated Response — displays the response returned via the callback URL.
+- Response Path — provide the JSON path to locate extracted chunks within the response.
+- Response Comparison — validates the actual response against the expected structure. An error is shown if they don't match.
 
 ### Default Extraction Strategies
 
-| Content Source | Content Type | Extraction Strategy |
-|---------------|--------------|---------------------|
-| WebPages | HTML | Advanced HTML Extraction |
-| Documents | pdf, doc, docx | Markdown Extraction |
-| Documents | pptx, txt | Text Extraction |
-| Connectors | pdf, doc, docx, html, aspx | Markdown Extraction |
-| Connectors | pptx, txt | Text Extraction |
-| Connectors | json | JSON Extraction |
+By default, every application has a Default Strategy that uses different extraction methods for different types of content. 
+
+| Content Source | Content Type               | Extraction Strategy      |
+|----------------|----------------------------|--------------------------|
+| WebPages       | html                       | Advanced HTML Extraction |
+| Documents      | pdf, doc, docx             | Markdown Extraction      |
+| Documents      | pptx, txt                  | Text Extraction          |
+| Connectors     | pdf, doc, docx, html, aspx | Markdown Extraction      |
+| Connectors     | pptx, txt                  | Text Extraction          |
+| Connectors     | json                       | JSON Extraction          |
+
+<Note>The default extraction strategy applies only to applications created after November 19, 2025.</Note>
 
 ### Managing Extraction Strategies
 
-**Adding a Strategy:**
-1. Navigate to **Index > Extract**
-2. Click **+Add Strategy**
+#### Adding a Strategy
+
+1. Navigate to **Index** > **Extract**.
+2. Click **+Add Strategy**.
 3. Configure:
+
    - **Strategy Name:** Unique identifier
    - **Define Source:** Select data sources and content types using filters
    - **Extraction Model:** Choose the extraction method
    - Configure model-specific settings
 
-**Multiple Strategies:** When multiple strategies exist, they apply based on sequence order. Higher-priority strategies process content first.
+<Note>A new strategy is enabled automatically upon creation, but extraction does not begin until you trigger it manually using the Train option.</Note>
 
-**Managing Strategies:**
-- **Enable/Disable:** Toggle from the strategy page
-- **Delete:** Use the Delete button (does not affect existing chunks)
-- **Reorder:** Drag and drop to change sequence
+#### Multiple Strategies:
+
+When multiple strategies exist, they apply based on their sequence in the list - top-down priority. 
+
+**Example**: With a web pages strategy and a default (all content) strategy:
+
+Default on top → applies to all content; web pages strategy is never triggered.
+Web pages strategy on top → processes HTML first; default handles the rest.
+
+To reorder, drag strategies above or below as needed.
+
+#### Managing Strategies:
+
+- **Enable/Disable:** Toggle from the strategy page. Use it for testing purposes to evaluate alternative extraction strategies or when it's no longer needed.
+- **Delete:** Use the Delete button (doesn't affect existing chunks).
+- **Reorder:** Drag to change sequence.
 
 
 ## Content Transformation
 
-Content transformation refines extracted text into high-quality data after the extraction phase. This enrichment process addresses incomplete metadata, formatting inconsistencies, and missing context to improve search and retrieval effectiveness.
+Content transformation refines extracted text into high-quality data after the extraction phase. This enrichment process addresses incomplete metadata, formatting inconsistencies, and missing context to improve search and retrieval effectiveness. The transformed output feeds directly into vectorization for AI processing.
+
+Example use case: A crawled blog page may contain ads, recent post references, and embedded author info alongside the core content. Transformation stages can strip the irrelevant sections and remap author info to a dedicated metadata field — ensuring only clean, structured content is indexed.
 
 ### Benefits
 
-- **Improved Data Quality:** Fix errors, standardize fields, add contextual information
-- **Enhanced Control:** Adapt enrichment to specific business needs
-- **Bulk Transformation:** Apply rules to all applicable content simultaneously
+- **Improved Data Quality:** Fix errors, standardize fields, add contextual information.
+- **Enhanced Control:** Adapt enrichment to specific business needs.
+- **Bulk Transformation:** Apply rules to all applicable content simultaneously.
 
 ### Transformation Stages
 
 #### Field Mapping Stage
 
-Adds, updates, or deletes specific fields from input content. Useful for ensuring uniformity across pages.
+Adds, updates, or deletes specific fields from input content. Useful for ensuring uniformity across pages, for example, adding a title to pages where it's missing.
 
 **Configuration:**
+
 - **Name:** Unique stage identifier
-- **Condition:** Rules for selecting content (Basic or Script mode)
+- **Condition:** Rules for selecting content
+
   - Field Name, Operator, Value
+
 - **Outcome:** Actions to perform:
+
   - **Set:** Sets value for target field
   - **Delete:** Removes target field
   - **Copy:** Copies value between fields
 
 #### Custom Script Stage
 
-Implements custom JavaScript transformations for specific business needs.
+Implements custom JavaScript transformations for specific business needs. For example, prepending a source title to all extracted content.
+
+<Note>For this stage, sub-conditions and outcomes are defined together within the same script.</Note>
 
 **Configuration:**
-- **Condition:** Painless script for content selection
-- **Outcome:** Painless script defining transformations
+
+- **Outcome:** JavaScript defining transformations. 
+- **View Fields**: Lists all the fields of the schema.
 
 **Example - Count pages:**
-```javascript
+
+``` javascript
 int temp_total_pages = 0;
 if(ctx.file_content_obj != null){
     for (def item: ctx.file_content_obj) {
@@ -147,7 +199,7 @@ if(ctx.file_content_obj != null){
         }
     }
 }
-ctx.total_pages = temp_total_pages;
+context.total_pages = temp_total_pages;
 ```
 
 #### Exclude Documents Stage
@@ -155,136 +207,155 @@ ctx.total_pages = temp_total_pages;
 Filters out unnecessary or irrelevant content before ingestion.
 
 **Configuration:**
-- **Field:** Document field for condition (e.g., creation date, file type)
-- **Operator:** Comparison operator (greater than, less than, equals)
-- **Value:** Comparison value
 
-**Benefits:**
-- Reduces unnecessary chunk generation
-- Improves search accuracy
-- Enhances indexing efficiency
+- **Field:** Document field for condition (for example, creation date and file type).
+- **Operator:** Comparison operator (greater than, less than, equals).
+- **Value:** Comparison value.
+
+Example: To exclude documents older than a specific date, set Field = Created On, Operator = less than, Value = [cutoff date].
 
 #### API Stage
 
-Invokes external APIs to modify, enrich, or analyze content during transformation.
+Invokes external APIs to modify, enrich, or analyze content during transformation. Useful for metadata extraction, summarization, or translation via custom models.
 
 **Configuration:**
-- **Endpoint:** POST endpoint URL (supports dynamic fields with `{{field_name}}`)
+
+- **Endpoint:** POST endpoint URL (supports dynamic fields with `{{field_name}}`). Example: `https://api.example.com/meta/{{chunkTitle}}?type={{cfs1}}`
 - **Headers:** Key-value pairs for authentication
-- **Request Body:** Content to send (use `{{field_name}}` for dynamic values)
+- **Request Body:** Content to send (use `{{field_name}}` for dynamic values). Example: `"content": {{content}}`.
 
-**Testing:** Click **Test** to validate configuration and map response fields to Search AI schema.
+**Testing:** Click **Test** to send a sample request and validate configuration. Use the **Response** tab to view returned data and map API response fields to Search AI schema fields.
 
-> **Note:** Only POST APIs and Sync APIs are currently supported.
+**Note:** Only POST APIs and Sync APIs are supported. You can map one or more API response fields to the Search AI schema fields corresponding to the content.
 
 #### LLM Stage
 
 Leverages external LLMs to refine, update, or enrich content (summarization, readability improvements, context addition).
 
 **Prerequisites:**
-1. Set up required LLM in Models Library
-2. Create custom prompt for 'Transform Documents with LLM'
-3. Enable the feature in Gen AI features page
+1. Set up required LLM in [Models Library](/ai-for-service/generative-ai-tools/llm-integration).
+2. Create [custom prompt for 'Transform Documents with LLM'](/ai-for-service/generative-ai-tools/custom-prompts).
+3. [Enable the feature in Gen AI features page](/ai-for-service/generative-ai-tools/genai-features-searchai).
 
 **Configuration:**
-- **LLM:** Select the language model
-- **Prompt:** Select the custom prompt
-- **Target Field:** Field for storing enriched content
+
+- **LLM:** Select the language model.
+- **Prompt:** Select the custom prompt.
+- **Target Field:** Field for storing enriched content.
 
 ### Stage Availability by Extraction Strategy
 
-| Strategy | Field Mapping | Custom Script | Exclude Documents | API Stage | LLM Stage |
-|----------|--------------|---------------|-------------------|-----------|-----------|
-| Text Extraction | Yes | Yes | Yes | Yes | Yes |
-| Advanced HTML Extraction | Yes | Yes | Yes | Yes | Yes |
-| Layout Aware Extraction | NA | NA | NA | NA | NA |
-| Markdown Extraction | NA | NA | NA | NA | NA |
-| Image-based Document Extraction | NA | NA | NA | NA | NA |
+| Strategy                        | Field Mapping | Custom Script | Exclude Documents | API Stage | LLM Stage |
+|---------------------------------|---------------|---------------|-------------------|-----------|-----------|
+| Text Extraction                 | ✓            | ✓             | ✓                 | ✓         | ✓         |
+| Advanced HTML Extraction        | Yes           | Yes           | Yes               | Yes       | ✓         |
+| Layout Aware Extraction         | NA            | NA            | NA                | NA        | NA        |
+| Markdown Extraction             | NA            | NA            | NA                | NA        | NA        |
+| Image-based Document Extraction | NA            | NA            | NA                | NA        | NA        |
 
 ### Managing Transformation Stages
 
-**Adding a Stage:**
+#### Adding a Stage
+
 1. Navigate to **Index > Enrich** (or Transform page)
 2. Click **+New Stage**
 3. Select stage type and configure
 4. Click **Save**
 
-**Stage Operations:**
-- **Enable/Disable:** Use ellipsis menu or status toggle
-- **Delete:** Permanently removes the stage
-- **Reorder:** Drag and drop to change sequence
+#### Stage Operations
 
+- **Testing a Stage**: Click Simulate on the Transform page, select the stage and number of documents to test with. Results appear in the Viewer as a JSON object. Any transformation errors are listed under `simulate_errors`.
+- **Enable/Disable:** Use ellipsis menu or status toggle. Disabling a stage doesn't delete or remove it permanently. When a stage is disabled, the output of the previous stage in the sequence is directly sent as input to the next stage.
+- **Delete:** Permanently removes the stage.
+- **Sequencing**: Stages execute top-down. The output of each stage becomes the input of the next — so order directly affects outcomes. Use the drag handle to reorder stages. 
 
-## Workbench
+## Content Enrichment Using Workbench
 
 The Workbench is a tool for processing and enhancing ingested content through a series of configurable stages. Each stage performs specific data transformations before passing content to the next stage.
 
+Example: To prevent confidential information from appearing in answers, set up an Exclude Document stage that filters out any chunk containing the word "Confidential" in its title or body.
+
 ### Key Features
 
-- **Pipeline Processing:** Sequential stage execution
-- **Custom Transformation:** Customizable stages per business needs
-- **Simulation Capabilities:** Built-in testing before deployment
-- **Flexible Sequencing:** Design efficient processing workflows
+- **Pipeline Processing:** Sequential stage execution; the output of each stage feeds into the next.
+- **Custom Transformation:** Customizable stages per business needs.
+- **Simulation Capabilities:** Built-in Built-in simulator to test individual stages or the cumulative effect of multiple stages before deployment.
+- **Flexible Sequencing:** Design efficient processing workflows.
 
 ### Supported Stages
 
-| Stage Type | Purpose |
-|------------|---------|
-| Field Mapping | Map document fields to target fields based on conditions |
-| Custom Script | Run custom scripts on input data |
-| Exclude Document | Exclude documents from indexing based on conditions |
-| API Stage | Connect with third-party services for dynamic updates |
-| LLM Stage | Leverage external LLMs for content enrichment |
+| Stage Type       | Purpose                                                  |
+|------------------|----------------------------------------------------------|
+| Field Mapping    | Map document fields to target fields based on conditions |
+| Custom Script    | Run custom scripts on input data                         |
+| Exclude Document | Exclude documents from indexing based on conditions      |
+| API Stage        | Connect with third-party services for dynamic updates    |
+| LLM Stage        | Leverage external LLMs for content enrichment            |
+
+### Content Transformation vs Enrichment
+
+|                       | **Transform**                                                                 | Enrich                                                        |
+|-----------------------|-------------------------------------------------------------------------------|---------------------------------------------------------------|
+| **Where in pipeline** | Operates on **raw documents** — immediately after extraction, before chunking | Operates on **extracted chunks** — after chunking is complete |
+| **Input**             | Full source documents or pages                                                | Individual chunks                                             |
+| **Purpose**           | Clean and enrich the document-level content before it becomes chunks          | Refine and enhance chunk-level content before indexing        |
+| **Accessibility**     | **Index** > **Enrich** (Transform page)                                       | **Index** > **Enrich** (Workbench page)                       |
 
 ### Adding Workbench Stages
 
-1. Navigate to **Index > Enrich**
-2. Click **+New Stage**
-3. Select stage type
+1. Navigate to **Index** > **Enrich**.
+2. Click **+New Stage**.
+3. Select stage type.
 4. Configure:
+
    - Unique stage name
-   - Condition(s) for content selection
-   - Outcome(s) defining transformations
-5. Click **Save**
+   - Conditions for content selection
+   - Outcomes defining transformations
+
+5. Click **Save**.
 
 ### Stage Management
 
-**Ordering:** Data processes through stages sequentially. Use drag-and-drop to reorder.
+**Ordering:** Data processes through stages sequentially. The sequence directly affects the cumulative output. Drag to reorder.
 
-**Enable/Disable:** Toggle stages on/off without deleting. Disabled stages are skipped during processing.
+**Enable/Disable:** Toggle stages on/off without deleting. When disabled, the stage is skipped and the previous stage's output passes directly to the next active stage. Example: With three stages where stage 2 is disabled — data flows through stage 1, then directly to stage 3, skipping stage 2 entirely.
 
 **Deleting:** Permanently removes the stage from the Workbench.
 
-
-## Workbench Simulator
+### Workbench Simulator
 
 The Workbench includes a built-in simulator for testing stage behavior before deployment.
 
-### Features
+**Features**
 
 - Test and verify individual stage outputs
 - Test cumulative effects of multiple stages
 - Works with any data source type
 
-### Running a Simulation
+**Running a Simulation**
 
-1. Click **Simulate** button on the Workbench page
-2. Select stage(s) to test
-3. Choose number of documents for testing
-4. View results in JSON format in the Chunk Viewer
+1. Click **Simulate** option on the Workbench page.
+2. Select the stages to test.
+3. Choose number of documents for testing.
+4. View results in JSON format in the Chunk Viewer.
 
 **Key Points:**
+
 - Simulator shows changes from all stages in sequence order
 - Testing from a specific stage shows cumulative transformations up to that point
 - Temporarily disable other stages to test individual stage behavior
 - Errors during transformation appear in the `simulate_errors` object
 
-> **Tip:** Use the Workbench Simulator frequently during configuration to catch errors early.
-
+<Tip> Use the Workbench Simulator frequently during configuration to catch errors early.</Tip>
 
 ## Content Browser
 
 The Content Browser provides tools to observe, verify, and edit extracted chunks from source data.
+
+<Note>
+   - When new content is added, the application auto-trains and generates chunks automatically. 
+   - When existing content is updated, all related chunks are deleted and recreated — meaning any manual edits to those chunks will be lost on the next sync.
+</Note>
 
 ### Key Capabilities
 
@@ -294,10 +365,11 @@ The Content Browser provides tools to observe, verify, and edit extracted chunks
 ### Viewing Chunks
 
 Navigate to **Index > Browse** to view all chunks. Each chunk displays:
-- Preview (including images and tables)
+- Preview of any images or tables present in the chunk. Click a preview to enlarge it to full size. If a chunk contains multiple images, a carousel allows navigation through them.
 - Summary information
 
 Click **Details** to view:
+
 - **Document Title:** Source document/page title
 - **Chunk Title:** Title assigned to the chunk
 - **Chunk Text:** Content of the chunk
@@ -319,33 +391,201 @@ Click **Details** to view:
 
 Alternatively, use the **Edit** option directly from the browser home page.
 
-> **Note:** When documents are updated, all related chunks are deleted and recreated, losing manual edits.
+<Note> When documents are updated, all related chunks are deleted and recreated, losing manual edits.</Note>
 
 ### Search and Filter
 
 **Search:** Use the search bar to find chunks by properties (chunkTitle, chunkText, source, etc.)
 
 **Filter:** Advanced search using multiple chunk properties:
+
 - Source types
 - Extraction strategy
 - Content keywords
 - And more
 
-**Example:** Find all chunks from "Kore blogs" containing "virtual assistant":
-- Set Source Name = "Kore blogs"
-- AND chunkText contains "virtual assistant"
-
-
 ## Vector Configuration
 
-Vector Configuration manages how extracted and transformed chunks are converted into vector embeddings for efficient semantic search and retrieval. This includes:
+Indexing converts extracted chunks into vector embeddings and stores them in a knowledge index used for answer generation. Vectors are multidimensional numerical representations of chunks that carry their semantic meaning. 
 
-- **Embedding Model Selection:** Choose appropriate embedding models
-- **Image-based Embedding:** Enable for image-based document extraction
-- **Indexing Parameters:** Configure vector storage settings
+Navigate to **Index** > **Index Configuration** to configure this.
 
-> **Note:** When using Image-Based Document Extraction, select an image-based embedding model in Vector Configuration for proper indexing.
+The platform supports embedding models including BGE-M3, VDR, and custom models.
 
+By default, new applications use the BGE-M3 model for vector generation.
+
+**Key Features**
+
+- Select from out-of-the-box XO GPT embedding models or bring your own custom model.
+- Choose which chunk fields are used to generate embeddings.
+- Generate up to three vectors per chunk, each capturing different semantic aspects via distinct field combinations (multi-vector search).
+
+### Glossary
+
+| Term               | Description                                                                                                                 |
+|--------------------|-----------------------------------------------------------------------------------------------------------------------------|
+| Vector / Embedding | A numerical representation of data that captures its semantic meaning.                                                      |
+| Embedding Model    | A machine learning model that converts text or images into vectors.                                                         |
+| Multi-Vector       | Generating multiple vectors per chunk, each using different fields to capture distinct semantic aspects.                    |
+| Field Combination  | The specific set of fields (for example, Chunk Title, Chunk Text, Record Title) selected to generate a vector.              |
+| Vector Column      | The data column that stores embeddings for a specific vector. In a 3-vector setup, there are three vector columns.          |
+| Vector Weight      | A percentage value assigned to each vector to control its influence on retrieval scoring.                                   |
+| Vision Models      | AI models designed to interpret and analyze visual data such as images.                                                     |
+| Rebalancing        | When a vector is unavailable for a chunk, its weight is proportionally redistributed among the remaining available vectors. |
+
+---
+
+### Prerequisites
+
+The **XO GPT model** is configured for vector generation by default. To verify or change the embedding model:
+
+1. Navigate to **Generative AI Tools** > **Model Library**.
+2. Confirm that vector generation is enabled for the desired model.
+
+All configured embedding models appear in the **Vector Configuration** page drop-down.
+
+### Vector Configuration for Textual Data
+
+Configure the following fields:
+
+| Field        | Description                                                                            |
+|--------------|----------------------------------------------------------------------------------------|
+| Vector Model | Embedding model for vector generation. Options: BGE-M3 or a custom model               |
+| Prompt       | Prompt used by the model. For custom models, create a new prompt using **+New Prompt** |
+
+<Note>The model and prompt selected on the Gen AI page are applied here by default. Changes made here are also reflected in the **Vector Generation - Text** feature on the Gen AI page.</Note>
+
+### Multi-Vector Search
+
+Search AI supports generating up to **three vectors per chunk**, each configured to capture different semantic aspects using distinct field combinations. This improves retrieval accuracy by evaluating each chunk from multiple perspectives.
+
+**How it works:**
+
+1. **Configure vectors** — Define up to three vectors, each targeting specific sources, file types, and fields.
+2. **Assign weights** — Set a percentage weight per vector to control its influence on the final relevance score.
+3. **Retrieval** — At query time, the user query is converted to a vector and matched against all configured vectors, calculating a similarity score corresponding to each vector. Each similarity score is multiplied by its weight, and scores are summed to produce a final relevance ranking. Chunks are ranked based on these final scores, and the most relevant results are returned.
+
+### Configuring Vectors
+
+Generate and assign up to three different vectors per chunk.
+
+**Vector 1** is configured by default, applies to all content from all sources, and cannot be deleted. Its default fields are: `Chunk Title`, `Chunk Text`, `Source Name`, `Record Title`. You can change the fields but not the content source and file types.
+
+**Vectors 2 and 3** must be manually configured. For each additional vector, provide:
+
+| Field             | Description                                                           |
+|-------------------|-----------------------------------------------------------------------|
+| Name              | A meaningful identifier for the vector configuration                  |
+| Field Combination | Defines which content the vector applies to and which fields are used |
+
+Each **Field Combination** has three components:
+
+- **Source** — Select the content source (e.g., uploaded files, connectors). Use the AND operator to narrow the scope further.
+- **File Types** — Select supported file types (e.g., PDF, HTML).
+- **Fields** — Select one or more chunk fields (e.g., Chunk Text, Chunk Title, Record Title) for embedding generation.
+
+<Note>The order of selected fields influences the generated embedding. Semantically rich fields improve embedding quality and search accuracy.</Note>
+
+**Example:** To use a custom summary field (`cfs1`) for uploaded PDFs:
+- Source: Files
+- File Type: PDF
+- Fields: `cfs1`
+
+Use the **Add** button to define multiple field combinations within a single vector — useful when different content types need different field selections.
+
+---
+
+### Field Combinations Precedence
+
+When multiple field combinations are defined within a vector, they are evaluated **top to bottom**. The first matching combination is applied. Place more specific combinations above generic ones.
+
+**Example:** If the first combination targets the Default Directory and the second targets all sources — the Default Directory uses the first combination; everything else uses the second.
+
+---
+
+### Vector Coverage
+
+If a vector's field combinations don't cover certain content types, no embeddings are generated for those types in that vector column — meaning those chunks won't contribute to semantic matching for that vector. The system automatically rebalances weights to compensate. 
+
+For instance, if Vector 2 is configured with fields that apply only to web files, then embeddings are generated only for web content in Vector 2. Other content types, such as PDFs or connector-based files, won't have embeddings in Vector 2 and therefore won't contribute to semantic matching for that vector column.
+
+Learn about [Weight Rebalancing](/ai-for-service/searchai/index-configuration#automatic-weight-rebalancing).
+
+---
+
+### Assigning Weights to Vectors
+
+Weights control how much each vector contributes to the final relevance score. All weights must total **100%**.
+
+To assign weights, click **Manage Weights** in the Vector Configuration section and set a percentage for each vector.
+
+**Example configuration:**
+
+Use case: A company wants to improve semantic search by capturing multiple aspects of the same document — prioritizing technical summaries while supporting broad and product-specific queries.
+
+| Vector                            | Fields Used                             | Weight | Rationale                  |
+|-----------------------------------|-----------------------------------------|--------|----------------------------|
+| Vector 1 (Title-Focused Vector)   | Chunk Text, Chunk Title                 | 30%    | Broad general coverage     |
+| Vector 2 (Summary-Focused Vector) | Summary (`cfs1`)                        | 50%    | High semantic significance |
+| Vector 3 (Metadata-Driven Vector) | Product Name (`cfs2`), Version (`cfs3`) | 20%    | Specific but limited scope |
+
+---
+
+### Automatic Weight Rebalancing
+
+When a vector has no embedding for a particular chunk (e.g., Vector 2 is only configured for web pages, so PDF chunks have no Vector 2 embedding), the system automatically redistributes that vector's weight proportionally among the remaining available vectors, referred to as Automatic Weight Rebalancing.
+
+**Example:** Three vectors configured as:
+- Vector 1 — all sources, fields `a, b`, weight **50%**
+- Vector 2 — web pages only, fields `c, d`, weight **20%**
+- Vector 3 — all sources, fields `e, f`, weight **30%**
+
+Vector 2 embeddings are only generated for web page chunks. For all other content types (uploaded files, connectors), Vector 2 is unavailable:
+
+| Chunk                   | Vector 1 | Vector 2      | Vector 3 |
+|-------------------------|----------|---------------|----------|
+| Chunk 1 (web page)      | ✓        | ✓             | ✓        |
+| Chunk 2 (uploaded file) | ✓        | Not available | ✓        |
+| Chunk 3 (connector)     | ✓        | Not available | ✓        |
+
+For Chunks 2 and 3, Vector 2's 20% weight is redistributed using:
+
+> **Adjusted Weight = Original Weight + ((Unavailable Weight × Original Weight) / Sum of Available Weights)**
+
+This gives the following adjusted weights for Chunks 2 and 3:
+- Vector 1 → **62.5%**
+- Vector 3 → **37.5%**
+
+This ensures fair and accurate scoring without manual adjustment.
+
+---
+
+### Points to Note
+
+- The default Vector 1 cannot be disabled or deleted.
+- Avoid overlapping conditions across vector definitions.
+- After changing the embedding model, updating vector configurations, or reassigning weights — always **Train** the application to regenerate embeddings with the new settings.
+
+---
+
+### Vector Configuration for Image-Based Data
+
+Required only when using the **Image-Based Document Extraction** strategy.
+
+| Field        | Description                                                 |
+|--------------|-------------------------------------------------------------|
+| Vector Model | VDR embedding model (selected by default)                   |
+| Prompt       | Select or create a prompt for image-based vector generation |
+
+<Note>Changes to the prompt here are automatically reflected in the **Vector Generation - Image** feature on the Gen AI page.</Note>
+
+---
+
+### Batch Processing of Vector Generation
+
+Search AI supports batch processing, which groups multiple chunks into a single API request rather than sending them individually for vector generation. This reduces API overhead and improves throughput. The system dynamically packs chunks up to a configured token limit per request and throttles batches according to token-per-minute and request-per-minute rate limits.
+
+For configuration details, see [Configure Batch Processing](#).
 
 ## Best Practices
 
@@ -373,7 +613,7 @@ Vector Configuration manages how extracted and transformed chunks are converted 
 
 ## Processing Workflow Summary
 
-```
+```text
 1. Content Ingestion
    └── Sources: Websites, Documents, Connectors
 
@@ -386,7 +626,7 @@ Vector Configuration manages how extracted and transformed chunks are converted 
    └── Each stage processes and passes to next
 
 4. Enrichment Phase (Workbench)
-   └── Additional processing stages
+   └── Chunks processing stages
    └── Field mapping, scripts, API calls, LLM enrichment
 
 5. Indexing Phase
