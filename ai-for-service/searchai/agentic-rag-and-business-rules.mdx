@@ -14,23 +14,72 @@ Agentic RAG enhances retrieval accuracy through LLM-powered agents that process 
 
 ### What is Agentic RAG?
 
-Agentic RAG extends traditional RAG by adding an intelligent, agent-driven control layer that can reason about tasks, determine required information, and actively shape the context used during generation. Instead of a static pipeline, Agentic RAG operates as a coordinated reasoning system that can plan, adapt, validate, and refine steps in real time.
+Agentic RAG is an advanced form of RAG that uses autonomous agents to improve query understanding and retrieval accuracy. It dynamically adapts retrieval strategies based on query intent.
+
+### Why Agentic RAG?
+
+Standard RAG is optimized for unstructured data and uses a static retrieval configuration. This leads to suboptimal results for structured data queries, for example, a specific JIRA ticket query may return irrelevant results. Agentic RAG adds an intelligent layer using LLMs that analyzes query intent and dynamically determines the best retrieval parameters and filters, moving away from a one-size-fits-all approach.
 
 ### RAG Agents
 
-| Agent | Purpose | Example |
-|-------|---------|---------|
-| Query Type Detection | Determines if user seeks a specific answer or search results list | Classifies query intent with confidence level |
-| Query Transformation | Identifies key terms, removes noise, prioritizes relevant documents | Query: "What is the work-from-home policy for Kore.ai?" → Extracts: "work-from-home", "policy", "Kore.ai" |
-| Metadata Extractor | Extracts sources and fields from query, maps to structured data, applies filters | Query: "Find Jira tickets assigned to John with status 'In Progress'" → Applies: assignee=John, status=In Progress |
+#### Query Rephrase Agent
+
+Enhances and clarifies user queries using conversation context and user intent, producing more precise and actionable queries.
+
+Example:
+
+- User query: "What about India?"
+- Previous conversation: "What is the leave policy for America?"
+- Rephrased query: "What is the leave policy for India?"
+
+<Note>This agent is currently available only for the Advanced Search API. See the API documentation for usage details.</Note>
+
+
+#### Result Type Classification Agent
+
+Interprets the query to determine whether the user wants a direct answer or a list of search results, ensuring the appropriate response type is returned.
+
+Examples:
+
+- "Give me a list of tickets assigned to John." → Output: search
+- "Give me details on the custom embeddings story." → Output: answers
+
+<Note>This agent applies only when search results are enabled. Search results are currently accessible via API only — enable this agent only when using search results through the API.</Note>
+
+
+#### Query Transformation Agent
+
+Identifies key terms in a query, removes noise, and boosts documents containing those terms in their title or content — aligning results more closely with user intent.
+
+Example:
+
+- Query: "What is the work-from-home policy for the X company?"
+- Extracted key terms: "Work from Home Policy", "X Company"
+- Refined query: "X Company work-from-home policy details."
+
+Result: Documents containing these terms in title or content are ranked higher.
+
+#### Metadata Extractor Agent
+
+Extracts relevant sources and fields from a query, maps them to structured data, and applies filters or boosts for accurate retrieval.
+
+Example:
+
+- Query: "Find Jira tickets assigned to John with status 'In Progress' and priority 'High'."
+- Source identified: Jira
+- Extracted fields: Assignee, Status, Priority
+- Action: Filter applied (no boost needed)
 
 ### Supported Models
 
-Currently, only **OpenAI** and **Azure OpenAI 4.0** models are supported for Agentic RAG.
+Currently, only **OpenAI 4.0** and **Azure OpenAI 4.0** models are supported for Agentic RAG.
 
 ### Enabling Agentic RAG
 
-1. Navigate to **Configuration > Agentic RAG**
+**Prerequisites**
+- Configure LLM. 
+
+1. Navigate to **Responses** > **Agentic RAG**
 2. Enable Agentic RAG (enables all agents by default)
 3. All agents use the configured model
 
@@ -38,20 +87,52 @@ Currently, only **OpenAI** and **Azure OpenAI 4.0** models are supported for Age
 
 To change model/prompt settings or enable/disable specific agents:
 1. Go to **Generative AI Tools > GenAI Features**
-2. Configure individual agent settings
+2. Configure individual agent settings.
+
+<Note>By default, enabling Agentic RAG activates all four agents, each using the selected model.</Note>
+
+To change the model or prompt per agent, or to enable/disable individual agents, go to **Generative AI Tools** > **Gen AI Features**.
+
+---
+
+### Supported Models
+
+| Model | Metadata Extractor | Query Rephrase | Query Transformation | Result Type Classification |
+|---|---|---|---|---|
+| Azure OpenAI — GPT-4, GPT-4 Turbo | ❌ | ❌ | ❌ | ❌ |
+| Azure OpenAI — GPT-4o, GPT-4o mini | ✅ | ✅ | ✅ | ✅ |
+| OpenAI — GPT-3.5 Turbo, GPT-4, GPT-4 Turbo | ❌ | ❌ | ❌ | ❌ |
+| OpenAI — GPT-4o, GPT-4o mini | ✅ | ✅ | ✅ | ✅ |
+| Custom LLM (if underlying model is GPT-4o / GPT-4o mini) | ✅ | ✅ | ✅ | ✅ |
+| Kore.ai XO GPT | ❌ | ❌ | ❌ | ❌ |
+| Amazon Bedrock | ❌ | ❌ | ❌ | ❌ |
+
+---
+
+### Testing Agentic RAG
+
+Use the **Test** option on the Agentic RAG page to validate agent behavior. Enter a query and review the response.
+
+When Agentic RAG is enabled, a **Retrieval** tab is added to the debug logs, showing:
+- The sequence of agents invoked
+- LLM input and output per agent
+- Time taken by each LLM call
+
+---
 
 ### Considerations
 
-| Factor | Impact |
-|--------|--------|
-| Response Time | Multiple LLM calls may increase overall response time |
-| API Usage | Enable agents only when utilizing search results via API |
-| Accuracy | Improves retrieval precision for complex queries |
+- **Response Time:** Multiple LLM calls per query may increase overall response latency. Factor this into performance expectations.
+- **Cost:** Larger prompt sizes from metadata enrichment increase token usage and costs. Budget accordingly.
+- **Control:** The LLM dynamically decides between boosting and filtering. Additional fine-tuning may be needed for specific use cases.
+- **Source Accuracy:** Inaccurate source identification can lead to irrelevant results. Maintaining high source data quality improves retrieval relevance.
 
 
 ## Business Rules
 
-Business Rules customize and personalize answers based on organizational requirements and policies.
+Business Rules customize and personalize answers based on organizational requirements and policies by applying context-aware logic on retrieved content.
+
+Business Rules are policies applied during answer generation that refine results before they are returned to the user. They operate on retrieved content (chunks) and modify how those results are used to generate answers.
 
 ### Purpose
 
@@ -143,9 +224,10 @@ Available chunk fields can be viewed in the Content Browser.
 
 | Agent | Function |
 |-------|----------|
-| Query Type Detection | Answer vs. Search Results classification |
+| Query Rephrase Agent | Rephrase user query based on context |
+| Result Type Classification | Answer vs. Search Results classification |
 | Query Transformation | Key term extraction, noise removal |
-| Metadata Extractor | Filter and boost application |
+| Metadata Extractor | Extract relevant sources and fields from a query |
 
 ### Business Rule Actions
 
