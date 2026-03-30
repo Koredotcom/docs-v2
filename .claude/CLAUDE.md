@@ -19,6 +19,7 @@ If you make major edits or structure changes, let the user know the summary of c
 - Use bold and italics rarely and to improve scannability. Too much of it hinders scannability and understanding.
 - Don't use emojis and too many horizontal separators in the docs. Don't use formatting for decoration or visual appeal.
 - If all lines of a codeblock start with pipe character | then it is intentional and not a leftover formatting. Don't edit it.
+- If you add any absolute URL ensure it is https and make sure to report it in the console to the user for a human review.
 
 ## Style of writing and editing standards
 
