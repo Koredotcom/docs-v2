@@ -1,0 +1,78 @@
+---
+title: How to Use Conversational Context When Searching via the Public API
+sidebarTitle: Use Conversational Context in Public API
+---
+
+By default, Search AI treats each query independently. If your application maintains a conversation history, you can pass previous exchanges as context so the system can interpret follow-up queries correctly and generate more relevant answers.
+
+Example: If a user first asks "What is the leave policy in the US?" and then asks "What about Germany?", Search AI needs the prior exchange to understand that the second query is also about leave policy.
+
+
+## Step 1: Enable Agentic RAG
+
+Conversational context is processed by the Query Rephrasing Agent, which is part of the Agentic RAG pipeline. You must enable this before passing the conversation history.
+
+
+1. Go to Search AI > Agentic RAG.
+2. Enable Agentic RAG. [Learn More.](/ai-for-service/searchai/agentic-rag-and-business-rules#enabling-agentic-rag)
+3. Configure the LLM model and prompt to be used for query rephrasing. Learn more. 
+
+<Note>Each enabled Agentic RAG stage adds latency to the search request. Disable other stages if not required.</Note>
+
+## Step 2: Pass the Conversation History in the API Request
+
+Use the `customData.previousConversation` field in the Advanced Search API request body to pass the prior conversation as context.
+
+The `previousConversation` array contains objects with the previous queries and their answers. The entire array is stringified and passed directly to the LLM , so the model has full context of the exchange when rephrasing the current query.
+
+**Request example**
+
+```json
+{
+  "query": "What about Germany?",
+  "answerSearch": true,
+  "customData": {
+    "previousConversation": [
+      {
+        "query": "What is the leave policy for America?",
+        "answer": "The leave policy in the U.S. varies by employer, but the Family and Medical Leave Act (FMLA) allows eligible employees to take up to 12 weeks of unpaid leave for certain family and medical reasons."
+      },
+      {
+        "query": "How do I reset my company email password?",
+        "answer": "You can reset your company email password by visiting the IT support portal and selecting 'Forgot Password.'"
+      }
+    ]
+  }
+}
+```
+
+
+The LLM uses the conversation history to infer that "What about Germany?" refers to leave policy and rephrases it as a self-contained query before retrieval.
+
+## Passing Additional Context in the Same Array
+
+You can include additional contextual objects alongside the Q&A entries in the `previousConversation` array. For example, if your application generates a conversation summary, you can pass it as a separate object in the same array. 
+
+<Note>The previousConversation array must be a valid JSON object. It can include any number of sub-objects.</Note>
+
+```
+"previousConversation": [
+  {
+    "query": "What is the leave policy for America?",
+    "answer": "The FMLA allows up to 12 weeks of unpaid leave..."
+  },
+  {
+    "query": "What about Germany?",
+    "answer": "Germany mandates a minimum of 20 days of paid annual leave."
+  },
+  {
+    "summary": "The user is asking about leave policies across differe
+nt countries."
+  }
+]
+```
+## Points to Note
+
+* The `previousConversation` field is processed by the Query Rephrasing Agent. Agentic RAG must be enabled for the context to take effect. If Agentic RAG is disabled, the field is ignored.
+* There is no enforced limit on the number of entries in the array, but keep in mind that very long conversation histories increase the token count sent to the LLM, which can affect latency and cost.
+* You can also use `customData` to pass other context, such as user identity or location. These can coexist with `previousConversation` in the same `customData` object. Learn more.

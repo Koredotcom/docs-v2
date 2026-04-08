@@ -1,0 +1,76 @@
+---
+title: How to Use userContext Sent via the Public API in Generative AI Prompts
+sidebarTitle: Use userContext in Prompts
+---
+
+When calling the Advanced Search API, you can pass user-specific information through the `customData.userContext` field. This context is available in the Query Rephrase feature, allowing the LLM to tailor how it interprets and rephrases user queries based on who is asking.
+
+<Note>`userContext` is available in the Query Rephrase prompt only. It is not available in the Answer Generation prompt.</Note>
+
+## How It Works
+
+User context can be passed in the API as a customData field. When `userContext` is included in the API request, Search AI makes it available in the prompt template as the `{{customUserContext}}` variable The entire object is passed as-is to the LLM,  all keys and values in the object are visible to the model, allowing it to reason over them when rephrasing the query.
+
+For example, if you send:
+
+```
+"customData": {
+  "userContext": {
+    "userType": "premium",
+    "userName": "Jane"
+  }
+}
+```
+
+The prompt receives this as: You can then reference this in your prompts using {{customUserContext}}.
+
+
+## Prerequisites
+
+* Agentic RAG must be enabled in your Search AI application.
+* A custom prompt must be configured for the Query Rephrase Agent. Learn more.
+
+
+### Step 1: Pass userContext in the API Request
+
+Include the `userContext` object inside `customData` in your Advanced Search API request:
+
+```
+{
+  "query": "what are my benefits?",
+   "customData": {
+    "userContext": {
+      "userType": "active",
+    
+  "userName": "John"
+    }
+  }}
+```
+
+### Step 2: Configure the Query Rephrase Prompt
+
+In the prompt configuration for the Query Rephrase Agent, use `{{customUserContext}}` to reference the user context and instruct the LLM to apply rephrasing logic based on its contents.
+
+Example prompt configuration:
+
+
+```
+"messages": [
+  {
+    "role": "system",
+    "content": "You are an intelligent assistant that helps users rephrase their queries only when necessary based on userContext. If the userContext has userType as active, rephrase the query to focus on currently active employee benefits and entitlements."
+  },
+  {
+    "role": "user",
+    "content": "Using the following userContext, rephrase the query if needed: {{query}}.\nContext: {{customUserContext}}."
+  }
+]
+```
+In this example, the LLM receives the full `userContext` object and uses the `userType` field to decide how to rephrase the query. For a user with `userType: active`, the query "what are my benefits?" might be rephrased to "what benefits and entitlements are available to currently active employees?" before retrieval.
+
+### Notes
+
+* The `{{customUserContext}}` variable contains the entire `userContext` object as a stringified JSON. All keys in this object are visible to the LLM.
+* `userContext` is only accessible in the Query Rephrase prompt.
+* You can include both `userContext` and `previousConversation` in the same `customData` object — they are independent and do not conflict.
+* If `userContext` is passed but Agentic RAG is disabled, or no custom prompt referencing `{{customUserContext}}` is configured, the context is ignored.

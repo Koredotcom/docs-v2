@@ -11,6 +11,22 @@ This document covers best practices, how-to instructions, and frequently asked q
 | [How-To Topics](#how-to-topics) | Custom embedding model integration, channel-based response customization |
 | [Frequently Asked Questions](#frequently-asked-questions) | Application training, multilingual support, user feedback handling |
 | [Quick Reference](#quick-reference) | Checklists and summary tables for all key topics |
+
+---
+
+## How-To Topics
+
+|Topic|Description|
+|-----|----------|
+|[Integrate Custom Embedding Model](/ai-for-service/searchai/howto/custom-embedding-model)| Connect your own embedding model to control how Search AI vectorizes ingested content|
+|[Image based Document Extraction](/ai-for-service/searchai/howto/image-based-document-extraction)|Extract and Search Content from Image-Based Documents| 
+|[Customizing Model Responses by Channel Type](/ai-for-service/searchai/howto/customize-response-by-channel)|Update Search AI response based on channels of interaction|
+|[Batch Processing of Embedding Generation](/ai-for-service/searchai/howto/batch-processing)| Send batch request to the embedding models for vector generation|
+|[Use userContext in Gen AI prompts](/ai-for-service/searchai/howto/use-usercontext)| Learn to use userContext shared via the Public API in Generative AI Prompts|
+|[Use conversation context in Search](/ai-for-service/searchai/howto/use-conversational-context)| Use Conversational Context When Searching via the Public API|
+|[Ingest from spreadsheets](/ai-for-service/searchai/howto/ingestion-from-spreadsheets)| Handling content from xlsx and csv files|
+|[Enable Answer Streaming](/ai-for-service/searchai/howto/enable-answer-streaming)| Configure Search AI to respond in real-time|
+
 ---
 
 ## Best Practices
@@ -24,7 +40,7 @@ The quality of your data directly impacts search performance. Ensure you ingest 
 #### Supported Data Sources
 
 Search AI accepts content from:
-- **Files**: PDF, DOCX, PPTX, TXT
+- **Files**: PDF, DOCX, PPTX, TXT, XLSX
 - **Websites**: Web pages and HTML content
 - **Connectors**: Third-party applications
 
@@ -207,151 +223,6 @@ When using custom or third-party LLMs:
 
 ---
 
-## How-To Topics
-
-### Integrate a Custom Embedding Model
-
-Connect your own embedding model to control how Search AI vectorizes text, enabling domain-specific embeddings or compliance with data privacy requirements.
-
-#### Supported Vector Dimensions
-
-Your embedding model must output one of these vector sizes:
-
-| Supported Sizes |
-|-----------------|
-| 128, 256, 384, 512, 768, 1024, 1028, 1536, 2048, 3072 |
-
-#### Integration Steps
-
-**Step 1: Configure the Model**
-
-1. Go to **Generative AI Tools > Model Library**
-2. Click **+New Model** and select **Custom Integration**
-3. In the **Configurations** tab, provide:
-
-| Field | Description |
-|-------|-------------|
-| Integration Name | Unique identifier for this integration |
-| Model Name | Your model name (e.g., `text-embedding-ada-002`) |
-| Endpoint | API endpoint that returns embeddings |
-| Auth | Authorization profile (if required) |
-| Headers | Any required request headers |
-
-4. Click **Next** and enter your **Request Prompt** (the payload sent to the model):
-
-```json
-{
-  "input": "The food was delicious and the waiter...",
-  "model": "text-embedding-ada-002",
-  "encoding_format": "float"
-}
-```
-
-5. Click **Test** to verify the response, then **Save**
-
-**Step 2: Create a Custom Prompt**
-
-1. Go to **Generative AI Tools > Prompt Library**
-2. Click **+New Prompt** and configure:
-
-| Field | Description |
-|-------|-------------|
-| Name | Unique identifier for this prompt |
-| Feature | Select **Vector Generation** |
-| Model | Select your custom model from Step 1 |
-
-3. Define the **Request** using the `{{embedding_input}}` variable:
-
-```json
-{
-  "input": "{{embedding_input}}",
-  "model": "text-embedding-ada-002",
-  "encoding_format": "float"
-}
-```
-
-4. Enter sample values and click **Test**
-5. In the **Response**, double-click the field containing the embeddings array to set the **Text Response Path**
-
-The selected field must contain an array of numbers:
-
-```json
-{
-  "data": [
-    {
-      "embedding": [-0.022822052, 0.01614314, 0.008042404, ...]
-    }
-  ]
-}
-```
-
-6. Click **Save**
-
-<Note>If the response format doesn't match, use a post-processor script to transform it.</Note>
-
-**Step 3: Enable the Model**
-
-1. Go to **GenAI Features**
-2. For **Vector Generation**:
-   - Select the model from Step 1
-   - Select the prompt from Step 2
-3. Enable the feature
-
-Search AI now uses your custom embedding model.
-
-#### Fine-Tuning Embedding Models
-
-For improved relevance, fine-tune embedding models with your domain-specific data using the [Fine-Tune Embedding Utility]() from the Search AI Toolkit.
-
----
-
-### Customize Responses by Channel Type
-
-Search AI can format responses differently for digital channels (chat, messaging) versus voice channels (IVR, phone). Digital responses can include rich formatting, while voice responses should be concise and TTS-compatible.
-
-#### How It Works
-
-The `{{answer_mode}}` variable tells the LLM which channel type is being used:
-
-| Value | Channel Types |
-|-------|---------------|
-| `digital` | Chat, messaging, email, SMS, web widgets, social platforms (WhatsApp, Slack, Teams, etc.) |
-| `voice` | IVR, Alexa, Twilio Voice, Voice Gateway, AudioCodes |
-
-#### Default Behavior
-
-The **Default-v2** prompt automatically includes `{{answer_mode}}`. No configuration needed if you're using the default prompt.
-
-#### Custom Prompt Configuration
-
-When creating a custom prompt for Answer Generation, include `{{answer_mode}}` so the model adapts its response style.
-
-**Example prompt structure:**
-
-```json
-{
-  "messages": [
-    {
-      "role": "system",
-      "content": "Generate answers based on the provided context. Customize format based on {{answer_mode}}:\n\n**Digital Channel:**\n- Use markdown for formatting\n- Include bullet points, numbered lists, headings\n- Ensure visual hierarchy and readability\n\n**Voice Channel:**\n- Remove markdown syntax for TTS compatibility\n- Keep responses short and concise\n- Use natural language transitions (First, Second, Lastly)"
-    },
-    {
-      "role": "user",
-      "content": "Context: {{chunks}}\nQuery: {{query}}\nAnswer Mode: {{answer_mode}}"
-    }
-  ]
-}
-```
-
-#### Response Formatting Guidelines
-
-| Channel | Formatting |
-|---------|------------|
-| Digital | Markdown, bullet points, headings, structured layout |
-| Voice | Plain text, short sentences, natural transitions, no special characters |
-
----
-
 ## Frequently Asked Questions
 
 ### Application Training
@@ -371,8 +242,8 @@ The application automatically trains when new content is ingested through file u
 
 | Scenario | Behavior |
 |----------|----------|
-| Initial Ingestion | Full training of all ingested content |
-| Incremental Updates | Training only for content changes (recrawling, connector resync) |
+| Initial Ingestion | If the content source is configured for the first time, such as setting up a web crawler for a web domain, the training is initiated automatically, and all ingested content is used to train the application. |
+| Incremental Updates | Whenever an update to the existing content source is identified, such as through the recrawling of a configured web source or resync with an existing connector, auto-training is initiated for only the updates in the content (i.e., additions, deletions, or modifications). |
 
 When auto-training initiates, a banner appears at the top of the application interface.
 
@@ -393,6 +264,8 @@ Use the **Train** button on the **Extract** or **Vector Configuration** page to 
 |-----------------|-------------------|
 | Before extraction stage | Reprocesses from extraction and chunking onward (e.g., connector config, schema, extraction strategy) |
 | After extraction stage | Skips re-chunking, updates enrichment and vector generation only (e.g., embedding model, embedding fields) |
+
+Example: If a new extraction strategy is introduced for a particular document, the application is trained only for that document without affecting the chunks related to other content. If, however, the embedding model is updated or embedding fields are modified, new embeddings are generated for all the content.
 
 #### Training Logs
 
@@ -416,8 +289,8 @@ Click individual records to view details grouped by extraction strategy.
 
 #### Important Notes
 
-- Manual chunk edits are overwritten during retraining for affected content only
-- Manually resynchronizing a connector may require manual training trigger (known issue)
+- Manual chunk edits are overwritten during retraining for affected content only.
+- Manually resynchronizing a connector may require manual training trigger (known issue).
 
 ---
 
@@ -433,6 +306,12 @@ Search AI supports multilingual capabilities, enabling users to interact in thei
 | Query Processing | Submit queries in supported languages |
 | Response Generation | Receive answers in the same language as the query |
 
+#### Key Highlights
+
+- 100+ Languages Supported for indexing, querying, and answer generation.
+- Works with any language supported by your chosen LLM and vector generation model, using the Text Extraction strategy and Vector Retrieval method.
+- No additional configuration required.
+
 #### Language Support Requirements
 
 Multilingual support works with any language supported by your configured LLM and vector generation model when using:
@@ -445,31 +324,42 @@ No additional configuration is required for basic multilingual support.
 
 Search AI supports languages commonly handled by advanced LLMs and embedding models like BGE-M3. Refer to your LLM or vector generation model's official documentation for a comprehensive list.
 
-#### Language-Sensitive Components
+#### Language-Specific Extraction Capabilities¶
 
-Certain modules require specific strategies or models depending on the language.
+| Extraction Method | Supported Languages |
+|---|---|
+| Text Extraction | All languages |
+| Layout Aware Extraction | English, Ukrainian |
+| Image-based Document Extraction | English, Spanish, Italian, German, French |
+| Advanced HTML Extraction | English, Ukrainian, German |
+| Markdown Extraction | English, Ukrainian, Spanish, Russian, German, Hungarian, Chinese |
 
-**Content Extraction:**
 
-| Language | Supported Strategies |
-|----------|---------------------|
-| English | All extraction methods |
-| Other languages | Varies by method - consult documentation |
+#### Language-Specific Vector Generation Support
+Vector generation model support varies by language. Use the following models for optimal performance:
 
-**Vector Generation Models:**
+- English: MPNet, E5, BGE-M3, LaBSE
+- Non-English Languages: BGE-M3 and LaBSE
 
-| Model | Language Support |
-|-------|-----------------|
-| BGE-M3 | Wide range of languages; performance may be lower for underrepresented languages |
-| Other models | Varies - check model documentation |
+<Note>BGE-M3 supports a wide range of languages. Their training data includes many commonly spoken languages; however, performance may be lower for low-resource or underrepresented languages.</Note>
 
-**Re-Ranker Models:**
+#### Language-Specific Retrieval Strategy Support¶
 
-| Model | Best For |
-|-------|----------|
-| Cross Encoder (ms-marco-MiniLM) | English - lightweight and fast |
-| BGE Re-Ranker (bge-reranker-v2-m3) | Multilingual - lightweight with broad language support |
-| MixedBread Re-Ranker | Highest accuracy - resource intensive |
+- English: Vector Retrieval and Hybrid Retrieval
+- Non-English: Vector Retrieval
+
+#### Supported Answer Generation Models
+
+Answer generation quality depends on the language capabilities of the underlying LLM. Please refer to the official list of supported languages from the LLM provider.
+
+#### Recommendations
+
+To optimize multilingual performance:
+
+- Choose the right LLM - Select models with strong support for your target languages. Refer to the official list of languages supported by the LLM.
+- Customize prompts - Create language-specific prompts to improve answer quality and relevance.
+- Test performance - Evaluate different LLMs for your specific use case in your target language.
+- Monitor quality - Regularly assess answer quality across languages and adjust configurations as needed.
 
 #### Best Practices
 
@@ -492,7 +382,7 @@ Users express satisfaction through thumbs up/down actions captured via:
 
 #### Enabling Feedback
 
-1. Navigate to **Configuration > Answer Generation**
+1. Navigate to **Answer Generation**
 2. Enable **Feedback Configuration**
 
 #### Capturing Feedback
@@ -503,11 +393,11 @@ When enabled, thumbs up/down icons appear with each answer in the SDK interface.
 
 **Via API:**
 
-Use the [Feedback API](https://docs.kore.ai/xo/apis/searchai/feedback/) to capture feedback programmatically.
+Use the [Feedback API](/ai-for-service/apis/searchai/feedback) to capture feedback programmatically.
 
 #### Viewing Feedback Data
 
-Feedback appears in **Analytics > Search AI > Answer Insights**.
+Feedback appears in **Analytics** > **Search AI** > **Answer Insights**.
 
 **Feedback Display:**
 
@@ -530,7 +420,7 @@ Feedback appears in **Analytics > Search AI > Answer Insights**.
 **When using SearchAINode:**
 - Ensure `searchRequestId` is included in the channel response
 - Automatic when SearchAINode response is presented directly
-- Must be explicitly included if response is saved to context and rendered with a custom template
+- Must be explicitly included if response is saved to context and rendered with a custom template. [Learn More](/ai-for-service/automation/dialogs/node-types/searchai-node).
 
 #### Feedback vs. Feedback Surveys
 
