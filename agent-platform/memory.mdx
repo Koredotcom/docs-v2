@@ -23,7 +23,7 @@ Agentic Apps support two main types of memory: Session Meta Memory and Custom Me
 
 ### Session Meta (Default)
 
-A built-in, read-only store for session-specific data.
+A built-in, read-only store for session-specific data and contextual metadata.
 
 - **Scope**: Single session
 - **Lifetime**: Duration of the session
@@ -100,9 +100,17 @@ Navigation: Go to **Agentic app** > **Memory** > **Create new**.
 
 ## Accessing Memory
 
+Agentic Apps provide Memory Stores to persist data across interactions. 
+
+- Memory stores can be read from within prompts, workflow tools, and code tools, but can be updated or deleted via code tools or workflow tools.
+- Memory store can be referenced in tools using its technical name only.
+- sessionMeta can't be manipulated via code tools.
+
 ### In Prompts
 
 Use the template syntax:
+
+`{{memory.<store_name>.<field_path>}}`
 
 ```json
 Welcome back! Your preferred language is {{memory.userPrefs.preferences.language}}.
@@ -113,7 +121,16 @@ Your recent orders:
 
 ### In Code Tools (JavaScript)
 
-Memory methods are **async**—use with `await`:
+Memory methods are `async` and return a `Promise`. Use them with `await` keyword.
+
+**Read from Memory**
+
+Syntax: `memory.get_content(<store_name>,<projections>)`
+
+Parameters:
+
+- store_name(string): The technical name of the memory store.
+- projections(optional): JSON object specifying the fields to retrieve. If omitted, the entire record is returned.
 
 ```javascript
 // Read from memory
@@ -126,6 +143,18 @@ const partial = await memory.get_content("userPrefs", {
   "lastVisit": 1
 });
 
+**Write to Memory**
+
+- Creates a new record if none exists, else updates existing record if one is found (based on sessionID, userId, or applicationId, depending on the store’s access type).
+- Records are stored based on the memory store’s access context: session, user, or application.
+- Fields not included in the update are retained as-is.
+
+Syntax: `memory.set_content(<store_name>,<data_object>)`
+
+Parameters:
+- store_name(string): the technical name of the store.
+- data_object: A JSON object representing the fields to write or update in the memory store.
+
 // Write to memory (creates a new record if none exists; updates existing record if found)
 // Fields not included in the update are retained as-is
 await memory.set_content("userPrefs", {
@@ -133,13 +162,17 @@ await memory.set_content("userPrefs", {
   lastVisit: new Date().toISOString()
 });
 
+**Delete from Memory**
+
+- Depending on the access type of the store, the method deletes the record corresponding to the session, user, or application.
+
 // Delete memory content
 await memory.delete_content("userPrefs");
 ```
 
 ### In Code Tools (Python)
 
-Memory methods are **synchronous**:
+Memory methods are **synchronous** and return values directly.
 
 ```python
 # Read from memory
