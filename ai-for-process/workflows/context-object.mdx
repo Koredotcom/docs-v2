@@ -1,0 +1,237 @@
+---
+title: Context Object Reference
+sidebarTitle: Context Management
+---
+
+The context object is the central runtime state container for every workflow execution. It stores inputs, intermediate data, node-level status, final outputs, and metadata needed for debugging and session rehydration.
+
+## Top-Level Structure
+
+Every workflow execution has a single context object with three top-level categories:
+
+| Category | Key Examples | Description |
+|:---|:---|:---|
+| **Run Metadata** | `startDate`, `status`, `flowType`, `appId`, `versionId`, `cfProcessId` | Identifiers and timestamps for the workflow instance. |
+| **Execution State** | `steps`, `branch`, `activeSteps`, `status` | Progress and outcome data for each node. |
+| **Environment & Config** | `env`, `agentTimeout`, `asyncExecDetails` | Runtime and environment parameters. |
+
+## The `steps` Object
+
+The `steps` object is a map that holds the execution state of every node in the workflow, indexed by node name.
+
+```json
+"steps": {
+  "NodeNameA": { ... },
+  "NodeNameB": { ... },
+  "NodeNameC": { ... }
+}
+```
+
+Each node entry contains:
+
+| Field | Description |
+|:---|:---|
+| `input` | Data received by the node at execution time. |
+| `output` | Result produced by the node — model outputs, processed data, or API responses. |
+| `statusCode` / `isSuccessful` | Whether execution succeeded, failed, or was skipped. |
+| `logs` | Optional log text or debug messages. |
+| `executionTime`, `totalTime`, `pausedAt`, `resumedAt` | Node-level timing data for performance analysis. |
+| `reqObj` / `resObj` | For AI nodes, the raw request and response envelopes. |
+| `metadata` | Node-specific information such as schema references, task IDs, or external job handles. |
+
+**Example node structure:**
+
+```json
+"steps": {
+  "ExampleNode": {
+    "input": {
+      "parameters": { "param1": "value1" },
+      "contextRefs": { "previousNodeOutput": "..." }
+    },
+    "output": {
+      "result": "some value",
+      "summary": "optional explanation",
+      "structuredData": { "key": "value" }
+    },
+    "statusCode": 200,
+    "isSuccessful": true,
+    "logs": "Node executed successfully",
+    "executionTime": "1250ms",
+    "metadata": {
+      "model": "gpt-5",
+      "nodeType": "LLM",
+      "dependencies": ["SchemaRetriever", "Sanitizer"]
+    }
+  }
+}
+```
+
+### How `steps` evolves during execution
+
+The platform populates `steps` as the workflow runs:
+
+1. **Initialization** — The `steps` object starts empty.
+2. **Node execution** — An entry is created for each node as it runs.
+3. **Completion** — Outputs and timing data are appended.
+4. **Error handling** — Logs and status are updated; `branch` reflects failures.
+
+## Common Node Types
+
+| Node Type | Typical Fields | Purpose |
+|:---|:---|:---|
+| Input/Start | `user_query`, `metadata` | Captures initial requests. |
+| API | `body`, `statusCode`, `totalTime` | Fetches external data. |
+| AI | `reqObj`, `resObj`, `modelElapsedTime` | Records prompt and response data. |
+
+## Cross-Node Referencing
+
+Nodes reference each other's data using the `{{ }}` syntax. Values resolve at runtime.
+
+**Example:** Pass the schema output from one node as input to the next.
+
+```json
+"steps": {
+  "SchemaRetriever": {
+    "output": { "schema": [ ... ] }
+  },
+  "QueryGenerator": {
+    "input": {
+      "schema": "{{steps.SchemaRetriever.output.schema}}"
+    }
+  }
+}
+```
+
+### Supported reference patterns
+
+```
+{{context.appId}}
+{{context.steps.QueryGenerator.output.sql_query}}
+{{context.schema[0].column_name}}
+{{context.steps.Start.variable_name}}
+```
+
+- `context` refers to the full context object.
+- `steps` provides scoped access to individual node data.
+- References work in input fields, API node parameters, LLM prompts, and conditions.
+
+### Evaluation behavior
+
+- **Lazy evaluation** — Values resolve immediately before the node executes.
+- **Missing keys** — If a referenced key doesn't exist, the expression resolves to `null` or an empty string in string contexts.
+- **Circular references** — Automatically detected and blocked.
+
+## Extending Context with Script Nodes
+
+Use Script Nodes to add or modify context keys dynamically. Any key you add is accessible in later nodes using `{{context.<key>}}`.
+
+<CodeGroup>
+
+```javascript JavaScript
+// Add a simple key-value pair
+context.newKey = "Hello World";
+
+// Store structured data
+context.customData = {
+  runId: context.cfProcessId,
+  stage: "validation",
+  timestamp: new Date().toISOString()
+};
+
+// Access it in later nodes
+console.log(context.customData.stage);
+```
+
+```python Python
+# Add or modify keys in the context dictionary
+context['newKey'] = "Hello World"
+
+# Store complex objects
+context['customData'] = {
+    "runId": context.get('cfProcessId'),
+    "stage": "validation",
+    "timestamp": datetime.now().isoformat()
+}
+
+# Retrieve later
+print(context['customData']['stage'])
+```
+
+</CodeGroup>
+
+### Guidelines
+
+- Use camelCase naming — for example, `customerInfo`, `retryCounter`, `tempResults`.
+- Don't override system-reserved keys: `steps`, `branch`, `status`, `dbquery`.
+- Keep data lightweight — avoid storing large arrays or raw API responses.
+
+## Loop Node Context
+
+When a Loop Node executes, it creates its own context object that tracks iteration progress and results. This object is accessible throughout the workflow.
+
+### Structure
+
+```json
+{
+  "loopId": "string",
+  "startTime": "timestamp",
+  "iterationCount": "number",
+  "inputs": ["array of input values"],
+  "outputArray": ["array of iteration results"],
+  "totalCount": "number",
+  "childNodesExecuted": "number"
+}
+```
+
+| Field | Type | Description |
+|:---|:---|:---|
+| `loopId` | String | Unique identifier for the loop node, matching the node ID in your flow. |
+| `startTime` | Timestamp | When the loop started executing. |
+| `iterationCount` | Number | Number of iterations completed so far. |
+| `inputs` | Array | The original list of items the loop processes. |
+| `outputArray` | Array of Objects | Results from each iteration, in execution order. |
+| `totalCount` | Number | Total number of items to process (same as `inputs` length). |
+| `childNodesExecuted` | Number | Total count of child nodes that ran across all iterations. |
+
+### Accessing loop data
+
+**Inside the loop** — Use iteration-scoped variables:
+
+| Variable | Description |
+|:---|:---|
+| `{{context.currentItem}}` | The item being processed in the current iteration. |
+| `{{context.currentIndex}}` | Zero-based index of the current item. |
+| `{{context.currentOutput[x]}}` | Output from a specific previous iteration. |
+
+**Outside the loop** — Access results using the loop node's ID:
+
+| Variable | Description |
+|:---|:---|
+| `{{context.steps.Loop0001.output}}` | The complete array of all iteration results. |
+| `{{context.steps.Loop0001.output[0]}}` | The result from a specific iteration. |
+
+**Example:** Processing a list of email addresses.
+
+```json
+{
+  "loopId": "Add2DB_0",
+  "startTime": "2025-11-12T09:23:05.306Z",
+  "iterationCount": 2,
+  "inputs": ["user1@example.com", "user2@example.com"],
+  "outputArray": [
+    { "output": { "success": "user1@example.com added to the Employee Database" } },
+    { "output": { "success": "user2@example.com added to the Employee Database" } }
+  ],
+  "totalCount": 2,
+  "childNodesExecuted": 10
+}
+```
+
+## Best Practices
+
+- **Use consistent node naming**: Names like `QueryGenerator` or `DataCleaner` make context references traceable and readable.
+- **Mask sensitive data**: Don't write credentials or PII directly to the context object.
+- **Prefer declarative references**: Use `{{context.<key>}}` syntax wherever possible. Reserve Script Nodes for computed or dynamic values.
+- **Keep context data lightweight**: Avoid storing large arrays or raw API payloads.
+
+---
