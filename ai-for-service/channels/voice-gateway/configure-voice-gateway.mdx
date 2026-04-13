@@ -776,4 +776,124 @@ Define the maximum wait time to receive user input. The maximum wait time is 60 
 
 Define the maximum number of retries allowed. Select **Save**. A success message appears, and saves the voice call properties.
 
+## System Error Settings
+
+Configure how the system handles a call when a system error occurs (no response from the bot), such as ending the call with a message or transferring it to an agent via SIP with optional headers.
+
+**End the Call**
+
+1. Select **End the Call** and enter the message to play before the call ends.
+2. Select **Save**
+
+**Transfer the Call**
+
+1. Select **Transfer the Call** and enter the message to play before the call transfer.
+2. The SIP Transfer method is pre-filled.
+3. Enter the Redirect URL. For example, `sip:123.456.789:5060`.
+4. (Optional) Enter the SIP Headers (Key and Value). For example, `X-Reason: SystemError`.
+5. Select **Save**.
+    ![Call Transfer Settings](/ai-for-service/channels/voice-gateway/images/system-error-settings-call-transfer.png)
+
+### Configure Different “Refer-To” Numbers for Different Experience Flows
+
+In the current bot configuration, System Error Settings apply globally across all experience flows in the bot.
+
+However, in scenarios where different Lines of Business (LOBs) use different experience flows, you can configure system errors to transfer calls to different phone numbers depending on the LOB.
+
+This can be achieved by:
+
+* Passing the Refer-To phone number through a SIP Header in the SIP INVITE request.
+* Dynamically reading that header in System Error Settings using the format:
+
+    `{{SIPHEADER.<header_name>}}`
+
+    Example:
+
+    Redirect URL: `{{SIPHEADER.contact}}`
+
+    This dynamically determines the transfer destination based on the header value received in the SIP INVITE.
+
+#### Configuration
+
+**Step 1. Configure System Error Settings**
+
+Navigate to the [System Error Settings](#system-error-settings) configuration in your bot and enter in the following details.
+
+| Field | Value |
+|-------|-------|
+| Message | Any preferred system error message |
+| SIP Transfer Method | SIP Refer (pre-filled) |
+| Redirect URL | `{{SIPHEADER.contact}}` |
+| SIP Headers | Optional–include any headers needed for context |
+
+The Redirect URL reads the value of the contact header from the SIP INVITE request.
+
+**Step 2. Send Refer-To Number in SIP Invite**
+
+When sending the SIP INVITE request, include a SIP header containing the fallback phone number for that LOB.
+
+Example header:
+
+Contact: `sip:+14085550100@example.com`
+
+**Step 3. Example SIP INVITE Request**
+
+Below is a sample SIP INVITE message sent to the Voice Gateway.
+
+```
+INVITE sip:bot@kore.ai SIP/2.0
+Via: SIP/2.0/UDP client.example.com;branch=z9hG4bK776asdhds
+Max-Forwards: 70
+From: "Customer" <sip:+14085550001@example.com>;tag=1928301774
+To: <sip:bot@kore.ai>
+Call-ID: a84b4c76e66710@example.com
+CSeq: 314159 INVITE
+Contact: sip:+14085550100@example.com
+User-Agent: Customer-SIP-Client
+Content-Type: application/sdp
+Content-Length: 142
+
+v=0
+o=- 3747 3747 IN IP4 client.example.com
+s=Voice Call
+c=IN IP4 client.example.com
+t=0 0
+m=audio 49170 RTP/AVP 0
+a=rtpmap:0 PCMU/8000
+```
+| Header | Description |
+|--------|-------------|
+| Contact | Contains the Refer-To number for fallback routing |
+| Redirect URL | Configured in System Error Settings as `{{SIPHEADER.contact}}` |
+
+When a system error occurs, the system:
+
+* Reads the Contact header value from the SIP INVITE
+* Resolves the Redirect URL dynamically
+* sends a SIP REFER to transfer the call to:
+
+    `sip:+14085550100@example.com`
+
+Example LOB Configuration
+
+Different LOBs can send different header values.
+
+| LOB | SIP Header Value |
+|-----|------------------|
+| Banking | Contact: `sip:+14085550100@example.com` |
+| Insurance | Contact: `sip:+14085550200@example.com` |
+| Retail | Contact: `sip:+14085550300@example.com` |
+
+If a system error occurs in the Insurance experience flow, the call is transferred to:
+
+    `sip:+14085550200@example.com`
+
+<Note>
+
+* System Error Settings are configured at the bot level and apply to all experience flows.
+* Dynamic routing is enabled by passing the Refer-To number in the SIP headers of the SIP INVITE.
+* The Redirect URL must use the format `{{SIPHEADER.<header_name>}}` to read header values dynamically.
+* Ensure the correct header name used in the Redirect URL matches the header sent in the SIP INVITE.
+</Note>
+    
 ---
