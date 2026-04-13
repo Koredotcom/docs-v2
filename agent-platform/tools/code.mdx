@@ -53,7 +53,7 @@ Code tools are ideal when:
 │   Step 1            Step 2            Step 3            Step 4            Step 5
 │ ┌──────────┐       ┌──────────┐      ┌──────────┐      ┌──────────┐      ┌──────────┐
 │ │  Create  │       │  Define  │      │  Define  │      │  Define  │      │  Write   │
-│ │  Tool    │─────▶│ Metadata │─────▶│  Input   │────▶│  Output  │─────▶│  Code    │
+│ │  Tool    │─────▶ │ Metadata │─────▶│  Input   │────▶ │  Output  │─────▶│  Code    │
 │ │          │       │          │      │  Params  │      │  Params  │      │          │
 │ └──────────┘       └──────────┘      └──────────┘      └──────────┘      └──────────┘
 │      │                 │                  │                  │                 │
@@ -76,6 +76,24 @@ Code tools are ideal when:
 
 </div>
 
+---
+
+```mermaid
+sequenceDiagram
+    actor Dev as Developer
+    participant P as Platform
+
+    Dev->>P: Step 1 — Create Tool (New Tool + Language)
+    Dev->>P: Step 2 — Define Metadata (Name, Description, Artifacts)
+    Dev->>P: Step 3 — Define Input Params (Parameters & Types)
+    Dev->>P: Step 4 — Define Output Params (Output mode & routing)
+    Dev->>P: Step 5 — Write Code (execute() function)
+    Dev->>P: Step 6 — Test (Run Sample Execution)
+    P-->>Dev: Execution results
+    Dev->>P: Step 7 — Deploy
+    P-->>Dev: Tool live & agent-invocable
+```
+
 ### Step 1: Create the Tool
 
 1. Navigate to **Tools** → **+ New Tool**.
@@ -95,7 +113,7 @@ Define the parameters the tool needs to perform its task. For each parameter, sp
 
 | Field | Description |
 |-------|-------------|
-| **Name** | A unique identifier for the parameter |
+| **Name** | A unique identifier for the parameter.  |
 | **Description** | Explains the parameter's purpose; helps the agent extract relevant data from user input |
 | **Type** | The expected data type (see below) |
 | **isMandatory** | Whether the parameter is required |
@@ -109,11 +127,11 @@ Define the parameters the tool needs to perform its task. For each parameter, sp
 | `number` | An integer value |
 | `boolean` | `true` or `false` |
 | `list of values` | A restricted set of predefined options (enum). Add all values the parameter can accept. Example: `low`, `medium`, `high` for a `priority` field. |
-| `object` | A structured type with one or more nested parameters. Use when multiple related values must be grouped. |
+| `object` | A structured type with one or more nested parameters. Use when multiple related values must be grouped. Example: location object containing building name, city and zip code. |
 
 #### Defining an Object Parameter
 
-Use an object parameter when the tool requires structured input that groups multiple related fields. Object parameters enable structured, nested inputs and allow the agent to validate and construct accurate tool requests before execution.
+Use an object parameter when the tool requires structured input that groups multiple related fields. Object parameters enable structured, nested inputs and allow the agent to validate and construct accurate tool requests before execution. Adhere to the **Sample Schema** for detailed structure and formatting guidelines. 
 
 When defining an object-type parameter:
 
@@ -123,7 +141,7 @@ When defining an object-type parameter:
   - `description` (optional): A brief explanation of the field's purpose
   - `required` (optional): Whether the field is mandatory
 - Use the `required` array to list mandatory fields of the object
-- Nested objects must define their own `properties` and `required` fields
+- Nested objects must define their own `properties` and `required` fields.  Set type as object.
 
 **Example**: An employee object with `id` and `email` (mandatory), and a nested `location` object containing `city`, `state`, and `country` (where `city` and `state` are mandatory):
 
@@ -189,92 +207,87 @@ For each output parameter, configure **Output Routing** to define where the extr
 | Option | Description |
 | --- | --- |
 | **Agent** | Routes the extracted value to the agent for use in reasoning, decision-making, or subsequent steps. |
-| **Artifacts** | Stores the extracted value in the `artifacts` section of the Execute API response for programmatic access. |
+| **Artifacts** | Stores the extracted value in the `artifacts` section of the Execute API response for programmatic access. |  
+|**Both**| Available for agent reasoning as well as added to the response payload. simultaneously|
 
 
 ### Step 5: Write Code
 
 This is the core logic of the tool. This is the custom code that gets executed when the tool is invoked. This can be written in either JavaScript or Python. 
 
-Using input parameters in the script: 
-- The input parameters can be used in the script with a prefix ‘$’. Assign it to a local variable before using it. 
-- Returning response back to Agent: Use the JavaScript return statement or the Python return keyword in the script to return the code tool response to the agent. 
-- To store the response in the artifacts object in the Execute API response payload, refer to Output Parameters.
-- Use Output parameter options to customize the response sent to the agent or artifacts.
-- Refer to [this](/agent-platform/tools/context-object) to learn context object structure.
+**Using Input Parameters in the script**
 
+In JavaScript, parameters are injected directly as `$ParameterName` variables. Assign them to local variables at the top of your script before using them. 
+
+**Example**: ` myinput = $value; (input variable = value)
+
+In Python, parameters are passed as it is. 
+
+**Example**: containerId = value  (input variable = value)
+
+
+**Returning a Response**
+
+Use `return` to pass the result back to the agent. 
+
+
+**Error Handling**
+
+If your script throws an unhandled exception, the error message is passed to the agent for further investigation. This means the agent may attempt to recover or respond to the user based on the error, so write clear, descriptive error messages rather than generic ones. Use try/catch in JavaScript or try/except in Python to control exactly what the agent receives when something goes wrong.
+
+
+**Working With Memory**
+
+To read from or write to the memory store inside your script, refer to the Memory in Code Tools page.
+
+**Working with Context Object**
+
+Refer to [this](/agent-platform/tools/context-object) to learn **context object structure**. Context object can be accessed as:
+
+`context.<variables>`
+
+**Logging in scripts**
+
+* Use console.log() method for log messages in javascript. 
+* For Python, use:  print("This is a log message")
+* Design time logs during tool testing can be viewed in the Execution Logs section during testing of the tool.
+* Execution logs from the tool can be viewed in the Traces.
+
+<Note>Script execution has a time limit of 180 seconds. </Note> 
+
+Examples:
 
 **JavaScript Example**:
 
 ```javascript
-async function execute(input, context) {
-  const { query_text, max_results = 100 } = input;
+const customerId = $CustomerId; //Read the input parameters
+const pin = $Pin;
 
-  // Parse the natural language query
-  const sqlQuery = constructSQLFromText(query_text);
-
-  // Execute against database
-  const client = await getDBClient(context.env.DB_CONNECTION);
-
-  try {
-    const results = await client.query(sqlQuery, { limit: max_results });
-
-    return {
-      success: true,
-      data: results.rows,
-      count: results.rowCount,
-      query: sqlQuery
-    };
-  } catch (error) {
-    return {
-      success: false,
-      error: error.message,
-      query: sqlQuery
-    };
-  }
-}
-
-function constructSQLFromText(text) {
-  // Your SQL generation logic here
+async function storeCustomerCredentials(customerId, pin) {
+    await memory.set_content("CustomerData", { CustomerId: customerId, Pin: pin }); //Update memory store
+    return { status: "stored", CustomerId: customerId };
 }
 ```
+
 
 **Python Example**:
 
-```python
+```Python
+
 def execute(input: dict, context: dict) -> dict:
-    query_text = input.get("query_text")
-    max_results = input.get("max_results", 100)
-
-    # Parse the natural language query
-    sql_query = construct_sql_from_text(query_text)
-
-    # Execute against database
-    connection = get_db_connection(context["env"]["DB_CONNECTION"])
+    customer_id = CustomerId
+    pin = Pin
 
     try:
-        cursor = connection.cursor()
-        cursor.execute(sql_query)
-        results = cursor.fetchmany(max_results)
-
-        return {
-            "success": True,
-            "data": results,
-            "count": len(results),
-            "query": sql_query
-        }
+        memory.set_content("CustomerData", {
+            "CustomerId": customer_id,
+            "Pin": pin
+        })
+        return { "success": True, "CustomerId": customer_id }
     except Exception as e:
-        return {
-            "success": False,
-            "error": str(e),
-            "query": sql_query
-        }
-
-
-def construct_sql_from_text(text: str) -> str:
-    # Your SQL generation logic here
-    pass
+        return { "success": False, "error": str(e) }
 ```
+
 
 ### Step 5: Test
 
