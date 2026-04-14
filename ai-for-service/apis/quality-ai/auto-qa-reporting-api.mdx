@@ -4,7 +4,10 @@ sidebarTitle: Auto QA Reporting API
 ---
 <Badge icon="arrow-left" color="gray">[Back to API List](/ai-for-service/apis/quality-ai/api-list)</Badge>
 
-The Auto QA Score Reporting API returns interaction-level evaluation data, including Auto QA scores, metric results, and duration-based eligibility. It uses `duration_status` to indicate eligibility, supports date-range and pagination filters, and optionally includes below-threshold interactions.
+The Auto QA Score Reporting API returns interaction-level evaluation data, including Auto QA scores, metric results, duration-based eligibility, and audit details, with support for contact direction (inbound/outbound).
+
+It uses `duration_status` to indicate evaluation eligibility, supports date-range and pagination filters, and can include below-threshold interactions when requested. With direction-based evaluation, the API enables directional segmentation, applies direction-specific evaluation logic, and supports audit-level reporting.
+
 
 | **METHOD** | **POST** |
 |------------|----------|
@@ -17,17 +20,17 @@ The Auto QA Score Reporting API returns interaction-level evaluation data, inclu
 
 | Parameter | Description | Type |
 |-----------|-------------|------|
-| `Content-Type` | `application/json` | `string`, required |
-| `accountId` | Unique account identifier. For example, `67a9ca06cf0e510a8632xxxx` | `string`, required |
-| `orgId` | Unique identifier of the organization. | `string`, required |
-| `auth` | JWT token used for authentication. | `string`, required |
+| `Content-Type` | `application/json` | string, required |
+| `accountId` | Unique account identifier. For example, `67a9ca06cf0e510a8632xxxx` | string, required |
+| `orgId` | Unique identifier of the organization. | string, required |
+| `auth` | JWT token used for authentication. | string, required |
 
 ## Path Parameters
 
 | Parameter | Description | Type |
 |-----------|-------------|------|
-| `host` | Environment URL. For example, `https://platform.kore.ai/` | `string`, required |
-| `streamId` | `botId` or `streamId`. Retrieve this from the App Settings page. | `string`, required |
+| `host` | Environment URL. For example, `https://platform.kore.ai/` | string, required |
+| `streamId` | `botId` or `streamId`. Retrieve this from the App Settings page. | string, required |
 
 ## Sample Request
 
@@ -42,6 +45,7 @@ curl --location 'https://{{host}}/qualityai/api/v1/public/qualitymanagement/app/
   "startDate": "2026-03-23 10:17:54",
   "endDate": "2026-03-23 23:36:35",
   "include_below_threshold": true,
+  "contact_direction": "inbound"
   "limit": 100
 }'
 ```
@@ -50,11 +54,12 @@ curl --location 'https://{{host}}/qualityai/api/v1/public/qualitymanagement/app/
 
 | Parameter | Description | Type |
 |-----------|-------------|------|
-| `offset` | Number of records to skip for pagination. | `integer`, optional |
-| `startDate` | The start date from which records are retrieved. Use UTC format: `YYYY-MM-DDTHH:MM:SS.NNNZ`. For example, `2026-03-23 10:17:54`. | `string`, required |
-| `endDate` | The end date to include records. Use UTC format: `YYYY-MM-DDTHH:MM:SS.NNNZ`. For example, `2026-03-23 23:00:35`. | `string`, required |
-| `include_below_threshold` | When `true`, includes contacts marked Below Threshold in the response. Default: `false`.| `string`, required |
-| `limit` | Number of records to retrieve per page (maximum `100`). | `integer`, optional |
+| `offset` | Number of records to skip for pagination. | integer, optional |
+| `startDate` | The start date from which records are retrieved. Use UTC format: `YYYY-MM-DDTHH:MM:SS.NNNZ`. For example, `2026-03-23 10:17:54`. | string, required |
+| `endDate` | The end date to include records. Use UTC format: `YYYY-MM-DDTHH:MM:SS.NNNZ`. For example, `2026-03-23 23:00:35`. | string, required |
+| `include_below_threshold` | When `true`, includes contacts marked Below Threshold in the response. Default: `false`.| string, required |
+| `limit` | Number of records to retrieve per page (maximum `100`). | integer, optional |
+| `contact_direction` | Filters results by `inbound` or `outbound`. | string, optional |
 
 <Note> APIs exclude contacts below the threshold by default. An `include_below_threshold=true` parameter allows explicit inclusion for ad hoc analysis.</Note>
 
@@ -63,9 +68,13 @@ curl --location 'https://{{host}}/qualityai/api/v1/public/qualitymanagement/app/
 
 ```json
 {
-    "results": [
+  "results": [
     {
       "conversationId": "c-0bba1c4-6d27-49d9-8557-9b0e8774xxxx",
+      "customConversationId": "UATTranscripts_Mar23b",
+      "contact_direction": "inbound",
+      "channel": "voice",
+      "audit_status": "audited",
       "Queues": [
         {
           "Queue ID": "qu-c304439-3d79-4389-b1cb-014eb75axxxx",
@@ -76,16 +85,15 @@ curl --location 'https://{{host}}/qualityai/api/v1/public/qualitymanagement/app/
         {
           "Agent ID": "a-424ea65-322b-47c1-8189-7200b64cxxxx",
           "Agent Name": "John Doe"
-        },
-        {
-          "Agent ID": "a-a25ad66-638d-46c0-b4db-7e5a7360xxxx",
-          "Agent Name": "John Doe"
         }
       ],
       "koreEvalutionScore": 77,
+      "supervisorAuditScore": 81,
       "fatalErrorCount": 0,
       "Language": "English",
       "duration_status": "evaluated",
+      "evaluation_status": "pass",
+      "evaluatedAt": "2026-03-23 11:03:54",
       "Metrics": [
         {
           "Metric ID": "em-44758b38-816c-557b-b6a9-2d2c6297xxxx",
@@ -96,17 +104,20 @@ curl --location 'https://{{host}}/qualityai/api/v1/public/qualitymanagement/app/
           "isFatalError": false
         },
         {
-          "Metric ID": "em-1fd43c3f-67f9-5c30-8140-c3e534a1xxxx",
-          "Metric Name": "Manual Evaluation - UK - Manual Evaluation Metric",
-          "Metric Weight": 0,
-          "Metric Negative Weight": 0,
-          "Qualification": "-",
+          "Metric ID": "em-dc5679bd-e6c4-548c-b650-21c5e83dxxxx",
+          "Metric Name": "UK Proper Sign-off GenAI",
+          "Metric Weight": 27,
+          "Metric Negative Weight": 26,
+          "Qualification": "YES",
           "isFatalError": false
         }
       ]
     },
     {
       "conversationId": "c-8d43539-ae1e-473a-ad97-6bd2add4xxxx",
+      "contact_direction": "inbound",
+      "channel": "voice",
+      "audit_status": "not_audited",
       "Queues": [
         {
           "Queue ID": "qu-c304439-3d79-4389-b1cb-014eb75axxxx",
@@ -120,134 +131,73 @@ curl --location 'https://{{host}}/qualityai/api/v1/public/qualitymanagement/app/
         }
       ],
       "koreEvalutionScore": null,
+      "supervisorAuditScore": null,
       "fatalErrorCount": 0,
       "Language": "English",
       "duration_status": "below_threshold",
+      "evaluation_status": "not_evaluated",
+      "evaluatedAt": null,
       "Metrics": [
         {
           "Metric ID": "em-44758b38-816c-557b-b6a9-2d2c6297xxxx",
           "Metric Name": "UK Greeting Compliance Rate GEN",
           "Metric Weight": 28,
           "Metric Negative Weight": 27,
-          "isFatalError": false
-        },
-        {
-          "Metric ID": "em-dc5679bd-e6c4-548c-b650-21c5e83dxxxx",
-          "Metric Name": "UK Proper Sign-off GenAI",
-          "Metric Weight": 27,
-          "Metric Negative Weight": 26,
-          "isFatalError": false
-        }
-      ]
-    },
-    {
-      "conversationId": "c-a19b658-da43-465c-9606-1abb5786xxxx",
-      "Queues": [
-        {
-          "Queue ID": "qu-c304439-3d79-4389-b1cb-014eb75axxxx",
-          "Queue Name": "Default Queue - Q1"
-        }
-      ],
-      "Agents": [
-        {
-          "Agent ID": "a-424ea65-322b-47c1-8189-7200b64cxxxx",
-          "Agent Name": "Lily Agent"
-        }
-      ],
-      "koreEvalutionScore": 0,
-      "fatalErrorCount": 1,
-      "Language": "English",
-      "duration_status": "evaluated",
-      "Metrics": [
-        {
-          "Metric ID": "em-44758b38-816c-557b-b6a9-2d2c6297xxxx",
-          "Metric Name": "UK Greeting Compliance Rate GEN",
-          "Metric Weight": 28,
-          "Metric Negative Weight": 27,
-          "Qualification": "YES",
-          "isFatalError": false
-        },
-        {
-          "Metric ID": "em-dc5679bd-e6c4-548c-b650-21c5e83dxxxx",
-          "Metric Name": "UK Proper Sign-off GenAI",
-          "Metric Weight": 27,
-          "Metric Negative Weight": 26,
-          "Qualification": "NO",
-          "isFatalError": true
-        }
-      ]
-    },
-    {
-      "conversationId": "c-94376d76-dbe2-59c6-8665-ea70217exxxx",
-      "customConversationId": "UATTranscripts_Mar23b",
-      "Queues": [
-        {
-          "Queue ID": "qu-16c07483-765f-5e2e-a150-e5b66033xxxx",
-          "Queue Name": "PublicApiQueue"
-        }
-      ],
-      "Agents": [
-        {
-          "Agent ID": "a-b35a99e-9c55-4d43-ac00-225169c9xxxx",
-          "Agent Name": "UmaKalva UAT TitanAsh"
-        }
-      ],
-      "koreEvalutionScore": 9,
-      "fatalErrorCount": 0,
-      "Language": "English",
-      "duration_status": "evaluated",
-      "Metrics": [
-        {
-          "Metric ID": "em-44758b38-816c-557b-b6a9-2d2c6297xxxx",
-          "Metric Name": "UK Greeting Compliance Rate GEN",
-          "Metric Weight": 11,
-          "Metric Negative Weight": 14,
-          "Qualification": "YES",
-          "isFatalError": false
-        },
-        {
-          "Metric ID": "em-dc5679bd-e6c4-548c-b650-21c5e83dxxxx",
-          "Metric Name": "UK Proper Sign-off GenAI",
-          "Metric Weight": 9,
-          "Metric Negative Weight": 12,
-          "Qualification": "NO",
           "isFatalError": false
         }
       ]
     }
   ],
-  "totalResults": 21,
-  "hasMore": false,
-  "totalPages": 1
+  "pagination": {
+    "offset": 0,
+    "limit": 100,
+    "totalResults": 21,
+    "hasMore": false,
+    "totalPages": 1
+  }
 }
+
 ```
 
 ## Response Body Parameters
 
-| Parameter | Description | Type |
-|----------|-------------|------|
-| `conversationId` | Unique system-generated conversation ID. | `string` |
-| `customConversationId` | Custom ID provided at ingestion (if available). | `string` |
-| `Queues` | Queue details associated with the conversation.| `array` |
-| `Queue ID` | Queue identifier. | `string` |
-| `Queue Name` | Name of the queue. | `string` |
-| `Agents` | Agents in the conversation. | `array` |
-| `Agent ID` | Agent identifier. | `string` |
-| `Agent Name` | Agent name. | `string` |
-| `koreEvaluationScore` | Auto QA score (−100 to 100, null if not evaluated). | `number (nullable)` |
-| `fatalErrorCount` | Number of fatal metric failures. | `integer` |
-| `Language` | Conversation language. | `string` |
-| `duration_status` | Evaluation status (`evaluated`, `below_threshold`, `duration_unavailable`).| `string (enum)` |
-| `Metrics` | Evaluation metrics objects applied to the conversation. | `array` |
-| `Metric ID` | Metric identifier. | `string` |
-| `Metric Name` | Name of the metric. | `string` |
-| `Metric Weight` | Positive weightage assigned to the metric. | `number` |
-| `Metric Negative Weight` | Negative weightage assigned to the metric.  | `number` |
-| `Qualification` | Metric result (YES, NO, NA). | `string (enum)` |
-| `isFatalError` | Indicates whether this metric is configured as fatal and not met. | `boolean` |
-| `totalResults` | Total number of conversation records matching the request. | `integer` |
-| `totalPages` | Total pages | `integer` |
-| `hasMore` | Indicates whether additional pages exist. | `boolean` |
-| `results` | List of conversation objects. | `array` |
+| Parameter                | Description                                                                                                                       | Type              |
+| ------------------------ | --------------------------------------------------------------------------------------------------------------------------------- | ----------------- |
+| `results`                | List of conversation objects returned for the request.                                                                            | array             |
+| `conversationId`         | Unique system-generated identifier for the conversation.                                                                          | string            |
+| `customConversationId`   | Custom identifier provided at ingestion time; present only when set during upload.                                                | string            |
+| `queues`                 | List of queue objects associated with the conversation.                                                                           | array             |
+| `queueId`                | Unique identifier for the queue.                                                                                                  | string            |
+| `queueName`              | Name of the queue.                                                                                                                | string            |
+| `agents`                 | List of agents who participated in the conversation; multiple agents may exist per conversation.                                  | array             |
+| `agentId`                | Unique identifier for the agent.                                                                                                  | string            |
+| `agentName`              | Name of the agent.                                                                                                                | string            |
+| `koreEvaluationScore`    | Auto QA score (-100 to 100); returns `null` for `below-threshold` or `unavailable duration`.                                      | number or null     |
+| `fatalErrorCount`        | Number of fatal metric failures; returns `0` when none are present. If a fatal error occurs, `koreEvaluationScore` is set to `0`. | integer           |
+| `language`               | Conversation language.                                                                                                            | string            |
+| `metrics`                | List of evaluation metric objects applied to the conversation.                                                                    | array             |
+| `metricId`               | Unique identifier for the evaluation metric.                                                                                      | string            |
+| `metricName`             | Name of the evaluation metric as configured in the evaluation form.                                                               | string            |
+| `metricWeight`           | Positive weight assigned to the metric.                                                                                           | number            |
+| `metricNegativeWeight`   | Negative weight assigned; returns `0` when not configured.                                                                        | number            |
+| `qualification`          | Agent outcome for the metric (`YES`, `NO`, `NA`); present only when `duration_status` is `evaluated`.                             | string (enum)     |
+| `isFatalError`           | Indicates whether the metric is fatal and not met; if `true`, `koreEvaluationScore` is set to `0`.                                | boolean           |
+| `duration_status`        | Evaluation eligibility status (`evaluated`, `below_threshold`, `duration_unavailable`).                                           | string (enum)     |
+| `evaluation_status`      | Overall evaluation result (`pass`, `fail`, `not_evaluated`).                                                                      | string (enum)     |
+| `audit_status`           | Status of audit assignment or completion; returns `null` if unavailable.                                                          | string or null     |
+| `contact_direction`      | Resolved interaction direction (`inbound` or `outbound`).                                                                         | string (enum)     |
+| `is_direction_defaulted` | Indicates whether direction was system-inferred (`true`) or provided at ingestion (`false`).                                      | boolean or null    |
+| `channel`                | Interaction channel (`voice` or `chat`).                                                                                          | string            |
+| `auditor`                | Name of the auditor.                                                                                                              | string or null     |
+| `AuditStatus`            | Audit workflow status (`Audited`, `Assigned`, `Not Assigned`).                                                                    | string            |
+| `AuditScore`             | Score assigned during audit evaluation; returned only when completed.                                                             | number (optional) |
+| `audit_date`             | Timestamp of audit completion.                                                                                                    | DateTime or null   |
+| `evaluatedAt`            | Timestamp when Auto QA evaluation was completed.                                                                                  | DateTime or null   |
+| `totalResults`           | Total number of conversation records matching the request.                                                                        | integer           |
+| `totalPages`             | Total number of pages based on page size.                                                                                         | integer           |
+| `hasMore`                | Indicates whether additional pages exist.                                                                                         | boolean           |
+| `results`                | A list of conversation objects.                                                                                                   | array             |
 
 
+
+<Note> Contacts ingested before the minimum duration threshold feature is enabled return `null` for `duration_status`.</Note>
