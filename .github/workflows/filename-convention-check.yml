@@ -2,35 +2,37 @@ name: Filenaming Convention Check
 
 on:
   pull_request:
-    types: [opened, synchronize, reopened]
 
 jobs:
-  validate-filenames:
+  validate:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repo
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-
-      - name: Get changed files
-        id: changed-files
-        run: |
-          git diff --name-only origin/${{ github.base_ref }}...HEAD > files.txt
-          cat files.txt
 
       - name: Validate filenames
         run: |
           violations=0
+          FOLDER_REGEX='^(docs/|help/|guides/|api/|reference/)'
+
           while IFS= read -r file; do
-            if [[ "$file" =~ [A-Z] || "$file" =~ " " ]]; then
-              echo "Invalid filename: $file"
-              violations=1
+            if [[ "$file" =~ $FOLDER_REGEX ]]; then
+              
+              # Check for uppercase, spaces, and disallowed special characters
+              if [[ "$file" =~ [A-Z] || \
+                    "$file" =~ " " || \
+                    "$file" =~ [\(\)\[\]&@#%+\*] ]]; then
+                
+                echo "Invalid filename: $file"
+                violations=1
+              fi
+
             fi
-          done < files.txt
+          done < <(git diff --name-only origin/${{ github.base_ref }}...HEAD)
 
           if [ $violations -ne 0 ]; then
-            echo "Filename convention violated (uppercase or spaces found)."
+            echo "Filename convention violated."
             exit 1
           fi
