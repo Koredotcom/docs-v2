@@ -1,0 +1,313 @@
+# Click Analytics API
+
+The Click Analytics API allows you to programmatically retrieve aggregated click analytics for your application.
+
+It provides insights into how users interact with search results, helping you analyze engagement, ranking effectiveness, and content gaps.
+
+---
+
+## Supported Metrics
+
+* **ClickAnalytics** – Searches with and without clicks (time-series)
+* **AvgClickStats** – Click engagement depth
+* **AvgClickPosition** – Average position of clicked results
+* **ClickPositionDistribution** – Click distribution by result rank
+* **TopQueriesNoClicks** – Queries with no clicks (content gap detection)
+
+---
+
+## Specifications
+
+| Field | Value |
+|------|------|
+| **Method** | POST |
+| **Endpoint** | `https://{{host}}/api/public/bot/{{AppID}}/search/clickAnalytics` |
+| **Content-Type** | `application/json` |
+| **Authorization** | `auth: {{JWT}}` |
+| **API Scope** | Answer Insights |
+
+---
+
+## Query Parameters
+
+| Parameter | Description | Mandatory |
+|----------|-------------|----------|
+| `AppID` | Provide your application ID here. | `Yes` |
+
+---
+
+## Request Parameters
+
+| Parameter | Description | Mandatory |
+|----------|-------------|----------|
+| `type` | Provide the metric Type. It can take the following values: <br/> `ClickAnalytics`, `AvgClickStats`, `AvgClickPosition`, `ClickPositionDistribution`, `TopQueriesNoClicks` | `Yes` |
+| `filters` | Date range (`from`, `to`) in UTC. Defaults to last 7 days if not provided. | `No.` |
+| `group` | This field is applicable to following metrics. | `No` |
+| `limit` | Pagination limit | `No` |
+| `offset` | Pagination offset | `No` |
+
+---
+
+## Sample Request Body
+
+```json
+{
+  "type": "<MetricType>",
+  "filters": {
+    "from": "2026-03-01T00:00:00Z",
+    "to": "2026-03-17T23:59:59Z"
+  },
+  "group": "date",
+  "limit": 10,
+  "offset": 0
+}
+```
+
+## Metric Types
+
+### ClickAnalytics
+
+Shows how many searches resulted in a user clicking a result versus not clicking anything, over the given period of time, grouped by `hour`/`day`/`week`.
+
+**Sample Request**
+
+```json
+{
+  "type": "ClickAnalytics",
+  "filters": {
+    "from": "2026-03-10T00:00:00Z",
+    "to": "2026-03-17T23:59:59Z"
+  },
+  "group": "date",
+  "limit": 10,
+  "offset": 0
+}
+```
+
+**Sample Response**
+
+```json
+{
+  "result": [
+    { "period": "2026-03-17 00:00:00", "searches_with_clicks": 4, "searches_without_clicks": 15 },
+    { "period": "2026-03-18 00:00:00", "searches_with_clicks": 7, "searches_without_clicks": 9 },
+    { "period": "2026-03-20 00:00:00", "searches_with_clicks": 0, "searches_without_clicks": 2 }
+  ]
+}
+```
+
+**Response Parameters**
+
+| Field | Type | Description |
+|------|------|-------------|
+| result | Array | One entry per time period in the requested date range |
+| result[].period | String | UTC timestamp truncated to the requested group granularity (day/hour/week) |
+| result[].searches_with_clicks | Number | Distinct searches where at least one citation was clicked in this period |
+| result[].searches_without_clicks | Number | Searches with no click events in this period (total − with_clicks) |
+
+**Error Response**
+
+
+Results array is empty. The error is shared in analyticsError field.
+
+
+```
+{ 
+    "result": [], 
+    "analyticsError": "Click analytics data is temporarily unavailable." 
+}
+```
+
+### AvgClickStats 
+
+Measures click engagement depth by showing how many times users click per search and how many different results they click on, on average.
+
+**Sample Request**
+
+```
+{
+  "type": "AvgClickStats",
+  "filters": {
+    "from": "2026-03-10T00:00:00Z",
+    "to": "2026-03-17T23:59:59Z"
+  }
+}
+```
+
+**Sample Response**
+
+```json
+{
+  "avg_clicks_per_search": 1.8,
+  "avg_chunks_clicked": 1.4,
+  "total_searches_with_clicks": 52
+}
+```
+
+**Response Fields**
+
+| Field | Type | Description |
+|------|------|-------------|
+| avg_clicks_per_search | Number | Average total click events per search session that had at least one click |
+| avg_chunks_clicked | Number | Average number of distinct chunks/citations clicked per search session |
+| total_searches_with_clicks | Number | Count of unique search sessions that resulted in at least one click |
+
+**Error Response**
+
+```json
+{ 
+    "avg_clicks_per_search": 0,
+     "avg_chunks_clicked": 0, 
+     "total_searches_with_clicks": 0, 
+     "analyticsError": "..." 
+}
+```
+
+### AvgClickPosition 
+
+It indicates the average retrieval rank at which users click. Useful for understanding whether users engage with top results or scroll further down.
+
+**Sample Request**
+
+```json
+{
+  "type": "AvgClickPosition",
+  "filters": {
+    "from": "2026-03-10T00:00:00Z",
+    "to": "2026-03-17T23:59:59Z"
+  }
+}
+```
+
+**Sample Response**
+
+```json
+{
+  "avg_click_position": 2.34,
+  "min_click_position": 1,
+  "max_click_position": 8,
+  "total_clicks": 137
+}
+```
+
+**Response Fields**
+
+| Field | Type | Description |
+|------|------|-------------|
+| avg_click_position | Number | Weighted average retrieval rank across all click events (lower = users click higher-ranked results) |
+| min_click_position | Number | Lowest retrieval rank that received a click (typically 1) |
+| max_click_position | Number | Highest retrieval rank that received a click |
+| total_clicks | Number | Total click events in the date range (excludes rank-0 chunks) |
+
+**Error Response**
+
+```json
+{ 
+    "avg_click_position": 0,
+    "min_click_position": 0, 
+    "max_click_position": 0, 
+    "total_clicks": 0, 
+    "analyticsError": "..." 
+}
+```
+
+### ClickPositionDistribution 
+
+It shows how clicks are distributed across result positions. It is  useful for identifying which positions attract the most user attention.
+
+**Sample Request**
+
+```json
+{
+  "type": "ClickPositionDistribution",
+  "filters": {
+    "from": "2026-03-10T00:00:00Z",
+    "to": "2026-03-17T23:59:59Z"
+  }
+}
+```
+
+**Sample Response**
+
+```json
+{
+  "result": [
+    { "retrieval_rank": 1, "chunks_clicked_at_position": 18, "total_clicks_at_position": 54 },
+    { "retrieval_rank": 2, "chunks_clicked_at_position": 11, "total_clicks_at_position": 29 },
+    { "retrieval_rank": 3, "chunks_clicked_at_position": 6,  "total_clicks_at_position": 14 }
+  ]
+}
+```
+
+**Response Fields**
+
+| Field | Type | Description |
+|------|------|-------------|
+| result | Array | One entry per retrieval rank that received at least one click |
+| result[].retrieval_rank | Number | 1-based position in the citation list |
+| result[].chunks_clicked_at_position | Number | Number of distinct chunk IDs clicked at this rank |
+| result[].total_clicks_at_position | Number | Total click events at this rank (multiple clicks on the same chunk count separately) |
+
+**Error Response**
+
+```json
+{ 
+    "result": [],
+    "analyticsError": "Click analytics data is temporarily unavailable." 
+}
+```
+
+### TopQueriesNoClicks 
+
+It helps identifies queries where users did not click any results. Supports pagination via limit and offset.
+
+**Sample Request**
+
+```json
+{
+  "type": "TopQueriesNoClicks",
+  "filters": {
+    "from": "2026-03-10T00:00:00Z",
+    "to": "2026-03-17T23:59:59Z"
+  },
+  "limit": 10,
+  "offset": 0
+}
+```
+
+**Sample Response**
+
+```json
+{
+  "moreavailable": true,
+  "result": [
+    { "query": "how to reset password", "count": 23 },
+    { "query": "invoice not generating",  "count": 17 },
+    { "query": "two factor auth setup",   "count": 11 }
+  ],
+  "totalCount": 84
+}
+```
+
+**Response Fields**
+
+| Field | Type | Description |
+|------|------|-------------|
+| result | Array | Paginated list of queries that received zero clicks in the date range |
+| result[].query | String | The search query text entered by the user |
+| result[].count | Number | Number of times this query was searched without any click |
+| moreavailable | Boolean | true if additional pages exist beyond the current offset |
+| totalCount | Number | Total number of distinct no-click queries (for pagination UI) |
+
+
+**Error Response**
+
+```json
+{ 
+    "moreavailable": false,
+     "result": [], 
+     "totalCount": 0, 
+     "analyticsError": "..."
+}
+```
+
