@@ -1,0 +1,671 @@
+---
+title: 'Testing & Evaluation'
+section: 'guides'
+order: 10
+description: 'Agent Platform 2.0 includes a complete testing and evaluation framework. You can test agents interactively in Studio, create automated test suites with simulated personas and scenarios, build LLM judge eval'
+---
+
+# Testing & Evaluation
+
+Agent Platform 2.0 includes a complete testing and evaluation framework. You can test agents interactively in Studio, create automated test suites with simulated personas and scenarios, build LLM judge evaluators to score conversations, run evaluation batches at scale, and debug issues using the trace system.
+
+## Test in Studio Chat
+
+Use the Studio test chat to validate agent behavior interactively before deploying to production.
+
+### Start a Test Session
+
+1. Open your project in Studio.
+2. Select the agent you want to test from the project sidebar.
+3. Click **Test** in the top-right toolbar to open the chat panel.
+
+Studio creates a test session that connects to the Runtime and executes your agent's compiled ABL definition in real time.
+
+### Send Messages and Observe Behavior
+
+Type a message in the chat input and press **Enter**. The agent responds using the same execution pipeline as production, including:
+
+- Tool calls and their results
+- Flow step transitions (for agents with `FLOW`)
+- Handoffs to other agents (for supervisors)
+- Guardrail checks on inputs and outputs
+
+Each message shows the agent's response along with metadata like which step executed, which tools were called, and the total response time.
+
+### Inspect Traces
+
+Click any message bubble to expand its trace details. The trace view shows:
+
+- **Span tree** -- the hierarchy of execution spans (LLM calls, tool invocations, guardrail evaluations)
+- **Decision points** -- why the agent chose a particular path, handoff, or completion
+- **Timing** -- latency breakdown per span
+
+### Reset Session State
+
+If you need to restart the conversation from scratch (clearing memory and flow position):
+
+1. Click the **Reset** button in the chat toolbar.
+2. Confirm the reset.
+
+This creates a fresh execution context while keeping the same session ID for comparison.
+
+### Test with Different Entry Agents
+
+For multi-agent projects with a supervisor, Studio defaults to the project's entry agent. To test a specific child agent directly:
+
+1. Select the child agent in the project sidebar.
+2. Click **Test** on that agent.
+
+This bypasses the supervisor routing and sends messages directly to the selected agent.
+
+### Test with Environment Variables
+
+If your agent references `{{env.KEY}}` placeholders, set the corresponding environment variables in **Project Settings > Environment Variables** for the `dev` environment before testing. The test session resolves variables from the `dev` environment by default.
+
+### Troubleshooting
+
+- **Agent not responding:** Verify the agent compiles without errors. Check the editor for red underlines or the **Problems** panel.
+- **Tool calls failing:** Test tools return mock responses in Studio unless you have configured live tool bindings in project settings.
+- **Stale behavior after edits:** Studio auto-compiles on save, but if behavior seems outdated, click **Rebuild** in the toolbar to force recompilation.
+- **Session state persisting unexpectedly:** Click **Reset** to clear session memory and flow state.
+
+## Create Test Personas & Scenarios
+
+Create personas and scenarios to define repeatable, automated test conversations that exercise your agents with diverse user behaviors and conversation paths.
+
+### Create a Test Persona
+
+A persona represents a simulated user with a specific communication style, domain knowledge level, and behavioral traits.
+
+1. Open your project in Studio.
+2. Navigate to **Evals > Personas**.
+3. Click **New Persona**.
+4. Fill in the persona details:
+
+| Field                   | Description                                   | Options                                              |
+| ----------------------- | --------------------------------------------- | ---------------------------------------------------- |
+| **Name**                | Unique name within the project                | e.g., "Impatient Business Traveler"                  |
+| **Communication style** | How the persona phrases messages              | `casual`, `formal`, `technical`, `terse`, `verbose`  |
+| **Domain knowledge**    | How much the persona knows about the topic    | `beginner`, `intermediate`, `expert`                 |
+| **Behavior traits**     | Specific behaviors the persona exhibits       | Free-text tags, e.g., "asks follow-ups", "impatient" |
+| **Goals**               | What the persona is trying to accomplish      | Free text                                            |
+| **Constraints**         | Rules the persona follows during conversation | Free text                                            |
+
+5. Click **Save**.
+
+### Use AI-Generated Personas
+
+Instead of defining every persona manually, select **Generate with AI** to have the platform create personas based on your agent's goal and domain. Generated personas cover a range of communication styles and knowledge levels. They can be edited after creation.
+
+### Create Adversarial Personas
+
+To test agent safety and robustness, create adversarial personas:
+
+1. Toggle **Adversarial** on when creating a persona.
+2. Select the adversarial type:
+
+| Type                 | Tests for                                  |
+| -------------------- | ------------------------------------------ |
+| `prompt_injection`   | Attempts to override agent instructions    |
+| `social_engineering` | Tries to extract sensitive information     |
+| `off_topic`          | Steers conversation away from agent's goal |
+| `abusive`            | Uses hostile or inappropriate language     |
+| `edge_case`          | Sends unusual inputs (empty, very long)    |
+
+### Create a Test Scenario
+
+A scenario defines a conversation flow to test, including the expected outcome, entry point, and success milestones.
+
+1. Navigate to **Evals > Scenarios**.
+2. Click **New Scenario**.
+3. Fill in the scenario details:
+
+| Field                   | Description                                              |
+| ----------------------- | -------------------------------------------------------- |
+| **Name**                | Unique name within the project                           |
+| **Category**            | Grouping label (e.g., "booking", "returns", "auth")      |
+| **Difficulty**          | `easy`, `medium`, or `hard`                              |
+| **Entry agent**         | Which agent starts the conversation (optional)           |
+| **Initial message**     | The first user message that kicks off the scenario       |
+| **Expected outcome**    | Description of what a successful conversation looks like |
+| **Max turns**           | Maximum conversation turns before timeout                |
+| **Expected milestones** | Key checkpoints the conversation should hit              |
+| **Agent path**          | Expected sequence of agents (for multi-agent projects)   |
+
+4. Click **Save**.
+
+### Example Scenario
+
+```
+Name: Flight rebooking after cancellation
+Category: booking
+Difficulty: medium
+Initial message: "My flight was cancelled and I need to rebook for tomorrow"
+Expected outcome: "Agent identifies the cancelled booking, offers alternatives, and confirms a new flight"
+Max turns: 15
+Expected milestones:
+  - "Identify cancelled flight"
+  - "Present rebooking options"
+  - "Confirm new booking"
+Agent path: ["Supervisor", "Booking_Manager"]
+```
+
+### Bulk Import Personas and Scenarios
+
+Use the API to create multiple personas or scenarios programmatically:
+
+```bash
+curl -X POST /api/projects/:projectId/eval-personas \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Confused First-Time User",
+    "communicationStyle": "verbose",
+    "domainKnowledge": "beginner",
+    "behaviorTraits": ["asks for clarification", "repeats questions"],
+    "goals": "Complete a simple booking",
+    "constraints": "Never provides information upfront"
+  }'
+```
+
+### Tag Scenarios for Filtering
+
+Use the `tags` field on scenarios to organize them by feature area, regression suite, or priority. Tags make it easy to run subsets of scenarios during eval batches.
+
+### Troubleshooting
+
+- **Duplicate name error:** Persona and scenario names must be unique within a project. Choose a more specific name or delete the existing one.
+- **Persona not behaving as expected in evals:** Refine the `goals` and `constraints` fields -- these are used as system prompt instructions for the simulated user LLM.
+- **Scenario timing out:** Increase the `maxTurns` value or simplify the expected conversation path.
+
+## Build LLM Judge Evaluators
+
+Create evaluators that automatically score agent conversations using LLM judges, code-based scorers, or trajectory analysis.
+
+### Create an LLM Judge Evaluator
+
+An LLM judge evaluator uses a separate LLM to assess the quality of agent responses based on a scoring rubric you define.
+
+1. Open your project in Studio.
+2. Navigate to **Evals > Evaluators**.
+3. Click **New Evaluator**.
+4. Set the evaluator type to **LLM Judge**.
+5. Configure the evaluator:
+
+| Field                | Description                                                                   |
+| -------------------- | ----------------------------------------------------------------------------- |
+| **Name**             | Unique name (e.g., "Response Quality Judge")                                  |
+| **Category**         | `quality`, `safety`, `efficiency`, `empathy`, `tool_correctness`, or `custom` |
+| **Judge model**      | Which LLM to use as the judge (e.g., `gpt-4o`, `claude-sonnet-4-5-20250929`)  |
+| **Judge prompt**     | Instructions telling the judge what to evaluate                               |
+| **Chain of thought** | Whether the judge should explain its reasoning before scoring                 |
+| **Temperature**      | LLM temperature for the judge (lower = more consistent scores)                |
+
+6. Define a **scoring rubric**.
+7. Click **Save**.
+
+### Define a Scoring Rubric
+
+The rubric tells the judge how to assign scores. Choose between two scale types:
+
+**1-5 scale** -- Define criteria for each score level:
+
+```
+Scale type: 1-5
+Points:
+  5 - Excellent: Fully addresses the user's request with accurate, complete information
+  4 - Good: Addresses the request with minor omissions
+  3 - Adequate: Partially addresses the request but misses key details
+  2 - Poor: Mostly misses the request or provides inaccurate information
+  1 - Failing: Completely fails to address the request or provides harmful information
+```
+
+**Pass-fail** -- Define binary criteria:
+
+```
+Scale type: pass-fail
+Points:
+  1 - Pass: Agent completes the task within the expected flow
+  0 - Fail: Agent fails to complete the task or deviates from expected behavior
+```
+
+### Write Effective Judge Prompts
+
+The judge prompt is the most important part of an evaluator. Write it to be specific about what the judge should assess:
+
+```
+You are evaluating an AI agent's response quality in a customer support context.
+
+Evaluate the conversation on these criteria:
+1. Did the agent correctly identify the customer's intent?
+2. Did the agent provide accurate information?
+3. Did the agent follow the expected conversation flow?
+4. Was the agent's tone appropriate and professional?
+
+Score each conversation using the provided rubric.
+Focus on the agent's responses, not the simulated user's messages.
+```
+
+### Configure Bias Mitigation
+
+LLM judges can exhibit biases. Enable these settings to improve scoring reliability:
+
+| Setting                 | What it does                                                   | Default |
+| ----------------------- | -------------------------------------------------------------- | ------- |
+| **Position swap**       | Evaluates the conversation in both original and reversed order | On      |
+| **Blind evaluation**    | Removes agent identity information before judging              | On      |
+| **Cross-model judge**   | Uses a different model family than the agent being evaluated   | Off     |
+| **Evidence-first mode** | Requires the judge to cite specific evidence before scoring    | On      |
+
+### Trajectory Evaluator
+
+Trajectory evaluators assess the agent's execution path rather than response content. Use them to verify:
+
+- **Milestone completion** -- did the conversation hit expected checkpoints?
+- **Handoff correctness** -- did the supervisor route to the right agent?
+- **Path efficiency** -- how many unnecessary steps did the agent take?
+- **Tool sequence** -- did the agent call tools in the right order?
+
+Set the evaluator type to **Trajectory** and select the metrics to track.
+
+### Code Scorer Evaluator
+
+For deterministic checks that do not need an LLM:
+
+1. Set the evaluator type to **Code Scorer**.
+2. Provide a scorer name and configuration.
+
+Code scorers run custom evaluation logic (e.g., regex checks, keyword matching, response time thresholds).
+
+### Human Review Evaluator
+
+For subjective quality assessments, create a **Human Review** evaluator. This flags conversations for manual review when scores fall below a configurable threshold.
+
+### Troubleshooting
+
+- **Inconsistent scores across runs:** Lower the judge temperature (try `0.1`) and enable evidence-first mode. Run multiple variants per evaluation to get statistical confidence.
+- **Judge model too expensive:** Use a smaller model for initial screening and reserve larger models for detailed analysis. Set appropriate `maxTokens` limits.
+- **Judge ignoring rubric criteria:** Make the rubric criteria more specific with concrete examples. Add examples to each rubric point.
+
+## Run Evaluation Batches
+
+Run evaluation batches to systematically test your agents against combinations of personas, scenarios, and evaluators.
+
+### Create an Eval Set
+
+An eval set combines personas, scenarios, and evaluators into a runnable test suite. The platform executes the Cartesian product: every persona talks through every scenario, and every evaluator scores each conversation.
+
+1. Open your project in Studio.
+2. Navigate to **Evals > Eval Sets**.
+3. Click **New Eval Set**.
+4. Configure the eval set:
+
+| Field               | Description                                                             |
+| ------------------- | ----------------------------------------------------------------------- |
+| **Name**            | Unique name (e.g., "Booking Flow Regression Suite")                     |
+| **Personas**        | Select one or more personas to simulate users                           |
+| **Scenarios**       | Select one or more scenarios to test                                    |
+| **Evaluators**      | Select one or more evaluators to score conversations                    |
+| **Variants**        | Number of times to repeat each combination (for statistical confidence) |
+| **Max concurrency** | How many conversations to run in parallel                               |
+| **Persona model**   | LLM used to simulate the persona (optional override)                    |
+
+5. Click **Save**.
+
+### Understand the Evaluation Matrix
+
+For an eval set with 3 personas, 4 scenarios, 2 evaluators, and 2 variants:
+
+```
+Total conversations = 3 personas x 4 scenarios x 2 variants = 24
+Total evaluations   = 24 conversations x 2 evaluators = 48
+```
+
+Each conversation is an independent multi-turn session where the persona LLM plays the user role according to the scenario definition.
+
+### Run an Eval Batch
+
+1. Open the eval set you want to run.
+2. Click **Run Evaluation**.
+3. Optionally add a **name** and **notes** for this run.
+4. Click **Start**.
+
+The run transitions through these statuses:
+
+| Status      | Meaning                                         |
+| ----------- | ----------------------------------------------- |
+| `pending`   | Run is queued and waiting to start              |
+| `running`   | Conversations and evaluations are in progress   |
+| `completed` | All conversations and evaluations have finished |
+| `failed`    | Run encountered an unrecoverable error          |
+| `cancelled` | Run was manually cancelled                      |
+
+### Run via API
+
+Trigger eval runs programmatically for CI/CD integration:
+
+```bash
+curl -X POST /api/projects/:projectId/eval-runs \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "evalSetId": "your-eval-set-id",
+    "name": "CI Run #42",
+    "triggerSource": "ci"
+  }'
+```
+
+The `triggerSource` field tracks how the run was initiated: `manual` (Studio), `ci` (API/pipeline), or `scheduled`.
+
+### Set Up Regression Detection
+
+Compare new runs against a baseline to detect performance regressions:
+
+1. Open the eval set.
+2. Under **Regression Settings**, set a **baseline run** -- typically your last known-good run.
+3. Set the **regression threshold** (e.g., `0.1` means a 10% score drop triggers a regression alert).
+
+When a new run completes, the platform compares scores per-evaluator and flags regressions with the evaluator name, persona/scenario combination, baseline vs. current score, and delta.
+
+### Enable CI Integration
+
+To block deployments on eval regressions:
+
+1. Open the eval set.
+2. Toggle **CI Enabled** on.
+3. Use the eval run API in your CI pipeline.
+4. Check the run result for `regressionDetected: true` and fail the pipeline accordingly.
+
+```bash
+# Poll for completion
+RUN_ID=$(curl -s -X POST .../eval-runs -d '...' | jq -r '.id')
+
+# Check result
+RESULT=$(curl -s /api/projects/:projectId/eval-runs/$RUN_ID)
+REGRESSION=$(echo $RESULT | jq '.regressionDetected')
+
+if [ "$REGRESSION" = "true" ]; then
+  echo "Regression detected -- blocking deployment"
+  exit 1
+fi
+```
+
+### Run a Subset of Scenarios
+
+Instead of running the full eval set, use scenario tags to filter:
+
+1. Tag your scenarios (e.g., `smoke-test`, `regression`, `edge-case`).
+2. Create separate eval sets for different test scopes -- a small smoke-test set for every commit and a full regression set for release candidates.
+
+### Troubleshooting
+
+- **Run stuck in `pending`:** Check that your project has valid LLM credentials configured. The eval pipeline requires both an agent model and a persona model.
+- **High costs on large eval sets:** Reduce variants to 1 during development. Use smaller persona models. Limit max concurrency to control spend.
+- **Inconsistent results between runs:** Increase the variant count to 3+ for statistical significance. Lower persona and judge temperatures.
+- **Run failing immediately:** Check that all referenced personas, scenarios, and evaluators still exist. Deleted components cause run failures.
+
+## Interpret Results
+
+Review eval run results to understand agent performance, identify regressions, and act on improvement recommendations.
+
+### View Run Summary
+
+After an eval run completes, open it from **Evals > Runs** to see the summary dashboard:
+
+| Metric                  | What it tells you                                                |
+| ----------------------- | ---------------------------------------------------------------- |
+| **Avg score**           | Overall average across all evaluators and conversations          |
+| **Scores by evaluator** | Breakdown of average score per evaluator                         |
+| **Total conversations** | How many persona-scenario conversations were executed            |
+| **Total evaluations**   | Total number of evaluator judgments (conversations x evaluators) |
+| **Duration**            | Wall-clock time for the full run                                 |
+| **Estimated cost**      | Projected LLM cost before the run started                        |
+| **Actual cost**         | Real LLM cost tracked during execution                           |
+
+### Understand Statistical Metrics
+
+- **Standard deviation (stdDev)** -- how much individual scores vary from the average. Lower is more consistent.
+- **Confidence interval** -- the range within which the true average score falls (typically 95% confidence). A narrow interval means the result is reliable.
+- **Pass@K** -- the probability that at least one of K attempts passes the eval criteria. Useful for creative or open-ended tasks.
+
+### Interpret Score Distributions
+
+| Pattern               | What it means                              | Action                                    |
+| --------------------- | ------------------------------------------ | ----------------------------------------- |
+| High avg, low stdDev  | Agent performs consistently well           | Ship it                                   |
+| High avg, high stdDev | Agent is good on average but unpredictable | Investigate low-scoring outliers          |
+| Low avg, low stdDev   | Agent consistently underperforms           | Review agent instructions and flow design |
+| Low avg, high stdDev  | Performance varies wildly                  | Check for specific failing scenarios      |
+
+### Review Regression Details
+
+If the run detected regressions, the regression panel shows which evaluator flagged the regression, which persona/scenario combination regressed, the baseline score vs. current score, and the delta.
+
+Focus on regressions with the largest negative delta first. Click through to the individual conversation to review the trace and understand what went wrong.
+
+### Drill into Individual Conversations
+
+From the run results, click any conversation to see:
+
+1. **Full transcript** -- every message exchanged between the persona and agent.
+2. **Evaluator scores** -- per-evaluator scores with the judge's reasoning (if chain-of-thought is enabled).
+3. **Trace timeline** -- the execution trace showing tool calls, handoffs, and decisions.
+4. **Milestone tracking** -- which expected milestones were hit or missed.
+
+### Read Evaluator Reasoning
+
+When chain-of-thought is enabled on an evaluator, each score includes the judge's analysis:
+
+```
+Score: 3/5
+Reasoning: The agent correctly identified the customer's intent to rebook
+a cancelled flight. However, it failed to check for available alternatives
+before asking the customer for date preferences, adding an unnecessary
+conversation turn. The information provided was accurate but incomplete --
+no mention of rebooking fees or fare differences.
+```
+
+Use this reasoning to pinpoint specific improvements in your agent's instructions, flow design, or tool configuration.
+
+### Act on Results
+
+**For low quality scores:**
+
+- Refine the agent's `GOAL` and `PERSONA` to give clearer behavioral guidance.
+- Add or improve `LIMITATIONS` to prevent off-topic responses.
+- For flow-based agents, check step transitions and conditional logic.
+
+**For low safety scores:**
+
+- Add or tighten `GUARDRAILS` rules for input/output filtering.
+- Create adversarial personas to stress-test edge cases.
+- Review the [Safety & Guardrails guide](./safety-and-guardrails).
+
+**For low efficiency scores:**
+
+- Reduce unnecessary tool calls by improving the agent's instructions.
+- Optimize flow step sequences to minimize conversation turns.
+- Check if the agent is asking for information it could infer from context.
+
+**For handoff correctness issues:**
+
+- Review the supervisor's `HANDOFF` conditions.
+- Verify `WHEN` clauses match the intended routing patterns.
+- Check agent path expectations in scenarios.
+
+### Compare Runs Over Time
+
+Use the run history to track trends:
+
+1. Navigate to **Evals > Runs**.
+2. Sort by date to see chronological progression.
+3. Compare any two runs to see score deltas per evaluator.
+
+Establish a cadence of running evals after significant agent changes to catch regressions early.
+
+### Troubleshooting
+
+- **Scores seem random:** Increase the variant count in your eval set (3-5 variants gives better statistical significance). Lower judge temperature.
+- **All scores are perfect (5/5):** Your rubric criteria may be too lenient. Add more specific failure conditions. Use adversarial personas to find edge cases.
+- **Regression detected but agent improved:** Review the baseline run -- it may contain an anomalous high score. Set a more recent, stable run as the new baseline.
+- **Cost higher than expected:** Check the persona model and judge model selections. Using smaller models for personas significantly reduces cost.
+
+## Debug with Traces
+
+Use the trace system to inspect every decision, tool call, and state transition an agent makes during a conversation.
+
+### Open the Trace View
+
+1. Open your project in Studio.
+2. Navigate to **Sessions** and select a session.
+3. Click the **Traces** tab to view the full execution trace.
+
+Alternatively, fetch traces via API:
+
+```bash
+curl -X GET /api/projects/:projectId/sessions/:sessionId/traces \
+  -H "Authorization: Bearer $TOKEN"
+```
+
+### Understand the Trace Structure
+
+Every agent execution produces a tree of trace events organized into spans:
+
+```text
+Session
++-- Turn 1 (user message)
+|   +-- LLM Call (model: claude-sonnet-4-5-20250929, tokens: 142/89)
+|   +-- Tool Call: check_order(order_id: "12345")
+|   |   +-- Tool Result: {status: "shipped", eta: "2026-03-12"}
+|   +-- LLM Call (model: claude-sonnet-4-5-20250929, tokens: 231/156)
+|   +-- Response: "Your order #12345 has shipped..."
++-- Turn 2 (user message)
+|   +-- Decision: route to Returns_Agent
+|   +-- Handoff: Supervisor -> Returns_Agent
+|   |   +-- Context: {order_id, reason}
+|   +-- Response: "I've connected you with our returns specialist."
+```
+
+### Event Types
+
+| Event type         | What it captures                                 |
+| ------------------ | ------------------------------------------------ |
+| **llm_call**       | LLM API call with model, tokens, latency, prompt |
+| **tool_call**      | Tool invocation with parameters and result       |
+| **tool_result**    | Response from an external tool                   |
+| **decision**       | Agent's routing or flow decision with reasoning  |
+| **handoff**        | Transfer between agents with context             |
+| **guardrail_eval** | Guardrail check result (pass/fail/block)         |
+| **state_change**   | Session variable updates                         |
+| **error**          | Errors during execution                          |
+| **response**       | Agent's final response to the user               |
+
+### Filter Traces
+
+Use query parameters to narrow down specific events:
+
+```bash
+# Filter by event type
+GET /api/projects/:projectId/sessions/:id/traces?eventType=decision
+
+# Filter by decision kind
+GET /api/projects/:projectId/sessions/:id/traces?decisionKind=handoff
+
+# Get child events for a specific span
+GET /api/projects/:projectId/sessions/:id/traces/:spanId/children
+
+# Include metrics in trace response
+GET /api/projects/:projectId/sessions/:id/traces?include=metrics
+```
+
+### Debug Common Problems
+
+**Agent choosing the wrong path:**
+
+1. Filter traces to `eventType=decision`.
+2. Examine the decision's reasoning field -- it shows what conditions were evaluated and which matched.
+3. Check the session state at that point to see what variables influenced the decision.
+
+**Tool calls failing:**
+
+1. Filter traces to `eventType=tool_call`.
+2. Check the tool call parameters -- are the right values being passed?
+3. Look at the corresponding `tool_result` event for error messages.
+4. Verify the tool endpoint is reachable and the authentication is configured.
+
+**Agent giving incorrect information:**
+
+1. Find the `llm_call` event for the problematic response.
+2. Examine the **prompt** sent to the LLM -- does it include the correct context?
+3. Check if relevant tool results were included in the conversation history.
+4. Look for missing or stale session variables that should have been updated.
+
+**Slow responses:**
+
+1. Open the trace timeline view to see latency per span.
+2. Identify the slowest operations -- usually LLM calls or tool calls.
+3. For slow LLM calls: check the model used and token count. Consider a faster model.
+4. For slow tool calls: check the external service latency. Consider async execution for slow tools.
+
+### View Aggregated Session Metrics
+
+Get a performance summary for the entire session:
+
+```bash
+GET /api/projects/:projectId/sessions/:id/metrics
+```
+
+Returns total latency and per-turn latency breakdown, token usage per LLM call, tool call count and success rate, and guardrail evaluation count and block rate.
+
+### Run Trace Analysis
+
+For automated diagnostics:
+
+```bash
+GET /api/projects/:projectId/sessions/:id/analysis
+```
+
+The analysis endpoint returns slow spans, error patterns, decision anomalies, and optimization suggestions.
+
+### Export Traces
+
+Export traces for offline analysis or integration with observability tools:
+
+```bash
+# Export as CSV
+GET /api/projects/:projectId/sessions/export?format=csv
+
+# Export across all sessions with LLM call details
+GET /api/projects/:projectId/sessions/generations
+```
+
+The generations endpoint returns all LLM call events across sessions, useful for analyzing model performance and costs.
+
+### Debug Multi-Agent Handoffs
+
+For sessions involving multiple agents, the trace shows the full handoff chain:
+
+1. Filter to `eventType=handoff` to see all transfers.
+2. Each handoff event shows the source agent, target agent, and context passed.
+3. Follow the span tree to see what happened in each agent's execution.
+
+### Real-Time Trace Streaming
+
+During live test sessions in Studio, traces appear in real time as the agent executes:
+
+1. Open the test chat panel.
+2. Expand the trace viewer.
+3. Send a message and watch the trace build as the agent processes it.
+
+### Troubleshooting
+
+- **Traces not appearing:** Verify the session exists and belongs to the correct project. Check that tracing is enabled (it is on by default).
+- **Missing LLM call details:** Some trace fields (full prompt, raw response) may be truncated for large conversations. Use the span detail view for the complete data.
+- **Trace timeline showing gaps:** Gaps between spans indicate idle time (waiting for user input or async callbacks). This is normal for multi-turn conversations.
+- **Cannot find a specific event:** Use the event type and span ID filters. For very long sessions, paginate through the trace results.
+
+## Further Reading
+
+- [Build Your First Agent](../tutorials/build-your-first-agent) -- End-to-end tutorial including testing
+- [Safety & Guardrails](./safety-and-guardrails) -- Configure safety rules to test against
+- [Publishing & Operations](./publishing-and-operations) -- Deploy tested agents to production

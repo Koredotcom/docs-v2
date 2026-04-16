@@ -1,0 +1,1154 @@
+---
+title: 'SDKs'
+section: 'api-reference'
+order: 6
+description: 'The Agent Platform 2.0 provides two SDKs: the **Web SDK** for embedding agent chat and voice interactions in web applications, and the **ABL SDK** for programmatic access to parse, validate, and compile ABL'
+---
+
+# SDKs
+
+The Agent Platform 2.0 provides two SDKs: the **Web SDK** for embedding agent chat and voice interactions in web applications, and the **ABL SDK** for programmatic access to parse, validate, and compile ABL agent definitions. For authentication and error handling conventions, see [API overview](./api-overview).
+
+## Web SDK
+
+The Agent Platform Web SDK (`@agent-platform/web-sdk`) provides a TypeScript/JavaScript library for embedding agent chat and voice interactions in web applications. The SDK supports vanilla JavaScript, React hooks, and a web component for drop-in integration.
+
+The browser-facing SDK does not send the public `pk_*` key directly to `/ws/sdk`. It first exchanges the key for a short-lived SDK session token on `POST /api/v1/sdk/init`, then authenticates SDK HTTP routes with `X-SDK-Token` and the SDK WebSocket with `Sec-WebSocket-Protocol: sdk-auth,<token>`.
+
+### Installation
+
+```bash
+npm install @agent-platform/web-sdk
+```
+
+Or include via script tag:
+
+```html
+<script src="https://cdn.ablplatform.com/agent-sdk/latest/agent-sdk.min.js"></script>
+```
+
+### Quick start
+
+#### Vanilla JavaScript
+
+```typescript
+import { AgentSDK } from '@agent-platform/web-sdk';
+
+const sdk = new AgentSDK({
+  projectId: 'your-project-id',
+  apiKey: 'pk_your-public-key',
+  endpoint: 'https://api.ablplatform.com',
+});
+
+await sdk.connect();
+
+// Send a chat message
+const chat = sdk.chat();
+chat.on('message', (msg) => console.log(msg.content));
+await chat.send('Hello, I need help!');
+```
+
+#### React
+
+```tsx
+import { AgentProvider, useChat, useVoice } from '@agent-platform/web-sdk/react';
+
+function App() {
+  return (
+    <AgentProvider
+      projectId="your-project-id"
+      apiKey="pk_your-public-key"
+      endpoint="https://api.ablplatform.com"
+    >
+      <ChatWidget />
+    </AgentProvider>
+  );
+}
+
+function ChatWidget() {
+  const { messages, isTyping, sendMessage, isConnected } = useChat();
+
+  return (
+    <div>
+      {messages.map((msg) => (
+        <div key={msg.id}>
+          <strong>{msg.role}:</strong> {msg.content}
+        </div>
+      ))}
+      {isTyping && <div>Agent is typing...</div>}
+      <button onClick={() => sendMessage('Hello!')} disabled={!isConnected}>
+        Send
+      </button>
+    </div>
+  );
+}
+```
+
+#### Web component
+
+```html
+<script src="https://api.ablplatform.com/sdk/agent-widget.js"></script>
+
+<agent-widget project-id="your-project-id" api-key="pk_your-public-key" mode="chat"></agent-widget>
+```
+
+---
+
+### AgentSDK
+
+The main SDK class. Creates and manages connections, chat clients, and voice clients.
+
+#### Constructor
+
+```typescript
+new AgentSDK(config: SDKConfig)
+```
+
+##### SDKConfig
+
+| Property    | Type    | Required | Default     | Description                        |
+| ----------- | ------- | -------- | ----------- | ---------------------------------- |
+| `projectId` | string  | Yes      | --          | Project ID to connect to           |
+| `apiKey`    | string  | Yes      | --          | Public API key (starts with `pk_`) |
+| `endpoint`  | string  | No       | Same origin | Platform base URL                  |
+| `debug`     | boolean | No       | `false`     | Enable debug logging to console    |
+
+#### Methods
+
+| Method           | Returns         | Description                                           |
+| ---------------- | --------------- | ----------------------------------------------------- | -------------------------- |
+| `connect()`      | `Promise<void>` | Establish WebSocket connection to the platform        |
+| `disconnect()`   | `void`          | Close the connection and clean up resources           |
+| `chat()`         | `ChatClient`    | Get the chat client instance (created on first call)  |
+| `voice()`        | `VoiceClient`   | Get the voice client instance (created on first call) |
+| `isConnected()`  | `boolean`       | Check if the SDK is connected                         |
+| `getSessionId()` | `string         | null`                                                 | Get the current session ID |
+
+#### Static methods
+
+| Method                  | Returns    | Description                                                    |
+| ----------------------- | ---------- | -------------------------------------------------------------- |
+| `AgentSDK.init(config)` | `AgentSDK` | Create and store an SDK instance globally (for web components) |
+
+#### Events
+
+| Event          | Payload                 | Description                      |
+| -------------- | ----------------------- | -------------------------------- |
+| `connected`    | `void`                  | WebSocket connection established |
+| `disconnected` | `void`                  | WebSocket connection closed      |
+| `error`        | `{ error: Error }`      | Connection or runtime error      |
+| `sessionStart` | `{ sessionId: string }` | New session started              |
+| `sessionEnd`   | `void`                  | Session ended                    |
+
+```typescript
+sdk.on('connected', () => {
+  console.log('Connected to platform');
+});
+
+sdk.on('error', ({ error }) => {
+  console.error('SDK error:', error.message);
+});
+
+sdk.on('sessionStart', ({ sessionId }) => {
+  console.log('Session started:', sessionId);
+});
+```
+
+---
+
+### ChatClient
+
+Handles text messaging with streaming support. Obtained via `sdk.chat()`.
+
+#### Methods
+
+| Method                   | Returns           | Description                                         |
+| ------------------------ | ----------------- | --------------------------------------------------- |
+| `send(text, options?)`   | `Promise<string>` | Send a message. Returns the message ID              |
+| `uploadAttachment(file)` | `Promise<string>` | Upload a file attachment. Returns the attachment ID |
+| `getMessages()`          | `Message[]`       | Get all messages in the conversation                |
+| `getIsTyping()`          | `boolean`         | Check if the agent is currently responding          |
+| `clearMessages()`        | `void`            | Clear the local message history                     |
+
+#### send() options
+
+```typescript
+interface SendMessageOptions {
+  /** Pre-uploaded attachment IDs to include with the message */
+  attachmentIds?: string[];
+  /** Optional per-message metadata for the current turn only */
+  metadata?: Record<string, unknown>;
+}
+```
+
+##### Example: send with attachments
+
+```typescript
+const chat = sdk.chat();
+
+// Upload a file first
+const attachmentId = await chat.uploadAttachment(fileInput.files[0]);
+
+// Send message with attachment
+await chat.send('Please analyze this document', {
+  attachmentIds: [attachmentId],
+});
+```
+
+##### Example: send with per-message metadata
+
+```typescript
+await chat.send('Look up this account', {
+  metadata: {
+    accountId: 'acct_123',
+    context: { tier: 'gold' },
+  },
+});
+```
+
+Per-message metadata is validated server-side and is available only for that turn. Use `session.messageMetadata` as the canonical prompt/template path. `message_metadata` remains available as the tool-context alias for `context_access.read`.
+
+#### Events
+
+| Event                | Payload                                      | Description                              |
+| -------------------- | -------------------------------------------- | ---------------------------------------- |
+| `message`            | `Message`                                    | New message received (user or assistant) |
+| `messageChunk`       | `{ messageId: string, chunk: string }`       | Streaming text chunk from assistant      |
+| `typing`             | `{ isTyping: boolean }`                      | Agent typing indicator changed           |
+| `messageSent`        | `{ messageId: string }`                      | User message was sent                    |
+| `attachmentUploaded` | `{ attachmentId: string, filename: string }` | File upload completed                    |
+| `attachmentError`    | `{ filename: string, error: string }`        | File upload failed                       |
+| `error`              | `{ error: Error }`                           | Chat error                               |
+
+```typescript
+const chat = sdk.chat();
+
+chat.on('message', (msg) => {
+  if (msg.role === 'assistant') {
+    console.log('Agent:', msg.content);
+    if (msg.richContent?.markdown) {
+      renderMarkdown(msg.richContent.markdown);
+    }
+    if (msg.actions) {
+      renderActions(msg.actions);
+    }
+  }
+});
+
+chat.on('messageChunk', ({ messageId, chunk }) => {
+  appendToMessage(messageId, chunk);
+});
+
+chat.on('typing', ({ isTyping }) => {
+  showTypingIndicator(isTyping);
+});
+```
+
+#### Message type
+
+```typescript
+interface Message {
+  id: string;
+  role: 'user' | 'assistant' | 'system';
+  content: string;
+  timestamp: Date;
+  metadata?: Record<string, unknown>;
+  richContent?: RichContent;
+  actions?: ActionSet;
+  attachments?: AttachmentRef[];
+}
+```
+
+#### RichContent type
+
+Multi-format content variants delivered alongside the plain text response:
+
+```typescript
+interface RichContent {
+  markdown?: string;
+  adaptive_card?: string;
+  html?: string;
+  slack?: string;
+  ag_ui?: string;
+  whatsapp?: string;
+}
+```
+
+#### ActionSet type
+
+Interactive action elements the agent sends for user input:
+
+```typescript
+interface ActionSet {
+  elements: ActionElement[];
+  submit_label?: string;
+  submit_id?: string;
+}
+
+interface ActionElement {
+  id: string;
+  type: 'button' | 'select' | 'input';
+  label: string;
+  value?: string;
+  description?: string;
+  options?: Array<{ id: string; label: string; description?: string }>;
+  input_type?: 'text' | 'number' | 'date' | 'time' | 'email';
+  placeholder?: string;
+  required?: boolean;
+}
+```
+
+#### AttachmentRef type
+
+```typescript
+interface AttachmentRef {
+  id: string;
+  filename: string;
+  mimeType: string;
+  sizeBytes: number;
+  category: 'image' | 'document' | 'audio' | 'video';
+}
+```
+
+---
+
+### VoiceClient
+
+Handles voice interactions via WebSocket audio pipeline with optional WebRTC. Obtained via `sdk.voice()`.
+
+The voice client supports two modes:
+
+- **Pipeline mode**: Client-side VAD (Voice Activity Detection) captures PCM16 audio, sends it via WebSocket for server-side STT/LLM/TTS processing, and plays back MP3 audio responses.
+- **Realtime mode**: Native audio I/O via realtime LLM providers with PCM16 streaming.
+
+#### Methods
+
+| Method         | Returns         | Description                                              |
+| -------------- | --------------- | -------------------------------------------------------- |
+| `start()`      | `Promise<void>` | Start voice interaction (requests microphone permission) |
+| `stop()`       | `void`          | Stop voice interaction and release audio resources       |
+| `toggleMute()` | `boolean`       | Toggle microphone mute. Returns the new mute state       |
+| `getState()`   | `VoiceState`    | Get the current voice state                              |
+| `getInfo()`    | `VoiceInfo`     | Get full voice status information                        |
+
+#### Static methods
+
+| Method                      | Returns   | Description                                  |
+| --------------------------- | --------- | -------------------------------------------- |
+| `VoiceClient.isSupported()` | `boolean` | Check if the browser supports voice features |
+
+#### Voice states
+
+```typescript
+type VoiceState =
+  | 'idle' // Not active
+  | 'connecting' // Establishing connection
+  | 'ready' // Connected, waiting for speech
+  | 'listening' // Detecting speech
+  | 'processing' // Processing user speech
+  | 'speaking' // Playing agent response
+  | 'error'; // Error state
+```
+
+#### VoiceInfo type
+
+```typescript
+interface VoiceInfo {
+  state: VoiceState;
+  isMuted: boolean;
+  currentTranscript: string;
+  hasMicPermission?: boolean;
+}
+```
+
+#### VoiceClientOptions
+
+```typescript
+interface VoiceClientOptions {
+  enableBargeIn?: boolean; // Default: true
+  sampleRate?: number; // Default: 16000
+  deviceId?: string; // Specific audio input device
+  vadConfig?: {
+    positiveSpeechThreshold?: number;
+    negativeSpeechThreshold?: number;
+    redemptionMs?: number;
+    minSpeechMs?: number;
+    preSpeechPadMs?: number;
+  };
+}
+```
+
+#### Events
+
+| Event                 | Payload                                                   | Description                   |
+| --------------------- | --------------------------------------------------------- | ----------------------------- |
+| `stateChange`         | `{ state: VoiceState, previousState: VoiceState }`        | Voice state changed           |
+| `transcription`       | `{ text: string, isFinal: boolean, confidence?: number }` | Speech-to-text result         |
+| `transcriptionFinal`  | `{ text: string, confidence: number }`                    | Final transcription           |
+| `responseStart`       | `{ messageId: string }`                                   | Agent started speaking        |
+| `responseChunk`       | `{ messageId: string, text: string }`                     | Agent speech text chunk       |
+| `responseEnd`         | `{ messageId: string, text: string }`                     | Agent finished speaking       |
+| `speaking`            | `{ isSpeaking: boolean }`                                 | Audio playback state changed  |
+| `volumeChange`        | `{ level: number }`                                       | Microphone volume level (0-1) |
+| `ready`               | `void`                                                    | Voice client is ready         |
+| `error`               | `{ error: Error }`                                        | Voice error                   |
+| `micPermissionDenied` | `void`                                                    | Microphone permission denied  |
+| `bargeIn`             | `void`                                                    | User interrupted agent speech |
+| `vadAvailable`        | `{ available: boolean }`                                  | VAD availability changed      |
+
+##### Voice interaction example
+
+```typescript
+const voice = sdk.voice();
+
+voice.on('stateChange', ({ state }) => {
+  updateUI(state);
+});
+
+voice.on('transcription', ({ text, isFinal }) => {
+  updateTranscript(text, isFinal);
+});
+
+voice.on('responseEnd', ({ text }) => {
+  console.log('Agent said:', text);
+});
+
+voice.on('error', ({ error }) => {
+  console.error('Voice error:', error.message);
+});
+
+// Start listening
+await voice.start();
+
+// Mute/unmute
+const isMuted = voice.toggleMute();
+```
+
+---
+
+### React hooks
+
+The React integration provides a context provider and hooks for state management.
+
+#### AgentProvider
+
+Wrap your application with `AgentProvider` to initialize the SDK:
+
+```tsx
+import { AgentProvider } from '@agent-platform/web-sdk/react';
+
+<AgentProvider
+  projectId="your-project-id"
+  apiKey="pk_your-public-key"
+  endpoint="https://api.ablplatform.com"
+  debug={false}
+>
+  {children}
+</AgentProvider>;
+```
+
+#### useAgent()
+
+Access the full SDK context:
+
+```typescript
+const {
+  sdk, // AgentSDK | null
+  isConnected, // boolean
+  sessionId, // string | null
+  error, // Error | null
+  chat, // ChatClient | null
+  messages, // Message[]
+  isTyping, // boolean
+  sendMessage, // (text: string) => Promise<void>
+  voice, // VoiceClient | null
+  voiceState, // VoiceState
+  startVoice, // () => Promise<void>
+  stopVoice, // () => void
+  toggleMute, // () => boolean
+  isMuted, // boolean
+} = useAgent();
+```
+
+#### useChat()
+
+Access chat-specific state:
+
+```typescript
+const {
+  messages, // Message[]
+  isTyping, // boolean
+  sendMessage, // (text: string) => Promise<void>
+  isConnected, // boolean
+} = useChat();
+```
+
+##### Example
+
+```tsx
+import { useChat } from '@agent-platform/web-sdk/react';
+
+function ChatView() {
+  const { messages, isTyping, sendMessage, isConnected } = useChat();
+
+  const handleSend = async (text: string) => {
+    await sendMessage(text);
+  };
+
+  return (
+    <div>
+      {messages.map((msg) => (
+        <div key={msg.id} className={msg.role}>
+          {msg.content}
+        </div>
+      ))}
+      {isTyping && <div>Agent is typing...</div>}
+    </div>
+  );
+}
+```
+
+#### useVoice()
+
+Access voice-specific state:
+
+```typescript
+const {
+  voiceState, // VoiceState
+  startVoice, // () => Promise<void>
+  stopVoice, // () => void
+  toggleMute, // () => boolean
+  isMuted, // boolean
+  isConnected, // boolean
+} = useVoice();
+```
+
+##### Example
+
+```tsx
+import { useVoice } from '@agent-platform/web-sdk/react';
+
+function VoiceControls() {
+  const { voiceState, startVoice, stopVoice, toggleMute, isMuted } = useVoice();
+
+  return (
+    <div>
+      <p>Status: {voiceState}</p>
+      <button onClick={startVoice} disabled={voiceState !== 'idle'}>
+        Start
+      </button>
+      <button onClick={stopVoice} disabled={voiceState === 'idle'}>
+        Stop
+      </button>
+      <button onClick={toggleMute}>{isMuted ? 'Unmute' : 'Mute'}</button>
+    </div>
+  );
+}
+```
+
+---
+
+### File uploads
+
+Upload files for agent processing:
+
+```javascript
+const chat = sdk.chat();
+
+// Upload a file
+const file = new File(['content'], 'document.pdf', {
+  type: 'application/pdf',
+});
+const attachmentId = await chat.uploadAttachment(file);
+
+// Send message with attachment
+await chat.send('Please analyze this document', {
+  attachmentIds: [attachmentId],
+});
+```
+
+#### Supported file types
+
+- **Images:** JPEG, PNG, GIF, WebP, SVG
+- **Documents:** PDF, DOCX, XLSX, PPTX, TXT, CSV
+- **Audio:** MP3, WAV, OGG, M4A
+- **Video:** MP4, WebM
+
+#### Upload limits
+
+- Maximum file size: 25 MB per file
+- Maximum files per message: 10
+
+---
+
+### Styling and theming
+
+#### Widget theming
+
+Customize the web component appearance:
+
+```typescript
+interface WidgetTheme {
+  primaryColor?: string;
+  textColor?: string;
+  backgroundColor?: string;
+  borderRadius?: number;
+  fontFamily?: string;
+  darkMode?: boolean;
+}
+```
+
+Configure via attributes:
+
+```html
+<agent-widget
+  project-id="your-project-id"
+  api-key="pk_your-public-key"
+  mode="unified"
+  position="bottom-right"
+></agent-widget>
+```
+
+#### Widget positions
+
+- `bottom-right` (default)
+- `bottom-left`
+- `top-right`
+- `top-left`
+
+#### Widget modes
+
+- `chat` -- Text-only chat interface
+- `voice` -- Voice-only interface
+- `unified` -- Combined chat and voice interface
+
+---
+
+### TypedEventEmitter
+
+All SDK classes extend `TypedEventEmitter` for type-safe event handling:
+
+```typescript
+// Subscribe to events
+sdk.on('connected', callback);
+
+// Subscribe once
+sdk.once('connected', callback);
+
+// Unsubscribe
+sdk.off('connected', callback);
+
+// Remove all listeners
+sdk.removeAllListeners();
+```
+
+---
+
+### WebSocket message types
+
+The SDK communicates with the platform over WebSocket. These types are used internally but documented for advanced use cases.
+
+#### Server message types
+
+| Type             | Description                                                               |
+| ---------------- | ------------------------------------------------------------------------- |
+| `response_start` | Agent started generating a response                                       |
+| `response_chunk` | Incremental text from the agent                                           |
+| `response_end`   | Agent finished responding (includes `fullText`, `richContent`, `actions`) |
+| `error`          | Error occurred during processing                                          |
+| `session_start`  | New session established                                                   |
+| `session_end`    | Session ended                                                             |
+
+---
+
+### API key management
+
+Public API keys (`pk_` prefix) are scoped to a project and provide limited permissions for SDK usage. They are safe to expose in client-side code.
+
+#### Creating an API key
+
+1. Go to **Project > Settings > API Keys**.
+2. Click **Create API key**.
+3. Set the allowed origins (for CORS protection).
+4. Copy the key -- it is displayed only once.
+
+#### Origin restrictions
+
+Configure allowed origins to prevent unauthorized use of your API key:
+
+```json
+{
+  "allowedOrigins": ["https://your-app.example.com", "https://staging.your-app.example.com"]
+}
+```
+
+The runtime validates the `Origin` header on every SDK request and rejects requests from unlisted origins.
+
+---
+
+### Browser compatibility
+
+The SDK requires:
+
+- ES2020+ support
+- `fetch` API
+- `WebSocket` API
+- `MediaDevices` API (for voice features)
+- `AudioContext` API (for voice features)
+
+Voice features require HTTPS in production (microphone access requires a secure context).
+
+---
+
+## ABL SDK
+
+The ABL SDK (`@abl/core`) provides programmatic access to parse, validate, and serialize Agent Business Language (ABL) definitions. Use it to build tooling, CI/CD pipelines, and integrations that work with ABL agent specifications.
+
+### Installation
+
+```bash
+npm install @abl/core
+```
+
+The `@abl/compiler` package provides compilation to Intermediate Representation (IR) and validation:
+
+```bash
+npm install @abl/compiler
+```
+
+---
+
+### Parsing ABL
+
+The `parse()` function is the primary entry point. It auto-detects the document type and returns a parsed AST (Abstract Syntax Tree) along with any parse errors.
+
+#### parse(text, type?)
+
+Parse ABL text into a structured document.
+
+```typescript
+import { parse } from '@abl/core';
+
+const result = parse(`
+AGENT: support-agent
+
+ROLE:
+  You are a customer support agent.
+
+TOOLS:
+  - crm-lookup
+  - ticket-create
+`);
+
+if (result.errors.length > 0) {
+  console.error('Parse errors:', result.errors);
+} else {
+  console.log('Parsed document:', result.document);
+}
+```
+
+##### Parameters
+
+| Parameter | Type   | Required | Description                                                                      |
+| --------- | ------ | -------- | -------------------------------------------------------------------------------- |
+| `text`    | string | Yes      | ABL source text                                                                  |
+| `type`    | string | No       | Document type override: `supervisor`, `agent`, `agent-based`, `yaml`, or `tools` |
+
+##### Return type
+
+```typescript
+interface ParseResult<T> {
+  document: T | null;
+  errors: ParseError[];
+}
+```
+
+##### ParseError type
+
+```typescript
+interface ParseError {
+  message: string;
+  line?: number;
+  column?: number;
+  offset?: number;
+}
+```
+
+#### Auto-detection rules
+
+When `type` is not specified, `parse()` detects the document type from the content:
+
+| Content pattern                                     | Detected type |
+| --------------------------------------------------- | ------------- |
+| YAML format (lowercase keys like `agent:`, `flow:`) | `yaml`        |
+| Starts with `TOOLS:` (no `AGENT:` or `SUPERVISOR:`) | `tools`       |
+| Starts with `SUPERVISOR:`                           | `supervisor`  |
+| Starts with `AGENT:`                                | `agent`       |
+| Starts with `BEHAVIOR_PROFILE:`                     | `agent-based` |
+
+> **Note:** The parser also recognizes `MODE:` as a legacy keyword for backward compatibility. Definitions containing `MODE:` are detected as `agent-based` type but `MODE:` is deprecated and should not be used in new definitions. Use per-step `REASONING: true/false` within a `FLOW:` section instead.
+
+---
+
+### Validating ABL
+
+#### validate(text)
+
+Validate ABL text and return an array of errors. Returns an empty array if the text is valid.
+
+```typescript
+import { validate } from '@abl/core';
+
+const errors = validate(`
+AGENT: my-agent
+
+ROLE:
+  You are a helpful assistant.
+`);
+
+if (errors.length === 0) {
+  console.log('ABL is valid');
+} else {
+  errors.forEach((err) => {
+    console.error(`Line ${err.line}: ${err.message}`);
+  });
+}
+```
+
+##### Parameters
+
+| Parameter | Type   | Required | Description                 |
+| --------- | ------ | -------- | --------------------------- |
+| `text`    | string | Yes      | ABL source text to validate |
+
+##### Return type
+
+```typescript
+ParseError[]; // Empty array means valid
+```
+
+#### isValid(text)
+
+Quick boolean check for ABL validity.
+
+```typescript
+import { isValid } from '@abl/core';
+
+if (isValid(agentSource)) {
+  deployAgent(agentSource);
+}
+```
+
+---
+
+### Serializing ABL
+
+#### serialize(document)
+
+Convert a parsed AST document back to ABL text. Useful for programmatic modifications to agent definitions.
+
+```typescript
+import { parse, serialize } from '@abl/core';
+
+// Parse, modify, serialize
+const result = parse(originalSource);
+if (result.document) {
+  // Modify the AST...
+  const newSource = serialize(result.document);
+  console.log(newSource);
+}
+```
+
+---
+
+### Specialized parsers
+
+For advanced use cases, the SDK exposes type-specific parsers:
+
+#### parseAgent(text)
+
+Parse a standard agent definition.
+
+```typescript
+import { parseAgent } from '@abl/core';
+
+const result = parseAgent(agentSource);
+// result.document is AgentDocument | null
+```
+
+#### parseSupervisor(text)
+
+Parse a supervisor definition.
+
+```typescript
+import { parseSupervisor } from '@abl/core';
+
+const result = parseSupervisor(supervisorSource);
+// result.document is SupervisorDocument | null
+```
+
+#### parseAgentBasedABL(text)
+
+Parse an agent-based definition (legacy format with deprecated `MODE:` directive). For new definitions, use `parseAgent()` instead.
+
+```typescript
+import { parseAgentBasedABL } from '@abl/core';
+
+const result = parseAgentBasedABL(agentSource);
+// result.document is AgentBasedDocument | null
+```
+
+#### parseYamlABL(text)
+
+Parse a YAML-format ABL definition.
+
+```typescript
+import { parseYamlABL, isYamlFormat } from '@abl/core';
+
+if (isYamlFormat(source)) {
+  const result = parseYamlABL(source);
+  // result.document is AgentBasedDocument | null
+}
+```
+
+#### isYamlFormat(text)
+
+Check whether ABL text is in YAML format.
+
+```typescript
+import { isYamlFormat } from '@abl/core';
+
+const isYaml = isYamlFormat(source); // boolean
+```
+
+---
+
+### Expression parsing
+
+Parse and work with ABL condition expressions:
+
+#### parseCondition(text)
+
+Parse a condition expression used in ABL flow transitions.
+
+```typescript
+import { parseCondition } from '@abl/core';
+
+const condition = parseCondition("intent == 'billing' AND confidence > 0.8");
+```
+
+#### parseExpression(text)
+
+Parse a general ABL expression.
+
+```typescript
+import { parseExpression } from '@abl/core';
+
+const expr = parseExpression("customer.tier == 'premium'");
+```
+
+#### expressionToPython(expression)
+
+Convert a parsed ABL expression to Python syntax (used in runtime evaluation).
+
+```typescript
+import { parseExpression, expressionToPython } from '@abl/core';
+
+const expr = parseExpression("count > 3 AND status == 'active'");
+const python = expressionToPython(expr);
+// "count > 3 and status == 'active'"
+```
+
+---
+
+### Lexer utilities
+
+Access the tokenizer for building custom tooling:
+
+#### tokenize(text)
+
+Tokenize ABL text into a token stream.
+
+```typescript
+import { tokenize } from '@abl/core';
+
+const tokens = tokenize('AGENT: my-agent\nGOAL: Help users with their questions');
+```
+
+---
+
+### Compilation (IR)
+
+The `@abl/compiler` package compiles parsed ABL into an Intermediate Representation (IR) used by the runtime.
+
+#### compileABLtoIR(text, options?)
+
+Compile ABL source text directly to IR.
+
+```typescript
+import { compileABLtoIR } from '@abl/compiler';
+
+const ir = compileABLtoIR(agentSource);
+console.log('Compiled agents:', Object.keys(ir.agents));
+```
+
+#### validateABL(text)
+
+Validate ABL text with compiler-level checks (beyond parser validation).
+
+```typescript
+import { validateABL } from '@abl/compiler';
+
+const diagnostics = validateABL(agentSource);
+diagnostics.forEach((d) => {
+  console.log(`${d.severity}: ${d.message} (${d.code})`);
+});
+```
+
+#### validateIR(ir)
+
+Validate a compiled IR for semantic correctness.
+
+```typescript
+import { compileABLtoIR, validateIR } from '@abl/compiler';
+
+const ir = compileABLtoIR(agentSource);
+const diagnostics = validateIR(ir);
+```
+
+#### validateCrossAgentRefs(agents)
+
+Validate references between multiple agent definitions (handoffs, delegations).
+
+```typescript
+import { validateCrossAgentRefs } from '@abl/compiler';
+
+const diagnostics = validateCrossAgentRefs(compiledAgents);
+```
+
+#### validateFieldReferences(ir)
+
+Validate that field references in expressions point to defined fields.
+
+```typescript
+import { validateFieldReferences } from '@abl/compiler';
+
+const diagnostics = validateFieldReferences(ir);
+```
+
+#### ValidationDiagnostic type
+
+```typescript
+interface ValidationDiagnostic {
+  code: string;
+  message: string;
+  severity: 'error' | 'warning' | 'info';
+  line?: number;
+  column?: number;
+}
+```
+
+---
+
+### CI/CD integration example
+
+Validate all ABL files in a project before deployment:
+
+```typescript
+import { readdir, readFile } from 'fs/promises';
+import { parse, validate } from '@abl/core';
+import { validateABL, validateCrossAgentRefs } from '@abl/compiler';
+
+async function validateProject(agentsDir: string): Promise<boolean> {
+  const files = await readdir(agentsDir);
+  const ablFiles = files.filter((f) => f.endsWith('.abl'));
+
+  let hasErrors = false;
+  const allAgents = [];
+
+  for (const file of ablFiles) {
+    const source = await readFile(`${agentsDir}/${file}`, 'utf-8');
+
+    // Parser validation
+    const parseErrors = validate(source);
+    if (parseErrors.length > 0) {
+      console.error(`${file}: ${parseErrors.length} parse errors`);
+      parseErrors.forEach((e) => console.error(`  Line ${e.line}: ${e.message}`));
+      hasErrors = true;
+      continue;
+    }
+
+    // Compiler validation
+    const diagnostics = validateABL(source);
+    const errors = diagnostics.filter((d) => d.severity === 'error');
+    if (errors.length > 0) {
+      console.error(`${file}: ${errors.length} compilation errors`);
+      errors.forEach((e) => console.error(`  ${e.code}: ${e.message}`));
+      hasErrors = true;
+    }
+
+    const result = parse(source);
+    if (result.document) {
+      allAgents.push(result.document);
+    }
+  }
+
+  // Cross-agent reference validation
+  const crossRefDiagnostics = validateCrossAgentRefs(allAgents);
+  const crossErrors = crossRefDiagnostics.filter((d) => d.severity === 'error');
+  if (crossErrors.length > 0) {
+    console.error(`Cross-agent reference errors: ${crossErrors.length}`);
+    crossErrors.forEach((e) => console.error(`  ${e.code}: ${e.message}`));
+    hasErrors = true;
+  }
+
+  return !hasErrors;
+}
+
+// Usage in CI
+const isValid = await validateProject('./agents');
+process.exit(isValid ? 0 : 1);
+```
+
+---
+
+### Working with exported projects
+
+Combine the ABL SDK with the [Project export/import API](./knowledge-analytics-export#project-exportimport-api) to programmatically manipulate exported agent files:
+
+```typescript
+import { parse, serialize, validate } from '@abl/core';
+
+// Parse an exported agent file
+const agentSource = exportedFiles['agents/support-agent.abl'];
+const result = parse(agentSource);
+
+if (result.document && result.errors.length === 0) {
+  // Validate before importing
+  const errors = validate(agentSource);
+  if (errors.length === 0) {
+    console.log('Agent is valid and ready for import');
+  }
+}
+```
+
+### TypeScript support
+
+Both `@abl/core` and `@abl/compiler` ship with full TypeScript type definitions. Key types are exported directly:
+
+```typescript
+import type { ParseResult, ParseError } from '@abl/core';
+import type {
+  IRCompilationOutput,
+  AgentIR,
+  SupervisorIR,
+  ValidationDiagnostic,
+  CompilerOptions,
+} from '@abl/compiler';
+```
+
+## Next steps
+
+- [Channels](./channels) -- Configure SDK channels and widget settings
+- [Conversation API](./conversation-api) -- REST API for server-side chat integration
+- [API overview](./api-overview) -- Authentication and general conventions

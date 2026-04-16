@@ -1,0 +1,574 @@
+---
+title: 'Adding Structured Steps to Agents'
+section: 'guides'
+order: 2
+description: 'Any agent can include a `FLOW` section with structured steps for deterministic, step-by-step control over the conversation path. Use steps for booking flows, order tracking, data collection wizards, a'
+---
+
+# Adding Structured Steps to Agents
+
+Any agent can include a `FLOW` section with structured steps for deterministic, step-by-step control over the conversation path. Use steps for booking flows, order tracking, data collection wizards, and any workflow that needs predictable branching. Adding a FLOW section does not change what kind of agent it is -- it is still the same agent, with structured steps added for parts of the conversation that benefit from deterministic control.
+
+## Create an Agent with a Flow
+
+### Define the flow
+
+```abl
+AGENT: Order_Tracker
+GOAL: "Help customers look up and track their orders"
+
+PERSONA: |
+  Efficient order specialist. Provides clear status updates.
+  Empathetic when orders are delayed.
+
+TOOLS:
+  lookup_order(order_id: string) -> {order_id: string, status: string, tracking_number: string, estimated_delivery: string}
+    description: "Look up an order by ID"
+
+  get_shipping_details(tracking_number: string) -> {carrier: string, status: string, location: string, history: object[]}
+    description: "Get shipping and tracking information"
+
+FLOW:
+  entry_point: ask_order_id
+
+  steps:
+    - ask_order_id
+    - lookup
+    - show_status
+    - shipping_details
+
+  ask_order_id:
+    REASONING: false
+    GATHER:
+      - order_id:
+          prompt: "What is your order number? (Format: ORD-XXXXX)"
+          type: string
+          required: true
+    THEN: lookup
+
+  lookup:
+    REASONING: false
+    CALL: lookup_order(order_id)
+    ON_SUCCESS:
+      SET: tracking_number = result.tracking_number
+      THEN: show_status
+    ON_FAIL:
+      RESPOND: "I could not find that order. Please check the number and try again."
+      THEN: ask_order_id
+
+  show_status:
+    REASONING: false
+    RESPOND: |
+      Order: {{order_id}}
+      Status: {{status}}
+      Estimated delivery: {{estimated_delivery}}
+
+      Would you like shipping details?
+    ON_INPUT:
+      - IF: input contains "yes" OR input contains "shipping" OR input contains "track"
+        THEN: shipping_details
+      - ELSE:
+        THEN: COMPLETE
+
+  shipping_details:
+    REASONING: false
+    CALL: get_shipping_details(tracking_number)
+    ON_SUCCESS:
+      RESPOND: |
+        Carrier: {{carrier}}
+        Current location: {{location}}
+        Status: {{status}}
+      THEN: COMPLETE
+    ON_FAIL:
+      RESPOND: "Shipping details are unavailable right now."
+      THEN: COMPLETE
+
+COMPLETE:
+  - WHEN: order_status_shown == true
+    RESPOND: "Is there anything else I can help with?"
+```
+
+Each step in this flow sets `REASONING: false` for deterministic execution -- the agent follows the defined path rather than reasoning autonomously. The `THEN` keyword defines the next step. `ON_INPUT` branches based on user responses.
+
+### Key flow constructs
+
+**Entry point:**
+
+```abl
+FLOW:
+  entry_point: welcome
+```
+
+If omitted, the first step in the `steps` list is the entry point.
+
+**Step list shorthand:**
+
+```abl
+FLOW:
+  welcome -> collect_info -> process -> confirm
+```
+
+This shorthand declares the step order. You still define each step separately.
+
+**Tool calls with branching:**
+
+```abl
+process_payment:
+  REASONING: false
+  CALL: charge_card(card_number, amount)
+  ON_SUCCESS:
+    RESPOND: "Payment of ${{amount}} processed."
+    THEN: confirmation
+  ON_FAIL:
+    RESPOND: "Payment failed. Try a different card?"
+    THEN: collect_payment
+```
+
+**Conditional branching on input:**
+
+```abl
+choose_action:
+  REASONING: false
+  ON_INPUT:
+    - IF: input contains "track"
+      THEN: tracking_flow
+    - IF: input contains "cancel"
+      THEN: cancel_flow
+    - IF: input contains "return"
+      THEN: return_flow
+    - ELSE:
+      RESPOND: "Please choose: track, cancel, or return."
+      THEN: choose_action
+```
+
+### Flow with SET assignments
+
+```abl
+calculate_total:
+  REASONING: false
+  SET: nights = checkout_date - checkin_date
+  SET: total = room_price * nights
+  RESPOND: "Your total for {{nights}} nights is ${{total}}."
+  THEN: confirm_booking
+```
+
+### Flow with MAX_ATTEMPTS
+
+```abl
+verify_identity:
+  REASONING: false
+  MAX_ATTEMPTS: 3
+  ON_EXHAUSTED: escalate_to_human
+  GATHER:
+    - ssn_last_four:
+        prompt: "Last 4 digits of your SSN?"
+        type: string
+        required: true
+  CALL: verify_identity(ssn_last_four)
+  ON_SUCCESS:
+    THEN: authenticated
+  ON_FAIL:
+    RESPOND: "That did not match. Please try again."
+    THEN: verify_identity
+```
+
+### Troubleshooting
+
+- **Flow skips a step:** Verify every step has a `THEN` pointing to the correct next step. Missing `THEN` causes the flow to end.
+- **User input not matched:** `ON_INPUT` conditions are evaluated top-to-bottom. Place more specific conditions before general ones, and always include an `ELSE` branch.
+- **Step runs twice:** Check for circular `THEN` references. Use `THEN: COMPLETE` to exit the flow.
+
+## Mix Reasoning and Deterministic Steps
+
+Within a single flow, you can combine deterministic steps (`REASONING: false`) with reasoning steps (`REASONING: true`). This lets you use deterministic control for data collection and confirmations, while leveraging LLM autonomy for open-ended research or analysis.
+
+### Add a reasoning step inside a flow
+
+```abl
+AGENT: Travel_Advisor
+GOAL: "Help users plan trips by collecting preferences and then researching options autonomously"
+
+PERSONA: "Knowledgeable travel advisor with a conversational style"
+
+TOOLS:
+  search_flights(origin: string, destination: string, date: string) -> {flights: object[]}
+    description: "Search for available flights"
+  search_hotels(destination: string, checkin: date, checkout: date) -> {hotels: object[]}
+    description: "Search for available hotels"
+  get_weather(location: string) -> {forecast: string, temp: number}
+    description: "Get weather forecast for a destination"
+
+FLOW:
+  steps:
+    - collect_preferences
+    - research_options
+    - present_plan
+    - confirm
+
+  collect_preferences:
+    REASONING: false
+    GATHER:
+      - destination: required
+        prompt: "Where would you like to go?"
+      - travel_dates: required
+        type: date
+        prompt: "What are your travel dates?"
+      - budget: required
+        type: string
+        prompt: "What is your budget range?"
+    THEN: research_options
+
+  research_options:
+    REASONING: true
+    GOAL: |
+      Research travel options for {{destination}} on {{travel_dates}}
+      within a {{budget}} budget. Search flights, hotels, and check weather.
+      Compile a recommended itinerary with options at different price points.
+    AVAILABLE_TOOLS: [search_flights, search_hotels, get_weather]
+    EXIT_WHEN: itinerary_compiled == true
+    MAX_TURNS: 8
+    THEN: present_plan
+
+  present_plan:
+    REASONING: false
+    RESPOND: |
+      Here is your travel plan for {{destination}}:
+
+      {{compiled_itinerary}}
+
+      Would you like to proceed with booking, or adjust anything?
+    ON_INPUT:
+      - IF: input contains "book" OR input contains "yes"
+        THEN: confirm
+      - IF: input contains "change" OR input contains "adjust"
+        THEN: collect_preferences
+      - ELSE:
+        THEN: present_plan
+
+  confirm:
+    REASONING: false
+    RESPOND: "Booking confirmed. You will receive a confirmation email."
+    THEN: COMPLETE
+
+COMPLETE:
+  - WHEN: booking_confirmed == true
+    RESPOND: "Have a wonderful trip!"
+```
+
+The `research_options` step sets `REASONING: true`. Within that step, the LLM autonomously calls tools, reasons about results, and builds a response. `EXIT_WHEN` defines when the reasoning loop ends, and `MAX_TURNS` caps iterations.
+
+### Key properties for reasoning steps
+
+| Property           | Purpose                                               |
+| ------------------ | ----------------------------------------------------- |
+| `REASONING: true`  | Enable LLM autonomy for this step                     |
+| `GOAL`             | Step-specific goal (overrides agent-level goal)       |
+| `AVAILABLE_TOOLS`  | Subset of agent tools available in this step          |
+| `EXIT_WHEN`        | Condition to exit the reasoning loop                  |
+| `MAX_TURNS`        | Max reasoning cycles before forced exit (default: 10) |
+| `STEP_CONSTRAINTS` | Additional constraints for this reasoning zone        |
+
+### Reasoning step with constrained tools
+
+```abl
+analyze_data:
+  REASONING: true
+  GOAL: "Analyze the customer's transaction history and identify spending patterns"
+  AVAILABLE_TOOLS: [get_transactions, calculate_stats]
+  STEP_CONSTRAINTS:
+    - "Do not share raw transaction amounts -- only percentages and categories"
+    - "Limit analysis to the last 90 days"
+  EXIT_WHEN: analysis_complete == true
+  MAX_TURNS: 5
+  THEN: show_analysis
+```
+
+### Deterministic collection followed by reasoning analysis
+
+```abl
+FLOW:
+  steps:
+    - collect_symptoms
+    - diagnose
+    - recommend
+
+  collect_symptoms:
+    REASONING: false
+    GATHER:
+      - symptoms: required
+        prompt: "Describe the issue you are experiencing."
+      - device_model: required
+        prompt: "What device model are you using?"
+      - os_version: required
+        prompt: "What OS version is installed?"
+    THEN: diagnose
+
+  diagnose:
+    REASONING: true
+    GOAL: |
+      Diagnose the technical issue based on:
+      - Symptoms: {{symptoms}}
+      - Device: {{device_model}}
+      - OS: {{os_version}}
+      Search the knowledge base and run diagnostics.
+    AVAILABLE_TOOLS: [search_knowledge_base, run_diagnostic]
+    EXIT_WHEN: diagnosis_found == true
+    MAX_TURNS: 6
+    THEN: recommend
+
+  recommend:
+    REASONING: false
+    RESPOND: |
+      Diagnosis: {{diagnosis}}
+
+      Recommended fix: {{recommended_fix}}
+
+      Would you like me to walk you through the steps?
+    THEN: COMPLETE
+```
+
+### Troubleshooting
+
+- **Reasoning step ignores available tools:** Verify tool names in `AVAILABLE_TOOLS` exactly match the names in the `TOOLS` section.
+- **Reasoning step runs too long:** Set `MAX_TURNS` to a lower value (3-5 for focused tasks, 8-10 for research tasks).
+- **Reasoning step produces inconsistent results:** Add `STEP_CONSTRAINTS` to narrow the reasoning scope, and use a specific `GOAL` rather than relying on the agent-level goal.
+
+## NLU Intent Classification
+
+Define intents, entities, and categories in ABL to classify user messages and drive flow routing with structured understanding.
+
+### Define intents
+
+Add an `NLU` section to your agent definition with intent patterns:
+
+```abl
+AGENT: Customer_Support
+GOAL: "Route and resolve customer support requests"
+
+NLU:
+  intents:
+    - name: order_status
+      patterns:
+        - "where is my order"
+        - "track my package"
+        - "order status"
+        - "shipping update"
+      examples:
+        - "I ordered something last week and it hasn't arrived"
+        - "Can you check on order #12345?"
+        - "When will my delivery arrive?"
+      entities: [order_id]
+
+    - name: return_request
+      patterns:
+        - "return an item"
+        - "send something back"
+        - "refund request"
+      examples:
+        - "I want to return the shoes I bought"
+        - "This product is defective, I need a refund"
+      entities: [order_id, item_id, reason]
+
+    - name: billing_inquiry
+      patterns:
+        - "billing question"
+        - "charged incorrectly"
+        - "payment issue"
+      examples:
+        - "I was double charged on my last order"
+        - "Why is the amount different from what I expected?"
+```
+
+| Field        | Description                                            |
+| ------------ | ------------------------------------------------------ |
+| **name**     | Unique identifier for the intent                       |
+| **patterns** | Short phrases that characterize the intent             |
+| **examples** | Full example messages (provide 5-10 for best accuracy) |
+| **entities** | Entity types expected in messages matching this intent |
+
+### Define entities
+
+Entities extract structured data from user messages:
+
+```abl
+NLU:
+  entities:
+    - name: order_id
+      type: pattern
+      pattern: "#?\\d{5,8}"
+      validation: "Must be 5-8 digits, optionally prefixed with #"
+
+    - name: product_category
+      type: enum
+      values: ["electronics", "clothing", "home", "sports"]
+      synonyms:
+        electronics: ["tech", "gadgets", "devices"]
+        clothing: ["clothes", "apparel", "fashion"]
+        home: ["furniture", "household", "kitchen"]
+
+    - name: date
+      type: date
+
+    - name: amount
+      type: number
+
+    - name: location
+      type: location
+
+    - name: feedback
+      type: free_text
+```
+
+Supported entity types:
+
+| Type        | Extracts                                  | Configuration           |
+| ----------- | ----------------------------------------- | ----------------------- |
+| `enum`      | Predefined values with synonyms           | `values`, `synonyms`    |
+| `pattern`   | Regex-matched strings                     | `pattern`, `validation` |
+| `date`      | Date expressions ("tomorrow", "March 15") | Built-in                |
+| `number`    | Numeric values                            | Built-in                |
+| `location`  | Place names and addresses                 | Built-in                |
+| `free_text` | Unstructured text spans                   | Built-in                |
+
+### Define categories for routing
+
+Categories group intents for high-level routing in supervisors:
+
+```abl
+NLU:
+  categories:
+    - name: sales
+      patterns:
+        - "buying"
+        - "purchasing"
+        - "pricing"
+        - "discount"
+
+    - name: support
+      patterns:
+        - "help"
+        - "problem"
+        - "issue"
+        - "broken"
+
+    - name: account
+      patterns:
+        - "password"
+        - "login"
+        - "profile"
+        - "settings"
+```
+
+Use categories in supervisor routing:
+
+```abl
+HANDOFF:
+  - TO: Sales_Agent
+    WHEN: intent.category == "sales"
+
+  - TO: Support_Agent
+    WHEN: intent.category == "support"
+
+  - TO: Account_Agent
+    WHEN: intent.category == "account"
+```
+
+### Configure NLU models
+
+Specify which models handle intent classification:
+
+```abl
+NLU:
+  models:
+    fast: "gpt-4o-mini"
+    balanced: "claude-sonnet-4-5-20250929"
+```
+
+- **fast** -- used for initial classification when speed matters (e.g., routing decisions)
+- **balanced** -- used when accuracy is more important than latency (e.g., entity extraction)
+
+### Enable embeddings for semantic matching
+
+For more robust intent matching beyond keyword patterns:
+
+```abl
+NLU:
+  embeddings:
+    enabled: true
+    provider: "openai"
+    model: "text-embedding-3-small"
+    threshold: 0.75
+    cacheTtl: 3600
+```
+
+Embeddings compute semantic similarity between the user message and intent examples, catching paraphrases and variations that patterns miss.
+
+### Use intents in flow steps
+
+Reference classified intents in flow step conditions:
+
+```abl
+route_by_intent:
+  REASONING: false
+  THEN:
+    - IF: intent.name == "order_status"
+      THEN: check_order
+    - IF: intent.name == "return_request"
+      THEN: start_return
+    - ELSE:
+      THEN: general_help
+```
+
+### Load intents from external files
+
+For large intent libraries, reference an external file:
+
+```abl
+NLU:
+  intents:
+    - name: order_status
+      examplesFile: "training/order_status_examples.txt"
+```
+
+### Configure evaluation logging
+
+Track NLU accuracy for continuous improvement:
+
+```abl
+NLU:
+  evaluation:
+    logPredictions: true
+    abTest: true
+    confidenceThreshold: 0.7
+```
+
+- **logPredictions** -- log every intent classification for later analysis
+- **abTest** -- compare `fast` vs. `balanced` models and log accuracy differences
+- **confidenceThreshold** -- minimum confidence score to accept a classification (below this, the agent asks for clarification)
+
+### Troubleshooting
+
+- **Low classification accuracy:** Add more examples (10+ per intent). Ensure examples cover diverse phrasings. Enable embeddings for semantic matching.
+- **Intent confusion between similar intents:** Make patterns more distinct. Add negative examples. Increase the confidence threshold.
+- **Entity not being extracted:** Check the pattern regex for entity type `pattern`. For `enum` entities, add more synonyms.
+- **Classification too slow:** Use the `fast` model for routing decisions. Cache embedding results with `cacheTtl`.
+
+## Common Patterns
+
+**Start deterministic, add reasoning where needed.** Begin with all steps set to `REASONING: false` for predictable behavior, then selectively enable `REASONING: true` on steps that benefit from LLM autonomy (research, analysis, open-ended conversation).
+
+**Always include ELSE branches.** Every `ON_INPUT` block should have an `ELSE` branch to handle unexpected input. Without it, unmatched input leaves the user stranded.
+
+**Use COMPLETE_WHEN for data gates.** In GATHER steps, `COMPLETE_WHEN` ensures the flow does not advance until all required data is collected.
+
+**Keep reasoning steps focused.** Give each reasoning step a specific `GOAL` and a limited `AVAILABLE_TOOLS` list. Broad goals with many tools lead to unpredictable behavior.
+
+**Combine NLU with flow routing.** Use NLU intent classification at the entry point to route users into the correct flow, then use deterministic steps within each flow.
+
+## Related
+
+- [Building Agents](./building-reasoning-agents)
+- [Data Collection with GATHER](./data-collection-with-gather)
+- [Tools & Integrations](./tools-and-integrations)
+- [Multi-Agent Orchestration](./multi-agent-orchestration)
+- [FLOW (structured execution steps)](../abl-reference/flow)

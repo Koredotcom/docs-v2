@@ -1,0 +1,1533 @@
+---
+title: 'Channels'
+section: 'api-reference'
+order: 5
+description: 'The Agent Platform 2.0 delivers agent conversations through 20+ channels. Each channel has an adapter that normalizes inbound messages, delivers outbound responses, and handles platform-specific features li'
+---
+
+# Channels
+
+The Agent Platform 2.0 delivers agent conversations through 20+ channels. Each channel has an adapter that normalizes inbound messages, delivers outbound responses, and handles platform-specific features like interactive elements, threading, and media. For authentication and error handling conventions, see [API overview](./api-overview).
+
+## Channel architecture
+
+### Channel matrix
+
+| Channel             | Type       | Ingress      | Delivery      | Auth     | Rich output          | Threading | Media     | Streaming |
+| ------------------- | ---------- | ------------ | ------------- | -------- | -------------------- | --------- | --------- | --------- |
+| **Slack**           | Chat       | Webhook      | Async queue   | HMAC     | Yes (Block Kit)      | Yes       | Yes       | Yes       |
+| **Microsoft Teams** | Chat       | Webhook      | Async queue   | JWT      | Yes (Adaptive Cards) | Yes       | Yes       | Yes       |
+| **WhatsApp**        | Chat       | Webhook      | Async queue   | HMAC     | Yes (Interactive)    | No        | Yes       | No        |
+| **Messenger**       | Chat       | Webhook      | Async queue   | HMAC     | Yes (Templates)      | No        | Yes       | No        |
+| **Instagram**       | Chat       | Webhook      | Async queue   | HMAC     | Yes (Templates)      | No        | Yes       | No        |
+| **Telegram**        | Chat       | Webhook      | Async queue   | Token    | Yes (Keyboards)      | No        | Yes       | Yes       |
+| **LINE**            | Chat       | Webhook      | Async queue   | HMAC     | Yes                  | No        | Yes       | No        |
+| **Twilio SMS**      | Messaging  | Webhook      | Async queue   | HMAC     | No                   | No        | Yes (MMS) | No        |
+| **Email**           | Messaging  | SMTP         | Async queue   | None     | No                   | Yes       | Yes       | No        |
+| **Zendesk**         | Enterprise | Webhook      | Direct send   | HMAC     | Yes                  | Yes       | Yes       | No        |
+| **Genesys Cloud**   | Enterprise | Sync webhook | Sync response | Token    | Yes                  | No        | No        | No        |
+| **AudioCodes**      | Voice      | Webhook      | WebSocket     | Token    | No                   | No        | No        | No        |
+| **Kore VG**         | Voice      | WebSocket    | WebSocket     | Token    | No                   | No        | No        | Yes       |
+| **VXML**            | Voice      | Sync webhook | Sync response | Token    | No                   | No        | No        | No        |
+| **Voice (Twilio)**  | Voice      | Webhook      | WebSocket     | HMAC     | No                   | No        | No        | Yes       |
+| **Voice (LiveKit)** | Voice      | WebSocket    | WebSocket     | Token    | No                   | No        | No        | Yes       |
+| **Pipeline Voice**  | Voice      | WebSocket    | WebSocket     | Token    | No                   | No        | No        | Yes       |
+| **Web Chat**        | SDK        | WebSocket    | WebSocket     | SDK auth | Yes                  | No        | Yes       | Yes       |
+| **AG-UI**           | SDK        | WebSocket    | WebSocket     | SDK auth | Yes                  | No        | No        | Yes       |
+| **A2A**             | Protocol   | API          | Async queue   | API key  | No                   | No        | No        | Yes       |
+| **HTTP Async**      | API        | API          | Async queue   | API key  | No                   | No        | No        | No        |
+| **HTTP**            | API        | API          | Sync response | API key  | No                   | No        | No        | No        |
+| **API**             | API        | API          | Sync response | API key  | No                   | No        | No        | No        |
+
+### Adapter pattern
+
+Every channel follows the same adapter pattern:
+
+```
+External platform ──webhook/ws──> Channel Adapter ──normalize──> Inbound Queue
+                                                                      │
+                                                          Agent Runtime executes
+                                                                      │
+External platform <──send────── Channel Adapter <──transform── Outbound Queue
+```
+
+Each channel adapter implements the `ChannelAdapter` interface:
+
+- **`verifyRequest()`** -- Validates inbound request signatures (HMAC, JWT, token).
+- **`parseIncoming()`** -- Converts the platform-specific payload into a `NormalizedIncomingMessage`.
+- **`sendResponse()`** -- Delivers the agent's response through the channel.
+- **`transformOutput()`** -- Converts plain text and interactive actions into the channel's native format (Block Kit, Adaptive Cards, interactive messages, etc.).
+- **`sendTypingIndicator()`** -- Sends a "typing" signal on channels that support it.
+
+### Message normalization
+
+Every inbound message is normalized to a common structure:
+
+| Field                | Type   | Description                                                |
+| -------------------- | ------ | ---------------------------------------------------------- |
+| `externalMessageId`  | string | Unique message ID from the external platform               |
+| `externalSessionKey` | string | Conversation or thread identifier                          |
+| `text`               | string | Message text content                                       |
+| `metadata`           | object | Channel-specific metadata                                  |
+| `timestamp`          | Date   | Original message timestamp                                 |
+| `actionEvent`        | object | Interactive callback data (button clicks, menu selections) |
+
+### Processing pipeline
+
+1. **Inbound webhook** receives the raw payload.
+2. **Verification** validates the request signature using the channel connection's credentials.
+3. **Filtering** skips bot messages, irrelevant subtypes, and duplicate events.
+4. **Connection resolution** maps the external identifier to a tenant, project, and agent.
+5. **Normalization** converts the payload to the standard message format.
+6. **Enqueue** adds the message to the BullMQ inbound queue with idempotency keys.
+7. **Processing** the inbound worker picks up the job, creates or resumes a session, and runs the agent.
+8. **Delivery** the agent's response is transformed to the channel's native format and sent.
+
+### Common features
+
+#### Interactive elements
+
+Channels that support rich output can render interactive elements. Your agent uses the `ACTION_SET` construct in ABL to define buttons, menus, and input fields. The platform transforms these into the channel's native format:
+
+| ABL element | Slack            | Teams           | WhatsApp     | Messenger   | Telegram        |
+| ----------- | ---------------- | --------------- | ------------ | ----------- | --------------- |
+| Button      | Block Kit button | Action.Submit   | Reply button | Quick reply | Inline keyboard |
+| Select menu | Static select    | Input.ChoiceSet | List picker  | N/A         | Inline keyboard |
+| Text input  | Plain text input | Input.Text      | N/A          | N/A         | N/A             |
+
+#### Typing indicators
+
+Channels that support typing indicators show a "bot is typing" signal while the agent processes the message. Supported on: Microsoft Teams, Messenger, Instagram, LINE, Telegram, Web Chat, AG-UI, and SDK WebSocket.
+
+#### Media attachments
+
+Channels with media support can receive and send images, documents, audio, and video. File handling differs by channel:
+
+- **Inbound:** Files are downloaded and stored as attachments linked to the session.
+- **Outbound:** Files are uploaded to the channel's media API or sent as URLs.
+
+#### A2A per-message metadata
+
+Inbound A2A callers can attach turn-scoped custom metadata under `message.metadata.messageMetadata`.
+
+```json
+{
+  "message": {
+    "kind": "message",
+    "role": "user",
+    "parts": [{ "kind": "text", "text": "Look up this account" }],
+    "metadata": {
+      "messageMetadata": {
+        "accountId": "acct_123",
+        "context": { "tier": "gold" }
+      }
+    }
+  }
+}
+```
+
+This payload is validated server-side and is exposed only for the current turn. Use `session.messageMetadata` as the canonical prompt/template path. `message_metadata` remains available as the tool-context alias for `context_access.read`. The sibling key `message.metadata.history` remains reserved for forwarded conversation history in remote handoff flows.
+
+#### Webhook URLs
+
+Each webhook-capable channel connection generates a unique webhook URL:
+
+```
+https://api.ablplatform.com/api/v1/channels/{channelType}/webhook/{identifier}
+```
+
+For Meta channels (WhatsApp, Messenger, Instagram), a shared webhook URL with body-based routing is also supported:
+
+```
+https://api.ablplatform.com/api/v1/channels/{channelType}/webhook
+```
+
+---
+
+## Channel API
+
+Manage channel connections and SDK channel configurations for your projects.
+
+### Channel connections
+
+A channel connection links a channel type to a specific project and deployment. Each connection stores:
+
+- **Channel type** -- Which platform adapter to use.
+- **External identifier** -- The unique key for routing inbound messages (for example, Slack `team_id:app_id`).
+- **Encrypted credentials** -- API keys, tokens, and secrets for the platform.
+- **Agent binding** -- Which agent handles conversations on this channel.
+- **Deployment** -- Which deployment version to use (optional, defaults to latest).
+
+#### POST /api/projects/:projectId/channel-connections
+
+Create a new channel connection.
+
+**Auth required**: Yes
+
+#### GET /api/projects/:projectId/channel-connections
+
+List all channel connections for a project.
+
+**Auth required**: Yes
+
+#### PATCH /api/projects/:projectId/channel-connections/:id
+
+Update a channel connection.
+
+**Auth required**: Yes
+
+#### DELETE /api/projects/:projectId/channel-connections/:id
+
+Delete a channel connection.
+
+**Auth required**: Yes
+
+Or use the Studio UI at **Project > Channels**.
+
+---
+
+### Voice endpoints
+
+Voice endpoints handle Twilio-based voice calls, token generation, and call status management.
+
+**Base path**: `/api/v1/voice`
+
+#### GET /api/v1/voice/capabilities
+
+Check which voice services are configured and available.
+
+**Auth required**: Yes
+
+##### Response body
+
+| Field        | Type    | Description                               |
+| ------------ | ------- | ----------------------------------------- |
+| `twilio`     | boolean | Whether Twilio is configured              |
+| `deepgram`   | boolean | Whether Deepgram STT is configured        |
+| `elevenlabs` | boolean | Whether ElevenLabs TTS is configured      |
+| `fullVoice`  | boolean | Whether all voice services are configured |
+
+##### Example request
+
+```bash
+curl https://api.ablplatform.com/api/v1/voice/capabilities \
+  -H "Authorization: Bearer abl_sk-your-api-key"
+```
+
+##### Example response
+
+```json
+{
+  "twilio": true,
+  "deepgram": true,
+  "elevenlabs": true,
+  "fullVoice": true
+}
+```
+
+---
+
+#### POST /api/v1/voice/token
+
+Generate a Twilio access token for browser-based voice calls.
+
+**Auth required**: Yes
+
+##### Request body
+
+| Field       | Type   | Required | Description                   |
+| ----------- | ------ | -------- | ----------------------------- |
+| `sessionId` | string | Yes      | Session ID for the voice call |
+| `projectId` | string | No       | Project ID                    |
+
+##### Response body
+
+| Field       | Type   | Description                     |
+| ----------- | ------ | ------------------------------- |
+| `token`     | string | Twilio access token             |
+| `identity`  | string | Twilio identity for the session |
+| `sessionId` | string | Session ID                      |
+
+##### Example request
+
+```bash
+curl -X POST https://api.ablplatform.com/api/v1/voice/token \
+  -H "Authorization: Bearer abl_sk-your-api-key" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "sessionId": "sess_abc123",
+    "projectId": "proj_xyz"
+  }'
+```
+
+##### Example response
+
+```json
+{
+  "token": "eyJhbGciOiJIUzI1NiIs...",
+  "identity": "user-sess_abc123",
+  "sessionId": "sess_abc123"
+}
+```
+
+---
+
+#### POST /api/v1/voice/connect
+
+Twilio webhook endpoint called when a call connects. Returns TwiML instructions to stream media.
+
+**Auth required**: Twilio webhook signature verification
+
+This endpoint is called by Twilio, not by client applications.
+
+---
+
+#### POST /api/v1/voice/status
+
+Twilio status callback for call lifecycle events (initiated, ringing, in-progress, completed, failed).
+
+**Auth required**: Twilio webhook signature verification
+
+This endpoint is called by Twilio, not by client applications.
+
+---
+
+### LiveKit voice
+
+LiveKit endpoints provide real-time voice interaction using WebRTC.
+
+**Base path**: `/api/v1/livekit`
+
+#### GET /api/v1/livekit/capabilities
+
+Check whether LiveKit is configured and available.
+
+**Auth required**: Yes
+
+##### Response body
+
+| Field        | Type    | Description                                                    |
+| ------------ | ------- | -------------------------------------------------------------- |
+| `enabled`    | boolean | Whether LiveKit is enabled                                     |
+| `configured` | boolean | Whether LiveKit is fully configured (URL, API key, API secret) |
+
+##### Example request
+
+```bash
+curl https://api.ablplatform.com/api/v1/livekit/capabilities \
+  -H "Authorization: Bearer abl_sk-your-api-key"
+```
+
+##### Example response
+
+```json
+{
+  "enabled": true,
+  "configured": true
+}
+```
+
+---
+
+#### POST /api/v1/livekit/token
+
+Generate a LiveKit access token for joining a voice room. The platform creates a tenant-scoped room and optionally spawns an agent participant.
+
+**Auth required**: Yes
+
+##### Request body
+
+| Field          | Type   | Required | Description                                      |
+| -------------- | ------ | -------- | ------------------------------------------------ |
+| `sessionId`    | string | Yes      | Session ID (alphanumeric, max 128 characters)    |
+| `projectId`    | string | Yes      | Project ID (alphanumeric, max 128 characters)    |
+| `agentName`    | string | No       | Agent name (alphanumeric, max 64 characters)     |
+| `deploymentId` | string | No       | Deployment ID (alphanumeric, max 128 characters) |
+
+##### Response body
+
+| Field      | Type   | Description                 |
+| ---------- | ------ | --------------------------- |
+| `token`    | string | LiveKit access token        |
+| `roomName` | string | Tenant-scoped room name     |
+| `url`      | string | LiveKit server URL          |
+| `identity` | string | User identity for the token |
+
+##### Example request
+
+```bash
+curl -X POST https://api.ablplatform.com/api/v1/livekit/token \
+  -H "Authorization: Bearer abl_sk-your-api-key" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "sessionId": "sess_abc123",
+    "projectId": "proj_xyz",
+    "agentName": "voice-agent"
+  }'
+```
+
+##### Example response
+
+```json
+{
+  "token": "eyJhbGciOiJIUzI1NiIs...",
+  "roomName": "tenant_001-proj_xyz-sess_abc123",
+  "url": "wss://livekit.ablplatform.com",
+  "identity": "user-a1b2c3"
+}
+```
+
+##### Error responses
+
+| Status | Error                                     | Cause                                         |
+| ------ | ----------------------------------------- | --------------------------------------------- |
+| `400`  | Missing or invalid sessionId              | Invalid format or exceeds 128 characters      |
+| `400`  | Missing or invalid projectId              | Invalid format or exceeds 128 characters      |
+| `400`  | Invalid agentName                         | Exceeds 64 characters or invalid format       |
+| `403`  | Tenant context required                   | No tenant in authentication context           |
+| `429`  | Maximum concurrent voice sessions reached | Room limit exceeded                           |
+| `503`  | LiveKit not configured                    | LiveKit credentials not set up                |
+| `503`  | Voice credentials not found               | STT/TTS credentials not configured for tenant |
+
+---
+
+### SDK channels
+
+SDK channels configure embedded widget deployments for web, mobile, and API integration.
+
+**Base path**: `/api/projects/:projectId/sdk-channels`
+
+#### GET /api/projects/:projectId/sdk-channels
+
+List SDK channels for a project with pagination.
+
+**Auth required**: Yes
+**Permission**: `channel:read`
+
+##### Query parameters
+
+| Parameter | Type    | Default | Description              |
+| --------- | ------- | ------- | ------------------------ |
+| `limit`   | integer | `50`    | Items per page (max 200) |
+| `offset`  | integer | `0`     | Items to skip            |
+
+##### Response body
+
+```json
+{
+  "success": true,
+  "channels": [
+    {
+      "id": "ch_abc123",
+      "tenantId": "tenant_001",
+      "projectId": "proj_xyz",
+      "name": "Website Chat Widget",
+      "channelType": "web",
+      "deploymentId": "dep_456",
+      "publicApiKeyId": "pk_789",
+      "config": {},
+      "isActive": true,
+      "environment": "production",
+      "followEnvironment": true,
+      "createdAt": "2026-03-01T10:00:00.000Z",
+      "updatedAt": "2026-03-10T14:30:00.000Z"
+    }
+  ],
+  "pagination": {
+    "total": 1,
+    "limit": 50,
+    "offset": 0
+  }
+}
+```
+
+---
+
+#### POST /api/projects/:projectId/sdk-channels
+
+Create a new SDK channel.
+
+**Auth required**: Yes
+**Permission**: `channel:create`
+
+##### Request body
+
+| Field               | Type    | Required | Description                                                    |
+| ------------------- | ------- | -------- | -------------------------------------------------------------- |
+| `name`              | string  | Yes      | Channel name                                                   |
+| `channelType`       | string  | Yes      | Type: `web`, `mobile_ios`, `mobile_android`, `voice`, or `api` |
+| `publicApiKeyId`    | string  | Yes      | Public API key ID for the channel                              |
+| `deploymentId`      | string  | No       | Deployment to connect                                          |
+| `config`            | object  | No       | Channel-specific configuration                                 |
+| `environment`       | string  | No       | Environment: `dev`, `staging`, or `production`                 |
+| `followEnvironment` | boolean | No       | Track deployment environment changes (default: `true`)         |
+
+---
+
+#### GET /api/projects/:projectId/sdk-channels/:channelId
+
+Get SDK channel details.
+
+**Auth required**: Yes
+**Permission**: `channel:read`
+
+#### PATCH /api/projects/:projectId/sdk-channels/:channelId
+
+Update an SDK channel's configuration.
+
+**Auth required**: Yes
+**Permission**: `channel:update`
+
+#### DELETE /api/projects/:projectId/sdk-channels/:channelId
+
+Delete an SDK channel.
+
+**Auth required**: Yes
+**Permission**: `channel:delete`
+
+#### POST /api/projects/:projectId/sdk-channels/:channelId/token
+
+Generate a share or embed token for an SDK channel.
+
+**Auth required**: Yes
+**Permission**: `channel:create`
+
+---
+
+### Widget configuration
+
+Public endpoint for embedded widgets to retrieve their configuration.
+
+#### GET /api/v1/sdk/config/:projectId
+
+Get widget configuration for an embedded SDK integration. This is a public endpoint authenticated via API key.
+
+**Auth required**: `X-API-Key` header
+
+##### Response body
+
+| Field         | Type   | Description          |
+| ------------- | ------ | -------------------- |
+| `projectId`   | string | Project ID           |
+| `permissions` | object | API key permissions  |
+| `config`      | object | Widget configuration |
+
+Widget config object:
+
+| Field             | Type    | Description                                                              |
+| ----------------- | ------- | ------------------------------------------------------------------------ |
+| `mode`            | string  | Widget mode (`chat`, `voice`, `unified`)                                 |
+| `position`        | string  | Widget position (`bottom-right`, `bottom-left`, `top-right`, `top-left`) |
+| `theme`           | object  | Theme configuration (colors, fonts, etc.)                                |
+| `welcomeMessage`  | string  | Welcome message text                                                     |
+| `placeholderText` | string  | Input placeholder text                                                   |
+| `voiceEnabled`    | boolean | Whether voice is enabled                                                 |
+| `chatEnabled`     | boolean | Whether chat is enabled                                                  |
+
+##### Example request
+
+```bash
+curl https://api.ablplatform.com/api/v1/sdk/config/proj_xyz \
+  -H "X-API-Key: pk_your-public-key"
+```
+
+##### Example response
+
+```json
+{
+  "projectId": "proj_xyz",
+  "permissions": {
+    "chat": true,
+    "voice": false
+  },
+  "config": {
+    "mode": "chat",
+    "position": "bottom-right",
+    "theme": {
+      "primaryColor": "#4F46E5",
+      "darkMode": false
+    },
+    "welcomeMessage": "Hello! How can I help you today?",
+    "placeholderText": "Type a message...",
+    "voiceEnabled": false,
+    "chatEnabled": true
+  }
+}
+```
+
+---
+
+### Inbound webhooks
+
+External platforms (Slack, WhatsApp, Twilio SMS, etc.) deliver events to the platform via webhook endpoints.
+
+#### POST /api/v1/channels/:channelType/webhook
+
+Generic inbound webhook handler. The platform identifies the connection from the request body.
+
+#### POST /api/v1/channels/:channelType/webhook/:connectionIdentifier
+
+Explicit webhook handler with the connection identifier in the URL path.
+
+These endpoints are called by external platforms, not by client applications. The platform:
+
+1. Looks up the channel adapter from the registry
+2. Handles verification challenges (e.g., Slack `url_verification`)
+3. Filters events (skips bot messages, etc.)
+4. Resolves the channel connection to a tenant and project
+5. Verifies the request signature using per-connection secrets
+6. Normalizes the message format
+7. Enqueues the message for processing
+8. Returns `200` to acknowledge receipt
+
+Supported channel types include `slack`, `whatsapp`, `messenger`, `twilio_sms`, and others registered in the channel manifest.
+
+---
+
+## REST API integration
+
+For server-to-server integrations, custom clients, and environments where WebSocket connections are unavailable, you can interact with ABL agents directly through the REST API without using the Web SDK.
+
+### Session management
+
+Sessions are created implicitly on the first message or explicitly via the API:
+
+```bash
+curl -X POST https://api.ablplatform.com/api/v1/chat/send \
+  -H "Authorization: Bearer your-token" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "projectId": "project-123",
+    "message": "I need help with my account"
+  }'
+```
+
+Include the `sessionId` to continue an existing conversation:
+
+```bash
+curl -X POST https://api.ablplatform.com/api/v1/chat/send \
+  -H "Authorization: Bearer your-token" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "sessionId": "sess_abc123",
+    "message": "I want to update my email address"
+  }'
+```
+
+End a session explicitly:
+
+```bash
+curl -X POST https://api.ablplatform.com/api/v1/sessions/sess_abc123/end \
+  -H "Authorization: Bearer your-token"
+```
+
+### Message patterns
+
+#### Synchronous (request-response)
+
+The default pattern returns the full response in a single HTTP response:
+
+```bash
+curl -X POST https://api.ablplatform.com/api/v1/chat/send \
+  -H "Authorization: Bearer your-token" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "sessionId": "sess_abc123",
+    "message": "What are your business hours?"
+  }'
+```
+
+#### Streaming (SSE)
+
+For real-time streaming, use the SSE endpoint:
+
+```bash
+curl -N -X POST https://api.ablplatform.com/api/v1/chat/stream \
+  -H "Authorization: Bearer your-token" \
+  -H "Content-Type: application/json" \
+  -H "Accept: text/event-stream" \
+  -d '{
+    "sessionId": "sess_abc123",
+    "message": "Explain how multi-agent orchestration works"
+  }'
+```
+
+SSE events:
+
+```
+event: chunk
+data: {"messageId":"msg_xyz","text":"Multi-agent","done":false}
+
+event: chunk
+data: {"messageId":"msg_xyz","text":" orchestration","done":false}
+
+event: done
+data: {"messageId":"msg_xyz","text":"Multi-agent orchestration allows...","done":true}
+```
+
+#### Async (webhook callback)
+
+For long-running interactions, use the async HTTP channel:
+
+1. Create an HTTP Async channel connection with your callback URL.
+2. Send messages to the async endpoint.
+3. Receive responses at your webhook URL.
+
+```bash
+# Send async message
+curl -X POST https://api.ablplatform.com/api/v1/channels/http_async/send \
+  -H "X-API-Key: ak_your_api_key" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "connectionId": "conn_123",
+    "message": "Generate a comprehensive report on Q4 sales"
+  }'
+```
+
+Your webhook receives:
+
+```json
+{
+  "eventType": "agent.response",
+  "sessionId": "sess_abc123",
+  "messageId": "msg_xyz",
+  "text": "Here is the Q4 sales report...",
+  "metadata": {}
+}
+```
+
+### Best practices
+
+1. **Reuse sessions** -- Create a session once and reuse the `sessionId` for follow-up messages. Do not create a new session per message.
+2. **Handle streaming** -- Use SSE streaming for user-facing integrations to provide real-time feedback.
+3. **Implement retries** -- Use exponential backoff for 429 and 503 responses.
+4. **Validate API keys** -- Rotate API keys regularly and use the minimum scope needed.
+5. **Set timeouts** -- Configure client-side timeouts. Agent responses with tool calls can take 30+ seconds.
+
+---
+
+## Chat channels
+
+Connect your ABL agents to popular messaging platforms. Each channel integration handles authentication, message normalization, interactive elements, and delivery.
+
+### Slack
+
+#### Capabilities
+
+| Feature                 | Supported              |
+| ----------------------- | ---------------------- |
+| Rich output (Block Kit) | Yes                    |
+| Threading               | Yes                    |
+| Media attachments       | Yes                    |
+| Streaming               | Yes                    |
+| Typing indicator        | No                     |
+| Interactive elements    | Buttons, menus, modals |
+
+#### Setup
+
+1. Create a Slack app at [api.slack.com/apps](https://api.slack.com/apps).
+2. Enable **Event Subscriptions** and **Interactivity & Shortcuts**.
+3. Add bot scopes: `chat:write`, `app_mentions:read`, `im:history`, `im:read`, `im:write`.
+4. Install the app to your Slack workspace.
+5. In ABL Studio, go to **Project > Channels > Add Channel > Slack**.
+6. Enter the credentials:
+   - **Bot token** -- Starts with `xoxb-`
+   - **Signing secret** -- From your app's Basic Information page
+7. Copy the generated webhook URL and paste it into Slack's Event Subscriptions Request URL.
+
+#### Webhook URL formats
+
+**Generic (body-based routing):**
+
+```
+https://api.ablplatform.com/api/v1/channels/slack/webhook
+```
+
+**Explicit identifier (recommended for multi-workspace):**
+
+```
+https://api.ablplatform.com/api/v1/channels/slack/webhook/{team_id}:{app_id}
+```
+
+**Slash commands:**
+
+```
+https://api.ablplatform.com/api/v1/channels/slack/slash/{team_id}:{app_id}
+```
+
+#### Rich output
+
+ABL action sets are transformed into Slack Block Kit:
+
+```abl
+SAY "Choose a department:"
+ACTION_SET
+  BUTTON id="sales" label="Sales"
+  BUTTON id="support" label="Support"
+  BUTTON id="billing" label="Billing"
+```
+
+Renders as Block Kit buttons in Slack.
+
+---
+
+### Microsoft Teams
+
+#### Capabilities
+
+| Feature                      | Supported          |
+| ---------------------------- | ------------------ |
+| Rich output (Adaptive Cards) | Yes                |
+| Threading                    | Yes                |
+| Media attachments            | Yes                |
+| Streaming                    | Yes                |
+| Typing indicator             | Yes                |
+| Interactive elements         | Cards with actions |
+
+#### Setup
+
+1. Register a bot in the [Azure Bot Service](https://portal.azure.com).
+2. Create an Azure AD app registration for the bot.
+3. Note the **Application (client) ID**, **Client secret**, and **Tenant ID**.
+4. In ABL Studio, go to **Project > Channels > Add Channel > Microsoft Teams**.
+5. Enter the credentials:
+   - **App ID** -- Azure AD application ID
+   - **Client secret** -- Azure AD client secret
+   - **Tenant ID** -- Azure AD tenant ID (or `common` for multi-tenant)
+6. Copy the webhook URL and configure it as the bot's messaging endpoint in Azure.
+
+#### Webhook URL
+
+```
+https://api.ablplatform.com/api/v1/channels/msteams/webhook/{app_id}
+```
+
+#### Rich output
+
+ABL action sets are transformed into Adaptive Cards:
+
+```abl
+SAY "Please select your issue type:"
+ACTION_SET
+  SELECT id="issue_type" label="Issue type"
+    OPTION id="bug" label="Bug report"
+    OPTION id="feature" label="Feature request"
+    OPTION id="question" label="General question"
+```
+
+---
+
+### WhatsApp
+
+#### Capabilities
+
+| Feature                   | Supported                   |
+| ------------------------- | --------------------------- |
+| Rich output (Interactive) | Yes                         |
+| Threading                 | No                          |
+| Media attachments         | Yes                         |
+| Streaming                 | No                          |
+| Typing indicator          | No                          |
+| Interactive elements      | Reply buttons, list pickers |
+
+#### Providers
+
+WhatsApp supports multiple Business Solution Providers:
+
+| Provider                 | Setup source        | Webhook format                              |
+| ------------------------ | ------------------- | ------------------------------------------- |
+| Meta Cloud API (default) | Meta Business Suite | `/api/v1/channels/whatsapp/webhook`         |
+| Infobip                  | Infobip portal      | `/api/v1/channels/whatsapp/infobip/webhook` |
+| Gupshup                  | Gupshup dashboard   | `/api/v1/channels/whatsapp/gupshup/webhook` |
+| Netcore                  | Netcore portal      | `/api/v1/channels/whatsapp/netcore/webhook` |
+
+#### Setup (Meta Cloud API)
+
+1. Create a Meta Business App at [developers.facebook.com](https://developers.facebook.com).
+2. Add the WhatsApp product to your app.
+3. Generate a permanent access token.
+4. In ABL Studio, go to **Project > Channels > Add Channel > WhatsApp**.
+5. Enter the credentials:
+   - **Access token** -- Permanent token from Meta
+   - **App secret** -- From your app's Basic Settings
+   - **Verify token** -- A string you define for webhook verification
+6. Copy the webhook URL and configure it in Meta's webhook settings.
+7. Subscribe to the `messages` webhook field.
+
+#### Webhook verification
+
+Meta sends a GET request with a challenge during webhook setup. The platform handles this automatically by matching the `hub.verify_token` against your stored verify token (SHA-256 indexed lookup).
+
+#### Rich output
+
+ABL action sets are transformed into WhatsApp Interactive Messages:
+
+```abl
+SAY "How can I help you?"
+ACTION_SET
+  BUTTON id="track" label="Track order"
+  BUTTON id="return" label="Start return"
+  BUTTON id="contact" label="Talk to agent"
+```
+
+WhatsApp supports up to 3 reply buttons or a list with up to 10 items.
+
+---
+
+### Telegram
+
+#### Capabilities
+
+| Feature                 | Supported        |
+| ----------------------- | ---------------- |
+| Rich output (Keyboards) | Yes              |
+| Threading               | No               |
+| Media attachments       | Yes              |
+| Streaming               | Yes              |
+| Typing indicator        | Yes              |
+| Interactive elements    | Inline keyboards |
+
+#### Setup
+
+1. Create a bot via [@BotFather](https://t.me/BotFather) on Telegram.
+2. Note the **Bot token**.
+3. In ABL Studio, go to **Project > Channels > Add Channel > Telegram**.
+4. Enter the **Bot token**.
+5. The platform automatically registers the webhook URL with the Telegram Bot API.
+
+#### Webhook URL
+
+```
+https://api.ablplatform.com/api/v1/channels/telegram/webhook/{bot_id}
+```
+
+---
+
+### Facebook Messenger
+
+#### Capabilities
+
+| Feature                 | Supported                |
+| ----------------------- | ------------------------ |
+| Rich output (Templates) | Yes                      |
+| Threading               | No                       |
+| Media attachments       | Yes                      |
+| Streaming               | No                       |
+| Typing indicator        | Yes                      |
+| Interactive elements    | Quick replies, templates |
+
+#### Setup
+
+1. Create a Meta Business App at [developers.facebook.com](https://developers.facebook.com).
+2. Add the Messenger product.
+3. Generate a **Page access token** for your Facebook Page.
+4. In ABL Studio, go to **Project > Channels > Add Channel > Messenger**.
+5. Enter the credentials:
+   - **Page access token**
+   - **App secret**
+   - **Verify token**
+6. Copy the webhook URL and configure it in Meta's webhook settings.
+7. Subscribe to the `messages` and `messaging_postbacks` webhook events.
+
+---
+
+### Instagram DM
+
+#### Capabilities
+
+| Feature                 | Supported     |
+| ----------------------- | ------------- |
+| Rich output (Templates) | Yes           |
+| Threading               | No            |
+| Media attachments       | Yes           |
+| Streaming               | No            |
+| Typing indicator        | Yes           |
+| Interactive elements    | Quick replies |
+
+#### Setup
+
+1. Use the same Meta Business App as Messenger.
+2. Connect your Instagram Professional Account to the Facebook Page.
+3. In ABL Studio, go to **Project > Channels > Add Channel > Instagram**.
+4. Enter the same credentials as Messenger (Page access token, App secret, Verify token).
+5. Subscribe to the `instagram_messaging` webhook events.
+
+---
+
+### LINE
+
+#### Capabilities
+
+| Feature              | Supported     |
+| -------------------- | ------------- |
+| Rich output          | Yes           |
+| Threading            | No            |
+| Media attachments    | Yes           |
+| Streaming            | No            |
+| Typing indicator     | Yes           |
+| Interactive elements | Quick replies |
+
+#### Setup
+
+1. Create a LINE channel at [developers.line.biz](https://developers.line.biz).
+2. Note the **Channel access token** and **Channel secret**.
+3. In ABL Studio, go to **Project > Channels > Add Channel > LINE**.
+4. Enter the credentials:
+   - **Channel access token** (long-lived)
+   - **Channel secret**
+5. Copy the webhook URL and configure it in the LINE Developers Console.
+
+#### Webhook URL
+
+```
+https://api.ablplatform.com/api/v1/channels/line/webhook
+```
+
+---
+
+### Twilio SMS
+
+#### Capabilities
+
+| Feature              | Supported |
+| -------------------- | --------- |
+| Rich output          | No        |
+| Threading            | No        |
+| Media attachments    | Yes (MMS) |
+| Streaming            | No        |
+| Typing indicator     | No        |
+| Interactive elements | No        |
+
+#### Setup
+
+1. Create a Twilio account and provision a phone number.
+2. Note the **Account SID** and **Auth Token**.
+3. In ABL Studio, go to **Project > Channels > Add Channel > Twilio SMS**.
+4. Enter the credentials:
+   - **Account SID**
+   - **Auth Token**
+5. Copy the webhook URL and configure it as the phone number's messaging webhook in Twilio.
+
+#### Webhook URL
+
+```
+https://api.ablplatform.com/api/v1/channels/twilio_sms/webhook/{phone_number}
+```
+
+Twilio webhooks are verified using HMAC-SHA1 signature validation against the auth token and full webhook URL.
+
+---
+
+### Common channel operations
+
+#### Viewing channel status
+
+Go to **Project > Channels** to see all connected channels with their status (active, inactive, error).
+
+#### Testing a channel
+
+1. Open the channel connection details.
+2. Click **Send test message**.
+3. Verify the message arrives on the external platform and a response is returned.
+
+#### Deactivating a channel
+
+1. Go to **Project > Channels**.
+2. Click the channel you want to deactivate.
+3. Toggle **Active** to off.
+
+The channel stops processing inbound messages but retains its configuration. Reactivate at any time.
+
+---
+
+## Voice channels
+
+Integrate ABL agents with telephony systems and real-time voice interfaces. The platform supports multiple voice architectures: pipeline (STT-LLM-TTS), real-time native audio models, and traditional IVR/VXML.
+
+### Voice architecture
+
+#### Pipeline mode
+
+STT (speech-to-text) converts audio to text, the LLM processes the text, and TTS (text-to-speech) converts the response to audio.
+
+```
+Caller ──audio──> STT (Deepgram) ──text──> Agent Runtime ──text──> TTS (ElevenLabs) ──audio──> Caller
+```
+
+**Supported STT providers:** Deepgram (Nova-2)
+**Supported TTS providers:** ElevenLabs
+
+#### Realtime mode
+
+Native audio I/O models process speech directly without intermediate text conversion.
+
+```
+Caller ──audio──> Realtime Model (OpenAI/Gemini) ──audio──> Caller
+```
+
+**Supported providers:** OpenAI Realtime API, Google Gemini Live
+
+#### Voice mode selection
+
+Configure the voice mode per workspace:
+
+| Mode       | Description                                  | Latency     | Cost   |
+| ---------- | -------------------------------------------- | ----------- | ------ |
+| `pipeline` | STT + LLM + TTS chain                        | ~1--2s      | Lower  |
+| `realtime` | Native audio model                           | ~300--500ms | Higher |
+| `auto`     | Platform selects based on model capabilities | Varies      | Varies |
+
+### Jambonz (voice gateway)
+
+Jambonz is the primary voice gateway for connecting telephony (SIP, PSTN) to the platform.
+
+#### Setup
+
+1. Deploy Jambonz or use a hosted instance.
+2. Configure the voice settings in your workspace:
+   - **Jambonz API URL**
+   - **Account SID**
+   - **API key**
+   - **SBC address** (for SIP routing)
+3. Create a voice channel connection in your project.
+4. The platform provisions a Jambonz application, VoIP carrier, and phone number automatically.
+
+#### How it works
+
+1. An inbound call arrives at Jambonz.
+2. Jambonz opens a WebSocket to the platform runtime.
+3. The runtime manages the call using the agent's flow.
+4. Audio is streamed bidirectionally over the WebSocket.
+
+#### SIP integration (BYOC)
+
+For Bring Your Own Carrier (BYOC) setups:
+
+1. When creating the voice channel connection, set the provider to `byoc_sip`.
+2. Provide the SIP gateway address and port.
+3. The platform provisions a Jambonz SIP gateway pointing to your carrier.
+
+### AudioCodes
+
+AudioCodes voice gateways connect directly to the platform without Jambonz.
+
+#### Capabilities
+
+| Feature        | Supported |
+| -------------- | --------- |
+| Inbound calls  | Yes       |
+| Outbound calls | No        |
+| Streaming      | No        |
+| DTMF           | Yes       |
+
+#### Setup
+
+1. In ABL Studio, go to **Project > Channels > Add Channel > AudioCodes**.
+2. Enter the **Inbound auth token** for webhook verification.
+3. Copy the generated webhook URL.
+4. Configure the AudioCodes device to POST call events to the webhook URL.
+
+#### Webhook URL
+
+```
+https://api.ablplatform.com/api/v1/channels/audiocodes/webhook/{identifier}
+```
+
+### Twilio Voice
+
+Twilio provides browser-based and phone-to-agent voice.
+
+#### Browser-based voice (WebRTC)
+
+1. Configure Twilio credentials in your workspace:
+   - **Account SID**
+   - **Auth Token**
+   - **API Key SID and Secret** (for token generation)
+   - **TwiML App SID**
+2. The SDK generates a Twilio access token for the browser client.
+3. Voice is routed through Twilio's WebRTC infrastructure to the platform.
+
+All Twilio webhooks are validated using HMAC-SHA1 signature checking against the configured auth token and the full webhook URL.
+
+### VXML / IVR
+
+Traditional IVR integration using synchronous webhook-based communication.
+
+#### Capabilities
+
+| Feature       | Supported |
+| ------------- | --------- |
+| Inbound calls | Yes       |
+| DTMF input    | Yes       |
+| Streaming     | No        |
+| Rich output   | No        |
+
+#### Setup
+
+1. In ABL Studio, go to **Project > Channels > Add Channel > VXML**.
+2. The platform generates a webhook URL for your IVR system.
+3. Configure your IVR to POST user input and receive agent responses synchronously.
+
+#### Webhook URL
+
+```
+https://api.ablplatform.com/api/v1/channels/vxml/hooks/{streamId}
+```
+
+VXML is a synchronous channel -- the IVR sends input and waits for the agent's response in the same HTTP request.
+
+### LiveKit (WebRTC)
+
+Low-latency browser voice using LiveKit.
+
+#### Setup
+
+1. Deploy a LiveKit server or use LiveKit Cloud.
+2. Configure the LiveKit settings:
+   - **LiveKit URL**
+   - **API Key**
+   - **API Secret**
+3. The SDK connects to LiveKit for audio streaming and the platform runtime for agent logic.
+
+#### Configuration
+
+| Option                             | Default | Description                    |
+| ---------------------------------- | ------- | ------------------------------ |
+| `voice.livekit.url`                | --      | LiveKit server URL             |
+| `voice.livekit.apiKey`             | --      | LiveKit API key                |
+| `voice.livekit.apiSecret`          | --      | LiveKit API secret             |
+| `voice.livekit.tokenTtlSeconds`    | `3600`  | Token validity period          |
+| `voice.livekit.maxConcurrentRooms` | `50`    | Maximum concurrent voice rooms |
+
+### Voice analytics
+
+Voice interactions generate analytics data:
+
+| Metric              | Description                                |
+| ------------------- | ------------------------------------------ |
+| Call duration       | Total duration of the voice session        |
+| First response time | Time from caller speech to agent response  |
+| Turn count          | Number of conversational turns             |
+| STT confidence      | Average speech recognition confidence      |
+| Barge-in rate       | Percentage of turns with user interruption |
+| Silence duration    | Cumulative silence during the call         |
+
+Access voice analytics at **Project > Analytics > Voice** or via the [Analytics API](./knowledge-analytics-export#voice-analytics).
+
+### Voice configuration reference
+
+| Option                                | Default           | Description                                 |
+| ------------------------------------- | ----------------- | ------------------------------------------- |
+| `voice.enabled`                       | `false`           | Enable voice features                       |
+| `voice.mode`                          | `pipeline`        | Voice mode (`pipeline`, `realtime`, `auto`) |
+| `voice.latencyTargetMs`               | `500`             | Target end-to-end latency                   |
+| `voice.maxConcurrentCalls`            | `50`              | Maximum concurrent calls                    |
+| `voice.realtime.enabled`              | `false`           | Enable realtime mode                        |
+| `voice.realtime.defaultProvider`      | `openai_realtime` | Realtime provider                           |
+| `voice.realtime.defaultVoice`         | `alloy`           | Default voice for realtime                  |
+| `voice.realtime.audioFormat`          | `pcm16`           | Audio format                                |
+| `voice.realtime.maxSessionDurationMs` | `1800000` (30m)   | Maximum call duration                       |
+
+---
+
+## Email channel
+
+Connect ABL agents to email for asynchronous, threaded conversations. The email channel supports inbound message processing via SMTP, outbound responses via SMTP or Microsoft Graph, HTML rendering, attachments, and conversation threading by subject and message headers.
+
+### Capabilities
+
+| Feature              | Supported                              |
+| -------------------- | -------------------------------------- |
+| Rich output          | No (markdown to plain text)            |
+| Threading            | Yes (In-Reply-To / References headers) |
+| Media attachments    | Yes                                    |
+| Streaming            | No                                     |
+| Typing indicator     | No                                     |
+| Interactive elements | No                                     |
+
+### How email works
+
+#### Inbound flow
+
+1. An email arrives at your configured email address.
+2. Your mail server or relay forwards the email to the platform via SMTP inbound processing.
+3. The platform parses the email, extracts the text body, and normalizes it as an inbound message.
+4. Threading is resolved using the `In-Reply-To` and `References` headers to match the email to an existing session.
+5. The agent processes the message and generates a response.
+
+#### Outbound flow
+
+The platform supports two outbound transports:
+
+| Transport           | Use case                        | Configuration                |
+| ------------------- | ------------------------------- | ---------------------------- |
+| **SMTP** (default)  | Standard email delivery         | SMTP host, port, credentials |
+| **Microsoft Graph** | Microsoft 365 / Exchange Online | Graph API credentials        |
+
+The outbound email includes:
+
+- The agent's response as the email body (plain text with markdown formatting).
+- Proper threading headers (`In-Reply-To`, `References`, `Message-ID`).
+- Attachments if the agent generated any files.
+- A consistent `From` address configured per channel connection.
+
+### Setup
+
+1. In ABL Studio, go to **Project > Channels > Add Channel > Email**.
+2. Configure the inbound email address that will receive messages.
+3. Configure the outbound transport:
+
+**For SMTP outbound:**
+
+- SMTP host and port
+- Authentication credentials (username/password or OAuth 2.0)
+- TLS settings
+
+**For Microsoft Graph outbound:**
+
+- Azure AD client ID
+- Client secret
+- Tenant ID
+- Sender mailbox
+
+4. Set the sender display name and reply-to address.
+5. Click **Save and test** to send a verification email.
+
+### Email threading
+
+The platform maintains conversation threads using standard email headers:
+
+| Header        | Purpose                                               |
+| ------------- | ----------------------------------------------------- |
+| `Message-ID`  | Unique identifier for each outbound email             |
+| `In-Reply-To` | Links the response to the original email              |
+| `References`  | Full thread chain for email clients to group messages |
+| `Subject`     | Preserved from the original email (with `Re:` prefix) |
+
+#### Session mapping
+
+- **New email (no threading headers):** Creates a new session.
+- **Reply to a platform email:** Resumes the existing session using the `In-Reply-To` header.
+- **Forwarded email:** Treated as a new session unless threading headers are preserved.
+
+### Email configuration reference
+
+| Setting              | Description                                                        |
+| -------------------- | ------------------------------------------------------------------ |
+| Inbound address      | The email address that receives messages                           |
+| Outbound transport   | `smtp` or `graph`                                                  |
+| SMTP host            | Outbound SMTP server hostname                                      |
+| SMTP port            | Outbound SMTP server port (587 for STARTTLS, 465 for implicit TLS) |
+| SMTP credentials     | Username and password or OAuth 2.0 token                           |
+| TLS mode             | `starttls`, `implicit`, or `none`                                  |
+| Sender name          | Display name on outbound emails                                    |
+| Reply-to address     | Reply-to header on outbound emails                                 |
+| Auto-reply threshold | Minimum seconds between auto-replies to prevent loops              |
+
+### Preventing email loops
+
+The platform includes safeguards to prevent infinite email loops:
+
+- **Auto-reply detection:** Emails with `Auto-Submitted: auto-replied` or similar headers are ignored.
+- **Rate limiting:** A per-address cooldown prevents responding more than once per configurable interval.
+- **Loop detection:** If the platform detects that it is replying to its own messages, the loop is broken.
+
+### Email best practices
+
+1. **Use a dedicated mailbox** for the agent to avoid mixing agent conversations with human email.
+2. **Configure SPF, DKIM, and DMARC** on your sending domain to avoid outbound emails being marked as spam.
+3. **Set a reasonable auto-reply threshold** (default: 60 seconds) to prevent rapid-fire loops.
+4. **Monitor delivery rates** in your SMTP provider's dashboard for bounces and spam reports.
+
+---
+
+## Enterprise channels
+
+Connect ABL agents to enterprise contact center platforms and build custom channel adapters.
+
+### Genesys Cloud
+
+#### Capabilities
+
+| Feature              | Supported                |
+| -------------------- | ------------------------ |
+| Rich output          | Yes (structured content) |
+| Threading            | No                       |
+| Media attachments    | No                       |
+| Streaming            | No                       |
+| Typing indicator     | No                       |
+| Interactive elements | Structured actions       |
+
+#### How Genesys integration works
+
+The Genesys channel uses a synchronous webhook pattern. Genesys Cloud sends events to the platform's webhook endpoint, and the platform returns the agent's response in the same HTTP response.
+
+```
+Genesys Cloud ──POST──> ABL Runtime ──agent execution──> Response in same HTTP response
+```
+
+#### Setup
+
+1. In Genesys Cloud, create an **Open Messaging Integration**.
+2. Configure the outbound messaging endpoint.
+3. Note the **Client secret** from the integration settings.
+4. In ABL Studio, go to **Project > Channels > Add Channel > Genesys**.
+5. Enter the **Client secret**.
+6. Copy the generated webhook URL and paste it into the Genesys Cloud integration as the inbound message webhook.
+
+#### Webhook URL
+
+```
+https://api.ablplatform.com/api/v1/channels/genesys/hooks/{streamId}
+```
+
+#### Agent transfer
+
+When your ABL agent needs to escalate to a human, the Genesys integration supports agent transfer:
+
+1. The ABL agent triggers an `ESCALATE` action.
+2. The platform sends a transfer request to Genesys Cloud.
+3. Genesys Cloud routes the conversation to the configured queue.
+4. The session remains open for post-transfer context.
+
+---
+
+### Zendesk
+
+#### Capabilities
+
+| Feature              | Supported            |
+| -------------------- | -------------------- |
+| Rich output          | Yes                  |
+| Threading            | Yes (ticket threads) |
+| Media attachments    | Yes                  |
+| Streaming            | No                   |
+| Typing indicator     | No                   |
+| Interactive elements | Structured actions   |
+
+#### How Zendesk integration works
+
+Zendesk uses a webhook + direct-send pattern. Inbound events arrive via webhook, and outbound messages are sent directly through the Zendesk Sunshine Conversations API.
+
+#### Setup
+
+1. In Zendesk, go to **Admin > Sunshine Conversations > Integrations**.
+2. Create a custom integration and note the:
+   - **App ID**
+   - **Key ID**
+   - **Key secret**
+3. Optionally generate a **Webhook secret** for HMAC-SHA256 inbound verification.
+4. In ABL Studio, go to **Project > Channels > Add Channel > Zendesk**.
+5. Enter the credentials.
+6. Copy the generated webhook URL and configure it in Zendesk's webhook settings.
+
+#### Webhook URL
+
+```
+https://api.ablplatform.com/api/v1/channels/zendesk/webhook/{identifier}
+```
+
+---
+
+### Custom adapter development
+
+Build a custom channel adapter to connect the Agent Platform 2.0 to any messaging system.
+
+#### Adapter interface
+
+Every custom adapter must implement the `ChannelAdapter` interface:
+
+```typescript
+interface ChannelAdapter {
+  readonly channelType: ChannelType;
+  readonly capabilities: ChannelCapabilities;
+
+  // Validate inbound request signature
+  verifyRequest(
+    headers: Record<string, string>,
+    body: unknown,
+    rawBody?: Buffer | string,
+    connection?: ResolvedConnection | null,
+    webhookUrl?: string,
+  ): Promise<boolean>;
+
+  // Parse inbound payload into normalized message
+  parseIncoming(payload: InboundJobPayload): NormalizedIncomingMessage;
+
+  // Send response through the channel
+  sendResponse(
+    message: NormalizedOutgoingMessage,
+    connection: ResolvedConnection,
+  ): Promise<SendResult>;
+
+  // Transform plain text + actions into channel-native format (optional)
+  transformOutput?(text: string, actions?: ActionSetIR, richContent?: RichContentIR): ChannelOutput;
+
+  // Send typing indicator (optional)
+  sendTypingIndicator?(
+    connection: ResolvedConnection,
+    externalSessionKey: string,
+    metadata?: Record<string, unknown>,
+  ): Promise<void>;
+}
+```
+
+#### Capabilities declaration
+
+```typescript
+interface ChannelCapabilities {
+  supportsAsync: boolean;
+  supportsStreaming: boolean;
+  supportsMedia: boolean;
+  supportsThreading: boolean;
+}
+```
+
+#### Adding to the channel manifest
+
+Register your channel type in the channel manifest:
+
+```typescript
+my_channel: {
+  displayName: 'My Channel',
+  ingress: 'webhook',           // 'webhook' | 'websocket' | 'api' | 'smtp' | 'sync_webhook' | 'none'
+  delivery: 'async_queue',      // 'async_queue' | 'sync_response' | 'websocket' | 'direct_send' | 'none'
+  authMode: 'hmac',             // 'hmac' | 'jwt' | 'token' | 'api_key' | 'sdk_auth' | 'none'
+  responseFormat: 'text',
+  supportsRichOutput: false,
+  supportsThreading: false,
+  supportsMedia: false,
+  supportsStreaming: false,
+  isConnectionEligible: true,
+  requiredCredentials: ['api_token', 'webhook_secret'],
+  webhookPathPattern: '/api/v1/channels/my_channel/webhook/:identifier',
+  isVoice: false,
+  supportsTypingIndicator: false,
+}
+```
+
+#### Registering the adapter
+
+```typescript
+import { getChannelRegistry } from '../channels/registry.js';
+import { MyChannelAdapter } from './my-channel-adapter.js';
+
+const registry = getChannelRegistry();
+registry.register(new MyChannelAdapter());
+```
+
+#### Implementation checklist
+
+- [ ] Implement `verifyRequest()` with proper signature validation for your platform.
+- [ ] Implement `parseIncoming()` to normalize the platform's message format.
+- [ ] Implement `sendResponse()` to deliver messages through the platform's API.
+- [ ] Add the channel type to the manifest with accurate capability flags.
+- [ ] Register the adapter in the channel registry.
+- [ ] Test with your platform's webhook testing tools.
+- [ ] Handle idempotency: extract a unique event ID from each inbound message to prevent duplicate processing.
+
+## Next steps
+
+- [API overview](./api-overview) -- Authentication and general conventions
+- [Conversation API](./conversation-api) -- Text-based agent interactions
+- [SDKs](./sdks) -- Embed voice and chat widgets

@@ -1,0 +1,613 @@
+---
+title: 'Data Collection with GATHER'
+section: 'guides'
+order: 3
+description: 'GATHER collects structured data from users through natural conversation. Fields can be extracted from free-form messages, validated against rules, and corrected without restarting the flow.'
+---
+
+# Data Collection with GATHER
+
+GATHER collects structured data from users through natural conversation. Fields can be extracted from free-form messages, validated against rules, and corrected without restarting the flow.
+
+## Using GATHER for Data Collection
+
+### Collect fields at the agent level
+
+```abl
+AGENT: Hotel_Search
+GOAL: "Help users find hotels"
+
+GATHER:
+  destination:
+    prompt: "Where would you like to stay?"
+    type: string
+    required: true
+  checkin:
+    prompt: "When is your check-in date?"
+    type: date
+    required: true
+  checkout:
+    prompt: "When is your check-out date?"
+    type: date
+    required: true
+  guests:
+    prompt: "How many guests?"
+    type: number
+    required: false
+    default: 2
+```
+
+When placed at the agent level (outside any FLOW section), the top-level `GATHER` block defines fields the LLM collects through natural conversation. The user can provide multiple fields in a single message ("I want to stay in Paris from March 10 to March 15 for 2 guests"), and the LLM extracts them all.
+
+### Collect fields in a flow step
+
+```abl
+collect_trip_info:
+  REASONING: false
+  GATHER:
+    - destination: required
+      prompt: "Where would you like to stay?"
+    - checkin_date: required
+      type: date
+      prompt: "Check-in date?"
+    - checkout_date: required
+      type: date
+      prompt: "Check-out date?"
+    - num_guests
+      type: number
+      default: 2
+      prompt: "How many guests?"
+  COMPLETE_WHEN: destination AND checkin_date AND checkout_date
+  THEN: search_hotels
+```
+
+In a flow step, GATHER uses a compact list syntax. `COMPLETE_WHEN` defines when the step has enough data to proceed.
+
+### Specify a collection strategy
+
+```abl
+collect_trip_info:
+  REASONING: false
+  GATHER:
+    FIELDS:
+      - checkin_date: required
+      - checkout_date: required
+      - num_guests: required
+    STRATEGY: llm
+  THEN: search_and_show
+```
+
+| Strategy  | Behavior                                                    |
+| --------- | ----------------------------------------------------------- |
+| `llm`     | LLM extracts entities from natural language (default)       |
+| `pattern` | Strict pattern matching only                                |
+| `hybrid`  | Try pattern matching first, fall back to LLM for unresolved |
+
+### Field types
+
+| Type      | Example values              |
+| --------- | --------------------------- |
+| `string`  | Any text                    |
+| `number`  | `42`, `3.14`                |
+| `date`    | `2026-03-15`, `next Friday` |
+| `email`   | `user@example.com`          |
+| `phone`   | `+1-555-0123`               |
+| `boolean` | `yes`, `no`, `true`         |
+
+### GATHER with presentation template
+
+```abl
+collect_trip_info:
+  REASONING: false
+  GATHER:
+    - destination: required
+      prompt: "Where would you like to stay?"
+    - checkin_date: required
+      type: date
+    - checkout_date: required
+      type: date
+
+  PRESENT: |
+    Here is what I have so far:
+    {{#if destination}}Destination: {{destination}}{{/if}}
+    {{#if checkin_date}}Check-in: {{checkin_date}}{{/if}}
+    {{#if checkout_date}}Check-out: {{checkout_date}}{{/if}}
+
+  COMPLETE_WHEN: destination AND checkin_date AND checkout_date
+  THEN: search_hotels
+```
+
+`PRESENT` shows collected values back to the user as each field is filled.
+
+### Optional and default fields
+
+```abl
+GATHER:
+  priority:
+    prompt: "What priority level? (low, medium, high)"
+    type: string
+    required: false
+    default: "medium"
+  notes:
+    prompt: "Any additional notes?"
+    type: string
+    required: false
+```
+
+Optional fields are collected only if the user provides them. Default values are used when the user skips the field.
+
+### GATHER with extraction hints
+
+```abl
+GATHER:
+  cancellation_scope:
+    prompt: "Would you like to cancel the entire order or specific items?"
+    type: string
+    required: false
+    infer: true
+    extraction_hints:
+      - "If user says 'all', 'everything', 'whole order', infer 'full'"
+      - "If user mentions specific items or says 'some', infer 'partial'"
+```
+
+`extraction_hints` guide the LLM on how to interpret ambiguous user input for a given field.
+
+### Troubleshooting
+
+- **Fields not extracted from natural language:** Set `STRATEGY: llm` (or omit it, since `llm` is the default). Add `extraction_hints` for ambiguous fields.
+- **Step advances before all required fields are collected:** Add `COMPLETE_WHEN` with explicit conditions listing all required fields.
+- **User provides info out of order:** This is handled automatically by the LLM strategy. Each field is matched regardless of the order the user provides information.
+
+## Field Validation
+
+Add validation to GATHER fields to enforce data formats, value ranges, and business rules before the agent proceeds.
+
+### Add a validation expression
+
+```abl
+GATHER:
+  email:
+    prompt: "What is your email address?"
+    type: email
+    required: true
+    validate: "value matches '^[\\w.+-]+@[\\w-]+\\.[\\w.-]+$'"
+
+  age:
+    prompt: "How old are you?"
+    type: number
+    required: true
+    validate: "value >= 18 AND value <= 120"
+```
+
+The `validate` expression is evaluated at runtime. If it fails, the agent re-prompts the user.
+
+### Set the validation process
+
+```abl
+GATHER:
+  order_id:
+    prompt: "What is your order number? (Format: ORD-XXXXX)"
+    type: string
+    required: true
+    validation: "^ORD-[A-Z0-9]{5}$"
+    validation_process: REGEX
+
+  address:
+    prompt: "What is your shipping address?"
+    type: string
+    required: true
+    validation: "Verify this is a valid US mailing address with street, city, state, and ZIP"
+    validation_process: LLM
+```
+
+| Process | Behavior                                             |
+| ------- | ---------------------------------------------------- |
+| `REGEX` | Match the value against a regular expression pattern |
+| `CODE`  | Run a code snippet for validation                    |
+| `LLM`   | Ask the LLM to evaluate whether the value is valid   |
+
+### Customize retry behavior
+
+```abl
+GATHER:
+  phone_number:
+    prompt: "What is your phone number?"
+    type: phone
+    required: true
+    validation: "^\\+?[1-9]\\d{1,14}$"
+    validation_process: REGEX
+    retry_prompt: "That does not look like a valid phone number. Please enter a number like +15551234567."
+    max_retries: 3
+```
+
+`retry_prompt` replaces the default re-prompt message when validation fails. `max_retries` caps how many times the agent asks before moving on or escalating.
+
+### Enum validation with infer
+
+```abl
+GATHER:
+  cancellation_scope:
+    prompt: "Would you like to cancel the entire order or specific items?"
+    type: string
+    required: true
+    validate: enum(full, partial)
+    infer: true
+    extraction_hints:
+      - "If user says 'all', 'everything', or 'whole order', infer 'full'"
+      - "If user mentions specific items or says 'some', infer 'partial'"
+```
+
+`enum()` restricts accepted values. Combined with `infer: true`, the LLM maps natural language to the enum values.
+
+### Date range validation
+
+```abl
+GATHER:
+  checkin_date:
+    prompt: "Check-in date?"
+    type: date
+    required: true
+    validate: "value >= today()"
+    retry_prompt: "The check-in date must be today or later."
+
+  checkout_date:
+    prompt: "Check-out date?"
+    type: date
+    required: true
+    validate: "value > checkin_date"
+    retry_prompt: "Check-out must be after your check-in date of {{checkin_date}}."
+```
+
+Validation expressions can reference other gathered fields for cross-field validation.
+
+### Validation in a flow step
+
+```abl
+collect_payment:
+  REASONING: false
+  GATHER:
+    - card_number: required
+      validation: "^[0-9]{13,19}$"
+      validation_process: REGEX
+      retry_prompt: "Please enter a valid card number (13-19 digits)."
+      max_retries: 3
+    - expiry: required
+      validation: "^(0[1-9]|1[0-2])\\/([0-9]{2})$"
+      validation_process: REGEX
+      retry_prompt: "Please enter expiry as MM/YY."
+    - cvv: required
+      validation: "^[0-9]{3,4}$"
+      validation_process: REGEX
+      retry_prompt: "CVV must be 3 or 4 digits."
+  THEN: process_payment
+```
+
+### Constraint-level validation
+
+For business rules that go beyond field format, use `CONSTRAINTS`:
+
+```abl
+CONSTRAINTS:
+  - REQUIRE order_id matches "^ORD-[A-Z0-9]{5}$" OR email IS SET
+    ON_FAIL: "Please provide a valid order number (format: ORD-XXXXX) or an email address."
+
+  - REQUIRE lookup_attempts <= 3
+    ON_FAIL: "I have been unable to find your order after several attempts. Let me connect you with a specialist."
+```
+
+### Troubleshooting
+
+- **Validation never passes:** Double-check the regex pattern escaping. In ABL, backslashes in strings need to be doubled (`\\d` not `\d`).
+- **User stuck in retry loop:** Set `max_retries` to a reasonable number (2-3). After exhaustion, the agent proceeds or escalates rather than looping indefinitely.
+- **Cross-field validation runs before dependent field is collected:** The dependent field must be collected first. Order your GATHER fields so dependencies are listed first, or use `COMPLETE_WHEN` to control when validation runs.
+
+## LLM Inference in GATHER
+
+LLM inference lets the agent extract field values from conversational context rather than requiring the user to state each value explicitly.
+
+### Enable inference on a field
+
+```abl
+GATHER:
+  cancellation_reason:
+    prompt: "May I ask the reason for the cancellation?"
+    type: string
+    required: false
+    infer: true
+```
+
+With `infer: true`, the LLM extracts the value from prior conversation context. If the user already mentioned "I do not need the order anymore," the agent fills `cancellation_reason` without asking again.
+
+### Control inference confidence
+
+```abl
+GATHER:
+  destination:
+    prompt: "Where would you like to travel?"
+    type: string
+    required: true
+    infer: true
+    infer_confidence: 0.9
+    infer_confirm: true
+```
+
+| Property           | Default | Purpose                                               |
+| ------------------ | ------- | ----------------------------------------------------- |
+| `infer`            | `false` | Allow LLM to extract value from context               |
+| `infer_confidence` | `0.8`   | Minimum confidence score to accept an inferred value  |
+| `infer_confirm`    | `true`  | Ask user to confirm inferred values before proceeding |
+
+When `infer_confirm: true`, the agent says something like "It sounds like you want to travel to Paris. Is that correct?" before accepting the value.
+
+### Add extraction hints
+
+```abl
+GATHER:
+  cancellation_scope:
+    prompt: "Would you like to cancel the entire order or specific items?"
+    type: string
+    required: false
+    infer: true
+    extraction_hints:
+      - "If user says 'all', 'everything', 'whole order', infer 'full'"
+      - "If user mentions specific items or says 'some', infer 'partial'"
+
+  selected_items:
+    prompt: "Which items would you like to cancel?"
+    type: string
+    required: false
+    extraction_hints:
+      - "Only needed for partial cancellations"
+      - "Match user input to item names from the order"
+```
+
+Extraction hints guide the LLM on how to map natural language into structured values. They are especially useful for domain-specific terminology.
+
+### High-confidence inference without confirmation
+
+```abl
+GATHER:
+  language_preference:
+    prompt: "What language do you prefer?"
+    type: string
+    required: false
+    infer: true
+    infer_confidence: 0.95
+    infer_confirm: false
+```
+
+Set `infer_confirm: false` for fields where the inferred value is obvious from context (e.g., the user is writing in Spanish, so `language_preference` is "es"). Use a high `infer_confidence` threshold to avoid silent mismatches.
+
+### Inference with dependent fields
+
+```abl
+GATHER:
+  trip_type:
+    prompt: "Is this a round trip or one way?"
+    type: string
+    required: true
+    infer: true
+    extraction_hints:
+      - "If user mentions return date, infer 'round_trip'"
+      - "If user says 'one way' or mentions only departure, infer 'one_way'"
+
+  return_date:
+    prompt: "When would you like to return?"
+    type: date
+    required: false
+    infer: true
+    depends_on: [trip_type]
+    activation:
+      when: "trip_type == 'round_trip'"
+```
+
+`depends_on` and `activation` ensure `return_date` is only collected when `trip_type` is `round_trip`. If the user said "I need a round trip to London, leaving March 10 and returning March 17," both fields are inferred from a single message.
+
+### Prompt mode for extraction-only fields
+
+```abl
+GATHER:
+  sentiment:
+    prompt: "Assess the customer's emotional state from the conversation"
+    type: string
+    required: false
+    infer: true
+    prompt_mode: extract_only
+```
+
+`prompt_mode: extract_only` means the prompt is an instruction to the LLM, not a question to show the user. The agent silently extracts the value from context.
+
+### Progressive field activation
+
+```abl
+GATHER:
+  budget:
+    prompt: "What is your budget?"
+    type: string
+    required: true
+
+  luxury_preferences:
+    prompt: "Any specific luxury amenities you want?"
+    type: string
+    activation: progressive
+    depends_on: [budget]
+```
+
+With `activation: progressive`, the field activates only after its dependencies are met, letting the conversation unfold naturally.
+
+### Troubleshooting
+
+- **Inference fills a field incorrectly:** Raise `infer_confidence` to 0.9 or higher and set `infer_confirm: true` to require explicit user confirmation.
+- **Agent asks for a field that was already mentioned:** Verify `infer: true` is set on the field. Check that the `STRATEGY` is `llm` or `hybrid` (not `pattern`).
+- **Extraction hints ignored:** Hints must be a list of strings. Each hint should be a clear, specific instruction (not a long paragraph).
+
+## Handling Corrections & Re-prompts
+
+Enable corrections so users can change previously provided values without restarting the flow.
+
+### Enable corrections on a flow step
+
+```abl
+collect_trip_info:
+  REASONING: false
+  GATHER:
+    - destination: required
+      prompt: "Where would you like to stay?"
+    - checkin_date: required
+      type: date
+      prompt: "Check-in date?"
+    - checkout_date: required
+      type: date
+      prompt: "Check-out date?"
+
+  CORRECTIONS: true
+
+  COMPLETE_WHEN: destination AND checkin_date AND checkout_date
+  THEN: search_hotels
+```
+
+With `CORRECTIONS: true`, the user can say things like "actually, change the destination to London" at any point during collection, and the agent clears and re-collects that field.
+
+### Use SUB_INTENTS for specific corrections
+
+```abl
+collect_trip_info:
+  REASONING: false
+  GATHER:
+    - destination: required
+    - checkin_date: required
+      type: date
+    - checkout_date: required
+      type: date
+
+  SUB_INTENTS:
+    - INTENT: "change destination"
+      CLEAR: [destination]
+      RESPOND: "Sure, what is the new destination?"
+    - INTENT: "change dates"
+      CLEAR: [checkin_date, checkout_date]
+      RESPOND: "What are your new travel dates?"
+
+  COMPLETE_WHEN: destination AND checkin_date AND checkout_date
+  THEN: search_hotels
+```
+
+`SUB_INTENTS` define scoped intents valid only within this step. `CLEAR` removes the specified variables so the agent re-collects them.
+
+### Use ON_INPUT for explicit correction branching
+
+```abl
+get_dates:
+  REASONING: false
+  GATHER:
+    - checkin_date: required
+      type: date
+    - checkout_date: required
+      type: date
+  ON_INPUT:
+    - IF: input == "back"
+      THEN: get_destination
+    - IF: input contains "change destination"
+      THEN: get_destination
+    - ELSE:
+      THEN: get_guests
+```
+
+`ON_INPUT` provides deterministic branching. When the user says "change destination," the flow jumps back to the appropriate step.
+
+### Corrections across multiple steps
+
+```abl
+review_booking:
+  REASONING: false
+  PRESENT: |
+    Booking Summary:
+    Hotel: {{selected_hotel.name}}
+    Dates: {{checkin_date}} to {{checkout_date}}
+    Guests: {{num_guests}}
+    Guest: {{guest_name}} ({{guest_email}})
+    Total: ${{total_price}}
+
+    Type "confirm" to complete or "change [field]" to modify.
+
+  DIGRESSIONS:
+    - INTENT: "change hotel"
+      GOTO: select_hotel
+    - INTENT: "change dates"
+      CLEAR: [checkin_date, checkout_date]
+      GOTO: collect_trip_info
+    - INTENT: "change guest"
+      GOTO: collect_guest_info
+
+  ON_INPUT:
+    - IF: input == "confirm"
+      THEN: confirm
+    - ELSE:
+      RESPOND: "Please type 'confirm' to proceed or 'change [field]' to modify."
+      THEN: review_booking
+```
+
+`DIGRESSIONS` with `GOTO` allow jumping to any step in the flow. Unlike `SUB_INTENTS`, digressions leave the current step entirely.
+
+### MAX_ATTEMPTS with fallback
+
+```abl
+verify_identity:
+  REASONING: false
+  MAX_ATTEMPTS: 3
+  ON_EXHAUSTED: connect_to_human
+  GATHER:
+    - verification_code:
+        prompt: "Enter the 6-digit code sent to your phone."
+        type: string
+        required: true
+        validation: "^[0-9]{6}$"
+        validation_process: REGEX
+        retry_prompt: "That code is not valid. Please enter exactly 6 digits."
+        max_retries: 3
+  CALL: verify_code(verification_code)
+  ON_SUCCESS:
+    THEN: authenticated
+  ON_FAIL:
+    RESPOND: "That code did not match. Please try again."
+    THEN: verify_identity
+```
+
+`MAX_ATTEMPTS` on the step level limits total retries. `ON_EXHAUSTED` defines where to go when the limit is reached.
+
+### Global digressions for flow-wide corrections
+
+```abl
+FLOW:
+  steps:
+    - welcome
+    - collect_info
+    - search
+    - confirm
+
+  global_digressions:
+    REASONING: false
+    - INTENT: "cancel"
+      RESPOND: "Booking cancelled. Would you like to start over?"
+      GOTO: welcome
+    - INTENT: "help"
+      RESPOND: "I can help you find and book hotels. Tell me your destination and dates."
+      RESUME: true
+    - INTENT: "start over"
+      GOTO: welcome
+```
+
+Global digressions are available in every step. `RESUME: true` returns to the current step after handling the digression. Without `RESUME`, the `GOTO` target becomes the new active step.
+
+### Troubleshooting
+
+- **User correction not detected:** Add explicit `SUB_INTENTS` or `DIGRESSIONS` for the correction patterns your users are likely to use. The LLM may not recognize corrections without hints.
+- **Cleared field not re-collected:** After `CLEAR`, the step must re-prompt for the field. Verify the step's GATHER includes the cleared field and `COMPLETE_WHEN` requires it.
+- **MAX_ATTEMPTS not counting correctly:** `MAX_ATTEMPTS` counts entries to the step, not individual GATHER retries. `max_retries` on a field counts field-level retries separately.
+
+## Related
+
+- [Adding Structured Steps to Agents](./building-scripted-flows)
+- [Building Agents](./building-reasoning-agents)
+- [Tools & Integrations](./tools-and-integrations)
+- [GATHER (information collection)](../abl-reference/gather)

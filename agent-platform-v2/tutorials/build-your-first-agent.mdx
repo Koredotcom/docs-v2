@@ -1,0 +1,493 @@
+---
+title: 'Build Your First Agent'
+section: 'tutorials'
+order: 1
+description: 'In this tutorial, you build a customer greeting agent and then extend it with tools that connect to external APIs. By the end, you know how to:'
+---
+
+# Build Your First Agent
+
+> **Time:** ~30 minutes | **Level:** Beginner | **Prerequisites:** Agent Platform 2.0 account, access to Studio
+
+In this tutorial, you build a customer greeting agent and then extend it with tools that connect to external APIs. By the end, you know how to:
+
+- Define an agent with identity, goal, and persona
+- Test your agent in the Studio chat and read trace output
+- Define tool contracts (inline, HTTP, MCP, and sandbox)
+- Create reusable tool files and import them
+- Handle tool results and errors
+
+## Prerequisites
+
+- An Agent Platform 2.0 account with at least one project
+- Access to Studio (the visual development environment)
+- Familiarity with YAML-like syntax (helpful but not required)
+
+## What You'll Build
+
+You start by creating a simple agent -- a coffee shop greeter that answers customer questions using nothing but an LLM. Then you build a travel assistant agent with tools that fetch real data from external APIs. Together these two exercises cover the full foundation of agent development in ABL.
+
+---
+
+## Create Your First Agent
+
+### Step 1: Create a new project
+
+Open Studio and select **New Project** from the dashboard. Name it `bean-and-brew` and select **Blank Project** as the template.
+
+Studio creates the project and opens the editor.
+
+### Step 2: Define the agent
+
+Create a new agent file named `greeter.agent.abl`. Paste the following ABL definition:
+
+```abl
+AGENT: Customer_Greeter
+
+EXECUTION:
+  model: claude-sonnet-4-5-20250929
+
+GOAL: |
+  Welcome visitors to Bean & Brew coffee shop. Answer questions about
+  the menu, store hours, and location. Keep responses friendly, concise,
+  and on-topic. If the customer asks something outside your knowledge,
+  politely let them know and suggest they contact the store directly.
+
+PERSONA: |
+  Warm, friendly barista who loves coffee. Uses casual but professional
+  language. Keeps answers short and helpful. Occasionally mentions
+  seasonal specials to keep the conversation engaging.
+
+LIMITATIONS:
+  - Cannot process orders or payments
+  - Cannot access real-time inventory
+  - Cannot make reservations
+
+INSTRUCTIONS: |
+  1. Greet the customer warmly when they first message
+  2. Answer questions about the menu, hours, or location
+  3. If asked about placing an order, explain that online ordering
+     is coming soon and suggest visiting the store
+  4. Keep responses under 3 sentences when possible
+```
+
+This is a complete agent definition. Every agent reasons by default -- it uses the LLM to decide how to respond to each message. You can optionally add a `FLOW` block to give an agent structured steps (covered in the [next tutorial](./build-a-scripted-flow)), but without one the agent handles conversations entirely through LLM reasoning.
+
+### Step 3: Understand the key blocks
+
+Here is what each block does:
+
+**AGENT** -- The unique name for your agent. Use underscores instead of spaces.
+
+**EXECUTION** -- Specifies which LLM model powers the agent.
+
+**GOAL** -- The agent's primary objective. The LLM uses this as its core instruction. Use the pipe (`|`) character for multi-line text.
+
+**PERSONA** -- Defines the agent's personality and communication style. This shapes the tone of every response.
+
+**LIMITATIONS** -- Explicit boundaries the agent must not cross. The LLM respects these constraints during reasoning.
+
+**INSTRUCTIONS** -- Step-by-step guidance for how the agent should handle conversations.
+
+### Step 4: Test in Studio chat
+
+Open the **Chat** panel in Studio. Type a message:
+
+```
+Hi there!
+```
+
+The agent responds with a greeting matching the persona you defined -- warm, friendly, coffee-themed.
+
+Try a few more messages:
+
+```
+What are your store hours?
+```
+
+```
+Do you have oat milk lattes?
+```
+
+```
+Can I place an order for pickup?
+```
+
+The agent answers menu and hours questions based on its instructions, and politely declines order requests per its limitations.
+
+### Step 5: Review the trace output
+
+Open the **Traces** panel in Studio. Select the most recent session to see the full execution trace.
+
+The trace shows:
+
+- **Input** -- The user message received
+- **Reasoning** -- How the LLM interpreted the message against the goal and instructions
+- **Output** -- The response generated
+- **Latency** -- Time taken for each step
+
+Each message exchange appears as a separate trace event. This is your primary debugging tool for understanding why an agent responded a certain way.
+
+### Step 6: Refine the persona
+
+Update the `PERSONA` block to add more character:
+
+```abl
+PERSONA: |
+  Warm, friendly barista named Alex who has worked at Bean & Brew
+  for three years. Loves recommending the house blend and seasonal
+  specials. Uses casual but professional language. Occasionally
+  asks customers about their day. Keeps answers short and helpful.
+```
+
+Test again in the chat. Notice how the agent now introduces itself as Alex and makes more personalized recommendations.
+
+### Step 7: Add a completion condition
+
+Add a `COMPLETE` block to define when the conversation is finished:
+
+```abl
+COMPLETE:
+  - WHEN: user.says_goodbye == true
+    RESPOND: "Thanks for stopping by Bean & Brew! See you next time."
+```
+
+The `COMPLETE` block tells the Runtime when to end the session. Without it, the conversation continues until the user disconnects or the session times out.
+
+### Full greeter definition
+
+Here is the complete `greeter.agent.abl` file:
+
+```abl
+AGENT: Customer_Greeter
+
+EXECUTION:
+  model: claude-sonnet-4-5-20250929
+
+GOAL: |
+  Welcome visitors to Bean & Brew coffee shop. Answer questions about
+  the menu, store hours, and location. Keep responses friendly, concise,
+  and on-topic. If the customer asks something outside your knowledge,
+  politely let them know and suggest they contact the store directly.
+
+PERSONA: |
+  Warm, friendly barista named Alex who has worked at Bean & Brew
+  for three years. Loves recommending the house blend and seasonal
+  specials. Uses casual but professional language. Occasionally
+  asks customers about their day. Keeps answers short and helpful.
+
+LIMITATIONS:
+  - Cannot process orders or payments
+  - Cannot access real-time inventory
+  - Cannot make reservations
+
+INSTRUCTIONS: |
+  1. Greet the customer warmly when they first message
+  2. Answer questions about the menu, hours, or location
+  3. If asked about placing an order, explain that online ordering
+     is coming soon and suggest visiting the store
+  4. Keep responses under 3 sentences when possible
+
+COMPLETE:
+  - WHEN: user.says_goodbye == true
+    RESPOND: "Thanks for stopping by Bean & Brew! See you next time."
+```
+
+---
+
+## Add Tools to Your Agent
+
+Now that you have a working agent, give it the ability to call external APIs. You define tools three different ways: inline contracts, HTTP bindings, and MCP bindings.
+
+### Step 8: Define an inline tool contract
+
+Create a new agent file named `travel_assistant.agent.abl` with an inline tool definition:
+
+```abl
+AGENT: Travel_Assistant
+
+EXECUTION:
+  model: claude-sonnet-4-5-20250929
+
+GOAL: |
+  Help users find hotels and plan their trips. Search for available
+  hotels based on destination, dates, and number of guests. Provide
+  weather information for travel destinations.
+
+PERSONA: |
+  Knowledgeable travel advisor who gives clear, practical recommendations.
+  Presents search results in an organized format with key details like
+  price, rating, and location.
+
+TOOLS:
+  search_hotels(destination: string, checkin: date, checkout: date, guests: number) -> {hotels: array}
+    description: "Search for available hotels by destination and dates"
+
+  get_hotel_details(hotel_id: string) -> {name: string, rating: number, amenities: array, photos: array}
+    description: "Get detailed information about a specific hotel"
+
+INSTRUCTIONS: |
+  1. Ask the user where and when they want to travel
+  2. Search for hotels using the search_hotels tool
+  3. Present the top results with price, rating, and location
+  4. Offer to show details for any specific hotel
+  5. If no hotels are found, suggest adjusting dates or destination
+```
+
+The `TOOLS` block defines the contract for each tool: its name, parameters with types, return type, and a description. The Runtime resolves these contracts to actual implementations at deployment time.
+
+### Step 9: Create a reusable tool file
+
+When multiple agents share the same API, define tools in a separate `.tools.abl` file. Create `tools/hotels-api.tools.abl`:
+
+```abl
+TOOLS:
+  base_url: "https://api.hotels.example.com/v1"
+  auth: bearer
+  timeout: 5000
+  retry: 3
+
+  search_hotels(destination: string, checkin: date, checkout: date) -> Hotel[]
+    type: http
+    endpoint: "/search"
+    method: POST
+    description: "Search available hotels"
+
+  get_hotel(hotel_id: string) -> Hotel
+    type: http
+    endpoint: "/hotels/{hotel_id}"
+    method: GET
+    description: "Get hotel details by ID"
+
+  get_reviews(hotel_id: string, limit: number = 10) -> Review[]
+    type: http
+    endpoint: "/hotels/{hotel_id}/reviews"
+    method: GET
+    description: "Get reviews for a hotel"
+```
+
+The file-level settings (`base_url`, `auth`, `timeout`, `retry`) apply to every tool in the file. Each tool specifies its HTTP binding: endpoint path, method, and description.
+
+### Step 10: Import tools from the tool file
+
+Update your agent to import tools from the shared file using `FROM ... USE`:
+
+```abl
+AGENT: Travel_Assistant
+
+EXECUTION:
+  model: claude-sonnet-4-5-20250929
+
+GOAL: |
+  Help users find hotels and plan their trips. Search for available
+  hotels based on destination, dates, and number of guests. Provide
+  weather information for travel destinations.
+
+PERSONA: |
+  Knowledgeable travel advisor who gives clear, practical recommendations.
+  Presents search results in an organized format with key details like
+  price, rating, and location.
+
+TOOLS:
+  FROM "./tools/hotels-api.tools.abl" USE: search_hotels, get_hotel
+
+  format_results(hotels: Hotel[]) -> string
+    description: "Format hotel results for display"
+
+  get_weather(location: string) -> {temp: number, conditions: string}
+    type: mcp
+    server: "weather-service"
+    tool: "get_current_weather"
+    description: "Get current weather for a destination"
+
+INSTRUCTIONS: |
+  1. Ask the user where and when they want to travel
+  2. Search for hotels using the search_hotels tool
+  3. Check the weather at the destination using get_weather
+  4. Present the top results with price, rating, and weather info
+  5. Offer to show details for any specific hotel
+```
+
+This agent uses three types of tools:
+
+- **Imported HTTP tools** (`search_hotels`, `get_hotel`) -- loaded from the shared file with full HTTP binding
+- **Contract-only tool** (`format_results`) -- the Runtime injects the implementation at deployment time
+- **MCP tool** (`get_weather`) -- connects to an external MCP server for weather data
+
+### Step 11: Tool binding reference
+
+ABL supports several tool execution types. Here is a reference for the most common ones:
+
+```abl
+TOOLS:
+  # HTTP tool -- calls a REST API
+  create_booking(hotel_id: string, guest_name: string) -> {booking_id: string}
+    type: http
+    endpoint: "/bookings"
+    method: POST
+    auth: bearer
+    timeout: 10000
+    description: "Create a hotel booking"
+
+  # MCP tool -- connects to an MCP server
+  get_weather(location: string) -> {temp: number, conditions: string}
+    type: mcp
+    server: "weather-service"
+    tool: "get_current_weather"
+    description: "Get current weather"
+
+  # Sandbox tool -- runs custom code in isolation
+  calculate_price(base_rate: number, nights: number, tax_rate: number) -> {total: number}
+    type: sandbox
+    runtime: "javascript"
+    entrypoint: "calculatePrice"
+    timeout: 5000
+    memory_mb: 128
+    description: "Calculate total booking price with tax"
+
+  # Contract-only tool -- implementation injected by the Runtime
+  send_confirmation(email: string, booking_id: string) -> {sent: boolean}
+    description: "Send booking confirmation email"
+```
+
+### Step 12: Handle tool results in a flow step
+
+When you use tools inside a flow section (covered in the [next tutorial](./build-a-scripted-flow)), you handle results explicitly with `ON_SUCCESS` and `ON_FAIL`:
+
+```abl
+  search_and_show:
+    REASONING: false
+    CALL: search_hotels(destination, checkin_date, checkout_date, num_guests)
+    ON_SUCCESS:
+      RESPOND: |
+        Found {{hotels.length}} hotels in {{destination}}:
+
+        {{#each hotels}}
+        {{add @index 1}}. {{name}} - ${{price}}/night ({{rating}} stars)
+        {{/each}}
+
+        Which hotel interests you?
+      THEN: select_hotel
+    ON_FAIL:
+      RESPOND: "No hotels found for those dates. Would you like to try different dates?"
+      THEN: get_dates
+```
+
+The `ON_SUCCESS` block runs when the tool call returns data. The `ON_FAIL` block runs when the tool call fails or returns no results. Both can include `RESPOND` messages and `THEN` transitions to other steps.
+
+### Step 13: Use CALL WITH for explicit parameters
+
+For more control over tool parameters, use `CALL ... WITH` syntax:
+
+```abl
+  validate_recipient_step:
+    REASONING: false
+    CALL: validate_recipient
+      WITH:
+        routing_number: recipient_routing
+        account_number: recipient_account
+      AS: recipientResult
+    ON_RESULT:
+      - IF: recipientResult.status == "valid"
+        SET:
+          recipient_bank = recipientResult.bank_name
+          recipient_name = recipientResult.account_holder
+        THEN: collect_amount
+      - IF: recipientResult.status == "INVALID_ROUTING"
+        RESPOND: "The routing number is invalid. Please check and try again."
+        THEN: collect_recipient
+      - ELSE:
+        RESPOND: "Could not verify the recipient. Please try again."
+        THEN: collect_recipient
+```
+
+The `WITH` block maps session variables to tool parameters. The `AS` keyword binds the tool result to a named variable. `ON_RESULT` provides multi-way branching based on the result values.
+
+### Step 14: Test tool execution
+
+Open the **Chat** panel in Studio and start a conversation:
+
+```
+I need a hotel in Paris for next week
+```
+
+Open the **Traces** panel to see the tool execution:
+
+1. The agent receives the user message
+2. The LLM decides to call `search_hotels` with the extracted parameters
+3. The Runtime executes the HTTP request
+4. The tool result flows back to the agent
+5. The agent formats and presents the results
+
+Each tool call appears as a separate span in the trace tree. Select a tool span to see:
+
+- **Parameters sent** -- The actual values passed to the tool
+- **Response received** -- The raw data returned
+- **Latency** -- How long the tool call took
+- **Status** -- Whether the call succeeded or failed
+
+### Full travel assistant definition
+
+```abl
+AGENT: Travel_Assistant
+
+EXECUTION:
+  model: claude-sonnet-4-5-20250929
+
+GOAL: |
+  Help users find hotels and plan their trips. Search for available
+  hotels based on destination, dates, and number of guests. Provide
+  weather information for travel destinations.
+
+PERSONA: |
+  Knowledgeable travel advisor who gives clear, practical recommendations.
+  Presents search results in an organized format with key details like
+  price, rating, and location.
+
+TOOLS:
+  FROM "./tools/hotels-api.tools.abl" USE: search_hotels, get_hotel
+
+  format_results(hotels: Hotel[]) -> string
+    description: "Format hotel results for display"
+
+  get_weather(location: string) -> {temp: number, conditions: string}
+    type: mcp
+    server: "weather-service"
+    tool: "get_current_weather"
+    description: "Get current weather for a destination"
+
+INSTRUCTIONS: |
+  1. Ask the user where and when they want to travel
+  2. Search for hotels using the search_hotels tool
+  3. Check the weather at the destination using get_weather
+  4. Present the top results with price, rating, and weather info
+  5. Offer to show details for any specific hotel
+
+COMPLETE:
+  - WHEN: user.booking_complete == true
+    RESPOND: "Your trip is all set! Have a wonderful time."
+  - WHEN: user.says_goodbye == true
+    RESPOND: "Thanks for using our travel service. Safe travels!"
+```
+
+---
+
+## What You Learned
+
+- **AGENT**, **GOAL**, **PERSONA**, and **INSTRUCTIONS** define your agent's identity and behavior
+- Agents reason by default, using the LLM for every response; adding a `FLOW` block is optional for structured steps
+- **LIMITATIONS** set explicit boundaries the agent respects
+- **COMPLETE** defines when the session ends
+- Studio's chat panel lets you test agents interactively; trace output shows the full reasoning chain
+- **Inline tool contracts** define a tool's name, parameters, return type, and description
+- **Tool files** (`.tools.abl`) let you share tools across agents with shared configuration
+- **FROM ... USE** imports specific tools from a tool file
+- ABL supports four tool types: **http**, **mcp**, **sandbox**, and **contract-only**
+- **ON_SUCCESS** / **ON_FAIL** handle tool results; **CALL ... WITH ... AS** gives explicit parameter control
+- **ON_RESULT** enables multi-way branching based on tool return values
+- Tool calls appear as individual spans in the Studio trace view
+
+## Next Steps
+
+- [Add structured steps to an agent](./build-a-scripted-flow) -- Create step-by-step guided conversations with FLOW, GATHER, and branching
+- [Multi-agent and knowledge](./multi-agent-and-knowledge) -- Connect multiple agents through a supervisor and add a knowledge base

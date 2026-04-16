@@ -1,0 +1,471 @@
+---
+title: 'Memory & Constraints'
+section: 'abl-reference'
+order: 6
+description: 'This page documents two related ABL constructs: the `MEMORY:` block for managing session and persistent state, and the `CONSTRAINTS:` block for enforcing business rules.'
+---
+
+# Memory & Constraints
+
+This page documents two related ABL constructs: the `MEMORY:` block for managing session and persistent state, and the `CONSTRAINTS:` block for enforcing business rules.
+
+---
+
+## MEMORY
+
+Memory in ABL defines how an agent stores, retrieves, and persists information across conversation turns, sessions, and users. The `MEMORY:` block declares four categories: session variables, persistent variables, remember triggers, and recall instructions.
+
+### Overview
+
+Every agent has access to a memory configuration that controls data lifecycle:
+
+- **Session variables** exist for the duration of a single conversation session.
+- **Persistent variables** survive across sessions, scoped to a user or project.
+- **Remember triggers** automatically store values when conditions are met.
+- **Recall instructions** load stored facts at specific lifecycle events.
+
+```abl
+MEMORY:
+  session:
+    - customer_id
+    - order_total
+      TYPE: number
+      DESCRIPTION: "Running total for the current order"
+      INITIAL: 0
+      RESET: per_session
+  persistent:
+    - user.preferred_language
+    - user.loyalty_tier
+      SCOPE: user
+  remember:
+    - WHEN: user_language IS SET
+      STORE: user_language -> user.language
+      TTL: "90d"
+  recall:
+    - ON: session:start
+      ACTION: inject_context
+      PATHS: [user.preferred_language, user.loyalty_tier]
+```
+
+### Session variables
+
+Session variables hold data that is relevant only during a single conversation. They are created when the session starts and discarded when the session ends (unless `RESET: never` is specified).
+
+#### Syntax
+
+```abl
+MEMORY:
+  session:
+    - variable_name
+    - variable_name
+      TYPE: string
+      DESCRIPTION: "Human-readable description"
+      INITIAL: "default_value"
+      RESET: per_session
+```
+
+You can declare a session variable with a bare name (minimal form) or with additional metadata.
+
+#### Properties
+
+| Property      | Type          | Required   | Default   | Description                                           |
+| ------------- | ------------- | ---------- | --------- | ----------------------------------------------------- | ------------- | ------------------------------------------------------------------ | --- | --- | ------------------------------------------------------- |
+| `name`        | `string`      | Yes        | --        | Variable name, used as the key in session context.    |
+| `TYPE`        | `string`      | `number`   | `boolean` | `date`                                                | `array`       | `object`                                                           | No  | --  | Value type for runtime validation and field resolution. |
+| `DESCRIPTION` | `string`      | No         | --        | Human-readable description of the variable's purpose. |
+| `INITIAL`     | any           | No         | `null`    | Initial value assigned when the session starts.       |
+| `RESET`       | `per_session` | `per_step` | `never`   | No                                                    | `per_session` | When to reset the variable. See [Reset behavior](#reset-behavior). |
+
+#### Reset behavior
+
+| Value         | Behavior                                                                                                    |
+| ------------- | ----------------------------------------------------------------------------------------------------------- |
+| `per_session` | Variable is initialized at session start and cleared when the session ends. This is the default.            |
+| `per_step`    | Variable is reset to its initial value at the start of each flow step. Useful for step-scoped accumulators. |
+| `never`       | Variable persists for the lifetime of the runtime process. Use sparingly; prefer persistent memory instead. |
+
+#### Example: typed session variables
+
+```abl
+MEMORY:
+  session:
+    - cart_items
+      TYPE: array
+      DESCRIPTION: "Items currently in the shopping cart"
+      INITIAL: []
+      RESET: per_session
+    - attempt_count
+      TYPE: number
+      INITIAL: 0
+      RESET: per_step
+```
+
+### Persistent variables
+
+Persistent variables survive across sessions. They are stored in a fact store and scoped to either a specific user or to the entire project.
+
+#### Syntax
+
+```abl
+MEMORY:
+  persistent:
+    - user.preferred_chains
+    - user.wire_history_30d
+      SCOPE: user
+      TYPE: array
+      DESCRIPTION: "Recent wire transfer history"
+      ACCESS: readwrite
+      DEFAULT: []
+    - project.exchange_rates
+      SCOPE: project
+      ACCESS: read
+```
+
+Persistent variable paths use dot notation. The first segment typically indicates the scope (`user.*` or `project.*`), but you can override this with the `SCOPE` property.
+
+#### Properties
+
+| Property      | Type     | Required  | Default     | Description                                                                |
+| ------------- | -------- | --------- | ----------- | -------------------------------------------------------------------------- | -------------------------------------------------------------------------- | ------------------------------------------------------------------------ | --- | --- | ---------------------------------- |
+| `path`        | `string` | Yes       | --          | Dot-notation path (e.g., `user.preferred_chains`).                         |
+| `SCOPE`       | `user`   | `project` | No          | `user`                                                                     | Ownership scope. `user` is per-user; `project` is shared across all users. |
+| `ACCESS`      | `read`   | `write`   | `readwrite` | No                                                                         | `readwrite`                                                                | Access direction. Constrains whether the agent can read, write, or both. |
+| `TYPE`        | `string` | `number`  | `boolean`   | `date`                                                                     | `array`                                                                    | `object`                                                                 | No  | --  | Value type for runtime validation. |
+| `UNIT`        | `string` | No        | --          | Unit of the stored value (e.g., `USD`, `km`). Informational metadata only. |
+| `DEFAULT`     | any      | No        | `null`      | Default value when no fact exists in the store.                            |
+| `DESCRIPTION` | `string` | No        | --          | Human-readable description.                                                |
+
+#### Scoping rules
+
+- **User scope** (`SCOPE: user`): Values are unique per authenticated user. Two users in the same project see different values for the same path.
+- **Project scope** (`SCOPE: project`): Values are shared across all users within the project. Useful for reference data, feature flags, or global configuration.
+
+### Remember triggers
+
+Remember triggers define rules for automatically storing values into persistent memory when a condition is met during conversation.
+
+#### Syntax
+
+```abl
+MEMORY:
+  remember:
+    - WHEN: user_name IS SET
+      STORE: user_name -> user.name
+      TTL: "90d"
+    - WHEN: preferred_language IS SET
+      STORE: preferred_language -> user.language
+```
+
+#### Properties
+
+| Property | Type     | Required | Default | Description                                                                                           |
+| -------- | -------- | -------- | ------- | ----------------------------------------------------------------------------------------------------- |
+| `WHEN`   | `string` | Yes      | --      | Condition expression that triggers the store operation. Evaluated after each turn.                    |
+| `STORE`  | `object` | Yes      | --      | Defines the value expression and the target persistent path. Syntax: `value_expr -> target_path`.     |
+| `TTL`    | `string` | No       | --      | Time-to-live for the stored fact. After expiration, the value is deleted. Examples: `"30d"`, `"24h"`. |
+
+#### TTL format
+
+TTL values use a duration string:
+
+| Suffix | Meaning |
+| ------ | ------- |
+| `s`    | Seconds |
+| `m`    | Minutes |
+| `h`    | Hours   |
+| `d`    | Days    |
+
+Example: `"90d"` means the stored fact expires 90 days after it was written.
+
+### Recall instructions
+
+Recall instructions define when and how to load persistent facts back into the session context. They execute at specific lifecycle events.
+
+#### Syntax
+
+```abl
+MEMORY:
+  recall:
+    - ON: session:start
+      ACTION: inject_context
+      PATHS: [user.name, user.language, user.preferred_agent]
+    - ON: search:before
+      ACTION: load_memory
+      DOMAIN: "travel_preferences"
+    - ON: session:start
+      ACTION: prompt_llm
+      INSTRUCTION: "Greet the user by name if known"
+```
+
+#### Properties
+
+| Property      | Type     | Required | Default | Description                                                             |
+| ------------- | -------- | -------- | ------- | ----------------------------------------------------------------------- |
+| `ON`          | `string` | Yes      | --      | Lifecycle event that triggers the recall. See [Events](#recall-events). |
+| `ACTION`      | `string` | No       | --      | The concrete action to execute. See [Actions](#recall-actions).         |
+| `INSTRUCTION` | `string` | Yes      | --      | Human-readable instruction for the recall behavior.                     |
+| `PATHS`       | `array`  | No       | --      | Persistent paths to inject (for `inject_context` action).               |
+| `DOMAIN`      | `string` | No       | --      | Memory domain filter (for `load_memory` action).                        |
+
+#### Recall events
+
+| Event           | When it fires                                          |
+| --------------- | ------------------------------------------------------ |
+| `session:start` | When a new session initializes, before any user input. |
+| `search:before` | Before a search or retrieval operation.                |
+
+#### Recall actions
+
+| Action           | Behavior                                                                                  |
+| ---------------- | ----------------------------------------------------------------------------------------- |
+| `inject_context` | Loads specified persistent paths directly into the session context as variables.          |
+| `load_memory`    | Loads all facts in the specified domain into context.                                     |
+| `prompt_llm`     | Passes the instruction text to the LLM as additional context. This is the default action. |
+
+### Accessing memory in expressions
+
+Session variables are accessed by name in expressions and template strings:
+
+```abl
+RESPOND: "Hello, {{customer_name}}! Your balance is {{available_balance}}."
+```
+
+Persistent variables are accessed through their full dot-notation path:
+
+```abl
+SET: greeting = COALESCE(user.name, "valued customer")
+```
+
+Variables set via `SET` assignments in flow steps, `ON_START`, or hooks are written to session memory and available for the remainder of the session.
+
+---
+
+## CONSTRAINTS
+
+Constraints are deterministic business rules that the runtime evaluates against the current session state. Authors can still group constraints under named phases for readability, but phase names are currently labels only: the compiler flattens constraints into a single runtime list unless a constraint explicitly gates itself with `WHEN` or a structural checkpoint construct.
+
+### Overview
+
+Constraints enforce guardrails on agent behavior that are separate from LLM instructions. They are deterministic checks evaluated by the runtime, not suggestions to the model. A constraint that fails blocks the current operation and triggers an `ON_FAIL` action.
+
+```abl
+CONSTRAINTS:
+  always:
+    - REQUIRE customer_verified == true
+      ON_FAIL: "Please verify your identity first."
+
+  pre_booking:
+    - REQUIRE amount <= available_balance
+      ON_FAIL: "Insufficient funds. Your available balance is {{available_balance}}."
+
+    - REQUIRE sanctions_clear == true
+      ON_FAIL: HANDOFF Compliance_Officer
+```
+
+### Phases
+
+Named phases are retained as authoring labels for readability, review, and organization. They do not currently create separate runtime execution phases by themselves.
+
+#### Syntax
+
+```abl
+CONSTRAINTS:
+  phase_name:
+    - REQUIRE condition_expression
+      ON_FAIL: action_or_message
+```
+
+Use labels like `always`, `pre_booking`, or `eligibility_check` when they help readers understand intent, but use `WHEN` to gate applicability and `BEFORE` only for explicit structural checkpoint targets.
+
+### Requirement rules
+
+Each requirement within a phase uses one of three keywords: `REQUIRE`, `LIMIT`, or `RESTRICT`.
+
+#### REQUIRE
+
+The most common form. Asserts that a condition must be true. If the condition evaluates to false, the `ON_FAIL` action is triggered.
+
+```abl
+- REQUIRE account_status == "active"
+  ON_FAIL: "Wire transfers require an active account."
+```
+
+#### LIMIT
+
+Expresses a numeric boundary. Semantically equivalent to `REQUIRE` with a comparison, but communicates intent more clearly.
+
+```abl
+- LIMIT daily_wire_used + amount <= daily_wire_limit
+  ON_FAIL: "This would exceed your daily wire limit of {{daily_wire_limit}}."
+```
+
+#### RESTRICT
+
+Expresses a prohibition. The condition describes what is forbidden; when it evaluates to true, the constraint fails.
+
+```abl
+- RESTRICT beneficiary_country IN ["CU", "IR", "KP", "SY"]
+  ON_FAIL: "Transfers to that destination are prohibited under sanctions regulations."
+```
+
+#### WHEN
+
+Use `WHEN:` to make a constraint apply only in a specific context without overloading the phase label.
+
+```abl
+- REQUIRE ssn IS NOT SET
+  WHEN: channel == "voice"
+  ON_FAIL: "SSN cannot be collected on voice."
+```
+
+#### BEFORE
+
+Use `BEFORE` for structural checkpoints that the runtime knows how to activate.
+
+```abl
+- REQUIRE measure_field IS SET BEFORE calling search_aggregate
+  ON_FAIL: "Select a measure before running the aggregate search."
+
+- REQUIRE aggregation_validated == true BEFORE returning results
+  ON_FAIL: "Validate the aggregation before responding."
+```
+
+Supported structural targets today:
+
+- `BEFORE calling <tool_name>`
+- `BEFORE returning results`
+
+Non-structural `BEFORE` targets are retained for compatibility, but they are warning-only and have no runtime effect. Prefer `IMPLIES` or `WHEN` for that form.
+
+### Constraint properties
+
+| Property    | Type                 | Required | Default   | Description                                                                                                                           |
+| ----------- | -------------------- | -------- | --------- | ------------------------------------------------------------------------------------------------------------------------------------- |
+| `condition` | `string`             | Yes      | --        | Expression to evaluate. See [Expressions & functions](./rich-content-and-expressions#expressions--functions).                         |
+| `WHEN`      | `string`             | No       | --        | Optional applicability gate. The compiler lowers it to implication semantics so the constraint only applies when the gate is true.    |
+| `ON_FAIL`   | `string` or action   | Yes      | `respond` | Action when the condition fails. See [ON_FAIL actions](#on_fail-actions).                                                             |
+| `severity`  | `error` or `warning` | No       | `error`   | `error` blocks execution; `warning` emits a warning but continues. In text ABL, use the `WARN` keyword instead of a `severity:` line. |
+
+### ON_FAIL actions
+
+The `ON_FAIL` value determines what happens when a constraint fails.
+
+#### String message (respond)
+
+The most common form. Sends a message to the user and halts the current operation.
+
+```abl
+ON_FAIL: "Insufficient funds. Available balance: {{available_balance}}."
+```
+
+#### HANDOFF
+
+Transfers control to another agent. Active flow and reasoning runtime checkpoints execute the handoff immediately when the constraint fails.
+
+```abl
+ON_FAIL: HANDOFF Compliance_Officer
+```
+
+#### ESCALATE
+
+Triggers human escalation.
+
+```abl
+ON_FAIL: ESCALATE
+```
+
+#### Block
+
+Silently blocks the operation without a user-facing message.
+
+```abl
+ON_FAIL: BLOCK
+```
+
+#### Structured ON_FAIL block
+
+For more control, use a structured block that combines multiple actions.
+
+```abl
+- REQUIRE payment_method IS SET
+  ON_FAIL:
+    RESPOND: "I need your payment method before proceeding."
+    COLLECT: [payment_method]
+    THEN: retry
+```
+
+##### Structured ON_FAIL properties
+
+| Property  | Type                  | Required | Default | Description                                                          |
+| --------- | --------------------- | -------- | ------- | -------------------------------------------------------------------- |
+| `RESPOND` | `string`              | No       | --      | Message to send to the user.                                         |
+| `COLLECT` | `string[]`            | No       | --      | Fields to collect from the user before re-evaluating.                |
+| `GOTO`    | `string`              | No       | --      | Flow step to jump to.                                                |
+| `RETRY`   | `boolean`             | No       | `false` | Retry the current step after handling the constraint.                |
+| `THEN`    | `continue` or `retry` | No       | --      | What to do after collection: `continue` proceeds, `retry` re-checks. |
+
+#### Collect and retry example
+
+```abl
+CONSTRAINTS:
+  pre_booking:
+    - REQUIRE departure_date IS SET AND return_date IS SET
+      ON_FAIL:
+        RESPOND: "I need your travel dates to check availability."
+        COLLECT: [departure_date, return_date]
+        THEN: retry
+
+    - REQUIRE departure_date > NOW()
+      ON_FAIL:
+        RESPOND: "The departure date must be in the future. What date works for you?"
+        COLLECT: [departure_date]
+        THEN: retry
+```
+
+#### GOTO example
+
+```abl
+- REQUIRE user.verified == true
+  ON_FAIL:
+    RESPOND: "You need to verify your identity first."
+    GOTO: identity_verification_step
+```
+
+### Severity levels
+
+| Severity  | Behavior                                                                                  |
+| --------- | ----------------------------------------------------------------------------------------- |
+| `error`   | Blocks the current operation. The `ON_FAIL` action executes. This is the default.         |
+| `warning` | Emits a warning event and continues execution. The `ON_FAIL` message is logged, not sent. |
+
+```abl
+- WARN fraud_score < 60
+  ON_FAIL: "Transaction flagged for review."
+```
+
+### Constraint evaluation order
+
+1. Constraint phase names such as `always` or `pre_booking` are labels only; the compiler flattens all constraints into one runtime list.
+2. `WHEN` gates a constraint to a specific context, and structural `BEFORE` gates it to supported checkpoints such as tool calls or final responses.
+3. Inline flow-step `CHECK` expressions are separate from `CONSTRAINTS` and evaluate directly against `step.check`.
+4. Declaration order is preserved in the flattened list.
+5. Evaluation stops at the first `error`-severity failure. Warnings do not halt evaluation.
+
+### Template interpolation in messages
+
+`ON_FAIL` message strings support `{{variable}}` interpolation using the current session context:
+
+```abl
+- REQUIRE (daily_wire_used + amount) <= daily_wire_limit
+  ON_FAIL: "This wire would exceed your daily limit of {{daily_wire_limit}}. You've sent {{daily_wire_used}} today."
+```
+
+---
+
+## Related pages
+
+- [Guardrails](./guardrails) -- input/output safety checks (distinct from business rule constraints)
+- [Expressions & functions](./rich-content-and-expressions#expressions--functions) -- condition expression syntax
+- [Multi-Agent & Supervisor](./multi-agent-and-supervisor) -- HANDOFF and ESCALATE actions referenced in ON_FAIL
+- [Lifecycle & hooks](./lifecycle-and-hooks) -- `ON_START` handler where initial memory setup occurs
+- [Data types](./data-types-and-utilities) -- type definitions used in `TYPE` declarations

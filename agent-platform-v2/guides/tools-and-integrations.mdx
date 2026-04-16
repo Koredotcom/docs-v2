@@ -1,0 +1,884 @@
+---
+title: 'Tools & Integrations'
+section: 'guides'
+order: 4
+description: 'Tools connect agents to external systems -- REST APIs, code sandboxes, MCP servers, and webhooks. This guide covers how to create, configure, share, and handle errors for every tool type.'
+---
+
+# Tools & Integrations
+
+Tools connect agents to external systems -- REST APIs, code sandboxes, MCP servers, and webhooks. This guide covers how to create, configure, share, and handle errors for every tool type.
+
+## HTTP Tools
+
+HTTP tools connect an agent to REST APIs for fetching data, submitting forms, or triggering external services.
+
+### Define a basic HTTP tool
+
+```abl
+TOOLS:
+  get_order_details(order_id: string) -> {order_id: string, status: string, items: object[], total_amount: number}
+    description: "Retrieve order details by order ID"
+    type: http
+    endpoint: "https://api.example.com/v1/orders/{order_id}"
+    method: GET
+    auth: bearer
+```
+
+The `type: http` binding tells the runtime to make an HTTP request. Path parameters like `{order_id}` are interpolated from the tool's input parameters.
+
+### Add authentication
+
+```abl
+TOOLS:
+  create_ticket(subject: string, body: string, priority: string) -> {ticket_id: string, status: string}
+    description: "Create a support ticket"
+    type: http
+    endpoint: "https://api.helpdesk.com/v2/tickets"
+    method: POST
+    auth: api_key
+    headers:
+      X-API-Key: "{{secrets.HELPDESK_API_KEY}}"
+```
+
+| Auth type       | Description                             |
+| --------------- | --------------------------------------- |
+| `none`          | No authentication                       |
+| `api_key`       | API key in header                       |
+| `bearer`        | Bearer token in Authorization header    |
+| `oauth2_client` | OAuth2 client credentials flow          |
+| `oauth2_user`   | OAuth2 user authorization flow          |
+| `custom`        | Custom headers defined in `auth_config` |
+
+Secrets are referenced with `{{secrets.SECRET_NAME}}` and resolved at runtime from the project's secret store.
+
+### Configure reliability
+
+```abl
+TOOLS:
+  process_payment(amount: number, currency: string, card_token: string) -> {transaction_id: string, success: boolean}
+    description: "Process a payment"
+    type: http
+    endpoint: "https://payments.example.com/v1/charge"
+    method: POST
+    auth: bearer
+    timeout: 10000
+    retry: 3
+    retry_delay: 1000
+```
+
+| Property      | Default | Description                         |
+| ------------- | ------- | ----------------------------------- |
+| `timeout`     | 5000    | Request timeout in milliseconds     |
+| `retry`       | 0       | Number of retry attempts on failure |
+| `retry_delay` | 1000    | Delay between retries in ms         |
+
+### POST with custom headers and rate limiting
+
+```abl
+TOOLS:
+  send_email(to: string, subject: string, body: string) -> {message_id: string, status: string}
+    description: "Send an email via the messaging API"
+    type: http
+    endpoint: "https://api.messaging.com/v1/send"
+    method: POST
+    auth: bearer
+    headers:
+      Content-Type: "application/json"
+      X-Request-Id: "{{request_id}}"
+    rate_limit: 10
+```
+
+`rate_limit` caps requests per second to avoid throttling.
+
+### Tool with circuit breaker
+
+```abl
+TOOLS:
+  get_inventory(sku: string) -> {sku: string, quantity: number, warehouse: string}
+    description: "Check inventory levels"
+    type: http
+    endpoint: "https://api.warehouse.com/inventory/{sku}"
+    method: GET
+    auth: api_key
+    timeout: 3000
+    retry: 2
+    circuit_breaker:
+      threshold: 5
+      reset_ms: 60000
+```
+
+The circuit breaker opens after `threshold` consecutive failures and stops making requests for `reset_ms` milliseconds, preventing cascading failures.
+
+### Tool with hints and result mapping
+
+```abl
+TOOLS:
+  lookup_customer(email: string) -> {customer_id: string, name: string, tier: string}
+    description: "Look up customer by email"
+    type: http
+    endpoint: "https://api.crm.com/v1/customers/search"
+    method: POST
+    auth: bearer
+    hints:
+      cacheable: true
+      latency: fast
+      side_effects: false
+      timeout: 5000
+    on_result:
+      set:
+        customer_id: "result.customer_id"
+        customer_name: "result.name"
+        customer_tier: "result.tier"
+    on_error:
+      set:
+        lookup_failed: "true"
+```
+
+Hints inform the runtime about tool behavior for optimization. `cacheable: true` enables response caching. `on_result` and `on_error` automatically map tool results to session variables.
+
+### Troubleshooting
+
+- **404 errors on path parameters:** Verify the parameter name in `{braces}` exactly matches a tool parameter name (case-sensitive).
+- **Authentication fails:** Check that the secret name in `{{secrets.NAME}}` matches the key configured in the project's secret store. Secrets are not available in local development without configuration.
+- **Timeout on slow APIs:** Increase the `timeout` value. For APIs that take more than 30 seconds, consider using an [async webhook tool](#async-webhooks) instead.
+
+## Code Tools
+
+Use sandbox tools to run custom code in an isolated environment -- for calculations, data transformations, or ML inference that does not map to a REST API.
+
+### JavaScript sandbox
+
+```abl
+TOOLS:
+  calculate_risk(data: object) -> {score: number, factors: string[]}
+    description: "Custom risk scoring model"
+    type: sandbox
+    runtime: "javascript"
+    entrypoint: "calculateRisk"
+    timeout: 5000
+    memory_mb: 128
+```
+
+The runtime executes the function named in `entrypoint` inside an isolated JavaScript sandbox. The tool's input parameters are passed as the function argument.
+
+### Python sandbox
+
+```abl
+TOOLS:
+  analyze_sentiment(text: string) -> {sentiment: string, confidence: number}
+    description: "Analyze text sentiment using a custom model"
+    type: sandbox
+    runtime: "python"
+    entrypoint: "analyze"
+    timeout: 10000
+    memory_mb: 256
+```
+
+### Inline code with pipe syntax
+
+```abl
+TOOLS:
+  calculate_discount(price: number, tier: string) -> {discount_pct: number, final_price: number}
+    description: "Calculate discount based on customer tier"
+    type: sandbox
+    runtime: "javascript"
+    timeout: 3000
+    code: |
+      function main({ price, tier }) {
+        const rates = { bronze: 0.05, silver: 0.10, gold: 0.15, platinum: 0.20 };
+        const discount = rates[tier] || 0;
+        return {
+          discount_pct: discount * 100,
+          final_price: price * (1 - discount)
+        };
+      }
+```
+
+The `code` property (pipe syntax `|`) embeds the full code inline in the ABL file. Use this for small, self-contained functions.
+
+### Python data processing
+
+```abl
+TOOLS:
+  parse_csv(csv_text: string) -> {rows: object[], headers: string[], row_count: number}
+    description: "Parse CSV text into structured data"
+    type: sandbox
+    runtime: "python"
+    timeout: 10000
+    memory_mb: 256
+    code: |
+      import csv
+      import io
+
+      def main(params):
+          reader = csv.DictReader(io.StringIO(params["csv_text"]))
+          rows = list(reader)
+          return {
+              "rows": rows,
+              "headers": reader.fieldnames or [],
+              "row_count": len(rows)
+          }
+```
+
+### Sandbox properties
+
+| Property     | Default | Description                             |
+| ------------ | ------- | --------------------------------------- |
+| `runtime`    | --      | `"javascript"` or `"python"` (required) |
+| `entrypoint` | --      | Function name to call                   |
+| `code`       | --      | Inline source code (optional)           |
+| `timeout`    | 5000    | Max execution time in milliseconds      |
+| `memory_mb`  | 128     | Memory limit in megabytes               |
+
+Each tool runs in its own isolated sandbox. You can mix JavaScript and Python tools in the same agent.
+
+### Troubleshooting
+
+- **Timeout on computation-heavy tasks:** Increase the `timeout` value. For tasks exceeding 30 seconds, consider offloading to an [async webhook](#async-webhooks) or Lambda tool instead.
+- **Memory limit exceeded:** Increase `memory_mb`. Large datasets or ML models may need 512 MB or more.
+- **Module not available in sandbox:** Sandboxes include standard library modules and common packages. Custom dependencies require a Lambda tool or external service instead.
+
+## MCP Servers
+
+MCP (Model Context Protocol) tools connect an agent to an external MCP-compatible server that exposes tools, resources, or prompts.
+
+### Define an MCP tool
+
+```abl
+TOOLS:
+  get_weather(location: string) -> {temp: number, conditions: string}
+    type: mcp
+    server: "weather-service"
+    tool: "get_current_weather"
+    description: "Get current weather for a destination"
+```
+
+The `server` field references an MCP server name configured in the runtime. The `tool` field specifies which tool on that server to invoke. If `tool` is omitted, it defaults to the tool name defined in ABL (`get_weather`).
+
+### MCP binding properties
+
+| Property | Required | Description                                             |
+| -------- | -------- | ------------------------------------------------------- |
+| `server` | Yes      | MCP server name (resolved from runtime configuration)   |
+| `tool`   | No       | Tool name on the MCP server (defaults to ABL tool name) |
+
+### Use multiple tools from one MCP server
+
+```abl
+TOOLS:
+  navigate(url: string, waitFor: string = "load", timeout: number = 30000) -> {success: boolean, url: string, title: string}
+    type: mcp
+    server: "crawler"
+    tool: "navigate"
+    description: "Navigate to a URL in a browser"
+
+  get_page_content(includeHtml: boolean = true, includeText: boolean = true) -> {url: string, title: string, html: string, text: string}
+    type: mcp
+    server: "crawler"
+    tool: "get_page_content"
+    description: "Get current page HTML and text content"
+
+  extract_links(filter: string = "", limit: number = 100) -> {links: object[], count: number}
+    type: mcp
+    server: "crawler"
+    tool: "extract_links"
+    description: "Extract all links from the current page"
+
+  click_element(selector: string) -> {success: boolean, message: string}
+    type: mcp
+    server: "crawler"
+    tool: "click_element"
+    description: "Click an element on the page using a CSS selector"
+```
+
+All tools reference the same `server: "crawler"` but different tool names. The runtime maintains a single connection to the MCP server.
+
+### Mix MCP with other tool types
+
+```abl
+AGENT: HotelSearch
+GOAL: "Help users find and compare hotels"
+
+TOOLS:
+  # Imported from a tool file
+  FROM "./tools/hotels-api.tools.abl" USE: search_hotels, get_hotel
+
+  # MCP tool for weather
+  get_weather(location: string) -> {temp: number, conditions: string}
+    type: mcp
+    server: "weather-service"
+    tool: "get_current_weather"
+    description: "Get current weather for a destination"
+
+  # Contract-only tool (runtime-injected)
+  format_results(hotels: object[]) -> string
+    description: "Format hotel results for display"
+```
+
+Agents can mix MCP tools with HTTP tools, imported tools, and contract-only tools.
+
+### Troubleshooting
+
+- **"Server not found" error:** The MCP server name in the `server` field must match a server configured in the runtime. Check the runtime configuration for registered MCP servers.
+- **Tool name mismatch:** If the MCP server's tool name differs from your ABL tool name, set the `tool` field explicitly.
+- **MCP server not responding:** MCP servers must be running and reachable from the runtime. Check network connectivity and server health.
+
+## OAuth Configuration
+
+Use OAuth when connecting to APIs that require user-level or application-level authorization, such as Google Workspace, Salesforce, or Microsoft Graph.
+
+### Client credentials (machine-to-machine)
+
+```abl
+TOOLS:
+  get_crm_contacts(query: string) -> {contacts: object[], total: number}
+    description: "Search CRM contacts"
+    type: http
+    endpoint: "https://api.crm.com/v2/contacts/search"
+    method: POST
+    auth: oauth2_client
+    auth_config:
+      token_url: "https://auth.crm.com/oauth/token"
+      client_id: "{{secrets.CRM_CLIENT_ID}}"
+      client_secret: "{{secrets.CRM_CLIENT_SECRET}}"
+      scopes: "contacts.read"
+```
+
+With `oauth2_client`, the runtime exchanges `client_id` and `client_secret` for an access token using the OAuth2 client credentials grant. The token is cached and refreshed automatically.
+
+### User authorization (delegated access)
+
+```abl
+TOOLS:
+  list_calendar_events(date: string) -> {events: object[]}
+    description: "List user's calendar events for a given date"
+    type: http
+    endpoint: "https://graph.microsoft.com/v1.0/me/calendar/events"
+    method: GET
+    auth: oauth2_user
+    auth_config:
+      token_url: "https://login.microsoftonline.com/common/oauth2/v2.0/token"
+      client_id: "{{secrets.MS_CLIENT_ID}}"
+      client_secret: "{{secrets.MS_CLIENT_SECRET}}"
+      scopes: "Calendars.Read"
+      provider: "microsoft"
+```
+
+With `oauth2_user`, the runtime uses a user-level access token obtained through the authorization code flow. The `provider` field tells the runtime which OAuth provider handles the consent screen.
+
+### Auth config properties
+
+| Property        | Required | Description                                   |
+| --------------- | -------- | --------------------------------------------- |
+| `token_url`     | Yes      | Token endpoint URL                            |
+| `client_id`     | Yes      | OAuth client ID (use `{{secrets.X}}`)         |
+| `client_secret` | Yes      | OAuth client secret (use `{{secrets.X}}`)     |
+| `scopes`        | Yes      | Space-separated list of permission scopes     |
+| `provider`      | No       | Provider name for consent UI routing          |
+| `header_name`   | No       | Custom header name (default: `Authorization`) |
+
+### Custom header authentication
+
+```abl
+TOOLS:
+  search_docs(query: string) -> {results: object[]}
+    description: "Search internal documents"
+    type: http
+    endpoint: "https://api.internal.com/v1/search"
+    method: POST
+    auth: custom
+    auth_config:
+      custom_headers:
+        X-API-Token: "{{secrets.INTERNAL_TOKEN}}"
+        X-Org-Id: "{{secrets.ORG_ID}}"
+```
+
+Use `auth: custom` with `custom_headers` when the API uses non-standard authentication headers.
+
+### OAuth in a reusable tool file
+
+```abl
+TOOLS:
+  base_url: "https://api.salesforce.com/v58.0"
+  auth: oauth2_client
+  timeout: 10000
+
+  query_accounts(soql: string) -> {records: object[], totalSize: number}
+    type: http
+    endpoint: "/query"
+    method: GET
+    description: "Execute a SOQL query"
+
+  create_lead(company: string, email: string) -> {id: string, success: boolean}
+    type: http
+    endpoint: "/sobjects/Lead"
+    method: POST
+    description: "Create a new lead"
+```
+
+Shared defaults (`base_url`, `auth`, `timeout`) apply to all tools in a `.tools.abl` file, reducing duplication.
+
+### Troubleshooting
+
+- **Token refresh fails silently:** Verify the `token_url` is correct and the client credentials have not been revoked. Check that `scopes` match what the API requires.
+- **User not prompted for consent:** Ensure `auth: oauth2_user` is set (not `oauth2_client`). The `provider` field must match a configured OAuth provider in the runtime.
+- **Secrets not resolved:** Secret references (`{{secrets.X}}`) are resolved at runtime. Verify the secret exists in the project's secret store with the exact key name.
+
+## Reusable Tool Files
+
+Use `.tools.abl` files to define tool collections with shared defaults, then import them into multiple agents.
+
+### Create a tool file
+
+```abl
+TOOLS:
+  base_url: "https://api.hotels.com/v1"
+  auth: bearer
+  timeout: 5000
+  retry: 3
+
+  search_hotels(destination: string, checkin: date, checkout: date) -> Hotel[]
+    type: http
+    endpoint: "/search"
+    method: POST
+    description: "Search available hotels"
+
+  get_hotel(hotel_id: string) -> Hotel
+    type: http
+    endpoint: "/hotels/{hotel_id}"
+    method: GET
+    description: "Get hotel details by ID"
+
+  get_hotel_reviews(hotel_id: string, limit: number = 10) -> Review[]
+    type: http
+    endpoint: "/hotels/{hotel_id}/reviews"
+    method: GET
+    description: "Get reviews for a hotel"
+```
+
+Save this as `tools/hotels-api.tools.abl`. The shared defaults (`base_url`, `auth`, `timeout`, `retry`) apply to all tools in the file unless overridden on individual tools.
+
+### Import tools into an agent
+
+```abl
+AGENT: HotelSearch
+GOAL: "Help users find and compare hotels"
+
+TOOLS:
+  FROM "./tools/hotels-api.tools.abl" USE: search_hotels, get_hotel
+```
+
+`FROM` specifies the relative path to the tool file. `USE` lists the specific tools to import. Only the named tools are available to the agent.
+
+### Shared defaults
+
+| Default       | Description                             |
+| ------------- | --------------------------------------- |
+| `base_url`    | Prepended to each tool's `endpoint`     |
+| `auth`        | Default auth type for all tools         |
+| `timeout`     | Default request timeout (ms)            |
+| `retry`       | Default retry count                     |
+| `retry_delay` | Default delay between retries (ms)      |
+| `rate_limit`  | Default requests per second cap         |
+| `headers`     | Default headers applied to all requests |
+
+Individual tools can override any default by specifying the property directly.
+
+### Combine imports with local tools
+
+```abl
+AGENT: TravelAgent
+GOAL: "Help users plan trips"
+
+TOOLS:
+  # Imported from shared tool files
+  FROM "./tools/hotels-api.tools.abl" USE: search_hotels, get_hotel
+  FROM "./tools/flights-api.tools.abl" USE: search_flights, get_flight
+
+  # Local contract-only tool
+  format_itinerary(hotels: object[], flights: object[]) -> string
+    description: "Format a travel itinerary for display"
+
+  # Local MCP tool
+  get_weather(location: string) -> {temp: number, conditions: string}
+    type: mcp
+    server: "weather-service"
+    description: "Get weather forecast"
+```
+
+Imported tools and locally defined tools coexist in the same `TOOLS` section.
+
+### Troubleshooting
+
+- **Tool file not found:** The path in `FROM` is relative to the agent file. Verify the path and file extension (`.tools.abl`).
+- **Imported tool missing parameters:** The imported tool uses the signature defined in the tool file. You cannot add or remove parameters at the import site.
+- **Base URL not applied:** Verify the tool file has `base_url` at the top level (not inside a tool definition). Individual tool endpoints should be relative paths (e.g., `/search` not `https://...`).
+
+## Error Handling & Retries
+
+Configure error handling to recover gracefully when tools fail -- with retries, fallback messages, and escalation paths.
+
+### Agent-level error handlers
+
+```abl
+ON_ERROR:
+  tool_timeout:
+    RESPOND: "Our system is taking longer than usual. Let me try again."
+    RETRY: 2
+    THEN: CONTINUE
+
+  tool_error:
+    RESPOND: "Something went wrong. Let me try another approach."
+    RETRY: 1
+    THEN: ESCALATE
+```
+
+`ON_ERROR` defines handlers by error type. `RETRY` specifies how many times to retry before executing `THEN`. `THEN` determines what happens after retries are exhausted.
+
+### Error types
+
+| Type                | Triggered when                              |
+| ------------------- | ------------------------------------------- |
+| `tool_timeout`      | Tool execution exceeds the timeout          |
+| `tool_error`        | Tool returns an error response              |
+| `routing_failure`   | Supervisor cannot route to the target agent |
+| `agent_unavailable` | Target agent is unreachable                 |
+| `payment_error`     | Payment processing fails                    |
+| `invalid_input`     | Input validation fails                      |
+
+### THEN actions
+
+| Action      | Behavior                                       |
+| ----------- | ---------------------------------------------- |
+| `CONTINUE`  | Resume the conversation from the current point |
+| `ESCALATE`  | Trigger escalation to a human agent            |
+| `HANDOFF X` | Hand off to agent X                            |
+| `COMPLETE`  | End the conversation                           |
+
+### Handle errors in flow steps
+
+```abl
+lookup:
+  REASONING: false
+  CALL: lookup_order(order_id)
+  ON_SUCCESS:
+    SET: tracking_number = result.tracking_number
+    THEN: show_status
+  ON_FAIL:
+    RESPOND: "I could not find that order. Please check the number and try again."
+    THEN: ask_order_id
+```
+
+### Conditional branching on tool results
+
+```abl
+check_hours:
+  REASONING: false
+  CALL: get_business_hours("general_support")
+  ON_SUCCESS:
+    - IF: get_business_hours.is_open == true
+      THEN: check_availability
+    - ELSE:
+      RESPOND: |
+        Our support team is currently offline.
+        Business hours: {{get_business_hours.hours}}
+      THEN: offer_callback
+  ON_FAIL:
+    THEN: check_availability
+```
+
+### Retry with backoff strategy
+
+```abl
+ON_ERROR:
+  tool_timeout:
+    RESPOND: "Retrying with a longer timeout..."
+    RETRY: 3
+    RETRY_DELAY: 2000
+    RETRY_BACKOFF: exponential
+    RETRY_MAX_DELAY: 10000
+    THEN: ESCALATE
+```
+
+| Property          | Default | Description                         |
+| ----------------- | ------- | ----------------------------------- |
+| `RETRY`           | 0       | Number of retry attempts            |
+| `RETRY_DELAY`     | 1000    | Initial delay between retries (ms)  |
+| `RETRY_BACKOFF`   | `fixed` | `fixed`, `exponential`, or `linear` |
+| `RETRY_MAX_DELAY` | --      | Maximum delay between retries (ms)  |
+
+### Step-level error override
+
+```abl
+process_payment:
+  REASONING: false
+  CALL: charge_card(card_number, amount)
+  ON_SUCCESS:
+    RESPOND: "Payment processed."
+    THEN: confirmation
+  ON_FAIL:
+    RESPOND: "Payment failed. Please check your card details."
+    THEN: collect_payment
+
+  ON_ERROR:
+    - TYPE: tool_timeout
+      RESPOND: "Payment processing is slow. Retrying..."
+      RETRY: 1
+      THEN: CONTINUE
+```
+
+Step-level `ON_ERROR` overrides the agent-level handler for that specific step.
+
+### Troubleshooting
+
+- **Retries not executing:** Verify the `RETRY` value is greater than 0. A value of 0 means no retries -- the `THEN` action executes immediately.
+- **Error handler not matching:** Error types are matched by name. Use the exact type strings (`tool_timeout`, `tool_error`, etc.).
+- **Infinite retry loop:** Always set a finite `RETRY` count and a `THEN` action that breaks out of the loop (e.g., `ESCALATE` or `HANDOFF`).
+
+## Confirmation Prompts
+
+Require user approval before executing tools that have side effects, such as processing payments, cancelling orders, or sending messages.
+
+### Add confirmation to a tool
+
+```abl
+TOOLS:
+  cancel_booking(booking_id: string, reason: string) -> {success: boolean, refund_amount: number}
+    description: "Cancel a booking and process refund"
+    type: http
+    endpoint: "https://api.example.com/v1/bookings/{booking_id}/cancel"
+    method: POST
+    auth: bearer
+    confirmation:
+      require: always
+```
+
+With `require: always`, the runtime prompts the user for confirmation every time this tool is about to execute. The agent shows the parameters and asks "Proceed with cancellation?" before making the request.
+
+### Confirmation modes
+
+| Mode                | Behavior                                           |
+| ------------------- | -------------------------------------------------- |
+| `always`            | Always ask for confirmation before executing       |
+| `never`             | Never ask (default)                                |
+| `when_side_effects` | Ask only when the tool has side effects configured |
+
+### Protect specific parameters from modification
+
+```abl
+TOOLS:
+  process_payment(amount: number, currency: string, card_token: string) -> {transaction_id: string}
+    description: "Process a payment charge"
+    type: http
+    endpoint: "https://payments.example.com/v1/charge"
+    method: POST
+    auth: bearer
+    confirmation:
+      require: always
+      immutable_params: [amount, currency]
+```
+
+`immutable_params` lists parameters that cannot be changed between the confirmation prompt and execution.
+
+### Confirmation with side effects hint
+
+```abl
+TOOLS:
+  send_email(to: string, subject: string, body: string) -> {message_id: string}
+    description: "Send an email to a customer"
+    type: http
+    endpoint: "https://api.messaging.com/v1/send"
+    method: POST
+    auth: bearer
+    hints:
+      side_effects: true
+    confirmation:
+      require: when_side_effects
+```
+
+When `require: when_side_effects` is combined with `hints.side_effects: true`, confirmation is requested. Tools without `side_effects: true` skip the prompt.
+
+### Confirmation as an explicit flow step
+
+```abl
+confirm_cancellation:
+  REASONING: false
+  RESPOND: |
+    You are about to cancel order {{order_id}}.
+    {{#if deduction_applies}}
+    A 10% late cancellation fee will apply.
+    Refund amount: ${{refund_amount}}
+    {{/if}}
+
+    Do you want to proceed?
+  ON_INPUT:
+    - IF: input == "yes" OR input == "confirm"
+      CALL: process_cancellation(order_id, selected_item_ids, cancellation_reason, deduction_percentage)
+      ON_SUCCESS:
+        SET: cancellation_id = result.cancellation_id
+        THEN: show_confirmation
+      ON_FAIL:
+        RESPOND: "Cancellation failed. Let me try again."
+        THEN: confirm_cancellation
+    - IF: input == "no" OR input == "cancel"
+      RESPOND: "Cancellation aborted. Your order remains active."
+      THEN: COMPLETE
+    - ELSE:
+      RESPOND: "Please confirm with 'yes' or 'no'."
+      THEN: confirm_cancellation
+```
+
+In flows with structured steps, you can implement confirmation as an explicit step rather than relying on the declarative `confirmation` property. This gives full control over the confirmation message and branching.
+
+### Troubleshooting
+
+- **Confirmation prompt too generic:** For a custom message, use an explicit flow step with `RESPOND` and `ON_INPUT` branching instead of the declarative `confirmation` property.
+- **User says "yes" but tool does not execute:** Verify the `confirmation` block syntax. The `require` field must be `always`, `never`, or `when_side_effects` (not a boolean).
+- **Immutable params still change:** `immutable_params` protects against LLM modification between the confirmation display and execution. It does not prevent the user from providing different values in a subsequent turn.
+
+## Async Webhooks
+
+Suspend agent execution while waiting for external systems to respond, then resume automatically when a callback arrives.
+
+### How async callbacks work
+
+When an agent calls a tool that requires time to complete (payment processing, third-party approvals, long-running API calls), the platform can:
+
+1. **Suspend** the session, freeing runtime resources.
+2. **Register a callback URL** for the external system to call when ready.
+3. **Resume** the session when the callback arrives, continuing from exactly where it left off.
+
+This pattern supports minutes-to-hours-long waits without holding open connections or consuming resources.
+
+### Configure a tool for async execution
+
+Mark a tool as async in your ABL definition:
+
+```abl
+TOOLS:
+  process_payment:
+    description: "Process a payment through the payment gateway"
+    type: http
+    endpoint: "{{env.PAYMENT_API_URL}}/charge"
+    method: POST
+    auth: bearer
+    async: true
+    timeout: 3600000
+    hints:
+      latency: slow
+```
+
+When the agent invokes an async tool, the platform:
+
+1. Sends the request to the external system with a callback URL in the payload.
+2. Suspends the session.
+3. Returns a `202 Accepted` to the caller with a suspension ID.
+
+### Handle the callback
+
+The external system calls the registered callback URL when processing completes:
+
+```bash
+POST /api/v1/callbacks/:callbackId
+Content-Type: application/json
+X-Callback-Signature: sha256=<hmac-hex>
+
+{
+  "status": "completed",
+  "transactionId": "txn_abc123",
+  "amount": 99.99
+}
+```
+
+The callback is processed exactly once:
+
+1. The callback ID is atomically claimed (preventing duplicate processing).
+2. The payload is enqueued for reliable processing via a background job queue.
+3. The session resumes with the callback payload available as the tool result.
+
+Callbacks are secured with HMAC-SHA256 signatures. The platform generates a unique secret per suspension, and the external system signs the callback body with this secret. Include the signature in the `X-Callback-Signature` header.
+
+### Resume the conversation
+
+When the callback arrives, the agent continues executing from the step that initiated the async call:
+
+```abl
+process_payment_step:
+  REASONING: false
+  CALL: process_payment(amount, currency, customer_id)
+  ON_SUCCESS:
+    RESPOND: "Payment processed. Transaction ID: {{process_payment.transactionId}}"
+    THEN: confirmation_step
+  ON_FAIL:
+    RESPOND: "Payment failed. Please try again or use a different method."
+    THEN: retry_payment
+```
+
+### Configure callback timeouts
+
+Set how long the platform waits for a callback before timing out the suspension:
+
+```abl
+TOOLS:
+  background_check:
+    description: "Run a background verification"
+    async: true
+    timeout: 86400000
+```
+
+The `timeout` is in milliseconds. After expiry, the session resumes with a timeout error.
+
+### Poll-based async (webhook not possible)
+
+If the external system cannot call a webhook, use the HTTP async channel for poll-based updates:
+
+```bash
+# Check session status
+GET /api/v1/sessions/:sessionId/status
+
+# Push an update to a suspended session
+POST /api/v1/sessions/:sessionId/resume
+Content-Type: application/json
+
+{"toolResult": {"status": "approved"}}
+```
+
+### Chain multiple async calls
+
+An agent can make multiple async calls in sequence. Each suspension and resumption is tracked independently:
+
+```abl
+FLOW:
+  steps:
+    - verify_identity
+    - process_payment
+    - send_confirmation
+
+verify_identity:
+  REASONING: false
+  CALL: run_kyc_check(customer_id)
+  ON_SUCCESS:
+    THEN: process_payment
+
+process_payment:
+  REASONING: false
+  CALL: charge_card(amount, card_token)
+  ON_SUCCESS:
+    THEN: send_confirmation
+```
+
+### Troubleshooting
+
+- **Callback arriving before suspension is persisted:** The platform handles this race condition via retry logic. The callback is queued and retried until the suspension record is available.
+- **"Already processed" response on callback:** The callback ID was already claimed. This typically means a duplicate callback -- the `200 OK` response with `status: "already_processed"` is intentional.
+- **Session not resuming:** Check that the callback URL is correct and the signature is valid. Verify the callback payload is valid JSON.
+- **Timeout before callback arrives:** Increase the tool's `timeout` value. Consider whether the external system needs a longer processing window.
+
+## Related
+
+- [Building Agents](./building-reasoning-agents)
+- [Adding Structured Steps to Agents](./building-scripted-flows)
+- [Multi-Agent Orchestration](./multi-agent-orchestration)
+- [Agent Collaboration & Handoff](./agent-collaboration-and-handoff)
+- [Tools](../abl-reference/tools)

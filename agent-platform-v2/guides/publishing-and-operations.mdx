@@ -1,0 +1,640 @@
+---
+title: 'Publishing & Operations'
+section: 'guides'
+order: 12
+description: 'Once your agent is tested and ready, you need to publish it to production, manage environments, and monitor its performance. This guide covers the deployment lifecycle, environment configuration, Git '
+---
+
+# Publishing & Operations
+
+Once your agent is tested and ready, you need to publish it to production, manage environments, and monitor its performance. This guide covers the deployment lifecycle, environment configuration, Git integration for version control, project import/export, and performance monitoring.
+
+## Publish an Agent
+
+Deploy a versioned snapshot of your agents to a target environment so end users can interact with them through channels and APIs.
+
+### Create Agent Versions
+
+Before deploying, create versioned snapshots of your agents. Versions capture the compiled ABL definition at a point in time.
+
+1. Open your project in Studio.
+2. Select the agent you want to version.
+3. Click **Create Version** in the toolbar.
+4. Enter a version label (e.g., `1.0.0`) and optional changelog.
+5. Click **Save Version**.
+
+Repeat for every agent included in the deployment. The platform compiles and validates the ABL before saving -- versions with compilation errors are rejected.
+
+### Deploy via Studio
+
+1. Navigate to **Project Settings > Deployments**.
+2. Click **New Deployment**.
+3. Configure the deployment:
+
+| Field                      | Description                                                                                  |
+| -------------------------- | -------------------------------------------------------------------------------------------- |
+| **Environment**            | Target environment: `dev`, `staging`, or `production`                                        |
+| **Entry agent**            | The agent that receives incoming messages (typically the supervisor)                         |
+| **Agent version manifest** | Map each agent name to a version (or select `auto` to version from the current working copy) |
+| **Label**                  | Human-readable deployment label (e.g., "v1.2 - Added refund flow")                           |
+| **Description**            | Optional notes about what changed                                                            |
+
+4. Click **Deploy**.
+
+The platform validates all agent versions, resolves `{{config.KEY}}` placeholders, caches the compiled output, sets the previous active deployment to `draining` status, and updates auto-follow channels to point to the new deployment.
+
+### Deploy via API
+
+```bash
+curl -X POST /api/projects/:projectId/deployments \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "environment": "production",
+    "entryAgentName": "Airlines_Supervisor",
+    "agentVersionManifest": {
+      "Airlines_Supervisor": "1.0.0",
+      "Flight_Search": "1.0.0",
+      "Policy_Advisor": "1.0.0"
+    },
+    "label": "v1.0 - Initial release"
+  }'
+```
+
+Use `"auto"` as the version value to auto-create a version from the current working copy:
+
+```json
+{
+  "agentVersionManifest": {
+    "Airlines_Supervisor": "auto",
+    "Flight_Search": "auto"
+  }
+}
+```
+
+### Deployment Lifecycle
+
+Deployments transition through these statuses:
+
+| Status     | Meaning                                               |
+| ---------- | ----------------------------------------------------- |
+| `active`   | Receiving new sessions and serving traffic            |
+| `draining` | No new sessions; existing sessions complete naturally |
+| `retired`  | Fully decommissioned, no traffic                      |
+
+Only one deployment per environment can be `active` at a time. Creating a new deployment automatically drains the previous one.
+
+### Rollback a Deployment
+
+If a deployment causes issues, roll back to the previous version:
+
+1. Navigate to **Deployments**.
+2. Find the problematic deployment.
+3. Click **Rollback**.
+
+This retires the current deployment and reactivates the previous one. Alternatively, via API:
+
+```bash
+curl -X POST /api/projects/:projectId/deployments/:deploymentId/rollback \
+  -H "Authorization: Bearer $TOKEN"
+```
+
+### Deploy with Model Overrides
+
+Override LLM model settings per agent without changing ABL code:
+
+```json
+{
+  "environment": "production",
+  "entryAgentName": "Supervisor",
+  "agentVersionManifest": { "Supervisor": "1.0.0" },
+  "modelOverrides": {
+    "Supervisor": {
+      "model": "claude-sonnet-4-5-20250929",
+      "temperature": 0.3
+    }
+  }
+}
+```
+
+### Deploy with Workflow Versions
+
+If your project includes workflows, include them in the manifest:
+
+```json
+{
+  "workflowVersionManifest": {
+    "order_processing": "1.0.0",
+    "refund_workflow": "auto"
+  }
+}
+```
+
+### Troubleshooting
+
+- **"Agent not found" error:** Verify all agent names in the manifest match the exact names in your project (case-sensitive).
+- **"Version not found" error:** Create the version first or use `"auto"` to version from the current working copy.
+- **Missing environment variables warning:** The deployment succeeds but warns about unresolved `{{env.KEY}}` references. Add the missing variables in the target environment's settings.
+- **Channels not updating:** Verify channels are configured with auto-follow enabled for the target environment.
+
+## Set Up Environments
+
+Use environments to separate development, testing, and production configurations for the same agent project.
+
+### Understand the Environment Model
+
+Agent Platform 2.0 supports three built-in environments per project:
+
+| Environment  | Purpose                                                      |
+| ------------ | ------------------------------------------------------------ |
+| `dev`        | Active development and Studio testing                        |
+| `staging`    | Pre-production validation with production-like configuration |
+| `production` | Live traffic from end users via channels and APIs            |
+
+Each environment has its own deployment (the active agent version manifest), environment variables (key-value configuration resolved at runtime), channel bindings (which channels route to this environment), and model overrides (per-environment LLM model settings).
+
+### Configure Environment Variables
+
+Environment variables let you change agent behavior per environment without modifying ABL code. Reference them in agent definitions as `{{env.KEY}}`.
+
+1. Open **Project Settings > Environment Variables**.
+2. Select the target environment tab (`dev`, `staging`, or `production`).
+3. Click **Add Variable**.
+4. Enter the key, value, and optional description.
+5. Toggle **Secret** if the value is sensitive (secrets are write-only after saving).
+6. Click **Save**.
+
+Example variables:
+
+```
+Environment: production
++----------------------+-------------------------------+--------+
+| Key                  | Value                         | Secret |
++----------------------+-------------------------------+--------+
+| API_BASE_URL         | https://api.example.com       | No     |
+| SUPPORT_EMAIL        | support@example.com           | No     |
+| PAYMENT_API_KEY      | ********                      | Yes    |
+| FEATURE_NEW_FLOW     | true                          | No     |
++----------------------+-------------------------------+--------+
+```
+
+Reference in ABL:
+
+```abl
+TOOLS:
+  process_payment:
+    description: "Process a payment"
+    type: http
+    endpoint: "{{env.API_BASE_URL}}/payments"
+    auth: bearer
+```
+
+### Set Up Environment-Specific Deployments
+
+Create separate deployments per environment, each pointing to the appropriate agent versions:
+
+```bash
+# Deploy to dev with auto-versioning
+curl -X POST /api/projects/:projectId/deployments \
+  -d '{"environment": "dev", "entryAgentName": "Supervisor", "agentVersionManifest": {"Supervisor": "auto"}}'
+
+# Deploy to staging with pinned versions
+curl -X POST /api/projects/:projectId/deployments \
+  -d '{"environment": "staging", "entryAgentName": "Supervisor", "agentVersionManifest": {"Supervisor": "1.2.0"}}'
+
+# Promote staging to production
+curl -X POST /api/projects/:projectId/deployments/:stagingDeploymentId/promote \
+  -d '{"targetEnvironment": "production"}'
+```
+
+### Route Channels to Environments
+
+Each channel (web widget, voice, messaging integration) is bound to a specific environment:
+
+1. Open **Project Settings > Channels**.
+2. Select a channel.
+3. Set its **Environment** to `dev`, `staging`, or `production`.
+4. Enable **Auto-follow** to automatically update the channel when a new deployment is created for its environment.
+
+### Feature Flags via Environment Variables
+
+Use environment variables as feature flags:
+
+```abl
+FLOW:
+  steps:
+    - check_feature
+
+check_feature:
+  REASONING: false
+  THEN:
+    - IF: "{{env.FEATURE_NEW_FLOW}}" == "true"
+      THEN: new_flow_step
+    - ELSE:
+      THEN: legacy_flow_step
+```
+
+Set `FEATURE_NEW_FLOW=true` in staging to test, then flip it in production when ready.
+
+### Copy Variables Between Environments
+
+When setting up a new environment, copy variables from an existing one:
+
+1. Open the source environment tab.
+2. Click **Copy to...** and select the target environment.
+3. Review and modify values as needed (secrets are not copied -- re-enter them).
+
+### Troubleshooting
+
+- **"Missing environment variable" warning on deploy:** The deployment detects `{{env.KEY}}` references in your agents that do not have corresponding variables defined for the target environment. Add the missing variables before deploying.
+- **Variable changes not taking effect:** Environment variables are resolved at session start. Existing sessions use the values from when they were created. New sessions pick up the latest values.
+- **Cannot read secret value:** Secret variables are write-only after saving. You can update or delete them but cannot view the stored value.
+
+## Git Integration
+
+Connect your ABL project to a Git repository to track changes, collaborate with your team, and automate deployments from code.
+
+### Connect a Git Repository
+
+1. Open **Project Settings > Git Integration**.
+2. Click **Connect Repository**.
+3. Select your Git provider:
+
+| Provider  | Auth methods supported                   |
+| --------- | ---------------------------------------- |
+| GitHub    | OAuth, personal access token, GitHub App |
+| GitLab    | OAuth, personal access token             |
+| Bitbucket | OAuth, app password                      |
+| Generic   | Personal access token, SSH key           |
+
+4. Authorize access to your repository.
+5. Configure the connection:
+
+| Field              | Description                             | Default  |
+| ------------------ | --------------------------------------- | -------- |
+| **Repository URL** | Full URL to the Git repository          | Required |
+| **Default branch** | Branch to sync with                     | `main`   |
+| **Sync path**      | Directory within the repo for ABL files | `/`      |
+
+6. Click **Connect**.
+
+### Sync Project to Git
+
+Once connected, push your project's ABL files to the repository:
+
+1. Click **Push to Git** in the Git Integration panel.
+2. Review the files that will be pushed (agent definitions, tool files, project manifest).
+3. Enter a commit message.
+4. Click **Push**.
+
+The platform exports your project files in the standard ABL project structure:
+
+```
+agents/
+  supervisor.agent.abl
+  booking_manager.agent.abl
+  flight_search.agent.abl
+tools/
+  payment_api.tools.abl
+project.yaml          # Project manifest
+project-lock.yaml     # Dependency lockfile
+```
+
+### Pull Changes from Git
+
+To import changes made in the repository back into Studio:
+
+1. Click **Pull from Git**.
+2. Review the incoming changes (added, modified, removed agents).
+3. Click **Apply**.
+
+The platform runs a dry-run preview first, showing what will change before applying.
+
+### Configure Auto-Sync
+
+Enable automatic synchronization between Studio and your repository:
+
+1. Open the Git integration settings.
+2. Toggle **Auto-sync** on.
+3. Choose a **conflict strategy**:
+
+| Strategy      | Behavior                                                |
+| ------------- | ------------------------------------------------------- |
+| `manual`      | Pause on conflicts and wait for manual resolution       |
+| `local_wins`  | Studio changes overwrite repository changes on conflict |
+| `remote_wins` | Repository changes overwrite Studio changes on conflict |
+
+Auto-sync keeps your repository up to date whenever agents are saved in Studio, and pulls repository changes when webhooks fire.
+
+### Set Up Auto-Deploy from Git
+
+Automatically deploy when code is pushed to a specific branch:
+
+1. In the Git integration settings, expand **Auto-Deploy**.
+2. Toggle it on.
+3. Configure:
+
+| Field           | Description                       | Example      |
+| --------------- | --------------------------------- | ------------ |
+| **Branch**      | Which branch triggers auto-deploy | `main`       |
+| **Environment** | Which environment to deploy to    | `production` |
+
+When a push lands on the configured branch, the platform pulls the latest files, validates and compiles all agents, creates auto-versioned snapshots, and creates a new deployment in the target environment.
+
+### Branch-Per-Environment Workflow
+
+Map different branches to different environments for a GitOps workflow:
+
+- `develop` branch auto-deploys to `dev`
+- `staging` branch auto-deploys to `staging`
+- `main` branch auto-deploys to `production`
+
+Create separate auto-deploy configurations or use your CI/CD pipeline with the deployment API.
+
+### Troubleshooting
+
+- **"Authentication failed" on connect:** Verify your access token has repository read/write permissions. For GitHub Apps, check the installation has access to the specific repository.
+- **Sync conflicts:** When both Studio and the repository have changes to the same agent, a conflict occurs. Resolve manually by choosing which version to keep, or set a conflict strategy.
+- **Webhook not firing:** Verify the webhook URL is reachable from your Git provider. Check the webhook secret matches. Review webhook delivery logs in your Git provider's settings.
+- **Auto-deploy failing:** Check that agents compile cleanly in the repository. The auto-deploy aborts if any agent has compilation errors.
+
+## Export & Import Projects
+
+Export projects as portable file bundles for backup, migration, or sharing. Import file bundles to create or update agents in a project.
+
+### Preview Before Exporting
+
+Check what will be included in the export:
+
+```bash
+curl -X GET /api/projects/:projectId/project-io/export/preview \
+  -H "Authorization: Bearer $TOKEN"
+```
+
+The preview shows the project name and slug, list of agents (with DSL content status), list of tools, and dependency graph with validation.
+
+### Run the Full Export
+
+```bash
+curl -X GET /api/projects/:projectId/project-io/export \
+  -H "Authorization: Bearer $TOKEN"
+```
+
+The response contains:
+
+| Field      | Description                                          |
+| ---------- | ---------------------------------------------------- |
+| `manifest` | Project metadata (name, slug, entry agent, versions) |
+| `lockfile` | Dependency lockfile with content hashes              |
+| `files`    | Map of file paths to content strings                 |
+| `warnings` | Any non-blocking issues found during export          |
+
+Export file structure:
+
+```json
+{
+  "files": {
+    "agents/supervisor.agent.abl": "SUPERVISOR: Airlines_Supervisor\n...",
+    "agents/flight_search.agent.abl": "AGENT: Flight_Search\n...",
+    "tools/payment_api.tools.abl": "TOOL: Payment_API\n...",
+    "project.yaml": "name: Airlines Support\n..."
+  }
+}
+```
+
+### Include Deployments
+
+To export deployment history alongside agents:
+
+```bash
+curl -X GET "/api/projects/:projectId/project-io/export?include_deployments=true" \
+  -H "Authorization: Bearer $TOKEN"
+```
+
+### Export from Studio
+
+1. Open your project.
+2. Navigate to **Project Settings > Import / Export**.
+3. Click **Export Project**.
+4. Choose the export format and download.
+
+### Preview Import Changes
+
+Before applying, preview what the import will change:
+
+```bash
+curl -X POST /api/projects/:projectId/project-io/import/preview \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "files": {
+      "agents/supervisor.agent.abl": "SUPERVISOR: Airlines_Supervisor\n...",
+      "agents/new_agent.agent.abl": "AGENT: New_Agent\n..."
+    }
+  }'
+```
+
+The preview shows agents that will be created, modified, or removed, plus any validation errors.
+
+### Apply the Import
+
+```bash
+curl -X POST /api/projects/:projectId/project-io/import \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "files": {
+      "agents/supervisor.agent.abl": "SUPERVISOR: Airlines_Supervisor\n...",
+      "agents/flight_search.agent.abl": "AGENT: Flight_Search\n..."
+    }
+  }'
+```
+
+The response confirms what was applied:
+
+```json
+{
+  "success": true,
+  "applied": {
+    "created": 1,
+    "updated": 2,
+    "deleted": 0
+  }
+}
+```
+
+### Import from Studio
+
+1. Open your project.
+2. Navigate to **Project Settings > Import / Export**.
+3. Click **Import Project**.
+4. Upload your export file or paste file contents.
+5. Review the preview of changes.
+6. Click **Apply**.
+
+### Migrate Between Workspaces
+
+To move a project from one workspace to another:
+
+1. Export from the source workspace using the API or Studio.
+2. Create a new project in the target workspace.
+3. Import the exported files into the new project.
+
+Note: Environment variables, LLM credentials, and deployment history are not included in exports. Reconfigure these in the target workspace.
+
+### Use Import for CI/CD
+
+Integrate imports into your build pipeline:
+
+```bash
+# Build your agents from source
+# ...
+
+# Preview changes
+PREVIEW=$(curl -s -X POST .../import/preview -d @agents.json)
+echo "Changes: $(echo $PREVIEW | jq '.preview.changes')"
+
+# Apply if preview looks good
+curl -X POST .../import -d @agents.json
+```
+
+### Troubleshooting
+
+- **"Another import is in progress":** Only one import can run per project at a time. Wait for the current import to complete (timeout: 2 minutes).
+- **"File too large" error:** Individual files are limited to 1 MB and total import content to 50 MB. Split large projects if needed.
+- **Import validation errors:** The import validates ABL syntax for all files. Fix parse errors before importing.
+- **Path traversal error:** File paths cannot contain `..`, start with `/`, or use backslashes. Use forward-slash relative paths like `agents/my_agent.agent.abl`.
+- **Rollback on failure:** If the import fails during application, newly created agents are automatically rolled back. Partially updated agents may need manual review.
+
+## Monitor Performance
+
+Track agent health, response quality, and resource usage across your deployments.
+
+### Per-Session Metrics
+
+Open a session to view its performance data:
+
+| Metric                | What it measures                                        |
+| --------------------- | ------------------------------------------------------- |
+| **Response latency**  | Time from user message to agent response (ms)           |
+| **LLM call count**    | Number of LLM API calls in the session                  |
+| **Tool call count**   | Number of tool invocations                              |
+| **Token usage**       | Input and output tokens consumed                        |
+| **Turn count**        | Number of conversation turns                            |
+| **Handoff count**     | Number of agent-to-agent transfers                      |
+| **Completion status** | Whether the session completed normally or was abandoned |
+
+### Aggregated Metrics
+
+View metrics aggregated across sessions via the API:
+
+```bash
+curl -X GET "/api/projects/:projectId/sessions/:id/metrics" \
+  -H "Authorization: Bearer $TOKEN"
+```
+
+### Monitor Active Deployments
+
+Check deployment health from the deployments list:
+
+1. Navigate to **Project Settings > Deployments**.
+2. View the status of each deployment:
+   - **Active sessions** -- how many sessions are currently using this deployment.
+   - **Channel count** -- how many channels are bound to this deployment.
+   - **Status** -- `active`, `draining`, or `retired`.
+
+```bash
+# List all deployments for a project
+curl -X GET /api/projects/:projectId/deployments \
+  -H "Authorization: Bearer $TOKEN"
+
+# Filter by environment and status
+curl -X GET "/api/projects/:projectId/deployments?environment=production&status=active" \
+  -H "Authorization: Bearer $TOKEN"
+```
+
+### Track LLM Usage
+
+Monitor LLM token consumption and cost across your workspace:
+
+1. Open **Workspace Settings > Usage**.
+2. View usage broken down by time period, project, model, and environment.
+
+### Set Up Alerts
+
+Configure alerts to get notified when metrics exceed thresholds:
+
+1. Open **Project Settings > Alerts**.
+2. Click **New Alert**.
+3. Configure the alert condition:
+
+| Alert type              | Trigger condition example                        |
+| ----------------------- | ------------------------------------------------ |
+| **Latency**             | Average response time > 5 seconds over 5 minutes |
+| **Error rate**          | Error percentage > 5% over 15 minutes            |
+| **Token budget**        | Daily token usage exceeds threshold              |
+| **Session abandonment** | Abandonment rate > 20% over 1 hour               |
+
+4. Set the notification channel (email, webhook).
+5. Click **Save**.
+
+### Feedback Collection
+
+If your channel integration supports it, collect end-user feedback (thumbs up/down, ratings):
+
+```bash
+# Submit feedback for a session
+curl -X POST /api/projects/:projectId/sessions/:id/feedback \
+  -H "Authorization: Bearer $TOKEN" \
+  -d '{"rating": 4, "comment": "Helpful but slow"}'
+```
+
+### Trace Analysis
+
+For deep investigation of specific sessions, use the trace analysis endpoint:
+
+```bash
+curl -X GET /api/projects/:projectId/sessions/:id/analysis \
+  -H "Authorization: Bearer $TOKEN"
+```
+
+This returns slow spans, decision points where the agent deviated from expected paths, error events and recovery attempts.
+
+### Export Session Data
+
+Export traces as CSV for offline analysis or integration with external analytics tools:
+
+```bash
+curl -X GET "/api/projects/:projectId/sessions/export?format=csv" \
+  -H "Authorization: Bearer $TOKEN"
+```
+
+### Monitor Across Environments
+
+Compare metrics between environments to validate that staging behavior matches production:
+
+- Use environment filters on the sessions list.
+- Compare latency and error rates between staging and production deployments.
+- Run the same eval set against both environments and compare scores.
+
+### Natural Language Analytics
+
+Use the NL analytics endpoint to query session data using natural language:
+
+```bash
+curl -X POST /api/projects/:projectId/nl-analytics \
+  -H "Authorization: Bearer $TOKEN" \
+  -d '{"query": "What are the top 5 reasons users abandon sessions this week?"}'
+```
+
+### Troubleshooting
+
+- **Metrics not appearing:** Metrics require an active ClickHouse connection. In development without ClickHouse, the platform falls back to in-memory metrics that reset on restart.
+- **Latency spikes after deployment:** Check if the new deployment uses a different model or has additional tool calls. Compare traces between the old and new deployments.
+- **Token usage higher than expected:** Review agent instructions for verbosity. Check if tools are being called unnecessarily. Consider using smaller models for simple tasks.
+
+## Further Reading
+
+- [Testing & Evaluation](./testing-and-evaluation) -- Test agents before publishing
+- [Channels](./channels) -- Connect deployments to user-facing channels
+- [Quickstart](../getting-started/quickstart) -- Getting started with Agent Platform 2.0

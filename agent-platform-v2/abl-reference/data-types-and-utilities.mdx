@@ -1,0 +1,796 @@
+---
+title: 'Data Types & Utilities'
+section: 'abl-reference'
+order: 12
+description: 'This page documents the ABL type system, lookup tables for reference-based validation, and attachment handling for file and media uploads.'
+---
+
+# Data Types & Utilities
+
+This page documents the ABL type system, lookup tables for reference-based validation, and attachment handling for file and media uploads.
+
+---
+
+## Data Types
+
+ABL has a type system used for variable declarations, gather field types, tool parameter signatures, and runtime validation. Types are divided into primitives and complex types.
+
+### Primitive types
+
+Primitive types represent single scalar values.
+
+| Type       | Description                               | Example values           |
+| ---------- | ----------------------------------------- | ------------------------ |
+| `string`   | Unicode text of arbitrary length.         | `"hello"`, `"USD"`, `""` |
+| `number`   | IEEE 754 double-precision floating point. | `42`, `3.14`, `-1`, `0`  |
+| `boolean`  | True or false.                            | `true`, `false`          |
+| `date`     | Calendar date without time.               | `"2024-03-15"`           |
+| `datetime` | Date with time and timezone.              | `"2024-03-15T10:30:00Z"` |
+
+#### String
+
+Strings are the most common type in ABL. They are used for text input, identifiers, messages, and any unstructured data.
+
+```abl
+GATHER:
+  customer_name:
+    prompt: "What is your name?"
+    type: string
+    required: true
+```
+
+#### Number
+
+Numbers represent all numeric values, including integers and floating-point numbers. ABL does not distinguish between integer and float types.
+
+```abl
+GATHER:
+  amount:
+    prompt: "How much would you like to transfer?"
+    type: number
+    required: true
+    validate: min(1)
+```
+
+#### Boolean
+
+Booleans represent true/false values. In conditions, the following values are treated as falsy: `false`, `0`, `""`, `"false"`, `null`, `undefined`, empty arrays, and empty objects. Everything else is truthy.
+
+```abl
+MEMORY:
+  session:
+    - customer_verified
+      TYPE: boolean
+      INITIAL: false
+```
+
+#### Date
+
+Dates represent calendar dates without a time component. They are stored as ISO 8601 date strings (`YYYY-MM-DD`).
+
+```abl
+GATHER:
+  departure_date:
+    prompt: "When would you like to depart?"
+    type: date
+    required: true
+```
+
+#### Datetime
+
+Datetimes include both date and time with timezone information. They are stored as ISO 8601 datetime strings.
+
+```abl
+MEMORY:
+  session:
+    - session_start_time
+      TYPE: datetime
+      INITIAL: NOW()
+```
+
+### Complex types
+
+Complex types represent structured or composite values.
+
+#### array\<T\>
+
+An ordered collection of elements, optionally typed by item type.
+
+```abl
+# In type definitions
+type: array<string>          # Array of strings
+type: array<number>          # Array of numbers
+type: array<object>          # Array of objects
+```
+
+In memory declarations:
+
+```abl
+MEMORY:
+  session:
+    - cart_items
+      TYPE: array
+      INITIAL: []
+```
+
+##### Array type definition (IR)
+
+```
+{ kind: 'array', itemType: TypeDefinition }
+```
+
+| Property   | Type             | Description                        |
+| ---------- | ---------------- | ---------------------------------- |
+| `kind`     | `'array'`        | Discriminant for array type.       |
+| `itemType` | `TypeDefinition` | Type of each element in the array. |
+
+#### object\<{...}\>
+
+A structured record with named, typed fields.
+
+```abl
+# In type definitions
+type: object<{name: string, age: number, active: boolean}>
+```
+
+In tool return types:
+
+```abl
+TOOLS:
+  get_user(id: string) -> {name: string, email: string, role: string}
+```
+
+##### Object type definition (IR)
+
+```
+{ kind: 'object', properties: Record<string, TypeDefinition> }
+```
+
+| Property     | Type                             | Description                        |
+| ------------ | -------------------------------- | ---------------------------------- |
+| `kind`       | `'object'`                       | Discriminant for object type.      |
+| `properties` | `Record<string, TypeDefinition>` | Map of field names to their types. |
+
+#### enum\<[...]\>
+
+A constrained set of allowed string values.
+
+```abl
+GATHER:
+  transfer_type:
+    prompt: "Is this domestic or international?"
+    type: string
+    validate: enum(domestic, international)
+```
+
+##### Enum type definition (IR)
+
+```
+{ kind: 'enum', values: string[] }
+```
+
+| Property | Type       | Description                 |
+| -------- | ---------- | --------------------------- |
+| `kind`   | `'enum'`   | Discriminant for enum type. |
+| `values` | `string[]` | Allowed values.             |
+
+#### union\<[...]\>
+
+A value that can be one of several types. Useful for fields that accept different formats.
+
+```abl
+# In type definitions
+type: union<[string, number]>    # Either a string or a number
+```
+
+##### Union type definition (IR)
+
+```
+{ kind: 'union', types: TypeDefinition[] }
+```
+
+| Property | Type               | Description                   |
+| -------- | ------------------ | ----------------------------- |
+| `kind`   | `'union'`          | Discriminant for union type.  |
+| `types`  | `TypeDefinition[]` | Possible types for the value. |
+
+#### nullable\<T\>
+
+Wraps another type to indicate it can also be `null`.
+
+```abl
+# In type definitions
+type: nullable<string>           # String or null
+type: nullable<number>           # Number or null
+```
+
+##### Nullable type definition (IR)
+
+```
+{ kind: 'nullable', innerType: TypeDefinition }
+```
+
+| Property    | Type             | Description                                |
+| ----------- | ---------------- | ------------------------------------------ |
+| `kind`      | `'nullable'`     | Discriminant for nullable type.            |
+| `innerType` | `TypeDefinition` | The underlying type that can also be null. |
+
+### Type definitions in ABL contexts
+
+#### Variable declarations
+
+In `MEMORY:` session and persistent variable declarations, use the `TYPE` property:
+
+```abl
+MEMORY:
+  session:
+    - order_total
+      TYPE: number
+      INITIAL: 0
+    - items
+      TYPE: array
+    - customer_profile
+      TYPE: object
+```
+
+#### Gather fields
+
+Gather fields use the `type` property with primitive type names:
+
+```abl
+GATHER:
+  name:
+    prompt: "What is your name?"
+    type: string
+    required: true
+  age:
+    prompt: "How old are you?"
+    type: number
+    required: true
+  departure_date:
+    prompt: "When do you depart?"
+    type: date
+    required: true
+```
+
+#### Tool parameters
+
+Tool parameters declare types inline in the signature:
+
+```abl
+TOOLS:
+  search_flights(origin: string, destination: string, date: date, passengers: number) -> {flights: {id: string, price: number, departure: datetime}[], total: number}
+```
+
+Supported parameter types:
+
+| Type       | Description         |
+| ---------- | ------------------- |
+| `string`   | Text parameter.     |
+| `number`   | Numeric parameter.  |
+| `boolean`  | Boolean parameter.  |
+| `date`     | Date parameter.     |
+| `datetime` | Datetime parameter. |
+| `object`   | Structured object.  |
+| `string[]` | Array of strings.   |
+| `number[]` | Array of numbers.   |
+
+#### Tool return types
+
+Tool return types use object literal notation with field names and types:
+
+```abl
+-> {field1: type1, field2: type2, nested: {sub_field: type3}[]}
+```
+
+The `ToolReturn` structure supports nested objects and arrays:
+
+| Property   | Type                         | Description                                     |
+| ---------- | ---------------------------- | ----------------------------------------------- |
+| `type`     | `string`                     | Type name (`string`, `number`, `object`, etc.). |
+| `fields`   | `Record<string, ToolReturn>` | Sub-fields (for `object` type).                 |
+| `items`    | `ToolReturn`                 | Item type (for array types).                    |
+| `optional` | `boolean`                    | Whether this field is optional in the response. |
+
+### Variable sources
+
+Variables in ABL have a source that indicates their origin:
+
+| Source     | Description                                         |
+| ---------- | --------------------------------------------------- |
+| `system`   | Set by the runtime (e.g., session ID, timestamp).   |
+| `user`     | Set by user input (gather fields, direct input).    |
+| `agent`    | Set by agent logic (SET assignments, tool results). |
+| `computed` | Derived from other variables via expressions.       |
+
+```abl
+STATE:
+  user:
+    language:
+      type: string
+      source: user
+  system:
+    session_id:
+      type: string
+      source: system
+```
+
+### Type coercion at runtime
+
+The runtime applies type coercion in these contexts:
+
+| Context           | Behavior                                                                                 |
+| ----------------- | ---------------------------------------------------------------------------------------- |
+| Comparison        | Strings are parsed to numbers for numeric comparisons. Booleans become 0/1.              |
+| Assignment        | Values are stored as-is. No implicit conversion on write.                                |
+| Function calls    | Math functions coerce string arguments to numbers. String functions coerce null to `""`. |
+| Tool parameters   | Values are coerced to match the declared parameter type before sending.                  |
+| Gather validation | User input is validated and coerced to the declared gather field type.                   |
+
+For detailed coercion rules in expression evaluation, see [Expressions & functions -- Type coercion rules](./rich-content-and-expressions#type-coercion-rules).
+
+### Complete TypeDefinition reference
+
+The full `TypeDefinition` type is a union of primitive type names and complex type objects:
+
+```
+TypeDefinition =
+  | 'string'
+  | 'number'
+  | 'boolean'
+  | 'date'
+  | 'datetime'
+  | { kind: 'array', itemType: TypeDefinition }
+  | { kind: 'object', properties: Record<string, TypeDefinition> }
+  | { kind: 'enum', values: string[] }
+  | { kind: 'union', types: TypeDefinition[] }
+  | { kind: 'nullable', innerType: TypeDefinition }
+```
+
+---
+
+## Lookup Tables
+
+Lookup tables provide reference-based validation for gather fields and expressions. They define sets of valid values that the runtime uses to validate user input, suggest corrections, and perform fuzzy matching. The `LOOKUP_TABLES:` block declares named tables with their data source and matching configuration.
+
+### Overview
+
+ABL supports three lookup table sources:
+
+- **Inline** -- static values defined directly in the ABL file.
+- **Collection** -- values stored in a tenant-scoped database collection.
+- **API** -- values fetched from an external HTTP endpoint.
+
+```abl
+LOOKUP_TABLES:
+  airport_codes:
+    source: inline
+    values: [JFK, LAX, ORD, SFO, MIA, ATL, DFW, SEA]
+    case_sensitive: false
+    fuzzy_match: true
+    fuzzy_threshold: 0.85
+
+  hotel_chains:
+    source: collection
+    table_name: "hotel_chains"
+    field: "name"
+    case_sensitive: false
+    fuzzy_match: true
+    fuzzy_threshold: 0.8
+
+  currency_codes:
+    source: api
+    endpoint: "https://api.reference.com/v1/currencies"
+    field: "code"
+    timeout_ms: 5000
+    case_sensitive: true
+    fuzzy_match: false
+```
+
+### Inline lookup tables
+
+Inline tables define their values directly in the ABL file. Use them for small, stable reference sets.
+
+#### Syntax
+
+```abl
+LOOKUP_TABLES:
+  transfer_types:
+    source: inline
+    values: [domestic, international]
+    case_sensitive: false
+    fuzzy_match: false
+```
+
+#### When to use inline tables
+
+- The value set is small (fewer than ~100 entries).
+- The values rarely change.
+- No external dependency is acceptable.
+
+### Collection lookup tables
+
+Collection tables read values from a tenant-scoped database collection. The platform resolves the `table_name` to the correct storage location based on the current tenant.
+
+#### Syntax
+
+```abl
+LOOKUP_TABLES:
+  product_catalog:
+    source: collection
+    table_name: "products"
+    field: "product_name"
+    case_sensitive: false
+    fuzzy_match: true
+    fuzzy_threshold: 0.85
+```
+
+#### When to use collection tables
+
+- The value set is large or changes frequently.
+- Values are managed through an admin interface or data pipeline.
+- Different tenants have different valid values.
+
+### API lookup tables
+
+API tables fetch values from an external HTTP endpoint at runtime. The response is expected to contain an array of objects; the `field` property specifies which object field to match against.
+
+#### Syntax
+
+```abl
+LOOKUP_TABLES:
+  exchange_rates:
+    source: api
+    endpoint: "https://api.rates.example.com/v1/currencies"
+    field: "currency_code"
+    timeout_ms: 3000
+    case_sensitive: true
+    fuzzy_match: false
+```
+
+#### When to use API tables
+
+- Values come from a third-party system that maintains its own data.
+- Real-time accuracy is important (e.g., live exchange rates, inventory).
+- The dataset is too large to store locally.
+
+### Lookup table properties
+
+| Property          | Type       | Required | Default | Description                                                           |
+| ----------------- | ---------- | -------- | ------- | --------------------------------------------------------------------- |
+| `source`          | `string`   | Yes      | --      | Data source type: `inline`, `collection`, or `api`.                   |
+| `values`          | `string[]` | No       | --      | Static values (required for `source: inline`).                        |
+| `table_name`      | `string`   | No       | --      | Logical table name (required for `source: collection`).               |
+| `endpoint`        | `string`   | No       | --      | HTTP endpoint URL (required for `source: api`).                       |
+| `field`           | `string`   | No       | --      | Field within the data source to match against.                        |
+| `timeout_ms`      | `number`   | No       | `5000`  | Request timeout in milliseconds (for `source: api`).                  |
+| `case_sensitive`  | `boolean`  | Yes      | --      | Whether matching is case-sensitive.                                   |
+| `fuzzy_match`     | `boolean`  | Yes      | --      | Whether fuzzy (approximate) matching is enabled.                      |
+| `fuzzy_threshold` | `number`   | No       | `0.85`  | Minimum similarity score (0.0--1.0) for fuzzy matches to be accepted. |
+
+### Fuzzy matching
+
+When `fuzzy_match: true`, the runtime uses string similarity algorithms to find the closest match when an exact match is not found. This handles typos, abbreviations, and minor variations.
+
+#### Similarity threshold
+
+The `fuzzy_threshold` controls how similar a user's input must be to a valid value for the match to be accepted:
+
+| Threshold | Behavior                                                                  |
+| --------- | ------------------------------------------------------------------------- |
+| `0.95`    | Very strict. Only near-exact matches accepted.                            |
+| `0.85`    | Default. Tolerates minor typos and abbreviations.                         |
+| `0.75`    | Lenient. Accepts more variation but increases false positive risk.        |
+| `0.50`    | Very lenient. Useful for short strings where small edits are significant. |
+
+#### Example: fuzzy matching for airport codes
+
+```abl
+LOOKUP_TABLES:
+  airports:
+    source: inline
+    values: [JFK, LAX, ORD, SFO, MIA, ATL, DFW, SEA]
+    case_sensitive: false
+    fuzzy_match: true
+    fuzzy_threshold: 0.8
+```
+
+With this configuration:
+
+- `"jfk"` matches `JFK` (case-insensitive exact match).
+- `"SFP"` matches `SFO` (fuzzy match, 1 character difference).
+- `"XYZ"` does not match any value (below threshold).
+
+### Field mapping
+
+The `field` property specifies which field in the data source to match against. For collection and API sources, the data is typically an array of objects. The `field` tells the runtime which property to compare:
+
+```abl
+# Given API response: [{"code": "USD", "name": "US Dollar"}, {"code": "EUR", "name": "Euro"}]
+LOOKUP_TABLES:
+  currencies:
+    source: api
+    endpoint: "https://api.reference.com/v1/currencies"
+    field: "code"
+    case_sensitive: true
+    fuzzy_match: false
+```
+
+User input is matched against the `code` field of each object in the response.
+
+### Using lookup tables in validation
+
+Reference a lookup table in a gather field's `validate` property:
+
+```abl
+GATHER:
+  destination_airport:
+    prompt: "What's your destination airport code?"
+    type: string
+    required: true
+    validate: lookup(airports)
+```
+
+The `lookup(table_name)` function validates the user's input against the named lookup table, applying the table's matching configuration (case sensitivity, fuzzy matching, threshold).
+
+### Timeout and error handling
+
+For API-sourced tables, specify a `timeout_ms` to control how long the runtime waits for the external service:
+
+```abl
+LOOKUP_TABLES:
+  products:
+    source: api
+    endpoint: "https://catalog.internal/api/v1/products"
+    field: "sku"
+    timeout_ms: 3000
+    case_sensitive: true
+    fuzzy_match: false
+```
+
+If the API call times out or returns an error, the runtime:
+
+1. Logs a warning.
+2. Falls back to accepting the user's input without validation.
+3. Emits a trace event indicating the lookup failure.
+
+---
+
+## Attachments
+
+Attachments define file and media upload fields that the agent collects from the user. The `ATTACHMENTS:` block declares named attachment fields with their content category, processing options, and validation constraints. Attachments work alongside [GATHER](./gather) fields to collect structured data through conversation.
+
+### Overview
+
+ABL supports four attachment categories, each with specialized processing capabilities:
+
+| Category   | Use cases                                 | Processing features                |
+| ---------- | ----------------------------------------- | ---------------------------------- |
+| `document` | PDFs, Word docs, spreadsheets, text files | OCR, text extraction               |
+| `image`    | Photos, screenshots, scanned documents    | OCR, image analysis                |
+| `audio`    | Voice recordings, audio messages          | Transcription                      |
+| `video`    | Screen recordings, instructional clips    | Keyframe extraction, transcription |
+
+```abl
+ATTACHMENTS:
+  id_document:
+    prompt: "Please upload a photo of your government-issued ID."
+    category: image
+    required: true
+    max_file_size_mb: 10
+    allowed_mime_types: [image/jpeg, image/png, image/webp]
+    ocr_enabled: true
+
+  supporting_docs:
+    prompt: "Upload any supporting documents (invoices, contracts, etc.)."
+    category: document
+    required: false
+    max_file_size_mb: 25
+    allowed_mime_types: [application/pdf, image/jpeg, image/png]
+    ocr_enabled: true
+```
+
+### Attachment field properties
+
+| Property                | Type       | Required | Default | Description                                                              |
+| ----------------------- | ---------- | -------- | ------- | ------------------------------------------------------------------------ |
+| `name`                  | `string`   | Yes      | --      | Unique identifier for the attachment field (the YAML key).               |
+| `prompt`                | `string`   | Yes      | --      | Message displayed to the user when requesting the upload.                |
+| `category`              | `string`   | Yes      | --      | Content category: `document`, `image`, `audio`, or `video`.              |
+| `required`              | `boolean`  | Yes      | --      | Whether the attachment is mandatory.                                     |
+| `max_file_size_mb`      | `number`   | No       | --      | Maximum file size in megabytes.                                          |
+| `allowed_mime_types`    | `string[]` | No       | --      | Allowed MIME types. If omitted, all types for the category are accepted. |
+| `ocr_enabled`           | `boolean`  | No       | `false` | Enable OCR text extraction for `document` and `image` categories.        |
+| `transcription_enabled` | `boolean`  | No       | `false` | Enable audio transcription for `audio` and `video` categories.           |
+| `key_frame_extraction`  | `boolean`  | No       | `false` | Enable keyframe extraction for `video` category.                         |
+
+### Document attachments
+
+Document attachments handle file uploads such as PDFs, Word documents, spreadsheets, and plain text files. When OCR is enabled, the runtime extracts text content from the uploaded document and makes it available in the session context.
+
+```abl
+ATTACHMENTS:
+  bank_statement:
+    prompt: "Please upload your most recent bank statement."
+    category: document
+    required: true
+    max_file_size_mb: 25
+    allowed_mime_types: [application/pdf]
+    ocr_enabled: true
+```
+
+#### Common document MIME types
+
+| MIME type                                                                 | Description   |
+| ------------------------------------------------------------------------- | ------------- |
+| `application/pdf`                                                         | PDF documents |
+| `application/vnd.openxmlformats-officedocument.wordprocessingml.document` | Word (.docx)  |
+| `application/vnd.openxmlformats-officedocument.spreadsheetml.sheet`       | Excel (.xlsx) |
+| `text/plain`                                                              | Plain text    |
+| `text/csv`                                                                | CSV files     |
+
+### Image attachments
+
+Image attachments handle photo and screenshot uploads. OCR extracts text from images (useful for scanned documents, receipts, and ID cards).
+
+```abl
+ATTACHMENTS:
+  receipt_photo:
+    prompt: "Take a photo of your receipt or upload an image."
+    category: image
+    required: true
+    max_file_size_mb: 10
+    allowed_mime_types: [image/jpeg, image/png, image/webp, image/heic]
+    ocr_enabled: true
+```
+
+#### Common image MIME types
+
+| MIME type    | Description       |
+| ------------ | ----------------- |
+| `image/jpeg` | JPEG images       |
+| `image/png`  | PNG images        |
+| `image/webp` | WebP images       |
+| `image/heic` | HEIC images (iOS) |
+| `image/gif`  | GIF images        |
+| `image/tiff` | TIFF images       |
+
+### Audio attachments
+
+Audio attachments handle voice recordings and audio messages. When transcription is enabled, the runtime converts the audio to text.
+
+```abl
+ATTACHMENTS:
+  voice_message:
+    prompt: "Record or upload a voice message describing the issue."
+    category: audio
+    required: false
+    max_file_size_mb: 50
+    allowed_mime_types: [audio/mpeg, audio/wav, audio/ogg, audio/webm]
+    transcription_enabled: true
+```
+
+#### Common audio MIME types
+
+| MIME type    | Description   |
+| ------------ | ------------- |
+| `audio/mpeg` | MP3 files     |
+| `audio/wav`  | WAV files     |
+| `audio/ogg`  | OGG audio     |
+| `audio/webm` | WebM audio    |
+| `audio/mp4`  | AAC/M4A files |
+
+### Video attachments
+
+Video attachments handle video file uploads. Two processing features are available:
+
+- **Transcription** extracts speech from the video's audio track.
+- **Keyframe extraction** captures representative frames from the video for visual analysis.
+
+```abl
+ATTACHMENTS:
+  screen_recording:
+    prompt: "Upload a screen recording showing the issue."
+    category: video
+    required: false
+    max_file_size_mb: 100
+    allowed_mime_types: [video/mp4, video/webm, video/quicktime]
+    transcription_enabled: true
+    key_frame_extraction: true
+```
+
+#### Common video MIME types
+
+| MIME type         | Description     |
+| ----------------- | --------------- |
+| `video/mp4`       | MP4 video       |
+| `video/webm`      | WebM video      |
+| `video/quicktime` | QuickTime (MOV) |
+
+### OCR processing
+
+When `ocr_enabled: true`, the runtime processes uploaded documents and images through an OCR pipeline that:
+
+1. Detects text regions in the file.
+2. Extracts text content.
+3. Stores the extracted text in the session context under the attachment field name.
+
+The extracted text is accessible in expressions and template strings:
+
+```abl
+# After OCR, the text is available as the attachment field name
+SET:
+  id_text = id_document.extracted_text
+```
+
+### Transcription processing
+
+When `transcription_enabled: true`, the runtime processes audio and video files through a transcription pipeline:
+
+1. Extracts the audio track (for video files).
+2. Runs speech-to-text transcription.
+3. Stores the transcript in the session context.
+
+```abl
+SET:
+  message_text = voice_message.transcript
+```
+
+### Keyframe extraction
+
+When `key_frame_extraction: true`, the runtime extracts representative frames from video files:
+
+1. Analyzes the video for scene changes.
+2. Captures keyframes at scene boundaries.
+3. Stores the keyframes as an array of image references.
+
+```abl
+SET:
+  frames = screen_recording.keyframes
+```
+
+### File size and MIME type validation
+
+The runtime validates uploaded files against the declared constraints before processing:
+
+- If the file exceeds `max_file_size_mb`, the upload is rejected with an error message.
+- If the file's MIME type is not in `allowed_mime_types`, the upload is rejected.
+- If `allowed_mime_types` is omitted, all standard MIME types for the category are accepted.
+
+### Complete attachment example
+
+```abl
+ATTACHMENTS:
+  government_id:
+    prompt: "Please upload a clear photo of your government-issued ID (passport, driver's license, or national ID card)."
+    category: image
+    required: true
+    max_file_size_mb: 10
+    allowed_mime_types: [image/jpeg, image/png, image/webp]
+    ocr_enabled: true
+
+  proof_of_address:
+    prompt: "Upload a utility bill or bank statement from the last 3 months as proof of address."
+    category: document
+    required: true
+    max_file_size_mb: 25
+    allowed_mime_types: [application/pdf, image/jpeg, image/png]
+    ocr_enabled: true
+
+  voice_authorization:
+    prompt: "Record a voice message stating: 'I authorize this wire transfer of {{amount}} {{currency}} to {{beneficiary_name}}.'"
+    category: audio
+    required: false
+    max_file_size_mb: 10
+    allowed_mime_types: [audio/mpeg, audio/wav, audio/webm]
+    transcription_enabled: true
+```
+
+---
+
+## Related pages
+
+- [Expressions & functions](./rich-content-and-expressions#expressions--functions) -- type coercion in expressions and built-in type-checking functions
+- [Memory & Constraints](./memory-and-constraints) -- TYPE declarations in session and persistent variables, attachment data in session
+- [GATHER](./gather) -- gather field types and lookup-based validation
+- [NLU](./nlu) -- entity extraction that may reference lookup tables
