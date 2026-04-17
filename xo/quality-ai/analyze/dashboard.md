@@ -2,7 +2,9 @@
 
 ## Overview
 
-The Supervisor Dashboard (QA Dashboard) provides real-time insights of audit results, agent performance, and failure statistics across daily, weekly, and monthly timeframes. By default, the dashboard displays daily reports for all categories, allowing quick insights into quality standards and agent adherence. It helps you in filtering daily reports by language, date, and communication channel.
+The Supervisor Dashboard (QA Dashboard) provides near real-time insights into audit results, agent performance, coaching progress, evaluation trends, and fatal interactions across selected languages, date ranges, channels, and contact directions.
+
+By default, it displays data for the last 7 days across all languages, channels, and both inbound and outbound interactions. Direction-aware filtering enables analysis of inbound, outbound, or combined interactions, with all widgets dynamically updating based on the selected language, date range, channel, and contact direction—supporting comparison of quality trends, audit progress, coaching load, and fatal rates across workflows.
 
 Key features include:
 
@@ -77,7 +79,7 @@ To filter by calendar,
 
 #### Channel
 
-The Quality AI dashboard's default settings display combined data from all three channels — **Voice**, **Chat**, or **All**. You can filter performance metrics by channel: **Voice**, **Chat**, or **All** (which includes both Voice and Chat conversations). The dashboard presents trends and graphs with daily, weekly, and monthly views, along with a distribution view. The system displays data based on the selected language and channel.
+The Quality AI dashboard's default settings display combined data from all three channels ( **Voice**, **Chat**, or **All**). You can filter performance metrics by channel: **Voice**, **Chat**, or **All** (which includes both Voice and Chat conversations). The dashboard presents trends and graphs with daily, weekly, and monthly views, along with a distribution view. The system displays data based on the selected language and channel.
 
 To filter by channel, 
 
