@@ -1,0 +1,296 @@
+---
+title: Agent AI Voice Integration for NICE CXone Mpower in Salesforce
+sidebarTitle: Agent AI Voice Integration for NICE CXone Mpower in Salesforce
+---
+
+This guide explains how to set up and configure the Agent AI widget with NICE CXone telephony using the Salesforce NICE CXone Mpower package.
+
+## Use case
+
+ NICE CXone Mpower CTI on Salesforce receives or initiates a call:
+
+* CTI rules match the customer’s phone number to a Salesforce record.
+* NICE CXone streams audio to the Voice Gateway (Kore).
+* Agent AI generates real-time transcripts and suggestions.
+* The widget displays transcripts and next-best actions.
+* At the end of the call, the system generates a summary for the agent to review and submit.
+
+## Supported environments
+
+* Salesforce Lightning Experience
+* [Latest NICE CXone Mpower package](https://appexchange.salesforce.com/appxListingDetail?listingId=48255f2e-700a-46f4-94f4-e36a1cc3aad6&tab=e)
+* [Latest Agent AI package listed on Salesforce](https://appexchange.salesforce.com/appxListingDetail?listingId=a0N4V00000HSGlnUAH)
+
+## Prerequisites
+
+Ensure the following before you start:
+
+* Install the NICE CXone Mpower package in Salesforce
+* Set up the NICE CX account with inbound and outbound calling
+* Enable Agent Assist Hub (via NICE support)
+* Install **Agent AI for Salesforce** from AppExchange
+* Collect Agent AI credentials—Widget URL, Bot ID, Client ID and Secret, Account ID, and SIP URI
+* Obtain Salesforce System Administrator access
+
+    <Note>
+    The service provider bills the integration partner for real-time streaming usage for NICE integration. Charges may apply based on your commercial agreement. Contact your account representative for pricing and billing details specific to your setup.
+    </Note>
+
+## Shared Responsibilities Matrix
+
+| Activity                                      | Customer | Kore.ai | NICE     |
+|----------------------------------------------|----------|---------|----------|
+| ACD configuration                             | Owner    |         | Advisory |
+| Studio script setup                           | Owner    | Support | Support  |
+| Agent Assist Hub setup                        | Owner    | Support | Support  |
+| Agent AI credentials                          | Owner    | Support | —        |
+| Salesforce Agent AI package install           |          | Support | —        |
+| Salesforce CXone Mpower package installation  | Owner    | —       | Support  |
+| NICE streaming enablement                     | Owner    | —       | Support  |
+
+## Region-Specific URLs
+
+| Region  | Platform URL                          | Voice Gateway                      |
+|--------|--------------------------------------|------------------------------------|
+| US     | `https://platform.kore.ai`            | `wss://savg-webserver.kore.ai`     |
+| JP     | `https://jp-platform.kore.ai`         | `wss://jp-savg-audiosocket.kore.ai`|
+| On-Prem| Custom                               | Custom                             |
+
+## Architecture Diagram
+
+    ![architecture-diagram](/ai-for-service/agentai/integration/nice-cxone-mpower/images/architecture-diagram.png)
+
+## End-to-End Voice Interaction Flow with Agent AI Integration
+
+1. Customer initiates a call to NICE.
+2. NICE Studio Script for Voice triggers and assigns the call to an available agent.
+3. System routes the voice call through the configured Audiosocket URL in NICE Agent Assist Hub.
+4. Agent accepts the call.
+5. System loads the Agent AI widget in a Salesforce object/page (iframe).
+6. System establishes a WebSocket connection with the Agent AI backend.
+7. Audiosocket starts voice streaming to the Voice Gateway.
+8. ASR engine receives and converts voice to text transcripts.
+9. System returns transcripts to the Audiosocket implementation.
+10. System forwards transcripts to the Agent AI backend.
+11. Backend sends transcripts to the Agent AI widget for display in the Transcripts tab.
+12. Backend sends transcripts to the bot for intent recognition.
+13. System sends responses back to the widget through WebSocket.
+14. System generates a summary at the end of the conversation.
+15. System stores the summary in the Salesforce object (Kore Agent AI Conversation Summaries) after submission.
+
+## Installation and configuration
+
+### 1. Install the NICE CXone Mpower package
+
+* Install the package from **Salesforce AppExchange**. Follow [this article](https://help.nicecxone.com/content/agent/agentapplicationadministration/cxoneagentembedded/installcxae/installcxaeinsalesforce.htm?tocpath=Agent%20Application%20Administration%7CAgent%20Application%20Administration%7CAgent%20Embedded%7CSet%20Up%20Agent%20Embedded%7CSet%20Up%20in%20Salesforce%7C_____1) to install and configure the NICE CXone Mpower package on your Salesforce account.
+* Configure Screen Pop (for example, Account or Contact) by following [this article](https://help.nicecxone.com/content/agent/agentapplicationadministration/cxoneagentembedded/setupcxae/setupcxaeinsf/configurescreenpopscxaeinsf.htm?tocpath=Agent%20Application%20Administration%7CAgent%20Application%20Administration%7CAgent%20Embedded%7CSet%20Up%20Agent%20Embedded%7CSet%20Up%20in%20Salesforce%7C_____4).
+
+### 2. Configure Agent Assist Hub
+
+1. Sign in to **[NICE CXone](https://cxone.niceincontact.com/)**.
+2. Click the **application launcher**. 
+    ![app-launcher](/ai-for-service/agentai/integration/nice-cxone-mpower/images/app-launcher.png)
+3. Click **Others** > **Automation & AI** > **Agent Assist Hub**.
+4. Click **Add Agent Assist App**.
+5. Enter a name in the **AGENT ASSIST APP NAME** field.
+6. Select **Custom Agent Assist Endpoints**.
+7. Click **Next**.
+8. Configure the following:
+    * **Agent UI Option**: No Assist Panel 
+    * **App Title**: Kore Agent AI (change as needed)
+    * **Participants**: Both
+    * **Audio Relay Endpoint**: `{VG_HOST}/audiosocket/nice?sipuri=<SIP_URI>&token=<JWT>&botId=<BOT_ID>&accountId=<ACCOUNT_ID>&agentassist=true`
+        * **Bot SIP URI**: To get this value, navigate to **Flows & Channels** > **Voice Gateway** > **Configure SIP Trunk** > **[Agent AI](https://platform.kore.ai/)** section. 
+
+            ![configure-sip-trunk](/ai-for-service/agentai/integration/nice-cxone-mpower/images/configure-sip-trunk.png)
+
+        * **Bot ID and Account ID**: To get these values, navigate to **Flows & Channels** > **Digital** > **Web/Mobile Client** section. 
+        
+            ![web-mobile-client](/ai-for-service/agentai/integration/nice-cxone-mpower/images/web-mobile-client.png)
+
+        * **Token**: Create a JSON Web Token on [jwt.io](https://www.jwt.io/) with the following details.
+            * Payload: `{"appId": <Bot Client ID>}`
+            * Header: `{"alg": "HS256","typ": "JWT"}`
+            * Secret: Your Kore.ai Client Secret.
+            * Copy the token into the Audio Relay Endpoint
+
+            	**JWT Token Warning**
+
+                JWT expiry can break audio streaming.
+
+                    * Avoid using `exp` claim, OR
+                    * Implement token refresh
+9. Turn on the **CTI Event** toggle.
+10. Click **Create**.
+
+### 3. Configure Agent AI in Salesforce
+
+#### 3.1 Create Feature Configuration
+
+1. Click the **app launcher**.
+2. Type **kore** in the search box, and select **Kore AgentAI Feature Configuration** from the list.
+3. Click **New** from the upper right corner of the page.
+4. Type **Test Configuration** in the **Configuration Name** field.
+5. Select **NICE CTI** in the **CTI Provider** list.
+6. Select **Active**, and click **Save**.
+
+#### 3.2 Create Agent AI Configuration
+
+1. Click the **app launcher**.
+2. Type **kore** in the search box, and select **Kore AgentAI Feature Configuration** from the list.
+3. Click **New** from the upper-right corner of the page. 
+
+    ![agent-ai-configuration](/ai-for-service/agentai/integration/nice-cxone-mpower/images/agent-ai-configuration.png)
+
+4. Enter **Agent AI URL**, **Bot ID**, **Client ID**, **Client Secret**, and **Language** (bot language). To get these values:
+    * Sign in to [AI for Service](https://platform.kore.ai).
+    * Go to **Agent AI** > **Flows & Channels** > **Digital**.
+    * Select **Web/Mobile Client**, and expand the **JWT App Details** section.
+    * Select **copy** against the required fields. 
+    
+        ![jwt-app-details](/ai-for-service/agentai/integration/nice-cxone-mpower/images/jwt-app-details.png)
+
+5. Select a language in the **Language** dropdown list. The selected language corresponds to the language configured for the bot.
+6. Select **Active**, and click **Save**.
+
+    <Note>
+    Only one Agent AI Configuration record can be active at a time. Multiple active records cause inconsistent widget behavior.
+    </Note>
+
+### 4. Embed the Agent AI widget
+
+#### Option A: Page Layout (recommended)
+
+1. Open the **Screen Pop** page layout for Account Object.
+2. In the filter field, type **NiceCTI** and drag and drop the **NiceCTI_AgentAssistVoice** component onto the **Account Object** layout page. 
+
+    ![voice-component](/ai-for-service/agentai/integration/nice-cxone-mpower/images/nice-cti-aa-voice-component.png)
+
+#### Option B: Visualforce
+
+Create a Lightning Out app:
+
+1. Open the **Developer Console** from your **Salesforce** org.
+2. Navigate to **File** > **New** > **Lightning Application**.
+3. Enter **Name** and **Description**, and then click **Submit**.
+4. Paste the following code into the editor, and save the **Lightning Application**: 
+```
+    <aura:application access="GLOBAL" extends="ltng:outApp">
+        {/* Lightning Web Component will be loaded here from Visualforce page */}
+        <aura:dependency resource="KAA:niceCTIAgentAssistVoice" />
+    </aura:application>
+```
+**Create/Edit Visualforce Page**
+
+1. Create a new Visualforce page or open an existing page.
+2. To create a new Visualforce page, navigate to the **Setup** page > **Visualforce Pages**, and click **New**.
+3. In the **Visualforce Markup** code editor, add <apex:includeLightning />` at the beginning of your Visualforce page. This component loads the JavaScript file that Lightning Components for Visualforce uses.
+4. Paste the following script in the **Visualforce Markup** code editor at the location where you want the Agent AI widget to display:  
+```
+    <code><div id="lwc-container"></div> \
+    <script> \
+    // Initialize Lightning Out with the app you created \
+    $Lightning.use("c:LightningApplication", function() { \
+    // Create the LWC component inside the div container \
+    $Lightning.createComponent("KAA:niceCTIAgentAssistVoice", { height: '600px', width: '500px'}, "lwc-container"); \
+    }); \
+    </script> \
+    \
+    </code>
+```
+    <Note>
+    Replace **LightningApplication** with the name of the Lightning Out app. Modify the **height** and **width** of the **niceCTIAgentAssistVoice** component according to your preference - these are the height and width of the Agent AI widget.
+    </Note>
+5. Click **Save**.
+
+    **Sample Visualforce Page**:
+
+    ```
+    <apex:page>
+       <apex:includeLightning />
+       <h1>Hello! </h1>
+       <p>Welcome to Kore.ai Visualforce page.</p>
+       <div id="lwc-container"></div>
+
+       <script>
+           // Initialize Lightning Out with the app you created
+           $Lightning.use("c:Kore_Lightning_App", function() {
+               // Create the LWC component inside the div container
+               $Lightning.createComponent("KAA:niceCTIAgentAssistVoice", { height: '600px', width: '500px'}, "lwc-container");
+           });
+
+       </script>
+
+    </apex:page>
+    ```
+
+    Set this Visualforce page as the screen pop-up, or create a Visualforce tab by following the instructions in the [Create Visualforce Tabs](https://help.salesforce.com/s/articleView?id=platform.pages_tabs_create.htm&type=5) document.
+
+#### Option C: Aura Component
+
+    Create a new Aura component or open an existing component:
+
+1. To create a new Aura component, open **Developer Console** from your Salesforce org.
+2. In the **Developer Console**, navigate to **File** > **New** > **LightningComponent**.
+3. Enter **Name** and **Description**, and then click **Submit**.
+4. Paste the following script in the editor at the desired location where you want the Agent AI widget to display, and save the **Lightning Application**:  \
+<code><KAA:niceCTIAgentAssistVoice height="800px" width="500px" /></code>
+
+    <Note>
+    Modify the **height** and **width** of the **niceCTIAgentAssistVoice** component--these are the height and width of the Agent AI widget.
+    </Note>
+
+    **Sample Aura Component**:
+
+    ```
+    <aura:component implements="force:appHostable,flexipage:availableForAllPageTypes" access="global" >
+       <h1>Hello! Kore Aura Component</h1>
+       <KAA:niceCTIAgentAssistVoice height="800px" width="500px" />
+       <h1>End of Aura Component</h1>
+    </aura:component>
+    ```
+
+    Create a Lightning tab by following the instructions in this [document](https://help.salesforce.com/s/articleView?id=platform.creating_flexipage_tabs.htm&type=5).
+
+### 5. Configure OAuth
+
+Create an OAuth app by referring to [Create an External Client App for the OAuth Client Credential flow](https://developer.salesforce.com/docs/industries/loyalty/guide/authorization.html).
+
+#### Retrieve Salesforce Base URI
+
+`curl -X POST "[https://login.salesforce.com/services/oauth2/token?grant_type=client_credentials&client_id=](https://login.salesforce.com/services/oauth2/token?grant_type=client_credentials&client_id=)<KEY>&client_secret=<SECRET>"`
+
+Use `instance_url` as `salesforceBaseURI`.
+
+### 6. Configure NICE Studio scripts
+
+#### Inbound script
+
+* Import `kore.ai_nicecti_sf_voice.XML`.
+* Update Salesforce credentials, Agent AI credentials, and Routing skill.
+* Map Agent Assist Hub app
+
+#### Outbound script
+
+* Import `kore.ai_nicecti_sf_chat.xml`
+* Configure OAuth using password grant
+* Map Agent Assist Hub
+
+<Note>
+The file ``kore.ai_nicecti_sf_chat.xml`` is used for outbound voice calls.
+</Note>
+
+### 7. Configure NICE ACD
+
+* Create campaign
+* Create skills (inbound/outbound)
+* Assign Studio scripts
+* Create Point of Contact (inbound calls)
+
+## Outbound voice considerations
+
+* If the widget loads before the agent accepts the call, disable **Agent AI-Initiated Transcription**. Custom data isn't available in this scenario. 
+
+    ![outbound-voice-considerations](/ai-for-service/agentai/integration/nice-cxone-mpower/images/outbound-voice-considerations.png)
+
+* If the widget loads after the agent accepts the call, transcription works normally, and custom data is available.
