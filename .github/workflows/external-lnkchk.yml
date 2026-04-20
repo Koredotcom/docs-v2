@@ -1,0 +1,44 @@
+name: Check Links
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  external-lnkchk:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Link Checker
+        uses: lycheeverse/lychee-action@v2
+        with:
+          # Configuration Breakdown:
+          # 1. --root-dir .: Ensures /docs/abc resolves from the repo root.
+          # 2. --remap: Maps extensionless links (Mintlify style) back to .mdx files.
+          # 3. --accept 200,429: Ignores 429 (Rate Limit) errors from external sites.
+          # 4. --exclude: Skips internal URLs that might be dynamic or placeholder.
+          args: >
+            --root-dir ./
+            --verbose
+            --no-progress
+            --extensions mdx
+            --accept 200,429,401
+            --exclude "https://localhost"
+            --exclude "https://twitter.com"
+            --exclude '^(file://|/|\.{1,2}/)'
+            "./**/*.mdx"
+          fail: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Create Issue on Failure
+        if: env.lychee_exit_code != 0
+        uses: peter-evans/create-issue-from-file@v5
+        with:
+          title: "Broken Links Detected in MDX"
+          content-filepath: ./lychee/out.md
+          labels: documentation, bug
