@@ -206,6 +206,72 @@ For configuring service levels, see [SLAs & Alerts](/ai-for-service/contact-cent
 
 ---
 
+## Skill and Queue Subscription Visibility
+
+The Monitor tab displays agent-level skill and queue deselections. Supervisors can identify agents who have modified their skills or queues and take corrective action without leaving the Monitor view.
+
+Agents View
+
+The Agents view displays each agent's current routing eligibility, including any skill or queue deselections.
+
+| Indicator | Description |
+|-----------|-------------|
+| Active skills | Skills the agent subscribed to and eligible for routing. |
+| Deselected skills | Skills the agent has opted out of at runtime. Displayed with a distinct visual indicator. |
+| Active queues | Queues the agent subscribed to and eligible for routing. |
+| Deselected queues / Off-Queue | Queues the agent has opted out of at runtime. Displayed as Off-Queue with a distinct visual indicator. |
+
+**Supervisor Actions from the Agents View**
+
+From the agent detail panel in the Agents view, supervisors can:
+
+* View the full list of assigned skills and queues.
+* See which skills and queues the agent has deselected.
+   
+   ![Agents Queue Override](/ai-for-service/contact-center/routing/images/agents-queue-override.png)
+
+* Select Restore to override the agent's deselection and reinstate their routing eligibility for a specific skill or queue.
+
+Queues View
+
+The Queues view distinguishes between agents who are assigned to a queue and agents who are actively eligible for routing from that queue.
+
+| Agent Status in Queue View | Meaning |
+|---------------------------|---------|
+| Available | The agent is assigned and subscribed to the queue. Eligible for routing. |
+| Off-Queue | The agent is assigned to the queue but has deselected it at runtime. Not eligible for routing from this queue. |
+
+Agents in Off-Queue status are counted in the queue's total agent assignments but are excluded from routing calculations.
+
+**Supervisor Actions from the Queues View**
+
+From within a queue in the Monitor view, supervisors can:
+
+* Identify all agents in Off-Queue status.
+
+   ![Queue Status](/ai-for-service/contact-center/routing/images/queue-status.png)
+
+* Select Restore for any Off-Queue agent to reinstate their routing eligibility for that queue.
+
+   ![Queue Status detailed](/ai-for-service/contact-center/routing/images/queue-status-detailed.png)
+
+---
+
+## Blending Indicators
+
+Blending status is visible in both the Agents and Queues views.
+
+**Monitor** > **Agents**
+
+* Indicates whether an agent is blending-enabled at the agent level.
+* Indicates whether queue-level blending is influencing the agent's current state.
+
+**Monitor** > **Queues**
+
+![Blending Indicators](/ai-for-service/contact-center/agent-and-supervisors/agent-management/images/blending-queues.png)
+
+---
+
 ## Live Conversation Monitoring
 
 ### Listen & Whisper (Voice)
@@ -479,19 +545,34 @@ Each status entry shows its **Name**, **Type** (Available, Away, Busy, or Offlin
 
 **With Blended Mode:**
 
-| Setting | Trigger |
-|---------|---------|
-| Blended On | All voice + digital slots full |
-| Blended Off | 100% digital occupancy or voice slot full |
+When blending is active, System Busy behavior varies based on the agent's queue assignments:
+
+**Case A**: Blending Disabled Across All Queues
+
+If an agent is assigned to multiple queues and none of them have blending enabled, the agent behaves as non-blended. System Busy triggers when:
+
+* The voice slot is occupied, OR
+* Digital slots reach full capacity.
+
+**Case B**: At Least One Queue Has Blending Enabled
+
+If an agent is assigned to multiple queues and at least one queue has blending enabled, the agent is treated as blending-enabled across all assignments. System Busy triggers only if all voice and digital slots are utilized.
+
+<Note> System Busy evaluation is based on the effective blending state after precedence resolution, not on individual queue isolation.</Note>
+
+| Blending Setting | System Busy Trigger |
+|------------------|---------------------|
+| Blended ON (at least one queue or agent level) | All voice and digital slots are full |
+| Blended OFF (all queues and agent level) | 100% digital occupancy or voice slot occupied |
 
 Load Capacity = (Occupied Voice or Max Voice) + (Occupied Digital or Max Digital)
 
 **Best practices:**
 
-- Configure slot allocations based on interaction volumes.
-- Train agents on blended handling and multitasking.
-- Monitor load capacity to optimize staffing levels.
-- Use reporting to track blended mode impact on KPIs.
+* Configure slot allocations based on expected interaction volumes per queue.
+* Train agents on blended handling and effective multitasking.
+* Monitor load capacity indicators in the Agents view to optimize staffing.
+* Use reporting to track the impact of blended mode on key performance indicators.
 
 #### Create an Agent Status
 
@@ -708,7 +789,54 @@ When enabled, the following options are available:
 #### Blended Agents
 
 When enabled, agents can handle voice and digital interactions simultaneously, optimizing capacity and efficiency. Disabled by default.
-![Blended Agents Toggle](/ai-for-service/contact-center/agent-and-supervisors/agent-management/images/blended-agents-toggle.png)
+
+Blended Agent configuration controls whether agents can receive voice and digital (chat, messaging, or email) interactions simultaneously. Configuration can be applied at three levels: the app, the queue, and the agent.
+
+**Configuration Levels**
+
+A three-tier hierarchy determines Blended Agent behavior. When no override exists at a lower level, the system falls back to the level above.
+
+**App-Level(Default)**
+
+The app-level setting acts as the base configuration. It applies when no queue-level or agent-level overrides are defined. To enable or disable blending at the app level, go to **Contact Center AI** > **Agent & Supervisors** > **Agent Management** > **Agent Settings** > **Blended Agents**.
+
+**Queue-Level**
+
+When enabled at the queue level, all interactions routed through that queue treat agents as blending-enabled, regardless of the app-level setting. You can search for and select specific queues to apply blending.
+
+![Blended Agents-Queue Level](/ai-for-service/contact-center/agent-and-supervisors/agent-management/images/blended-agents-queues.png)
+
+<Note>For existing accounts with app-level blending enabled, all queues default to blending enabled. Any new queue in such accounts is automatically included under the blended queue configuration.</Note>
+
+**Agent-Level**
+
+When blending is enabled at the agent level, the agent is always treated as blended, regardless of the queue or app configuration.
+
+**Precondition**: The agent must have both voice and digital capabilities enabled.
+
+**Precedence**
+
+The system evaluates blending eligibility in the following order:
+
+**Agent Level** > **Queue Level** > **App Level**
+
+The following table shows how the system resolves the effective blending state based on each combination of settings:
+
+| Agent Blending | Queue Blending | App Blending | Result                 |
+|----------------|----------------|--------------|------------------------|
+| ON             | Any            | Any          | Blended                |
+| OFF            | ON             | Any          | Blended for that queue |
+| OFF            | OFF            | ON           | Non-blended            |
+| OFF            | ON             | ON           | Non-blended            |
+| OFF            | OFF            | OFF          | Non-blended            |
+
+**Interaction Routing Behavior**
+
+The system determines the effective blending state before routing any interaction:
+
+1.     Determine effective blending state by applying the precedence model (**Agent** > **Queue** > **App**).
+2.     If blended: Apply slot-based and interruption logic per existing routing specifications.
+3.     If non-blended: Apply channel selection logic, if enabled.
 
 For details on how Blended Mode affects System Busy behavior, see [System Busy Status](#system-busy-status).
 
