@@ -13,6 +13,8 @@ The Amazon S3 Connector allows seamless integration between Amazon S3 and Search
 | Supported content | Files in buckets (.pdf, .txt, .ppt, .docx) |
 | RACL support | No |
 | Content filtering | Yes (Advanced Filters for paths and file extensions) |
+| Webhook support | Yes |
+
 
 To integrate Search AI with the Amazon S3 account and ingest data from it, follow the steps listed below. 
 
@@ -94,6 +96,10 @@ On the **Authorization** page of the connector, provide the following fields and
 | **Access Key** | Access Key ID generated in the previous step |
 | **Secret** | Secret Access Key generated in the previous step |
 | **Region** | AWS region of your account |
+| **Enable Real-Time Sync** | Toggle to **On** to activate continuous synchronization |
+| **Webhook Client Secret** | Used to authenticate webhook calls (optionally hashed with SHA-256) |
+| **Webhook URL** | Copy this URL to configure the SNS subscription |
+
 
 ## Content Ingestion
 
@@ -125,6 +131,44 @@ Improves sync efficiency by avoiding redundant processing of unchanged files.
 * The first sync will perform a Full Sync.
 * From the second sync onward, only newly added and modified files will be processed.
 * If filters (such as Advanced Filters) are changed, the system will automatically perform a Full Sync again.
+
+## Real-Time Sync (Webhooks)
+
+The Amazon S3 connector supports real-time content updates via AWS S3 Event Notifications through SNS. When configured, file changes in S3 buckets are reflected in search results in near real-time.
+
+<Note>Only Bucket Level Webhooks are supported. Webhooks must be enabled individually for each bucket.</Note>
+
+**Step 1: Set Up AWS SNS**
+
+1. In the AWS Management Console, go to SNS > Topics > Create Topic.
+2. Set: Type: Standard, Name: (choose a name), and leave all other settings as default.
+3. Click Create.
+4. Open the new topic, go to Subscriptions > Create Subscription. 
+5. Configure the subscription:
+- Protocol: HTTPS
+- Endpoint: Paste the Webhook URL copied from the platform and append the secret as a query parameter.
+- Example, URL format: https://platform/api/1.1/searchai/webhook/{stream-id}/{connector-id}?token={secret}
+6. Uncheck Enable raw message delivery.
+7. Return to the topic and verify the subscription status is Confirmed. 
+
+**Step 2: Configure S3 Event Notifications**
+
+1. In S3, open the target bucket. 
+2. Go to Bucket Properties > Event Notifications. 
+3. Click Create Event Notification and name it. 
+4. Under Event Types, enable: Object creation, Object removal, Object restore, Object tagging. 
+5. Under Destination, choose SNS Topic. 
+6. From Specify SNS topic > Choose from your SNS topics, select the topic created in Step 2. 
+7. Click Save changes.
+
+**Optional Filters**
+
+When creating an event notification, you can narrow the scope using these optional filters:
+
+| Filter | Description |
+|--------|-------------|
+| Prefix | Limits notifications to a specific folder path. The webhook will only track events within that path and ignore all others. |
+| Suffix | Filters by file extension. For example, entering `.html` will only trigger events for HTML files. |
 
 ## Policy-Based Sync All
 
