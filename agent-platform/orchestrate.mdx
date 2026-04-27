@@ -188,6 +188,65 @@ Click the **Settings** icon to update the voice model settings.
 
 Use this section to set the guidelines for the agent's behavior. These instructions will be added to the orchestrator and the system prompt of each agent. Click **Modify Instructions**, then enter the prompt.
 
+### Input Processor
+The Input Processor is an app-level feature that executes a custom script before orchestration begins. It is used to preprocess user input, enrich context, and populate memory variables that can be used by agents during execution. 
+
+When enabled, this processor is executed before the welcome event is triggered.
+
+<Note>Input Processor is not supported for voice interactions.</Note>
+
+**Use the Input Processor to:**
+
+- **Transform input**: Apply custom logic before agent execution to modify, sanitize, or normalize the raw user input.
+- **Initialize session and populate memory** : Initialize session-level variables and configurations and populate memory with variables that are required throughout the application.
+- **Enrich Context**: Enrich requests with additional context (e.g., user metadata, defaults)
+
+#### Input Processor Execution modes
+
+- **Always Run** : Executes on session creation and every user input. Use this when preprocessing is required consistently for all interactions.
+- **Run Once**: Executes only once per session. Use this when initialization logic is needed only at the start of a session.
+
+#### Adding Input Processor
+
+- Click **Add Script** to open the script editor. The user **Input** that triggered this agent run is available to the script for use.
+- Provide the script that updates the output before delivering to the end user. You can use **JavaScript** or **Python** for this scripting.
+  - Access input in the script using $ prefix.
+  - Access environment variables using env keyword : `env.<variable-name>`. Note that the namespace to which the variable belongs must be selected for the input processor. 
+  - Access content variables as: `content.<variable-name>`.
+  - Access [memory stores in the script using these methods](/agent-platform/memory).
+- Select **namespaces** to make their variables available to the script.
+- Use **Test Input Processor** to validate the script's behavior.
+
+**Sample Script**
+
+```javascript
+// Load customer profile at session start
+const userId = context.userId;
+
+// Fetch customer profile from memory or external store
+const customerProfile = await memory.get_content("customerProfile_" + userId);
+
+const accountType = customerProfile.accountType;
+const tier = customerProfile.tier;
+const preferredLanguage = customerProfile.preferredLanguage;
+
+// Store key details in session memory for agent access
+await memory.set_content("sessionContext", {
+  userId: userId,
+  accountType: accountType,       // e.g. "savings", "current", "credit"
+  tier: tier,                     // e.g. "standard", "premium", "private"
+  preferredLanguage: preferredLanguage  // e.g. "en", "fr", "de"
+});
+
+return {
+  status: "Session initialized",
+  userId: userId,
+  accountType: accountType,
+  tier: tier
+};
+```
+
+
 ### Response Processor
 
 The Response Processor is an app-level feature that executes a custom script on every agent response before delivering it to the end user. It executes as the final stage in response generation—after the agent produces its output but before that output leaves the platform. Configured on the Orchestrator page, the script applies uniformly across all agents in the app, regardless of which agent handled the request.
