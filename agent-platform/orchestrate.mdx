@@ -10,7 +10,7 @@ Coordinate how agents work together to handle user requests.
 The orchestrator is the intelligence layer that manages agent interactions. It:
 
 - Interprets user intent
-- Selects the appropriate agent(s)
+- Selects the appropriate agents
 - Coordinates multi-agent workflows
 - Resolves conflicts between outputs
 - Delivers unified responses
@@ -69,7 +69,7 @@ flowchart TD
 
 **Use Supervisor when:**
 
-- Tasks can be broken into independent subtasks
+- Tasks can become independent subtasks
 - You need parallel execution for speed
 - Multiple specialists should contribute to responses
 - You want centralized control and conflict resolution
@@ -81,7 +81,7 @@ flowchart TD
 - Tasks flow naturally between domains
 - You need dynamic routing based on context
 - Agents should autonomously decide when to hand off
-- Sequential expertise is required
+- Sequential expertise is needed
 
 **Example**: An employee onboarding app where HR, IT, and Finance agents hand off based on the current step.
 
@@ -151,7 +151,7 @@ For each orchestration pattern, configure the following.
 
 ### Default AI Model
 
-AI model to be used for operations across the app. Select any of the configured models. The default settings of the model are shown. Click the **Settings** icon to update the default settings. 
+The default AI model that the app uses for operations. Select any of the configured models. The default settings of the model are shown. Click the **Settings** icon to update the default settings. 
 
 ### Voice-to-Voice Interactions
 
@@ -179,14 +179,74 @@ Click the **Settings** icon to update the voice model settings.
 | Threshold | Sensitivity of detection | Lower = more sensitive |
 | Prefix Padding | Audio before speech detection | Prevents clipping |
 | Silence Duration | Silence before speech ends | Lower = faster response |
-| Create Response | Auto-generate response | True/False |
+| Create Response | Auto generate response | True/False |
 | Interrupt Response | Allow interruption | True/False |
-| Transcription Language | Language for speech-to-text | Default: Auto-detect; improves accuracy if set |
+| Transcription Language | Language for speech-to-text | Default: Auto detect; improves accuracy if set |
 | Transcription Prompt | Context for ASR model | Helps recognize domain-specific terms and improve accuracy. [Learn More](/agent-platform/howto/configure-transcription).|
 
 ### Behavioral Instructions
 
 Use this section to set the guidelines for the agent's behavior. These instructions will be added to the orchestrator and the system prompt of each agent. Click **Modify Instructions**, then enter the prompt.
+
+### Input Processor
+
+The Input Processor is an app-level feature that executes a custom script before orchestration begins. It's used to preprocess user input, enrich context, and populate memory variables that can be used by agents during execution. 
+
+When enabled, this processor is executed before the welcome event is triggered.
+
+<Note>Input Processor is not supported for voice interactions.</Note>
+
+**Use the Input Processor to:**
+
+- **Transform input**: Apply custom logic before agent execution to modify, sanitize, or normalize the raw user input.
+- **Initialize session and populate memory** : Initialize session-level variables and configurations and populate memory with variables that are required throughout the application.
+- **Enrich Context**: Enrich requests with additional context, for example, user metadata, defaults.
+
+#### Input Processor Execution modes
+
+- **Always Run** : Executes on session creation and every user input. Use this when preprocessing is required consistently for all interactions.
+- **Run Once**: Executes only once per session. Use this when initialization logic is needed only at the start of a session.
+
+#### Adding Input Processor
+
+- Click **Add Script** to open the script editor. The user **Input** that triggered this agent run is available to the script for use.
+- Provide the script that updates the output before delivering to the end user. You can use **JavaScript** or **Python** for this scripting.
+  - Access input in the script using $ prefix.
+  - Access environment variables using env keyword : `env.<variable-name>`. Note that the namespace to which the variable belongs must be selected for the input processor. 
+  - Access content variables as: `content.<variable-name>`.
+  - Access [memory stores in the script using these methods](/agent-platform/memory).
+- Select **namespaces** to make their variables available to the script.
+- Use **Test Input Processor** to validate the script's behavior.
+
+**Sample Script**
+
+```javascript
+// Load customer profile at session start
+const userId = context.userId;
+
+// Fetch customer profile from memory or external store
+const customerProfile = await memory.get_content("customerProfile_" + userId);
+
+const accountType = customerProfile.accountType;
+const tier = customerProfile.tier;
+const preferredLanguage = customerProfile.preferredLanguage;
+
+// Store key details in session memory for agent access
+await memory.set_content("sessionContext", {
+  userId: userId,
+  accountType: accountType,       // e.g. "savings", "current", "credit"
+  tier: tier,                     // e.g. "standard", "premium", "private"
+  preferredLanguage: preferredLanguage  // e.g. "en", "fr", "de"
+});
+
+return {
+  status: "Session initialized",
+  userId: userId,
+  accountType: accountType,
+  tier: tier
+};
+```
+
 
 ### Response Processor
 
@@ -197,7 +257,7 @@ The Response Processor is an app-level feature that executes a custom script on 
 Use the Response Processor to write artifact payloads directly in code. When the processor runs, it constructs the payload, writes it to the artifacts key, and the platform appends it for delivery. This approach is useful when:
 
 - The artifact must be assembled from multiple tool outputs or session variables.
-- The payload structure depends on business logic that is better handled centrally.
+- The payload structure depends on business logic that's better handled centrally.
 - No tool is involved—the processor can generate artifacts independently, using only the input context.
 
 
