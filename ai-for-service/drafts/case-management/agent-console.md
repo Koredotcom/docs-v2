@@ -108,7 +108,7 @@ When a customer requests an agent, the system transfers the conversation by init
 
     **Tip:** Based on the conversations, the agent provides relevant information to customers or suggests actions to resolve the issue. For example: Refrigerator Cooling Issue. The agent suggests troubleshooting steps based on the customer details received.
 
-<img src="../images/Issues-search-bar.png" alt="Comments" title="Comments" style="border: 1px solid gray; zoom:70%;">
+<img src="../images/issues-search.png" alt="Comments" title="Comments" style="border: 1px solid gray; zoom:70%;">
     
 * **Follow-up Questions**
 

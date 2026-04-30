@@ -468,7 +468,7 @@ To access case management integrations,
 
 1. Navigate to **Contact Center AI > Case Management > Configuration > Priority** and select **All**. This displays all the apps available to integrate.
 
-    <img src="../images/Integration-all.png" alt="Delete Priority" title="Delete Priority" style="border: 1px solid gray; zoom:70%;">
+    <img src="../images/integration.png" alt="Delete Priority" title="Delete Priority" style="border: 1px solid gray; zoom:70%;">
 
     !!! Note
 
@@ -476,6 +476,6 @@ To access case management integrations,
 
 2. Select the **app > Configurations** and follow the instructions.
 
-    <img src="../images/Slack-configuration.png" alt="Delete Priority" title="Delete Priority" style="border: 1px solid gray; zoom:70%;">
+    <img src="../images/slack-config.png" alt="Delete Priority" title="Delete Priority" style="border: 1px solid gray; zoom:70%;">
 
 3. Click **Save**.
