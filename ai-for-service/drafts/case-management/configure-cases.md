@@ -402,7 +402,7 @@ Priority configuration in case management helps agents determine which cases and
 ### Access Priority Configuration
 
 To access case management Priority, navigate to **Contact Center AI > Case Management > Configuration > Priority**.  
-<img src="../images/new-priority- access.png" alt="Priority" title="Priority" style="border: 1px solid gray; zoom:70%;">
+<img src="../images/new-priority-access.png" alt="Priority" title="Priority" style="border: 1px solid gray; zoom:70%;">
 
 ### Manage Existing Priorities
 
@@ -413,7 +413,7 @@ You cannot edit system priorities, but you can deactivate them using the toggle 
 To add a new priority:
 
 1. On the **Priority** page, click **+ New Priority**.  
-<img src="../images/new-priority- access.png" alt="Priority" title="Priority" style="border: 1px solid gray; zoom:70%;">
+<img src="../images/new-priority-access.png" alt="Priority" title="Priority" style="border: 1px solid gray; zoom:70%;">
 
 2. In the **New Priority** page, enter details in the following sections:
 
