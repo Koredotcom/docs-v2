@@ -1,0 +1,434 @@
+---
+title: 'Agent declaration'
+section: 'abl-reference'
+order: 2
+description: 'The agent declaration establishes the identity, metadata, goals, personality, and execution configuration of an ABL agent document. Every `.agent.abl` file must begin with an `AGENT:` declaration.'
+---
+
+# Agent declaration
+
+The agent declaration establishes the identity, metadata, goals, personality, and execution configuration of an ABL agent document. Every `.agent.abl` file must begin with an `AGENT:` declaration.
+
+## AGENT keyword
+
+The `AGENT:` keyword declares the agent's name. This name must be unique within the project and is used as the primary identifier throughout the platform.
+
+```abl
+AGENT: Wire_Transfer_Specialist
+```
+
+### Naming rules
+
+- Use `PascalCase` with underscores to separate words
+- Must start with a letter
+- May contain letters, digits, and underscores
+- Must be unique within the system
+
+### Examples
+
+```abl
+AGENT: Hotel_Search
+AGENT: Payment_Processor
+AGENT: Customer_Support
+AGENT: Fraud_Detection
+```
+
+## VERSION
+
+The `VERSION:` directive specifies the semantic version of the agent document. The value must be a quoted string in semver format (`major.minor.patch`).
+
+```abl
+VERSION: "2.0.0"
+```
+
+| Property  | Type              | Required | Default   | Description                                    |
+| --------- | ----------------- | -------- | --------- | ---------------------------------------------- |
+| `VERSION` | `string` (semver) | No       | `"1.0.0"` | Document version in `major.minor.patch` format |
+
+The version is stored in the document's metadata (`meta.version`) and is available for compatibility checks, deployment tracking, and audit trails.
+
+### Example
+
+```abl
+AGENT: Booking_Agent
+VERSION: "3.1.0"
+```
+
+## DESCRIPTION
+
+The `DESCRIPTION:` directive provides a human-readable summary of the agent's purpose. It supports both single-line and multi-line (pipe block) formats.
+
+```abl
+DESCRIPTION: "Handles flight booking and modifications"
+```
+
+```abl
+DESCRIPTION: |
+  Processes outbound wire transfers for retail and commercial banking
+  customers. Handles domestic (Fedwire) and international (SWIFT)
+  transfers with full regulatory compliance.
+```
+
+| Property      | Type     | Required | Default | Description                                   |
+| ------------- | -------- | -------- | ------- | --------------------------------------------- |
+| `DESCRIPTION` | `string` | No       | _none_  | Human-readable summary of the agent's purpose |
+
+## LANGUAGE
+
+The `LANGUAGE:` directive sets the primary language the agent operates in. The value is a quoted BCP 47 language tag.
+
+```abl
+LANGUAGE: "en"
+```
+
+```abl
+LANGUAGE: "es-EC"
+```
+
+| Property   | Type     | Required | Default | Description                                            |
+| ---------- | -------- | -------- | ------- | ------------------------------------------------------ |
+| `LANGUAGE` | `string` | No       | _none_  | BCP 47 language code (e.g., `"en"`, `"es-EC"`, `"fr"`) |
+
+The language directive influences the runtime's language-aware behavior including NLU processing, response generation, and entity recognition.
+
+## Complete declaration property reference
+
+The following table summarizes all agent declaration properties:
+
+| Property      | Type              | Required | Default   | Description                                        |
+| ------------- | ----------------- | -------- | --------- | -------------------------------------------------- |
+| `AGENT`       | `string`          | **Yes**  | --        | Unique agent name in `PascalCase_With_Underscores` |
+| `VERSION`     | `string` (semver) | No       | `"1.0.0"` | Document version                                   |
+| `DESCRIPTION` | `string`          | No       | _none_    | Human-readable description                         |
+| `LANGUAGE`    | `string`          | No       | _none_    | BCP 47 language code                               |
+
+---
+
+## Identity & Goals
+
+The identity and goals sections define what an agent is trying to achieve, how it presents itself, and what boundaries it operates within. These sections feed directly into the system prompt that guides the LLM's behavior at runtime.
+
+### GOAL
+
+The `GOAL:` section defines the agent's primary objective. It is the only **required** section besides `AGENT:`. The goal drives the LLM's reasoning, determines completion conditions, and provides the core purpose statement included in every system prompt.
+
+```abl
+GOAL: "Process the customer's wire transfer request accurately and securely."
+```
+
+Multi-line goals use pipe block syntax:
+
+```abl
+GOAL: |
+  Process the customer's outbound wire transfer request accurately and
+  securely. Collect all required beneficiary and payment details, screen
+  for sanctions and fraud, enforce daily limits and cut-off windows,
+  obtain dual authorization when required, and execute the transfer
+  with a complete audit trail.
+```
+
+| Property | Type     | Required | Default | Description                                                                    |
+| -------- | -------- | -------- | ------- | ------------------------------------------------------------------------------ |
+| `GOAL`   | `string` | **Yes**  | --      | The agent's primary objective. Used in system prompt and completion detection. |
+
+#### Goal guidelines
+
+- State the objective from the agent's perspective, not the user's
+- Be specific about what the agent should accomplish
+- Include success criteria when measurable outcomes exist
+- When an agent includes a `FLOW:` section, the goal also serves as context for any steps that have `REASONING: true`
+
+### PERSONA
+
+The `PERSONA:` section describes how the agent should present itself -- its tone, communication style, expertise signaling, and behavioral characteristics. The persona is included in the system prompt to shape the LLM's response style.
+
+```abl
+PERSONA: "Friendly and patient customer support representative."
+```
+
+```abl
+PERSONA: |
+  Senior wire operations specialist at a large commercial bank — precise
+  with numbers, methodical about compliance steps, and transparent about
+  processing times and fees. Never rushes a wire. Confirms every detail
+  before execution because a released wire cannot be reversed, only recalled.
+```
+
+| Property  | Type     | Required | Default      | Description                                     |
+| --------- | -------- | -------- | ------------ | ----------------------------------------------- |
+| `PERSONA` | `string` | No       | `""` (empty) | Personality and communication style description |
+
+If omitted, the agent uses a neutral, professional tone determined by the LLM's default behavior.
+
+### LIMITATIONS
+
+The `LIMITATIONS:` section declares prompt-level boundaries, caveats, and out-of-scope behaviors for the agent. Each limitation is a quoted string in a list. Limitations are included in the system prompt as guidance for how the agent should respond; use `CONSTRAINTS:` for deterministic runtime checks.
+
+```abl
+LIMITATIONS:
+  - "Cannot process wires to OFAC-sanctioned countries"
+  - "Cannot override the daily wire transfer limit"
+  - "Cannot process wires after the daily cut-off"
+  - "Cannot reverse a wire after execution"
+```
+
+| Property      | Type       | Required | Default           | Description                                               |
+| ------------- | ---------- | -------- | ----------------- | --------------------------------------------------------- |
+| `LIMITATIONS` | `string[]` | No       | `[]` (empty list) | List of prompt-level boundaries and caveats for the agent |
+
+#### Limitation guidelines
+
+- Use clear statements about what the agent should avoid, decline, or explain
+- Be specific -- vague limitations are hard for the LLM to apply consistently
+- Include the reason or consequence when it helps clarity
+- Use `CONSTRAINTS:` for deterministic rules that depend on session state or checkpoints
+
+### INSTRUCTIONS
+
+The `INSTRUCTIONS:` section provides operational guidance that supplements the goal. Instructions are appended to the goal in the system prompt. Use instructions for procedural guidance that does not fit naturally in the goal or persona.
+
+```abl
+INSTRUCTIONS: |
+  Always verify the customer's identity before collecting wire details.
+  For international wires, confirm the purpose code. If the customer
+  seems uncertain about the SWIFT/BIC code, recommend they verify
+  with the beneficiary before proceeding.
+```
+
+| Property       | Type     | Required | Default | Description                                       |
+| -------------- | -------- | -------- | ------- | ------------------------------------------------- |
+| `INSTRUCTIONS` | `string` | No       | _none_  | Operational guidance appended to the agent's goal |
+
+Instructions and the goal are combined at parse time: the instructions text is appended under an `Instructions:` heading within the goal's description.
+
+### IDENTITY
+
+The `IDENTITY:` section is an alternative, structured format that combines role, persona, expertise, and limitations into a single block. When used, its fields are mapped to the equivalent top-level sections.
+
+```abl
+IDENTITY:
+  role: "Senior wire operations specialist"
+  persona: "Methodical, precise, and transparent about compliance"
+  expertise: [wire transfers, compliance screening, FX conversion]
+  limitations: ["Cannot override daily limits", "Cannot reverse executed wires"]
+```
+
+#### IDENTITY field reference
+
+| Field         | Type       | Required | Default | Maps to                                    |
+| ------------- | ---------- | -------- | ------- | ------------------------------------------ |
+| `role`        | `string`   | No       | `""`    | `GOAL:` (sets the goal description)        |
+| `persona`     | `string`   | No       | `""`    | `PERSONA:` (sets persona description)      |
+| `expertise`   | `string[]` | No       | `[]`    | Appended to `PERSONA:` as "Expertise: ..." |
+| `limitations` | `string[]` | No       | `[]`    | `LIMITATIONS:`                             |
+
+#### Mapping behavior
+
+When the parser encounters an `IDENTITY:` block:
+
+1. The `role` value becomes the `GOAL:` description
+2. The `persona` value becomes the `PERSONA:` description
+3. The `expertise` list is appended to the persona as a comma-separated string
+4. The `limitations` list populates `LIMITATIONS:`
+
+You can use either the `IDENTITY:` block or the individual `GOAL:`, `PERSONA:`, `LIMITATIONS:` sections, but if both are present, the individual sections take the values set last in document order.
+
+### Combining identity sections
+
+The recommended approach is to use the individual sections (`GOAL:`, `PERSONA:`, `LIMITATIONS:`) for clarity. The `IDENTITY:` block is available as a compact alternative.
+
+#### Recommended style
+
+```abl
+AGENT: Hotel_Search
+
+GOAL: |
+  Help the customer find and book a hotel that matches their preferences,
+  budget, and travel dates.
+
+PERSONA: |
+  Enthusiastic travel advisor who knows every major hotel chain and
+  boutique property. Provides honest comparisons and highlights
+  trade-offs between price, location, and amenities.
+
+LIMITATIONS:
+  - "Cannot guarantee room availability — availability changes in real time"
+  - "Cannot process payments directly — redirects to the booking system"
+  - "Cannot access loyalty program accounts for other hotel chains"
+```
+
+#### Compact style (using IDENTITY)
+
+```abl
+AGENT: Hotel_Search
+
+IDENTITY:
+  role: "Help the customer find and book a hotel matching their preferences"
+  persona: "Enthusiastic travel advisor with deep hotel industry knowledge"
+  expertise: [hotel chains, boutique properties, price comparison]
+  limitations:
+    - "Cannot guarantee room availability"
+    - "Cannot process payments directly"
+```
+
+---
+
+## Execution Configuration
+
+The `EXECUTION:` section configures runtime behavior for the agent, including LLM model selection, temperature, token limits, timeouts, extended thinking, and per-operation model routing.
+
+### Syntax
+
+```abl
+EXECUTION:
+  model: "claude-sonnet-4-5-20250929"
+  temperature: 0.3
+  max_tokens: 4096
+  tool_timeout: 30000
+  fallback_model: "claude-haiku-4-5-20251001"
+```
+
+All properties are optional. When omitted, the platform applies its built-in defaults.
+
+### Configuration properties
+
+| Property                   | Type      | Required | Default          | Description                                                                                         |
+| -------------------------- | --------- | -------- | ---------------- | --------------------------------------------------------------------------------------------------- |
+| `model`                    | `string`  | No       | Platform default | Primary LLM model identifier                                                                        |
+| `temperature`              | `number`  | No       | Platform default | Sampling temperature (0.0--1.0). Lower values produce more deterministic output.                    |
+| `max_tokens`               | `number`  | No       | Platform default | Maximum tokens in LLM response                                                                      |
+| `tool_timeout`             | `number`  | No       | Platform default | Timeout in milliseconds for tool execution                                                          |
+| `llm_timeout`              | `number`  | No       | Platform default | Timeout in milliseconds for LLM inference calls                                                     |
+| `session_idle_timeout`     | `number`  | No       | Platform default | Timeout in milliseconds before an idle session expires                                              |
+| `max_reasoning_iterations` | `number`  | No       | Platform default | Maximum reasoning loop iterations for agents without a flow                                         |
+| `max_flow_iterations`      | `number`  | No       | Platform default | Maximum step transitions in a flow before forced exit                                               |
+| `voice_latency_target`     | `number`  | No       | Platform default | Target latency in milliseconds for voice channel responses                                          |
+| `fallback_model`           | `string`  | No       | _none_           | Model to use when the primary model is unavailable or errors                                        |
+| `enable_thinking`          | `boolean` | No       | `false`          | Enable extended thinking (Anthropic Claude models)                                                  |
+| `thinking_budget`          | `number`  | No       | Platform default | Token budget allocated to extended thinking                                                         |
+| `compaction_threshold`     | `number`  | No       | Platform default | Context-usage ratio (0.0--1.0) that triggers auto-compaction                                        |
+| `inline_gather`            | `boolean` | No       | `false`          | When `true`, gather fields are collected inline during conversation rather than as a separate phase |
+
+### Extended thinking
+
+Extended thinking allows Claude models to perform internal reasoning before producing a response. This is useful for complex multi-step reasoning tasks where the agent needs to plan before acting.
+
+```abl
+EXECUTION:
+  model: "claude-sonnet-4-5-20250929"
+  enable_thinking: true
+  thinking_budget: 8000
+```
+
+| Property          | Type      | Required | Default          | Description                                             |
+| ----------------- | --------- | -------- | ---------------- | ------------------------------------------------------- |
+| `enable_thinking` | `boolean` | No       | `false`          | Enable the extended thinking capability                 |
+| `thinking_budget` | `number`  | No       | Platform default | Maximum tokens the model can use for internal reasoning |
+
+When enabled, the model uses a portion of its context window for internal chain-of-thought reasoning before producing the visible response. The `thinking_budget` controls how many tokens are allocated to this internal reasoning.
+
+### Context compaction
+
+As conversations grow, the context window fills with message history. Context compaction automatically summarizes older messages when the context usage exceeds a threshold, preventing context-window overflow.
+
+```abl
+EXECUTION:
+  compaction_threshold: 0.75
+```
+
+| Property               | Type     | Required | Default          | Description                                                |
+| ---------------------- | -------- | -------- | ---------------- | ---------------------------------------------------------- |
+| `compaction_threshold` | `number` | No       | Platform default | Ratio (0.0--1.0) of context usage that triggers compaction |
+
+When the ratio of used tokens to available tokens exceeds this threshold, the runtime compacts older conversation history into a summary, freeing space for new messages while preserving essential context.
+
+### Per-operation model routing
+
+The `models:` sub-block within `EXECUTION:` allows you to route different operations to different LLM models. This enables cost optimization by using faster, cheaper models for simple tasks and more capable models for complex reasoning.
+
+```abl
+EXECUTION:
+  model: "claude-sonnet-4-5-20250929"
+  fallback_model: "claude-haiku-4-5-20251001"
+  models:
+    extraction: "claude-haiku-4-5-20251001"
+    response_gen: "claude-sonnet-4-5-20250929"
+    reasoning: "claude-sonnet-4-5-20250929"
+    coordination: "claude-sonnet-4-5-20250929"
+```
+
+The `models:` block maps operation names to model identifiers. The `model` property serves as the default for any operation not explicitly listed.
+
+#### Recognized operation names
+
+| Operation      | Description                                                                   |
+| -------------- | ----------------------------------------------------------------------------- |
+| `extraction`   | Extracting structured data from user messages (e.g., gather field extraction) |
+| `response_gen` | Generating user-facing responses                                              |
+| `reasoning`    | Complex reasoning, planning, and decision-making                              |
+| `coordination` | Multi-agent coordination and routing decisions                                |
+
+Custom operation names are also accepted and are resolved at runtime if the platform supports them.
+
+### Complete execution example
+
+```abl
+EXECUTION:
+  model: "claude-sonnet-4-5-20250929"
+  temperature: 0.1
+  max_tokens: 4096
+  max_reasoning_iterations: 8
+  tool_timeout: 30000
+  llm_timeout: 60000
+  session_idle_timeout: 900000
+  fallback_model: "claude-haiku-4-5-20251001"
+  enable_thinking: true
+  thinking_budget: 4000
+  compaction_threshold: 0.8
+  models:
+    extraction: "claude-haiku-4-5-20251001"
+    response_gen: "claude-sonnet-4-5-20250929"
+    reasoning: "claude-sonnet-4-5-20250929"
+    coordination: "claude-sonnet-4-5-20250929"
+```
+
+---
+
+## Complete example
+
+```abl
+AGENT: Wire_Transfer_Specialist
+VERSION: "2.0.0"
+DESCRIPTION: |
+  Processes outbound wire transfers for retail and commercial banking
+  customers. Handles domestic (Fedwire) and international (SWIFT)
+  transfers with full regulatory compliance.
+LANGUAGE: "en"
+
+GOAL: |
+  Process the customer's outbound wire transfer request accurately
+  and securely.
+
+PERSONA: |
+  Senior wire operations specialist at a large commercial bank — precise
+  with numbers, methodical about compliance steps, and transparent about
+  processing times and fees.
+
+LIMITATIONS:
+  - "Cannot process wires to OFAC-sanctioned countries"
+  - "Cannot override the daily wire transfer limit"
+  - "Cannot reverse a wire after execution"
+
+EXECUTION:
+  model: "claude-sonnet-4-5-20250929"
+  temperature: 0.1
+  max_tokens: 4096
+  tool_timeout: 30000
+  fallback_model: "claude-haiku-4-5-20251001"
+```
+
+## Related
+
+- [Language overview](./language-overview) -- file structure, syntax rules, and auto-detection
+- [Tools](./tools) -- tool-level timeout configuration
+- [FLOW](./flow) -- per-step GOAL overrides and `MAX_TURNS` for reasoning steps
