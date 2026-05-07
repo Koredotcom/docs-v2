@@ -1,0 +1,480 @@
+---
+title: 'Workspace Configuration'
+section: 'admin'
+order: 4
+description: 'Configure the operational settings that your agents and tools depend on at runtime. This page covers secrets management, environment variables, workspace guardrails, and external connectors.'
+---
+
+# Workspace Configuration
+
+Configure the operational settings that your agents and tools depend on at runtime. This page covers secrets management, environment variables, workspace guardrails, and external connectors.
+
+## Secrets & Credentials
+
+Secrets store sensitive values -- API keys, OAuth tokens, service credentials -- that your agents and tools need at runtime. The Agent Platform 2.0 provides a dedicated secrets management system that keeps sensitive data encrypted and access-controlled.
+
+**Required role:** Owner or Admin to manage workspace secrets; Operator to manage project-level secrets
+
+### Types of secrets
+
+- **Tool secrets** -- API keys and credentials used by agent tools to call external services (e.g., a CRM API key).
+- **LLM provider credentials** -- API keys for LLM providers (Anthropic, OpenAI, Azure, Google, Bedrock), managed through the [AI Model Configuration](/agent-platform-v2/admin/ai-model-configuration) page.
+- **OAuth tokens** -- Encrypted access and refresh tokens for OAuth 2.0 connectors (Slack, Google Drive, Salesforce), managed through the [Connectors](#connectors--integrations) section below.
+- **Proxy credentials** -- Proxy authentication credentials (username, password, certificates) for organizations routing outbound traffic through a proxy. See [Organization Setup](/agent-platform-v2/admin/workspace-and-team#organization-setup).
+
+### Managing secrets
+
+#### Adding a secret
+
+1. Go to **Settings > Account > Secrets**.
+2. Click **Add secret**.
+3. Enter the secret details:
+   - **Key** -- A unique identifier for the secret (for example, `STRIPE_API_KEY`). Keys must be uppercase with underscores.
+   - **Value** -- The sensitive value to store.
+   - **Description** (optional) -- A note about what this secret is for and when it was last rotated.
+   - **Scope** -- Whether this secret is available workspace-wide or limited to specific projects.
+4. Click **Save**.
+
+The secret value is encrypted before storage and is never displayed in plaintext after initial creation.
+
+#### Updating a secret
+
+1. Find the secret in the secrets list.
+2. Click **Edit**.
+3. Enter the new value. The previous value is not displayed.
+4. Click **Save**.
+
+Secret updates take effect immediately. Active agent sessions pick up the new value on their next tool call.
+
+#### Deleting a secret
+
+1. Find the secret in the secrets list.
+2. Click the three-dot menu and select **Delete**.
+3. Confirm the deletion.
+
+> **Warning:** Deleting a secret that is referenced by active agents causes their tool calls to fail. Verify that no agents depend on the secret before deleting it.
+
+### Referencing secrets in agent definitions
+
+Agents reference secrets using the `{{secret.KEY}}` placeholder syntax in tool configurations:
+
+```abl
+tools:
+  - name: payment-processor
+    config:
+      api_key: '{{secret.STRIPE_API_KEY}}'
+      endpoint: 'https://api.stripe.com/v1'
+```
+
+At runtime, the platform resolves `{{secret.STRIPE_API_KEY}}` to the decrypted value. The secret is never exposed in logs, traces, or agent responses.
+
+### Security guarantees
+
+- **Encryption at rest** -- All secret values are encrypted using the workspace's encryption key before storage. On Enterprise plans with [KMS](/agent-platform-v2/admin/billing-quotas-and-operations#kms-bring-your-own-key), your own key material is used.
+- **Encryption in transit** -- All communication between the platform's services uses TLS.
+- **Access control** -- Secrets are scoped to your workspace (tenant isolation). No other workspace can access your secrets.
+- **No plaintext logging** -- Secret values are never written to application logs, trace events, or audit log metadata.
+- **Audit trail** -- Every secret creation, update, and deletion is recorded in the [audit log](/agent-platform-v2/admin/security-and-authentication#audit-logging).
+
+### Secret rotation
+
+Rotate secrets regularly to limit the blast radius of a compromised credential:
+
+1. Generate a new API key or token with your external provider.
+2. Update the secret value in the Agent Platform 2.0.
+3. Verify that your agents function correctly with the new value.
+4. Revoke the old API key or token at the external provider.
+
+> **Tip:** Perform rotations during low-traffic periods. Add a description to each secret noting when it was last rotated and when the next rotation is due.
+
+### API keys for programmatic access
+
+In addition to tool secrets, the platform supports API keys for programmatic access to the Agent Platform 2.0 API itself:
+
+1. Go to **Settings > API Keys** (accessible from your profile menu).
+2. Click **Create API key**.
+3. Configure the key:
+   - **Name** -- A descriptive name (for example, "CI/CD Pipeline Key")
+   - **Scopes** -- Which API operations the key can perform
+   - **Project access** -- Which projects the key can access (all or specific projects)
+   - **Environments** -- Which environments the key is valid for (development, staging, production)
+   - **Expiration** -- Optional expiration date
+4. Click **Create**.
+5. Copy the generated key immediately -- it is only displayed once.
+
+API keys use a prefix format (`ablk_...`) for easy identification. The key hash is stored; the raw key cannot be recovered after creation. Revoke keys at **Settings > API Keys** -- revoked keys stop working immediately.
+
+## Environment Variables
+
+Environment variables store configuration values that vary between environments (development, staging, production). Use them for endpoint URLs, feature flags, and other settings your agents need at runtime.
+
+**Required role:** Owner, Admin, or Operator
+
+### How environment variables work
+
+Environment variables are key-value pairs scoped to a specific project and environment. When an agent runs, the platform resolves `{{env.KEY}}` placeholders in tool configurations and agent parameters to the matching variable's value for the current environment.
+
+```abl
+tools:
+  - name: crm-lookup
+    config:
+      base_url: '{{env.CRM_API_URL}}'
+      timeout: '{{env.CRM_TIMEOUT_MS}}'
+```
+
+In development, `CRM_API_URL` might resolve to a sandbox endpoint. In production, it resolves to the live API.
+
+### Environment variables versus secrets
+
+|                 | Environment variables                         | Secrets                      |
+| --------------- | --------------------------------------------- | ---------------------------- |
+| **Purpose**     | Non-sensitive configuration                   | Sensitive credentials        |
+| **Visibility**  | Values visible to Operators and above         | Values hidden after creation |
+| **Encryption**  | Encrypted at rest                             | Encrypted at rest            |
+| **Secret flag** | Can be marked as secret (values hidden in UI) | Always treated as secret     |
+| **Syntax**      | `{{env.KEY}}`                                 | `{{secret.KEY}}`             |
+| **Scoping**     | Per project + per environment                 | Per workspace or project     |
+
+> **Tip:** Use environment variables for values that change between environments but are not sensitive (URLs, feature flags, timeout values). Use secrets for API keys, passwords, and tokens.
+
+The platform also supports **project config variables** (`{{config.KEY}}`), which are plaintext key-value pairs resolved at compile time rather than runtime. Config variables are not environment-scoped -- they have one value per project. Use config variables for project-wide constants that do not change between environments.
+
+### Managing environment variables
+
+#### Viewing variables
+
+1. Go to **Settings > Team > Environment Variables**.
+2. Select the project and environment from the dropdowns.
+3. The variable list shows all defined variables with their keys, values (masked for secrets), and descriptions.
+
+#### Adding a variable
+
+1. Click **Add variable**.
+2. Enter the variable details:
+   - **Key** -- A unique identifier within the project and environment. Use `UPPER_SNAKE_CASE` by convention.
+   - **Value** -- The value for this environment.
+   - **Description** (optional) -- Explain what this variable controls.
+   - **Secret** -- Toggle this on if the value is sensitive.
+3. Click **Save**.
+
+#### Editing and deleting variables
+
+Click **Edit** on any variable to update its value or description. Changes take effect immediately. To delete, click the delete icon and confirm.
+
+> **Warning:** Deleting a variable that is referenced in an agent definition causes a runtime resolution error. Check agent definitions for references before deleting.
+
+### Environment scoping
+
+Each variable is scoped to one environment within a project:
+
+| Environment     | Purpose                                   |
+| --------------- | ----------------------------------------- |
+| **development** | Local testing and agent development       |
+| **staging**     | Pre-production validation and QA          |
+| **production**  | Live agent deployments serving real users |
+
+You can define variables with the same key in multiple environments. The platform resolves the variable value based on which environment the agent is running in.
+
+**Example:**
+
+| Key              | Development                       | Staging                           | Production                    |
+| ---------------- | --------------------------------- | --------------------------------- | ----------------------------- |
+| `CRM_API_URL`    | `https://sandbox.crm.example.com` | `https://staging.crm.example.com` | `https://api.crm.example.com` |
+| `LOG_LEVEL`      | `debug`                           | `info`                            | `warn`                        |
+| `FEATURE_NEW_UI` | `true`                            | `true`                            | `false`                       |
+
+### Bulk import
+
+For projects with many variables, import them in bulk:
+
+1. Click **Import**.
+2. Upload a `.env` file or CSV with columns `key`, `value`, `isSecret`, `description`.
+3. Select the target environment.
+4. Review the preview showing which variables will be created or updated.
+5. Click **Import**.
+
+The import does not delete existing variables that are not present in the file. It only creates new variables and updates existing ones where the key matches.
+
+`.env` file format:
+
+```bash
+# CRM configuration
+CRM_API_URL=https://api.crm.example.com
+CRM_TIMEOUT_MS=5000
+
+# Feature flags
+FEATURE_NEW_UI=false
+```
+
+Lines starting with `#` are treated as comments and ignored. Variables imported from `.env` files are not marked as secret by default.
+
+### Workspace-wide variables
+
+While environment variables are project-scoped, common patterns include replicating certain variables across projects. To streamline this:
+
+- Use the bulk import feature with a shared `.env` file across projects.
+- Consider using workspace-level secrets for values that should be identical across all projects.
+
+## Workspace Guardrails
+
+Workspace guardrails define organization-wide content safety policies that apply across all agents in your workspace. They catch harmful, inappropriate, or off-topic content before it reaches end users.
+
+**Required role:** Owner or Admin
+
+> **Plan requirement:** Guardrails are available on Professional and Enterprise plans.
+
+### How guardrails work
+
+Guardrails evaluate agent inputs and outputs against configurable safety categories. When content triggers a guardrail, the platform can block the response, flag it for review, or log it for analysis -- depending on your policy settings.
+
+The evaluation flow:
+
+1. An end user sends a message to an agent.
+2. The agent generates a response using the assigned LLM.
+3. Before delivering the response, the guardrail system evaluates it against your configured policies.
+4. If the content violates a policy, the configured action is taken (block, warn, or log).
+
+Guardrails can also evaluate **inbound** messages from end users to prevent prompt injection, jailbreak attempts, and other input-side risks.
+
+### Content safety categories
+
+| Category               | Description                                                                                |
+| ---------------------- | ------------------------------------------------------------------------------------------ |
+| **Hate speech**        | Content that promotes hatred or violence against groups based on protected characteristics |
+| **Sexual content**     | Sexually explicit material inappropriate for the agent's use case                          |
+| **Violence**           | Graphic descriptions of violence or instructions for causing harm                          |
+| **Self-harm**          | Content that encourages or instructs self-harm                                             |
+| **PII detection**      | Personally identifiable information (names, emails, phone numbers, SSNs) in outputs        |
+| **Profanity**          | Offensive language and slurs                                                               |
+| **Prompt injection**   | Attempts to override agent instructions through crafted inputs                             |
+| **Off-topic**          | Content outside the agent's intended domain                                                |
+| **Hallucination risk** | Responses that may contain fabricated information (requires knowledge base context)        |
+
+Each category has a configurable **threshold** (0.0 to 1.0) that controls sensitivity. Lower thresholds flag more content; higher thresholds only flag high-confidence violations.
+
+### Adding a guardrail provider
+
+Before creating policies, configure the guardrail evaluation service:
+
+1. Go to **Settings > AI Configuration > Guardrails**.
+2. Click **Add provider**.
+3. Select the adapter type:
+   - **OpenAI Moderation** -- Uses OpenAI's moderation endpoint
+   - **Azure Content Safety** -- Microsoft Azure content safety service
+   - **Anthropic** -- Claude-based content evaluation
+   - **Lakera** -- Lakera Guard for prompt injection and jailbreak detection
+   - **Custom HTTP** -- Any HTTP endpoint that returns a score and label
+   - **Built-in PII** -- Platform-native PII detection (no external service required)
+4. Enter the connection details (endpoint URL, API key credential).
+5. Select the categories this provider supports.
+6. Set the default threshold.
+7. Click **Save**.
+
+### Creating a guardrail policy
+
+1. Click **Create policy**.
+2. Give the policy a name and description.
+3. Select which categories to evaluate.
+4. For each category, configure:
+   - **Threshold** -- Sensitivity level (0.0 = flag everything, 1.0 = flag only high-confidence violations)
+   - **Action** -- What happens when content is flagged:
+     - **Block** -- Prevent the response from reaching the end user. A fallback message is shown instead.
+     - **Warn** -- Deliver the response but add a warning annotation visible to operators.
+     - **Log** -- Record the violation for analytics without affecting the response.
+5. Set whether the policy evaluates inbound messages, outbound responses, or both.
+6. Click **Save**.
+
+### Linking guardrails to projects
+
+Workspace guardrails are available to all projects, but each project chooses which policies to activate:
+
+1. Open the project in Studio.
+2. Go to **Project settings > Guardrails**.
+3. Toggle on the workspace guardrail policies you want to enforce for this project.
+4. Optionally adjust thresholds at the project level (project settings override workspace defaults when more restrictive).
+
+When both workspace and project guardrails exist:
+
+- **Workspace policies evaluate first.** If a workspace guardrail blocks content, the project guardrail is not consulted.
+- **Project policies add specificity.** Use them for domain-specific rules (for example, blocking financial advice in a customer support agent).
+- **The most restrictive action wins.** If the workspace policy says "warn" but the project policy says "block" for the same category, the content is blocked.
+
+### Provider health monitoring
+
+The guardrails page shows the health status of each configured provider:
+
+| Status        | Meaning                                                        |
+| ------------- | -------------------------------------------------------------- |
+| **Healthy**   | The provider responded successfully within acceptable latency  |
+| **Unhealthy** | The provider returned errors or exceeded the latency threshold |
+| **Unknown**   | The provider has not been checked recently                     |
+
+The platform periodically checks provider health. If a provider becomes unhealthy, its circuit breaker activates. After repeated failures, the circuit breaker opens and stops sending requests. After the reset timeout, the circuit breaker allows a test request through.
+
+> **Important:** When a guardrail provider's circuit breaker is open, the platform follows the provider's configured **fail mode**:
+>
+> - **Open** (fail-open) -- Content is delivered without guardrail evaluation. Violations may go undetected.
+> - **Closed** (fail-closed) -- Content is blocked until the provider recovers. This is safer but may interrupt service.
+
+### Guardrail best practices
+
+- **Start with logging** -- Deploy new guardrail policies in "log" mode first. Review the flagged content to tune thresholds before switching to "block" mode.
+- **Layer workspace and project policies** -- Use workspace policies for universal safety (hate speech, PII) and project policies for domain-specific rules.
+- **Monitor false positives** -- Overly sensitive thresholds disrupt legitimate conversations. Review flagged content regularly and adjust thresholds.
+- **Configure fail-closed for high-risk agents** -- If your agents handle sensitive domains (healthcare, finance), use fail-closed mode to prevent unmoderated content during provider outages.
+- **Use PII detection for all customer-facing agents** -- Even if your agents should not ask for PII, end users may volunteer it. PII detection helps you comply with data minimization requirements.
+
+## Connectors & Integrations
+
+Connectors let your agents interact with external services -- messaging platforms, CRMs, email providers, and custom APIs. Configure connectors at the workspace level and make them available across your projects.
+
+**Required role:** Owner or Admin to configure workspace connectors; Operator to manage project-level connections
+
+> **Plan requirement:** Connectors are available on Professional and Enterprise plans.
+
+### How connectors work
+
+A connector in the Agent Platform 2.0 has two layers:
+
+1. **Connector schema** -- The platform maintains a catalog of supported connector types, each defining the available fields, authentication requirements, and data types.
+2. **Connector connection** -- When you set up a connector for your workspace, you create a connection that stores the encrypted credentials and configuration for a specific instance of that connector type.
+
+Agents reference connectors by name in their tool definitions. At runtime, the platform resolves the connector to its connection, decrypts the credentials, and makes the authenticated API call.
+
+### Supported connectors
+
+#### Messaging platforms
+
+| Connector             | Auth type    | Capabilities                                         |
+| --------------------- | ------------ | ---------------------------------------------------- |
+| **Slack**             | OAuth 2.0    | Send/receive messages, manage channels, file uploads |
+| **Microsoft Teams**   | OAuth 2.0    | Send/receive messages, adaptive cards                |
+| **WhatsApp Business** | API key      | Send/receive messages, templates, media              |
+| **Telegram**          | Bearer token | Send/receive messages, inline keyboards              |
+
+#### Communication
+
+| Connector        | Auth type        | Capabilities                          |
+| ---------------- | ---------------- | ------------------------------------- |
+| **Twilio**       | API key + secret | SMS, voice calls, WhatsApp via Twilio |
+| **SendGrid**     | API key          | Transactional and marketing email     |
+| **Email (SMTP)** | Basic auth       | Send email via any SMTP server        |
+
+#### CRM and business tools
+
+| Connector      | Auth type           | Capabilities                             |
+| -------------- | ------------------- | ---------------------------------------- |
+| **Salesforce** | OAuth 2.0           | CRUD operations on objects, SOQL queries |
+| **HubSpot**    | OAuth 2.0           | Contacts, deals, companies, tickets      |
+| **Zendesk**    | API key / OAuth 2.0 | Tickets, users, organizations            |
+
+#### Webhooks
+
+| Connector            | Auth type                 | Capabilities                         |
+| -------------------- | ------------------------- | ------------------------------------ |
+| **Inbound webhook**  | None / HMAC signature     | Receive events from external systems |
+| **Outbound webhook** | API key / Bearer / Custom | Send events to external endpoints    |
+
+#### Custom connectors
+
+For services not in the catalog, use the **Custom HTTP** connector type:
+
+- Configure any REST API endpoint
+- Support for API key, Bearer token, Basic auth, OAuth 2.0, and custom authentication
+- Define request/response field mappings
+
+### Setting up a connector
+
+#### Step 1: Choose the connector type
+
+1. Go to **Settings > Account > Connectors**.
+2. Click **Add connector**.
+3. Browse or search the connector catalog.
+4. Select the connector type.
+
+#### Step 2: Authenticate
+
+The authentication flow varies by connector:
+
+**OAuth 2.0 connectors (Slack, Salesforce, HubSpot):**
+
+1. Click **Connect with [Provider]**.
+2. You are redirected to the provider's authorization page.
+3. Grant the requested permissions.
+4. You are redirected back to the Agent Platform 2.0 with the connection established.
+
+**API key connectors (Twilio, SendGrid, webhooks):**
+
+1. Enter the API key and any additional credentials.
+2. Click **Validate and connect**.
+
+**Custom connectors:**
+
+1. Enter the endpoint URL.
+2. Select the authentication type.
+3. Enter the credentials.
+4. Click **Test connection**.
+
+#### Step 3: Configure scope
+
+Choose how the connection is shared:
+
+- **Workspace-scoped** -- Available to all projects. Credentials are managed centrally by workspace Admins.
+- **Project-scoped** -- Limited to a specific project. Use this when different projects connect to different instances of the same service.
+
+#### Step 4: Name and save
+
+1. Enter a display name for the connection (for example, "Production Slack" or "Sandbox Salesforce").
+2. Add an optional description.
+3. Click **Save**.
+
+### Managing connections
+
+Each connection shows its current status:
+
+| Status      | Meaning                                                                          |
+| ----------- | -------------------------------------------------------------------------------- |
+| **Active**  | Credentials are valid and the connection is operational                          |
+| **Expired** | OAuth tokens have expired and need re-authorization                              |
+| **Revoked** | The connection has been manually revoked or the external provider revoked access |
+
+For OAuth 2.0 connectors, tokens are automatically refreshed when possible. If the refresh token has expired, go to **Settings > Account > Connectors**, find the expired connection, and click **Re-authorize**.
+
+For API key connectors, click **Edit** to enter new credentials. To remove a connection, click the three-dot menu and select **Remove**.
+
+> **Warning:** Removing a connection disables all agents that depend on it. Check which agents reference the connector before removing.
+
+### Using connectors in agents
+
+Agents reference connectors in their ABL definitions:
+
+```abl
+tools:
+  - name: send-notification
+    connector: slack
+    action: send_message
+    config:
+      channel: '{{env.SLACK_CHANNEL}}'
+```
+
+The platform resolves `slack` to the workspace's active Slack connection, authenticates the request, and sends the message.
+
+#### Connector schema discovery
+
+When you set up a connector for a supported service, the platform automatically discovers the available data schema:
+
+- **Fields** -- The data fields available in the connected service (for example, contact fields in a CRM)
+- **Custom fields** -- Any custom fields defined in your instance
+- **Field types** -- Data types for validation and mapping
+
+This schema is used by Studio to provide autocomplete and validation when configuring agent tools.
+
+### Availability across projects
+
+Workspace-scoped connectors are visible to all projects, but each project can choose which connectors to activate:
+
+1. Open the project in Studio.
+2. Go to **Project settings > Connectors**.
+3. Toggle on the workspace connectors you want to use in this project.
+
+This gives workspace Admins central control over credentials while letting project teams decide which integrations are relevant to their agents.

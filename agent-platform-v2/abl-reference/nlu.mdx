@@ -1,0 +1,330 @@
+---
+title: 'NLU (Natural Language Understanding)'
+section: 'abl-reference'
+order: 9
+description: 'The `NLU:` block configures how the agent classifies user intent, extracts entities, resolves synonyms, and matches utterances. NLU definitions are used by the runtime for intent routing, digression m'
+---
+
+# NLU (Natural Language Understanding)
+
+The `NLU:` block configures how the agent classifies user intent, extracts entities, resolves synonyms, and matches utterances. NLU definitions are used by the runtime for intent routing, digression matching, and entity extraction during conversation.
+
+## Overview
+
+ABL's NLU configuration supports:
+
+- **Intent classification** with keyword patterns and example utterances.
+- **Entity extraction** with typed extractors (enum, pattern, location, date, number, free text).
+- **Synonyms** for normalizing variant expressions to canonical values.
+- **Embeddings-based matching** for semantic similarity when keyword patterns are insufficient.
+- **Multi-language support** with per-language model configuration.
+- **A glossary** for domain-specific terminology.
+
+```abl
+NLU:
+  intents:
+    - NAME: send_wire
+      PATTERNS: ["wire transfer", "send money", "wire funds"]
+      EXAMPLES: ["I need to wire $50,000 to Germany", "Can I send a domestic wire?"]
+
+  entities:
+    - NAME: currency_code
+      TYPE: enum
+      VALUES: [USD, EUR, GBP, JPY]
+      SYNONYMS:
+        USD: [dollars, usd, bucks]
+        EUR: [euros, eur]
+
+  glossary:
+    - "SWIFT/BIC -- Code identifying a bank globally"
+    - "Fedwire -- Federal Reserve real-time settlement system"
+```
+
+## Intent classification
+
+Intents represent categories of user messages. Each intent has a name, keyword patterns for quick matching, and optional example utterances for model-based classification.
+
+### Syntax
+
+```abl
+NLU:
+  intents:
+    - NAME: book_flight
+      PATTERNS: ["book flight", "find flights", "search flights", "fly to"]
+      EXAMPLES:
+        - "I want to fly to Paris next Tuesday"
+        - "Find me a round trip to London"
+        - "Book two seats on the morning flight to NYC"
+      ENTITIES: [destination, travel_date, passenger_count]
+```
+
+### Intent properties
+
+| Property        | Type       | Required | Default | Description                                                                |
+| --------------- | ---------- | -------- | ------- | -------------------------------------------------------------------------- |
+| `NAME`          | `string`   | Yes      | --      | Unique intent identifier.                                                  |
+| `PATTERNS`      | `string[]` | Yes      | --      | Keyword patterns for quick substring matching.                             |
+| `EXAMPLES`      | `string[]` | No       | --      | Full example utterances for model-based classification. Improves accuracy. |
+| `EXAMPLES_FILE` | `string`   | No       | --      | Path to an external file containing example utterances (one per line).     |
+| `ENTITIES`      | `string[]` | No       | --      | Entity types expected to co-occur with this intent.                        |
+
+### Pattern matching
+
+Patterns are matched as case-insensitive substrings against the user's message. If any pattern appears in the message, the intent is a candidate match. Pattern matching is the first tier of classification; it is fast but imprecise.
+
+### Example-based classification
+
+When `EXAMPLES` are provided, the runtime uses an LLM or embedding model to classify messages based on semantic similarity to the examples. This is more accurate than pattern matching but requires more compute.
+
+### Intent with external examples file
+
+For intents with many examples, reference an external file:
+
+```abl
+NLU:
+  intents:
+    - NAME: product_inquiry
+      PATTERNS: ["tell me about", "what is", "describe"]
+      EXAMPLES_FILE: "./nlu/product_inquiry_examples.txt"
+```
+
+## Entity extraction
+
+Entities are structured values extracted from user messages. ABL supports six entity types.
+
+### Syntax
+
+```abl
+NLU:
+  entities:
+    - NAME: currency_code
+      TYPE: enum
+      VALUES: [USD, EUR, GBP, JPY, CHF, CAD, AUD]
+      SYNONYMS:
+        USD: [dollars, usd, bucks, us dollars]
+        EUR: [euros, eur]
+        GBP: [pounds, sterling, gbp, quid]
+
+    - NAME: phone_number
+      TYPE: pattern
+      PATTERN: "\\b\\d{3}[-.]?\\d{3}[-.]?\\d{4}\\b"
+      VALIDATION: "Must be a valid US phone number"
+
+    - NAME: destination
+      TYPE: location
+
+    - NAME: travel_date
+      TYPE: date
+
+    - NAME: passenger_count
+      TYPE: number
+
+    - NAME: special_request
+      TYPE: free_text
+```
+
+### Entity types
+
+| Type        | Description                                                                         | Additional properties   |
+| ----------- | ----------------------------------------------------------------------------------- | ----------------------- |
+| `enum`      | Matches against a fixed set of values with optional synonyms.                       | `VALUES`, `SYNONYMS`    |
+| `pattern`   | Matches against a regular expression.                                               | `PATTERN`, `VALIDATION` |
+| `location`  | Extracts geographic locations (cities, countries, addresses).                       | --                      |
+| `date`      | Extracts date and time references, including relative expressions ("next Tuesday"). | --                      |
+| `number`    | Extracts numeric values.                                                            | --                      |
+| `free_text` | Captures arbitrary text spans. Useful for notes, descriptions, or comments.         | --                      |
+
+### Entity properties
+
+| Property     | Type                       | Required | Default | Description                                     |
+| ------------ | -------------------------- | -------- | ------- | ----------------------------------------------- |
+| `NAME`       | `string`                   | Yes      | --      | Unique entity identifier.                       |
+| `TYPE`       | `string`                   | Yes      | --      | Entity type. See [Entity types](#entity-types). |
+| `VALUES`     | `string[]`                 | No       | --      | Valid values (for `enum` type).                 |
+| `SYNONYMS`   | `Record<string, string[]>` | No       | --      | Synonym mappings. Keys are canonical values.    |
+| `PATTERN`    | `string`                   | No       | --      | Regular expression (for `pattern` type).        |
+| `VALIDATION` | `string`                   | No       | --      | Validation description or expression.           |
+
+### Synonyms
+
+Synonyms map variant expressions to canonical values. When a synonym is detected, the runtime normalizes it to the canonical form before storing:
+
+```abl
+SYNONYMS:
+  USD: [dollars, usd, bucks, us dollars]
+  EUR: [euros, eur]
+  GBP: [pounds, sterling, gbp, quid]
+```
+
+If the user says "100 bucks", the entity extraction yields `currency_code: "USD"`.
+
+## Embeddings-based matching
+
+For more accurate semantic matching, enable embeddings-based NLU. This uses vector similarity to match user messages against intent examples.
+
+```abl
+NLU:
+  embeddings:
+    enabled: true
+    provider: "bge-m3"
+    model: "BAAI/bge-m3"
+    threshold: 0.75
+    cache_ttl: 3600
+```
+
+### Embeddings properties
+
+| Property    | Type      | Required | Default | Description                                                         |
+| ----------- | --------- | -------- | ------- | ------------------------------------------------------------------- |
+| `enabled`   | `boolean` | Yes      | --      | Whether embeddings-based matching is active.                        |
+| `provider`  | `string`  | No       | --      | Embedding model provider name.                                      |
+| `model`     | `string`  | No       | --      | Specific model identifier.                                          |
+| `baseUrl`   | `string`  | No       | --      | Custom endpoint URL for the embedding service.                      |
+| `threshold` | `number`  | No       | --      | Similarity threshold (0.0--1.0). Below this, the match is rejected. |
+| `cache_ttl` | `number`  | No       | --      | Cache duration in seconds for computed embeddings.                  |
+
+## Multi-language support
+
+ABL NLU supports multiple languages with per-language model configuration and optional code-switching detection.
+
+```abl
+NLU:
+  languages: [en, es, fr]
+  default_language: en
+  allow_code_switching: true
+  language_models:
+    en: "gpt-4o"
+    es: "gpt-4o"
+    fr: "gpt-4o"
+```
+
+### Multi-language properties
+
+| Property               | Type                    | Required | Default | Description                                        |
+| ---------------------- | ----------------------- | -------- | ------- | -------------------------------------------------- |
+| `languages`            | `string[]`              | No       | --      | Supported language codes.                          |
+| `default_language`     | `string`                | No       | --      | Default language when detection is ambiguous.      |
+| `allow_code_switching` | `boolean`               | No       | `false` | Allow users to switch languages mid-conversation.  |
+| `language_models`      | `Record<string,string>` | No       | --      | Per-language model assignments for classification. |
+
+## Model configuration
+
+Specify which models to use for NLU classification tasks:
+
+```abl
+NLU:
+  models:
+    fast: "claude-haiku-4-5-20251001"
+    balanced: "claude-sonnet-4-5-20250929"
+```
+
+| Property   | Type     | Required | Default | Description                                 |
+| ---------- | -------- | -------- | ------- | ------------------------------------------- |
+| `fast`     | `string` | No       | --      | Model for fast, low-latency classification. |
+| `balanced` | `string` | No       | --      | Model for higher-accuracy classification.   |
+
+## Evaluation configuration
+
+Control NLU evaluation behavior for monitoring and testing:
+
+```abl
+NLU:
+  evaluation:
+    log_predictions: true
+    ab_test: true
+    confidence_threshold: 0.6
+```
+
+| Property               | Type      | Required | Default | Description                                          |
+| ---------------------- | --------- | -------- | ------- | ---------------------------------------------------- |
+| `log_predictions`      | `boolean` | No       | --      | Log all NLU predictions for analysis.                |
+| `ab_test`              | `boolean` | No       | --      | Enable A/B testing between NLU models.               |
+| `confidence_threshold` | `number`  | No       | --      | Minimum confidence score for accepting a prediction. |
+
+## Glossary
+
+The glossary defines domain-specific terms and abbreviations. These definitions are injected into the LLM context to improve understanding of specialized vocabulary.
+
+```abl
+NLU:
+  glossary:
+    - "SWIFT/BIC -- Society for Worldwide Interbank Financial Telecommunication code"
+    - "IBAN -- International Bank Account Number"
+    - "Fedwire -- Federal Reserve real-time gross settlement system"
+    - "OFAC -- Office of Foreign Assets Control"
+    - "Beneficiary -- The person or entity receiving the wire transfer"
+```
+
+Each glossary entry is a plain string in `"term -- definition"` format.
+
+## External NLU configuration
+
+For complex NLU setups, reference an external configuration file:
+
+```abl
+NLU:
+  config_file: "./nlu/config.yaml"
+```
+
+The external file is merged with any inline NLU configuration. Inline values take precedence.
+
+## Complete example
+
+```abl
+NLU:
+  models:
+    fast: "claude-haiku-4-5-20251001"
+    balanced: "claude-sonnet-4-5-20250929"
+
+  languages: [en, es]
+  default_language: en
+  allow_code_switching: true
+
+  intents:
+    - NAME: send_wire
+      PATTERNS: ["wire transfer", "send money", "wire funds", "remittance"]
+      EXAMPLES:
+        - "I need to wire $50,000 to a vendor in Germany"
+        - "Can I send a domestic wire from my business account?"
+
+    - NAME: check_status
+      PATTERNS: ["wire status", "where is my wire", "tracking"]
+      EXAMPLES:
+        - "What's the status of confirmation WR-2024-88431?"
+
+    - NAME: cancel_wire
+      PATTERNS: ["cancel the wire", "stop the transfer", "recall"]
+
+  entities:
+    - NAME: currency_code
+      TYPE: enum
+      VALUES: [USD, EUR, GBP, JPY, CHF, CAD, AUD]
+      SYNONYMS:
+        USD: [dollars, usd, bucks]
+        EUR: [euros, eur]
+        GBP: [pounds, sterling, quid]
+
+    - NAME: transfer_type
+      TYPE: enum
+      VALUES: [domestic, international]
+      SYNONYMS:
+        domestic: [within the us, fedwire, local wire]
+        international: [overseas, swift, cross-border]
+
+  embeddings:
+    enabled: true
+    provider: "bge-m3"
+    threshold: 0.75
+    cache_ttl: 3600
+
+  glossary:
+    - "SWIFT/BIC -- Code identifying a bank globally"
+    - "Fedwire -- Federal Reserve real-time settlement system"
+    - "OFAC -- Office of Foreign Assets Control"
+```
+
+## Related pages
+
+- [Multi-Agent & Supervisor](/agent-platform-v2/abl-reference/multi-agent-and-supervisor) -- intent-based routing in Supervisors
+- [Expressions & functions](/agent-platform-v2/abl-reference/rich-content-and-expressions#expressions--functions) -- expression syntax used in intent conditions
+- [Memory & Constraints](/agent-platform-v2/abl-reference/memory-and-constraints) -- NLU results stored in session variables

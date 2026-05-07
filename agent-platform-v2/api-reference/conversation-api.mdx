@@ -1,0 +1,539 @@
+---
+title: 'Conversation API'
+section: 'api-reference'
+order: 2
+description: 'The conversation API provides three interaction modes: agent-backed chat (ABL runtime execution), streaming LLM completions, and non-streaming LLM completions. All chat endpoints require authenticatio'
+---
+
+# Conversation API
+
+The conversation API provides three interaction modes: agent-backed chat (ABL runtime execution), streaming LLM completions, and non-streaming LLM completions. All chat endpoints require authentication and enforce per-tenant rate limits (see [API overview](/agent-platform-v2/api-reference/api-overview)).
+
+**Base path**: `/api/v1/chat`
+
+## Agent-backed chat
+
+Execute a message through the ABL runtime against a deployed agent project. The platform creates a session on the first call and reuses it on subsequent calls via `sessionId`.
+
+### POST /api/v1/chat/agent
+
+Send a message to an agent and receive a response with full execution context including trace events and state updates.
+
+**Auth required**: Yes (JWT, API key, or SDK token)
+
+#### Request body
+
+| Field          | Type   | Required | Description                                                 |
+| -------------- | ------ | -------- | ----------------------------------------------------------- |
+| `projectId`    | string | Yes      | Project containing the agent(s) to execute                  |
+| `message`      | string | Yes      | User message text (min 1 character)                         |
+| `sessionId`    | string | No       | Existing session ID to resume. Omit to create a new session |
+| `deploymentId` | string | No       | Specific deployment to target                               |
+| `environment`  | string | No       | Target environment (`dev`, `staging`, `production`)         |
+| `agentId`      | string | No       | Override which agent handles the first turn                 |
+| `metadata`     | object | No       | Optional per-message metadata for the current turn only     |
+| `testContext`  | object | No       | Test context for development (requires write permissions)   |
+
+**Test context fields** (optional):
+
+| Field              | Type    | Description                                                        |
+| ------------------ | ------- | ------------------------------------------------------------------ |
+| `gatherValues`     | object  | Pre-populated gather step values                                   |
+| `sessionVariables` | object  | Initial session variable values                                    |
+| `callerContext`    | object  | Simulated caller context (`userId`, `channel`, `customAttributes`) |
+| `toolMocks`        | array   | Mock tool responses for testing (max 50)                           |
+| `skipOnStart`      | boolean | Skip the agent's `on_start` handler                                |
+| `startAtStep`      | string  | Begin execution at a specific step                                 |
+
+#### Per-message metadata
+
+`POST /api/v1/chat/agent` accepts an optional `metadata` object for turn-scoped context:
+
+```json
+{
+  "projectId": "clx1abc2d0000ab12cd34ef56",
+  "message": "Look up this account",
+  "metadata": {
+    "accountId": "acct_123",
+    "context": { "tier": "gold" }
+  }
+}
+```
+
+Per-message metadata is validated server-side and is available only for the current turn. Use `session.messageMetadata` as the canonical prompt/template path. `message_metadata` remains available as the tool-context alias for `context_access.read`. If you need the data on later turns, copy the fields you care about into session state during that same turn.
+
+#### Response body
+
+| Field         | Type   | Description                                    |
+| ------------- | ------ | ---------------------------------------------- |
+| `sessionId`   | string | Session ID (use this for subsequent messages)  |
+| `response`    | string | Agent's text response                          |
+| `action`      | object | Action metadata (e.g., `{ type: "continue" }`) |
+| `state`       | object | Session state updates                          |
+| `traceEvents` | array  | Execution trace events (if any occurred)       |
+| `voiceConfig` | object | Voice configuration (if voice-enabled)         |
+| `richContent` | object | Rich content variants (markdown, HTML, etc.)   |
+| `actions`     | object | Interactive action elements                    |
+
+#### Example request
+
+```bash
+curl -X POST https://api.ablplatform.com/api/v1/chat/agent \
+  -H "Authorization: Bearer abl_sk-your-api-key" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "projectId": "clx1abc2d0000ab12cd34ef56",
+    "message": "I need help resetting my password"
+  }'
+```
+
+#### Example response
+
+```json
+{
+  "sessionId": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+  "response": "I can help you reset your password. Could you provide me with the email address associated with your account?",
+  "action": {
+    "type": "continue"
+  },
+  "state": {
+    "currentStep": "gather-email",
+    "intent": "password_reset"
+  },
+  "traceEvents": [
+    {
+      "type": "llm_call",
+      "data": {
+        "model": "claude-sonnet-4-20250514",
+        "usage": { "inputTokens": 245, "outputTokens": 38 }
+      }
+    }
+  ]
+}
+```
+
+#### Resuming a session
+
+Pass the `sessionId` from the first response to continue the conversation:
+
+```bash
+curl -X POST https://api.ablplatform.com/api/v1/chat/agent \
+  -H "Authorization: Bearer abl_sk-your-api-key" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "projectId": "clx1abc2d0000ab12cd34ef56",
+    "sessionId": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+    "message": "user@example.com"
+  }'
+```
+
+#### Error responses
+
+| Status | Error                               | Cause                                              |
+| ------ | ----------------------------------- | -------------------------------------------------- |
+| `400`  | Invalid request                     | Missing required fields or validation failure      |
+| `400`  | Invalid message metadata            | `metadata` exceeds server-side validation limits   |
+| `404`  | Project not found or has no agents  | Invalid `projectId` or project has no agent DSL    |
+| `404`  | Session not found                   | Invalid `sessionId` or cross-tenant session access |
+| `410`  | Deployment is retired               | Targeted deployment has been retired               |
+| `429`  | Session message rate limit exceeded | Too many messages in the session window            |
+| `429`  | Concurrent session limit exceeded   | Tenant has too many active sessions                |
+| `429`  | Execution queue full                | Server execution queue is at capacity              |
+| `503`  | Runtime not configured              | Model resolution or tenant credentials not set up  |
+
+---
+
+## Streaming chat completion
+
+Stream a chat completion with token-by-token delivery via Server-Sent Events (SSE).
+
+### POST /api/v1/chat/stream
+
+**Auth required**: Yes
+
+#### Request body
+
+| Field         | Type          | Required | Description                                     |
+| ------------- | ------------- | -------- | ----------------------------------------------- |
+| `projectId`   | string (CUID) | Yes      | Project ID                                      |
+| `messages`    | array         | Yes      | Message array (min 1). See message schema below |
+| `sessionId`   | string        | No       | Session ID for rate limiting                    |
+| `tools`       | array         | No       | Tool definitions for function calling           |
+| `modelId`     | string        | No       | Override the project's default model            |
+| `tier`        | string        | No       | Model tier: `fast`, `balanced`, or `powerful`   |
+| `temperature` | number        | No       | Sampling temperature (0-2)                      |
+| `maxTokens`   | integer       | No       | Maximum output tokens (1-200,000)               |
+
+**Message schema**:
+
+| Field          | Type            | Required | Description                                  |
+| -------------- | --------------- | -------- | -------------------------------------------- |
+| `role`         | string          | Yes      | `system`, `user`, `assistant`, or `tool`     |
+| `content`      | string or array | Yes      | Text content or multimodal content array     |
+| `name`         | string          | No       | Name for the message author                  |
+| `tool_call_id` | string          | No       | ID of the tool call this message responds to |
+| `tool_calls`   | array           | No       | Tool calls made by the assistant             |
+
+**Tool schema**:
+
+| Field         | Type   | Required | Description                     |
+| ------------- | ------ | -------- | ------------------------------- |
+| `name`        | string | Yes      | Tool name                       |
+| `description` | string | Yes      | Tool description                |
+| `parameters`  | object | Yes      | JSON Schema for tool parameters |
+
+#### SSE event types
+
+| Event             | Data                                                                   | Description                     |
+| ----------------- | ---------------------------------------------------------------------- | ------------------------------- |
+| `metadata`        | `{ modelId, provider, source }`                                        | Resolved model information      |
+| `text_delta`      | `{ delta }`                                                            | Incremental text chunk          |
+| `tool_call_start` | `{ id, name }`                                                         | Tool call initiated             |
+| `tool_call_delta` | `{ id, arguments }`                                                    | Incremental tool call arguments |
+| `tool_call_end`   | `{ id, name, arguments }`                                              | Tool call completed             |
+| `usage`           | `{ inputTokens, outputTokens }`                                        | Token usage update              |
+| `error`           | `{ error }`                                                            | Stream error                    |
+| `complete`        | `{ inputTokens, outputTokens, totalTokens, estimatedCost, latencyMs }` | Stream finished                 |
+
+#### Example request
+
+```bash
+curl -X POST https://api.ablplatform.com/api/v1/chat/stream \
+  -H "Authorization: Bearer abl_sk-your-api-key" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "projectId": "clx1abc2d0000ab12cd34ef56",
+    "messages": [
+      { "role": "system", "content": "You are a helpful assistant." },
+      { "role": "user", "content": "Explain quantum computing in one paragraph." }
+    ],
+    "temperature": 0.7,
+    "maxTokens": 500
+  }'
+```
+
+#### Example SSE response
+
+```
+event: metadata
+data: {"modelId":"claude-sonnet-4-20250514","provider":"anthropic","source":"tenant"}
+
+event: text_delta
+data: {"delta":"Quantum computing"}
+
+event: text_delta
+data: {"delta":" leverages the principles"}
+
+event: usage
+data: {"inputTokens":42,"outputTokens":128}
+
+event: complete
+data: {"inputTokens":42,"outputTokens":128,"totalTokens":170,"estimatedCost":0.0012,"latencyMs":2340}
+```
+
+---
+
+## Non-streaming chat completion
+
+Receive a complete chat response in a single JSON payload.
+
+### POST /api/v1/chat/complete
+
+**Auth required**: Yes
+
+#### Request body
+
+Same schema as [POST /api/v1/chat/stream](#post-apiv1chatstream).
+
+#### Response body
+
+| Field                 | Type           | Description                                             |
+| --------------------- | -------------- | ------------------------------------------------------- |
+| `content`             | string         | Complete response text                                  |
+| `toolCalls`           | array          | Tool calls (if any)                                     |
+| `model`               | string         | Resolved model ID                                       |
+| `finishReason`        | string         | Why generation stopped (e.g., `end_turn`, `max_tokens`) |
+| `usage.inputTokens`   | number         | Input token count                                       |
+| `usage.outputTokens`  | number         | Output token count                                      |
+| `usage.totalTokens`   | number         | Total token count                                       |
+| `usage.estimatedCost` | number or null | Estimated cost in USD                                   |
+| `latencyMs`           | number         | End-to-end latency in milliseconds                      |
+
+#### Example request
+
+```bash
+curl -X POST https://api.ablplatform.com/api/v1/chat/complete \
+  -H "Authorization: Bearer abl_sk-your-api-key" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "projectId": "clx1abc2d0000ab12cd34ef56",
+    "messages": [
+      { "role": "user", "content": "What is 2+2?" }
+    ]
+  }'
+```
+
+#### Example response
+
+```json
+{
+  "content": "2 + 2 = 4.",
+  "model": "claude-sonnet-4-20250514",
+  "finishReason": "end_turn",
+  "usage": {
+    "inputTokens": 12,
+    "outputTokens": 8,
+    "totalTokens": 20,
+    "estimatedCost": 0.0001
+  },
+  "latencyMs": 450
+}
+```
+
+---
+
+## Usage metrics
+
+### GET /api/v1/chat/usage
+
+Retrieve aggregated chat usage metrics for a project.
+
+**Auth required**: Yes
+
+#### Query parameters
+
+| Parameter   | Type   | Required | Description                            |
+| ----------- | ------ | -------- | -------------------------------------- |
+| `projectId` | string | Yes      | Project ID to query                    |
+| `startDate` | string | No       | ISO 8601 start date                    |
+| `endDate`   | string | No       | ISO 8601 end date                      |
+| `groupBy`   | string | No       | Set to `model` for per-model breakdown |
+
+#### Response body
+
+```json
+{
+  "summary": {
+    "totalTokens": 125000,
+    "totalCost": 4.5,
+    "requestCount": 342,
+    "avgLatency": 1250
+  },
+  "byModel": [
+    {
+      "modelId": "claude-sonnet-4-20250514",
+      "provider": "anthropic",
+      "totalTokens": 100000,
+      "totalCost": 3.6,
+      "requestCount": 280
+    }
+  ]
+}
+```
+
+---
+
+## Sessions
+
+Sessions track the conversation state for agent-backed chat interactions. Sessions are project-scoped.
+
+**Base path**: `/api/projects/:projectId/sessions`
+
+### POST /api/projects/:projectId/sessions
+
+Create a new test session for a specific agent.
+
+**Auth required**: Yes
+**Permission**: `session:execute`
+
+#### Request body
+
+| Field     | Type   | Required | Description                                  |
+| --------- | ------ | -------- | -------------------------------------------- |
+| `agentId` | string | Yes      | Agent ID or path (e.g., `domain/agent-name`) |
+
+#### Response body
+
+```json
+{
+  "success": true,
+  "session": {
+    "id": "sess_abc123",
+    "agentId": "agent-id",
+    "agentName": "support-agent",
+    "createdAt": "2026-03-11T10:00:00.000Z"
+  }
+}
+```
+
+### GET /api/projects/:projectId/sessions
+
+List sessions with pagination and filtering.
+
+**Auth required**: Yes
+**Permission**: `session:read`
+
+#### Query parameters
+
+| Parameter | Type    | Default | Description                                     |
+| --------- | ------- | ------- | ----------------------------------------------- |
+| `limit`   | integer | `50`    | Items per page (max 200)                        |
+| `offset`  | integer | `0`     | Items to skip                                   |
+| `status`  | string  | --      | Filter by status (`active`, `ended`)            |
+| `channel` | string  | --      | Filter by channel (`api`, `web_debug`, `voice`) |
+
+#### Response body
+
+```json
+{
+  "success": true,
+  "total": 25,
+  "offset": 0,
+  "limit": 50,
+  "sessions": [
+    {
+      "id": "sess_abc123",
+      "runtimeSessionId": "a1b2c3d4-...",
+      "agentName": "support-agent",
+      "status": "active",
+      "channel": "api",
+      "messageCount": 12,
+      "traceEventCount": 45,
+      "tokenCount": 3200,
+      "estimatedCost": 0.05,
+      "errorCount": 0,
+      "durationMs": 45000,
+      "createdAt": "2026-03-11T10:00:00.000Z",
+      "lastActivityAt": "2026-03-11T10:05:00.000Z"
+    }
+  ]
+}
+```
+
+### GET /api/projects/:projectId/sessions/:id
+
+Get detailed information about a specific session.
+
+**Auth required**: Yes
+**Permission**: `session:read`
+
+### DELETE /api/projects/:projectId/sessions/:id
+
+Delete a session and its associated data.
+
+**Auth required**: Yes
+
+### POST /api/projects/:projectId/sessions/:id/reset
+
+Reset a session's state, allowing the conversation to restart.
+
+**Auth required**: Yes
+
+### GET /api/projects/:projectId/sessions/:id/traces
+
+Get execution trace events for a session.
+
+**Auth required**: Yes
+**Permission**: `session:read`
+
+#### Query parameters
+
+| Parameter      | Type   | Description                                    |
+| -------------- | ------ | ---------------------------------------------- |
+| `eventType`    | string | Filter by event type                           |
+| `decisionKind` | string | Filter by decision kind                        |
+| `spanId`       | string | Filter by span ID                              |
+| `include`      | string | Set to `metrics` to include aggregated metrics |
+
+### GET /api/projects/:projectId/sessions/:id/metrics
+
+Get aggregated metrics for a specific session.
+
+**Auth required**: Yes
+**Permission**: `session:read`
+
+## Working with attachments
+
+### Upload
+
+```bash
+curl -X POST https://api.ablplatform.com/api/projects/proj_123/sessions/sess_abc123/attachments \
+  -H "Authorization: Bearer your-token" \
+  -F "file=@document.pdf"
+```
+
+Response:
+
+```json
+{
+  "success": true,
+  "attachmentId": "att_abc123",
+  "filename": "document.pdf",
+  "mimeType": "application/pdf",
+  "sizeBytes": 245760
+}
+```
+
+### Send with attachment
+
+```bash
+curl -X POST https://api.ablplatform.com/api/v1/chat/send \
+  -H "Authorization: Bearer your-token" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "sessionId": "sess_abc123",
+    "message": "Please summarize this document",
+    "attachmentIds": ["att_abc123"]
+  }'
+```
+
+## Retrieving conversation history
+
+```bash
+curl -X GET "https://api.ablplatform.com/api/v1/sessions/sess_abc123/transcripts" \
+  -H "Authorization: Bearer your-token"
+```
+
+Response:
+
+```json
+{
+  "success": true,
+  "messages": [
+    {
+      "id": "msg_001",
+      "role": "user",
+      "content": "What are your business hours?",
+      "timestamp": "2026-03-11T10:00:00Z"
+    },
+    {
+      "id": "msg_002",
+      "role": "assistant",
+      "content": "Our business hours are Monday through Friday, 9 AM to 5 PM EST.",
+      "timestamp": "2026-03-11T10:00:02Z"
+    }
+  ]
+}
+```
+
+## Providing feedback
+
+Submit user feedback on agent responses:
+
+```bash
+curl -X POST https://api.ablplatform.com/api/v1/feedback \
+  -H "Authorization: Bearer your-token" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "sessionId": "sess_abc123",
+    "messageId": "msg_002",
+    "rating": "positive",
+    "comment": "Accurate and helpful response"
+  }'
+```
+
+## Next steps
+
+- [Management APIs](/agent-platform-v2/api-reference/management-apis) -- Manage agents, deployments, and tools
+- [Knowledge, Analytics & Export APIs](/agent-platform-v2/api-reference/knowledge-analytics-export) -- Analytics and project operations
+- [SDKs](/agent-platform-v2/api-reference/sdks) -- Build chat interfaces with the Web SDK

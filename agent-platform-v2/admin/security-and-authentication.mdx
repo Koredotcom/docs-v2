@@ -1,0 +1,335 @@
+---
+title: 'Security & Authentication'
+section: 'admin'
+order: 2
+description: 'Security in the Agent Platform 2.0 is not a feature you enable -- it is a structural property of the system. Every query, every session, and every piece of data is scoped to its owner. This page covers the '
+---
+
+# Security & Authentication
+
+Security in the Agent Platform 2.0 is not a feature you enable -- it is a structural property of the system. Every query, every session, and every piece of data is scoped to its owner. This page covers the platform's security architecture, authentication configuration, integration auth patterns, audit logging, and data protection.
+
+**Required role:** Owner or Admin (for workspace security settings)
+
+## Security Architecture
+
+### Tenant isolation
+
+A tenant is your organizational boundary in the platform. All resources -- projects, agents, sessions, credentials, and data -- belong to a tenant. The platform enforces tenant isolation at every layer.
+
+**What this means in practice:**
+
+- Every data query includes the tenant identifier as a filter condition. There is no API path or query pattern that can access another tenant's data.
+- Cross-tenant access attempts return a "not found" response rather than "access denied." This prevents information leakage -- an attacker cannot even confirm whether a resource exists in another tenant.
+- LLM credentials, API keys, and tool bindings are tenant-scoped. Your API keys never touch another tenant's workloads.
+
+Tenant isolation is enforced at the data layer, not the application layer. This means even a bug in business logic cannot bypass isolation boundaries -- the database queries themselves are scoped.
+
+### Project-based resource scoping
+
+Within a tenant, **projects** provide a second level of isolation. Each project is an independent workspace with its own agents, deployments, sessions, and configurations.
+
+Projects are useful for separating concerns within your organization:
+
+- A **customer support** project with triage, billing, and technical agents
+- A **sales** project with product recommendation and checkout agents
+- An **internal operations** project with HR and IT helpdesk agents
+
+Each project has its own agent definitions, session data, knowledge bases, LLM configuration, tool bindings, and environment variables. A session in one project cannot access data from another project, even within the same tenant. This separation lets you grant different team members access to different projects without risk of cross-project data exposure.
+
+### Access control
+
+The platform implements role-based access control (RBAC) with fine-grained permissions:
+
+| Level   | Scope                                                  |
+| ------- | ------------------------------------------------------ |
+| Tenant  | Organization-wide settings, billing, member management |
+| Project | Agent definitions, deployments, sessions, tools        |
+| User    | Personal API keys, preferences                         |
+
+Permissions are evaluated at the API boundary. Every request checks that the authenticated user has the required permission for the specific resource they are accessing. Insufficient permissions return a "not found" response, consistent with the information-leakage-prevention approach used for tenant isolation.
+
+### Encryption
+
+All data is encrypted at rest and in transit:
+
+| What                   | How                                                                                            |
+| ---------------------- | ---------------------------------------------------------------------------------------------- |
+| **Data in transit**    | All communication between services and with external APIs uses TLS encryption                  |
+| **Data at rest**       | Sensitive data (credentials, API keys, PII) is encrypted before storage                        |
+| **Credential storage** | LLM provider API keys and integration credentials are encrypted using a key management service |
+| **Session state**      | Receives additional application-level encryption for sensitive fields                          |
+
+Session-level encryption means even database-level access to raw storage does not expose conversation content without the correct decryption keys. On Enterprise plans with [KMS (Bring Your Own Key)](/agent-platform-v2/admin/billing-quotas-and-operations#kms-bring-your-own-key), your own key material is used.
+
+### Design implications for your agents
+
+These security boundaries affect how you design your agent system:
+
+1. **Agents within a project share context.** A supervisor can hand off to any agent in the same project with full session continuity. Design your project boundaries to match trust boundaries.
+2. **Cross-project communication requires explicit integration.** If you need agents in different projects to collaborate, use tool-based integrations. This is intentional -- it keeps isolation boundaries clear.
+3. **Secrets belong in environment variables, not ABL.** Never hardcode API keys, passwords, or tokens in your agent definitions. Use the platform's environment variable system, which encrypts values and injects them at runtime.
+4. **Tool bindings handle auth.** Do not put authentication logic in your agent's instructions or tools. Configure auth at the tool binding level so credentials are managed centrally and rotated without changing agent definitions.
+
+## SSO Configuration
+
+SSO lets your team authenticate through your organization's identity provider (IdP) instead of managing separate Agent Platform 2.0 passwords.
+
+> **Plan requirement:** SSO is available on Enterprise plans.
+
+### Supported protocols
+
+- **SAML 2.0** -- For identity providers like Okta, Azure AD, OneLogin, and PingIdentity
+- **OpenID Connect (OIDC)** -- For providers that support the OIDC protocol, including Azure AD, Auth0, and Google Workspace
+
+### Setting up SAML SSO
+
+1. Go to **Settings > Team > Security**.
+2. In the **Single sign-on** section, click **Configure SSO**.
+3. Select **SAML 2.0** as the protocol.
+4. Copy the **ACS URL** and **Entity ID** displayed -- you need these for your identity provider.
+5. In your identity provider's admin console, create a new SAML application using the ACS URL and Entity ID.
+6. Copy the **IdP Metadata URL** (or upload the metadata XML) from your identity provider back into the Agent Platform 2.0 configuration.
+7. Map the required attributes:
+   - `email` (required) -- The user's email address
+   - `firstName` (optional) -- The user's first name
+   - `lastName` (optional) -- The user's last name
+8. Click **Save and test**.
+9. Test the connection by signing in through the SSO flow.
+
+### Setting up OIDC SSO
+
+1. Go to **Settings > Team > Security**.
+2. In the **Single sign-on** section, click **Configure SSO**.
+3. Select **OpenID Connect** as the protocol.
+4. Enter the **Discovery URL** (the `.well-known/openid-configuration` endpoint) from your identity provider.
+5. Enter the **Client ID** and **Client Secret** from your IdP's application registration.
+6. Set the required scopes: `openid`, `email`, `profile`.
+7. Click **Save and test**.
+
+### Domain verification
+
+Before enforcing SSO for your workspace, verify ownership of your email domain:
+
+1. In the SSO settings, enter your domain (for example, `yourcompany.com`).
+2. Add the provided TXT record to your domain's DNS settings.
+3. Click **Verify domain**.
+4. Verification typically completes within a few minutes, though DNS propagation can take up to 48 hours.
+
+### Force SSO
+
+Once SSO is configured and your domain is verified, you can require all workspace members to authenticate through SSO:
+
+1. Toggle **Force SSO** to enabled.
+2. Confirm the change.
+
+When Force SSO is enabled:
+
+- All workspace members with a verified domain email must authenticate through SSO.
+- Password-based login is disabled for those users.
+- Members with email addresses outside your verified domain are unaffected.
+- The workspace Owner always retains password-based login as a fallback, regardless of the Force SSO setting.
+
+### Google authentication fallback
+
+If you use Google Workspace as your identity provider, team members can authenticate using the "Sign in with Google" button without separate SSO configuration. This is available on all plans and works alongside or independently of SAML/OIDC SSO.
+
+## Multi-Factor Authentication
+
+MFA adds a second layer of security by requiring a time-based one-time password (TOTP) in addition to the primary authentication method.
+
+### Enabling MFA for your account
+
+1. Go to your profile settings (click your avatar in the top-right corner).
+2. Click **Enable MFA**.
+3. Scan the QR code with an authenticator app (Google Authenticator, Authy, 1Password, or any TOTP-compatible app).
+4. Enter the six-digit code from your authenticator app to confirm setup.
+5. Save the recovery codes displayed on screen in a secure location.
+
+### Recovery codes
+
+When you enable MFA, the platform generates a set of one-time recovery codes. Each recovery code can be used once to sign in if you lose access to your authenticator app.
+
+- Store recovery codes in a secure location (password manager, printed and locked away).
+- Each code is single-use. Once used, it cannot be reused.
+- You can regenerate recovery codes from your profile settings, which invalidates all previously issued codes.
+
+### MFA enforcement policies
+
+Workspace Owners and Admins can require MFA for the entire workspace:
+
+1. Go to **Settings > Team > Security**.
+2. In the **Multi-factor authentication** section, toggle **Require MFA for all members**.
+3. Choose a grace period (7, 14, or 30 days) for existing members to set up MFA.
+
+When MFA is enforced:
+
+- New members must configure MFA before they can access workspace resources.
+- Existing members see a prompt to set up MFA and have until the grace period expires.
+- Members who do not set up MFA within the grace period are locked out until they comply.
+
+> **Tip:** Announce the MFA requirement to your team before enabling enforcement, and set a reasonable grace period to avoid disrupting ongoing work.
+
+## Authentication for Integrations
+
+Agent Platform 2.0 provides multiple ways to authenticate external applications that interact with your deployed agents.
+
+### API keys
+
+API keys are the primary way to authenticate external applications that interact with your deployed agents. You create and manage API keys in Studio, scoped to individual projects.
+
+When your application makes a request to the Runtime API, it includes the API key in the `X-API-Key` header. The Runtime validates the key by:
+
+1. **Hashing the key** and looking up the hash in the database. The original key is never stored -- only its cryptographic hash.
+2. **Checking activation status.** Keys can be active or revoked. Revoked keys are rejected immediately.
+3. **Verifying project scope.** Each key is tied to a specific project. A key for Project A cannot access agents in Project B.
+4. **Validating origins.** If allowed origins are configured for the key, the Runtime checks the request's `Origin` header against the allowlist.
+
+API keys carry permissions that control what the authenticated application can do:
+
+- **Chat** -- Send messages to agents and receive responses
+- **Read** -- Access session history, analytics, and agent metadata
+- **Admin** -- Manage agents, configurations, and deployments
+
+Follow the principle of least privilege -- a web chat widget only needs Chat permission.
+
+**Key management best practices:**
+
+- Use separate keys for separate environments (development, staging, production).
+- Rotate keys periodically. Create a new key, update your application, then revoke the old key.
+- Configure allowed origins for browser-based integrations. This prevents your key from being used on unauthorized websites.
+- Never embed keys in client-side code that is not origin-restricted.
+
+### SDK tokens
+
+SDK tokens authenticate client-side integrations (web widgets, mobile apps). They are short-lived, limited in scope, and designed to be safe for use in browser-facing code. The browser first exchanges a project-scoped public key on `POST /api/v1/sdk/init`, then uses the issued SDK session token for SDK HTTP routes and the `/ws/sdk` WebSocket. SDK tokens can only create sessions and send messages -- they cannot modify agent definitions or access admin functions.
+
+### Channel authentication
+
+For platform-specific channels (voice, messaging platforms, custom webhooks), the Runtime provides dedicated channel endpoints with their own authentication mechanisms:
+
+| Channel type        | Authentication method                                                         |
+| ------------------- | ----------------------------------------------------------------------------- |
+| **Web SDK**         | Public key exchange on `/api/v1/sdk/init`, then short-lived SDK session token |
+| **Voice**           | Session tokens with platform-specific integration                             |
+| **Webhooks**        | HMAC signature verification on incoming payloads                              |
+| **Custom channels** | API key or JWT-based authentication                                           |
+
+### Service-to-service authentication
+
+When agents call tools or external services, the platform handles authentication on behalf of the agent. Tool bindings can include API key injection, OAuth flows, or custom header-based auth. This means your agent definition declares _what_ tool to call, and the deployment configuration handles _how_ to authenticate.
+
+### Session security
+
+Conversation sessions are protected with several measures:
+
+- Sessions are scoped to a specific project and tenant.
+- Session data is encrypted at rest.
+- Session timeouts are configurable (idle timeout and absolute timeout).
+- Sessions can be explicitly terminated.
+
+## Audit Logging
+
+Audit logs provide a record of sensitive operations performed within your workspace. Use them to investigate security incidents, verify compliance, and understand team activity.
+
+### Viewing audit logs
+
+1. Go to **Settings > Team > Security**.
+2. Scroll to the **Audit logs** section, or click the **Audit logs** tab.
+
+The log displays events in reverse chronological order with the following columns:
+
+| Column         | Description                                    |
+| -------------- | ---------------------------------------------- |
+| **Timestamp**  | When the action occurred                       |
+| **Actor**      | The user who performed the action              |
+| **Action**     | The type of operation (see action types below) |
+| **Target**     | The resource affected                          |
+| **IP address** | The IP address of the request                  |
+
+### Action types
+
+Audit logs capture the following categories of actions:
+
+| Category                | Examples                                                              |
+| ----------------------- | --------------------------------------------------------------------- |
+| **Authentication**      | Login, logout, MFA setup, password reset, API key usage               |
+| **Team management**     | Member invited, member removed, role changed, ownership transferred   |
+| **Model configuration** | LLM credential added, model configuration changed, credential revoked |
+| **Secrets**             | Secret created, secret updated, secret deleted, secret accessed       |
+| **Security settings**   | SSO configured, MFA policy changed, domain verified                   |
+| **Workspace settings**  | Workspace name changed, retention policy updated                      |
+| **Agent operations**    | Agent deployed, agent configuration published                         |
+| **Data operations**     | Knowledge base created, documents uploaded, data export requested     |
+
+### Filtering audit logs
+
+Use the filter controls above the log table to narrow results:
+
+- **Actor** -- Filter by the email or name of the user who performed the action
+- **Action type** -- Select a specific action category from the dropdown
+- **Date range** -- Set start and end dates to scope the time window
+- **Target** -- Search for actions on a specific resource by name or ID
+
+### Exporting audit logs
+
+To export audit logs for external analysis or compliance archival:
+
+1. Apply any desired filters.
+2. Click **Export CSV**.
+3. The platform generates a CSV file with all matching log entries and downloads it to your browser.
+
+The exported CSV includes all columns visible in the log table, plus additional metadata fields useful for compliance auditing.
+
+> **Note:** Audit log retention follows your workspace's data retention policy. On Professional and Enterprise plans, logs are retained for at least 90 days. Contact support if you need extended retention.
+
+## Data Protection & Compliance
+
+### Data retention
+
+Each tenant configures a retention period for session data. After the retention window closes, session data is permanently deleted. This applies to:
+
+- Conversation histories
+- Session variables and gathered data
+- Trace events and execution logs
+- Cold-stored session snapshots
+
+Retention is enforced automatically. You do not need to write cleanup logic -- the platform handles deletion on schedule.
+
+### Right to erasure
+
+The platform supports data deletion requests at the user level. When a deletion request is processed, all data associated with that user -- across all sessions and projects within the tenant -- is removed. This cascade covers conversation history, gathered data, persistent memory facts, and any derived analytics.
+
+### PII handling
+
+Agents that handle personally identifiable information (PII) can be configured with redaction policies. The platform can detect and tokenize PII in both input and output, preventing sensitive data from reaching LLM providers or appearing in logs.
+
+- **PII detection** -- Configurable patterns detect PII in user messages and agent responses.
+- **PII redaction** -- Detected PII can be automatically redacted before storage or display.
+- **PII audit logging** -- Access to PII-containing data is logged for compliance auditing.
+- **Output filtering** -- Output guardrails can filter PII from agent responses before delivery.
+
+PII redaction is configurable per environment. You might disable it in development for easier debugging while enforcing it in production.
+
+### LLM provider data handling
+
+When your agent calls an LLM provider, the conversation content is sent to that provider's API. Each provider has its own data handling policies:
+
+- **Anthropic** -- Does not use API data for training by default
+- **OpenAI** -- Enterprise and API accounts have data usage opt-out
+- **Azure OpenAI** -- Data stays within your Azure tenant
+- **AWS Bedrock** -- Data stays within your AWS account
+
+You choose which provider to use, and you configure the credentials. The platform routes requests to the provider you select.
+
+### Data residency
+
+Your data stays within the infrastructure you deploy to. For cloud deployments, you choose the region. The platform does not replicate data across regions unless you configure it.
+
+## Security Best Practices
+
+- **Enable MFA enforcement** for all workspace members, especially if your workspace contains production agent configurations or customer data.
+- **Configure SSO** to centralize authentication and take advantage of your organization's identity governance policies.
+- **Review audit logs regularly** -- Schedule a weekly review of authentication-related events to catch suspicious activity early.
+- **Use the principle of least privilege** -- Assign members the minimum role they need. Most team members need Member or Viewer access, not Admin.
+- **Rotate secrets periodically** -- See [Workspace Configuration](/agent-platform-v2/admin/workspace-configuration) for guidance on secret rotation.

@@ -1,0 +1,651 @@
+---
+title: 'Rich Content & Expressions'
+section: 'abl-reference'
+order: 11
+description: 'This page documents two core ABL capabilities: rich content output formats (voice, cards, carousels, interactive actions, templates) and the expression language (operators, functions, template interpo'
+---
+
+# Rich Content & Expressions
+
+This page documents two core ABL capabilities: rich content output formats (voice, cards, carousels, interactive actions, templates) and the expression language (operators, functions, template interpolation).
+
+---
+
+## Rich Content
+
+ABL supports multi-format output for delivering responses across different channels (web, mobile, voice, messaging platforms). The `VOICE:`, `RICH_CONTENT:`, and `ACTIONS:` blocks can be attached to any `RESPOND` statement, `COMPLETE` condition, or lifecycle handler.
+
+### Overview
+
+A single response can include:
+
+- **Plain text** -- the default `RESPOND` string.
+- **Voice configuration** -- SSML markup or natural language voice instructions.
+- **Rich content** -- Markdown, Adaptive Cards, HTML, Slack Block Kit, WhatsApp, or AG-UI.
+- **Carousels** -- scrollable card collections with images and buttons.
+- **Interactive actions** -- buttons, select menus, and input fields.
+- **Templates** -- reusable named response definitions with interpolation.
+
+The runtime selects the appropriate format based on the delivery channel.
+
+### Voice configuration
+
+Voice configuration provides channel-specific voice output. The `VOICE:` block can appear alongside any `RESPOND`.
+
+#### Syntax
+
+```abl
+RESPOND: "Your booking is confirmed for December 15th."
+VOICE:
+  ssml: |
+    <speak>
+      Your booking is confirmed for <say-as interpret-as="date" format="mdy">12/15/2025</say-as>.
+    </speak>
+  instructions: "Speak in a warm, congratulatory tone"
+  plain_text: "Your booking is confirmed for December fifteenth."
+```
+
+#### Voice properties
+
+| Property       | Type     | Required | Default | Description                                                                      |
+| -------------- | -------- | -------- | ------- | -------------------------------------------------------------------------------- |
+| `ssml`         | `string` | No       | --      | W3C SSML markup for TTS engines (Google, Azure, Amazon Polly).                   |
+| `instructions` | `string` | No       | --      | Natural language voice style instructions (OpenAI Realtime, Gemini Live).        |
+| `plain_text`   | `string` | No       | --      | Voice-optimized plaintext. Used by ElevenLabs and as a fallback for all engines. |
+
+#### SSML example
+
+```abl
+VOICE:
+  ssml: |
+    <speak>
+      <prosody rate="slow" pitch="+2st">
+        Your wire transfer of <say-as interpret-as="currency">$50,000 USD</say-as>
+        has been executed.
+      </prosody>
+      <break time="500ms"/>
+      The confirmation number is
+      <say-as interpret-as="characters">WR-2024-88431</say-as>.
+    </speak>
+```
+
+#### Natural language instructions
+
+For voice platforms that accept style instructions rather than SSML:
+
+```abl
+VOICE:
+  instructions: "Speak slowly and clearly, emphasizing the confirmation number. Use a professional but warm tone."
+```
+
+### Rich content formats
+
+The `RICH_CONTENT:` block provides format-specific variants of a response. The runtime selects the variant matching the delivery channel.
+
+#### Syntax
+
+```abl
+RESPOND: "Here are your flight options."
+RICH_CONTENT:
+  MARKDOWN: |
+    ## Flight Options
+    | Flight | Departure | Arrival | Price |
+    |--------|-----------|---------|-------|
+    | AA 142 | 8:00 AM   | 11:30 AM | $349 |
+    | UA 891 | 10:15 AM  | 1:45 PM  | $289 |
+
+  ADAPTIVE_CARD: |
+    {
+      "type": "AdaptiveCard",
+      "body": [
+        {"type": "TextBlock", "text": "Flight Options", "size": "large"}
+      ]
+    }
+
+  HTML: |
+    <div class="flight-results">
+      <h2>Flight Options</h2>
+      <table>...</table>
+    </div>
+
+  SLACK: |
+    {
+      "blocks": [
+        {"type": "header", "text": {"type": "plain_text", "text": "Flight Options"}}
+      ]
+    }
+```
+
+#### Rich content properties
+
+| Property        | Type     | Required | Default | Description                                                    |
+| --------------- | -------- | -------- | ------- | -------------------------------------------------------------- |
+| `MARKDOWN`      | `string` | No       | --      | Formatted markdown text.                                       |
+| `ADAPTIVE_CARD` | `string` | No       | --      | JSON string conforming to the Microsoft Adaptive Cards schema. |
+| `HTML`          | `string` | No       | --      | HTML content for web-based channels.                           |
+| `SLACK`         | `string` | No       | --      | JSON string conforming to the Slack Block Kit format.          |
+| `AG_UI`         | `string` | No       | --      | JSON string for AG-UI / CopilotKit events.                     |
+| `WHATSAPP`      | `string` | No       | --      | JSON string for WhatsApp interactive messages.                 |
+| `CAROUSEL`      | `object` | No       | --      | Carousel of cards. See [Carousels](#carousels).                |
+
+### Carousels
+
+Carousels display a horizontal scrollable collection of cards, each with a title, subtitle, image, and action buttons.
+
+#### Syntax
+
+```abl
+RICH_CONTENT:
+  CAROUSEL:
+    - title: "Economy Class"
+      subtitle: "$289 - UA 891"
+      imageUrl: "https://cdn.example.com/economy.jpg"
+      defaultActionUrl: "https://booking.example.com/ua891"
+      buttons:
+        - id: select_economy
+          type: button
+          label: "Select"
+          value: "ua891_economy"
+
+    - title: "Business Class"
+      subtitle: "$1,249 - UA 891"
+      imageUrl: "https://cdn.example.com/business.jpg"
+      buttons:
+        - id: select_business
+          type: button
+          label: "Select"
+          value: "ua891_business"
+```
+
+#### Carousel card properties
+
+| Property           | Type     | Required | Default | Description                                                      |
+| ------------------ | -------- | -------- | ------- | ---------------------------------------------------------------- |
+| `title`            | `string` | Yes      | --      | Card title.                                                      |
+| `subtitle`         | `string` | No       | --      | Card subtitle or description.                                    |
+| `imageUrl`         | `string` | No       | --      | URL for the card image.                                          |
+| `defaultActionUrl` | `string` | No       | --      | URL opened when the card itself is tapped.                       |
+| `buttons`          | `array`  | No       | --      | Action buttons. See [Interactive actions](#interactive-actions). |
+
+### Interactive actions
+
+Interactive actions add buttons, select menus, and input fields to a response. Users interact with these elements, and the agent handles the interactions via `ON_ACTION` blocks.
+
+#### Syntax
+
+```abl
+RESPOND: "How would you like to proceed?"
+ACTIONS:
+  - id: confirm_wire
+    type: button
+    label: "Confirm Wire"
+    value: "confirmed"
+
+  - id: modify_amount
+    type: button
+    label: "Modify Amount"
+    value: "modify"
+
+  - id: cancel
+    type: button
+    label: "Cancel"
+    value: "cancelled"
+```
+
+#### Action element properties
+
+| Property      | Type      | Required | Default | Description                                                                 |
+| ------------- | --------- | -------- | ------- | --------------------------------------------------------------------------- |
+| `id`          | `string`  | Yes      | --      | Unique action identifier. Referenced in `ON_ACTION` handlers.               |
+| `type`        | `string`  | Yes      | --      | Element type: `button`, `select`, or `input`.                               |
+| `label`       | `string`  | Yes      | --      | Display label.                                                              |
+| `value`       | `string`  | No       | --      | Hidden value sent when the user interacts with this element.                |
+| `description` | `string`  | No       | --      | Subtitle or help text (for list items).                                     |
+| `options`     | `array`   | No       | --      | Options for `select` type. Each has `id`, `label`, `description`.           |
+| `inputType`   | `string`  | No       | --      | Input type for `input` elements: `text`, `number`, `date`, `time`, `email`. |
+| `placeholder` | `string`  | No       | --      | Placeholder text for `input` elements.                                      |
+| `required`    | `boolean` | No       | --      | Whether the input is required before submission.                            |
+
+#### Select element example
+
+```abl
+ACTIONS:
+  - id: select_account
+    type: select
+    label: "Choose Account"
+    options:
+      - id: checking
+        label: "Checking ****4521"
+        description: "Available: $12,340.50"
+      - id: savings
+        label: "Savings ****8872"
+        description: "Available: $45,200.00"
+```
+
+#### Input element example
+
+```abl
+ACTIONS:
+  - id: amount_input
+    type: input
+    label: "Transfer Amount"
+    inputType: number
+    placeholder: "Enter amount"
+    required: true
+
+  - id: reference_input
+    type: input
+    label: "Reference (optional)"
+    inputType: text
+    placeholder: "Invoice number, memo, etc."
+    required: false
+  submitLabel: "Submit"
+  submitId: "submit_transfer"
+```
+
+#### Form submission
+
+When the `ACTIONS` block contains `input` elements, you can specify a `submitLabel` and `submitId` for the form submission button:
+
+| Property      | Type     | Required | Default | Description                                   |
+| ------------- | -------- | -------- | ------- | --------------------------------------------- |
+| `submitLabel` | `string` | No       | --      | Label for the form submit button.             |
+| `submitId`    | `string` | No       | --      | Action ID emitted when the form is submitted. |
+
+#### ON_ACTION handlers
+
+Handle user interactions with action elements in flow steps:
+
+```abl
+FLOW:
+  review_wire:
+    RESPOND: "Ready to proceed?"
+    ACTIONS:
+      - id: confirm
+        type: button
+        label: "Confirm"
+      - id: cancel
+        type: button
+        label: "Cancel"
+    ON_ACTION:
+      - ACTION_ID: confirm
+        RESPOND: "Executing your wire transfer."
+        SET:
+          user_confirmed = true
+        THEN: execute_wire_step
+      - ACTION_ID: cancel
+        RESPOND: "Wire transfer cancelled."
+        THEN: cleanup
+```
+
+##### ON_ACTION handler properties
+
+| Property    | Type                    | Required | Default | Description                                   |
+| ----------- | ----------------------- | -------- | ------- | --------------------------------------------- |
+| `ACTION_ID` | `string`                | Yes      | --      | Which action element triggered this handler.  |
+| `CONDITION` | `string`                | No       | --      | Optional condition based on the action value. |
+| `RESPOND`   | `string`                | No       | --      | Response message.                             |
+| `SET`       | `Record<string,string>` | No       | --      | Variable assignments.                         |
+| `THEN`      | `string`                | No       | --      | Flow step to transition to.                   |
+
+### Templates
+
+Templates are named, reusable response definitions declared in the `TEMPLATES:` block. They support `{{}}` interpolation and multi-format variants.
+
+#### Syntax
+
+```abl
+TEMPLATES:
+  wire_confirmation:
+    DEFAULT: |
+      **Wire Confirmation -- {{confirmation_number}}**
+      From: ****{{source_last4}} | To: {{beneficiary_name}}
+      Amount: {{amount}} {{currency}} | Fees: {{fees}} | Total: {{total_debit}}
+      Status: {{status}} | ETA: {{estimated_arrival}}
+    MARKDOWN: |
+      ## Wire Transfer Confirmation
+      | Field | Value |
+      |-------|-------|
+      | Confirmation | {{confirmation_number}} |
+      | Amount | {{amount}} {{currency}} |
+      | Status | {{status}} |
+
+  fee_breakdown:
+    DEFAULT: |
+      **Fee Breakdown for {{transfer_type}} wire**
+      Wire fee: {{wire_fee}} {{currency}}
+      {{#if intermediary_fee}}Intermediary fee: {{intermediary_fee}} {{currency}}{{/if}}
+      **Total fees: {{total_fees}} {{currency}}**
+```
+
+#### Template properties
+
+| Property        | Type     | Required | Default | Description                                                    |
+| --------------- | -------- | -------- | ------- | -------------------------------------------------------------- |
+| `name`          | `string` | Yes      | --      | Template name (the YAML key). Referenced via `TEMPLATE(name)`. |
+| `DEFAULT`       | `string` | Yes      | --      | Default template body with `{{}}` interpolation.               |
+| `MARKDOWN`      | `string` | No       | --      | Markdown variant.                                              |
+| `ADAPTIVE_CARD` | `string` | No       | --      | Adaptive Card JSON variant.                                    |
+| `ACTIONS`       | `object` | No       | --      | Interactive actions attached to this template.                 |
+
+#### Referencing templates
+
+Use `TEMPLATE(name)` in any RESPOND value:
+
+```abl
+RESPOND: TEMPLATE(wire_confirmation)
+```
+
+#### Template interpolation
+
+Templates use `{{variable_name}}` for value substitution and `{{#if variable}}...{{/if}}` for conditional sections:
+
+```abl
+DEFAULT: |
+  Hello, {{customer_name}}.
+  {{#if has_loyalty}}Your loyalty tier: {{loyalty_tier}}.{{/if}}
+  How can I help you today?
+```
+
+### Channel selection
+
+The runtime selects the response format based on the delivery channel:
+
+| Channel  | Priority format                          | Fallback     |
+| -------- | ---------------------------------------- | ------------ |
+| Web/SDK  | `RICH_CONTENT` (Markdown, HTML, AG-UI)   | Plain text   |
+| Mobile   | `RICH_CONTENT` (Adaptive Card, Carousel) | Plain text   |
+| Voice    | `VOICE` (SSML, instructions, plain_text) | RESPOND text |
+| Slack    | `RICH_CONTENT` (SLACK)                   | Markdown     |
+| WhatsApp | `RICH_CONTENT` (WHATSAPP)                | Plain text   |
+
+If the preferred format is not available, the runtime falls back through the priority chain until it finds a defined format. Plain text (`RESPOND`) is always the final fallback.
+
+---
+
+## Expressions & Functions
+
+ABL expressions are used in conditions (`WHEN`, `CHECK`, constraint rules), value assignments (`SET`), template interpolation (`{{}}`), and function calls. This section documents the expression syntax and all 36 built-in functions.
+
+### Expression syntax
+
+#### Comparison operators
+
+| Operator   | Syntax         | Description                                           |
+| ---------- | -------------- | ----------------------------------------------------- |
+| `==`       | `a == b`       | Equal to.                                             |
+| `!=`       | `a != b`       | Not equal to.                                         |
+| `>`        | `a > b`        | Greater than.                                         |
+| `<`        | `a < b`        | Less than.                                            |
+| `>=`       | `a >= b`       | Greater than or equal to.                             |
+| `<=`       | `a <= b`       | Less than or equal to.                                |
+| `in`       | `a IN [x,y,z]` | Value is in the list.                                 |
+| `not_in`   | `a NOT IN [x]` | Value is not in the list.                             |
+| `matches`  | `a matches r`  | Value matches a regular expression.                   |
+| `contains` | `a contains b` | String contains substring, or array contains element. |
+
+#### Logical operators
+
+| Operator | Syntax    | Description                   |
+| -------- | --------- | ----------------------------- |
+| `AND`    | `a AND b` | Both conditions must be true. |
+| `OR`     | `a OR b`  | At least one must be true.    |
+| `NOT`    | `NOT a`   | Negates the condition.        |
+
+Logical operators are case-insensitive (`AND`, `and`, `And` are equivalent).
+
+#### Unary operators
+
+| Operator     | Syntax           | Description                                       |
+| ------------ | ---------------- | ------------------------------------------------- |
+| `NOT`        | `NOT condition`  | Negates a condition.                              |
+| `IS SET`     | `var IS SET`     | True if the variable is not null/undefined.       |
+| `IS NOT SET` | `var IS NOT SET` | True if the variable is null or undefined.        |
+| `exists`     | `EXISTS var`     | True if the variable exists in context.           |
+| `empty`      | `EMPTY var`      | True if the variable is empty (null, "", [], {}). |
+
+#### Operator precedence
+
+1. Parentheses `()`
+2. Unary operators (`NOT`, `IS SET`, `IS NOT SET`)
+3. Comparison operators (`==`, `!=`, `>`, `<`, `>=`, `<=`, `contains`, `matches`)
+4. `AND`
+5. `OR`
+
+Use parentheses to override default precedence:
+
+```abl
+WHEN: (status == "active" OR status == "pending") AND amount > 0
+```
+
+### Variable paths and dot notation
+
+Variables are referenced using dot notation to access nested values:
+
+```abl
+user.name                  # Access nested property
+user.addresses[0].city     # Array index access
+acctResult.status          # Tool result field
+```
+
+#### Path resolution rules
+
+1. The evaluator looks up the full path in the session context.
+2. Each segment is resolved left to right: `user.address.city` resolves `user`, then `address` on the result, then `city`.
+3. If any segment resolves to `null` or `undefined`, the entire path resolves to `undefined`.
+4. Array access uses bracket notation: `items[0]`, `items[2].name`.
+
+### Template strings
+
+Template strings use `{{}}` syntax for variable interpolation within `RESPOND`, `summary`, and other string properties:
+
+```abl
+RESPOND: "Hello, {{customer_name}}! Your balance is {{available_balance}}."
+```
+
+#### Conditional sections
+
+Templates support conditional rendering with `{{#if}}...{{/if}}`:
+
+```abl
+RESPOND: |
+  Transfer complete.
+  {{#if fx_rate}}Exchange rate: {{fx_rate}}{{/if}}
+  Estimated arrival: {{estimated_arrival}}.
+```
+
+#### Function calls in templates
+
+You can call built-in functions within template strings:
+
+```abl
+SET:
+  formatted_balance = FORMAT_CURRENCY(available_balance, "USD")
+RESPOND: "Your balance is {{formatted_balance}}."
+```
+
+### Built-in function reference
+
+ABL provides 36 built-in functions organized into seven categories. All functions are called with `FUNCTION_NAME(arg1, arg2, ...)` syntax. Function names are case-insensitive.
+
+#### Math functions (8)
+
+| Function | Signature                       | Description                                    | Example                                             |
+| -------- | ------------------------------- | ---------------------------------------------- | --------------------------------------------------- | ------------------------ |
+| `ADD`    | `ADD(a, b) -> number`           | Add two numbers.                               | `ADD(2, 3)` returns `5`                             |
+| `SUB`    | `SUB(a, b) -> number`           | Subtract b from a.                             | `SUB(10, 3)` returns `7`                            |
+| `MUL`    | `MUL(a, b) -> number`           | Multiply two numbers.                          | `MUL(4, 5)` returns `20`                            |
+| `DIV`    | `DIV(a, b) -> number            | null`                                          | Divide a by b. Returns `null` for division by zero. | `DIV(10, 2)` returns `5` |
+| `ROUND`  | `ROUND(n, decimals?) -> number` | Round to specified decimal places. Default: 0. | `ROUND(3.14159, 2)` returns `3.14`                  |
+| `ABS`    | `ABS(n) -> number`              | Absolute value.                                | `ABS(-5)` returns `5`                               |
+| `MIN`    | `MIN(a, b) -> number`           | Return the smaller of two numbers.             | `MIN(3, 7)` returns `3`                             |
+| `MAX`    | `MAX(a, b) -> number`           | Return the larger of two numbers.              | `MAX(3, 7)` returns `7`                             |
+
+Math functions coerce string arguments to numbers automatically: `ADD("2", "3")` returns `5`.
+
+#### String functions (10)
+
+| Function    | Signature                               | Description                        | Example                                        |
+| ----------- | --------------------------------------- | ---------------------------------- | ---------------------------------------------- |
+| `UPPER`     | `UPPER(s) -> string`                    | Convert to uppercase.              | `UPPER("hello")` returns `"HELLO"`             |
+| `LOWER`     | `LOWER(s) -> string`                    | Convert to lowercase.              | `LOWER("HELLO")` returns `"hello"`             |
+| `TRIM`      | `TRIM(s) -> string`                     | Strip leading/trailing whitespace. | `TRIM("  hi  ")` returns `"hi"`                |
+| `SUBSTRING` | `SUBSTRING(s, start, end?) -> string`   | Extract a substring.               | `SUBSTRING("hello", 0, 3)` returns `"hel"`     |
+| `REPLACE`   | `REPLACE(s, find, repl) -> string`      | Replace all occurrences.           | `REPLACE("a,b,c", ",", "-")` returns `"a-b-c"` |
+| `SPLIT`     | `SPLIT(s, delimiter) -> string[]`       | Split string into array.           | `SPLIT("a,b,c", ",")` returns `["a","b","c"]`  |
+| `JOIN`      | `JOIN(arr, delimiter) -> string`        | Join array into string.            | `JOIN(["a","b"], ", ")` returns `"a, b"`       |
+| `PAD_START` | `PAD_START(s, length, char?) -> string` | Left-pad to specified length.      | `PAD_START("42", 6, "0")` returns `"000042"`   |
+| `PAD_END`   | `PAD_END(s, length, char?) -> string`   | Right-pad to specified length.     | `PAD_END("42", 6, "0")` returns `"420000"`     |
+| `REPEAT`    | `REPEAT(s, count) -> string`            | Repeat string N times.             | `REPEAT("*", 4)` returns `"****"`              |
+
+String functions handle `null` and `undefined` gracefully, returning an empty string: `UPPER(null)` returns `""`.
+
+String output is capped at 100,000 characters to prevent memory issues.
+
+#### Formatting functions (4)
+
+| Function          | Signature                                         | Description                                              | Example                                                                    |
+| ----------------- | ------------------------------------------------- | -------------------------------------------------------- | -------------------------------------------------------------------------- |
+| `MASK`            | `MASK(s, pattern, char?) -> string`               | Mask a string. See [Mask patterns](#mask-patterns).      | `MASK("4111111111111111", "last4")` returns `"************1111"`           |
+| `FORMAT_CURRENCY` | `FORMAT_CURRENCY(n, currency, locale?) -> string` | Format a number as currency.                             | `FORMAT_CURRENCY(1234.5, "USD")` returns `"$1,234.50"`                     |
+| `FORMAT_DATE`     | `FORMAT_DATE(d, format, tz?) -> string`           | Format a date string. See [Date formats](#date-formats). | `FORMAT_DATE("2024-03-15T10:30:00Z", "YYYY-MM-DD")` returns `"2024-03-15"` |
+| `ORDINAL`         | `ORDINAL(n) -> string`                            | Convert number to ordinal string.                        | `ORDINAL(1)` returns `"1st"`, `ORDINAL(22)` returns `"22nd"`               |
+
+##### Mask patterns
+
+| Pattern  | Behavior                                           | Example result             |
+| -------- | -------------------------------------------------- | -------------------------- |
+| `last4`  | Mask all characters except the last 4.             | `"************1111"`       |
+| `first4` | Mask all characters except the first 4.            | `"4111************"`       |
+| `N*N`    | Show N chars at start, mask middle, show N at end. | `MASK(s, "4*4")` shows 4+4 |
+
+The default mask character is `*`. Pass a third argument to use a different character: `MASK(ssn, "last4", "x")`.
+
+##### Date formats
+
+| Token  | Description          | Example |
+| ------ | -------------------- | ------- |
+| `YYYY` | Four-digit year      | `2024`  |
+| `MM`   | Two-digit month      | `03`    |
+| `DD`   | Two-digit day        | `15`    |
+| `HH`   | Two-digit hour (24h) | `10`    |
+| `mm`   | Two-digit minute     | `30`    |
+| `ss`   | Two-digit second     | `00`    |
+
+Example: `FORMAT_DATE("2024-03-15T10:30:00Z", "YYYY-MM-DD HH:mm")` returns `"2024-03-15 10:30"`.
+
+#### Type checking and coercion functions (5)
+
+| Function    | Signature                 | Description                                         | Example                                                |
+| ----------- | ------------------------- | --------------------------------------------------- | ------------------------------------------------------ | ------------------------------ |
+| `IS_ARRAY`  | `IS_ARRAY(x) -> boolean`  | True if the value is an array.                      | `IS_ARRAY([1,2])` returns `true`                       |
+| `IS_NUMBER` | `IS_NUMBER(x) -> boolean` | True if the value is a number (not NaN).            | `IS_NUMBER(42)` returns `true`                         |
+| `IS_STRING` | `IS_STRING(x) -> boolean` | True if the value is a string.                      | `IS_STRING("hi")` returns `true`                       |
+| `TO_NUMBER` | `TO_NUMBER(x) -> number   | null`                                               | Convert to number. Returns `null` if conversion fails. | `TO_NUMBER("42")` returns `42` |
+| `TO_STRING` | `TO_STRING(x) -> string`  | Convert to string. Returns `""` for null/undefined. | `TO_STRING(42)` returns `"42"`                         |
+
+#### Array functions (3)
+
+| Function           | Signature                                       | Description                                               | Example                                                  |
+| ------------------ | ----------------------------------------------- | --------------------------------------------------------- | -------------------------------------------------------- | --------------------------------------------------------- |
+| `LENGTH`           | `LENGTH(x) -> number`                           | Array length or string length. Returns 0 for other types. | `LENGTH([1,2,3])` returns `3`                            |
+| `ARRAY_FIND`       | `ARRAY_FIND(arr, field, value) -> object        | null`                                                     | Find first element where `field == value`.               | `ARRAY_FIND(users, "id", 42)` returns the matching object |
+| `ARRAY_FIND_INDEX` | `ARRAY_FIND_INDEX(arr, field, value) -> number` | Find index of first match. Returns -1 if not found.       | `ARRAY_FIND_INDEX(items, "type", "b")` returns the index |
+
+#### Object functions (3)
+
+| Function        | Signature                                 | Description                                       | Example                                           |
+| --------------- | ----------------------------------------- | ------------------------------------------------- | ------------------------------------------------- |
+| `OBJECT_KEYS`   | `OBJECT_KEYS(obj) -> string[]`            | Return array of object keys.                      | `OBJECT_KEYS({a:1, b:2})` returns `["a","b"]`     |
+| `OBJECT_VALUES` | `OBJECT_VALUES(obj) -> any[]`             | Return array of object values.                    | `OBJECT_VALUES({a:1, b:2})` returns `[1, 2]`      |
+| `OBJECT_MERGE`  | `OBJECT_MERGE(obj1, obj2, ...) -> object` | Merge objects. Right-side values win on conflict. | `OBJECT_MERGE({a:1}, {b:2})` returns `{a:1, b:2}` |
+
+`OBJECT_KEYS` and `OBJECT_VALUES` return an empty array for non-object inputs (null, arrays, strings).
+
+`OBJECT_MERGE` accepts any number of arguments and skips non-object values.
+
+#### Utility functions (3)
+
+| Function    | Signature                      | Description                                                                               | Example                                                |
+| ----------- | ------------------------------ | ----------------------------------------------------------------------------------------- | ------------------------------------------------------ |
+| `COALESCE`  | `COALESCE(a, b, ...) -> any`   | Return the first non-null, non-undefined value. Returns `null` if all arguments are null. | `COALESCE(null, undefined, "hello")` returns `"hello"` |
+| `NOW`       | `NOW() -> string`              | Return the current timestamp as an ISO 8601 string.                                       | `NOW()` returns `"2024-03-15T10:30:00.000Z"`           |
+| `UNIQUE_ID` | `UNIQUE_ID(length?) -> string` | Generate a random alphanumeric string. Default length: 6.                                 | `UNIQUE_ID(12)` returns `"aB3kM9pQ2xLw"`               |
+
+`COALESCE` considers `0` and `false` as valid (non-null) values: `COALESCE(0, "fallback")` returns `0`.
+
+`UNIQUE_ID` generates cryptographically random IDs suitable for reference numbers.
+
+### Nested function calls
+
+Functions can be nested as arguments to other functions:
+
+```abl
+SET:
+  result = ADD(MUL(2, 3), SUB(10, 4))     # Returns 12
+  name = UPPER(TRIM("  hello  "))           # Returns "HELLO"
+  fallback = COALESCE(user.lastName, "Guest")
+```
+
+Nesting is limited to a maximum depth of 32 to prevent stack overflow.
+
+### Using expressions in ABL
+
+#### In conditions (WHEN, CHECK, constraint rules)
+
+```abl
+WHEN: user.age >= 18 AND user.verified == true
+CHECK: amount <= available_balance
+- REQUIRE sanctions_clear == true
+```
+
+#### In SET assignments
+
+```abl
+SET:
+  balance_formatted = FORMAT_CURRENCY(available_balance, "USD")
+  wire_reference = UNIQUE_ID(12)
+  greeting = COALESCE(user.name, "valued customer")
+```
+
+#### In template interpolation
+
+```abl
+RESPOND: "Hello, {{customer_name}}! Balance: {{FORMAT_CURRENCY(available_balance, 'USD')}}."
+```
+
+#### In TRANSFORM pipelines
+
+```abl
+TRANSFORM:
+  SOURCE: search_results
+  AS: item
+  INTO: filtered_results
+  FILTER: item.price <= budget AND item.available == true
+  MAP:
+    name: item.hotel_name
+    price: FORMAT_CURRENCY(item.price, "USD")
+  SORT_BY: price ASC
+  LIMIT: 5
+```
+
+### Type coercion rules
+
+The evaluator applies these coercion rules during expression evaluation:
+
+| Context                    | Rule                                                                                                                  |
+| -------------------------- | --------------------------------------------------------------------------------------------------------------------- |
+| Equality (`==`)            | null/undefined == null/undefined is true. Strings compared case-sensitively. Numbers parsed from strings.             |
+| Inequality (`!=`)          | If either side is undefined/null, returns true.                                                                       |
+| Numeric (`>`, `<`, etc.)   | Strings parsed to numbers. Booleans become 0/1. Arrays become length. Undefined becomes 0.                            |
+| Truthiness (bare variable) | `false`, `0`, `""`, `"false"`, `null`, `undefined`, empty arrays, empty objects are falsy. Everything else is truthy. |
+| IS SET / IS NOT SET        | Checks for null/undefined only. Empty string IS SET.                                                                  |
+
+---
+
+## Related pages
+
+- [Memory & Constraints](/agent-platform-v2/abl-reference/memory-and-constraints) -- condition expressions in constraint rules, variable paths and session context
+- [Lifecycle & hooks](/agent-platform-v2/abl-reference/lifecycle-and-hooks) -- ON_START and hooks that support rich content
+- [Multi-Agent & Supervisor](/agent-platform-v2/abl-reference/multi-agent-and-supervisor) -- COMPLETE conditions with rich responses
+- [Data Types & Utilities](/agent-platform-v2/abl-reference/data-types-and-utilities) -- types used in function signatures, lookup validation functions

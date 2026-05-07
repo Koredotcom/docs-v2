@@ -1,0 +1,810 @@
+---
+title: 'Management APIs'
+section: 'api-reference'
+order: 3
+description: 'The management APIs provide endpoints for discovering agents, managing project-level agent definitions, creating deployments, coordinating between agents via handoffs and delegation, and managing tool'
+---
+
+# Management APIs
+
+The management APIs provide endpoints for discovering agents, managing project-level agent definitions, creating deployments, coordinating between agents via handoffs and delegation, and managing tool secrets. For authentication and error handling conventions, see [API overview](./api-overview).
+
+## Agent Management API
+
+### Agent discovery
+
+List and inspect agents across your tenant.
+
+**Base path**: `/api/agents`
+
+#### GET /api/agents
+
+List all agents accessible to the authenticated tenant.
+
+**Auth required**: Yes
+
+##### Response body
+
+| Field     | Type    | Description                     |
+| --------- | ------- | ------------------------------- |
+| `success` | boolean | Whether the operation succeeded |
+| `total`   | number  | Total number of agents          |
+| `agents`  | array   | List of agent metadata objects  |
+
+Each agent object:
+
+| Field  | Type   | Description |
+| ------ | ------ | ----------- |
+| `id`   | string | Agent ID    |
+| `name` | string | Agent name  |
+
+##### Example request
+
+```bash
+curl https://api.ablplatform.com/api/agents \
+  -H "Authorization: Bearer abl_sk-your-api-key"
+```
+
+##### Example response
+
+```json
+{
+  "success": true,
+  "total": 3,
+  "agents": [
+    { "id": "ag_001", "name": "support-agent" },
+    { "id": "ag_002", "name": "sales-agent" },
+    { "id": "ag_003", "name": "onboarding-agent" }
+  ]
+}
+```
+
+---
+
+#### GET /api/agents/:name
+
+Get full details for a specific agent by name, including the compiled specification.
+
+**Auth required**: Yes
+
+##### Path parameters
+
+| Parameter | Type   | Description |
+| --------- | ------ | ----------- |
+| `name`    | string | Agent name  |
+
+##### Response body
+
+| Field     | Type    | Description                     |
+| --------- | ------- | ------------------------------- |
+| `success` | boolean | Whether the operation succeeded |
+| `agent`   | object  | Agent detail object             |
+
+Agent detail object:
+
+| Field        | Type   | Description           |
+| ------------ | ------ | --------------------- |
+| `id`         | string | Agent ID              |
+| `name`       | string | Agent name            |
+| `dslContent` | string | Agent DSL source code |
+
+##### Example request
+
+```bash
+curl https://api.ablplatform.com/api/agents/support-agent \
+  -H "Authorization: Bearer abl_sk-your-api-key"
+```
+
+##### Example response
+
+```json
+{
+  "success": true,
+  "agent": {
+    "id": "ag_001",
+    "name": "support-agent",
+    "dslContent": "AGENT: support-agent\n..."
+  }
+}
+```
+
+##### Cache behavior
+
+Agent detail responses include `Cache-Control: private, max-age=300` since agent specifications change infrequently.
+
+---
+
+### Project agents
+
+Manage agents within a specific project. Project agents are tenant-scoped and include version tracking.
+
+**Base path**: `/api/projects/:projectId/agents`
+
+#### GET /api/projects/:projectId/agents
+
+List all agents in a project.
+
+**Auth required**: Yes
+**Permission**: `agent:read`
+
+##### Response body
+
+| Field     | Type    | Description                  |
+| --------- | ------- | ---------------------------- |
+| `success` | boolean | Always `true` on success     |
+| `agents`  | array   | List of agent detail objects |
+
+Each agent object:
+
+| Field            | Type           | Description                                 |
+| ---------------- | -------------- | ------------------------------------------- |
+| `id`             | string         | Agent ID                                    |
+| `name`           | string         | Agent name                                  |
+| `agentPath`      | string         | Full agent path (e.g., `domain/agent-name`) |
+| `description`    | string or null | Agent description                           |
+| `versionCount`   | number         | Number of saved versions                    |
+| `activeVersions` | object         | Map of environment to active version        |
+| `createdAt`      | string         | ISO 8601 creation timestamp                 |
+| `updatedAt`      | string         | ISO 8601 last update timestamp              |
+
+##### Example request
+
+```bash
+curl https://api.ablplatform.com/api/projects/proj_abc/agents \
+  -H "Authorization: Bearer abl_sk-your-api-key"
+```
+
+##### Example response
+
+```json
+{
+  "success": true,
+  "agents": [
+    {
+      "id": "ag_001",
+      "name": "support-agent",
+      "agentPath": "helpdesk/support-agent",
+      "description": "Customer support automation agent",
+      "versionCount": 5,
+      "activeVersions": {
+        "dev": "3",
+        "production": "2"
+      },
+      "createdAt": "2026-02-15T08:00:00.000Z",
+      "updatedAt": "2026-03-10T14:30:00.000Z"
+    }
+  ]
+}
+```
+
+---
+
+#### GET /api/projects/:projectId/agents/:agentName
+
+Get a single agent with version count and DSL content.
+
+**Auth required**: Yes
+**Permission**: `agent:read`
+
+##### Path parameters
+
+| Parameter   | Type          | Description |
+| ----------- | ------------- | ----------- |
+| `projectId` | string (CUID) | Project ID  |
+| `agentName` | string        | Agent name  |
+
+##### Response body
+
+```json
+{
+  "success": true,
+  "agent": {
+    "id": "ag_001",
+    "name": "support-agent",
+    "agentPath": "helpdesk/support-agent",
+    "description": "Customer support automation agent",
+    "dslContent": "AGENT: support-agent\n...",
+    "versionCount": 5,
+    "activeVersions": { "dev": "3", "production": "2" },
+    "createdAt": "2026-02-15T08:00:00.000Z",
+    "updatedAt": "2026-03-10T14:30:00.000Z"
+  }
+}
+```
+
+---
+
+#### PUT /api/projects/:projectId/agents/:agentName/dsl
+
+Save a working copy of the agent's DSL content. This updates the mutable draft without triggering compilation or creating a version.
+
+**Auth required**: Yes
+**Permission**: `agent:write`
+
+##### Request body
+
+| Field        | Type   | Required | Description                              |
+| ------------ | ------ | -------- | ---------------------------------------- |
+| `dslContent` | string | Yes      | ABL DSL source content (cannot be empty) |
+
+##### Response body
+
+```json
+{
+  "success": true,
+  "updatedAt": "2026-03-11T10:30:00.000Z"
+}
+```
+
+---
+
+### Deployments
+
+Manage the deployment lifecycle for agent projects. Deployments bundle specific agent versions for a target environment.
+
+**Base path**: `/api/projects/:projectId/deployments`
+
+#### POST /api/projects/:projectId/deployments
+
+Create a new deployment with specified agent versions and configuration.
+
+**Auth required**: Yes
+**Permission**: `deployment:create`
+
+##### Request body
+
+| Field                     | Type   | Required | Description                                           |
+| ------------------------- | ------ | -------- | ----------------------------------------------------- |
+| `environment`             | string | Yes      | Target environment: `dev`, `staging`, or `production` |
+| `agentVersionManifest`    | object | Yes      | Map of agent names to version strings (or `"auto"`)   |
+| `entryAgentName`          | string | Yes      | Name of the entry-point agent                         |
+| `label`                   | string | No       | Human-readable deployment label                       |
+| `description`             | string | No       | Deployment description                                |
+| `modelOverrides`          | object | No       | Model configuration overrides per agent               |
+| `settingsVersionId`       | string | No       | Pin a specific project settings version               |
+| `workflowVersionManifest` | object | No       | Map of workflow names to versions                     |
+
+##### Example request
+
+```bash
+curl -X POST https://api.ablplatform.com/api/projects/proj_abc/deployments \
+  -H "Authorization: Bearer abl_sk-your-api-key" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "environment": "production",
+    "agentVersionManifest": {
+      "support-agent": "3",
+      "escalation-agent": "2"
+    },
+    "entryAgentName": "support-agent",
+    "label": "v2.1 production release"
+  }'
+```
+
+##### Example response (201 Created)
+
+```json
+{
+  "success": true,
+  "deployment": {
+    "id": "dep_xyz789",
+    "projectId": "proj_abc",
+    "environment": "production",
+    "status": "active",
+    "label": "v2.1 production release",
+    "description": null,
+    "endpointSlug": "proj_abc-production-lk3m-a1b2c3",
+    "entryAgentName": "support-agent",
+    "agentVersionManifest": {
+      "support-agent": "3",
+      "escalation-agent": "2"
+    },
+    "createdAt": "2026-03-11T10:00:00.000Z",
+    "createdBy": "user_123"
+  }
+}
+```
+
+---
+
+#### GET /api/projects/:projectId/deployments
+
+List all deployments for a project.
+
+**Auth required**: Yes
+
+##### Response body
+
+```json
+{
+  "success": true,
+  "deployments": [
+    {
+      "id": "dep_xyz789",
+      "projectId": "proj_abc",
+      "environment": "production",
+      "status": "active",
+      "label": "v2.1 production release",
+      "endpointSlug": "proj_abc-production-lk3m-a1b2c3",
+      "createdAt": "2026-03-11T10:00:00.000Z"
+    }
+  ]
+}
+```
+
+---
+
+#### GET /api/projects/:projectId/deployments/:deploymentId
+
+Get deployment details including channel count.
+
+**Auth required**: Yes
+
+##### Response body
+
+```json
+{
+  "success": true,
+  "deployment": {
+    "id": "dep_xyz789",
+    "projectId": "proj_abc",
+    "environment": "production",
+    "status": "active",
+    "label": "v2.1 production release",
+    "description": null,
+    "endpointSlug": "proj_abc-production-lk3m-a1b2c3",
+    "entryAgentName": "support-agent",
+    "agentVersionManifest": {
+      "support-agent": "3",
+      "escalation-agent": "2"
+    },
+    "channelCount": 2,
+    "createdAt": "2026-03-11T10:00:00.000Z",
+    "createdBy": "user_123"
+  }
+}
+```
+
+---
+
+#### POST /api/projects/:projectId/deployments/:deploymentId/retire
+
+Retire a deployment. Active sessions are drained before full retirement.
+
+**Auth required**: Yes
+**Permission**: `deployment:create`
+
+##### Response body
+
+```json
+{
+  "success": true,
+  "deployment": {
+    "id": "dep_xyz789",
+    "status": "retired",
+    "retiredAt": "2026-03-11T12:00:00.000Z"
+  }
+}
+```
+
+---
+
+#### POST /api/projects/:projectId/deployments/:deploymentId/rollback
+
+Rollback a retired deployment to its previous active state.
+
+**Auth required**: Yes
+**Permission**: `deployment:create`
+
+---
+
+#### POST /api/projects/:projectId/deployments/:deploymentId/promote
+
+Promote a deployment from one environment to another (e.g., staging to production).
+
+**Auth required**: Yes
+**Permission**: `deployment:create`
+
+---
+
+## Multi-Agent API
+
+The multi-agent API enables coordination between agents through handoffs, delegation, and asynchronous callbacks. These patterns allow you to build complex agent workflows where specialized agents collaborate to handle user requests.
+
+### Handoff
+
+Handoffs transfer conversation control from one agent to another within the same session. The originating agent transfers full context to the target agent.
+
+#### How handoffs work
+
+1. Agent A determines a handoff is needed (via ABL `HANDOFF:` directive or runtime decision).
+2. The platform transfers the session to Agent B with context from Agent A.
+3. Agent B takes over the conversation and responds to subsequent messages.
+4. Handoff events are recorded in the session trace.
+
+Handoffs are triggered automatically by the ABL runtime when an agent definition includes a `HANDOFF:` directive. You do not call a separate handoff endpoint -- the handoff occurs within the normal [agent-backed chat flow](./conversation-api#agent-backed-chat).
+
+#### Observing handoffs
+
+Handoff events appear in the `traceEvents` array of the chat response:
+
+```json
+{
+  "sessionId": "a1b2c3d4-...",
+  "response": "Let me transfer you to our billing specialist.",
+  "traceEvents": [
+    {
+      "type": "handoff",
+      "data": {
+        "fromAgent": "support-agent",
+        "toAgent": "billing-agent",
+        "reason": "billing_inquiry",
+        "timestamp": "2026-03-11T10:05:00.000Z"
+      }
+    }
+  ]
+}
+```
+
+#### Handoff count in session metrics
+
+The `handoffCount` field on session objects tracks how many handoffs occurred:
+
+```bash
+curl https://api.ablplatform.com/api/projects/proj_abc/sessions/sess_123 \
+  -H "Authorization: Bearer abl_sk-your-api-key"
+```
+
+---
+
+### Delegation
+
+Delegation allows one agent to request work from another agent and receive the result, without transferring conversation control. The delegating agent remains in charge of the conversation.
+
+#### How delegation works
+
+1. Agent A encounters a task suited for Agent B.
+2. Agent A delegates the task to Agent B (via ABL `DELEGATE:` directive).
+3. Agent B processes the task and returns a result.
+4. Agent A incorporates the result and continues the conversation.
+
+Delegation is orchestrated by the ABL runtime and occurs transparently during message execution. Delegation events appear in session traces:
+
+```json
+{
+  "type": "delegate",
+  "data": {
+    "fromAgent": "coordinator-agent",
+    "toAgent": "research-agent",
+    "task": "lookup_product_specs",
+    "duration_ms": 1200
+  }
+}
+```
+
+---
+
+### Asynchronous callbacks
+
+The callback API enables external systems to deliver results back to a suspended agent session. When an agent invokes an async tool or delegates to an external system, the platform generates a callback URL that the external system calls when the work is complete.
+
+**Base path**: `/api/v1/callbacks`
+
+#### POST /api/v1/callbacks/:callbackId
+
+Deliver a callback result to resume a suspended agent session.
+
+**Auth required**: HMAC signature verification via `x-callback-signature` header (no JWT required)
+
+##### Path parameters
+
+| Parameter    | Type   | Description                                                         |
+| ------------ | ------ | ------------------------------------------------------------------- |
+| `callbackId` | string | Unique callback identifier provided when the suspension was created |
+
+##### Request headers
+
+| Header                 | Required    | Description                                                      |
+| ---------------------- | ----------- | ---------------------------------------------------------------- |
+| `x-callback-signature` | Recommended | HMAC-SHA256 signature of the request body: `sha256=<hex_digest>` |
+| `Content-Type`         | Yes         | `application/json`                                               |
+
+##### Request body
+
+The request body is passed directly to the agent as the callback payload. Structure depends on the tool or delegation that created the callback:
+
+```json
+{
+  "status": "completed",
+  "result": {
+    "orderId": "ORD-12345",
+    "trackingNumber": "1Z999AA10123456784"
+  }
+}
+```
+
+##### Response body
+
+```json
+{
+  "ok": true
+}
+```
+
+If the callback has already been processed:
+
+```json
+{
+  "ok": true,
+  "status": "already_processed"
+}
+```
+
+##### HMAC signature verification
+
+When an agent suspension includes a callback secret, the platform verifies the `x-callback-signature` header against the request body:
+
+```python
+import hmac
+import hashlib
+
+body = '{"status":"completed","result":{"orderId":"ORD-12345"}}'
+secret = "your-callback-secret"
+signature = "sha256=" + hmac.new(
+    secret.encode(), body.encode(), hashlib.sha256
+).hexdigest()
+
+# Include in request: x-callback-signature: sha256=abc123...
+```
+
+```bash
+curl -X POST https://api.ablplatform.com/api/v1/callbacks/cb_abc123 \
+  -H "Content-Type: application/json" \
+  -H "x-callback-signature: sha256=abc123def456..." \
+  -d '{"status":"completed","result":{"orderId":"ORD-12345"}}'
+```
+
+##### Callback guarantees
+
+| Property    | Guarantee                                                      |
+| ----------- | -------------------------------------------------------------- |
+| Delivery    | At-most-once (callback ID is atomically claimed)               |
+| Idempotency | Duplicate callbacks return `200` with `already_processed`      |
+| Timeout     | Callbacks expire after the suspension TTL (configurable)       |
+| Processing  | Callbacks are enqueued for reliable processing via a job queue |
+
+##### Error responses
+
+| Status | Error                           | Cause                                         |
+| ------ | ------------------------------- | --------------------------------------------- |
+| `200`  | `already_processed`             | Callback was already delivered                |
+| `401`  | Invalid signature               | HMAC verification failed                      |
+| `503`  | Service temporarily unavailable | Failed to enqueue the resume job (retry safe) |
+
+---
+
+### Multi-agent patterns in ABL
+
+The ABL DSL supports several multi-agent patterns natively:
+
+| Pattern    | ABL directive        | Description                                                             |
+| ---------- | -------------------- | ----------------------------------------------------------------------- |
+| Handoff    | `HANDOFF:`           | Transfer conversation to another agent                                  |
+| Delegation | `DELEGATE:`          | Request work from another agent, retain control                         |
+| Fan-out    | Multiple `DELEGATE:` | Delegate to several agents in parallel                                  |
+| Escalation | `ESCALATE:`          | Human/system escalation based on confidence, intent, or failure signals |
+
+These patterns are configured in agent definitions and executed automatically by the runtime. See the [ABL SDK](./sdks#abl-sdk) for programmatic access to agent definitions.
+
+---
+
+## Tool Management API
+
+The tool management API provides endpoints for managing tool secrets -- encrypted credentials that agents use at runtime to authenticate with external services. Secrets are encrypted with tenant-scoped AES-256-GCM keys and are never returned in plaintext via the API.
+
+### Tool secrets
+
+**Base path**: `/api/tool-secrets`
+
+#### POST /api/tool-secrets
+
+Create a new encrypted tool secret for a specific tool and environment.
+
+**Auth required**: Yes
+**Permission**: `credential:write`
+
+##### Request body
+
+| Field         | Type   | Required | Description                          |
+| ------------- | ------ | -------- | ------------------------------------ |
+| `projectId`   | string | Yes      | Project ID                           |
+| `toolName`    | string | Yes      | Tool name (max 256 characters)       |
+| `secretKey`   | string | Yes      | Secret key/name (max 256 characters) |
+| `value`       | string | Yes      | Secret value (max 16,384 characters) |
+| `environment` | string | No       | Target environment (default: `dev`)  |
+| `expiresAt`   | string | No       | ISO 8601 expiration timestamp        |
+
+##### Response body (201 Created)
+
+```json
+{
+  "success": true,
+  "secret": {
+    "id": "sec_abc123",
+    "toolName": "crm-lookup",
+    "secretKey": "API_KEY",
+    "environment": "production",
+    "version": 1,
+    "expiresAt": null,
+    "createdAt": "2026-03-11T10:00:00.000Z"
+  }
+}
+```
+
+##### Example request
+
+```bash
+curl -X POST https://api.ablplatform.com/api/tool-secrets \
+  -H "Authorization: Bearer abl_sk-your-api-key" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "projectId": "clx1abc2d0000ab12cd34ef56",
+    "toolName": "crm-lookup",
+    "secretKey": "API_KEY",
+    "value": "sk-your-api-key",
+    "environment": "production"
+  }'
+```
+
+##### Error responses
+
+| Status | Error                                      | Cause                                                         |
+| ------ | ------------------------------------------ | ------------------------------------------------------------- |
+| `400`  | Missing required fields                    | `projectId`, `toolName`, `secretKey`, or `value` not provided |
+| `400`  | Secret value exceeds maximum length        | Value exceeds 16,384 characters                               |
+| `400`  | Field names must not exceed 256 characters | `toolName` or `secretKey` too long                            |
+| `409`  | Secret already exists                      | Duplicate `toolName`/`secretKey`/`environment` combination    |
+| `503`  | Encryption service unavailable             | Server encryption not configured                              |
+
+---
+
+#### GET /api/tool-secrets
+
+List tool secrets with optional filtering and pagination. Returns metadata only -- secret values are never included.
+
+**Auth required**: Yes
+**Permission**: `credential:read`
+
+##### Query parameters
+
+| Parameter     | Type    | Required | Description                  |
+| ------------- | ------- | -------- | ---------------------------- |
+| `projectId`   | string  | Yes      | Project ID to filter by      |
+| `toolName`    | string  | No       | Filter by tool name          |
+| `environment` | string  | No       | Filter by environment        |
+| `page`        | integer | No       | Page number (default: 1)     |
+| `limit`       | integer | No       | Items per page (default: 50) |
+
+##### Response body
+
+```json
+{
+  "success": true,
+  "secrets": [
+    {
+      "id": "sec_abc123",
+      "toolName": "crm-lookup",
+      "secretKey": "API_KEY",
+      "environment": "production",
+      "version": 1,
+      "expiresAt": null,
+      "createdAt": "2026-03-11T10:00:00.000Z",
+      "updatedAt": "2026-03-11T10:00:00.000Z"
+    }
+  ],
+  "total": 1,
+  "page": 1,
+  "limit": 50
+}
+```
+
+##### Example request
+
+```bash
+curl "https://api.ablplatform.com/api/tool-secrets?projectId=clx1abc2d0000ab12cd34ef56&environment=production" \
+  -H "Authorization: Bearer abl_sk-your-api-key"
+```
+
+---
+
+#### PUT /api/tool-secrets/:id
+
+Rotate (update) a tool secret's value. This increments the version number and re-encrypts the value.
+
+**Auth required**: Yes
+**Permission**: `credential:write`
+
+##### Path parameters
+
+| Parameter | Type   | Description |
+| --------- | ------ | ----------- |
+| `id`      | string | Secret ID   |
+
+##### Request body
+
+| Field   | Type   | Required | Description                              |
+| ------- | ------ | -------- | ---------------------------------------- |
+| `value` | string | Yes      | New secret value (max 16,384 characters) |
+
+##### Response body
+
+```json
+{
+  "success": true,
+  "secret": {
+    "id": "sec_abc123",
+    "toolName": "crm-lookup",
+    "secretKey": "API_KEY",
+    "environment": "production",
+    "version": 2,
+    "updatedAt": "2026-03-11T12:00:00.000Z"
+  }
+}
+```
+
+##### Example request
+
+```bash
+curl -X PUT https://api.ablplatform.com/api/tool-secrets/sec_abc123 \
+  -H "Authorization: Bearer abl_sk-your-api-key" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "value": "sk-your-new-api-key"
+  }'
+```
+
+---
+
+#### DELETE /api/tool-secrets/:id
+
+Delete a tool secret permanently.
+
+**Auth required**: Yes
+**Permission**: `credential:write`
+
+##### Path parameters
+
+| Parameter | Type   | Description |
+| --------- | ------ | ----------- |
+| `id`      | string | Secret ID   |
+
+##### Response body
+
+```json
+{
+  "success": true
+}
+```
+
+##### Example request
+
+```bash
+curl -X DELETE https://api.ablplatform.com/api/tool-secrets/sec_abc123 \
+  -H "Authorization: Bearer abl_sk-your-api-key"
+```
+
+---
+
+### Security considerations
+
+- **Encryption at rest**: All secret values are encrypted using AES-256-GCM with tenant-scoped keys before storage.
+- **No plaintext retrieval**: The API never returns secret values in responses. Only metadata (tool name, key name, environment, version) is exposed.
+- **Audit logging**: All create, rotate, and delete operations are recorded in the audit log.
+- **Version tracking**: Each secret rotation increments the version counter, providing a rotation history.
+- **Expiration**: Secrets can include an optional `expiresAt` timestamp. Expired secrets are no longer resolved at runtime.
+
+## Next steps
+
+- [Conversation API](./conversation-api) -- Send messages through deployed agents
+- [Knowledge, Analytics & Export APIs](./knowledge-analytics-export) -- Analytics and project export
+- [SDKs](./sdks) -- Parse agent definitions programmatically

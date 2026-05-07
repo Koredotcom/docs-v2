@@ -1,0 +1,299 @@
+---
+title: 'API overview and authentication'
+section: 'api-reference'
+order: 1
+description: 'The Agent Platform 2.0 exposes a RESTful API for managing agents, sessions, chat interactions, deployments, voice, analytics, and more. This page covers authentication, request format, error handling, rate '
+---
+
+# API overview and authentication
+
+The Agent Platform 2.0 exposes a RESTful API for managing agents, sessions, chat interactions, deployments, voice, analytics, and more. This page covers authentication, request format, error handling, rate limits, and pagination conventions that apply to every endpoint.
+
+## Base URL and versioning
+
+All API requests use your platform instance's base URL:
+
+```
+https://api.ablplatform.com
+```
+
+Endpoints are versioned with a `/api/v1/` prefix for core APIs, or scoped under `/api/projects/:projectId/` for project-level resources.
+
+| Scope           | Base path                   | Example                         |
+| --------------- | --------------------------- | ------------------------------- |
+| Global (v1)     | `/api/v1/`                  | `/api/v1/chat/agent`            |
+| Project-scoped  | `/api/projects/:projectId/` | `/api/projects/abc123/sessions` |
+| Agent discovery | `/api/agents/`              | `/api/agents/my-agent`          |
+
+The platform uses URL-path versioning. Current version: **v1**. When breaking changes are introduced, a new version prefix (e.g., `/api/v2/`) is added. Previous versions remain available during a documented deprecation window.
+
+Non-versioned project-scoped routes (`/api/projects/:projectId/...`) follow the same stability guarantees as v1.
+
+## Authentication
+
+Every authenticated endpoint requires one of the following credential types passed in request headers.
+
+### JWT Bearer token
+
+Issued after user login. Include in the `Authorization` header:
+
+```bash
+curl -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIs..." \
+  https://api.ablplatform.com/api/v1/chat/agent
+```
+
+### API key
+
+Long-lived keys prefixed with `abl_`. Pass as a Bearer token:
+
+```bash
+curl -H "Authorization: Bearer abl_sk-your-api-key" \
+  https://api.ablplatform.com/api/v1/chat/agent
+```
+
+For service-to-service calls, you can also use the `X-API-Key` header:
+
+```bash
+curl -H "X-API-Key: ak_your_api_key" \
+  https://api.ablplatform.com/api/v1/chat/send
+```
+
+### SDK session token
+
+Short-lived tokens for embedded widget sessions. Pass via the `X-SDK-Token` header:
+
+```bash
+curl -H "X-SDK-Token: sdk_token_value" \
+  https://api.ablplatform.com/api/v1/chat/agent
+```
+
+### Public API key (widgets only)
+
+Public widget keys start with `pk_` and are safe to expose in client-side code when they are origin-restricted. They are used in two places:
+
+- Widget configuration endpoints accept the key via the `X-API-Key` header.
+- SDK session bootstrap exchanges the key on `POST /api/v1/sdk/init` via the `X-Public-Key` header and returns a short-lived SDK session token.
+
+Widget configuration example:
+
+```bash
+curl -H "X-API-Key: pk_your-public-key" \
+  https://api.ablplatform.com/api/v1/sdk/config/PROJECT_ID
+```
+
+SDK session bootstrap example:
+
+```bash
+curl -X POST \
+  -H "X-Public-Key: pk_your-public-key" \
+  -H "Content-Type: application/json" \
+  -d '{"projectId":"PROJECT_ID"}' \
+  https://api.ablplatform.com/api/v1/sdk/init
+```
+
+Public API keys are scoped to a project and provide limited permissions for SDK usage. Configure allowed origins to prevent unauthorized use:
+
+```json
+{
+  "allowedOrigins": ["https://your-app.example.com", "https://staging.your-app.example.com"]
+}
+```
+
+The runtime validates the `Origin` header on every SDK request and rejects requests from unlisted origins.
+
+## Request and response format
+
+### Request format
+
+- **Content-Type**: `application/json` for all request bodies (unless otherwise noted).
+- **Character encoding**: UTF-8.
+- **Maximum body size**: 1 MB for standard endpoints. Import endpoints accept up to 60 MB.
+
+```bash
+curl -X POST \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer abl_sk-your-api-key" \
+  -d '{"projectId":"proj_abc","message":"Hello"}' \
+  https://api.ablplatform.com/api/v1/chat/agent
+```
+
+### Success response
+
+```json
+{
+  "success": true,
+  "data": { ... }
+}
+```
+
+Some endpoints return a domain-specific top-level key (e.g., `sessions`, `agents`, `deployment`) instead of a generic `data` wrapper. The `success` field is always present.
+
+### Error response
+
+```json
+{
+  "success": false,
+  "error": {
+    "code": "NOT_FOUND",
+    "message": "Agent not found: my-agent"
+  }
+}
+```
+
+Some endpoints return a simplified error format:
+
+```json
+{
+  "error": "Project not found"
+}
+```
+
+## Error handling
+
+### HTTP status codes
+
+| Code  | Meaning               | When it occurs                                             |
+| ----- | --------------------- | ---------------------------------------------------------- |
+| `200` | OK                    | Successful read or update                                  |
+| `201` | Created               | Resource created successfully                              |
+| `400` | Bad Request           | Validation failed, missing required fields                 |
+| `401` | Unauthorized          | Missing or invalid authentication credentials              |
+| `403` | Forbidden             | Valid credentials but insufficient permissions             |
+| `404` | Not Found             | Resource does not exist or is not accessible to the caller |
+| `409` | Conflict              | Duplicate resource (e.g., secret already exists)           |
+| `413` | Payload Too Large     | Request body exceeds size limit                            |
+| `429` | Too Many Requests     | Rate limit or concurrency limit exceeded                   |
+| `500` | Internal Server Error | Unexpected server-side failure                             |
+| `503` | Service Unavailable   | Required backend service not configured or offline         |
+
+> **Privacy note**: Cross-tenant access attempts return `404` (not `403`) to avoid revealing resource existence.
+
+### Error codes
+
+| Code                  | HTTP status | Description                           | Resolution                                               |
+| --------------------- | ----------- | ------------------------------------- | -------------------------------------------------------- |
+| `BAD_REQUEST`         | 400         | Invalid or missing request parameters | Check request body against the endpoint schema           |
+| `VALIDATION_ERROR`    | 400         | Invalid request parameters            | Review field values and types                            |
+| `UNAUTHORIZED`        | 401         | Authentication failed                 | Verify your token or API key is valid and not expired    |
+| `FORBIDDEN`           | 403         | Insufficient permissions              | Check that your credentials have the required scope      |
+| `NOT_FOUND`           | 404         | Resource not found                    | Confirm the resource ID and that you have access         |
+| `RATE_LIMIT_EXCEEDED` | 429         | Rate limit exceeded                   | Wait for the rate limit window to reset and retry        |
+| `QUEUE_FULL`          | 429         | Execution queue at capacity           | Reduce concurrency or retry after `retryAfterMs`         |
+| `INTERNAL_ERROR`      | 500         | Unexpected server error               | Retry after a brief delay; contact support if persistent |
+| `SERVICE_UNAVAILABLE` | 503         | Backend dependency offline            | Retry later; the service may be starting up              |
+
+## Rate limits
+
+The platform enforces per-tenant rate limits on all authenticated endpoints. When a rate limit is exceeded, the API returns `429 Too Many Requests`.
+
+| Limit type           | Scope       | Description                                      |
+| -------------------- | ----------- | ------------------------------------------------ |
+| Request rate         | Per tenant  | Maximum requests per second across all endpoints |
+| Session message rate | Per session | Maximum messages per session per minute          |
+| Concurrent sessions  | Per tenant  | Maximum concurrent active sessions               |
+| Voice rooms          | Global      | Maximum concurrent LiveKit voice rooms           |
+
+### Rate limit headers
+
+| Header                  | Description                                   |
+| ----------------------- | --------------------------------------------- |
+| `X-RateLimit-Remaining` | Requests remaining in the current window      |
+| `X-RateLimit-Reset`     | Unix timestamp when the current window resets |
+| `Retry-After`           | Seconds until you can retry (present on 429)  |
+
+Rate-limited responses also include a `retryAfterMs` field in the JSON body:
+
+```json
+{
+  "error": "Session message rate limit exceeded",
+  "retryAfterMs": 2000
+}
+```
+
+**Best practice**: Implement exponential backoff for `429` and `503` responses.
+
+## Pagination
+
+List endpoints support offset-based pagination via query parameters:
+
+| Parameter | Type    | Default | Description                           |
+| --------- | ------- | ------- | ------------------------------------- |
+| `limit`   | integer | `50`    | Number of items to return (max `200`) |
+| `offset`  | integer | `0`     | Number of items to skip               |
+
+### Paginated response
+
+```json
+{
+  "success": true,
+  "sessions": [ ... ],
+  "pagination": {
+    "total": 142,
+    "limit": 50,
+    "offset": 0
+  }
+}
+```
+
+Use `total` to determine whether more pages exist:
+
+```bash
+# Fetch page 2
+curl "https://api.ablplatform.com/api/projects/proj_abc/sessions?limit=50&offset=50" \
+  -H "Authorization: Bearer abl_sk-your-api-key"
+```
+
+## Streaming (SSE)
+
+Streaming endpoints (e.g., `/api/v1/chat/stream`) use Server-Sent Events (SSE). The response uses `Content-Type: text/event-stream` and delivers named events:
+
+```
+event: text_delta
+data: {"delta":"Hello"}
+
+event: usage
+data: {"inputTokens":52,"outputTokens":14}
+
+event: complete
+data: {"inputTokens":52,"outputTokens":14,"totalTokens":66,"latencyMs":1200}
+```
+
+SSE connections send periodic heartbeat comments (`: heartbeat`) every 15 seconds to keep the connection alive through proxies.
+
+### Consuming SSE in JavaScript
+
+For environments where WebSocket connections are not available, use the SSE-based streaming endpoint:
+
+```javascript
+const response = await fetch('/api/v1/chat/stream', {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json',
+    Authorization: 'Bearer your-token',
+  },
+  body: JSON.stringify({
+    sessionId: 'session-id',
+    message: 'Hello',
+  }),
+});
+
+const reader = response.body.getReader();
+const decoder = new TextDecoder();
+
+while (true) {
+  const { value, done } = await reader.read();
+  if (done) break;
+  const chunk = decoder.decode(value);
+  // Parse SSE events from chunk
+}
+```
+
+## CORS
+
+Widget and SDK endpoints set appropriate CORS headers based on configured allowed origins. When embedding widgets, register your domains in the SDK channel configuration.
+
+## Next steps
+
+- [Conversation API](/agent-platform-v2/api-reference/conversation-api) -- Send messages and interact with agents
+- [Management APIs](/agent-platform-v2/api-reference/management-apis) -- Manage agents, multi-agent workflows, and tools
+- [SDKs](/agent-platform-v2/api-reference/sdks) -- Embed agents in your web application

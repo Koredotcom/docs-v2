@@ -1,0 +1,133 @@
+---
+title: 'Testing Standards'
+section: 'testing'
+order: 2
+description: 'Platform testing standards, quality gates, and enforcement rules for E2E, integration, and unit tests.'
+---
+
+> **Last Updated**: 2026-03-25
+
+## Core Principle
+
+Every test must exercise the real system. Tests that mock the component under test create false confidence — they pass while production breaks.
+
+<Callout type="warning">
+  A2A protocol tests passed 55/55 while auth was missing, sessions had race conditions, and history
+  forwarding was broken — because every test mocked the components that contained the bugs.
+</Callout>
+
+---
+
+## E2E Test Standards
+
+E2E tests must exercise the real system through its HTTP API.
+
+### Rules
+
+1. **No mocking existing components** — `vi.mock()` / `jest.mock()` are FORBIDDEN in E2E tests
+2. **API-only interaction** — Seed data via POST endpoints, assert via GET responses. Never import Mongoose models directly.
+3. **Real servers** — Start Express on random ports (`{ port: 0 }`). Full middleware chain must execute: auth, rate limiting, tenant isolation, validation.
+4. **Optimal architecture, not easy path** — If testing requires encryption, key generation, or concurrency harnesses, do it properly.
+5. **No TODO stubs** — Committed test files must have working infrastructure.
+6. **Test all content types** — Include structured types (`ContentBlock[]`), not just plain strings.
+
+### Auth Context
+
+Every E2E scenario must specify:
+
+- **Tenant**: Which tenant the request runs under
+- **Project**: Which project scope (if applicable)
+- **User**: Specific user with defined permissions
+- **Isolation check**: Cross-tenant/cross-project access returns 404 (not 403)
+
+### Enforcement
+
+A PreToolUse hook (`e2e-test-quality-lint.sh`) blocks:
+
+- `vi.mock()` in E2E test files
+- Direct DB access (Mongoose model imports)
+- Stubbed infrastructure
+
+---
+
+## Integration Test Standards
+
+Integration tests verify real service boundaries — both services must be real.
+
+### Rules
+
+1. **No mocking codebase components** — Only external third-party services may be mocked
+2. **Real service boundaries** — Test the actual interaction between services
+3. **Specify the boundary** — Every scenario names both sides (e.g., "content.ts -> filesystem", "access.ts -> auth-repo")
+4. **Failure modes** — Test what happens when the downstream service is unavailable or returns errors
+
+### What Can Be Mocked
+
+| Allowed to Mock        | NOT Allowed to Mock       |
+| ---------------------- | ------------------------- |
+| External HTTP APIs     | Internal services         |
+| Third-party SDKs (AWS) | Database queries          |
+| Email/SMS providers    | Auth middleware           |
+| Payment gateways       | File system (for content) |
+
+---
+
+## Unit Test Standards
+
+Unit tests verify individual functions and modules in isolation.
+
+### Rules
+
+1. **Pure function focus** — Unit tests work best for deterministic functions
+2. **No side effects** — Mock I/O at the boundary (filesystem, network)
+3. **Edge cases** — Cover boundary conditions, invalid inputs, empty states
+4. **Fast execution** — Unit tests should complete in milliseconds
+
+---
+
+## Security & Isolation Tests
+
+Every feature must address these security checks:
+
+| Check                    | Requirement                                           |
+| ------------------------ | ----------------------------------------------------- |
+| Cross-tenant access      | Returns 404 (not 403) — no existence leaking          |
+| Cross-project access     | Returns 404 within same tenant                        |
+| Cross-user access        | User-owned resources filtered by `userId`/`createdBy` |
+| Missing auth             | Returns 401                                           |
+| Insufficient permissions | Returns 403                                           |
+| Input validation         | Rejects malformed data with structured error          |
+
+---
+
+## Test Specification Structure
+
+Every test spec generated via `/test-spec` follows this structure:
+
+1. **Coverage Matrix** — FR-to-test-type mapping
+2. **E2E Scenarios** (min 5) — Full user journeys via HTTP API
+3. **Integration Scenarios** (min 5) — Service boundary tests
+4. **Unit Test Scenarios** — Module-level tests
+5. **Security & Isolation Tests** — Tenant/project/user boundaries
+6. **Performance Tests** — Bundle size, latency, lazy loading
+7. **Test Infrastructure** — Required services, data seeding
+8. **Test File Mapping** — Planned test file paths and coverage
+
+## Quality Gates for Status Transitions
+
+| Transition       | Test Requirements                                             |
+| ---------------- | ------------------------------------------------------------- |
+| PLANNED -> ALPHA | Feature spec + test spec exist, E2E/INT scenarios defined     |
+| ALPHA -> BETA    | All E2E pass, all INT pass, security tests pass               |
+| BETA -> STABLE   | Zero open gaps, full coverage matrix, 2+ live test iterations |
+
+---
+
+## CI Integration
+
+Tests run automatically via Harness CI on every pull request:
+
+- `pnpm build` — Full monorepo build (Turbo enforces order)
+- `pnpm test` — All unit and integration tests
+- `pnpm test:report` — Structured failure capture for debugging
+- Playwright E2E — Browser-based tests against running Studio/Runtime

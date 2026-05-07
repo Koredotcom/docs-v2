@@ -1,0 +1,999 @@
+---
+title: 'Knowledge, Analytics & Export APIs'
+section: 'api-reference'
+order: 4
+description: 'This page covers the knowledge and memory API for runtime data persistence and contact management, the analytics API for event metrics and voice analytics, and the project export/import API for migrat'
+---
+
+# Knowledge, Analytics & Export APIs
+
+This page covers the knowledge and memory API for runtime data persistence and contact management, the analytics API for event metrics and voice analytics, and the project export/import API for migrating agent projects between environments. For authentication and error handling conventions, see [API overview](/agent-platform-v2/api-reference/api-overview).
+
+## Knowledge & Memory API
+
+### Memory API
+
+The memory API enables agent code running in sandboxed environments to read, write, and delete values from named memory stores. Memory stores persist data across turns within a session, allowing agents to maintain context.
+
+**Base path**: `/api/v1/memory`
+
+#### POST /api/v1/memory
+
+Perform a memory operation (get, set, or delete) on a named memory store.
+
+**Auth required**: Yes (sandbox JWT -- issued automatically by the runtime for sandbox execution contexts)
+
+##### Request body
+
+| Field             | Type   | Required | Description                                     |
+| ----------------- | ------ | -------- | ----------------------------------------------- |
+| `action`          | string | Yes      | Operation to perform: `get`, `set`, or `delete` |
+| `memoryStoreName` | string | Yes      | Name of the memory store                        |
+| `payload`         | object | No       | Data payload (required for `set` action)        |
+
+##### Actions
+
+**Get** -- Retrieve the current contents of a memory store:
+
+```bash
+curl -X POST https://api.ablplatform.com/api/v1/memory \
+  -H "Authorization: Bearer <sandbox-jwt>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "action": "get",
+    "memoryStoreName": "user-preferences"
+  }'
+```
+
+Response:
+
+```json
+{
+  "success": true,
+  "data": {
+    "language": "en",
+    "timezone": "America/New_York"
+  }
+}
+```
+
+**Set** -- Store or update data in a memory store:
+
+```bash
+curl -X POST https://api.ablplatform.com/api/v1/memory \
+  -H "Authorization: Bearer <sandbox-jwt>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "action": "set",
+    "memoryStoreName": "user-preferences",
+    "payload": {
+      "content": {
+        "language": "en",
+        "timezone": "America/New_York"
+      }
+    }
+  }'
+```
+
+Response:
+
+```json
+{
+  "success": true
+}
+```
+
+**Delete** -- Remove data from a memory store:
+
+```bash
+curl -X POST https://api.ablplatform.com/api/v1/memory \
+  -H "Authorization: Bearer <sandbox-jwt>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "action": "delete",
+    "memoryStoreName": "user-preferences"
+  }'
+```
+
+Response:
+
+```json
+{
+  "success": true,
+  "data": {
+    "deleted": true
+  }
+}
+```
+
+##### Error responses
+
+| Status | Error                             | Cause                                             |
+| ------ | --------------------------------- | ------------------------------------------------- |
+| `400`  | Missing action or memoryStoreName | Required fields not provided                      |
+| `400`  | Token missing sessionId           | Sandbox JWT does not contain a session identifier |
+| `400`  | Unknown action                    | Action is not `get`, `set`, or `delete`           |
+| `401`  | Invalid or expired token          | Sandbox JWT verification failed                   |
+| `404`  | Session not found                 | No active memory bridge for the session           |
+| `503`  | Sandbox auth not configured       | Server sandbox JWT secret not configured          |
+
+---
+
+### Contacts
+
+The contacts API manages end-user identities that can be linked across multiple sessions. Contacts provide a unified view of interactions with a specific person or entity.
+
+**Base path**: `/api/contacts`
+
+#### POST /api/contacts
+
+Create a new contact record.
+
+**Auth required**: Yes
+**Permission**: Admin or write access
+
+##### Request body
+
+| Field          | Type   | Required | Description                                          |
+| -------------- | ------ | -------- | ---------------------------------------------------- |
+| `type`         | string | No       | Contact type: `employee`, `customer`, or `anonymous` |
+| `identity`     | string | No       | Unique identity value (email, phone, external ID)    |
+| `identityType` | string | No       | Identity type: `email`, `phone`, or `external`       |
+| `displayName`  | string | No       | Display name (max 200 characters)                    |
+| `department`   | string | No       | Department (for employee contacts)                   |
+| `employeeId`   | string | No       | Employee ID (max 100 characters)                     |
+| `company`      | string | No       | Company name (max 200 characters)                    |
+| `accountRef`   | string | No       | Account reference ID                                 |
+| `channel`      | string | No       | Primary channel                                      |
+| `metadata`     | object | No       | Custom metadata key-value pairs                      |
+| `tags`         | array  | No       | Tags (max 50, each max 50 characters)                |
+
+##### Response body (201 Created)
+
+```json
+{
+  "success": true,
+  "data": {
+    "id": "ct_abc123",
+    "tenantId": "tenant_001",
+    "type": "customer",
+    "identity": "user@example.com",
+    "identityType": "email",
+    "displayName": "Jane Doe",
+    "company": "Acme Corp",
+    "metadata": {},
+    "tags": ["premium"],
+    "firstSeenAt": "2026-03-11T10:00:00.000Z",
+    "lastSeenAt": "2026-03-11T10:00:00.000Z"
+  }
+}
+```
+
+##### Example request
+
+```bash
+curl -X POST https://api.ablplatform.com/api/contacts \
+  -H "Authorization: Bearer abl_sk-your-api-key" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "type": "customer",
+    "identity": "user@example.com",
+    "identityType": "email",
+    "displayName": "Jane Doe",
+    "company": "Acme Corp",
+    "tags": ["premium"]
+  }'
+```
+
+---
+
+#### GET /api/contacts
+
+Query contacts with optional filters and pagination.
+
+**Auth required**: Yes
+
+##### Query parameters
+
+| Parameter | Type    | Description                                                  |
+| --------- | ------- | ------------------------------------------------------------ |
+| `type`    | string  | Filter by contact type (`employee`, `customer`, `anonymous`) |
+| `channel` | string  | Filter by channel                                            |
+| `limit`   | integer | Items per page                                               |
+| `offset`  | integer | Items to skip                                                |
+
+##### Response body
+
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "id": "ct_abc123",
+      "tenantId": "tenant_001",
+      "type": "customer",
+      "identity": "user@example.com",
+      "identityType": "email",
+      "displayName": "Jane Doe",
+      "metadata": {},
+      "tags": ["premium"],
+      "firstSeenAt": "2026-03-11T10:00:00.000Z",
+      "lastSeenAt": "2026-03-11T14:30:00.000Z"
+    }
+  ],
+  "total": 1
+}
+```
+
+---
+
+#### GET /api/contacts/lookup
+
+Find a contact by identity value (email, phone, or external ID).
+
+**Auth required**: Yes
+
+##### Query parameters
+
+| Parameter      | Type   | Required | Description                                  |
+| -------------- | ------ | -------- | -------------------------------------------- |
+| `identity`     | string | Yes      | Identity value to search for                 |
+| `identityType` | string | No       | Identity type (`email`, `phone`, `external`) |
+
+##### Example request
+
+```bash
+curl "https://api.ablplatform.com/api/contacts/lookup?identity=user@example.com&identityType=email" \
+  -H "Authorization: Bearer abl_sk-your-api-key"
+```
+
+---
+
+#### GET /api/contacts/:id
+
+Get a contact by ID.
+
+**Auth required**: Yes
+
+##### Path parameters
+
+| Parameter | Type   | Description |
+| --------- | ------ | ----------- |
+| `id`      | string | Contact ID  |
+
+---
+
+#### PUT /api/contacts/:id
+
+Update a contact's information.
+
+**Auth required**: Yes
+**Permission**: Admin or write access
+
+##### Request body
+
+Same fields as [POST /api/contacts](#post-apicontacts). All fields are optional; only provided fields are updated.
+
+---
+
+#### DELETE /api/contacts/:id
+
+Soft-delete a contact. Sets a `deletedAt` timestamp rather than permanently removing the record.
+
+**Auth required**: Yes
+**Permission**: Admin or write access
+
+---
+
+#### POST /api/contacts/:id/link-session
+
+Link a contact to an existing session, associating the conversation with a known identity.
+
+**Auth required**: Yes
+**Permission**: Admin or write access
+
+##### Request body
+
+| Field       | Type   | Required | Description        |
+| ----------- | ------ | -------- | ------------------ |
+| `sessionId` | string | Yes      | Session ID to link |
+
+##### Response body
+
+```json
+{
+  "success": true
+}
+```
+
+---
+
+## Analytics API
+
+Query and aggregate platform events across sessions and agents. All analytics endpoints are project-scoped and require authentication.
+
+### Event analytics
+
+**Base path**: `/api/projects/:projectId/analytics`
+
+#### GET /api/projects/:projectId/analytics/metrics
+
+Get aggregated event metrics grouped by specified dimensions.
+
+**Auth required**: Yes
+**Permission**: `session:read`
+
+##### Query parameters
+
+| Parameter  | Type   | Default            | Description                                                                                              |
+| ---------- | ------ | ------------------ | -------------------------------------------------------------------------------------------------------- |
+| `from`     | string | 24 hours ago       | ISO 8601 start date                                                                                      |
+| `to`       | string | Now                | ISO 8601 end date                                                                                        |
+| `groupBy`  | string | `category`         | Comma-separated dimensions: `category`, `event_type`, `agent_name`, `channel`, `hour`, `day`             |
+| `metrics`  | string | `count,error_rate` | Comma-separated metrics: `count`, `avg_duration`, `error_rate`, `p95_duration`, `sum_tokens`, `sum_cost` |
+| `category` | string | --                 | Filter by event category                                                                                 |
+
+##### Available event categories
+
+| Category     | Description                 |
+| ------------ | --------------------------- |
+| `session`    | Session lifecycle events    |
+| `message`    | Message send/receive events |
+| `llm`        | LLM call events             |
+| `tool`       | Tool execution events       |
+| `agent`      | Agent-level events          |
+| `gather`     | Gather step events          |
+| `flow`       | Flow transition events      |
+| `channel`    | Channel events              |
+| `deployment` | Deployment lifecycle events |
+| `search`     | Search/knowledge events     |
+| `voice`      | Voice interaction events    |
+| `audit`      | Audit log events            |
+| `evaluation` | Evaluation run events       |
+| `feedback`   | User feedback events        |
+| `system`     | System-level events         |
+
+##### Example request
+
+```bash
+curl "https://api.ablplatform.com/api/projects/proj_abc/analytics/metrics?from=2026-03-04T00:00:00Z&to=2026-03-11T00:00:00Z&groupBy=category,day&metrics=count,error_rate,sum_cost" \
+  -H "Authorization: Bearer abl_sk-your-api-key"
+```
+
+##### Example response
+
+```json
+{
+  "success": true,
+  "data": {
+    "buckets": [
+      {
+        "category": "llm",
+        "day": "2026-03-10",
+        "count": 450,
+        "error_rate": 0.02,
+        "sum_cost": 12.5
+      },
+      {
+        "category": "tool",
+        "day": "2026-03-10",
+        "count": 120,
+        "error_rate": 0.05,
+        "sum_cost": 0
+      }
+    ]
+  }
+}
+```
+
+---
+
+#### GET /api/projects/:projectId/analytics/events
+
+List raw events with filtering and pagination.
+
+**Auth required**: Yes
+**Permission**: `session:read`
+
+##### Query parameters
+
+| Parameter    | Type    | Default      | Description                             |
+| ------------ | ------- | ------------ | --------------------------------------- |
+| `from`       | string  | 24 hours ago | ISO 8601 start date                     |
+| `to`         | string  | Now          | ISO 8601 end date                       |
+| `category`   | string  | --           | Filter by event category                |
+| `eventTypes` | string  | --           | Comma-separated event type filter       |
+| `sessionId`  | string  | --           | Filter by session ID                    |
+| `agentName`  | string  | --           | Filter by agent name                    |
+| `hasError`   | string  | --           | Set to `true` to show only error events |
+| `limit`      | integer | `100`        | Items per page (max 10,000)             |
+| `offset`     | integer | `0`          | Items to skip                           |
+
+##### Example request
+
+```bash
+curl "https://api.ablplatform.com/api/projects/proj_abc/analytics/events?category=llm&hasError=true&limit=20" \
+  -H "Authorization: Bearer abl_sk-your-api-key"
+```
+
+##### Example response
+
+```json
+{
+  "success": true,
+  "data": {
+    "events": [
+      {
+        "id": "evt_001",
+        "category": "llm",
+        "event_type": "llm_call",
+        "agent_name": "support-agent",
+        "session_id": "sess_abc",
+        "timestamp": "2026-03-11T10:05:00.000Z",
+        "duration_ms": 2400,
+        "error": "Rate limit exceeded",
+        "metadata": {
+          "model": "claude-sonnet-4-20250514",
+          "tokens_in": 500,
+          "tokens_out": 0
+        }
+      }
+    ],
+    "total": 3,
+    "hasMore": false
+  }
+}
+```
+
+---
+
+#### GET /api/projects/:projectId/analytics/agents/:name
+
+Get performance metrics for a specific agent.
+
+**Auth required**: Yes
+**Permission**: `session:read`
+
+##### Path parameters
+
+| Parameter | Type   | Description |
+| --------- | ------ | ----------- |
+| `name`    | string | Agent name  |
+
+##### Query parameters
+
+| Parameter | Type   | Default      | Description         |
+| --------- | ------ | ------------ | ------------------- |
+| `from`    | string | 24 hours ago | ISO 8601 start date |
+| `to`      | string | Now          | ISO 8601 end date   |
+
+---
+
+#### GET /api/projects/:projectId/analytics/cost-breakdown
+
+Get LLM cost breakdown by model and provider.
+
+**Auth required**: Yes
+**Permission**: `session:read`
+
+##### Query parameters
+
+| Parameter | Type   | Default      | Description         |
+| --------- | ------ | ------------ | ------------------- |
+| `from`    | string | 24 hours ago | ISO 8601 start date |
+| `to`      | string | Now          | ISO 8601 end date   |
+
+---
+
+#### GET /api/projects/:projectId/analytics/session-metrics
+
+Get session-level aggregated metrics.
+
+**Auth required**: Yes
+**Permission**: `session:read`
+
+---
+
+#### POST /api/projects/:projectId/analytics/query
+
+Execute an ad-hoc event query with custom filters.
+
+**Auth required**: Yes
+**Permission**: `session:read`
+
+##### Request body
+
+| Field        | Type    | Required | Description                                |
+| ------------ | ------- | -------- | ------------------------------------------ |
+| `timeRange`  | object  | Yes      | `{ from: string, to: string }` in ISO 8601 |
+| `category`   | string  | No       | Event category filter                      |
+| `eventTypes` | array   | No       | Event type filter                          |
+| `sessionId`  | string  | No       | Session ID filter                          |
+| `agentName`  | string  | No       | Agent name filter                          |
+| `hasError`   | boolean | No       | Error filter                               |
+| `limit`      | integer | No       | Result limit (default: 100, max: 10,000)   |
+| `offset`     | integer | No       | Result offset                              |
+
+---
+
+#### POST /api/projects/:projectId/analytics/aggregate
+
+Execute an ad-hoc aggregation query.
+
+**Auth required**: Yes
+**Permission**: `session:read`
+
+##### Request body
+
+| Field       | Type   | Required | Description                                |
+| ----------- | ------ | -------- | ------------------------------------------ |
+| `timeRange` | object | Yes      | `{ from: string, to: string }` in ISO 8601 |
+| `groupBy`   | array  | Yes      | Dimensions to group by                     |
+| `metrics`   | array  | Yes      | Metrics to compute                         |
+| `filters`   | object | No       | Additional filters (category, event types) |
+
+---
+
+### Voice analytics
+
+Voice-specific analytics with hourly aggregations and summary KPIs.
+
+**Base path**: `/api/projects/:projectId/voice-analytics`
+
+#### GET /api/projects/:projectId/voice-analytics/hourly
+
+Get hourly aggregated voice metrics.
+
+**Auth required**: Yes
+**Permission**: `session:read`
+
+##### Query parameters
+
+| Parameter | Type    | Default        | Description                  |
+| --------- | ------- | -------------- | ---------------------------- |
+| `hours`   | integer | `168` (7 days) | Number of hours to look back |
+
+##### Response body
+
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "hour": "2026-03-11T10:00:00.000Z",
+      "session_count": 45,
+      "error_count": 2,
+      "avg_call_duration_ms": 180000,
+      "avg_inbound_mos": 4.2,
+      "avg_outbound_mos": 4.1,
+      "avg_inbound_jitter_ms": 12.5,
+      "avg_outbound_jitter_ms": 15.0,
+      "avg_e2e_latency_ms": 340,
+      "avg_barge_in_rate": 0.15,
+      "avg_dtmf_fallback_rate": 0.03,
+      "avg_asr_score": 0.92,
+      "avg_tts_proxy_mos": 4.0,
+      "avg_silence_percent": 0.12,
+      "total_turns": 540,
+      "total_barge_in_count": 68,
+      "total_dtmf_turn_count": 15
+    }
+  ]
+}
+```
+
+##### Metric descriptions
+
+| Metric                 | Description                                |
+| ---------------------- | ------------------------------------------ |
+| `session_count`        | Number of voice sessions in the hour       |
+| `error_count`          | Number of sessions with errors             |
+| `avg_call_duration_ms` | Average call duration in milliseconds      |
+| `avg_inbound_mos`      | Average inbound Mean Opinion Score (1-5)   |
+| `avg_outbound_mos`     | Average outbound Mean Opinion Score (1-5)  |
+| `avg_e2e_latency_ms`   | Average end-to-end latency in milliseconds |
+| `avg_barge_in_rate`    | Average rate of user interruptions         |
+| `avg_asr_score`        | Average speech recognition accuracy (0-1)  |
+| `total_turns`          | Total conversation turns                   |
+
+---
+
+#### GET /api/projects/:projectId/voice-analytics/summary
+
+Get summary KPIs for dashboard display.
+
+**Auth required**: Yes
+**Permission**: `session:read`
+
+##### Query parameters
+
+| Parameter | Type    | Default        | Description                  |
+| --------- | ------- | -------------- | ---------------------------- |
+| `hours`   | integer | `168` (7 days) | Number of hours to look back |
+
+##### Response body
+
+```json
+{
+  "success": true,
+  "data": {
+    "total_calls": 1250,
+    "total_errors": 23,
+    "avg_call_duration_ms": 195000,
+    "overall_avg_inbound_mos": 4.15,
+    "overall_avg_outbound_mos": 4.08,
+    "overall_avg_latency_ms": 320,
+    "overall_barge_in_rate": 0.12,
+    "overall_dtmf_fallback_rate": 0.04,
+    "overall_asr_score": 0.91,
+    "total_turns": 15600,
+    "total_barge_in_count": 1872,
+    "total_dtmf_turn_count": 624
+  }
+}
+```
+
+---
+
+### Session traces
+
+Detailed execution traces for individual sessions are available through the sessions API.
+
+#### GET /api/projects/:projectId/sessions/:id/traces
+
+See [Conversation API -- Session traces](/agent-platform-v2/api-reference/conversation-api#get-apiprojectsprojectidsessionsidtraces) for full documentation.
+
+#### GET /api/projects/:projectId/sessions/:id/traces/:spanId/children
+
+Get child events for a specific span within a session trace.
+
+**Auth required**: Yes
+**Permission**: `session:read`
+
+#### GET /api/projects/:projectId/sessions/:id/analysis
+
+Get trace analysis and diagnostics for a session.
+
+**Auth required**: Yes
+**Permission**: `session:read`
+
+#### GET /api/projects/:projectId/sessions/generations
+
+List LLM call events across all sessions in a project.
+
+**Auth required**: Yes
+**Permission**: `session:read`
+
+#### GET /api/projects/:projectId/sessions/export
+
+Export session traces as CSV.
+
+**Auth required**: Yes
+**Permission**: `session:read`
+
+---
+
+## Project Export/Import API
+
+The project export/import API enables programmatic migration of agent projects between environments. You can export a project's agents, tools, and deployment configurations as a file map, then import them into another project or instance.
+
+**Base path**: `/api/projects/:projectId/project-io`
+
+### Export
+
+#### GET /api/projects/:projectId/project-io/export/preview
+
+Preview what will be exported without generating files. Returns metadata about agents, tools, and dependency validation.
+
+**Auth required**: Yes
+**Permission**: `project:export`
+
+##### Response body
+
+| Field          | Type   | Description                                   |
+| -------------- | ------ | --------------------------------------------- |
+| `project`      | object | Project metadata (`name`, `slug`)             |
+| `agents`       | array  | Agents with DSL content availability          |
+| `tools`        | array  | Tools with type information                   |
+| `dependencies` | object | Dependency graph edges and validation results |
+
+##### Example request
+
+```bash
+curl https://api.ablplatform.com/api/projects/proj_abc/project-io/export/preview \
+  -H "Authorization: Bearer abl_sk-your-api-key"
+```
+
+##### Example response
+
+```json
+{
+  "project": {
+    "name": "Customer Support",
+    "slug": "customer-support"
+  },
+  "agents": [
+    { "name": "support-agent", "hasDslContent": true },
+    { "name": "escalation-agent", "hasDslContent": true }
+  ],
+  "tools": [
+    { "name": "crm-lookup", "toolType": "api" },
+    { "name": "ticket-create", "toolType": "api" }
+  ],
+  "dependencies": {
+    "edges": [
+      {
+        "from": "support-agent",
+        "to": "escalation-agent",
+        "type": "handoff"
+      },
+      {
+        "from": "support-agent",
+        "to": "crm-lookup",
+        "type": "tool"
+      }
+    ],
+    "validation": {
+      "valid": true,
+      "errors": []
+    }
+  }
+}
+```
+
+---
+
+#### GET /api/projects/:projectId/project-io/export
+
+Export the full project as a file map with manifest and lockfile.
+
+**Auth required**: Yes
+**Permission**: `project:export`
+
+##### Query parameters
+
+| Parameter             | Type   | Default  | Description                                 |
+| --------------------- | ------ | -------- | ------------------------------------------- |
+| `format`              | string | `folder` | Export format: `folder` or `zip`            |
+| `include_deployments` | string | `false`  | Set to `true` to include deployment records |
+
+##### Response body
+
+| Field      | Type    | Description                                        |
+| ---------- | ------- | -------------------------------------------------- |
+| `success`  | boolean | Whether the export succeeded                       |
+| `manifest` | object  | Project manifest with metadata and checksums       |
+| `lockfile` | object  | Lockfile with pinned dependency versions           |
+| `files`    | object  | Map of file paths to content strings               |
+| `warnings` | array   | Export warnings (e.g., agents without DSL content) |
+
+##### Example request
+
+```bash
+curl "https://api.ablplatform.com/api/projects/proj_abc/project-io/export?include_deployments=true" \
+  -H "Authorization: Bearer abl_sk-your-api-key"
+```
+
+##### Example response
+
+```json
+{
+  "success": true,
+  "manifest": {
+    "name": "customer-support",
+    "version": "1.0.0",
+    "entryAgent": "support-agent",
+    "agents": {
+      "support-agent": {
+        "sourceHash": "sha256:abc123...",
+        "path": "agents/support-agent.abl"
+      }
+    },
+    "exportedAt": "2026-03-11T10:00:00.000Z",
+    "exportedBy": "user_123"
+  },
+  "lockfile": {
+    "agents": {
+      "support-agent": {
+        "version": "3",
+        "hash": "sha256:abc123..."
+      }
+    }
+  },
+  "files": {
+    "agents/support-agent.abl": "AGENT: support-agent\n...",
+    "agents/escalation-agent.abl": "AGENT: escalation-agent\nFLOW:\n...",
+    "tools/crm-lookup.tools.abl": "TOOLS:\n  - name: crm-lookup\n    ..."
+  },
+  "warnings": []
+}
+```
+
+##### Export limits
+
+| Limit                 | Value  |
+| --------------------- | ------ |
+| Maximum agents        | 1,000  |
+| Maximum tools         | 500    |
+| Maximum response size | 100 MB |
+
+---
+
+### Import
+
+#### POST /api/projects/:projectId/project-io/import/preview
+
+Perform a dry-run import to preview what changes will be applied without modifying any data.
+
+**Auth required**: Yes
+**Permission**: `project:import`
+
+##### Request body
+
+| Field   | Type   | Required | Description                          |
+| ------- | ------ | -------- | ------------------------------------ |
+| `files` | object | Yes      | Map of file paths to content strings |
+
+##### Response body
+
+| Field     | Type    | Description                                  |
+| --------- | ------- | -------------------------------------------- |
+| `success` | boolean | Whether the preview succeeded                |
+| `preview` | object  | Preview of operations that will be performed |
+| `error`   | object  | Error details if preview failed              |
+
+##### Example request
+
+```bash
+curl -X POST https://api.ablplatform.com/api/projects/proj_abc/project-io/import/preview \
+  -H "Authorization: Bearer abl_sk-your-api-key" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "files": {
+      "agents/support-agent.abl": "AGENT: support-agent\n...",
+      "agents/new-agent.abl": "AGENT: new-agent\nFLOW:\n..."
+    }
+  }'
+```
+
+##### Example response
+
+```json
+{
+  "success": true,
+  "preview": {
+    "operations": [
+      {
+        "type": "update",
+        "entity": "agent",
+        "name": "support-agent",
+        "reason": "Content changed"
+      },
+      {
+        "type": "create",
+        "entity": "agent",
+        "name": "new-agent",
+        "reason": "New agent"
+      }
+    ],
+    "summary": {
+      "create": 1,
+      "update": 1,
+      "delete": 0
+    }
+  }
+}
+```
+
+---
+
+#### POST /api/projects/:projectId/project-io/import
+
+Apply an import, creating, updating, or deleting agents as needed.
+
+**Auth required**: Yes
+**Permission**: `project:import`
+
+##### Request body
+
+| Field   | Type   | Required | Description                          |
+| ------- | ------ | -------- | ------------------------------------ |
+| `files` | object | Yes      | Map of file paths to content strings |
+
+##### Response body
+
+| Field     | Type    | Description                  |
+| --------- | ------- | ---------------------------- |
+| `success` | boolean | Whether the import succeeded |
+| `applied` | object  | Summary of applied changes   |
+
+```json
+{
+  "success": true,
+  "applied": {
+    "created": 1,
+    "updated": 1,
+    "deleted": 0
+  }
+}
+```
+
+##### Example request
+
+```bash
+curl -X POST https://api.ablplatform.com/api/projects/proj_abc/project-io/import \
+  -H "Authorization: Bearer abl_sk-your-api-key" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "files": {
+      "agents/support-agent.abl": "AGENT: support-agent\n...",
+      "agents/new-agent.abl": "AGENT: new-agent\nFLOW:\n..."
+    }
+  }'
+```
+
+##### Import limits
+
+| Limit                        | Value       |
+| ---------------------------- | ----------- |
+| Maximum file size (per file) | 1 MB        |
+| Maximum total content size   | 50 MB       |
+| Maximum file count           | 500         |
+| Maximum request body         | 60 MB       |
+| Concurrent import lock TTL   | 120 seconds |
+
+##### Import validation
+
+The import endpoint validates each file before applying changes:
+
+- **Path traversal prevention**: Paths containing `..`, leading `/`, null bytes, or backslashes are rejected.
+- **File size limits**: Individual files exceeding 1 MB are rejected.
+- **Total size limits**: Combined content exceeding 50 MB is rejected.
+- **Concurrent import protection**: A distributed lock prevents simultaneous imports to the same project.
+
+##### Error responses
+
+| Status | Error                                       | Cause                                      |
+| ------ | ------------------------------------------- | ------------------------------------------ |
+| `400`  | Request body must contain a "files" object  | Missing or invalid `files` field           |
+| `400`  | File content must be a string               | Non-string value in files map              |
+| `400`  | Invalid file path (path traversal detected) | Path traversal attempt                     |
+| `400`  | File too large (max 1MB)                    | Individual file exceeds size limit         |
+| `400`  | Total content size exceeds 50MB             | Combined content too large                 |
+| `400`  | Too many files                              | File count exceeds 500                     |
+| `413`  | Request body too large                      | Request body exceeds 60 MB                 |
+| `409`  | Import already in progress                  | Another import is running for this project |
+
+---
+
+### Workflow: export from one project, import to another
+
+```bash
+# 1. Export from source project
+export EXPORT=$(curl -s \
+  "https://api.ablplatform.com/api/projects/proj_source/project-io/export" \
+  -H "Authorization: Bearer abl_sk-your-api-key")
+
+# 2. Extract the files object
+export FILES=$(echo "$EXPORT" | jq '.files')
+
+# 3. Preview import in target project
+curl -X POST \
+  "https://api.ablplatform.com/api/projects/proj_target/project-io/import/preview" \
+  -H "Authorization: Bearer abl_sk-your-api-key" \
+  -H "Content-Type: application/json" \
+  -d "{\"files\": $FILES}"
+
+# 4. Apply import
+curl -X POST \
+  "https://api.ablplatform.com/api/projects/proj_target/project-io/import" \
+  -H "Authorization: Bearer abl_sk-your-api-key" \
+  -H "Content-Type: application/json" \
+  -d "{\"files\": $FILES}"
+```
+
+## Next steps
+
+- [Conversation API](/agent-platform-v2/api-reference/conversation-api) -- Session and trace details
+- [Management APIs](/agent-platform-v2/api-reference/management-apis) -- Manage imported agents
+- [SDKs](/agent-platform-v2/api-reference/sdks) -- Parse and validate exported ABL files programmatically

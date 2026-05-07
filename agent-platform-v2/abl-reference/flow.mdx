@@ -1,0 +1,1023 @@
+---
+title: 'FLOW (structured execution steps)'
+section: 'abl-reference'
+order: 5
+description: 'The `FLOW:` section adds structured execution steps to any agent. It defines a step-by-step execution graph where each step declares actions (collect information, call tools, respond, branch) and tran'
+---
+
+# FLOW (structured execution steps)
+
+The `FLOW:` section adds structured execution steps to any agent. It defines a step-by-step execution graph where each step declares actions (collect information, call tools, respond, branch) and transitions to other steps.
+
+Agents operate in reasoning mode by default, where the LLM autonomously decides actions based on the goal. Adding a `FLOW:` section gives an agent a structured step graph, with each step declaring whether it uses LLM reasoning or deterministic execution via the `REASONING:` toggle.
+
+## Flow structure
+
+### Basic syntax
+
+```abl
+FLOW:
+  entry_point: start
+
+  steps:
+    - start
+    - collect_info
+    - process
+    - complete
+
+  start:
+    REASONING: false
+    SET:
+      status = "pending"
+    RESPOND: "Welcome! Let me help you get started."
+    THEN: collect_info
+
+  collect_info:
+    REASONING: false
+    GATHER:
+      - name: required
+        prompt: "What is your name?"
+    THEN: process
+
+  process:
+    REASONING: false
+    CALL: process_request
+      WITH:
+        name: name
+      AS: result
+    RESPOND: "Done! Your request has been processed."
+    THEN: complete
+
+  complete:
+    REASONING: false
+    RESPOND: "Thank you for using our service. Goodbye!"
+```
+
+### Entry point
+
+The `entry_point:` property declares which step the flow begins at:
+
+```abl
+FLOW:
+  entry_point: greeting
+```
+
+| Property      | Type     | Required | Default                        | Description                          |
+| ------------- | -------- | -------- | ------------------------------ | ------------------------------------ |
+| `entry_point` | `string` | No       | First step in the `steps` list | The step name where execution begins |
+
+If omitted, execution starts at the first step listed in the `steps` array.
+
+### Step list
+
+The `steps:` array declares the ordered list of step names. While steps can transition to any other step (not just the next in order), the list establishes the canonical ordering:
+
+```abl
+FLOW:
+  steps:
+    - greeting
+    - collect_account
+    - verify
+    - process
+    - complete
+```
+
+### Step definitions
+
+Each step is defined as a named block under `FLOW:` with its properties indented:
+
+```abl
+FLOW:
+  greeting:
+    REASONING: false
+    RESPOND: "Hello! How can I help you today?"
+    THEN: collect_account
+```
+
+### Per-step REASONING toggle
+
+Every step in a `FLOW:` section **must** declare `REASONING: true` or `REASONING: false`. This controls whether the step uses LLM reasoning or deterministic execution.
+
+```abl
+FLOW:
+  analyze_request:
+    REASONING: true
+    GOAL: "Analyze the customer's request and determine the best course of action"
+    AVAILABLE_TOOLS: [search_knowledge, classify_intent]
+    EXIT_WHEN: intent_classified == true
+    MAX_TURNS: 5
+    THEN: route_request
+
+  route_request:
+    REASONING: false
+    CHECK: intent == "billing"
+    ON_FAIL: general_support
+    THEN: billing_flow
+```
+
+| Property    | Type      | Required | Default | Description                                                          |
+| ----------- | --------- | -------- | ------- | -------------------------------------------------------------------- |
+| `REASONING` | `boolean` | **Yes**  | --      | `true` for LLM-driven reasoning, `false` for deterministic execution |
+
+#### Reasoning step properties
+
+When `REASONING: true`, the following additional properties are available:
+
+| Property           | Type       | Required | Default             | Description                                                   |
+| ------------------ | ---------- | -------- | ------------------- | ------------------------------------------------------------- |
+| `GOAL`             | `string`   | No       | Agent-level `GOAL:` | Step-specific goal (overrides the agent's goal for this step) |
+| `AVAILABLE_TOOLS`  | `string[]` | No       | All agent tools     | Subset of agent tools available in this step                  |
+| `EXIT_WHEN`        | `string`   | No       | _none_              | Condition that ends the reasoning loop                        |
+| `MAX_TURNS`        | `number`   | No       | `10`                | Maximum reasoning turns before forced exit                    |
+| `STEP_CONSTRAINTS` | `string[]` | No       | _none_              | Constraints specific to this reasoning zone                   |
+
+> **Validation rules:**
+>
+> - A step with `REASONING: true` must have either a step-level `GOAL` or an agent-level `GOAL:` defined.
+> - A step with `REASONING: false` should not have a `GOAL` (it has no effect on deterministic steps).
+> - A step with `REASONING: false` should not have `AVAILABLE_TOOLS` (use `CALL` to invoke tools deterministically).
+
+### Entry guards
+
+The `WHEN:` property on a step defines a condition that must be true for the step to execute. If the condition is false, the step is skipped:
+
+```abl
+FLOW:
+  international_details:
+    REASONING: false
+    WHEN: "transfer_type == 'international'"
+    GATHER:
+      - swift_code: required
+        prompt: "What is the SWIFT/BIC code?"
+    THEN: validate_details
+```
+
+| Property | Type     | Required | Default | Description                                                    |
+| -------- | -------- | -------- | ------- | -------------------------------------------------------------- |
+| `WHEN`   | `string` | No       | _none_  | Condition expression that must be true for the step to execute |
+
+### Attempt limiting
+
+Steps can limit the number of times they execute (useful for retry loops):
+
+```abl
+FLOW:
+  collect_pin:
+    REASONING: false
+    MAX_ATTEMPTS: 3
+    ON_EXHAUSTED: lockout
+    GATHER:
+      - pin: required
+        prompt: "Enter your PIN."
+    THEN: verify_pin
+```
+
+| Property       | Type     | Required | Default | Description                                        |
+| -------------- | -------- | -------- | ------- | -------------------------------------------------- |
+| `MAX_ATTEMPTS` | `number` | No       | _none_  | Maximum number of times this step can execute      |
+| `ON_EXHAUSTED` | `string` | No       | _none_  | Step to transition to after max attempts exhausted |
+
+---
+
+## Step actions
+
+### SAY / RESPOND
+
+The `RESPOND:` action sends a message to the user. It supports template interpolation with `{{variable}}` syntax:
+
+```abl
+FLOW:
+  greeting:
+    REASONING: false
+    RESPOND: "Hello, {{customer_name}}! Your balance is {{balance}}."
+    THEN: next_step
+```
+
+Multi-line responses use pipe block syntax:
+
+```abl
+FLOW:
+  summary:
+    REASONING: false
+    RESPOND: |
+      Here is your transfer summary:
+      From: {{source_account}}
+      To: {{beneficiary_name}}
+      Amount: {{amount}} {{currency}}
+    THEN: confirm
+```
+
+### PRESENT
+
+The `PRESENT:` action displays a formatted presentation before collection. It is used alongside `GATHER:` to show the user what has been collected so far:
+
+```abl
+FLOW:
+  review:
+    REASONING: false
+    PRESENT: |
+      Beneficiary: {{beneficiary_name}}
+      Account: {{MASK(beneficiary_account, "last4")}}
+      Bank: {{beneficiary_bank_name}}
+    GATHER:
+      - confirmation: required
+    THEN: process
+```
+
+### GATHER in flow steps
+
+Within a flow step, `GATHER:` uses a list syntax different from the top-level `GATHER:` section:
+
+```abl
+FLOW:
+  collect_details:
+    REASONING: false
+    GATHER:
+      - source_account: required
+        prompt: "Your account number?"
+    THEN: next_step
+```
+
+#### Multi-field collection
+
+Collect multiple fields in a single step using the `FIELDS:` sub-block:
+
+```abl
+FLOW:
+  collect_beneficiary:
+    REASONING: false
+    GATHER:
+      FIELDS:
+        - beneficiary_name: required
+          prompt: "Full legal name on the account."
+        - beneficiary_account: required
+          prompt: "Account number or IBAN."
+        - beneficiary_bank: required
+          prompt: "Name of the bank."
+        - country: required
+          prompt: "Country of the bank."
+          default: "US"
+          infer: true
+      STRATEGY: llm
+    CORRECTIONS: true
+    COMPLETE_WHEN: beneficiary_name AND beneficiary_account AND beneficiary_bank AND country
+    THEN: validate
+```
+
+#### Flow gather field properties
+
+Each field in a flow `GATHER:` supports these properties:
+
+| Property                               | Type                         | Required | Default    | Description                         |
+| -------------------------------------- | ---------------------------- | -------- | ---------- | ----------------------------------- |
+| `required` / optional value after name | `boolean`                    | No       | `true`     | Whether the field must be collected |
+| `prompt`                               | `string`                     | No       | _none_     | Question shown to the user          |
+| `type`                                 | `string`                     | No       | `"string"` | Data type                           |
+| `default`                              | `any`                        | No       | _none_     | Default value                       |
+| `validation`                           | `string`                     | No       | _none_     | Validation expression               |
+| `infer`                                | `boolean`                    | No       | `false`    | Allow LLM inference                 |
+| `infer_confidence`                     | `number`                     | No       | `0.8`      | Minimum inference confidence        |
+| `infer_confirm`                        | `boolean`                    | No       | `true`     | Confirm inferred values             |
+| `extraction_hints`                     | `string[]`                   | No       | _none_     | LLM extraction guidance             |
+| `range`                                | `boolean`                    | No       | `false`    | Collect as range                    |
+| `list`                                 | `boolean`                    | No       | `false`    | Collect as array                    |
+| `activation`                           | `string` \| `{when: string}` | No       | _none_     | Activation mode                     |
+| `depends_on`                           | `string[]`                   | No       | _none_     | Field dependencies                  |
+| `prompt_mode`                          | `"ask"` \| `"extract_only"`  | No       | `"ask"`    | Prompt usage mode                   |
+
+#### Strategy
+
+The `STRATEGY:` property on a flow `GATHER:` block controls the collection approach:
+
+| Value     | Description                                         |
+| --------- | --------------------------------------------------- |
+| `llm`     | Use LLM to extract values from natural conversation |
+| `pattern` | Use pattern matching and extraction rules           |
+| `hybrid`  | Combine LLM and pattern matching                    |
+
+#### CORRECTIONS
+
+When `CORRECTIONS: true`, the user can naturally correct previously collected values without restarting the step:
+
+```abl
+FLOW:
+  collect_info:
+    REASONING: false
+    GATHER:
+      - name: required
+      - email: required
+    CORRECTIONS: true
+    THEN: next_step
+```
+
+#### COMPLETE_WHEN
+
+The `COMPLETE_WHEN:` condition specifies when the gather step is considered complete:
+
+```abl
+FLOW:
+  collect_all:
+    REASONING: false
+    GATHER:
+      FIELDS:
+        - field_a: required
+        - field_b: required
+        - field_c: optional
+    COMPLETE_WHEN: field_a AND field_b
+    THEN: process
+```
+
+### CALL...WITH...AS
+
+The `CALL:` action invokes a tool. Use `WITH:` to pass parameters and `AS:` to bind the result to a variable:
+
+```abl
+FLOW:
+  verify_step:
+    REASONING: false
+    CALL: verify_account
+      WITH:
+        account_id: source_account
+      AS: acctResult
+    RESPOND: "Account verified: {{acctResult.owner_name}}"
+    THEN: next_step
+```
+
+| Property | Type                     | Required | Default | Description                           |
+| -------- | ------------------------ | -------- | ------- | ------------------------------------- |
+| `CALL`   | `string`                 | --       | --      | Tool name to invoke                   |
+| `WITH`   | `Record<string, string>` | No       | _none_  | Key-value parameter mapping           |
+| `AS`     | `string`                 | No       | _none_  | Variable name to bind the tool result |
+
+#### WITH parameters
+
+The `WITH:` block maps tool parameter names to values or variable references:
+
+```abl
+CALL: calculate_fees
+  WITH:
+    transfer_type: transfer_type
+    amount: amount
+    currency: currency
+    destination_country: beneficiary_country
+  AS: feeResult
+```
+
+Values can be:
+
+- Variable references: `amount` (resolves the session variable `amount`)
+- Literal strings: `"domestic"`
+- Expressions: `COALESCE(reference, "")`
+
+### SET
+
+The `SET:` action assigns values to session variables:
+
+```abl
+FLOW:
+  init:
+    REASONING: false
+    SET:
+      status = "pending"
+      retry_count = 0
+      sanctions_clear = false
+    THEN: next_step
+```
+
+Each assignment uses `variable = expression` syntax. The expression is resolved at execution time and can reference:
+
+- Literal values: `"pending"`, `0`, `true`, `false`
+- Variable references: `acctResult.balance`
+- Function calls: `FORMAT_CURRENCY(amount, "USD")`, `COALESCE(value, "default")`, `ADD(a, b)`, `SUB(a, b)`, `ROUND(n, decimals)`
+- Unique ID generation: `UNIQUE_ID(12)`
+- Current timestamp: `NOW()`
+
+### CHECK
+
+The `CHECK:` action evaluates a condition. If the condition is false, execution transitions to the `ON_FAIL:` step:
+
+```abl
+FLOW:
+  check_limits:
+    REASONING: false
+    CHECK: amount <= available_balance AND ADD(daily_used, amount) <= daily_limit
+    ON_FAIL: over_limit
+    THEN: proceed
+```
+
+| Property  | Type     | Required | Default | Description                             |
+| --------- | -------- | -------- | ------- | --------------------------------------- |
+| `CHECK`   | `string` | --       | --      | Condition expression to evaluate        |
+| `ON_FAIL` | `string` | No       | _none_  | Step to go to if the condition is false |
+
+### CLEAR
+
+The `CLEAR:` action removes variables from the session context:
+
+```abl
+FLOW:
+  reset_beneficiary:
+    REASONING: false
+    CLEAR: [beneficiary_name, beneficiary_account, beneficiary_id]
+    THEN: collect_beneficiary
+```
+
+### TRANSFORM
+
+The `TRANSFORM:` action filters, maps, sorts, and limits an array from the session context:
+
+```abl
+FLOW:
+  filter_results:
+    REASONING: false
+    TRANSFORM:
+      SOURCE: search_results
+      AS: hotel
+      INTO: filtered_hotels
+      FILTER: "hotel.rating >= 4"
+      MAP:
+        name: hotel.name
+        price: hotel.price_per_night
+        rating: hotel.rating
+      SORT_BY: price asc
+      LIMIT: 5
+    THEN: show_results
+```
+
+| Property  | Type                     | Required | Default | Description                                  |
+| --------- | ------------------------ | -------- | ------- | -------------------------------------------- |
+| `SOURCE`  | `string`                 | Yes      | --      | Dot-path to the source array                 |
+| `AS`      | `string`                 | Yes      | --      | Loop variable name                           |
+| `INTO`    | `string`                 | Yes      | --      | Output variable name                         |
+| `FILTER`  | `string`                 | No       | _none_  | Condition expression using the loop variable |
+| `MAP`     | `Record<string, string>` | No       | _none_  | Field mapping expressions                    |
+| `SORT_BY` | `string`                 | No       | _none_  | Sort field and direction (`asc` or `desc`)   |
+| `LIMIT`   | `number`                 | No       | _none_  | Maximum number of items in the output        |
+
+---
+
+## Branching and control flow
+
+### THEN / ON_FAIL
+
+The most basic branching: `THEN:` specifies the next step on success, and `ON_FAIL:` specifies the step on failure:
+
+```abl
+FLOW:
+  check_status:
+    REASONING: false
+    CHECK: account_status == "active"
+    ON_FAIL: inactive_account
+    THEN: proceed
+```
+
+### ON_RESULT
+
+`ON_RESULT:` provides multi-way branching based on the result of a `CALL:` action. Each branch has an `IF:` condition, optional actions, and a `THEN:` transition:
+
+```abl
+FLOW:
+  verify_step:
+    REASONING: false
+    CALL: verify_account
+      WITH:
+        account_id: source_account
+      AS: acctResult
+    ON_RESULT:
+      - IF: acctResult.status == "active"
+        SET:
+          customer_name = acctResult.owner_name
+          balance = acctResult.available_balance
+        RESPOND: "Account verified. Hello, {{customer_name}}."
+        THEN: next_step
+      - IF: acctResult.status == "frozen"
+        RESPOND: "Your account is frozen. Please contact your branch."
+        THEN: end
+      - ELSE:
+        RESPOND: "Account not found. Please check the number."
+        THEN: collect_account
+```
+
+#### ON_RESULT branch properties
+
+| Property  | Type                     | Required | Default | Description                                   |
+| --------- | ------------------------ | -------- | ------- | --------------------------------------------- |
+| `IF`      | `string`                 | No       | --      | Condition expression. Omit for `ELSE` branch. |
+| `RESPOND` | `string`                 | No       | _none_  | Message to display                            |
+| `SET`     | `Record<string, string>` | No       | _none_  | Variable assignments                          |
+| `CALL`    | `string`                 | No       | _none_  | Optional nested tool call                     |
+| `THEN`    | `string`                 | Yes      | --      | Next step                                     |
+
+The `ELSE` branch (a branch with no `IF` condition) matches when no other condition is true.
+
+### ON_SUCCESS / ON_FAILURE
+
+An alternative to `ON_RESULT:` for simpler success/failure branching:
+
+```abl
+FLOW:
+  call_api:
+    REASONING: false
+    CALL: submit_request
+      WITH:
+        data: request_data
+      AS: result
+    ON_SUCCESS:
+      RESPOND: "Request submitted: {{result.id}}"
+      THEN: done
+    ON_FAILURE:
+      RESPOND: "Request failed. Please try again."
+      THEN: retry_step
+```
+
+Both `ON_SUCCESS:` and `ON_FAILURE:` support conditional branches:
+
+```abl
+FLOW:
+  process:
+    REASONING: false
+    CALL: process_order
+      AS: orderResult
+    ON_SUCCESS:
+      - IF: orderResult.express == true
+        RESPOND: "Express order confirmed!"
+        THEN: express_fulfillment
+      - ELSE:
+        RESPOND: "Order confirmed."
+        THEN: standard_fulfillment
+    ON_FAILURE:
+      - IF: orderResult.error == "out_of_stock"
+        RESPOND: "Item is out of stock."
+        THEN: suggest_alternatives
+      - ELSE:
+        RESPOND: "An error occurred."
+        THEN: error_handling
+```
+
+### ON_INPUT
+
+`ON_INPUT:` provides branching based on user input, typically used after a `GATHER:` action:
+
+```abl
+FLOW:
+  confirm:
+    REASONING: false
+    GATHER:
+      - confirmation: required
+    ON_INPUT:
+      - IF: input contains "yes" OR input contains "confirm"
+        THEN: execute
+      - IF: input contains "no" OR input contains "cancel"
+        RESPOND: "Cancelled."
+        THEN: cleanup
+      - ELSE:
+        RESPOND: "Please type 'yes' to confirm or 'no' to cancel."
+        THEN: confirm
+```
+
+### Digressions
+
+Digressions are intent-based escapes that can interrupt the current step. They match user intent patterns and respond accordingly:
+
+```abl
+FLOW:
+  collect_details:
+    REASONING: false
+    GATHER:
+      - account: required
+
+    DIGRESSIONS:
+      - INTENT: "what is swift"
+        RESPOND: "A SWIFT code is an 8 or 11 character code identifying a bank internationally."
+        RESUME: true
+      - INTENT: "cancel"
+        RESPOND: "Transaction cancelled."
+        GOTO: cleanup
+      - INTENT: "speak to agent"
+        RESPOND: "Connecting you with a specialist."
+        DELEGATE: Live_Agent
+```
+
+#### Digression properties
+
+| Property    | Type       | Required | Default | Description                               |
+| ----------- | ---------- | -------- | ------- | ----------------------------------------- |
+| `INTENT`    | `string`   | Yes      | --      | Intent pattern to match                   |
+| `KEYWORDS`  | `string[]` | No       | _none_  | Explicit keywords for matching            |
+| `CONDITION` | `string`   | No       | _none_  | Additional condition to check             |
+| `RESPOND`   | `string`   | No       | _none_  | Response message                          |
+| `RESUME`    | `boolean`  | No       | `false` | Return to the current step after handling |
+| `GOTO`      | `string`   | No       | _none_  | Transition to a specific step             |
+| `DELEGATE`  | `string`   | No       | _none_  | Delegate to another agent                 |
+| `CALL`      | `string`   | No       | _none_  | Tool to invoke                            |
+| `CLEAR`     | `string[]` | No       | _none_  | Variables to clear                        |
+
+When `RESUME: true`, the user returns to the interrupted step after the digression response. When `GOTO:` is specified, the flow transitions to that step instead.
+
+### Global digressions
+
+Digressions declared at the flow level (under `global_digressions:`) are available at every step:
+
+```abl
+FLOW:
+  global_digressions:
+    - INTENT: "cancel"
+      RESPOND: "Transaction cancelled."
+      GOTO: cleanup
+
+    - INTENT: "help"
+      RESPOND: "I can help with account inquiries, transfers, and balance checks."
+      RESUME: true
+
+    - INTENT: "speak to agent"
+      RESPOND: "Connecting you with a live agent."
+      DELEGATE: Live_Agent_Transfer
+```
+
+### Sub-intents
+
+Sub-intents are scoped intents valid only within a specific step. They handle step-specific user requests like corrections or clarifications:
+
+```abl
+FLOW:
+  collect_beneficiary:
+    REASONING: false
+    GATHER:
+      FIELDS:
+        - name: required
+        - account: required
+        - bank: required
+
+    SUB_INTENTS:
+      - INTENT: "change name"
+        CLEAR: [name]
+        RESPOND: "What is the correct name?"
+      - INTENT: "change account"
+        CLEAR: [account]
+        RESPOND: "What is the correct account number?"
+      - INTENT: "change bank"
+        CLEAR: [bank, routing_code]
+        RESPOND: "What is the correct bank name?"
+```
+
+#### Sub-intent properties
+
+| Property  | Type                     | Required | Default | Description                                 |
+| --------- | ------------------------ | -------- | ------- | ------------------------------------------- |
+| `INTENT`  | `string`                 | Yes      | --      | Intent pattern to match                     |
+| `RESPOND` | `string`                 | No       | _none_  | Response message                            |
+| `CLEAR`   | `string[]`               | No       | _none_  | Variables to clear (triggers re-collection) |
+| `SET`     | `Record<string, string>` | No       | _none_  | Variables to set                            |
+| `CALL`    | `string`                 | No       | _none_  | Tool to invoke                              |
+| `RESUME`  | `boolean`                | No       | `true`  | Stay in the current step                    |
+
+---
+
+## Interactive actions
+
+Flow steps can present interactive UI elements (buttons, selects, inputs) to the user. These are attached to `RESPOND:` messages and handled with `ON_ACTION:` callbacks.
+
+### Action elements
+
+Interactive actions are defined in an `ACTIONS:` block within a step:
+
+```abl
+FLOW:
+  choose_option:
+    REASONING: false
+    RESPOND: "How would you like to proceed?"
+    ACTIONS:
+      - id: "option_transfer"
+        type: button
+        label: "Wire Transfer"
+        value: "wire"
+      - id: "option_ach"
+        type: button
+        label: "ACH Transfer"
+        value: "ach"
+      - id: "option_check"
+        type: button
+        label: "Send a Check"
+        value: "check"
+    ON_ACTION:
+      - ACTION: "option_transfer"
+        SET:
+          transfer_method = "wire"
+        THEN: wire_flow
+      - ACTION: "option_ach"
+        SET:
+          transfer_method = "ach"
+        THEN: ach_flow
+      - ACTION: "option_check"
+        SET:
+          transfer_method = "check"
+        THEN: check_flow
+```
+
+### Element types
+
+#### Buttons
+
+```abl
+ACTIONS:
+  - id: "confirm_btn"
+    type: button
+    label: "Confirm"
+    value: "confirmed"
+```
+
+#### Select (dropdown)
+
+```abl
+ACTIONS:
+  - id: "currency_select"
+    type: select
+    label: "Select currency"
+    options:
+      - id: "usd"
+        label: "US Dollar"
+        description: "United States Dollar"
+      - id: "eur"
+        label: "Euro"
+        description: "European Union Euro"
+      - id: "gbp"
+        label: "British Pound"
+```
+
+#### Input fields
+
+```abl
+ACTIONS:
+  - id: "amount_input"
+    type: input
+    label: "Enter amount"
+    inputType: number
+    placeholder: "0.00"
+    required: true
+```
+
+### Action element properties
+
+| Property      | Type                                                        | Required | Default  | Description                                           |
+| ------------- | ----------------------------------------------------------- | -------- | -------- | ----------------------------------------------------- |
+| `id`          | `string`                                                    | Yes      | --       | Unique identifier for the action element              |
+| `type`        | `"button"` \| `"select"` \| `"input"`                       | Yes      | --       | Element type                                          |
+| `label`       | `string`                                                    | Yes      | --       | Display label                                         |
+| `value`       | `string`                                                    | No       | _none_   | Hidden value sent when the element is interacted with |
+| `description` | `string`                                                    | No       | _none_   | Subtitle or helper text                               |
+| `options`     | `{id, label, description?}[]`                               | No       | _none_   | Options for `select` type                             |
+| `inputType`   | `"text"` \| `"number"` \| `"date"` \| `"time"` \| `"email"` | No       | `"text"` | Input field type (for `input` type)                   |
+| `placeholder` | `string`                                                    | No       | _none_   | Placeholder text (for `input` type)                   |
+| `required`    | `boolean`                                                   | No       | `false`  | Whether the input is required (for `input` type)      |
+
+### Form submission
+
+When a step contains `input` type elements, you can configure a form submission button:
+
+```abl
+ACTIONS:
+  - id: "name_input"
+    type: input
+    label: "Your name"
+    inputType: text
+    required: true
+  - id: "email_input"
+    type: input
+    label: "Your email"
+    inputType: email
+    required: true
+  SUBMIT_LABEL: "Submit"
+  SUBMIT_ID: "form_submit"
+```
+
+### ON_ACTION callbacks
+
+The `ON_ACTION:` block defines handlers for user interactions with action elements:
+
+```abl
+ON_ACTION:
+  - ACTION: "confirm_btn"
+    RESPOND: "Confirmed! Processing your request."
+    SET:
+      confirmed = true
+    THEN: process_step
+  - ACTION: "cancel_btn"
+    RESPOND: "Cancelled."
+    THEN: cleanup
+```
+
+#### ON_ACTION handler properties
+
+| Property    | Type                     | Required | Default | Description                                                |
+| ----------- | ------------------------ | -------- | ------- | ---------------------------------------------------------- |
+| `ACTION`    | `string`                 | Yes      | --      | The `id` of the action element that triggered this handler |
+| `CONDITION` | `string`                 | No       | _none_  | Optional value-based condition                             |
+| `RESPOND`   | `string`                 | No       | _none_  | Response message                                           |
+| `SET`       | `Record<string, string>` | No       | _none_  | Variable assignments                                       |
+| `THEN`      | `string`                 | No       | _none_  | Step to transition to                                      |
+
+### Rich content
+
+Steps can include rich content in multiple formats alongside `RESPOND:` messages. The runtime selects the appropriate format based on the channel:
+
+```abl
+FLOW:
+  show_summary:
+    REASONING: false
+    RESPOND: "Here is your transfer summary."
+    RICH_CONTENT:
+      MARKDOWN: |
+        ## Wire Transfer Summary
+        | Field | Value |
+        |-------|-------|
+        | From | {{source_account}} |
+        | To | {{beneficiary_name}} |
+        | Amount | {{amount}} {{currency}} |
+      ADAPTIVE_CARD: |
+        {"type": "AdaptiveCard", "body": [...]}
+```
+
+#### Rich content format properties
+
+| Format          | Description                       |
+| --------------- | --------------------------------- |
+| `MARKDOWN`      | Formatted markdown text           |
+| `ADAPTIVE_CARD` | Microsoft Adaptive Cards JSON     |
+| `HTML`          | HTML content                      |
+| `SLACK`         | Slack Block Kit JSON              |
+| `AG_UI`         | AG-UI / CopilotKit event JSON     |
+| `WHATSAPP`      | WhatsApp interactive message JSON |
+
+### Voice configuration
+
+Steps can include voice-specific overrides for text-to-speech engines:
+
+```abl
+FLOW:
+  greeting:
+    REASONING: false
+    RESPOND: "Welcome to wire transfer services."
+    VOICE:
+      SSML: |
+        <speak>
+          Welcome to <emphasis>wire transfer</emphasis> services.
+        </speak>
+      INSTRUCTIONS: "Speak in a warm, professional tone."
+      PLAIN_TEXT: "Welcome to wire transfer services."
+```
+
+| Property       | Type     | Description                                          |
+| -------------- | -------- | ---------------------------------------------------- |
+| `SSML`         | `string` | W3C SSML markup for TTS engines                      |
+| `INSTRUCTIONS` | `string` | Natural language voice style instructions            |
+| `PLAIN_TEXT`   | `string` | Voice-optimized plaintext (fallback for all engines) |
+
+---
+
+## Step-level error handling
+
+Steps can define local error handlers that override agent-level `ON_ERROR:` handlers:
+
+```abl
+FLOW:
+  call_external:
+    REASONING: false
+    CALL: external_api
+      WITH:
+        query: user_query
+      AS: apiResult
+    ON_ERROR:
+      tool_timeout:
+        RESPOND: "The service is responding slowly. Retrying..."
+        RETRY: 2
+        THEN: CONTINUE
+      tool_error:
+        RESPOND: "An error occurred. Let me try a different approach."
+        THEN: fallback_step
+```
+
+## Complete example
+
+```abl
+AGENT: Simple_Order
+VERSION: "1.0.0"
+
+GOAL: "Help customers place orders."
+
+PERSONA: "Friendly order assistant."
+
+TOOLS:
+  check_inventory(product_id: string) -> {available: boolean, quantity: number}
+    description: "Check product availability"
+    type: http
+    endpoint: "/api/inventory/check"
+    method: GET
+
+  place_order(product_id: string, quantity: number) -> {order_id: string, total: number}
+    description: "Place an order"
+    type: http
+    endpoint: "/api/orders"
+    method: POST
+
+FLOW:
+  entry_point: welcome
+
+  steps:
+    - welcome
+    - collect_product
+    - check_stock
+    - out_of_stock
+    - collect_quantity
+    - confirm
+    - place
+    - done
+
+  global_digressions:
+    - INTENT: "cancel"
+      RESPOND: "Order cancelled."
+      GOTO: done
+
+  welcome:
+    REASONING: false
+    RESPOND: "Welcome! What product are you looking for?"
+    THEN: collect_product
+
+  collect_product:
+    REASONING: false
+    GATHER:
+      - product_id: required
+        prompt: "What is the product ID?"
+    THEN: check_stock
+
+  check_stock:
+    REASONING: false
+    CALL: check_inventory
+      WITH:
+        product_id: product_id
+      AS: stockResult
+    ON_RESULT:
+      - IF: stockResult.available == true
+        SET:
+          stock_quantity = stockResult.quantity
+        RESPOND: "Great news! We have {{stock_quantity}} in stock."
+        THEN: collect_quantity
+      - ELSE:
+        THEN: out_of_stock
+
+  out_of_stock:
+    REASONING: false
+    RESPOND: "Sorry, that product is currently out of stock."
+    THEN: done
+
+  collect_quantity:
+    REASONING: false
+    GATHER:
+      - quantity: required
+        type: number
+        prompt: "How many would you like to order?"
+    CHECK: quantity <= stock_quantity
+    ON_FAIL: collect_quantity
+    THEN: confirm
+
+  confirm:
+    REASONING: false
+    RESPOND: "You'd like to order {{quantity}} of {{product_id}}. Confirm?"
+    ACTIONS:
+      - id: "yes"
+        type: button
+        label: "Confirm"
+      - id: "no"
+        type: button
+        label: "Cancel"
+    ON_ACTION:
+      - ACTION: "yes"
+        THEN: place
+      - ACTION: "no"
+        RESPOND: "Order cancelled."
+        THEN: done
+
+  place:
+    REASONING: false
+    CALL: place_order
+      WITH:
+        product_id: product_id
+        quantity: quantity
+      AS: orderResult
+    ON_SUCCESS:
+      RESPOND: "Order placed! Order ID: {{orderResult.order_id}}, Total: {{orderResult.total}}"
+      THEN: done
+    ON_FAILURE:
+      RESPOND: "Failed to place order. Please try again later."
+      THEN: done
+
+  done:
+    REASONING: false
+    RESPOND: "Thank you for using our service!"
+```
+
+## Related
+
+- [Language overview](/agent-platform-v2/abl-reference/language-overview) -- syntax rules and auto-detection
+- [Tools](/agent-platform-v2/abl-reference/tools) -- tool definitions used by `CALL` actions
+- [GATHER](/agent-platform-v2/abl-reference/gather) -- top-level gather field definitions
+- [Agent declaration](/agent-platform-v2/abl-reference/agent-declaration) -- GOAL used by `REASONING: true` steps, `max_flow_iterations` and model settings

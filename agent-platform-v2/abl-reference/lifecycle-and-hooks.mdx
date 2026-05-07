@@ -1,0 +1,260 @@
+---
+title: 'Lifecycle and hooks'
+section: 'abl-reference'
+order: 10
+description: 'ABL provides lifecycle handlers and hooks that execute at specific points in an agent execution cycle. These allow you to initialize state, and run side effects.'
+---
+
+# Lifecycle and hooks
+
+ABL provides lifecycle handlers and hooks that execute at specific points in an agent's execution cycle. These allow you to initialize state, run side effects, and handle errors without embedding that logic in the main conversation flow.
+
+## Overview
+
+| Handler    | When it fires                                           |
+| ---------- | ------------------------------------------------------- |
+| `ON_START` | Once per session, before any user input.                |
+| `HOOKS`    | At defined lifecycle points (before/after agent, turn). |
+| `ON_ERROR` | When a specific error type occurs during execution.     |
+
+## ON_START handler
+
+The `ON_START` handler executes once when a new session initializes, before the agent processes any user input. Use it for greeting messages, initial tool calls, and variable initialization.
+
+### Syntax
+
+```abl
+ON_START:
+  SET:
+    session_initialized = true
+    transfer_status = "pending"
+    retry_count = 0
+  CALL: check_returning_user()
+  RESPOND: |
+    Welcome to Wire Transfer Services. I can help you send
+    a domestic or international wire transfer.
+    Which account would you like to send from?
+```
+
+### ON_START properties
+
+| Property       | Type                    | Required | Default | Description                                                                                    |
+| -------------- | ----------------------- | -------- | ------- | ---------------------------------------------------------------------------------------------- |
+| `SET`          | `Record<string,string>` | No       | --      | Variable assignments executed at session start.                                                |
+| `CALL`         | `string`                | No       | --      | Tool to call during initialization.                                                            |
+| `DELEGATE`     | `string`                | No       | --      | Agent to delegate to during initialization.                                                    |
+| `RESPOND`      | `string`                | No       | --      | Greeting or welcome message sent to the user.                                                  |
+| `VOICE`        | `object`                | No       | --      | Voice-specific overrides for the response. See [Rich Content](/agent-platform-v2/abl-reference/rich-content-and-expressions). |
+| `RICH_CONTENT` | `object`                | No       | --      | Rich content format variants. See [Rich Content](/agent-platform-v2/abl-reference/rich-content-and-expressions).              |
+| `ACTIONS`      | `object`                | No       | --      | Interactive actions attached to the response.                                                  |
+
+### Template references in ON_START
+
+You can reference named templates in the RESPOND value:
+
+```abl
+ON_START:
+  RESPOND: TEMPLATE(welcome)
+```
+
+This renders the template named `welcome` from the agent's `TEMPLATES:` block.
+
+### ON_START with tool call
+
+```abl
+ON_START:
+  CALL: check_cut_off_times(transfer_type = "all")
+  SET:
+    sanctions_clear = false
+    fraud_score = 0
+  RESPOND: "Welcome. Let me check today's processing windows."
+```
+
+The tool call executes first, and its result is available in the session context when the RESPOND message is rendered.
+
+## HOOKS
+
+The `HOOKS:` block defines actions that run at four lifecycle points. Unlike `ON_START`, hooks fire repeatedly throughout the session.
+
+### Syntax
+
+```abl
+HOOKS:
+  before_agent:
+    SET:
+      agent_start_time = NOW()
+    CALL: load_user_preferences()
+
+  after_agent:
+    CALL: save_session_summary()
+
+  before_turn:
+    SET:
+      turn_start_time = NOW()
+
+  after_turn:
+    CALL: log_audit_event()
+    SET:
+      turn_count = ADD(turn_count, 1)
+```
+
+### Hook points
+
+| Hook           | When it fires                                                                   |
+| -------------- | ------------------------------------------------------------------------------- |
+| `before_agent` | Once when the agent is first activated (before it processes its first message). |
+| `after_agent`  | Once when the agent completes or is deactivated.                                |
+| `before_turn`  | Before each user message is processed.                                          |
+| `after_turn`   | After each turn completes (after the agent's response is sent).                 |
+
+### Hook action properties
+
+Each hook supports the same set of action properties:
+
+| Property       | Type                    | Required | Default | Description                                         |
+| -------------- | ----------------------- | -------- | ------- | --------------------------------------------------- |
+| `SET`          | `Record<string,string>` | No       | --      | Variable assignments.                               |
+| `CALL`         | `string`                | No       | --      | Tool to call.                                       |
+| `RESPOND`      | `string`                | No       | --      | Message to send (uncommon in hooks, but supported). |
+| `VOICE`        | `object`                | No       | --      | Voice-specific overrides.                           |
+| `RICH_CONTENT` | `object`                | No       | --      | Rich content format variants.                       |
+| `ACTIONS`      | `object`                | No       | --      | Interactive actions.                                |
+
+### Example: audit logging hook
+
+```abl
+HOOKS:
+  after_turn:
+    CALL: log_wire_audit_event()
+```
+
+### Example: turn timing
+
+```abl
+HOOKS:
+  before_turn:
+    SET:
+      turn_start_time = NOW()
+  after_turn:
+    SET:
+      turn_duration_ms = SUB(NOW_MS(), turn_start_time_ms)
+```
+
+## ON_ERROR handlers
+
+The `ON_ERROR:` block defines how the agent responds to specific error types. Each handler matches an error type and specifies a response, optional retry logic, and a follow-up action.
+
+### Syntax
+
+```abl
+ON_ERROR:
+  tool_timeout:
+    RESPOND: "That system is responding slowly. Let me retry."
+    RETRY: 2
+    THEN: CONTINUE
+
+  tool_error:
+    RESPOND: "I hit an error accessing that service. Let me try again."
+    RETRY: 1
+    THEN: CONTINUE
+
+  validation_error:
+    RESPOND: "That value doesn't look right. Could you double-check?"
+    THEN: CONTINUE
+
+  llm_error:
+    RESPOND: "I'm having trouble processing your request."
+    RETRY: 1
+    RETRY_BACKOFF: exponential
+    RETRY_MAX_DELAY: 10000
+    THEN: ESCALATE
+```
+
+### Error types
+
+| Error type          | When it occurs                                         |
+| ------------------- | ------------------------------------------------------ |
+| `tool_timeout`      | A tool call exceeds its timeout.                       |
+| `tool_error`        | A tool call returns an error.                          |
+| `validation_error`  | User input fails validation.                           |
+| `llm_error`         | The LLM call fails (rate limit, model error, etc.).    |
+| `routing_failure`   | The Supervisor cannot route a message.                 |
+| `agent_unavailable` | A target agent for handoff or delegate is unavailable. |
+| `timeout`           | A general timeout (session idle, async operation).     |
+
+### Error handler properties
+
+| Property          | Type       | Required | Default | Description                                                                   |
+| ----------------- | ---------- | -------- | ------- | ----------------------------------------------------------------------------- |
+| `RESPOND`         | `string`   | No       | --      | Message sent to the user when this error occurs.                              |
+| `VOICE`           | `object`   | No       | --      | Voice-specific overrides for the response.                                    |
+| `RICH_CONTENT`    | `object`   | No       | --      | Rich content format variants.                                                 |
+| `ACTIONS`         | `object`   | No       | --      | Interactive actions.                                                          |
+| `RETRY`           | `number`   | No       | --      | Number of retry attempts before executing `THEN`.                             |
+| `RETRY_DELAY`     | `number`   | No       | --      | Delay in milliseconds between retries.                                        |
+| `RETRY_BACKOFF`   | `string`   | No       | --      | Backoff strategy for retries. See [Retry strategies](#retry-strategies).      |
+| `RETRY_MAX_DELAY` | `number`   | No       | --      | Maximum delay between retries in milliseconds.                                |
+| `THEN`            | `string`   | No       | --      | Action after retries are exhausted. See [Then actions](#then-actions).        |
+| `BACKTRACK_TO`    | `string`   | No       | --      | Target step for `backtrack` action.                                           |
+| `subtypes`        | `string[]` | No       | --      | Error subtypes for fine-grained matching (e.g., `[rate_limit, model_error]`). |
+
+### Retry strategies
+
+| Strategy      | Behavior                                                                         |
+| ------------- | -------------------------------------------------------------------------------- |
+| `fixed`       | Wait the same `RETRY_DELAY` between each attempt.                                |
+| `exponential` | Double the delay after each attempt, up to `RETRY_MAX_DELAY`.                    |
+| `linear`      | Increase the delay by `RETRY_DELAY` after each attempt, up to `RETRY_MAX_DELAY`. |
+
+### Then actions
+
+| Action      | Behavior                                                    |
+| ----------- | ----------------------------------------------------------- |
+| `CONTINUE`  | Continue the conversation, skipping the failed operation.   |
+| `ESCALATE`  | Trigger human escalation.                                   |
+| `HANDOFF`   | Transfer to a specified agent (e.g., `HANDOFF Live_Agent`). |
+| `COMPLETE`  | End the conversation.                                       |
+| `backtrack` | Return to a previous step specified by `BACKTRACK_TO`.      |
+
+### Step-level error handlers
+
+Error handlers can be overridden at the step level within a flow. Step-level handlers take precedence over agent-level handlers for the same error type.
+
+```abl
+FLOW:
+  steps:
+    execute_payment:
+      CALL: process_payment
+      ON_ERROR:
+        - TYPE: tool_error
+          RESPOND: "Payment processing failed. Retrying..."
+          RETRY: 3
+          RETRY_BACKOFF: exponential
+          THEN: HANDOFF Payment_Support
+```
+
+#### Step-level error handler properties
+
+| Property          | Type       | Required | Default | Description                               |
+| ----------------- | ---------- | -------- | ------- | ----------------------------------------- |
+| `TYPE`            | `string`   | Yes      | --      | Error type to match.                      |
+| `subtypes`        | `string[]` | No       | --      | Error subtypes for fine-grained matching. |
+| `RESPOND`         | `string`   | No       | --      | Message to the user.                      |
+| `RETRY`           | `number`   | No       | --      | Retry count.                              |
+| `RETRY_DELAY`     | `number`   | No       | --      | Delay between retries (ms).               |
+| `RETRY_BACKOFF`   | `string`   | No       | --      | Backoff strategy.                         |
+| `RETRY_MAX_DELAY` | `number`   | No       | --      | Maximum retry delay (ms).                 |
+| `THEN`            | `string`   | No       | --      | Action after retries are exhausted.       |
+| `BACKTRACK_TO`    | `string`   | No       | --      | Target step for backtrack.                |
+
+## Error handler resolution order
+
+1. **Step-level handlers** are checked first, matching on error type and optional subtypes.
+2. **Agent-level handlers** (`ON_ERROR:` block) are checked if no step-level handler matches.
+3. If no handler matches, the runtime uses the default error message from the `MESSAGES:` block (`error_default`).
+
+## Related pages
+
+- [Memory & Constraints](/agent-platform-v2/abl-reference/memory-and-constraints) -- variables initialized in ON_START and hooks
+- [Multi-Agent & Supervisor](/agent-platform-v2/abl-reference/multi-agent-and-supervisor) -- ESCALATE and HANDOFF used in THEN actions
+- [Rich Content & Expressions](/agent-platform-v2/abl-reference/rich-content-and-expressions) -- voice and rich content in handler responses

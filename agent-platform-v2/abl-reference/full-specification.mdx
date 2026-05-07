@@ -1,0 +1,2504 @@
+---
+title: 'ABL Complete Specification'
+section: 'abl-reference'
+order: 0
+description: 'The complete Agent Blueprint Language (ABL) specification — syntax, semantics, and compilation.'
+---
+
+## Overview
+
+This specification defines an **agent-based DSL** that compiles to an intermediate representation (AgentIR) executed by the platform runtime. Unlike the step-based approach (which creates dialog flows), this DSL defines agents that reason about goals, use tools intelligently, and manage complex workflows.
+
+### Implementation Status Legend
+
+Features in this spec are marked with their implementation status:
+
+- No mark — **Fully implemented** and production-ready
+- ⚡ — **Partial implementation** — core functionality works but some sub-features are pending
+- 🗺️ — **Roadmap** — type definitions exist but runtime execution is not yet implemented
+
+---
+
+## 1. Design Philosophy
+
+### 1.1 Step-Based vs Agent-Based
+
+| Aspect       | Step-Based (Current)    | Agent-Based (New)        |
+| ------------ | ----------------------- | ------------------------ |
+| Flow Control | Explicit numbered steps | Goal-driven reasoning    |
+| Transitions  | `ON_SUCCESS -> 5`       | LLM decides next action  |
+| Responses    | Template strings        | LLM-generated contextual |
+| Tool Usage   | Scripted calls          | Agent decides when/what  |
+| Flexibility  | Rigid, predictable      | Adaptive, intelligent    |
+
+### 1.2 Core Principles
+
+1. **Goal-Oriented**: Agents work toward defined goals, not through scripts
+2. **Constraint-Guarded**: Business rules enforced via constraints, not step order
+3. **Memory-Enabled**: Agents remember user preferences across sessions
+4. **Composable**: Agents can delegate to sub-agents or handoff entirely
+5. **Human-in-the-Loop**: Clear escalation paths when needed
+
+---
+
+## 2. Document Structure
+
+```
+AGENT: <name>
+
+# Identity
+GOAL: <string>
+PERSONA: <multiline string>
+LIMITATIONS: <list>
+
+# Capabilities
+TOOLS: <tool definitions>
+GATHER: <information requirements>
+
+# State Management
+MEMORY:
+  session: <list>
+  persistent: <list>
+  remember: <triggers>
+  recall: <retrieval rules>
+
+# Business Rules
+CONSTRAINTS:
+  <phase>:
+    - REQUIRE <condition>
+      ON_FAIL: <response template>
+
+# Multi-Format Output
+TEMPLATES: <named templates with channel-specific formats>
+
+# Context-Dependent Behavior
+BEHAVIOR_PROFILES: <conditional behavior overrides>
+
+# Flow Control
+FLOW: <flow steps with reasoning zones>
+DELEGATE: <sub-agent calls>
+HANDOFF: <agent transfers>
+ESCALATE: <human escalation>
+COMPLETE: <completion conditions>
+
+# Error Handling
+ON_ERROR: <error handlers>
+```
+
+> **Dual Format Support**: ABL supports both the traditional uppercase keyword format (`.agent.abl`) and a YAML-based format (`.agent.yaml`). Keywords are case-insensitive — `AGENT:`, `agent:`, `GOAL:`, `goal:` are all valid. The YAML format uses lowercase keywords exclusively. See the [DSL Extensions](#dsl-syntax) for YAML format details.
+
+---
+
+## 3. Section Specifications
+
+### 3.1 AGENT Declaration
+
+```
+AGENT: <PascalCase_Name>
+```
+
+**Rules:**
+
+- Must be unique within the system
+- PascalCase with underscores allowed
+- Maps to `metadata.name` in the compiled AgentIR
+
+**Examples:**
+
+```
+AGENT: Hotel_Search
+AGENT: Payment_Processor
+AGENT: Customer_Support
+```
+
+---
+
+### 3.2 GOAL
+
+Defines what the agent is trying to achieve. Used in system prompt and for completion detection.
+
+```
+GOAL: "<imperative statement describing the agent's purpose>"
+```
+
+**Rules:**
+
+- Must be a clear, achievable objective
+- Should be measurable (agent can determine when done)
+- Injected into LLM system prompt
+
+**Examples:**
+
+```
+GOAL: "Help user find and book a hotel that meets all booking policies"
+GOAL: "Process user's refund request and confirm resolution"
+GOAL: "Collect issue details and route to appropriate support team"
+```
+
+---
+
+### 3.3 PERSONA
+
+Multi-line description of agent's personality and behavior. Directly injected into system prompt.
+
+```
+PERSONA: |
+  <line 1>
+  <line 2>
+  ...
+```
+
+**Rules:**
+
+- Use YAML multi-line syntax (`|`)
+- Describe tone, style, approach
+- Can reference memory (e.g., "References user's past preferences")
+
+**Example:**
+
+```
+PERSONA: |
+  Helpful, knowledgeable hotel booking specialist.
+  Friendly but efficient - doesn't waste user's time.
+  Asks clarifying questions only when necessary.
+  Always explains why if a booking can't be made.
+  References user's past preferences when making suggestions.
+```
+
+---
+
+### 3.4 LIMITATIONS
+
+Explicit boundaries on what the agent cannot do. Injected into system prompt and used for response filtering.
+
+```
+LIMITATIONS:
+  - "<limitation 1>"
+  - "<limitation 2>"
+```
+
+**Rules:**
+
+- Clear statements of what's NOT possible
+- Helps LLM refuse inappropriate requests
+- Should match actual system capabilities
+
+**Example:**
+
+```
+LIMITATIONS:
+  - "Cannot guarantee room availability until booking is confirmed"
+  - "Cannot override blackout dates or minimum stay policies"
+  - "Cannot process payments directly - must handoff to Payment agent"
+  - "Cannot access bookings made outside this system"
+```
+
+---
+
+### 3.5 TOOLS
+
+Defines tools the agent can use. Compiles to `ToolDefinition` entries in the AgentIR.
+
+```
+TOOLS:
+  <tool_name>(<params>) -> <return_type>
+  ...
+```
+
+**Parameter Syntax:**
+
+```
+param_name: type [= default]
+```
+
+**Supported Types:**
+
+- `string` - Text value
+- `number` - Numeric value (int or float)
+- `boolean` - True/false
+- `date` - Date value (ISO 8601 or natural language)
+- `array` - List of values
+- `object` - Structured object
+- `Hotel[]` - Array of typed objects
+- `{field: type, ...}` - Inline object type
+
+**Examples:**
+
+```
+TOOLS:
+  # Simple tool with typed return
+  check_blackout_dates(destination: string, checkin: date, checkout: date) -> {allowed: boolean, reason?: string}
+
+  # Tool with default parameter
+  search_hotels(destination: string, checkin: date, checkout: date, guests: number = 2) -> Hotel[]
+
+  # Tool with complex return
+  get_hotel_details(hotel_id: string) -> {
+    name: string,
+    rating: number,
+    amenities: string[],
+    rooms_available: number,
+    price_per_night: number
+  }
+
+  # Action tool (no meaningful return)
+  create_reservation(hotel_id: string, guest_info: GuestInfo) -> Reservation
+```
+
+---
+
+### 3.6 GATHER
+
+Defines information the agent needs to collect. Agent will intelligently gather these through conversation.
+
+```
+GATHER:
+  <field_name>:
+    prompt: "<question to ask if not provided>"
+    type: <type>
+    required: <boolean>
+    default: <value>
+    validate: "<validation rule>"
+```
+
+**Rules:**
+
+- Agent will ask for required fields not yet provided
+- Agent extracts from user messages (doesn't always ask directly)
+- Validation rules checked before proceeding
+
+**Example:**
+
+```
+GATHER:
+  destination:
+    prompt: "Where would you like to stay?"
+    type: string
+    required: true
+    validate: "Must be a valid city name"
+
+  checkin:
+    prompt: "What's your check-in date?"
+    type: date
+    required: true
+    validate: "Must be today or future date"
+
+  checkout:
+    prompt: "What's your check-out date?"
+    type: date
+    required: true
+    validate: "Must be after check-in date"
+
+  guests:
+    prompt: "How many guests will be staying?"
+    type: number
+    required: false
+    default: 2
+    validate: "Must be between 1 and 10"
+
+  room_preference:
+    prompt: "Any room preferences? (king bed, ocean view, etc.)"
+    type: string
+    required: false
+```
+
+#### Extraction Strategies
+
+The `strategy` field controls how the runtime extracts field values from user messages. Five strategies are supported:
+
+| Strategy  | Description                                                                | Use When                                      |
+| --------- | -------------------------------------------------------------------------- | --------------------------------------------- |
+| `auto`    | Runtime selects the best tier automatically based on field type/complexity | Default — good for most agents                |
+| `pattern` | Regex and JS library extraction only (no LLM calls)                        | High-volume, low-cost — dates, phones, emails |
+| `ml`      | ML sidecar (NLU engine) for entity extraction                              | Enterprise — when ML models are available     |
+| `llm`     | LLM-based extraction with tool-use                                         | Complex fields — addresses, preferences       |
+| `hybrid`  | Pattern extraction first, LLM fallback for unresolved fields               | Balance of cost and accuracy                  |
+
+```dsl
+GATHER:
+  strategy: hybrid   # Try patterns first, LLM fallback
+
+  phone:
+    prompt: "What's your phone number?"
+    type: phone
+    required: true
+
+  destination:
+    prompt: "Where are you flying to?"
+    type: string
+    required: true
+    semantics:
+      format: airport_code
+      lookup: iata_codes
+```
+
+#### Field Semantics
+
+The optional `semantics` block provides extraction hints that improve accuracy across all strategies:
+
+| Property     | Description                     | Example                                      |
+| ------------ | ------------------------------- | -------------------------------------------- |
+| `format`     | High-level format hint          | `airport_code`, `currency_amount`, `address` |
+| `components` | Structured sub-parts to extract | `[street, city, state, zip, country]`        |
+| `unit`       | Unit of measurement             | `USD`, `kg`, `celsius`                       |
+| `lookup`     | Reference table for validation  | `iata_codes`, `country_names`                |
+| `convert_to` | Auto-conversion target unit     | `USD`, `km`                                  |
+| `locale`     | Formatting locale               | `en-US`, `es-MX`                             |
+
+#### Supported Field Types
+
+ABL provides 6 base storage types plus 25+ semantic type mappings for migration from Kore.ai XO platform:
+
+**Base Types:**
+
+| Type      | Extraction                           | Example Values               |
+| --------- | ------------------------------------ | ---------------------------- |
+| `string`  | LLM or pattern                       | `"Paris"`, `"John Smith"`    |
+| `number`  | Regex + JS coercion                  | `42`, `17.5`                 |
+| `date`    | JS date library (chrono-node)        | `"2026-03-15"`, `"tomorrow"` |
+| `email`   | Regex pattern                        | `"user@example.com"`         |
+| `phone`   | Regex + libphonenumber               | `"+1-555-123-4567"`          |
+| `boolean` | Keyword matching (yes/no/true/false) | `true`, `false`              |
+
+**Kore Entity Type Mappings** (for XO 10/11 migration):
+
+Kore platform entity types map to ABL's `type` + `semantics` system. For example:
+
+| Kore Entity   | ABL Type | Semantics                                                       |
+| ------------- | -------- | --------------------------------------------------------------- |
+| `LOC_AIRPORT` | string   | `format: airport_code, lookup: iata_codes`                      |
+| `LOC_ADDRESS` | string   | `format: address, components: [street, city, state, zip]`       |
+| `CURRENCY`    | number   | `unit: currency, format: currency_amount`                       |
+| `PERSON_NAME` | string   | `format: person_name, components: [first, middle, last, title]` |
+| `DATE_PERIOD` | string   | `format: date_range, components: [start, end]`                  |
+| `PHONE`       | phone    | _(base type)_                                                   |
+| `EMAIL`       | email    | _(base type)_                                                   |
+
+> **Full list**: 25+ Kore entity types are mapped. See `packages/compiler/src/platform/utils/kore-entity-map.ts` for the complete mapping.
+
+#### Validation Rules
+
+Fields support typed validation that runs after extraction:
+
+| Type      | Rule Format                     | Example                                       |
+| --------- | ------------------------------- | --------------------------------------------- |
+| `pattern` | Regex string                    | `pattern: "^[A-Z]{2}\\d{6}$"` (policy number) |
+| `range`   | Numeric range expression        | `range: "1-10"` (guest count)                 |
+| `enum`    | Comma-separated allowed values  | `enum: "economy, business, first"`            |
+| `custom`  | Expression evaluated at runtime | `custom: "checkout > checkin"`                |
+| `llm`     | Natural language instruction    | `llm: "Must be a valid city name"`            |
+
+```dsl
+GATHER:
+  policy_number:
+    prompt: "What is your policy number?"
+    type: string
+    required: true
+    validate:
+      type: pattern
+      rule: "^POL-[A-Z]{2}\\d{6}$"
+      error: "Policy number must be in format POL-XX999999"
+      max_retries: 3
+
+  cabin_class:
+    prompt: "What class would you like to fly?"
+    type: string
+    required: true
+    validate:
+      type: enum
+      rule: "economy, premium_economy, business, first"
+    infer: true
+    infer_confirm: true
+```
+
+#### Field Activation Modes
+
+Fields can be conditionally activated based on other collected data:
+
+| Mode             | Behavior                                                |
+| ---------------- | ------------------------------------------------------- |
+| `required`       | Always prompted (default)                               |
+| `optional`       | Collected if mentioned, never prompted                  |
+| `progressive`    | Becomes required when `depends_on` fields are collected |
+| `{ when: expr }` | Activates when a data-driven condition is true          |
+
+```dsl
+GATHER:
+  has_loyalty:
+    prompt: "Are you a loyalty program member?"
+    type: boolean
+    required: true
+
+  loyalty_number:
+    prompt: "What is your loyalty number?"
+    type: string
+    activation: progressive
+    depends_on: [has_loyalty]
+
+  upgrade_preference:
+    prompt: "Would you like to use points for an upgrade?"
+    type: boolean
+    activation:
+      when: "has_loyalty == true AND loyalty_points > 5000"
+```
+
+---
+
+### 3.7 MEMORY
+
+Defines what the agent remembers within and across conversations.
+
+```
+MEMORY:
+  session:
+    - <variable_name>    # Description
+    ...
+
+  persistent:
+    - <namespace>.<field>
+    ...
+
+  remember:
+    - WHEN <condition>
+      STORE: <value> -> <target>
+    ...
+
+  recall:
+    - ON_<event>: "<instruction>"
+    ...
+```
+
+#### 3.7.1 Session Memory
+
+Temporary state within current conversation. Cleared when conversation ends.
+
+```
+session:
+  - search_results      # Hotels returned from search
+  - selected_hotel      # Hotel user is considering
+  - reservation_draft   # In-progress reservation details
+  - clarification_count # How many times we've asked for clarification
+```
+
+#### 3.7.2 Persistent Memory
+
+Long-term storage associated with user. Survives across conversations.
+
+```
+persistent:
+  - user.preferred_hotel_chains    # ["Marriott", "Hilton"]
+  - user.preferred_room_type       # "king bed, non-smoking"
+  - user.loyalty_programs          # {"marriott": "Gold", "hilton": "Silver"}
+  - user.home_airport              # "LAX"
+  - user.past_destinations         # ["Paris", "Tokyo", "NYC"]
+  - user.average_budget            # 250 (learned from bookings)
+  - user.past_bookings             # [{hotel, dates, price}, ...]
+  - user.dietary_restrictions      # "vegetarian"
+  - user.accessibility_needs       # "wheelchair accessible"
+```
+
+#### 3.7.3 Remember Triggers
+
+When to store information to memory.
+
+```
+remember:
+  - WHEN booking.confirmed
+    STORE: {destination, hotel_chain, room_type, price, dates} -> user.past_bookings
+
+  - WHEN user.states_preference CONTAINS "prefer"
+    STORE: extracted_preference -> user.preferred_*
+
+  - WHEN user.mentions_loyalty_program
+    STORE: {program, tier} -> user.loyalty_programs
+
+  - WHEN search.completed
+    STORE: AVG(selected_prices) -> user.average_budget
+```
+
+#### 3.7.4 Recall Instructions
+
+How to use memory during the conversation.
+
+```
+recall:
+  - ON_START: "Check if user has preferred chains, room types, or loyalty programs"
+  - ON_SEARCH: "Consider user's average budget when ranking results"
+  - ON_RECOMMENDATION: "Prioritize hotels matching user's past preferences"
+  - ON_DESTINATION_MENTION: "Check if user has visited this destination before"
+```
+
+---
+
+### 3.8 CONSTRAINTS
+
+Business rules that must be enforced. These become guardrails evaluated by the runtime constraint checker during execution.
+
+```
+CONSTRAINTS:
+  <label>:
+    - REQUIRE|WARN|LIMIT|RESTRICT <condition> [IMPLIES <condition>] [BEFORE calling <tool>|BEFORE returning results]
+      WHEN: <condition>                # optional applicability gate
+      ON_FAIL: <response or action>
+    ...
+```
+
+#### 3.8.1 Constraint Labels
+
+Constraint phase names are **organizational labels** for grouping related constraints. All constraints are evaluated every turn in declaration order, regardless of label.
+
+| Label         | Typical authoring use         |
+| ------------- | ----------------------------- |
+| `pre_search`  | Search-related checks         |
+| `pre_booking` | Booking-related checks        |
+| `pre_payment` | Payment-related checks        |
+| `always`      | General checks (common label) |
+
+> **Note:** Phase names are arbitrary user-defined strings. The compiler flattens all phases into a single constraint list, and the runtime evaluates them in declaration order every turn. Use phase names for readability and organization, not for execution control. Use `WHEN` for contextual gating and structural `BEFORE` only for supported checkpoints.
+
+#### 3.8.2 Condition Syntax
+
+```ebnf
+condition = operand comparator operand
+          | operand "IS SET"
+          | operand "IS NOT SET"
+          | "NOT" condition
+          | condition "AND" condition
+          | condition "OR" condition
+          | condition "IMPLIES" condition
+
+constraint_rule = ("REQUIRE" | "WARN" | "LIMIT" | "RESTRICT") condition
+                  [before_clause]
+                  [when_clause]
+
+before_clause = "BEFORE" checkpoint_target
+when_clause = "WHEN:" condition
+
+checkpoint_target = "calling" identifier
+                  | "returning results"
+```
+
+`IMPLIES` lowers to implication semantics. `LIMIT` and `RESTRICT` are retained as distinct constraint kinds while initially reusing the standard runtime handling path. Non-structural `BEFORE` forms are still accepted for compatibility, but they compile with a warning and have no runtime effect.
+
+#### 3.8.3 ON_FAIL Actions
+
+```
+ON_FAIL: "<response template with {variables}>"
+ON_FAIL: ESCALATE
+ON_FAIL: HANDOFF <agent>
+ON_FAIL: BLOCK
+```
+
+`ON_FAIL: HANDOFF <agent>` is executed through the shared runtime violation handler on the active flow and reasoning paths. In practice, checkpointed failures such as `BEFORE calling ...` and `BEFORE returning results` can perform a handoff instead of returning a placeholder signal.
+
+**Example:**
+
+```abl
+CONSTRAINTS:
+  booking_requirements: # label only; runtime gating comes from WHEN / BEFORE
+    - REQUIRE selected_hotel IS SET BEFORE calling reserve_hotel
+      ON_FAIL: "Pick a hotel before I try to reserve it."
+
+    - REQUIRE user.email IS SET
+      WHEN: selected_hotel IS SET
+      ON_FAIL: "I'll need your email address to send the confirmation. What's your email?"
+
+    - REQUIRE dispute_type == "card" IMPLIES card_unique_id IS SET
+      ON_FAIL: "Card disputes require the card unique ID."
+
+  risk_controls:
+    - LIMIT clarification_count < 5
+      ON_FAIL: ESCALATE
+
+    - RESTRICT beneficiary_country IN ["CU", "IR", "KP", "SY"]
+      ON_FAIL: BLOCK
+
+    - REQUIRE fraud_review_complete == true BEFORE returning results
+      ON_FAIL: HANDOFF Fraud_Review_Team
+```
+
+---
+
+### 3.8.1 GUARDRAILS
+
+GUARDRAILS define safety and quality validation rules checked at various execution points. Unlike CONSTRAINTS (which check business logic conditions against session data), GUARDRAILS validate content — user inputs, agent outputs, tool parameters, tool results, and handoff context.
+
+#### Guardrail Kinds
+
+| Kind          | When Evaluated        | Purpose                                                                     |
+| ------------- | --------------------- | --------------------------------------------------------------------------- |
+| `input`       | Before LLM processing | Block harmful/malicious user inputs                                         |
+| `output`      | After LLM response    | Validate response quality/safety                                            |
+| `tool_input`  | Before tool execution | Validate tool parameters                                                    |
+| `tool_output` | After tool execution  | Validate tool results                                                       |
+| `handoff`     | Before agent handoff  | Validate handoff context                                                    |
+| `both`        | Input + Output        | Shorthand — expands to separate input and output guardrails at compile time |
+
+#### 3-Tier Evaluation
+
+Guardrails are evaluated in a tiered architecture for performance.
+
+| Tier              | Method                          | Latency   | Examples                                    |
+| ----------------- | ------------------------------- | --------- | ------------------------------------------- |
+| **Tier 1: Local** | CEL expressions, regex patterns | \<5 ms    | Pattern matching, length limits, blocklists |
+| **Tier 2: Model** | External classifier APIs        | 10-200ms  | OpenAI Moderation, AWS Bedrock Guardrails   |
+| **Tier 3: LLM**   | LLM-as-judge evaluation         | 100-500ms | Semantic checks, tone analysis              |
+
+#### DSL Syntax
+
+```dsl
+GUARDRAILS:
+  no_pii_output:
+    kind: output
+    check: "contains_pii(content)"
+    action: redact
+    msg: "PII detected in response"
+
+  abusive_input_review:
+    kind: input
+    llm_check: "Does this input contain abusive, threatening, or harassing language?"
+    action: block
+    msg: "Inappropriate content detected"
+
+  tool_param_validation:
+    kind: tool_input
+    check: "word_count(content) < 200"
+    action: block
+    msg: "Tool input payload is too large"
+```
+
+> **`both` expansion**: When `kind: both` is specified, the compiler creates two guardrails — one `input` and one `output` — with identical configuration. This is a convenience for rules that should apply in both directions.
+
+```dsl
+GUARDRAILS:
+  no_competitor_mentions:
+    kind: both
+    check: "not_matches_pattern(content, '(?i)acme travel|globex bookings')"
+    action: filter
+    msg: "Competitor mention detected"
+    # Compiles to two guardrails:
+    #   no_competitor_mentions_input (kind: input)
+    #   no_competitor_mentions_output (kind: output)
+```
+
+> **Important:** Local `check:` expressions should use documented CEL helpers such as `contains_pii`, `matches_pattern`, `not_matches_pattern`, `word_count`, `sentence_count`, `contains_url`, and `contains_email`. Tone or safety judgments like empathy/toxicity should use `llm_check` or a provider-backed guardrail rather than undocumented pseudo-check names.
+
+#### Actions
+
+| Action     | Behavior                                           |
+| ---------- | -------------------------------------------------- |
+| `block`    | Prevent processing, return message                 |
+| `warn`     | Log warning, continue processing                   |
+| `redact`   | Replace matched content with `[REDACTED]`          |
+| `fix`      | Apply an automatic repair strategy                 |
+| `reask`    | Ask the model to regenerate                        |
+| `filter`   | Remove violating portions while preserving content |
+| `escalate` | Route to human agent                               |
+
+> **Implementation Status**: Guardrails are fully implemented in the runtime. Input guardrails are evaluated pre-message, and the runtime filters by `kind` to evaluate guardrails at their respective execution points (tool_input, tool_output, handoff, output). See `GUARDRAILS_SPEC.md` for the full technical specification.
+
+---
+
+### 3.9 DELEGATE
+
+Call a sub-agent for a specific task, get result, continue processing.
+
+```
+DELEGATE:
+  - AGENT: <agent_name>
+    WHEN: <condition>
+    PURPOSE: "<description>"
+    INPUT: {<fields to pass>}
+    RETURNS: {<expected return fields>}
+    USE_RESULT: "<how to use the result>"
+```
+
+**Behavior:**
+
+- Current agent pauses
+- Sub-agent executes with provided input
+- Sub-agent returns result
+- Current agent continues with result
+
+**Example:**
+
+```
+DELEGATE:
+  - AGENT: Loyalty_Lookup
+    WHEN: user.mentions_loyalty OR booking.ready
+    PURPOSE: "Check loyalty status and available rewards"
+    INPUT: {user_id, hotel_chain}
+    RETURNS: {loyalty_tier: string, points_balance: number, available_rewards: Reward[]}
+    USE_RESULT: "Offer to apply rewards if available and beneficial"
+
+  - AGENT: Price_Optimizer
+    WHEN: search_results.count > 0 AND user.flexible_dates == true
+    PURPOSE: "Find better prices on nearby dates"
+    INPUT: {hotel_id, checkin, checkout, flexibility_days: 3}
+    RETURNS: {best_price: number, best_dates: DateRange, savings: number}
+    USE_RESULT: "Suggest alternative dates if savings > 15%"
+
+  - AGENT: Availability_Checker
+    WHEN: user.selects_hotel
+    PURPOSE: "Verify real-time availability"
+    INPUT: {hotel_id, room_type, dates}
+    RETURNS: {available: boolean, alternative_rooms?: Room[]}
+    USE_RESULT: "Proceed with booking or offer alternatives"
+```
+
+---
+
+### 3.10 HANDOFF
+
+Transfer control to another agent permanently (or until that agent hands back).
+
+```
+HANDOFF:
+  - TO: <agent_name>
+    WHEN: <condition>
+    CONTEXT:
+      pass: [<fields to pass>]
+      summary: "<context summary template>"
+    RETURN: <boolean>
+```
+
+**Parameters:**
+
+- `TO`: Target agent
+- `WHEN`: Condition triggering handoff
+- `CONTEXT.pass`: Data fields to transfer
+- `CONTEXT.summary`: Human-readable summary for target agent
+- `RETURN`: If `true`, control can return; if `false`, permanent transfer
+
+**Runtime behavior when `RETURN: true`:**
+
+When a child agent is invoked with `RETURN: true`, the runtime automatically injects a `__return_to_parent__` system tool into the child's tool set. This allows the child to explicitly return control to the parent supervisor when it encounters a request outside its capabilities (digression handling). The child's thread is set to `waiting` status (not `completed`), preserving its conversation history and gathered data. If the supervisor later re-routes to the same child agent, the runtime **resumes the existing waiting thread** instead of creating a new one — the child's prior context, gathered fields, and conversation history are fully preserved.
+
+**Example:**
+
+```
+HANDOFF:
+  - TO: Payment_Agent
+    WHEN: reservation.ready_for_payment == true
+    CONTEXT:
+      pass: [reservation, selected_hotel, user.loyalty_programs, user.email]
+      summary: |
+        User booking {selected_hotel.name} in {destination}
+        Dates: {checkin} to {checkout} ({nights} nights)
+        Total: ${reservation.total}
+        Loyalty: {user.loyalty_programs}
+    RETURN: false
+
+  - TO: Flight_Search
+    WHEN: user.intent == "also_need_flight"
+    CONTEXT:
+      pass: [destination, checkin, checkout]
+      summary: "User also needs flights to {destination}, arriving by {checkin}"
+    RETURN: true  # May return after flight is booked
+
+  - TO: Support_Agent
+    WHEN: user.intent == "complaint" OR user.sentiment == "frustrated"
+    CONTEXT:
+      pass: [conversation_history, booking_reference, user.past_bookings]
+      summary: |
+        User issue: {detected_issue}
+        Booking ref: {booking_reference}
+        Sentiment: {user.sentiment}
+    RETURN: false
+```
+
+**Advanced HANDOFF Features:**
+
+**History Strategy** — Controls how conversation history is passed to the target agent:
+
+```
+HANDOFF:
+  - TO: Specialist_Agent
+    WHEN: needs_specialist == true
+    CONTEXT:
+      pass: [user_id, query]
+      summary: "User needs specialist help"
+      history: full          # Pass full conversation history
+      # history: none        # Fresh conversation (default)
+      # history: summary_only # Pass only the summary
+      # history: {last_n: 5} # Pass last 5 messages
+```
+
+| Strategy       | Description                                       |
+| -------------- | ------------------------------------------------- |
+| `none`         | Target agent starts fresh (default)               |
+| `summary_only` | Pass only the `summary` field, no message history |
+| `full`         | Pass the complete parent conversation             |
+| `{last_n: N}`  | Pass the last N messages from the parent          |
+
+**Return Mapping** — Structure the data returned from a child agent:
+
+```
+HANDOFF:
+  - TO: Authentication_Agent
+    WHEN: user.is_authenticated == false
+    CONTEXT:
+      pass: [session_context]
+      summary: "User needs authentication"
+      grant_memory: [user.last_verified_at]  # 🗺️ Roadmap — not yet implemented
+    RETURN: true
+    ON_RETURN:
+      action: "route_to_booking"
+      map:
+        user_id: auth_result.user_id
+        auth_token: auth_result.token
+```
+
+**Async Handoff** ⚡ — For long-running operations with push notifications (timeout config is parsed and stored; async completion mechanism is partially implemented):
+
+```
+HANDOFF:
+  - TO: Background_Processor
+    WHEN: needs_processing == true
+    CONTEXT:
+      pass: [document_id]
+      summary: "Process uploaded document"
+    async: true
+    asyncTimeout: 300  # 5 minutes
+    ON_RETURN: "notify_user"
+```
+
+**Remote Agent** — Handoff to agents in different services:
+
+```
+HANDOFF:
+  - TO: External_Service_Agent
+    WHEN: needs_external == true
+    remote:
+      service_url: "https://other-service.example.com"
+      auth_header: "Bearer {{service_token}}"
+    CONTEXT:
+      pass: [query, user_context]
+      summary: "Route to external service"
+```
+
+---
+
+### 3.11 ESCALATE
+
+Transfer to human agent with full context.
+
+```
+ESCALATE:
+  triggers:
+    - WHEN: <condition>
+      REASON: "<reason for escalation>"
+      PRIORITY: <low|medium|high|critical>
+    ...
+
+  context_for_human:
+    - <context_item>
+    ...
+
+  on_human_complete:
+    - IF <condition>: <action>
+    ...
+```
+
+#### 3.11.1 Triggers
+
+```
+triggers:
+  # Technical failures
+  - WHEN: tool_failures > 3
+    REASON: "Repeated technical failures"
+    PRIORITY: medium
+
+  # Policy issues
+  - WHEN: constraint_failures > 2 AND user.sentiment == "frustrated"
+    REASON: "User unable to book due to policy restrictions"
+    PRIORITY: high
+
+  # High-value transactions
+  - WHEN: booking.total > 5000
+    REASON: "High-value booking requires human approval"
+    PRIORITY: low
+
+  # User request
+  - WHEN: user.requests_human == true
+    REASON: "User explicitly requested human agent"
+    PRIORITY: high
+
+  # Complex situations
+  - WHEN: user.has_special_request AND NOT agent.can_handle
+    REASON: "Special accommodation request"
+    PRIORITY: medium
+
+  # Compliance
+  - WHEN: user.mentions_legal OR user.mentions_lawsuit
+    REASON: "Potential legal issue"
+    PRIORITY: critical
+```
+
+#### 3.11.2 Context for Human
+
+```
+context_for_human:
+  - conversation_transcript
+  - extracted_requirements:
+      destination: {destination}
+      dates: {checkin} to {checkout}
+      guests: {guests}
+      budget: {user.average_budget}
+  - attempted_actions:
+      tools_called: {tool_call_history}
+      results: {tool_results}
+  - failure_reasons: {constraint_failures}
+  - user_sentiment: {detected_sentiment}
+  - suggested_resolution: "<agent's recommendation>"
+  - relevant_policies: {applicable_policies}
+```
+
+#### 3.11.3 Post-Human Actions
+
+```
+on_human_complete:
+  - IF human.resolved == true:
+      STORE: {resolution_type, resolution_details} -> user.support_history
+      RESPOND: "Thanks for your patience! {human.resolution_summary}"
+      COMPLETE: true
+
+  - IF human.handed_back == true:
+      CONTINUE: with human.instructions
+      CONTEXT: human.additional_context
+
+  - IF human.escalated_further == true:
+      RESPOND: "Your case has been escalated to our specialist team. Reference: {case_id}"
+      COMPLETE: true
+```
+
+---
+
+### 3.12 COMPLETE
+
+Defines when the agent's job is done.
+
+```
+COMPLETE:
+  - WHEN: <condition>
+    RESPOND: "<completion message>"
+    STORE: <optional memory update>
+  ...
+```
+
+**Example:**
+
+```
+COMPLETE:
+  - WHEN: reservation.confirmed == true
+    RESPOND: |
+      Your reservation is confirmed!
+      Confirmation #: {reservation.confirmation_number}
+      Hotel: {selected_hotel.name}
+      Dates: {checkin} to {checkout}
+      Total: ${reservation.total}
+
+      A confirmation email has been sent to {user.email}.
+    STORE: {destination, hotel: selected_hotel.name, dates: {checkin, checkout}, price: reservation.total} -> user.past_bookings
+
+  - WHEN: user.intent == "cancel" OR user.intent == "nevermind"
+    RESPOND: "No problem! Your search has been saved - just say 'continue my search' anytime to pick up where we left off."
+    STORE: {search_state} -> user.saved_searches
+
+  - WHEN: handoff.completed == true
+    # Silent completion - handoff agent takes over
+
+  - WHEN: escalate.completed == true
+    # Completion handled by escalation flow
+```
+
+---
+
+### 3.13 ON_ERROR
+
+Error handling and recovery strategies.
+
+```
+ON_ERROR:
+  <error_type>:
+    RESPOND: "<user message>"
+    RETRY: <count>
+    THEN: <action>
+  ...
+```
+
+**Error Types:**
+
+- `tool_timeout` - Tool didn't respond in time
+- `tool_error` - Tool returned an error
+- `invalid_input` - User input couldn't be parsed
+- `validation_error` - Gathered data failed validation
+- `api_error` - External API failure
+- `unknown_error` - Unexpected error
+
+**Example:**
+
+```
+ON_ERROR:
+  tool_timeout:
+    RESPOND: "I'm having a bit of trouble connecting. Let me try that again..."
+    RETRY: 2
+    THEN: ESCALATE with REASON: "Service unavailable"
+
+  tool_error:
+    LOG: {tool_name, error_message, input_params}
+    RESPOND: "Something went wrong while {action_description}. Let me try a different approach."
+    RETRY: 1
+    THEN: DELEGATE -> Fallback_Agent
+
+  invalid_input:
+    RESPOND: "I didn't quite understand that. {clarification_prompt}"
+    RETRY: 3
+    THEN: ESCALATE with REASON: "Unable to understand user"
+
+  validation_error:
+    RESPOND: "That doesn't seem quite right - {validation_message}. Could you double-check?"
+    RETRY: 2
+    THEN: CONTINUE
+
+  api_error:
+    LOG: {api_name, status_code, response_body}
+    RESPOND: "Our booking system is experiencing issues. Would you like me to keep trying, or shall I connect you with an agent?"
+    RETRY: 0
+    THEN: ASK_USER {retry, escalate}
+
+  unknown_error:
+    LOG: {error_type, error_message, stack_trace, conversation_state}
+    RESPOND: "I apologize, but something unexpected happened. Let me connect you with a team member who can help."
+    ESCALATE: PRIORITY: high
+```
+
+---
+
+### 3.13.1 TEMPLATES (Named Response Templates)
+
+Templates define reusable response content with channel-specific format variants. Each template has a `DEFAULT` text and optional overrides for specific output channels.
+
+**Syntax:**
+
+```
+TEMPLATES:
+  <template_name>:
+    DEFAULT: "<text with {{variable}} interpolation>"
+    MARKDOWN: "<markdown formatted variant>"
+    HTML: "<html formatted variant>"
+    VOICE INSTRUCTIONS: "<instructions for TTS rendering>"
+    ADAPTIVE_CARD: "<Adaptive Card JSON>"
+    SLACK: "<Slack Block Kit JSON>"
+    WHATSAPP: "<WhatsApp message format>"
+    AG_UI: "<AG-UI event format>"
+```
+
+**Supported Formats:**
+
+| Format               | Channel    | Description                                                      |
+| -------------------- | ---------- | ---------------------------------------------------------------- |
+| `DEFAULT`            | All        | Plain text fallback used when no channel-specific format matches |
+| `MARKDOWN`           | Web, SDK   | Markdown with tables, headers, bold, lists                       |
+| `HTML`               | Web, Email | Full HTML with styling and interactive elements                  |
+| `VOICE INSTRUCTIONS` | Voice      | TTS rendering instructions (pacing, emphasis, pauses)            |
+| `ADAPTIVE_CARD`      | Teams, Web | Microsoft Adaptive Card JSON schema                              |
+| `SLACK`              | Slack      | Slack Block Kit JSON                                             |
+| `WHATSAPP`           | WhatsApp   | WhatsApp message template format                                 |
+| `AG_UI`              | AG-UI SDK  | AG-UI protocol event stream                                      |
+
+**Variable Interpolation:**
+
+Templates support Handlebars-style interpolation:
+
+- `{{variable}}` — simple value substitution
+- `{{#each items}}...{{/each}}` — array iteration
+- `{{#if condition}}...{{/if}}` — conditional blocks
+- `{{this.field}}` — access fields within iteration context
+
+**Using Templates:**
+
+```
+# In flow steps
+RESPOND: TEMPLATE(greeting)
+
+# In ON_START
+ON_START:
+  RESPOND: TEMPLATE(welcome)
+
+# In COMPLETE
+COMPLETE:
+  - WHEN: order_confirmed == true
+    RESPOND: TEMPLATE(checkout_confirmation)
+```
+
+**Example — Retail Cart Summary:**
+
+```
+TEMPLATES:
+  cart_summary:
+    DEFAULT: |
+      Your Cart:
+      {{#each items}}
+      - {{this.name}} x{{this.quantity}} — {{this.price}} {{currency}}
+      {{/each}}
+      Total: {{total}} {{currency}}
+    MARKDOWN: |
+      ## Your Cart
+
+      | Item | Qty | Price |
+      |------|-----|-------|
+      {{#each items}}
+      | {{this.name}} | {{this.quantity}} | {{this.price}} {{currency}} |
+      {{/each}}
+
+      **Total: {{total}} {{currency}}**
+    HTML: |
+      <div class="cart-summary">
+        <h2>Your Cart</h2>
+        <table>
+          {{#each items}}
+          <tr><td>{{this.name}}</td><td>{{this.quantity}}</td><td>{{this.price}} {{currency}}</td></tr>
+          {{/each}}
+          <tr class="total"><td colspan="2">Total</td><td>{{total}} {{currency}}</td></tr>
+        </table>
+      </div>
+    VOICE INSTRUCTIONS: "Read each item name and price. Then state the total clearly."
+```
+
+**Compilation:** Templates compile to `AgentIR.templates: Record<string, string>` for the DEFAULT text, and to `AgentIR.rich_content: Record<string, RichContentIR>` for channel-specific variants.
+
+---
+
+### 3.13.2 BEHAVIOR_PROFILES (Context-Dependent Behavior)
+
+Behavior profiles allow an agent to adapt its behavior based on runtime context — such as the communication channel, user preferences, or conversation state. Each profile activates conditionally and overrides specific aspects of the agent's base behavior.
+
+**Syntax:**
+
+```
+BEHAVIOR_PROFILES:
+  - NAME: <profile_name>
+    PRIORITY: <number>
+    WHEN: <CEL expression>
+    INSTRUCTIONS: "<additional instructions>"
+    VOICE:
+      provider: <tts_provider>
+      voice_id: <voice_identifier>
+      speed: <playback_speed>
+    RESPONSE_RULES:
+      max_buttons: <number>
+      fallback_format: <plain_text | markdown | html>
+      max_response_length: <number>
+    TOOLS_HIDE: [<tool_names_to_remove>]
+    TOOLS_ADD:
+      - <tool_definition>
+    CONSTRAINTS:
+      - REQUIRE <condition>
+        ON_FAIL: "<message>"
+    GATHER_OVERRIDES:
+      validation_style: <strict | lenient>
+      confirmation: <always | never | on_change>
+      field_overrides:
+        <field_name>:
+          prompt: "<channel-specific prompt>"
+    FLOW_MODIFICATIONS:
+      skip: [<step_names>]
+      override:
+        <step_name>: <replacement_config>
+      insert_before:
+        <step_name>: <new_step>
+    FLOW_REPLACE: <alternative_flow_name>
+```
+
+**Fields:**
+
+| Field                | Type             | Description                                               |
+| -------------------- | ---------------- | --------------------------------------------------------- |
+| `NAME`               | string           | Profile identifier                                        |
+| `PRIORITY`           | number           | Higher priority wins when multiple profiles match         |
+| `WHEN`               | CEL expression   | Activation condition evaluated at runtime                 |
+| `INSTRUCTIONS`       | string           | Additional instructions merged with base persona          |
+| `VOICE`              | object           | Voice configuration overrides (provider, voice_id, speed) |
+| `RESPONSE_RULES`     | object           | Channel-specific response formatting constraints          |
+| `TOOLS_HIDE`         | string[]         | Tool names to remove from available tools                 |
+| `TOOLS_ADD`          | ToolDefinition[] | Additional tools available only in this profile           |
+| `CONSTRAINTS`        | Constraint[]     | Additional constraints active only in this profile        |
+| `GATHER_OVERRIDES`   | object           | Modify gather behavior per field                          |
+| `FLOW_MODIFICATIONS` | object           | Skip, override, or insert flow steps                      |
+| `FLOW_REPLACE`       | string           | Replace the entire base flow with an alternative          |
+
+**Example — Voice Channel Optimization:**
+
+```
+BEHAVIOR_PROFILES:
+  - NAME: voice-optimized
+    PRIORITY: 10
+    WHEN: context.channel == "voice"
+    INSTRUCTIONS: "Keep responses under 3 sentences. Use natural speech patterns."
+    VOICE:
+      provider: elevenlabs
+      voice_id: aria
+      speed: 1.1
+    RESPONSE_RULES:
+      max_buttons: 0
+      fallback_format: plain_text
+      max_response_length: 200
+    TOOLS_HIDE: [show_map, render_chart]
+    CONSTRAINTS:
+      - REQUIRE len(response) < 500
+        ON_FAIL: "Please provide a shorter response for voice."
+    GATHER_OVERRIDES:
+      validation_style: lenient
+      confirmation: always
+```
+
+**Example — SDK Rich Experience:**
+
+```
+BEHAVIOR_PROFILES:
+  - NAME: sdk-rich
+    PRIORITY: 5
+    WHEN: context.channel == "sdk" OR context.channel == "web"
+    RESPONSE_RULES:
+      max_buttons: 5
+      fallback_format: markdown
+      media_types: [image, video, carousel]
+    TOOLS_ADD:
+      - show_carousel(items: object[]) -> {displayed: boolean}
+        description: "Display a product carousel in the chat"
+```
+
+**Profile Resolution:** At runtime, all profiles whose `WHEN` condition evaluates to `true` are collected and merged by priority (highest wins). Conflicts in the same field are resolved by priority. The merged result is applied on top of the agent's base configuration.
+
+**Compilation:** Profiles compile to `AgentIR.behavior_profiles: BehaviorProfileIR[]`.
+
+---
+
+### 3.13.3 Voice Configuration ⚡
+
+Voice properties control text-to-speech (TTS) rendering when agents operate on voice channels. Voice config can be set at multiple levels: agent-wide, per behavior profile, per template, or per flow step.
+
+> **⚡ Partial:** SSML, `instructions`, and `plain_text` fields are interpolated at runtime and passed to clients. However, `provider` and `voice_id` fields are **not yet resolved from agent IR** — voice provider selection is configured externally (Jambonz/ElevenLabs API provisioning), not driven by the DSL. Voice channel transfer via `transfer_to_agent` tool is fully implemented.
+
+**Agent-Level Voice Config:**
+
+```
+EXECUTION:
+  voice:
+    provider: elevenlabs
+    voice_id: aria
+    speed: 1.0
+```
+
+**Per-Template Voice Instructions:**
+
+```
+TEMPLATES:
+  greeting:
+    DEFAULT: "Welcome to our service."
+    VOICE INSTRUCTIONS: "Speak warmly with a slight pause after 'Welcome'."
+```
+
+**Per-Step Voice Override:**
+
+```
+confirm_booking:
+  REASONING: false
+  RESPOND: "Your booking is confirmed."
+  VOICE:
+    ssml: "<speak><prosody rate='slow'>Your booking is confirmed.</prosody></speak>"
+```
+
+**VoiceConfigIR Fields:**
+
+| Field          | Type   | Description                                       |
+| -------------- | ------ | ------------------------------------------------- |
+| `provider`     | string | TTS provider (elevenlabs, azure, google, openai)  |
+| `voice_id`     | string | Voice identifier from the provider                |
+| `speed`        | number | Playback speed multiplier (0.5 - 2.0)             |
+| `ssml`         | string | SSML markup for fine-grained speech control       |
+| `instructions` | string | Natural language instructions for TTS rendering   |
+| `plain_text`   | string | Plain text override (strip formatting before TTS) |
+
+**Voice Channel Agent Transfer:**
+
+Voice channels have special transfer semantics. Unlike chat handoffs, voice transfers involve the telephony gateway:
+
+```
+TOOLS:
+  transfer_to_agent:
+    description: "Transfer call to human agent via telephony gateway"
+    params:
+      provider: string       # "kore", "genesys", "twilio"
+      skills: string[]       # Agent skills required
+      queueId: string        # Queue identifier
+      priority: number       # Queue priority (1-10)
+      postAgentAction: string  # "end" (hang up) or "return" (come back to AI)
+      metadata: object       # Channel, department, caller context
+    returns: object
+
+# In flow:
+transfer_call:
+  REASONING: false
+  CALL: transfer_to_agent
+    call_with:
+      provider: "kore"
+      skills: ["{{department}}"]
+      queueId: "{{department}}_queue"
+      priority: 5
+      postAgentAction: "end"
+  ON_SUCCESS:
+    - IF: transfer_to_agent.status == "waiting"
+      RESPOND: "Connecting you now. Please hold."
+      THEN: complete
+```
+
+---
+
+### 3.13.4 Attachments & File Collection ⚡
+
+Agents can collect file attachments from users as part of the GATHER process. Attachment fields support type validation, size limits, and automated processing (OCR, transcription, key frame extraction).
+
+> **⚡ Partial:** Attachment upload, storage, and processing (OCR via Docling, transcription) are fully implemented via the `get_attachment` and `list_attachments` system tools and the multimodal service pipeline. However, the **GATHER-level `AttachmentFieldIR`** with field-specific `ocr_enabled`/`transcription_enabled` flags is **not yet wired** — attachment collection currently works through generic tool calls rather than declarative GATHER fields.
+
+**Syntax (within GATHER):**
+
+```
+GATHER:
+  - <field_name>: required
+    type: attachment
+    category: <image | document | audio | video>
+    prompt: "<request message>"
+    allowed_mime_types: [<mime_types>]
+    max_file_size: <bytes>
+    processing:
+      ocr_enabled: <boolean>
+      transcription_enabled: <boolean>
+      key_frame_extraction: <boolean>
+```
+
+**Example — Insurance Claim with Photo:**
+
+```
+GATHER:
+  - damage_photo: required
+    type: attachment
+    category: image
+    prompt: "Please upload a photo of the damage."
+    allowed_mime_types: [image/jpeg, image/png, image/heic]
+    max_file_size: 10485760  # 10MB
+    processing:
+      ocr_enabled: true
+
+  - claim_document: optional
+    type: attachment
+    category: document
+    prompt: "If you have a police report or repair estimate, please upload it."
+    allowed_mime_types: [application/pdf, image/jpeg]
+    max_file_size: 20971520  # 20MB
+    processing:
+      ocr_enabled: true
+```
+
+**Processing Options:**
+
+| Option                  | Applies To      | Description                                |
+| ----------------------- | --------------- | ------------------------------------------ |
+| `ocr_enabled`           | image, document | Extract text from images/PDFs via OCR      |
+| `transcription_enabled` | audio, video    | Transcribe speech to text                  |
+| `key_frame_extraction`  | video           | Extract representative frames for analysis |
+
+**Compilation:** Attachment fields compile to `AttachmentFieldIR` in the gather section of the AgentIR.
+
+---
+
+### 3.13.5 Interactive Actions ⚡
+
+Agents can include interactive elements (buttons, dropdowns, text inputs) in responses. Actions are rendered by the client SDK and trigger handler logic when users interact with them.
+
+> **⚡ Partial:** Interactive actions (BUTTON, SELECT, INPUT) are fully implemented with channel-specific rendering (Slack Block Kit, Teams Adaptive Cards, WhatsApp Interactive, Messenger Quick Replies). However, the explicit `ACTION_HANDLERS` DSL block is **not yet implemented** — action routing is handled implicitly by the runtime when user interactions arrive. The `ActionSetIR` and `ActionElementIR` types are used directly.
+
+**Syntax:**
+
+```
+RESPOND: "Choose your preferred option:"
+  ACTIONS:
+    - BUTTON: "Option A"
+      ID: option_a
+      VALUE: "a"
+    - BUTTON: "Option B"
+      ID: option_b
+      VALUE: "b"
+    - SELECT: "Departure City"
+      ID: departure
+      OPTIONS:
+        - { id: "NYC", label: "New York" }
+        - { id: "LAX", label: "Los Angeles" }
+        - { id: "ORD", label: "Chicago" }
+    - INPUT: "Special requests"
+      ID: special_requests
+      TYPE: text
+      PLACEHOLDER: "Any dietary requirements?"
+
+ACTION_HANDLERS:
+  option_a:
+    SET: user_choice = "a"
+    RESPOND: "Great choice!"
+    THEN: process_selection
+  option_b:
+    SET: user_choice = "b"
+    THEN: process_selection
+```
+
+**Action Element Types:**
+
+| Type     | Fields                                 | Description                           |
+| -------- | -------------------------------------- | ------------------------------------- |
+| `BUTTON` | id, label, value                       | Clickable button that submits a value |
+| `SELECT` | id, label, options[]                   | Dropdown with selectable options      |
+| `INPUT`  | id, label, type, placeholder, required | Text/number/date input field          |
+
+**Input Types:** `text`, `number`, `date`, `time`, `email`
+
+**Compilation:** Actions compile to `ActionSetIR` with `ActionElementIR[]` elements. Handlers compile to `ActionHandlerIR[]`.
+
+---
+
+## 3.14 FLOW (Flow-Based Execution)
+
+> **Execution Style**: Agents with a `FLOW:` section use flow-based execution. Agents without `FLOW:` use reasoning-only execution. The legacy `MODE:` declaration is deprecated — use per-step `REASONING: true | false` within FLOW steps to enable LLM reasoning on specific steps.
+
+When an agent has a FLOW section, it follows a deterministic state machine defined by the FLOW.
+
+### 3.14.1 Basic Syntax
+
+```dsl
+FLOW:
+  step1 -> step2 -> step3          # Step sequence
+
+  step1:
+    RESPOND: "Welcome!"
+    THEN: step2
+
+  step2:
+    COLLECT: destination
+    PROMPT: "Where would you like to go?"
+    THEN: step3
+
+  step3:
+    CALL: search_hotels(destination)
+    RESPOND: "Found {{result.total}} hotels!"
+    THEN: COMPLETE
+```
+
+### 3.14.2 Enhanced GATHER within FLOW
+
+FLOW steps can use GATHER for multi-field collection with LLM or pattern-based extraction:
+
+```dsl
+FLOW:
+  collect_details:
+    PRESENT: "Let me gather your booking details."
+    GATHER:
+      - destination: required
+      - checkin:
+          TYPE: date
+          REQUIRED: true
+          PROMPT: "When do you want to check in?"
+      - checkout:
+          TYPE: date
+          REQUIRED: true
+      - guests:
+          TYPE: number
+          DEFAULT: 2
+      STRATEGY: hybrid
+      PROMPT: "Please provide destination, dates, and number of guests."
+    CORRECTIONS: true
+    COMPLETE_WHEN: destination AND checkin AND checkout
+    THEN: search
+```
+
+**GATHER Properties:**
+
+- `fields` - List of fields with type, required, default, prompt, validation
+- `strategy` - Extraction method: `llm`, `pattern`, or `hybrid`
+- `prompt` - Prompt template for collecting
+
+**Step Properties:**
+
+- `PRESENT` - Template shown before collection (can include data from previous steps)
+- `CORRECTIONS` - Allow natural corrections like "actually 4 guests not 3"
+  - When `CORRECTIONS: true`: If the user says "actually 4 guests", the runtime detects this as a correction to an already-collected field (via regex patterns and LLM fallback), updates the value, and invalidates dependent fields.
+  - When `CORRECTIONS: false` (default): The same message is treated as new input for the current step. Use this for:
+    - Single-field collection steps (nothing to correct)
+    - Strict sequential forms where backtracking is not allowed (e.g., regulatory compliance)
+    - Performance-sensitive flows (correction detection adds regex matching and potentially an LLM call)
+    - Automated/deterministic pipelines where natural-language corrections don't apply
+- `COMPLETE_WHEN` - Condition for when the step is complete
+
+### 3.14.3 Conditional Branching (ON_INPUT)
+
+```dsl
+FLOW:
+  confirm:
+    RESPOND: "Would you like to proceed?"
+    ON_INPUT:
+      - IF: input == "yes" OR yes
+        RESPOND: "Great! Processing..."
+        THEN: process
+      - IF: input == "no" OR no
+        RESPOND: "No problem."
+        THEN: cancelled
+      - IF: input contains "change"
+        RESPOND: "What would you like to change?"
+        THEN: modify
+      - ELSE:
+        RESPOND: "Please say yes or no."
+        THEN: confirm
+```
+
+**ON_INPUT Branch Properties:**
+
+- `IF` / `ELSE` - Condition for the branch
+- `RESPOND` - Optional response message
+- `SET` - Variable assignments (`SET: var = value`)
+- `CALL` - Tool call before transition
+- `THEN` - Target step
+
+### 3.14.4 DIGRESSIONS (Intent-Based Escapes)
+
+Digressions allow users to break out of the current flow based on detected intents:
+
+```dsl
+FLOW:
+  # Global digressions available in all steps
+  global_digressions:
+    - INTENT: "cancel"
+      RESPOND: "Canceling your request."
+      GOTO: cancelled
+    - INTENT: "speak_to_agent"
+      DELEGATE: Human_Support
+
+  collect_info:
+    GATHER: destination, checkin, checkout
+    # Step-specific digressions
+    DIGRESSIONS:
+      - INTENT: "help"
+        RESPOND: "Just tell me where and when you want to travel."
+        RESUME: true              # Return to this step after responding
+      - INTENT: "weather"
+        DELEGATE: Weather_Agent   # Delegate to another agent
+        RESUME: true
+        CLEAR: [destination]      # Clear fields before resuming
+    THEN: search
+```
+
+**Digression Properties:**
+| Property | Description |
+|----------|-------------|
+| `INTENT` | Intent pattern to match |
+| `CONDITION` | Optional additional condition |
+| `RESPOND` | Response before handling |
+| `GOTO` | Target step to go to |
+| `DELEGATE` | Agent to delegate to |
+| `CALL` | Tool to call |
+| `RESUME` | Return to current step (default: false) |
+| `CLEAR` | Variables to clear before resuming |
+
+### 3.14.5 SUB_INTENTS (Scoped Intents)
+
+Sub-intents are scoped to a specific step and don't leave the step:
+
+```dsl
+FLOW:
+  select_room:
+    RESPOND: "Select a room type."
+    SUB_INTENTS:
+      - INTENT: "change dates"
+        RESPOND: "Let's update your dates."
+        CLEAR: [checkin, checkout]
+      - INTENT: "more details"
+        CALL: get_room_details(hover_room_id)
+        RESPOND: "{{result.description}}"
+      - INTENT: "price breakdown"
+        RESPOND: "{{room.price}} per night, {{total}} total including taxes."
+    ON_INPUT:
+      - IF: input matches /room\s*\d+/
+        SET: selected_room = extracted_room_id
+        THEN: confirm
+      - ELSE:
+        THEN: select_room
+```
+
+**Sub-Intent Properties:**
+| Property | Description |
+|----------|-------------|
+| `INTENT` | Intent pattern to match |
+| `RESPOND` | Response message |
+| `CLEAR` | Variables to clear (triggers re-collection) |
+| `SET` | Variables to set |
+| `CALL` | Tool to call |
+| `RESUME` | Stay in step (default: true for sub-intents) |
+
+### 3.14.6 ON_SUCCESS / ON_FAILURE Blocks
+
+For CALL steps, define separate handling for success and failure:
+
+```dsl
+FLOW:
+  book_hotel:
+    CALL: create_reservation(hotel_id, guest_info)
+    ON_SUCCESS:
+      RESPOND: "Booking confirmed! Reference: {{result.confirmation_id}}"
+      THEN: send_confirmation
+    ON_FAIL:
+      RESPOND: "Sorry, the booking failed: {{result.error}}"
+      THEN: retry_or_cancel
+```
+
+### 3.14.7 SET (Variable Assignment)
+
+Assign computed values to variables within flow steps. Supports both inline (single) and block (multiple) forms.
+
+**Inline form (in ON_INPUT branches):**
+
+```dsl
+SET: transfer_amount = TO_NUMBER(REPLACE(raw_amount, "$", ""))
+```
+
+**Block form (step-level, multiple assignments):**
+
+```dsl
+start:
+  SET:
+    preferred_currency = COALESCE(preferred_currency, "USD")
+    request_timestamp = NOW()
+    transfer_id = UNIQUE_ID(10)
+  THEN: next_step
+```
+
+Expressions can use any built-in function (see Section 8) and reference session variables or tool result fields via dot notation.
+
+### 3.14.8 CLEAR (Variable Deletion)
+
+Remove variables from session state. Used to reset state when looping or changing context.
+
+```dsl
+CLEAR: from_date, to_date, txnResult, filtered_transactions
+```
+
+Commonly used in ON_INPUT branches to reset state before re-collecting:
+
+```dsl
+ON_INPUT:
+  - IF: input contains "change"
+    CLEAR: transfer_amount, raw_amount, limitsResult, feeResult
+    THEN: collect_amount
+```
+
+### 3.14.9 CALL WITH/AS (Explicit Tool Parameters and Result Binding)
+
+Enhanced tool calling with explicit parameter mapping (`WITH:`) and result variable binding (`AS:`).
+
+```dsl
+fetch_balance:
+  CALL: get_balance
+    WITH:
+      account_id: selected_account.id
+      currency: preferred_currency
+    AS: balanceResult
+```
+
+- **WITH** maps named parameters to expressions (variables, dot paths, or built-in function calls)
+- **AS** binds the tool result to a named variable for subsequent use in ON_RESULT branches or SET expressions
+
+### 3.14.10 ON_RESULT (Multi-Way Result Branching)
+
+Branch on tool call results with multiple conditions. Replaces the simpler ON_SUCCESS/ON_FAIL pattern when more than two outcomes are possible.
+
+```dsl
+validate_recipient_step:
+  CALL: validate_recipient
+    WITH:
+      routing_number: recipient_routing
+      account_number: recipient_account
+    AS: recipientResult
+  ON_RESULT:
+    - IF: recipientResult.status == "valid"
+      SET:
+        recipient_bank = recipientResult.bank_name
+        recipient_name = recipientResult.account_holder
+      THEN: collect_amount
+    - IF: recipientResult.status == "INVALID_ROUTING"
+      RESPOND: "The routing number is invalid. Please double-check."
+      THEN: collect_recipient
+    - IF: recipientResult.status == "ACCOUNT_CLOSED"
+      RESPOND: "That account appears to be closed."
+      THEN: collect_recipient
+    - ELSE:
+      RESPOND: "We couldn't verify the recipient details."
+      THEN: collect_recipient
+```
+
+ON_RESULT branches support the same properties as ON_INPUT branches: `IF`/`ELSE`, `SET`, `CLEAR`, `RESPOND`, and `THEN`.
+
+### 3.14.11 TRANSFORM (Array Data Pipeline)
+
+Process arrays through a declarative pipeline with filter, map, sort, and limit operations.
+
+```dsl
+apply_filters:
+  TRANSFORM: txnResult.transactions AS txn INTO filtered_transactions
+    FILTER: filter_type == "all" OR txn.type == filter_type
+    MAP:
+      id: txn.id
+      date: FORMAT_DATE(txn.date, "MMM DD")
+      description: COALESCE(txn.merchant, txn.description)
+      display_amount: FORMAT_CURRENCY(ABS(txn.amount), "USD")
+      direction: UPPER(SUBSTRING(txn.type, 0, 1))
+      category: UPPER(txn.category)
+    SORT_BY: date DESC
+    LIMIT: page_size
+  THEN: display_transactions
+```
+
+**Pipeline stages:**
+
+- `FILTER:` — Boolean expression; items where the condition is true are kept
+- `MAP:` — Object with field mappings; each value is an expression evaluated per item
+- `SORT_BY:` — Field name with optional `ASC`/`DESC` direction (default: ASC)
+- `LIMIT:` — Maximum number of items to keep (expression or literal)
+
+All stages are optional. MAP expressions can use any built-in function and reference the item variable (`txn` in the example above) via dot notation.
+
+---
+
+### 3.15 Execution Pipeline (Supervisor Pre-Classification)
+
+Supervisors can enable an opt-in classification pipeline that runs before the main reasoning LLM. A smaller, faster model classifies user intent and optionally short-circuits routing — avoiding the cost of the full reasoning call for obvious routing decisions.
+
+#### Configuration
+
+```dsl
+SUPERVISOR: Support_Router
+  EXECUTION:
+    model: claude-sonnet-4-5-20250929
+    pipeline:
+      enabled: true
+      mode: sequential          # 'parallel' | 'sequential'
+      model: qwen3-30b          # Smaller/faster classifier model
+      shortCircuit:
+        enabled: true
+        confidenceThreshold: 0.85
+      toolFilter:
+        enabled: true
+        maxTools: 6
+      keywordVeto:
+        enabled: true
+        keywords: [reset, cancel, undo]
+
+  AGENTS:
+    billing: Billing_Agent
+    technical: Tech_Support
+    general: General_Inquiry
+```
+
+#### Pipeline Options
+
+| Option                             | Default     | Description                                                                                                            |
+| ---------------------------------- | ----------- | ---------------------------------------------------------------------------------------------------------------------- |
+| `enabled`                          | `false`     | Enable the pre-classification pipeline                                                                                 |
+| `mode`                             | `parallel`  | `parallel` — classifier and main LLM run simultaneously; `sequential` — classifier runs first, main LLM only if needed |
+| `model`                            | `qwen3-30b` | Model for classification (should be fast/cheap)                                                                        |
+| `shortCircuit.enabled`             | `true`      | Allow direct routing when classifier confidence is high                                                                |
+| `shortCircuit.confidenceThreshold` | `0.85`      | Minimum confidence to skip the reasoning loop                                                                          |
+| `toolFilter.enabled`               | `true`      | Filter tools to only relevant ones before reasoning                                                                    |
+| `toolFilter.maxTools`              | `6`         | Maximum tools to pass to the reasoning loop                                                                            |
+| `keywordVeto.enabled`              | `true`      | Prevent short-circuit when user mentions local tool keywords                                                           |
+| `keywordVeto.keywords`             | `[]`        | Additional keywords that veto short-circuit routing                                                                    |
+
+#### Execution Flow
+
+```
+User message
+    ↓
+Pipeline enabled? ──no──→ Reasoning loop (full tools)
+    ↓ yes
+Classify intent (fast model, 300 tokens max, 10s timeout)
+    ↓
+Short-circuit? ─────────→ Single intent + high confidence + no keyword veto
+    ↓ yes                     ↓ no
+Route directly via       Filter tools → Reasoning loop (reduced tool set)
+HANDOFF (skip reasoning)
+```
+
+#### Configuration Resolution
+
+Pipeline config resolves through a 3-level hierarchy:
+
+1. **Agent IR** (`execution.pipeline` block) — highest priority
+2. **Project config** — project-level defaults
+3. **System defaults** — hardcoded fallback values
+
+#### Sequential vs Parallel Mode
+
+- **Sequential**: Classifier runs first. If it short-circuits, the main LLM is never called — saving the full cost of a reasoning iteration. Best for supervisors where most messages route cleanly.
+- **Parallel**: Classifier and main LLM run simultaneously. Short-circuit still works, but if it doesn't fire, the classifier only contributes tool filtering. You pay for both calls regardless.
+
+> **Cost note**: For pure routing supervisors, `sequential` mode with `shortCircuit.enabled: true` provides the best cost savings. In `parallel` mode, the classifier adds latency protection but no cost savings.
+
+---
+
+## 8. Built-in Functions Reference
+
+35 built-in functions are available in SET expressions, TRANSFORM MAP/FILTER, CALL WITH values, and RESPOND templates.
+
+### 8.1 Math Functions
+
+| Function | Signature                      | Description                               |
+| -------- | ------------------------------ | ----------------------------------------- |
+| `ADD`    | `ADD(a, b) → number`           | Addition                                  |
+| `SUB`    | `SUB(a, b) → number`           | Subtraction                               |
+| `MUL`    | `MUL(a, b) → number`           | Multiplication                            |
+| `DIV`    | `DIV(a, b) → number\|null`     | Division (returns null on divide-by-zero) |
+| `ROUND`  | `ROUND(n, decimals?) → number` | Round to N decimal places (default: 0)    |
+| `ABS`    | `ABS(n) → number`              | Absolute value                            |
+| `MIN`    | `MIN(a, b) → number`           | Minimum of two values                     |
+| `MAX`    | `MAX(a, b) → number`           | Maximum of two values                     |
+
+### 8.2 String Functions
+
+| Function    | Signature                                | Description                        |
+| ----------- | ---------------------------------------- | ---------------------------------- |
+| `UPPER`     | `UPPER(s) → string`                      | Convert to uppercase               |
+| `LOWER`     | `LOWER(s) → string`                      | Convert to lowercase               |
+| `TRIM`      | `TRIM(s) → string`                       | Remove leading/trailing whitespace |
+| `SUBSTRING` | `SUBSTRING(s, start, end?) → string`     | Extract substring                  |
+| `REPLACE`   | `REPLACE(s, find, replacement) → string` | Replace all occurrences            |
+| `SPLIT`     | `SPLIT(s, delimiter) → array`            | Split string into array            |
+| `JOIN`      | `JOIN(arr, delimiter) → string`          | Join array into string             |
+| `PAD_START` | `PAD_START(s, length, char?) → string`   | Pad start to target length         |
+| `PAD_END`   | `PAD_END(s, length, char?) → string`     | Pad end to target length           |
+| `REPEAT`    | `REPEAT(s, count) → string`              | Repeat string N times              |
+
+### 8.3 Formatting Functions
+
+| Function          | Signature                                        | Description                                            |
+| ----------------- | ------------------------------------------------ | ------------------------------------------------------ |
+| `MASK`            | `MASK(s, pattern, char?) → string`               | Mask string (e.g., `MASK(acct, "last4")` → `****1234`) |
+| `FORMAT_CURRENCY` | `FORMAT_CURRENCY(n, currency, locale?) → string` | Format as currency (e.g., `$1,234.56`)                 |
+| `FORMAT_DATE`     | `FORMAT_DATE(d, format, tz?) → string`           | Format date (e.g., `"MMM DD, YYYY"`)                   |
+| `ORDINAL`         | `ORDINAL(n) → string`                            | Ordinal suffix (e.g., `1` → `"1st"`)                   |
+
+### 8.4 Type Functions
+
+| Function    | Signature                     | Description                     |
+| ----------- | ----------------------------- | ------------------------------- |
+| `IS_ARRAY`  | `IS_ARRAY(x) → boolean`       | Check if value is an array      |
+| `IS_NUMBER` | `IS_NUMBER(x) → boolean`      | Check if value is a number      |
+| `IS_STRING` | `IS_STRING(x) → boolean`      | Check if value is a string      |
+| `TO_NUMBER` | `TO_NUMBER(x) → number\|null` | Convert to number (null if NaN) |
+| `TO_STRING` | `TO_STRING(x) → string`       | Convert to string               |
+
+### 8.5 Array Functions
+
+| Function           | Signature                                      | Description                                  |
+| ------------------ | ---------------------------------------------- | -------------------------------------------- |
+| `LENGTH`           | `LENGTH(x) → number`                           | Array length or string length                |
+| `ARRAY_FIND`       | `ARRAY_FIND(arr, field, value) → object\|null` | Find first item where `item[field] == value` |
+| `ARRAY_FIND_INDEX` | `ARRAY_FIND_INDEX(arr, field, value) → number` | Find index of first match (-1 if not found)  |
+
+### 8.6 Object Functions
+
+| Function        | Signature                        | Description                           |
+| --------------- | -------------------------------- | ------------------------------------- |
+| `OBJECT_KEYS`   | `OBJECT_KEYS(obj) → array`       | Get object keys                       |
+| `OBJECT_VALUES` | `OBJECT_VALUES(obj) → array`     | Get object values                     |
+| `OBJECT_MERGE`  | `OBJECT_MERGE(...objs) → object` | Merge objects (later values override) |
+
+### 8.7 Utility Functions
+
+| Function    | Signature                     | Description                                |
+| ----------- | ----------------------------- | ------------------------------------------ |
+| `COALESCE`  | `COALESCE(...args) → any`     | Return first non-null, non-undefined value |
+| `NOW`       | `NOW() → string`              | Current timestamp (ISO 8601)               |
+| `UNIQUE_ID` | `UNIQUE_ID(length?) → string` | Generate random alphanumeric ID            |
+
+### 8.8 System-Assigned Variables
+
+The following variables are managed by the runtime and available in WHEN conditions, SET expressions, and CONSTRAINT checks. Do not use these names for user-defined variables.
+
+#### Pattern Match Variable
+
+| Variable | Assigned By                         | Contents                                                                                             |
+| -------- | ----------------------------------- | ---------------------------------------------------------------------------------------------------- |
+| `match`  | `matches` operator in IF conditions | Regex capture groups: `match.0` (full match), `match.1` (first group), `match.room_id` (named group) |
+
+> **Warning:** If you use `SET: match = value`, the variable will be overwritten by the next successful `matches` operation. The compiler emits a warning for reserved variable names.
+
+#### Gather & Extraction Variables
+
+| Variable               | Type                     | Set When                                | Description                                         |
+| ---------------------- | ------------------------ | --------------------------------------- | --------------------------------------------------- |
+| `_clarification_count` | `number`                 | Session init (0), incremented on re-ask | How many times the agent re-prompted for a field    |
+| `_validation_retries`  | `Record<string, number>` | Validation failure                      | Per-field count of failed validation attempts       |
+| `_pending_inferences`  | `object`                 | LLM infers a field value                | Inferred values waiting for user confirmation       |
+| `all_fields_gathered`  | `boolean`                | All required GATHER fields collected    | True when gather is complete — use in COMPLETE/WHEN |
+
+```dsl
+COMPLETE:
+  - WHEN: all_fields_gathered == true
+    RESPOND: "Great, I have everything I need."
+```
+
+#### Tool Result Variables
+
+| Variable                  | Type     | Set When             | Description                                           |
+| ------------------------- | -------- | -------------------- | ----------------------------------------------------- |
+| `last_<tool_name>_result` | `object` | After tool execution | Full result of the most recent call to the named tool |
+
+```dsl
+CONSTRAINTS:
+  always:
+    - REQUIRE last_search_hotels_result.total > 0
+      ON_FAIL: "No hotels found matching your criteria. Try different dates?"
+```
+
+#### Intent & Sentiment Variables
+
+| Variable               | Type     | Set When                                   | Legal Values                                                                      |
+| ---------------------- | -------- | ------------------------------------------ | --------------------------------------------------------------------------------- |
+| `user.intent`          | `string` | Intent classification on each user message | Agent-specific (detected by NLU)                                                  |
+| `user.sentiment`       | `string` | Sentiment analysis on each user message    | `very_negative`, `negative`, `neutral`, `positive`, `very_positive`, `frustrated` |
+| `sentiment_trajectory` | `string` | Computed across conversation turns         | `improving`, `declining`, `stable`, `volatile`                                    |
+
+```dsl
+ESCALATE:
+  - WHEN: user.sentiment == "very_negative" AND sentiment_trajectory == "declining"
+    PRIORITY: high
+    CONTEXT: [conversation_history, user.sentiment]
+    RESPOND: "I understand your frustration. Let me connect you with a specialist."
+```
+
+#### Constraint & Error Variables
+
+| Variable                  | Type       | Set When                                | Description                                    |
+| ------------------------- | ---------- | --------------------------------------- | ---------------------------------------------- |
+| `_constraint_warnings`    | `string[]` | Constraint evaluation produces warnings | Warning messages from soft constraint failures |
+| `tool_failures`           | `number`   | Tool execution fails                    | Count of consecutive tool failures             |
+| `constraint_failures`     | `number`   | Constraint check fails                  | Count of constraint violations                 |
+| `_disambiguation_intents` | `string[]` | Multi-intent detection                  | Possible intents when disambiguation needed    |
+
+#### Session & Channel Variables
+
+| Variable   | Type     | Set When              | Legal Values / Description                          |
+| ---------- | -------- | --------------------- | --------------------------------------------------- |
+| `channel`  | `string` | Session init          | `web`, `slack`, `teams`, `whatsapp`, `voice`, `api` |
+| `language` | `string` | Session init / detect | ISO 639 code: `en`, `es`, `fr`, `de`, etc.          |
+
+```dsl
+ROUTING:
+  - TO: Spanish_Support
+    WHEN: language == "es"
+  - TO: General_Support
+    WHEN: channel == "voice"
+    PASS: [user_id, sentiment_trajectory]
+```
+
+#### Orchestration Variables
+
+| Variable             | Type      | Set When                            | Description                           |
+| -------------------- | --------- | ----------------------------------- | ------------------------------------- |
+| `handoff.completed`  | `boolean` | Child agent completes after handoff | True when a handed-off agent finishes |
+| `escalate.completed` | `boolean` | Human agent resolves escalation     | True when escalation is resolved      |
+
+```dsl
+COMPLETE:
+  - WHEN: handoff.completed == true
+    RESPOND: "Is there anything else I can help with?"
+```
+
+#### Reserved Variable Prefixes
+
+Variables beginning with `_` are reserved for runtime use. The following prefixes have special meaning:
+
+| Prefix                    | Purpose                                                      |
+| ------------------------- | ------------------------------------------------------------ |
+| `_summary`                | Conversation summary state                                   |
+| `_stored_*`               | Persistent memory values                                     |
+| `_error`                  | Error state from last failed operation                       |
+| `_correction`             | Correction detection state                                   |
+| `_current_step_for_reset` | Flow step tracking (resets validation counts on step change) |
+
+### 8.9 MASK Patterns
+
+Built-in patterns for the `MASK()` function:
+
+| Pattern  | Behavior                      | Example                                                     |
+| -------- | ----------------------------- | ----------------------------------------------------------- |
+| `last4`  | Show only last 4 characters   | `MASK("4111111111111111", "last4")` → `"************1111"`  |
+| `first4` | Show only first 4 characters  | `MASK("4111111111111111", "first4")` → `"4111************"` |
+| `N*N`    | Show N chars at start and end | `MASK("4111111111111111", "4*4")` → `"4111********1111"`    |
+
+Pattern names are string literals passed as the second argument to `MASK()`, not variable references.
+
+---
+
+### 8.10 Events & Lifecycle Hooks
+
+ABL supports lifecycle events for triggering actions at specific execution points.
+
+#### RECALL Events
+
+Used in the MEMORY section to trigger recall of stored information:
+
+| Event Pattern              | Fires When                        | Example                        |
+| -------------------------- | --------------------------------- | ------------------------------ |
+| `session:start`            | New session begins                | Load user preferences          |
+| `session:end`              | Session terminates                | Save conversation summary      |
+| `agent:<name>:before`      | Before a specific agent starts    | `agent:Payment_Agent:before`   |
+| `agent:<name>:after`       | After a specific agent completes  | `agent:Billing_Agent:after`    |
+| `agent:*:before`           | Before any agent starts           | Global pre-agent hook          |
+| `agent:*:after`            | After any agent completes         | Global post-agent hook         |
+| `tool:<name>:after`        | After a specific tool executes    | `tool:search_hotels:after`     |
+| `tool:*:after`             | After any tool executes           | Global post-tool hook          |
+| `entity:<field>:extracted` | After a gather field is extracted | `entity:destination:extracted` |
+| `step:enter:<name>`        | When a flow step is entered       | `step:enter:Collect_Payment`   |
+| `step:exit:<name>`         | When a flow step is exited        | `step:exit:Verify_Identity`    |
+
+```dsl
+MEMORY:
+  recall:
+    - ON: session:start
+      RETRIEVE: [user.preferences, user.loyalty_tier]
+    - ON: tool:search_hotels:after
+      RETRIEVE: [user.hotel_preferences]
+    - ON: entity:destination:extracted
+      RETRIEVE: [user.destination_history]
+```
+
+> **Legacy syntax**: `ON_<event>:` (e.g., `ON_SESSION_START:`) is deprecated. Use `ON: session:start` instead. Legacy names are auto-normalized: `session_start` → `session:start`, `agent_enter` → `agent:*:after`.
+
+#### Lifecycle Hooks
+
+Hooks execute actions at agent and conversation turn boundaries:
+
+| Hook           | Fires When                                        |
+| -------------- | ------------------------------------------------- |
+| `before_agent` | Before the agent begins processing (session init) |
+| `after_agent`  | After the agent completes                         |
+| `before_turn`  | Before each conversation turn is processed        |
+| `after_turn`   | After each conversation turn completes            |
+
+```dsl
+HOOKS:
+  before_turn:
+    CALL: audit_logger
+    SET:
+      _turn_start: NOW()
+  after_turn:
+    CALL: metrics_reporter
+    RESPOND: ""  # Silent — no user-facing message
+```
+
+#### Flow Step Events (ON_SUCCESS / ON_FAILURE / ON_RESULT / ON_INPUT)
+
+These events are documented in Section 3.14.6 (ON_SUCCESS/ON_FAILURE), 3.14.10 (ON_RESULT), and 3.14.3 (ON_INPUT). They fire at specific points within a flow step:
+
+| Event        | Fires When                                       | Use For                           |
+| ------------ | ------------------------------------------------ | --------------------------------- |
+| `ON_SUCCESS` | Step's CALL or GATHER completes successfully     | Happy-path branching              |
+| `ON_FAILURE` | Step's CALL or GATHER fails                      | Error recovery, retry, escalation |
+| `ON_RESULT`  | After CALL returns — multi-way branch on result  | Route based on tool return values |
+| `ON_INPUT`   | After user input — conditional branch on content | Deterministic routing by response |
+
+> **Evaluation order**: ON_INPUT is evaluated on a frozen state snapshot. Mutations (SET, TRANSITION) are collected and applied after all conditions are evaluated. This prevents side effects from affecting sibling branches.
+
+---
+
+### 8.11 Runtime Defaults & Limits
+
+The following defaults apply when not overridden in the agent's EXECUTION block or project configuration:
+
+#### Timeouts
+
+| Setting                | Default      | Override Via                                 | Description                       |
+| ---------------------- | ------------ | -------------------------------------------- | --------------------------------- |
+| Tool execution timeout | 30,000 ms    | `execution.timeouts.tool_timeout_ms`         | Max time for a single tool call   |
+| LLM call timeout       | 30,000 ms    | `execution.timeouts.llm_timeout_ms`          | Max time for a single LLM request |
+| Session idle timeout   | 1,800,000 ms | `execution.timeouts.session_timeout_ms`      | Session expires after 30 min idle |
+| Voice latency target   | _(none)_     | `execution.timeouts.voice_latency_target_ms` | Target response time for voice    |
+
+#### Iteration Limits
+
+| Setting                  | Default | Override Via                    | Description                           |
+| ------------------------ | ------- | ------------------------------- | ------------------------------------- |
+| Reasoning max iterations | 10      | `execution.max_iterations`      | Max tool-use loops before forced stop |
+| Flow max iterations      | 100     | `execution.max_flow_iterations` | Max flow step transitions per session |
+
+```dsl
+AGENT: Complex_Workflow
+  EXECUTION:
+    model: claude-sonnet-4-5-20250929
+    max_iterations: 20          # Allow more reasoning loops
+    max_flow_iterations: 200    # Complex flow with many steps
+    timeouts:
+      tool_timeout_ms: 60000    # Some tools are slow
+      session_timeout_ms: 3600000  # 1 hour sessions
+```
+
+#### Size Limits
+
+| Setting                  | Default | Description                                |
+| ------------------------ | ------- | ------------------------------------------ |
+| Tool parameters max size | 512 KB  | Max serialized size of tool call arguments |
+
+#### Pipeline Defaults
+
+When `execution.pipeline` is enabled but specific fields are omitted, these defaults apply:
+
+| Setting                                     | Default     |
+| ------------------------------------------- | ----------- |
+| `pipeline.mode`                             | `parallel`  |
+| `pipeline.model`                            | `qwen3-30b` |
+| `pipeline.shortCircuit.enabled`             | `true`      |
+| `pipeline.shortCircuit.confidenceThreshold` | `0.85`      |
+| `pipeline.toolFilter.enabled`               | `true`      |
+| `pipeline.toolFilter.maxTools`              | `6`         |
+| `pipeline.keywordVeto.enabled`              | `true`      |
+| `pipeline.keywordVeto.keywords`             | `[]`        |
+
+---
+
+## 4. Compilation to AgentIR
+
+### 4.1 Compilation Pipeline
+
+ABL source files are compiled to a typed intermediate representation (`AgentIR`) at deploy time. The runtime loads and executes the IR directly — there is no code generation step.
+
+```
+ABL Source (.agent.abl or .agent.yaml)
+        │
+        ▼
+┌──────────────────────────┐
+│   Parser (@abl/core)     │
+│   parseAgentBasedDSL()   │
+│   → AgentBasedDocument   │
+└──────────────────────────┘
+        │
+        ▼
+┌──────────────────────────┐
+│  Compiler (@abl/compiler)│
+│  compileDSLtoIR()        │
+│  → CompilationOutput     │
+│    { agents, entry_agent }│
+└──────────────────────────┘
+        │
+        ▼
+┌──────────────────────────┐
+│   Runtime Executors      │
+│  (apps/runtime/src/      │
+│   services/execution/)   │
+│  • ReasoningExecutor     │
+│  • FlowStepExecutor      │
+│  • RoutingExecutor       │
+│  • ConstraintChecker     │
+└──────────────────────────┘
+```
+
+The only compilation target is `'ir'`. The compiler produces a `CompilationOutput` containing a map of `AgentIR` instances (one per agent, including supervisors) and identifies the entry agent.
+
+### 4.2 Generated IR Structure
+
+For the `Hotel_Search` agent example, the compiler produces an `AgentIR` with:
+
+- **identity**: Built from GOAL, PERSONA, LIMITATIONS — includes a generated `system_prompt.template`
+- **tools**: `ToolDefinition[]` from the TOOLS section, with typed parameters and return schemas
+- **gather**: `GatherConfig` with field definitions from the GATHER section
+- **constraints**: `ConstraintConfig` with a flattened ordered constraint list plus guardrails from CONSTRAINTS
+- **coordination**: `CoordinationConfig` with handoffs, delegates, escalation from HANDOFF/DELEGATE/ESCALATE
+- **completion**: `CompletionConfig` from COMPLETE conditions
+- **memory**: `MemoryConfig` from MEMORY section (session variables, persistent paths, remember triggers, recall instructions)
+
+At runtime, the executor loads the IR, builds the system prompt, wires tools to the LLM provider, and manages the conversation loop. Constraint checking, tool execution, handoff/delegate routing, and escalation are handled by dedicated executor modules in the runtime.
+
+---
+
+## 5. Multi-Agent Orchestration
+
+### 5.1 Supervisor for Agent-Based Agents (Unified AgentIR)
+
+When using multiple agent-based agents, a supervisor coordinates them. Supervisors compile to the same `AgentIR` type as regular agents — they are simply agents with `routing` and `available_agents` fields populated. All agents (including supervisors) live in a single `CompilationOutput.agents` registry. Supervisors can hand off to other supervisors, enabling hierarchical composition:
+
+```
+SUPERVISOR: Travel_Assistant
+
+AGENTS:
+  hotel: Hotel_Search
+  flight: Flight_Search
+  payment: Payment_Agent
+  support: Support_Agent
+
+ROUTING:
+  - INTENT(hotel, stay, room, accommodation) -> hotel
+  - INTENT(flight, fly, plane, airline) -> flight
+  - INTENT(pay, checkout, purchase) -> payment
+  - INTENT(help, problem, issue, complaint) -> support
+  - DEFAULT -> hotel  # Most common use case
+
+HANDOFF_PROTOCOL:
+  # How agents communicate
+  - FROM hotel TO payment:
+      CONTEXT: [reservation, user.loyalty_programs]
+      TRIGGER: reservation.ready_for_payment
+
+  - FROM any TO support:
+      CONTEXT: [conversation_history, active_agent, current_state]
+      TRIGGER: user.requests_human OR user.sentiment == "frustrated"
+```
+
+### 5.2 Delegate vs Handoff Execution
+
+```
+DELEGATE (synchronous, returns):
+┌─────────────────────────────────────────────────┐
+│  Hotel_Search                                    │
+│                                                  │
+│  1. User asks about loyalty points               │
+│  2. DELEGATE -> Loyalty_Lookup                   │
+│     └──────────────────────────┐                │
+│                                 ▼                │
+│                    ┌─────────────────────┐      │
+│                    │  Loyalty_Lookup     │      │
+│                    │  - Check points     │      │
+│                    │  - Return balance   │      │
+│                    └─────────────────────┘      │
+│                                 │                │
+│     ┌───────────────────────────┘                │
+│     ▼                                            │
+│  3. Use loyalty info in booking                  │
+│  4. Continue with reservation                    │
+└─────────────────────────────────────────────────┘
+
+HANDOFF (asynchronous, transfers control):
+┌──────────────────┐         ┌──────────────────┐
+│  Hotel_Search    │         │  Payment_Agent   │
+│                  │         │                  │
+│  1. Find hotel   │         │                  │
+│  2. User books   │ ──────► │  3. Process pay  │
+│  3. HANDOFF      │ context │  4. Confirm      │
+│                  │         │  5. COMPLETE     │
+│  [DONE]          │         │                  │
+└──────────────────┘         └──────────────────┘
+
+HANDOFF RETURN:true with digression (thread resume):
+┌──────────────┐    ┌──────────────┐    ┌──────────────┐    ┌──────────────┐
+│  Supervisor  │    │ CreditCard   │    │ AccountInfo  │    │ CreditCard   │
+│              │    │              │    │              │    │ (RESUMED)    │
+│ 1. Route to  │──► │ 2. Gather    │    │              │    │              │
+│    CC agent  │    │    payment   │    │              │    │              │
+│              │    │ 3. User asks │    │              │    │              │
+│              │ ◄──│    "balance" │    │              │    │              │
+│ 4. Re-route  │──► │ (return_to_  │    │ 5. Check     │    │              │
+│    to AcctInfo    │  parent)     │    │    balance   │    │              │
+│              │ ◄──│ [WAITING]    │    │ 6. COMPLETE  │    │              │
+│ 7. Re-route  │────┼──────────────┼────┼──────────────┼──► │ 8. Resume    │
+│    to CC     │    │              │    │              │    │    payment   │
+│              │    │              │    │              │    │    (context  │
+│              │    │              │    │              │    │    preserved)│
+└──────────────┘    └──────────────┘    └──────────────┘    └──────────────┘
+```
+
+---
+
+## 6. Complete Example
+
+```dsl
+AGENT: Hotel_Search
+
+GOAL: "Help user find and book a hotel that meets all booking policies"
+
+PERSONA: |
+  Helpful, knowledgeable hotel booking specialist.
+  Friendly but efficient - doesn't waste user's time.
+  Always explains policies clearly when they affect the booking.
+  References user's preferences to make personalized suggestions.
+
+LIMITATIONS:
+  - "Cannot guarantee availability until booking is confirmed"
+  - "Cannot override blackout dates or minimum stay policies"
+  - "Cannot process payments - must transfer to payment agent"
+
+TOOLS:
+  check_blackout_dates(destination: string, checkin: date, checkout: date) -> {allowed: boolean, reason?: string}
+  validate_minimum_stay(destination: string, checkin: date, checkout: date) -> {valid: boolean, minimum: number, nights: number}
+  search_hotels(destination: string, checkin: date, checkout: date, guests: number = 2) -> Hotel[]
+  get_hotel_details(hotel_id: string) -> HotelDetails
+  check_availability(hotel_id: string, room_type: string, dates: DateRange) -> {available: boolean, price: number}
+  create_reservation(hotel_id: string, room_type: string, dates: DateRange, guest: GuestInfo) -> Reservation
+
+GATHER:
+  destination:
+    prompt: "Where would you like to stay?"
+    type: string
+    required: true
+  checkin:
+    prompt: "What's your check-in date?"
+    type: date
+    required: true
+  checkout:
+    prompt: "What's your check-out date?"
+    type: date
+    required: true
+  guests:
+    prompt: "How many guests?"
+    type: number
+    default: 2
+
+MEMORY:
+  session:
+    - search_results
+    - selected_hotel
+    - reservation_draft
+
+  persistent:
+    - user.preferred_chains
+    - user.preferred_room_type
+    - user.loyalty_programs
+    - user.past_bookings
+    - user.average_budget
+
+  remember:
+    - WHEN booking.confirmed
+      STORE: {hotel: selected_hotel.name, chain: selected_hotel.chain, destination, price: reservation.total} -> user.past_bookings
+
+  recall:
+    - ON_START: "Load user's preferred chains and room types"
+    - ON_SEARCH: "Prioritize hotels matching preferences"
+
+CONSTRAINTS:
+  pre_search:
+    - REQUIRE check_blackout_dates.allowed == true
+      ON_FAIL: |
+        Those dates fall within a blackout period ({reason}).
+        We cannot book during Dec 24-26 or Dec 31-Jan 1.
+        Would you like to try different dates?
+
+    - REQUIRE validate_minimum_stay.valid == true
+      ON_FAIL: |
+        {destination} requires a minimum of {minimum} nights.
+        You've selected {nights} nights. Would you like to extend?
+
+DELEGATE:
+  - AGENT: Loyalty_Lookup
+    WHEN: booking.ready AND user.loyalty_programs IS SET
+    PURPOSE: "Check for applicable rewards"
+    INPUT: {user_id, hotel_chain: selected_hotel.chain}
+    RETURNS: {points: number, rewards: Reward[]}
+    USE_RESULT: "Offer to apply rewards"
+
+HANDOFF:
+  - TO: Payment_Agent
+    WHEN: reservation.confirmed_pending_payment
+    CONTEXT:
+      pass: [reservation, selected_hotel, user.email]
+      summary: "Booking {selected_hotel.name}, {nights} nights, ${reservation.total}"
+    RETURN: false
+
+  - TO: Support_Agent
+    WHEN: user.sentiment == "frustrated" OR user.requests_human
+    CONTEXT:
+      pass: [conversation_history, current_state]
+      summary: "User needs assistance with hotel booking"
+    RETURN: false
+
+ESCALATE:
+  triggers:
+    - WHEN: tool_failures > 3
+      REASON: "Technical issues"
+      PRIORITY: medium
+
+    - WHEN: user.requests_human
+      REASON: "User requested human"
+      PRIORITY: high
+
+  context_for_human:
+    - conversation_transcript
+    - gathered: {destination, checkin, checkout, guests}
+    - search_results
+    - failure_reasons
+
+COMPLETE:
+  - WHEN: handoff.completed
+    # Silent - payment agent takes over
+
+  - WHEN: user.intent == "cancel"
+    RESPOND: "No problem! Feel free to come back anytime."
+
+ON_ERROR:
+  tool_timeout:
+    RESPOND: "Having trouble connecting. Retrying..."
+    RETRY: 2
+    THEN: ESCALATE
+
+  unknown_error:
+    RESPOND: "Something went wrong. Connecting you with support."
+    ESCALATE: PRIORITY: high
+```
+
+---
+
+## 7. Appendix: Type Definitions
+
+### 7.1 Built-in Types
+
+```typescript
+type string = string;
+type number = number;
+type boolean = boolean;
+type date = string; // ISO 8601 or natural language
+type array = any[];
+type object = Record<string, any>;
+```
+
+### 7.2 Domain Types (Examples)
+
+```typescript
+interface Hotel {
+  id: string;
+  name: string;
+  chain?: string;
+  rating: number;
+  price_per_night: number;
+  amenities: string[];
+  location: string;
+}
+
+interface HotelDetails extends Hotel {
+  description: string;
+  rooms_available: number;
+  room_types: RoomType[];
+  cancellation_policy: string;
+  images: string[];
+}
+
+interface Reservation {
+  id: string;
+  confirmation_number: string;
+  hotel: Hotel;
+  room_type: string;
+  checkin: date;
+  checkout: date;
+  guests: number;
+  total: number;
+  status: 'pending' | 'confirmed' | 'cancelled';
+}
+
+interface GuestInfo {
+  name: string;
+  email: string;
+  phone?: string;
+  loyalty_number?: string;
+}
+```

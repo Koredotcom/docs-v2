@@ -1,0 +1,437 @@
+---
+title: 'GATHER (information collection)'
+section: 'abl-reference'
+order: 4
+description: 'The `GATHER:` section defines structured information that the agent needs to collect from the user during a conversation. Each field specifies a data type, prompt, validation rules, and collection beh'
+---
+
+# GATHER (information collection)
+
+The `GATHER:` section defines structured information that the agent needs to collect from the user during a conversation. Each field specifies a data type, prompt, validation rules, and collection behavior. The runtime orchestrates multi-turn collection, extracting values from natural conversation and prompting for missing fields.
+
+## Syntax
+
+At the top level of an agent document, `GATHER:` defines fields as named blocks:
+
+```abl
+GATHER:
+  source_account:
+    prompt: "Which account would you like to use?"
+    type: string
+    required: true
+
+  amount:
+    prompt: "How much would you like to transfer?"
+    type: number
+    required: true
+    validate: min(1)
+
+  currency:
+    prompt: "What currency?"
+    type: string
+    required: true
+    default: "USD"
+    infer: true
+```
+
+Within a `FLOW:` step, gather uses a different syntax. See [GATHER within FLOW](/agent-platform-v2/abl-reference/flow#gather-in-flow-steps).
+
+## Field properties
+
+| Property             | Type                                  | Required | Default      | Description                                                             |
+| -------------------- | ------------------------------------- | -------- | ------------ | ----------------------------------------------------------------------- |
+| `prompt`             | `string`                              | Yes      | --           | The question or instruction shown to the user to collect this field     |
+| `type`               | `string`                              | No       | `"string"`   | Data type for the field value                                           |
+| `required`           | `boolean`                             | No       | `true`       | Whether the field must be collected before proceeding                   |
+| `default`            | `any`                                 | No       | _none_       | Default value used if the user does not provide one                     |
+| `validate`           | `string`                              | No       | _none_       | Validation expression (see [Validation](#validation))                   |
+| `validation_process` | `"REGEX"` \| `"CODE"` \| `"LLM"`      | No       | _none_       | How validation is performed                                             |
+| `retry_prompt`       | `string`                              | No       | _none_       | Custom prompt shown when validation fails                               |
+| `max_retries`        | `number`                              | No       | _none_       | Maximum validation retry attempts                                       |
+| `infer`              | `boolean`                             | No       | `false`      | Allow the LLM to infer the value from context                           |
+| `infer_confidence`   | `number`                              | No       | `0.8`        | Minimum confidence threshold for accepting inferred values (0.0--1.0)   |
+| `infer_confirm`      | `boolean`                             | No       | `true`       | Whether to confirm inferred values with the user                        |
+| `extraction_hints`   | `string[]`                            | No       | _none_       | Hints to guide the LLM's value extraction                               |
+| `prompt_mode`        | `"ask"` \| `"extract_only"`           | No       | `"ask"`      | Whether the prompt is shown to the user or used only for LLM extraction |
+| `range`              | `boolean`                             | No       | `false`      | Collect as a range `{low, high}` instead of a scalar                    |
+| `list`               | `boolean`                             | No       | `false`      | Collect as an array instead of a scalar                                 |
+| `preferences`        | `boolean`                             | No       | `false`      | Categorize into accept/desire/avoid/refuse preference sets              |
+| `activation`         | `string` \| `{when: string}`          | No       | `"required"` | Activation mode (see [Progressive activation](#progressive-activation)) |
+| `depends_on`         | `string[]`                            | No       | _none_       | Fields that must be collected before this field activates               |
+| `sensitive`          | `boolean`                             | No       | `false`      | Whether this field carries PII                                          |
+| `sensitive_display`  | `"redact"` \| `"mask"` \| `"replace"` | No       | _none_       | How sensitive values are displayed outside the gather context           |
+| `mask_config`        | `{showFirst, showLast, char}`         | No       | _none_       | Masking configuration when `sensitive_display` is `"mask"`              |
+| `transient`          | `boolean`                             | No       | `false`      | Whether PII auto-cleans after gather completes                          |
+| `extraction_pattern` | `string`                              | No       | _none_       | Custom regex pattern for value extraction                               |
+| `extraction_group`   | `number`                              | No       | `0`          | Capture group index for `extraction_pattern`                            |
+| `semantics`          | `object`                              | No       | _none_       | Supplemental metadata about the value (see [Semantics](#semantics))     |
+
+## Field types
+
+The `type` property specifies the expected data type for the field value:
+
+| Type      | Description     | Example values          |
+| --------- | --------------- | ----------------------- |
+| `string`  | Free-text value | `"John Smith"`, `"USD"` |
+| `number`  | Numeric value   | `42`, `150.75`          |
+| `boolean` | True/false      | `true`, `false`         |
+| `date`    | Calendar date   | `"2026-03-15"`          |
+| `email`   | Email address   | `"user@example.com"`    |
+| `phone`   | Phone number    | `"+1-555-123-4567"`     |
+
+## Validation
+
+The `validate` property defines a validation expression that the collected value must satisfy:
+
+```abl
+GATHER:
+  amount:
+    prompt: "How much?"
+    type: number
+    required: true
+    validate: min(1)
+
+  email:
+    prompt: "Your email address?"
+    type: string
+    required: true
+    validate: email()
+
+  transfer_type:
+    prompt: "Domestic or international?"
+    type: string
+    required: true
+    validate: enum(domestic, international)
+```
+
+### Validation expressions
+
+| Expression       | Description                      | Example                                   |
+| ---------------- | -------------------------------- | ----------------------------------------- |
+| `min(n)`         | Minimum numeric value            | `validate: min(1)`                        |
+| `max(n)`         | Maximum numeric value            | `validate: max(10000)`                    |
+| `enum(a, b, c)`  | Must be one of the listed values | `validate: enum(domestic, international)` |
+| `email()`        | Must be a valid email format     | `validate: email()`                       |
+| `pattern(regex)` | Must match a regex pattern       | `validate: pattern(^\d{9}$)`              |
+
+### Validation process
+
+The `validation_process` property controls how validation is executed:
+
+| Value   | Description                                 |
+| ------- | ------------------------------------------- |
+| `REGEX` | Validate using a regular expression pattern |
+| `CODE`  | Validate using a code expression            |
+| `LLM`   | Validate using LLM judgment                 |
+
+```abl
+GATHER:
+  routing_number:
+    prompt: "What is the ABA routing number?"
+    type: string
+    required: true
+    validate: pattern(^\d{9}$)
+    validation_process: REGEX
+    retry_prompt: "That doesn't look like a valid 9-digit routing number. Please re-enter."
+    max_retries: 3
+```
+
+## LLM inference
+
+When `infer: true`, the LLM can extract or infer the field value from conversational context without explicitly asking the user. This enables natural, conversational information collection.
+
+```abl
+GATHER:
+  transfer_type:
+    prompt: "Is this domestic or international?"
+    type: string
+    required: true
+    validate: enum(domestic, international)
+    infer: true
+    extraction_hints: ["If beneficiary country is US, infer domestic. Otherwise international."]
+
+  currency:
+    prompt: "What currency?"
+    type: string
+    required: true
+    default: "USD"
+    infer: true
+    infer_confidence: 0.9
+    infer_confirm: false
+```
+
+### Inference properties
+
+| Property           | Type       | Default | Description                                                                 |
+| ------------------ | ---------- | ------- | --------------------------------------------------------------------------- |
+| `infer`            | `boolean`  | `false` | Enable LLM inference for this field                                         |
+| `infer_confidence` | `number`   | `0.8`   | Minimum confidence (0.0--1.0) the LLM must have to accept an inferred value |
+| `infer_confirm`    | `boolean`  | `true`  | Whether to ask the user to confirm inferred values                          |
+| `extraction_hints` | `string[]` | _none_  | Natural-language hints guiding the LLM's extraction logic                   |
+
+When the LLM's confidence in an inferred value falls below `infer_confidence`, the runtime falls back to asking the user directly using the `prompt`.
+
+## Range collection
+
+When `range: true`, the field collects a range with `low` and `high` values instead of a single scalar:
+
+```abl
+GATHER:
+  budget:
+    prompt: "What is your budget range?"
+    type: number
+    required: true
+    range: true
+```
+
+The collected value is stored as an object: `{low: number, high: number}`.
+
+## List collection
+
+When `list: true`, the field collects multiple values as an array:
+
+```abl
+GATHER:
+  dietary_restrictions:
+    prompt: "Do you have any dietary restrictions?"
+    type: string
+    required: false
+    list: true
+```
+
+The collected value is stored as an array: `["vegetarian", "no nuts"]`.
+
+## Preference collection
+
+When `preferences: true`, the field categorizes user input into preference sets:
+
+```abl
+GATHER:
+  hotel_amenities:
+    prompt: "What amenities are important to you?"
+    type: string
+    required: false
+    preferences: true
+```
+
+The collected value is categorized into: `{accept: [], desire: [], avoid: [], refuse: []}`.
+
+## Progressive activation
+
+The `activation` property controls when a field becomes active for collection:
+
+| Value                 | Description                                           |
+| --------------------- | ----------------------------------------------------- |
+| `"required"`          | Always active, must be collected (default)            |
+| `"optional"`          | Active but not required                               |
+| `"progressive"`       | Activated progressively as other fields are collected |
+| `{when: "condition"}` | Activated only when the condition evaluates to true   |
+
+```abl
+GATHER:
+  routing_number:
+    prompt: "What is the ABA routing number?"
+    type: string
+    required: true
+    activation: required
+    depends_on: [transfer_type]
+
+  swift_code:
+    prompt: "What is the SWIFT/BIC code?"
+    type: string
+    required: true
+    activation:
+      WHEN: "transfer_type == 'international'"
+    depends_on: [transfer_type]
+```
+
+### Field dependencies
+
+The `depends_on` property lists fields that must be collected before this field activates. Combined with `activation`, this creates ordered collection flows:
+
+```abl
+GATHER:
+  destination:
+    prompt: "Where are you traveling?"
+    type: string
+    required: true
+
+  hotel_class:
+    prompt: "What class of hotel?"
+    type: string
+    required: true
+    depends_on: [destination]
+    activation: progressive
+```
+
+## Corrections handling
+
+In flow steps, the `CORRECTIONS: true` property enables natural corrections -- the user can update previously collected values by stating corrections in natural language:
+
+```abl
+# Within a FLOW step
+collect_details:
+  GATHER:
+    - name: required
+    - email: required
+  CORRECTIONS: true
+```
+
+See [FLOW](/agent-platform-v2/abl-reference/flow) for the full flow step GATHER syntax.
+
+## Transient and sensitive fields
+
+### Sensitive fields
+
+Fields marked `sensitive: true` carry PII and receive special handling:
+
+```abl
+GATHER:
+  ssn_last4:
+    prompt: "Last 4 digits of your Social Security Number?"
+    type: string
+    required: true
+    sensitive: true
+    sensitive_display: mask
+    mask_config:
+      showFirst: 0
+      showLast: 4
+      char: "*"
+```
+
+### Sensitive display modes
+
+| Mode      | Description                                | Example output |
+| --------- | ------------------------------------------ | -------------- |
+| `redact`  | Replace entire value with placeholder      | `[REDACTED]`   |
+| `mask`    | Show partial value with masking characters | `****1234`     |
+| `replace` | Replace with a generic description         | `[SSN]`        |
+
+### Mask configuration
+
+| Property    | Type     | Default | Description                               |
+| ----------- | -------- | ------- | ----------------------------------------- |
+| `showFirst` | `number` | `0`     | Number of characters to show at the start |
+| `showLast`  | `number` | `4`     | Number of characters to show at the end   |
+| `char`      | `string` | `"*"`   | Masking character                         |
+
+### Transient fields
+
+Fields marked `transient: true` are automatically cleared from the session after the gather phase completes. Use this for sensitive data that should not persist beyond its immediate use:
+
+```abl
+GATHER:
+  card_number:
+    prompt: "Card number for verification?"
+    type: string
+    required: true
+    sensitive: true
+    transient: true
+```
+
+## Extraction patterns
+
+The `extraction_pattern` property defines a custom regex for extracting structured values from user input. Combined with `extraction_group`, it specifies which capture group to use:
+
+```abl
+GATHER:
+  routing_number:
+    prompt: "What is the routing number?"
+    type: string
+    required: true
+    extraction_pattern: "(?:routing|aba|transit).*?(\d{9})"
+    extraction_group: 1
+```
+
+| Property             | Type     | Default | Description                          |
+| -------------------- | -------- | ------- | ------------------------------------ |
+| `extraction_pattern` | `string` | _none_  | Regex pattern for value extraction   |
+| `extraction_group`   | `number` | `0`     | Capture group index (0 = full match) |
+
+## Semantics
+
+The `semantics` block provides supplemental metadata that helps the runtime interpret and process field values:
+
+```abl
+GATHER:
+  address:
+    prompt: "What is the delivery address?"
+    type: string
+    required: true
+    semantics:
+      format: "US postal address"
+      components: [street, city, state, zip]
+
+  transfer_amount:
+    prompt: "How much to transfer?"
+    type: number
+    required: true
+    semantics:
+      unit: "USD"
+      convert_to: "cents"
+```
+
+### Semantics properties
+
+| Property     | Type       | Description                           |
+| ------------ | ---------- | ------------------------------------- |
+| `format`     | `string`   | Expected format description           |
+| `components` | `string[]` | Sub-components of the value           |
+| `unit`       | `string`   | Unit of measurement                   |
+| `lookup`     | `string`   | Lookup table reference for validation |
+| `convert_to` | `string`   | Target unit for conversion            |
+| `locale`     | `string`   | Locale for parsing                    |
+
+## Complete example
+
+```abl
+GATHER:
+  source_account:
+    prompt: "Which account would you like to send from?"
+    type: string
+    required: true
+
+  transfer_type:
+    prompt: "Is this a domestic or international wire?"
+    type: string
+    required: true
+    validate: enum(domestic, international)
+    infer: true
+    extraction_hints: ["If beneficiary country is US, infer domestic. Otherwise international."]
+
+  beneficiary_name:
+    prompt: "Full legal name on the beneficiary's account?"
+    type: string
+    required: true
+
+  amount:
+    prompt: "How much would you like to send?"
+    type: number
+    required: true
+    validate: min(1)
+
+  currency:
+    prompt: "What currency? (e.g., USD, EUR, GBP)"
+    type: string
+    required: true
+    default: "USD"
+    infer: true
+
+  purpose_code:
+    prompt: "Purpose of this transfer?"
+    type: string
+    required: true
+    infer: true
+    extraction_hints: ["Map descriptions to standard purpose codes."]
+
+  reference:
+    prompt: "Reference or memo for the beneficiary? (optional)"
+    type: string
+    required: false
+```
+
+## Related
+
+- [Tools](/agent-platform-v2/abl-reference/tools) -- tool definitions (tools and gather work together)
+- [FLOW](/agent-platform-v2/abl-reference/flow) -- GATHER within flow steps uses a different syntax
+- [Language overview](/agent-platform-v2/abl-reference/language-overview) -- syntax rules for lists and blocks

@@ -1,0 +1,627 @@
+---
+title: 'Multi-Agent and Knowledge'
+sidebarTitle: 'Multi-Agent & Knowledge'
+---
+
+Build a multi-agent customer support system with a supervisor that routes conversations to specialist agents. Then create a knowledge base and connect it so your agents can answer questions grounded in your documentation. By the end, you know how to:
+
+- Create a supervisor with handoff rules
+- Define specialist agents with distinct capabilities
+- Configure context passing between agents
+- Handle escalation and error scenarios
+- Create a knowledge base and ingest documents
+- Connect a knowledge base to an agent as a tool
+- Test RAG-powered responses
+
+## Prerequisites
+
+- Completed [Add structured steps to an agent](/agent-platform-v2/tutorials/build-a-scripted-flow)
+- A project open in Studio
+- Understanding of agents, tools, and flows
+- Documents to upload (PDF, DOCX, TXT, or Markdown files) for the knowledge base section
+
+## What You'll Build
+
+```mermaid actions={false}
+flowchart LR
+    A["**Part 1** <br /> Build a Supervisor"]
+    B["**Part 2** <br /> Add Delegation <br /> & Routing"]
+    C["**Part 3** <br /> Add a Knowledge <br /> Base"]
+    D["**Part 4** <br /> Connect It <br /> Together"]
+    A --> B --> C --> D
+```
+
+A retail customer support system with:
+
+- **Retail_Supervisor** — Routes customer queries to the right specialist.
+- **Order_Tracker** — Handles order status and shipping inquiries.
+- **Returns_Agent** — Processes returns and refund requests.
+- **Product_Advisor** — Answers product questions and gives recommendations.
+- **A knowledge base** — Powers agents with document-based search for accurate, grounded answers.
+
+---
+
+## Build a Supervisor
+
+### Step 1: Create the order tracking agent
+
+Create `agents/order_tracker.agent.abl`:
+
+```abl
+AGENT: Order_Tracker
+GOAL: "Help customers track their orders and get shipping updates"
+
+PERSONA: |
+  Efficient and reassuring customer service specialist.
+  Provides clear, specific information about order status.
+  Proactively offers tracking links and estimated delivery dates.
+
+LIMITATIONS:
+  - Cannot modify orders after they ship
+  - Cannot process refunds (routes to Returns_Agent)
+  - Cannot change shipping addresses on shipped orders
+
+TOOLS:
+  lookup_order(order_id: string) -> {status: string, items: array, tracking_number: string, estimated_delivery: string}
+    description: "Look up order details by order ID"
+
+  get_tracking(tracking_number: string) -> {carrier: string, status: string, location: string, events: array}
+    description: "Get real-time tracking information"
+
+GATHER:
+  order_id:
+    prompt: "What is your order number?"
+    type: string
+    required: true
+
+INSTRUCTIONS: |
+  1. Ask for the order number if not provided
+  2. Look up the order using lookup_order
+  3. If the order has a tracking number, get tracking details
+  4. Present the current status, location, and estimated delivery
+  5. If the customer wants a refund, let them know you will
+     connect them with the returns team
+
+HANDOFF:
+  - TO: Returns_Agent
+    WHEN: intent.category == "refund" OR intent.category == "return"
+    CONTEXT:
+      pass: [order_id, order_status, customer_id]
+      summary: "Customer wants to return or get a refund"
+    RETURN: false
+
+COMPLETE:
+  - WHEN: order_status_provided == true
+    RESPOND: "Is there anything else I can help you with regarding your order?"
+```
+
+This agent defines its own `HANDOFF` rule. If a customer asks about a return during an order tracking conversation, the agent hands off to the Returns_Agent with the relevant context.
+
+### Step 2: Create the returns agent
+
+Create `agents/returns_agent.agent.abl`:
+
+```abl
+AGENT: Returns_Agent
+GOAL: "Process return and refund requests efficiently and fairly"
+
+PERSONA: |
+  Empathetic and solution-oriented returns specialist.
+  Explains the return process clearly. Handles frustrated
+  customers with patience and understanding.
+
+LIMITATIONS:
+  - Cannot override the 30-day return window
+  - Cannot process returns for items marked as final sale
+  - Cannot issue refunds exceeding the original purchase price
+
+TOOLS:
+  check_return_eligibility(order_id: string, item_id: string) -> {eligible: boolean, reason: string, return_window_ends: string}
+    description: "Check if an item is eligible for return"
+
+  initiate_return(order_id: string, item_id: string, reason: string) -> {return_id: string, label_url: string, instructions: string}
+    description: "Create a return request and generate shipping label"
+
+  check_refund_status(return_id: string) -> {status: string, amount: number, estimated_date: string}
+    description: "Check the status of a pending refund"
+
+FLOW:
+  steps:
+    - identify_item
+    - check_eligibility
+    - process_return
+    - provide_instructions
+
+  identify_item:
+    REASONING: false
+    GATHER:
+      - order_id: required
+        prompt: "What is your order number?"
+      - item_description: required
+        prompt: "Which item would you like to return?"
+    THEN: check_eligibility
+
+  check_eligibility:
+    REASONING: false
+    CALL: check_return_eligibility(order_id, item_id)
+    ON_SUCCESS:
+      RESPOND: "Good news -- your item is eligible for return. The return window closes on {{return_window_ends}}."
+      THEN: process_return
+    ON_FAIL:
+      RESPOND: "Unfortunately, this item is not eligible for return. Reason: {{reason}}"
+      THEN: COMPLETE
+
+  process_return:
+    REASONING: false
+    GATHER:
+      - return_reason: required
+        prompt: "Can you tell me why you are returning this item?"
+    CALL: initiate_return(order_id, item_id, return_reason)
+    ON_SUCCESS:
+      RESPOND: |
+        Your return has been initiated!
+
+        Return ID: {{return_id}}
+        Shipping label: {{label_url}}
+      THEN: provide_instructions
+    ON_FAIL:
+      RESPOND: "There was an issue creating the return. Let me connect you with a specialist."
+      THEN: COMPLETE
+
+  provide_instructions:
+    REASONING: false
+    RESPOND: |
+      Here is what to do next:
+
+      {{instructions}}
+
+      Your refund will be processed within 5-7 business days
+      after we receive the item.
+    THEN: COMPLETE
+
+COMPLETE:
+  - WHEN: return_initiated == true
+    RESPOND: "Your return is all set. Is there anything else I can help with?"
+```
+
+### Step 3: Create the product advisor agent
+
+Create `agents/product_advisor.agent.abl`:
+
+```abl
+AGENT: Product_Advisor
+GOAL: "Help customers find products, compare options, and make informed purchase decisions"
+
+PERSONA: |
+  Knowledgeable and enthusiastic product specialist.
+  Gives honest, balanced recommendations. Never pushes
+  unnecessary upsells. Focuses on what the customer needs.
+
+TOOLS:
+  search_products(query: string, category: string, max_price: number) -> {products: array}
+    description: "Search the product catalog"
+
+  get_product_details(product_id: string) -> {name: string, description: string, price: number, specs: object, reviews_summary: object}
+    description: "Get detailed product information"
+
+  compare_products(product_ids: array) -> {comparison: object}
+    description: "Compare two or more products side by side"
+
+INSTRUCTIONS: |
+  1. Understand what the customer is looking for
+  2. Search for matching products
+  3. Present the top options with key details
+  4. Offer to compare products if the customer is undecided
+  5. Provide honest pros and cons for each option
+
+COMPLETE:
+  - WHEN: customer_found_product == true
+    RESPOND: "Great choice! Is there anything else you would like to know?"
+```
+
+### Step 4: Create the supervisor
+
+Create `supervisor.agent.abl` at the project root:
+
+```abl
+SUPERVISOR: Retail_Supervisor
+GOAL: "Route customers to the right specialist for order tracking, returns, or product questions"
+
+PERSONA: |
+  Professional and helpful retail assistant.
+  Friendly, efficient, and knowledgeable.
+  Routes requests to the right specialist quickly.
+
+LIMITATIONS:
+  - Cannot process orders or payments directly
+  - Cannot access customer financial information
+  - Cannot override pricing or return policies
+
+TEMPLATES:
+  welcome:
+    DEFAULT: |
+      Welcome to our store! I can help you with:
+      - Track an order or check shipping status
+      - Process a return or check refund status
+      - Find products or get recommendations
+      What can I help you with today?
+
+ON_START:
+  RESPOND: TEMPLATE(welcome)
+
+MEMORY:
+  session:
+    - current_intent
+    - customer_id
+    - routing_history
+    - handoff_count
+
+HANDOFF:
+  - TO: Order_Tracker
+    WHEN: intent.category == "order_inquiry" OR intent.category == "shipping" OR intent.category == "delivery"
+    CONTEXT:
+      pass: [customer_id, order_id, session_context]
+      summary: "Customer wants to track or check on an order"
+    RETURN: false
+
+  - TO: Returns_Agent
+    WHEN: intent.category == "return" OR intent.category == "refund" OR intent.category == "exchange"
+    CONTEXT:
+      pass: [customer_id, order_id, session_context]
+      summary: "Customer wants to return an item or check refund status"
+    RETURN: false
+
+  - TO: Product_Advisor
+    WHEN: intent.category == "browse" OR intent.category == "search" OR intent.category == "recommend" OR intent.category == "compare"
+    CONTEXT:
+      pass: [customer_id, search_context]
+      summary: "Customer looking for products or recommendations"
+    RETURN: false
+
+ESCALATE:
+  triggers:
+    - WHEN: handoff_count >= 3
+      REASON: "Customer bounced between too many agents"
+      PRIORITY: high
+      TAGS: [ux_failure]
+
+    - WHEN: user.frustration_detected == true
+      REASON: "Customer showing signs of frustration"
+      PRIORITY: high
+      TAGS: [sentiment, retention]
+
+  context_for_human:
+    - customer_id
+    - conversation_history
+    - routing_history
+    - last_intent
+
+ON_ERROR:
+  routing_failure:
+    RESPOND: "I'm having trouble understanding your request. Let me connect you with someone who can help."
+    RETRY: 1
+    THEN: ESCALATE
+
+COMPLETE:
+  - WHEN: handoff_successful == true
+    RESPOND: "I've connected you with the right specialist."
+
+  - WHEN: user.session_ended == true
+    RESPOND: "Thank you for shopping with us!"
+```
+
+### Step 5: Understand the supervisor structure
+
+The supervisor is the orchestration layer. Here is what each section does:
+
+**SUPERVISOR** -- Declares this as a supervisor (not an agent). Supervisors route conversations; they do not handle domain tasks directly.
+
+**TEMPLATES** -- Reusable message templates. `TEMPLATE(welcome)` references the named template.
+
+**ON_START** -- Runs when a new session begins. Sends the welcome message before the user types anything.
+
+**MEMORY** -- Session variables the supervisor tracks across the conversation.
+
+**HANDOFF** -- Routing rules ordered by priority. Each rule specifies:
+
+- **TO** -- The target agent
+- **WHEN** -- The condition that triggers the handoff
+- **CONTEXT** -- What data to pass to the target agent
+  - **pass** -- List of session variables to include
+  - **summary** -- A natural language description for the receiving agent
+- **RETURN** -- Whether control returns to the supervisor after the agent finishes
+
+**ESCALATE** -- Conditions that trigger escalation to a human agent.
+
+**ON_ERROR** -- Error handling for routing failures.
+
+---
+
+## Add Delegation & Routing
+
+### Step 6: Configure context passing
+
+The `CONTEXT` block controls what information flows between agents. Here is a more detailed example:
+
+```abl
+  - TO: Order_Tracker
+    WHEN: intent.category == "order_inquiry"
+    CONTEXT:
+      pass: [customer_id, order_id, session_context]
+      summary: "Customer wants to track order"
+    RETURN: true
+    ON_RETURN: "await_next_request"
+```
+
+When `RETURN: true`, the conversation returns to the supervisor after the specialist agent finishes. `ON_RETURN` specifies what the supervisor does next. With `RETURN: false`, the specialist agent handles the rest of the session.
+
+### Step 7: Test the orchestration flow
+
+Open the **Chat** panel and start a conversation:
+
+```
+Hi, I'd like to check on my order
+```
+
+The supervisor routes to Order_Tracker. The agent asks for the order number and provides status updates.
+
+Try switching contexts:
+
+```
+Actually, I want to return one of the items
+```
+
+The order tracker hands off to the returns agent, passing the order context along.
+
+Start a new session and try:
+
+```
+I'm looking for a good laptop for programming
+```
+
+The supervisor routes directly to Product_Advisor.
+
+### Step 8: Review the orchestration trace
+
+Open the **Traces** panel to see the multi-agent flow:
+
+1. **Supervisor receives message** -- Intent classification happens
+2. **Handoff decision** -- The matching HANDOFF rule fires
+3. **Context transfer** -- Session variables pass to the target agent
+4. **Agent execution** -- The specialist agent handles the conversation
+5. **Return or complete** -- The agent either returns to the supervisor or ends the session
+
+Each agent's execution appears as a nested span under the supervisor span. This gives you full visibility into routing decisions and context flow.
+
+### Project file structure
+
+```
+my-retail-project/
+  supervisor.agent.abl
+  agents/
+    order_tracker.agent.abl
+    returns_agent.agent.abl
+    product_advisor.agent.abl
+```
+
+---
+
+## Add a Knowledge Base
+
+Now add document-based knowledge so your agents can answer questions grounded in your content. You create a knowledge base, upload documents, and connect it to an agent using retrieval-augmented generation (RAG).
+
+### Step 9: Create a knowledge base in Studio
+
+Open your project in Studio. Navigate to the **Knowledge** section in the left sidebar. Select **Create Knowledge Base** and configure it:
+
+- **Name:** `product-docs`
+- **Description:** "Product documentation and help articles"
+
+Studio creates the knowledge base and opens the document management view.
+
+### Step 10: Upload documents
+
+Select **Upload Documents** and add your files. The platform supports:
+
+- PDF documents
+- DOCX (Microsoft Word)
+- Plain text files (.txt)
+- Markdown files (.md)
+
+The platform processes each document through the ingestion pipeline:
+
+1. **Extraction** -- Converts the document to plain text
+2. **Chunking** -- Splits the text into semantic chunks
+3. **Embedding** -- Generates vector embeddings for each chunk
+4. **Indexing** -- Stores the chunks in the search index
+
+The processing status appears next to each file. Wait for all documents to show "Indexed" status before continuing.
+
+### Step 11: Create an agent with knowledge tools
+
+Create `support_agent.agent.abl`:
+
+```abl
+AGENT: Support_Agent
+
+EXECUTION:
+  model: claude-sonnet-4-5-20250929
+
+GOAL: |
+  Answer customer questions about our product using the knowledge base.
+  Provide accurate, helpful responses grounded in the documentation.
+  If the answer is not in the knowledge base, say so honestly rather
+  than guessing.
+
+PERSONA: |
+  Friendly and knowledgeable support specialist. Explains technical
+  concepts clearly. Includes relevant links or references when
+  available. Admits when information is not available rather than
+  speculating.
+
+LIMITATIONS:
+  - Cannot access customer account data
+  - Cannot make changes to customer configurations
+  - Cannot provide information not in the knowledge base
+
+TOOLS:
+  vocabulary_resolve(project_kb_id: string, query: string) -> {resolvedTerms: object[], structuredFilters: object[]}
+    description: "Resolve business terms to canonical metadata filters"
+
+  search_hybrid(index_id: string, query: string, top_k: number, similarity_threshold: number) -> {results: object[], totalCount: number, latencyMs: number}
+    description: "Search the knowledge base using hybrid vector and keyword search"
+
+  search_vector(index_id: string, query: string, top_k: number) -> {results: object[], totalCount: number, latencyMs: number}
+    description: "Search the knowledge base using semantic vector search"
+
+INSTRUCTIONS: |
+  1. When the user asks a question, identify any domain-specific terms
+  2. If domain terms are found, call vocabulary_resolve to get filters
+  3. Execute search_hybrid with the query and any resolved filters
+  4. If results are insufficient, retry with search_vector
+  5. Synthesize an answer from the retrieved knowledge chunks
+  6. Include source attribution for transparency
+  7. If no results are found, tell the user honestly and suggest
+     contacting support directly
+
+COMPLETE:
+  - WHEN: user.question_answered == true
+    RESPOND: "Is there anything else you would like to know?"
+```
+
+The agent uses three search tools:
+
+- **vocabulary_resolve** -- Maps informal or domain-specific terms (like "SSO" or "2FA") to canonical forms for better search precision
+- **search_hybrid** -- Combines vector similarity with keyword matching for precise results
+- **search_vector** -- Pure semantic search for broader, meaning-based queries
+
+### Step 12: Connect the knowledge base in Studio
+
+In Studio, open your agent's configuration panel. Under **Tools**, you see the search tools defined in the ABL file. Select **Configure** next to `search_hybrid` and map it to your knowledge base:
+
+- **Index ID:** Select `product-docs` from the dropdown
+
+Studio automatically configures the tool binding to use your knowledge base's search index. The `index_id` parameter is resolved at runtime to the correct index.
+
+### Step 13: Test RAG-powered responses
+
+Open the **Chat** panel and ask a question that relates to your uploaded documents:
+
+```
+How do I reset my password?
+```
+
+The agent:
+
+1. Receives your question
+2. Calls `search_hybrid` to search the knowledge base
+3. Receives relevant document chunks
+4. Synthesizes an answer based on the retrieved content
+5. Responds with the answer and source attribution
+
+Open the **Traces** panel to see the RAG pipeline in action:
+
+- **Search query** -- The query sent to the search tool
+- **Retrieved chunks** -- The document segments returned
+- **Relevance scores** -- How closely each chunk matched
+- **Generated response** -- The final answer synthesized from the chunks
+
+---
+
+## Connect Knowledge to Your Multi-Agent System
+
+The knowledge base and multi-agent system are even more powerful together. Here is how to wire them up.
+
+### Step 14: Add knowledge tools to the Product Advisor
+
+Update `agents/product_advisor.agent.abl` to include knowledge base search alongside catalog tools:
+
+```abl
+AGENT: Product_Advisor
+GOAL: "Help customers find products, compare options, and make informed purchase decisions using catalog data and product documentation"
+
+TOOLS:
+  search_products(query: string, category: string, max_price: number) -> {products: array}
+    description: "Search the product catalog"
+
+  get_product_details(product_id: string) -> {name: string, description: string, price: number, specs: object, reviews_summary: object}
+    description: "Get detailed product information"
+
+  compare_products(product_ids: array) -> {comparison: object}
+    description: "Compare two or more products side by side"
+
+  search_hybrid(index_id: string, query: string, top_k: number, similarity_threshold: number) -> {results: object[], totalCount: number, latencyMs: number}
+    description: "Search product documentation and guides"
+
+INSTRUCTIONS: |
+  1. Understand what the customer is looking for
+  2. Search for matching products in the catalog
+  3. If the customer has technical questions, search the knowledge base
+  4. Combine catalog data and documentation to give complete answers
+  5. Offer to compare products if the customer is undecided
+  6. Provide honest pros and cons for each option
+```
+
+Now the Product Advisor can answer both "What laptops do you have under $1000?" (catalog search) and "Does the ProBook support USB-C charging?" (knowledge base search) in the same conversation.
+
+### Step 15: Add a knowledge-powered FAQ to the supervisor
+
+You can also give the supervisor a knowledge tool for quick FAQ-style answers that do not require routing to a specialist:
+
+```abl
+SUPERVISOR: Retail_Supervisor
+
+TOOLS:
+  search_hybrid(index_id: string, query: string, top_k: number, similarity_threshold: number) -> {results: object[], totalCount: number, latencyMs: number}
+    description: "Search the FAQ knowledge base for quick answers"
+
+HANDOFF:
+  - TO: Order_Tracker
+    WHEN: intent.category == "order_inquiry" OR intent.category == "shipping"
+    # ... existing handoff rules ...
+
+  - TO: Returns_Agent
+    WHEN: intent.category == "return" OR intent.category == "refund"
+    # ... existing handoff rules ...
+
+  - TO: Product_Advisor
+    WHEN: intent.category == "browse" OR intent.category == "search"
+    # ... existing handoff rules ...
+
+INSTRUCTIONS: |
+  1. For simple FAQ questions (store hours, policies, general info),
+     search the knowledge base and answer directly
+  2. For domain-specific requests, route to the appropriate specialist
+  3. If the knowledge base returns a clear answer, respond without
+     routing -- this reduces handoffs and improves response time
+```
+
+This pattern keeps simple questions at the supervisor level while routing complex requests to specialists. Fewer handoffs mean faster responses and better user experience.
+
+---
+
+## What You Learned
+
+- **SUPERVISOR** is the orchestration layer that routes conversations to specialist agents
+- **HANDOFF** rules define when and where to route based on intent
+- **CONTEXT** controls what data flows between agents via `pass` and `summary`
+- **RETURN: true** sends control back to the supervisor; **RETURN: false** lets the agent finish the session
+- **ON_START** sends a welcome message before the user types anything
+- **TEMPLATES** define reusable messages referenced by name
+- **ESCALATE** defines conditions for human handoff
+- **ON_ERROR** handles routing failures with retry and fallback
+- Agents can define their own **HANDOFF** rules for agent-to-agent transfers
+- Knowledge bases store and index your documents for retrieval
+- The ingestion pipeline extracts, chunks, embeds, and indexes documents
+- **search_hybrid** combines vector similarity with keyword matching; **search_vector** performs pure semantic search
+- **vocabulary_resolve** maps domain terms to canonical filters for precision
+- RAG (retrieval-augmented generation) grounds agent responses in your content
+- Knowledge tools can be added to individual agents or the supervisor for FAQ handling
+
+## Next Steps
+
+- [Safety, testing, and publishing](/agent-platform-v2/tutorials/safety-testing-publishing) — Add guardrails, run evaluations, and publish your agent.
+- [Building agents](/agent-platform-v2/guides/building-reasoning-agents) — Deep dive into agent patterns.
+- [Knowledge bases](/agent-platform-v2/guides/knowledge-bases) — Advanced knowledge base configuration and search strategies.
+
+<Tip>Use `RETURN: true` on handoffs when you want the supervisor to resume after a specialist finishes. Use `RETURN: false` when the specialist should own the rest of the session.</Tip>

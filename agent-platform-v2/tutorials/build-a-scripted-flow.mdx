@@ -1,0 +1,424 @@
+---
+title: 'Add Structured Steps to an Agent'
+sidebarTitle: 'Add Structured Steps'
+---
+
+Add a `FLOW` section to a hotel booking agent, giving it structured steps that guide users through a reservation process. By the end, you know how to:
+
+- Define a flow with named steps and transitions
+- Use GATHER to collect information from users
+- Add conditional branching with ON_INPUT and ON_RESULT
+- Handle tool call results within flow steps
+- Implement validation and correction patterns
+
+## Prerequisites
+
+- Completed [Build your first agent](/agent-platform-v2/tutorials/build-your-first-agent)
+- A project open in Studio
+- Understanding of agent and tool definitions
+
+## What You'll Build
+
+```mermaid actions={false}
+flowchart LR
+    A["Create agent <br /> with tools"]
+    B["Add FLOW <br /> block"]
+    C["Build each <br /> step"]
+    D["Test the <br /> full flow"]
+    A --> B --> C --> D
+```
+
+A hotel booking agent with a `FLOW` section that walks users through structured steps: entering a destination, selecting dates, searching for hotels, choosing a room, entering guest details, and confirming the booking. Each step collects specific information before moving forward. The agent is the same kind of agent you built in the first tutorial — you are simply adding structured steps via a `FLOW` block.
+
+## Step 1: Create the agent with tools
+
+Create `hotel_booking.agent.abl` and start with the agent definition and tools:
+
+```abl
+AGENT: Hotel_Booking
+GOAL: "Guide users through a complete hotel booking process step by step"
+
+PERSONA: |
+  Professional and friendly hotel booking assistant.
+  Guides users through each step clearly.
+  Confirms information at each stage.
+
+TOOLS:
+  search_hotels(destination: string, checkin: date, checkout: date, guests: number) -> {hotels: array}
+    description: "Search for available hotels"
+
+  create_booking(hotel_id: string, guest_name: string, email: string, phone: string) -> {booking_id: string, confirmation: string}
+    description: "Create a hotel booking"
+```
+
+## Step 2: Add a FLOW section
+
+Add the `FLOW` block to give the agent structured steps. Any agent can include a FLOW section -- it does not change the type of agent, it just adds a step-by-step structure to the conversation:
+
+```abl
+FLOW:
+  steps:
+    - welcome
+    - get_destination
+    - get_dates
+    - get_guests
+    - search_and_show
+    - select_hotel
+    - get_guest_details
+    - confirm_booking
+```
+
+The `steps` list declares the order of steps. Each step name maps to a definition below. The first step in the list is the default entry point.
+
+## Step 3: Add the welcome step
+
+```abl
+  welcome:
+    REASONING: false
+    RESPOND: |
+      Welcome to Hotel Booking!
+
+      I'll help you find and book the perfect hotel.
+      Let's get started with your destination.
+    THEN: get_destination
+```
+
+Within a flow, each step can set `REASONING: false` to follow exact rules without LLM reasoning, or `REASONING: true` to use the LLM for that step. Since agents reason by default, `REASONING: true` is the default for flow steps -- you only need to set `REASONING: false` explicitly when you want deterministic, non-LLM behavior. The `RESPOND` block sends a message to the user. `THEN` transitions to the next step.
+
+## Step 4: Collect information with GATHER
+
+Add the destination, dates, and guest count steps:
+
+```abl
+  get_destination:
+    REASONING: false
+    GATHER:
+      - destination: required
+        prompt: "Where would you like to stay?"
+    THEN: get_dates
+
+  get_dates:
+    REASONING: false
+    GATHER:
+      - checkin_date: required
+        type: date
+        prompt: "What is your check-in date?"
+      - checkout_date: required
+        type: date
+        prompt: "What is your check-out date?"
+    THEN: get_guests
+
+  get_guests:
+    REASONING: false
+    GATHER:
+      - num_guests: required
+        type: number
+        prompt: "How many guests?"
+    THEN: search_and_show
+```
+
+`GATHER` collects one or more pieces of information from the user. Each field specifies:
+
+- **name** -- The variable name to store the value
+- **required** -- Whether the field must be provided
+- **type** -- The expected data type (string, number, date, email, phone)
+- **prompt** -- The question shown to the user
+
+When a step has multiple GATHER fields, the Runtime collects them in a natural conversational flow. Users can provide multiple values in a single message.
+
+## Step 5: Call a tool and handle results
+
+Add the hotel search step with result handling:
+
+```abl
+  search_and_show:
+    REASONING: false
+    CALL: search_hotels(destination, checkin_date, checkout_date, num_guests)
+    ON_SUCCESS:
+      RESPOND: |
+        I found these hotels in {{destination}}:
+
+        {{#each hotels}}
+        {{add @index 1}}. {{name}} - ${{price}}/night ({{rating}} stars)
+        {{/each}}
+
+        Which hotel would you like to book? Enter the number.
+      THEN: select_hotel
+    ON_FAIL:
+      RESPOND: "No hotels found for your criteria. Let's try different dates."
+      THEN: get_dates
+```
+
+The `CALL` keyword executes a tool with session variables as arguments. `ON_SUCCESS` runs when the tool returns data, and `ON_FAIL` runs when it fails. The response template uses Handlebars syntax (`{{#each}}`, `{{name}}`) to render dynamic data.
+
+## Step 6: Add conditional branching with ON_INPUT
+
+Add the hotel selection step with input validation:
+
+```abl
+  select_hotel:
+    REASONING: false
+    GATHER:
+      - hotel_selection: required
+    ON_INPUT:
+      - IF: input is_number AND input >= 1 AND input <= hotels.length
+        SET: selected_hotel = hotels[input - 1]
+        THEN: get_guest_details
+      - ELSE:
+        RESPOND: "Please enter a valid hotel number."
+        THEN: select_hotel
+```
+
+`ON_INPUT` provides conditional branching based on what the user enters. Each branch has:
+
+- **IF** -- A condition to evaluate against the input
+- **SET** -- Variable assignments (optional)
+- **RESPOND** -- A message to send (optional)
+- **THEN** -- The next step to transition to
+
+The `ELSE` branch catches any input that does not match the preceding conditions.
+
+## Step 7: Collect guest details
+
+```abl
+  get_guest_details:
+    REASONING: false
+    GATHER:
+      - guest_name: required
+        prompt: "What is the primary guest name (as on ID)?"
+      - guest_email: required
+        type: email
+        prompt: "What is your email address?"
+      - guest_phone: required
+        prompt: "What is your phone number?"
+    THEN: confirm_booking
+```
+
+The `type: email` declaration tells the Runtime to validate the input as an email address. If the user provides an invalid format, the Runtime re-prompts automatically.
+
+## Step 8: Confirm and complete the booking
+
+```abl
+  confirm_booking:
+    REASONING: false
+    RESPOND: |
+      Please review your booking:
+
+      Hotel: {{selected_hotel.name}}
+      Dates: {{checkin_date}} to {{checkout_date}}
+      Guests: {{num_guests}}
+      Guest: {{guest_name}} ({{guest_email}})
+
+      Type "confirm" to complete or "change" to start over.
+    ON_INPUT:
+      - IF: input == "confirm" OR input == "yes"
+        CALL: create_booking(selected_hotel.id, guest_name, guest_email, guest_phone)
+        ON_SUCCESS:
+          RESPOND: |
+            Booking confirmed!
+
+            Confirmation: {{booking_id}}
+            Hotel: {{selected_hotel.name}}
+            Check-in: {{checkin_date}}
+            Check-out: {{checkout_date}}
+            Guest: {{guest_name}}
+
+            A confirmation email has been sent to {{guest_email}}.
+          THEN: COMPLETE
+        ON_FAIL:
+          RESPOND: "Booking failed. Please try again."
+          THEN: confirm_booking
+      - IF: input == "change"
+        THEN: get_destination
+      - ELSE:
+        RESPOND: "Please type 'confirm' or 'change'."
+        THEN: confirm_booking
+```
+
+Nested `CALL` inside `ON_INPUT` executes the tool only when the user confirms. The special step name `COMPLETE` ends the session. Failed bookings loop back to the confirmation step.
+
+## Step 9: Add the completion condition
+
+```abl
+COMPLETE:
+  - WHEN: booking_confirmed == true
+    RESPOND: "Your booking is complete. Thank you!"
+```
+
+## Step 10: Test the full flow
+
+Open the **Chat** panel and walk through the booking:
+
+1. The agent greets you and asks for a destination
+2. Enter "Paris" -- the agent asks for dates
+3. Enter check-in and check-out dates -- the agent asks for guest count
+4. Enter "2" -- the agent searches for hotels and shows results
+5. Enter a hotel number -- the agent asks for guest details
+6. Provide name, email, and phone -- the agent shows a summary
+7. Type "confirm" -- the booking completes
+
+Open the **Traces** panel to see each step as a separate trace span. The flow transitions appear as arrows between steps.
+
+## Full Agent Definition
+
+```abl
+AGENT: Hotel_Booking
+GOAL: "Guide users through a complete hotel booking process step by step"
+
+PERSONA: |
+  Professional and friendly hotel booking assistant.
+  Guides users through each step clearly.
+  Confirms information at each stage.
+
+TOOLS:
+  search_hotels(destination: string, checkin: date, checkout: date, guests: number) -> {hotels: array}
+    description: "Search for available hotels"
+
+  create_booking(hotel_id: string, guest_name: string, email: string, phone: string) -> {booking_id: string, confirmation: string}
+    description: "Create a hotel booking"
+
+FLOW:
+  steps:
+    - welcome
+    - get_destination
+    - get_dates
+    - get_guests
+    - search_and_show
+    - select_hotel
+    - get_guest_details
+    - confirm_booking
+
+  welcome:
+    REASONING: false
+    RESPOND: |
+      Welcome to Hotel Booking!
+
+      I'll help you find and book the perfect hotel.
+      Let's get started with your destination.
+    THEN: get_destination
+
+  get_destination:
+    REASONING: false
+    GATHER:
+      - destination: required
+        prompt: "Where would you like to stay?"
+    THEN: get_dates
+
+  get_dates:
+    REASONING: false
+    GATHER:
+      - checkin_date: required
+        type: date
+        prompt: "What is your check-in date?"
+      - checkout_date: required
+        type: date
+        prompt: "What is your check-out date?"
+    THEN: get_guests
+
+  get_guests:
+    REASONING: false
+    GATHER:
+      - num_guests: required
+        type: number
+        prompt: "How many guests?"
+    THEN: search_and_show
+
+  search_and_show:
+    REASONING: false
+    CALL: search_hotels(destination, checkin_date, checkout_date, num_guests)
+    ON_SUCCESS:
+      RESPOND: |
+        I found these hotels in {{destination}}:
+
+        {{#each hotels}}
+        {{add @index 1}}. {{name}} - ${{price}}/night ({{rating}} stars)
+        {{/each}}
+
+        Which hotel would you like to book? Enter the number.
+      THEN: select_hotel
+    ON_FAIL:
+      RESPOND: "No hotels found for your criteria. Let's try different dates."
+      THEN: get_dates
+
+  select_hotel:
+    REASONING: false
+    GATHER:
+      - hotel_selection: required
+    ON_INPUT:
+      - IF: input is_number AND input >= 1 AND input <= hotels.length
+        SET: selected_hotel = hotels[input - 1]
+        THEN: get_guest_details
+      - ELSE:
+        RESPOND: "Please enter a valid hotel number."
+        THEN: select_hotel
+
+  get_guest_details:
+    REASONING: false
+    GATHER:
+      - guest_name: required
+        prompt: "What is the primary guest name (as on ID)?"
+      - guest_email: required
+        type: email
+        prompt: "What is your email address?"
+      - guest_phone: required
+        prompt: "What is your phone number?"
+    THEN: confirm_booking
+
+  confirm_booking:
+    REASONING: false
+    RESPOND: |
+      Please review your booking:
+
+      Hotel: {{selected_hotel.name}}
+      Dates: {{checkin_date}} to {{checkout_date}}
+      Guests: {{num_guests}}
+      Guest: {{guest_name}} ({{guest_email}})
+
+      Type "confirm" to complete or "change" to start over.
+    ON_INPUT:
+      - IF: input == "confirm" OR input == "yes"
+        CALL: create_booking(selected_hotel.id, guest_name, guest_email, guest_phone)
+        ON_SUCCESS:
+          RESPOND: |
+            Booking confirmed!
+
+            Confirmation: {{booking_id}}
+            Hotel: {{selected_hotel.name}}
+            Check-in: {{checkin_date}}
+            Check-out: {{checkout_date}}
+            Guest: {{guest_name}}
+
+            A confirmation email has been sent to {{guest_email}}.
+          THEN: COMPLETE
+        ON_FAIL:
+          RESPOND: "Booking failed. Please try again."
+          THEN: confirm_booking
+      - IF: input == "change"
+        THEN: get_destination
+      - ELSE:
+        RESPOND: "Please type 'confirm' or 'change'."
+        THEN: confirm_booking
+
+COMPLETE:
+  - WHEN: booking_confirmed == true
+    RESPOND: "Your booking is complete. Thank you!"
+```
+
+## What You Learned
+
+- The **FLOW** block adds structured steps to any agent for step-by-step conversations
+- **GATHER** collects typed information from users with prompts and validation
+- **REASONING: false** makes a step follow exact rules without LLM reasoning; **REASONING: true** (the default) uses the LLM
+- **CALL** executes tools with session variables as arguments
+- **ON_SUCCESS** and **ON_FAIL** handle tool results
+- **ON_INPUT** provides conditional branching based on user input
+- **SET** assigns values to session variables
+- **THEN** transitions to the next step; **THEN: COMPLETE** ends the session
+- Handlebars templates (`{{variable}}`, `{{#each}}`) render dynamic data in responses
+
+## Next Steps
+
+- [Multi-agent and knowledge](/agent-platform-v2/tutorials/multi-agent-and-knowledge) — Create a supervisor that routes between specialist agents and add a knowledge base.
+- [Safety, testing, and publishing](/agent-platform-v2/tutorials/safety-testing-publishing) — Add guardrails, run evaluations, and publish your agent.
+
+<Tip>When building flows, use **REASONING: true** on steps where you want the LLM to handle edge cases naturally. Reserve **REASONING: false** for deterministic validation and branching logic.</Tip>

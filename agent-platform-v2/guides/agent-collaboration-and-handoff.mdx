@@ -1,0 +1,430 @@
+---
+title: 'Agent Collaboration & Handoff'
+section: 'guides'
+order: 6
+description: 'When automated handling is insufficient -- due to user frustration, policy limits, system failures, or explicit requests -- agents need to escalate to humans or pause for human approval. This guide co'
+---
+
+# Agent Collaboration & Handoff
+
+When automated handling is insufficient -- due to user frustration, policy limits, system failures, or explicit requests -- agents need to escalate to humans or pause for human approval. This guide covers escalation triggers, human task workflows, and approval gates.
+
+## Handle Escalation to Humans
+
+### Define escalation triggers
+
+```abl
+ESCALATE:
+  triggers:
+    - WHEN: user.frustration_detected == true
+      REASON: "User showing signs of frustration"
+      PRIORITY: high
+      TAGS: [sentiment, retention]
+
+    - WHEN: intent.category == "complaint"
+      REASON: "Customer complaint requires immediate attention"
+      PRIORITY: critical
+      TAGS: [complaint]
+
+    - WHEN: handoff_count >= 4
+      REASON: "Customer bounced between too many agents"
+      PRIORITY: high
+      TAGS: [ux_failure]
+```
+
+Each trigger has a `WHEN` condition, a `REASON` for the human agent, a `PRIORITY` level, and optional `TAGS` for routing and analytics.
+
+### Priority levels
+
+| Priority   | Use case                                           |
+| ---------- | -------------------------------------------------- |
+| `low`      | Non-urgent feedback, general inquiries             |
+| `medium`   | Standard requests requiring human judgment         |
+| `high`     | Frustrated users, repeated failures, policy limits |
+| `critical` | Complaints, VIP issues, safety concerns            |
+
+### Provide context for the human agent
+
+```abl
+ESCALATE:
+  triggers:
+    - WHEN: refund_amount > 1000
+      REASON: "High-value refund of ${{refund_amount}} requires manager approval"
+      PRIORITY: medium
+      TAGS: [refund, approval_needed]
+
+  context_for_human:
+    - booking_id
+    - user_id
+    - action_type
+    - change_details
+    - refund_amount
+    - conversation_history
+```
+
+`context_for_human` lists the session variables passed to the human agent's interface. Include everything the human needs to continue without asking the user to repeat information.
+
+### Define post-human actions
+
+```abl
+ESCALATE:
+  triggers:
+    - WHEN: user.requests_human == true
+      REASON: "Customer requesting human agent"
+      PRIORITY: medium
+
+  context_for_human:
+    - order_id
+    - customer_name
+    - cancellation_reason
+    - items
+
+  on_human_complete:
+    - IF human.resolved == true: COMPLETE
+    - IF human.needs_agent == true: HANDOFF to specified_agent
+    - IF human.approved_refund == true: CONTINUE
+```
+
+`on_human_complete` defines what happens after the human finishes. The human's action (`resolved`, `needs_agent`, `approved_refund`) determines the next step.
+
+### Agent-level escalation triggers
+
+```abl
+AGENT: Booking_Manager
+
+ESCALATE:
+  triggers:
+    # High-value refund needs manager approval
+    - WHEN: refund_amount > 1000
+      REASON: "High-value refund requires manager approval"
+      PRIORITY: medium
+      TAGS: [refund, approval_needed]
+
+    # Customer insists on impossible change
+    - WHEN: check_change_eligibility.eligible == false AND user.insists == true
+      REASON: "Customer insisting on change that cannot be processed"
+      PRIORITY: high
+      TAGS: [change_request]
+
+    # System errors during modification
+    - WHEN: modification_failures >= 2
+      REASON: "Repeated system errors while modifying booking"
+      PRIORITY: high
+      TAGS: [system_error]
+
+  context_for_human:
+    - booking_id
+    - user_id
+    - action_type
+    - change_details
+    - refund_amount
+    - conversation_history
+
+  on_human_complete:
+    - IF human.approved_change == true: CONTINUE
+    - IF human.approved_refund == true: CONTINUE
+    - IF human.resolved == true: COMPLETE
+```
+
+### Supervisor-level escalation
+
+```abl
+SUPERVISOR: Support_Supervisor
+
+ESCALATE:
+  triggers:
+    - WHEN: routing_failures >= 3
+      REASON: "Multiple routing failures -- system issue"
+      PRIORITY: high
+
+    - WHEN: customer_tier == "VIP" AND intent.category == "complaint"
+      REASON: "VIP customer with complaint requires immediate attention"
+      PRIORITY: critical
+      TAGS: [vip, complaint]
+
+  context_for_human:
+    - user_id
+    - conversation_history
+    - routing_history
+    - last_intent
+
+  on_human_complete:
+    - IF human.resolved == true: COMPLETE
+    - IF human.needs_agent == true: HANDOFF to specified_agent
+```
+
+### Escalation via ON_ERROR
+
+```abl
+ON_ERROR:
+  tool_error:
+    RESPOND: "I encountered an issue. Let me connect you with a specialist."
+    RETRY: 1
+    THEN: ESCALATE
+
+  routing_failure:
+    RESPOND: "I am having trouble routing your request."
+    RETRY: 1
+    THEN: HANDOFF Live_Agent_Transfer
+```
+
+`THEN: ESCALATE` triggers the escalation flow after retry attempts are exhausted. `THEN: HANDOFF` goes directly to a specific agent.
+
+### Live agent transfer flow
+
+For a complete human transfer experience with availability checking and callback scheduling, create a dedicated transfer agent:
+
+```abl
+AGENT: Live_Agent_Transfer
+GOAL: "Connect customers with human agents smoothly"
+
+TOOLS:
+  check_agent_availability(department: string, priority: string) -> {available: boolean, estimated_wait: number}
+    description: "Check if human agents are available"
+
+  create_transfer_ticket(user_id: string, reason: string, context: object) -> {ticket_id: string}
+    description: "Create a transfer ticket with conversation context"
+
+  schedule_callback(user_id: string, phone: string, preferred_time: datetime) -> {callback_id: string}
+    description: "Schedule a callback when agents are unavailable"
+
+FLOW:
+  entry_point: check_availability
+
+  steps:
+    - check_availability
+    - create_ticket
+    - do_transfer
+    - offer_callback
+
+  check_availability:
+    REASONING: false
+    CALL: check_agent_availability("support", "medium")
+    ON_SUCCESS:
+      - IF: result.available == true
+        RESPOND: "An agent is available. Estimated wait: ~{{result.estimated_wait}} minutes."
+        THEN: create_ticket
+      - ELSE:
+        RESPOND: "All agents are currently busy."
+        THEN: offer_callback
+    ON_FAIL:
+      THEN: create_ticket
+
+  create_ticket:
+    REASONING: false
+    CALL: create_transfer_ticket(user_id, transfer_reason, conversation_context)
+    ON_SUCCESS:
+      RESPOND: "I have prepared your case with full context. The agent will have everything."
+      THEN: do_transfer
+    ON_FAIL:
+      RESPOND: "Let me try connecting you directly."
+      THEN: do_transfer
+
+  do_transfer:
+    REASONING: false
+    RESPOND: "Connecting you now. Thank you for your patience."
+    THEN: COMPLETE
+
+  offer_callback:
+    REASONING: false
+    GATHER:
+      - wants_callback: required
+    ON_INPUT:
+      - IF: input contains "yes" OR input contains "callback"
+        GATHER:
+          - callback_number: required
+            type: phone
+          - callback_time: required
+            type: datetime
+        CALL: schedule_callback(user_id, callback_number, callback_time)
+        RESPOND: "Callback scheduled. We will call you at {{callback_time}}."
+        THEN: COMPLETE
+      - ELSE:
+        RESPOND: "You can reach us at support@example.com."
+        THEN: COMPLETE
+```
+
+### Troubleshooting
+
+- **Escalation never triggers:** Verify the `WHEN` condition references variables that are actually set during the conversation. Test with explicit values.
+- **Human agent lacks context:** Include `conversation_history` in `context_for_human`. List all relevant session variables -- not just IDs but also collected data and current state.
+- **Conversation stalls after human completes:** Define `on_human_complete` handlers for all possible human outcomes (resolved, needs more agent work, approved an action).
+
+## Human Approval Workflows
+
+Pause agent execution at critical decision points and wait for a human to review, approve, or provide input before continuing.
+
+### How human-in-the-loop works
+
+The platform supports a unified human task system. When an agent or workflow reaches a point that requires human judgment, it creates a **human task** that appears in the team's task inbox. The session suspends until a team member resolves the task.
+
+### Define an approval step in ABL
+
+Use the `ESCALATE` section in your agent to trigger human escalation:
+
+```abl
+ESCALATE:
+  triggers:
+    - WHEN: transaction_amount > 10000
+      REASON: "High-value transaction requires manager approval"
+      PRIORITY: high
+      TAGS: [finance, approval]
+
+    - WHEN: customer_tier == "VIP" AND intent.category == "complaint"
+      REASON: "VIP complaint requires immediate human attention"
+      PRIORITY: critical
+      TAGS: [vip, escalation]
+
+  context_for_human:
+    - customer_id
+    - conversation_history
+    - transaction_details
+    - risk_assessment
+
+  on_human_complete:
+    - IF human.resolved == true: COMPLETE
+    - IF human.needs_agent == true: HANDOFF to specified_agent
+```
+
+When a trigger condition matches, the platform:
+
+1. Creates a human task with the specified priority and context.
+2. Suspends the agent session.
+3. Notifies assigned team members.
+
+### Work with the human task inbox
+
+**View pending tasks:**
+
+```bash
+GET /api/projects/:projectId/human-tasks?status=pending
+```
+
+Tasks include:
+
+| Field        | Description                                                               |
+| ------------ | ------------------------------------------------------------------------- |
+| **Type**     | `approval`, `data_entry`, `review`, `decision`, `escalation`              |
+| **Status**   | `pending`, `assigned`, `in_progress`, `completed`, `expired`, `cancelled` |
+| **Priority** | `low`, `medium`, `high`, `critical`                                       |
+| **Title**    | Description of what needs human attention                                 |
+| **Context**  | Relevant data from the conversation                                       |
+| **Fields**   | Form fields for data collection (if applicable)                           |
+| **Due at**   | SLA deadline (if configured)                                              |
+
+**Claim a task:**
+
+```bash
+POST /api/projects/:projectId/human-tasks/:taskId/claim
+Content-Type: application/json
+
+{"userId": "your-user-id"}
+```
+
+**Resolve a task:**
+
+```bash
+POST /api/projects/:projectId/human-tasks/:taskId/resolve
+Content-Type: application/json
+
+{
+  "respondedBy": "user-id",
+  "decision": "approved",
+  "fields": {
+    "override_reason": "Manager verified customer identity",
+    "approved_amount": 15000
+  },
+  "notes": "Customer provided additional documentation"
+}
+```
+
+After resolution, the agent session resumes with the human's decision available in the conversation context.
+
+**Assign a task to a team member:**
+
+```bash
+POST /api/projects/:projectId/human-tasks/:taskId/assign
+Content-Type: application/json
+
+{"assignedTo": "manager-user-id"}
+```
+
+Or assign to a team:
+
+```json
+{ "assignedToTeam": "finance-approvers" }
+```
+
+### Define form fields for data collection
+
+When the human needs to provide structured input (not just approve/reject), define form fields:
+
+```bash
+POST /api/projects/:projectId/human-tasks
+Content-Type: application/json
+
+{
+  "type": "data_entry",
+  "title": "Complete customer verification",
+  "priority": "high",
+  "fields": [
+    {"name": "id_verified", "type": "boolean", "label": "ID verified?", "required": true},
+    {"name": "id_type", "type": "select", "label": "ID type", "options": ["passport", "drivers_license", "national_id"], "required": true},
+    {"name": "notes", "type": "textarea", "label": "Verification notes", "required": false}
+  ],
+  "context": {
+    "customerId": "cust_123",
+    "requestedAmount": 50000
+  }
+}
+```
+
+Supported field types: `text`, `number`, `boolean`, `select`, `textarea`, `date`.
+
+### Configure SLA and escalation chains
+
+Set deadlines and automatic escalation when tasks are not resolved in time:
+
+| Field                        | Description                                |
+| ---------------------------- | ------------------------------------------ |
+| **Due at**                   | Deadline for task completion               |
+| **Escalation chain**         | Ordered list of users/teams to escalate to |
+| **Current escalation level** | Tracks which level the task has reached    |
+
+When a task's deadline passes without resolution, the platform escalates to the next level in the chain.
+
+### Workflow-based approvals
+
+For multi-step approval processes (e.g., "manager approves, then VP approves"):
+
+1. Create a workflow with approval steps.
+2. Each approval step creates a human task.
+3. The workflow orchestrates the sequence.
+
+### Agent-initiated human handoff
+
+Agents can request human help during a conversation when they encounter something outside their capabilities:
+
+```abl
+HANDOFF:
+  - TO: Live_Agent
+    WHEN: user.wants_human == true OR user.frustration_detected == true
+    CONTEXT:
+      pass: [customer_id, conversation_summary, intent, sentiment]
+      summary: "User requests human assistance"
+    RETURN: false
+```
+
+### Troubleshooting
+
+- **Task not appearing in inbox:** Verify the task's `projectId` and `tenantId` match the user's access scope. Check that the user has `human_task:read` permission.
+- **Session not resuming after task resolution:** Check that the upstream resolution handler is connected. View the task's `source` field to verify it points to a valid session or workflow execution.
+- **Required fields validation error:** All fields marked `required: true` must be included in the resolution payload.
+- **Task expired before resolution:** Increase the `dueAt` deadline or add more team members to the escalation chain to reduce response times.
+
+## Related
+
+- [Multi-Agent Orchestration](/agent-platform-v2/guides/multi-agent-orchestration)
+- [Tools & Integrations](/agent-platform-v2/guides/tools-and-integrations)
+- [Safety & Guardrails](/agent-platform-v2/guides/safety-and-guardrails)
+- [Testing & Evaluation](/agent-platform-v2/guides/testing-and-evaluation)

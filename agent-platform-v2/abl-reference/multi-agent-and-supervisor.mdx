@@ -1,0 +1,778 @@
+---
+title: 'Multi-Agent & Supervisor'
+section: 'abl-reference'
+order: 8
+description: 'This page documents multi-agent orchestration constructs (`DELEGATE`, `HANDOFF`, `ESCALATE`, `COMPLETE`) and the `SUPERVISOR:` declaration for top-level routing.'
+---
+
+# Multi-Agent & Supervisor
+
+This page documents multi-agent orchestration constructs (`DELEGATE`, `HANDOFF`, `ESCALATE`, `COMPLETE`) and the `SUPERVISOR:` declaration for top-level routing.
+
+---
+
+## SUPERVISOR Declaration
+
+A Supervisor is a top-level orchestrator that routes user messages to the appropriate child agent based on intent, context, and declarative rules. Supervisor documents use the `SUPERVISOR:` keyword instead of `AGENT:` and define agent references, routing rules, state schemas, policies, and communication settings.
+
+### Overview
+
+While agents handle domain-specific tasks, the Supervisor decides which agent should handle each user message. It does not execute tools or gather information directly; it classifies intent and routes accordingly.
+
+```abl
+SUPERVISOR: Travel_Supervisor
+VERSION: "2.0"
+DESCRIPTION: "Routes customers to booking, support, or sales specialists"
+GOAL: "Route requests to the right specialist with full context preservation"
+
+PERSONA: |
+  Professional travel booking assistant. Friendly, efficient, and helpful.
+  Routes requests quickly and transparently.
+```
+
+### Agent references
+
+The Supervisor declares which agents are available for routing. Each reference includes a file path, an alias, and a list of capabilities.
+
+#### Syntax
+
+```abl
+AGENTS:
+  - REF: ./agents/flight_search.agent.abl
+    ALIAS: Flight_Search
+    CAPABILITIES: [flight_booking, fare_search, seat_selection]
+    CHANNELS: [web, mobile, voice]
+    REQUIRES_VALIDATION: false
+
+  - REF: ./agents/support.agent.abl
+    ALIAS: Support_Agent
+    CAPABILITIES: [booking_management, cancellation, refund]
+    REQUIRES_VALIDATION: true
+```
+
+#### Agent reference properties
+
+| Property              | Type       | Required | Default | Description                                                          |
+| --------------------- | ---------- | -------- | ------- | -------------------------------------------------------------------- |
+| `REF`                 | `string`   | Yes      | --      | File path to the agent's ABL definition.                             |
+| `ALIAS`               | `string`   | Yes      | --      | Local name used in routing rules and handoff targets.                |
+| `CAPABILITIES`        | `string[]` | Yes      | --      | List of capability tags describing what the agent can do.            |
+| `CHANNELS`            | `string[]` | No       | --      | Channels this agent supports (e.g., `web`, `mobile`, `voice`).       |
+| `REQUIRES_VALIDATION` | `boolean`  | No       | `false` | Whether the user must be authenticated before routing to this agent. |
+
+### Routing rules
+
+Routing rules define conditional logic for directing messages to agents. Rules are evaluated in priority order.
+
+#### Syntax
+
+```abl
+ROUTING:
+  - NAME: escalation_route
+    DESCRIPTION: "Route frustrated or explicitly requesting human"
+    PRIORITY: 1
+    WHEN: intent.category == "escalation" OR user.frustration_detected == true
+    THEN: ROUTE_TO Live_Agent_Transfer
+    FLAGS: [set_active]
+
+  - NAME: booking_route
+    PRIORITY: 5
+    WHEN: intent.category == "new_booking"
+    THEN: ROUTE_TO Sales_Agent
+```
+
+Alternatively, routing can be declared using the `HANDOFF:` block within a Supervisor, following the same syntax as [agent handoffs](#handoff):
+
+```abl
+HANDOFF:
+  - TO: Sales_Agent
+    WHEN: intent.category == "new_booking"
+    CONTEXT:
+      pass: [search_context, user_preferences, budget]
+      summary: "User looking to book new travel"
+    RETURN: false
+```
+
+#### Routing rule properties
+
+| Property      | Type            | Required | Default | Description                                                       |
+| ------------- | --------------- | -------- | ------- | ----------------------------------------------------------------- |
+| `NAME`        | `string`        | Yes      | --      | Unique name for the routing rule.                                 |
+| `DESCRIPTION` | `string`        | No       | --      | Human-readable description.                                       |
+| `PRIORITY`    | `number`        | Yes      | --      | Evaluation order. Lower values are evaluated first.               |
+| `WHEN`        | `string`        | Yes      | --      | Condition expression that must be true for this rule to activate. |
+| `THEN`        | `RoutingAction` | Yes      | --      | Action to take. See [Routing actions](#routing-actions).          |
+| `FLAGS`       | `string[]`      | No       | --      | Behavioral flags. See [Routing flags](#routing-flags).            |
+| `CONSTRAINTS` | `object`        | No       | --      | Additional constraints on when this rule applies.                 |
+
+#### Routing actions
+
+| Action               | Syntax                       | Description                                    |
+| -------------------- | ---------------------------- | ---------------------------------------------- |
+| Route to agent       | `ROUTE_TO Agent_Name`        | Send the message to a specific agent.          |
+| Route to user        | `ROUTE_TO_USER "message"`    | Send a message and wait for user input.        |
+| Route by variable    | `ROUTE_TO_VARIABLE var_name` | Route to the agent named in a variable.        |
+| Intent-based routing | `INTENT_MATCH`               | Route based on detected intent. See below.     |
+| End conversation     | `END_CONVERSATION`           | End the session.                               |
+| System action        | `SYSTEM_ACTION action_name`  | Execute a system-level action (e.g., handoff). |
+
+#### Intent-based routing
+
+For more granular routing, use `INTENT_MATCH` with intent-to-agent mappings:
+
+```abl
+ROUTING:
+  - NAME: intent_router
+    PRIORITY: 10
+    WHEN: true
+    THEN:
+      INTENT_MATCH:
+        - INTENTS: [flight_search, hotel_search]
+          ACTION: ROUTE_TO Sales_Agent
+        - INTENTS: [manage_booking, cancel_booking]
+          ACTION: ROUTE_TO Support_Agent
+        FALLBACK: ROUTE_TO Fallback_Handler
+```
+
+#### Routing flags
+
+| Flag             | Effect                                                             |
+| ---------------- | ------------------------------------------------------------------ |
+| `set_active`     | Mark the target agent as the active agent for subsequent messages. |
+| `silent`         | Route without sending a user-visible message.                      |
+| `no_log`         | Do not log this routing decision in the trace store.               |
+| `priority_boost` | Apply a priority boost in the target agent's queue.                |
+
+#### Conditional routing (WHEN clauses)
+
+WHEN clauses use the same expression syntax as [Expressions & functions](/agent-platform-v2/abl-reference/rich-content-and-expressions#expressions--functions). Common patterns include:
+
+```abl
+# Intent-based
+WHEN: intent.category == "complaint"
+
+# State-based
+WHEN: user.is_authenticated == true AND intent.category == "manage_booking"
+
+# Negation
+WHEN: NOT intent.has_specific_request
+
+# Compound
+WHEN: intent.unclear == true OR intent.confidence < 0.5
+
+# Variable check
+WHEN: handoff_count >= 4
+```
+
+#### Routing constraint blocks
+
+Add constraints to limit when a rule applies beyond the WHEN condition:
+
+```abl
+ROUTING:
+  - NAME: voice_only_route
+    PRIORITY: 3
+    WHEN: intent.category == "voice_action"
+    THEN: ROUTE_TO Voice_Agent
+    CONSTRAINTS:
+      channels: [voice]
+      requiresState: [user.is_authenticated]
+      ignoreIntents: [greeting, farewell]
+```
+
+| Constraint      | Type       | Description                                                 |
+| --------------- | ---------- | ----------------------------------------------------------- |
+| `ignoreIntents` | `string[]` | Intents that should not trigger this rule.                  |
+| `channels`      | `string[]` | Channels where this rule applies (e.g., `[web, voice]`).    |
+| `requiresState` | `string[]` | State variables that must be set for this rule to activate. |
+
+### State schema
+
+The Supervisor can declare a state schema that defines typed variables organized by namespace.
+
+```abl
+STATE:
+  user:
+    is_authenticated:
+      type: boolean
+      required: false
+      default: false
+      description: "Whether the user has been authenticated"
+    language:
+      type: string
+      required: false
+      source: user
+  system:
+    routing_failures:
+      type: number
+      required: false
+      default: 0
+      source: system
+```
+
+State variables follow the same [VariableDefinition](/agent-platform-v2/abl-reference/data-types-and-utilities) structure as agent variables, with the addition of namespace grouping.
+
+#### State variable properties
+
+| Property      | Type                                         | Required | Default | Description                                          |
+| ------------- | -------------------------------------------- | -------- | ------- | ---------------------------------------------------- | --- | --- | ----------------------------- |
+| `type`        | See [Data types](/agent-platform-v2/abl-reference/data-types-and-utilities) | Yes      | --      | Variable type.                                       |
+| `required`    | `boolean`                                    | No       | `false` | Whether the variable must have a value.              |
+| `default`     | any                                          | No       | --      | Default value.                                       |
+| `description` | `string`                                     | No       | --      | Human-readable description.                          |
+| `source`      | `system`                                     | `user`   | `agent` | `computed`                                           | No  | --  | Origin of the variable value. |
+| `updatedBy`   | `string[]`                                   | No       | --      | List of agent aliases that can update this variable. |
+
+### Policies
+
+Policies define high-level behavioral rules for the Supervisor, constraining what it is allowed and forbidden to do.
+
+```abl
+POLICIES:
+  - NAME: no_direct_booking
+    DESCRIPTION: "Supervisor must not make bookings directly"
+    RULES:
+      forbiddenWhen: intent.category == "booking" AND active_agent IS NOT SET
+      behavior: "Route to Sales_Agent instead of handling directly"
+
+  - NAME: auth_required_for_account
+    DESCRIPTION: "Account operations require authentication"
+    RULES:
+      allowedWhen: user.is_authenticated == true
+      triggerSignal: "auth_required"
+```
+
+#### Policy properties
+
+| Property      | Type     | Required | Default | Description                         |
+| ------------- | -------- | -------- | ------- | ----------------------------------- |
+| `NAME`        | `string` | Yes      | --      | Unique policy name.                 |
+| `DESCRIPTION` | `string` | No       | --      | Human-readable description.         |
+| `RULES`       | `object` | Yes      | --      | Policy rule definitions. See below. |
+
+#### Policy rule properties
+
+| Property        | Type     | Required | Default | Description                                          |
+| --------------- | -------- | -------- | ------- | ---------------------------------------------------- |
+| `allowedWhen`   | `string` | No       | --      | Condition under which the action is allowed.         |
+| `forbiddenWhen` | `string` | No       | --      | Condition under which the action is forbidden.       |
+| `triggerSignal` | `string` | No       | --      | Signal to emit when the policy is triggered.         |
+| `behavior`      | `string` | No       | --      | Description of the expected behavior when triggered. |
+
+### Communication settings
+
+Communication settings define the Supervisor's language, tone, and vocabulary preferences.
+
+```abl
+COMMUNICATION:
+  language: en
+  formality: neutral
+  pronouns:
+    use: "we"
+    avoid: "I"
+  vocabulary:
+    prefer: [assist, help, guide]
+    avoid: [unfortunately, regrettably]
+  constraints:
+    - "Never reveal internal agent names to the user"
+    - "Always explain why a transfer is happening"
+```
+
+#### Communication properties
+
+| Property      | Type       | Required   | Default   | Description                               |
+| ------------- | ---------- | ---------- | --------- | ----------------------------------------- | --- | ------------------- |
+| `language`    | `string`   | Yes        | --        | Primary language code (e.g., `en`, `es`). |
+| `formality`   | `formal`   | `informal` | `neutral` | Yes                                       | --  | Communication tone. |
+| `pronouns`    | `object`   | No         | --        | Pronoun preferences (`use` and `avoid`).  |
+| `vocabulary`  | `object`   | No         | --        | Preferred and avoided vocabulary.         |
+| `constraints` | `string[]` | Yes        | --        | Communication behavioral constraints.     |
+
+### Behavior settings
+
+The `BEHAVIOR` block defines whether the Supervisor can respond directly to users or must always route to an agent.
+
+```abl
+BEHAVIOR:
+  canRespondDirectly: false
+  allowedDirectActions: [greet, clarify_intent]
+  forbiddenActions: [make_booking, process_payment, access_account]
+```
+
+| Property               | Type       | Required | Default | Description                                                 |
+| ---------------------- | ---------- | -------- | ------- | ----------------------------------------------------------- |
+| `canRespondDirectly`   | `boolean`  | Yes      | --      | Whether the Supervisor can send messages directly to users. |
+| `allowedDirectActions` | `string[]` | No       | `[]`    | Actions the Supervisor can perform directly.                |
+| `forbiddenActions`     | `string[]` | No       | `[]`    | Actions the Supervisor must never perform.                  |
+
+---
+
+## HANDOFF
+
+HANDOFF transfers conversational control from the current agent to another agent, passing context and optionally expecting a return.
+
+### Syntax
+
+```abl
+HANDOFF:
+  - TO: Compliance_Officer
+    WHEN: sanctions_clear == false
+    PRIORITY: 0
+    CONTEXT:
+      pass: [customer_id, beneficiary_name, amount, sanctions_match_score]
+      summary: "Wire flagged during sanctions screening (score: {{sanctions_match_score}})."
+      history: full
+      grant_memory: [user.compliance_notes]
+    RETURN: true
+    ON_RETURN: "resume_if_cleared"
+    MAP:
+      compliance_decision: sanctions_clear
+      review_notes: compliance_review_notes
+```
+
+### Properties
+
+| Property        | Type                    | Required | Default | Description                                                                                  |
+| --------------- | ----------------------- | -------- | ------- | -------------------------------------------------------------------------------------------- |
+| `TO`            | `string`                | Yes      | --      | Target agent name.                                                                           |
+| `WHEN`          | `string`                | Yes      | --      | Condition that triggers the handoff.                                                         |
+| `PRIORITY`      | `number`                | No       | --      | Evaluation priority. Lower values are evaluated first when multiple handoff rules match.     |
+| `CONTEXT`       | `object`                | Yes      | --      | Context to pass to the target agent. See [Context](#handoff-context).                        |
+| `RETURN`        | `boolean`               | Yes      | --      | Whether control should return to this agent after the target completes.                      |
+| `ON_RETURN`     | `string`                | No       | --      | Instruction for handling the return (e.g., step to resume at).                               |
+| `MAP`           | `Record<string,string>` | No       | --      | Return value mapping. Keys are target agent result fields; values are parent variable names. |
+| `REMOTE`        | `object`                | No       | --      | Remote agent configuration. Same structure as DELEGATE remote.                               |
+| `ASYNC`         | `boolean`               | No       | `false` | Use async dispatch with push notifications for remote agents.                                |
+| `ASYNC_TIMEOUT` | `number`                | No       | --      | Timeout in seconds for async handoff.                                                        |
+
+### Handoff context
+
+The `CONTEXT` block defines what information the target agent receives.
+
+| Property       | Type       | Required | Default | Description                                                                            |
+| -------------- | ---------- | -------- | ------- | -------------------------------------------------------------------------------------- |
+| `pass`         | `string[]` | Yes      | --      | Session variable names to include in the handoff context.                              |
+| `summary`      | `string`   | Yes      | --      | Human-readable summary of why the handoff is occurring. Supports `{{}}` interpolation. |
+| `history`      | `string`   | No       | --      | Conversation history strategy. See [History strategies](#history-strategies).          |
+| `grant_memory` | `string[]` | No       | --      | Persistent memory paths to grant the target agent access to.                           |
+
+### History strategies
+
+The `history` property controls how much conversation history the target agent receives.
+
+| Value          | Behavior                                                 |
+| -------------- | -------------------------------------------------------- |
+| `none`         | No conversation history is passed.                       |
+| `summary_only` | Only the `summary` text is passed, no raw messages.      |
+| `full`         | The complete conversation history is passed.             |
+| `last_N`       | The last N messages are passed. Specify as `last_n: 10`. |
+
+```abl
+CONTEXT:
+  pass: [customer_id, amount]
+  summary: "Customer needs fraud review."
+  history: last_n: 10
+```
+
+### Return expectations
+
+When `RETURN: true`, the calling agent pauses and waits for the target agent to complete. Upon return:
+
+1. The `MAP` block (if present) writes the target's result fields into the parent's session variables.
+2. The `ON_RETURN` instruction guides what happens next (e.g., resume a step, re-evaluate conditions).
+
+When `RETURN: false`, the handoff is a one-way transfer. The calling agent's session ends.
+
+### Async dispatch
+
+For remote agents, set `ASYNC: true` to dispatch the handoff asynchronously. The calling agent receives a notification when the remote agent completes rather than blocking.
+
+```abl
+HANDOFF:
+  - TO: External_Review
+    WHEN: requires_external_review == true
+    CONTEXT:
+      pass: [case_id, documents]
+      summary: "Documents require external review."
+    RETURN: true
+    REMOTE:
+      location: remote
+      endpoint: "https://review.partner.com/api/v1/submit"
+      protocol: a2a
+    ASYNC: true
+    ASYNC_TIMEOUT: 3600
+```
+
+### Memory grants
+
+Use `grant_memory` to give the target agent access to specific persistent memory paths. Without this, the target agent cannot read or write the parent's persistent variables.
+
+```abl
+CONTEXT:
+  pass: [user_id, booking_reference]
+  summary: "User needs to authenticate to manage booking."
+  grant_memory: [user.last_verified_at]
+```
+
+---
+
+## DELEGATE
+
+DELEGATE invokes a sub-agent synchronously, waits for it to complete, and maps the result back into the calling agent's context. The sub-agent runs in its own scope and does not have direct access to the parent's session variables.
+
+### Syntax
+
+```abl
+DELEGATE:
+  - AGENT: Sanctions_Screening
+    WHEN: beneficiary_name IS SET AND beneficiary_country IS SET
+    PURPOSE: "Screen beneficiary against OFAC SDN and EU sanctions lists"
+    INPUT:
+      name: beneficiary_name
+      account: beneficiary_account
+      country: beneficiary_country
+    RETURNS:
+      cleared: sanctions_clear
+      match_score: sanctions_match_score
+    USE_RESULT: "Block if match_score > 85. Proceed only if cleared."
+    TIMEOUT: "15s"
+    ON_FAILURE: escalate
+```
+
+### Properties
+
+| Property          | Type                    | Required | Default | Description                                                                                             |
+| ----------------- | ----------------------- | -------- | ------- | ------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------- |
+| `AGENT`           | `string`                | Yes      | --      | Name of the sub-agent to invoke.                                                                        |
+| `WHEN`            | `string`                | Yes      | --      | Condition that must be true for delegation to occur.                                                    |
+| `PURPOSE`         | `string`                | Yes      | --      | Description of why this delegation exists. Included in trace events.                                    |
+| `INPUT`           | `Record<string,string>` | Yes      | --      | Input mapping. Keys are sub-agent parameter names; values are expressions from the parent's context.    |
+| `RETURNS`         | `Record<string,string>` | Yes      | --      | Output mapping. Keys are sub-agent result fields; values are parent context variable names to write to. |
+| `USE_RESULT`      | `string`                | Yes      | --      | Instructions for interpreting the sub-agent's result.                                                   |
+| `TIMEOUT`         | `string`                | No       | --      | Maximum time to wait for the sub-agent. Format: `"Ns"` (seconds).                                       |
+| `ON_FAILURE`      | `string`                | `object` | No      | --                                                                                                      | Action when the sub-agent fails or times out. See [Failure strategies](#delegate-failure-strategies). |
+| `FAILURE_MESSAGE` | `string`                | No       | --      | Message to display when delegation fails.                                                               |
+
+### Input/output mapping
+
+The `INPUT` block maps values from the parent agent's session context into the sub-agent's input parameters:
+
+```abl
+INPUT:
+  name: beneficiary_name          # parent's beneficiary_name -> sub-agent's "name" parameter
+  account: beneficiary_account
+  amount: amount
+```
+
+The `RETURNS` block maps the sub-agent's result fields back into the parent's session variables:
+
+```abl
+RETURNS:
+  cleared: sanctions_clear        # sub-agent's "cleared" field -> parent's sanctions_clear
+  match_score: sanctions_match_score
+```
+
+### Delegate failure strategies
+
+| Value      | Behavior                                                 |
+| ---------- | -------------------------------------------------------- |
+| `respond`  | Send a message and continue. Requires `FAILURE_MESSAGE`. |
+| `continue` | Silently continue without the sub-agent's result.        |
+| `escalate` | Trigger human escalation.                                |
+| `retry`    | Retry the delegation. Accepts a `count` for max retries. |
+
+Structured failure example:
+
+```abl
+ON_FAILURE:
+  type: retry
+  count: 2
+```
+
+### Remote agent support
+
+DELEGATE supports invoking agents running on remote services. Add a `REMOTE` block to configure the connection.
+
+```abl
+DELEGATE:
+  - AGENT: External_Compliance
+    WHEN: amount > 10000
+    PURPOSE: "External compliance check for high-value transfers"
+    INPUT:
+      transaction_id: wire_reference
+      amount: amount
+    RETURNS:
+      approved: compliance_approved
+    USE_RESULT: "Proceed only if approved."
+    REMOTE:
+      location: remote
+      endpoint: "https://compliance.partner.com/api/v1/check"
+      protocol: a2a
+      auth:
+        type: bearer
+      timeout: "30s"
+```
+
+#### Remote properties
+
+| Property   | Type     | Required | Default | Description                           |
+| ---------- | -------- | -------- | ------- | ------------------------------------- | ---------------------------------------------------------------------- |
+| `location` | `local`  | `remote` | No      | `local`                               | Whether the agent is co-located or remote.                             |
+| `endpoint` | `string` | No       | --      | URL for remote agent invocation.      |
+| `protocol` | `a2a`    | `rest`   | No      | --                                    | Communication protocol. `a2a` for Agent-to-Agent, `rest` for REST API. |
+| `auth`     | `object` | No       | --      | Authentication configuration.         |
+| `timeout`  | `string` | No       | --      | Override timeout for the remote call. |
+
+---
+
+## FAN_OUT
+
+FAN_OUT executes multiple delegate calls in parallel and collects their results. This is useful when several independent sub-agents need to process data simultaneously.
+
+```abl
+DELEGATE:
+  - AGENT: Sanctions_Screening
+    WHEN: beneficiary_name IS SET
+    PURPOSE: "Screen beneficiary"
+    INPUT:
+      name: beneficiary_name
+    RETURNS:
+      cleared: sanctions_clear
+
+  - AGENT: Fraud_Detection
+    WHEN: amount IS SET
+    PURPOSE: "Score fraud risk"
+    INPUT:
+      amount: amount
+      account: source_account
+    RETURNS:
+      score: fraud_score
+```
+
+When multiple DELEGATE entries have their conditions satisfied simultaneously, the runtime can execute them in parallel (fan-out). Each delegation runs independently, and results are mapped back into the parent context as each completes.
+
+---
+
+## ESCALATE
+
+ESCALATE transfers the conversation to a human operator. It is designed for situations where the agent cannot or should not continue autonomously.
+
+### Syntax
+
+```abl
+ESCALATE:
+  triggers:
+    - WHEN: sanctions_screening_unavailable == true AND retry_count >= 2
+      REASON: "Sanctions screening service down. Compliance check cannot be bypassed."
+      PRIORITY: critical
+      TAGS: [compliance, service_outage]
+
+    - WHEN: user.requests_human == true
+      REASON: "Customer requesting human specialist."
+      PRIORITY: medium
+      TAGS: [human_request]
+
+  context_for_human:
+    - customer_id
+    - customer_name
+    - amount
+    - conversation_history
+
+  routing:
+    queue: "wire_operations_l2"
+    skill_tags: [wire_transfer, compliance]
+    priority_boost: 1
+
+  on_human_complete:
+    - IF human.resolved == true: COMPLETE
+    - IF human.needs_agent == true: HANDOFF to specified_agent
+```
+
+### Trigger properties
+
+| Property   | Type       | Required | Default | Description                                                   |
+| ---------- | ---------- | -------- | ------- | ------------------------------------------------------------- |
+| `WHEN`     | `string`   | Yes      | --      | Condition that triggers escalation.                           |
+| `REASON`   | `string`   | Yes      | --      | Human-readable reason for the escalation.                     |
+| `PRIORITY` | `string`   | Yes      | --      | Priority level: `low`, `medium`, `high`, or `critical`.       |
+| `TAGS`     | `string[]` | No       | --      | Tags for routing and categorization in the human agent queue. |
+
+### Priority levels
+
+| Level      | Use case                                                           |
+| ---------- | ------------------------------------------------------------------ |
+| `low`      | Non-urgent requests (e.g., general feedback).                      |
+| `medium`   | Standard requests (e.g., customer asks to speak with a human).     |
+| `high`     | Urgent issues (e.g., service outages, repeated failures).          |
+| `critical` | Immediate attention required (e.g., compliance violations, fraud). |
+
+### Context for human
+
+The `context_for_human` block lists session variable names to include in the escalation package. The human agent sees these values in their interface.
+
+```abl
+context_for_human:
+  - customer_id
+  - customer_name
+  - source_account
+  - amount
+  - fraud_score
+  - conversation_history
+```
+
+You can also use structured context items with templates:
+
+```abl
+context_for_human:
+  - NAME: case_summary
+    TEMPLATE: "Customer {{customer_name}} requesting wire of {{amount}} {{currency}}"
+    INCLUDE: [fraud_score, sanctions_match_score]
+```
+
+### Routing configuration
+
+The `routing` block controls how the escalation is routed in the human agent system.
+
+| Property         | Type       | Required | Default | Description                                           |
+| ---------------- | ---------- | -------- | ------- | ----------------------------------------------------- |
+| `queue`          | `string`   | No       | --      | Target queue name in the human agent system.          |
+| `skill_tags`     | `string[]` | No       | --      | Required skills for the human agent.                  |
+| `priority_boost` | `number`   | No       | --      | Additional priority boost applied to the queue entry. |
+
+### Post-completion actions
+
+The `on_human_complete` block defines what happens after the human agent finishes.
+
+```abl
+on_human_complete:
+  - IF human.resolved == true: COMPLETE
+  - IF human.needs_agent == true: HANDOFF to specified_agent
+  - IF human.needs_followup == true: CONTINUE
+```
+
+Each entry has a `condition` and an `action`. The action can be `COMPLETE` (end the conversation), `HANDOFF` (transfer to another agent), or `CONTINUE` (resume the current agent).
+
+---
+
+## COMPLETE
+
+COMPLETE defines the conditions under which the agent considers its task finished. Each completion condition specifies a `WHEN` expression and an optional response.
+
+### Syntax
+
+```abl
+COMPLETE:
+  - WHEN: confirmation_number IS SET AND transfer_status == "released"
+    RESPOND: |
+      Your wire transfer has been executed successfully.
+
+      **Confirmation:** {{confirmation_number}}
+      **Amount:** {{amount}} {{currency}}
+      **To:** {{beneficiary_name}}
+      **Estimated Arrival:** {{estimated_arrival}}
+    STORE: "wire_transfers"
+
+  - WHEN: transfer_status == "queued"
+    RESPOND: "Your wire has been queued for the next processing window."
+```
+
+### Properties
+
+| Property  | Type     | Required | Default | Description                                                            |
+| --------- | -------- | -------- | ------- | ---------------------------------------------------------------------- |
+| `WHEN`    | `string` | Yes      | --      | Condition expression. The agent completes when this evaluates to true. |
+| `RESPOND` | `string` | No       | --      | Final message to the user. Supports `{{}}` template interpolation.     |
+| `STORE`   | `string` | No       | --      | Collection or path name to store the completion result for analytics.  |
+
+### Rich content in completion
+
+COMPLETE responses support voice configuration and rich content, the same as any RESPOND:
+
+```abl
+COMPLETE:
+  - WHEN: booking_confirmed == true
+    RESPOND: "Your booking is confirmed!"
+    VOICE:
+      ssml: "<speak>Your booking is confirmed!</speak>"
+    RICH_CONTENT:
+      MARKDOWN: |
+        ## Booking Confirmed
+        | Detail | Value |
+        |--------|-------|
+        | Reference | {{booking_ref}} |
+        | Date | {{travel_date}} |
+    ACTIONS:
+      - id: view_itinerary
+        type: button
+        label: "View Itinerary"
+```
+
+### Completion evaluation
+
+Completion conditions are evaluated after every turn, in declaration order. The first matching condition triggers completion. If no condition matches, the agent continues the conversation.
+
+---
+
+## Context Passing
+
+### Evaluation order across constructs
+
+When multiple multi-agent constructs apply on the same turn, the runtime evaluates them in this order:
+
+1. **ESCALATE triggers** -- checked first; critical safety and compliance.
+2. **HANDOFF rules** -- evaluated by priority (lower first).
+3. **DELEGATE conditions** -- evaluated in declaration order.
+4. **COMPLETE conditions** -- checked last.
+
+---
+
+## Complete Supervisor example
+
+```abl
+SUPERVISOR: Customer_Service_Hub
+VERSION: "2.0"
+GOAL: "Route customers to the right specialist"
+
+PERSONA: |
+  Professional customer service coordinator. Routes requests
+  efficiently and preserves context across agent transfers.
+
+HANDOFF:
+  - TO: Live_Agent
+    WHEN: intent.category == "escalation"
+    CONTEXT:
+      pass: [user_id, conversation_summary]
+      summary: "User requests human assistance"
+    RETURN: false
+
+  - TO: Sales_Agent
+    WHEN: intent.category == "new_booking"
+    CONTEXT:
+      pass: [search_context, preferences]
+      summary: "User looking to book"
+    RETURN: false
+
+ESCALATE:
+  triggers:
+    - WHEN: routing_failures >= 3
+      REASON: "Multiple routing failures"
+      PRIORITY: high
+
+ON_ERROR:
+  routing_failure:
+    RESPOND: "Let me connect you with someone who can help."
+    RETRY: 1
+    THEN: HANDOFF Live_Agent
+
+COMPLETE:
+  - WHEN: handoff_successful == true
+    RESPOND: "I've connected you with the right specialist."
+```
+
+## Related pages
+
+- [NLU](/agent-platform-v2/abl-reference/nlu) -- intent classification that drives routing decisions
+- [Memory & Constraints](/agent-platform-v2/abl-reference/memory-and-constraints) -- session and persistent state used in routing conditions
+- [Expressions & functions](/agent-platform-v2/abl-reference/rich-content-and-expressions#expressions--functions) -- condition syntax for WHEN clauses
+- [Lifecycle & hooks](/agent-platform-v2/abl-reference/lifecycle-and-hooks) -- ON_START and hooks that interact with multi-agent flows
+- [Rich Content & Expressions](/agent-platform-v2/abl-reference/rich-content-and-expressions) -- formatting for RESPOND and COMPLETE messages

@@ -1,0 +1,282 @@
+---
+title: 'Guardrails'
+section: 'abl-reference'
+order: 7
+description: 'Guardrails are safety checks that evaluate agent inputs and outputs to detect harmful, non-compliant, or malformed content.'
+---
+
+# Guardrails
+
+Guardrails are safety checks that evaluate agent inputs and outputs to detect harmful, non-compliant, or malformed content. Unlike [constraints](/agent-platform-v2/abl-reference/memory-and-constraints#constraints) (which enforce business rules), guardrails protect against safety and quality violations at the content level. The `GUARDRAILS:` block defines named guardrail rules.
+
+## Overview
+
+ABL guardrails use a three-tier evaluation model:
+
+1. **CEL-based** (Tier 1) -- fast, deterministic expression checks.
+2. **Model-based** (Tier 2) -- pre-trained safety classification models (e.g., OpenAI moderation).
+3. **LLM-based** (Tier 3) -- natural language checks evaluated by an LLM.
+
+Each guardrail specifies an application point (when to check), a check expression or prompt, and an action to take when the check fails.
+
+```abl
+GUARDRAILS:
+  profanity_filter:
+    kind: input
+    check: not_contains_blocked_words(input)
+    action: block
+    message: "Your message was blocked. Please keep the conversation respectful."
+    priority: 1
+
+  pii_output_prevention:
+    kind: output
+    check: not_contains_ssn(response)
+    action: redact
+    message: "Sensitive information has been redacted."
+    priority: 0
+```
+
+## Application points
+
+The `kind` property determines when the guardrail is evaluated during the agent's processing pipeline.
+
+| Kind          | Evaluation point                                                           |
+| ------------- | -------------------------------------------------------------------------- |
+| `input`       | Before the user's message reaches the LLM.                                 |
+| `output`      | After the LLM generates a response, before it is sent to the user.         |
+| `both`        | Evaluated on both input and output.                                        |
+| `tool_input`  | Before parameters are sent to a tool call.                                 |
+| `tool_output` | After a tool returns its result, before the result enters the LLM context. |
+| `handoff`     | Before context is passed to another agent during a handoff.                |
+
+## Guardrail properties
+
+| Property             | Type      | Required | Default | Description                                                                          |
+| -------------------- | --------- | -------- | ------- | ------------------------------------------------------------------------------------ |
+| `name`               | `string`  | Yes      | --      | Unique identifier for the guardrail (the YAML key).                                  |
+| `kind`               | `string`  | Yes      | --      | Application point. See [Application points](#application-points).                    |
+| `check`              | `string`  | No       | --      | CEL expression to evaluate (Tier 1). Omit for model-based or LLM-based.              |
+| `action`             | `string`  | Yes      | --      | Action when the check fails. See [Actions](#actions).                                |
+| `message`            | `string`  | No       | --      | Human-readable message displayed or logged when the guardrail triggers.              |
+| `priority`           | `number`  | No       | `100`   | Evaluation priority. Lower values are evaluated first.                               |
+| `provider`           | `string`  | No       | --      | Model provider name for Tier 2 checks (e.g., `openai_moderation`).                   |
+| `category`           | `string`  | No       | --      | Safety taxonomy category for Tier 2 (e.g., `hate`, `violence`).                      |
+| `threshold`          | `number`  | No       | --      | Score threshold (0.0--1.0) for model-based checks.                                   |
+| `llm_check`          | `string`  | No       | --      | Natural language prompt for Tier 3 LLM-based checks.                                 |
+| `severity_actions`   | `object`  | No       | --      | Per-severity action overrides. See [Graduated actions](#graduated-actions).          |
+| `fix_strategy`       | `string`  | No       | --      | Fix strategy when `action: fix`. See [Fix strategies](#fix-strategies).              |
+| `fix_expression`     | `string`  | No       | --      | CEL expression for the `custom` fix strategy.                                        |
+| `max_reasks`         | `number`  | No       | `2`     | Maximum reask attempts when `action: reask`.                                         |
+| `filter_min_length`  | `number`  | No       | --      | Minimum content length after filtering. Below this threshold, block instead.         |
+| `streaming`          | `boolean` | No       | `false` | Enable mid-stream evaluation for streaming responses.                                |
+| `streaming_interval` | `string`  | No       | --      | Streaming evaluation granularity. See [Streaming evaluation](#streaming-evaluation). |
+
+## Actions
+
+The `action` property determines the runtime behavior when a guardrail check fails.
+
+| Action     | Behavior                                                                                                     |
+| ---------- | ------------------------------------------------------------------------------------------------------------ |
+| `block`    | Reject the content entirely. For input, the user message is discarded. For output, the response is withheld. |
+| `warn`     | Allow the content through but emit a warning event. The `message` is logged, not sent to the user.           |
+| `redact`   | Replace the offending content with a redaction marker and continue. The sanitized content is passed through. |
+| `escalate` | Trigger human escalation for review. The content is held pending human decision.                             |
+| `fix`      | Automatically repair the content using a fix strategy. See [Fix strategies](#fix-strategies).                |
+| `reask`    | Reject the LLM output and re-prompt with the guardrail's message appended as additional guidance.            |
+| `filter`   | Remove the offending portions while preserving the rest of the content.                                      |
+
+## Three-tier implementation
+
+### Tier 1: CEL-based checks
+
+CEL (Common Expression Language) checks are fast, deterministic rules evaluated without calling an external model. Use the `check` property with a CEL expression.
+
+```abl
+GUARDRAILS:
+  length_limit:
+    kind: output
+    check: length(response) < 10000
+    action: warn
+    message: "Response exceeds recommended length."
+
+  ssn_detection:
+    kind: input
+    check: not_matches_pattern(input, "\\b\\d{3}-\\d{2}-\\d{4}\\b")
+    action: redact
+    message: "SSN detected and redacted."
+```
+
+### Tier 2: Model-based checks
+
+Model-based checks use a pre-trained classification model to score content. You specify a `provider`, an optional `category`, and a `threshold`.
+
+```abl
+GUARDRAILS:
+  toxicity_detection:
+    kind: input
+    provider: openai_moderation
+    category: hate
+    threshold: 0.7
+    action: block
+    message: "Content flagged for hateful language."
+```
+
+### Tier 3: LLM-based checks
+
+LLM-based checks use a natural language prompt evaluated by an LLM. Use the `llm_check` property with a descriptive prompt.
+
+```abl
+GUARDRAILS:
+  medical_advice_check:
+    kind: output
+    llm_check: "Does this response provide specific medical diagnoses or prescribe medication? Answer YES or NO."
+    action: block
+    message: "I'm not able to provide medical diagnoses. Please consult a healthcare professional."
+```
+
+## Fix strategies
+
+When `action: fix`, the `fix_strategy` property determines how content is repaired.
+
+| Strategy     | Behavior                                                   |
+| ------------ | ---------------------------------------------------------- |
+| `truncate`   | Truncate content to the maximum allowed length.            |
+| `strip_html` | Remove HTML tags from the content.                         |
+| `redact_pii` | Detect and replace PII patterns with redaction markers.    |
+| `normalize`  | Normalize whitespace, encoding, and special characters.    |
+| `custom`     | Apply a custom CEL expression defined in `fix_expression`. |
+
+### Example: fix with truncation
+
+```abl
+GUARDRAILS:
+  response_length:
+    kind: output
+    check: length(response) <= 5000
+    action: fix
+    fix_strategy: truncate
+    message: "Response was trimmed to fit the maximum length."
+```
+
+### Example: custom fix expression
+
+```abl
+GUARDRAILS:
+  normalize_whitespace:
+    kind: output
+    check: not_contains_excessive_whitespace(response)
+    action: fix
+    fix_strategy: custom
+    fix_expression: "collapse_whitespace(response)"
+```
+
+## Graduated actions
+
+Use `severity_actions` to apply different actions based on the severity of the violation. The keys are severity labels and the values are action names.
+
+```abl
+GUARDRAILS:
+  content_safety:
+    kind: output
+    provider: openai_moderation
+    threshold: 0.5
+    action: warn
+    severity_actions:
+      low: warn
+      medium: reask
+      high: block
+    message: "Content flagged by safety model."
+```
+
+## Streaming evaluation
+
+For streaming responses, guardrails can evaluate content as it is generated rather than waiting for the complete response.
+
+| Property             | Values                            | Description                          |
+| -------------------- | --------------------------------- | ------------------------------------ | ----------------------------- |
+| `streaming`          | `true`                            | `false`                              | Enable mid-stream evaluation. |
+| `streaming_interval` | `token`, `sentence`, `chunk_size` | Granularity of streaming evaluation. |
+
+```abl
+GUARDRAILS:
+  realtime_safety:
+    kind: output
+    provider: openai_moderation
+    threshold: 0.8
+    action: block
+    streaming: true
+    streaming_interval: sentence
+    message: "Response generation halted due to safety concern."
+```
+
+When a streaming guardrail triggers, the response generation is halted at the current point and the `message` is sent to the user.
+
+## Reask behavior
+
+When `action: reask`, the runtime rejects the LLM output, appends the guardrail's `message` as additional guidance, and re-prompts. The `max_reasks` property controls how many times this can happen before falling back to a block.
+
+```abl
+GUARDRAILS:
+  factual_grounding:
+    kind: output
+    llm_check: "Does this response make claims not supported by the provided context?"
+    action: reask
+    max_reasks: 3
+    message: "Stick to information from the provided context. Do not make unsupported claims."
+```
+
+## Priority and evaluation order
+
+Guardrails are evaluated in order of `priority` (lower values first). When multiple guardrails have the same priority, they are evaluated in declaration order.
+
+A `block` action from any guardrail stops further evaluation. `warn` actions do not stop evaluation; all subsequent guardrails continue to run.
+
+## Built-in guardrail templates
+
+ABL provides five built-in guardrail templates that you can reference by convention:
+
+| Template                    | Kind   | Check                            | Action     |
+| --------------------------- | ------ | -------------------------------- | ---------- |
+| `account_number_masking`    | output | Full account numbers in response | `redact`   |
+| `credential_input`          | input  | Passwords, PINs, security codes  | `redact`   |
+| `ssn_protection`            | input  | SSN patterns                     | `redact`   |
+| `profanity_filter`          | input  | Blocked words list               | `block`    |
+| `harmful_content_detection` | both   | Harmful instruction patterns     | `escalate` |
+
+## Complete example
+
+```abl
+GUARDRAILS:
+  account_number_masking:
+    kind: output
+    check: not_contains_full_account_number(response)
+    action: redact
+    message: "Account numbers are masked. Only the last 4 digits are displayed."
+    priority: 0
+
+  credential_input:
+    kind: input
+    check: not_contains_credentials(input)
+    action: redact
+    message: "Please never share passwords or PINs in this chat."
+    priority: 0
+
+  credit_card_detection:
+    kind: input
+    check: not_matches_pattern(input, "\\b\\d{4}[- ]?\\d{4}[- ]?\\d{4}[- ]?\\d{4}\\b")
+    action: redact
+    message: "Credit card number redacted for your security."
+
+  toxicity_check:
+    kind: output
+    check: toxicity_score(response) < 0.5
+    action: block
+    message: "Response blocked due to potential harmful content."
+    priority: 1
+```
+
+## Related pages
+
+- [Memory & Constraints](/agent-platform-v2/abl-reference/memory-and-constraints#constraints) -- business rule enforcement (distinct from content safety)
+- [Expressions & functions](/agent-platform-v2/abl-reference/rich-content-and-expressions#expressions--functions) -- CEL expression syntax for `check` properties
+- [Multi-Agent & Supervisor](/agent-platform-v2/abl-reference/multi-agent-and-supervisor) -- ESCALATE action for human review

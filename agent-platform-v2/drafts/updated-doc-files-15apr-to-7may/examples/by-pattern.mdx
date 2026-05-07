@@ -1,0 +1,1688 @@
+---
+title: 'Examples by Pattern'
+section: 'examples'
+order: 1
+description: 'Complete, runnable ABL examples organized by agent pattern. Each example includes the full ABL definition, an explanation of key constructs, and guidance on when to use that pattern.'
+---
+
+# Examples by Pattern
+
+Complete, runnable ABL examples organized by agent pattern. Each example includes the full ABL definition, an explanation of key constructs, and guidance on when to use that pattern.
+
+> **Tip:** Copy any example into the ABL Studio visual editor to see the flow graph rendered in real time.
+
+---
+
+## Simple Agent
+
+An agent uses LLM intelligence to decide what to do at each turn by default. It does not follow a fixed flow graph -- instead, the model interprets the user's intent, picks tools, gathers data, and formulates responses dynamically.
+
+**When to use:** Open-ended conversations where the user's path cannot be predicted in advance -- advisory, search, Q&A, and exploratory interactions.
+
+```abl
+AGENT: Product_Advisor
+VERSION: "1.0"
+DESCRIPTION: "Helps customers find the right product based on their needs and preferences"
+
+GOAL: |
+  Understand the customer's requirements, recommend suitable products from the
+  catalog, compare options when asked, and answer questions about features,
+  pricing, and availability. Never pressure the customer -- provide honest,
+  balanced recommendations.
+
+PERSONA: |
+  Knowledgeable product specialist who listens carefully, asks clarifying
+  questions, and provides clear comparisons. Admits when a product is not the
+  right fit rather than overselling.
+
+LIMITATIONS:
+  - "Cannot process payments or place orders -- hands off to checkout"
+  - "Cannot guarantee prices beyond the current session"
+  - "Cannot provide technical support for owned products"
+
+TOOLS:
+  search_products(query: string, category: string = "", max_results: number = 5) -> {products: object[], total: number}
+    description: "Search the product catalog by keyword, category, or attribute"
+
+  get_product_details(product_id: string) -> {name: string, price: number, features: string[], availability: string, rating: number}
+    description: "Retrieve full details for a specific product"
+
+  compare_products(product_ids: string[]) -> {comparison: object}
+    description: "Generate a side-by-side comparison of up to 3 products"
+
+GATHER:
+  use_case:
+    prompt: "What are you looking for? Tell me about your use case or requirements."
+    type: string
+    required: true
+
+  budget:
+    prompt: "Do you have a budget range in mind?"
+    type: string
+    required: false
+
+COMPLETE:
+  - WHEN: user.ready_to_buy == true
+    RESPOND: "Great choice! Let me connect you to checkout to complete your purchase."
+
+  - WHEN: user.wants_to_think == true
+    RESPOND: "Take your time. Your product comparison is saved and valid for 24 hours."
+```
+
+**Key concepts:**
+
+- No `FLOW` section -- the agent uses LLM reasoning by default to select tools and responses each turn.
+- `GATHER` -- declares information the agent should collect, but the LLM decides _when_ and _how_ to ask.
+- `LIMITATIONS` -- prompt-level boundaries the LLM uses for refusals, caveats, and scope guidance.
+- `COMPLETE` -- conditions that signal the conversation has reached a successful end state.
+
+---
+
+## Agent with Structured Steps
+
+An agent with a FLOW section follows a deterministic step graph. Each step defines what to say, what data to collect, what tool to call, and which step comes next. The path through the conversation is explicit and predictable.
+
+**When to use:** Regulated processes, data collection forms, step-by-step wizards, and any workflow where the order of operations matters.
+
+```abl
+AGENT: Hotel_Booking_Flow
+VERSION: "1.0"
+DESCRIPTION: "Guides users through a complete hotel booking process step by step"
+
+GOAL: "Walk the user through hotel search, selection, guest details, and booking confirmation"
+
+PERSONA: |
+  Professional and friendly hotel booking assistant.
+  Guides users through each step clearly.
+  Confirms information at each stage.
+
+TOOLS:
+  search_hotels(destination: string, checkin: date, checkout: date, guests: number) -> {hotels: array}
+    description: "Search for available hotels"
+
+  create_booking(hotel_id: string, guest_name: string, email: string, phone: string) -> {booking_id: string, confirmation: string}
+    description: "Create a hotel booking"
+
+FLOW:
+  entry_point: welcome
+
+  steps:
+    - welcome
+    - get_destination
+    - get_dates
+    - search_results
+    - get_selection
+    - get_guest_details
+    - confirm_booking
+
+  welcome:
+    REASONING: false
+    RESPOND: "Welcome to Hotel Booking! I'll help you find and book the perfect hotel."
+    THEN: get_destination
+
+  get_destination:
+    REASONING: false
+    GATHER:
+      - destination: required
+    THEN: get_dates
+
+  get_dates:
+    REASONING: false
+    GATHER:
+      - checkin_date: required
+        type: date
+      - checkout_date: required
+        type: date
+    THEN: search_results
+
+  search_results:
+    REASONING: false
+    CALL: search_hotels(destination, checkin_date, checkout_date, 1)
+    ON_FAIL: "No hotels found for your criteria. Let's try different dates."
+    RESPOND: |
+      I found these hotels for you:
+      {{#each hotels}}
+      {{@index}}. {{name}} - ${{price}}/night ({{rating}} stars)
+      {{/each}}
+    THEN: get_selection
+
+  get_selection:
+    REASONING: false
+    GATHER:
+      - hotel_selection: required
+    THEN: get_guest_details
+
+  get_guest_details:
+    REASONING: false
+    GATHER:
+      - guest_name: required
+      - guest_email: required
+        type: email
+      - guest_phone: required
+    THEN: confirm_booking
+
+  confirm_booking:
+    REASONING: false
+    CALL: create_booking(selected_hotel_id, guest_name, guest_email, guest_phone)
+    RESPOND: |
+      Booking confirmed!
+      Confirmation Number: {{booking_id}}
+      Hotel: {{hotel_name}}
+      Check-in: {{checkin_date}} | Check-out: {{checkout_date}}
+      Guest: {{guest_name}}
+    THEN: COMPLETE
+
+COMPLETE:
+  - WHEN: booking_confirmed == true
+    RESPOND: "Your booking is complete. Thank you!"
+```
+
+**Key concepts:**
+
+- `FLOW` section -- adding a FLOW section gives the agent a fixed step graph.
+- `entry_point` / `steps` -- declares the step sequence and starting point.
+- `THEN:` -- explicit transitions between steps.
+- `REASONING: false` -- disables LLM reasoning within a step (deterministic execution).
+- `CALL` -- invokes a tool with specific parameters.
+- `GATHER` within a step -- collects input before moving to the next step.
+
+---
+
+## Agent with HTTP Tools
+
+HTTP tools connect your agent to external APIs. You declare the endpoint, method, authentication, and expected response shape directly in the ABL definition.
+
+**When to use:** Any agent that needs to read or write data from REST APIs -- CRM lookups, payment processing, inventory checks, and third-party service calls.
+
+```abl
+AGENT: Account_Lookup
+VERSION: "1.0"
+DESCRIPTION: "Looks up customer account information from the banking core system"
+
+GOAL: "Help customers check their account balance, recent transactions, and account status"
+
+PERSONA: |
+  Friendly and efficient bank teller. Verifies identity before sharing
+  any account information. Formats currency values clearly.
+
+TOOLS:
+  verify_customer(customer_id: string) -> {name: string, status: string, tier: string}
+    description: "Verify customer identity and retrieve profile"
+    type: http
+    endpoint: "https://api.bankexample.com/v2/customers/verify"
+    method: POST
+    auth: bearer
+    hints:
+      cacheable: true
+      latency: fast
+      timeout: 5000
+
+  get_balance(account_id: string) -> {available: number, pending: number, currency: string, as_of: string}
+    description: "Retrieve current account balance"
+    type: http
+    endpoint: "https://api.bankexample.com/v2/accounts/balance"
+    method: POST
+    auth: bearer
+    hints:
+      cacheable: false
+      latency: fast
+      timeout: 5000
+
+  get_transactions(account_id: string, limit: number = 10) -> {transactions: object[], total: number}
+    description: "Retrieve recent transactions for an account"
+    type: http
+    endpoint: "https://api.bankexample.com/v2/accounts/transactions"
+    method: POST
+    auth: bearer
+    hints:
+      cacheable: false
+      latency: fast
+      timeout: 8000
+
+GATHER:
+  customer_id:
+    prompt: "What is your customer ID or the last four digits of your account?"
+    type: string
+    required: true
+
+COMPLETE:
+  - WHEN: query_resolved == true
+    RESPOND: "Is there anything else I can help you with today?"
+```
+
+**Key concepts:**
+
+- `type: http` -- marks the tool as an HTTP API call.
+- `endpoint` -- the full URL of the API.
+- `method` -- HTTP method (`GET`, `POST`, `PUT`, `DELETE`).
+- `auth: bearer` -- the runtime injects a Bearer token from the project's credential store.
+- `hints` -- optional metadata that helps the runtime optimize tool execution:
+  - `cacheable` -- whether results can be cached across turns.
+  - `latency` -- expected response time (`fast`, `medium`, `slow`).
+  - `timeout` -- maximum wait time in milliseconds.
+  - `side_effects` -- whether the call modifies external state.
+
+---
+
+## Agent with Code Sandbox
+
+Code sandbox tools run arbitrary code in a secure, isolated environment. The runtime provides a `memory` API so sandbox code can read and write agent session state.
+
+**When to use:** Complex calculations, data transformations, custom formatting, or any logic that is easier to express in code than in tool parameters.
+
+```abl
+AGENT: Data_Analyst
+VERSION: "1.0"
+DESCRIPTION: "Analyzes datasets and generates insights using code execution"
+
+GOAL: |
+  Help users analyze data by writing and executing code in a secure sandbox.
+  Generate charts, compute statistics, and produce formatted reports.
+
+PERSONA: |
+  Data scientist who explains findings in plain language.
+  Shows code when the user asks for it, but focuses on insights by default.
+
+TOOLS:
+  # HTTP tool to fetch data
+  fetch_dataset(dataset_id: string) -> {data: object[], schema: object, row_count: number}
+    description: "Fetch a dataset from the data warehouse"
+    type: http
+    endpoint: "https://api.dataexample.com/v1/datasets/fetch"
+    method: POST
+    auth: bearer
+
+  # Sandbox tool -- implementation lives in Project Tools
+  # The runtime injects the memory API automatically:
+  #   memory.get_content(key)
+  #   memory.set_content(key, value)
+  #   memory.delete_content(key)
+  compute_statistics(data: object[], columns: string[]) -> {stats: object}
+    description: "Compute descriptive statistics (mean, median, std, quartiles) for specified columns"
+
+  generate_chart(data: object[], chart_type: string, x_axis: string, y_axis: string) -> {chart_url: string, summary: string}
+    description: "Generate a chart from the data and return a URL to the rendered image"
+
+  transform_data(data: object[], operations: object[]) -> {result: object[], row_count: number}
+    description: "Apply filter, sort, group-by, and aggregate operations to a dataset"
+
+MEMORY:
+  session:
+    - active_dataset
+    - last_analysis_result
+    - chart_urls
+
+COMPLETE:
+  - WHEN: analysis_complete == true
+    RESPOND: "Your analysis is ready. Would you like to explore further or export the results?"
+```
+
+**Key concepts:**
+
+- Sandbox tools are declared with a signature but no `type: http` or `type: mcp` -- the runtime resolves them from **Project Tools** (code files uploaded to the project).
+- The `memory` API is injected automatically. Sandbox code can read session state with `memory.get_content()` and persist results with `memory.set_content()`.
+- Sandbox execution is isolated -- the code cannot access the network, filesystem, or other sessions.
+
+---
+
+## Agent with MCP Integration
+
+MCP (Model Context Protocol) tools connect your agent to external tool servers. This is useful for browser automation, database access, file system operations, and any capability exposed via an MCP server.
+
+**When to use:** When you need to interact with tools provided by an MCP server -- browser automation, IDE integration, specialized data sources, or third-party MCP-compatible services.
+
+```abl
+AGENT: Web_Research_Assistant
+VERSION: "1.0"
+DESCRIPTION: "Researches topics by navigating websites and extracting information"
+
+GOAL: |
+  Help users research topics by navigating to relevant websites, extracting
+  key information, and synthesizing findings into a clear summary. Respects
+  robots.txt and rate limits.
+
+PERSONA: |
+  Thorough research analyst who cross-references multiple sources and
+  presents findings with proper attribution. Distinguishes between facts
+  and opinions in source material.
+
+LIMITATIONS:
+  - "Cannot bypass login walls or CAPTCHAs"
+  - "Respects robots.txt and site rate limits"
+  - "Cannot execute code on target websites"
+
+TOOLS:
+  navigate(url: string, waitFor: string = "load", timeout: number = 30000) -> {success: boolean, url: string, title: string, statusCode: number}
+    type: mcp
+    server: "crawler"
+    tool: "navigate"
+    description: "Navigate to a URL in a browser and wait for page load"
+
+  get_page_content(includeHtml: boolean = true, includeText: boolean = true) -> {url: string, title: string, html: string, text: string}
+    type: mcp
+    server: "crawler"
+    tool: "get_page_content"
+    description: "Get current page HTML and text content"
+
+  extract_links(filter: string = "", includeExternal: boolean = false, limit: number = 50) -> {links: object[], count: number}
+    type: mcp
+    server: "crawler"
+    tool: "extract_links"
+    description: "Extract all links from the current page"
+
+  extract_elements(selector: string, attributes: string[] = ["text"], limit: number = 50) -> {elements: object[], count: number}
+    type: mcp
+    server: "crawler"
+    tool: "extract_elements"
+    description: "Extract elements matching a CSS selector"
+
+  take_screenshot(fullPage: boolean = false) -> {screenshot: string, format: string}
+    type: mcp
+    server: "crawler"
+    tool: "take_screenshot"
+    description: "Take a screenshot of the current page"
+
+GATHER:
+  topic:
+    prompt: "What topic would you like me to research?"
+    type: string
+    required: true
+
+  sources:
+    prompt: "Any specific websites you want me to check?"
+    type: string
+    required: false
+
+COMPLETE:
+  - WHEN: research_complete == true
+    RESPOND: "Here is your research summary with source links."
+```
+
+**Key concepts:**
+
+- `type: mcp` -- routes the tool call through an MCP server instead of direct HTTP.
+- `server: "crawler"` -- identifies which MCP server to connect to (configured in the project's MCP settings).
+- `tool: "navigate"` -- the specific tool name on the MCP server.
+- MCP tools support the full range of ABL tool features: parameters, return types, `hints`, `on_result` handlers.
+
+> **Cross-reference:** See the [MCP Configuration Guide](../guides/tools-and-integrations) for details on registering MCP servers with your project.
+
+---
+
+## Multi-Agent with Supervisor
+
+A supervisor agent routes incoming requests to specialist agents based on intent. It does not handle domain logic itself -- it classifies the user's need and hands off to the right agent, with optional context passing.
+
+**When to use:** Any application with multiple distinct capabilities -- customer service with different departments, enterprise platforms with specialized functions, or any system where one agent cannot handle all request types.
+
+```abl
+SUPERVISOR: Support_Supervisor
+VERSION: "1.0"
+DESCRIPTION: "Routes customer requests to the right specialist agent"
+
+GOAL: "Identify the customer's need and route to the correct specialist with full context"
+
+PERSONA: |
+  Professional customer service coordinator. Quickly understands
+  the customer's intent and connects them with the right specialist.
+  Never attempts to handle domain-specific requests directly.
+
+LIMITATIONS:
+  - "Cannot access or modify accounts directly -- routes to specialists"
+  - "Cannot process transactions or payments"
+  - "Cannot override security policies"
+
+TEMPLATES:
+  welcome: |
+    Welcome! I can help you with:
+    - Account inquiries and balance checks
+    - Fund transfers and payments
+    - Technical support and troubleshooting
+    How can I assist you today?
+
+ON_START:
+  RESPOND: TEMPLATE(welcome)
+
+MEMORY:
+  session:
+    - current_intent
+    - routing_history
+    - handoff_count
+  persistent:
+    - user.name
+    - user.customer_id
+  recall:
+    - ON_START: "Check if user is returning and has recent context"
+
+HANDOFF:
+  # P0 -- Immediate human escalation
+  - TO: Live_Agent
+    WHEN: user.wants_human == true OR user.frustration_detected == true
+    CONTEXT:
+      pass: [customer_id, conversation_summary, transfer_reason]
+      summary: "Customer requesting human assistance"
+    RETURN: false
+
+  # P1 -- Account inquiries
+  - TO: Account_Inquiry
+    WHEN: intent.category == "balance" OR intent.category == "account_details"
+    CONTEXT:
+      pass: [customer_id, session_context]
+      summary: "Customer wants account information"
+    RETURN: true
+    ON_RETURN: "check_additional_needs"
+
+  # P2 -- Fund transfers
+  - TO: Fund_Transfer
+    WHEN: intent.category == "transfer" OR intent.category == "send_money"
+    CONTEXT:
+      pass: [customer_id, session_context]
+      summary: "Customer wants to transfer funds"
+    RETURN: true
+    ON_RETURN: "check_additional_needs"
+
+  # P3 -- Technical support
+  - TO: Tech_Support
+    WHEN: intent.category == "technical" OR intent.category == "troubleshooting"
+    CONTEXT:
+      pass: [customer_id, device_info, session_context]
+      summary: "Customer needs technical assistance"
+    RETURN: true
+    ON_RETURN: "check_additional_needs"
+
+  # P4 -- Farewell
+  - TO: Farewell_Agent
+    WHEN: intent.category == "farewell"
+    CONTEXT:
+      pass: [session_context, conversation_summary]
+      summary: "Customer ending conversation"
+    RETURN: false
+
+  # P5 -- Fallback
+  - TO: Fallback_Handler
+    WHEN: intent.unclear == true OR intent.confidence < 0.5
+    CONTEXT:
+      pass: [session_context, last_message]
+      summary: "Need clarification on customer intent"
+    RETURN: true
+    ON_RETURN: "reclassify_intent"
+
+ESCALATE:
+  triggers:
+    - WHEN: routing_failures >= 3
+      REASON: "Multiple routing failures -- system issue"
+      PRIORITY: high
+
+    - WHEN: handoff_count >= 4
+      REASON: "Customer bounced between too many agents"
+      PRIORITY: high
+      TAGS: [ux_failure]
+
+  context_for_human:
+    - customer_id
+    - conversation_history
+    - routing_history
+    - last_intent
+
+ON_ERROR:
+  routing_failure:
+    RESPOND: "I'm having trouble understanding your request. Let me connect you with someone who can help."
+    RETRY: 1
+    THEN: HANDOFF Live_Agent
+
+COMPLETE:
+  - WHEN: handoff_successful == true
+    RESPOND: "I've connected you with the right specialist."
+
+  - WHEN: user.session_ended == true
+    RESPOND: "Thank you for contacting us. Have a great day!"
+```
+
+**Key concepts:**
+
+- `SUPERVISOR:` -- declares this agent as a supervisor (router) rather than a domain agent.
+- `HANDOFF` -- ordered list of routing rules. Each entry specifies the target agent, trigger condition, context to pass, and whether control returns after the handoff.
+- `CONTEXT.pass` -- array of session variables forwarded to the child agent.
+- `CONTEXT.summary` -- human-readable description of why the handoff is happening.
+- `RETURN: true` / `RETURN: false` -- whether the supervisor regains control after the child completes.
+- `ON_RETURN` -- what to do when control returns (e.g., check if the customer has additional needs).
+- `ESCALATE` -- system-level triggers for transferring to a human supervisor.
+
+---
+
+## Agent with Knowledge Base (RAG)
+
+A RAG (Retrieval-Augmented Generation) agent uses semantic search over a knowledge base to answer questions grounded in your documents. ABL supports hybrid search (vector + keyword), vocabulary resolution for domain terms, and source attribution.
+
+**When to use:** Policy Q&A, product documentation, FAQ bots, compliance advisors, and any agent that needs to answer questions from a corpus of documents.
+
+```abl
+AGENT: Policy_Advisor
+VERSION: "1.0"
+DESCRIPTION: "Answers policy questions using semantic search over the knowledge base"
+
+EXECUTION:
+  model: "claude-sonnet-4-5-20250929"
+
+GOAL: |
+  Answer customer questions about company policies using semantic search over
+  policy documents. Use vocabulary resolution to map domain-specific terms
+  to canonical metadata filters. Always cite sources.
+
+PERSONA: |
+  Knowledgeable policy specialist who provides accurate, well-sourced answers.
+  Cites the specific document and section when answering. Distinguishes between
+  what the policy says and any interpretation.
+
+LIMITATIONS:
+  - "Cannot modify or override policies"
+  - "Cannot grant exceptions -- escalates to a human manager"
+  - "Answers are based on indexed policy documents only"
+
+TOOLS:
+  vocabulary_resolve(project_kb_id: string, query: string) -> {resolvedTerms: object[], structuredFilters: object[]}
+    description: "Resolve domain-specific terms to canonical metadata filters for precision search"
+
+  search_hybrid(index_id: string, query: string, top_k: number = 5, similarity_threshold: number = 0.7) -> {results: object[], totalCount: number}
+    description: "Execute hybrid vector + keyword search over the knowledge base"
+
+  search_vector(index_id: string, query: string, top_k: number = 5, similarity_threshold: number = 0.6) -> {results: object[], totalCount: number}
+    description: "Execute pure semantic (vector) search for broader matching"
+
+INSTRUCTIONS: |
+  1. Analyze the query for domain-specific terms (e.g., "PTO", "401k match", "remote work")
+  2. If domain terms are found, call vocabulary_resolve to get metadata filters
+  3. Execute search_hybrid with the query and any resolved filters
+  4. If results are insufficient, retry with search_vector for broader semantic matching
+  5. Synthesize an answer from the retrieved knowledge chunks
+  6. Include source attribution (document name, section) for transparency
+
+COMPLETE:
+  - WHEN: question_answered == true
+    RESPOND: "Does this answer your question, or would you like me to look into something else?"
+```
+
+**Key concepts:**
+
+- `vocabulary_resolve` -- maps user terms to structured metadata filters before searching.
+- `search_hybrid` -- combines vector similarity with keyword matching for high precision.
+- `search_vector` -- fallback for broader semantic search when hybrid returns few results.
+- `INSTRUCTIONS` -- step-by-step guidance for the reasoning LLM on how to use the tools.
+- Always include source attribution so users can verify answers against original documents.
+
+> **Cross-reference:** See the [SearchAI Guide](../guides/knowledge-bases) for knowledge base ingestion, indexing, and search strategy configuration.
+
+---
+
+## Agent with Guardrails
+
+Guardrails enforce safety checks on inputs and outputs. They run before or after every turn to detect PII, block harmful content, redact sensitive data, or enforce content policies.
+
+**When to use:** Any production agent that handles user input -- especially in regulated industries (finance, healthcare, insurance) where data protection and content safety are mandatory.
+
+```abl
+AGENT: Secure_Assistant
+VERSION: "1.0"
+DESCRIPTION: "Demonstrates input and output guardrails for data protection"
+
+GOAL: "Help users while protecting sensitive personal information"
+
+PERSONA: |
+  Helpful, security-aware assistant. Protective of user privacy.
+  Immediately alerts users when they share sensitive data and explains why
+  it was redacted.
+
+LIMITATIONS:
+  - "Cannot store PII beyond the current session"
+  - "Cannot share sensitive data with external services"
+
+TOOLS:
+  lookup_account(user_id: string) -> {name: string, status: string, tier: string}
+    description: "Look up account by user ID (not PII)"
+
+GUARDRAILS:
+  # Block Social Security Numbers in user input
+  ssn_detection:
+    kind: input
+    check: not_matches_pattern(input, "\\b\\d{3}-\\d{2}-\\d{4}\\b")
+    action: redact
+    message: "I noticed you shared what looks like an SSN. I've redacted it for your protection. Please avoid sharing sensitive numbers."
+    priority: 0
+
+  # Block credit card numbers in user input
+  credit_card_detection:
+    kind: input
+    check: not_matches_pattern(input, "\\b\\d{4}[- ]?\\d{4}[- ]?\\d{4}[- ]?\\d{4}\\b")
+    action: redact
+    message: "Credit card number detected and automatically redacted for your security."
+    priority: 0
+
+  # Prevent the agent from outputting SSN-like patterns
+  ssn_output_prevention:
+    kind: output
+    check: not_matches_pattern(response, "\\b\\d{3}-\\d{2}-\\d{4}\\b")
+    action: block
+    message: "Response blocked: cannot include SSN patterns in output."
+    priority: 0
+
+  # Block harmful content in both directions
+  harmful_content:
+    kind: both
+    check: not_contains_harmful_instructions(text)
+    action: escalate
+    message: "Escalating to human review for safety assessment."
+    priority: 0
+
+  # Warn on overly long responses
+  response_length:
+    kind: output
+    check: length(response) < 10000
+    action: warn
+    message: "Response is very long. Consider breaking into parts."
+    priority: 2
+
+COMPLETE:
+  - WHEN: user_satisfied == true
+    RESPOND: "Glad I could help. Your data is safe with us."
+```
+
+**Key concepts:**
+
+- `GUARDRAILS` -- a named map of safety checks applied to inputs, outputs, or both.
+- `kind: input` / `kind: output` / `kind: both` -- when the check runs.
+- `check` -- the validation expression. Supports regex patterns (`not_matches_pattern`), content checks (`not_contains_harmful_instructions`), and length checks.
+- `action` -- what happens when the check fails:
+  - `redact` -- removes the sensitive content and continues.
+  - `block` -- stops the message entirely.
+  - `warn` -- logs a warning but allows the message through.
+  - `escalate` -- routes to human review.
+- `priority` -- lower numbers run first. Priority 0 guardrails are non-negotiable.
+
+---
+
+## Agent with Memory and Recall
+
+ABL supports three memory scopes: **session** (in-memory, per-conversation), **user** (persistent, per-user), and **project** (shared across all users). The `remember` and `recall` blocks control when data flows between scopes.
+
+**When to use:** Personalization, returning-user detection, preference learning, and any agent that improves over time by remembering past interactions.
+
+```abl
+AGENT: Personalized_Travel_Advisor
+VERSION: "1.0"
+DESCRIPTION: "Travel advisor that remembers user preferences and past bookings"
+
+GOAL: |
+  Help customers plan travel while leveraging their history and preferences.
+  Remember their favorite destinations, preferred airlines, seat class
+  preferences, and dietary requirements across sessions.
+
+PERSONA: |
+  Friendly travel advisor who remembers returning customers by name,
+  recalls their preferences, and proactively suggests destinations they love.
+
+TOOLS:
+  search_flights(origin: string, destination: string, date: string) -> {flights: object[]}
+    description: "Search available flights"
+
+  search_hotels(destination: string, checkin: string, checkout: string) -> {hotels: object[]}
+    description: "Search available hotels"
+
+MEMORY:
+  # Session memory -- lives only for this conversation
+  session:
+    - search_results
+      TYPE: object
+      DESCRIPTION: "Latest search results"
+    - selected_items
+      TYPE: object[]
+      DESCRIPTION: "Items the customer selected for quoting"
+    - preferred_currency
+      TYPE: string
+      DESCRIPTION: "Display currency for this session"
+
+  # Persistent memory -- survives across conversations
+  persistent:
+    # User-scoped (private to this user)
+    - PATH: user.preferred_destinations
+      SCOPE: user
+      ACCESS: readwrite
+      TYPE: array
+      DESCRIPTION: "Destinations this user has searched or booked"
+    - PATH: user.travel_preferences
+      SCOPE: user
+      ACCESS: readwrite
+      TYPE: object
+      DESCRIPTION: "Seat class, airline, hotel rating preferences"
+    - PATH: user.loyalty_tier
+      SCOPE: user
+      ACCESS: read
+      TYPE: string
+      DESCRIPTION: "Loyalty tier from CRM -- read-only"
+
+    # Project-scoped (shared across all users)
+    - PATH: active_promotions
+      SCOPE: project
+      ACCESS: read
+      TYPE: array
+      DESCRIPTION: "Current promotions -- managed by ops team"
+    - PATH: popular_destinations
+      SCOPE: project
+      ACCESS: readwrite
+      TYPE: array
+      DESCRIPTION: "Trending destinations from aggregate search data"
+
+  # Persist data from session to long-term storage
+  remember:
+    - WHEN: booking_confirmed == true
+      STORE: {destination: destination, travelers: num_travelers} -> user.travel_preferences
+      TTL: 90d
+    - WHEN: search_completed == true
+      STORE: user.preferred_destinations -> user.preferred_destinations
+      TTL: 90d
+
+  # Load data from long-term storage into session
+  recall:
+    - ON: session:start
+      ACTION: inject_context
+      PATHS: [user.preferred_destinations, user.loyalty_tier, active_promotions]
+    - ON: tool:search_flights:after
+      ACTION: inject_context
+      PATHS: [user.travel_preferences]
+
+COMPLETE:
+  - WHEN: booking_confirmed == true
+    RESPOND: "Your trip is booked! I've saved your preferences for next time."
+```
+
+**Key concepts:**
+
+- `session` -- ephemeral key-value pairs that exist only during the conversation.
+- `persistent` with `SCOPE: user` -- data stored per-user in the persistent fact store.
+- `persistent` with `SCOPE: project` -- shared data visible to all agents and users in the project.
+- `ACCESS: read` / `ACCESS: readwrite` -- controls whether the agent can modify persistent data.
+- `remember` -- rules that copy session data to persistent storage on specific triggers.
+- `recall` -- rules that load persistent data into the session at specific lifecycle events.
+- `TTL: 90d` -- time-to-live for persisted data; automatically cleaned up after expiration.
+
+---
+
+## Agent with Human-in-the-Loop
+
+Human-in-the-loop agents pause execution at critical decision points and wait for a human operator to approve, reject, or override before proceeding. The `ESCALATE` block defines when and how to involve humans.
+
+**When to use:** High-value transactions, compliance decisions, content moderation, and any workflow where automated decisions need human oversight.
+
+```abl
+AGENT: Loan_Approval_Agent
+VERSION: "1.0"
+DESCRIPTION: "Processes loan applications with human approval gates for high-value decisions"
+
+GOAL: |
+  Collect loan application details, run automated credit checks and risk
+  scoring, then route to a human underwriter for approval on applications
+  that exceed the automated approval threshold.
+
+PERSONA: |
+  Professional loan officer who is transparent about the process, explains
+  what information is needed and why, and sets clear expectations about
+  approval timelines.
+
+LIMITATIONS:
+  - "Cannot approve loans over $50,000 without human underwriter review"
+  - "Cannot override credit check results"
+  - "Cannot waive documentation requirements"
+
+TOOLS:
+  run_credit_check(applicant_id: string) -> {score: number, factors: string[], recommendation: string}
+    description: "Run credit check against bureau data"
+
+  calculate_risk_score(income: number, debt: number, credit_score: number, loan_amount: number) -> {risk_score: number, risk_tier: string, max_approved: number}
+    description: "Calculate risk score based on financial profile"
+
+  submit_application(applicant_id: string, loan_amount: number, risk_score: number) -> {application_id: string, status: string}
+    description: "Submit the loan application for processing"
+
+GATHER:
+  loan_amount:
+    prompt: "How much would you like to borrow?"
+    type: number
+    required: true
+    validate: min(1000)
+
+  loan_purpose:
+    prompt: "What is the purpose of the loan?"
+    type: string
+    required: true
+
+  annual_income:
+    prompt: "What is your annual household income?"
+    type: number
+    required: true
+
+ESCALATE:
+  triggers:
+    # High-value loans require human underwriter
+    - WHEN: loan_amount > 50000
+      REASON: "Loan amount exceeds automated approval threshold"
+      PRIORITY: medium
+      TAGS: [underwriting, high_value]
+
+    # High-risk applicants require human review
+    - WHEN: risk_score > 70
+      REASON: "Risk score {{risk_score}} exceeds threshold -- manual review required"
+      PRIORITY: high
+      TAGS: [underwriting, high_risk]
+
+    # Credit check returned adverse factors
+    - WHEN: credit_check.recommendation == "manual_review"
+      REASON: "Credit check flagged for manual review: {{credit_check.factors}}"
+      PRIORITY: high
+      TAGS: [credit, manual_review]
+
+    # Customer explicitly requests human
+    - WHEN: user.requests_human == true
+      REASON: "Customer requested to speak with a loan officer"
+      PRIORITY: medium
+      TAGS: [human_request]
+
+  context_for_human:
+    - applicant_id
+    - loan_amount
+    - loan_purpose
+    - annual_income
+    - credit_score
+    - risk_score
+    - risk_tier
+    - conversation_history
+
+  routing:
+    queue: "loan_underwriting"
+    skill_tags: [underwriting, credit_review]
+    priority_boost: 1
+
+  on_human_complete:
+    - IF human.approved == true: CONTINUE
+    - IF human.denied == true: RESPOND "Your application was not approved at this time."
+    - IF human.needs_info == true: CONTINUE
+
+COMPLETE:
+  - WHEN: application_id IS SET AND status == "approved"
+    RESPOND: |
+      Your loan has been approved!
+      Application ID: {{application_id}}
+      Amount: {{loan_amount}}
+      You will receive the full terms via email within 24 hours.
+
+  - WHEN: status == "pending_review"
+    RESPOND: |
+      Your application has been submitted for review.
+      Application ID: {{application_id}}
+      A loan officer will contact you within 1 business day.
+```
+
+**Key concepts:**
+
+- `ESCALATE.triggers` -- conditions that pause the agent and route to a human operator.
+- `PRIORITY` -- controls queue priority: `critical`, `high`, `medium`, `low`.
+- `TAGS` -- metadata tags that help the routing system match the right human agent.
+- `context_for_human` -- data forwarded to the human agent's interface.
+- `routing.queue` -- the human agent queue to route to.
+- `on_human_complete` -- what the agent does when the human completes their review.
+
+---
+
+## Full Reference: Complete Agent
+
+This comprehensive example demonstrates every major ABL construct for an agent without a FLOW section. The LLM reasons through each turn, selecting tools and formulating responses dynamically. It is based on the wire transfer specialist from the platform's reference examples.
+
+> **Source file:** `examples/reference/agent_complete.agent.abl`
+
+```abl
+AGENT: Wire_Transfer_Specialist
+VERSION: "2.0"
+DESCRIPTION: |
+  Processes outbound wire transfers for retail and commercial banking customers.
+  Handles domestic (Fedwire) and international (SWIFT) transfers with full
+  regulatory compliance -- sanctions screening, fraud detection, dual-authorization
+  workflows, cut-off time enforcement, and irrevocability safeguards.
+
+LANGUAGE: "en"
+
+# --- IDENTITY & BEHAVIOR ---
+
+GOAL: |
+  Process the customer's outbound wire transfer request accurately and securely.
+  Collect all required beneficiary and payment details, screen for sanctions and
+  fraud, enforce daily limits and cut-off windows, obtain dual authorization when
+  required, and execute the transfer with a complete audit trail.
+
+PERSONA: |
+  Senior wire operations specialist at a large commercial bank -- precise with
+  numbers, methodical about compliance, and transparent about processing times
+  and fees. Never rushes a wire. Confirms every detail before execution because
+  a released wire cannot be reversed, only recalled.
+
+LIMITATIONS:
+  - "Cannot process wires to OFAC-sanctioned countries or SDN-listed entities"
+  - "Cannot override the daily wire transfer limit"
+  - "Cannot process wires after the daily cut-off"
+  - "Cannot reverse a wire after execution -- can only initiate a recall request"
+  - "Cannot waive wire fees without supervisor authorization"
+  - "Cannot process third-party wires"
+
+INSTRUCTIONS: |
+  Always verify the customer's identity and confirm account ownership before
+  collecting wire details. For international wires, confirm the purpose code.
+  Read back the full wire details and get explicit confirmation before executing.
+  Never execute a wire on implied consent.
+
+# --- TOOLS (HTTP with hints) ---
+
+TOOLS:
+  verify_account(account_id: string) -> {account_id: string, owner_name: string, status: string, available_balance: number, daily_wire_limit: number, daily_wire_used: number}
+    description: "Retrieve account details and wire usage"
+    type: http
+    endpoint: "https://api.bankexample.com/v2/accounts/verify"
+    method: POST
+    auth: bearer
+    hints:
+      cacheable: true
+      latency: fast
+      timeout: 5000
+
+  validate_beneficiary(name: string, account_number: string, swift_bic: string, bank_name: string, country: string) -> {valid: boolean, beneficiary_id: string, warnings: string[]}
+    description: "Validate beneficiary against bank directory"
+    type: http
+    endpoint: "https://api.bankexample.com/v2/beneficiaries/validate"
+    method: POST
+    auth: bearer
+
+  calculate_fees(transfer_type: string, amount: number, currency: string, destination_country: string) -> {wire_fee: number, total_fees: number, exchange_rate: number}
+    description: "Calculate wire fees and FX rates"
+    type: http
+    endpoint: "https://api.bankexample.com/v2/wire/fees"
+    method: POST
+    auth: bearer
+
+  execute_wire(account_id: string, beneficiary_id: string, amount: number, currency: string, transfer_type: string, purpose_code: string) -> {confirmation_number: string, status: string, estimated_arrival: string}
+    description: "Execute the wire transfer. Irrevocable once status is 'released'."
+    type: http
+    endpoint: "https://api.bankexample.com/v2/wire/execute"
+    method: POST
+    auth: bearer
+    hints:
+      side_effects: true
+      timeout: 15000
+
+# --- GATHER ---
+
+GATHER:
+  source_account:
+    prompt: "Which account would you like to send the wire from?"
+    type: string
+    required: true
+
+  transfer_type:
+    prompt: "Is this a domestic or international wire transfer?"
+    type: string
+    required: true
+    validate: enum(domestic, international)
+    infer: true
+    extraction_hints: ["If beneficiary country is US, infer domestic."]
+
+  beneficiary_name:
+    prompt: "What is the full legal name on the beneficiary's account?"
+    type: string
+    required: true
+
+  amount:
+    prompt: "How much would you like to send?"
+    type: number
+    required: true
+    validate: min(1)
+
+  purpose_code:
+    prompt: "What is the purpose of this transfer?"
+    type: string
+    required: true
+    infer: true
+
+# --- MEMORY ---
+
+MEMORY:
+  session:
+    - customer_id
+    - customer_name
+    - source_account
+    - available_balance
+    - beneficiary_id
+    - amount
+    - currency
+    - sanctions_clear
+    - fraud_score
+    - confirmation_number
+    - transfer_status
+  persistent:
+    - user.frequent_beneficiaries
+    - user.wire_history_30d
+
+# --- CONSTRAINTS ---
+
+CONSTRAINTS:
+  always:
+    - REQUIRE customer_verified == true
+      ON_FAIL: "I need to verify your identity before processing a wire transfer."
+
+    - REQUIRE account_status == "active"
+      ON_FAIL: "Wire transfers can only be initiated from active accounts."
+
+  action_rules: # label only; use WHEN / BEFORE if you need explicit runtime scoping
+    - REQUIRE amount <= available_balance
+      ON_FAIL: "The amount exceeds your available balance of {{available_balance}} {{currency}}."
+
+    - REQUIRE (daily_wire_used + amount) <= daily_wire_limit
+      ON_FAIL: "This wire would exceed your daily limit of {{daily_wire_limit}}."
+
+    - REQUIRE sanctions_clear == true
+      ON_FAIL: HANDOFF Compliance_Officer
+
+# --- DELEGATE (synchronous sub-agent calls) ---
+
+DELEGATE:
+  - AGENT: Sanctions_Screening
+    WHEN: beneficiary_name IS SET AND beneficiary_country IS SET
+    PURPOSE: "Screen beneficiary against OFAC, EU, and UN sanctions lists"
+    INPUT:
+      name: beneficiary_name
+      country: beneficiary_country
+      amount: amount
+    RETURNS:
+      cleared: sanctions_clear
+      match_score: sanctions_match_score
+    USE_RESULT: "Block if match_score > 85. Review if 50-85. Proceed if cleared."
+    ON_FAILURE: escalate
+    TIMEOUT: "15s"
+
+  - AGENT: Fraud_Detection
+    WHEN: amount IS SET AND source_account IS SET
+    PURPOSE: "Score transaction for fraud risk"
+    INPUT:
+      account_id: source_account
+      amount: amount
+      beneficiary_country: beneficiary_country
+    RETURNS:
+      risk_score: fraud_score
+      requires_dual_auth: dual_auth_required
+    USE_RESULT: "If score < 40: proceed. If 40-79: require dual auth. If >= 80: block."
+    ON_FAILURE: escalate
+    TIMEOUT: "10s"
+
+# --- HANDOFF ---
+
+HANDOFF:
+  - TO: Compliance_Officer
+    WHEN: sanctions_clear == false
+    PRIORITY: 0
+    CONTEXT:
+      pass: [customer_id, beneficiary_name, beneficiary_country, amount, sanctions_match_score]
+      summary: "Wire flagged during sanctions screening"
+      history: full
+    RETURN: true
+    MAP:
+      compliance_decision: sanctions_clear
+
+  - TO: Branch_Manager
+    WHEN: fee_waiver_requested == true
+    PRIORITY: 2
+    CONTEXT:
+      pass: [customer_id, amount, daily_wire_limit]
+      summary: "Customer requesting fee waiver"
+    RETURN: true
+
+# --- ESCALATE ---
+
+ESCALATE:
+  triggers:
+    - WHEN: sanctions_screening_unavailable == true
+      REASON: "Sanctions screening service down -- mandatory check cannot be bypassed"
+      PRIORITY: critical
+      TAGS: [compliance, sanctions]
+
+    - WHEN: user.requests_human == true
+      REASON: "Customer requesting human specialist"
+      PRIORITY: medium
+
+  context_for_human:
+    - customer_id
+    - beneficiary_name
+    - amount
+    - conversation_history
+
+  routing:
+    queue: "wire_operations_l2"
+    skill_tags: [wire_transfer, compliance]
+
+# --- COMPLETE ---
+
+COMPLETE:
+  - WHEN: confirmation_number IS SET AND transfer_status == "released"
+    RESPOND: |
+      Your wire transfer has been executed successfully.
+      **Confirmation:** {{confirmation_number}}
+      **Amount:** {{amount}} {{currency}} to {{beneficiary_name}}
+      **Estimated Arrival:** {{estimated_arrival}}
+      Please save your confirmation number. Wire transfers are irrevocable.
+
+  - WHEN: transfer_status == "queued"
+    RESPOND: |
+      Your wire has been queued for the next processing window.
+      **Queue Reference:** {{queue_reference}}
+      **Scheduled:** {{next_processing_date}}
+
+# --- LIFECYCLE ---
+
+ON_START:
+  SET:
+    sanctions_clear = false
+    fraud_score = 0
+    transfer_status = "pending"
+  RESPOND: |
+    Welcome to Wire Transfer Services. I can help you send a domestic or
+    international wire. Which account would you like to send from?
+
+ON_ERROR:
+  tool_timeout:
+    RESPOND: "That system is responding slowly. Let me retry."
+    RETRY: 2
+    THEN: CONTINUE
+
+  tool_error:
+    RESPOND: "I hit an error. Let me try again."
+    RETRY: 1
+    THEN: CONTINUE
+
+# --- EXECUTION ---
+
+EXECUTION:
+  model: "claude-sonnet-4-5-20250929"
+  temperature: 0.1
+  max_tokens: 4096
+  max_reasoning_iterations: 8
+  fallback_model: "claude-haiku-4-5-20251001"
+
+# --- TEMPLATES ---
+
+TEMPLATES:
+  wire_confirmation:
+    DEFAULT: |
+      **Wire Confirmation -- {{confirmation_number}}**
+      From: ****{{source_last4}} | To: {{beneficiary_name}}
+      Amount: {{amount}} {{currency}} | Fees: {{fees}} | Total: {{total_debit}}
+    MARKDOWN: |
+      ## Wire Transfer Confirmation
+      | Field | Value |
+      |-------|-------|
+      | Confirmation | {{confirmation_number}} |
+      | Amount | {{amount}} {{currency}} |
+      | Fees | {{total_fees}} |
+      | Status | {{status}} |
+
+# --- GUARDRAILS ---
+
+GUARDRAILS:
+  account_number_masking:
+    kind: output
+    check: not_contains_full_account_number(response)
+    action: redact
+    message: "Account numbers masked for security."
+    priority: 0
+
+  credential_input:
+    kind: input
+    check: not_contains_credentials(input)
+    action: redact
+    message: "Please never share passwords or PINs in this chat."
+    priority: 0
+
+# --- NLU ---
+
+NLU:
+  intents:
+    - NAME: send_wire
+      PATTERNS: ["wire transfer", "send money", "wire funds"]
+      EXAMPLES: ["I need to wire $50,000 to Germany", "Can I send a domestic wire?"]
+
+    - NAME: fee_inquiry
+      PATTERNS: ["wire fee", "transfer charges", "exchange rate"]
+      EXAMPLES: ["What are the fees for an international wire?"]
+
+  entities:
+    - NAME: currency_code
+      TYPE: enum
+      VALUES: [USD, EUR, GBP, JPY, CHF]
+      SYNONYMS:
+        USD: [dollars, usd, bucks]
+        EUR: [euros, eur]
+
+  glossary:
+    - "SWIFT/BIC -- Bank identifier code for international transfers"
+    - "Fedwire -- Federal Reserve real-time settlement for domestic USD"
+    - "OFAC -- Office of Foreign Assets Control, administers US sanctions"
+
+# --- HOOKS ---
+
+HOOKS:
+  before_turn:
+    SET:
+      turn_start_time = NOW()
+  after_turn:
+    CALL: log_wire_audit_event()
+
+# --- MESSAGES ---
+
+MESSAGES:
+  error_default: "Something went wrong. I've logged the issue and will retry."
+  constraint_blocked: "That action cannot be completed due to regulatory restrictions."
+  escalation_format: "Connecting you with a specialist from our {{queue}} team."
+```
+
+This example demonstrates: `GOAL`, `PERSONA`, `LIMITATIONS`, `INSTRUCTIONS`, `TOOLS` (HTTP with hints), `GATHER` (with validation, inference, and extraction hints), `MEMORY` (session + persistent), `CONSTRAINTS` (labeled groups such as `always` + `action_rules`; labels are organizational only), `DELEGATE` (synchronous sub-agent calls), `HANDOFF` (with context, priority, return mapping), `ESCALATE` (with routing and human completion handlers), `COMPLETE` (multiple conditions), `ON_START`, `ON_ERROR`, `EXECUTION`, `TEMPLATES` (multi-format), `GUARDRAILS`, `NLU` (intents, entities, glossary), `HOOKS`, and `MESSAGES`.
+
+---
+
+## Full Reference: Complete Agent with Flow
+
+This comprehensive example demonstrates every major ABL construct for an agent with a FLOW section. It follows the same wire transfer scenario but uses a deterministic step graph instead of relying solely on LLM reasoning.
+
+> **Source file:** `examples/reference/agent_with_flow_complete.agent.abl`
+
+```abl
+AGENT: Wire_Transfer_Flow
+VERSION: "2.0"
+DESCRIPTION: |
+  Wire transfer agent with structured steps. Step-by-step flow:
+  identity -> account -> beneficiary -> compliance -> fees -> review ->
+  dual auth (if needed) -> execute -> confirm.
+
+LANGUAGE: "en"
+
+GOAL: |
+  Walk the customer through an outbound wire transfer step by step.
+
+PERSONA: |
+  Senior wire operations specialist. Precise, methodical, transparent.
+
+LIMITATIONS:
+  - "Cannot process wires to sanctioned countries"
+  - "Cannot override daily wire limits"
+  - "Cannot reverse a wire after execution"
+
+# --- TOOLS ---
+
+TOOLS:
+  verify_account(account_id: string) -> {owner_name: string, status: string, available_balance: number, daily_wire_limit: number, daily_wire_used: number}
+    description: "Retrieve account details and balance"
+    type: http
+    endpoint: "https://api.bankexample.com/v2/accounts/verify"
+    method: POST
+    auth: bearer
+
+  validate_beneficiary(name: string, account_number: string, routing_number: string, swift_bic: string, country: string) -> {valid: boolean, beneficiary_id: string, warnings: string[]}
+    description: "Validate beneficiary against bank directory"
+    type: http
+    endpoint: "https://api.bankexample.com/v2/beneficiaries/validate"
+    method: POST
+    auth: bearer
+
+  screen_sanctions(name: string, country: string, amount: number) -> {cleared: boolean, match_score: number}
+    description: "Screen beneficiary against sanctions lists"
+    type: http
+    endpoint: "https://api.bankexample.com/v2/sanctions/screen"
+    method: POST
+    auth: bearer
+
+  calculate_fees(transfer_type: string, amount: number, currency: string) -> {wire_fee: number, total_fees: number, exchange_rate: number}
+    description: "Calculate wire fees and FX rates"
+    type: http
+    endpoint: "https://api.bankexample.com/v2/wire/fees"
+    method: POST
+    auth: bearer
+
+  execute_wire(account_id: string, beneficiary_id: string, amount: number, transfer_type: string) -> {confirmation_number: string, status: string, estimated_arrival: string}
+    description: "Execute the wire transfer"
+    type: http
+    endpoint: "https://api.bankexample.com/v2/wire/execute"
+    method: POST
+    auth: bearer
+    hints:
+      side_effects: true
+
+# --- MEMORY ---
+
+MEMORY:
+  session:
+    - customer_name
+    - source_account
+    - available_balance
+    - daily_wire_limit
+    - daily_wire_used
+    - transfer_type
+    - beneficiary_name
+    - beneficiary_account
+    - beneficiary_id
+    - amount
+    - sanctions_clear
+    - wire_fee
+    - total_fees
+    - confirmation_number
+
+# --- CONSTRAINTS ---
+
+CONSTRAINTS:
+  always:
+    - REQUIRE customer_verified == true
+      ON_FAIL: "I need to verify your identity first."
+
+# --- FLOW ---
+
+FLOW:
+  entry_point: start
+
+  steps:
+    - start
+    - collect_account
+    - verify_account_step
+    - account_problem
+    - collect_beneficiary
+    - validate_beneficiary_step
+    - invalid_beneficiary
+    - collect_amount
+    - check_limits
+    - over_limit
+    - run_sanctions
+    - sanctions_flagged
+    - calculate_fees_step
+    - review_wire
+    - execute_wire_step
+    - wire_complete
+    - wire_failed
+    - cleanup
+
+  # Global digressions -- available at every step
+  global_digressions:
+    - INTENT: "cancel"
+      RESPOND: "Wire transfer cancelled. No funds have been debited."
+      GOTO: cleanup
+
+    - INTENT: "speak to agent"
+      RESPOND: "Let me connect you with a wire specialist."
+      DELEGATE: Live_Agent_Transfer
+
+  # --- Step definitions ---
+
+  start:
+    REASONING: false
+    SET:
+      transfer_status = "pending"
+      sanctions_clear = false
+    RESPOND: |
+      Welcome to Wire Transfer Services.
+      I'll guide you through each step. Let's start with your account.
+    THEN: collect_account
+
+  collect_account:
+    REASONING: false
+    GATHER:
+      - source_account: required
+        prompt: "Please provide your account number."
+    CORRECTIONS: true
+    ON_INPUT:
+      - ELSE:
+        THEN: verify_account_step
+
+  verify_account_step:
+    REASONING: false
+    CALL: verify_account
+      WITH:
+        account_id: source_account
+      AS: acctResult
+    ON_RESULT:
+      - IF: acctResult.status == "active"
+        SET:
+          customer_name = acctResult.owner_name
+          available_balance = acctResult.available_balance
+          daily_wire_limit = acctResult.daily_wire_limit
+          daily_wire_used = acctResult.daily_wire_used
+          customer_verified = true
+          balance_formatted = FORMAT_CURRENCY(acctResult.available_balance, "USD")
+        RESPOND: "Account verified. Hello, {{customer_name}}. Balance: {{balance_formatted}}."
+        THEN: collect_beneficiary
+      - IF: acctResult.status == "frozen" OR acctResult.status == "closed"
+        THEN: account_problem
+      - ELSE:
+        RESPOND: "Could not verify that account. Please try again."
+        THEN: collect_account
+
+  account_problem:
+    REASONING: false
+    RESPOND: "Your account is not eligible for wire transfers. Please contact your branch."
+    THEN: cleanup
+
+  collect_beneficiary:
+    REASONING: false
+    GATHER:
+      - beneficiary_name: required
+      - beneficiary_account: required
+      - routing_or_swift: required
+      - beneficiary_country: required
+        default: "US"
+    CORRECTIONS: true
+    ON_INPUT:
+      - ELSE:
+        THEN: validate_beneficiary_step
+
+  validate_beneficiary_step:
+    REASONING: false
+    CALL: validate_beneficiary
+      WITH:
+        name: beneficiary_name
+        account_number: beneficiary_account
+        routing_number: routing_or_swift
+        swift_bic: routing_or_swift
+        country: beneficiary_country
+      AS: benResult
+    ON_RESULT:
+      - IF: benResult.valid == true
+        SET:
+          beneficiary_id = benResult.beneficiary_id
+        THEN: collect_amount
+      - ELSE:
+        THEN: invalid_beneficiary
+
+  invalid_beneficiary:
+    REASONING: false
+    RESPOND: "The beneficiary details could not be validated. Please check and re-enter."
+    THEN: collect_beneficiary
+
+  collect_amount:
+    REASONING: false
+    GATHER:
+      - amount: required
+        type: number
+        prompt: "How much would you like to send?"
+      - transfer_type: required
+        prompt: "Domestic or international wire?"
+    ON_INPUT:
+      - ELSE:
+        THEN: check_limits
+
+  check_limits:
+    REASONING: false
+    ON_INPUT:
+      - IF: amount > available_balance
+        RESPOND: "Amount exceeds your available balance of {{balance_formatted}}."
+        THEN: collect_amount
+      - IF: (daily_wire_used + amount) > daily_wire_limit
+        THEN: over_limit
+      - ELSE:
+        THEN: run_sanctions
+
+  over_limit:
+    REASONING: false
+    SET:
+      remaining = SUB(daily_wire_limit, daily_wire_used)
+      remaining_formatted = FORMAT_CURRENCY(remaining, "USD")
+    RESPOND: "This exceeds your daily limit. Maximum available: {{remaining_formatted}}."
+    THEN: collect_amount
+
+  run_sanctions:
+    REASONING: false
+    CALL: screen_sanctions
+      WITH:
+        name: beneficiary_name
+        country: beneficiary_country
+        amount: amount
+      AS: sanctionsResult
+    ON_RESULT:
+      - IF: sanctionsResult.cleared == true
+        SET:
+          sanctions_clear = true
+        THEN: calculate_fees_step
+      - ELSE:
+        THEN: sanctions_flagged
+
+  sanctions_flagged:
+    REASONING: false
+    RESPOND: "This transfer has been flagged for compliance review. A specialist will follow up."
+    THEN: cleanup
+
+  calculate_fees_step:
+    REASONING: false
+    CALL: calculate_fees
+      WITH:
+        transfer_type: transfer_type
+        amount: amount
+        currency: "USD"
+      AS: feeResult
+    ON_RESULT:
+      - ELSE:
+        SET:
+          wire_fee = feeResult.wire_fee
+          total_fees = feeResult.total_fees
+          total_debit = ADD(amount, feeResult.total_fees)
+          fee_formatted = FORMAT_CURRENCY(feeResult.total_fees, "USD")
+          total_formatted = FORMAT_CURRENCY(ADD(amount, feeResult.total_fees), "USD")
+        THEN: review_wire
+
+  review_wire:
+    REASONING: false
+    SET:
+      amount_formatted = FORMAT_CURRENCY(amount, "USD")
+    RESPOND: |
+      Wire Transfer Summary:
+      To: {{beneficiary_name}} ({{MASK(beneficiary_account, "last4")}})
+      Amount: {{amount_formatted}}
+      Fees: {{fee_formatted}}
+      Total Debit: {{total_formatted}}
+
+      Do you confirm this wire? (yes / no / change amount)
+    GATHER:
+      - confirm: required
+    ON_INPUT:
+      - IF: input contains "yes" OR input contains "confirm"
+        THEN: execute_wire_step
+      - IF: input contains "no" OR input contains "cancel"
+        RESPOND: "Wire cancelled."
+        THEN: cleanup
+      - IF: input contains "change" OR input contains "amount"
+        CLEAR: amount, feeResult, wire_fee, total_fees
+        THEN: collect_amount
+      - ELSE:
+        RESPOND: "Please confirm with yes, no, or change amount."
+        THEN: review_wire
+
+  execute_wire_step:
+    REASONING: false
+    CALL: execute_wire
+      WITH:
+        account_id: source_account
+        beneficiary_id: beneficiary_id
+        amount: amount
+        transfer_type: transfer_type
+      AS: execResult
+    ON_RESULT:
+      - IF: execResult.status == "released"
+        SET:
+          confirmation_number = execResult.confirmation_number
+        THEN: wire_complete
+      - ELSE:
+        THEN: wire_failed
+
+  wire_complete:
+    REASONING: false
+    RESPOND: |
+      Wire transfer executed successfully!
+      Confirmation: {{confirmation_number}}
+      Estimated arrival: {{execResult.estimated_arrival}}
+      This wire is irrevocable. Save your confirmation number.
+    THEN: cleanup
+
+  wire_failed:
+    REASONING: false
+    RESPOND: "The wire transfer failed. Please try again or contact support."
+    THEN: cleanup
+
+  cleanup:
+    REASONING: false
+    CLEAR: amount, beneficiary_name, beneficiary_account, beneficiary_id, sanctions_clear
+    RESPOND: "Is there anything else I can help you with?"
+    THEN: COMPLETE
+
+# --- COMPLETION ---
+
+COMPLETE:
+  - WHEN: confirmation_number IS SET
+    RESPOND: "Wire complete. Reference: {{confirmation_number}}"
+
+  - WHEN: user.cancelled == true
+    RESPOND: "Wire cancelled. No funds were debited."
+
+# --- ERROR HANDLING ---
+
+ON_ERROR:
+  tool_timeout:
+    RESPOND: "The banking system is slow. Please wait..."
+    RETRY: 2
+    THEN: ESCALATE
+
+  tool_error:
+    RESPOND: "Something went wrong."
+    RETRY: 1
+    THEN: CONTINUE
+```
+
+**Key flow constructs demonstrated:**
+
+| Construct                               | Purpose                                              |
+| --------------------------------------- | ---------------------------------------------------- |
+| `FLOW` / `entry_point` / `steps`        | Declares the step graph and starting point           |
+| `THEN:`                                 | Explicit transition to the next step                 |
+| `REASONING: false`                      | Disables LLM reasoning for deterministic steps       |
+| `CALL ... WITH ... AS`                  | Tool call with named parameters and result binding   |
+| `ON_RESULT` / `IF` / `ELSE`             | Conditional branching based on tool results          |
+| `SET`                                   | Assign session variables                             |
+| `CLEAR`                                 | Reset session variables between flows                |
+| `GATHER` within a step                  | Collect user input with validation                   |
+| `ON_INPUT`                              | Branch based on user response content                |
+| `CORRECTIONS: true`                     | Allow users to correct previously entered values     |
+| `global_digressions`                    | Intents handled at any step (cancel, help, transfer) |
+| `FORMAT_CURRENCY`, `MASK`, `ADD`, `SUB` | Built-in expression functions                        |
+
+---
+
+## Next Steps
+
+- Browse [industry-specific examples](./by-industry) for real-world implementations.
+- Study [orchestration patterns](./orchestration-and-integration) for multi-agent coordination strategies.
+- Follow [integration recipes](./orchestration-and-integration) for connecting agents to external services.
+- See the [ABL Language Reference](../abl-reference/language-overview) for complete syntax documentation.

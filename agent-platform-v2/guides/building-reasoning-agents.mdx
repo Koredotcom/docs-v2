@@ -1,0 +1,423 @@
+---
+title: 'Building Agents'
+section: 'guides'
+order: 1
+description: 'Agents reason by default -- they make autonomous decisions, plan multi-step actions, and use tools dynamically based on conversation context. When an agent has no `FLOW` section, the LLM decides when '
+---
+
+# Building Agents
+
+Agents reason by default -- they make autonomous decisions, plan multi-step actions, and use tools dynamically based on conversation context. When an agent has no `FLOW` section, the LLM decides when to call tools, what to ask the user, and how to compose responses based on the `GOAL` and `INSTRUCTIONS`. You can optionally add a FLOW section with structured steps for deterministic control over parts of the conversation (see [Adding Structured Steps to Agents](/agent-platform-v2/guides/building-scripted-flows)).
+
+## Create an Agent
+
+### Define the agent
+
+```abl
+AGENT: Policy_Advisor
+
+GOAL: |
+  Answer customer policy questions using semantic search
+  over policy documents. Clarify ambiguous queries before searching.
+
+PERSONA: |
+  Knowledgeable and patient policy specialist.
+  Cites source documents when answering. Never guesses.
+
+LIMITATIONS:
+  - "Cannot modify or override existing policies"
+  - "Cannot process refunds directly"
+
+TOOLS:
+  search_policies(query: string, category: string) -> {results: object[], totalCount: number}
+    description: "Search policy documents by query and category"
+
+  get_policy_detail(policy_id: string) -> {title: string, content: string, effectiveDate: string}
+    description: "Get full text of a specific policy"
+
+INSTRUCTIONS: |
+  1. Identify the policy area from the user's question
+  2. Search relevant documents with search_policies
+  3. If results are ambiguous, ask the user to narrow down
+  4. Present the answer with source attribution
+
+COMPLETE:
+  - WHEN: policy_answer_provided == true
+    RESPOND: "Is there anything else about our policies I can help with?"
+```
+
+### Add execution configuration
+
+```abl
+EXECUTION:
+  model: claude-sonnet-4-5-20250929
+  temperature: 0.3
+  max_tokens: 4096
+  max_reasoning_iterations: 15
+  tool_timeout: 10000
+```
+
+`max_reasoning_iterations` caps how many tool-call/response cycles the agent performs before forcing a final response.
+
+### Agent with memory
+
+```abl
+AGENT: Account_Advisor
+
+GOAL: "Help customers understand their account options and recommend products"
+
+PERSONA: "Friendly financial advisor who remembers customer preferences"
+
+MEMORY:
+  session:
+    - customer_id
+    - recommended_products
+  persistent:
+    - user.risk_profile
+    - user.preferred_products
+  remember:
+    - WHEN: risk_profile IS SET
+      STORE: risk_profile -> user.risk_profile
+  recall:
+    - ON: session:start
+      ACTION: inject_context
+      PATHS: [user.risk_profile, user.preferred_products]
+
+TOOLS:
+  get_account_summary(customer_id: string) -> {accounts: object[], totalBalance: number}
+    description: "Retrieve customer account summary"
+  recommend_products(profile: object) -> {products: object[]}
+    description: "Get product recommendations based on profile"
+
+COMPLETE:
+  - WHEN: recommendation_provided == true
+    RESPOND: "I hope these recommendations are helpful!"
+```
+
+### Agent with guardrails
+
+```abl
+AGENT: Content_Assistant
+
+GOAL: "Help users draft and refine content"
+
+PERSONA: "Professional content editor"
+
+GUARDRAILS:
+  - NAME: pii_filter
+    KIND: output
+    CHECK: "output NOT CONTAINS ssn_pattern AND output NOT CONTAINS credit_card_pattern"
+    ACTION: redact
+    MESSAGE: "Personal information has been removed from the response."
+
+  - NAME: content_safety
+    KIND: input
+    PROVIDER: openai_moderation
+    CATEGORY: hate
+    THRESHOLD: 0.7
+    ACTION: block
+    MESSAGE: "That request contains content I cannot help with."
+
+TOOLS:
+  grammar_check(text: string) -> {corrections: object[]}
+    description: "Check grammar and suggest corrections"
+
+COMPLETE:
+  - WHEN: content_finalized == true
+    RESPOND: "Your content is ready!"
+```
+
+### Troubleshooting
+
+- **Agent loops endlessly:** Set `max_reasoning_iterations` in the `EXECUTION` block to cap the number of tool-call cycles.
+- **Agent calls wrong tools:** Improve `INSTRUCTIONS` with numbered steps and add clear `description` fields to each tool definition.
+- **Agent responds when it should use a tool:** Strengthen the `GOAL` to explicitly state when tool use is required (e.g., "Always search before answering").
+
+## Define Identity & Persona
+
+Identity and persona control how an agent communicates -- its tone, expertise, boundaries, and opening behavior.
+
+### Set the core identity
+
+```abl
+AGENT: Booking_Manager
+
+GOAL: |
+  Help authenticated users manage their reservations -- view details,
+  change dates or passengers, upgrade rooms, or cancel with clear
+  fee and refund information upfront.
+
+PERSONA: |
+  Knowledgeable booking specialist for our travel service.
+  Understands travel policies and change fees deeply.
+  Always shows fees and consequences BEFORE asking for confirmation.
+  Empathetic when handling cancellations or disappointing news.
+  Clear, honest, and never makes promises that can't be kept.
+
+LIMITATIONS:
+  - "Cannot waive change fees without manager approval"
+  - "Cannot override airline or hotel policies"
+  - "Cannot modify bookings less than 24 hours before departure"
+  - "Cannot process refunds to a different payment method"
+```
+
+`GOAL` tells the agent what to accomplish. `PERSONA` defines how it communicates. `LIMITATIONS` set hard boundaries the agent will respect and communicate to users.
+
+### Add an opening message
+
+```abl
+ON_START:
+  RESPOND: |
+    Hello! I am your booking specialist.
+    I can help you view, modify, upgrade, or cancel your reservation.
+    What would you like to do?
+```
+
+`ON_START` fires when a session begins, before any user input.
+
+### Persona with configurable messages
+
+```abl
+PERSONA: |
+  Friendly, efficient customer service agent for Face Frames optical store.
+  Patient and empathetic. Explains deductions and restrictions clearly.
+  Never cancels without explicit customer confirmation.
+
+MESSAGES:
+  error_default: "I am sorry, something went wrong. Let me try again or connect you with a team member."
+  constraint_blocked: "I am unable to proceed due to a policy restriction."
+  escalation_format: "Let me connect you with a team member who can help further."
+  conversation_complete: "Thank you for contacting us. Have a great day!"
+  gather_prompt: "I need a bit more information to help you."
+```
+
+`MESSAGES` customizes system-generated responses to match the persona's voice.
+
+### Supervisor persona
+
+```abl
+SUPERVISOR: Retail_Supervisor
+
+GOAL: "Route customers to the right specialist for product discovery, purchases, orders, returns, loyalty, or human support"
+
+PERSONA: |
+  Professional and helpful retail assistant.
+  Friendly, efficient, and knowledgeable about our product catalog.
+  Recognizes returning customers and adapts to their shopping history.
+  Routes requests to the right specialist quickly and transparently.
+
+LIMITATIONS:
+  - "Cannot process payments or complete purchases directly"
+  - "Cannot access customer financial information"
+  - "Cannot override pricing, discount policies, or return windows"
+  - "Must not share personal information about other customers"
+```
+
+### ON_START with tool calls
+
+```abl
+ON_START:
+  CALL: check_returning_user
+  SET:
+    session_initialized = true
+  RESPOND: |
+    Welcome back, {{user_name}}! How can I help you today?
+```
+
+The `ON_START` handler can call tools (e.g., to check if the user is returning) and set session variables before greeting.
+
+### Troubleshooting
+
+- **Agent ignores limitations:** Limitations are advisory for the LLM. For hard enforcement, use `CONSTRAINTS` with `REQUIRE` conditions and `ON_FAIL` actions.
+- **Agent tone drifts during long conversations:** Keep the persona description concise and specific. Use `MESSAGES` to control system-generated text. Consider adding `INSTRUCTIONS` for detailed behavioral rules.
+- **ON_START does not fire:** Verify the agent is the entry point or is being handed off to. `ON_START` runs once per session initialization for that agent.
+
+## Multi-Language Agents
+
+Build agents that detect the user's language and respond in kind, with optional language-specific model routing and glossary support.
+
+### Set up language detection
+
+Configure the NLU section in your agent definition to enable language support:
+
+```abl
+AGENT: Multilingual_Support
+GOAL: "Help customers in their preferred language"
+
+NLU:
+  languages: ["en", "es", "fr", "de", "pt"]
+  defaultLanguage: "en"
+  allowCodeSwitching: true
+```
+
+| Field                  | Description                                                            |
+| ---------------------- | ---------------------------------------------------------------------- |
+| **languages**          | List of supported language codes (ISO 639-1)                           |
+| **defaultLanguage**    | Fallback language when detection is ambiguous                          |
+| **allowCodeSwitching** | Whether to follow the user when they switch languages mid-conversation |
+
+When `allowCodeSwitching` is enabled, the agent detects language changes and adapts its responses accordingly. When disabled, the agent stays in the initially detected language.
+
+### Provide language-specific models
+
+Route to different LLM models based on the detected language:
+
+```abl
+NLU:
+  languages: ["en", "es", "ja"]
+  defaultLanguage: "en"
+  languageModels:
+    en: "claude-sonnet-4-5-20250929"
+    es: "claude-sonnet-4-5-20250929"
+    ja: "gpt-4o"
+```
+
+This is useful when certain models perform better for specific languages.
+
+### Define a glossary
+
+Add domain-specific terms that the language model should use consistently:
+
+```abl
+NLU:
+  languages: ["en", "es"]
+  defaultLanguage: "en"
+  glossary:
+    - "Agent Platform 2.0"
+    - "SearchAI"
+    - "eval set"
+    - "guardrail policy"
+```
+
+Glossary terms are injected into the system prompt to ensure the agent uses correct terminology regardless of language.
+
+### Write multi-language templates
+
+Use the TEMPLATES section to provide pre-written responses in each supported language:
+
+```abl
+TEMPLATES:
+  welcome:
+    DEFAULT: "Welcome! How can I help you today?"
+    MARKDOWN: |
+      # Welcome!
+      How can I help you today?
+
+  bienvenida:
+    DEFAULT: "Bienvenido! Como puedo ayudarte hoy?"
+```
+
+For dynamic language selection, let the LLM generate responses in the detected language using the agent's PERSONA and GOAL as guidance.
+
+### Set language per environment variable
+
+For deployments serving a single market, set the language via environment variable:
+
+```abl
+NLU:
+  defaultLanguage: "{{env.DEFAULT_LANGUAGE}}"
+```
+
+Then configure `DEFAULT_LANGUAGE=es` for your Spanish market deployment and `DEFAULT_LANGUAGE=en` for English.
+
+### Persona with a language setting
+
+```abl
+AGENT: Soporte_Cliente
+
+LANGUAGE: "es-EC"
+
+GOAL: "Ayudar a los clientes con consultas sobre sus pedidos"
+
+PERSONA: |
+  Agente de servicio al cliente profesional y amable.
+  Siempre usa usted en lugar de tu.
+  Explica las politicas de forma clara y paciente.
+```
+
+### NLU intents with multiple languages
+
+Define intent patterns in multiple languages:
+
+```abl
+NLU:
+  languages: ["en", "es"]
+  defaultLanguage: "en"
+
+  intents:
+    - name: greeting
+      patterns:
+        - "hello"
+        - "hi there"
+        - "hola"
+        - "buenos dias"
+      examples:
+        - "Hey, how are you?"
+        - "Hola, como estas?"
+
+    - name: order_status
+      patterns:
+        - "where is my order"
+        - "track my package"
+        - "donde esta mi pedido"
+        - "rastrear mi paquete"
+```
+
+### Language-specific embeddings
+
+For knowledge base retrieval in multi-language scenarios:
+
+```abl
+NLU:
+  embeddings:
+    enabled: true
+    model: "multilingual-e5-large"
+    threshold: 0.7
+```
+
+Multilingual embedding models map queries and documents into a shared semantic space, enabling cross-language search.
+
+### Language-based routing
+
+The platform detects the user's language from their first message and sets it as a session variable. Use this for routing:
+
+```abl
+HANDOFF:
+  - TO: Spanish_Support
+    WHEN: detected_language == "es"
+    CONTEXT:
+      pass: [customer_id, query]
+
+  - TO: English_Support
+    WHEN: detected_language == "en"
+    CONTEXT:
+      pass: [customer_id, query]
+```
+
+### Troubleshooting
+
+- **Agent responding in the wrong language:** Check that `allowCodeSwitching` is enabled. Verify the PERSONA instructs the agent to respond in the user's language. Add explicit instructions like "Always respond in the same language the user writes in."
+- **Glossary terms being translated:** Glossary terms should be treated as proper nouns. Add them to the glossary list to signal the LLM to preserve them.
+- **Language detection unreliable for short messages:** Short messages (1-2 words) can be ambiguous. Set a `defaultLanguage` to handle these cases.
+- **Model not available for a language:** Fall back to a multilingual model. Most major LLMs support all widely spoken languages.
+
+## Common Patterns
+
+**Start with clear GOAL and PERSONA.** The GOAL defines _what_ the agent accomplishes; the PERSONA defines _how_ it communicates. Keep both concise and specific -- vague instructions lead to inconsistent behavior.
+
+**Use LIMITATIONS for advisory boundaries.** Limitations tell the LLM what the agent cannot or should not do. For hard enforcement, pair them with `CONSTRAINTS` that have `REQUIRE` conditions and `ON_FAIL` actions.
+
+**Cap reasoning iterations.** Always set `max_reasoning_iterations` in the `EXECUTION` block to prevent runaway loops. Start with 10-15 for most agents and tune based on observed behavior.
+
+**Add numbered INSTRUCTIONS for complex workflows.** When the agent needs to follow a specific process (e.g., "search first, then summarize, then cite sources"), use numbered `INSTRUCTIONS` rather than relying solely on the GOAL.
+
+**Test with edge cases.** Agents are non-deterministic when reasoning. Test with ambiguous inputs, missing context, and adversarial prompts to verify the agent handles them gracefully.
+
+## Related
+
+- [Adding Structured Steps to Agents](/agent-platform-v2/guides/building-scripted-flows)
+- [Tools & Integrations](/agent-platform-v2/guides/tools-and-integrations)
+- [Multi-Agent Orchestration](/agent-platform-v2/guides/multi-agent-orchestration)
+- [Safety & Guardrails](/agent-platform-v2/guides/safety-and-guardrails)
+- [Memory & State](/agent-platform-v2/guides/memory-and-state)
+- [Tools](/agent-platform-v2/abl-reference/tools)

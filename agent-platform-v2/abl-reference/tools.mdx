@@ -1,0 +1,689 @@
+---
+title: 'Tools'
+section: 'abl-reference'
+order: 3
+description: 'The `TOOLS:` section defines the external capabilities available to an agent. Each tool declares a typed signature (parameters and return type), an optional execution binding (HTTP, MCP, sandbox, or l'
+---
+
+# Tools
+
+The `TOOLS:` section defines the external capabilities available to an agent. Each tool declares a typed signature (parameters and return type), an optional execution binding (HTTP, MCP, sandbox, or lambda), and metadata that guides the LLM's tool selection.
+
+## Tool declaration syntax
+
+A tool is declared with a function-style signature followed by indented properties:
+
+```abl
+TOOLS:
+  tool_name(param1: type1, param2: type2 = default) -> ReturnType
+    description: "What this tool does"
+    type: http
+    endpoint: "/api/path"
+    method: POST
+```
+
+### Signature format
+
+```
+name(parameters) -> return_type
+```
+
+- **name** -- a lowercase identifier using `snake_case`
+- **parameters** -- comma-separated list of typed parameters
+- **return_type** -- the type of data the tool returns
+
+### Parameter syntax
+
+Each parameter follows the format `name: type` with an optional default value:
+
+```
+param_name: type
+param_name: type = default_value
+```
+
+| Component   | Description                              | Examples                              |
+| ----------- | ---------------------------------------- | ------------------------------------- |
+| `name`      | Parameter identifier (snake_case)        | `account_id`, `query`, `limit`        |
+| `type`      | Data type                                | `string`, `number`, `boolean`, `date` |
+| `= default` | Default value (makes parameter optional) | `= 10`, `= "USD"`, `= true`           |
+
+Parameters without a default value are required. Parameters with a default value are optional.
+
+### Parameter types
+
+| Type      | Description                                              | Examples               |
+| --------- | -------------------------------------------------------- | ---------------------- |
+| `string`  | Text value                                               | `"hello"`              |
+| `number`  | Numeric value (integer or float)                         | `42`, `3.14`           |
+| `boolean` | True or false                                            | `true`, `false`        |
+| `date`    | Date value                                               | `"2026-03-01"`         |
+| `object`  | Nested object (specify fields with nested `parameters:`) | --                     |
+| `type[]`  | Array of the given type                                  | `string[]`, `number[]` |
+
+#### Object parameters
+
+When a parameter has type `object`, you can define nested fields using a `parameters:` block under the tool:
+
+```abl
+TOOLS:
+  create_order(customer: object, items: object[]) -> {order_id: string}
+    description: "Create a new order"
+    parameters:
+      customer:
+        name: string
+        email: string
+      items:
+        product_id: string
+        quantity: number
+```
+
+#### Array parameters
+
+Array types use the `[]` suffix:
+
+```abl
+TOOLS:
+  bulk_lookup(ids: string[]) -> {results: object[]}
+    description: "Look up multiple records by ID"
+```
+
+### Return type
+
+The return type appears after the `->` arrow. It can be:
+
+| Form             | Syntax                       | Example                                  |
+| ---------------- | ---------------------------- | ---------------------------------------- |
+| Simple type      | `-> type`                    | `-> string`                              |
+| Object type      | `-> {field: type, ...}`      | `-> {id: string, name: string}`          |
+| Array type       | `-> type[]`                  | `-> Hotel[]`                             |
+| Nested object    | `-> {field: {nested: type}}` | `-> {user: {name: string, age: number}}` |
+| Optional fields  | `-> {field?: type}`          | `-> {error?: string}`                    |
+| Array of objects | `-> {field: type}[]`         | `-> {id: string, title: string}[]`       |
+
+```abl
+TOOLS:
+  search_hotels(destination: string, checkin: date, checkout: date) -> {hotels: {id: string, name: string, price: number, rating: number}[], total: number}
+    description: "Search available hotels"
+```
+
+### Description
+
+The `description:` property provides a natural-language explanation of what the tool does. The LLM uses this description to decide when and how to call the tool.
+
+```abl
+TOOLS:
+  verify_account(account_id: string) -> {name: string, status: string}
+    description: "Retrieve account details and verify the account is active"
+```
+
+Write descriptions that help the LLM understand:
+
+- What the tool does
+- When to call it
+- What data it returns
+
+### Hints
+
+The `hints:` block provides execution metadata that the runtime uses for optimization:
+
+```abl
+TOOLS:
+  get_balance(account_id: string) -> {balance: number}
+    description: "Get account balance"
+    hints:
+      cacheable: true
+      latency: fast
+      timeout: 5000
+```
+
+| Hint            | Type                               | Default | Description                                                                |
+| --------------- | ---------------------------------- | ------- | -------------------------------------------------------------------------- |
+| `cacheable`     | `boolean`                          | _none_  | Whether results can be cached across calls with the same parameters        |
+| `latency`       | `"fast"` \| `"medium"` \| `"slow"` | _none_  | Expected latency category for runtime scheduling                           |
+| `side_effects`  | `boolean`                          | _none_  | Whether the tool modifies external state                                   |
+| `requires_auth` | `boolean`                          | _none_  | Whether the tool requires authenticated context                            |
+| `timeout`       | `number`                           | _none_  | Tool-specific timeout in milliseconds (overrides `EXECUTION.tool_timeout`) |
+
+---
+
+## HTTP tools
+
+HTTP tools call REST API endpoints. They are the most common tool type.
+
+```abl
+TOOLS:
+  search_flights(origin: string, destination: string, date: date) -> {flights: {id: string, price: number}[]}
+    description: "Search available flights"
+    type: http
+    endpoint: "https://api.flights.com/v1/search"
+    method: POST
+    auth: bearer
+    timeout: 10000
+    retry: 3
+    retry_delay: 1000
+```
+
+### HTTP binding properties
+
+| Property          | Type                                                      | Required | Default                  | Description                                                                    |
+| ----------------- | --------------------------------------------------------- | -------- | ------------------------ | ------------------------------------------------------------------------------ |
+| `type`            | `"http"`                                                  | Yes      | --                       | Declares this as an HTTP tool                                                  |
+| `endpoint`        | `string`                                                  | Yes      | --                       | URL or path for the API call. Supports path parameters: `"/hotels/{hotel_id}"` |
+| `method`          | `"GET"` \| `"POST"` \| `"PUT"` \| `"PATCH"` \| `"DELETE"` | Yes      | --                       | HTTP method                                                                    |
+| `auth`            | `string`                                                  | No       | `"none"`                 | Authentication type (see [Auth](#auth))                                        |
+| `timeout`         | `number`                                                  | No       | `EXECUTION.tool_timeout` | Request timeout in milliseconds                                                |
+| `retry`           | `number`                                                  | No       | _none_                   | Number of retry attempts on failure                                            |
+| `retry_delay`     | `number`                                                  | No       | _none_                   | Delay in milliseconds between retries                                          |
+| `headers`         | `Record<string, string>`                                  | No       | _none_                   | Custom HTTP headers                                                            |
+| `query_params`    | `Record<string, string>`                                  | No       | _none_                   | Query string parameters                                                        |
+| `body_template`   | `string`                                                  | No       | _none_                   | Custom body template with interpolation                                        |
+| `rate_limit`      | `number`                                                  | No       | _none_                   | Maximum requests per second                                                    |
+| `circuit_breaker` | `{threshold, resetMs}`                                    | No       | _none_                   | Circuit breaker configuration                                                  |
+
+### Path parameters
+
+Use curly braces in the endpoint to reference tool parameters:
+
+```abl
+TOOLS:
+  get_hotel(hotel_id: string) -> Hotel
+    type: http
+    endpoint: "/hotels/{hotel_id}"
+    method: GET
+```
+
+### Headers
+
+Custom headers are specified as key-value pairs:
+
+```abl
+TOOLS:
+  get_data(query: string) -> {results: object[]}
+    type: http
+    endpoint: "/api/data"
+    method: POST
+    headers:
+      X-Api-Version: "2024-01"
+      Accept: "application/json"
+```
+
+### Auth
+
+The `auth:` property specifies the authentication mechanism. The runtime resolves credentials from the project's credential store -- the ABL document never contains actual secrets.
+
+| Auth type       | Description                                            |
+| --------------- | ------------------------------------------------------ |
+| `none`          | No authentication                                      |
+| `bearer`        | Bearer token in `Authorization` header                 |
+| `api_key`       | API key (header name configurable via `auth_config`)   |
+| `oauth2_client` | OAuth 2.0 client credentials flow                      |
+| `oauth2_user`   | OAuth 2.0 authorization code flow (user-scoped tokens) |
+| `saml`          | SAML assertion-based authentication                    |
+| `custom`        | Custom authentication with configurable headers        |
+
+#### Auth configuration
+
+For auth types that require additional configuration, use the `auth_config:` block:
+
+```abl
+TOOLS:
+  get_user_data(user_id: string) -> {name: string, email: string}
+    type: http
+    endpoint: "/api/users/{user_id}"
+    method: GET
+    auth: oauth2_client
+    auth_config:
+      token_url: "https://auth.example.com/oauth/token"
+      client_id: "my-client-id"
+      client_secret: "{{secrets.OAUTH_CLIENT_SECRET}}"
+      scopes: "read:users"
+```
+
+```abl
+TOOLS:
+  call_partner_api(payload: string) -> {status: string}
+    type: http
+    endpoint: "https://partner.example.com/api"
+    method: POST
+    auth: api_key
+    auth_config:
+      header_name: "X-API-Key"
+```
+
+| Auth config property | Type                     | Used with                      | Description                                            |
+| -------------------- | ------------------------ | ------------------------------ | ------------------------------------------------------ |
+| `token_url`          | `string`                 | `oauth2_client`, `oauth2_user` | OAuth token endpoint URL                               |
+| `client_id`          | `string`                 | `oauth2_client`, `oauth2_user` | OAuth client identifier                                |
+| `client_secret`      | `string`                 | `oauth2_client`, `oauth2_user` | OAuth client secret (use `{{secrets.X}}` placeholders) |
+| `scopes`             | `string`                 | `oauth2_client`, `oauth2_user` | Space-separated OAuth scopes                           |
+| `header_name`        | `string`                 | `api_key`                      | Custom header name for the API key                     |
+| `provider`           | `string`                 | `oauth2_user`, `saml`          | Auth provider identifier                               |
+| `custom_headers`     | `Record<string, string>` | `custom`                       | Custom authentication headers                          |
+
+#### Secret placeholders
+
+Credentials use `{{secrets.NAME}}` placeholder syntax. The runtime resolves these from the project's secret store at execution time. Never embed actual credentials in ABL files.
+
+```abl
+auth_config:
+  client_secret: "{{secrets.PARTNER_OAUTH_SECRET}}"
+```
+
+### Result transformation
+
+Tool results are available in the session context after execution. You can map specific result fields to session variables using `on_result:` and handle errors with `on_error:`:
+
+```abl
+TOOLS:
+  get_balance(account_id: string) -> {balance: number, currency: string}
+    description: "Get account balance"
+    type: http
+    endpoint: "/api/balance"
+    method: GET
+    on_result:
+      set:
+        current_balance: result.balance
+        account_currency: result.currency
+    on_error:
+      set:
+        balance_error: error.message
+```
+
+### SSRF protection
+
+The platform enforces SSRF (Server-Side Request Forgery) protection on all HTTP tool endpoints. Private IP ranges, localhost, and internal network addresses are blocked at the runtime level. Only allowlisted domains and public endpoints are permitted for HTTP tool calls.
+
+### Circuit breaker
+
+The circuit breaker prevents cascading failures by halting requests to a failing endpoint after a threshold of consecutive errors:
+
+```abl
+TOOLS:
+  unreliable_api(query: string) -> {data: string}
+    type: http
+    endpoint: "https://api.example.com/data"
+    method: GET
+    circuit_breaker:
+      threshold: 5
+      resetMs: 30000
+```
+
+| Property    | Type     | Description                                             |
+| ----------- | -------- | ------------------------------------------------------- |
+| `threshold` | `number` | Number of consecutive failures before the circuit opens |
+| `resetMs`   | `number` | Milliseconds to wait before trying the endpoint again   |
+
+---
+
+## MCP tools
+
+MCP (Model Context Protocol) tools connect to external MCP servers that expose tools dynamically. The runtime handles protocol negotiation, transport, and tool discovery.
+
+```abl
+TOOLS:
+  web_search(query: string) -> {results: {title: string, url: string, snippet: string}[]}
+    description: "Search the web"
+    type: mcp
+    server: "brave-search"
+```
+
+### MCP binding properties
+
+| Property      | Type     | Required | Default   | Description                                                       |
+| ------------- | -------- | -------- | --------- | ----------------------------------------------------------------- |
+| `type`        | `"mcp"`  | Yes      | --        | Declares this as an MCP tool                                      |
+| `server`      | `string` | Yes      | --        | MCP server name (resolved from runtime configuration)             |
+| `server_tool` | `string` | No       | Tool name | Tool name on the MCP server (if different from the ABL tool name) |
+
+### Server configuration
+
+The `server` value is a logical name that maps to an MCP server configuration in the project's runtime settings. Server configuration (transport type, connection URL, authentication) is managed at the project level, not in the ABL file.
+
+The platform supports these MCP transport types:
+
+| Transport   | Description                                            |
+| ----------- | ------------------------------------------------------ |
+| `stdio`     | Standard input/output (for local MCP server processes) |
+| `http`      | HTTP-based transport (Streamable HTTP)                 |
+| `websocket` | WebSocket-based transport                              |
+
+### Dynamic tool discovery
+
+MCP servers can expose multiple tools. When you declare an MCP tool in ABL, you bind a specific tool from the server. If the tool name on the MCP server differs from the tool name in your ABL file, use `server_tool:` to specify the server-side name:
+
+```abl
+TOOLS:
+  search(query: string) -> {results: object[]}
+    description: "Search using Brave"
+    type: mcp
+    server: "brave-search"
+    server_tool: "brave_web_search"
+```
+
+---
+
+## Code tools (sandbox)
+
+Code tools execute user-provided JavaScript or Python code in an isolated sandbox environment with resource limits and no network access.
+
+```abl
+TOOLS:
+  calculate_tax(income: number, state: string) -> {tax: number, rate: number}
+    description: "Calculate state income tax"
+    type: sandbox
+    runtime: javascript
+    timeout: 5000
+    memory_mb: 128
+    code: |
+      const rates = { CA: 0.133, NY: 0.109, TX: 0 };
+      const rate = rates[state] || 0.05;
+      return { tax: income * rate, rate };
+```
+
+### Sandbox binding properties
+
+| Property    | Type                         | Required | Default          | Description                                           |
+| ----------- | ---------------------------- | -------- | ---------------- | ----------------------------------------------------- |
+| `type`      | `"sandbox"`                  | Yes      | --               | Declares this as a sandbox tool                       |
+| `runtime`   | `"javascript"` \| `"python"` | Yes      | --               | Execution runtime                                     |
+| `code`      | `string`                     | No       | _none_           | Inline source code (pipe block syntax for multi-line) |
+| `timeout`   | `number`                     | No       | Platform default | Maximum execution time in milliseconds                |
+| `memory_mb` | `number`                     | No       | Platform default | Memory limit in megabytes                             |
+
+### Isolation
+
+Sandbox tools execute in a gVisor-isolated environment with the following restrictions:
+
+- No network access
+- No filesystem access beyond the sandbox working directory
+- Resource limits enforced (CPU, memory, execution time)
+- Each execution runs in a fresh environment
+
+### JavaScript runtime
+
+JavaScript code tools have access to standard JavaScript built-ins. The code should return a value matching the declared return type.
+
+```abl
+TOOLS:
+  format_currency(amount: number, currency: string) -> {formatted: string}
+    type: sandbox
+    runtime: javascript
+    code: |
+      const formatter = new Intl.NumberFormat('en-US', {
+        style: 'currency',
+        currency: currency
+      });
+      return { formatted: formatter.format(amount) };
+```
+
+### Python runtime
+
+Python code tools use a sandboxed Python interpreter. The code should return a dictionary matching the declared return type.
+
+```abl
+TOOLS:
+  analyze_text(text: string) -> {word_count: number, sentences: number}
+    type: sandbox
+    runtime: python
+    code: |
+      import re
+      words = len(text.split())
+      sentences = len(re.split(r'[.!?]+', text))
+      return {"word_count": words, "sentences": sentences}
+```
+
+---
+
+## Lambda tools
+
+Lambda tools invoke cloud serverless functions. The function name is a logical identifier resolved to an actual endpoint (ARN, URL) at runtime through the project's function registry.
+
+```abl
+TOOLS:
+  process_document(document_url: string, format: string) -> {text: string, pages: number}
+    description: "Extract text from a document"
+    type: lambda
+    function: "document-processor"
+    runtime: "nodejs20"
+    timeout: 30000
+```
+
+### Lambda binding properties
+
+| Property   | Type       | Required | Default          | Description                                        |
+| ---------- | ---------- | -------- | ---------------- | -------------------------------------------------- |
+| `type`     | `"lambda"` | Yes      | --               | Declares this as a lambda tool                     |
+| `function` | `string`   | Yes      | --               | Logical function name (resolved at runtime)        |
+| `runtime`  | `string`   | No       | _none_           | Runtime hint (e.g., `"nodejs20"`, `"python3.12"`)  |
+| `timeout`  | `number`   | No       | Platform default | Override timeout for this function in milliseconds |
+
+---
+
+## Async webhook tools
+
+Async webhook tools send an HTTP request with a callback URL injected into the payload. The external system processes the request asynchronously and posts the result back to the callback URL when complete.
+
+```abl
+TOOLS:
+  generate_report(report_type: string, date_range: string) -> {report_url: string, status: string}
+    description: "Generate a financial report (processed asynchronously)"
+    type: async_webhook
+    endpoint: "https://reports.internal/api/generate"
+    method: POST
+    callback_url_field: "callbackUrl"
+    timeout_seconds: 3600
+```
+
+### Async webhook binding properties
+
+| Property             | Type                             | Required | Default         | Description                                                     |
+| -------------------- | -------------------------------- | -------- | --------------- | --------------------------------------------------------------- |
+| `type`               | `"async_webhook"`                | Yes      | --              | Declares this as an async webhook tool                          |
+| `endpoint`           | `string`                         | Yes      | --              | URL to send the initial request                                 |
+| `method`             | `"POST"` \| `"PUT"` \| `"PATCH"` | Yes      | --              | HTTP method                                                     |
+| `headers`            | `Record<string, string>`         | No       | _none_          | Custom HTTP headers                                             |
+| `callback_url_field` | `string`                         | No       | `"callbackUrl"` | Dot-path in the request body where the callback URL is injected |
+| `timeout_seconds`    | `number`                         | No       | `3600`          | Timeout in seconds for the async callback response              |
+
+---
+
+## Tool file imports
+
+Tool definitions can be organized into reusable `.tools.abl` files and imported into agent documents. This allows sharing tool definitions across multiple agents.
+
+### Tool file format
+
+A `.tools.abl` file starts with a `TOOLS:` section that can include shared defaults:
+
+```abl
+TOOLS:
+  base_url: "https://api.hotels.com/v1"
+  auth: bearer
+  timeout: 5000
+  retry: 3
+
+  search_hotels(destination: string, checkin: date, checkout: date) -> Hotel[]
+    type: http
+    endpoint: "/search"
+    method: POST
+    description: "Search available hotels"
+
+  get_hotel(hotel_id: string) -> Hotel
+    type: http
+    endpoint: "/hotels/{hotel_id}"
+    method: GET
+    description: "Get hotel details by ID"
+```
+
+### Shared defaults
+
+The following defaults can be set at the top of a `.tools.abl` file and apply to all tools in the file:
+
+| Default       | Type                     | Description                                       |
+| ------------- | ------------------------ | ------------------------------------------------- |
+| `base_url`    | `string`                 | Base URL prepended to all relative endpoint paths |
+| `auth`        | `string`                 | Default auth type for all tools                   |
+| `timeout`     | `number`                 | Default timeout in milliseconds                   |
+| `retry`       | `number`                 | Default retry count                               |
+| `retry_delay` | `number`                 | Default retry delay in milliseconds               |
+| `rate_limit`  | `number`                 | Default rate limit (requests per second)          |
+| `headers`     | `Record<string, string>` | Default headers applied to all tools              |
+
+### Import syntax
+
+Import tools from a `.tools.abl` file into an agent using the `file:` directive within the `TOOLS:` section:
+
+```abl
+TOOLS:
+  file: "./tools/hotels-api.tools.abl" [search_hotels, get_hotel]
+```
+
+The import specifies:
+
+1. The path to the `.tools.abl` file (relative to the agent file)
+2. An optional list of specific tool names to import (in brackets). If omitted, all tools from the file are imported.
+
+### Example
+
+Given the file `tools/hotels-api.tools.abl`:
+
+```abl
+TOOLS:
+  base_url: "https://api.hotels.com/v1"
+  auth: bearer
+
+  search_hotels(destination: string, checkin: date, checkout: date) -> Hotel[]
+    type: http
+    endpoint: "/search"
+    method: POST
+    description: "Search available hotels"
+
+  get_hotel(hotel_id: string) -> Hotel
+    type: http
+    endpoint: "/hotels/{hotel_id}"
+    method: GET
+    description: "Get hotel details by ID"
+
+  get_hotel_reviews(hotel_id: string, limit: number = 10) -> Review[]
+    type: http
+    endpoint: "/hotels/{hotel_id}/reviews"
+    method: GET
+    description: "Get reviews for a hotel"
+```
+
+An agent file can import selected tools:
+
+```abl
+AGENT: Hotel_Search
+
+TOOLS:
+  file: "./tools/hotels-api.tools.abl" [search_hotels, get_hotel]
+
+  # Additional agent-specific tools
+  check_availability(hotel_id: string, dates: string) -> {available: boolean}
+    description: "Check real-time availability"
+    type: http
+    endpoint: "/api/availability"
+    method: POST
+```
+
+---
+
+## Tool features
+
+### Confirmation
+
+The `confirmation:` block configures whether the agent should ask the user for confirmation before executing a tool. This is particularly important for tools with side effects (e.g., executing a payment, deleting a record).
+
+```abl
+TOOLS:
+  execute_payment(amount: number, recipient: string) -> {confirmation_id: string}
+    description: "Execute a payment"
+    type: http
+    endpoint: "/api/payments"
+    method: POST
+    confirmation:
+      require: always
+      immutable_params: [recipient]
+```
+
+| Property           | Type                                             | Default | Description                                          |
+| ------------------ | ------------------------------------------------ | ------- | ---------------------------------------------------- |
+| `require`          | `"always"` \| `"never"` \| `"when_side_effects"` | _none_  | When to require user confirmation                    |
+| `immutable_params` | `string[]`                                       | _none_  | Parameters that cannot be changed after confirmation |
+
+### Caching hints
+
+Use the `cacheable` hint to indicate that a tool's results can be cached:
+
+```abl
+TOOLS:
+  get_exchange_rate(from: string, to: string) -> {rate: number}
+    description: "Get current exchange rate"
+    type: http
+    endpoint: "/api/fx/rate"
+    method: GET
+    hints:
+      cacheable: true
+      latency: fast
+```
+
+When `cacheable: true`, the runtime may cache results for identical parameter combinations. When `cacheable: false`, results are never cached (use this for tools that return time-sensitive data).
+
+### PII access
+
+The `pii_access:` property declares what level of personally identifiable information (PII) a tool can access:
+
+```abl
+TOOLS:
+  verify_identity(ssn_last4: string, dob: string) -> {verified: boolean}
+    description: "Verify customer identity"
+    type: http
+    endpoint: "/api/identity/verify"
+    method: POST
+    pii_access: user
+```
+
+| Value   | Description                                      |
+| ------- | ------------------------------------------------ |
+| `tools` | Tool can access PII data from other tool results |
+| `user`  | Tool can access user-provided PII                |
+| `logs`  | PII from this tool may appear in logs            |
+| `llm`   | PII from this tool is sent to the LLM            |
+
+### Context access
+
+The `context_access:` block declares which session context variables a tool reads from and writes to. This enables the runtime to automatically inject context into HTTP requests and apply result values back to session state:
+
+```abl
+TOOLS:
+  update_profile(name: string) -> {updated: boolean}
+    description: "Update user profile"
+    type: http
+    endpoint: "/api/profile"
+    method: PUT
+    context_access:
+      read: [user.id, user.email]
+      write: [user.name, user.updated_at]
+```
+
+### Store result
+
+The `store_result:` property controls whether the raw tool result blob is stored in the session context. Defaults to `true`.
+
+```abl
+TOOLS:
+  log_event(event: string) -> {logged: boolean}
+    description: "Log an audit event"
+    type: http
+    endpoint: "/api/audit"
+    method: POST
+    store_result: false
+```
+
+## Related
+
+- [Language overview](/agent-platform-v2/abl-reference/language-overview) -- file structure and syntax
+- [Agent declaration](/agent-platform-v2/abl-reference/agent-declaration) -- `tool_timeout` and model settings in EXECUTION
+- [GATHER](/agent-platform-v2/abl-reference/gather) -- information collection (often used alongside tools)
+- [FLOW](/agent-platform-v2/abl-reference/flow) -- `CALL` action for invoking tools within flow steps
