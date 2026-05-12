@@ -10,7 +10,7 @@ Coordinate how agents work together to handle user requests.
 The orchestrator is the intelligence layer that manages agent interactions. It:
 
 - Interprets user intent
-- Selects the appropriate agent(s)
+- Selects the appropriate agents
 - Coordinates multi-agent workflows
 - Resolves conflicts between outputs
 - Delivers unified responses
@@ -43,7 +43,7 @@ Choose a pattern based on your use case complexity.
 
 ## How Orchestration Works
 
-```mermaid
+```mermaid actions={false}
 flowchart TD
     A([User Request]) --> B[**Intent Analysis** <br />Parse user input, identify required capabilities, determine complexity]
     B --> C[**Agent Selection**<br /> Match capabilities to agent descriptions, consider agent availability and scope, select single agent or multiple agents]
@@ -69,7 +69,7 @@ flowchart TD
 
 **Use Supervisor when:**
 
-- Tasks can be broken into independent subtasks
+- Tasks can become independent subtasks
 - You need parallel execution for speed
 - Multiple specialists should contribute to responses
 - You want centralized control and conflict resolution
@@ -81,7 +81,7 @@ flowchart TD
 - Tasks flow naturally between domains
 - You need dynamic routing based on context
 - Agents should autonomously decide when to hand off
-- Sequential expertise is required
+- Sequential expertise is needed
 
 **Example**: An employee onboarding app where HR, IT, and Finance agents hand off based on the current step.
 
@@ -151,7 +151,7 @@ For each orchestration pattern, configure the following.
 
 ### Default AI Model
 
-AI model to be used for operations across the app. Select any of the configured models. The default settings of the model are shown. Click the **Settings** icon to update the default settings. 
+The default AI model that the app uses for operations. Select any of the configured models. The default settings of the model are shown. Click the **Settings** icon to update the default settings. 
 
 ### Voice-to-Voice Interactions
 
@@ -179,38 +179,99 @@ Click the **Settings** icon to update the voice model settings.
 | Threshold | Sensitivity of detection | Lower = more sensitive |
 | Prefix Padding | Audio before speech detection | Prevents clipping |
 | Silence Duration | Silence before speech ends | Lower = faster response |
-| Create Response | Auto-generate response | True/False |
+| Create Response | Auto generate response | True/False |
 | Interrupt Response | Allow interruption | True/False |
-| Transcription Language | Language for speech-to-text | Default: Auto-detect; improves accuracy if set |
+| Transcription Language | Language for speech-to-text | Default: Auto detect; improves accuracy if set |
 | Transcription Prompt | Context for ASR model | Helps recognize domain-specific terms and improve accuracy. [Learn More](/agent-platform/howto/configure-transcription).|
 
 ### Behavioral Instructions
 
 Use this section to set the guidelines for the agent's behavior. These instructions will be added to the orchestrator and the system prompt of each agent. Click **Modify Instructions**, then enter the prompt.
 
+### Input Processor
+
+The Input Processor is an app-level feature that executes a custom script before orchestration begins. It's used to preprocess user input, enrich context, and populate memory variables that can be used by agents during execution. 
+
+When enabled, this processor is executed before the welcome event is triggered.
+
+<Note>Input Processor is not supported for voice interactions.</Note>
+
+**Use the Input Processor to:**
+
+- **Transform input**: Apply custom logic before agent execution to modify, sanitize, or normalize the raw user input.
+- **Initialize session and populate memory** : Initialize session-level variables and configurations and populate memory with variables that are required throughout the application.
+- **Enrich Context**: Enrich requests with additional context, for example, user metadata, defaults.
+
+#### Input Processor Execution modes
+
+- **Always Run** : Executes on session creation and every user input. Use this when preprocessing is required consistently for all interactions.
+- **Run Once**: Executes only once per session. Use this when initialization logic is needed only at the start of a session.
+
+#### Adding Input Processor
+
+- Click **Add Script** to open the script editor. The user **Input** that triggered this agent run is available to the script for use.
+- Provide the script that updates the output before delivering to the end user. You can use **JavaScript** or **Python** for this scripting.
+  - Access input in the script using $ prefix.
+  - Access environment variables using env keyword : `env.<variable-name>`. Note that the namespace to which the variable belongs must be selected for the input processor. 
+  - Access content variables as: `content.<variable-name>`.
+  - Access [memory stores in the script using these methods](/agent-platform/memory).
+- Select **namespaces** to make their variables available to the script.
+- Use **Test Input Processor** to validate the script's behavior.
+
+**Sample Script**
+
+```javascript
+// Load customer profile at session start
+const userId = context.userId;
+
+// Fetch customer profile from memory or external store
+const customerProfile = await memory.get_content("customerProfile_" + userId);
+
+const accountType = customerProfile.accountType;
+const tier = customerProfile.tier;
+const preferredLanguage = customerProfile.preferredLanguage;
+
+// Store key details in session memory for agent access
+await memory.set_content("sessionContext", {
+  userId: userId,
+  accountType: accountType,       // e.g. "savings", "current", "credit"
+  tier: tier,                     // e.g. "standard", "premium", "private"
+  preferredLanguage: preferredLanguage  // e.g. "en", "fr", "de"
+});
+
+return {
+  status: "Session initialized",
+  userId: userId,
+  accountType: accountType,
+  tier: tier
+};
+```
+
+
 ### Response Processor
 
-The Response Processor is an application-level feature that lets you run a custom script on every agent response before it is delivered to the end user. It executes as the final stage in response generation, after the agent generates its output and before the output leaves the platform. Because it is configured at the app level on the Orchestrator page, the script applies consistently across all agents in the app, regardless of which agent handled the request.
+The Response Processor is an app-level feature that executes a custom script on every agent response before delivering it to the end user. It executes as the final stage in response generation—after the agent produces its output but before that output leaves the platform. Configured on the Orchestrator page, the script applies uniformly across all agents in the app, regardless of which agent handled the request.
 
 **Using the Response Processor to Generate Artifacts**
 
-Developers can write artifact payloads directly inside the Response Processor code. When the processor runs, it constructs the desired payload, writes it into the artifacts key, and the platform appends it for delivery. This is particularly useful when:
+Use the Response Processor to write artifact payloads directly in code. When the processor runs, it constructs the payload, writes it to the artifacts key, and the platform appends it for delivery. This approach is useful when:
 
-- The artifact needs to be assembled from multiple tool outputs or session variables rather than a single tool response.
-- The payload structure depends on business logic better handled centrally at the application level.
-- No tool is needed — the processor can produce artifacts independently based on input context alone.
+- The artifact must be assembled from multiple tool outputs or session variables.
+- The payload structure depends on business logic that's better handled centrally.
+- No tool is involved—the processor can generate artifacts independently, using only the input context.
+
 
 **Using the Response Processor to Transform Existing Artifacts**
 
-When tools have already populated the artifacts array, the Response Processor can be used to enrich or transform it before delivery:
+When tools have already populated the artifacts array, the Response Processor can enrich or transform it before delivery:
 
-- Reorder elements to control which artifact renders first.
-- Filter artifacts based on channel, user segment, or business logic.
-- Transform or enrich payload data before delivery to the client.
+- Reorder elements to control render priority.
+- Filter artifacts by channel, user segment, or business logic.
+- Transform or enrich the payload before delivery to the client.
 - Merge multiple tool outputs into a single consolidated artifact.
-- Add metadata, wrapper keys, or channel-specific formatting.
+- Annotate with metadata, wrapper keys, or channel-specific formatting.
 
-<Note>When a Response Processor is active, streaming is not supported. Artifacts and the text response are delivered as a complete payload after the processor finishes. If the processor fails, the original untransformed response is returned, and the error is logged.</Note>
+<Note>When a Response Processor is active, streaming is disabled. Artifacts and the text response are delivered as a complete payload after processing. If the processor fails, the original untransformed response is returned, and the error is logged.</Note>
 
 #### Adding a Response Processor
 
@@ -218,7 +279,7 @@ Click **Add Script** to open the script editor. The following are available as i
 
 1. **Input** — The original user input that triggered this agent run.
 2. **Output** — The agent's response generated by the agent.
-3. **Artifacts** — Array of tool outputs and structured data returned during the run by different tools.
+3. **Artifacts** — An array of tool outputs and structured data returned during the run by different tools.
 
 **Response Processing Script:** Provide the script that updates the output before delivering to the end user. You can use JavaScript or Python for this scripting.
 
@@ -227,7 +288,7 @@ Click **Add Script** to open the script editor. The following are available as i
  - Access content variables as: `content.<variable-name>`.
  - Access [memory stores in the script using these methods](/agent-platform/memory).
 
-**Namespace:** Select the namespaces to be provided to the script. All the variables within the namespace are available to the script for processing.
+**Namespace:** Select namespaces to make their variables available to the script.
 
 Use **Test Response Processor** to validate the script's behavior.
 
