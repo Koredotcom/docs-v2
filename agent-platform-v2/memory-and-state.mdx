@@ -1,0 +1,732 @@
+---
+title: 'Memory and State'
+sidebarTitle: 'Memory and State'
+---
+
+Agents on the platform use two kinds of memory: session memory and persistent memory.
+
+Learn how to declare, access, and manage session variables, persistent memory, and set up auto-recall using the ABL Editor.
+
+## Key Concepts 
+
+| Concept | Description |
+| --- | --- |
+| [Session Memory](#session-memory) | Declare and use variables that hold data within a single conversation — collected values, flags, and intermediate results that are discarded when the session ends. |
+| [Persistent Memory](#persistent-memory) | Store facts that survive across sessions, such as user preferences and history. Covers user-scoped vs. project-scoped variables and access control. |
+| [Auto-Recall](#auto-recall) | Automatically write values to persistent memory when conditions are met, and load stored facts back into the session at lifecycle events like session start or before a search. |
+| [Manipulate State: SET, CLEAR, and TRANSFORM](#manipulate-state-set-clear-and-transform) | Assign values, remove variables, and reshape data arrays during flow execution using `SET`, `CLEAR`, and `TRANSFORM` directives. |
+| [Accessing Memory in Code Tools](#accessing-memory-in-code-tools) | Read, write, and delete memory store contents from JavaScript or Python code tools, prompt templates, and workflow function nodes. |
+| [Session Meta](#session-meta) | Read the built-in, read-only `sessionMeta` store that the platform populates automatically with session info, API-passed metadata, and file attachment details. |
+| [Access Scopes and Retention](#access-scopes-and-retention) | Understand session, user, and application access scopes and configure data retention periods. |
+| [Best Practices](#best-practices) | Recommended patterns for naming stores, defining schemas, handling missing data, and managing TTLs. |
+
+
+## Session Memory
+
+### Declare session variables
+
+Add a `MEMORY:` block with a `session:` section to your agent definition in the ABL editor.
+
+```abl
+AGENT: Booking_Agent
+GOAL: "Help users book hotels"
+
+MEMORY:
+  session:
+    - selected_booking
+      TYPE: string
+      DESCRIPTION: "The booking ID the customer is currently managing"
+    - action_type
+      TYPE: string
+      DESCRIPTION: "What the customer wants to do"
+    - pending_changes
+      TYPE: object
+      DESCRIPTION: "Proposed changes awaiting confirmation"
+    - quoted_fee
+      TYPE: number
+      DESCRIPTION: "Fee quoted for the pending modification"
+```
+
+For simple tracking without type metadata, declare a bare name:
+
+```abl
+MEMORY:
+  session:
+    - customer_id
+    - order_total
+```
+
+### Type, initial value, and reset behavior
+
+Specify `TYPE`, `DESCRIPTION`, `INITIAL`, and `RESET` for runtime validation and documentation.
+
+```abl
+MEMORY:
+  session:
+    - cart_items
+      TYPE: array
+      DESCRIPTION: "Items currently in the shopping cart"
+      INITIAL: []
+      RESET: per_session
+    - attempt_count
+      TYPE: number
+      INITIAL: 0
+      RESET: per_step
+```
+
+`RESET` controls when a session variable is cleared:
+
+| Value | Behavior |
+| --- | --- |
+| `per_session` | Initialized at session start, cleared when session ends. (Default.) |
+| `per_step` | Reset to initial value at the start of each flow step. |
+| `never` | Persists for the lifetime of the runtime process. Use sparingly. |
+
+### Access session variables in response templates
+
+Reference session variables by name inside `{{ }}` in `RESPOND` blocks.
+
+```abl
+FLOW:
+  confirm_booking:
+    REASONING: false
+    RESPOND: |
+      Booking summary:
+      Hotel: {{selected_hotel.name}}
+      Guest: {{guest_name}}
+      Total: ${{quoted_fee}}
+    THEN: COMPLETE
+```
+
+### Access session variables in step conditions
+
+Use session variables in `CHECK`, constraint expressions, and `ON_INPUT` transition logic.
+
+```abl
+FLOW:
+  check_eligibility:
+    REASONING: false
+    CHECK: attempt_count < 3
+    ON_FAIL: too_many_attempts
+    THEN: process_request
+```
+
+### Troubleshooting
+
+- **Variable is undefined in template.** The variable has not been set yet in the current flow. Ensure the step that sets it executes before the step that reads it.
+- **Variable resets unexpectedly.** Check `RESET`. Variables with `RESET: per_step` clear at each step transition. Use `per_session` or `never` for longer-lived values.
+- **Type mismatch at runtime.** `TYPE` enables runtime validation. If you declare `TYPE: number` but assign a string, the runtime logs a warning. Coerce tool results and user inputs to the declared type.
+
+---
+
+## Persistent Memory
+
+Persistent variables are stored in the platform's fact store and survive across sessions. When the same user starts a new conversation, their stored facts are available for recall.
+
+### Declare persistent variables
+
+Add a `persistent:` section under `MEMORY:`. Use dot-notation paths to name each variable.
+
+```abl
+AGENT: Support_Agent
+GOAL: "Help customers with personalized support"
+
+MEMORY:
+  persistent:
+    - user.preferred_language
+    - user.loyalty_tier
+      SCOPE: user
+    - user.booking_history
+      SCOPE: user
+      TYPE: array
+      DESCRIPTION: "Recent booking history"
+```
+
+### User-scoped vs. project-scoped variables
+
+User-scoped variables are unique per user. Project-scoped variables are shared across all users of the agent.
+
+```abl
+MEMORY:
+  persistent:
+    - user.preferred_chains
+      SCOPE: user
+      DESCRIPTION: "User's preferred hotel chains"
+
+    - user.wire_history_30d
+      SCOPE: user
+      TYPE: array
+      ACCESS: readwrite
+      DEFAULT: []
+
+    - project.exchange_rates
+      SCOPE: project
+      ACCESS: read
+      DESCRIPTION: "Current exchange rates (shared across all users)"
+```
+
+### Access control
+
+Restrict whether the agent can read, write, or both for each persistent path.
+
+```abl
+MEMORY:
+  persistent:
+    - user.preferences
+      ACCESS: readwrite
+
+    - user.account_status
+      ACCESS: read
+
+    - user.interaction_log
+      ACCESS: write
+```
+
+| Value | Behavior |
+| --- | --- |
+| `read` | Agent can read but not modify the value. |
+| `write` | Agent can write but not read the current value. |
+| `readwrite` | Agent can both read and modify. (Default.) |
+
+### Typed persistent variables with defaults
+
+```abl
+MEMORY:
+  persistent:
+    - user.notification_preference
+      TYPE: string
+      DEFAULT: "email"
+      SCOPE: user
+
+    - user.session_count
+      TYPE: number
+      DEFAULT: 0
+      SCOPE: user
+
+    - user.tags
+      TYPE: array
+      DEFAULT: []
+      SCOPE: user
+```
+
+### Access persistent variables in expressions
+
+Use the full dot-notation path to read persistent variables in `SET` expressions and `RESPOND` templates.
+
+```abl
+SET: greeting = COALESCE(user.name, "valued customer")
+RESPOND: "Welcome back, {{greeting}}! Your tier is {{user.loyalty_tier}}."
+```
+
+### Troubleshooting
+
+- **Persistent value is null on first session.** The value has not been stored yet. Use `DEFAULT` to provide a fallback, or use `COALESCE()` in expressions.
+- **Value not persisting across sessions.** Ensure the value is written using a `remember` trigger or `SET` statement. Declaring a persistent path does not automatically populate it.
+- **Wrong user sees another user's data.** Verify `SCOPE: user` is set. Project-scoped variables are shared. User-scoped variables require user authentication to resolve correctly.
+
+---
+
+## Auto-Recall
+
+Auto-recall automatically stores values into persistent memory when conditions are met, and loads stored facts back into the session at the right moments.
+
+### Add remember triggers
+
+Remember triggers write values to persistent memory when a condition evaluates to `true` during conversation.
+
+```abl
+AGENT: Support_Agent
+GOAL: "Help customers with personalized support"
+
+MEMORY:
+  persistent:
+    - user.name
+    - user.language
+    - user.booking_history
+
+  remember:
+    - WHEN: user_name IS SET
+      STORE: user_name -> user.name
+      TTL: "90d"
+    - WHEN: preferred_language IS SET
+      STORE: preferred_language -> user.language
+```
+
+When `user_name` gets a value during the conversation (from a `GATHER` step, `SET` assignment, or tool result), the trigger fires and stores it to `user.name`. `TTL: "90d"` means the stored fact expires after 90 days.
+
+### Store computed values
+
+Store a computed object instead of a raw variable value.
+
+```abl
+MEMORY:
+  remember:
+    - WHEN: action_completed == true
+      STORE: {booking_id: selected_booking, action: action_type, date: now} -> user.booking_history
+```
+
+### Add recall instructions
+
+Recall instructions load persistent facts back into the session context at specific lifecycle events.
+
+```abl
+MEMORY:
+  recall:
+    - ON: session:start
+      ACTION: inject_context
+      PATHS: [user.name, user.language, user.preferred_agent]
+    - ON: session:start
+      ACTION: prompt_llm
+      INSTRUCTION: "Greet the user by name if known"
+```
+
+When a new session starts, the platform loads `user.name`, `user.language`, and `user.preferred_agent` from persistent memory and injects them into the session context.
+
+### Recall before search operations
+
+Load relevant user context before a knowledge base search executes.
+
+```abl
+MEMORY:
+  recall:
+    - ON: search:before
+      ACTION: load_memory
+      DOMAIN: "travel_preferences"
+```
+
+This loads all facts tagged with the `travel_preferences` domain into the session, allowing the search to incorporate user preferences.
+
+### Inject recalled data as an LLM instruction
+
+Instead of directly injecting variables, pass an instruction to the LLM on how to use the recalled information.
+
+```abl
+MEMORY:
+  recall:
+    - ON: session:start
+      ACTION: prompt_llm
+      INSTRUCTION: |
+        Check if you have the user's name and preferences from previous
+        conversations. If so, greet them personally and reference their
+        past interactions. If not, introduce yourself and start fresh.
+```
+
+### Combined remember and recall pattern
+
+A complete pattern that stores user preferences during a conversation and recalls them at the start of future sessions.
+
+```abl
+MEMORY:
+  session:
+    - selected_booking
+      TYPE: string
+    - action_type
+      TYPE: string
+
+  persistent:
+    - user.booking_history
+    - user.preferences
+
+  remember:
+    - WHEN: action_completed == true
+      STORE: {booking_id: selected_booking, action: action_type, date: now} -> user.booking_history
+    - WHEN: user_preference IS SET
+      STORE: user_preference -> user.preferences
+
+  recall:
+    - ON: session:start
+      ACTION: inject_context
+      PATHS: [user.booking_history, user.preferences]
+    - ON: tool:list_user_bookings:after
+      ACTION: inject_context
+      PATHS: [user.preferences]
+```
+
+### Recall events
+
+| Event | When it fires |
+| --- | --- |
+| `session:start` | When a new session initializes, before any user input. |
+| `search:before` | Before a search or retrieval operation. |
+
+### Recall actions
+
+| Action | Behavior |
+| --- | --- |
+| `inject_context` | Loads specified persistent paths directly into session variables. |
+| `load_memory` | Loads all facts in the specified domain into context. |
+| `prompt_llm` | Passes the instruction text to the LLM as additional context. (Default.) |
+
+### TTL format
+
+| Suffix | Meaning |
+| --- | --- |
+| `s` | Seconds |
+| `m` | Minutes |
+| `h` | Hours |
+| `d` | Days |
+
+Example: `"90d"` expires the stored fact 90 days after it was written.
+
+### Troubleshooting
+
+- **Remember trigger never fires.** The `WHEN` condition references a variable that is never set during conversation. Verify the variable name matches what your flow or tools produce.
+- **Recalled value is stale.** The fact may have expired (TTL elapsed). Check the TTL setting and extend it if needed.
+- **Recall injects null values.** The persistent path has not been written to yet. Use `DEFAULT` on the persistent variable declaration to provide a fallback.
+
+---
+
+## Manipulate State: SET, CLEAR, and TRANSFORM
+
+Use `SET`, `CLEAR`, and `TRANSFORM` directives in flow steps to assign values, remove variables, and reshape data arrays during execution.
+
+### SET a variable
+
+Use `SET` in a flow step to assign a value to a session variable. The expression is resolved at execution time.
+
+```abl
+FLOW:
+  calculate_total:
+    REASONING: false
+    SET:
+      - total_price = nights * price_per_night
+      - tax_amount = total_price * 0.12
+      - final_total = total_price + tax_amount
+    RESPOND: "Your total is ${{final_total}} (including ${{tax_amount}} tax)."
+    THEN: confirm_booking
+```
+
+`SET` expressions support arithmetic, string interpolation, dot-notation access, and function calls.
+
+**From tool results:**
+
+```abl
+FLOW:
+  process_search:
+    REASONING: false
+    CALL: search_hotels(destination, checkin_date, checkout_date, num_guests)
+    ON_SUCCESS:
+      SET:
+        - hotel_count = call_result.hotels.length
+        - cheapest_price = call_result.hotels[0].price
+      RESPOND: "Found {{hotel_count}} hotels. Prices start at ${{cheapest_price}}."
+      THEN: select_hotel
+```
+
+**Nested objects using dot notation:**
+
+```abl
+SET:
+  - booking.guest_name = guest_name
+  - booking.check_in = checkin_date
+  - booking.total = final_total
+```
+
+**In `ON_INPUT` branches:**
+
+```abl
+FLOW:
+  select_hotel:
+    REASONING: false
+    ON_INPUT:
+      - IF: input is_number AND input >= 1 AND input <= hotels.length
+        SET:
+          - selected_hotel = hotels[input - 1]
+          - need_price_quote = true
+        THEN: collect_guest_info
+      - ELSE:
+        RESPOND: "Please enter a valid hotel number."
+```
+
+### CLEAR a variable
+
+Use `CLEAR` to remove one or more variables from the session. After a `CLEAR`, the variable is undefined and any template reference to it renders as empty.
+
+```abl
+FLOW:
+  restart_search:
+    REASONING: false
+    CLEAR: [destination, checkin_date, checkout_date, search_results]
+    RESPOND: "Let's start fresh. Where would you like to go?"
+    THEN: collect_trip_info
+```
+
+**In sub-intents** — allow users to clear and re-enter specific fields:
+
+```abl
+FLOW:
+  collect_trip_info:
+    REASONING: false
+    GATHER:
+      - destination: required
+      - checkin_date: required
+      - checkout_date: required
+
+    SUB_INTENTS:
+      - INTENT: "change destination"
+        CLEAR: [destination]
+        RESPOND: "What's the new destination?"
+      - INTENT: "change dates"
+        CLEAR: [checkin_date, checkout_date]
+        RESPOND: "What are your new travel dates?"
+
+    COMPLETE_WHEN: destination AND checkin_date AND checkout_date
+    THEN: search_hotels
+```
+
+### TRANSFORM an array
+
+Use `TRANSFORM` to filter, map, sort, and limit array data in a single pipeline. `TRANSFORM` creates a new variable without modifying the source array.
+
+**Full pipeline:**
+
+```abl
+FLOW:
+  filter_hotels:
+    REASONING: false
+    TRANSFORM:
+      SOURCE: search_results AS hotel
+      INTO: affordable_hotels
+      FILTER: hotel.price <= budget
+      MAP:
+        name: hotel.name
+        price: hotel.price
+        rating: hotel.rating
+      SORT_BY: price asc
+      LIMIT: 5
+    RESPOND: |
+      Here are {{affordable_hotels.length}} hotels within your budget:
+      {{#each affordable_hotels}}
+      {{add @index 1}}. {{name}} - ${{price}}/night ({{rating}} stars)
+      {{/each}}
+    THEN: select_hotel
+```
+
+**Filter only:**
+
+```abl
+TRANSFORM:
+  SOURCE: all_bookings AS booking
+  INTO: active_bookings
+  FILTER: booking.status == "active"
+```
+
+**Map only:**
+
+```abl
+TRANSFORM:
+  SOURCE: raw_results AS item
+  INTO: formatted_results
+  MAP:
+    title: item.name
+    summary: item.description
+    link: item.url
+```
+
+### Troubleshooting
+
+- **`SET` expression produces null.** The right-hand variable may not be defined yet. Verify the data source (tool result, gathered field, or prior `SET`) runs before this step.
+- **`CLEAR` does not reset a `GATHER` field.** Clearing a variable removes it from the session, but the `GATHER` step may not re-prompt for it unless the step is re-entered. Use `CLEAR` within a `SUB_INTENT` or `DIGRESSION` that resumes the same step.
+- **`TRANSFORM` produces empty array.** The `FILTER` condition may be too strict, or the source array is empty. Check the source variable and filter expression.
+
+---
+
+## Accessing Memory in Code Tools
+
+If your agent uses code tools (JavaScript or Python), you can read, write, and delete memory store contents programmatically. Memory stores are accessed by their technical name.
+
+<Note>
+`sessionMeta` is read-only within code tools and cannot be updated or deleted programmatically. The `metadata` field within `sessionMeta` can be updated via API only.
+</Note>
+
+### JavaScript
+
+Memory methods are `async` and return a `Promise`. Use `await`.
+
+**Read:**
+
+```javascript
+// Read all fields
+const prefs = await memory.get_content("userPrefs");
+console.log(prefs.preferences.language);
+
+// Read specific fields using projections
+const partial = await memory.get_content("userPrefs", {
+  "preferences.language": 1,
+  "lastVisit": 1
+});
+```
+
+**Write:**
+
+Creates a new record if none exists; updates the existing record if one is found (based on `sessionId`, `userId`, or `applicationId`, depending on the store's access type). Fields not included in the update are retained.
+
+```javascript
+await memory.set_content("userPrefs", {
+  preferences: { language: "en", notifications: true },
+  lastVisit: new Date().toISOString()
+});
+```
+
+**Delete:**
+
+Deletes the record corresponding to the session, user, or application depending on the store's access type.
+
+```javascript
+await memory.delete_content("userPrefs");
+```
+
+### Python
+
+Memory methods are synchronous and return values directly.
+
+```python
+# Read from memory
+prefs = memory.get_content("userPrefs")
+print(prefs["preferences"]["language"])
+
+# Read with projections
+partial = memory.get_content("userPrefs", {
+    "preferences.language": 1,
+    "lastVisit": 1
+})
+
+# Write (creates if not exists; updates existing; unspecified fields are retained)
+memory.set_content("userPrefs", {
+    "preferences": {"language": "en", "notifications": True},
+    "lastVisit": datetime.now().isoformat()
+})
+
+# Delete memory content
+memory.delete_content("userPrefs")
+```
+
+### In prompts
+
+Use the template syntax `{{memory.<store_name>.<field_path>}}` to read memory values in prompt templates.
+
+```
+Welcome back! Your preferred language is {{memory.userPrefs.preferences.language}}.
+
+Your recent orders: {{memory.userPrefs.recentOrders}}
+```
+
+### In workflow tools
+
+Function nodes in workflow tools use the same syntax as code tools above. Use the technical name of the memory store.
+
+---
+
+## Session Meta
+
+`sessionMeta` is a built-in, read-only store populated automatically by the platform for each session.
+
+**Contents:**
+
+- `metadata` — contextual data passed via API (for example, `userId`, `channel`, custom fields).
+- `sessionInfo` — system-populated object with `sessionId`, `appId`, `sessionReference`, `userReference`, `userId`, `runId`, and `timestamp`.
+
+### Read session meta in code tools
+
+```javascript
+const sessionMeta = await memory.get_content("sessionMeta");
+
+// Access metadata passed via API
+const userId = sessionMeta.metadata.userId;
+const channel = sessionMeta.metadata.channel;
+
+// Access session info
+const sessionId = sessionMeta.sessionInfo.sessionId;
+```
+
+### Read session meta in prompts
+
+```
+Hello {{memory.sessionMeta.metadata.userName}}!
+
+You're connecting via {{memory.sessionMeta.metadata.channel}}.
+```
+
+### Pass metadata via API
+
+```json
+{
+  "message": "Hello",
+  "session_id": "sess_123",
+  "metadata": {
+    "userId": "user_456",
+    "userName": "John",
+    "customerTier": "premium",
+    "channel": "mobile_app"
+  }
+}
+```
+
+### File attachments
+
+When users upload files, attachment metadata is stored in `sessionMeta.artifacts`.
+
+```javascript
+const filedata = await memory.get_content("sessionMeta");
+const files = filedata.artifacts;
+
+files.forEach(file => {
+  console.log(file.filename);     // Original name
+  console.log(file.mimetype);     // MIME type
+  console.log(file.downloadUrl);  // Temporary URL (30 days)
+  console.log(file.isActive);     // Include in context?
+});
+```
+
+**Supported file types:**
+
+| Format | Content extraction | URL access |
+| --- | --- | --- |
+| PDF, DOCX, TXT, JSON | Yes | Yes |
+| CSV, XLS, XLSX | No | Yes |
+| PPT, PPTX, HTML | No | Yes |
+| Images (PNG, JPG, GIF) | No | Yes |
+
+---
+
+## Access Scopes and Retention
+
+### Access scopes
+
+| Scope | Description | Identifiers | Use case |
+| --- | --- | --- | --- |
+| Session | Data for the current session only. | AppId + SessionId | Conversation context, multi-turn dialog state. |
+| User | Data persists across user sessions. | AppId + UserId | Preferences, history. |
+| Application | Shared across all users. | AppId | Global settings, counters. |
+
+### Retention policies
+
+| Policy | Duration | Use case |
+| --- | --- | --- |
+| Session | Until session ends. | Temporary context. |
+| 1 Day | 24 hours. | Short-term cache. |
+| 1 Week | 7 days. | Recent activity. |
+| 1 Month | 30 days. | User preferences. |
+
+<Note>Set appropriate retention periods based on your data's usage to balance performance, cost, and compliance.</Note>
+
+---
+
+## Best Practices
+
+- **Use meaningful technical names.** Use names like `userPreferences`, `orderHistory`, or `conversationContext`. Avoid generic names like `store1`, `data`, or `temp`.
+- **Define clear schemas.** Schemas enforce data consistency and make stores easier to maintain. Mark required fields and set defaults where applicable.
+- **Handle missing data.** Always check for existence before using a memory value:
+  ```javascript
+  const prefs = await memory.get_content("userPrefs");
+  const language = prefs?.preferences?.language || "en";
+  ```
+- **Clean up temporary data.** Delete short-lived data when it is no longer needed to free resources:
+  ```javascript
+  await memory.delete_content("tempProcessingData");
+  ```
+- **Use `COALESCE()` for persistent variables.** Persistent paths may not be populated on a user's first session. Use `COALESCE(user.name, "valued customer")` to provide a safe fallback.
+- **Prefer `per_session` reset over `never`.** Variables with `RESET: never` persist for the lifetime of the runtime process. Reserve this for counters or flags where cross-session accumulation is intentional.
+
+---
+
