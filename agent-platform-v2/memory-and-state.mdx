@@ -1,25 +1,26 @@
 ---
-title: 'Memory and State'
-sidebarTitle: 'Memory and State'
+title: "Memory and State"
+sidebarTitle: "Memory and State"
 ---
 
 Agents on the platform use two kinds of memory: session memory and persistent memory.
 
 Learn how to declare, access, and manage session variables, persistent memory, and set up auto-recall using the ABL Editor.
 
-## Key Concepts 
+## Key Concepts
 
-| Concept | Description |
-| --- | --- |
-| [Session Memory](#session-memory) | Declare and use variables that hold data within a single conversation — collected values, flags, and intermediate results that are discarded when the session ends. |
-| [Persistent Memory](#persistent-memory) | Store facts that survive across sessions, such as user preferences and history. Covers user-scoped, project-scoped and  execution-tree scoped variables and access control. |
-| [Recall](#auto-recall) | Automatically loads values from persistent memory into session context at lifecycle events like session start or before a search. |
-| [Remember Triggers]() | Automatically stores values into persistent memory when a condition is met. |
-| [Manipulate State: SET, CLEAR, and TRANSFORM](#manipulate-state-set-clear-and-transform) | Assign values, remove variables, and reshape data arrays during flow execution using `SET`, `CLEAR`, and `TRANSFORM` directives. |
-| [Best Practices](#best-practices) | Recommended patterns for naming variables, providing fallback values, and managing reset behavior. |
-
+| Concept                                                                                  | Description                                                                                                                                                                |
+| ---------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [Session Memory](#session-memory)                                                        | Declare and use variables that hold data within a single conversation — collected values, flags, and intermediate results that are discarded when the session ends.        |
+| [Persistent Memory](#persistent-memory)                                                  | Store facts that survive across sessions, such as user preferences and history. Covers user-scoped, project-scoped and execution-tree scoped variables and access control. |
+| [Recall](#recall)                                                                        | Automatically loads values from persistent memory into session context at lifecycle events like session start or before a search.                                          |
+| [Remember Triggers]()                                                                    | Automatically stores values into persistent memory when a condition is met.                                                                                                |
+| [Manipulate State: SET, CLEAR, and TRANSFORM](#manipulate-state-set-clear-and-transform) | Assign values, remove variables, and reshape data arrays during flow execution using `SET`, `CLEAR`, and `TRANSFORM` directives.                                           |
+| [Best Practices](#best-practices)                                                        | Recommended patterns for naming variables, providing fallback values, and managing reset behavior.                                                                         |
 
 ## Session Memory
+
+Session variables hold data that is relevant only during a single conversation. They are created when the session starts and discarded when the session ends (unless RESET: never is specified).
 
 ### Declare session variables
 
@@ -45,6 +46,24 @@ MEMORY:
       DESCRIPTION: "Fee quoted for the pending modification"
 ```
 
+**Session Variable Properties**
+
+| Property    | Type                                                   | Required | Default     | Description                                             |
+| ----------- | ------------------------------------------------------ | -------- | ----------- | ------------------------------------------------------- |
+| name        | string                                                 | Yes      | --          | Variable name, used as the key in session context.      |
+| TYPE        | string \| number \| boolean \| date \| array \| object | No       | --          | Value type for runtime validation and field resolution. |
+| DESCRIPTION | string                                                 | No       | --          | Human-readable description of the variable's purpose.   |
+| INITIAL     | any                                                    | No       | null        | Initial value assigned when the session starts.         |
+| RESET       | per_session \| per_step \| never                       | No       | per_session | When to reset the variable. See Reset behavior.         |
+
+**Reset Behavior**
+
+| Value       | Behavior                                                                                                    |
+| ----------- | ----------------------------------------------------------------------------------------------------------- |
+| per_session | Variable is initialized at session start and cleared when the session ends. This is the default.            |
+| per_step    | Variable is reset to its initial value at the start of each flow step. Useful for step-scoped accumulators. |
+| never       | Variable persists for the lifetime of the runtime process. Use sparingly; prefer persistent memory instead. |
+
 For simple tracking without type metadata, declare a bare name:
 
 ```abl
@@ -54,9 +73,7 @@ MEMORY:
     - order_total
 ```
 
-### Type, initial value, and reset behavior
-
-Specify `TYPE`, `DESCRIPTION`, `INITIAL`, and `RESET` for runtime validation and documentation.
+Fields with initial values and reset control:
 
 ```abl
 MEMORY:
@@ -71,14 +88,6 @@ MEMORY:
       INITIAL: 0
       RESET: per_step
 ```
-
-`RESET` controls when a session variable is cleared:
-
-| Value | Behavior |
-| --- | --- |
-| `per_session` | Initialized at session start, cleared when session ends. (Default.) |
-| `per_step` | Reset to initial value at the start of each flow step. |
-| `never` | Persists for the lifetime of the runtime process. Use sparingly. |
 
 ### Access session variables in response templates
 
@@ -119,11 +128,11 @@ FLOW:
 
 ## Persistent Memory
 
-Persistent variables are stored in the platform's fact store and survive across sessions. When the same user starts a new conversation, their stored facts are available for recall.
+Persistent variables are stored in the platform's fact store and survive across sessions. Persistent memory fields are scoped to a user, a execution chain or an entire project.
 
 ### Declare persistent variables
 
-Add a `persistent:` section under `MEMORY:`. Use dot-notation paths to name each variable.
+Add a `persistent:` section under `MEMORY:`. Use dot-notation paths to name each variable and bind them to a scope.
 
 ```abl
 AGENT: Support_Agent
@@ -138,11 +147,31 @@ MEMORY:
       SCOPE: user
       TYPE: array
       DESCRIPTION: "Recent booking history"
+    - user.notification_preference
+      TYPE: string
+      DEFAULT: "email"
+      SCOPE: user
 ```
 
-### User-scoped vs. project-scoped variables
+**Persistent Variable Properties**
 
-User-scoped variables are unique per user. Project-scoped variables are shared across all users of the agent.
+| Property    | Type                                                   | Required | Default   | Description                                                                                                                                                                                                        |
+| ----------- | ------------------------------------------------------ | -------- | --------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| path        | string                                                 | Yes      | --        | Dot-notation path (e.g., user.preferred_chains), where the first segment indicates the scope(user, project or workflow) and second indicates the name of the field.                                                |
+| SCOPE       | user \| project \| execution_tree                      | No       | user      | Ownership scope. user is per-user; project is shared across all users. execution_tree is for an entire execution workflow across agents. If this scope differs from the scope in the path, scope takes precedence. |
+| ACCESS      | read \| write \| readwrite                             | No       | readwrite | Access direction. Constrains whether the agent can read, write, or both.                                                                                                                                           |
+| TYPE        | string \| number \| boolean \| date \| array \| object | No       | --        | Value type for runtime validation.                                                                                                                                                                                 |
+| UNIT        | string                                                 | No       | --        | Unit of the stored value (e.g., USD, km). Informational metadata only.                                                                                                                                             |
+| DEFAULT     | any                                                    | No       | null      | Default value when no fact exists in the store.                                                                                                                                                                    |
+| DESCRIPTION | string                                                 | No       | --        | Human-readable description.                                                                                                                                                                                        |
+
+### Scoping rules
+
+| Scope                                        | Description                                                                                                                                                                        |
+| -------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| User scope (SCOPE: user)                     | Values are unique per authenticated user. Two users in the same project see different values for the same path.                                                                    |
+| Project scope (SCOPE: project)               | Values are shared across all users within the project. Useful for reference data, feature flags, or global configuration.                                                          |
+| Execution-tree scope (SCOPE: execution_tree) | Values are shared across one workflow / handoff tree only. This is the preferred scope for cross-agent state such as auth tokens, selected account IDs, or in-flight case context. |
 
 ```abl
 MEMORY:
@@ -163,7 +192,7 @@ MEMORY:
       DESCRIPTION: "Current exchange rates (shared across all users)"
 ```
 
-### Access control
+### Access Control
 
 Restrict whether the agent can read, write, or both for each persistent path.
 
@@ -180,36 +209,15 @@ MEMORY:
       ACCESS: write
 ```
 
-| Value | Behavior |
-| --- | --- |
-| `read` | Agent can read but not modify the value. |
-| `write` | Agent can write but not read the current value. |
-| `readwrite` | Agent can both read and modify. (Default.) |
+| Value       | Behavior                                        |
+| ----------- | ----------------------------------------------- |
+| `read`      | Agent can read but not modify the value.        |
+| `write`     | Agent can write but not read the current value. |
+| `readwrite` | Agent can both read and modify. (Default.)      |
 
-### Typed persistent variables with defaults
+### Access Persistent Variables in Expressions
 
-```abl
-MEMORY:
-  persistent:
-    - user.notification_preference
-      TYPE: string
-      DEFAULT: "email"
-      SCOPE: user
-
-    - user.session_count
-      TYPE: number
-      DEFAULT: 0
-      SCOPE: user
-
-    - user.tags
-      TYPE: array
-      DEFAULT: []
-      SCOPE: user
-```
-
-### Access persistent variables in expressions
-
-Use the full dot-notation path to read persistent variables in `SET` expressions and `RESPOND` templates.
+Use the full dot-notation path within `{{ }}` to read persistent variables in `SET` expressions and `RESPOND` templates.
 
 ```abl
 SET: greeting = COALESCE(user.name, "valued customer")
@@ -224,11 +232,7 @@ RESPOND: "Welcome back, {{greeting}}! Your tier is {{user.loyalty_tier}}."
 
 ---
 
-## Auto-Recall
-
-Auto-recall automatically stores values into persistent memory when conditions are met, and loads stored facts back into the session at the right moments.
-
-### Add remember triggers
+## Remember Triggers
 
 Remember triggers write values to persistent memory when a condition evaluates to `true` during conversation.
 
@@ -252,6 +256,14 @@ MEMORY:
 
 When `user_name` gets a value during the conversation (from a `GATHER` step, `SET` assignment, or tool result), the trigger fires and stores it to `user.name`. `TTL: "90d"` means the stored fact expires after 90 days.
 
+**Remember Trigger Properties**
+
+| Property | Type   | Required | Default | Description                                                                                                                                                                       |
+| -------- | ------ | -------- | ------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| WHEN     | string | Yes      | --      | Condition expression that triggers the store operation. Evaluated after each turn.                                                                                                |
+| STORE    | object | Yes      | --      | Defines the value expression and the target persistent path. Syntax: `value_expr -> target_path`.                                                                                 |
+| TTL      | string | No       | --      | Time-to-live for the stored fact. After expiration, the value is deleted. Examples: "30d", "24h". TTL values use a duration string: s - Seconds, m - Minutes, h - Hours, d - Days |
+
 ### Store computed values
 
 Store a computed object instead of a raw variable value.
@@ -263,9 +275,11 @@ MEMORY:
       STORE: {booking_id: selected_booking, action: action_type, date: now} -> user.booking_history
 ```
 
-### Add recall instructions
+## Recall
 
-Recall instructions load persistent facts back into the session context at specific lifecycle events.
+Recall automatically stores values into persistent memory when conditions are met, and loads stored facts back into the session at specific lifecycle events.
+
+### Add recall instructions
 
 ```abl
 MEMORY:
@@ -279,6 +293,31 @@ MEMORY:
 ```
 
 When a new session starts, the platform loads `user.name`, `user.language`, and `user.preferred_agent` from persistent memory and injects them into the session context.
+
+**Recall Properties**
+
+| Property    | Type   | Required | Description                                             |
+| ----------- | ------ | -------- | ------------------------------------------------------- |
+| ON          | string | Yes      | Lifecycle event that triggers the recall. See Events.   |
+| ACTION      | string | No       | The concrete action to execute. See Actions.            |
+| INSTRUCTION | string | No       | Human-readable instruction for the recall behavior.     |
+| PATHS       | array  | No       | Persistent paths to inject (for inject_context action). |
+| DOMAIN      | string | No       | Memory domain filter (for load_memory action).          |
+
+**Recall Events**
+
+| Event         | When it fires                                          |
+| ------------- | ------------------------------------------------------ |
+| session:start | When a new session initializes, before any user input. |
+| search:before | Before a search or retrieval operation.                |
+
+**Recall Actions**
+
+| Action         | Behavior                                                                 |
+| -------------- | ------------------------------------------------------------------------ |
+| inject_context | Loads specified persistent paths directly into session variables.        |
+| load_memory    | Loads all facts in the specified domain into context.                    |
+| prompt_llm     | Passes the instruction text to the LLM as additional context. (Default.) |
 
 ### Recall before search operations
 
@@ -339,32 +378,6 @@ MEMORY:
       ACTION: inject_context
       PATHS: [user.preferences]
 ```
-
-### Recall events
-
-| Event | When it fires |
-| --- | --- |
-| `session:start` | When a new session initializes, before any user input. |
-| `search:before` | Before a search or retrieval operation. |
-
-### Recall actions
-
-| Action | Behavior |
-| --- | --- |
-| `inject_context` | Loads specified persistent paths directly into session variables. |
-| `load_memory` | Loads all facts in the specified domain into context. |
-| `prompt_llm` | Passes the instruction text to the LLM as additional context. (Default.) |
-
-### TTL format
-
-| Suffix | Meaning |
-| --- | --- |
-| `s` | Seconds |
-| `m` | Minutes |
-| `h` | Hours |
-| `d` | Days |
-
-Example: `"90d"` expires the stored fact 90 days after it was written.
 
 ### Troubleshooting
 
@@ -474,7 +487,9 @@ FLOW:
 
 ### TRANSFORM an array
 
-Use `TRANSFORM` to filter, map, sort, and limit array data in a single pipeline. `TRANSFORM` creates a new variable without modifying the source array.
+Use `TRANSFORM` to filter, map, sort, and limit array data in a single pipeline.
+
+In the following example `TRANSFORM` creates a new array `affordable_hotels` without modifying the source array.
 
 **Full pipeline:**
 
