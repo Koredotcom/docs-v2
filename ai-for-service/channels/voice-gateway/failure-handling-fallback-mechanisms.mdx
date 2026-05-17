@@ -1,0 +1,281 @@
+---
+title: Voice Calls-Handle Failure and Fallback
+sidebarTitle: Failure and Fallback Handling
+---
+
+AI for Service provides three distinct layers of failure handling to ensure robust call management and graceful degradation when issues occur. Each layer targets a specific stage of the call lifecycle — from initial call establishment through ongoing conversation to error recovery.
+
+| Layer | Mechanism | Scope |
+|---|---|---|
+| App-Level | Answer Call on Bot Response flag | SIP connection establishment |
+| Flow-Level | Bot No Input settings | Ongoing bot responsiveness |
+| Node-Level | OnError path | Granular error types (ASR, TTS, dialog) |
+
+---
+
+## Layer 1 — App-Level Settings: Answer Call on Bot Response
+
+**What It Does**
+
+The **Answer Call on Bot Response** flag controls when the system answers an incoming call. When enabled, the system delays the SIP `200 OK` response until the first bot response is fully prepared.
+
+**Configuration**
+
+Path: App Settings > Advanced Settings > System Settings
+
+![Answer Call on Bot First Response](/ai-for-service/channels/voice-gateway/images/answer-call-on-bot-response.png)
+
+| Setting | Value | Behavior |
+|:---|:---|:---|
+| Default | `false` (disabled) | Call is answered immediately; bot response prepares after establishment. |
+| Enabled | `true` | Call is answered only when the first bot response is ready for delivery. |
+
+**When to Use This Setting**
+
+Enable **Answer Call on Bot Response** when:
+
+- Integration with SIP-aware source systems is required
+- Upstream systems need SIP response codes for failure detection
+- Call quality requirements mandate that callers only hear prepared responses
+- SIP response codes are needed for the currently running node
+
+<Warning>Enabling this flag can cause frequent call drops if your flow contains many script or service nodes that delay the initial bot response. The call will not be answered until that first response is ready. Evaluate your flow complexity before enabling.</Warning>
+
+---
+
+## Layer 2 — Flow-Level Settings: Bot No Input
+
+**What It Does**
+
+The **Bot No Input** section monitors ongoing bot responsiveness after the first response has been successfully delivered. When the bot fails to respond within the configured timeout, the system triggers a fallback action.
+
+**Configuration**
+
+Path: Contact Center AI > Start Flows > Create or edit a Start Flow > Bot No Input
+
+![Edit Flow](/ai-for-service/channels/voice-gateway/images/edit-flow.png)
+
+| Parameter | Description |
+|:---|:---|
+| Timeout interval | Duration to wait before triggering the fallback action. |
+| Action type | `End Call` or `SIP URI Target Transfer`. |
+| SIP URI target | Destination URI when transfer is selected. |
+
+**Available Actions**
+
+| Action | Behavior |
+|:---|:---|
+| End Call | Automatically terminates the call when bot unresponsiveness is detected. |
+| SIP URI Target Transfer | Transfers the call to a specified SIP URI fallback target. |
+| Play a message with retries | Plays a configured message and retries before taking further action. |
+
+**Trigger Conditions**
+
+- The first bot response has already been delivered successfully.
+- The bot fails to respond within the configured timeout interval.
+- Monitoring is continuous throughout the call session.
+
+**When to Use This Setting**
+
+Use **Bot No Input** settings when:
+
+- The first bot response has already been delivered successfully
+- Ongoing bot responsiveness monitoring is required
+- A fallback target or graceful call termination is needed
+- User experience continuity is the priority
+
+---
+
+## Layer 3 — Node-Level: OnError Path
+
+**What It Does**
+
+The **OnError path** provides explicit, granular error handling for failures that occur during call processing — including ASR failures, TTS errors, dialog flow errors, and bot processing failures.
+
+**Configuration**
+
+Path: Contact Center AI > Start Flows > Add an Automation Node > Error Handling tab
+
+![Error Handling](/ai-for-service/channels/voice-gateway/images/automation-node.png)
+
+**Supported Error Types**
+
+| Error Type | Description |
+|:---|:---|
+| Dialog flow errors | Task failure events and flow execution errors. |
+| ASR errors | Speech recognition failures and timeout issues. |
+| TTS errors | Text-to-speech synthesis failures. |
+| Bot failures | Explicit bot processing errors. |
+
+**Capabilities**
+
+- Define custom workflows for specific error types.
+- Maintain call continuity during error conditions.
+- Provide appropriate audio feedback to callers during error scenarios.
+
+**When to Use the OnError Path**
+
+Use the **OnError path** when:
+
+- Comprehensive error handling across multiple error types is required
+- Custom error workflows are necessary for specific failure scenarios
+- System resilience and session continuity are a priority
+
+<Note>The OnError path has universal applicability. Implement it for every automation node — regardless of whether you use the other two layers.</Note>
+
+---
+
+**Configuration Priority**
+
+| Priority | Mechanism | Applicability |
+|:---|:---|:---|
+| Always configure | OnError path | Universal — all deployments |
+| Conditionally configure | App-level Answer Call on Bot Response | SIP-integrated environments only |
+| Scenario-specific | Flow-level Bot No Input | Based on user experience requirements |
+
+**Recommendations**
+
+* Always implement OnError path handling for comprehensive error coverage.
+* Evaluate SIP integration requirements before enabling the Answer Call on Bot Response flag.
+* Define explicit timeout values for bot responsiveness detection in Bot No Input settings.
+
+---
+
+## Deployment Scenarios
+
+### Scenario 1 — SIP-Integrated Environment
+
+**Configuration:**
+
+| Layer | Setting |
+|:---|:---|
+| App-Level | Answer Call on Bot Response = `true` |
+| Flow-Level | Bot No Input action = Transfer to SIP URI |
+| Node-Level | Custom OnError workflow |
+
+**Behavior**:
+
+- Call is answered only when the bot response is ready.
+- SIP codes are available for upstream system handling.
+- Unresponsive bot triggers transfer to the fallback SIP target.
+- Explicit errors are handled through the custom OnError workflow.
+
+---
+
+### Scenario 2 — Direct Call Environment
+
+**Configuration**:
+
+| Layer | Setting |
+|:---|:---|
+| App-Level | Answer Call on Bot Response = `false` |
+| Flow-Level | Bot No Input action = End Call |
+| Node-Level | Standard error messaging |
+
+**Behavior**:
+
+- Immediate call answering for a better user experience.
+- Bot unresponsiveness results in call termination.
+- Errors handled with standard user-facing messages.
+
+---
+
+### Scenario 3 — High-Availability Environment
+
+**Configuration**:
+
+| Layer | Setting |
+|:---|:---|
+| App-Level | Answer Call on Bot Response = `true` |
+| Flow-Level | Bot No Input action = Transfer to backup system |
+| Node-Level | Comprehensive error recovery workflows |
+
+**Behavior**:
+
+- Quality-assured response delivery at call establishment.
+- Multiple fallback layers address different failure types.
+- Maximum call continuity and user experience preservation.
+
+---
+
+## SIP Failures
+
+### During Call Establishment
+
+If the system encounters an issue during SIP connection establishment, it sends the corresponding SIP error code to the client. Configure the appropriate experience in your system to handle each error code.
+
+### During Agent Transfers
+
+When the system sends a `SIP INVITE` or `SIP REFER` to a recipient system during an agent transfer, the recipient may return a SIP error code if issues exist on the agent side.
+
+Fix: Configure the Error Path on the Agent Transfer node to:
+
+- Play a text message or audio file, or
+- Route the caller to a different node.
+
+---
+
+## Handling AI for Service Downtime
+
+### Before Call Establishment
+
+Use the **Answer Call on Bot Response** flag. When enabled, the call is not answered unless AI for Service is available and the bot sends its first message after SIP connection establishment.
+
+### During an Active Call
+
+If AI for Service becomes unavailable mid-call, the **Bot No Input** flow-level settings trigger the configured fallback:
+
+| Action | Behavior |
+|:---|:---|
+| End Call | Terminates the call automatically. |
+| SIP URI Target Transfer | Transfers the caller to the configured fallback target. |
+| Play a message with retries | Plays a message and retries before escalating. |
+
+---
+
+## ASR and TTS Failover
+
+| Capability | Description |
+|:---|:---|
+| Multiple vendors | Configure both primary and fallback ASR and TTS vendors independently. |
+| Regional failover | Supports regional failover within the same speech vendor. |
+| Full vendor failure | If both primary and fallback providers fail, the system issues a SIP `REFER` (agent transfer). |
+
+<Tip>Configure primary and fallback ASR/TTS vendors before going to production. Use a different region for the fallback to maximize availability. See the [ASR & TTS Troubleshooting guide](/ai-for-service/channels/voice-gateway/troubleshooting-asr-tts) for vendor-specific configuration details.</Tip>
+
+---
+
+## Voice Gateway Level Resiliency
+
+| Component | Detail |
+|:---|:---|
+| Session Border Controllers (SBCs) | Two SBCs are available in the environment. |
+| Fallback SBC | Configure a fallback SBC to activate upon primary SBC failure. |
+| Error signaling | Failures are signaled to the customer's SBC via `4xx` SIP error codes. |
+
+---
+
+## Routing Errors
+
+Condition: The DID number is not attached to a Start Flow, or the system is unable to trigger the Start Flow mapped to the DID number.
+
+| Option | Behavior |
+|:---|:---|
+| End the call | The call is terminated with an appropriate SIP response. |
+| Transfer to a different number | A `SIP REFER` is issued to redirect the call. |
+
+<Warning>The default error path for routing failures must be configured as Agent Transfer. Ensure this is set before going to production.</Warning>
+
+![ASR Configuration](/ai-for-service/channels/voice-gateway/images/asr-configuration.png)
+![TTS Selection](/ai-for-service/channels/voice-gateway/images/tts-selection.png)
+![Primary TTS](/ai-for-service/channels/voice-gateway/images/primary-tts.png)
+
+---
+
+## 3-Tier Resilience Summary
+
+| Tier | Mechanism | What It Prevents |
+|:---|:---|:---|
+| App-Level | Delays SIP `200 OK` until AI is ready | Dead air and unanswered calls during bot startup failures |
+| Flow-Level | Real-time bot responsiveness monitoring | Stuck calls when the bot becomes unresponsive mid-session |
+| Node-Level | Granular OnError paths per node (ASR / TTS / Data) | Session failures from individual component errors |
