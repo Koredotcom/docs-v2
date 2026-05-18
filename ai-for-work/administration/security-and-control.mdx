@@ -255,6 +255,7 @@ Go to **Admin Console > Security > Connections > Service Account**.
 | Google | Connect to Google Workspace for user and group management |
 | Microsoft Azure | Integrate with Azure Active Directory |
 | LDAP | Connect to on-premises directory services |
+| Okta | Connect to Okta for user and group management |
 
 ### Add a Service Account
 
@@ -324,6 +325,25 @@ After adding permissions, click **Grant Admin Consent** in the Azure Portal.
 
 Click **Save**.
 
+#### Okta
+
+| Field | Description |
+|-------|-------------|
+| Account Name | A descriptive name for this service account |
+| Okta Domain | Your Okta domain URL (for example, `https://your-domain.okta.com`) |
+| Admin API Token | Admin API token generated from the Okta Admin Console (masked input) |
+
+All fields are required. The platform validates the Okta Domain format and tests the credentials through the Okta API before saving.
+
+- If the credentials are valid, the service account saves successfully.
+- If the credentials are invalid, the platform displays an error message and does not save the account.
+
+Error messages display for invalid credentials, network or API failures, expired API tokens, and expired service accounts.
+
+![okta-service-account](/ai-for-work/administration/images/okta-service-account.png "okta-service-account")
+
+Click **Save**.
+
 ### Manage Service Accounts
 
 Click the **three-dot menu** next to any service account to access these options:
@@ -356,7 +376,7 @@ The platform automatically manages encryption — no configuration required. You
 
 BYOK lets you use your own Customer Master Keys (CMKs) from AWS KMS or Azure Key Vault for all encryption operations. The platform communicates with your external KMS for cryptographic operations.
 
-**Supported providers:** AWS KMS, Azure Key Vault
+**Supported providers**: AWS KMS, Azure Key Vault
 
 <Note>BYOK is permanent. Once activated, you cannot revert to the default key, and the configuration cannot be modified. Contact [Kore.ai support](https://support.kore.ai/) if changes are needed.</Note>
 
@@ -372,25 +392,31 @@ BYOK lets you use your own Customer Master Keys (CMKs) from AWS KMS or Azure Key
 
 #### AWS KMS
 
-**Values the platform provides:**
+For detailed guidance on AWS KMS, refer to the [AWS KMS Developer Guide](https://docs.aws.amazon.com/kms/latest/developerguide/overview.html).
+
+**Values the platform provides**:
+
+When you initiate the BYOK setup, the platform displays these values for you to copy. You will need them when configuring your IAM role.
 
 | Value | How It's Used |
 |-------|---------------|
-| Service Role ARN | Required when configuring your IAM role trust policy |
-| External ID | Add to your IAM role trust policy to securely allow role assumption |
+| Service Role ARN | Add to your IAM role trust policy so the platform can assume the role |
+| External ID | Add to your IAM role trust policy to securely restrict who can assume the role |
 
-**Values you provide:**
+**Values you provide**:
 
 | Field | Description |
 |-------|-------------|
 | Key ARN | Your KMS Customer Managed Key ARN (e.g., `arn:aws:kms:<region>:<account-id>:key/<key-id>`) |
 | Assume Role ARN | The IAM role ARN you create for the platform (e.g., `arn:aws:iam::<account-id>:role/<role-name>`) |
 
-**AWS setup steps:**
+**AWS setup steps**:
 
-1. In the **AWS KMS console**, note your **CMK ARN** from the key's details page.
-2. In **IAM > Roles > Create Role**, select **Another AWS account**, enter the Service Role ARN provided by the platform, and name the role.
-3. Set the trust policy on the role (replace placeholders with actual values):
+1. **Locate your Customer Managed Key (CMK) ARN.** The platform uses this key for all encryption operations. In the **AWS KMS console**, open your CMK's details page and copy the **CMK ARN** (e.g., `arn:aws:kms:<region>:<account-id>:key/<key-id>`).
+
+2. **Create an IAM role for the platform.** This role allows the platform to securely access your KMS key without sharing credentials. Go to **IAM > Roles > Create Role**, select **Another AWS account**, enter the **Service Role ARN** provided by the platform, and name the role (e.g., `AIforWorkByokAccessRole`). Note the **Role ARN** after creation.
+
+3. **Configure the trust policy on the role.** The trust policy restricts who can assume this role. By specifying the platform's Service Role ARN and the External ID, you ensure that only the platform's verified service can use it. Go to **IAM > Roles > Your role > Trust Relationships > Edit Trust Policy** and set the following (replace placeholders with actual values):
    ```json
    {
      "Version": "2012-10-17",
@@ -402,54 +428,82 @@ BYOK lets you use your own Customer Master Keys (CMKs) from AWS KMS or Azure Key
      }]
    }
    ```
-4. Create and attach a permissions policy to the role:
+
+4. **Create and attach a permissions policy.** This policy defines which KMS actions the role is allowed to perform on your key. Go to **IAM > Policies > Create Policy > JSON** and add the following:
    ```json
    {
      "Version": "2012-10-17",
      "Statement": [{
+       "Sid": "AllowKMSActions",
        "Effect": "Allow",
        "Action": ["kms:Encrypt", "kms:Decrypt", "kms:ReEncrypt*", "kms:GenerateDataKey*", "kms:DescribeKey"],
        "Resource": "<your-cmk-arn>"
      }]
    }
    ```
-5. In the KMS console, add the IAM role to the CMK's key policy:
+   Name the policy (e.g., `AIKMSPolicy`), create it, then attach it to the role via **IAM > Roles > Your role > Add Permissions > Attach Policies**.
+
+5. **Grant the IAM role access in the CMK key policy.** This authorizes the role to perform cryptographic operations on the key from the KMS side. In the **KMS console**, select your CMK, go to the **Key Policy** tab, switch to edit mode, and add the following statement to the existing policy's `Statement` array:
    ```json
    {
+     "Sid": "AllowAIAccess",
      "Effect": "Allow",
      "Principal": { "AWS": "<your-role-arn>" },
      "Action": ["kms:Encrypt", "kms:Decrypt", "kms:ReEncrypt*", "kms:GenerateDataKey*", "kms:DescribeKey"],
      "Resource": "*"
    }
    ```
-6. Contact [Kore.ai support](https://support.kore.ai/) and share your **CMK ARN** and **Role ARN** to complete the integration.
+
+6. **Validate the configuration (optional).** Run the following AWS CLI commands to verify that your IAM role and CMK key policy are set up correctly. This step does not validate the full BYOK integration.
+   ```
+   aws sts assume-role \
+     --role-arn arn:aws:iam::<your-account-id>:role/<role-name> \
+     --role-session-name test-session
+
+   aws kms describe-key \
+     --key-id <your-cmk-arn> \
+     --region <your-region>
+   ```
+
+7. **Share your details with Kore.ai.** Contact [Support](https://support.kore.ai/) and provide your **CMK ARN** (from step 1) and **Role ARN** (from step 2). The team will configure the service side to assume the role and securely access your KMS key. Once this is done, the BYOK configuration and test connection will complete successfully.
 
 #### Azure Key Vault
 
-**Values the platform provides:**
+For detailed guidance on Azure Key Vault, refer to the [Azure Key Vault documentation](https://learn.microsoft.com/en-us/azure/key-vault/general/overview).
+
+**Values the platform provides**:
+
+When you initiate the BYOK setup, the platform displays these values for you to copy. You will need them when granting access to the platform's service principal.
 
 | Value | How It's Used |
 |-------|---------------|
-| Client ID | Required when granting the platform's service principal access to your Key Vault |
-| App Name | The platform's registered application name in your Azure tenant |
+| Client ID | Identifies the platform's application when granting Key Vault access |
+| App Name | The platform's registered application name, used to search for the service principal in role assignments |
 
-**Values you provide:**
+**Values you provide**:
 
 | Field | Description |
 |-------|-------------|
 | Key Vault URL | Your Azure Key Vault URI (e.g., `https://<vault-name>.vault.azure.net/`) |
 | Tenant ID | Your Azure Directory (tenant) ID |
 
-**Azure setup steps:**
+**Azure setup steps**:
 
-1. Sign in to the Azure portal as a Global Administrator and grant admin consent for the platform's application using one of:
-   - **Admin Consent URL**: Navigate to `https://login.microsoftonline.com/<your-tenant-id>/adminconsent?client_id=<platform-client-id>`
-   - **Azure CLI**: Run `az ad sp create --id '<platform-client-id>'`
-2. In your Key Vault, go to **Access Control (IAM) > Add Role Assignment** and assign the platform's service principal:
-   - **Key Vault Crypto User** — for cryptographic operations (wrap/unwrap keys)
-   - **Key Vault Reader** — for reading Key Vault metadata
-3. Share the following with [Kore.ai support](https://support.kore.ai/): Tenant ID, Key Vault URI, and Key Name.
-4. After the team configures the connection, go to **Key Vault > Networking > Private Endpoint Connections** and approve the pending request.
+1. **Authorize the platform in your Azure tenant.** This step registers the platform as a service principal in your tenant, allowing it to interact with your Key Vault securely. Sign in to the **Azure portal** as a Global Administrator and grant admin consent for the platform's application using one of:
+   - **Admin Consent URL**: Navigate to `https://login.microsoftonline.com/<your-tenant-id>/adminconsent?client_id=<platform-client-id>` (replace `<your-tenant-id>` with your tenant ID, found in **Microsoft Entra ID > Properties**).
+   - **Azure CLI**: Run `az ad sp create --id '<platform-client-id>'` (replace `<platform-client-id>` with the Client ID provided by the platform).
+
+2. **Prepare your Key Vault and encryption key.** Ensure you have a Key Vault and an RSA key in your Azure subscription. Note the following details, which you will share with the team:
+   - **Key Vault URI** (e.g., `https://<vault-name>.vault.azure.net/`)
+   - **Key Name** for the specific key the platform will use
+
+3. **Grant the platform access to your Key Vault.** This authorizes the platform's service principal to perform the cryptographic operations required for BYOK. In your Key Vault, go to **Access Control (IAM) > Add Role Assignment** and assign the following roles to the platform's service principal (search by the App Name or Client ID provided by the platform):
+   - **Key Vault Crypto User** — allows cryptographic operations like wrapping and unwrapping keys, required for BYOK functionality
+   - **Key Vault Reader** — allows reading metadata about the Key Vault and its resources
+
+4. **Share your details with Kore.ai.** Contact [Support](https://support.kore.ai/) and provide: your **Tenant ID** (found in **Microsoft Entra ID > Properties**), the **Key Vault URI**, and the **Key Name**.
+
+5. **Approve the private endpoint connection.** After the team configures the connection on their end, a private endpoint request will appear in your Key Vault. Go to **Key Vault > Networking > Private Endpoint Connections**, find the pending request, and approve it. This establishes a secure private link between the platform and your Key Vault.
 
 ---
 
@@ -481,7 +535,7 @@ When **Do not store full conversation data** is selected, apply the policy at on
 | Default (7 years) | Data is automatically deleted after 7 years |
 | Custom | Set a specific retention duration before automatic deletion |
 
-
+---
 
 ## Domain Management
 
