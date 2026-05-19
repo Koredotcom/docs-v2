@@ -28,8 +28,7 @@ To author and preview, follow these steps:
 
 ## Folder structure and common files
 
-```
-agent-management-platform/	# Agent Management Platform docs 
+```txt 
 agent-platform/				# Agent Platform docs
 ai-for-process/				# AI for Process docs
 ai-for-service/				# AI for Service fka XO11 docs
