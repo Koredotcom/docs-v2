@@ -1,0 +1,591 @@
+---
+title: ASR and TTS Troubleshooting
+sidebarTitle: Troubleshooting ASR and TTS
+---
+
+This document covers the most common speech recognition (ASR) and text-to-speech (TTS) issues encountered in Voice Gateway deployments. Each section is structured as: Symptom > Root Cause > Fix, with parameter reference tables and known limitations noted where applicable.
+
+All runtime parameters are set using:
+
+```js
+userSessionUtils.setCallControlParam('paramName', value);
+```
+
+---
+
+## Microsoft Azure ASR
+
+### Utterance Splitting — Speech Split into Multiple Parts
+
+**Symptom**
+
+A continuous user utterance arrives as multiple separate inputs. For example, `Hello, I want to check my balance` is received as two turns: `Hello` then `I want to check my balance`. This causes intent mismatches, loop behavior, or responses to partial input.
+
+**Root Cause**
+
+Azure Speech uses `AzureSegmentationSilenceTimeoutMs` to detect end-of-speech. Natural pauses of 300 ms or more between words can trigger a premature commit. The default value is too aggressive for conversational IVR use cases.
+
+**Fix**
+
+Add a Script node at the start of your Experience Flow:
+
+```js
+// Standard conversational IVR
+userSessionUtils.setCallControlParam(
+  'AzureSegmentationSilenceTimeoutMs', 1200
+);
+
+// Longer conversational utterances (Agentic app flows)
+userSessionUtils.setCallControlParam(
+  'AzureSegmentationSilenceTimeoutMs', 2000
+);
+
+// Do NOT exceed 3000 — increases latency significantly.
+```
+
+<Tip>Start with `1200 ms` and increase in 200 ms increments if splitting persists. Test with real callers in your target language before going live.</Tip>
+
+**Parameter Reference**
+
+| Parameter | Value / Range | Purpose |
+|:---|:---|:---|
+| `AzureSegmentationSilenceTimeoutMs` | 800-2000 ms | End-of-speech silence detection. Lower = faster response. Higher = fewer splits. |
+| `sttMinConfidence` | 0.4-0.6 | Reduce to accept more valid inputs; raise to filter background noise. |
+| `botNoInputTimeoutMS` | 5000-8000 ms | Increase for non-English speakers or callers who pause before speaking. |
+
+<Info>For more details, refer to [Speech Customization](/ai-for-service/channels/voice-gateway/speech-customization)</Info>
+
+---
+
+### Digit and Number Misinterpretation
+
+**Symptom**
+
+Numbers are misinterpreted by the ASR engine. Common patterns include:
+
+- Spoken Hindi numbers such as `ek` combined with `22,000` becoming `1,202,000`.
+- Card numbers with repeated digits being truncated or garbled.
+- Confidence scores above threshold (for example, 75.7%) but transcription still incorrect.
+
+**Fix**
+
+```js
+// Enable continuous ASR at the digit-collection entity node
+userSessionUtils.setCallControlParam('continuousASR', true);
+userSessionUtils.setCallControlParam('continuousASRTimeoutInMS', 2000);
+
+// DTMF fallback — strongly recommended for 16-digit card numbers
+userSessionUtils.setCallControlParam('dtmfCollectMaxDigits', 16);
+userSessionUtils.setCallControlParam('dtmfCollectInterDigitTimeoutMS', 4000);
+```
+
+**Input Type Recommendations**
+
+| Input Type | Recommended Method | Configuration Notes | Error Rate |
+|:---|:---|:---|:---|
+| 4-8 digit PIN | Speech ASR | Enable `continuousASR` | Low |
+| 10-digit phone number | Speech or DTMF | Speech for English; DTMF for non-English | Medium |
+| 16-digit card number | DTMF preferred | ASR struggles with repeated digits-use DTMF as primary | High with ASR |
+| Currency amounts (Hindi) | Speech + lower threshold | `sttMinConfidence=0.4` + `AzureSegmentationSilenceTimeoutMs=1500` | Medium |
+
+---
+
+### Widespread ASR Failure-Outage or Concurrency Breach
+
+**Symptom**
+
+All IVR calls fail simultaneously. The bot responds with the default error message and no speech is recognized across any bots. An Azure region outage typically causes a concurrency limit breach or expired API credentials.
+
+**Immediate Recovery Steps**
+
+1. Verify the affected Azure region at Azure Status. Confirm whether the issue is a full outage or a concurrency limit breach.
+2. Switch active calls to the fallback ASR label configured in your Voice Gateway settings.
+3. If the issue is caused by expired API credentials, update the Azure Speech key in the platform channel configuration and save the changes.
+4. Place a test call and confirm that speech recognition resumes before you re-enable production traffic.
+
+**Prevention — Configure Before Go-Live**
+
+```
+Primary ASR:  Label = your-primary-label    (primary region)
+Fallback ASR: Label = your-fallback-label   (different region, same vendor)
+```
+
+<Warning>Primary and Fallback must use different labels. Using the same label for both provides no fallback protection.</Warning>
+
+<Note>Always configure fallback ASR/TTS before going to production. Use the same vendor but a different region for optimal compatibility. For vendor-level fallback, configure a secondary vendor (for example, Deepgram as a fallback for Azure).</Note>
+
+---
+
+## Microsoft Azure TTS
+
+### Mispronounced Words-SSML Phoneme and Say-As Tags
+
+**Symptom**
+
+Azure Neural Voice mispronounces product names, currency amounts, acronyms, or non-English terms. Digits may be read as words — for example, `6987` spoken as `Che Nau Sath Aath Feet` when using a mismatched voice.
+
+**Fix**
+
+Use SSML tags in your Message nodes:
+
+```xml
+<!-- Currency amounts -->
+<speak>
+  <say-as interpret-as="currency" language="hi-IN">
+    ₹3,40,650.23
+  </say-as>
+</speak>
+
+<!-- Digit-by-digit (prevents misread artifacts) -->
+<speak>
+  Your OTP is <say-as interpret-as="digits">6987</say-as>
+</speak>
+
+<!-- Acronym spelled out -->
+<speak>
+  <say-as interpret-as="spell-out">EMI</say-as>
+</speak>
+
+<!-- Pause before key information -->
+<speak>
+  Your balance is <break time="300ms"/>
+  <say-as interpret-as="currency">₹5000</say-as>
+</speak>
+```
+
+**SSML Tag Reference**
+
+| Problem | SSML Fix | Effect |
+|:---|:---|:---|
+| Currency read incorrectly | `<say-as interpret-as="currency">` | Reads with correct language context |
+| Digits read as words | `<say-as interpret-as="digits">` | Forces digit-by-digit: `six nine eight seven` |
+| Acronym mispronounced | `<say-as interpret-as="spell-out">` | Spells out letter by letter: `E-M-I` |
+| Brand name incorrect | `<sub alias="correct pronunciation">` | Replaces text with specified pronunciation |
+| Need a pause | `<break time="500ms"/>` | Inserts a 0.5-second pause |
+| Speech too fast | `<prosody rate="slow">` | Reduces speech rate for complex information |
+
+---
+
+### TTS Reading Newlines from LLM or Agentic Responses
+
+**Symptom**
+
+When using LLM or Agentic app responses in voice flows, the TTS engine reads literal newline characters aloud — saying `'backslash n backslash n'` instead of pausing. This occurs because LLM outputs contain formatting characters (`\n`, markdown bold, bullet points) that TTS cannot interpret.
+
+**Fix**
+
+Add a Script node before the Message node to sanitize the LLM output:
+
+```js
+// Replace 'YourLLMNode' with your actual node name
+var raw = context.steps.YourLLMNode.response || '';
+
+var clean = raw
+  .replace(/\\n/g, ' ')        // literal \n strings from LLM
+  .replace(/\n/g, ' ')          // actual newline characters
+  .replace(/\r/g, ' ')          // carriage returns
+  .replace(/\*\*/g, '')         // markdown bold
+  .replace(/\*/g, '')           // markdown bullets/italic
+  .replace(/#+\s/g, '')         // markdown headers
+  .replace(/^\s*[-•]\s*/gm, '') // bullet characters
+  .replace(/\s{2,}/g, ' ')      // collapse multiple spaces
+  .trim();
+
+context.ttsOutput = clean;
+// Use context.ttsOutput in your Message node
+```
+
+<Warning>There is no call control parameter for this fix. Sanitization must be applied in a Script node before the Message node. Adjust the variable path (`context.steps.YourLLMNode.response`) to match your specific flow design.</Warning>
+
+---
+
+### Hindi TTS Failure-Voice-Language Mismatch
+
+**Symptom**
+
+On mid-call language switch to Hindi, TTS throws a `'synthAudio requires language'` error. Logs show `'language: undefined'` and `'voice: undefined'`. Digits may be spoken incorrectly when an English voice receives Devanagari numerals.
+
+**Root Cause**
+
+The voice name and language code do not match. For example, using `language=hi-IN` with `voice=en-IN-AartiIndicNeural` (an English-Indian voice, not a Hindi voice).
+
+**Fix**
+
+Add a Script node before the first Hindi message node:
+
+```js
+userSessionUtils.setCallControlParam('ttsLanguage', 'hi-IN');
+userSessionUtils.setCallControlParam('voiceName', 'hi-IN-SwaraNeural');
+userSessionUtils.setCallControlParam('ttsProvider', 'microsoft');
+
+// WRONG:   language=hi-IN + voice=en-IN-AartiIndicNeural
+// CORRECT: language=hi-IN + voice=hi-IN-SwaraNeural
+```
+
+**Supported Hindi Voices**
+
+| Voice Name | Gender | Language | Notes |
+|---|---|---|---|
+| `hi-IN-SwaraNeural` | Female | `hi-IN` | Recommended — natural Hindi |
+| `hi-IN-MadhurNeural` | Male | `hi-IN` | Alternate male voice |
+| `en-IN-AartiIndicNeural` | Female | `en-IN` | English-Indian — **do not use for Hindi text** |
+
+<Note>The system does not currently validate voice-language matching during configuration. Manually verify that the `voiceName` language prefix matches the `ttsLanguage` code.</Note>
+
+---
+
+### Configured Voice Not Applying
+
+**Symptom**
+
+The voice configured in Voice Preferences (for example, `hi-IN-SwaraNeural`) is not applied during live calls. The bot uses the default English voice instead, and no error displays.
+
+**Root Cause**
+
+TTS initializes at the first message node. If automation or a script runs first, TTS uses defaults before the voice configuration loads.
+
+**Resolution Options**
+
+| Option | Action |
+|:---|:---|
+| Fix 1 (Recommended) | Add a short Message node as the first node in your Flow-before any script or automation node. |
+| Fix 2 | After saving voice config in the UI, edit the flow description field and re-save to force re-registration. |
+| Fix 3 (Script) | Set voice via script: `userSessionUtils.setCallControlParam('voiceName', 'hi-IN-SwaraNeural');` before the message node. |
+| Fix 4 (Google) | If you see `'No credentials for Google with labels: undefined'` — set `ttsLabel` using a script, not the UI. See [No Credentials for Google](#no-credentials-for-google-label-undefined-error). |
+
+---
+
+## Deepgram ASR / TTS
+
+### Utterance Splitting — utteranceEndMs Tuning
+
+**Symptom**
+
+A user says a long sentence, but Deepgram commits mid-sentence due to natural pauses. Setting `deepgramUtteranceEndMs` to 3000 or 4000 ms still results in splits.
+
+**Root Cause**
+
+`deepgramUtteranceEndMs` alone is insufficient. It must be paired with `deepgramEndpointing` to handle micro-pauses within sentences. The endpointing parameter controls Voice Activity Detection (VAD) sensitivity for short gaps; `utteranceEndMs` controls the final silence window.
+
+**Fix**
+
+```js
+// Recommended for Agentic/Conversational flows
+userSessionUtils.setCallControlParam('deepgramUtteranceEndMs', 1500);
+userSessionUtils.setCallControlParam('deepgramEndpointing', 500);
+userSessionUtils.setCallControlParam('sttMinConfidence', 0.4);
+userSessionUtils.setCallControlParam('deepgramNumerals', true);
+userSessionUtils.setCallControlParam('deepgramPunctuate', true);
+
+// For Spanish / Latin American Spanish
+userSessionUtils.setCallControlParam('sttLanguage', 'es-419');
+```
+
+<Note>
+  **Why smaller `utteranceEndMs` works better:** `endpointing=500` handles micro-pauses within speech. `utteranceEndMs=1500` handles the longer gap at the end. Setting `utteranceEndMs=3000-4000` delays the final commit but does not fix mid-sentence splits.
+</Note>
+
+**Parameter Reference**
+
+| Parameter | Value / Range | Purpose |
+|---|---|---|
+| `deepgramUtteranceEndMs` | 800-2000 ms | End-of-utterance silence window. Start at 1200; increase by 200 ms if splitting persists. |
+| `deepgramEndpointing` | 300-600 ms | VAD sensitivity. 300 ms = responsive; 600 ms = more patient with pauses. |
+| `deepgramNumerals` | `true/false` | Converts spoken numbers to digits (for example, `five hundred` > `500`). |
+| `deepgramNer` | `true/false` | Named Entity Recognition — improves proper noun and entity recognition. |
+| `deepgramPunctuate` | `true/false` | Adds punctuation to transcripts-useful for NLU processing. |
+| `deepgramKeyterms` | String array | Boosts recognition of specific listed words. |
+
+---
+
+### Digit and RX Number Recognition
+
+**Symptom**
+
+The bot is collecting multi-digit numbers (for example, 5-7 digit prescription or account numbers). Callers pause between digits. The bot splits the utterance or misses digits.
+
+**Production-Tested Configuration**
+
+```js
+var recognizerConfig = {
+  vendor: 'deepgram',
+  model: 'nova-3-medical', // Use nova-3 for non-medical
+  language: 'en-US',
+  interim: true,
+  deepgramOptions: {
+    endpointing: 300,
+    utteranceEndMs: 1000,
+    keyterms: [
+      'zero', 'one', 'two', 'three', 'four',
+      'five', 'six', 'seven', 'eight', 'nine'
+    ],
+    numerals: true
+  }
+};
+
+userSessionUtils.setCallControlParam('dtmfBargein', false);
+userSessionUtils.setCallControlParam('listenDuringPrompt', true);
+```
+
+**Model Selection**
+
+| Model | Best For | Use Case | Status |
+|---|---|---|---|
+| `nova-3` | Best general accuracy | Default IVR flows | Recommended |
+| `nova-3-medical` | Medical/clinical terms, RX numbers | Healthcare, pharmacy, insurance | Recommended |
+| `nova-2-phonecall` | Optimized for telephony audio | Call centre deployments | Stable |
+| `enhanced` | High accuracy, slightly higher latency | Accuracy-critical flows | Stable |
+
+---
+
+## Google ASR & TTS
+
+### 16-Digit Card Number — Repeated Digit Failure
+
+**Symptom**
+
+Google ASR fails on sequences with 8 or more consecutive identical digits (for example, `509099999999990002`). The bot may barge in early. This is a known Google ASR limitation.
+
+**Fix**
+
+```js
+// Recommended: DTMF input for card numbers
+userSessionUtils.setCallControlParam('dtmfCollectMaxDigits', 16);
+userSessionUtils.setCallControlParam('dtmfCollectInterDigitTimeoutMS', 4000);
+userSessionUtils.setCallControlParam('dtmfCollectTermDigit', '#');
+
+// If speech must be used — enable continuous ASR
+userSessionUtils.setCallControlParam('continuousASR', true);
+userSessionUtils.setCallControlParam('continuousASRTimeoutInMS', 2500);
+
+// Note: AzureSegmentationSilenceTimeoutMs does NOT affect Google ASR.
+```
+
+**Model Selection**
+
+| Model | Description | Use Case | Status |
+|---|---|---|---|
+| `chirp_2` | Best for telephony + accents | Recommended for IVR | Recommended |
+| `chirp_telephony` | Optimized for 8 kHz/16 kHz audio | Telephony deployments | Recommended |
+| `telephony` | Legacy — stable, widely tested | Default | Good default |
+| `telephony_short` | Fast, for short utterances (less than 5 seconds) | Menu / yes-no commands | Recommended |
+| `long` | Batch file processing | — | Do not use for real-time IVR |
+
+---
+
+### No Credentials for Google — Label: undefined Error
+
+**Symptom**
+
+TTS fails with: `'No text-to-speech service credentials for Google with labels: undefined'`. This occurs even after setting `ttsLabel` in the [Voice Preferences](/ai-for-service/channels/voice-gateway/configure-voice-gateway#voice-preferences).
+
+**Root Cause**
+
+The `ttsLabel` configured in the Voice Preferences UI does not propagate to the TTS engine at runtime in some configurations. The label must be set using a Script node.
+
+**Fix**
+
+Add a Script node at the start of your Experience Flow:
+
+```js
+// TTS configuration
+userSessionUtils.setCallControlParam('ttsProvider', 'google');
+userSessionUtils.setCallControlParam('ttsLabel', 'your_google_label');
+userSessionUtils.setCallControlParam('ttsLanguage', 'en-US');
+userSessionUtils.setCallControlParam('voiceName', 'en-US-Chirp3-HD-Aoede');
+
+// ASR configuration (same approach)
+userSessionUtils.setCallControlParam('sttProvider', 'google');
+userSessionUtils.setCallControlParam('sttLabel', 'your_google_label');
+```
+
+<Warning>The Voice Preferences UI setting for `ttsLabel` doesn't propagate at runtime for Google TTS. Always set the label using a script.</Warning>
+
+---
+
+### Background Streaming-Prompts Not Played
+
+**Symptom**
+
+When using Google TTS with Chirp voices and Background Streaming enabled at the Experience Flow level, follow-up prompts (for example, `Is there anything else?`) are logged as synthesized successfully, but no audio is delivered to the caller.
+
+**Fix Options**
+
+| Option | Action |
+|---|---|
+| Option 1 — Disable Background Streaming | Go to Flows > Edit > Background Streaming > Disabled. Confirm audio plays correctly. |
+| Option 2 — Use non-Chirp voice | Switch to a Google Neural voice (for example, `en-US-Wavenet-F`). Confirmed compatible with Background Streaming. |
+| Option 3 — Use Deepgram TTS | Deepgram TTS has native streaming support and is more stable with Background Streaming enabled. |
+
+<Note>Google Chirp voices are not compatible with Background Streaming.</Note>
+
+---
+
+## Sarvam TTS
+
+### TTS Fails on Currency, Commas, Special Characters
+
+**Symptom**
+
+Sarvam TTS fails on messages containing the `₹` symbol, commas in Indian number format (`3,40,650.23`), or mixed punctuation. The Sarvam API does not handle Unicode currency symbols or Indian number formatting natively.
+
+**Fix**
+
+Pre-process text in a Script node before passing to Sarvam TTS:
+
+```js
+function sanitizeForSarvam(text) {
+  return text
+    .replace(/₹([\d,]+\.?\d*)/g, function(m, n) {
+      var num = parseFloat(n.replace(/,/g, ''));
+      if (num >= 100000) return (num / 100000).toFixed(0) + ' lakh rupaye';
+      if (num >= 1000) return (num / 1000).toFixed(0) + ' hazaar rupaye';
+      return num + ' rupaye';
+    })
+    .replace(/[,;]/g, ' ')      // remove commas/semicolons
+    .replace(/\.(?!\d)/g, ' ')  // periods NOT followed by a digit
+    .replace(/[()\[\]{}]/g, '') // brackets
+    .replace(/\s{2,}/g, ' ')    // collapse multiple spaces
+    .trim();
+}
+
+context.sarvamInput = sanitizeForSarvam(context.llmResponse);
+
+// Provider configuration
+userSessionUtils.setCallControlParam('ttsProvider', 'custom:sarvamTTS');
+userSessionUtils.setCallControlParam('voiceName', 'simran');
+```
+
+<Warning>Sarvam doesn't support SSML tags. Use plain text only. All text formatting must be handled in the sanitization script before passing to Sarvam TTS.</Warning>
+
+---
+
+### Background Streaming — Audio Not Played
+
+**Symptom**
+
+When Background Streaming is enabled at the Experience Flow level with Sarvam TTS, audio synthesis is logged as successful in Interactions, but zero audio plays to the caller.
+
+**Fix**
+
+Disable Background Streaming when using Sarvam TTS.
+
+**Steps:** Go to **Experience Flow > Edit > Background Streaming > Disabled**.
+
+<Note>Sarvam TTS is not compatible with Background Streaming. A platform fix is being tracked. Until resolved, Background Streaming must be disabled for any flow using Sarvam TTS. No configuration workaround is available.</Note>
+
+---
+
+## Call Flow — Barge-in, Transfer & Transcription
+
+### Aggressive Barge-in — Bot Interrupts User Mid-Speech
+
+**Symptom**
+
+The bot plays filler music in under 3 seconds, interrupting the user's utterance. The `ActionHookDelayProcessor` fires too early, especially when there is a language mismatch between TTS text and the voice configuration.
+
+**Fix**
+
+```js
+// Disable barge-in for specific nodes (legal, OTP, transfer messages)
+userSessionUtils.setCallControlParam('node.bargein', false);
+
+// Delay filler music — prevent premature firing
+userSessionUtils.setCallControlParam('actionHookDelayInMs', 8000);
+
+// Session-level barge-in sensitivity
+userSessionUtils.setCallControlParam('session.bargein', true);
+userSessionUtils.setCallControlParam('session.bargeInSensitivity', 'low');
+```
+
+**Scenario Guide**
+
+| Scenario | Recommended Fix |
+|:---|:---|
+| Bot interrupts greetings | Set `actionHookDelayInMs=8000` or higher. Give the caller time to state full intent. |
+| Barge-in on legal/OTP prompts | Set `node.bargein=false` on those specific message nodes. |
+| Background noise triggers barge-in | Set `bargeInSensitivity=low`. Ensure noise suppression is active in your telephony setup. |
+| Transfer message cut short | Use `queueCommand: true` — see [Transfer Fires Before TTS Message Completes](#transfer-fires-before-tts-message-completes). |
+
+---
+
+### Transfer Fires Before TTS Message Completes
+
+**Symptom**
+
+Agent transfer fires before the farewell or transfer message finishes playing. The caller hears a partial message before being transferred.
+
+**Root Cause**
+
+A direct Agent Transfer node placed after a Message node creates a race condition — the transfer may execute before TTS playback completes.
+
+**Fix**
+
+Use `queueCommand: true` in a Script node to ensure TTS completes before transfer executes:
+
+```js
+var transferCmd = {
+  type: 'command',
+  command: 'redirect',
+  queueCommand: true, // Critical parameter — waits for TTS to complete
+  data: [{
+    verb: 'transfer',
+    destination: 'sip:agent@your-sip-domain.com'
+  }]
+};
+
+// Execute using your flow's command execution method.
+```
+
+<Note>The `queueCommand: true` parameter instructs the Voice Gateway to wait until current TTS playback is fully complete before executing the transfer. Use this for any action that follows a voice prompt.</Note>
+
+<Info>For additional information, refer to [Utility Functions in Voice Gateway](/ai-for-service/channels/voice-gateway/utility-functions-in-voice-gateway)</Info>
+
+---
+
+### Transcription Not Displaying (Twilio / ASR Timeout)
+
+**Symptom**
+
+The Transcripts tab is empty after completed calls.
+
+**Diagnosis & Fix**
+
+| Root Cause | How to Diagnose | Fix |
+|:---|:---|:---|
+| Twilio webhook misconfiguration | The Twilio Media Stream webhook is missing the transcript endpoint. Transcription is enabled but results are not sent to the platform. | Verify your webhook URL in the Twilio Console includes the correct transcript endpoint for your environment. Contact [Support](https://support.kore.ai/) to confirm the correct URL. |
+| ASR timeout too short | ASR timeout is set too low (for example, 2000 ms). Calls end with `NO_INPUT` before transcription completes. | Increase `botNoInputTimeoutMS` to `8000` ms or higher. Verify `sttMinConfidence` is not set too high. |
+| ChannelOverrideTemplate override | Template-level timeout silently overrides the Experience Flow settings. | Set `botNoInputTimeoutMS` explicitly in the `ChannelOverrideTemplate` itself, not just in the Flow. |
+
+---
+
+## Quick Reference-All Parameters
+
+All parameters are set using `userSessionUtils.setCallControlParam('paramName', value)`.
+
+| Parameter | Vendor | Value Range | Purpose |
+|:---|:---|:---|:---|
+| `AzureSegmentationSilenceTimeoutMs` | Azure ASR | 800-2000 ms | End-of-speech silence. Increase to reduce utterance splits. |
+| `continuousASR` | Azure, Google | `true/false` | Enable for digit/number collection. |
+| `continuousASRTimeoutInMS` | Azure, Google | 1500-3000 ms | Wait after last input in continuous mode. |
+| `sttMinConfidence` | All vendors | 0.4-0.7 | Minimum confidence to accept an utterance. Lower = more permissive. |
+| `sttLanguage` | All vendors | BCP-47 code | ASR language (for example, `en-US`, `hi-IN`, `es-419`, `ja-JP`). |
+| `sttProvider` | All vendors | Provider string | ASR vendor selection (`microsoft`, `google`, `deepgram`). |
+| `botNoInputTimeoutMS` | All vendors | 5000-15000 ms | Wait before no-input event. Increase for non-English callers. |
+| `deepgramUtteranceEndMs` | Deepgram | 800-2000 ms | End-of-utterance silence. Pair with `deepgramEndpointing`. |
+| `deepgramEndpointing` | Deepgram | 300-600 ms | VAD sensitivity. 300 ms = responsive; 600 ms = patient. |
+| `deepgramNumerals` | Deepgram | `true/false` | Spoken numbers → digits (*five hundred* → `500`). |
+| `deepgramPunctuate` | Deepgram | `true/false` | Adds punctuation to transcripts. |
+| `deepgramKeyterms` | Deepgram | String array | Boost recognition of specific words. |
+| `ttsLanguage` | All TTS | BCP-47 code | TTS language. Must match `voiceName` language. |
+| `ttsProvider` | All TTS | Provider string | TTS vendor (`microsoft`, `google`, `custom:sarvamTTS`). |
+| `ttsLabel` | Google TTS | Label string | Must be set using a script, not UI only. |
+| `voiceName` | All TTS | Voice identifier | Must match `ttsLanguage`. |
+| `node.bargein` | All vendors | `true/false` | Enable/disable barge-in per node. |
+| `session.bargeInSensitivity` | All vendors | `low/medium/high` | Session-level barge-in sensitivity. |
+| `actionHookDelayInMs` | All vendors | 5000-10000 ms | Delay before filler music fires. |
+| `dtmfCollectMaxDigits` | All vendors | 1-20 | Max DTMF digits to collect (card numbers: `16`). |
+| `dtmfCollectInterDigitTimeoutMS` | All vendors | 3000-5000 ms | Wait between DTMF digits. |
+| `dtmfCollectTermDigit` | All vendors | `#` or `*` | Termination digit for DTMF collection. |
+| `listenDuringPrompt` | All vendors | `true/false` | Allow ASR to listen while TTS plays. |
+---
