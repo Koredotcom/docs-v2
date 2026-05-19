@@ -1,0 +1,221 @@
+---
+title: YouTube Connector
+sidebarTitle: YouTube Connector
+---
+
+<Badge icon="arrow-left" color="gray">[Back to Search AI connectors list](/ai-for-service/searchai/content-sources#supported-connectors)</Badge>
+
+YouTube is a video-sharing platform that allows users to upload, view, and manage video content organized into channels and playlists. You can configure Search AI to connect to YouTube to enable users to fetch query results using video metadata, descriptions, and transcripts from your YouTube channel.
+
+| Specification     | Details                                       |
+|-------------------|-----------------------------------------------|
+| Repository type   | Cloud                                         |
+| Supported content | Videos (metadata, descriptions, transcripts)  |
+| Content filtering | Yes (playlist selection and advanced filters) |
+| RACL support      | Yes (available; can be enabled)               |
+
+
+## Authorization Support
+
+Search AI supports **OAuth 2.0 (Google)** authentication for communicating with YouTube. Authentication requires a **Client ID** and **Client Secret** obtained from the Google Cloud Console.
+
+## Integration Steps
+
+To configure YouTube as a content source, complete the following steps.
+
+- Configure the YouTube connector in Search AI
+- Set up Permissions
+- Configure Content Scope
+- Schedule Sync
+
+## Step 1: Configure the YouTube Connector in Search AI
+
+### Prerequisites - Obtaining Google OAuth 2.0 Credentials
+
+Before configuring the connector, generate your OAuth 2.0 credentials from the Google Cloud Console:
+
+1. Go to [Google Cloud Console](https://console.cloud.google.com) and create or select a project.
+2. Enable the **YouTube Data API v3** under **APIs & Services > Library**.
+3. Configure the **OAuth consent screen** (set user type to Internal for org use).
+4. Add the required scopes:
+   - `https://www.googleapis.com/auth/youtube.readonly` - View your YouTube account
+   - `https://www.googleapis.com/auth/youtube.force-ssl` - Required for downloading captions/transcripts
+5. Create an **OAuth client ID** (Web application type) under **APIs & Services > Credentials**.
+6. Add the authorized redirect URI:
+   `https://<your-searchassist-domain>/searchassist/idproxy/callback`
+7. Copy the generated **Client ID** and **Client Secret**.
+
+### Configuring the Connector
+
+Go to **Connectors** under the Sources page and select **YouTube**. On the **Authentication** tab, enter the following details and click **Connect**.
+
+{/* AG: Bold or backticks field names */}
+
+| Field              | Description                                                                                   |
+|--------------------|-----------------------------------------------------------------------------------------------|
+| Name               | A unique name for this connector instance.                                                    |
+| Authorization type | OAuth 2.0 (pre-selected).                                                                     |
+| Grant type         | Authorization Code (pre-selected).                                                            |
+| Client ID          | Your Google OAuth 2.0 Client ID (for example: `123456789-abcdef.apps.googleusercontent.com`). |
+| Client Secret      | Your Google OAuth 2.0 Client Secret (for example: `GOCSPX-xxxxxxxxxxxxxxxxxxxxxx`).           |
+
+After entering credentials and clicking **Connect**, you will be redirected to Google's consent screen to authorize Search AI. Tokens are stored securely and refreshed automatically when they expire. Once successfully authenticated, the status shows as **Connected**.
+
+## Step 2: Set Up Permissions
+
+Go to the **Permissions** tab to configure access control for the ingested content. The following options are available.
+
+- **Same users as in the source system (Restricted Access)** - Applies RACL-based access control. When enabled, the connector uses the `permissions` field from the video data source. Since YouTube videos are inherently public (private videos are skipped), RACL effectively defaults to open access for all ingested content.
+- **Everyone (Public Access)** - All users are granted full access to the ingested content.
+
+<Note>RACL Sync scheduling isn't applicable for the YouTube connector since YouTube doesn't have a user/group permission model for public video content.</Note>
+
+## Step 3: Configure Content Scope
+
+Go to the **Content Scope** tab under Connector Setup to define which videos are ingested. Content scope is controlled via two levels of filtering.
+
+### Standard Filter (Playlist Selection)
+
+The standard filter controls **which playlists** to sync content from.
+
+| Option                        | Behavior                                                                                                                                      |
+|-------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------|
+| **Sync All** (default)        | Syncs videos from all playlists in your channel. If no playlists exist, falls back to the channel's "Uploads" playlist (all uploaded videos). |
+| **Select Specific Playlists** | Displays a playlist picker where you can search and select specific playlists. Only videos from the selected playlists are synced.            |
+| **Select All Playlists**      | Discovers and syncs all playlists from the channel (same as Sync All, but explicit).                                                          |
+
+The **Playlist Picker** supports paginated browsing, search/filter by name, and multi-select.
+
+### Advanced Filter (Pre-Filter)
+
+You use advanced filtering criteria to filter specific videos for ingestion. Only the ingested videos consume your API quota. The filtering happens before fetching the transcript, so that the filtered-out videos don't consume API quota.
+
+| Filter Parameter     | Description                                         | Example Value                          |
+|----------------------|-----------------------------------------------------|----------------------------------------|
+| `publishedAfter`     | Only include videos published after this date.      | `2024-01-01` or `2024-01-01T00:00:00Z` |
+| `publishedBefore`    | Only include videos published before this date.     | `2025-12-31`                           |
+| `minViewCount`       | Only include videos with at least this many views.  | `1000`                                 |
+| `minDurationMinutes` | Only include videos longer than this (in minutes).  | `5`                                    |
+| `maxDurationMinutes` | Only include videos shorter than this (in minutes). | `60`                                   |
+
+**Validation Rules:**
+
+- `publishedAfter` must be earlier than `publishedBefore`
+- `minDurationMinutes` must be less than `maxDurationMinutes`
+- View count and duration values must be non-negative
+- Dates accept ISO 8601 format (`YYYY-MM-DD` or `YYYY-MM-DDTHH:MM:SSZ`)
+
+**Example:** `Only sync tutorial videos published after January 2024 that are between 5 and 60 minutes long and have at least 500 views.`
+
+
+## Step 4: Sync Content
+
+After configuring the connector, go to **Schedule Sync** to initiate and manage content synchronization.
+
+- Use the **Sync** option for an immediate, on-demand sync.
+- Enable **Schedule Sync** to set up automated, recurring syncs.
+
+The Schedule Sync table displays a log of all sync activity with the following details.
+
+| Field        | Description                                            |
+|--------------|--------------------------------------------------------|
+| Sync Scope   | The scope of the sync (for example, Full Sync).        |
+| Sync Type    | Indicates whether the sync was On-Demand or Scheduled. |
+| Sync Status  | The result of the sync (for example, Successful).      |
+| Triggered By | The user who initiated the sync.                       |
+| Started On   | The date and time the sync started.                    |
+| Completed On | The date and time the sync completed.                  |
+
+### Sync Behavior
+
+| Aspect              | Behavior                                                                                                                                                                                         |
+|---------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **Full Sync**       | Fetches all videos from the configured playlists, processes them, and updates the index. A delete queue runs after ingestion to remove any previously indexed videos that are no longer present. |
+| **Scheduling**      | You can configure an automatic sync schedule to keep content up to date.                                                                                                                         |
+| **Shorts Handling** | YouTube Shorts (videos under 60 seconds) are excluded by default.                                                                                                                            |
+
+<Note>Only public videos are synced. Private and unlisted videos are automatically skipped.</Note>
+
+## Content Ingestion
+
+Once the sync is complete, go to the **Content** tab to review the ingested content. The tab displays the count of files that are Successful, Failed, and Skipped, along with the total number of Accessible Files.
+
+The system converts each synced video into a single Markdown document. It extracts and indexes the following key fields:
+
+- `title` - The video title.
+- `content` - The full transcript organized by chapters (if available) with timestamps, plus the first 2,000 characters of the video description.
+- `doc_id` - A unique identifier for the ingested video document, derived from the YouTube video ID.
+- `doc_source_type` - Identifies the source as a YouTube video.
+- `doc_created_on` / `doc_updated_on` - Timestamp of video publishing and last update.
+- `url` - Direct link to the video on YouTube (`https://www.youtube.com/watch?v=<videoId>`).
+- `tags` - Video tags extracted from YouTube metadata.
+- `type` - Content type classification (for example: `tutorial (85%)`).
+
+### Content Format
+
+Each ingested video document follows this structured layout:
+
+```markdown
+# <Video Title>
+
+**Channel:** <Channel Name> | **Published:** <Date> | **Duration:** <HH:MM:SS>
+**Video:** https://www.youtube.com/watch?v=<videoId>
+**Tags:** tag1, tag2, tag3
+**Type:** tutorial (85%)
+
+## Description
+
+<First 2,000 characters of the video description>
+
+## Chapter Title 1 (0:00)
+
+[00:00] First transcript line...
+[00:05] Second transcript line...
+[00:12] Third transcript line...
+
+## Chapter Title 2 (3:45)
+
+[03:45] Transcript continues here...
+[03:50] More transcript text...
+```
+
+### Transcript (Captions) Behavior
+
+The connector fetches video captions or transcripts using the YouTube Captions API. Transcript selection follows this priority order:
+
+| Priority | Transcript Type                             |
+|----------|---------------------------------------------|
+| 1st      | Manual (human-uploaded) captions in English |
+| 2nd      | Auto-generated captions in English          |
+| 3rd      | Manual captions in any language             |
+| 4th      | Auto-generated captions in any language     |
+
+- If a video has no captions at all, it's still synced - the video metadata and description are indexed without a transcript.
+- Chapter markers in the video description (for example: `0:00 Introduction`, `5:30 Setup`) are automatically detected and used to organize the transcript into sections.
+
+## API Quota
+
+The YouTube Data API v3 has a daily quota limit of **10,000 units** per Google Cloud project. The connector is quota-efficient.
+
+| Operation                             | Quota Cost            |
+|---------------------------------------|-----------------------|
+| List channels, playlists, videos    | 1 unit per request    |
+| List captions for a video             | 50 units per request  |
+| Download a caption track (transcript) | 200 units per request |
+
+The connector reserves a buffer of 1,000 units and stops processing if the quota budget (9,000 units) is reached. If the quota is over mid-sync, the job completes with a `limit exceeded` status and the system retains the processed videos.
+
+<Tip>If you have a large channel (hundreds of videos with transcripts), consider requesting a quota increase from Google through the [Cloud Console Quotas page](https://console.cloud.google.com/iam-admin/quotas).</Tip>
+
+## RACL Support
+
+Search AI provides access control support for content ingested from YouTube. The `sys_racl` field is used to enforce access control for the ingested content.
+
+| Feature      | Status                     |
+|--------------|----------------------------|
+| RACL Support | Available (can be enabled) |
+| RACL Sync    | Not applicable             |
+
+- When RACL is **disabled** (default), all synced content is publicly available to all users searching the index (permission set to `*`).
+- When RACL is **enabled**, the connector uses the `permissions` field from the video data source. Since YouTube videos are inherently public (private videos are skipped), RACL effectively defaults to open access (`['*']`) for all ingested content.
+- RACL Sync scheduling isn't applicable for the YouTube connector since YouTube doesn't have a user/group permission model for public video content.
