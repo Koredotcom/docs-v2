@@ -1,0 +1,194 @@
+---
+title: "Escalation to Human Agent from an Agent"
+sidebarTitle: "Escalation to Human Agent"
+---
+
+Use `ESCALATE` when an agent cannot safely or confidently continue execution and requires human intervention. Escalation transfers the conversation to a human operator or handling system, ensuring continuity while preventing incorrect or risky automated responses.
+
+Unlike agent-to-agent routing (`HANDOFF` / `DELEGATE`), escalation is specifically designed for human involvement and should not be modeled as a handoff to a human agent.
+
+## When to Use Escalation
+
+Typical scenarios include:
+
+- User frustration
+- Customer complaints
+- Policy validation requirements
+- System failures
+- Repeated routing failures
+- High-risk or high-value operations
+
+## How Escalation Works
+
+1. Agent evaluates escalation triggers.
+2. When a trigger condition is met:
+   - A new task is created in the Inbox for a human agent to review and proceed.
+   - Agent execution is suspended.
+3. A human agent reviews and completes the task.
+4. After completion:
+   - The system executes configured post-completion actions.
+   - The workflow may resume, transfer, or end.
+
+## DSL Configuration
+
+```yaml
+ESCALATE:
+  triggers:
+    - WHEN: condition
+      REASON: "reason for escalation"
+      PRIORITY: medium
+      TAGS: [tag1, tag2]
+
+  context_for_human:
+    - variable1
+    - variable2
+
+  routing:
+    queue: "queue_name"
+    skill_tags: [skill1, skill2]
+    priority_boost: 1
+
+  on_human_complete:
+    - IF human.resolved == true: COMPLETE
+```
+
+## Trigger Properties
+
+| Property | Type     | Required | Description                                                   |
+| -------- | -------- | -------- | ------------------------------------------------------------- |
+| WHEN     | string   | Yes      | Condition that triggers escalation.                           |
+| REASON   | string   | Yes      | Human-readable reason for the escalation.                     |
+| PRIORITY | string   | Yes      | Priority level: low, medium, high, or critical.               |
+| TAGS     | string[] | No       | Tags for routing and categorization in the human agent queue. |
+
+## Priority Levels
+
+| Level    | Use case                                                           |
+| -------- | ------------------------------------------------------------------ |
+| low      | Non-urgent requests (e.g., general feedback).                      |
+| medium   | Standard requests (e.g., user requests human assistance).          |
+| high     | Urgent issues (e.g., repeated failures, outages).                  |
+| critical | Immediate attention required (e.g., compliance violations, fraud). |
+
+## Context for Human
+
+The `context_for_human` block defines what data is sent to the human agent. This ensures the human agent has full context without asking the user to repeat information.
+
+```yaml
+context_for_human:
+  - customer_id
+  - customer_name
+  - amount
+  - conversation_history
+```
+
+### Structured Context
+
+```yaml
+context_for_human:
+  - NAME: case_summary
+    TEMPLATE: "Customer {{customer_name}} requesting wire of {{amount}} {{currency}}"
+    INCLUDE: [fraud_score, sanctions_match_score]
+```
+
+## Routing Configuration
+
+Controls how escalation is routed to the human system.
+
+| Property       | Type     | Required | Description                              |
+| -------------- | -------- | -------- | ---------------------------------------- |
+| queue          | string   | No       | Target queue in the human agent system.  |
+| skill_tags     | string[] | No       | Required skills for the human agent.     |
+| priority_boost | number   | No       | Additional priority applied to the task. |
+
+## Post-Completion Behavior
+
+Defines what happens after the human agent completes the task.
+
+```yaml
+on_human_complete:
+  - IF human.resolved == true: COMPLETE
+  - IF human.needs_agent == true: HANDOFF to specified_agent
+  - IF human.needs_followup == true: CONTINUE
+```
+
+| Action   | Behavior                  |
+| -------- | ------------------------- |
+| COMPLETE | End the workflow          |
+| HANDOFF  | Transfer back to an agent |
+| CONTINUE | Resume the current agent  |
+
+## Examples
+
+### Escalation from Supervisor
+
+```yaml
+SUPERVISOR: Customer_Service_Hub
+VERSION: "2.0"
+GOAL: "Route customers to the right specialist"
+
+PERSONA: |
+  Professional customer service coordinator. Routes requests
+  efficiently and preserves context across agent transfers.
+
+ESCALATE:
+  triggers:
+    - WHEN: routing_failures >= 3
+      REASON: "Multiple routing failures"
+      PRIORITY: high
+
+    - WHEN: user.requests_human == true
+      REASON: "Customer requesting human specialist"
+      PRIORITY: medium
+
+  context_for_human:
+    - user_id
+    - conversation_summary
+    - routing_failures
+    - conversation_history
+
+  routing:
+    queue: "customer_support_l2"
+    skill_tags: [support, escalation]
+    priority_boost: 1
+
+  on_human_complete:
+    - IF human.resolved == true: COMPLETE
+    - IF human.needs_agent == true: HANDOFF to Support_Agent
+```
+
+### Escalation via ON_ERROR
+
+`THEN: ESCALATE` triggers the escalation flow after retry attempts are exhausted.
+
+```yaml
+ON_ERROR:
+  tool_error:
+    RESPOND: "I encountered an issue. Let me connect you with a specialist."
+    RETRY: 1
+    THEN: ESCALATE
+
+  routing_failure:
+    RESPOND: "I am having trouble routing your request."
+    RETRY: 1
+    THEN: HANDOFF Live_Agent_Transfer
+```
+
+## Escalation vs Handoff
+
+| Aspect       | ESCALATE                       | HANDOFF                   |
+| ------------ | ------------------------------ | ------------------------- |
+| Target       | Human operator                 | Another agent             |
+| Visibility   | User interacts with human      | User interacts with agent |
+| Use case     | Failure / escalation scenarios | Multi-agent routing       |
+| Control flow | Suspends agent execution       | Transfers execution       |
+
+## Troubleshooting
+
+| Issue                                     | Resolution                                                                                                                                           |
+| ----------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Escalation never triggers                 | Verify the `WHEN` condition references variables that are actually set during the conversation. Test with explicit values.                           |
+| Human agent lacks context                 | Include `conversation_history` in `context_for_human`. List all relevant session variables — not just IDs but also collected data and current state. |
+| Conversation stalls after human completes | Define `on_human_complete` handlers for all possible human outcomes (`resolved`, `needs_agent`, `needs_followup`).                                   |
+
+
