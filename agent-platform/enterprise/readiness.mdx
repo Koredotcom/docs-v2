@@ -1,0 +1,468 @@
+---
+title: 'Enterprise Readiness'
+section: 'enterprise'
+order: 1
+description: 'Enterprise readiness assessment — security, compliance, scalability, and operational maturity.'
+---
+
+> **Last Updated**: 2026-03-16
+> **Implementation Score**: 87/100 — Core features implemented. Validation and production deployment TBD.
+
+**Status Legend**:
+
+- **Implementation**: Code complete, unit/integration tested in dev
+- **Validation**: Load testing, security audit, penetration testing — **TBD**
+- **Deployment**: Production deployment, configuration, monitoring setup — **TBD**
+
+---
+
+## Executive Summary
+
+| Category                          | Implementation | Validation | Deployment | Score |
+| --------------------------------- | -------------- | ---------- | ---------- | ----- |
+| Authentication & Authorization    | Implemented    | TBD        | TBD        | 9/10  |
+| Multi-Tenancy & Isolation         | Implemented    | TBD        | TBD        | 10/10 |
+| Data Security & Encryption        | Implemented    | TBD        | TBD        | 10/10 |
+| GDPR & Compliance                 | Implemented    | TBD        | TBD        | 9/10  |
+| Audit & Logging                   | Implemented    | TBD        | TBD        | 9/10  |
+| Observability & Monitoring        | Implemented    | TBD        | TBD        | 8/10  |
+| Scalability                       | Implemented    | TBD        | TBD        | 10/10 |
+| Deployment & Infrastructure       | Implemented    | TBD        | TBD        | 9/10  |
+| Agent Development & Collaboration | Implemented    | TBD        | TBD        | 9/10  |
+| Testing & Quality                 | Implemented    | TBD        | TBD        | 8/10  |
+| API & Integration                 | Implemented    | TBD        | TBD        | 9/10  |
+| Backup & Archival                 | Partial        | TBD        | TBD        | 5/10  |
+| Performance                       | Implemented    | TBD        | TBD        | 9/10  |
+| Disaster Recovery                 | Gap            | TBD        | TBD        | 3/10  |
+| Rate Limiting & Throttling        | Implemented    | TBD        | TBD        | 10/10 |
+
+---
+
+## 1. Authentication & Authorization
+
+**Implementation: Complete** | **Validation: TBD** | **Deployment: TBD** (9/10)
+
+### Implemented
+
+| Feature                 | Implementation                                                                                                                   | Files                                                                                      |
+| ----------------------- | -------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------ |
+| Unified Auth Middleware | Central dispatcher: User JWT, SDK Token, API Key                                                                                 | `packages/shared-auth/src/middleware/unified-auth.ts`                                      |
+| RBAC System             | Granular `object:operation` permissions                                                                                          | `apps/runtime/src/middleware/rbac.ts`                                                      |
+| Permission Guards       | `requirePermission()`, `requireAllPermissions()`, `requireAnyPermission()`, `requireProjectScope()`, `requireEnvironmentScope()` | `packages/shared-auth/src/middleware/permission-guard.ts`                                  |
+| Project-Level RBAC      | Built-in `admin`, `developer`, `tester`, `viewer` project roles plus `custom` role resolution                                    | `packages/shared-auth/src/rbac/role-permissions.ts`, `apps/runtime/src/middleware/rbac.ts` |
+| IP Allowlisting         | CIDR + plain IP matching for admin routes                                                                                        | `packages/shared-auth/src/middleware/`                                                     |
+| MFA Framework           | JWT payload detection for `mfa_pending`                                                                                          | `packages/shared-auth/src/middleware/unified-auth.ts`                                      |
+| Enterprise Auth Schemes | SAML 2.0, Kerberos, WS-Security, Hawk, Digest (with tests)                                                                       | `packages/auth-enterprise/src/`                                                            |
+| OIDC/OAuth2             | OAuth2 client adapter, OIDC support                                                                                              | `packages/auth-enterprise/src/`, `packages/agent-transfer/src/adapters/auth/oidc.ts`       |
+| API Key Management      | Scoped API keys (`abl_*` prefix), project + environment binding                                                                  | `packages/shared-auth/src/middleware/unified-auth.ts`                                      |
+
+### Gaps
+
+| Gap                                   | Impact                                        |
+| ------------------------------------- | --------------------------------------------- |
+| MFA full implementation               | Medium — framework exists, TOTP/SMS not wired |
+| Session token revocation API          | Low — tokens are short-lived                  |
+| Certificate pinning for external auth | Low                                           |
+
+---
+
+## 2. Multi-Tenancy & Isolation
+
+**Implementation: Complete** | **Validation: TBD** | **Deployment: TBD** (10/10)
+
+### Implemented
+
+| Feature                    | Implementation                                               | Files                                                            |
+| -------------------------- | ------------------------------------------------------------ | ---------------------------------------------------------------- |
+| Automatic Tenant Isolation | AsyncLocalStorage-based tenantId injection on all DB queries | `packages/database/src/mongo/plugins/tenant-isolation.plugin.ts` |
+| Tenant Context Propagation | Request-scoped tenant context bridge                         | `packages/shared-auth/src/middleware/tenant-context.ts`          |
+| Cross-Tenant Guard         | Returns 404 (not 403) to prevent tenant enumeration          | All repo functions                                               |
+| Tenant-Scoped Resources    | All models include tenantId indexing                         | `packages/database/src/models/`                                  |
+| Tenant Configuration       | Per-tenant KMS, crawl policy, LLM policy, member roles       | `packages/database/src/models/`                                  |
+| SuperAdmin Context         | Explicit bypass for platform admins only                     | `packages/database/src/mongo/`                                   |
+| Per-Tenant Rate Limits     | Plan-aware limits (FREE, TEAM, BUSINESS, ENTERPRISE)         | `apps/runtime/src/middleware/rate-limiter.ts`                    |
+
+### Gaps
+
+None identified.
+
+---
+
+## 3. Data Security & Encryption
+
+**Implementation: Complete** | **Validation: TBD** | **Deployment: TBD** (10/10)
+
+### Implemented
+
+| Feature                        | Implementation                                                        | Files                                                              |
+| ------------------------------ | --------------------------------------------------------------------- | ------------------------------------------------------------------ |
+| AES-256-GCM Encryption         | Field-level encryption at rest with per-document keys                 | `packages/database/src/mongo/plugins/encryption.plugin.ts`         |
+| Tenant Secret Encryption       | DEK envelope with provider-tracked KEK wrapping                       | `packages/database/src/mongo/plugins/encryption.plugin.ts`         |
+| KMS Provider Pool              | AWS KMS, GCP Cloud KMS, Azure Key Vault, External KMS, Local fallback | `packages/database/src/kms/kms-provider-pool.ts`                   |
+| Master Key Management          | 64-char hex (32-byte) with validation                                 | `packages/database/src/mongo/`                                     |
+| ClickHouse Encryption          | Analytics data encrypted before storage                               | `packages/database/src/clickhouse-encryption-interceptor.ts`       |
+| Session Field Encryption       | Encrypted transfer session state                                      | `packages/agent-transfer/src/security/session-field-encryption.ts` |
+| Webhook Signature Verification | HMAC-based authenticity                                               | `packages/shared-kernel/src/security/webhook-signature.ts`         |
+| PII Detection                  | Built-in PII detector for guardrails                                  | `packages/compiler/src/security/pii-detector.ts`                   |
+| Payload Size Validation        | Enforced at API boundaries                                            | Middleware layer                                                   |
+
+### Gaps
+
+| Gap                               | Impact                         |
+| --------------------------------- | ------------------------------ |
+| Automated key rotation scheduling | Medium — manual rotation works |
+
+---
+
+## 4. GDPR & Compliance
+
+**Implementation: Complete** | **Validation: TBD** | **Deployment: TBD** (9/10)
+
+### Implemented
+
+| Feature                 | Implementation                                                            | Files                                                                   |
+| ----------------------- | ------------------------------------------------------------------------- | ----------------------------------------------------------------------- |
+| Right to Erasure        | Cascade deletion (Messages → Sessions → Agents → Projects)                | `packages/database/src/cascade/cascade-delete.ts`                       |
+| GDPR Service            | Delegation to EventLifecycle for session/tenant deletion                  | `packages/eventstore/src/retention/event-gdpr-service.ts`               |
+| Audit Log Anonymization | Audit logs NEVER deleted; users anonymized (userId, email, IP, userAgent) | `packages/database/src/cascade/`                                        |
+| PII Audit Trail         | Dedicated audit log for PII operations                                    | `packages/database/src/models/pii-audit-log.model.ts`                   |
+| Retention Policies      | TTL-based event cleanup                                                   | `packages/eventstore/src/retention/event-retention-service.ts`          |
+| Per-Tenant Retention    | Configurable message retention per plan                                   | `apps/runtime/src/services/tenant-config.ts`                            |
+| Data Export             | Project-level import/export                                               | `packages/project-io/`                                                  |
+| Trace Scrubbing         | Removes sensitive data from execution traces                              | `packages/compiler/src/platform/constructs/executors/trace-scrubber.ts` |
+| Message Scrubbing       | GDPR right-to-erasure for messages by contact/session                     | `apps/runtime/src/services/stores/mongo-message-store.ts`               |
+
+### Gaps
+
+| Gap                                         | Impact                                              |
+| ------------------------------------------- | --------------------------------------------------- |
+| Data Subject Access Request (DSAR) endpoint | Medium — export exists but no self-service DSAR API |
+| Consent management model                    | Low — platform is B2B, not direct consumer          |
+| Data processing agreements (DPA) template   | Low — documentation only                            |
+
+---
+
+## 5. Audit & Logging
+
+**Implementation: Complete** | **Validation: TBD** | **Deployment: TBD** (9/10)
+
+### Implemented
+
+| Feature            | Implementation                                      | Files                                                       |
+| ------------------ | --------------------------------------------------- | ----------------------------------------------------------- |
+| Audit Trail Plugin | Auto-tracks create/update/delete with actor context | `packages/database/src/mongo/plugins/audit-trail.plugin.ts` |
+| Actor Context      | userId, email, IP, userAgent via AsyncLocalStorage  | `packages/database/src/mongo/plugins/audit-trail.plugin.ts` |
+| Trace Events       | Structured schema for execution tracing             | `packages/observatory/src/schema/trace-events.ts`           |
+| Centralized Logger | `createLogger()` factory with pino                  | `packages/shared-observability/src/logger.ts`               |
+| Observatory UI     | Real-time trace inspection in Studio                | `apps/studio/src/components/observatory/`                   |
+| PII Audit Log      | Dedicated tracking for PII-sensitive operations     | `packages/database/src/models/pii-audit-log.model.ts`       |
+| Admin Audit        | Admin dashboard access and action logging           | `apps/admin/src/lib/audit-logger.ts`                        |
+
+### Gaps
+
+| Gap                             | Impact                              |
+| ------------------------------- | ----------------------------------- |
+| SIEM/syslog integration         | Medium — needed for SOC2 compliance |
+| Log retention policy automation | Low — manual cleanup works          |
+
+---
+
+## 6. Observability & Monitoring
+
+**Implementation: Complete** | **Validation: TBD** | **Deployment: TBD** (8/10)
+
+**Stack**: Coroot (current) + Groundcover (production add-on). eBPF-based, zero-instrumentation.
+
+### Implemented
+
+| Feature                  | Implementation                                                       | Files                                                           |
+| ------------------------ | -------------------------------------------------------------------- | --------------------------------------------------------------- |
+| Health Checks            | Per-service `/health` endpoints                                      | All apps `routes/health.ts`                                     |
+| Circuit Breaker          | Redis-backed distributed CB (CLOSED → OPEN → HALF_OPEN)              | `packages/circuit-breaker/src/redis-circuit-breaker.ts`         |
+| Circuit Breaker Registry | Multi-breaker orchestration per tenant + connector                   | `packages/circuit-breaker/src/registry.ts`                      |
+| Internal TraceStore      | Session-level execution tracing                                      | `packages/compiler/src/platform/stores/trace-store.ts`          |
+| Observatory Dashboard    | Real-time span tree, event timeline, flow visualization              | `apps/studio/src/components/observatory/`                       |
+| Request Instrumentation  | Middleware for request/response metrics                              | `packages/shared-observability/src/middleware/observability.ts` |
+| Structured Logging       | pino-based JSON logging with correlation                             | `packages/shared-observability/src/logger.ts`                   |
+| Coroot                   | eBPF-based service map, latency, error rate, dependency health       | Infrastructure (Kubernetes sidecar)                             |
+| Groundcover (production) | Full eBPF APM — distributed tracing, metrics, logs, network analysis | Infrastructure (DaemonSet, zero-code)                           |
+
+### Production Observability Stack
+
+| Layer                       | Tool                              | Coverage                                     |
+| --------------------------- | --------------------------------- | -------------------------------------------- |
+| Service Maps & Dependencies | Coroot                            | Auto-discovered via eBPF                     |
+| Distributed Tracing         | Groundcover                       | eBPF-captured, no SDK instrumentation needed |
+| Metrics & Alerting          | Coroot + Groundcover              | Latency, error rate, throughput per service  |
+| Log Aggregation             | Groundcover                       | Correlated with traces and metrics           |
+| Network Analysis            | Groundcover                       | DNS, TCP retransmits, connection issues      |
+| Application-Level Traces    | Internal TraceStore + Observatory | Agent execution spans, LLM calls, tool calls |
+
+### Gaps
+
+| Gap                                    | Impact                                          |
+| -------------------------------------- | ----------------------------------------------- |
+| Custom Grafana dashboards for ABL KPIs | Low — Coroot/Groundcover dashboards cover infra |
+| OTEL SDK instrumentation (optional)    | Low — eBPF covers network/service level already |
+| Agent-level cost/token alerting rules  | Medium — data exists in TraceStore, no alerts   |
+
+---
+
+## 7. Scalability
+
+**Implementation: Complete** | **Validation: TBD** | **Deployment: TBD** (10/10)
+
+### Implemented
+
+| Feature                      | Implementation                                        | Files                                                   |
+| ---------------------------- | ----------------------------------------------------- | ------------------------------------------------------- |
+| Redis State Management       | Session, cache, pub/sub, distributed locks            | `packages/redis/src/`                                   |
+| BullMQ Job Queues            | Async processing for heavy workloads                  | `packages/redis/src/bullmq.ts`                          |
+| Distributed Locks            | Redis SET NX PX with retry and auto-release           | `packages/shared-observability/src/distributed-lock.ts` |
+| Stateless Architecture       | All shared state in Redis/MongoDB, no pod-local truth | Architecture principle                                  |
+| Connection Pooling           | MongoDB (Mongoose), Redis (ioredis)                   | Config layer                                            |
+| Horizontal Scaling           | No sticky sessions required                           | Architecture principle                                  |
+| Sliding Window Rate Limiting | Per-tenant with Redis + in-memory fallback            | `apps/runtime/src/middleware/rate-limiter.ts`           |
+| Kafka Integration            | Event streaming for SearchAI pipeline                 | `apps/search-ai/src/`                                   |
+| ClickHouse Analytics         | Columnar store for high-volume trace/metrics data     | `packages/database/src/clickhouse.ts`                   |
+
+### Gaps
+
+None identified.
+
+---
+
+## 8. Deployment & Infrastructure
+
+**Implementation: Complete** | **Validation: TBD** | **Deployment: TBD** (9/10)
+
+### Implemented
+
+| Feature                 | Implementation                                         | Files                                    |
+| ----------------------- | ------------------------------------------------------ | ---------------------------------------- |
+| Docker Compose          | Complete dev stack (MongoDB, Redis, ClickHouse, Kafka) | `docker-compose.yml`                     |
+| Production Dockerfiles  | Multi-stage builds for all apps                        | `apps/*/Dockerfile`                      |
+| Harness CI/CD           | Build pipeline with tests                              | `.harness/pipelines/ci-build.yaml`       |
+| Release Management      | CalVer versioning, `apx release` CLI                   | `scripts/release.ts`, `apx`              |
+| Three-Repo Architecture | Source, Deploy (Helm/ArgoCD), Infra (Terraform)        | Architectural design                     |
+| K8s Load Testing        | K6 operator manifests                                  | `deploy/k8s/benchmarks/k6-operator.yaml` |
+| Environment Validation  | Runtime config schema validation                       | `packages/config/src/schemas/`           |
+| PM2 Process Management  | Local multi-service orchestration                      | `ecosystem.config.js`                    |
+
+### Gaps
+
+| Gap                                            | Impact                                |
+| ---------------------------------------------- | ------------------------------------- |
+| Harness release pipeline (release/\* branches) | Medium — manual release process works |
+| Blue/green or canary deployments               | Low — not needed for initial launch   |
+
+---
+
+## 9. Agent Development & Collaboration
+
+**Implementation: Complete** | **Validation: TBD** | **Deployment: TBD** (9/10)
+
+### Implemented
+
+| Feature              | Implementation                                               | Files                                                                                      |
+| -------------------- | ------------------------------------------------------------ | ------------------------------------------------------------------------------------------ |
+| Project-Level RBAC   | `admin`, `developer`, `tester`, `viewer`, and `custom` roles | `packages/shared-auth/src/rbac/role-permissions.ts`, `apps/runtime/src/middleware/rbac.ts` |
+| Agent Versioning     | Version tracking in project structure                        | `packages/compiler/src/`                                                                   |
+| Import/Export        | V2 layered import with cross-reference resolution            | `packages/project-io/`                                                                     |
+| Git Integration      | Webhook sync, Bitbucket/GitHub/GitLab providers              | `packages/project-io/src/git/`                                                             |
+| Workspace Management | Tenant-level project organization                            | `packages/database/src/models/`                                                            |
+| ABL DSL              | Domain-specific language for agent definitions               | `packages/core/`, `packages/compiler/`                                                     |
+| Studio IDE           | Visual editor with Monaco, observatory, architect            | `apps/studio/`                                                                             |
+| Template System      | Agent templates, evaluation rubrics                          | `packages/database/src/templates/`                                                         |
+| Collaboration Roles  | TenantMember, ProjectMember with role-based access           | `packages/shared-auth/`                                                                    |
+| MCP Server Support   | External tool integration via Model Context Protocol         | `packages/shared/src/services/mcp-server-registry.ts`                                      |
+
+### Gaps
+
+| Gap                             | Impact                                            |
+| ------------------------------- | ------------------------------------------------- |
+| Real-time collaborative editing | Low — single editor workflow sufficient initially |
+| Change notifications/presence   | Low — no concurrent editing currently             |
+| Agent marketplace/sharing       | Low — future feature                              |
+
+---
+
+## 10. Testing & Quality
+
+**Implementation: Complete** | **Validation: TBD** | **Deployment: TBD** (8/10)
+
+### Implemented
+
+| Feature             | Implementation                                 | Files                       |
+| ------------------- | ---------------------------------------------- | --------------------------- |
+| Unit Test Framework | Vitest across 44+ packages                     | `*/vitest.config.ts`        |
+| Fast Test Tier      | `test:fast` for CI (threads/forks pool)        | `*/vitest.unit.config.ts`   |
+| Integration Tests   | Multi-package integration suites               | `*/__tests__/`              |
+| E2E Tests           | Agent transfer, compiler, runtime flows        | `*/__tests__/e2e/`          |
+| Load Testing        | K6 operator for Kubernetes                     | `deploy/k8s/benchmarks/`    |
+| Pre-Commit Hooks    | Prettier, TypeScript type-checking, gitleaks   | `.husky/`, `.claude/hooks/` |
+| Pre-Push Tests      | Affected package testing via turbo             | `.husky/pre-push`           |
+| Commitlint          | Enforced `[ABLP-123] type(scope): description` | `commitlint.config.ts`      |
+
+### Gaps
+
+| Gap                                  | Impact                                     |
+| ------------------------------------ | ------------------------------------------ |
+| Minimum coverage targets per package | Medium — no enforced thresholds            |
+| Browser/visual regression testing    | Low — Playwright present but not in CI     |
+| Chaos engineering/fault injection    | Low — circuit breakers tested in isolation |
+
+---
+
+## 11. API & Integration
+
+**Implementation: Complete** | **Validation: TBD** | **Deployment: TBD** (9/10)
+
+### Implemented
+
+| Feature               | Implementation                                           | Files                                                 |
+| --------------------- | -------------------------------------------------------- | ----------------------------------------------------- |
+| OpenAPI Documentation | Auto-generated from route handlers                       | `packages/openapi/`                                   |
+| Webhook System        | Event forwarding with delivery tracking and retry        | `packages/eventstore/src/webhook/`                    |
+| A2A Protocol          | Agent-to-agent communication with auth + SSRF protection | `packages/a2a/`                                       |
+| MCP Support           | Model Context Protocol for external tools                | `packages/shared/src/services/mcp-server-registry.ts` |
+| Rate Limiting         | Per-tenant, per-operation with plan awareness            | `apps/runtime/src/middleware/rate-limiter.ts`         |
+| CORS                  | Configurable origins                                     | `packages/config/src/schemas/cors.schema.ts`          |
+| SDK                   | Web SDK for agent embedding                              | `packages/web-sdk/`                                   |
+| Connector SDK         | Extensible connector framework (25+ connectors)          | `packages/connectors/`                                |
+| Channel System        | WhatsApp, Twilio SMS, Voice, HTTP async, email, Slack    | `apps/runtime/src/routes/channel-webhooks.ts`         |
+
+### Gaps
+
+| Gap                    | Impact                         |
+| ---------------------- | ------------------------------ |
+| GraphQL API            | Low — REST is sufficient       |
+| API versioning (v1/v2) | Low — single version currently |
+
+---
+
+## 12. Backup & Archival
+
+**Implementation: Partial** | **Validation: TBD** | **Deployment: TBD** (5/10)
+
+### Implemented
+
+| Feature              | Implementation                              | Files                                           |
+| -------------------- | ------------------------------------------- | ----------------------------------------------- |
+| Archive Framework    | Config schema and manifest model            | `packages/config/src/schemas/archive.schema.ts` |
+| TTL Indexes          | Automatic cleanup on session collections    | MongoDB TTL indexes                             |
+| Retention Service    | EventStore TTL-based cleanup                | `packages/eventstore/src/retention/`            |
+| Data Export          | Project-level export for manual backups     | `packages/project-io/`                          |
+| Per-Tenant Retention | Configurable message retention by plan tier | `apps/runtime/src/services/tenant-config.ts`    |
+
+### Gaps
+
+| Gap                           | Impact                                       |
+| ----------------------------- | -------------------------------------------- |
+| S3/cloud storage backend      | **HIGH** — no offsite backup                 |
+| Automated backup schedule     | **HIGH** — manual only                       |
+| Incremental backup            | Medium                                       |
+| Backup integrity validation   |
+| Point-in-time recovery (PITR) | Medium — MongoDB supports it, not configured |
+| Cross-region replication      | Medium                                       |
+
+---
+
+## 13. Performance
+
+**Implementation: Complete** | **Validation: TBD** | **Deployment: TBD** (9/10)
+
+### Implemented
+
+| Feature                     | Implementation                            | Files                                                                           |
+| --------------------------- | ----------------------------------------- | ------------------------------------------------------------------------------- |
+| Async Gzip Compression      | Compress before storing                   | `packages/pipeline-engine/src/pipeline/services/eval/eval-compression.ts`       |
+| Tenant Key Cache            | LRU with TTL eviction                     | `packages/shared/src/encryption/cache/tenant-key-cache.ts`                      |
+| Conversation Sliding Window | Lightweight message window reads          | `packages/pipeline-engine/src/pipeline/services/read-message-window.service.ts` |
+| Batch Operations            | BullMQ for async job batching             | `packages/redis/src/bullmq.ts`                                                  |
+| Database Indexing           | Compound indexes on tenantId + timestamps | All models                                                                      |
+| MongoDB Compression         | Snappy/Zstd compressors                   | Connection config                                                               |
+| Payload Size Validation     | Enforced at API boundaries                | Middleware                                                                      |
+| Connection Pooling          | Mongoose + ioredis pools                  | Config layer                                                                    |
+
+### Gaps
+
+| Gap                                     | Impact                          |
+| --------------------------------------- | ------------------------------- |
+| Query plan monitoring/slow query alerts | Low — slow query logging exists |
+| CDN for static assets                   | Low — Next.js handles           |
+
+---
+
+## 14. Disaster Recovery
+
+**Implementation: Partial** | **Validation: TBD** | **Deployment: TBD** (3/10)
+
+### Implemented
+
+| Feature             | Implementation                                  | Files                                                   |
+| ------------------- | ----------------------------------------------- | ------------------------------------------------------- |
+| MongoDB Replica Set | Single-node replica set (dev) with keyfile auth | `docker-compose.yml`                                    |
+| Redis Persistence   | Volume-backed data persistence                  | `docker-compose.yml`                                    |
+| Distributed Locks   | Prevents duplicate execution during failover    | `packages/shared-observability/src/distributed-lock.ts` |
+| Event Sourcing      | EventStore as recovery source of truth          | `packages/eventstore/src/`                              |
+
+### Gaps
+
+| Gap                               | Impact                                                |
+| --------------------------------- | ----------------------------------------------------- |
+| Multi-region MongoDB replication  | **CRITICAL** — single point of failure                |
+| Automated failover scripts        | **HIGH** — manual intervention required               |
+| Scheduled database backups        | **HIGH** — no automated backup                        |
+| RPO/RTO documentation             | **HIGH** — not defined                                |
+| Disaster recovery runbook         | **HIGH** — no runbook                                 |
+| Cross-AZ Redis (Sentinel/Cluster) |
+| ClickHouse replication            | Medium — ReplicatedMergeTree ready but not configured |
+
+---
+
+## 15. Rate Limiting & Throttling
+
+**Implementation: Complete** | **Validation: TBD** | **Deployment: TBD** (10/10)
+
+### Implemented
+
+| Feature                   | Implementation                                                | Files                                                                      |
+| ------------------------- | ------------------------------------------------------------- | -------------------------------------------------------------------------- |
+| Per-Tenant Sliding Window | Requests/min, tokens/min, concurrent sessions, tool calls/min | `apps/runtime/src/middleware/rate-limiter.ts`                              |
+| Plan-Aware Limits         | FREE/TEAM/BUSINESS/ENTERPRISE tiers                           | `apps/runtime/src/services/tenant-config.ts`                               |
+| Hybrid Rate Limiter       | Redis primary + in-memory fallback                            | `apps/runtime/src/middleware/rate-limiter.ts`                              |
+| SearchAI Rate Limiting    | Fixed-window with Redis fallback (120 req/min)                | `apps/search-ai/src/middleware/rate-limit.ts`                              |
+| Connector Rate Limiting   | External API backoff strategies                               | `packages/connectors/base/src/client/rate-limiter.ts`                      |
+| Eval Rate Limiting        | Evaluation-specific throttling                                | `packages/pipeline-engine/src/pipeline/services/eval/eval-rate-limiter.ts` |
+| Agent Transfer Throttle   | Session-level rate limiting                                   | `packages/agent-transfer/src/security/rate-limiter.ts`                     |
+| Circuit Breaker           | Distributed CB as fallback when limits exceeded               | `packages/circuit-breaker/src/`                                            |
+
+### Gaps
+
+None identified.
+
+---
+
+## Enterprise Readiness Backlog
+
+| #   | Priority | Category          | Item                                   | Description                                                                                                                                                                                                                                                                                                                               |
+| --- | -------- | ----------------- | -------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1   | P0       | Backup            | Automated database backups             | MongoDB, Redis, and ClickHouse have no scheduled backup automation. A single disk failure or accidental deletion would result in permanent data loss. Needs cron-based `mongodump`/`redis-cli BGSAVE` with S3 upload and retention policy.                                                                                                |
+| 2   | P0       | Disaster Recovery | RPO/RTO documentation + DR runbook     | Recovery Point Objective and Recovery Time Objective are not defined. Enterprise audits (SOC2, ISO 27001) require documented recovery targets and a step-by-step runbook for failover scenarios.                                                                                                                                          |
+| 3   | P0       | Disaster Recovery | Multi-region database replication      | MongoDB runs as a single-node replica set. A region outage takes down the entire platform with no automatic failover. Needs Atlas or self-managed multi-AZ replica set with automatic primary election.                                                                                                                                   |
+| 4   | P0       | Audit             | SIEM integration (syslog/Splunk)       | Audit logs and structured pino output are only stored locally. SOC2 compliance requires centralized log aggregation with tamper-proof retention. Needs syslog exporter or Splunk/Elastic forwarder from pino transport.                                                                                                                   |
+| 5   | P1       | Backup            | S3/cloud storage for backups           | The archive framework exists (`packages/config/src/schemas/archive.schema.ts`) but no S3 backend is wired. Backups must be stored offsite in a different availability zone. Needs AWS S3 or GCS client integration in the archive store.                                                                                                  |
+| 6   | P1       | Observability     | Agent-level cost and token alerting    | LLM cost and token usage data is captured in TraceStore and ClickHouse but no alerting rules exist. A runaway agent could burn through API credits without anyone being notified. Needs threshold-based alerts on per-tenant token spend with PagerDuty/Slack integration.                                                                |
+| 7   | P1       | Auth              | MFA full implementation                | The MFA framework exists in the JWT payload (`mfa_pending` type detection) but TOTP and SMS verification are not wired. Enterprise customers expect MFA enforcement for admin and developer accounts. Needs TOTP generation, QR code enrollment, and verification middleware.                                                             |
+| 8   | P1       | GDPR              | DSAR self-service endpoint             | Right-to-erasure (deletion) is fully implemented, but Data Subject Access Requests (export of all personal data) require manual intervention. GDPR Article 15 mandates a machine-readable export. Needs a `/api/v1/gdpr/dsar` endpoint that bundles all user data into a downloadable archive.                                            |
+| 9   | P1       | Security          | KMS key rotation automation            | Key rotation works manually via the KMS provider pool, but there is no scheduled automatic rotation. NIST 800-57 recommends annual rotation at minimum. Needs a cron job or BullMQ scheduled task that rotates tenant CEKs and re-encrypts affected documents.                                                                            |
+| 10  | P1       | Performance       | K6 load testing benchmarks             | K6 operator manifests exist (`deploy/k8s/benchmarks/k6-operator.yaml`) but no benchmark suite has been executed. Baseline performance numbers (p50/p95/p99 latency, max throughput, concurrent session limits) are unknown. Needs test scenarios for chat API, WebSocket connections, and SearchAI queries run against a staging cluster. |
+| 11  | P2       | Observability     | Custom Grafana dashboards for ABL KPIs | Coroot and Groundcover provide infrastructure-level dashboards but no agent-specific views. Teams need dashboards showing agent success rates, handoff frequency, average conversation length, and LLM cost per agent. Needs Grafana dashboards backed by ClickHouse queries on TraceStore data.                                          |
+| 12  | P2       | Testing           | Chaos engineering and fault injection  | Circuit breakers and distributed locks are unit-tested but never validated under real failure conditions. Needs Chaos Mesh or Litmus experiments for pod kills, network partitions, Redis failover, and MongoDB primary stepdown.                                                                                                         |
+| 13  | P2       | Deployment        | Blue/green or canary deployments       | Releases currently deploy all pods simultaneously. A bad release affects all users instantly with no rollback window. Needs ArgoCD progressive delivery with Argo Rollouts or Flagger for canary traffic shifting.                                                                                                                        |
+| 14  | P2       | Disaster Recovery | Cross-AZ Redis (Sentinel/Cluster)      | Redis runs as a single instance. A Redis failure disables rate limiting, distributed locks, BullMQ queues, and circuit breaker state. Needs Redis Sentinel for automatic failover or Redis Cluster for horizontal sharding.                                                                                                               |
+| 15  | P2       | Disaster Recovery | ClickHouse replication                 | ClickHouse uses MergeTree engine. The `ReplicatedMergeTree` engine is ready in the schema (`packages/pipeline-engine/src/pipeline/schemas/init-eval-tables.ts`) but not enabled. Analytics data would be lost in a disk failure. Needs ZooKeeper/ClickHouse Keeper and ReplicatedMergeTree activation.                                    |
+| 16  | P3       | Collaboration     | Real-time collaborative editing        | Only one user can edit an agent at a time. Concurrent edits result in last-write-wins. Enterprise teams with multiple developers need CRDT-based or OT-based real-time collaboration in the Studio editor, similar to Google Docs or Figma.                                                                                               |
+| 17  | P3       | API               | GraphQL API                            | The platform exposes REST APIs only. Some enterprise integrations and frontend use cases benefit from GraphQL's flexibility for partial field selection and batched queries. Needs a GraphQL gateway layer over the existing REST endpoints.                                                                                              |
+| 18  | P3       | Observability     | OTEL SDK instrumentation               | Groundcover captures network-level traces via eBPF, but application-internal spans (e.g., LLM prompt construction, tool parameter resolution) are only in the internal TraceStore. Optional OTEL SDK instrumentation would bridge internal spans into the Groundcover/Jaeger timeline for end-to-end correlation.                         |
