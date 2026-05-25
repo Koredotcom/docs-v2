@@ -1,0 +1,307 @@
+---
+title: Safety and Guardrails
+sidebarTitle: Safety & Guardrails
+---
+
+Configure enforcement layers, guardrail policies, providers, and input/output safety rules to protect agents from misuse and ensure compliance.
+
+The platform uses three enforcement layers to control agent behavior and protect against misuse, sensitive data exposure, and policy violations.
+
+| Enforcement layer | Description | Example |
+|-------------------|-------------|---------|
+| [Guardrails](#input-guardrails) | Safety and quality checks applied to agent input and output content. | Blocking abusive language or redacting sensitive information from responses. |
+| [Limitations](/agent-platform/create-agents#define-identity-and-persona) | Reasoning-based guidance enforced through the model. Defines how the agent should behave, what it should avoid, and the scope it should operate within. | Instructing an agent to avoid financial advice or remain within a support domain. |
+| [Constraints](/agent-platform/concepts#constraints-and-guardrails) | Runtime business-rule validations that prevent execution when required conditions aren't met. | Requiring a customer ID before allowing an order lookup or payment action. |
+
+## Constraints vs. Guardrails
+
+Constraints and guardrails operate at different layers of agent execution:
+
+| Feature | Constraints | Guardrails |
+|---------|------------|------------|
+| Purpose | Enforce business rules. | Enforce safety and content policies. |
+| Scope | Agent logic and tool execution. | LLM input and output content. |
+| Evaluation | Runtime data and conditions. | Message and response content. |
+| Typical usage | Eligibility checks, required inputs. | Content moderation, PII detection. |
+
+---
+
+## Runtime Flow
+
+Guardrails evaluate agent inputs and outputs against configurable safety categories. Depending on configuration, they can block content, warn users, redact sensitive information, escalate interactions, request rephrasing, or automatically sanitize responses.
+
+```text
+┌────────────┐
+│ User Input │
+└──────┬─────┘
+       ↓
+┌────────────────────┐
+│ Input Guardrails   │
+│ • PII detection    │
+│ • Prompt injection │
+│ • Topic checks     │
+└──────┬─────────────┘
+       ↓
+┌────────────────────┐
+│ Agent / Model      │
+│ Processing         │
+└──────┬─────────────┘
+       ↓
+┌────────────────────┐
+│ Output Guardrails  │
+│ • Toxicity checks  │
+│ • PII redaction    │
+│ • Content filtering│
+└──────┬─────────────┘
+       ↓
+┌────────────────────┐
+│ Final Response     │
+│ Returned to User   │
+└────────────────────┘
+```
+
+```mermaid
+%%{init: {'theme': 'base', 'themeVariables': {'background': 'transparent', 'primaryColor': '#e8f0fe', 'primaryTextColor': '#1a1a1a', 'primaryBorderColor': '#4a6fa5', 'lineColor': '#4a6fa5', 'secondaryColor': 'transparent', 'tertiaryColor': 'transparent', 'clusterBkg': 'transparent', 'clusterBorder': '#4a6fa5', 'titleColor': '#1a1a1a', 'clusterLabelBackground': 'transparent', 'edgeLabelBackground': '#e8f0fe'}}}%%
+flowchart TD
+    A[User Input] --> B[Input Guardrails]
+    B --> |PII detection\nPrompt injection\nTopic checks| C[Agent / Model Processing]
+    C --> D[Output Guardrails]
+    D --> |Toxicity checks\nPII redaction\nContent filtering| E[Final Response Returned to User]
+```
+
+---
+
+## Guardrail Configuration Levels
+
+Guardrails can be configured at two levels:
+
+| Scope | Purpose | Where managed | Typical usage |
+|-------|---------|---------------|---------------|
+| Project guardrails | Centralized governance and reusable safety policies across agents. | **Govern > Guardrails** | Enterprise-wide safety enforcement. |
+| Agent guardrails | Agent-specific runtime safety checks. | **Agent > Guardrails** | Localized rules for individual agents. |
+
+Project-level policies apply in addition to agent-specific guardrails.
+
+**Use project guardrails when you want:**
+- Consistent governance across multiple agents.
+- Shared moderation providers.
+- Organization-wide safety controls.
+- Centralized runtime management.
+
+**Use agent guardrails when:**
+- Safety rules are specific to one agent.
+- Runtime behavior must be customized locally.
+- Shared project-level governance isn't required.
+
+---
+
+## Guardrail Policies
+
+Policies are reusable governance containers that define runtime safety behavior across agents and projects. Each policy contains one or more rules. Each rule defines what to evaluate, where to evaluate it, which provider to use, and what action to take when triggered.
+
+Rules can support input and output evaluation, streaming responses, pattern matching, model-based moderation, and LLM-based classification.
+
+Go to **Govern > Guardrails > Policies**.
+
+<Note>Only one policy can be active per project at a time. Activating a new policy automatically deactivates the previously active one.</Note>
+
+### Policy Scopes
+
+**Project-level scope** — Apply the policy to all agents in the project:
+
+```abl
+{
+  "scopeType": "project"
+}
+```
+
+**Agent-level scope** — Apply the policy only to a specific agent:
+
+```abl
+{
+  "scopeType": "agent",
+  "agentDefId": "agent-definition-id"
+}
+```
+
+### Create a Guardrail Policy
+
+1. Go to **Govern > Guardrails**.
+2. On the **Policies** tab, click **Create policy**.
+3. Enter a policy name and description.
+4. Select whether the policy applies to all agents in the project or only to a specific agent.
+5. Configure the required rules and runtime settings.
+6. Click **Save**.
+
+#### Rules
+
+| Field | Description |
+|-------|-------------|
+| Applies To | Where the rule is evaluated: Input, Output, or Both. |
+| Action | What happens when the rule is triggered: Block, Warn, Redact, Escalate, Fix, Reask, or Filter. |
+| Provider | The provider used for guardrail evaluation. |
+| Category | The safety or content category evaluated by the rule. |
+| Severity Threshold | The threshold level used to trigger the configured action. |
+| Action Message | The message shown or logged when the rule is triggered. |
+
+#### Runtime Settings
+
+| Setting | Description |
+|---------|-------------|
+| Fail Mode | Controls whether execution continues or is blocked if guardrail evaluation fails. **Fail-open** allows execution to continue if evaluation fails or times out. **Fail-closed** blocks execution when evaluation can't complete. Use fail-closed for high-security or compliance-sensitive applications. |
+| Local Timeout | How long the platform waits for local guardrail evaluation. |
+| Model Timeout | How long the platform waits for model-based provider evaluation. |
+| LLM Timeout | How long the platform waits for LLM-based evaluation. |
+| Streaming Evaluation | Enables guardrail evaluation while responses are streamed. |
+| Chunk Interval | Whether streamed responses are evaluated by sentence, token, or chunk size. |
+| Early Termination | Stops evaluation on the first guardrail trigger. |
+
+### Custom Guardrail Policies
+
+Custom guardrail policies provide centralized, organization-wide safety enforcement across agents and projects. They support reusable rules, provider-based moderation, streaming evaluation, budget controls, and scoped runtime enforcement.
+
+Custom policies support:
+- Project-level and agent-level scopes.
+- Streaming guardrails.
+- Budget controls.
+- Constitution principles.
+- External moderation providers.
+
+When configured budgets are exceeded, guardrails fall back to pattern-based checks.
+
+For API payloads, policy schemas, and advanced configuration examples, see the Guardrail Policy API Reference in the *ABL Reference Guide*.
+
+---
+
+## Guardrail Providers
+
+Providers are the evaluation engines used to classify or inspect content during runtime. They can detect unsafe content, identify PII, classify toxicity, evaluate prompt injection attempts, and perform model-based moderation.
+
+**Supported provider types:**
+- OpenAI Moderation
+- Azure AI Content Safety
+- Anthropic
+- Lakera Guard
+- Custom HTTP providers
+- Custom webhook providers
+- Built-in PII providers
+
+### Configure a Provider
+
+1. Go to **Govern > Guardrails**.
+2. Open the **Providers** tab and click **Add provider**.
+3. Configure the following fields and save.
+
+| Field | Description |
+|-------|-------------|
+| Adapter Type | The integration type: OpenAI Moderation, Custom HTTP, Custom Webhook, or Custom LLM. |
+| Hosting | The provider hosting model: Cloud API, Self-Hosted, or Managed Service. |
+| Endpoint URL | The provider API endpoint URL. |
+| Model | The model used for guardrail evaluation. |
+| Authentication | Enable and select an authentication profile for the provider connection. Raw API keys aren't accepted — use an Auth Profile for providers that require credentials. |
+| Default Category | The default moderation or safety category evaluated by the provider. |
+| Default Threshold | The default score threshold that triggers enforcement actions. |
+| Circuit Breaker | Configure failure handling: **Max Failures** sets how many consecutive failures activate the circuit breaker; **Reset Timeout** sets how long the platform waits before retrying a disabled provider. |
+| Retry Configuration | Configure retry behavior: **Max Retries** sets how many retry attempts are made; **Backoff Strategy** configures the delay between failed attempts. |
+
+### Provider Health
+
+The platform periodically checks provider health. When a provider becomes unhealthy, its circuit breaker activates and stops sending requests. After the reset timeout, it allows a test request through.
+
+When a provider's circuit breaker is open, the platform follows the configured fail mode:
+- **Fail-open** — Content is delivered without guardrail evaluation. Violations may go undetected.
+- **Fail-closed** — Content is blocked until the provider recovers. Safer, but may interrupt service.
+
+---
+
+## Input Guardrails
+
+Input guardrails evaluate user messages before they reach the LLM. Use them to detect unsafe content, identify prompt injection attempts, protect sensitive information, and enforce topic or policy restrictions.
+
+Use `kind: input` to evaluate user messages before they reach the LLM:
+
+```abl
+GUARDRAILS:
+  profanity_filter:
+    kind: input
+    action: block
+```
+
+Input guardrails support:
+- Pattern-based detection.
+- Provider-based moderation.
+- LLM-based classification.
+- Severity-based actions.
+- Runtime priority ordering.
+
+For advanced syntax and additional examples, see the Guardrails section in the *ABL Reference Guide*.
+
+---
+
+## Output Guardrails
+
+Output guardrails evaluate generated responses before they're returned to the user. Use them to prevent unsafe responses, redact sensitive information, apply moderation checks, and inspect streaming output during generation.
+
+Use `kind: output` to evaluate generated responses:
+
+```abl
+GUARDRAILS:
+  pii_output_prevention:
+    kind: output
+    action: block
+```
+
+Use `kind: both` to apply the same rule to both input and output:
+
+```abl
+GUARDRAILS:
+  phone_number_check:
+    kind: both
+    action: warn
+```
+
+Enable streaming evaluation for responses while content is still being generated:
+
+```abl
+GUARDRAILS:
+  streaming_safety:
+    kind: output
+    streaming: true
+```
+
+Output guardrails support:
+- PII detection and redaction.
+- Toxicity scoring.
+- Streaming response evaluation.
+- Bidirectional guardrails.
+- Automatic response cleanup and fix strategies.
+
+For advanced syntax and additional examples, see the Guardrails section in the *ABL Reference Guide*.
+
+---
+
+## DSL and UI Mapping
+
+The platform maintains a one-to-one mapping between the UI configuration and the DSL/ABL definition. This lets you:
+- Configure guardrails visually.
+- Manage guardrails as code.
+- Version and compare configuration changes.
+- Switch between UI and DSL-based editing workflows.
+
+When you add a guardrail rule in the UI, the platform generates the corresponding `GUARDRAILS:` block in the DSL/ABL. Updating the `GUARDRAILS:` block directly in the DSL/ABL updates the same rule in the UI.
+
+For detailed guardrail syntax, runtime semantics, and advanced ABL examples, see the Guardrails section in the *ABL Reference Guide*.
+
+---
+
+## Best Practices
+
+- Use project guardrails for centralized governance; use agent guardrails for localized runtime behavior.
+- Start with `warn` before enabling `block` to understand impact before enforcement.
+- Test regex patterns carefully to reduce false positives.
+- Enable streaming guardrails for high-risk applications.
+- Use fail-closed behavior for compliance-sensitive workloads.
+- Separate business constraints from safety guardrails.
+- Use providers with caching and budget controls for large-scale deployments.
+
+---

@@ -4,16 +4,19 @@ Official documentation for the Kore.ai Platform — build intelligent AI solutio
 
 ## Products
 
-- **[Agent Platform](https://koreai.mintlify.app/agent-platform/index)** — Build intelligent, autonomous AI agents
-- **[AI for Work](https://koreai.mintlify.app/ai-for-work/index)** — Enterprise productivity platform
-- **[AI for Service](https://koreai.mintlify.app/ai-for-service/index)** — Customer service AI solutions
-- **[AI for Process](https://koreai.mintlify.app/ai-for-process/index)** — Process automation with AI
+The new **Agent Platform** is the next-generation Kore.ai platform to design, deploy, and operate intelligent agent systems. The platform unifies conversational AI and agentic AI under a single programming model, so a single agent definition can combine deterministic workflows with autonomous reasoning. 
 
-## Prerequisites and Development
+Other business solutions of Kore.ai:
+
+- **[AI for Service](https://docs.kore.ai/ai-for-service)** — Customer service AI solutions.
+- **[AI for Work](https://docs.kore.ai/ai-for-work)** — Enterprise productivity platform.
+- **[AI for Process](https://docs.kore.ai/ai-for-process)** — Process automation with AI.
+
+## Contribute to this Documentation
 
 Prerequisites to author and contribute are:
 
-- [Node.js](https://nodejs.org) v20.17.0 or later (LTS version recommended)
+- [Node.js](https://nodejs.org) v20.17.0 or later (LTS version recommended).
 - Get write access to this repo.
 - Install Mintlify CLI `npm i -g mintlify`.
 
@@ -23,12 +26,12 @@ To author and preview, follow these steps:
 1. Work only in your [product-specific branch](https://github.com/Koredotcom/docs-v2/branches) and your product-specific folder.
 1. Create or update the .mdx files or other assets.
 1. To preview locally, create a local build using `mint dev` or `mint dev --port xxxx` in the cloned repo's root folder.
-1. To preview on stage, create [a pull requests](https://github.com/Koredotcom/docs-v2/pulls) and view the deployment link in it.
+1. To preview on stage, create [a pull requests](https://github.com/Koredotcom/docs-v2/pulls) targeting `main` branch and view the preview or deployment link in it.
 1. To publish your doc updates, request a review of your PR and wait for it to be merged. Do NOT merge on your own.
 
 ## Folder structure and common files
 
-```txt 
+```text
 agent-platform/				# Agent Platform docs
 ai-for-process/				# AI for Process docs
 ai-for-service/				# AI for Service fka XO11 docs

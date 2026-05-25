@@ -1,0 +1,459 @@
+---
+noindex: true
+title: Sessions API
+---
+
+<Badge icon="arrow-left" color="gray">[Back to API List](/agent-platform/v1/apis)</Badge>
+
+Endpoints for managing conversational sessions with your Agentic App.
+
+
+## Create a Session
+
+Establishes a new conversation session for a specific user with the Agentic App. 
+
+*Note: This is the starting point for any new interaction.* 
+
+
+| Field | Value |
+|:------ |:------ |
+| Endpoint | `https://domain/api/v2/apps/{{appId}}/environments/{{envName}}/sessions` |
+| Content-type | application/json |
+| Authorization Header | x-api-key: `API-KEY>` |  
+|API Permissions| Session Create |
+
+
+
+### Path Parameters
+
+
+| Fields | Description |
+|:------ |:------ |
+| AppID | Unique Identifier for the app. |
+| EnvName | Name of the environment to be used for the agent. |
+
+
+
+### Request Parameters
+
+
+| Fields | Description |
+|:------ |:------ |
+| sessionIdentity | This is an array of objects with a `type` and `value` used to identify or create sessions and manage user session mappings. The three supported identifier types are: The objects can be of three types: <ol> <li>sessionIdentity(highest priority)</li> <li>sessionReference</li> <li>userReference(lowest priority)</li> </ol>  Refer [Session Resolution Process](/agent-platform/v1/apis#session-resolution-process) for a detailed description. |
+| source(optional) | <p>Identifies the system from which the API request is initiated. This field enables better analytics, monitoring, and observability by indicating what triggered the agentic app execution. This field is available as a filter in the session logs.</p> <p>If not provided, the Platform automatically assigns the default value.</p> <p>Recommended Values:</p> <ul> <li>AP: This is the default value. Used when the sourcefield isn't explicitly passed.</li> <li>AIS-AA: AI for Service - Agent Assist</li> <li>AIS-QM: AI for Service - Quality Module</li> <li>AIS-CC: AI for Service - Contact Center</li> <li>AP-PG: Agent Platform - Playground</li> <li>AP-ES: Agent Platform - Evaluation Studio</li> <li>AIW: AI for Work</li> <li>AIP: AI for Process</li> <li>MP: Agent Platform - Marketplace</li> </ul> |
+
+
+
+#### Sample Request
+
+
+```bash
+curl --location 'https://domain/api/v2/apps/aa-6b8e45ca-xxxx-xxxx-a151-8225d0ffe592/environments/env/sessions' \
+--header 'Content-Type: application/json' \
+--header 'x-api-key: YOUR_API_KEY_HERE' \
+--data '{
+  "sessionIdentity": [
+    {
+      "type": "userReference",
+      "value": "usr_1a2b3c4d5e"
+    }
+  ]
+}'
+```
+
+
+
+### Response
+
+Returns details of the newly created session, which are required for managing and continuing conversations. The response also includes document upload configuration and allowed file types, enabling clients to validate uploads in advance and prevent unnecessary failures. The fields in the response include:
+
+
+
+* **session** - Metadata about the created session.
+    * **sessionId** - A unique identifier for the session.
+    * **Status** - Indicates the current state of the session. Possible values: `idle`, `busy`, `error`.
+    * **sessionReference** - A unique reference string associated with the session for easier cross-request tracking.
+    * **userReference** - Unique reference string for the user associated with the session.
+    * **userId** - Internal system-generated identifier for the user.
+    * **createdAt** - Timestamp indicating when the session was created.
+* **allowedMimeTypes** - List of supported file formats for uploads.
+* **fileUploadConfig** - File Upload rules configured for the app. These rules apply to both types of documents - uploaded for context extraction and for Metadata generation. The following fields are available in this field. 
+    * **maxFileCount** - Max number of files that can be uploaded. 
+    * **maxFileSize** - Max size of each file that can be uploaded. The value is in MBs.
+    * **maxTokens** - Specifies the maximum allowed combined size of all uploaded files, measured in tokens. If the total token size exceeds this limit, only files that comply with the threshold are uploaded; files exceeding it will be rejected.
+
+
+#### Sample Response 
+
+```json
+{
+  "session": {
+    "sessionId": "s-409fc8fc-bf36-443d-a46f-f4d0770e45e6",
+    "sessionReference": null,
+    "userReference": "usr_1a2b3c4d5e",
+    "status": "started",
+    "userId": "u-7bd72bac-52e8-5933-815e-cc6b7a18066e",
+    "createdAt": "2026-04-15T10:40:16.332Z",
+    "source": "AP"
+  },
+  "events": [
+    {
+      "type": "Welcome_Event",
+      "content": {
+        "messageToUser": "Welcome message"
+      },
+      "params": {
+        "reason": "User has initiated a new session"
+      }
+    }
+  ],
+  "output": [
+    {
+      "type": "text",
+      "content": "Welcome message"
+    }
+  ],
+  "allowedMimeTypes": [
+    "pdf", "docx", "doc", "txt", "json", "csv", "htm", "mle",
+    "ppt", "xls", "gif", "png", "jpg", "jpeg", "html", "rtf",
+    "bmp", "xlsx", "pptx", "wav", "mp4", "m4a", "mp3", "webm",
+    "mpga", "mpeg", "webp"
+  ],
+  "fileUploadConfig": {
+    "maxFileCount": 2,
+    "maxFileSize": 5,
+    "maxTokens": 10000,
+    "isAttachmentsEnabled": true
+  }
+}
+```
+**Note**: When a new session is initiated, and the application requires permissions for OAuth authorization from the user, the API response includes a special event of type `IDP_Redirect`. This event provides a URL that the user must visit to complete the authorization process. If the required authorization isn't completed, the associated tools will return an error upon invocation.
+
+```json
+{
+  "messageId": "msg-260f4d3c-5b8c-4056-af97-11317fc28c8d",
+  "events": [
+    {
+      "type": "IDP_Redirect",
+      "content": {
+        "auth_profiles": [
+          {
+            "url": "https://{host}/r/396c63515671xxxxxxxxxx7955",
+            "idpName": "Google",
+            "isAuthorized": false,
+            "sso_type": "oauth2"
+          }
+        ]
+      }
+    }
+  ],
+  "sessionInfo": {
+    "status": "idle",
+    "userReference": "s-b8987503-696b-4111-a006-49c0cbcf0fb9",
+    "sessionReference": "s-b8987503-696b-4111-a006-49c0cbcf0fb9",
+    "userId": "u-f5e5e830-70d4-53d6-8034-86bfa765c04a",
+    "sessionId": "s-54f40bda-1505-4f9e-b38e-88d39ea36d58",
+    "runId": "r-41ad20e0-6295-4f0e-9b04-e51875356107",
+    "appId": "aa-c31cccce-d0bf-4db5-a177-7ff45941c2d8",
+    "attachments": []
+  },
+  "allowedMimeTypes": [ "pdf","docx","doc","txt","json","csv","htm","mle","ppt","xls","gif","png","jpg","jpeg","html","rtf","bmp","xlsx","pptx"],
+  "fileUploadConfig": {
+    "enabled": true,
+    "maxFileCount": 2,
+    "maxFileSize": 10,
+    "maxTokens": 100000
+  }
+}
+```
+ 
+## List Sessions
+
+Lists sessions for the selected app and environment. Supports optional filters such as session ID, user reference, and date range.
+
+
+| Field | Value |
+|:------ |:------ |
+| Endpoint | POST `https://your-domain/api/public/apps/:appId/sessions/list` |
+| Content-Type  | application/json |
+| Authorization Header | x-api-key: `<API-KEY>` |
+|API Permissions| Session Details |
+
+
+### Path Parameters
+
+| Fields | Description |
+|:------ |:------ |
+| AppID | Unique Identifier for the app. |
+
+### Query Parameters
+
+| Field   | Type   | Description                                                                 | Mandatory |
+|---------|--------|-----------------------------------------------------------------------------|-----------|
+| offset  | number | Number of records to skip before starting to return results. Used for pagination. Default is 0. | No        |
+| limit   | number | Maximum number of records to return in a single response. Accepted range: 1–100. Default is 20. | No        |
+
+### Request Parameters
+
+All fields are optional. Send `{}` to use defaults.
+
+| Field               | Type   | Description                                                                                                                   |
+|---------------------|--------|-------------------------------------------------------------------------------------------------------------------------------|
+| env_name            | string | Environment name (mandatory). Case-insensitive.                                                 |
+| start_time          | string | Start of the date range for session retrieval. Must be in ISO 8601 format (for example: `2026-04-01T00:00:00.000Z`). Defaults to 24 hours before `end_time`. |
+| end_time            | string | End of the date range for session retrieval. Must be in ISO 8601 format. Defaults to the current time.                        |
+| user_reference_id   | string | Filter sessions by user reference.                                                                                             |
+| session_reference_id| string | Filter sessions by custom session reference.                                                                                   |
+
+#### Sample Request
+
+
+```
+curl -X POST 'https://your-domain.com/api/public/apps/:appId/sessions/list' \
+--header 'Content-Type: application/json' \
+--header 'x-api-key: YOUR_API_KEY_HERE' \
+--data '{
+  "env_name": "draft",
+  "start_time": "2026-04-01T00:00:00.000Z",
+  "end_time": "2026-04-14T23:59:59.999Z",
+  "user_reference_id": "user@example.com"
+}'
+```
+
+### Response Parameters
+
+| Field                        | Type   | Description                                                                                                   |
+|------------------------------|--------|---------------------------------------------------------------------------------------------------------------|
+| `sessions`                     | array  | Array of session objects matching the filters.                                                                |
+| `sessions[].session_id `       | string | Unique session identifier (starts with `s-`).                                                                 |
+| `sessions[].session_reference_id` | string | Custom session reference ID. Empty string if not set.                                                          |
+| `sessions[].user_reference_id` | string | User identifier associated with the session.                                                                  |
+| `sessions[].env_name`          | string | Environment name where the session was created.                                                               |
+| `sessions[].start_time`        | string | Session start timestamp in ISO 8601 format.                                                                   |
+| `sessions[].end_time`          | string | null | Session end timestamp in ISO 8601 format. `null` if the session is still active.                               |
+| `sessions[].last_activity_at`  | string | Last activity timestamp in ISO 8601 format.                                                                   |
+| `sessions[].source`            | string | null | Session source identifier (for example, `AP` for API).                                                         |
+| `total_count`                  | number | Total number of sessions matching the filters. Use for pagination.                                            |
+
+#### Sample Response
+
+
+```
+{
+  "sessions": [
+    {
+      "session_id": "s-836c9453-795f-40a4-a744-1a421d02760c",
+      "session_reference_id": "custom-ref-123",
+      "user_reference_id": "user@example.com",
+      "env_name": "draft",
+      "start_time": "2026-04-13T14:30:00.000Z",
+      "end_time": "2026-04-13T15:00:00.000Z",
+      "last_activity_at": "2026-04-13T14:55:00.000Z",
+      "source": "AP"
+    }
+  ],
+  "total_count": 1
+}
+```
+## Get Session details
+
+
+| Field | Value |
+|:------ |:------ |
+| Endpoint | GET `https://domain/api/public/apps/{{appId}}/sessions?session_id={{sessionId}}` |
+| Content-Type  | application/json |
+| Authorization Header | x-api-key: `<API-KEY>` |
+|API Permissions| Session Details |
+
+
+### Path Parameters
+
+| Fields | Description |
+|:------ |:------ |
+| AppID | Unique Identifier for the app. |
+
+### Query Parameters
+
+| Field   | Mandatory   | Description                                                                 |
+|---------|--------|-----------------------------------------------------------------------------|
+| sessionId  | Yes | Unique identifier of the session to retrieve. Example: s-xxxxxxxxx-50a3-4107-9b8a-337e2dad517f  |
+| include   | No | Additional data to include in the response. Accepted values: `traces` and `observations`. Pass multiple values by repeating the parameter: `&include=traces&include=observations`. | 
+
+### Sample Request
+
+```curl
+curl --location --request GET 'https://domain/api/public/apps/aa-1abb7216-efa8-xxxx-b8af-04450bb09d7c/sessions?session_id=s-9b7a1c53-xxxx-xxxx-9b8a-337e2dad517f&include=traces&include=observations' \
+--header 'apikey: kg-52093952-8024-xxxx-xxxx-bf221f6faa0a.028dea04-c107-4ce2-8185-bfd485a553cb' \
+--header 'Content-Type: application/x-www-form-urlencoded' \
+--data-urlencode 'session_id=s-9b7a1c53-50a3-4107-9b8a-337e2dad517f' \
+--data-urlencode 'include=traces' \
+--data-urlencode 'include=observations'
+
+```
+
+### Sample Response
+
+```json
+{
+  // The sample content is truncated for brevity.
+
+  "sessions": [
+    {
+      "session_id": "s-9b7a1c53-50a3-4107-9b8a-337e2dad517f",
+      "created_at": "2026-04-24T08:59:29.342Z",
+      "source": "AP",
+      "environment": "draft",
+      "user_id": "u-fc9e1bda-22a7-52a6-9519-fd12b4a3cc5e",
+      "session_reference": "",
+      "app_version_id": "av-401fb41c-09d9-48bf-bf42-00f44d48339d",
+      "latency": 31.471,
+      "traces": [
+        {
+          "trace_id": "r-38bf674b-9b65-47db-8fc5-962f093d3268",
+          "timestamp": null,
+          "environment": "draft",
+          "user_id": "u-fc9e1bda-22a7-52a6-9519-fd12b4a3cc5e",
+          "input": null,
+          "output": null,
+          "latency": null,
+          "app_version_id": "av-401fb41c-09d9-48bf-bf42-00f44d48339d",
+          "env_id": "env-302004cb-32b2-4b14-b291-c90802315e52",
+          "source": "AP",
+          "observations": [
+            {
+              "observation_id": "bcd6f4b7-560a-4c22-ae97-6802e2c7c456",
+              "type": "GENERATION",
+              "name": "AzureChatOpenAI",
+              "start_time": "2026-04-24T08:59:53.588Z",
+              "end_time": "2026-04-24T08:59:59.639Z",
+              "latency": 6.051,
+              "input": ["<system_prompt>", "hi"],
+              "output": "",
+              "model": "GPT-4o",
+              "provider": "Azure Open AI",
+              "token_usage": {
+                "input": 3406,
+                "output": 255,
+                "total": 3661
+              },
+              "parent_observation_id": "c2eb4afa-f44a-405a-9929-7dfc7e6a4b87"
+            },
+            {
+              "observation_id": "87513f14-1e8b-4fa3-92c1-1bb24e4c07dc",
+              "type": "SPAN",
+              "name": "Welcome Event",
+              "start_time": "2026-04-24T08:59:42.149Z",
+              "end_time": "2026-04-24T08:59:42.149Z",
+              "latency": null,
+              "input": {
+                "customMessage": "Hi How can I help you with the contracts information"
+              },
+              "output": null,
+              "model": null,
+              "provider": null,
+              "token_usage": {
+                "input": 0,
+                "output": 0,
+                "total": 0
+              },
+              "parent_observation_id": null
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "pagination": {
+    "page": 0,
+    "limit": 20,
+    "total": 1
+  }
+}
+
+```
+
+## Terminate Session
+
+Terminates a given session. 
+
+<Note>
+- Deletes the associated session-specific memory data.
+- Invokes [End of Conversation Event](/agent-platform/v1/agents/agentic-apps/settings/events#end-of-conversation-event).
+</Note>
+
+| Field | Value |
+|:------ |:------ |
+| Endpoint | `https://domain/api/v2/apps/{{appId}}/environments/{{envName}}/sessions/terminate` |
+| Content-type | application/json |
+| Authorization Header | x-api-key: `<API-KEY>` |
+|API Permissions| Session Terminate |
+
+
+
+
+### Path Parameters
+
+
+| Fields | Description |
+|:------ |:------ |
+| AppID | Unique Identifier for the app. |
+| EnvName | The name of the environment in which the application will run. |
+
+
+
+### Request Parameters
+
+
+| Fields | Description | Mandatory |
+|:------ |:------ |:------ |
+| sessionIdentity | Provide the **sessionReference** or **sessionId** to uniquely identify the session to be terminated. Do not use userReference. | Yes |
+
+
+
+#### Sample Request
+
+
+```json
+{
+   "sessionIdentity": [
+    {
+      "type": "string",  // ["sessionReference", "sessionId"]
+      "value": "s-1232123"
+    }
+  ]
+}
+```
+
+
+
+#### Sample Response
+
+```json
+{
+  "status": "terminated",
+  "userReference": "string",
+  "sessionReference": "string",
+  "userId": "string",
+  "sessionId": "string",
+  "appId": "string",
+  "attachments": [
+    {
+      "fileId": "string",
+      "fileName": "string",
+      "fileType": "string"
+    }
+  ],
+  "events": [
+    {
+      "type": "End_of_Conversation",
+      "content": {
+        "messageToUser": "string"
+      },
+      "params": {
+        "reason": "string",
+        "conversationSummary": "string"
+      }
+    }
+  ]
+}
+```

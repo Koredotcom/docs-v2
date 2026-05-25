@@ -1,361 +1,738 @@
 ---
-title: Orchestration Overview
-sidebarTitle: Overview 
+title: "Multi-Agent Orchestration"
+sidebarTitle: "Multi-Agent Orchestration"
 ---
 
-Coordinate how agents work together to handle user requests.
+Multi-Agent orchestration involves distributing tasks across specialized agents, each focused on a specific domain or task, such as billing, authentication, or order tracking.
 
----
+Multi-Agent Orchestration encompasses the following components:
 
-The orchestrator is the intelligence layer that manages agent interactions. It:
+- **Routing**: Determining which agent handles a request based on user intent, session state, or custom conditions. The supervisor evaluates routing rules on every message.
+- **Context Propagation**: Ensuring the target agent has the data it needs without asking the user to repeat themselves. Context does not transfer automatically — it must be explicitly passed.
+- **Control Flow**: Managing whether the calling agent retains control after routing or permanently transfers it. This determines how results flow back and whether the user perceives a transfer.
 
-- Interprets user intent
-- Selects the appropriate agents
-- Coordinates multi-agent workflows
-- Resolves conflicts between outputs
-- Delivers unified responses
+Together, these mechanisms let you build systems where users experience a single, unified assistant — while specialized agents work together behind the scenes.
 
----
+## Types of Orchestration
+
+The platform supports four orchestration patterns:
+
+| Pattern    | When to use                                                                              | User experience                                                                           |
+| ---------- | ---------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------- |
+| [Supervisor](/agent-platform/orchestrate#1-supervisor) | Entry point for Multi-Agent systems; intent-based routing                                | User always talks to an agent, who routes the request to a specialized agent as required. |
+| [Handoff](/agent-platform/orchestrate#2-handoff)    | Route the conversation to a specialist agent.                                            | The user is transferred to a new agent                                                    |
+| [Delegation](/agent-platform/orchestrate#3-delegate) | The agent needs a sub-task done; Sends the sub-task to an agent and get results back     | Transparent -- user does not see the delegation.                                          |
+| [Fan-out](/agent-platform/orchestrate#4-fan-out)    | The agent needs multiple things done in parallel. Run multiple agents and merge results. | Transparent -- user sees a single combined result.                                        |
+| [Escalation](/agent-platform/escalate) | Transfer to a human agent with full context.                                             | User interacts with a human agent.                                                        |
+
+**Sample Multi-Agent Orchestration**
+
+![Multi-Agent Orchestration](/agent-platform/images/multi-agent-orchestration.png)
+
+## Configure Orchestration
+
+You can configure orchestration in two ways:
+
+### 1. Using the Agent Platform Studio
+
+- Navigate to the **Agents** page to view all agents in the project. ![Orchestration](/agent-platform/images/agent-pattern.png)
+- Use the **Canvas view** to visualize relationships between agents. ![Orchestration](/agent-platform/images/canvas-view.png)
+- Select an agent to open its configuration page.
+- Configure **handoffs or delegation** under the **Coordination** section.
+- Save changes.
+
+### 2. Using the DSL Editor
+
+- Open the agent and switch to **DSL view.**
+- Define orchestration logic using ABL constructs such as:
+  - `SUPERVISOR`
+  - `HANDOFF`
+  - `DELEGATE`
+- Compile and save changes.
+- Updates are applied immediately after successful compilation.
+
+<Note>
+  The UI and ABL are interchangeable. Changes made in ABL reflect in the UI and vice versa.
+</Note>
 
 ## Orchestration Patterns
 
-Choose a pattern based on your use case complexity.
+### 1. Supervisor
 
-- [Single Agent](/agent-platform/orchestration/single-agent): One agent handles all requests. Best for focused, well-defined domains.
+A Supervisor is a special agent that acts as the central router for a Multi-Agent system.
 
-- [Supervisor](/agent-platform/orchestration/supervisor): Central orchestrator coordinates multiple specialized agents. Best for complex, parallelizable tasks.
+- It receives every incoming message.
+- Routes them to special agents based on user intent, session state, channel, or custom conditions.
+- Performs pre-routing actions, such as fetching data or checking authentication state, before forwarding the request to a specialized agent.
 
-- [Adaptive Network](/agent-platform/orchestration/adaptive-network): Agents dynamically hand off to each other. Best for sequential, multi-domain workflows.
+A Multi-Agent system can have exactly one Supervisor. It is the entry point for all user interactions.
 
+#### How It Works
 
-## Pattern Comparison
+When a user sends a message, the Supervisor:
 
-| Aspect | Single Agent | Supervisor | Adaptive Network |
-|--------|--------------|------------|------------------|
-| Complexity | Low | Medium | Medium-High |
-| Agents | 1 | Multiple | Multiple |
-| Coordination | None | Centralized | Decentralized |
-| Execution | Sequential | Parallel | Sequential |
-| Latency | Lowest | Medium | Low |
-| Best for | Simple tasks | Complex decomposition | Dynamic hand-offs |
+- Receives the message as the active agent.
+- Optionally performs a pre-routing action using tools.
+- Evaluates its HANDOFF rules top-to-bottom.
+- Routes the message to the first agent whose WHEN condition matches.
+- Regains control if the child agent completes with RETURN: true.
+- If no HANDOFF rule matches, the Supervisor handles the message directly (if canRespondDirectly is enabled) or returns an error.
 
+#### How to Set Up
 
-
-## How Orchestration Works
-
-```mermaid actions={false}
-flowchart TD
-    A([User Request]) --> B[**Intent Analysis** <br />Parse user input, identify required capabilities, determine complexity]
-    B --> C[**Agent Selection**<br /> Match capabilities to agent descriptions, consider agent availability and scope, select single agent or multiple agents]
-    C --> D[Agent A]
-    C --> E[Agent B]
-    C --> F[Agent C]
-    D --> G[**Response Aggregation**<br />Collect agent outputs, resolve conflicts, synthesize unified response]
-    E --> G
-    F --> G
-    G --> H([User Response])
-```
-
-## Choosing the Right Pattern
-
-**Use Single Agent when:**
-
-- Your app has one primary capability
-- Tasks don't require coordination between specialists
-- You want minimal orchestration overhead
-- Response latency is critical
-
-**Example**: A leave management bot where one agent handles all employee requests.
-
-**Use Supervisor when:**
-
-- Tasks can become independent subtasks
-- You need parallel execution for speed
-- Multiple specialists should contribute to responses
-- You want centralized control and conflict resolution
-
-**Example**: A customer service app where billing, orders, and technical support agents work in parallel.
-
-**Use Adaptive Network when:**
-
-- Tasks flow naturally between domains
-- You need dynamic routing based on context
-- Agents should autonomously decide when to hand off
-- Sequential expertise is needed
-
-**Example**: An employee onboarding app where HR, IT, and Finance agents hand off based on the current step.
-
----
-
-## Orchestrator Responsibilities
-
-### Task Decomposition
-
-Breaking complex requests into manageable subtasks:
+A Supervisor is defined using the SUPERVISOR keyword in the ABL file.
 
 ```yaml
-User: "I need to cancel my order and get a refund"
-
-Decomposition:
-├── Subtask 1: Look up order details (Order Agent)
-├── Subtask 2: Process cancellation (Order Agent)
-└── Subtask 3: Initiate refund (Billing Agent)
+SUPERVISOR: "agent-name"
 ```
 
-### Agent Delegation
+Additionally, define the following properties for the Supervisor agent.
 
-Routing tasks to appropriate specialists:
+| Field           | Required | Description                                                                                                                              |
+| --------------- | -------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| GOAL            | Yes      | What the supervisor is responsible for. Helps the LLM understand its role.                                                               |
+| PERSONA         | No       | Defines the supervisor's tone and communication style.                                                                                   |
+| LIMITATIONS     | No       | Specifies what the supervisor cannot do to prevent incorrect handling.                                                                   |
+| ON_START        | No       | Message sent to the user at the start of the session.                                                                                    |
+| TOOLS           | No       | Tools the supervisor can invoke before routing.                                                                                          |
+| HANDOFF         | Yes      | List of agents to which the request is routed based on the conditions. The platform evaluates the rules top-to-bottom; first match wins. |
+| RETURN_HANDLERS | No       | Defines actions when a child agent returns control.                                                                                      |
+| ESCALATE        | No       | Conditions that trigger escalation to a human agent.                                                                                     |
+| ON_ERROR        | No       | Fallback behavior when routing fails or an agent is unavailable.                                                                         |
+| COMPLETE        | No       | Responses sent when the session ends or a handoff completes.                                                                             |
+| MEMORY          | No       | Session and persistent memory configuration.                                                                                             |
+
+#### Examples
+
+**1. Travel Supervisor**
 
 ```yaml
-Request: "What's my order status and can I upgrade my shipping?"
+SUPERVISOR: Travel_Supervisor
 
-Delegation:
-├── Order Agent: Retrieve order status
-└── Shipping Agent: Process shipping upgrade
+PERSONA: "Professional travel assistant. Friendly and efficient. Routes requests to the right specialist quickly and transparently."
+
+GOAL: "Route customers to the right specialist -- booking, sales, support, or human agent -- with full context preservation."
+
+LIMITATIONS:
+  - "Cannot make bookings or process payments directly."
+  - "Cannot access user account information directly."
+
+ON_START:
+  - RESPOND: "Welcome! I am your travel assistant. I can help you search and book flights, manage a booking, or connect you with support. What can I help you with today?"
+
+RETURN_HANDLERS:
+  route_to_booking_manager:
+    CLEAR: [return_to]
+    CONTINUE: true
+  reclassify_intent:
+    CLEAR: [current_intent]
+    RESUME_INTENT: true
+
+HANDOFF:
+  - TO: Sales_Agent
+    WHEN: intent.category == "new_booking" OR intent.category == "travel_search"
+    CONTEXT:
+      pass: [search_context, user_preferences, budget]
+      summary: "User looking to book new travel."
+
+  - TO: Booking_Manager
+    WHEN: intent.category == "manage_existing_booking"
+    CONTEXT:
+      pass: [user_id, booking_context, auth_token]
+      summary: "User managing their reservation."
+
+ESCALATE:
+  triggers:
+    - WHEN: user.wants_human_agent == true OR user.frustration_detected == true
+      REASON: "User requests human assistance."
+      PRIORITY: high
+      TAGS: [human_request]
+
+COMPLETE:
+  - WHEN: handoff_successful == true
+    RESPOND: "I have connected you with the right specialist."
+
+  - WHEN: user.session_ended == true
+    RESPOND: "Thank you for using our travel service."
 ```
 
-### Conflict Resolution
+**2. Priority-ordered routing**
 
-Handling inconsistencies between agent outputs:
+Routing rules are evaluated top to bottom. Use specific rules before general ones.
 
 ```yaml
-Conflict:
-├── Agent A: "Item is in stock"
-└── Agent B: "Item ships in 2 weeks"
+RETURN_HANDLERS:
+  route_to_booking_manager:
+    CLEAR: [return_to]
+    CONTINUE: true
 
-Resolution: Check inventory system → Provide accurate status
+  reclassify_intent:
+    CLEAR: [current_intent]
+    RESUME_INTENT: true
+
+ESCALATE:
+  triggers:
+    - WHEN: intent.category == "escalation" OR user.frustration_detected == true
+      REASON: "User requests human assistance or is frustrated"
+      PRIORITY: high
+      TAGS: [human_request]
+
+    - WHEN: intent.category == "complaint"
+      REASON: "Customer complaint requires a human specialist"
+      PRIORITY: high
+      TAGS: [complaint]
+
+HANDOFF:
+  - TO: Authentication_Agent
+    WHEN: user.is_authenticated == false AND intent.category == "manage_booking"
+    CONTEXT:
+      pass: [session_context, return_to]
+      summary: "User needs to authenticate"
+      history: summary_only
+      memory_grants:
+        - path: workflow.auth_token
+          access: readwrite
+        - path: user.last_verified_at
+          access: read
+    RETURN: true
+    ON_RETURN:
+      handler: route_to_booking_manager
+  - TO: Booking_Manager
+    WHEN: user.is_authenticated == true AND intent.category == "manage_booking"
+    CONTEXT:
+      pass: [user_id, booking_context, auth_token]
+      summary: "Authenticated user managing reservation"
+
+  # P4 -- New bookings
+  - TO: Sales_Agent
+    WHEN: intent.category == "new_booking" OR intent.category == "travel_search"
+    CONTEXT:
+      pass: [search_context, user_preferences, budget]
+      summary: "User looking to book"
+
+  # P5 -- Fallback
+  - TO: Clarification_Agent
+    WHEN: intent.unclear == true OR intent.confidence < 0.5
+    CONTEXT:
+      pass: [session_context, last_message]
+      summary: "Need clarification"
+    RETURN: true
+    ON_RETURN:
+      handler: reclassify_intent
+
+Supervisor with tools: Supervisors can have tools for pre-routing tasks.
+
+SUPERVISOR: NOC_Supervisor
+GOAL: "Triage network alarms and route to specialist agents"
+
+TOOLS:
+  get_active_alarms(severity: string = "all") -> {alarms: array, total: number}
+    description: "Retrieve active alarms from the network management system"
+    type: http
+    endpoint: "https://nms.example.com/api/alarms"
+    method: POST
+    auth: bearer
+
+HANDOFF:
+  - TO: Network_Triage
+    WHEN: alarm.category IN ["link_degradation", "fiber_cut", "hardware_warning"]
+    CONTEXT:
+      pass: [alarm_id, severity, site_code, category]
+      summary: "New alarm requires triage"
+    RETURN: true
+
+  - TO: Incident_Manager
+    WHEN: severity == "critical" OR severity == "major"
+    CONTEXT:
+      pass: [alarm_id, severity, site_code, affected_subscribers]
+      summary: "High-severity issue requires incident management"
+    RETURN: true
 ```
 
-### Context Management
+### 2. Handoff
 
-Maintaining conversation state across agents:
+A handoff transfers the conversation from one agent to another. The original agent stops handling the request at the point of handoff.
 
-```yaml
-Context:
-├── User ID: 12345
-├── Session ID: abcde
-└── Previous Turns:
-    ├── Turn 1: User provides order number
-    ├── Turn 2: Agent A uses order number
-    └── Turn 3: Agent B receives context, doesn't ask again
+Handoffs can originate from a Supervisor routing to a specialist agent, or directly from one agent to another for peer-to-peer routing. In both cases, the target agent receives the context and continues the conversation from that point.
 
-```
+#### How It Works
 
----
+- The calling agent evaluates its HANDOFF rules.
+- When a condition is met, the conversation is transferred to the target agent.
+- The target agent receives the context defined in the CONTEXT block.
+- Return must be set to false for handoff orchestration.
 
-## Orchestrator Configuration
+#### How to Set Up
 
-Navigate to **App** > **Orchestrator**.
+To enable a handoff, configure it in the originating agent(the agent initiating the transfer).
 
-For each orchestration pattern, configure the following.
+- In the Studio, go to the agent and add a Handoff under the Coordination section.
+- Alternatively, define the following properties in the ABL editor.
 
-### Default AI Model
-
-The default AI model that the app uses for operations. Select any of the configured models. The default settings of the model are shown. Click the **Settings** icon to update the default settings. 
-
-### Voice-to-Voice Interactions
-
-Enable this field to allow users to interact with the app via real-time voice conversations. Once enabled, also provide the AI model that processes speech and generates voice responses. The platform supports various models. See the [list of supported models](/agent-platform/models/supported-models) and [how to add an external model](/agent-platform/models/external-models) to the platform.
+| Field     | Required | Description                                                                  |
+| --------- | -------- | ---------------------------------------------------------------------------- |
+| TO        | Yes      | Name of the target agent                                                     |
+| WHEN      | Yes      | Condition for routing; accepts expressions or natural language.               |
+| CONTEXT   | No       | Data passed to the target agent (pass, summary, history, memory_grants). |
+| RETURN    | No       | Whether control returns to the supervisor or parent agent after completion (default: false).  |
+| ON_RETURN | No       | Action when the child returns; references a RETURN_HANDLERS entry.           |
+| PRIORITY  | No       | Evaluation priority: lower numbers are evaluated first.                       |
 
 <Note>
-  Adaptive Network Orchestration does not support Gemini real time models.
+  HANDOFF is for machine-to-machine agent routing only. Use ESCALATE when the target agent is a human operator.
 </Note>
 
-Click the **Settings** icon to update the voice model settings. 
+**Context properties**
 
-#### Voice AI Model Settings
+| Property      | Description                                                                                                      |
+| ------------- | ---------------------------------------------------------------------------------------------------------------- |
+| pass          | An array of variables to send to the target. The target agent receives these as pre-populated session variables. |
+| summary       | Natural language description of why the handoff occurred.                                                        |
+| memory_grants | Explicit durable-memory grants (path + access) for the receiving agent.                                         |
+| history       | Conversation history strategy (safe default: auto).                                                               |
 
-| Setting | Description | Key Notes |
-|--------|-------------|----------|
-| Voice | Voice used for audio responses | Depends on model/provider |
-| Input Audio Format | Format of incoming audio | Example: `pcm16`, must match client input |
-| Output Audio Format | Format of generated audio | Must match playback capability |
-| Speech Speed | Speed of generated speech | `1.0` = default |
-| Max Response Output Tokens | Max tokens per response | Controls response length & latency |
-| Temperature | Controls randomness/creativity | Lower = deterministic, higher = creative |
-| Max Tokens | Max tokens generated | Limits total response size |
-| Noise Reduction Type | Filters input audio noise | `Near Field` (close mic), `Far Field` (room audio) |
-| VAD Type | Speech detection method | Example: Server VAD |
-| Threshold | Sensitivity of detection | Lower = more sensitive |
-| Prefix Padding | Audio before speech detection | Prevents clipping |
-| Silence Duration | Silence before speech ends | Lower = faster response |
-| Create Response | Auto generate response | True/False |
-| Interrupt Response | Allow interruption | True/False |
-| Transcription Language | Language for speech-to-text | Default: Auto detect; improves accuracy if set |
-| Transcription Prompt | Context for ASR model | Helps recognize domain-specific terms and improve accuracy. [Learn More](/agent-platform/howto/configure-transcription).|
+**RETURN_HANDLERS actions**
 
-### Behavioral Instructions
+- CLEAR - Removes the listed session variables before continuing.
+- CONTINUE - Resumes normal routing after the return.
+- RESUME_INTENT - Re-evaluates the user's intent and re-routes.
 
-Use this section to set the guidelines for the agent's behavior. These instructions will be added to the orchestrator and the system prompt of each agent. Click **Modify Instructions**, then enter the prompt.
+**History Strategies**
 
-### Input Processor
+| Value                    | Behavior                                                                                 |
+| ------------------------ | ---------------------------------------------------------------------------------------- |
+| auto                     | Use the handoff summary when available; otherwise, pass bounded recent history (default) |
+| none                     | No conversation history passed                                                           |
+| summary_only             | Pass only the handoff summary, never raw messages                                        |
+| full                     | Pass the entire conversation history                                                     |
+| `{ mode: last_n, count: }` | Pass only the last N messages using the typed bounded-history form                       |
 
-The Input Processor is an app-level feature that executes a custom script before orchestration begins. It's used to preprocess user input, enrich context, and populate memory variables that can be used by agents during execution. 
+#### Examples
 
-When enabled, this processor is executed before the welcome event is triggered.
+**1. Handoff from Supervisor**
 
-<Note>Input Processor is not supported for voice interactions.</Note>
+```yaml
+SUPERVISOR: Support_Supervisor
 
-**Use the Input Processor to:**
-
-- **Transform input**: Apply custom logic before agent execution to modify, sanitize, or normalize the raw user input.
-- **Initialize session and populate memory** : Initialize session-level variables and configurations and populate memory with variables that are required throughout the application.
-- **Enrich Context**: Enrich requests with additional context, for example, user metadata, defaults.
-
-#### Input Processor Execution modes
-
-- **Always Run** : Executes on session creation and every user input. Use this when preprocessing is required consistently for all interactions.
-- **Run Once**: Executes only once per session. Use this when initialization logic is needed only at the start of a session.
-
-#### Adding Input Processor
-
-- Click **Add Script** to open the script editor. The user **Input** that triggered this agent run is available to the script for use.
-- Provide the script that updates the output before delivering to the end user. You can use **JavaScript** or **Python** for this scripting.
-  - Access input in the script using $ prefix.
-  - Access environment variables using env keyword : `env.<variable-name>`. Note that the namespace to which the variable belongs must be selected for the input processor. 
-  - Access content variables as: `content.<variable-name>`.
-  - Access [memory stores in the script using these methods](/agent-platform/memory).
-- Select **namespaces** to make their variables available to the script.
-- Use **Test Input Processor** to validate the script's behavior.
-
-**Sample Script**
-
-```javascript
-// Load customer profile at session start
-const userId = context.userId;
-
-// Fetch customer profile from memory or external store
-const customerProfile = await memory.get_content("customerProfile_" + userId);
-
-const accountType = customerProfile.accountType;
-const tier = customerProfile.tier;
-const preferredLanguage = customerProfile.preferredLanguage;
-
-// Store key details in session memory for agent access
-await memory.set_content("sessionContext", {
-  userId: userId,
-  accountType: accountType,       // e.g. "savings", "current", "credit"
-  tier: tier,                     // e.g. "standard", "premium", "private"
-  preferredLanguage: preferredLanguage  // e.g. "en", "fr", "de"
-});
-
-return {
-  status: "Session initialized",
-  userId: userId,
-  accountType: accountType,
-  tier: tier
-};
+HANDOFF:
+  - TO: Order_Tracking
+    WHEN: intent.category == "order_inquiry" OR intent.category == "shipping"
+    CONTEXT:
+      pass: [customer_id, order_id, session_context]
+      summary: "Customer wants to track or manage an order"
+    RETURN: false
 ```
 
+**2. Handoff from an agent**
 
-### Response Processor
+```yaml
+AGENT: Order_Tracking
 
-The Response Processor is an app-level feature that executes a custom script on every agent response before delivering it to the end user. It executes as the final stage in response generation—after the agent produces its output but before that output leaves the platform. Configured on the Orchestrator page, the script applies uniformly across all agents in the app, regardless of which agent handled the request.
+GOAL: "Help customers track orders"
 
-**Using the Response Processor to Generate Artifacts**
+HANDOFF:
+  - TO: Returns_And_Refunds
+    WHEN: intent.category == "return" OR intent.category == "refund"
+    CONTEXT:
+      pass: [customer_id, order_id, item_id]
+      summary: "Customer wants to return or get a refund for an item."
+    RETURN: false
 
-Use the Response Processor to write artifact payloads directly in code. When the processor runs, it constructs the payload, writes it to the artifacts key, and the platform appends it for delivery. This approach is useful when:
-
-- The artifact must be assembled from multiple tool outputs or session variables.
-- The payload structure depends on business logic that's better handled centrally.
-- No tool is involved—the processor can generate artifacts independently, using only the input context.
-
-
-**Using the Response Processor to Transform Existing Artifacts**
-
-When tools have already populated the artifacts array, the Response Processor can enrich or transform it before delivery:
-
-- Reorder elements to control render priority.
-- Filter artifacts by channel, user segment, or business logic.
-- Transform or enrich the payload before delivery to the client.
-- Merge multiple tool outputs into a single consolidated artifact.
-- Annotate with metadata, wrapper keys, or channel-specific formatting.
-
-<Note>When a Response Processor is active, streaming is disabled. Artifacts and the text response are delivered as a complete payload after processing. If the processor fails, the original untransformed response is returned, and the error is logged.</Note>
-
-#### Adding a Response Processor
-
-Click **Add Script** to open the script editor. The following are available as input to the script:
-
-1. **Input** — The original user input that triggered this agent run.
-2. **Output** — The agent's response generated by the agent.
-3. **Artifacts** — An array of tool outputs and structured data returned during the run by different tools.
-
-**Response Processing Script:** Provide the script that updates the output before delivering to the end user. You can use JavaScript or Python for this scripting.
-
- - Access input, output or artifacts in the script using $ prefix.
- - Access environment variables using env keyword : `env.<variable-name>`.
- - Access content variables as: `content.<variable-name>`.
- - Access [memory stores in the script using these methods](/agent-platform/memory).
-
-**Namespace:** Select namespaces to make their variables available to the script.
-
-Use **Test Response Processor** to validate the script's behavior.
-
-**Sample Script**
-
-```javascript
-
-// Extracts account balance amount from the textual response and only sends back the value, instead of complete textual response.
-
-console.log("[PostProcessor] Input received:", $input); 
-console.log("[PostProcessor] Output received:", $output);
-console.log("[PostProcessor] Artifacts:", $artifacts);
-console.log(env.name) //access environment variable
-console.log(content.new) //access content variable
-
-const originalOutput = $output;
-let modifiedOutput = originalOutput;
-
-const outputData = $output;
-
-let finalOutput;
-
-// Extract balance amount(number) from text (e.g., "Your balance is 7236")
-const match = outputData.match(/\d+/);
-
-if (match) {
-    finalOutput = {
-      balance: Number(match[0])
-    };
-} else {
-    finalOutput = {
-      message: outputData
-    };
-}
-
-return {
-  output: finalOutput
-};
+  - TO: Sales_Agent
+    WHEN: reorder_ready == true AND user.ready_to_checkout == true
+    CONTEXT:
+      pass: [customer_id, cart_items, total]
+      summary: "Customer reordering -- cart ready for checkout."
+    RETURN: false
 ```
----
 
-### Single Agent Configuration
+**3. Pass variables during handoff**
 
-In a Single Agent setup, all user requests are routed directly to the agent. Since no supervisor agent is involved, the agent's prompt serves as the primary instruction set for the underlying model.
+```yaml
+HANDOFF:
+  - TO: Booking_Manager
+    WHEN: intent.category == "manage_booking"
+    CONTEXT:
+      pass: [user_id, booking_context, auth_token]
+      summary: "Authenticated user managing their reservation"
+```
 
-When processing a request, the platform constructs a single consolidated prompt by combining the following components in order, and sends it to the model:
+**4. Scoped access to memory on handoff**
 
-1. **Agent Prompt** — The core instructions that define the agent's role and behavior.
-2. **Behavioral Instructions** — Guidelines that control tone, constraints, and response style.
-3. **Tools Assigned to the Agent** — Tool definitions available for the agent to invoke.
-4. **Events Enabled in the Application** — Event-related context.
+```yaml
+HANDOFF:
+  - TO: Authentication_Agent
+    WHEN: user.is_authenticated == false AND action_requires_auth == true
+    CONTEXT:
+      pass: [session_context, return_to]
+      summary: "User needs to authenticate"
+      memory_grants:
+        - path: workflow.auth_token
+          access: readwrite
+        - path: user.last_verified_at
+          access: read
+    RETURN: true
+```
 
----
+**5. Pass complete history as context**
 
-### Supervisor Configuration
+```yaml
+HANDOFF:
+  - TO: Support_Agent
+    WHEN: intent.category == "support"
+    CONTEXT:
+      pass: [customer_id, issue_description]
+      summary: "Customer needs technical support"
+      history: full
+```
 
-In addition to the configurations discussed above, configure the following for the Supervisor pattern:
+### 3. Delegate
 
-- **Orchestrator Prompt** — A set of instructions for the supervisor of the app. This includes instructions and requirements that guide the orchestrator's decision-making process.
-- **Orchestration Prompt for Voice-to-Voice Interactions** — This prompt serves as instructions for the supervisor in case of voice interactions.
+Delegation is a call-and-return pattern. The parent agent sends a task to a child agent, waits for the result, and then continues its own processing with the returned data. The user does not see the delegation, it is transparent.
 
----
+#### How It Works
 
-### Adaptive Network Configuration
+1. The parent agent evaluates its DELEGATE conditions.
+2. When a condition matches, it sends the defined `INPUT` to the sub-agent.
+3. The sub-agent processes the task and returns its result. The response is processed via the `COMPLETE` property of the delegated agent.
+4. The parent agent maps the returned values to its own session variables using `RETURNS`.
+5. The parent agent continues processing using the result as defined in `USE_RESULT`.
+6. If the sub-agent fails or times out, `ON_FAILURE` handles the error.
 
-In addition to the configurations discussed above, configure the following for the Adaptive Network pattern:
+#### How to Set Up
 
-- **Initial Agent** — Select the agent that serves as the first point of contact for each task. This agent receives the user's request, processes the initial requirements, and begins task execution.
+To enable a delegation, configure it in the originating agent(the agent initiating the transfer).
 
-For this pattern, configure the agents with the delegation rules.
+- In the Studio, go to the agent and add **Delegate** under the **Coordination** section.
+- Alternatively, define the following properties under `DELEGATE` block in the ABL editor.
+
+| Property   | Required | Description                                                                                                                                                             |
+| ---------- | -------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| AGENT      | Yes      | Name of the sub-agent to call                                                                                                                                           |
+| WHEN       | Yes      | The condition that triggers the delegation                                                                                                                              |
+| PURPOSE    | Yes      | Description of what the sub-agent should accomplish                                                                                                                     |
+| INPUT      | Yes      | Map of parent variables to sub-agent input parameters (sub-agent param → parent session variable)                                                                       |
+| RETURNS    | Yes      | Map of sub-agent output fields back to parent session variables (delegate variable → parent session variable)                                                           |
+| USE_RESULT | Yes      | Instructions for how the parent agent uses the result                                                                                                                   |
+| TIMEOUT    | No       | Maximum time to wait for the sub-agent (e.g., 10s)                                                                                                                      |
+| ON_FAILURE | No       | Action if the sub-agent fails or times out. Options: RESPOND "message" (show a message and continue), ESCALATE (trigger escalation), RETRY count (retry the delegation) |
+
+#### Examples
+
+**1. Set up delegate from an agent.**
+
+```yaml
+DELEGATE:
+  - AGENT: Fee_Calculator
+    WHEN: action_type == "modify" OR action_type == "upgrade"
+    PURPOSE: "Calculate total fees and price differences for the requested changes"
+    INPUT:
+      booking_id: selected_booking
+      change_type: action_type
+      changes: change_details
+    RETURNS:
+      total_fee: quoted_fee
+      breakdown: fee_breakdown
+    USE_RESULT: "Present fee breakdown to customer before asking for confirmation"
+    TIMEOUT: "10s"
+    ON_FAILURE: RESPOND "Unable to calculate fees right now. Let me try again."
+```
+
+**2. Corresponding Delegate Agent**
+
+```yaml
+AGENT: Fee_Calculator
+
+GOAL: |
+  Calculate all applicable fees for booking changes --
+  modification fees, price differences, upgrade costs --
+  and return a clear breakdown.
+
+PERSONA: |
+  Precise fee calculation specialist.
+  Returns detailed breakdowns.
+
+TOOLS:
+  get_modification_fee(booking_id: string, change_type: string) -> {base_fee: number, currency: string}
+    description: "Get the base modification fee"
+
+  calculate_price_difference(booking_id: string, original_item: object, new_item: object) -> {price_diff: number, breakdown: object}
+    description: "Calculate price difference between original and new selection"
+
+COMPLETE:
+  - WHEN: fee_calculated == true
+    RESPOND: |
+      Fee breakdown:
+      {{#each fee_breakdown}}
+      - {{this.description}}: {{this.amount}} {{this.currency}}
+      {{/each}}
+      Total: {{total_fee}} {{currency}}
+
+```
+
+**3. Pass Context to Delegate Agents**
+
+```yaml
+DELEGATE:
+  - AGENT: Fee_Calculator
+    WHEN: action_type == "modify"
+    PURPOSE: "Calculate fees for the modification"
+    INPUT:
+      booking_id: selected_booking
+      change_type: action_type
+      changes: change_details
+    RETURNS:
+      total_fee: quoted_fee
+      breakdown: fee_breakdown
+    USE_RESULT: "Present fee breakdown to customer"
+```
+
+### 4. Fan-out
+
+Fan-out sends a task to multiple agents simultaneously and aggregates their results. For example, searching flights and hotels in parallel. The user sees a single combined response, the parallel execution is transparent.
+
+#### How It Works
+
+1. A user message matches the `WHEN` condition on multiple `HANDOFF` or `DELEGATE` rules simultaneously.
+2. All matching agents are invoked in parallel.
+3. Each agent runs independently and returns its results.
+4. Results are merged back into the calling agent's state.
+5. The calling agent responds with the aggregated result.
+6. If one agent fails, its `ON_FAILURE` handler runs independently, other agents continue.
+
+#### How to Set Up
+
+Fan-out can be implemented in two ways:
+
+- **Via Supervisor HANDOFF**: Define multiple `HANDOFF` rules with the same `WHEN` condition and `RETURN: true`. Each matching rule triggers a separate agent. Use `RETURN_HANDLERS` to merge results as each agent returns.
+- **Via DELEGATE**: Define multiple `DELEGATE` entries with overlapping `WHEN` conditions. Each delegate runs independently and returns its result to the parent agent via `RETURNS`. Use distinct variable names in `RETURNS` for each delegate to prevent one result from overwriting another.
+
+#### Examples
+
+**1. Via Supervisor HANDOFF - Route to multiple agents from a supervisor**
+
+In the following example, when `intent.category == "plan_trip"` matches, all three handoff rules trigger. Each agent runs independently and returns results to the supervisor via `RETURN: true`. Child return data merges back into the supervisor state before the named return handler continues orchestration.
+
+```yaml
+SUPERVISOR: Travel_Planner
+GOAL: "Help users plan trips by searching flights, hotels, and activities in parallel"
+RETURN_HANDLERS:
+  merge_flight_results:
+    CONTINUE: true
+  merge_hotel_results:
+    CONTINUE: true
+  merge_activity_results:
+    CONTINUE: true
+HANDOFF:
+  - TO: Flight_Search
+    WHEN: intent.category == "plan_trip" OR intent.category == "search_flights"
+    CONTEXT:
+      pass: [origin, destination, travel_dates, passengers]
+      summary: "Search for available flights"
+    RETURN: true
+    ON_RETURN:
+      handler: merge_flight_results
+  - TO: Hotel_Search
+    WHEN: intent.category == "plan_trip" OR intent.category == "search_hotels"
+    CONTEXT:
+      pass: [destination, checkin_date, checkout_date, guests]
+      summary: "Search for available hotels"
+    RETURN: true
+    ON_RETURN:
+      handler: merge_hotel_results
+  - TO: Activity_Search
+    WHEN: intent.category == "plan_trip" OR intent.category == "search_activities"
+    CONTEXT:
+      pass: [destination, travel_dates, interests]
+      summary: "Search for activities and experiences"
+    RETURN: true
+    ON_RETURN:
+      handler: merge_activity_results
+```
+
+**2. Via DELEGATE**
+
+Multiple `DELEGATE` entries with overlapping `WHEN` conditions can execute in parallel. Each delegate returns its results independently.
+
+```yaml
+AGENT: Trip_Planner
+DELEGATE:
+  - AGENT: Flight_Search
+    WHEN: need_flights == true
+    PURPOSE: "Find available flights for the trip"
+    INPUT:
+      origin: departure_city
+      destination: arrival_city
+      date: travel_date
+    RETURNS:
+      flights: available_flights
+      best_price: cheapest_flight_price
+    USE_RESULT: "Include flight options in the trip plan"
+    TIMEOUT: "15s"
+    ON_FAILURE: RESPOND "Flight search is unavailable. Continuing with hotel search."
+
+  - AGENT: Hotel_Search
+    WHEN: need_hotels == true
+    PURPOSE: "Find available hotels at the destination"
+    INPUT:
+      destination: arrival_city
+      checkin: checkin_date
+      checkout: checkout_date
+    RETURNS:
+      hotels: available_hotels
+      best_price: cheapest_hotel_price
+    USE_RESULT: "Include hotel options in the trip plan"
+    TIMEOUT: "15s"
+    ON_FAILURE: RESPOND "Hotel search is unavailable. Continuing with other results."
+```
+
+**3. Fan out with partial failure tolerance**
+
+Each delegate has its own `ON_FAILURE` handler. If one supplier is unavailable, the agent proceeds with partial results from the others.
+
+```yaml
+DELEGATE:
+  - AGENT: Price_Checker_A
+    WHEN: comparison_mode == true
+    PURPOSE: "Check price from supplier A"
+    INPUT:
+      product_id: sku
+      quantity: qty
+    RETURNS:
+      price_a: supplier_a_price
+    USE_RESULT: "Compare with other suppliers"
+    TIMEOUT: "5s"
+    ON_FAILURE: RESPOND "Supplier A unavailable."
+
+  - AGENT: Price_Checker_B
+    WHEN: comparison_mode == true
+    PURPOSE: "Check price from supplier B"
+    INPUT:
+      product_id: sku
+      quantity: qty
+    RETURNS:
+      price_b: supplier_b_price
+    USE_RESULT: "Compare with other suppliers"
+    TIMEOUT: "5s"
+    ON_FAILURE: RESPOND "Supplier B unavailable."
+```
+
+### Difference Between Handoff and Delegate
+
+| Aspect         | Handoff                                                                | Delegation                                                                                                        |
+| -------------- | ---------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
+| Control flow   | Transfers the conversation permanently or temporarily to another agent | Always call-and-return. The parent agent always regains control after the sub-agent completes                    |
+| User awareness | The user may be aware that they are talking to a different agent       | Sub-agent is never visible to the user                                                                            |
+| Data flow      | CONTEXT pass list and history strategy                                 | Structured INPUT/RETURNS mapping with explicit variable mapping on both sides                                     |
+| Use case       | The user needs to interact with a different specialist agent           | Parent agent needs a background task completed — such as a calculation or lookup — before continuing its own flow |
+
+### Difference between Delegate and Fan-out
+
+The key distinction is parallelism and scope. Use delegation when you need a result from one sub-agent before the parent can continue. Use fan-out when you need results from multiple independent agents simultaneously — for example, searching flights and hotels at the same time.
+
+| Aspect           | Delegation                               | Fan-out                                                                          |
+| ---------------- | ---------------------------------------- | -------------------------------------------------------------------------------- |
+| Number of agents | One sub-agent                            | Multiple agents simultaneously                                                   |
+| Execution        | Sequential - parent waits for the result | Parallel - all agents run at once                                                |
+| Results          | Single result returned                   | Multiple results aggregated                                                      |
+| Partial failure  | Single ON_FAILURE handler                | Each agent has its own ON_FAILURE handler - one failing does not stop the others |
+| Use case         | One background task                      | Multiple independent tasks                                                       |
+
+### Context Propagation Between Agents
+
+No data is automatically shared between agents. Every piece of data that a target agent needs must be explicitly passed using one of three mechanisms: session variables, conversation history, or persistent memory grants.
+
+| Data type              | Handoff                                                                            | Delegation                   | Fan-out                      |
+| ---------------------- | ---------------------------------------------------------------------------------- | ---------------------------- | ---------------------------- |
+| Session metadata       | Forwarded (non-internal values)                                                    | Available via parent context | Available via parent context |
+| Conversation history   | Configurable (auto default / summary_only / full / `{ mode: last_n, count }` / none) | Not shared                   | Not shared                   |
+| Gather progress        | Not transferred (each agent has its own)                                           | Not transferred              | Not transferred              |
+| Custom variables (SET) | Transferred as metadata                                                            | Passed explicitly            | Passed explicitly            |
+| Workflow-scoped memory | Shared only through explicit memory_grants                                         | Not shared unless passed     | Not shared unless passed     |
+| Agent-specific state   | Not transferred                                                                    | Not transferred              | Not transferred              |
+
+**Memory-based Context Sharing**
+
+```yaml
+MEMORY:
+  session:
+    - customer_id
+    - current_intent
+    - routing_history
+    - conversation_summary
+    - session_context
+      TYPE: object
+      DESCRIPTION: "Current session state snapshot passed to child agents on handoff"
+
+  persistent:
+    - user.name
+    - user.language
+    - user.preferred_agent
+    - user.last_verified_at
+
+  remember:
+    - WHEN: user_name IS SET
+      STORE: user_name -> user.name
+    - WHEN: user_language IS SET
+      STORE: user_language -> user.language
+
+  recall:
+    - ON: session:start
+      ACTION: inject_context
+      PATHS: [user.name, user.language, user.preferred_agent]
+```
+
+For more details on memory and access scopes, refer [this guide on memory management across agents](/agent-platform/memory-and-state).
+
+## Points to Note
+
+### Routing and Handoff Behavior
+
+1. `HANDOFF` rules evaluate top-to-bottom. First match wins. Place specific conditions before general ones.
+2. `HANDOFF` is for agent-to-agent routing only. Use `ESCALATE` when the target is a human operator or a queue.
+3. `RETURN` defaults to false. Set `RETURN: true` explicitly when you need a call-and-return pattern.
+4. The default history strategy is `auto`. Opt into `summary_only` for strict no-transcript transfer.
+
+### Variables and Data
+
+1. Null or undefined variables are not passed at handoff time. Set all required variables before the handoff condition fires.
+2. In a DELEGATE `INPUT` map, the left side is the sub-agent's parameter name and the right side is the parent's session variable. Reversing them causes empty input.
+3. In fan-out, if two delegates write to the same `RETURNS` variable, one overwrites the other. Use unique names per delegate output.
+4. Persistent memory requires explicit `memory_grants` in the `CONTEXT` block. Without it, the target agent cannot read the value.
+
+### Reliability
+
+1. Always set `TIMEOUT` on every `DELEGATE` block. Without it, a stalled sub-agent indefinitely blocks the parent.
+2. Track `handoff_count` in session memory and escalate when it reaches 3 or 4 to prevent routing loops.
+
+## Troubleshooting Guide
+
+**Routing and Handoff**
+
+| Symptom                                   | Fix                                                                                                                  |
+| ----------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
+| Routing goes to the wrong agent           | `HANDOFF` rules evaluate top-to-bottom and first match wins. Move specific conditions above general ones.              |
+| No rule matches the user message          | Add a fallback rule at the bottom of the `HANDOFF` block that routes to a clarification agent or escalates to a human. |
+| Agent loops between supervisor and child  | Set `RETURN: false` on terminal handoffs. Use `ON_RETURN` with a named handler when `RETURN: true` is used.                |
+| Handoff creates a loop between two agents | Set clear `WHEN` conditions on both sides. Use RETURN: true on one side to establish a parent-child relationship.      |
+| User is bouncing between agents           | Track handoff_count in session memory and add an `ESCALATE` trigger at 3 or 4 handoffs.                                |
+| User repeats information after handoff    | Use `history: auto` or `history: full` in the `CONTEXT` block so the target agent has prior context.                       |
+
+**Context and Variables**
+
+| Symptom                               | Fix                                                                                                                                       |
+| ------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| Target agent does not receive context | Verify that all variables in the pass list are set before the handoff condition is triggered. Null or undefined variables are not passed. |
+| Too much context slows down the agent | Pass only the variables the target agent needs. Use `history: auto or summary_only` instead of `history: full` for long conversations.        |
+| Persistent memory not accessible      | Add an explicit `memory_grants` entry in the `CONTEXT` block. Without it, the target agent cannot read the value.                             |
+
+**Delegation and Fan-out**
+
+| Symptom                                           | Fix                                                                                                                                                          |
+| ------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Delegate never returns                            | Set `TIMEOUT` on every `DELEGATE` block. Without it, the calling agent waits indefinitely if the sub-agent stalls.                                               |
+| Delegate agent does not receive input             | Verify the variable names on the right side of the `INPUT` map match existing session variables in the calling agent.                                          |
+| Return values not mapped correctly                | Verify keys in `RETURNS` match the output variable names from the delegate. Left side is the delegate's variable, right side is the parent's session variable. |
+| Parallel agents not executing concurrently        | Verify that multiple `WHEN` conditions match simultaneously for the same user message.                                                                         |
+| Results from one agent overwrite those of another | Use distinct variable names in `RETURNS` for each delegate. For example, supplier_a_price and supplier_b_price, not both price.                               |
+| Timeout on slow agents in fan-out                 | Set `TIMEOUT` on each delegate independently. Use `ON_FAILURE` to handle agents that do not respond in time.                                                     |
