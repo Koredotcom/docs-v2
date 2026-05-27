@@ -4,7 +4,7 @@ Official documentation for the Kore.ai Platform — build intelligent AI solutio
 
 ## Products
 
-The new **Agent Platform** is the next-generation Kore.ai platform to design, deploy, and operate intelligent agent systems. The platform unifies conversational AI and agentic AI under a single programming model, so a single agent definition can combine deterministic workflows with autonomous reasoning. 
+The new **[Agent Platform](https://docs.kore.ai/home)** is the next-generation Kore.ai platform to design, deploy, and operate intelligent agent systems. The platform unifies conversational AI and agentic AI under a single programming model, so a single agent definition can combine deterministic workflows with autonomous reasoning. 
 
 Other business solutions of Kore.ai:
 
