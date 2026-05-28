@@ -129,7 +129,7 @@ export const HeroSection = () => {
   }, [])
 
   return (
-    <div className="kore-hero ka1" style={{ position: 'relative', overflow: 'hidden', padding: '75px 48px 54px', textAlign: 'center' }}>
+    <div className="kore-hero" style={{ position: 'relative', overflow: 'hidden', padding: '75px 48px 54px', textAlign: 'center' }}>
       <canvas ref={canvasRef} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', zIndex: 0 }} />
       <div className="kore-hero-overlay" style={{ position: 'absolute', inset: 0, pointerEvents: 'none', zIndex: 1 }} />
       <div className="kore-hero-bottom-fade" style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: '90px', pointerEvents: 'none', zIndex: 1 }} />
