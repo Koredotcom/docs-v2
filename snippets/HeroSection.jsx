@@ -112,6 +112,12 @@ export const HeroSection = () => {
     initNodes()
     loop()
 
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        document.documentElement.classList.add('kore-loaded')
+      })
+    })
+
     hero.addEventListener('mousemove', onMouseMove)
     hero.addEventListener('mouseenter', onMouseEnter)
     hero.addEventListener('mouseleave', onMouseLeave)
