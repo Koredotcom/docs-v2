@@ -4,9 +4,14 @@ export const HeroSection = () => {
   const canvasRef = useRef(null)
 
   useEffect(() => {
+    const loadedRaf1 = requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        document.documentElement.classList.add('kore-loaded')
+      })
+    })
+
     const canvas = canvasRef.current
-    if (!canvas) return
-    const ctx = canvas.getContext('2d')
+    if (!canvas) return () => cancelAnimationFrame(loadedRaf1)
     const hero = canvas.parentElement
 
     const NODE_COUNT = 90
@@ -14,9 +19,13 @@ export const HeroSection = () => {
     const MOUSE_RADIUS = 140
     const MOUSE_FORCE = 1.2
     const MAX_SPEED = 4
+    let ctx = null
     let nodes = []
     let raf = null
     let paused = false
+    let started = false
+    let idleId = null
+    let timeoutId = null
     const mouse = { x: -9999, y: -9999, over: false }
 
     function resize() {
@@ -106,17 +115,29 @@ export const HeroSection = () => {
     function onMouseEnter() { mouse.over = true }
     function onMouseLeave() { mouse.over = false; mouse.x = -9999; mouse.y = -9999 }
     function onVisibility() { paused = document.hidden }
-    function onResize() { resize(); initNodes() }
+    function onResize() {
+      if (!started) return
+      resize()
+      initNodes()
+    }
 
-    resize()
-    initNodes()
-    loop()
-
-    requestAnimationFrame(() => {
+    function startCanvas() {
+      if (started) return
+      started = true
+      ctx = canvas.getContext('2d')
+      resize()
+      initNodes()
+      loop()
       requestAnimationFrame(() => {
-        document.documentElement.classList.add('kore-loaded')
+        canvas.classList.add('kore-canvas-ready')
       })
-    })
+    }
+
+    if (typeof window !== 'undefined' && 'requestIdleCallback' in window) {
+      idleId = window.requestIdleCallback(startCanvas, { timeout: 1500 })
+    } else {
+      timeoutId = setTimeout(startCanvas, 200)
+    }
 
     hero.addEventListener('mousemove', onMouseMove)
     hero.addEventListener('mouseenter', onMouseEnter)
@@ -125,7 +146,10 @@ export const HeroSection = () => {
     document.addEventListener('visibilitychange', onVisibility)
 
     return () => {
-      cancelAnimationFrame(raf)
+      cancelAnimationFrame(loadedRaf1)
+      if (raf) cancelAnimationFrame(raf)
+      if (idleId !== null && 'cancelIdleCallback' in window) window.cancelIdleCallback(idleId)
+      if (timeoutId !== null) clearTimeout(timeoutId)
       hero.removeEventListener('mousemove', onMouseMove)
       hero.removeEventListener('mouseenter', onMouseEnter)
       hero.removeEventListener('mouseleave', onMouseLeave)
@@ -136,7 +160,7 @@ export const HeroSection = () => {
 
   return (
     <div className="kore-hero" style={{ position: 'relative', overflow: 'hidden', padding: '75px 48px 54px', textAlign: 'center' }}>
-      <canvas ref={canvasRef} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', zIndex: 0 }} />
+      <canvas ref={canvasRef} className="kore-hero-canvas" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', zIndex: 0 }} />
       <div className="kore-hero-overlay" style={{ position: 'absolute', inset: 0, pointerEvents: 'none', zIndex: 1 }} />
       <div className="kore-hero-bottom-fade" style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: '90px', pointerEvents: 'none', zIndex: 1 }} />
 
