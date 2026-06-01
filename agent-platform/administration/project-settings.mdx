@@ -130,22 +130,125 @@ Each model entry shows the model name, provider, supported capabilities (chat, f
 
 ## Runtime Configuration
 
-The **Runtime Configuration** page lets you configure the extraction pipeline, multi-intent handling, inference, currency conversion, and lookup tables for this project.
+The **Runtime Configuration** page centralizes the behavioral controls that govern how your agent processes input, handles multi-intent turns, infers missing field values, converts currencies, generates filler messages, protects user data, and validates field values at runtime. Changes made here take effect for all agent deployments within the project.
 
 **Navigation**: **Project** → **Settings** → **Runtime Config**
 
+Use the **Reset to Defaults** button in the top-right corner to revert all settings to their factory values. Click **Save** to apply any changes.
+
+Each configuration group appears as a collapsible card. Click a card header to expand or collapse it.
+
+
 **Extraction Pipeline**
-Configure how user input gets extracted into structured field values.
 
-| Setting               | Description                                                                   | Default   |
-|-----------------------|-------------------------------------------------------------------------------|-----------|
-| **Extraction Strategy**   | How fields get extracted from user messages (auto, ml, or rules).             | auto      |
-| **Correction Detection**  | Method for detecting when users correct previous answers (ml or rules).       | ml        |
-| **NLU Provider**          | NLU provider for entity extraction and intent detection (standard or custom). | standard  |
+The **Extraction Pipeline** section controls how the platform extracts structured field values from raw user messages. Tuning these settings affects accuracy, latency, and resilience for all field extraction in the project.
 
-Additional sections include multi-intent handling, inference settings, currency conversion tables, and lookup tables for entity resolution.
+| Field | Description |
+|---|---|
+| **Extraction Strategy** | Determines the method used to extract field values from user input. `auto` selects the best-fit strategy based on the message and field configuration. |
+| **Correction Detection** | Sets the method the platform uses to detect when a user is correcting a previously provided answer. `ml` uses a machine-learning classifier for correction detection. |
+| **NLU Provider** | Selects the natural language understanding provider for entity extraction and intent detection. `standard` uses the platform's built-in NLU engine. |
+| **Sidecar Timeout (ms)** | Maximum time in milliseconds the platform waits for a response from the extraction sidecar service before timing out. Default: `500`. |
+| **Circuit Breaker Threshold** | Number of consecutive sidecar failures that trigger the circuit breaker, bypassing the sidecar until it recovers. Default: `5`. |
 
-Click **Save** to apply changes. Click **Reset to Defaults** to restore all values to their original settings.
+
+**Multi-Intent Recognition**
+
+The **Multi-Intent Recognition** section configures how the platform detects and handles messages that express more than one user intent in a single turn.
+
+| Field | Description |
+|---|---|
+| **Enable Multi-Intent** | Toggles multi-intent detection on or off for the project. When enabled, the platform attempts to identify and act on multiple intents in a single user message. |
+| **Strategy** | Defines the execution order for detected intents. `primary_queue` processes intents in priority order, queuing secondary intents for subsequent turns. |
+| **Unknown Relationship Strategy** | Fallback strategy used when the relationship between detected intents cannot be determined. `parallel` processes all detected intents simultaneously in the same turn. |
+| **Max Intents** | Maximum number of intents the platform processes in a single user turn. Default: `3`. |
+| **Confidence Threshold** | Minimum confidence score (0–1) required for the platform to act on a detected intent. Intents below this threshold are discarded. Default: `0.6`. |
+| **Queue Max Age (ms)** | Maximum time in milliseconds a queued intent remains eligible for processing. Intents older than this value are dropped. Default: `600000`. |
+
+
+**Field Inference**
+
+The **Field Inference** section enables the platform to use an LLM to infer values for fields that have not been explicitly provided by the user, reducing the number of clarifying questions the agent must ask.
+
+| Field | Description |
+|---|---|
+| **Confidence Threshold** | Minimum confidence score (0–1) required for the platform to accept an inferred field value. Inferences below this threshold are not applied. Default: `0.8`. |
+| **Require User Confirmation** | When enabled, the agent presents inferred field values to the user for confirmation before applying them. Recommended when inference accuracy is critical. |
+| **Model Tier** | Selects the LLM tier used for inference calls. `fast` uses a lower-latency model optimized for speed. |
+| **Max Fields Per Pass** | Maximum number of fields the platform attempts to infer in a single LLM call. Default: `3`. |
+
+
+**Currency Conversion**
+
+The **Currency Conversion** section controls how the platform resolves and converts currency values mentioned in conversations.
+
+| Field | Description |
+|---|---|
+| **Currency Mode** | Sets the conversion mode. `static` uses fixed exchange rates configured in the platform rather than live API-based rates. |
+
+
+**Reasoning Pipeline**
+
+The **Reasoning Pipeline** is an experimental pre-reasoning layer that runs a lightweight classifier before each agent reasoning turn. It filters unnecessary tool calls and routes conversations to improve overall response efficiency.
+
+<Warning>
+**Experimental Feature — Read Before Enabling**
+
+- Requires a configured `tool_selection` model in your LLM provider settings. The pipeline will silently skip if no model is available.
+- Adds one additional LLM call before each reasoning turn, typically 200–500 ms. In parallel mode, the classifier and tool filter run simultaneously.
+- If the pipeline model fails 3 consecutive times, the circuit breaker will bypass the pipeline for 60 seconds to avoid adding latency to every turn.
+</Warning>
+
+| Field | Description |
+|---|---|
+| **Enable Pipeline** | Activates the pre-reasoning classifier and tool filter. Disabled by default. Enable only after configuring a `tool_selection` model in LLM provider settings. |
+
+
+**Filler Settings**
+
+**Filler Settings** configure the transient status messages the platform sends to users while the agent is processing a response. Fillers keep conversations feeling responsive by bridging silent processing gaps, particularly on voice channels. The platform supports both static filler messages and LLM-generated contextual fillers that adapt to the recent conversation.
+
+| Field | Description |
+|---|---|
+| **Fillers Enabled** | Master toggle for the filler system. When off, no filler messages are emitted regardless of other settings. |
+| **Chat Fillers** | When enabled, filler messages appear as transient `status_update` messages in chat clients during processing. |
+| **Voice Fillers** | When enabled, filler messages are spoken aloud on voice channels while the agent processes a response. |
+| **Chat Delay (ms)** | Minimum elapsed processing time in milliseconds before a static chat filler is emitted. Default: `1200`. |
+| **Voice Delay (ms)** | Minimum elapsed processing time in milliseconds before a static voice filler is emitted. Default: `500`. |
+| **Cooldown (ms)** | Minimum interval in milliseconds between consecutive static filler emissions in the same turn. Default: `3000`. |
+| **Max Per Turn** | Maximum number of filler messages the platform emits during a single agent turn. Default: `5`. |
+| **Status Tags** | When enabled, `<status>` tags emitted inline by the response model are surfaced as filler messages, allowing response-model-generated status updates to reach the user. |
+| **Generated Fillers** | When enabled, the platform uses a lightweight LLM call to generate contextual filler messages rather than selecting from static text. Requires **Filler Model** to be configured. |
+| **Filler Model** | The LLM used to generate contextual filler messages when **Generated Fillers** is on. Defaults to the project's runtime default model. |
+| **Conversation History** | Number of recent user and assistant messages (0–20) included in the filler generation prompt to produce context-aware fillers. Default: `0` (no conversation context). |
+| **Previous Fillers** | Number of previously emitted filler messages (0–20) included in the filler generation prompt to avoid repetitive phrasing. Default: `0`. |
+| **Filler Prompt** | Optional prompt-library override for contextual filler generation. When set, replaces the built-in filler prompt. Use **Choose prompt override** to select a saved prompt-library version, or **Clone built-in** to create an editable copy of the default. The prompt supports three placeholders: `{{userMessage}}`, `{{conversationHistory}}`, and `{{previousFillers}}`. |
+
+<Note>
+**Conversation History** and **Previous Fillers** default to `0`, meaning contextual filler generation is dormant until explicitly configured. Existing projects are unaffected unless these values are changed. When using a custom **Filler Prompt**, include `{{conversationHistory}}` and `{{previousFillers}}` placeholders to take advantage of the context passed in by these settings.
+</Note>
+
+
+**PII Redaction**
+
+The **PII Redaction** section controls how the platform detects and scrubs personally identifiable information from agent conversations. Baseline credential and secret scrubbing is always active, even when PII protection is disabled.
+
+| Field | Description |
+|---|---|
+| **Enable PII Protection** | Activates detection and redaction of PII types — emails, phone numbers, SSNs, credit card numbers, and IP addresses — across conversations. Baseline credential and secret scrubbing remains active even when this toggle is off. |
+| **Redact Input** | When enabled, PII detected in user messages is redacted before the message is sent to the LLM. Context-aware exemption: fields actively being gathered are excluded from redaction to preserve extraction accuracy. |
+| **Redact Output** | When enabled, PII detected in agent responses is redacted before the response is delivered to the user. |
+
+
+**Lookup Tables**
+
+The **Lookup Tables** section manages the reference tables the platform uses to validate field values and perform fuzzy matching during extraction. Project-level lookup tables serve as the shared canonical source of truth across all agents in the project.
+
+<Note>
+**Project Canonical** tables defined here are the recommended source of truth for field validation and fuzzy matching. **Agent-local** `LOOKUP_TABLES` defined in individual agent configurations remain available as an experimental compatibility lane, but new projects should use project-level tables.
+</Note>
+
+When no tables are configured, the section displays a **No lookup tables configured** placeholder. Click **+ Add Lookup Table** to create the first table.
 
 ---
 
