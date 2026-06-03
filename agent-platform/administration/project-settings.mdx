@@ -7,7 +7,7 @@ Project settings give administrators and developers control over who can access 
 
 ## Overview
 
-The Settings section is organized into five groups. Click any item to jump to its detailed documentation.
+The Settings section organizes its pages into five groups. Click any item to jump to its detailed documentation.
 
 **General**
 
@@ -65,7 +65,7 @@ The Settings section is organized into five groups. Click any item to jump to it
 
 Confirm the following before modifying project settings:
 
-- Most settings pages require **Admin** access. Developers can view settings but cannot modify membership, API keys, or security controls.
+- Most settings pages require **Admin** access. Developers can view settings but can't modify membership, API keys, or security controls.
 - Adding project members requires them to already exist as workspace members. Only workspace **Owners** and **Admins** can invite new people into the workspace.
 - Model configuration requires at least one LLM provider configured at the workspace level under **Admin** → **Models**.
 - Git integration requires a repository URL and authentication (SSH key or personal access token) prepared in advance.
@@ -130,22 +130,125 @@ Each model entry shows the model name, provider, supported capabilities (chat, f
 
 ## Runtime Configuration
 
-The **Runtime Configuration** page lets you configure the extraction pipeline, multi-intent handling, inference, currency conversion, and lookup tables for this project.
+The **Runtime Configuration** page centralizes the behavioral controls that govern how your agent processes input, handles multi-intent turns, infers missing field values, converts currencies, generates filler messages, protects user data, and validates field values at runtime. Changes made here take effect for all agent deployments within the project.
 
 **Navigation**: **Project** → **Settings** → **Runtime Config**
 
+Use the **Reset to Defaults** button in the top-right corner to revert all settings to their factory values. Click **Save** to apply any changes.
+
+Each configuration group appears as a collapsible card. Click a card header to expand or collapse it.
+
+
 **Extraction Pipeline**
-Configure how user input gets extracted into structured field values.
 
-| Setting               | Description                                                                   | Default   |
-|-----------------------|-------------------------------------------------------------------------------|-----------|
-| **Extraction Strategy**   | How fields get extracted from user messages (auto, ml, or rules).             | auto      |
-| **Correction Detection**  | Method for detecting when users correct previous answers (ml or rules).       | ml        |
-| **NLU Provider**          | NLU provider for entity extraction and intent detection (standard or custom). | standard  |
+The **Extraction Pipeline** section controls how the platform extracts structured field values from raw user messages. Tuning these settings affects accuracy, latency, and resilience for all field extraction in the project.
 
-Additional sections include multi-intent handling, inference settings, currency conversion tables, and lookup tables for entity resolution.
+| Field | Description |
+|---|---|
+| **Extraction Strategy** | Determines the method the platform uses to extract field values from user input. `auto` selects the best-fit strategy based on the message and field configuration. |
+| **Correction Detection** | Sets the method the platform uses to detect when a user is correcting a previously provided answer. `ml` uses a machine-learning classifier for correction detection. |
+| **NLU Provider** | Selects the natural language understanding provider for entity extraction and intent detection. `standard` uses the platform's built-in NLU engine. |
+| **Sidecar Timeout (ms)** | Maximum time in milliseconds the platform waits for a response from the extraction sidecar service before timing out. Default: `500`. |
+| **Circuit Breaker Threshold** | Number of consecutive sidecar failures that trigger the circuit breaker, bypassing the sidecar until it recovers. Default: `5`. |
 
-Click **Save** to apply changes. Click **Reset to Defaults** to restore all values to their original settings.
+
+**Multi-Intent Recognition**
+
+The **Multi-Intent Recognition** section configures how the platform detects and handles messages that express more than one user intent in a single turn.
+
+| Field | Description |
+|---|---|
+| **Enable Multi-Intent** | Toggles multi-intent detection on or off for the project. When enabled, the platform attempts to identify and act on multiple intents in a single user message. |
+| **Strategy** | Defines the execution order for detected intents. `primary_queue` processes intents in priority order, queuing secondary intents for subsequent turns. |
+| **Unknown Relationship Strategy** | Fallback strategy the platform uses when it can't determine the relationship between detected intents. `parallel` processes all detected intents simultaneously in the same turn. |
+| **Max Intents** | Maximum number of intents the platform processes in a single user turn. Default: `3`. |
+| **Confidence Threshold** | Minimum confidence score (0–1) required for the platform to act on a detected intent. The platform discards intents below this threshold. Default: `0.6`. |
+| **Queue Max Age (ms)** | Maximum time in milliseconds a queued intent remains eligible for processing. The platform drops intents older than this value. Default: `600000`. |
+
+
+**Field Inference**
+
+The **Field Inference** section enables the platform to use an LLM to infer values for fields the user hasn't explicitly provided, reducing the number of clarifying questions the agent must ask.
+
+| Field | Description |
+|---|---|
+| **Confidence Threshold** | Minimum confidence score (0–1) required for the platform to accept an inferred field value. The platform doesn't apply inferences below this threshold. Default: `0.8`. |
+| **Require User Confirmation** | When enabled, the agent presents inferred field values to the user for confirmation before applying them. Recommended when inference accuracy is critical. |
+| **Model Tier** | Selects the LLM tier the platform uses for inference calls. `fast` uses a lower-latency model optimized for speed. |
+| **Max Fields Per Pass** | Maximum number of fields the platform attempts to infer in a single LLM call. Default: `3`. |
+
+
+**Currency Conversion**
+
+The **Currency Conversion** section controls how the platform resolves and converts currency values mentioned in conversations.
+
+| Field | Description |
+|---|---|
+| **Currency Mode** | Sets the conversion mode. `static` uses fixed exchange rates that you configure in the platform rather than live API-based rates. |
+
+
+**Reasoning Pipeline**
+
+The **Reasoning Pipeline** is an experimental pre-reasoning layer that runs a lightweight classifier before each agent reasoning turn. It filters unnecessary tool calls and routes conversations to improve overall response efficiency.
+
+<Warning>
+**Experimental Feature — Read Before Enabling**
+
+- Requires a configured `tool_selection` model in your LLM provider settings. The pipeline will silently skip if no model is available.
+- Adds one additional LLM call before each reasoning turn, typically 200–500 ms. In parallel mode, the classifier and tool filter run simultaneously.
+- If the pipeline model fails 3 consecutive times, the circuit breaker will bypass the pipeline for 60 seconds to avoid adding latency to every turn.
+</Warning>
+
+| Field | Description |
+|---|---|
+| **Enable Pipeline** | Activates the pre-reasoning classifier and tool filter. Disabled by default. Enable only after configuring a `tool_selection` model in LLM provider settings. |
+
+
+**Filler Settings**
+
+**Filler Settings** configure the transient status messages the platform sends to users while the agent is processing a response. Fillers keep conversations feeling responsive by bridging silent processing gaps, particularly on voice channels. The platform supports both static filler messages and LLM-generated contextual fillers that adapt to the recent conversation.
+
+| Field | Description |
+|---|---|
+| **Fillers Enabled** | Master toggle for the filler system. When off, the platform emits no filler messages regardless of other settings. |
+| **Chat Fillers** | When enabled, filler messages appear as transient `status_update` messages in chat clients during processing. |
+| **Voice Fillers** | When enabled, the agent speaks filler messages aloud on voice channels while it processes a response. |
+| **Chat Delay (ms)** | Minimum elapsed processing time in milliseconds before the platform emits a static chat filler. Default: `1200`. |
+| **Voice Delay (ms)** | Minimum elapsed processing time in milliseconds before the platform emits a static voice filler. Default: `500`. |
+| **Cooldown (ms)** | Minimum interval in milliseconds between consecutive static filler emissions in the same turn. Default: `3000`. |
+| **Max Per Turn** | Maximum number of filler messages the platform emits during a single agent turn. Default: `5`. |
+| **Status Tags** | When enabled, the platform surfaces `<status>` tags that the response model emits inline as filler messages, letting response-model-generated status updates reach the user. |
+| **Generated Fillers** | When enabled, the platform uses a lightweight LLM call to generate contextual filler messages rather than selecting from static text. Requires **Filler Model** to be configured. |
+| **Filler Model** | The LLM the platform uses to generate contextual filler messages when **Generated Fillers** is on. Defaults to the project's runtime default model. |
+| **Conversation History** | Number of recent user and assistant messages (0–20) the platform includes in the filler generation prompt to produce context-aware fillers. Default: `0` (no conversation context). |
+| **Previous Fillers** | Number of previously emitted filler messages (0–20) the platform includes in the filler generation prompt to avoid repetitive phrasing. Default: `0`. |
+| **Filler Prompt** | Optional prompt-library override for contextual filler generation. When set, replaces the built-in filler prompt. Use **Choose prompt override** to select a saved prompt-library version, or **Clone built-in** to create an editable copy of the default. The prompt supports three placeholders: `{{userMessage}}`, `{{conversationHistory}}`, and `{{previousFillers}}`. |
+
+<Note>
+**Conversation History** and **Previous Fillers** default to 0, meaning contextual filler generation stays dormant until you configure it explicitly. Existing projects remain unaffected unless you change these values. When using a custom **Filler Prompt**, include the `{{conversationHistory}}` and `{{previousFillers}}` placeholders to take advantage of the context these settings pass in.
+</Note>
+
+
+**PII Redaction**
+
+The **PII Redaction** section controls how the platform detects and scrubs personally identifiable information from agent conversations. Baseline credential and secret scrubbing stays active always, even when you disable PII protection.
+
+| Field | Description |
+|---|---|
+| **Enable PII Protection** | Activates detection and redaction of PII types, emails, phone numbers, SSNs, credit card numbers, and IP addresses, across conversations. Baseline credential and secret scrubbing stays active even when this toggle is off. |
+| **Redact Input** | When enabled, the platform redacts PII it detects in user messages before sending the message to the LLM. Context-aware exemption: the platform excludes fields it's actively gathering from redaction to preserve extraction accuracy. |
+| **Redact Output** | When enabled, the platform redacts PII it detects in agent responses before delivering the response to the user. |
+
+
+**Lookup Tables**
+
+The **Lookup Tables** section manages the reference tables the platform uses to validate field values and perform fuzzy matching during extraction. Project-level lookup tables serve as the shared canonical source of truth across all agents in the project.
+
+<Note>
+**Project Canonical** tables defined here are the recommended source of truth for field validation and fuzzy matching. **Agent-local** `LOOKUP_TABLES` defined in individual agent configurations remain available as an experimental compatibility lane, but new projects should use project-level tables.
+</Note>
+
+When no lookup tables exist, the section displays a **No lookup tables configured** placeholder. Click **+ Add Lookup Table** to create the first table.
 
 ---
 
@@ -193,7 +296,7 @@ Click **Add Variable** to create a new entry. Each variable includes the followi
 | Field           | Description                                                                                     |
 |-----------------|-------------------------------------------------------------------------------------------------|
 | **Key**             | Unique identifier for the variable (for example, `API_BASE_URL`). Reference in code as `{{config.KEY}}`. |
-| **Value**           | The value assigned to the key, resolved at compile time.                                        |
+| **Value**           | The value you assign to the key, which the platform resolves at compile time.                   |
 | **Namespaces**      | Logical grouping for the variable. Defaults to **Auto**.                                        |
 | **Description**     | Optional description explaining the variable's purpose.                                         |
 
@@ -209,7 +312,7 @@ The **Localization** page lets you manage locale JSON assets with a full-width e
 
 **Navigation**: **Project** → **Settings** → **Localization**
 
-The page displays the total number of assets, locales, and shared assets. The platform stores locale assets as project-level JSON files and exports them to Git under the same path contract that project import/export uses (for example, `locales/en/_shared.json` or `locales/fr/booking_agent.json`). If Git is not connected, a status indicator shows **Git not connected** with a link to **Open Git Settings**.
+The page displays the total number of assets, locales, and shared assets. The platform stores locale assets as project-level JSON files and exports them to Git under the same path contract that project import/export uses (for example, `locales/en/_shared.json` or `locales/fr/booking_agent.json`). If Git isn't connected, a status indicator shows **Git not connected** with a link to **Open Git Settings**.
 
 ### Create a Localization Asset
 
@@ -246,7 +349,7 @@ Click **Connect Repository** to open the connection dialog. Configure the follow
 | **Secret ID**           | The secret reference identifier for the credential.                                          |
 | **Conflict Strategy**   | How the system resolves conflicts when both Studio and the repository have changes.          |
 
-Test the connection before saving. When Git integration is enabled, you can push agent definitions to the repository, pull changes into Studio, and use conflict resolution tools to manage simultaneous edits.
+Test the connection before saving. After you enable Git integration, you can push agent definitions to the repository, pull changes into Studio, and use conflict resolution tools to manage simultaneous edits.
 
 ---
 
@@ -263,7 +366,7 @@ The **Auth Profiles** page lets you manage authentication credentials for connec
 | **All Profiles**     | View and manage all authentication profiles configured for the project.    |
 | **Integrations**     | View profiles associated with specific third-party integrations.           |
 
-Each profile entry displays the profile name, test status, active/inactive status, environment scope, auth type, source, and whether it is project-level or inherited from the workspace. Workspace-inherited profiles show a **Manage in Workspace** link and cannot be edited at the project level.
+Each profile entry displays the profile name, test status, active/inactive status, environment scope, auth type, source, and whether it is project-level or inherited from the workspace. Workspace-inherited profiles show a **Manage in Workspace** link, and you can't edit them at the project level.
 
 ### Create an Auth Profile
 
@@ -431,7 +534,7 @@ Configure voice-specific transfer settings for SIP-based handoffs, including SIP
 
 ### PII Handling
 
-Control how the system handles personally identifiable information during transfers. Configure which PII fields pass through, get masked, or get redacted when the conversation hands off to a human operator.
+Control how the system handles personally identifiable information during transfers. Configure which PII fields pass through and which the platform masks or redacts when the conversation hands off to a human operator.
 
 Click **Save** to apply changes or **Reset** to restore all values to defaults.
 
@@ -444,7 +547,7 @@ The **Agent Assist** page manages Agent Assist connections for this project.
 **Navigation**: **Project** → **Settings** → **Agent Assist**
 
 **Project Settings**
-The **Enable Agent Assist for this project** toggle controls whether the Agent Assist facade is available. When enabled, human agents receive AI-powered suggestions, knowledge lookups, and response drafts in real time. When disabled, the facade returns 404.
+The **Enable Agent Assist for this project** toggle controls whether the Agent Assist facade is available. When enabled, human agents receive AI-powered suggestions, knowledge lookups, and response drafts in real time. When you disable it, the facade returns 404.
 
 **Connections**
 Click **Add connection** to configure a new Agent Assist integration with endpoint and authentication credentials.
@@ -464,7 +567,7 @@ The **PII Protection** page configures PII detection patterns, redaction strateg
 | **PII Detection**           | Scan agent inputs for PII using active patterns.                    | Enabled  |
 | **PII Output Redaction**    | Apply redaction to agent outputs before delivery to consumers.      | Disabled |
 
-<Note>Credential, secret, and high-risk token scrubbing stays active for logs, traces, session history, and normal API responses even when configurable PII detection is disabled.</Note>
+<Note>Credential, secret, and high-risk token scrubbing stays active for logs, traces, session history, and normal API responses even when you disable configurable PII detection.</Note>
 
 ### Built-in Patterns
 
@@ -517,7 +620,7 @@ When you select **Predefined Label**, configure the **Redaction Label** field to
 | **Default Render Mode**       | How PII appears by default: **Redacted**, **Tokenized**, or **Original**. |
 | **Per-Consumer Overrides**    | Click **Add Consumer** to set render mode overrides for specific consumers. |
 
-<Note>LLM consumers cannot receive original plaintext. The system stores a saved LLM override of **Original** as **Tokenized**, and an **Original** default adds an explicit LLM **Tokenized** override.</Note>
+<Note>LLM consumers can't receive original plaintext. The system stores a saved LLM override of **Original** as **Tokenized**, and an **Original** default adds an explicit LLM **Tokenized** override.</Note>
 
 **Live Test**
 Enter sample text in the **Sample Text** field to test pattern detection before saving. The test runs the regex pattern and validator expression against the input and shows matches with the configured redaction applied.
@@ -532,7 +635,7 @@ The **Public API Access** page configures which APIs end-users can access when a
 
 ### Query API
 
-Toggle the **Query API** to allow authenticated end-users to query agents through the public API endpoint. When enabled, the following configuration fields appear:
+Toggle the **Query API** to allow authenticated end-users to query agents through the public API endpoint. When you enable it, the following configuration fields appear:
 
 | Field                                       | Description                                                                                              |
 |---------------------------------------------|----------------------------------------------------------------------------------------------------------|
@@ -604,7 +707,7 @@ Omnichannel settings allow users who start a conversation on one channel to cont
 | Setting                         | Description                                                   | Default  |
 |---------------------------------|---------------------------------------------------------------|----------|
 | **Enable cross-channel recall**     | Allow sessions to transfer across channels.                   | Disabled |
-| **Maximum messages to recall**      | Number of messages carried over to the new channel.           | 20       |
+| **Maximum messages to recall**      | Number of messages the platform carries over to the new channel.   | 20       |
 | **Maximum age (days)**              | How old a conversation can be and still qualify for recall.   | 30       |
 
 **Allowed channels**
@@ -696,7 +799,7 @@ The **Advanced Settings** page configures advanced execution parameters for this
 
 ### LLM Task Prompts
 
-Customize the prompts that the system uses for entity extraction, correction detection, validation, and inference. Each prompt ships with a default system prompt and can be expanded to view or edit.
+Customize the prompts that the system uses for entity extraction, correction detection, validation, and inference. Each prompt ships with a default system prompt, and you can expand it to view or edit the content.
 
 | Prompt                        | Description                                                                                  |
 |-------------------------------|----------------------------------------------------------------------------------------------|
@@ -711,13 +814,13 @@ Customize the escalation confirmation messages that users see when a conversatio
 
 | Channel            | Description                                                                     |
 |--------------------|---------------------------------------------------------------------------------|
-| **Digital Channel**    | Shown in web chat and messaging apps. Supports markdown formatting and emoji.   |
-| **Voice Channel**      | Read aloud by TTS on voice/phone channels. Keep it short and natural.           |
+| **Digital Channel**    | Appears in web chat and messaging apps. Supports markdown formatting and emoji.   |
+| **Voice Channel**      | TTS reads it aloud on voice/phone channels. Keep it short and natural.           |
 | **Plain Text**         | Fallback for SMS and channels without rich formatting support.                  |
 
 Each template supports `{{reason}}` and `{{priority}}` variables that the system substitutes at runtime with the actual escalation reason and priority level.
 
-<Warning>The **Danger Zone** section permanently deletes the project and all its agents, tools, deployments, and settings. This action cannot be undone. Click **Delete Project** to proceed.</Warning>
+<Warning>The **Danger Zone** section permanently deletes the project and all its agents, tools, deployments, and settings. You can't undo this action. Click **Delete Project** to proceed.</Warning>
 
 ### Settings Versions
 
