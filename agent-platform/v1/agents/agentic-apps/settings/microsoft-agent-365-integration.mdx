@@ -1,0 +1,368 @@
+---
+noindex: true
+title: Microsoft Agent 365 Integration Guide
+---
+
+This guide shows how to make a Kore Agent Builder app Microsoft Agent 365 enabled, from registering the client app through verifying the agent in Microsoft Teams and monitoring its activity.
+
+Connecting an agent to Microsoft Agent 365 does the following:
+
+* It registers the agent as a verified identity in your Microsoft 365 tenant. It allows for discovery and interactivity in Microsoft Teams and governance through the [Microsoft Admin Center](https://learn.microsoft.com/en-us/microsoft-365/admin/manage/agent-365-overview).
+* It integrates the agent with the Microsoft Agent 365 Observability SDK, which exports traces for agent invocation, inference, and tool calls to the Agent 365 cloud service. View these traces in the [Microsoft Defender Portal](https://learn.microsoft.com/en-us/microsoft-agent-365/admin/threat-protection).
+
+To build your agent on the Platform first, see [Create an Agentic App](/agent-platform/v1/agents/agentic-apps/create-an-app).
+
+---
+
+## Integration Overview
+
+<Steps>
+  <Step title="Register Client App">
+    Create the Entra ID app identity for the A365 CLI. **Owner:** IT Admin.
+  </Step>
+  <Step title="Install CLI and Configure">
+    Install tools and initialize `a365.config.json`. **Owner:** Developer.
+  </Step>
+  <Step title="Create Agent Blueprint">
+    Provision the blueprint, configure Platform credentials, set the server URL, and publish. **Owner:** IT Admin or Developer.
+  </Step>
+  <Step title="Activate in Admin Center">
+    Activate and deploy the agent to your organization. **Owner:** IT Admin.
+  </Step>
+  <Step title="Verify in Teams">
+    Create an instance and confirm the integration works end to end. **Owner:** Developer.
+  </Step>
+  <Step title="Monitor Activity">
+    Observe agent events in Purview and Defender. **Owner:** IT Admin.
+  </Step>
+</Steps>
+
+---
+
+## Prerequisites
+
+### Frontier Program Enrollment
+
+{/* AG: Cross-check with engg. or PM if Billing Admin role works or not. */}
+
+Before you start, your tenant needs at least one Microsoft 365 Copilot license (trial or paid), and you must sign in with a Global Administrator or Billing Administrator role.
+
+1. Go to the [Microsoft 365 Admin Center](https://admin.microsoft.com).
+2. Go to **Agents** > **Agent Overview**.
+3. Select **Try now** and accept the Terms of Service.
+4. Go to **Copilot** > **Settings** > **User Access** > **Copilot Frontier** and turn on Frontier features.
+5. Access **Agents** > **Agent Overview** and verify that the Agent 365 UI is available and preview features are available.
+
+These steps provide an Agent 365 Preview subscription that's provisioned with 25 licenses. These licenses are for agent instances (digital workers) and not for individual users.
+
+![Agent 365 Overview page in the Microsoft 365 Admin Center](/agent-platform/v1/agents/agentic-apps/settings/images/ms-agent365-3.png)
+
+---
+
+## Step 1: Register Client App
+
+**Outcome:** A registered app in Entra ID with the credentials the developer and CLI need, and an Azure resource group ready for blueprint provisioning.
+
+### 1.1 Create an Azure resource group and App Service Plan
+
+1. Open the [Azure Portal](https://portal.azure.com).
+2. Go to **Resource groups → + Create**. Name it clearly (for example, `rg-kore-agent-prod`), select your target region, then select **Review + Create**.
+3. Open the new resource group and select **+ Create → App Service Plan**.
+4. Configure the App Service Plan:
+
+| Field                | Value                                     |
+|----------------------|-------------------------------------------|
+| **Name**             | Any name (for example, `asp-kore-agent`). |
+| **Operating System** | Windows or Linux.                         |
+| **Pricing tier**     | **B1 or above**.                          |
+
+5. Select **Review + Create**.
+6. Authenticate the Azure CLI with `az login`. Confirm the Subscription ID and Tenant ID in the terminal output match your target environment.
+
+### 1.2 Create the app registration
+
+1. Open [Entra Admin Center](https://entra.microsoft.com) and go to **Identity → Applications → App registrations → + New registration**.
+2. Configure as follows:
+
+| Field                       | Value                                                           |
+|-----------------------------|-----------------------------------------------------------------|
+| **Name**                    | `Agent365-CLI` (or your preferred name).                        |
+| **Supported account types** | Accounts in this organizational directory only (Single tenant). |
+| **Redirect URI — Platform** | Public client/native (mobile and desktop).                      |
+| **Redirect URI — Value**    | `http://localhost:8400/`                                        |
+
+3. Select **Register**.
+4. Go back to the app, select **Authentication → + Add a platform** (if not already done), and add a second redirect URI:
+
+| Platform             | Value                                                                   |
+|----------------------|-------------------------------------------------------------------------|
+| Public client/native | `ms-appx-web://Microsoft.AAD.BrokerPlugin/{your-application-client-id}` |
+
+Replace `{your-application-client-id}` with the Application (client) ID displayed on the **Overview** page.
+
+### 1.3 Record the Application ID and Tenant ID
+
+From the app's Overview page, copy and store securely:
+
+- **Application (client) ID** — passed to `a365 config init` in Step 2.
+- **Directory (tenant) ID**.
+
+### 1.4 Add API permissions and grant admin consent
+
+<Note>Only Global Administrator role can grant consent to the required permissions.</Note>
+
+1. In your app registration, go to **API permissions → + Add a permission → Microsoft Graph → Delegated permissions**.
+2. Add each of the following five permissions. Search by name, select the checkbox, select **Add permissions**, then repeat.
+
+  | Permission                                        | Reason                                                   |
+  |---------------------------------------------------|----------------------------------------------------------|
+  | `AgentIdentityBlueprint.ReadWrite.All`            | CLI creates and manages the Agent Blueprint.             |
+  | `AgentIdentityBlueprint.UpdateAuthProperties.All` | CLI configures inheritable permissions on the blueprint. |
+  | `Application.ReadWrite.All`                       | CLI creates and manages app registrations.               |
+  | `DelegatedPermissionGrant.ReadWrite.All`          | CLI grants delegated permissions to the blueprint.       |
+  | `Directory.Read.All`                              | CLI validates tenant directory configuration.            |
+
+3. Select the option to **Grant admin consent** for your tenant.
+4. Verify that under **Status**, a green checkmark displays for the required permissions.
+
+![API permissions list showing the five delegated Microsoft Graph permissions](/agent-platform/v1/agents/agentic-apps/settings/images/ms-agent365-8.png)
+
+<Caution>Add only Delegated permissions. Using Application-type permissions cause CLI failures. If any permission shows Type "Application", remove it and re-add it as Delegated.</Caution>
+
+Have the following values ready before you start Step 2:
+
+| Value                   | Source                                     |
+|-------------------------|--------------------------------------------|
+| Application (client) ID | Entra app → Overview (Step 1.3).           |
+| Directory (tenant) ID   | Entra app → Overview (Step 1.3).           |
+| Resource group name     | Azure Portal → Resource groups (Step 1.1). |
+
+---
+
+## Step 2: Install CLI and Configure
+
+**Outcome:** CLI tools are installed, the Azure CLI is authenticated, and `a365.config.json` is created with your project settings and the deployment flag is set.
+
+### 2.1 Install prerequisites
+
+```bash
+# .NET SDK (Windows — via winget)
+winget install Microsoft.DotNet.SDK.8
+
+# Agent 365 CLI
+dotnet tool install --global Microsoft.Agents.A365.DevTools.Cli --prerelease
+
+# Azure CLI (Windows — via winget)
+winget install Microsoft.AzureCLI
+
+# Authenticate azure
+az login
+```
+
+Verify the CLI is installed using `a365 -h` command.
+
+### 2.2 Run `a365 config init`
+
+```bash
+a365 config init
+```
+
+You must complete `az login` first. The CLI auto-detects your Azure subscription and tenant. Confirm they match your intended environment.
+
+Respond to each prompt:
+
+| Prompt                                           | Your input                             |
+|--------------------------------------------------|----------------------------------------|
+| Client App ID (GUID format)                      | Application (client) ID from Step 1.3. |
+| Agent name                                       | Your agent's display name.             |
+| Select resource group                            | Resource group from Step 1.1.          |
+| Select App Service Plan                          | App Service Plan from Step 1.1.        |
+| Manager email                                    | Your email address.                    |
+| Would you like to customize the generated names? | `N`                                    |
+| Save this configuration?                         | `Y`                                    |
+
+**Validate before proceeding:**
+
+- `Client app validation successful!` appears.
+- The final line reads: `Configuration saved to: <path>\a365.config.json`.
+
+### 2.3 Set `needDeployment` to false
+
+Open `a365.config.json` in your project directory and add or update:
+
+```json
+"needDeployment": false
+```
+
+Kore hosts the agent endpoint, so no Azure infrastructure deployment is required from your end.
+
+---
+
+## Step 3: Create Agent Blueprint
+
+<Note>`a365 setup all` and `a365 publish` require an interactive browser sign-in with a Global Administrator account.</Note>
+
+**Outcome:** The Agent Blueprint is created in Microsoft Entra, its credentials are entered into Kore, the Kore agent's messaging endpoint is bound in the Teams Developer Portal, and the agent is published to the Microsoft 365 catalog.
+
+Run all CLI commands from the project directory where `a365.config.json` was created, with `az login` authenticated.
+
+### 3.1 Run `a365 setup all`
+
+```bash
+a365 setup all
+```
+
+This command creates the Agent Blueprint and configures all required permissions. It opens browser windows for interactive authentication. Sign in with your Global Administrator account at each prompt.
+
+| Browser prompt                       | Action                                    |
+|--------------------------------------|-------------------------------------------|
+| Microsoft Graph interactive sign-in  | Sign in as Global Administrator.          |
+| Admin consent for application scopes | Grant consent.                            |
+| Agent 365 Tools authentication       | Authenticate via Windows Account Manager. |
+
+**Validate before proceeding:**
+
+- Requirements Check Summary shows `Failed: 0`.
+- `Agent blueprint created successfully` appears.
+- `a365.generated.config.json` is created in your project directory.
+
+### 3.2 Configure the Kore environment with blueprint credentials
+
+Open the two generated config files in your project directory and copy the following values:
+
+| Kore field | Config field | File |
+|---|---|---|
+| **A365_BLUEPRINT_ID** | `agentBlueprintId` | `a365.generated.config.json` |
+| **A365_CLIENT_SECRET_REF** | `agentBlueprintClientSecret` | `a365.generated.config.json` |
+| **A365_TENANT_ID** | `tenantId` | `a365.config.json` |
+
+In Kore Agent Builder, go to your agent → **Environment → Review Environment Variables**. Enter the three values above and save.
+
+<Note>The Kore Agent Builder UI for entering these variables is changing. The screens and steps in this section may differ from what you see, and will be updated once the UI changes are complete.</Note>
+
+### 3.3 Complete Kore agent creation
+
+Complete the remaining steps in the Kore agent creation wizard and publish the agent. Copy the **backend webhook URL** that Kore provides. You need it in the next step.
+
+### 3.4 Set the backend URL in the Teams Developer Portal
+
+1. Open the [Microsoft Teams Developer Portal](https://dev.teams.microsoft.com).
+2. Go to **Apps → Agent Blueprints** and select your blueprint by name.
+3. Open **Configuration**.
+4. Set **Connection type** to `API Based`.
+5. Set **Backend URL** to the Kore webhook URL from Step 3.3.
+6. Select **Save**.
+
+![Teams Developer Portal Configuration page with Connection type set to API Based and the backend URL entered](/agent-platform/v1/agents/agentic-apps/settings/images/ms-agent365-4.png)
+
+**Validate:**
+
+- Connection type shows `API Based`.
+- Backend URL matches the Kore webhook URL from Step 3.3.
+
+### 3.5 Run `a365 publish`
+
+```bash
+a365 publish
+```
+
+| Prompt | Action |
+|---|---|
+| Open manifest in your default editor now? | `Y` to review. Confirm `name.short` is 30 characters or fewer. |
+| Press Enter when finished editing | Press **Enter**. |
+| Browser: MOS authentication | Sign in when the browser opens. |
+
+<Note>On re-publish, increment the `version` field in the manifest.</Note>
+
+**Validate before proceeding:**
+
+- `MOS token acquired successfully` appears.
+- The final line reads: `Publish completed successfully!`.
+
+---
+
+## Step 4: Activate in Admin Center
+
+**Outcome:** Your agent is active and deployed to all users in your organization, ready to be instantiated in Teams.
+
+1. Open **Microsoft Admin Center → Agents → All Agents**.
+2. Search for your agent by name and select it to open its details panel.
+3. Select **Activate**.
+4. When prompted to select a template, choose **Default template for allowing instances**. This associates the Frontier license with the blueprint to allow instance creation.
+5. Select **Next** and wait for activation to complete fully. Do not navigate away.
+
+**Validate:**
+
+- The **Activate** button has disappeared from the agent panel.
+
+6. Select the three-dot menu (···) beside your agent name, then **Deploy → All Users**.
+7. Select **Close** when the confirmation screen appears.
+
+**Validate:**
+
+- The confirmation reads: agent `was deployed successfully` to **All users**.
+
+---
+
+## Step 5: Verify in Teams
+
+**Outcome:** You have a live conversation with your agent in Teams, confirming the full integration works end to end.
+
+1. Open [Microsoft Teams](https://teams.cloud.microsoft/).
+2. Go to **Apps → Agents for your team**.
+3. Search for your agent by name, select it, then select **Create Instance**.
+4. Name the instance (for example, `[AgentName]-test`) and select **Save**.
+
+![Create Instance dialog for the agent in Microsoft Teams](/agent-platform/v1/agents/agentic-apps/settings/images/ms-agent365-5.png)
+
+The agent appears in your Teams chat list.
+
+![Agent listed in the Microsoft Teams chat list](/agent-platform/v1/agents/agentic-apps/settings/images/ms-agent365-6.png)
+
+**Validate:**
+
+- The agent responds to your messages.
+- If there is no response, the endpoint binding or blueprint configuration is incorrect. Re-check the Step 3 validation items before proceeding.
+
+<Note>If you cannot create an instance, confirm the agent was activated with the **Default template for allowing instances** in Step 4. If the template was not selected during activation, re-activate the blueprint.</Note>
+
+---
+
+## Step 6: Monitor Activity
+
+### Defender — Advanced Hunting
+
+**Outcome:** Agent activity events are queryable in Defender for security review and SOC integration.
+
+For Defender prerequisites (audit log enablement, M365 connector setup), see [Monitor agents with Microsoft Defender](https://learn.microsoft.com/en-us/microsoft-agent-365/admin/threat-protection).
+
+<Note>Allow up to 30 minutes after the Step 5 interactions before events appear.</Note>
+
+Once the M365 connector is active, baseline threat detections trigger automatically. No additional rule configuration is required.
+
+1. Go to [security.microsoft.com](https://security.microsoft.com) and select **Hunting → Advanced Hunting**.
+2. In the **Schema** tab, locate the `CloudAppEvents` table.
+3. Execute the following query after substituting your agent's display name:
+
+```kusto
+CloudAppEvents
+| where ActionType in ("InvokeAgent", "InferenceCall", "ExecuteToolBySDK",
+                       "ExecuteToolByGateway", "ExecuteToolByMCPServer")
+| where AccountDisplayName contains "<your-agent-name>"
+```
+
+![Advanced Hunting query results in the Defender portal showing agent activity events](/agent-platform/v1/agents/agentic-apps/settings/images/ms-agent365-7.png)
+
+**Validate:**
+
+- Actions from the Step 5 Teams test session appear in the results.
+
+---
+
+**Related Links**
+
+- [Create an Agentic App](/agent-platform/v1/agents/agentic-apps/create-an-app).
+- [Microsoft Agent 365 Developer Overview](https://learn.microsoft.com/en-us/microsoft-agent-365/developer/).
+- [Agent 365 Observability](https://learn.microsoft.com/en-us/microsoft-agent-365/developer/observability).
+- [Monitor Agents with Microsoft Defender](https://learn.microsoft.com/en-us/microsoft-agent-365/admin/threat-protection).
+- [About Microsoft Frontier Preview Program](https://adoption.microsoft.com/copilot/frontier-program/).
