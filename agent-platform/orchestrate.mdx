@@ -393,7 +393,7 @@ Delegation is a call-and-return pattern. The parent agent sends a task to a chil
 3. The sub-agent processes the task and returns its result. The response is processed via the `COMPLETE` property of the delegated agent.
 4. The parent agent maps the returned values to its own session variables using `RETURNS`.
 5. The parent agent continues processing using the result as defined in `USE_RESULT`.
-6. If the sub-agent fails or times out, `ON_FAILURE` handles the error.
+6. If the sub-agent fails or times out, `ON_FAIL` handles the error.
 
 #### How to Set Up
 
@@ -411,7 +411,7 @@ To enable a delegation, configure it in the originating agent(the agent initiati
 | `RETURNS`    | Yes      | Map of sub-agent output fields back to parent session variables (delegate variable → parent session variable)                                                           |
 | `USE_RESULT` | Yes      | Instructions for how the parent agent uses the result                                                                                                                   |
 | `TIMEOUT`    | No       | Maximum time to wait for the sub-agent (for example, 10s)                                                                                                                      |
-| `ON_FAILURE` | No       | Action if the sub-agent fails or times out. Options: RESPOND "message" (show a message and continue), ESCALATE (trigger escalation), RETRY count (retry the delegation) |
+| `ON_FAIL` | No       | Action if the sub-agent fails or times out. Options: RESPOND "message" (show a message and continue), ESCALATE (trigger escalation), RETRY count (retry the delegation) |
 
 #### Examples
 
@@ -431,7 +431,7 @@ DELEGATE:
       breakdown: fee_breakdown
     USE_RESULT: "Present fee breakdown to customer before asking for confirmation"
     TIMEOUT: "10s"
-    ON_FAILURE: RESPOND "Unable to calculate fees right now. Let me try again."
+    ON_FAIL: RESPOND "Unable to calculate fees right now. Let me try again."
 ```
 
 **2. Corresponding Delegate Agent**
@@ -494,7 +494,7 @@ Fan-out sends a task to multiple agents simultaneously and aggregates their resu
 3. Each agent runs independently and returns its results.
 4. Results are merged back into the calling agent's state.
 5. The calling agent responds with the aggregated result.
-6. If one agent fails, its `ON_FAILURE` handler runs independently, other agents continue.
+6. If one agent fails, its `ON_FAIL` handler runs independently, other agents continue.
 
 #### How to Set Up
 
@@ -565,7 +565,7 @@ DELEGATE:
       best_price: cheapest_flight_price
     USE_RESULT: "Include flight options in the trip plan"
     TIMEOUT: "15s"
-    ON_FAILURE: RESPOND "Flight search is unavailable. Continuing with hotel search."
+    ON_FAIL: RESPOND "Flight search is unavailable. Continuing with hotel search."
 
   - AGENT: Hotel_Search
     WHEN: need_hotels == true
@@ -579,12 +579,12 @@ DELEGATE:
       best_price: cheapest_hotel_price
     USE_RESULT: "Include hotel options in the trip plan"
     TIMEOUT: "15s"
-    ON_FAILURE: RESPOND "Hotel search is unavailable. Continuing with other results."
+    ON_FAIL: RESPOND "Hotel search is unavailable. Continuing with other results."
 ```
 
 **3. Fan out with partial failure tolerance**
 
-Each delegate has its own `ON_FAILURE` handler. If one supplier is unavailable, the agent proceeds with partial results from the others.
+Each delegate has its own `ON_FAIL` handler. If one supplier is unavailable, the agent proceeds with partial results from the others.
 
 ```yaml
 DELEGATE:
@@ -598,7 +598,7 @@ DELEGATE:
       price_a: supplier_a_price
     USE_RESULT: "Compare with other suppliers"
     TIMEOUT: "5s"
-    ON_FAILURE: RESPOND "Supplier A unavailable."
+    ON_FAIL: RESPOND "Supplier A unavailable."
 
   - AGENT: Price_Checker_B
     WHEN: comparison_mode == true
@@ -610,7 +610,7 @@ DELEGATE:
       price_b: supplier_b_price
     USE_RESULT: "Compare with other suppliers"
     TIMEOUT: "5s"
-    ON_FAILURE: RESPOND "Supplier B unavailable."
+    ON_FAIL: RESPOND "Supplier B unavailable."
 ```
 
 ### Difference Between Handoff and Delegate
@@ -627,11 +627,11 @@ DELEGATE:
 The key distinction is parallelism and scope. Use delegation when you need a result from one sub-agent before the parent can continue. Use fan-out when you need results from multiple independent agents simultaneously — for example, searching flights and hotels at the same time.
 
 | Aspect           | Delegation                               | Fan-out                                                                          |
-| ---------------- | ---------------------------------------- | -------------------------------------------------------------------------------- |
+|------------------|------------------------------------------|----------------------------------------------------------------------------------|
 | Number of agents | One sub-agent                            | Multiple agents simultaneously                                                   |
 | Execution        | Sequential - parent waits for the result | Parallel - all agents run at once                                                |
 | Results          | Single result returned                   | Multiple results aggregated                                                      |
-| Partial failure  | Single ON_FAILURE handler                | Each agent has its own ON_FAILURE handler - one failing does not stop the others |
+| Partial failure  | Single ON_FAIL handler                | Each agent has its own ON_ON_FAILndler - one failing doesn't stop the others  |
 | Use case         | One background task                      | Multiple independent tasks                                                       |
 
 ### Context Propagation Between Agents
@@ -731,4 +731,4 @@ For more details on memory and access scopes, refer [this guide on memory manage
 | Return values not mapped correctly                | Verify keys in `RETURNS` match the output variable names from the delegate. Left side is the delegate's variable, right side is the parent's session variable. |
 | Parallel agents not executing concurrently        | Verify that multiple `WHEN` conditions match simultaneously for the same user message.                                                                         |
 | Results from one agent overwrite those of another | Use distinct variable names in `RETURNS` for each delegate. For example, supplier_a_price and supplier_b_price, not both price.                               |
-| Timeout on slow agents in fan-out                 | Set `TIMEOUT` on each delegate independently. Use `ON_FAILURE` to handle agents that do not respond in time.                                                     |
+| Timeout on slow agents in fan-out                 | Set `TIMEOUT` on each delegate independently. Use `ON_FAIL` to handle agents that do not respond in time.                                                     |
