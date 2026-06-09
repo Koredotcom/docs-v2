@@ -62,7 +62,8 @@ MEMORY:
 | ----------- | ----------------------------------------------------------------------------------------------------------- |
 | per_session | Variable is initialized at session start and cleared when the session ends. This is the default.            |
 | per_step    | Variable is reset to its initial value at the start of each flow step. Useful for step-scoped accumulators. |
-| never       | Variable persists for the lifetime of the runtime process. Use sparingly; prefer persistent memory instead. |
+| never       | Variable persists for the lifetime of the runtime process. Use sparingly; prefer persistent memory instead. | 
+| per_activation |Variable is reset to `INITIAL` every time the agent is activated, including repeated activations of the same agent. |
 
 For simple tracking without type metadata, declare a bare name:
 
@@ -296,13 +297,17 @@ When a new session starts, the platform loads `user.name`, `user.language`, and 
 
 **Recall Properties**
 
-| Property    | Type   | Required | Description                                             |
-| ----------- | ------ | -------- | ------------------------------------------------------- |
-| ON          | string | Yes      | Lifecycle event that triggers the recall. See Events.   |
-| ACTION      | string | No       | The concrete action to execute. See Actions.            |
-| INSTRUCTION | string | No       | Human-readable instruction for the recall behavior.     |
-| PATHS       | array  | No       | Persistent paths to inject (for inject_context action). |
-| DOMAIN      | string | No       | Memory domain filter (for load_memory action).          |
+| Field         | Required | Description                                                                 |
+| ------------- | -------- | --------------------------------------------------------------------------- |
+| `ON`          | Yes      | Canonical event name such as `session:start` or `tool:<name>:after`.        |
+| `ACTION`      | Yes      | `inject_context`, `load_memory`, or `prompt_llm`.                           |
+| `PATHS`       | No       | Durable memory paths to retrieve for `inject_context` or `load_memory`.     |
+| `DOMAIN`      | No       | Named memory domain used by `load_memory` when paths are domain-scoped.     |
+| `INSTRUCTION` | No       | Prompt text used by `prompt_llm` to shape how retrieved context is applied. |
+
+{/* AG: This note added in code repo is likely not needed in the pubilc docs. Leaving it here for a quick check later.
+**Compatibility note**: Retired `ON_<event>` aliases fail with guided diagnostics. Use canonical `ON: session:start`-style event names in new ABL.
+*/}
 
 **Recall Events**
 
@@ -315,9 +320,9 @@ When a new session starts, the platform loads `user.name`, `user.language`, and 
 
 | Action         | Behavior                                                                 |
 | -------------- | ------------------------------------------------------------------------ |
-| inject_context | Loads specified persistent paths directly into session variables.        |
-| load_memory    | Loads all facts in the specified domain into context.                    |
-| prompt_llm     | Passes the instruction text to the LLM as additional context. (Default.) |
+| `inject_context` | Loads specified persistent paths directly into session variables.        |
+| `load_memory`    | Loads all facts in the specified domain into context.                    |
+| `prompt_llm`     | Passes the instruction text to the LLM as additional context. (Default.) |
 
 ### Recall before search operations
 
@@ -440,7 +445,7 @@ FLOW:
   select_hotel:
     REASONING: false
     ON_INPUT:
-      - IF: input is_number AND input >= 1 AND input <= hotels.length
+      - IF: abl.is_number(input) AND input >= 1 AND input <= hotels.length
         SET:
           - selected_hotel = hotels[input - 1]
           - need_price_quote = true
