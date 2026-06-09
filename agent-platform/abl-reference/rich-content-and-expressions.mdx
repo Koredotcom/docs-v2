@@ -264,14 +264,16 @@ FLOW:
         type: button
         label: "Cancel"
     ON_ACTION:
-      - ACTION_ID: confirm
-        RESPOND: "Executing your wire transfer."
-        SET:
-          user_confirmed = true
-        THEN: execute_wire_step
-      - ACTION_ID: cancel
+      confirm:
+        DO:
+          - SET: user_confirmed = true
+          - RESPOND: "Executing your wire transfer."
+            FORMATS:
+              MARKDOWN: "**Executing your wire transfer.**"
+          - GOTO: execute_wire_step
+      cancel:
         RESPOND: "Wire transfer cancelled."
-        THEN: cleanup
+        GOTO: cleanup
 ```
 
 The `ON_ACTION` handler properties are described below.
@@ -280,9 +282,17 @@ The `ON_ACTION` handler properties are described below.
 | ----------- | ----------------------- | -------- | ------- | --------------------------------------------- |
 | `ACTION_ID` | `string`                | Yes      | --      | Which action element triggered this handler.  |
 | `CONDITION` | `string`                | No       | --      | Optional condition based on the action value. |
-| `RESPOND`   | `string`                | No       | --      | Response message.                             |
-| `SET`       | `Record<string,string>` | No       | --      | Variable assignments.                         |
-| `THEN`      | `string`                | No       | --      | Flow step to transition to.                   |
+| `DO`                           | ordered action list     | No       | --      | Preferred form when order or nested rich `FORMATS:` matters.              |
+| `RESPOND`                      | `string`                | No       | --      | Response message; supports nested `FORMATS:` inside a `DO` action.        |
+| `SET`                          | `Record<string,string>` | No       | --      | Variable assignments.                |
+| `CLEAR`                        | `string[]`              | No       | --      | Session variables to clear.                                               |
+| `CALL`                         | `string`                | No       | --      | Tool call; use `AS result_key` to store the result.                       |
+| `GOTO` / `TRANSITION` / `THEN` | `string`                | No       | --      | Flow step to transition to.                   |
+| `HANDOFF`                      | `string`                | No       | --      | Declared handoff target agent.                                            |
+| `DELEGATE`                     | `string`                | No       | --      | Declared delegate target agent; supports nested `RETURN` and `ON_RETURN`. |
+| `COMPLETE`                     | `boolean`               | No       | `true`  | Complete the current flow.                                                |
+
+If a handler `RESPOND` includes rich `FORMATS:` before terminal routing, that payload is forwarded as the fallback final channel payload. The terminal target's own rich payload takes precedence.
 
 ### Templates
 
@@ -416,7 +426,7 @@ WHEN: (status == "active" OR status == "pending") AND amount > 0
 
 ### Variable paths and dot notation
 
-Variables are referenced using dot notation to access nested values:
+Reference variables using dot notation to access nested values:
 
 ```abl
 user.name                  # Access nested property
@@ -426,10 +436,10 @@ acctResult.status          # Tool result field
 
 #### Path resolution rules
 
-1. The evaluator looks up the full path in the session context.
-2. Each segment is resolved left to right: `user.address.city` resolves `user`, then `address` on the result, then `city`.
-3. If any segment resolves to `null` or `undefined`, the entire path resolves to `undefined`.
-4. Array access uses bracket notation: `items[0]`, `items[2].name`.
+* The evaluator looks up the full path in the session context.
+* The Platform resolves each segment left to right: `user.address.city` resolves `user`, then `address` on the result, then `city`.
+* If any segment resolves to `null` or `undefined`, the entire path resolves to `undefined`.
+* Array access uses bracket notation: `items[0]`, `items[2].name`.
 
 ### Template strings
 

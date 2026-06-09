@@ -41,6 +41,6 @@ If you make major edits or structure changes, let the user know the summary of c
 
 ## Images and visuals
 
-- When editing a doc, retain the original images, but convert its path to root-relative path. Verify that the link works.
+- When editing a doc, retain the original images, but convert its path to root-relative path. Verify that the image exists at the path.
 - If you think an image can be converted to Mermaid diagram, then ask user if they want to convert it. Keep Mermaid image code inside the .mdx article file only.
 - Try to summarize steps in the doc using ASCII diagrams wrapped in codeblocks.
