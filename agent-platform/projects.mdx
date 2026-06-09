@@ -216,36 +216,113 @@ For deeper analysis, use the pages under **More > Insights** (Dashboard, Analyti
 
 ### Exporting and Importing Projects
 
-Export and import let you move agent definitions and configuration between projects or environments. Both actions are available from the project Overview.
+Export and Import let you move agent definitions and configuration between projects or environments. Both actions are available from the project Overview.
 
-#### Exporting a Project
+#### Export Project
 
-Export creates a downloadable package containing agent definitions and project configuration. Common reasons to export include:
+Use the Export Project dialog to package an agent project into a portable .zip file. The archive contains the project's agents, tools, and any optional layers you select—such as guardrails, workflows, and channels. The archive can be imported into another environment or saved as a versioned snapshot.
 
-- Backing up project state before a major change.
-- Promoting agents from a development project to a production project.
-- Sharing a configuration with a teammate or partner.
+Before exporting, review the project contents in the export dialog.
 
-**To export a project:**
+- **Project Summary**: Overview of the project, including project name and number of agents and tools in the project. 
+- **Agents**: List of agents in the project.
+- **Tools**: List of tools in the project.
+- **Export Warnings**: If the platform detects any conditions that affect the export, such as automatic normalization of tool formats, it surfaces them in the Export Warnings. All warnings are informational and do not block the export process. Review warnings before exporting to understand what the platform has automatically adjusted. 
+- **Export Layers**: Control which parts of the project are included in the output archive.
 
-1. Open the project and navigate to **Overview**.
-2. Click **Export**.
-3. In the export dialog, confirm the contents and click **Download**.
+Click **Export** to download a .zip archive to your browser. The file follows the standard folder structure(shown above) and can be imported directly using the Import Project dialog.
 
-#### Importing Into a Project
+<Note>
+- Credentials must always be reconfigured in the target environment. The export only includes the structural requirements and metadata (such as which profile types/auth fields are needed).
+- Any hardcoded secret values remaining in text/YAML files are replaced with `{{config.X}}` template references before archiving.
+</Note>
 
-Import loads a previously exported package into the current project. The import merges the uploaded agents and configurations with the existing project contents.
+#### Import Project
 
-**To import into a project:**
+Use the Import Project dialog to import an agent project or individual agent files into the Agent Platform. The import supports merge-based import, stale content removal, environment reference adaptation, and three-way conflict detection.
 
-1. Open the destination project and navigate to **Overview**.
-2. Click **Import**.
-3. Select the exported package file.
-4. Review the summary of agents and resources to be imported.
-5. Resolve any conflicts (see the note below).
-6. Confirm the import.
+Navigate to **Project** > **Overview** > **Import**.
 
-<Info>Import does not overwrite existing agents. If the package contains an agent with the same name as one already in the project, the import flags the conflict and asks you to rename or skip the incoming agent before proceeding.</Info>
+##### Upload Import File
+
+Drag a file into the upload area, or click the upload area to open a file browser. The platform accepts the following formats:
+
+| Field / Option | Description | Notes |
+|----------------|-------------|-------|
+| `.zip` | A compressed archive containing a full project folder structure. | Most common for full project imports. |
+| `.agent-bundle.json` | A JSON bundle that packages agent definitions and metadata. | Produced by the platform's Export function. |
+| `.ablenc` | An encrypted ABL (Agent Behavior Language) file. | Used for secure distribution of agent logic. |
+| `.abl` | A plain-text ABL source file for a single agent. | Individual agent import. |
+| `.yaml / .yml` | A YAML-formatted agent or configuration file. | Individual agent or config import. |
+
+Expected folder structure inside a `.zip` archive. The contents of the zip are mapped according to the subfolders.
+
+```text
+your-project/
+├── project.json                     # Manifest
+├── abl.lock                         # Integrity
+├── agents/                          # Core - agent definition
+│   ├── supervisor.agent.abl
+│   └── booking_agent.agent.abl
+├── tools/                           # Core - tool definition
+│   └── hotels-api.tools.abl
+├── config/                          # Core
+├── connections/                     # Connections
+├── guardrails/                      # Guardrails
+├── workflows/                       # Workflows
+└── locales/                         # Optional
+    └── en/
+        └── booking_agent.json
+```
+
+##### Import Mode
+
+The Import Mode section controls how the incoming project is reconciled with the target project in the platform. The default mode is always Merge.
+ 
+**Merge with existing project  (default)**
+
+Matching records from the archive are updated in the target project. Records that exist in the target but are absent from the archive are left untouched. This is a non-destructive operation; no existing content is deleted unless explicitly overridden by the Replace modifier below.
+ 
+**Replace project contents**
+
+When checked, this modifier changes how each import layer (e.g., agents, tools, connections) is handled: any content belonging to that layer that is present in the target but absent from the archive is removed. Content that exists in both the archive and the target is updated normally.
+
+<Note> Replace does not switch the import to a full overwrite. It is a modifier on top of Merge. Records that are in both the archive and the target are merged; records only in the target are deleted per layer; records only in the archive are added.</Note>
+ 
+| Record exists in | Merge only | Merge + Replace |
+|------------------|------------|-----------------|
+| Archive only | Added to target | Added to target |
+| Both archive and target | Updated (merged) | Updated (merged) |
+| Target only | Kept unchanged | Removed from target |
+
+
+##### Adapt References for This Environment
+
+When enabled, the platform performs post-import normalization steps to make the imported project compatible with the current tenant and environment.
+ 
+- Portable bindings - Resolves any environment-portable connection or resource references so they point to the correct endpoints for this tenant.
+- Eval references - Normalizes evaluation dataset or metric references so they are valid within the current environment's evaluation framework. If a referenced modelId doesn't exist in the target tenant, the user is prompted to pick a replacement. 
+- Post-import validation - Runs a validation pass on the imported project after the above steps complete, surfacing any remaining reference errors like auth profiles, environment variables, connector credentials, MCP server auth, etc.
+ 
+##### Use a Base Export for Conflict Checks
+
+Enables three-way conflict detection during import. When active, the platform compares three states. 
+- The base snapshot - the original export of the project before any edits were made.
+- The archive being imported - the version with the author's changes.
+- The current target - the live state of the project in the platform.
+ 
+When enabled, attach the base export file. This allows the platform to distinguish between a true conflict (where both the archive and the target have independently changed the same record from the base) versus a non-conflicting divergence (where only one side changed). Without a base snapshot, any difference between archive and target is treated as a conflict.
+
+##### How to Import a Project
+ 
+1.     Navigate to the project where you want to import content.
+2.     Click **Import**.
+3.     Drag your file into the upload area, or browse and select a file. Accepted formats: `.zip, .agent-bundle.json, .ablenc, .abl, .yaml`.
+4.     Choose your **Import Mode** options. Merge is always active. Check **Replace project contents** if you want to remove layer-level content from the target that is absent from the archive.
+5.     Optionally, check **Adapt references for this environment** to normalize bindings and references for the current tenant.
+6.     Optionally, check **Use a base export for conflict checks** to enable three-way conflict detection.
+7.     Click **Import** to start the import.
+8.     Review any validation errors or conflict reports surfaced by the platform after import completes.
 
 ### Deleting A Project
 
