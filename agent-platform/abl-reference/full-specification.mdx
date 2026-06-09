@@ -41,11 +41,11 @@ Features in this spec are marked with their implementation status:
 
 ## 2. Document Structure
 
-```
+```yaml expandable=true
 AGENT: <name>
 
 # Identity
-GOAL: <string>
+GOAL: <string or multiline block>
 PERSONA: <multiline string>
 LIMITATIONS: <list>
 
@@ -65,15 +65,17 @@ CONSTRAINTS:
   <phase>:
     - REQUIRE <condition>
       ON_FAIL: <response template>
+GUARDRAILS: <input/output safety checks>
 
 # Multi-Format Output
 TEMPLATES: <named templates with channel-specific formats>
 
-# Context-Dependent Behavior
-BEHAVIOR_PROFILES: <conditional behavior overrides>
+# Context-Dependent Behavior (standalone documents)
+# BEHAVIOR_PROFILE: <name>  — defined in separate .behavior_profile.abl files
+# Referenced via USE BEHAVIOR_PROFILE: <name> in agent documents
 
 # Flow Control
-FLOW: <flow steps with reasoning zones>
+FLOW: <optional deterministic step sequence>
 DELEGATE: <sub-agent calls>
 HANDOFF: <agent transfers>
 ESCALATE: <human escalation>
@@ -81,9 +83,17 @@ COMPLETE: <completion conditions>
 
 # Error Handling
 ON_ERROR: <error handlers>
+
+# Lifecycle & Configuration
+EXECUTION: <model, timeouts, iteration limits>
+HOOKS: <before_turn, after_turn lifecycle handlers>
+ON_START: <initial actions when agent activates>
+ACTION_HANDLERS: <interactive UI button/action definitions>
 ```
 
-> **Dual Format Support**: ABL supports both the traditional uppercase keyword format (`.agent.abl`) and a YAML-based format (`.agent.yaml`). Keywords are case-insensitive — `AGENT:`, `agent:`, `GOAL:`, `goal:` are all valid. The YAML format uses lowercase keywords exclusively. See the [DSL Extensions](#dsl-syntax) for YAML format details.
+> **Dual Format Support**: ABL supports both the traditional uppercase keyword format (`.agent.abl`) and a YAML-based format (`.agent.yaml`). The `.abl` format requires **uppercase keywords** (`AGENT:`, `GOAL:`, `TOOLS:`). The `.yaml` format uses **lowercase keywords** (`agent:`, `goal:`, `tools:`). Keywords are NOT interchangeable between formats — using `agent:` in a `.abl` file will produce a parser error.
+
+`GOAL:` may be a single quoted string or a multiline block (`GOAL: |`) when the objective needs multiple clauses. Keep the goal declarative: describe the outcome the agent is optimizing for, not step-by-step control flow.
 
 ---
 
@@ -91,7 +101,7 @@ ON_ERROR: <error handlers>
 
 ### 3.1 AGENT Declaration
 
-```
+```yaml
 AGENT: <PascalCase_Name>
 ```
 
@@ -103,7 +113,7 @@ AGENT: <PascalCase_Name>
 
 **Examples:**
 
-```
+```yaml
 AGENT: Hotel_Search
 AGENT: Payment_Processor
 AGENT: Customer_Support
@@ -115,7 +125,7 @@ AGENT: Customer_Support
 
 Defines what the agent is trying to achieve. Used in system prompt and for completion detection.
 
-```
+```yaml
 GOAL: "<imperative statement describing the agent's purpose>"
 ```
 
@@ -127,7 +137,7 @@ GOAL: "<imperative statement describing the agent's purpose>"
 
 **Examples:**
 
-```
+```yaml
 GOAL: "Help user find and book a hotel that meets all booking policies"
 GOAL: "Process user's refund request and confirm resolution"
 GOAL: "Collect issue details and route to appropriate support team"
@@ -139,7 +149,7 @@ GOAL: "Collect issue details and route to appropriate support team"
 
 Multi-line description of agent's personality and behavior. Directly injected into system prompt.
 
-```
+```yaml
 PERSONA: |
   <line 1>
   <line 2>
@@ -154,7 +164,7 @@ PERSONA: |
 
 **Example:**
 
-```
+```yaml
 PERSONA: |
   Helpful, knowledgeable hotel booking specialist.
   Friendly but efficient - doesn't waste user's time.
@@ -167,9 +177,9 @@ PERSONA: |
 
 ### 3.4 LIMITATIONS
 
-Explicit boundaries on what the agent cannot do. Injected into system prompt and used for response filtering.
+Prompt-level boundaries that guide how the agent should respond. Injected into the system prompt; use `CONSTRAINTS` for deterministic runtime checks.
 
-```
+```yaml
 LIMITATIONS:
   - "<limitation 1>"
   - "<limitation 2>"
@@ -178,12 +188,12 @@ LIMITATIONS:
 **Rules:**
 
 - Clear statements of what's NOT possible
-- Helps LLM refuse inappropriate requests
+- Helps the LLM explain scope or decline inappropriate requests
 - Should match actual system capabilities
 
 **Example:**
 
-```
+```yaml
 LIMITATIONS:
   - "Cannot guarantee room availability until booking is confirmed"
   - "Cannot override blackout dates or minimum stay policies"
@@ -197,7 +207,7 @@ LIMITATIONS:
 
 Defines tools the agent can use. Compiles to `ToolDefinition` entries in the AgentIR.
 
-```
+```yaml
 TOOLS:
   <tool_name>(<params>) -> <return_type>
   ...
@@ -205,7 +215,7 @@ TOOLS:
 
 **Parameter Syntax:**
 
-```
+```yaml
 param_name: type [= default]
 ```
 
@@ -222,7 +232,7 @@ param_name: type [= default]
 
 **Examples:**
 
-```
+```yaml
 TOOLS:
   # Simple tool with typed return
   check_blackout_dates(destination: string, checkin: date, checkout: date) -> {allowed: boolean, reason?: string}
@@ -242,6 +252,183 @@ TOOLS:
   # Action tool (no meaningful return)
   create_reservation(hotel_id: string, guest_info: GuestInfo) -> Reservation
 ```
+
+> **Tool implementation note**: Agent `TOOLS:` declarations define the callable contract. The HTTP implementation stored in the Tool Library (`.tools.abl`) may use either `body: |` for a static payload or `body_template: |` for a templated payload that resolves runtime values such as `{{session.idCard}}` or `{{env.API_BASE_URL}}`.
+
+> **Import/apply note**: During project bundle import, inline agent `TOOLS:` signatures are previewed as tool additions and `apply` auto-creates project tool stubs when no companion `.tools.abl` file exists in the bundle. The next export materializes those synthesized stubs under `tools/<name>.tools.abl`. Outside bundle import, referenced tools still need to exist in the project tool registry before compilation/runtime use.
+
+#### Tool Auth Properties
+
+Tools that access external services can declare auth requirements using indented sub-properties. These compile to fields on `ToolDefinition` in the AgentIR and are consumed by the runtime auth middleware.
+
+```yaml
+TOOLS:
+  gmail_lookup(query: string) -> Result
+    auth_profile: "google-creds"
+    auth_jit: true
+    consent: preflight
+    connection: per_user
+    description: "Look up Gmail messages"
+```
+
+| Property       | IR Field           | Type                      | Description                                                                               |
+| -------------- | ------------------ | ------------------------- | ----------------------------------------------------------------------------------------- |
+| `auth_profile` | `auth_profile_ref` | `string`                  | Reference to an auth profile by name or config variable (e.g. `"{{config.GOOGLE_AUTH}}"`) |
+| `auth_jit`     | `jit_auth`         | `boolean`                 | Whether this tool requires just-in-time authentication                                    |
+| `consent`      | `consent_mode`     | `'preflight' \| 'inline'` | `preflight` prompts for all auth upfront; `inline` prompts on first tool use              |
+| `connection`   | `connection_mode`  | `'per_user' \| 'shared'`  | `per_user` requires user-scoped credentials; `shared` uses tenant-level                   |
+
+**Rules:**
+
+- `auth_jit: true` without `auth_profile` emits warning `AUTH_JIT_WITHOUT_PROFILE`
+- `consent` without `auth_profile` is ignored (orphan consent)
+- Templated refs (`"{{config.X}}"`) are preserved verbatim for runtime name resolution
+- When multiple tools reference the same `auth_profile`, requirements are merged: scopes are unioned, `preflight` wins over `inline`, `per_user` wins over `shared`
+
+After compilation, the runtime collects all auth requirements via `collectAuthRequirements()` into `AuthRequirementIR[]` for preflight consent checks and credential resolution.
+
+#### Tool Confirmation Properties
+
+Tools that can mutate external state should declare confirmation behavior explicitly instead of relying on an implicit runtime default.
+
+```dsl
+TOOLS:
+  charge_card(amount: number) -> Result
+    description: "Charge the customer's card"
+    side_effects: true
+    confirm: when_side_effects
+    immutable: [amount]
+```
+
+| Property    | IR Field                        | Type                                         | Description                                                            |
+| ----------- | ------------------------------- | -------------------------------------------- | ---------------------------------------------------------------------- |
+| `confirm`   | `confirmation.require`          | `'always' \| 'never' \| 'when_side_effects'` | When to require user approval before the tool executes                 |
+| `immutable` | `confirmation.immutable_params` | `string[]`                                   | Parameters locked after approval so the execution payload cannot drift |
+
+- The compiler emits warning `SIDE_EFFECT_TOOL_WITHOUT_CONFIRMATION` when `side_effects: true` is set without an explicit `confirm` policy.
+- The runtime does **not** auto-default confirmation behavior. Choose `confirm: when_side_effects`, `confirm: always`, or `confirm: never` deliberately for each side-effecting tool.
+
+---
+
+#### 3.5.1 ENTITIES (Named Entity Registry)
+
+`ENTITIES:` defines reusable extraction contracts that `GATHER` fields can reference with `ENTITY_REF`. Use it when several fields or agents need the same enum, synonym set, or pattern validation.
+
+```dsl
+ENTITIES:
+  request_type:
+    TYPE: enum
+    VALUES: [REQ_REFUND, REQ_EXCHANGE, REQ_CANCEL]
+    SYNONYMS:
+      REQ_REFUND: [refund, money back, reimburse]
+      REQ_EXCHANGE: [exchange, swap]
+      REQ_CANCEL: [cancel, cancellation]
+
+  booking_ref:
+    TYPE: pattern
+    PATTERN: "^[A-Z]{2}[0-9]{4,6}$"
+
+GATHER:
+  request:
+    ENTITY_REF: request_type
+    PROMPT: "What type of request do you have?"
+```
+
+| Property            | Applies To            | Description                                                                                |
+|---------------------|-----------------------|--------------------------------------------------------------------------------------------|
+| `TYPE`              | all                   | `enum` or `pattern`.                                                                       |
+| `VALUES`            | `enum`                | Canonical values stored in session state.                                                  |
+| `SYNONYMS`          | `enum`                | User-facing phrases mapped to each canonical value.                                        |
+| `PATTERN`           | `pattern`             | Regex used to validate extracted values.                                                   |
+| `SENSITIVE`         | `enum`, `pattern`     | Marks values as personal or regulated data when referenced by gather fields.               |
+| `SENSITIVE_DISPLAY` | sensitive definitions | `redact`, `replace`, or `mask`; follows the same renderer rules as gather privacy fields.  |
+| `MASK_CONFIG`       | `mask` mode           | Optional `show_first`, `show_last`, and `char` configuration.                              |
+| `PII_TYPE`          | `mask` mode           | Shape hint such as `email`, `phone`, `ssn`, `credit_card`, `address`, `name`, or `custom`. |
+
+**Rules:**
+
+- `ENTITY_REF` must point to an entity declared in `ENTITIES:`.
+- A `GATHER` field with `ENTITY_REF` should not also declare `TYPE`, `OPTIONS`, or `VALUES`; the referenced entity owns that contract.
+- Entity definitions compile into `AgentIR.entities`; gather fields keep the reference so runtime extraction, validation, and UI surfaces can resolve the canonical definition.
+- Privacy fields on an entity follow the same sensitive rendering behavior as `GATHER` privacy attributes.
+
+---
+
+#### 3.5.2 LOOKUP_TABLES (Reference Data)
+
+`LOOKUP_TABLES:` defines lookup-backed reference sets for validation, normalization, and suggestions. Agent-local lookup tables are supported but experimental; project runtime config lookup tables are the canonical shared source for production reference data.
+
+```dsl
+LOOKUP_TABLES:
+  airports:
+    source: inline
+    values: [LAX, JFK, CDG, LHR]
+    case_sensitive: false
+    fuzzy_match: true
+    fuzzy_threshold: 0.85
+
+  hotels:
+    source: collection
+    table_name: lookup_hotels
+    field: name
+```
+
+| Field             | Description                                                  |
+| ----------------- | ------------------------------------------------------------ |
+| `source`          | `inline`, `collection`, or `api`.                            |
+| `values`          | Inline value list when `source: inline`.                     |
+| `table_name`      | Collection/runtime-config table name for shared lookup data. |
+| `field`           | Field to read from collection-backed rows.                   |
+| `case_sensitive`  | Whether matching preserves case.                             |
+| `fuzzy_match`     | Enables approximate matching.                                |
+| `fuzzy_threshold` | Similarity threshold for fuzzy matching.                     |
+
+- Use `GATHER` field semantics to reference a lookup table from a field.
+- Agent-local tables compile into `AgentIR.lookup_tables` and emit an experimental warning.
+- Prefer project runtime config lookup tables when multiple agents share the same reference set.
+
+---
+
+#### 3.5.3 NLU, INTENTS, MULTI_INTENT, MESSAGES, and TESTS
+
+These top-level sections are parsed for compatibility with authored and imported agents. Runtime support varies by section; prefer the current `HANDOFF`, `GATHER`, `DIGRESSIONS`, and `GUARDRAILS` constructs for new behavior unless the section below names a wired runtime contract.
+
+```dsl
+NLU:
+  entities:
+    - NAME: ssn
+      TYPE: pattern
+      PATTERN: "\\d{3}-\\d{2}-\\d{4}"
+      SENSITIVE: true
+
+INTENTS:
+  LEXICAL_FALLBACK: when_unavailable
+  location_lookup: "Help users find a nearby service location"
+
+MULTI_INTENT:
+  strategy: primary_queue
+  max_intents: 5
+  confidence_threshold: 0.7
+  enabled: true
+
+MESSAGES:
+  error_default: "Sorry, something went wrong. Please try again."
+  escalation_notice: TEMPLATE(escalation_notice)
+
+TESTS:
+  - name: "happy path"
+    input: "track my order"
+    expect_intent: order_inquiry
+```
+
+| Section        | Runtime contract                                                                                  |
+| -------------- | ------------------------------------------------------------------------------------------------- |
+| `NLU`          | Defines entity extraction metadata. Prefer `ENTITIES` for reusable field contracts in new agents. |
+| `INTENTS`      | Declares intent labels and lexical fallback behavior for routing/classification.                  |
+| `MULTI_INTENT` | Configures multi-intent detection strategy when the runtime classifier supports it.               |
+| `MESSAGES`     | Overrides named runtime/user-facing message strings; values may reference `TEMPLATE(name)`.       |
+| `TESTS`        | Authoring/evaluation metadata. Parsed for tooling; not a runtime execution section.               |
+| `INSTRUCTIONS` | Additional authoring instructions merged with persona/behavior-profile guidance where supported.  |
 
 ---
 
@@ -265,7 +452,44 @@ GATHER:
 - Agent extracts from user messages (doesn't always ask directly)
 - Validation rules checked before proceeding
 
-**Example:**
+**Example — GATHER in a reasoning agent (no FLOW):**
+
+In reasoning mode, GATHER fields are collected conversationally. The LLM uses the prompts as guidance but asks naturally based on conversation context — it may collect multiple fields in a single turn if the user volunteers information.
+
+```dsl
+AGENT: Refund_Agent
+
+GOAL: "Help customers process refunds for eligible orders"
+
+TOOLS:
+  lookup_order(order_id: string) -> {order_id: string, items: object[], total: number, status: string}
+    description: "Look up order details"
+  process_refund(order_id: string, item_id: string, reason: string) -> {refund_id: string, amount: number}
+    description: "Process refund for an item"
+
+GATHER:
+  order_id:
+    prompt: "Could you share your order number?"
+    type: string
+    required: true
+  refund_reason:
+    prompt: "What's the reason for the refund?"
+    type: string
+    required: true
+    validate: "Must describe a specific issue"
+
+CONSTRAINTS:
+  - REQUIRE lookup_order.status != "already_refunded"
+    ON_FAIL: "This order has already been refunded."
+
+COMPLETE:
+  - WHEN: refund_id IS SET
+    RESPOND: "Your refund of {{process_refund.amount}} has been processed. Reference: {{refund_id}}"
+```
+
+> In this reasoning agent, the LLM decides when to ask for each field, when to call `lookup_order`, and when to call `process_refund` — all guided by the GOAL and CONSTRAINTS. No FLOW section is needed.
+
+**Example — GATHER field definitions (standalone):**
 
 ```
 GATHER:
@@ -302,32 +526,27 @@ GATHER:
 
 #### Extraction Strategies
 
-The `strategy` field controls how the runtime extracts field values from user messages. Five strategies are supported:
+The `strategy` field controls how the runtime extracts field values from user messages. Three strategies are supported:
 
 | Strategy  | Description                                                                | Use When                                      |
 | --------- | -------------------------------------------------------------------------- | --------------------------------------------- |
-| `auto`    | Runtime selects the best tier automatically based on field type/complexity | Default — good for most agents                |
 | `pattern` | Regex and JS library extraction only (no LLM calls)                        | High-volume, low-cost — dates, phones, emails |
-| `ml`      | ML sidecar (NLU engine) for entity extraction                              | Enterprise — when ML models are available     |
 | `llm`     | LLM-based extraction with tool-use                                         | Complex fields — addresses, preferences       |
 | `hybrid`  | Pattern extraction first, LLM fallback for unresolved fields               | Balance of cost and accuracy                  |
 
+<Note>The `strategy` field is only effective inside FLOW GATHER blocks (see [§3.20.2](#3202-gather-within-flow-steps)). In top-level GATHER, the runtime always uses LLM-based extraction; specifying `strategy` at the top level is accepted but has no effect.</Note>
+
 ```dsl
-GATHER:
-  strategy: hybrid   # Try patterns first, LLM fallback
-
-  phone:
-    prompt: "What's your phone number?"
-    type: phone
-    required: true
-
-  destination:
-    prompt: "Where are you flying to?"
-    type: string
-    required: true
-    semantics:
-      format: airport_code
-      lookup: iata_codes
+FLOW:
+  collect_info:
+    REASONING: false
+    GATHER:
+      - phone: required
+      - destination:
+          TYPE: string
+          REQUIRED: true
+      STRATEGY: hybrid   # Try patterns first, LLM fallback
+    THEN: next_step
 ```
 
 #### Field Semantics
@@ -342,10 +561,13 @@ The optional `semantics` block provides extraction hints that improve accuracy a
 | `lookup`     | Reference table for validation  | `iata_codes`, `country_names`                |
 | `convert_to` | Auto-conversion target unit     | `USD`, `km`                                  |
 | `locale`     | Formatting locale               | `en-US`, `es-MX`                             |
+| `enum_set`   | Allowed enumeration values (alias for top-level `options`; compiler mirrors into `enum_values`) | `[small, medium, large]`                     |
+
+> **Precedence when both `options` and `semantics.enum_set` are specified:** the top-level `options` list wins and is written into `enum_values`. `semantics.enum_set` is retained on the IR `semantics` block for round-trip / introspection but does _not_ override the top-level list.
 
 #### Supported Field Types
 
-ABL provides 6 base storage types plus 25+ semantic type mappings for migration from Kore.ai XO platform:
+Agent Platform provides six base storage types and more than 25 semantic-type mappings for migration from [AI for Service Platform](/ai-for-service/index):
 
 **Base Types:**
 
@@ -358,7 +580,7 @@ ABL provides 6 base storage types plus 25+ semantic type mappings for migration 
 | `phone`   | Regex + libphonenumber               | `"+1-555-123-4567"`          |
 | `boolean` | Keyword matching (yes/no/true/false) | `true`, `false`              |
 
-**Kore Entity Type Mappings** (for XO 10/11 migration):
+**Kore Entity Type Mappings** (for migration from AI for Service):
 
 Kore platform entity types map to ABL's `type` + `semantics` system. For example:
 
@@ -371,8 +593,6 @@ Kore platform entity types map to ABL's `type` + `semantics` system. For example
 | `DATE_PERIOD` | string   | `format: date_range, components: [start, end]`                  |
 | `PHONE`       | phone    | _(base type)_                                                   |
 | `EMAIL`       | email    | _(base type)_                                                   |
-
-> **Full list**: 25+ Kore entity types are mapped. See `packages/compiler/src/platform/utils/kore-entity-map.ts` for the complete mapping.
 
 #### Validation Rules
 
@@ -444,7 +664,7 @@ GATHER:
 
 ### 3.7 MEMORY
 
-Defines what the agent remembers within and across conversations.
+Defines what the agent remembers within the current conversation, across one execution tree, and across broader user/project lifecycles.
 
 ```
 MEMORY:
@@ -453,84 +673,124 @@ MEMORY:
     ...
 
   persistent:
-    - <namespace>.<field>
+    - PATH: <namespace>.<field>
+      SCOPE: user | project | execution_tree
+      ACCESS: read | write | readwrite
     ...
 
   remember:
-    - WHEN <condition>
+    - WHEN: <condition>
       STORE: <value> -> <target>
     ...
 
   recall:
-    - ON_<event>: "<instruction>"
-    ...
+    - ON: <canonical_event>
+      ACTION: inject_context | load_memory | prompt_llm
+      ...
 ```
 
 #### 3.7.1 Session Memory
 
-Temporary state within current conversation. Cleared when conversation ends.
+Temporary state within the current conversation. Session memory is projected into reasoning context, tool gating, and prompt shaping before each LLM turn.
 
 ```
 session:
-  - search_results      # Hotels returned from search
-  - selected_hotel      # Hotel user is considering
-  - reservation_draft   # In-progress reservation details
-  - clarification_count # How many times we've asked for clarification
+  - search_results
+  - selected_hotel
+  - reservation_draft
+  - clarification_count
 ```
 
 #### 3.7.2 Persistent Memory
 
-Long-term storage associated with user. Survives across conversations.
+Durable memory comes in three scopes:
+
+- `user` — facts shared across that user's sessions
+- `project` — facts shared across the whole project
+- `execution_tree` — workflow-scoped facts shared across one handoff tree or long-running execution
 
 ```
 persistent:
-  - user.preferred_hotel_chains    # ["Marriott", "Hilton"]
-  - user.preferred_room_type       # "king bed, non-smoking"
-  - user.loyalty_programs          # {"marriott": "Gold", "hilton": "Silver"}
-  - user.home_airport              # "LAX"
-  - user.past_destinations         # ["Paris", "Tokyo", "NYC"]
-  - user.average_budget            # 250 (learned from bookings)
-  - user.past_bookings             # [{hotel, dates, price}, ...]
-  - user.dietary_restrictions      # "vegetarian"
-  - user.accessibility_needs       # "wheelchair accessible"
+  - PATH: user.preferred_hotel_chains
+    SCOPE: user
+    ACCESS: readwrite
+  - PATH: project.exchange_rates
+    SCOPE: project
+    ACCESS: read
+  - PATH: workflow.current_quote
+    SCOPE: execution_tree
+    ACCESS: readwrite
 ```
+
+Persistent memory entries may also use explicit read/write lists in compatibility-authored agents:
+
+```dsl
+persistent:
+  READS:
+    - user.preferences
+  WRITES:
+    - workflow.current_quote
+```
+
+Session memory declarations can include initial values and reset hints:
+
+```dsl
+session:
+  - routing_history
+  - handoff_count
+      INITIAL: 0
+      RESET: per_session
+```
+
+Supported `RESET` values:
+
+- `per_session` initializes once at session start and keeps the value for that conversation.
+- `per_activation` resets to `INITIAL` every time the agent is activated, including repeated activations of the same agent.
+- `per_step` is reserved for step-scoped reset semantics.
+- `never` avoids runtime reset; prefer persistent memory for durable data.
+
+`ACCESS: readwrite` grants both read and write capability for a persistent path. Prefer the narrowest access that lets the agent complete its job.
+
+> **Reserved system identifiers**: `user_id`, `project_id`, `tenant_id`, and other system-owned context fields are populated by the platform. Treat them as immutable in public ABL authoring.
 
 #### 3.7.3 Remember Triggers
 
-When to store information to memory.
+Remember triggers store new information into durable memory when a condition is met.
 
 ```
 remember:
-  - WHEN booking.confirmed
+  - WHEN: booking.confirmed == true
     STORE: {destination, hotel_chain, room_type, price, dates} -> user.past_bookings
 
-  - WHEN user.states_preference CONTAINS "prefer"
-    STORE: extracted_preference -> user.preferred_*
-
-  - WHEN user.mentions_loyalty_program
+  - WHEN: user.mentions_loyalty_program == true
     STORE: {program, tier} -> user.loyalty_programs
 
-  - WHEN search.completed
-    STORE: AVG(selected_prices) -> user.average_budget
+  - WHEN: quote_ready == true
+    STORE: quoted_price -> workflow.current_quote
 ```
 
 #### 3.7.4 Recall Instructions
 
-How to use memory during the conversation.
+Recall rules load stored facts back into the session at canonical lifecycle events.
 
 ```
 recall:
-  - ON_START: "Check if user has preferred chains, room types, or loyalty programs"
-  - ON_SEARCH: "Consider user's average budget when ranking results"
-  - ON_RECOMMENDATION: "Prioritize hotels matching user's past preferences"
-  - ON_DESTINATION_MENTION: "Check if user has visited this destination before"
+  - ON: session:start
+    ACTION: inject_context
+    PATHS: [user.preferred_hotel_chains, user.loyalty_programs]
+  - ON: tool:search_hotels:after
+    ACTION: prompt_llm
+    INSTRUCTION: "Prefer hotels aligned with the user's known room and loyalty preferences"
+  - ON: agent:*:after
+    ACTION: load_memory
+    DOMAIN: "travel_preferences"
 ```
 
 ---
 
 ### 3.8 CONSTRAINTS
 
-Business rules that must be enforced. These become guardrails evaluated by the runtime constraint checker during execution.
+Deterministic runtime checks over session state and execution checkpoints. When a check fails, the runtime executes `ON_FAIL`.
 
 ```
 CONSTRAINTS:
@@ -543,16 +803,16 @@ CONSTRAINTS:
 
 #### 3.8.1 Constraint Labels
 
-Constraint phase names are **organizational labels** for grouping related constraints. All constraints are evaluated every turn in declaration order, regardless of label.
+Constraint labels are **organizational groupings** for related constraints. All constraints are evaluated every turn in declaration order, regardless of label.
 
-| Label         | Typical authoring use         |
-| ------------- | ----------------------------- |
-| `pre_search`  | Search-related checks         |
-| `pre_booking` | Booking-related checks        |
-| `pre_payment` | Payment-related checks        |
-| `always`      | General checks (common label) |
+| Label           | Typical authoring use         |
+| --------------- | ----------------------------- |
+| `search_rules`  | Search-related checks         |
+| `booking_rules` | Booking-related checks        |
+| `payment_rules` | Payment-related checks        |
+| `always`        | General checks (common label) |
 
-> **Note:** Phase names are arbitrary user-defined strings. The compiler flattens all phases into a single constraint list, and the runtime evaluates them in declaration order every turn. Use phase names for readability and organization, not for execution control. Use `WHEN` for contextual gating and structural `BEFORE` only for supported checkpoints.
+> **Note:** Labels are arbitrary user-defined strings. The compiler flattens all labeled blocks into a single constraint list, and the runtime evaluates them in declaration order every turn. Use labels for readability and organization, not for execution control. Use `WHEN` for contextual gating and structural `BEFORE` only for supported checkpoints.
 
 #### 3.8.2 Condition Syntax
 
@@ -580,6 +840,8 @@ checkpoint_target = "calling" identifier
 
 #### 3.8.3 ON_FAIL Actions
 
+**Inline form** (single action):
+
 ```
 ON_FAIL: "<response template with {variables}>"
 ON_FAIL: ESCALATE
@@ -588,6 +850,32 @@ ON_FAIL: BLOCK
 ```
 
 `ON_FAIL: HANDOFF <agent>` is executed through the shared runtime violation handler on the active flow and reasoning paths. In practice, checkpointed failures such as `BEFORE calling ...` and `BEFORE returning results` can perform a handoff instead of returning a placeholder signal.
+
+**Structured block form** (multiple directives):
+
+When `ON_FAIL:` is followed by an empty value, the parser reads a structured block with these directives:
+
+```
+- REQUIRE some_condition
+  ON_FAIL:
+    RESPOND: "Please provide the required information."
+    COLLECT: [field_a, field_b]
+    RETRY: true
+    GOTO: previous_step
+    THEN: continue
+```
+
+| Directive | Type     | Description                                             |
+| --------- | -------- | ------------------------------------------------------- |
+| `RESPOND` | string   | Message shown to the user when the constraint fails     |
+| `COLLECT` | string[] | Fields to re-collect (comma-separated list or `[a, b]`) |
+| `RETRY`   | boolean  | Whether to retry the current step (`true` / `false`)    |
+| `GOTO`    | string   | Jump to a named FLOW step                               |
+| `THEN`    | string   | Control flow: `continue`, `retry`, or custom action     |
+
+`CLEAR` is not currently a structured `ON_FAIL` directive for global constraints. If a failed constraint needs to reset variables before retrying, route to a flow step that performs `CLEAR` explicitly.
+
+> **In reasoning mode**: Constraints are runtime checks that the platform evaluates around agent actions. The LLM does not need to remember or simulate them itself — the runtime decides when to respond, block, hand off, escalate, or continue based on the compiled rule set.
 
 **Example:**
 
@@ -617,7 +905,7 @@ CONSTRAINTS:
 
 ---
 
-### 3.8.1 GUARDRAILS
+### 3.9 GUARDRAILS
 
 GUARDRAILS define safety and quality validation rules checked at various execution points. Unlike CONSTRAINTS (which check business logic conditions against session data), GUARDRAILS validate content — user inputs, agent outputs, tool parameters, tool results, and handoff context.
 
@@ -660,7 +948,7 @@ GUARDRAILS:
 
   tool_param_validation:
     kind: tool_input
-    check: "word_count(content) < 200"
+    check: "abl.word_count(tool_input) >= 200"
     action: block
     msg: "Tool input payload is too large"
 ```
@@ -671,7 +959,7 @@ GUARDRAILS:
 GUARDRAILS:
   no_competitor_mentions:
     kind: both
-    check: "not_matches_pattern(content, '(?i)acme travel|globex bookings')"
+    check: "abl.matches_pattern(input, '(?i)acme travel|globex bookings')"
     action: filter
     msg: "Competitor mention detected"
     # Compiles to two guardrails:
@@ -679,7 +967,17 @@ GUARDRAILS:
     #   no_competitor_mentions_output (kind: output)
 ```
 
-> **Important:** Local `check:` expressions should use documented CEL helpers such as `contains_pii`, `matches_pattern`, `not_matches_pattern`, `word_count`, `sentence_count`, `contains_url`, and `contains_email`. Tone or safety judgments like empathy/toxicity should use `llm_check` or a provider-backed guardrail rather than undocumented pseudo-check names.
+> **Important:** Local `check:` expressions are violation predicates: `true` means the guardrail fires and `false` means the content passes. Use documented CEL helpers such as `abl.contains_pii`, `abl.matches_pattern`, `abl.word_count`, `abl.sentence_count`, `abl.contains_url`, and `abl.contains_email`. Tone or safety judgments like empathy/toxicity should use `llm_check` or a provider-backed guardrail rather than undocumented pseudo-check names.
+
+#### Guardrail Fields
+
+| Field       | Required | Description                                                                                                       |
+| ----------- | -------- | ----------------------------------------------------------------------------------------------------------------- |
+| `kind`      | yes      | Evaluation point: `input`, `output`, `tool_input`, `tool_output`, `handoff`, or `both`.                           |
+| `check`     | no       | Local CEL-style violation predicate. Use for deterministic checks.                                                |
+| `llm_check` | no       | Natural-language evaluator instruction for LLM-as-judge checks.                                                   |
+| `action`    | yes      | Action to apply when the rule fires. See the action table below.                                                  |
+| `msg`       | no       | User-safe message or trace summary associated with the violation. Do not include secrets or internal remediation. |
 
 #### Actions
 
@@ -697,9 +995,9 @@ GUARDRAILS:
 
 ---
 
-### 3.9 DELEGATE
+### 3.10 DELEGATE
 
-Call a sub-agent for a specific task, get result, continue processing.
+Call a sub-agent for a specific task, get result, continue processing. In reasoning mode, the LLM decides when delegation conditions are met — you don't need to wire delegation into explicit flow steps.
 
 ```
 DELEGATE:
@@ -1096,14 +1394,14 @@ TEMPLATES:
 
 | Format               | Channel    | Description                                                      |
 | -------------------- | ---------- | ---------------------------------------------------------------- |
-| `DEFAULT`            | All        | Plain text fallback used when no channel-specific format matches |
-| `MARKDOWN`           | Web, SDK   | Markdown with tables, headers, bold, lists                       |
-| `HTML`               | Web, Email | Full HTML with styling and interactive elements                  |
-| `VOICE INSTRUCTIONS` | Voice      | TTS rendering instructions (pacing, emphasis, pauses)            |
 | `ADAPTIVE_CARD`      | Teams, Web | Microsoft Adaptive Card JSON schema                              |
-| `SLACK`              | Slack      | Slack Block Kit JSON                                             |
-| `WHATSAPP`           | WhatsApp   | WhatsApp message template format                                 |
 | `AG_UI`              | AG-UI SDK  | AG-UI protocol event stream                                      |
+| `DEFAULT`            | All        | Plain text fallback used when no channel-specific format matches |
+| `HTML`               | Web, Email | Full HTML with styling and interactive elements                  |
+| `MARKDOWN`           | Web, SDK   | Markdown with tables, headers, bold, lists                       |
+| `SLACK`              | Slack      | Slack Block Kit JSON                                             |
+| `VOICE INSTRUCTIONS` | Voice      | TTS rendering instructions (pacing, emphasis, pauses)            |
+| `WHATSAPP`           | WhatsApp   | WhatsApp message template format                                 |
 
 **Variable Interpolation:**
 
@@ -1548,7 +1846,7 @@ FLOW:
       - IF: input == "no" OR no
         RESPOND: "No problem."
         THEN: cancelled
-      - IF: input contains "change"
+      - IF: input.contains("change")
         RESPOND: "What would you like to change?"
         THEN: modify
       - ELSE:
@@ -1630,16 +1928,17 @@ FLOW:
 ```
 
 **Sub-Intent Properties:**
-| Property | Description |
-|----------|-------------|
-| `INTENT` | Intent pattern to match |
-| `RESPOND` | Response message |
-| `CLEAR` | Variables to clear (triggers re-collection) |
-| `SET` | Variables to set |
-| `CALL` | Tool to call |
-| `RESUME` | Stay in step (default: true for sub-intents) |
 
-### 3.14.6 ON_SUCCESS / ON_FAILURE Blocks
+| Property  | Description                                  |
+|-----------|----------------------------------------------|
+| `INTENT`  | Intent pattern to match                      |
+| `RESPOND` | Response message                             |
+| `CLEAR`   | Variables to clear (triggers re-collection)  |
+| `SET`     | Variables to set                             |
+| `CALL`    | Tool to call                                 |
+| `RESUME`  | Stay in step (default: true for sub-intents) |
+
+### 3.14.6 ON_SUCCESS / ON_FAIL Blocks
 
 For CALL steps, define separate handling for success and failure:
 
@@ -1690,7 +1989,7 @@ Commonly used in ON_INPUT branches to reset state before re-collecting:
 
 ```dsl
 ON_INPUT:
-  - IF: input contains "change"
+  - IF: input.contains("change")
     CLEAR: transfer_amount, raw_amount, limitsResult, feeResult
     THEN: collect_amount
 ```
@@ -2100,22 +2399,24 @@ HOOKS:
     RESPOND: ""  # Silent — no user-facing message
 ```
 
-#### Flow Step Events (ON_SUCCESS / ON_FAILURE / ON_RESULT / ON_INPUT)
+#### Flow Step Events (ON_SUCCESS / ON_FAIL / ON_RESULT / ON_INPUT)
 
-These events are documented in Section 3.14.6 (ON_SUCCESS/ON_FAILURE), 3.14.10 (ON_RESULT), and 3.14.3 (ON_INPUT). They fire at specific points within a flow step:
+These events are documented in Section 3.14.6 (ON_SUCCESS/ON_FAIL), 3.14.10 (ON_RESULT), and 3.14.3 (ON_INPUT). They fire at specific points within a flow step:
 
 | Event        | Fires When                                       | Use For                           |
 | ------------ | ------------------------------------------------ | --------------------------------- |
 | `ON_SUCCESS` | Step's CALL or GATHER completes successfully     | Happy-path branching              |
-| `ON_FAILURE` | Step's CALL or GATHER fails                      | Error recovery, retry, escalation |
+| `ON_FAIL`    | Step's CALL or GATHER fails                      | Error recovery, retry, escalation |
 | `ON_RESULT`  | After CALL returns — multi-way branch on result  | Route based on tool return values |
 | `ON_INPUT`   | After user input — conditional branch on content | Deterministic routing by response |
 
 > **Evaluation order**: ON_INPUT is evaluated on a frozen state snapshot. Mutations (SET, TRANSITION) are collected and applied after all conditions are evaluated. This prevents side effects from affecting sibling branches.
 
+> **Determinism**: ON_INPUT `IF:` predicates are pure boolean expressions over `input` and session/flow variables. No LLM reasoning, no tool invocations, no intent classification runs inside the predicate — if you need LLM-based routing, use `DIGRESSIONS` with `INTENT:` (§ 3.20.4). Treat ON_INPUT as a first-match boolean dispatcher so replays and eval snapshots are reproducible.
+
 ---
 
-### 8.11 Runtime Defaults & Limits
+### 7.11 Runtime Defaults & Limits
 
 The following defaults apply when not overridden in the agent's EXECUTION block or project configuration:
 
@@ -2140,7 +2441,7 @@ AGENT: Complex_Workflow
   EXECUTION:
     model: claude-sonnet-4-5-20250929
     max_iterations: 20          # Allow more reasoning loops
-    max_flow_iterations: 200    # Complex flow with many steps
+    max_flow_iterations: 200    # Only raise above default 100 for audited flows with many deterministic steps
     timeouts:
       tool_timeout_ms: 60000    # Some tools are slow
       session_timeout_ms: 3600000  # 1 hour sessions
