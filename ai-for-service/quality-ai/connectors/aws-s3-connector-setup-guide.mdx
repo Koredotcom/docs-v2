@@ -15,7 +15,7 @@ Complete the following before you start.
 |---------------------|--------------------------------------------------------------------------------|
 | **S3 bucket**       | Created in your preferred region with an organized folder structure            |
 | **IAM permissions** | Read-only access (`s3:GetObject`, `s3:ListBucket`) via access keys or IAM role |
-| **Audio files**     | WAV or MP3 format, maximum 50 MB each, accessible via HTTPS                    |
+| **Audio files**     | WAV or MP3 format, maximum 50 MB each, available via HTTPS                    |
 | **Chat files**      | JSON format                                                                    |
 | **Timestamps**      | ISO 8601 format with UTC timezone (`YYYY-MM-DDTHH:MM:SSZ`)                     |
 | **Test file**       | A `test.csv` file with sample data in each configured S3 folder                |
@@ -72,7 +72,26 @@ Using a single mixed mono file significantly reduces transcription accuracy.
 
 ## Data Flow
 
-![Architecture](/ai-for-service/quality-ai/configure/connectors/images/architecture.png) 
+```text
+
+[S3 Bucket]
+└─ Audio + Metadata Files
+        │
+        ▼
+[S3 Connector]
+└─ Validation + Ingestion
+        │
+        ▼
+[Quality AI Express]
+├─ Transcription + Analysis│  
+        │
+        ▼
+[Analytics Dashboard]
+├─ Quality Score
+└─ Sentiment
+└─ Topics
+```
+
 
 ---
 
@@ -287,48 +306,23 @@ Choose a folder structure for your S3 bucket.
 
 **Option 1: Unified Path** (voice and chat in one folder):
 
-{/*
-<div style="font-family: monospace; white-space: pre;">
+```text
 
-┌───────────────────────────────────────────────┐
-│ s3://your-bucket/conversations/               │
-└───────────────────────────────────────────────┘
-                     │
-                     ▼
-┌──────────────────────────────┐
-│ metadata.csv                 │
-│ All interaction metadata     │
-└──────────────────────────────┘
-                     │
-                     ▼
-┌──────────────────────────────┐
-│ audio/                       │
-├──────────────────────────────┤
-│ conv-123456.wav              │ Stereo recording
-│ conv-123457-agent.wav        │ Mono - agent only
-│ conv-123457-customer.wav     │ Mono - customer only
-│ conv-123458.wav              │ Stereo recording
-└──────────────────────────────┘
-                     │
-                     ▼
-┌──────────────────────────────┐
-│ chat/                        │
-├──────────────────────────────┤
-│ chat-123459.json             │ Chat transcript
-│ chat-123460.json             │ Chat transcript
-└──────────────────────────────┘
-                     │
-                     ▼
-┌──────────────────────────────┐
-│ test.csv                     │
-│ Required for validation      │
-└──────────────────────────────┘
-
-
-</div>
-*/}
- 
----
+s3://your-bucket/
+├─ voice-interactions/
+│  ├─ voice_metadata.csv
+│  ├─ recordings/
+│  │  ├─ conv-123456.wav            (Stereo recording)
+│  │  ├─ conv-123457-agent.wav      (Mono - agent only)
+│  │  └─ conv-123457-customer.wav   (Mono - customer only)
+│  └─ test.csv                      (Required for validation)
+└─ chat-interactions/
+   ├─ chat_metadata.csv
+   ├─ transcripts/
+   │  ├─ chat-123459.json           (Chat transcript)
+   │  └─ chat-123460.json           (Chat transcript)
+   └─ test.csv                      (Required for validation)
+```   
 
 **Option 2: Separate Paths** (voice and chat in separate folders):
 
@@ -351,11 +345,11 @@ s3://your-bucket/
 
 **Before moving on, verify:**
 
-- All audio files are accessible via HTTPS URLs.
+- All audio files are available via HTTPS URLs.
 - CSV files contain the required fields with correct column headers.
 - Mono recordings have separate agent and customer files.
 - A `test.csv` file exists in each configured folder.
-- All file sizes are under 50 MB, and file names do not contain spaces.
+- All file sizes are under 50 MB, and file names don't contain spaces.
 
 ---
 
@@ -382,7 +376,7 @@ s3://your-bucket/
    | Check                   | Expected Result           |
    |-------------------------|---------------------------|
    | **Authentication**      | Connected successfully    |
-   | **File Path Access**    | S3 bucket accessible      |
+   | **File Path Access**    | S3 bucket available      |
    | **File Format**         | CSV format validated      |
    | **Metadata Validation** | Required fields confirmed |
 
@@ -391,7 +385,7 @@ s3://your-bucket/
    | Check               | Resolution                                                                      |
    |---------------------|---------------------------------------------------------------------------------|
    | **Authentication**  | Verify credentials and IAM permissions; ensure they haven't expired            |
-   | **File Access**     | Check bucket name, region, and folder paths; confirm file URLs are accessible   |
+   | **File Access**     | Check bucket name, region, and folder paths; confirm file URLs are available   |
    | **Format/Metadata** | Ensure `test.csv` exists with correct structure, column headers, and timestamps |
 
 ---
@@ -420,22 +414,14 @@ s3://your-bucket/
 
 ## Troubleshooting
 
-### Authentication Issues
+| Category              | Problem              | Symptom                           | Resolution                                                                 |
+|----------------------|---------------------|-----------------------------------|---------------------------------------------------------------------------|
+| Authentication       | Invalid Credentials | Authentication failed error       | Verify access key and secret key. Check IAM role ARN format, and confirm credentials haven’t expired.  |
+| Authentication       | Permission Denied   | Access denied to S3 bucket       | Add S3 read permissions to the IAM user or role. Verify the bucket policy and confirm the bucket region matches the configuration. |
+| Data Processing      | Timestamp Errors    | Invalid timestamp format         | Use ISO 8601 format (YYYY-MM-DDTHH:MM:SSZ) and include UTC timezone. Verify end time is after start time. |
 
-| Problem                 | Symptom                     | Resolution                                                                                                                     |
-|-------------------------|-----------------------------|--------------------------------------------------------------------------------------------------------------------------------|
-| **Invalid Credentials** | Authentication failed error | Verify access key and secret key; check IAM role ARN format; ensure credentials haven't expired                                |
-| **Permission Denied**   | Access denied to S3 bucket  | Add S3 read permissions to the IAM user or role; verify the bucket policy; confirm the bucket region matches the configuration |
 
-### Data Processing Issues
-
-| Problem              | Symptom                  | Resolution                                                                                              |
-|----------------------|--------------------------|---------------------------------------------------------------------------------------------------------|
-| **Timestamp Errors** | Invalid timestamp format | Use ISO 8601 format (`YYYY-MM-DDTHH:MM:SSZ`); include UTC timezone; verify end time is after start time |
-
-### Performance
-
-Processing time is approximately 3-5 minutes per conversation, depending on conversation length, ASR transcription latency (for voice), and LLM response latency.
+Processing typically takes approximately 3–5 minutes per conversation, depending on conversation length, ASR transcription latency (for voice), and LLM response latency.
 
 ---
 
