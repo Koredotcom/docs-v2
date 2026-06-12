@@ -1,0 +1,146 @@
+---
+title: "External Agent"
+sidebarTitle: "External Agent"
+---
+
+Register and use external agents in Agent Platform using the A2A (Agent-to-Agent) protocol. This enables cross-service agent invocation over standard HTTP — including agents owned by external organizations — supporting delegation, sub-task handoff, and multi-agent orchestration across service boundaries. The routing executor handles remote handoffs transparently, making agent calls location-agnostic: external agents are invoked the same way as local ones.
+
+## Register an External Agent
+
+Register an external agent to make it available within the Agent Platform. 
+
+**Prerequisites**
+
+- The external agent supports the A2A protocol.
+- The agent endpoint is reachable over HTTP or HTTPS.
+- You have the endpoint URL for the external agent.
+- Authentication details are available if required.
+
+**To register an external agent:**
+
+1. Navigate to **External Agents**.
+2. Click **Register Agent**.
+3. Enter the required details:
+    - **Agent Name** — Name of the external agent.
+    - **Endpoint URL** — URL of the external agent endpoint.
+    - **Protocol** — Communication protocol for the external agent. Supported protocols:
+        - A2A
+        - REST
+    - **Authentication Type** — Authentication mechanism required by the external agent endpoint. Supported types:
+        - API Key
+        - Bearer Token
+4. Click **Register**.
+
+The platform validates the endpoint and adds the agent to the **External Agents** list. Use the **Test Connection** action to verify that the endpoint is reachable. On success, the platform fetches and stores the agent card, which defines the agent's capabilities, skills, and streaming support.
+
+## Access External Agents via Handoff or Delegation
+
+Once registered, external agents are available as tools within Agent Platform agents. You can combine local and external agents in the same multi-agent workflow.
+
+To use an external agent, add it to the **Handoff** or **Delegate** section of your agent. The platform handles communication through the A2A protocol.
+
+**In ABL**, add the external agent under the `HANDOFF` or `DELEGATE` section and set `LOCATION` to `REMOTE`:
+
+```yaml
+HANDOFF:
+  - TO: RemoteAgentName           # must match ExternalAgentConfig.name in the DB
+    WHEN: <condition>
+    LOCATION: REMOTE              # marks this as an external call
+    ENDPOINT: "https://remote.example.com/a2a"  # inline URL (optional if DB config exists)
+    PROTOCOL: A2A                 # only 'a2a' supported today
+    ASYNC: true                   # optional: suspend + push-notification callback mode
+    TIMEOUT: 300                  # optional: seconds
+    CONTEXT:
+      pass: [field1, field2]      # session/context variables to forward
+      summary: "Why we're handing off"
+      history: full               # none | summary_only | full | last_n
+    RETURN: true                  # true = parent thread waits for response
+```
+
+### Remote-Specific Properties
+
+| Property | Values | Description |
+|----------|---------|-------------|
+| `LOCATION` | `REMOTE` | Marks the tool as a remote agent. |
+| `ENDPOINT` | URL string | The A2A endpoint. Supports `{{config.*}}` and `{{env.*}}` interpolation. This property is optional. If provided, it overrides the endpoint URL configured during agent registration. |
+| `PROTOCOL` | `A2A` or `REST` | The communication protocol used to invoke the remote agent. |
+| `ASYNC` | `true` / `false` | Enables asynchronous dispatch with push-notification barriers. When set to `true`, configure the `CALLBACK_BASE_URL` environment variable. This value must be a publicly accessible HTTPS URL where the remote agent can post execution results. |
+| `TIMEOUT` | Integer (seconds) | Maximum time to wait for a response from the remote agent before the request times out. |
+| `CONTEXT` | — | Copies named fields from the current session's gathered or set data values into the request metadata sent to the external agent. |
+| `RETURN` | `true` / `false` | Whether the parent thread waits for the response. |
+
+### Operating Modes
+
+#### Sync Mode
+
+This is the default mode. The agent waits for a response from the external agent. The default timeout is 30 seconds. If the request times out, the `ON_FAILURE` event is triggered.
+
+```yaml
+- TO: Risk_Analyzer
+  WHEN: intent contains "risk"
+  LOCATION: REMOTE
+  ENDPOINT: "http://localhost:4002"
+  PROTOCOL: A2A
+  CONTEXT:
+    pass: [contract_id, contract_type]
+    summary: "User needs risk analysis"
+  RETURN: true
+```
+
+#### Streaming
+
+Streaming is auto-detected when the remote agent card has `streaming: true` and the user is connected. No DSL changes are required; the runtime handles it automatically.
+
+```yaml
+- TO: Risk_Analyzer
+  WHEN: intent contains "risk"
+  LOCATION: REMOTE
+  ENDPOINT: "http://localhost:4002"
+  PROTOCOL: A2A
+  RETURN: true
+```
+
+#### Async
+
+Async mode uses a suspend-and-callback mechanism. The current session suspends, and the remote agent pushes the result when done. Use this mode for long-running operations.
+
+Requirements for async remote calls:
+
+- The `CALLBACK_BASE_URL` environment variable must be set to a public HTTPS URL reachable by the remote agent.
+- The remote agent's card must have push notification capabilities.
+- Default async timeout is 300 seconds. Override with the `TIMEOUT` value in ABL.
+
+
+```yaml
+- TO: Async_Risk_Analyzer
+  WHEN: intent contains "deep analysis"
+  LOCATION: REMOTE
+  ENDPOINT: "http://localhost:4002"
+  PROTOCOL: A2A
+  ASYNC: true        # critical — forces suspend + callback path
+  TIMEOUT: 300       # max wait in seconds
+  CONTEXT:
+    pass: [contract_id]
+    summary: "Background deep analysis"
+  RETURN: true
+```
+
+<Note>
+1. **Case sensitivity**: `TO: <external-agent-name>` must exactly match the name provided during registration. The value is case-sensitive.
+2. **Config variable**: When using a config variable for the URL, `{{config.EXTERNAL_AGENT_URL}}` resolves at compile time, not runtime. The config variable must exist in the project before you save and deploy the agent. This approach is recommended for multi-environment setups.
+
+    ```yaml
+    - TO: Hosted_External_Agent
+      WHEN: true
+      LOCATION: REMOTE
+      ENDPOINT: "{{config.EXTERNAL_AGENT_URL}}"   # set this in project config vars
+      PROTOCOL: A2A
+      CONTEXT:
+        history: full
+      RETURN: true
+    ```
+3. **Async callback**: Push-notification callbacks require a public HTTPS URL set in the `CALLBACK_BASE_URL` environment variable.
+4. **Inline endpoint**: An inline `ENDPOINT` in DSL overrides the endpoint provided during registration. Authentication details must still be configured during registration—credentials cannot be added to the DSL.
+5. **Remote agent state**: Remote agents are stateless by default and only see the current message. Use `history: full` in `CONTEXT` to forward the conversation. The history is stored in `message.metadata.history` in the A2A payload.
+6. **Context tracking**: A `contextId` is sent on every turn to the same remote agent, allowing the remote side to associate turns if it maintains state.
+</Note>

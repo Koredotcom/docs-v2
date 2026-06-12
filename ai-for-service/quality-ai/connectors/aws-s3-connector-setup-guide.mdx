@@ -15,7 +15,7 @@ Complete the following before you start.
 |---------------------|--------------------------------------------------------------------------------|
 | **S3 bucket**       | Created in your preferred region with an organized folder structure            |
 | **IAM permissions** | Read-only access (`s3:GetObject`, `s3:ListBucket`) via access keys or IAM role |
-| **Audio files**     | WAV or MP3 format, maximum 50 MB each, accessible via HTTPS                    |
+| **Audio files**     | WAV or MP3 format, maximum 50 MB each, available via HTTPS                    |
 | **Chat files**      | JSON format                                                                    |
 | **Timestamps**      | ISO 8601 format with UTC timezone (`YYYY-MM-DDTHH:MM:SSZ`)                     |
 | **Test file**       | A `test.csv` file with sample data in each configured S3 folder                |
@@ -72,7 +72,26 @@ Using a single mixed mono file significantly reduces transcription accuracy.
 
 ## Data Flow
 
-![Architecture](/ai-for-service/quality-ai/configure/connectors/images/architecture.png) 
+```text
+
+[S3 Bucket]
+└─ Audio + Metadata Files
+        │
+        ▼
+[S3 Connector]
+└─ Validation + Ingestion
+        │
+        ▼
+[Quality AI Express]
+├─ Transcription + Analysis│  
+        │
+        ▼
+[Analytics Dashboard]
+├─ Quality Score
+└─ Sentiment
+└─ Topics
+```
+
 
 ---
 
@@ -171,9 +190,9 @@ Use this format for live chat interactions from web chat, messaging platforms, o
 
 ### ​Agent and queue validation scenarios
 
-- If the agent isn't onboarded but the queue is onboarded, the system processes the conversation.
-- If both the agent and queue are onboarded, the system processes the conversation even when the agent isn't mapped to the queue.
-- If the queue isn't onboarded or configured, the system rejects the conversation during validation.
+- The system processes the conversation if the onboarding team hasn't onboarded the agent, but has onboarded the queue.
+- The system processes the conversation if the onboarding team has onboarded both the agent and the queue, even when the agent isn't mapped to the queue.
+- The system rejects the conversation during validation if the onboarding team hasn't onboarded the queue or configured it.
 
 ## JSON Transcript Schemas
 
@@ -287,19 +306,46 @@ Choose a folder structure for your S3 bucket.
 
 **Option 1: Unified Path** (voice and chat in one folder):
 
-![Unified Path Structure](/ai-for-service/quality-ai/configure/connectors/images/unified-path-structure.png)
+```text
+s3://your-bucket/conversations/
+├── metadata.csv                    # All interaction metadata
+├── audio/
+│   ├── conv-123456.wav            # Stereo recording
+│   ├── conv-123457-agent.wav      # Mono - agent only
+│   ├── conv-123457-customer.wav   # Mono - customer only  
+│   └── conv-123458.wav            # Stereo recording
+├── chat/
+│   ├── chat-123459.json           # Chat transcript
+│   └── chat-123460.json           # Chat transcript
+└── test.csv                       # Required for validation
+```   
 
 **Option 2: Separate Paths** (voice and chat in separate folders):
 
-![Separate Path Structure](/ai-for-service/quality-ai/configure/connectors/images/separate-path-structure.png)
+```text
+s3://your-bucket/
+├─ voice-interactions/
+│  ├─ voice_metadata.csv
+│  ├─ recordings/
+│  │  ├─ conv-123456.wav            (Stereo)
+│  │  ├─ conv-123457-agent.wav      (Mono agent)
+│  │  └─ conv-123457-customer.wav   (Mono customer)
+│  └─ test.csv
+└─ chat-interactions/
+   ├─ chat_metadata.csv
+   ├─ transcripts/
+   │  ├─ chat-123459.json
+   │  └─ chat-123460.json
+   └─ test.csv
+```
 
 **Before moving on, verify:**
 
-- All audio files are accessible via HTTPS URLs.
+- All audio files are available via HTTPS URLs.
 - CSV files contain the required fields with correct column headers.
 - Mono recordings have separate agent and customer files.
 - A `test.csv` file exists in each configured folder.
-- All file sizes are under 50 MB, and file names do not contain spaces.
+- All file sizes are under 50 MB, and file names don't contain any spaces.
 
 ---
 
@@ -314,71 +360,63 @@ Choose a folder structure for your S3 bucket.
    - **IAM Role**: Enter the IAM Role ARN.
 6. Set the folder path:
    - **Unified Path**: Enter a single path for both voice and chat (for example, `s3://your-bucket/conversations/`).
-   - **Separate Paths**: Enter a **Voice Path** and a **Chat Path** separately.
+   - **Separate Paths**: Enter a **Voice Path** and a **Chat Path**.
 
 ---
 
 ### Step 3: Test the Connection
 
 1. Select the **Test** tab in the connector configuration.
-2. Confirm the following checks pass:
+2. Run the connection test.
+3. Verify that the system passes all validation checks:
 
-   | Check                   | Expected Result           |
-   |-------------------------|---------------------------|
-   | **Authentication**      | Connected successfully    |
-   | **File Path Access**    | S3 bucket accessible      |
-   | **File Format**         | CSV format validated      |
-   | **Metadata Validation** | Required fields confirmed |
+   * Authentication
+   * File Path Access
+   * File Format
+   * Metadata Validation
 
-3. If a check fails:
-
-   | Check               | Resolution                                                                      |
-   |---------------------|---------------------------------------------------------------------------------|
-   | **Authentication**  | Verify credentials and IAM permissions; ensure they haven't expired            |
-   | **File Access**     | Check bucket name, region, and folder paths; confirm file URLs are accessible   |
-   | **Format/Metadata** | Ensure `test.csv` exists with correct structure, column headers, and timestamps |
-
----
-
-### Step 4: Map Queues and Set a Schedule
+### Step 4: Map Queues and Configure the Schedule
 
 1. Navigate to the **Queue** tab.
-2. Map each `queueId` value from your CSV files to a queue in Quality AI Express. Values must match exactly.
+2. Map each `queueId` value from the CSV files to a Quality AI Express queue. Values must match exactly.
 3. Navigate to the **Schedule** tab.
-4. Set the **Interval** (minutes, hours, or days) and the **Start Time** (UTC).
+4. Set the **Interval** (minutes, hours, or days) and **Start Time** (UTC).
 5. Select **Save** to activate the connector.
 
-**Verify the setup is complete:**
+**Verify the setup is complete**:
 
-- Queue mappings are saved and validated.
-- The processing schedule is active.
-- The first ingestion job appears in the **Log** tab.
-- No errors appear in the processing logs.
+* save and validate the queue mappings.
+* Activate the processing schedule.
+* Verify that the first ingestion job appears in the Log tab.
+* Verify that the system reports no processing errors.
 
-**Success indicators:**
+**Success indicators**:
 
-- Conversations appear in Quality AI Express dashboards.
-- Analytics data populates for ingested interactions.
-
----
+* Conversations display in **Quality AI Express** dashboards.
+* Analytics data is available for ingested interactions.
 
 ## Troubleshooting
 
-### Authentication Issues
+### Authentication
 
-| Problem                 | Symptom                     | Resolution                                                                                                                     |
-|-------------------------|-----------------------------|--------------------------------------------------------------------------------------------------------------------------------|
-| **Invalid Credentials** | Authentication failed error | Verify access key and secret key; check IAM role ARN format; ensure credentials haven't expired                                |
-| **Permission Denied**   | Access denied to S3 bucket  | Add S3 read permissions to the IAM user or role; verify the bucket policy; confirm the bucket region matches the configuration |
+| Problem             | Symptom                    | Resolution                                                                                   |
+| ------------------- | -------------------------- | -------------------------------------------------------------------------------------------- |
+| Invalid Credentials | Authentication failed      | Verify the access key, secret key, IAM role ARN, and credential expiration.                  |
+| Permission Denied   | Access denied to S3 bucket | Add S3 read permissions to the IAM user or role. Verify the bucket policy and bucket region. |
 
-### Data Processing Issues
+### File Validation
 
-| Problem              | Symptom                  | Resolution                                                                                              |
-|----------------------|--------------------------|---------------------------------------------------------------------------------------------------------|
-| **Timestamp Errors** | Invalid timestamp format | Use ISO 8601 format (`YYYY-MM-DDTHH:MM:SSZ`); include UTC timezone; verify end time is after start time |
+| Problem                         | Symptom                | Resolution                                                                                          |
+| ------------------------------- | ---------------------- | --------------------------------------------------------------------------------------------------- |
+| File Access Error               | File or path not found | Verify the bucket name, region, folder path, and file availability.                                 |
+| Invalid File Format or Metadata | Validation failed      | Confirm that `test.csv` exists and contains the required structure, column headers, and timestamps. |
 
-### Performance
+### Data Processing
 
-Processing time is approximately 3-5 minutes per conversation, depending on conversation length, ASR transcription latency (for voice), and LLM response latency.
+| Problem          | Symptom                  | Resolution                                                                                                                       |
+| ---------------- | ------------------------ | -------------------------------------------------------------------------------------------------------------------------------- |
+| Timestamp Errors | Invalid timestamp format | Use ISO 8601 format (`YYYY-MM-DDTHH:MM:SSZ`) and include the UTC timezone. Verify that the end time occurs after the start time. |
+
+> Processing typically takes 3–5 minutes per conversation, depending on conversation length, ASR transcription latency (for voice), and LLM response latency.
 
 ---
