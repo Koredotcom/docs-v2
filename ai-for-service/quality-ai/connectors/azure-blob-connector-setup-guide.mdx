@@ -1,0 +1,207 @@
+---
+title: Configurations Overview
+sidebarTitle: Azure Blob Connector
+---
+
+The Azure Blob Storage Connector imports conversation recordings, transcripts, and metadata stored in Microsoft Azure Blob Storage into Quality AI Express. Organizations can use this connector with third-party CCaaS platforms to enable automated quality evaluations, conversation analytics, sentiment analysis, coaching workflows, and reporting.
+
+The connector periodically scans configured Azure Blob Storage locations and ingests supported conversation data into Quality AI Express.
+
+## Prerequisites
+
+### Azure Storage Requirements
+
+| Requirement          | Description                                         |
+| -------------------- | --------------------------------------------------- |
+| **Storage Account**      | Azure Storage Account with Blob access subscription |
+| **Authentication**       | Connection String                                   |
+| **Container**            | Azure Blob container containing conversation files  |
+| **Supported File Types** | WAV, MP3, JSON, CSV                                 |
+| **Maximum File Size**    | 50 MB per file                                      |
+| **Timestamp Format**     | ISO 8601 UTC (YYYY-MM-DDTHH:MM:SSZ)                 |
+
+### Platform Requirements
+
+| Requirement        | Description                              |
+| ------------------ | ---------------------------------------- |
+| **Quality AI Express** | Connector feature enabled                |
+| **Agent Setup**        | Agents configured with valid email addresses |
+| **Queue Setup**        | Quality AI queues configured and available for mapping |
+| **Permissions**	| Access to Connectors configuration |
+
+## Authentication Methods
+
+The connector supports Connection String authentication.
+
+### Connection String (Recommended)
+
+Use this method for production deployments.
+
+1. Open Azure Portal.
+1. Navigate to **Storage Account**.
+1. Go to **Security + Networking** > **Access Keys**.
+1. Copy the **Connection String** for **Key1** or **Key2**.
+
+    <Note> Use Account Key authentication for simple setups. Use **Connection Strings** for centralized credential management in production environments.</Note>
+
+## Supported Data Types and File Requirements
+
+Azure Blob Storage supports the same data types as AWS S3 Connector.
+
+| Data Type        | Format   | Files per Conversation | File Requirements                                | Analytics Support       |
+| ---------------- | -------- | ---------------------- | ------------------------------------------------ | ----------------------- |
+| **Stereo Voice**     | WAV, MP3 | 1 dual-channel file     | Single dual-channel recording (agent + customer). | Complete Analytics      |
+| **Mono Voice**       | WAV, MP3 | 2 files (agent and customer)    | Separate agent and customer recordings.  <br /> - **Supported**: `conv-123456-agent.wav` and `conv-123456-customer.wav`. <br /> - **Not Supported**: `conv-123456-mixed.wav` containing both speakers.         | Enhanced Analytics      |
+| **Voice Transcript** | JSON     | 1 transcript file      | Pre-transcribed voice conversation.    | Text Analytics          |
+| **Chat Transcript**  | JSON     | 1 transcript file    | Message-level chat transcript.                    | Complete Text Analytics |
+
+<Note>Mono voice conversation requires two-file recording structure (for agent and customer). Combined recordings aren't supported.</Note>
+
+Storage Structure Options
+
+Option A: Unified Path (Voice and Chat in a Single Folder Structure)
+
+https://accountname.blob.core.windows.net/container/conversations/
+
+container/
+├── metadata.csv
+├── audio/
+│   ├── conv-123456.wav
+│   ├── conv-123457-agent.wav
+│   └── conv-123457-customer.wav
+├── chat/
+│   └── chat-123459.json
+└── test.csv
+
+
+Option B: Separate Voice and Chat Paths (Voice and Chat in Separate Folder Structures)
+
+https://accountname.blob.core.windows.net/container/
+
+container/
+├── voice/
+│   ├── metadata.csv
+│   ├── recordings/
+│   └── test.csv
+└── chat/
+    ├── metadata.csv
+    ├── transcripts/
+    └── test.csv
+
+**Validation Checklist**
+
+- Upload all required files to Azure Blob Storage.
+- Metadata CSV contains required fields and valid values.
+- Mono conversations contain separate agent and customer files.
+- The configured container and folder paths are available.
+- A `test.csv` file exists in each ingestion path.
+- Blob permissions enable the connector to access the files.
+- Avoid spaces and special characters in file and folder names to simplify ingestion and troubleshooting.
+
+### Step 1: Create the Connector
+
+1. Navigate to **Quality AI** > **Configure** > **Connectors**.
+1. Select **+ Add Connector** > **Azure Blob Storage** > **Connect**.
+
+| Field               | Description                                    |
+| ------------------- | ---------------------------------------------- |
+| **Name**                | Unique connector name.                          |
+| **Region**              | Azure storage account region.                   |
+| **Authentication Type** | Connection String.                              |
+| **Connection String**   | Required authentication value when using Connection String.  |
+| **Channel**             | Unified Path or Separate Paths for Voice and Chat.      |
+| **Voice Path**          | Blob path for voice recordings.                 |
+| **Chat Path**           | Blob path for chat transcripts.                 |
+
+**Channel Configuration Storage Paths**
+
+Choose one configuration method:
+* **Unified Path**: Configure a single Blob path containing both voice and chat content.
+* **Separate Paths**: Configure independent paths for Voice or Chat interactions.
+
+### Step 2: Test Connection
+
+Run validation checks:
+
+1. Select the **Test** tab.
+2. Run the connection test.
+3. Verify that the system passes all validation checks: Authentication, File Path Access, File Format Validation, and Metadata Validation.
+
+### Step 3: Configure Queue Mapping
+
+1. Select the **Queue** tab.
+1. Map each `queueId` value from the CSV files to a **Quality AI Express** queue. Values must match exactly.
+1. Repeat for all queue identifiers.
+1. Select **Save**.
+
+<Note> Every queue ID in the metadata file must map to an existing Quality AI Express queue before ingestion can run. Evaluation forms linked to mapped queues determine how interactions are evaluated.</Note>
+
+### Step 4: Configure the Schedule
+
+1. Select the **Schedule** tab.
+1. Set the Interval Type, Start Date, Repeat Every, and Start Time (UTC).
+1. Select **Save** to activate the schedule.
+
+**Verify Configuration**
+
+- Save and validate the queue mappings.
+- Activate the processing schedule.
+- Verify that the first ingestion job appears in the **Log** tab.
+- Confirm that the system reports no processing errors.
+
+**Success Indicators
+
+- All conversations display in **Quality AI Express** dashboards.
+- Analytics data is available for ingested interactions.
+
+### Step 5: Monitor Ingestion Jobs
+
+Use the **Log** tab to monitor ingestion activity.
+
+| Column       | Description         |
+| ------------ | ------------------- |
+| Start Time   | Job start time      |
+| Finish Time  | Job completion time |
+| Uploaded     | Uploaded files count    |
+| Processing   | Processed files count   |
+| Job Status   | Current processing status  |
+| View Details | Opens job details         |
+
+
+**Verify Successful Ingestion**
+
+Confirm that uploaded and processed file counts match, confirm the job completed, and no errors appear in the job details.
+
+## Troubleshooting
+
+Authentication Issues
+
+| Problem               | Symptom          | Resolution                              |
+| --------------------- | ---------------- | --------------------------------------- |
+| Authentication Failed | Authentication error       | Verify the Account Key, Connection String, and Storage Account Name. Re-copy the credentials from the Azure portal and test again. |
+| Authorization Header Error   | Request rejected | Generate a new access key and update the connector configuration.  |
+
+### Storage Access Issues
+
+| Problem             | Symptom        | Resolution             |
+| ------------------- | -------------- | ---------------------- |
+| Container Not Found | Container or path not found | Verify the container name and folder structure.  |
+| File Not Available | Blob Access denied  | Verify blob access permissions and storage access settings. |
+
+### File Validation Issues
+
+| Problem           | Symptom        | Resolution                 |
+| ----------------- | -------------- | -------------------------- |
+| File Format Validation Error | Unsupported or invalid file format | Verify the CSV metadata structure and required headers.       |
+| Metadata Validation Error    | Missing or invalid metadata | Verify required metadata fields and timestamp values. |
+
+## Data Processing Issues
+
+| Problem             | Symptom        | Resolution        |
+| ------------------- | -------------- | ----------------- |
+| Timestamp Validation Error  | Invalid timestamp format | Use ISO 8601 UTC format. |
+| Queue Mapping Error | Queue IDs not mapped   | Map all queue IDs before ingestion. |
+
+### Performance Considerations
+
+Processing typically takes 3–5 minutes per conversation, depending on audio length, transcription latency, and AI analysis time.
