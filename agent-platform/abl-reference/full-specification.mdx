@@ -291,7 +291,7 @@ After compilation, the runtime collects all auth requirements via `collectAuthRe
 
 Tools that can mutate external state should declare confirmation behavior explicitly instead of relying on an implicit runtime default.
 
-```dsl
+```yaml
 TOOLS:
   charge_card(amount: number) -> Result
     description: "Charge the customer's card"
@@ -314,7 +314,7 @@ TOOLS:
 
 `ENTITIES:` defines reusable extraction contracts that `GATHER` fields can reference with `ENTITY_REF`. Use it when several fields or agents need the same enum, synonym set, or pattern validation.
 
-```dsl
+```yaml
 ENTITIES:
   request_type:
     TYPE: enum
@@ -358,7 +358,7 @@ GATHER:
 
 `LOOKUP_TABLES:` defines lookup-backed reference sets for validation, normalization, and suggestions. Agent-local lookup tables are supported but experimental; project runtime config lookup tables are the canonical shared source for production reference data.
 
-```dsl
+```yaml
 LOOKUP_TABLES:
   airports:
     source: inline
@@ -393,7 +393,7 @@ LOOKUP_TABLES:
 
 These top-level sections are parsed for compatibility with authored and imported agents. Runtime support varies by section; prefer the current `HANDOFF`, `GATHER`, `DIGRESSIONS`, and `GUARDRAILS` constructs for new behavior unless the section below names a wired runtime contract.
 
-```dsl
+```yaml
 NLU:
   entities:
     - NAME: ssn
@@ -416,9 +416,9 @@ MESSAGES:
   escalation_notice: TEMPLATE(escalation_notice)
 
 TESTS:
-  - name: "happy path"
+  happy_path:
     input: "track my order"
-    expect_intent: order_inquiry
+    expected: { toolCalled: "lookup_order", responseContains: "order" }
 ```
 
 | Section        | Runtime contract                                                                                  |
@@ -427,7 +427,7 @@ TESTS:
 | `INTENTS`      | Declares intent labels and lexical fallback behavior for routing/classification.                  |
 | `MULTI_INTENT` | Configures multi-intent detection strategy when the runtime classifier supports it.               |
 | `MESSAGES`     | Overrides named runtime/user-facing message strings; values may reference `TEMPLATE(name)`.       |
-| `TESTS`        | Authoring/evaluation metadata. Parsed for tooling; not a runtime execution section.               |
+| `TESTS`        | Named test cases for authoring/evaluation tooling — each test has an input and an expected block (toolCalled, responseContains, signal, stateUpdates). Parsed and surfaced to tooling; the runtime skips the section and never executes it.|
 | `INSTRUCTIONS` | Additional authoring instructions merged with persona/behavior-profile guidance where supported.  |
 
 ---
@@ -456,7 +456,7 @@ GATHER:
 
 In reasoning mode, GATHER fields are collected conversationally. The LLM uses the prompts as guidance but asks naturally based on conversation context — it may collect multiple fields in a single turn if the user volunteers information.
 
-```dsl
+```yaml
 AGENT: Refund_Agent
 
 GOAL: "Help customers process refunds for eligible orders"
@@ -536,7 +536,7 @@ The `strategy` field controls how the runtime extracts field values from user me
 
 <Note>The `strategy` field is only effective inside FLOW GATHER blocks (see [this](#enhanced-gather-within-flow)). In top-level GATHER, the runtime always uses LLM-based extraction; specifying `strategy` at the top level is accepted but has no effect.</Note>
 
-```dsl
+```yaml
 FLOW:
   collect_info:
     REASONING: false
@@ -606,7 +606,7 @@ Fields support typed validation that runs after extraction:
 | `custom`  | Expression evaluated at runtime | `custom: "checkout > checkin"`                |
 | `llm`     | Natural language instruction    | `llm: "Must be a valid city name"`            |
 
-```dsl
+```yaml
 GATHER:
   policy_number:
     prompt: "What is your policy number?"
@@ -640,7 +640,7 @@ Fields can be conditionally activated based on other collected data:
 | `progressive`    | Becomes required when `depends_on` fields are collected |
 | `{ when: expr }` | Activates when a data-driven condition is true          |
 
-```dsl
+```yaml
 GATHER:
   has_loyalty:
     prompt: "Are you a loyalty program member?"
@@ -724,7 +724,7 @@ persistent:
 
 Persistent memory entries may also use explicit read/write lists in compatibility-authored agents:
 
-```dsl
+```yaml
 persistent:
   READS:
     - user.preferences
@@ -734,7 +734,7 @@ persistent:
 
 Session memory declarations can include initial values and reset hints:
 
-```dsl
+```yaml
 session:
   - routing_history
   - handoff_count
@@ -932,7 +932,7 @@ Guardrails are evaluated in a tiered architecture for performance.
 
 #### DSL Syntax
 
-```dsl
+```yaml
 GUARDRAILS:
   no_pii_output:
     kind: output
@@ -955,7 +955,7 @@ GUARDRAILS:
 
 > **`both` expansion**: When `kind: both` is specified, the compiler creates two guardrails — one `input` and one `output` — with identical configuration. This is a convenience for rules that should apply in both directions.
 
-```dsl
+```yaml
 GUARDRAILS:
   no_competitor_mentions:
     kind: both
@@ -1769,7 +1769,7 @@ When an agent has a FLOW section, it follows a deterministic state machine defin
 
 ### Basic Syntax
 
-```dsl
+```yaml
 FLOW:
   step1 -> step2 -> step3          # Step sequence
 
@@ -1792,7 +1792,7 @@ FLOW:
 
 FLOW steps can use GATHER for multi-field collection with LLM or pattern-based extraction:
 
-```dsl
+```yaml
 FLOW:
   collect_details:
     PRESENT: "Let me gather your booking details."
@@ -1835,7 +1835,7 @@ FLOW:
 
 ### Conditional Branching (ON_INPUT)
 
-```dsl
+```yaml
 FLOW:
   confirm:
     RESPOND: "Would you like to proceed?"
@@ -1866,7 +1866,7 @@ FLOW:
 
 Digressions allow users to break out of the current flow based on detected intents:
 
-```dsl
+```yaml
 FLOW:
   # Global digressions available in all steps
   global_digressions:
@@ -1906,7 +1906,7 @@ FLOW:
 
 Sub-intents are scoped to a specific step and don't leave the step:
 
-```dsl
+```yaml
 FLOW:
   select_room:
     RESPOND: "Select a room type."
@@ -1942,7 +1942,7 @@ FLOW:
 
 For CALL steps, define separate handling for success and failure:
 
-```dsl
+```yaml
 FLOW:
   book_hotel:
     CALL: create_reservation(hotel_id, guest_info)
@@ -1960,13 +1960,13 @@ Assign computed values to variables within flow steps. Supports both inline (sin
 
 **Inline form (in ON_INPUT branches):**
 
-```dsl
+```yaml
 SET: transfer_amount = TO_NUMBER(REPLACE(raw_amount, "$", ""))
 ```
 
 **Block form (step-level, multiple assignments):**
 
-```dsl
+```yaml
 start:
   SET:
     preferred_currency = COALESCE(preferred_currency, "USD")
@@ -1981,13 +1981,13 @@ Expressions can use any built-in function (see Section 8) and reference session 
 
 Remove variables from session state. Used to reset state when looping or changing context.
 
-```dsl
+```yaml
 CLEAR: from_date, to_date, txnResult, filtered_transactions
 ```
 
 Commonly used in ON_INPUT branches to reset state before re-collecting:
 
-```dsl
+```yaml
 ON_INPUT:
   - IF: input.contains("change")
     CLEAR: transfer_amount, raw_amount, limitsResult, feeResult
@@ -1998,7 +1998,7 @@ ON_INPUT:
 
 Enhanced tool calling with explicit parameter mapping (`WITH:`) and result variable binding (`AS:`).
 
-```dsl
+```yaml
 fetch_balance:
   CALL: get_balance
     WITH:
@@ -2014,7 +2014,7 @@ fetch_balance:
 
 Branch on tool call results with multiple conditions. Replaces the simpler ON_SUCCESS/ON_FAIL pattern when more than two outcomes are possible.
 
-```dsl
+```yaml
 validate_recipient_step:
   CALL: validate_recipient
     WITH:
@@ -2044,7 +2044,7 @@ ON_RESULT branches support the same properties as ON_INPUT branches: `IF`/`ELSE`
 
 Process arrays through a declarative pipeline with filter, map, sort, and limit operations.
 
-```dsl
+```yaml
 apply_filters:
   TRANSFORM: txnResult.transactions AS txn INTO filtered_transactions
     FILTER: filter_type == "all" OR txn.type == filter_type
@@ -2077,7 +2077,7 @@ Supervisors can enable an opt-in classification pipeline that runs before the ma
 
 #### Configuration
 
-```dsl
+```yaml
 SUPERVISOR: Support_Router
   EXECUTION:
     model: claude-sonnet-4-5-20250929
@@ -2243,7 +2243,7 @@ The following variables are managed by the runtime and available in WHEN conditi
 | `_pending_inferences`  | `object`                 | LLM infers a field value                | Inferred values waiting for user confirmation       |
 | `all_fields_gathered`  | `boolean`                | All required GATHER fields collected    | True when gather is complete — use in COMPLETE/WHEN |
 
-```dsl
+```yaml
 COMPLETE:
   - WHEN: all_fields_gathered == true
     RESPOND: "Great, I have everything I need."
@@ -2255,7 +2255,7 @@ COMPLETE:
 | ------------------------- | -------- | -------------------- | ----------------------------------------------------- |
 | `last_<tool_name>_result` | `object` | After tool execution | Full result of the most recent call to the named tool |
 
-```dsl
+```yaml
 CONSTRAINTS:
   always:
     - REQUIRE last_search_hotels_result.total > 0
@@ -2270,7 +2270,7 @@ CONSTRAINTS:
 | `user.sentiment`       | `string` | Sentiment analysis on each user message    | `very_negative`, `negative`, `neutral`, `positive`, `very_positive`, `frustrated` |
 | `sentiment_trajectory` | `string` | Computed across conversation turns         | `improving`, `declining`, `stable`, `volatile`                                    |
 
-```dsl
+```yaml
 ESCALATE:
   - WHEN: user.sentiment == "very_negative" AND sentiment_trajectory == "declining"
     PRIORITY: high
@@ -2294,7 +2294,7 @@ ESCALATE:
 | `channel`  | `string` | Session init          | `web`, `slack`, `teams`, `whatsapp`, `voice`, `api` |
 | `language` | `string` | Session init / detect | ISO 639 code: `en`, `es`, `fr`, `de`, etc.          |
 
-```dsl
+```yaml
 ROUTING:
   - TO: Spanish_Support
     WHEN: language == "es"
@@ -2310,7 +2310,7 @@ ROUTING:
 | `handoff.completed`  | `boolean` | Child agent completes after handoff | True when a handed-off agent finishes |
 | `escalate.completed` | `boolean` | Human agent resolves escalation     | True when escalation is resolved      |
 
-```dsl
+```yaml
 COMPLETE:
   - WHEN: handoff.completed == true
     RESPOND: "Is there anything else I can help with?"
@@ -2364,7 +2364,7 @@ Used in the MEMORY section to trigger recall of stored information:
 | `step:enter:<name>`        | When a flow step is entered       | `step:enter:Collect_Payment`   |
 | `step:exit:<name>`         | When a flow step is exited        | `step:exit:Verify_Identity`    |
 
-```dsl
+```yaml
 MEMORY:
   recall:
     - ON: session:start
@@ -2388,7 +2388,7 @@ Hooks execute actions at agent and conversation turn boundaries:
 | `before_turn`  | Before each conversation turn is processed        |
 | `after_turn`   | After each conversation turn completes            |
 
-```dsl
+```yaml
 HOOKS:
   before_turn:
     CALL: audit_logger
@@ -2436,7 +2436,7 @@ The following defaults apply when not overridden in the agent's EXECUTION block 
 | Reasoning max iterations | 10      | `execution.max_iterations`      | Max tool-use loops before forced stop |
 | Flow max iterations      | 100     | `execution.max_flow_iterations` | Max flow step transitions per session |
 
-```dsl
+```yaml
 AGENT: Complex_Workflow
   EXECUTION:
     model: claude-sonnet-4-5-20250929
@@ -2613,7 +2613,7 @@ HANDOFF RETURN:true with digression (thread resume):
 
 ## Complete Example
 
-```dsl
+```yaml
 AGENT: Hotel_Search
 
 GOAL: "Help user find and book a hotel that meets all booking policies"
