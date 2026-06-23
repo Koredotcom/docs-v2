@@ -38,5 +38,4 @@ Next, navigate to the Configurations tab to review and complete the channel setu
 7. Select **Yes** and click **Save** to enable the channel.
 ![Enable channel](/ai-for-service/channels/images/tropo-img4.png)
 
-After the channel is enabled and all configurations are verified, you can optionally publish the app to make it available for end-users, with the new channel. Learn more about [Publishing your App](/ai-for-service/deployment/publishing-app).
-
+After the channel is enabled and all configurations are verified, you can optionally publish the app to make it available for end-users, with the new channel. Learn more about [Publishing your App](/ai-for-service/deployment/publishingApp).
