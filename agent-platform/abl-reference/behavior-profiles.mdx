@@ -1,0 +1,101 @@
+---
+title: Behavior profiles
+sidebarTitle: Behavior profiles
+---
+
+Behavior profiles are standalone ABL documents. Agents attach them with `USE BEHAVIOR_PROFILE: <name>`, and the compiler attaches the matching profile IR to that agent.
+
+## File contract
+
+Behavior profile files belong in `behavior_profiles/` and should use the `.behavior_profile.abl` suffix:
+
+```text
+behavior_profiles/voice_vip.behavior_profile.abl
+```
+
+The manifest records them under `behavior_profiles`, while `layers_included` still uses `core`. Do'nt add `behavior_profiles` to `layers_included`.
+
+The manifest entry is a pointer, not the profile definition. Import preview compiles the actual file at `behavior_profiles.<name>.path`. A package that only lists a profile in `project.json` but omits the referenced `.abl` file doesn't create the profile; agents with `USE BEHAVIOR_PROFILE: <name>` will fail resolution with a missing profile diagnosis.
+
+```json
+{
+  "format_version": "2.0",
+  "layers_included": ["core"],
+  "behavior_profiles": {
+    "voice_vip": {
+      "name": "voice_vip",
+      "path": "behavior_profiles/voice_vip.behavior_profile.abl",
+      "priority": 100,
+      "when_summary": "channel == voice",
+      "used_by": ["Support_Agent"]
+    }
+  }
+}
+```
+
+## Grammar
+
+```yaml
+BEHAVIOR_PROFILE: voice_vip
+PRIORITY: 100
+WHEN: channel == "voice"
+
+INSTRUCTIONS: |
+  Speak concisely and confirm one thing at a time.
+
+CONVERSATION:
+  speaking:
+    tone: warm
+    max_sentences: 2
+
+VOICE:
+  INSTRUCTIONS: "Use a calm voice with clear pauses."
+
+TOOLS:
+  HIDE: [internal_debug_tool]
+
+GATHER:
+  field_overrides:
+    account_id:
+      prompt: "Please say or enter your account number."
+```
+
+Required declarations:
+
+| Declaration         | Required | Notes                                       |
+| ------------------- | -------- | ------------------------------------------- |
+| `BEHAVIOR_PROFILE:` | yes      | Case-sensitive profile name                 |
+| `PRIORITY:`         | yes      | Higher priority wins when profiles conflict |
+| `WHEN:`             | yes      | CEL expression evaluated against context    |
+
+## Agent attachment
+
+```yaml
+AGENT: Support_Agent
+GOAL: "Resolve customer support requests"
+USE BEHAVIOR_PROFILE: voice_vip
+```
+
+The attached profile name must match the `BEHAVIOR_PROFILE:` header, not just the filename.
+
+## Compile and import behavior
+
+During import preview, the platform:
+
+1. Reads `project.json` and `abl.lock`.
+2. Categorizes `behavior_profiles/<name>.behavior_profile.abl` as part of the `core` layer.
+3. Parses the profile with the canonical ABL parser.
+4. Compiles profiles before agents.
+5. Resolves every `USE BEHAVIOR_PROFILE` reference against compiled profile names.
+6. Reports missing or malformed profiles as import/compiler issues.
+
+Common fixes:
+
+| Symptom                                                | Fix                                                                          |
+| ------------------------------------------------------ | ---------------------------------------------------------------------------- |
+| `Unknown layer "behavior_profiles" in layers_included` | Remove it from `layers_included`; keep `core` and the manifest map.          |
+| Manifest has `behavior_profiles` but preview adds none | Include the referenced `behavior_profiles/<name>.behavior_profile.abl` file. |
+| `Missing BEHAVIOR_PROFILE: header`                     | Start the profile file with `BEHAVIOR_PROFILE: <name>`.                      |
+| `BEHAVIOR_PROFILE requires a PRIORITY declaration`     | Add `PRIORITY: <number>`.                                                    |
+| `BEHAVIOR_PROFILE requires a WHEN declaration`         | Add `WHEN: <condition>`, or `WHEN: true` for a default profile.              |
+| Agent references a missing `profile_use` target        | Add the standalone profile file or remove the `USE` reference.               |
