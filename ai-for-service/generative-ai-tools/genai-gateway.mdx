@@ -1,0 +1,146 @@
+---
+title: Priority-Based Retry & Circuit Breaker for the GenAI Gateway
+sidebarTitle: Priority-Based Retry & Circuit Breaker
+---
+<Badge icon="arrow-left" color="gray">[Back to Generative AI Tools](/ai-for-service/generative-ai-tools/overview)</Badge>
+
+
+
+The Platform’s GenAI Gateway now automatically retries failed LLM requests and queues them by business priority while a provider recovers.
+
+
+
+This capability applies to all AI for Service modules that use GenAI features, including Automation AI, Search AI, Agent AI, Contact Center AI, and Quality AI.
+
+The feature is fully additive and doesn't change existing request or response contracts.
+
+## How It Works
+
+When a request fails, the gateway follows this sequence:
+
+1. **Request fails.** The LLM provider returns HTTP status codes 429 and 503.
+
+2. **Gateway opens a circuit.** The gateway opens a circuit for that provider endpoint and starts a cooldown timer.
+
+3. **Gateway queues all requests.** Both new arrivals and retries go into a shared priority queue for the duration of the cooldown.
+
+4. **Cooldown expires; gateway drains the queue.** Higher-priority tiers drain first. Within each tier, retries drain before fresh requests are made.
+
+5. **Provider errors during draining restart the cycle.** The circuit reopens with a longer cooldown, and draining resumes when the next cooldown expires.
+
+6. **Retries are capped at 3.** After 3 failed attempts, the gateway returns the original provider error to the caller unchanged.
+
+## Priority Tiers
+
+Every GenAI feature belongs to one of three priority tiers. Features that power live user conversations are protected first. Background and batch workloads yield to them.
+
+### P1: Critical Realtime
+
+P1 features have a 10-second time budget and drain first. Live conversations depend on them.
+
+
+| Product | Supported Features |
+| ----- | ----- |
+| **Automation AI** | • Agent Node</br>• Prompt Node</br>• Repeat Responses</br>• Rephrase Responses</br>• Rephrase User Query</br>• Zero-shot ML Model</br>• Few-shot ML Model |
+| **Search AI** | • Answer Generation</br>• Metadata Extractor Agent</br>• Query Rephrase for Advanced Search API</br>• Query Transformation</br>• Rephrase User Query</br>• Result Type Classification |
+| **Agent AI** | • Agent Coaching |
+| **Contact Center AI** | • Agent Response Rephrasing |
+
+### P2: Standard Realtime
+
+P2 features have a 60-second time budget and drain after all P1 requests are cleared.
+
+| Product | Supported Features |
+| ----- | ----- |
+| **Agent AI** | • Sentiment Analysis</br>• Conversation Summary |
+| **Contact Center AI** | • Sentiment Analysis</br>• Conversation Summary</br>• Disposition Prediction for Agent Wrap-Up |
+
+### P3: Non-Realtime
+
+P3 covers background, batch, and analytics workloads. They yield entirely to P1 and P2, with a 60-second time budget.
+
+| Product | Supported Features |
+| ----- | ----- |
+| **Automation AI** | • Conversation Summary</br>• Automatic Dialog Generation</br>• Conversation Test Cases Suggestions</br>• NLP Batch Test Cases Suggestions</br>• Training Utterance Suggestions</br>• Use Case Suggestions |
+| **Search AI** | • Enrich Chunks with LLM</br>• Transform Documents with LLM</br>• Vector Generation – Text</br>• Vector Generation – Image |
+| **Agent AI** | • Generating Similar Utterance Suggestions</br>• Generating Similar Answer Suggestions</br>• Generating Opposite Utterance Suggestions |
+| **Quality AI** | • Advanced Topic Discovery</br>• Agent Empathy Identification</br>• By Hold Adherence</br>• By Transfer Adherence</br>• By Value Adherence Validation</br>• By Value Metric Extraction</br>• Churn & Escalation Identification</br>• Conversation Phase Identification</br>• Crutch Word Usage Detection</br>• Default Script Adherence</br>• GenAI-based Agent Answer Adherence and Customer Trigger Detection</br>• Generating Similar QM Utterance Suggestions</br>• Post Conversation Sentiment Analysis</br>• Sentiment Analysis</br>• Topic Modelling |
+
+## Retry & Timing Behavior
+
+The following table lists the retry and timing settings for the gateway.
+
+| Setting | Value |
+| :---- | :---- |
+| Triggers | HTTP 429, HTTP 503, connection timeout |
+| Max retries per request | 3 (the gateway makes up to 4 total attempts) |
+| On retry exhaustion | The gateway returns the original provider error to the caller |
+| P1 time budget | 10 seconds |
+| P2 time budget | 60 seconds |
+| P3 time budget | 60 seconds |
+| Queue capacity (per endpoint) | 5,000 requests |
+| Cooldown (no Retry-After header) | 1 second base (fixed in v1) |
+| Cooldown (with Retry-After header) | Provider’s header value takes precedence |
+
+When a request exceeds its tier’s time budget, exhausts its retry limit, or is displaced from a full queue, the gateway returns a GenAI Gateway Circuit Open Error (HTTP 429) with a Retry-After header. The header value indicates how long the gateway expects the endpoint to remain unavailable. The error also includes a reason field:
+
+| Reason value | Meaning |
+| :---- | :---- |
+| retry_exhausted | All 3 retries failed; the gateway returns the original provider error. |
+| deadline_missed | The request couldn't be served within its tier’s time budget. |
+| queue_full | The queue was at capacity, and this request had the lowest priority. |
+| evicted | A higher-priority request arrived and displaced this one from the queue. |
+
+## What Callers See
+
+
+This feature requires no API changes and is transparent to calling applications.
+
+- Successful requests return the same responses as before.
+
+- If the gateway retries a failed request successfully, the caller waits for the response and does not see the intermediate failure.
+
+- If the gateway cannot complete a request, it returns the same error types as before, except in one case. If the gateway cannot process the request within the configured retry budget, it returns a GenAI Gateway Circuit Open error (HTTP 429) and includes a Retry-After header. Use the Retry-After value to determine when to retry the request.
+
+## Drain Order Within a Cooldown Cycle
+
+When the cooldown expires, the gateway dispatches queued requests in this order:
+
+1. Retry P1 requests.  
+2. Fresh P1 requests.
+
+3. Retry P2 requests.
+
+4. Fresh P2 requests.
+
+5. Retry P3 requests.
+
+6. Fresh P3 requests.
+
+Within each group, the gateway serves requests in the order they arrive.
+
+## What to Expect During a Provider Outage
+
+* **P1 features are protected first.** Short outages under 10 seconds may be fully absorbed by the retry queue with no error reaching the end user.
+
+* **P2 and P3 features tolerate longer holds.** They wait up to 60 seconds before failing fast.
+
+* If a provider throttles at a sustained rate, the circuit stays open, backoff grows, and P3 workloads are displaced to protect P1 and P2.
+
+* **Redis infrastructure failure:** The gateway fails open. It passes requests through directly without queuing or retries, rather than blocking traffic.
+
+## Observability
+
+The platform captures a lifecycle trace for every request passing through the gateway. Traces are stored in the LLM performance logs collection (365-day retention) under the genaiTrace field and include:
+
+* The tier assigned to the request.
+
+* Whether the request took the fast path or was queued.
+
+* How long the request waited in the queue.
+
+* The outcome and reason (success, exhausted, deadline missed, and so on).
+
+* A plain-English summary field for non-technical review.
+
+Circuit open and close events are recorded separately in the genai circuit events collection (90-day retention), one document per episode, for operational audit and alert integration.
