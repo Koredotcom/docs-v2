@@ -32,23 +32,25 @@ To author and preview, follow these steps:
 ## Folder structure and common files
 
 ```text
-agent-platform/				# Agent Platform docs
-ai-for-process/				# AI for Process docs
-ai-for-service/				# AI for Service fka XO11 docs
-ai-for-work/				# AI for Work docs
-assets/						# Common assets for all docs, say favicon, logo, etc.
+agent-platform/				# Agent Platform v1 archived docs
+agent-platform/v1     # Artemis Agent Platform v2 docs
+ai-for-process/				# AI for Process archived docs
+ai-for-service/				# AI for Service docs
+ai-for-work/				  # AI for Work docs
+assets/						    # Common assets for all docs, say favicon, logo, etc. Used in docs.json.
 ├── favicon.png
-├── koreailogo.svg
-custom-css			# custom stylesheets. Don't edit.
+├── favicon-dark.png
+├── favicon-light.svg
+├── koreailogo-black.svg
+├── koreailogo-white.svg
+custom-css			    # custom stylesheets. Don't edit.
 ├── style.css
-snippets			# Reusable content for single sourcing
-xo/					# Don't edit. Read-only dump of XO11 docs from old repo. Being repurposed in /ai-for-service folder.
-.cspell.json		# Spell check config file that's NOT available in the repo but added in everyone's local clone manually. Works when extension is installed in VSCode editor.
-.gitignore			# Exclusions from repo uploads
+snippets			     # Reusable content for single sourcing
+.cspell.json		   # Spell check config file that's NOT available in the repo but added in everyone's local clone manually. Works when extension is installed in VSCode editor.
+.gitignore			   # Exclusions from repo uploads
 .markdownlint.jsonc	# Markdown linting rules. Works when extension is installed in VSCode editor
 .mintignore			# Exclusions from the Mintlify build
 docs.json			# Config, TOC, home page design theme, analytics integration, etc.
 home.mdx			# Docs home page
-License				# 
-README.md			# This file
+License				# MIT license for docs
 ```
