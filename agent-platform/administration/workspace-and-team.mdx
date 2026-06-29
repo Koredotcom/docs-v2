@@ -14,11 +14,11 @@ The **Workspace and Team** settings are your control center for access, security
 
 ## Workspace Structure
 
-The Agent Platform organizes resources across three levels. You don't need all three — start with a workspace, add projects as your work grows, and only set up an organization if you need to manage multiple workspaces together.
+The Agent Platform organizes resources across three levels. You don't need all three - start with a workspace, add projects as your work grows, and only set up an organization if you need to manage multiple workspaces together.
 
 | Level | Description |
 |-------|-------------|
-| **Workspace** | Your team's dedicated environment. Contains all agents, models, connectors, secrets, and members. Each workspace is fully isolated — data in one workspace is never accessible from another. |
+| **Workspace** | Your team's dedicated environment. Contains all agents, models, connectors, secrets, and members. Each workspace is fully isolated - data in one workspace is never accessible from another. |
 | **Project** | A group of related agents and resources for a specific use case, inside a workspace. Projects inherit the workspace's AI model configuration but can override model tier assignments. |
 | **Organization** | Optional. Sits above workspaces for shared billing and governance across multiple teams. A single-workspace setup doesn't need this. |
 
@@ -87,7 +87,7 @@ The invitee receives an email with a unique link that includes the workspace nam
 | Resend | Sends a fresh invitation email with a new token, resetting the 7-day expiry. |
 | Revoke | Cancels the invitation so the link can no longer be used. |
 
-<Note>If a member reports not receiving the invitation email, check the pending list and resend — you don't need to revoke first.</Note>
+<Note>If a member reports not receiving the invitation email, check the pending list and resend - you don't need to revoke first.</Note>
 
 ### Change a Member's Role
 
@@ -95,13 +95,13 @@ The invitee receives an email with a unique link that includes the workspace nam
 2. Click the role dropdown next to their name.
 3. Select the new role and confirm.
 
-Role changes take effect immediately — permissions update on the member's next page load or API call.
+Role changes take effect immediately - permissions update on the member's next page load or API call.
 
 **Platform-enforced role hierarchy rules:**
 - You can't assign a role higher than your own. An Admin can't promote a member to Owner.
 - Only the workspace Owner can promote a member to Admin.
 - Only the workspace Owner can transfer ownership.
-- You can't demote yourself — ask another Owner or Admin to change your role.
+- You can't demote yourself - ask another Owner or Admin to change your role.
 
 ### Remove a Member
 
@@ -181,9 +181,20 @@ SSO lets users authenticate using an external identity provider (IdP).
 
 **Plan requirement**: Enterprise plan only.
 
+**Generated SSO URLs**
+
+The platform automatically generates these endpoints; there is no action to create or edit them manually. Use the URLs when configuring your identity provider's SAML/OIDC application settings. Auto-generated SSO URLs are created automatically and aren't user-configurable. Only organization owners or admins can view and use these URLs to configure SSO. Admins can select **Refresh** to reload the current URL values, but this doesn't regenerate or change them.
+
+| SSO Protocol              | URL                                                                 | When to use it                                                                 |
+|----------------------------|----------------------------------------------------------------------|--------------------------------------------------------------------------------|
+| **SP‑initiated ACS URL**   | `https://example.com/api/sso/saml/callback`                 | Enter as the **ACS URL / Reply URL** on the IdP for Service Provider‑initiated logins. |
+| **IdP‑initiated ACS URL**  | `https://example.com/api/sso/saml/callback`                 | Enter as the **ACS URL** for IdP‑initiated logins. |
+| **SAML metadata URL**      | `https://example.com/api/sso/saml/metadata`                 | Provide to the IdP for automatic SP metadata import. |
+| **OIDC redirect URL**      | `https://example.com/api/sso/oidc/callback`                 | Enter as the **Redirect URI / Callback URL** for OIDC configuration. |
+
 **Supported protocols:**
-- **SAML 2.0** — Supports Okta, Azure AD, and OneLogin.
-- **OpenID Connect (OIDC)** — Supports Auth0 and Keycloak.
+- **SAML 2.0** - Supports Okta, Azure AD, and OneLogin.
+- **OpenID Connect (OIDC)** - Supports Auth0 and Keycloak.
 
 **Set up SAML SSO:**
 Go to **Team > Security & Compliance > SSO**, select **SAML 2.0**, enter the required configuration details, and click **Save Configuration**.
@@ -274,12 +285,13 @@ The Key Management Service (KMS) lets you control the encryption keys used to pr
 
 ### Encryption Architecture
 
-The platform uses envelope encryption:
+The platform uses envelope encryption: a Key Encryption Key (KEK) from your provider wraps versioned Data Encryption Keys (DEKs).
 
-| Key type | Description |
-|----------|-------------|
-| **Key Encryption Key (KEK)** | Master key stored in your cloud provider's KMS. |
-| **Data Encryption Keys (DEKs)** | Short-lived keys that encrypt data items, wrapped by the KEK. Scoped to specific projects and environments with configurable rotation intervals. |
+| Key type                  | Description                                                                 |
+|----------------------------|-----------------------------------------------------------------------------|
+| **KEK** | Master key stored in your cloud provider's KMS.                            |
+| **DEKs** | Versioned keys generated by the platform to encrypt data. Each DEK is wrapped by your KEK before storage. Active DEKs can rotate, while retired DEKs remain available for decryption as long as ciphertext references them. |
+| **Encryption at rest**     | When the platform encrypts a secret, it generates a DEK, encrypts the data, wraps the DEK with your KEK, and stores both. Decryption reverses this process. |
 
 The KMS page is organized into five tabs: **Configuration**, **Scopes**, **Encryption Keys**, **Health**, and **Audit Log**.
 
@@ -288,11 +300,14 @@ The KMS page is organized into five tabs: **Configuration**, **Scopes**, **Encry
 The **Configuration** tab shows the active KMS setup and lets you manage provider and encryption policies.
 
 **Supported KMS providers:**
-- **Local (Built-in)** — Platform-managed local KMS.
-- **AWS KMS** — Symmetric CMK (AES-256).
-- **Azure Key Vault** — RSA or AES keys.
-- **Google Cloud KMS** — Symmetric AES-256 keys.
-- **External KMS** — REST-compatible external providers.
+
+| Provider             | Key type                | Region support      |
+| -------------------- | ----------------------- | ------------------- |
+| **AWS KMS**          | Symmetric CMK (AES-256) | All AWS regions     |
+| **Azure Key Vault**  | RSA or AES keys         | All Azure regions   |
+| **Google Cloud KMS** | Symmetric AES-256 keys  | All GCP regions     |
+| **OCI Vault KMS**    | AES keys                | OCI regions         |
+| **External KMS**     | Any REST-compatible KMS | Self-hosted or SaaS |
 
 **Failure policy:**
 
@@ -302,6 +317,8 @@ The **Configuration** tab shows the active KMS setup and lets you manage provide
 | Fail Open | The platform continues operating without guardrail evaluation. |
 
 **Rotation and re-encryption settings:**
+
+Key rotation can happen automatically (if the provider supports scheduled rotation) or manually, by creating a new key version on demand from the Encryption Keys tab.
 
 | Setting | Description |
 |---------|-------------|
@@ -321,7 +338,7 @@ The **Scopes** tab lets you configure KMS overrides for specific environments an
 
 The most specific override always takes precedence.
 
-Use the **Effective Scope Preview** to inspect the resolved provider for a selected project or environment. It shows the full inheritance chain — each level marked as Active or overridden.
+Use the **Effective Scope Preview** to inspect the resolved provider for a selected project or environment. It shows the full inheritance chain - each level marked as Active or overridden.
 
 Use **Save Override**, **Reset Form**, or **Clear Override** to manage scoped overrides.
 
@@ -340,6 +357,8 @@ The **Encryption Keys** tab shows active and retired DEKs across scopes.
 | Expiring Soon | Active DEKs expiring within 72 hours. |
 | Last Checked | Timestamp of the latest DEK creation. |
 
+Active DEKs can rotate; retired DEKs remain decrypt-capable as long as existing ciphertext still references them, which is why they appear as Decrypt-Only instead of being removed immediately.
+
 Filter the inventory by status (Active, Decrypt-Only, or Destroyed), project, or environment. Use **Rotate Keys** to manually trigger DEK rotation for the current scope.
 
 <Note>Don't destroy a key version in your cloud provider until all data has been re-encrypted with the new version. Destroying active key versions may result in permanent data loss.</Note>
@@ -349,8 +368,8 @@ Filter the inventory by status (Active, Decrypt-Only, or Destroyed), project, or
 The **Health** tab shows operational status and encryption metrics for the configured KMS provider. Click **Refresh Health** to reload.
 
 When provider connectivity fails:
-- **Fail Closed** — Encryption and decryption operations stop until recovery.
-- **Fail Open** — The platform continues operating with cached DEKs.
+- **Fail Closed** - Encryption and decryption operations stop until recovery.
+- **Graceful Degradation** - The platform continues operating using cached DEKs already in memory, without contacting the KEK provider.
 
 ### KMS Audit Log
 

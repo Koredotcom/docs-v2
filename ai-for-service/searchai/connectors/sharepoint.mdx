@@ -87,6 +87,7 @@ App registration establishes trust between Search AI and the Microsoft identity 
    - `Sites.Selected`
    - `GroupMember.Read.All` — required only if RACL is enabled
    - `Organization.Read.All` — required only if RACL is enabled
+   - `SensitivityLabels.Read.All` — required to extract Microsoft Purview sensitivity label metadata during sync
 
 10. Click **Grant Admin Consent** to apply the permissions.
 
@@ -185,6 +186,38 @@ Folder paths must be constructed in the following format: `/Folder Name/Sub Fold
 
 For example, to ingest files from a specific folder, set up a filter with **Content Type = Files**, **Parameter = FolderPath**, **Operator = In**, and **Value = /Documents/Reports**.
 
+## Microsoft Purview Sensitivity Labels
+
+The SharePoint connector supports indexing sensitivity label metadata from documents classified using [Microsoft Purview Information Protection](https://learn.microsoft.com/en-us/purview/information-protection). During each sync, sensitivity labels (such as Confidential, Internal Only, or Public) are extracted from SharePoint documents and stored as searchable metadata fields, enabling users to filter search results by document classification.
+
+**How It Works**
+
+At the start of each sync (full or incremental), the connector fetches all sensitivity labels defined in your tenant using the [Microsoft Graph](https://learn.microsoft.com/en-us/graph/api/tenantdatasecurityandgovernance-list-sensitivitylabels?view=graph-rest-1.0&tabs=http) and builds an in-memory label map for the duration of the sync. For each document ingested, the connector calls the [Extract Sensitivity Labels](https://learn.microsoft.com/en-us/graph/api/driveitem-extractsensitivitylabels?view=graph-rest-1.0&tabs=http) to retrieve the label assigned to that document and resolves the human-readable display name from the cached map.
+
+The following metadata fields are stored on each indexed document:
+
+| Field                | Description                                                                 |
+|-----------------------|-----------------------------------------------------------------------------|
+| `sensitivityLabelId`    | Unique identifier of the sensitivity label                                  |
+| `sensitivityLabelName`  | Human-readable display name (for example: "Confidential," "Internal Only") |
+| `tenantId`              | Tenant identifier, used to scope labels correctly in multi-tenant environments |
+
+Documents with no sensitivity label assigned are stored with the sensitivity label field unset and appear under an Unlabeled option in the filter.
+
+<Note>If the tenant-level label fetch fails at the start of a sync, the sync is aborted. Document-level label resolution is not possible without the label map.</Note>
+
+**Prerequisites**
+
+To enable sensitivity label extraction, the Azure AD app registration must include the following application permission under Microsoft Graph:
+- `SensitivityLabels.Read.All`
+
+Grant admin consent for this permission before running a sync. 
+
+**Filtering by Sensitivity Label**
+
+Once sensitivity label metadata is indexed, users can filter search results by label using the Sensitivity Label filter in the advanced filters panel.
+- Operator: Equals
+- Selection: Multi-select - select one or more labels to restrict results to documents carrying any of the selected labels.
 
 ## Access Control
 
