@@ -2,22 +2,36 @@
 title: AWS S3 Connector Setup Guide
 sidebarTitle: AWS S3 Connector
 ---
+<Badge icon="arrow-left" color="gray">[Back to Connectors](/ai-for-service/quality-ai/configurations#connectors)</Badge>
 
-The AWS S3 Connector enables you pull conversation recordings and chat transcripts from an S3 bucket into Quality AI Express on a configurable schedule. Use this connector to analyze interactions from third-party Contact Center as a Service (CCaaS) solutions.
+Set up the AWS S3 connector to pull voice recordings and chat transcripts from an S3 bucket into Quality AI Express for analysis.
+
+The AWS S3 Connector pulls conversation recordings and chat transcripts from an S3 bucket into Quality AI Express on a configurable schedule. Use this connector to analyze interactions from third-party Contact Center as a Service (CCaaS) solutions.
+
+The connector ingests voice recordings (stereo or mono), chat transcripts, pre-transcribed voice data, and metadata `.csv` files.
+
+| Section | Description |
+|---------|-------------|
+| [Prerequisites](#prerequisites) | AWS IAM permissions, file formats, and platform requirements. |
+| [Supported Recording Types](#supported-recording-types) | Voice and chat formats — stereo, mono, pre-transcribed audio, and chat transcripts. |
+| [Data Flow](#data-flow) | How data moves from an S3 bucket through the connector into Quality AI Express. |
+| [CSV Metadata Formats](#csv-metadata-formats) | Required and optional CSV fields for each recording type. |
+| [JSON Transcript Schemas](#json-transcript-schemas) | JSON structure for voice and chat transcript files. |
+| [Storage Structure Options](#storage-structure-options) | Folder organization options for your S3 bucket. |
+| [Set Up the Connector](#set-up-the-connector) | Steps to create, test, and activate the connector. |
+| [Troubleshooting](#troubleshooting) | Fixes for common authentication, file validation, and data processing issues. |
 
 ## Prerequisites
 
-Complete the following before you start.
-
 ### AWS Requirements
 
-| Requirement         | Details                                                                        |
-|---------------------|--------------------------------------------------------------------------------|
-| **S3 bucket**       | Created in your preferred region with an organized folder structure            |
-| **IAM permissions** | Read-only access (`s3:GetObject`, `s3:ListBucket`) via access keys or IAM role |
-| **Audio files**     | WAV or MP3 format, maximum 50 MB each, available via HTTPS                    |
-| **Chat files**      | JSON format                                                                    |
-| **Test file**       | A `test.csv` file with sample data in each configured S3 folder                |
+| Requirement | Details |
+|---|---|
+| **S3 bucket** | Created in your preferred region with an organized folder structure. |
+| **IAM permissions** | Read-only access (`s3:GetObject`, `s3:ListBucket`) via access keys or IAM role. |
+| **Audio files** | WAV or MP3 format, maximum 50 MB each, available via HTTPS. |
+| **Chat files** | JSON format. |
+| **Test file** | A `test.csv` file with sample data in each configured S3 folder. |
 
 **Required IAM policy:**
 
@@ -39,159 +53,143 @@ Complete the following before you start.
 
 ### Platform Requirements
 
-| Requirement            | Details                                                   |
-|------------------------|-----------------------------------------------------------|
-| **Quality AI Express** | Feature enabled in platform settings                      |
-| **Agents**             | All agents onboarded with valid, matching email addresses |
-| **Queues**             | Service queues configured and ready for mapping           |
-| **Permissions**        | You have **Integrations & Extensions** access             |
-
----
+| Requirement | Details |
+|---|---|
+| **Quality AI Express** | Feature enabled in platform settings. |
+| **Agents** | All agents onboarded with valid, matching email addresses. |
+| **Queues** | Service queues configured and ready for mapping. |
+| **Permissions** | You have Integrations & Extensions access. |
 
 ## Supported Recording Types
 
-| Type                  | Format  | Files per Conversation            | Channel Assignment             | Analytics           |
-|-----------------------|---------|-----------------------------------|--------------------------------|---------------------|
-| **Stereo Voice**      | WAV/MP3 | 1                                 | Left = Agent, Right = Customer | Full Analytics      |
-| **Mono Voice**        | WAV/MP3 | 2 (separate agent/customer files) | N/A                            | Enhanced Analytics  |
-| **Voice Transcripts** | JSON    | 1                                 | Pre-transcribed audio          | Text Analytics      |
-| **Chat Scripts**      | JSON    | 1                                 | Message-level attribution      | Full Text Analytics |
+| Type | Format | Files per Conversation | Channel Assignment | Analytics |
+|---|---|---|---|---|
+| **Stereo Voice** | WAV/MP3 | 1 | Left = Agent, Right = Customer | Full Analytics |
+| **Mono Voice** | WAV/MP3 | 2 (separate agent/customer files) | N/A | Enhanced Analytics |
+| **Voice Transcripts** | JSON | 1 | Pre-transcribed audio | Text Analytics |
+| **Chat Scripts** | JSON | 1 | Message-level attribution | Full Text Analytics |
 
 ### Mono Recording Requirement
 
-<Note>Mono recordings require two separate audio files — one for the agent and one for the customer. A single mixed mono file isn't supported.</Note>
+<Note>Mono recordings require two separate audio files — one for the agent and one for the customer. A single mixed mono file is not supported and significantly reduces transcription accuracy.</Note>
 
-| Supported                                                                         | Not Supported                                    |
-|-----------------------------------------------------------------------------------|--------------------------------------------------|
+| Supported | Not Supported |
+|---|---|
 | `conv-123456-agent.wav` (agent only) + `conv-123456-customer.wav` (customer only) | `conv-123456-mixed.wav` (both speakers combined) |
-
-Using a single mixed mono file significantly reduces transcription accuracy.
-
----
 
 ## Data Flow
 
 ```text
-
 [S3 Bucket]
-└─ Audio + Metadata Files
+└── Audio + Metadata Files
         │
         ▼
 [S3 Connector]
-└─ Validation + Ingestion
+└── Validation + Ingestion
         │
         ▼
 [Quality AI Express]
-├─ Transcription + Analysis│  
+└── Transcription + Analysis
         │
         ▼
 [Analytics Dashboard]
-├─ Quality Score
-└─ Sentiment
-└─ Topics
+├── Quality Score
+├── Sentiment
+└── Topics
 ```
-
-
----
 
 ## CSV Metadata Formats
 
-Each recording type requires specific CSV fields. The core fields are the same across all types; only the recording-specific fields differ.
+Each recording type requires specific CSV fields. The core fields are the same across all types, only the recording-specific fields differ.
 
 ### Stereo Voice Recordings
 
 **Configuration**: `recordingType = stereo`, `channelType = voice`
 
-| Field                   | Required | Type    | Example                                                           | Notes                                        |
-|-------------------------|----------|---------|-------------------------------------------------------------------|----------------------------------------------|
-| `conversationId`        | Required | String  | `conv-123456`                                                     | Unique identifier, max 50 chars              |
-| `agentEmail`            | Required | String  | `johndoe@example.com`                                          | Must match a platform user account           |
-| `conversationStartTime` | Required | String  | `2025-04-10T14:30:00Z`                                            | ISO 8601, UTC timezone                       |
-| `conversationEndTime`   | Required | String  | `2025-04-10T14:32:45Z`                                            | Must be after start time                     |
-| `channelType`           | Required | String  | `voice`                                                           | Always `voice` for audio                     |
-| `recordingType`         | Required | String  | `stereo`                                                          | Always `stereo` for this format              |
-| `chatScriptUrl`         | Required | String  | `https://your-bucket.s3.amazonaws.com/transcripts/chat-123.json`  | Full HTTPS URL to JSON transcript file       |
-| `recordingUrl`          | Required | String  | `https://s3.amazonaws.com/bucket/conv-123456.wav`                 | HTTPS URL                                    |
-| `transcriptUrl`         | Required | String  | `https://your-bucket.s3.amazonaws.com/transcripts/voice-123.json` | Full HTTPS URL to JSON transcript file       |
-| `queueId`               | Required | String  | `support-tier1`                                                   | Must exist in queue mapping                  |
-| `agentChannel`          | Required | Integer | `0`                                                               | Agent audio channel (0 = left, 1 = right)    |
-| `customerChannel`       | Required | Integer | `1`                                                               | Customer audio channel (0 = left, 1 = right) |
-| `language`              | Optional | String  | `en`                                                              | ISO 639-1 format, defaults to `en`           |
-| `asprovider`            | Optional | String  | `microsoft`                                                       | Audio service provider                       |
-
----
+| Field | Required | Type | Example | Notes |
+|---|---|---|---|---|
+| `conversationId` | Required | String | `conv-123456` | Unique identifier, max 50 chars. |
+| `agentEmail` | Required | String | `johndoe@example.com` | Must match a platform user account. |
+| `conversationStartTime` | Required | String | `2025-04-10T14:30:00Z` | ISO 8601, UTC timezone. |
+| `conversationEndTime` | Required | String | `2025-04-10T14:32:45Z` | Enter a time after start time. |
+| `channelType` | Required | String | `voice` | Always `voice` for audio. |
+| `recordingType` | Required | String | `stereo` | Always `stereo` for this format. |
+| `chatScriptUrl` | Required | String | `https://your-domain.com/path/to/chat-transcript.json` | Full HTTPS URL to the JSON transcript file. |
+| `recordingUrl` | Required | String | `https://your-domain.com/path/to/recording.wav` | HTTPS URL to the audio file. |
+| `transcriptUrl` | Required | String | `https://your-bucket.s3.amazonaws.com/transcripts/voice-123.json` | Full HTTPS URL to the JSON transcript file. |
+| `queueId` | Required | String | `support-tier1` | Must exist in queue mapping. |
+| `agentChannel` | Required | Integer | `0` | Agent audio channel (0 = left, 1 = right). |
+| `customerChannel` | Required | Integer | `1` | Customer audio channel (0 = left, 1 = right). |
+| `language` | Optional | String | `en` | ISO 639-1 format, defaults to `en`. |
+| `asprovider` | Optional | String | `microsoft` | Audio service provider. |
 
 ### Mono Voice Recordings
 
 **Configuration**: `recordingType = mono`, `channelType = voice`
 
-<Note>Mono recordings require two separate CSV rows and two audio files per conversation — one for the agent, one for the customer. Use the same `conversationId` for both rows.</Note>
+<Note>Mono recordings require two separate CSV rows and two audio files per conversation — one for the agent and one for the customer. Use the same `conversationId` for both rows.</Note>
 
-| Field                   | Required | Type   | Example                                                    | Notes                                    |
-|-------------------------|----------|--------|------------------------------------------------------------|------------------------------------------|
-| `conversationId`        | Required | String | `conv-123456`                                              | Same ID for both agent and customer rows |
-| `agentEmail`            | Required | String | `johndoe@example.com`                                   | Must match a platform user account       |
-| `conversationStartTime` | Required | String | `2025-04-10T14:30:00Z`                                     | ISO 8601, UTC timezone                   |
-| `conversationEndTime`   | Required | String | `2025-04-10T14:32:45Z`                                     | Must be after start time                 |
-| `channelType`           | Required | String | `voice`                                                    | Always `voice` for audio                 |
-| `recordingType`         | Required | String | `mono`                                                     | Always `mono` for this format            |
-| `agentRecordings`       | Required | String | `https://s3.amazonaws.com/bucket/conv-123456-agent.wav`    | URL to agent audio file                  |
-| `customerRecordings`    | Required | String | `https://s3.amazonaws.com/bucket/conv-123456-customer.wav` | URL to customer audio file               |
-| `queueId`               | Required | String | `support-tier1`                                            | Must exist in queue mapping              |
-| `agentId`               | Optional | String | `agent-789`                                                | Internal agent identifier                |
-| `language`              | Optional | String | `en`                                                       | ISO 639-1 format, defaults to `en`       |
-| `asProvider`            | Optional | String | `microsoft`                                                | Transcription provider                   |
-
----
+| Field | Required | Type | Example | Notes |
+|---|---|---|---|---|
+| `conversationId` | Required | String | `conv-123456` | Same ID for both agent and customer rows. |
+| `agentEmail` | Required | String | `johndoe@example.com` | Must match a platform user account. |
+| `conversationStartTime` | Required | String | `2025-04-10T14:30:00Z` | ISO 8601, UTC timezone. |
+| `conversationEndTime` | Required | String | `2025-04-10T14:32:45Z` | Must be after start time. |
+| `channelType` | Required | String | `voice` | Always `voice` for audio. |
+| `recordingType` | Required | String | `mono` | Always `mono` for this format. |
+| `agentRecordings` | Required | String | `https://s3.amazonaws.com/bucket/conv-123456-agent.wav` | URL to the agent audio file. |
+| `customerRecordings` | Required | String | `https://s3.amazonaws.com/bucket/conv-123456-customer.wav` | URL to the customer audio file. |
+| `queueId` | Required | String | `support-tier1` | Must exist in queue mapping. |
+| `agentId` | Optional | String | `agent-789` | Internal agent identifier. |
+| `language` | Optional | String | `en` | ISO 639-1 format, defaults to `en`. |
+| `asProvider` | Optional | String | `microsoft` | Transcription provider. |
 
 ### Voice Transcripts (Pre-transcribed Audio)
 
 **Configuration**: `recordingType = transcription`, `channelType = voice`
 
-Use this format when you have already transcribed your voice recordings and want to import the text for analysis without reprocessing the audio.
+Use this format when you have transcribed voice recordings and want to import the text for analysis without reprocessing the audio.
 
-| Field                   | Required | Type   | Example                      | Notes                                  |
-|-------------------------|----------|--------|------------------------------|----------------------------------------|
-| `conversationId`        | Required | String | `conv-123456`                | Unique identifier, max 50 chars        |
-| `agentEmail`            | Required | String | `johndoe@example.com`     | Must match a platform user account     |
-| `conversationStartTime` | Required | String | `2025-04-10T14:30:00Z`       | ISO 8601, UTC timezone                 |
-| `conversationEndTime`   | Required | String | `2025-04-10T14:32:45Z`       | Must be after start time               |
-| `channelType`           | Required | String | `voice`                      | Always `voice` for audio transcripts   |
-| `recordingType`         | Required | String | `transcription`              | Always `transcription` for this format |
-| `transcriptPath`        | Required | String | `transcripts/voice-123.json` | Path to JSON transcript file           |
-| `queueId`               | Required | String | `support-tier1`              | Must exist in queue mapping            |
-| `language`              | Optional | String | `en`                         | ISO 639-1 format, defaults to `en`     |
-| `asProvider`            | Optional | String | `microsoft`                  | Original audio service provider        |
-
----
+| Field | Required | Type | Example | Notes |
+|---|---|---|---|---|
+| `conversationId` | Required | String | `conv-123456` | Unique identifier, max 50 chars. |
+| `agentEmail` | Required | String | `johndoe@example.com` | Must match a platform user account. |
+| `conversationStartTime` | Required | String | `2025-04-10T14:30:00Z` | ISO 8601, UTC timezone. |
+| `conversationEndTime` | Required | String | `2025-04-10T14:32:45Z` | Must be after start time. |
+| `channelType` | Required | String | `voice` | Always `voice` for audio transcripts. |
+| `recordingType` | Required | String | `transcription` | Always `transcription` for this format. |
+| `transcriptPath` | Required | String | `transcripts/voice-123.json` | Path to the JSON transcript file. |
+| `queueId` | Required | String | `support-tier1` | Must exist in queue mapping. |
+| `language` | Optional | String | `en` | ISO 639-1 format, defaults to `en`. |
+| `asProvider` | Optional | String | `microsoft` | Original audio service provider. |
 
 ### Chat Scripts (Live Chat Interactions)
 
 **Configuration**: `recordingType = transcription`, `channelType = chat`
 
-Use this format for live chat interactions from web chat, messaging platforms, or chat-based customer service.
+Use this format for live chat interactions from web chat, WhatsApp, Facebook Messenger, and other messaging platforms.
 
-<Note>Chat scripts support interactions from platforms including web chat, WhatsApp, and Facebook Messenger.</Note>
+<Note>For conversations involving agent or queue transfers, use the `queueId` of the queue where the conversation ended and the `agentEmail` of the agent who closed the conversation.</Note>
 
-| Field                   | Required | Type   | Example                     | Notes                               |
-|-------------------------|----------|--------|-----------------------------|-------------------------------------|
-| `conversationId`        | Required | String | `conv-123456`               | Unique identifier, max 50 chars     |
-| `agentEmail`            | Required | String | `johndoe@example.com`    | Must match a platform user account  |
-| `conversationStartTime` | Required | String | `2025-04-10T14:30:00Z`      | ISO 8601, UTC timezone              |
-| `conversationEndTime`   | Required | String | `2025-04-10T14:45:00Z`      | Must be after start time            |
-| `channelType`           | Required | String | `chat`                      | Always `chat` for text interactions |
-| `recordingType`         | Required | String | `transcription`             | Always `transcription` for chat     |
-| `transcriptPath`        | Required | String | `transcripts/chat-123.json` | Path to JSON transcript file        |
-| `queueId`               | Required | String | `support-tier1`             | Must exist in queue mapping         |
-| `language`              | Optional | String | `en-US`                     | Defaults to `en` if not specified   |
+| Field | Required | Type | Example | Notes |
+|---|---|---|---|---|
+| `conversationId` | Required | String | `conv-123456` | Unique identifier, max 50 chars. |
+| `agentEmail` | Required | String | `johndoe@example.com` | Must match a platform user account. |
+| `conversationStartTime` | Required | String | `2025-04-10T14:30:00Z` | ISO 8601, UTC timezone. |
+| `conversationEndTime` | Required | String | `2025-04-10T14:45:00Z` | Must be after start time. |
+| `channelType` | Required | String | `chat` | Always `chat` for text interactions. |
+| `recordingType` | Required | String | `transcription` | Always `transcription` for chat. |
+| `transcriptPath` | Required | String | `transcripts/chat-123.json` | Path to the JSON transcript file. |
+| `queueId` | Required | String | `support-tier1` | Must exist in queue mapping. |
+| `language` | Optional | String | `en-US` | Defaults to `en` if not specified. |
 
-<Note>For conversations involving agent or queue transfers, use the `queueId` of the queue where the conversation ended, and the `agentEmail` of the agent who closed the conversation.</Note>
+#### Agent and Queue Validation
 
-### ​Agent and queue validation scenarios
+The system validates agent and queue combinations as follows:
 
-- The system processes the conversation if the onboarding team hasn't onboarded the agent, but has onboarded the queue.
-- The system processes the conversation if the onboarding team has onboarded both the agent and the queue, even when the agent isn't mapped to the queue.
-- The system rejects the conversation during validation if the onboarding team hasn't onboarded the queue or configured it.
+- Process the conversation when the system has onboarded the queue, even if the system hasn't onboarded the agent.
+- Process the conversation when the system has onboarded both the agent and the queue, even if the agent isn't mapped to the queue.
+- Reject the conversation when the system hasn't onboarded or configured the queue.
 
 ## JSON Transcript Schemas
 
@@ -263,8 +261,6 @@ Use this format for live chat interactions from web chat, messaging platforms, o
 }
 ```
 
----
-
 ### Chat Transcript Format
 
 **Example:**
@@ -288,20 +284,18 @@ Use this format for live chat interactions from web chat, messaging platforms, o
 
 **Required fields:**
 
-| Field       | Values                         | Notes                      |
-|-------------|--------------------------------|----------------------------|
-| `type`      | `AGENT`, `USER`, or `SYSTEM`   | Identifies the speaker     |
-| `text`      | Message content                | The message text           |
-| `timestamp` | Unix timestamp in milliseconds | Message time               |
-| `userId`    | Participant identifier         | Agent email or customer ID |
-
----
+| Field | Values | Notes |
+|---|---|---|
+| `type` | `AGENT`, `USER`, or `SYSTEM` | Identifies the speaker. |
+| `text` | Message content | The message text. |
+| `timestamp` | Unix timestamp in milliseconds | Message send time. |
+| `userId` | Participant identifier | Agent email or customer ID. |
 
 ## Storage Structure Options
 
-Choose a folder structure for your S3 bucket.
+Choose a folder structure for your S3 bucket before setting up the connector.
 
-**Option A: Unified Path** (Voice and Chat in a Single Folder Structure)
+**Option A: Unified Path**
 
 ```text
 s3://your-bucket/conversations/
@@ -315,35 +309,38 @@ s3://your-bucket/conversations/
 │   ├── chat-123459.json           # Chat transcript
 │   └── chat-123460.json           # Chat transcript
 └── test.csv                       # Required for validation
-```   
+```
 
-**Option B: Separate Voice and Chat Paths** (Voice and Chat in Separate Folder Structures)
+**Option B: Separate Voice and Chat Paths**
 
 ```text
 s3://your-bucket/
-├─ voice-interactions/
-│  ├─ voice_metadata.csv
-│  ├─ recordings/
-│  │  ├─ conv-123456.wav            (Stereo)
-│  │  ├─ conv-123457-agent.wav      (Mono agent)
-│  │  └─ conv-123457-customer.wav   (Mono customer)
-│  └─ test.csv
-└─ chat-interactions/
-   ├─ chat_metadata.csv
-   ├─ transcripts/
-   │  ├─ chat-123459.json
-   │  └─ chat-123460.json
-   └─ test.csv
+├── voice-interactions/
+│   ├── voice_metadata.csv
+│   ├── recordings/
+│   │   ├── conv-123456.wav            # Stereo
+│   │   ├── conv-123457-agent.wav      # Mono agent
+│   │   └── conv-123457-customer.wav   # Mono customer
+│   └── test.csv
+└── chat-interactions/
+    ├── chat_metadata.csv
+    ├── transcripts/
+    │   ├── chat-123459.json
+    │   └── chat-123460.json
+    └── test.csv
 ```
-**Validation Checklist**
+
+## Set Up the Connector
+
+Before you begin, verify that your S3 bucket is ready:
 
 - All audio files are available via HTTPS URLs.
-- CSV files contain the required fields with correct column headers.
+- `.csv` files contain the required fields with correct column headers.
 - Mono recordings have separate agent and customer files.
 - A `test.csv` file exists in each configured folder.
-- All file sizes are under 50 MB, and file names don't contain any spaces.
 
----
+<Note> File and folder names shouldn't contain any spaces or special characters.</Note>
+
 
 ### Step 1: Create the Connector
 
@@ -358,63 +355,63 @@ s3://your-bucket/
    - **Unified Path**: Enter a single path for both voice and chat (for example, `s3://your-bucket/conversations/`).
    - **Separate Paths**: Enter a **Voice Path** and a **Chat Path**.
 
----
-
 ### Step 2: Test the Connection
 
 1. Select the **Test** tab in the connector configuration.
-2. Run the connection test.
-3. Verify that the system passes all validation checks:
+2. Select **Test** to validate the configuration. If validation fails, correct the issue and select **Re-Test**.
+3. Verify that the following validation checks pass:
+   - **Authentication**: Validates your AWS credentials and S3 bucket access.
+   - **Filepath Availability & Accessibility**: Verifies that the configured S3 path exists and is available.
+   - **File Format Validation**: Verifies that supported file formats are present and readable.
+   - **Metadata Validation**: Verifies that required metadata fields are present and valid.
 
-   * Authentication
-   * File Path Access
-   * File Format
-   * Metadata Validation
+The **Test** tab displays validation progress and any errors.
+
+<Note>The connector must pass all validation checks before you can proceed with queue mapping and activation.</Note>
 
 ### Step 3: Map Queues and Configure the Schedule
 
 1. Navigate to the **Queue** tab.
-2. Map each `queueId` value from the CSV files to a Quality AI Express queue. Values must match exactly.
+2. Map each `queueId` from the `.csv` files to a Quality AI Express queue. Values must match exactly.
 3. Navigate to the **Schedule** tab.
 4. Set the **Interval** (minutes, hours, or days) and **Start Time** (UTC).
 5. Select **Save** to activate the connector.
 
-**Verify the setup is complete**:
+After saving, verify the setup is complete:
 
-* save and validate the queue mappings.
-* Activate the processing schedule.
-* Verify that the first ingestion job appears in the Log tab.
-* Verify that the system reports no processing errors.
+- The system saves and validates the queue mappings.
+- The processing schedule is active.
+- The first ingestion job displays in the **Log** tab.
+- The system reports no processing errors.
 
-**Success indicators**:
-
-* Conversations display in **Quality AI Express** dashboards.
-* Analytics data is available for ingested interactions.
+The setup is complete when conversations appear in **Quality AI Express** dashboards and analytics data is available for ingested interactions.
 
 ## Troubleshooting
 
 ### Authentication
 
-| Problem             | Symptom                    | Resolution                                                                                   |
-| ------------------- | -------------------------- | -------------------------------------------------------------------------------------------- |
-| Invalid Credentials | Authentication failed      | Verify the access key, secret key, IAM role ARN, and credential expiration.                  |
-| Permission Denied   | Access denied to S3 bucket | Add S3 read permissions to the IAM user or role. Verify the bucket policy and bucket region. |
+| Problem | Symptom | Resolution |
+|---|---|---|
+| **Invalid Credentials** | Authentication failed. | Verify the access key, secret key, IAM role ARN, and credential expiration. |
+| **Permission Denied** | Access denied to S3 bucket. | Add S3 read permissions to the IAM user or role. Verify the bucket policy and region. |
 
 ### File Validation
 
-| Problem                         | Symptom                | Resolution                                                                                          |
-| ------------------------------- | ---------------------- | --------------------------------------------------------------------------------------------------- |
-| File Access Error               | File or path not found | Verify the bucket name, region, folder path, and file availability.                                 |
-| Invalid File Format or Metadata | Validation failed      | Confirm that `test.csv` exists and contains the required structure, column headers, and timestamps. |
+| Problem | Symptom | Resolution |
+|---|---|---|
+| **File Access Error** | File or path not found. | Verify the bucket name, region, folder path, and file availability. |
+| **Invalid File Format or Metadata** | Validation failed. | Confirm that `test.csv` exists and contains the required structure, column headers, and timestamps. |
 
 ### Data Processing
 
-| Problem          | Symptom                  | Resolution                                                                                                                       |
-| ---------------- | ------------------------ | -------------------------------------------------------------------------------------------------------------------------------- |
-| Timestamp Errors | Invalid timestamp format | Use ISO 8601 format (`YYYY-MM-DDTHH:MM:SSZ`) and include the UTC timezone. Verify that the end time occurs after the start time. |
+| Problem | Symptom | Resolution |
+|---|---|---|
+| **Timestamp Errors** | Invalid timestamp format. | Use ISO 8601 format (`YYYY-MM-DDTHH:MM:SSZ`) in UTC. Verify that the end time is after the start time. |
 
 ### Performance Considerations
 
-Processing typically takes 3–5 minutes per conversation, depending on conversation length, ASR transcription latency (for voice), and LLM response latency.
+Processing time depends on conversation length, file size, ASR transcription latency for voice interactions, and LLM processing time.
+
+
 
 ---
