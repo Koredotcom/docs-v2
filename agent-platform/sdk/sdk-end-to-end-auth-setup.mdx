@@ -1,44 +1,25 @@
-# SDK End-To-End Auth Setup Guide
+---
+title: "SDK End-to-End Auth Setup Guide"
+sidebarTitle: "SDK Auth Setup"
+---
 
-This guide explains how to configure Artemis SDK authentication end to end across
-Studio, the browser SDK, the customer backend, and deployment/runtime settings.
+This guide explains how to configure Artemis SDK authentication end to end across Studio, the browser SDK, the customer backend, and deployment/runtime settings.
+
 It covers these scenarios:
 
-1. Public anonymous SDK
-2. Runtime-signed Hosted Exchange bootstrap
-3. Customer-issued shared-secret JWE, often called the XO-style custom-issued
-   flow
-4. Customer-issued public-key JWE with customer-signed payload
-
-Use this guide with the implementation and security notes in:
-
-- `docs/features/customer-issued-sdk-jwe-bootstrap.md`
-- `docs/specs/customer-issued-sdk-jwe-bootstrap.hld.md`
-- `docs/guides/hosted-exchange-jwe-websocket-auth.md`
-- `packages/web-sdk/README.md`
-
-## Code-Grounding Audit Map
-
-| Contract area                                | Grounding path                                                                                                                                                                            | Setup implication                                                                                                                                                                                                                                                                            |
-| -------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Browser SDK config shape                     | `packages/web-sdk/src/core/types.ts`, `packages/web-sdk/src/core/AgentSDK.ts`, `packages/web-sdk/src/core/TokenManager.ts`                                                                | Browser config must choose exactly one of `apiKey`, `bootstrapToken`, or `bootstrapTokenProvider`. Bootstrap-token configs require `projectId`; public-key configs may also use channel and deployment selectors.                                                                            |
-| Custom element config parsing                | `packages/web-sdk/src/ui/widget-sdk-config.ts`, `packages/web-sdk/src/ui/widget-bootstrap-lifecycle.ts`                                                                                   | `bootstrapTokenProvider` is a JavaScript property, not an HTML attribute. Set it before appending/connecting the element to avoid initialization races.                                                                                                                                      |
-| Runtime SDK init                             | `apps/runtime/src/routes/sdk/handlers/init.ts`, `apps/runtime/src/routes/sdk/internal/schemas.ts`                                                                                         | `/api/v1/sdk/init` accepts either `X-Public-Key` or `bootstrapToken`. Bootstrap tokens cannot be combined with `deploymentSlug`, `deploymentAlias`, `channelId`, `channelName`, or `clientSessionIdentifier`. Customer bootstrap tokens cannot be combined with browser `userContext`.       |
-| Runtime-signed customer session minting      | `apps/runtime/src/routes/sdk-customer-sessions.ts`                                                                                                                                        | `/api/v1/sdk/customer-sessions` requires `X-SDK-Channel-Secret`, `tenantId`, `projectId`, `verifiedUserId`, and exactly one of `channelId` or `channelName`. It does not accept a `permissions` body field; Runtime derives permissions from the channel's bound public API key.             |
-| Customer-issued JWE verification             | `apps/runtime/src/services/identity/sdk-customer-issued-jwe-bootstrap.ts`                                                                                                                 | Customer-issued JWE headers and claims are strict. Public-key mode requires an outer JWE with `cty=application/jose` and an inner customer-signed JWS. Shared-secret mode requires `cty=application/json`.                                                                                   |
-| Customer-issued JWE channel config           | `apps/runtime/src/services/identity/sdk-customer-issued-jwe-config.ts`, `apps/runtime/src/routes/sdk-channel-mutation-utils.ts`                                                           | `customerIssuedJwe` is valid only for `auth.mode=hosted_exchange`. Allowed config keys are `enabled`, `maxAgeSeconds`, `acceptRuntimeIssued`, `keyMode`, and `customerSigningPublicKey`. `maxAgeSeconds` must be `60` through `900`.                                                         |
-| Studio channel auth and key rotation         | `apps/studio/src/api/channels.ts`, `apps/studio/src/components/deployments/channels/tabs/ConfigurationTab.tsx`, `apps/runtime/src/services/identity/sdk-customer-issued-jwe-key-store.ts` | Studio surfaces `anonymous` and `hosted_exchange`, token envelope policy, server secret rotation, customer JWE key mode, customer signing public key, and one-time rotated material. Shared-secret rotation returns `secret`; public-key rotation returns the Runtime public encryption key. |
-| Origin and permission enforcement            | `apps/runtime/src/middleware/sdk-auth.ts`, `apps/runtime/src/routes/sdk/internal/bootstrap-resolution.ts`, `apps/runtime/src/routes/sdk/internal/widget-permissions.ts`                   | Runtime checks allowed origins and intersects requested customer-issued permissions with the channel's active public API key permissions. Empty effective permission sets fail closed.                                                                                                       |
-| Hosted Exchange token envelope JWE readiness | `apps/runtime/src/routes/sdk-jwe-capability.ts`, `apps/runtime/src/services/identity/sdk-jwe-runtime-config.ts`, `apps/runtime/src/services/identity/sdk-token-envelope-policy.ts`        | `jwe_required` needs Runtime JWE capability ready. Runtime derives JWE keys from `ENCRYPTION_MASTER_KEY` unless JWE is disabled by `AUTH_SDK_JWE_ENABLED=false`.                                                                                                                             |
+1. [Public anonymous SDK](#scenario-1-public-anonymous-sdk)
+2. [Runtime-signed Hosted Exchange bootstrap](#scenario-2-runtime-signed-hosted-exchange)
+3. [Customer-issued shared-secret JWE](#scenario-3-customer-issued-shared-secret-jwe)
+4. [Customer-issued public-key JWE with customer-signed payload](#scenario-4-customer-issued-public-key-jwe)
 
 ## Scenario Selection
 
-| Scenario                          | Browser credential                                        | Customer backend responsibility                                                                                                                                               | Runtime responsibility                                                                                                                                                                  | When to use                                                                                                                                   |
-| --------------------------------- | --------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
-| Public anonymous SDK              | Public SDK API key                                        | None for auth. The app may pass non-sensitive public `userContext`.                                                                                                           | Verifies public key, channel, origin, and issues SDK session tokens.                                                                                                                    | Anonymous or low-assurance website chat where no PHI or verified customer identity is required.                                               |
-| Runtime-signed Hosted Exchange    | Short-lived `bootstrapToken` returned by customer backend | Authenticates the customer, gathers secure attributes, calls Runtime `POST /api/v1/sdk/customer-sessions` with the channel server secret.                                     | Mints the hosted bootstrap artifact and SDK session token. Applies `sdkTokenEnvelopePolicy`.                                                                                            | Customers accept a server-to-server Runtime call and want Artemis to own signing/encryption.                                                  |
-| Customer-issued shared-secret JWE | Short-lived compact JWE returned by customer backend      | Authenticates the customer, builds claims, encrypts with the channel JWE shared secret, and returns JWE to the browser.                                                       | Decrypts and validates the customer-issued JWE, enforces replay, scope, age, and channel config, then issues SDK session token.                                                         | XO-style flow where the customer backend must keep PHI encryption local and avoid the `/customer-sessions` API call.                          |
-| Customer-issued public-key JWE    | Short-lived compact JWE returned by customer backend      | Authenticates the customer, signs the payload with the customer private key, encrypts the signed payload with the Runtime channel public key, and returns JWE to the browser. | Decrypts with Runtime private key, verifies customer signature with the configured customer public key, enforces replay, scope, age, and channel config, then issues SDK session token. | Preferred no-API-call flow when security review requires no shared encryption secret on the customer side and explicit issuer authentication. |
+| Scenario                                                                           | Browser credential                                        | Customer backend responsibility                                                                                                                                               | Runtime responsibility                                                                                                                                                                  | When to use                                                                                                                                   |
+| ---------------------------------------------------------------------------------- | --------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
+| [Public anonymous SDK](#scenario-1-public-anonymous-sdk)                           | Public SDK API key                                        | None for auth. The app may pass non-sensitive public `userContext`.                                                                                                           | Verifies public key, channel, origin, and issues SDK session tokens.                                                                                                                    | Anonymous or low-assurance website chat where no PHI or verified customer identity is required.                                               |
+| [Runtime-signed Hosted Exchange](#scenario-2-runtime-signed-hosted-exchange)       | Short-lived `bootstrapToken` returned by customer backend | Authenticates the customer, gathers secure attributes, calls Runtime `POST /api/v1/sdk/customer-sessions` with the channel server secret.                                     | Mints the hosted bootstrap artifact and SDK session token. Applies `sdkTokenEnvelopePolicy`.                                                                                            | Customers accept a server-to-server Runtime call and want Artemis to own signing/encryption.                                                  |
+| [Customer-issued shared-secret JWE](#scenario-3-customer-issued-shared-secret-jwe) | Short-lived compact JWE returned by customer backend      | Authenticates the customer, builds claims, encrypts with the channel JWE shared secret, and returns JWE to the browser.                                                       | Decrypts and validates the customer-issued JWE, enforces replay, scope, age, and channel config, then issues SDK session token.                                                         | Flow where the customer backend must keep PHI encryption local and avoid the `/customer-sessions` API call.                                   |
+| [Customer-issued public-key JWE](#scenario-4-customer-issued-public-key-jwe)       | Short-lived compact JWE returned by customer backend      | Authenticates the customer, signs the payload with the customer private key, encrypts the signed payload with the Runtime channel public key, and returns JWE to the browser. | Decrypts with Runtime private key, verifies customer signature with the configured customer public key, enforces replay, scope, age, and channel config, then issues SDK session token. | Preferred no-API-call flow when security review requires no shared encryption secret on the customer side and explicit issuer authentication. |
 
 Public-key customer JWE has two layers:
 
@@ -525,9 +506,9 @@ The widget reads SDK config during its connection/bootstrap lifecycle.
 
 ## Scenario 3: Customer-Issued Shared-Secret JWE
 
-This is the no-new-Artemis-API-call flow closest to XO-style `setJWT`: the
-customer backend pulls secure data, encrypts the customer bootstrap payload, and
-the browser passes the compact JWE to the SDK.
+This flow requires no new Artemis API call: the customer backend pulls secure
+data, encrypts the customer bootstrap payload, and the browser passes the compact
+JWE to the SDK.
 
 Shared-secret mode authenticates the issuer by possession of the scoped channel
 secret and authenticates ciphertext integrity through `A256GCM`. It does not use
@@ -994,7 +975,6 @@ For customer-issued public-key JWE:
 
 ## Studio API Automation Payloads
 
-Studio UI calls the Studio Runtime proxy in `apps/studio/src/api/channels.ts`.
 Use these shapes when automating setup through Studio instead of clicking through
 the channel configuration UI.
 
