@@ -1,1030 +1,303 @@
 ---
 title: "Channels"
-sidebarTitle: Channels
+sidebarTitle: "Channels"
 ---
 
-Channels connect your deployed agents to the surfaces where users interact: websites, messaging apps, and voice calls. The Agent Platform (Artemis) provides channel adapters that handle the protocol-specific details, so a single agent definition works across every channel without modification.
+Channels connect your deployed agents to the surfaces where users interact. Use the UI when you want to register a provider's credentials and bind the connection to a deployment without writing scripts. For the API method, rich content, and file-attachment handling, see [Channels](/agent-platform/channels-curl).
 
-This guide covers embedding a web chat or voice widget, connecting to Slack, WhatsApp, and voice, and using rich content and file attachments across channels.
-
-A channel always binds to a deployment in a specific environment. Configure deployments first, then add channels on top. For the deployment lifecycle and the **Deployments** -> **Channels** workspace, see [Deploy Agents](/agent-platform/deployment#channels).
-
-## How channels connect
-
-The platform exposes two connection mechanisms. The one you use depends on the surface.
-
-| Mechanism | Used by | How it works |
-| --------- | ------- | ------------ |
-| **SDK channel** | Web chat and voice widgets | A public API key (`pk_`) bootstraps a browser session. You embed the Web SDK or the `<agent-widget>` web component in your page. |
-| **Channel connection** | Slack, WhatsApp, voice, and other messaging adapters | You register the external provider's credentials. The platform returns a webhook URL that the provider calls when a user sends a message. |
-
-Both mechanisms route to the same agent definition. The adapter normalizes inbound and outbound formats, so your agent doesn't need channel-specific logic for basic conversations. Use rich content when you want to tailor formatting to a specific channel.
-
-| Surface | Adapter | Connection |
-| ------- | ------- | ---------- |
-| Web chat and voice | Web SDK, `<agent-widget>` | SDK channel (`pk_` key) |
-| Slack | Slack adapter | Channel connection |
-| WhatsApp | Meta Cloud API, Infobip, Twilio | Channel connection |
-| Microsoft Teams | Bot Framework | Channel connection |
-| Email | Inbound MIME parsing | Channel connection |
-| Telegram | Telegram adapter | Channel connection |
-| Voice | Kore Voice Gateway, AudioCodes, Twilio, BYOC SIP | Channel connection |
+Each channel opens a **New \<Channel> Connection** dialog. Provider-side setup, creating the app and copying credentials, happens in the provider's console first. You then paste those values into the dialog, and the platform returns a webhook URL to register back with the provider.
 
 <Note>
-  The channel connection REST calls in this guide are pending a published channel API reference. Verify endpoint paths, field names, and response shapes against that reference before publishing. The full adapter catalog is owned by the product team. Confirm the authoritative list of supported surfaces before publishing.
+  This guide covers the channels currently exposed in the **Deployments** -> **Channels** workspace. The full adapter catalog is owned by the product team. Confirm the authoritative list of supported channels before publishing.
 </Note>
 
-## Deploy on Web
+## Before you begin
 
-Deploy your agent on a website with the Web SDK. The SDK embeds a chat or voice widget that connects to your deployed agent through a public API key.
+Confirm the following before you add a connection:
 
-The browser-facing SDK never sends the public `pk_` key directly to the runtime. It exchanges the key for a short-lived SDK session token, then authenticates each request with that token. For the full SDK reference, see [Agent Platform SDKs Overview](/agent-platform/sdks).
+- You have an active deployment in the target environment, or you bind the connection to the working copy. A connection without an active deployment still saves; it routes traffic once a deployment exists.
+- You have a provider account and the credentials the channel requires.
+- You have access to the **Deployments** workspace for the project.
 
-### Create a Public API Key
+**Navigation**: **Project** -> **Deployments** -> **Channels** -> **Add Connection**, then select the channel.
 
-The Web SDK authenticates with a public key (`pk_` prefix). Public keys are scoped to a project and are safe to expose in client-side code.
+## Common connection settings
 
-<Steps>
-  <Step title="Open API keys">
-    Go to **Project** -> **Settings** -> **API Keys**.
-  </Step>
-  <Step title="Create the key">
-    Click **Create API key** and select the SDK key type.
-  </Step>
-  <Step title="Set allowed origins">
-    Add the website origins that are allowed to use the key. The runtime validates the `Origin` header on every SDK request and rejects requests from unlisted origins.
-  </Step>
-  <Step title="Copy the key">
-    Copy the key. It's displayed only once.
-  </Step>
-</Steps>
+Every **New Connection** dialog ends with the same three settings. The channel-specific fields differ; these don't.
 
-### Configure the Web SDK channel
+| Setting | Description |
+| ------- | ----------- |
+| **Display Name** | A label for the connection, such as `Slack Production`. Up to 255 characters. Use it to tell environments and workspaces apart in the Channels list. |
+| **Environment** | The deployment the connection binds to. Select an environment to follow its active deployment automatically, or leave the default to use the working copy. When no environment has an active deployment yet, create a deployment first to bind the connection to a published environment. |
+| **Provider Verification Strength** | Controls how strictly the platform trusts the provider's identity assertions for session continuity and linking. **Weak** is the default. Choose **Strong** only for channels or providers whose identity assertions you trust. |
+| **Initial Status** | **Active** connections are usable immediately. **Inactive** connections stay saved but disabled until you activate them. |
 
-Bind the channel to a deployment so the widget knows which agents to serve.
+Select **Create** to save the connection, or **Cancel** to discard it.
 
-1. Go to **Deployments** -> **Channels**.
-2. Add a Web SDK channel and select the target environment or deployment. The channel can follow an environment automatically or pin to a specific deployment version.
-3. Associate the public API key you created.
-
-### Embed the widget
-
-Add the widget to any page with the web component, or use the SDK directly for full control over the interface.
-
-<Tabs>
-  <Tab title="Web component">
-    The `<agent-widget>` web component is the fastest way to add a widget. It renders a chat button in the configured position and opens the chat interface when clicked.
-
-    ```html
-    <script src="https://agents.kore.ai/sdk/agent-widget.js"></script>
-
-    <agent-widget
-      project-id="your-project-id"
-      api-key="pk_your-public-key"
-      mode="chat"
-      position="bottom-right"
-    ></agent-widget>
-    ```
-
-    Set `mode` to `chat`, `voice`, or `unified`. Set `position` to `bottom-right`, `bottom-left`, `top-right`, or `top-left`.
-  </Tab>
-  <Tab title="Vanilla JavaScript">
-    Use the `AgentSDK` class when you build your own interface.
-
-    ```typescript
-    import { AgentSDK } from '@agent-platform/web-sdk';
-
-    const sdk = new AgentSDK({
-      projectId: 'your-project-id',
-      apiKey: 'pk_your-public-key',
-      endpoint: 'https://agents.kore.ai',
-    });
-
-    await sdk.connect();
-
-    const chat = sdk.chat();
-    chat.on('message', (msg) => console.log(msg.content));
-    await chat.send('Hello, I need help!');
-    ```
-  </Tab>
-  <Tab title="React">
-    Wrap your app in `AgentProvider` and use the `useChat` hook.
-
-    ```tsx
-    import { AgentProvider, useChat } from '@agent-platform/web-sdk/react';
-
-    function App() {
-      return (
-        <AgentProvider
-          projectId="your-project-id"
-          apiKey="pk_your-public-key"
-          endpoint="https://agents.kore.ai"
-        >
-          <ChatWidget />
-        </AgentProvider>
-      );
-    }
-
-    function ChatWidget() {
-      const { messages, isTyping, sendMessage, isConnected } = useChat();
-      return (
-        <div>
-          {messages.map((msg) => (
-            <div key={msg.id}>{msg.content}</div>
-          ))}
-          {isTyping && <div>Agent is typing...</div>}
-          <button onClick={() => sendMessage('Hello!')} disabled={!isConnected}>
-            Send
-          </button>
-        </div>
-      );
-    }
-    ```
-  </Tab>
-</Tabs>
-
-### Enable Voice
-
-Set the widget mode to `voice` for a voice-only experience, or `unified` to offer chat and voice together.
-
-```html
-<agent-widget
-  project-id="your-project-id"
-  api-key="pk_your-public-key"
-  mode="unified"
-  position="bottom-right"
-></agent-widget>
-```
-
-When you build your own interface, obtain the voice client with `sdk.voice()` and call `start()` to request microphone access. Voice features require HTTPS in production, because microphone access needs a secure context. For voice states, events, and configuration, see the [VoiceClient reference](/agent-platform/sdks#voiceclient).
-
-### Restrict to specific origins
-
-Origin restrictions prevent unauthorized sites from embedding your widget. Set the allowed origins on the public API key under **Project** -> **Settings** -> **API Keys**.
-
-```json
-{
-  "allowedOrigins": [
-    "https://www.example.com",
-    "https://app.example.com"
-  ]
-}
-```
-
-Requests from origins that aren't listed receive a `403 Forbidden` response.
-
-### Pass user context
-
-Identify authenticated users by attaching metadata to a message. The metadata is validated server-side and is available to your agent for that turn through `session.messageMetadata`.
-
-```typescript
-const chat = sdk.chat();
-
-await chat.send('Look up my account', {
-  metadata: {
-    accountId: 'acct_123',
-    plan: 'premium',
-  },
-});
-```
-
-Use session variables and persistent memory lookups in your agent to act on this context. See [Memory and State](/agent-platform/memory-and-state).
-
-### Target a specific deployment
-
-To point the widget at a staging or production deployment, set the channel's binding under **Deployments** -> **Channels**. Pin the channel to a specific deployment version, or let it follow an environment so it always serves the active deployment for that environment.
-
-### Troubleshooting
-
-| Symptom | Resolution |
-| ------- | ---------- |
-| **Widget doesn't appear** | Verify the script URL and that the `api-key` is valid. Check the browser console for errors. |
-| **"Invalid or expired API key"** | The key may have been rotated or the channel deactivated. Create a new key under **Project** -> **Settings** -> **API Keys**. |
-| **CORS errors** | Add the website's origin to the key's `allowedOrigins` list. |
-| **Widget loads but the agent doesn't respond** | Confirm an active deployment exists for the project and the channel is bound to it. |
+<Note>
+  Use separate connections and credentials for dev, staging, and production. Bind each to its matching environment so a test message never reaches a production audience.
+</Note>
 
 ## Set up Slack
 
-Connect your agent to Slack so users can interact with it directly in Slack channels and direct messages. Slack uses a channel connection: you register your Slack app's credentials with the platform, then point Slack's event webhook at the URL the platform returns.
+Deploy your agent as a Slack bot for team collaboration in channels and direct messages.
 
-### Create a Slack app
+### Get Slack credentials
 
 <Steps>
   <Step title="Create the app">
-    Go to [api.slack.com/apps](https://api.slack.com/apps) and select **Create New App** -> **From scratch**. Name the app and select the workspace.
+    Go to [api.slack.com/apps](https://api.slack.com/apps) and select **Create New App** -> **From scratch**. Name the app and select your workspace.
   </Step>
-  <Step title="Add bot token scopes">
-    Under **OAuth & Permissions**, add the bot token scopes your agent needs.
-
-    | Scope | Purpose |
-    | ----- | ------- |
-    | `chat:write` | Send messages. |
-    | `app_mentions:read` | Respond to @mentions. |
-    | `im:read`, `im:write` | Handle direct messages. |
-    | `files:read` | Read file attachments, if your agent handles them. |
+  <Step title="Subscribe to events">
+    Go to **Event Subscriptions**, enable events, and add the bot events `message.im` and `app_mention`. Set the **Request URL** to the webhook URL the platform shows after you create the connection.
+  </Step>
+  <Step title="Add scopes">
+    Under **OAuth & Permissions**, add the scopes `chat:write`, `im:history`, and `app_mentions:read`.
   </Step>
   <Step title="Install and copy credentials">
-    Install the app to your workspace and copy the **Bot User OAuth Token** (`xoxb-...`). Under **Basic Information**, copy the **Signing Secret**.
+    Select **Install to Workspace** and copy the **Bot User OAuth Token**. Under **Basic Information**, copy the **Signing Secret**, **App ID**, and your workspace **Team ID**.
   </Step>
 </Steps>
 
-### Create a channel connection
+### Create the connection
 
-Register the Slack app credentials with the platform. The response includes the `webhookUrl`. Copy it for the next step.
+In the **New Slack Connection** dialog, you can connect two ways:
 
-```bash
-curl -X POST https://your-platform/api/projects/$PROJECT_ID/channel-connections \
-  -H "Authorization: Bearer $TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "channel_type": "slack",
-    "display_name": "Production Slack",
-    "external_identifier": "T12345678:A12345678",
-    "credentials": {
-      "bot_token": "xoxb-your-bot-token",
-      "signing_secret": "your-signing-secret"
-    },
-    "environment": "production"
-  }'
-```
+- Select **Add to Slack** to authorize through Slack's OAuth flow.
+- Select **Enter credentials manually instead** to paste the values yourself.
 
-### Configure the Slack webhook
+| Field | What to enter |
+| ----- | ------------- |
+| **Display Name** | A label for the connection. |
+| **Slack Team ID:App ID** | Your workspace Team ID and App ID, joined with a colon. |
+
+Complete the [common connection settings](#common-connection-settings) and select **Create**.
+
+For Slack slash commands, point the command's **Request URL** to `/api/v1/channels/slack/slash/<Team ID:App ID>`.
+
+## Set up Microsoft Teams
+
+Integrate your agent into Teams channels and chats through an Azure Bot registration.
+
+### Get Microsoft Teams credentials
 
 <Steps>
-  <Step title="Enable event subscriptions">
-    In your Slack app settings, go to **Event Subscriptions**, enable events, and paste the `webhookUrl` from the channel connection response. Slack sends a verification challenge, and the platform responds automatically.
+  <Step title="Create the Azure Bot">
+    Go to the [Azure Portal](https://portal.azure.com/), navigate to **Azure Bot** -> **Create**, and set the **Messaging endpoint** to the webhook URL the platform shows after you create the connection.
   </Step>
-  <Step title="Subscribe to bot events">
-    Under **Subscribe to bot events**, add `message.im` for direct messages and `app_mention` for @mentions in channels. Save your changes.
+  <Step title="Copy the App ID and secret">
+    Copy the **Microsoft App ID** from the bot's **Configuration** page. Go to **App Registrations** -> your bot -> **Certificates & secrets**, create a **New client secret**, and copy the value.
+  </Step>
+  <Step title="Copy the tenant ID">
+    Copy the **Directory (tenant) ID** from the **Overview** page.
+  </Step>
+  <Step title="Add the Teams channel">
+    Go to **Channels** and add the **Microsoft Teams** channel. In the Teams app manifest, set `bots[0].supportsFiles` to `true` to enable attachments.
   </Step>
 </Steps>
 
-### Threaded replies
+### Create the connection
 
-The Slack adapter supports threaded conversations and enables them by default. When a user mentions the bot in a channel, the agent replies in a thread to keep the channel clean.
+| Field | What to enter |
+| ----- | ------------- |
+| **Display Name** | A label for the connection. |
+| **Bot App ID** | The Microsoft App ID of your bot registration. |
+| **App ID** | Your Microsoft App ID. |
+| **Client Secret** | The client secret value you created in Azure. |
+| **Azure Tenant ID** | The Directory (tenant) ID from the Azure Overview page. |
 
-### Slash commands
+Complete the [common connection settings](#common-connection-settings) and select **Create**.
 
-Register a custom slash command that routes to your agent.
-
-1. In your Slack app settings, go to **Slash Commands** and create a command, for example `/ask`.
-2. Set the request URL to `https://your-platform/api/v1/channels/slack/slash/{connection-identifier}`.
-3. The connection identifier is the external identifier from your channel connection, in the format `team_id:app_id`.
-
-### Interactive components
-
-If your agent uses interactive elements such as buttons or select menus, enable interactivity in your Slack app.
-
-1. Go to **Interactivity & Shortcuts** and toggle it on.
-2. Set the request URL to the same webhook URL you used for events.
-3. The platform routes interactive payloads, such as button clicks and menu selections, to your agent automatically.
-
-See [Rich content](#rich-content) for the Slack Block Kit and interactive action syntax.
-
-### Multi-workspace apps
-
-To distribute your agent across multiple Slack workspaces, use the generic webhook URL without a connection identifier. The platform extracts the workspace identifier from the event payload.
-
-```
-https://your-platform/api/v1/channels/slack/webhook
-```
-
-Create a separate channel connection for each workspace that installs the app.
-
-### Troubleshooting
-
-| Symptom | Resolution |
-| ------- | ---------- |
-| **"Channel not configured for this workspace"** | The connection's external identifier doesn't match the workspace. Verify the `team_id:app_id` matches your Slack app installation. |
-| **Bot doesn't respond** | Confirm the Event Subscriptions URL verification succeeded (green checkmark in Slack) and the `bot_token` includes the `chat:write` scope. |
-| **Signature verification fails** | The `signing_secret` must match the Signing Secret on the app's Basic Information page. Secrets are case-sensitive. |
-| **Duplicate responses** | Slack requires a response within 3 seconds, so the platform queues messages and responds asynchronously. If your app retries events, the platform deduplicates using event IDs. |
+<Note>
+  Attachment ingestion currently supports the **personal chat** scope only.
+</Note>
 
 ## Set up WhatsApp
 
-Connect your agent to WhatsApp so users can interact with it through WhatsApp messages. WhatsApp uses a channel connection. You register your WhatsApp Business API credentials with the platform, then point your provider's webhook at the URL the platform returns.
-
-### Set up a WhatsApp Business API account
-
-Before connecting to the platform, set up a WhatsApp Business API provider account. The platform supports Meta's Cloud API directly and third-party providers such as Infobip and Twilio.
-
-For Meta Cloud API:
-
-1. Go to [developers.facebook.com](https://developers.facebook.com) and create a Meta app with the WhatsApp product enabled.
-2. Under **WhatsApp** -> **Getting Started**, note your **Phone Number ID** and **WhatsApp Business Account ID**.
-3. Generate a permanent **System User Access Token** with the `whatsapp_business_messaging` permission.
-4. Under **Configuration**, note the **App Secret** for webhook signature verification.
-
-### Create a channel connection
-
-Register the WhatsApp credentials with the platform. The response includes the `webhookUrl`.
-
-```bash
-curl -X POST https://your-platform/api/projects/$PROJECT_ID/channel-connections \
-  -H "Authorization: Bearer $TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "channel_type": "whatsapp",
-    "display_name": "Production WhatsApp",
-    "external_identifier": "your-phone-number-id",
-    "credentials": {
-      "access_token": "your-system-user-access-token",
-      "app_secret": "your-app-secret",
-      "verify_token": "a-random-string-you-choose"
-    },
-    "config": {
-      "phoneNumberId": "your-phone-number-id"
-    },
-    "environment": "production"
-  }'
-```
-
-### Configure the Meta webhook
-
-1. In your Meta app settings, go to **WhatsApp** -> **Configuration**.
-2. Under **Webhook**, click **Edit** and paste the `webhookUrl`.
-3. Enter the same `verify_token` you used when creating the channel connection.
-4. Click **Verify and Save**. Meta sends a GET request to verify the webhook.
-5. Under **Webhook fields**, subscribe to `messages`.
-
-### Connect through Infobip
-
-For WhatsApp through Infobip, use the provider-specific configuration.
-
-```bash
-curl -X POST https://your-platform/api/projects/$PROJECT_ID/channel-connections \
-  -H "Authorization: Bearer $TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "channel_type": "whatsapp",
-    "display_name": "Infobip WhatsApp",
-    "external_identifier": "your-sender-number",
-    "credentials": {
-      "access_token": "your-infobip-api-key",
-      "app_secret": "your-webhook-secret",
-      "verify_token": "unused-for-infobip"
-    },
-    "config": {
-      "provider": "infobip",
-      "phoneNumberId": "your-sender-number"
-    }
-  }'
-```
-
-Set the Infobip webhook URL to:
-
-```
-https://your-platform/api/v1/channels/whatsapp/infobip/webhook
-```
-
-### Media support
-
-The WhatsApp adapter receives images, documents, audio, and video from users. The adapter downloads media files and routes them through the attachment pipeline automatically, so no extra configuration is needed. See [File attachments](#file-attachments) for how your agent processes uploaded media.
-
-### Interactive messages
-
-Your agent can send interactive WhatsApp messages, such as buttons and lists, through the `WHATSAPP` rich content format.
-
-```yaml
-FLOW:
-  offer_options:
-    REASONING: false
-    RESPOND: "How can I help you today?"
-    RICH_CONTENT:
-      WHATSAPP: |
-        {
-          "type": "interactive",
-          "interactive": {
-            "type": "list",
-            "body": {"text": "Choose a topic:"},
-            "action": {
-              "button": "Select",
-              "sections": [
-                {
-                  "title": "Support",
-                  "rows": [
-                    {"id": "billing", "title": "Billing"},
-                    {"id": "technical", "title": "Technical Issue"}
-                  ]
-                }
-              ]
-            }
-          }
-        }
-    THEN: handle_selection
-```
-
-### Troubleshooting
-
-| Symptom | Resolution |
-| ------- | ---------- |
-| **Webhook verification fails** | The `verify_token` in the channel connection must match the value entered in the Meta webhook configuration. It's a plain string you choose, not a Meta-generated secret. |
-| **Messages don't arrive** | Confirm you subscribed to the `messages` webhook field in Meta's configuration, and that the phone number is registered with an active WhatsApp Business account. |
-| **Signature verification fails on inbound messages** | The `app_secret` must be the Meta App Secret from Basic Settings, not the system user access token. |
-| **Media messages aren't processed** | Large media files can time out during download. Check the attachment processing logs for the session. |
-
-## Set up Voice
-
-Set up a voice channel so users can interact with your agent through phone calls. The platform uses speech-to-text and text-to-speech for natural voice conversations, and supports Kore Voice Gateway, AudioCodes, Twilio, and BYOC SIP trunks. Each uses a channel connection.
-
-### Kore Voice Gateway
-
-Create a channel connection for Kore Voice Gateway. The response includes a SIP endpoint to point your phone number at.
-
-```bash
-curl -X POST https://your-platform/api/projects/$PROJECT_ID/channel-connections \
-  -H "Authorization: Bearer $TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "channel_type": "korevg",
-    "display_name": "Voice Support Line",
-    "external_identifier": "support-line",
-    "config": {
-      "provider": "korevg",
-      "welcomeMessage": "Hello! How can I help you today?",
-      "voiceConfig": {
-        "sttProvider": "deepgram",
-        "sttLanguage": "en-US",
-        "ttsProvider": "elevenlabs",
-        "ttsVoice": "rachel"
-      }
-    },
-    "environment": "production"
-  }'
-```
-
-### Twilio Voice
-
-For Twilio-based voice, create a channel connection with Twilio credentials, then configure the Twilio phone number's webhook to point to the platform's voice endpoint.
-
-```bash
-curl -X POST https://your-platform/api/projects/$PROJECT_ID/channel-connections \
-  -H "Authorization: Bearer $TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "channel_type": "voice_twilio",
-    "display_name": "Twilio Voice",
-    "external_identifier": "+15551234567",
-    "credentials": {
-      "account_sid": "your-twilio-account-sid",
-      "auth_token": "your-twilio-auth-token"
-    },
-    "config": {
-      "phoneNumber": "+15551234567"
-    },
-    "environment": "production"
-  }'
-```
-
-### Use caller identity
-
-For voice sessions, the runtime makes caller identity available through the `session` namespace. Your agent can pass the caller's number or the dialed number into tools without asking the caller to repeat it.
-
-| Field | Description |
-| ----- | ----------- |
-| `session.anonymousId` | Normalized caller identity. For phone calls, this is the caller ANI when the gateway provides a valid phone number. |
-| `session.sessionPrincipalId` | The recognized session principal used for contact resolution and session ownership checks. |
-| `session.calledNumber` | Normalized number the caller dialed, when available. |
-| `session.rawCallerId` | Raw caller value before phone normalization. |
-| `session.rawFrom` | Raw upstream `From` value before phone normalization. |
-| `session.rawCalledNumber` | Raw called value before phone normalization. |
-| `session.rawTo` | Raw upstream `To` value before phone normalization. |
-
-The runtime normalizes phone-like values from the gateway. For example, `sip:+15551234567@example.com` and `+1 (555) 123-4567` both become `+15551234567`. If the first caller value isn't a phone number, the runtime checks trusted SIP identity headers before falling back to the raw identity value.
-
-Use the normalized fields for most tools:
-
-```yaml
-TOOLS:
-  lookup_customer(phone: string, called_number?: string) -> object
-    description: "Find the customer record for a voice caller."
-
-FLOW:
-  identify_caller
-
-  identify_caller:
-    REASONING: false
-    CALL: lookup_customer
-      WITH:
-        phone: session.anonymousId
-        called_number: session.calledNumber
-      AS: customer
-    RESPOND: "Thanks. I found your account."
-```
-
-Use raw fields only when your integration needs the original gateway value for audit or carrier-specific troubleshooting.
-
-```yaml
-CALL: record_voice_context
-  WITH:
-    caller_id: session.anonymousId
-    raw_from: session.rawFrom
-    called_number: session.calledNumber
-    raw_to: session.rawTo
-  AS: voiceContext
-```
-
-Caller identity fields can contain phone numbers or carrier-provided identifiers, so treat them as end-user identity data. Don't pass raw fields to external tools unless the tool needs the original gateway value.
-
-### Add voice-specific responses
-
-Use `VOICE:` blocks to provide voice-optimized output alongside text. The block accepts `ssml`, `instructions`, and `plain_text` properties.
-
-```yaml
-FLOW:
-  welcome:
-    REASONING: false
-    RESPOND: "Welcome to Acme Support. How can I help?"
-    VOICE:
-      instructions: "Use a warm, professional tone. Speak at a moderate pace."
-
-  confirm_booking:
-    REASONING: false
-    RESPOND: "Your booking is confirmed. Confirmation number: {{confirmation_id}}."
-    VOICE:
-      instructions: "Read the confirmation number slowly and clearly, one character at a time."
-      ssml: |
-        <speak>
-          Your booking is confirmed.
-          Confirmation number: <say-as interpret-as="characters">{{confirmation_id}}</say-as>.
-        </speak>
-```
-
-### BYOC SIP
-
-Connect your existing SIP trunk with the bring-your-own-carrier provider.
-
-```bash
-curl -X POST https://your-platform/api/projects/$PROJECT_ID/channel-connections \
-  -H "Authorization: Bearer $TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "channel_type": "korevg",
-    "display_name": "Enterprise SIP",
-    "external_identifier": "enterprise-sip",
-    "config": {
-      "provider": "byoc_sip",
-      "sipGateway": "192.168.1.100:5060",
-      "voiceConfig": {
-        "sttProvider": "deepgram",
-        "ttsProvider": "elevenlabs",
-        "ttsVoice": "rachel"
-      }
-    }
-  }'
-```
-
-### AudioCodes Voice Gateway
-
-For AudioCodes VoiceAI Connect integration:
-
-```bash
-curl -X POST https://your-platform/api/projects/$PROJECT_ID/channel-connections \
-  -H "Authorization: Bearer $TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "channel_type": "audiocodes",
-    "display_name": "AudioCodes Voice",
-    "external_identifier": "audiocodes-main",
-    "config": {
-      "botUrl": "https://your-platform/api/v1/channels/audiocodes/webhook"
-    }
-  }'
-```
-
-### Browser-based Voice
-
-Generate a Twilio token for browser-based voice calls from your web application.
-
-```bash
-curl -X POST https://your-platform/api/v1/voice/token \
-  -H "Authorization: Bearer $TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "projectId": "your-project-id",
-    "identity": "user-123"
-  }'
-```
-
-Use the returned token with the Twilio Client SDK in your frontend:
-
-```typescript
-import { Device } from '@twilio/voice-sdk';
-
-const device = new Device(token);
-await device.register();
-
-const call = await device.connect({
-  params: { projectId: 'your-project-id' },
-});
-```
-
-### Control speech with SSML
-
-Use SSML for fine-grained control over speech output, such as pauses, emphasis, and pronunciation.
-
-```yaml
-RESPOND: "Your account balance is ${{balance}}."
-VOICE:
-  ssml: |
-    <speak>
-      Your account balance is
-      <say-as interpret-as="currency">USD{{balance}}</say-as>.
-      <break time="500ms"/>
-      Is there anything else I can help with?
-    </speak>
-```
-
-### Troubleshooting
-
-| Symptom | Resolution |
-| ------- | ---------- |
-| **No audio in calls** | Confirm the STT and TTS providers are configured with valid API keys. Check the voice service health endpoint. |
-| **Webhook signature validation fails (Twilio)** | The `auth_token` must match the Twilio account's Auth Token. The platform uses it to validate `X-Twilio-Signature` on incoming webhooks. |
-| **Voice responses cut off** | Long responses can exceed TTS limits. Keep voice responses concise, or use SSML `<break>` tags to create natural pauses. |
-| **SIP registration fails** | For BYOC SIP, verify the SIP gateway IP and port, and confirm the gateway allows connections from the platform's IP range. |
-
-## Rich Content
-
-Use rich content to send formatted responses that adapt to each channel's capabilities: Markdown, Adaptive Cards, Slack Block Kit, WhatsApp interactive messages, carousels, and interactive elements.
-
-Attach a `RICH_CONTENT:` block to any `RESPOND` statement. The runtime selects the format that matches the delivery channel and falls back to the plain text `RESPOND` message when no matching format exists. For the complete reference, see [Rich Content and Expressions](/agent-platform/abl-reference/rich-content-and-expressions).
-
-| Format | Description |
-| ------ | ----------- |
-| `MARKDOWN` | Formatted Markdown text. |
-| `ADAPTIVE_CARD` | JSON conforming to the Microsoft Adaptive Cards schema. |
-| `HTML` | HTML content for web-based channels. |
-| `SLACK` | JSON conforming to the Slack Block Kit format. |
-| `WHATSAPP` | JSON for WhatsApp interactive messages. |
-| `AG_UI` | JSON for AG-UI events. |
-| `CAROUSEL` | A scrollable collection of cards. |
-
-### Add Rich Content to a response
-
-Provide channel-specific formatting alongside the plain text response.
-
-```yaml
-FLOW:
-  show_results:
-    REASONING: false
-    RESPOND: "Here are your search results."
-    RICH_CONTENT:
-      MARKDOWN: |
-        ## Search Results
-
-        | Hotel | Price | Rating |
-        |-------|-------|--------|
-        {{#each hotels}}
-        | {{name}} | ${{price}} | {{rating}} stars |
-        {{/each}}
-```
-
-If you don't provide a channel-specific format, the runtime falls back to the plain text `RESPOND` message.
-
-### Adaptive Cards for Microsoft Teams
-
-Send rich interactive cards on Teams with the Adaptive Cards format.
-
-```yaml
-RESPOND: "Your booking summary"
-RICH_CONTENT:
-  ADAPTIVE_CARD: |
-    {
-      "type": "AdaptiveCard",
-      "version": "1.5",
-      "body": [
-        {"type": "TextBlock", "text": "Booking Confirmed", "size": "large", "weight": "bolder"},
-        {"type": "FactSet", "facts": [
-          {"title": "Hotel", "value": "{{hotel_name}}"},
-          {"title": "Dates", "value": "{{checkin}} - {{checkout}}"},
-          {"title": "Total", "value": "${{total}}"}
-        ]}
-      ]
-    }
-```
-
-### Slack Block Kit
-
-Send formatted messages with Slack blocks.
-
-```yaml
-RESPOND: "Your order status"
-RICH_CONTENT:
-  SLACK: |
-    {
-      "blocks": [
-        {"type": "header", "text": {"type": "plain_text", "text": "Order Status"}},
-        {"type": "section", "fields": [
-          {"type": "mrkdwn", "text": "*Order:* #{{order_id}}"},
-          {"type": "mrkdwn", "text": "*Status:* {{status}}"}
-        ]},
-        {"type": "divider"},
-        {"type": "section", "text": {"type": "mrkdwn", "text": "Estimated delivery: {{delivery_date}}"}}
-      ]
-    }
-```
-
-### WhatsApp Interactive Messages
-
-Send interactive list or button messages on WhatsApp.
-
-```yaml
-RESPOND: "Select an option"
-RICH_CONTENT:
-  WHATSAPP: |
-    {
-      "type": "interactive",
-      "interactive": {
-        "type": "button",
-        "body": {"text": "How would you like to proceed?"},
-        "action": {
-          "buttons": [
-            {"type": "reply", "reply": {"id": "modify", "title": "Modify Booking"}},
-            {"type": "reply", "reply": {"id": "cancel", "title": "Cancel Booking"}},
-            {"type": "reply", "reply": {"id": "info", "title": "More Info"}}
-          ]
-        }
-      }
-    }
-```
-
-### Carousel of Cards
-
-Send a scrollable carousel of cards across supported channels. Each card has a title, an optional subtitle and image, and action buttons.
-
-```yaml
-RESPOND: "Available hotels"
-RICH_CONTENT:
-  CAROUSEL:
-    - title: "Grand Hotel"
-      subtitle: "$200/night - 4.5 stars"
-      imageUrl: "https://example.com/grand-hotel.jpg"
-      buttons:
-        - id: book_grand
-          type: button
-          label: "Book Now"
-          value: "grand_hotel"
-    - title: "City Lodge"
-      subtitle: "$120/night - 4.0 stars"
-      imageUrl: "https://example.com/city-lodge.jpg"
-      buttons:
-        - id: book_city
-          type: button
-          label: "Book Now"
-          value: "city_lodge"
-```
-
-### Interactive actions
-
-Add buttons, select menus, and input fields with an `ACTIONS:` block. Handle the user's interaction with `ON_ACTION`.
-
-```yaml
-FLOW:
-  offer_actions:
-    REASONING: false
-    RESPOND: "What would you like to do?"
-    ACTIONS:
-      - id: view_details
-        type: button
-        label: "View Details"
-      - id: select_category
-        type: select
-        label: "Category"
-        options:
-          - id: billing
-            label: "Billing"
-          - id: technical
-            label: "Technical"
-          - id: general
-            label: "General"
-    ON_ACTION:
-      view_details:
-        RESPOND: "Here are the details..."
-        GOTO: show_details
-      select_category:
-        SET:
-          selected_category = action.value
-        GOTO: route_to_category
-```
-
-The `type` property accepts `button`, `select`, or `input`. For `input` elements, set `inputType` to `text`, `number`, `date`, `time`, or `email`, and add a `submitLabel` and `submitId` for the form's submit button. See [Interactive actions](/agent-platform/abl-reference/rich-content-and-expressions#interactive-actions) for the full property list.
-
-### Multi-channel templates
-
-Define reusable, named responses in the `TEMPLATES:` block. Templates support `{{}}` interpolation and multi-format variants. Reference a template with `TEMPLATE(name)`.
-
-```yaml
-TEMPLATES:
-  booking_summary:
-    DEFAULT: |
-      Booking Confirmed!
-      Hotel: {{hotel_name}}
-      Total: ${{total}}
-    MARKDOWN: |
-      ## Booking Confirmed
-
-      | Detail | Value |
-      |--------|-------|
-      | **Hotel** | {{hotel_name}} |
-      | **Total** | ${{total}} |
-
-FLOW:
-  confirm:
-    REASONING: false
-    RESPOND: TEMPLATE(booking_summary)
-    THEN: COMPLETE
-```
+Connect your agent to WhatsApp Business for customer messaging through Meta's Cloud API.
+
+### Get WhatsApp credentials
+
+<Steps>
+  <Step title="Create the WhatsApp Business app">
+    Go to [Meta for Developers](https://developers.facebook.com/) and create a WhatsApp Business app.
+  </Step>
+  <Step title="Copy the API credentials">
+    Under **WhatsApp** -> **API Setup**, copy your **Access Token** and **Phone Number ID**. Under **Settings** -> **Basic**, copy the **App Secret**.
+  </Step>
+  <Step title="Choose a verify token">
+    Choose any secret string as your **Verify Token**. You use the same string in the dialog and when you configure the webhook in Meta's dashboard.
+  </Step>
+</Steps>
+
+### Create the connection
+
+| Field | What to enter |
+| ----- | ------------- |
+| **Display Name** | A label for the connection. |
+| **Provider** | The WhatsApp provider. Defaults to **Meta Cloud API**. |
+| **Phone Number ID** | The numeric Phone Number ID from Meta. |
+| **Access Token** | The access token from your WhatsApp Business app. |
+| **App Secret** | The Meta App Secret used to verify inbound webhook signatures. |
+| **Verify Token** | The secret string you chose for webhook verification. |
+
+Complete the [common connection settings](#common-connection-settings) and select **Create**. Then open your Meta app settings and set the **Webhook URL** to the URL the platform shows, using the same verify token.
+
+## Set up Telegram
+
+Connect your agent to a Telegram bot for direct and group conversations.
+
+### Get Telegram credentials
+
+<Steps>
+  <Step title="Create the bot">
+    Open Telegram and message [@BotFather](https://t.me/BotFather). Send `/newbot` and follow the prompts.
+  </Step>
+  <Step title="Copy the bot token">
+    Copy the bot token, in the format `123456:ABC-DEF1234ghIkl-zyx57W2v1u123ew11`.
+  </Step>
+</Steps>
+
+### Create the connection
+
+| Field | What to enter |
+| ----- | ------------- |
+| **Display Name** | A label for the connection. |
+| **Bot Username** | The bot's username, used as the external identifier. |
+| **Bot Token** | The token you copied from BotFather. |
+
+Complete the [common connection settings](#common-connection-settings) and select **Create**. The platform registers the webhook URL with Telegram automatically on connect.
+
+## Set up Email
+
+Process inbound emails and send agent responses by email.
+
+### Create the connection
+
+| Field | What to enter |
+| ----- | ------------- |
+| **Display Name** | A label for the connection. |
+
+Complete the [common connection settings](#common-connection-settings) and select **Create**. The platform generates an inbound email address for the connection.
+
+Configure your email provider to forward or route messages to that address. The platform's SMTP server listens on **port 2525**, and incoming emails route to the selected agent version.
+
+## Set up Genesys
+
+Connect your agent to Genesys Cloud as a Bot Connector for contact-center automation.
+
+### Get Genesys credentials
+
+<Steps>
+  <Step title="Create the Bot Connector">
+    In Genesys Cloud Admin, go to **Integrations** -> **Bot Connector** and create a new integration. Note the **Stream ID**.
+  </Step>
+  <Step title="Set the connector URL and secret">
+    Set the **Bot Connector URL** to the webhook URL the platform shows, and configure a **Client Secret** (bearer token) in the Bot Connector settings.
+  </Step>
+  <Step title="Wire the Architect flow">
+    In the Architect flow, add a **Call Bot Connector** action that points to this integration.
+  </Step>
+</Steps>
+
+### Create the connection
+
+| Field | What to enter |
+| ----- | ------------- |
+| **Display Name** | A label for the connection. |
+| **Stream ID** | The Stream ID from your Genesys Bot Connector integration. |
+| **Client Secret** | The bearer token you configured in the Bot Connector settings. |
+
+Complete the [common connection settings](#common-connection-settings) and select **Create**.
+
+## Set up AIforWork
+
+Connect your agent to Kore.ai's Employee Experience (EX) platform for bidirectional messaging.
+
+### Create the connection
+
+| Field | What to enter |
+| ----- | ------------- |
+| **Display Name** | A label for the connection. |
+
+Complete the [common connection settings](#common-connection-settings) and select **Create**. On creation, the platform auto-generates the endpoint URL and a connection secret.
+
+<Steps>
+  <Step title="Copy the endpoint and secret">
+    Copy the **Endpoint URL** and **Connection Secret** shown immediately after creation. The secret is revealed only once.
+  </Step>
+  <Step title="Register the ABL Agent">
+    In AIforWork, register a new ABL Agent and paste the endpoint URL and connection secret into its configuration.
+  </Step>
+  <Step title="Set the response mode">
+    Set the response mode — **sync**, **stream**, or **async** — to match your AI4W agent setup.
+  </Step>
+  <Step title="Test end to end">
+    Send a test message from AIforWork to confirm the integration works end to end. AIforWork signs requests with HMAC-SHA256 and includes a JWT bearer token, and the platform verifies both automatically.
+  </Step>
+</Steps>
+
+## Set up Web SDK
+
+Embed a chat widget in your website with a single script tag.
+
+### Create the connection
+
+| Field | What to enter |
+| ----- | ------------- |
+| **Display Name** | A label for the connection. |
+| **Environment** | The deployment the widget serves. See [common connection settings](#common-connection-settings). |
+| **Authentication** | How customer browsers bootstrap SDK sessions. Select **Anonymous / Public-key bootstrap** or **Hosted token exchange**. |
+
+Choose the authentication mode that fits your setup:
+
+| Mode | When to use |
+| ---- | ----------- |
+| **Anonymous / Public-key bootstrap** | Browser or client app. Store the public `pk_*` key, runtime endpoint, and channel selection in client-side configuration. No ABL secret is required, so there is nothing extra to provision on the customer server. |
+| **Hosted token exchange** | Customer backend. The backend adds a secret and issues one-time bootstrap tokens. |
 
 <Note>
-  The reference defines `DEFAULT`, `MARKDOWN`, `ADAPTIVE_CARD`, and `ACTIONS` as template variants. The `HTML` and voice template variants from earlier drafts aren't in the reference. Verify with the product team before documenting them.
+  Public-key bootstrap has security implications:
+
+  - The public `pk_*` key is publishable and may ship in browser code.
+  - It authenticates SDK bootstrap for the app or channel, not the end user.
+  - Restrict allowed origins and use separate public keys for dev, staging, and production.
 </Note>
 
-### How the runtime selects a format
+Create a public SDK key before you publish the channel. If the dialog reports **No active public SDK keys found**, create one in **Deploy** -> **Public Keys**. Then copy the embed snippet and add it to your website's `<head>` or before the closing `</body>` tag. For the embed component, SDK reference, and origin restrictions, see [Channels](/agent-platform/channels#deploy-on-web).
 
-The runtime selects the response format based on the delivery channel and falls back through the priority chain until it finds a defined format. Plain text is always the final fallback.
+## Set up Realtime LLM Voice
 
-| Channel | Priority format | Fallback |
-| ------- | --------------- | -------- |
-| Web and SDK | `RICH_CONTENT` (Markdown, HTML, AG-UI) | Plain text |
-| Mobile | `RICH_CONTENT` (Adaptive Card, Carousel) | Plain text |
-| Voice | `VOICE` (SSML, instructions, plain text) | `RESPOND` text |
-| Slack | `RICH_CONTENT` (Slack) | Markdown |
-| WhatsApp | `RICH_CONTENT` (WhatsApp) | Plain text |
+Run live voice conversations with realtime LLM models, such as OpenAI Realtime and Gemini Live, through the Kore.ai Voice Gateway.
 
-### Troubleshooting
+### Create the connection
 
-| Symptom | Resolution |
-| ------- | ---------- |
-| **Rich content doesn't render** | The channel may not support the format. Always provide a plain text `RESPOND` fallback. The runtime uses it when no matching rich format exists. |
-| **Adaptive Card JSON parse error** | Validate the JSON with the [Adaptive Cards Designer](https://adaptivecards.io/designer/). Template variables resolve before JSON parsing. |
-| **Slack blocks rejected by the API** | Slack limits block structure to 50 blocks and 3,000 characters per text element. Validate against Slack's Block Kit Builder. |
-| **Interactive action isn't handled** | Confirm each button or select element has an `id` that matches a handler key in the `ON_ACTION` block. |
+| Field | What to enter |
+| ----- | ------------- |
+| **Display Name** | A label for the connection. |
+| **Connection Name** | A machine-friendly name, for example `realtime-voice-prod`. |
 
-## File Attachments
+Complete the [common connection settings](#common-connection-settings) and select **Create**. Then finish the voice setup:
 
-Handle file attachments so your agent can accept, process, and respond to user-uploaded images, documents, audio, and video.
-
-<Note>
-  The `ATTACHMENTS` ABL block and the attachments REST API in this section are pending a published reference. Verify block properties, endpoint paths, and field names before publishing.
-</Note>
-
-### Declare attachment fields
-
-Use the `ATTACHMENTS` block in your agent to declare the file types your agent accepts. The runtime prompts the user for each required attachment and validates file type and size before processing.
-
-```yaml
-AGENT: Document_Processor
-GOAL: "Process uploaded documents and extract information"
-
-ATTACHMENTS:
-  id_document:
-    prompt: "Please upload a photo of your ID"
-    category: image
-    required: true
-    maxFileSizeMb: 10
-    allowedMimeTypes: ["image/jpeg", "image/png", "image/webp"]
-    ocrEnabled: true
-
-  supporting_document:
-    prompt: "Upload any supporting documents (optional)"
-    category: document
-    required: false
-    maxFileSizeMb: 20
-    allowedMimeTypes: ["application/pdf", "application/vnd.openxmlformats-officedocument.wordprocessingml.document"]
-```
-
-### Upload attachments through the API
-
-When you build a custom integration, upload files through the attachments API. The response includes an `attachmentId` and a processing `status`.
-
-```bash
-curl -X POST https://your-platform/api/projects/$PROJECT_ID/sessions/$SESSION_ID/attachments \
-  -H "Authorization: Bearer $TOKEN" \
-  -F "file=@document.pdf"
-```
-
-For the Web SDK, upload with `chat.uploadAttachment(file)` and send the returned ID with a message. The SDK accepts files up to 25 MB each, with a maximum of 10 files per message. See [Agent Platform SDKs Overview](/agent-platform/sdks#file-uploads).
-
-### Check processing status
-
-```bash
-curl https://your-platform/api/projects/$PROJECT_ID/sessions/$SESSION_ID/attachments/$ATTACHMENT_ID/status \
-  -H "Authorization: Bearer $TOKEN"
-```
-
-| Field | Description |
-| ----- | ----------- |
-| `scanStatus` | Malware scan result: pending, clean, or infected. |
-| `processingStatus` | Content extraction: pending, processing, or complete. |
-| `embeddingStatus` | Embedding generation: pending or complete. |
-
-### Extract text from images with OCR
-
-Enable OCR to extract text from images, which is useful for receipts, IDs, and handwritten notes. The extracted text is available in the session as `receipt.extractedText`.
-
-```yaml
-ATTACHMENTS:
-  receipt:
-    prompt: "Upload a photo of your receipt"
-    category: image
-    required: true
-    ocrEnabled: true
-```
-
-### Transcribe audio
-
-Enable transcription for audio uploads. The transcribed text is available as `voicemail.transcription`.
-
-```yaml
-ATTACHMENTS:
-  voicemail:
-    prompt: "Upload the voicemail recording"
-    category: audio
-    required: true
-    transcriptionEnabled: true
-    allowedMimeTypes: ["audio/mpeg", "audio/wav", "audio/ogg"]
-```
-
-### Extract key frames from video
-
-Extract key frames from video for visual analysis.
-
-```yaml
-ATTACHMENTS:
-  product_video:
-    prompt: "Upload a video of the defective product"
-    category: video
-    required: false
-    maxFileSizeMb: 50
-    keyFrameExtraction: true
-```
-
-### Request attachments in a flow step
-
-Request attachments at specific points in a flow.
-
-```yaml
-FLOW:
-  collect_documents:
-    REASONING: false
-    PROMPT: "I need to verify your identity. Please upload a photo of your ID."
-    GATHER:
-      FIELDS:
-        - id_photo
-          type: attachment
-          category: image
-          required: true
-    THEN: verify_identity
-
-  verify_identity:
-    REASONING: true
-    GOAL: "Verify the uploaded ID document"
-    AVAILABLE_TOOLS: [verify_document, extract_id_data]
-    EXIT_WHEN: identity_verified IS SET
-    THEN: proceed
-```
-
-### Channel-specific handling
-
-Different channels handle attachments differently. The platform's channel adapters normalize all formats, so no agent-side configuration is needed.
-
-| Channel | Attachment support |
-| ------- | ------------------ |
-| Web SDK | Drag-and-drop file upload in the chat widget. |
-| Slack | Native file sharing, downloaded automatically. |
-| WhatsApp | Image, document, audio, and video through the media API. |
-| Teams | File attachments through the Bot Framework. |
-| Email | MIME attachments parsed from inbound email. |
-| Telegram | Photos, documents, audio, and video messages. |
-
-### List and retrieve attachments
-
-The download URL is time-limited (one hour by default) and scoped to the authenticated user.
-
-```bash
-# List all attachments for a session
-curl https://your-platform/api/projects/$PROJECT_ID/sessions/$SESSION_ID/attachments \
-  -H "Authorization: Bearer $TOKEN"
-
-# Get a download URL for a specific attachment
-curl https://your-platform/api/projects/$PROJECT_ID/sessions/$SESSION_ID/attachments/$ATTACHMENT_ID/url \
-  -H "Authorization: Bearer $TOKEN"
-```
-
-### Troubleshooting
-
-| Symptom | Resolution |
-| ------- | ---------- |
-| **"PAYLOAD_TOO_LARGE" on upload** | The file exceeds the maximum size, either the upload endpoint limit or the `maxFileSizeMb` declared in the attachment field. Reduce the file size or adjust the limit. |
-| **Processing status stuck on "pending"** | The multimodal processing service may be unavailable. Check service health. |
-| **OCR returns empty text** | The image may be too low resolution, or the text isn't clearly visible. Recommend that users upload high-quality images. |
-| **Attachment isn't available in session variables** | Wait for `processingStatus` to reach `complete` before accessing extracted content. Use the status endpoint to poll. |
+<Steps>
+  <Step title="Select a voice provider">
+    Select a voice provider. The connection defaults to the **Kore.ai Voice Gateway**.
+  </Step>
+  <Step title="Provision a phone number">
+    Buy a phone number through Twilio in the **Configuration** tab.
+  </Step>
+  <Step title="Choose the realtime model">
+    Choose your realtime LLM model — **OpenAI Realtime** or **Gemini Live**.
+  </Step>
+  <Step title="Set ASR and TTS preferences">
+    Select your ASR (speech-to-text) and TTS (text-to-speech) model preferences.
+  </Step>
+  <Step title="Bind to an environment">
+    Assign the channel to a deployment environment.
+  </Step>
+</Steps>
 
 ## Related pages
 
-- [Deploy Agents](/agent-platform/deployment) -- deployments, environments, and the **Deployments** -> **Channels** workspace.
+- [Channels](/agent-platform/channels-curl) -- the API method, rich content, and file-attachment handling.
 - [Agent Platform SDKs Overview](/agent-platform/sdks) -- Web SDK and ABL SDK reference.
-- [Rich Content and Expressions](/agent-platform/abl-reference/rich-content-and-expressions) -- the full ABL rich content reference.
-- [Safety and Guardrails](/agent-platform/safety-and-guardrails) -- rate limiting for SDK channels.
-- [Build Your First Agent](/agent-platform/tutorials/build-your-first-agent) -- end-to-end tutorial including web deployment.

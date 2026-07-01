@@ -1,0 +1,64 @@
+---
+title: 'External API Call at Conversation Startup'
+---
+
+<Badge icon="arrow-left" color="gray">[Back to FAQs](/agent-platform/faq#tools-and-integrations)</Badge>
+
+<p className="rn-heading">Can I invoke an external API at conversation startup or immediately after the welcome message, without using a regular tool call?</p>
+
+**Use Case:** Retrieve data based on custom metadata or SIP headers and make it available in context, so the agent can reference it throughout the conversation.
+
+## Answer
+
+Yes. Use a top-level `ON_START` `CALL` in ABL. This is the supported pattern to fetch context before the agent responds.
+
+You cannot fully bypass the tool execution pipeline. A `CALL` still runs through the runtime's tool executor.
+
+### Recommended Pattern
+
+```yaml
+ON_START:
+  CALL: lookup_context
+    WITH:
+      metadata: _metadata
+    AS: startupContext
+  RESPOND: "Welcome..."
+```
+
+In this pattern:
+
+- `lookup_context` is a declared or bound tool, typically a read-only HTTP tool, that performs the external API call.
+- `AS: startupContext` captures the result and writes it to session state, so it stays available for the rest of the conversation.
+- The call is deterministic and startup-triggered because it runs in `ON_START`. Unlike a normal in-conversation tool call, it is not an LLM decision.
+
+### How It Works
+
+The startup sequence works as follows:
+
+1. On startup, the platform captures `sessionMetadata` from the URL and from `session:new.data.sessionMetadata` or `session_metadata`, then passes it into `createSessionFromResolved(... metadata ...)`. The platform stores this under `session.data.values._metadata`.
+2. SIP headers are projected and allowlisted separately, for example `x-custom-data`, `user-to-user`, and `x-contact-id`. The platform applies them into `_metadata.sip` before the greeting and init path runs.
+3. `initializeSession()` runs the startup lifecycle, which includes `ON_START`.
+4. Within `ON_START`, the execution order is fixed: `SET` → `CALL` → `RESPOND`.
+
+Because of this order, a top-level `ON_START` `CALL` runs before the welcome message is sent, which meets the "before welcome" requirement. To fetch data slightly later, an initial flow step can also run a `CALL` after startup and welcome. That step is also backed by the tool executor.
+
+### Caveat
+
+`CALL` is an ABL construct, but the runtime still executes it as a bound tool invocation through the tool I/O pipeline. This means:
+
+- You **can** make the call deterministic and startup-triggered instead of LLM-decided.
+- You **cannot** fully avoid the tool execution path. A declared or bound tool, typically a read-only HTTP tool, is still required.
+
+This pattern removes the overhead of an LLM deciding to call a tool, but not the tool-invocation mechanism itself.
+
+## Summary
+
+| Requirement | Supported? | How |
+|---|---|---|
+| Fetch external data before the welcome message | Yes | Top-level `ON_START` → `CALL` → `RESPOND` |
+| Fetch external data after welcome, early in the flow | Yes | `CALL` in an initial flow step |
+| Make data available throughout the conversation | Yes | Capture with `AS: <variableName>`; stored in session state |
+| Use custom metadata / SIP headers as input | Yes | Available via `_metadata` (and `_metadata.sip` for SIP headers) |
+| Fully bypass the tool execution pipeline | No | `CALL` always runs through the tool executor and requires a declared/bound tool |
+
+---
