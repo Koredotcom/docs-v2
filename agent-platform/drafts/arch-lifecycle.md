@@ -37,6 +37,5 @@ flowchart LR
 
 ## Related Topics
 
-- **Create Agents** – Learn how to create projects.
 - **Evaluations** – Learn how evaluation suites are generated, executed, and analyzed.
 - **Optimize with Arch AI** – Learn about the reinforcement loop and continuous optimization after deployment.
