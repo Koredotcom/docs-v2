@@ -1,0 +1,213 @@
+---
+title: "Receiving and Using Incoming SIP Headers in Voice Agents"
+sidebarTitle: "Handling Incoming SIP Headers"
+---
+
+When an inbound call or transferred call includes SIP headers, the platform can expose supported headers to the agent as session metadata. Agents can use this context for routing, personalization, or transfer continuity.
+
+For example, an agent can:
+
+- Route a call based on `x-queue` or `x-skill`.
+- Continue a CCaaS journey using `user-to-user`.
+- Inspect transfer context from `referred-by`, `diversion`, or `history-info`.
+
+<Note>
+  - This capability applies to voice channels that expose inbound SIP headers to
+  the runtime, including the Kore Voice Gateway path. - This capability is
+  currently in Alpha. The agent can access only headers that are sent by the
+  upstream SIP environment and pass the platform's filtering and safety checks.
+  Validate the behavior in your SIP environment before using it in production.
+</Note>
+
+## How Incoming SIP Headers Are Processed
+
+Incoming SIP headers are sent by the upstream SIP system. Unlike outgoing transfer headers, you do not configure header names or values in the agent or project settings.
+
+The processing flow is:
+
+```text
+Upstream SIP System
+        ↓
+Inbound INVITE or transfer REFER
+        ↓
+Platform-supported inbound headers
+        ↓
+Runtime filtering and normalization
+        ↓
+_metadata.sip
+        ↓
+Agent
+```
+
+The process works as follows:
+
+1. An upstream system, such as an SBC, carrier, PBX, or transfer source, sends SIP headers with the inbound INVITE or transfer REFER.
+2. The voice provider path forwards the available headers to the runtime.
+3. The runtime validates, filters, and normalizes the headers.
+4. Supported headers that pass these checks are added to \_metadata.sip before the first agent turn.
+5. The agent can read the headers from session metadata and use them in conditions, prompts, or tool calls.
+
+<Note>
+  There is no project-level configuration for selecting incoming SIP headers.
+  Project-level Header Passthrough and Allowed Transfer Headers settings apply
+  to outgoing transfers, not incoming header processing.
+</Note>
+
+## Platform-Supported Incoming Headers
+
+The platform exposes a fixed set of incoming SIP header names. Headers with other names are dropped.
+
+Supported header names are:
+
+```text
+call-id           reason              x-call-id           x-sbc-call-id
+x-queue           x-skill             x-campaign          x-correlation-id
+x-request-id      x-session-id        x-tenant-id         x-agent-id
+x-contact-id      x-project-id        x-custom-data       x-transfer-reason
+user-to-user      referred-by         diversion           history-info
+```
+
+### Header Normalization
+
+Before exposing headers to the agent, the runtime normalizes them as follows:
+
+- Header names are case-insensitive and stored in lowercase. `X-Queue` becomes `x-queue`.
+- Underscores are converted to hyphens. `x_queue` becomes `x-queue`.
+- Repeated or multi-valued headers are combined into a comma-separated value.
+- CR/LF characters are removed from values.
+- Values containing null characters are rejected.
+
+### Blocked Headers
+
+Infrastructure and security-sensitive headers are not exposed to the agent. Examples include:
+
+```text
+via
+route
+record-route
+contact
+authorization
+proxy-authorization
+p-asserted-identity
+```
+
+## Access Incoming Headers in the Agent
+
+Incoming SIP headers are available in the runtime session metadata at: `_metadata.sip`.
+
+Example:
+
+```yaml
+_metadata:
+  sip:
+    headers:
+      x-queue: claims-vip
+      user-to-user: account=12345;journey=renewal
+    inviteHeaders:
+      x-queue: claims-vip
+    referHeaders:
+      user-to-user: account=12345;journey=renewal
+    source: refer
+```
+
+The metadata includes:
+
+| Field           | Description                                                 |
+| --------------- | ----------------------------------------------------------- |
+| `headers`       | Unified map of all projected SIP headers.                   |
+| `inviteHeaders` | Headers associated with the inbound `INVITE`.               |
+| `referHeaders`  | Headers associated with transfer or `REFER` context.        |
+| `source`        | Indicates the header source, typically `invite` or `refer`. |
+
+## Use Incoming Headers in Agent
+
+You can use incoming SIP headers directly in agent conditions or assign them to simpler variables for reuse.
+
+### Use Headers Directly in Conditions
+
+Use bracket notation when referencing header names that contain hyphens.
+
+```yaml
+FLOW:
+  start:
+    REASONING: false
+    BRANCHES:
+      - IF: _metadata.sip.headers["x-queue"] == "claims-vip"
+        RESPOND: "Routing to VIP claims handling."
+      - IF: _metadata.sip.headers["user-to-user"] != null
+        RESPOND: "Transfer context detected."
+      - ELSE:
+        RESPOND: "Standard voice entry."
+```
+
+### Assign Headers to Variables
+
+When a header is used in multiple conditions, prompts, or tools, assign its value to a variable in ON_START.
+
+```yaml
+ON_START:
+ SET: sip_queue = _metadata.sip.headers["x-queue"]
+ SET: sip_skill = _metadata.sip.headers["x-skill"]
+ SET: sip_uui = _metadata.sip.headers["user-to-user"]
+ SET: sip_source = _metadata.sip.source
+You can then use the variables elsewhere in the agent:
+GOAL: |
+ Help the caller and honor any SIP-based routing context.
+ Queue: {{sip_queue}}
+ Skill: {{sip_skill}}
+
+COMPLETE:
+ - WHEN: sip_source == "refer"
+   RESPOND: "Transfer flow completed."
+```
+
+This approach is recommended when the same SIP-derived value is used in multiple places.
+
+### Use Incoming Headers in Tool Calls
+
+If a tool or HTTP integration requires a value from an incoming SIP header, first assign the header value to a variable in ON_START.
+
+For example:
+
+```yaml
+ON_START:
+ SET: sip_queue = _metadata.sip.headers["x-queue"]
+ SET: sip_uui = _metadata.sip.headers["user-to-user"]
+```
+
+You can then pass sip_queue or sip_uui to downstream tools or integrations.
+
+## Limits
+
+The following limits apply to incoming SIP headers:
+
+- Maximum 30 projected headers.
+- Maximum 2048 bytes per value.
+- Maximum 16384 bytes total for the projected SIP header block.
+
+If these limits are exceeded, excess data is dropped rather than causing session initialization to fail.
+
+## Security Considerations
+
+Treat incoming SIP headers as upstream-provided context, not as authenticated proof of identity or authorization.
+
+Do not rely solely on a SIP header to authorize sensitive actions such as:
+
+- Accessing an account.
+- Confirming a user's identity.
+- Issuing a refund.
+- Changing security-sensitive information.
+
+If a header such as user-to-user contains a customer identifier, validate it against a trusted system before using it for sensitive operations.
+
+## Troubleshooting
+
+| Symptom                                         | Possible cause and resolution                                                                                 |
+| ----------------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
+| `_metadata.sip` is empty or missing             | The upstream provider path did not expose SIP headers, or no headers passed platform filtering.               |
+| A header is missing                             | The header is not in the platform-supported set or is intentionally blocked.                                  |
+| `X-Queue` does not match                        | Header names are normalized to lowercase. Use `x-queue`.                                                      |
+| A value contains comma-separated entries        | Repeated or multi-valued headers are combined.                                                                |
+| A value is truncated or missing                 | The value may have exceeded a size limit or failed a safety check.                                            |
+| An agent condition does not compile             | Use bracket notation for hyphenated names, for example `_metadata.sip.headers["user-to-user"]`.               |
+| You need to add headers to an outgoing transfer | Configure custom SIP headers for the transfer instead. See **Sending Custom SIP Headers on Voice Transfers**. |
