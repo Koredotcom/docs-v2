@@ -3,141 +3,213 @@ title: "Deploy Agents"
 sidebarTitle: "Deploy Agents"
 ---
 
-To make an Agentic project live and available to users, you must correctly configure deployments, environments, channels, API keys, and channel authentication. Before users can interact with your agents, the following must exist:
+A deployment makes an Agentic project live so users can reach your agents. The platform organizes every part of going live under four tabs in the Deployments workspace: **Environments**, **Channels**, **Endpoints**, and **API Keys**. This page covers each tab in the order you use it.
 
-- An active deployment in the target environment (dev, staging, or production).
-- Environment variables configured for all `{{env.KEY}}` references used in ABL.
-- A channel bound to that environment and an API key to authorize.
+Before any user reaches an agent, three things must exist together. You need an active deployment in the target environment, environment variables that resolve every reference your ABL uses, and a channel bound to that environment with an API key that authorizes access.
 
-| Concept      | Description                                                   |
-| ------------ | ------------------------------------------------------------- |
-| Version      | A frozen snapshot of a compiled agent                         |
-| Deployment   | A manifest mapping agents to versions for an environment      |
-| Environment  | A named deployment slot (dev, staging, production)            |
-| Channel      | A user-facing communication surface connected to a deployment |
-| SDK Key      | A public client-side key used by SDK-based applications       |
-| Platform Key | A scoped backend API key for server-to-server integrations    |
+The following terms recur throughout this guide.
 
-## Deployment Lifecycle
+| Term | Definition |
+|---|---|
+| **Version** | A frozen snapshot of a compiled agent. |
+| **Deployment** | A manifest that maps agents and workflows to versions for one environment. |
+| **Environment** | One of the deployment slots: development, staging, or production. |
+| **Channel** | A user-facing surface that connects a deployment to end users. |
+| **SDK key** | A public, client-side credential that SDK applications use, prefixed `pk_`. |
+| **Platform key** | A scoped, server-to-server credential for backend integrations, prefixed `abl_`. |
 
-```mermaid actions={false}
-flowchart LR
-    A[Create Agent Versions]
-    --> B[Configure Env Variables]
-    --> C[Deploy to Dev]
+## Environments
 
-    C --> D[Promote to Staging]
-    D --> E[Promote to Production]
+The Environments tab is where you create deployments, manage the variables they depend on, and move a release from development to production. It lists a shared Base variable set, one card for each environment, and a history log of retired deployments. The tab header shows how many deployments are currently active and provides the **New Deploy** button.
 
-    E --> F[Configure Channels]
-    F --> G[Users Access Agents]
-```
+### Deployment lifecycle
 
-- A deployment is always scoped to a single environment.
-- Only one deployment per environment can be active at a time.
-- When a new deployment becomes active:
-  - The previous deployment automatically moves to draining.
-  - Existing sessions continue naturally.
-  - New sessions route to the latest deployment.
+A deployment always scopes to a single environment, and only one deployment stays active per environment at a time. When you activate a new deployment, the platform retires the previous one automatically. In-progress sessions finish on the old version while new sessions route to the latest deployment.
 
-## Step 1: Set Environment Variables
+The lifecycle follows a fixed path. You build agent versions, configure variables, deploy to development, promote to staging, promote to production, then connect channels so users can reach the agents.
 
-Before deployment, configure all environment variables referenced in agents. Navigate to **Deployments** -> **Environments**.
+### Environment cards
 
-**Base Variables** : The Base variables defines fallback values shared across environments. Use base variables for:
+Each environment card represents one deployment slot. When a deployment is active, the card shows its ID, status, label, the number of agents and workflows it contains, and the pinned component versions. The three environments follow a fixed promotion order.
 
-- Shared defaults across deployments.
-- Product names.
-- Common timeouts.
+| Environment | Description |
+|---|---|
+| **Development** | The first slot in the promotion chain, where you validate a new build. |
+| **Staging** | The middle slot, where you verify the release against production-like settings. |
+| **Production** | The final slot, which serves live users. |
 
-Override them per environment when needed.
+Each card provides **Snapshot**, **Promote**, **Rollback**, and **Retire** controls. **Snapshot** captures the current state, **Promote** pushes the manifest to the next environment, **Rollback** restores the previous deployment, and **Retire** decommissions the deployment. Production omits **Promote** because it's the final stage in the chain.
 
-Example:
+### Environment variables
 
-| Scope               | Value                                          |
-|---------------------|------------------------------------------------|
-| Base                | `SUPPORT_EMAIL=support@example.com`            |
-| Production Override | `SUPPORT_EMAIL=enterprise-support@example.com` |
+Configure variables before you deploy, so that every reference resolves at runtime. The Base set defines fallback values shared across all environments, and any environment can override a Base value with its own. The panel also lets you export, import, and copy variables between environments.
+
+To add an environment variable:
+
+1. Open **Base (Default)**, **Development**, **Staging**, or **Production**.
+2. Click **Add**, then enter the key and value.
+3. Select **Secret** when the value is sensitive. The platform stores secrets write-only, so no one can read them back after you save.
+4. Click the confirm icon to save the variable.
 
 <Note>
-- Variable changes only affect new sessions. If you update a variable, existing in-progress sessions keep the old value until they end. Runtime execution fails when unresolved variables are accessed.
-- You can also set global variables via **Admin Settings** ->**Env variables**. Environment-specific variables with the same key take priority.
+Variable changes affect new sessions only. In-progress sessions keep their original values until they end, and runtime execution fails when an agent reads an unresolved variable. You can also set global variables under **Admin Settings -> Env variables**. When keys collide, the environment-specific variable takes priority.
 </Note>
 
+### Create a deployment
 
-To add a new env variable:
+Click **New Deploy** to open the **Create Deployment** dialog. You choose the target environment, name the release, decide how the platform selects agent versions, and confirm the agents, workflows, and variables the deployment includes. Complete the fields in order.
 
-- Select the target environment tab (dev, staging, or production).
-- Click **Add Variable**.
-- Enter the key, value, and optional description.
-- Toggle Secret if the value is sensitive (secrets are write-only after saving).
-- Click Save.
-- You can also copy variables from other environments.
+| Field | Description |
+|---|---|
+| **Environment** | The deployment slot you target. Start every release in development. |
+| **Label** | A short, readable name for the release. |
+| **Description** | Optional notes about the deployment. |
+| **Version Strategy** | How the platform selects each agent's version. |
+| **Entry Agent** | The agent that receives the first message in a session. |
+| **Workflows** | The workflow versions the deployment includes. |
+| **Config Variables** | Optional. The config variable set version to bind. |
+| **Environment Variables** | Optional. Deployment-scoped variable overrides. |
 
-## Step 2: Deploy
+### Version strategy
 
-Go to **Deployments** → **Environments** and click **New Deploy** (upper-right). Configure:
+The version strategy controls which build of each agent the deployment uses. Choose the approach that matches how much control you need over individual agents.
 
-- Environment: Select environment. Always start with `dev`.
-- Entry agent: The agent that receives the first message, usually the supervisor.
-- Agent version manifest: map each agent to a version, or use the latest active version. You can also auto-create a version from the working copy.
-- Label: Human-readable identifier for the deployment like `v1.0 - initial build`.
+| Option | Description |
+|---|---|
+| **Use latest active** | Deploys the best available version for every agent, the fastest path to production. |
+| **Customize per agent** | Pins a specific version for each agent and lets you configure model overrides individually. |
 
-Click **Deploy**. The platform validates your agent ABLs, resolves configuration placeholders, and activates the deployment. If there was a previous dev deployment, it moves to draining — existing sessions finish naturally, new ones go to the new deployment.
+For workflows, pin each one to a published version or select **Auto-create from draft** to generate a version from the current working copy. A running summary confirms the payload before you deploy. When you click **Deploy**, the platform validates your ABLs, resolves configuration placeholders, activates the deployment, and retires any previous deployment in that environment.
 
-## Step 3: Promote to Staging
+### Promote through environments
 
-Don't manually recreate staging deployments. Instead, Promote your dev deployment. This pushes the exact same agent version manifest to staging, so you're testing what you actually built rather than manually re-specifying versions.
+Promotion moves the exact manifest you tested into the next environment, so you never rebuild a release by hand. This keeps development, staging, and production in sync and reduces configuration drift.
 
-## Step 4: Promote Staging to Production
+To promote a deployment:
 
-Once staging is validated, promote it to production the same way, by clicking Promote on the staging deployment.
+1. On the **Development** card, click **Promote** to push the manifest to staging.
+2. Confirm the deployment behaves as expected in staging.
+3. On the **Staging** card, click **Promote** to push the same manifest to production.
 
-## Step 5: Configure Access
+### Roll back a deployment
 
-An active deployment isn't automatically reachable. You must configure:
+A rollback reverses an active deployment when it causes problems. The platform retires the current deployment and reactivates the previous one, so users recover quickly.
 
-- API keys
-- Channels
-- Authentication methods, if required
+To roll back a deployment:
 
-### Configure API Keys
+1. Locate the environment running the problem deployment.
+2. Click **Rollback**.
 
-For external application access, create API Keys.
+Sessions on the failed deployment finish naturally, and new sessions reach the restored version immediately.
 
-| Key Type     | Description                                                                                                                                                                                                                                                                                                        |
-| ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| SDK Key      | Used by client apps to talk to the agent chat/runtime surface. Intended for embedding the widget or calling chat/session APIs. It bootstraps an SDK session, then requests are constrained by that session/token model. <br /><br />Think: end-user/app-facing chat access.                                        |
-| Platform Key | Used for broader server-to-server platform API access. Has explicitly selectable scopes such as Execute Chat, Read Analytics, Read Workspace, and Write Document Permissions. Intended for integrations, workflows, and backend automation. <br /><br />Think: integration/backend access with scoped permissions. |
+### Deployment history
 
-[Learn More](/agent-platform/administration/general-settings#api-keys)
+The **Deployment History** log records every retired deployment for audit and recovery. Each entry lists the deployment ID, source environment, retired status, date, and component versions, along with a **Snapshot** link.
 
+### Deployment status
 
-### Channels
+Every deployment moves through a small set of states as it goes live and later steps down. The status tells you whether a deployment serves new sessions, is winding down, or is fully decommissioned.
 
-To connect a channel from the **Deployments** -> **Channels** workspace, see [Set up Channels from the UI](/agent-platform/channels), which links each documented channel to its setup steps.
+| Status | Description |
+|---|---|
+| **active** | Serves live requests and receives new sessions. |
+| **draining** | Accepts no new sessions while existing sessions finish. |
+| **retired** | Fully decommissioned, though active sessions continue until they end. |
 
-| Channel | Description |
-| ------- | ----------- |
-| **Slack** | Deploy agents as Slack bots for team collaboration. See the [channel setup guide](/agent-platform/channels#set-up-slack). |
-| **Microsoft Teams** | Integrate agents into Teams channels and chats. See the [channel setup guide](/agent-platform/channels#set-up-microsoft-teams). |
-| **WhatsApp** | Connect agents to WhatsApp Business for customer messaging. See the [channel setup guide](/agent-platform/channels#set-up-whatsapp). |
-| **Telegram** | Connect agents to Telegram bots for messaging and group conversations. See the [channel setup guide](/agent-platform/channels#set-up-telegram). |
-| **Web SDK** | Embed a chat widget in your website with a single script tag. See the [channel setup guide](/agent-platform/channels#set-up-web-sdk). |
-| **Email** | Process inbound emails and send agent responses by email. See the [channel setup guide](/agent-platform/channels#set-up-email). |
-| **Realtime LLM Voice** | Live voice conversations using realtime LLM models, such as OpenAI Realtime and Gemini Live, through the Kore.ai Voice Gateway. See the [channel setup guide](/agent-platform/channels#set-up-realtime-llm-voice). |
-| **Genesys** | Connect agents to Genesys Cloud as a Bot Connector for contact-center automation. See the [channel setup guide](/agent-platform/channels#set-up-genesys). |
-| **AIforWork** | Connect agents to Kore.ai's Employee Experience (EX) platform for bidirectional messaging. See the [channel setup guide](/agent-platform/channels#set-up-aiforwork). |
+## Channels
 
+Channels connect your agents to the platforms your users already use, from messaging apps and voice systems to your own web and mobile applications. On the Channels tab you select a channel card to open its configuration, and each channel either follows an environment automatically or pins to a specific deployment version. This lets you expose the same agents across many surfaces without rebuilding them for each one.
 
-## Step 6: Rollback if Something Goes Wrong
+The platform groups the available channels into five top-level categories.
 
-If a production deployment causes issues, go to **Deployments** → **Environments**, find the active deployment, and click **Rollback**. This retires the current deployment and reactivates the previous one in that environment. Users on the bad deployment finish their sessions naturally; new sessions immediately go to the restored version.
+| Category | Description |
+|---|---|
+| **Messaging** | Connects agents to chat and customer-support platforms such as Slack, WhatsApp, Microsoft Teams, and Zendesk. |
+| **SDK** | Embeds agents into your own website or applications. |
+| **Voice** | Routes live and telephony conversations through the Kore.ai Voice Gateway and partner connectors, including realtime LLM voice and traditional STT to LLM to TTS pipelines. |
+| **Webhook** | Delivers agent responses to your own server asynchronously. |
+| **Protocols** | Exposes agents through standardized agent-communication interfaces. |
 
-## Deployment Status Reference
+To review the full list of supported channels and the step-by-step setup for each one, see [Channels](/agent-platform/channels).
 
-| Status   | What it Means                                                                       |
-| -------- | ----------------------------------------------------------------------------------- |
-| active   | Receiving new sessions, serving live requests.                                      |
-| draining | No new sessions accepted; existing sessions complete naturally.                     |
-| retired  | Fully decommissioned, no new requests to this deployment. Active sessions continue. |
+## Endpoints
+
+The Endpoints tab gives you the direct call surface for each agent in a chosen deployment. You select a deployment, then copy the ready-made request for any agent it contains. Each agent exposes three request modes: **Chat**, **Stream**, and **WebSocket (SDK)**.
+
+Open **Select deployment** and choose the deployment you want, such as the active staging, production, or dev deployment. The tab then lists each agent with its Chat URL and the three request modes.
+
+A Chat URL follows this structure.
+
+The **Chat** tab supplies a copy-ready request.
+
+```bash
+curl -X POST 'https://agents-dev.kore.ai/api/v1/project/smartdesk-enterprise-assistant/staging/agent/emailassistant/chat' \
+  -H 'x-api-key: <YOUR_API_KEY>' \
+  -H 'Content-Type: application/json' \
+  -d '{"message": "Hello", "sessionMetadata": {}}'
+```
+
+<Note>
+The **Stream** and **WebSocket (SDK)** tabs use the same base URL with a different request format. Capture and confirm those request bodies before publishing.
+</Note>
+
+## API keys
+
+The API Keys tab creates and manages the credentials external applications use to reach your agents. It separates keys into two types for two audiences, each on its own sub-tab. The type you create determines the format of the key and the permissions it can carry.
+
+| Key type | Description |
+|---|---|
+| **SDK key** | A public, client-side credential that SDK applications use to start a session. Requests stay constrained by the session token. Prefixed `pk_`. |
+| **Platform key** | A scoped credential for server-to-server platform API access, used by integrations, workflows, and backend automation. Prefixed `abl_`. |
+
+### SDK keys
+
+The SDK Keys sub-tab lists every SDK key by name and masked value. Each row includes a delete control, and rows show a last-used date once the key has been called. Click **Create Key** to add a new one.
+
+### Platform keys
+
+The Platform Keys sub-tab lists every platform key with fuller metadata and edit and delete controls. Each key also carries a status, such as revoked, and a **View scopes** expander that reveals the permissions it grants.
+
+| Field | Description |
+|---|---|
+| **Masked key** | The truncated key value shown after creation. |
+| **Created by** | The user who created the key. |
+| **Created at** | The date and time the key was created. |
+| **Lifecycle** | The key's current state and the time it last changed. |
+| **Scopes** | The permissions granted to the key. |
+
+### Create a platform key
+
+A platform key carries explicit scopes, so you grant only the permissions the integration needs. You name the key, select its scopes, and set an expiration before you create it.
+
+To create a platform key:
+
+1. Click **Create Key**, then enter a key name.
+2. Select one or more scopes from the groups below.
+3. Choose an expiration: **No expiration**, **30 days**, **90 days**, or a **Custom date**.
+4. Click **Create Key**.
+
+### Scopes
+
+Scopes define exactly what a platform key can do. The platform groups them by function, so you can grant read access, write access, or execution rights independently.
+
+| Group | Scope | Description |
+|---|---|---|
+| **Execution** | Execute Workflows | Execute workflows through the Process API. |
+| | Invoke Draft Workflows | Invoke draft, unpublished workflow versions, intended for CI/CD pipelines and automated testing. |
+| | Read Workflows | Read workflow definitions and status. |
+| | Execute Chat | Send messages to agents through the Chat API. |
+| **Management** | Read Agents | List and inspect agent configurations. |
+| | Write Agents | Create and update agent configurations. |
+| | Read Channel Connections | Read project channel connection details for service integrations. |
+| | Write Channel Connections | Create, update, and deactivate or delete project channel connections for service integrations. |
+| | Read Deployments | List deployment status and history. |
+| | Write Deployments | Create and promote deployments. |
+| | Read Sessions | Read session history and transcripts. |
+| | Write Sessions | Attach external provider metadata to sessions and trigger transcript sync. |
+| **Knowledge base** | Query Knowledge Base | Execute search queries against knowledge bases. |
+| | Read Knowledge Base | Read knowledge base metadata and configurations. |
+| | Ingest Documents | Upload files and ingest data into knowledge bases. |
+| | Write Document Permissions | Set document-level ACL permissions during ingestion. |
+| **Analytics** | Read Analytics | Read analytics dashboards and metrics. |
+| **Admin** | Read Workspace | Read workspace settings and usage data. |

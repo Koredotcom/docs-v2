@@ -1,0 +1,155 @@
+---
+title: Genesys Integration using Voice Automation and Audio Connector
+sidebarTitle: Genesys Integration using Voice Automation and Audio Connector
+---
+<Badge icon="arrow-left" color="gray">[Back to Integrations List](/ai-for-service/contact-center/integrations/overview)</Badge>
+
+This document describes how to configure inbound call handoff from Genesys Cloud CX to Contact Center AI (CCAI) for automation and transfer the call to a live agent while displaying Agent AI on the Genesys Agent Desktop.
+
+## Prerequisites
+
+* Admin access to CCAI, XO Platform, and Agent AI.
+* Admin access to a Genesys Cloud CX account.
+* Familiarity with creating Architect flows in Genesys Cloud CX.
+
+## Contact Center AI Configuration for Automation
+
+This section describes the configuration process of CCAI for automation:
+
+### 1. Create or Import App into XO Platform
+
+1. Sign in to **AI for Service**.
+2. Go to **Settings** > **App Settings** > **Dev Tools** > **BotKit**.
+3. Select **Add** to create a new bot or select one from the library. For help, refer to [Create an App](/ai-for-service/sdk/sdk-configuration#create-an-app).
+4. Publish the bot.
+
+### 2. Purchase a Phone Number
+
+1. Go to **Flows & Channels** > **Channels** > **Voice Gateway**.
+2. Follow [this doc](/ai-for-service/channels/voice-gateway/configure-voice-gateway#buy-new-phone-number) for purchasing a new phone number.
+3. Attach this phone number to an **Experience Flow**.
+
+### 3. Create an Experience Flow in Contact Center AI
+
+1. Follow [this doc](/ai-for-service/flows/create-and-manage-flows#create-a-start-flow) to create an experience flow.
+2. Add the **Automation** node to configure the app for automation.
+3. **Optional**: Add an **Agent Transfer** node to transfer calls to agents in Genesys Cloud CX. 
+    ![agent-transfer-node](/ai-for-service/contact-center/integrations/genesys-voice-automation-audio-connector/images/agent-transfer-node.png)
+
+4. Publish the flow.
+5. Select **Test Flow** to verify the call connects to the correct flow.
+
+### 4. Configure the Agent Transfer
+
+1. Go to the **App Settings** > **Integrations** > **Agent Transfer**.
+2. Select **Voice** > **SIP Transfer**.
+3. Configure SIP Transfer by following [this doc](/ai-for-service/integrations/agents/agent-transfer-integrations#configure-agent-transfer-settings).
+
+## Genesys Side Configuration for Inbound Agent Transfer
+
+### Step 1 – Queue
+
+If you haven’t created an Agent Queue to route live agent transfers, create and add the necessary members. Refer to [this doc](/ai-for-service/integrations/agents/configuring-the-genesys-agent#step-3-create-a-queue) for help.
+
+### Step 2 – Architect Flow
+
+**Create an Inbound Call Flow**
+
+Create a new Inbound Call Flow to transfer calls from SmartAssist to Genesys.
+
+1. Sign in to [Genesys Cloud](https://login.mypurecloud.com/#/authenticate-adv/org/kore).
+2. Select **Admin** > **Architect**.
+3. Select **+ Add** to add a new call flow.
+4. Enter a name and a description in the **Name** and **Description** fields.
+5. Select **Create Flow**.
+6. Create the flow (Add tasks) in the Main Menu or create a Reusable Task and mark this task as **set this as the starting task** from the ellipsis menu in the upper-right corner. 
+7. After the **Start** node, add a **Call Audio Connector** node in the architect flow.
+    1. Inside the **Call Audio Connector** node, give any descriptive name (optional).
+    2. Select **Literal** and add the following variables:
+        1. `isAgentTransfer` – with key Name as **isAgentTransfer** and validate to assign as **Task.isAgentTransfer**
+        2. `X-Queue-Name` – with key Name as **X-Queue-Name** and validate to assign as **Task.XQueueName**
+            ![isagenttransfer-and-xqueuename-variables](/ai-for-service/contact-center/integrations/genesys-voice-automation-audio-connector/images/isagenttransfer-and-xqueuename-variables.png)
+
+8. Add a **Decision** node immediately after the previous node in the Architect flow.
+    1. Inside this node, give any name.
+    2. Assign the following value (as an Expression): `if(Task.isAgentTransfer==”true”,true,false)` 
+        ![if-taskisagent-transfer-true-value](/ai-for-service/contact-center/integrations/genesys-voice-automation-audio-connector/images/if-taskisagent-transfer-true-value.png)
+
+9. After the **Decision** node, add **Transfer to ACD** node at **Success** path.
+    1. Inside this node, give any name.
+    2. Point it to the queue you want to use for agents by assigning the following value (as an Expression): `FindQueue(Task.XQueueName)` 
+        ![find-queue-value](/ai-for-service/contact-center/integrations/genesys-voice-automation-audio-connector/images/find-queue-value.png)
+
+### Step 3 – DID Numbers
+
+You need a DID Number that's internally routable inside Genesys.
+
+**DID Ranges**
+
+Create a new single-number DID Range:
+
+* Keep the Start Number and End Number the same.
+* Use a number that's not a typical external number (for example, +12223334444).
+* For Service Provider, select **Internal.**
+* Add a comment that explains the purpose of the range.
+
+**DID Assignments**
+
+Assign the number you created to the **Call Route** from [Step 4](#step-4-call-route).
+
+Assignee Type: Call Flow 
+DID Number: Your number
+
+### Step 4 – Call Route
+
+1. Go to **Admin** > **Call Routing**.
+2. Select the **+** button to create a new call route. 
+    ![create-call-route](/ai-for-service/contact-center/integrations/genesys-voice-automation-audio-connector/images/create-call-route.png)
+
+3. Set up a call route to map the DID Number created in [Step 3](#step-3-did-numbers) to the call flow created in [Step 2](#step-2-architect-flow).
+
+## Install AudioConnector for Automation Voice Streaming
+
+The final step is to install Audiohook for voice streaming, if using Kore-managed Transcriptions. To do that:
+
+1. Sign in to **Genesys Cloud**.
+2. Go to **Admin** > **Integrations** > **Integrations**.
+3. Enter **audioconnector** in the search bar. 
+    ![audioconnector-in-search-bar](/ai-for-service/contact-center/integrations/genesys-voice-automation-audio-connector/images/audioconnector-in-search-bar.png)
+
+    Audio Connector integration requires specific configuration values to support Agent AI configuration.
+4. Install a new audio connector app by selecting the **Add Integration** button in the top-right corner. 
+    ![add-integration-button](/ai-for-service/contact-center/integrations/genesys-voice-automation-audio-connector/images/add-integration-button.png)
+
+5. Open the **Audio Connector**, and go to the **Configuration** tab. 
+    ![audioconnector-configuration-tab](/ai-for-service/contact-center/integrations/genesys-voice-automation-audio-connector/images/audioconnector-configuration-tab.png) 
+
+6. The **Base Connection URI** format should be similar to `wss://{Voice Gateway(KVG)}/audiosocket/genesysconnect/?sipuri=xxx&token=xxx&botId=xxx&accountId=xxx&agentassist=false`.
+
+## Agent AI Integration
+
+Follow the steps from [Agent AI Integration with Genesys Cloud CX](/ai-for-service/agentai/integration/genesys/agent-ai-integration-with-genesys-cloud-cx#agent-ai-integration-with-genesys-cloud-cx) for Agent AI integration.
+
+<Note>
+You must configure AudioHook or enable the AudioHook monitor to get the transcripts on the Agent AI widget.
+</Note>
+
+## Test Your Integration
+
+Call the phone number you purchased in the previous steps. After automation and a successful agent transfer from CCAI to Genesys, the signed-in Genesys agent can accept the incoming calls.
+
+1. Select the **Answer** button to accept the call.
+2. Select **Tools** and select the interaction widget you configured in the previous steps. The Agent AI widget appears on the right side of the Genesys Agent desktop.  
+    ![interaction-details-page](/ai-for-service/contact-center/integrations/genesys-voice-automation-audio-connector/images/interaction-details-page.png) 
+
+3. Switch to the **Agent AI Transcript** tab to view the user-bot history and the summary between the user and the automation bot. All the real-time transcripts between the live agent and the user are captured in the Transcript tab. 
+    ![agent-assist-widget](/ai-for-service/contact-center/integrations/genesys-voice-automation-audio-connector/images/agent-assist-widget.png) 
+
+## Check the Interaction Details in Contact Center AI
+
+You can view all interaction details between the user and the bot during the call and the conversation between the user and the live agent after agent transfer in the CCAI dashboard:
+
+1. Sign in to **AI for Service** and go to **Contact Center AI**.
+2. Go to **Analytics**.
+3. Select the **Conversations** tab.
+4. Select the interaction you want to view. 
