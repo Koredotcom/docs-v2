@@ -9,39 +9,43 @@ Uses of this template:
 - Use as a template with AI tools.
 - Ensure consistency and coverage during peer review
 - Gather API details from engineering
+- Sample reference doc: https://docs.cognigy.com/api-reference/endpoints/list-endpoint-api-keys
 
+- {/* Optional */}
 ---
 
-## API Summary
-
-Describe what the API does, when it should be used, and the business problem it solves.
-
-| Field              | Value |
-|--------------------|-------|
-| API name           |       |
-| Version            |       |
-| HTTP method        |       |
-| Endpoint           |       |
-| Product/Service    |       |
-| API category       |       |
-| Authentication     |       |
-| Permissions/Scopes |       |
-
----
-
-## Overview
 
 Provide a concise description of the API and its purpose. Mention any important behavior or limitations.
 
+| Field              | Value |
+|--------------------|-------|
+| HTTP method        |       |
+| API name           |       |
+| Version            |       |
+| Endpoint URL       |       |
+| Content Type       |       |
+| Product/Service    |       |
+| API category*      |       |
+| Authentication     |       |
+| API Scopes         |       |
+| Permissions*       |       |
+
 ---
 
-## Prerequisites
+
+## Rate Limits
+
+Describe throttling limits, quotas, burst limits, and retry recommendations.
+
+---
+
+## Prerequisites* 
 
 List any prerequisites such as enabled features, roles, licenses, dependencies, or setup required before working with this API.
 
 ---
 
-## Endpoint
+## Endpoint*
 
 Specify the complete endpoint URL and explain path variables if applicable.
 
@@ -51,7 +55,7 @@ endpoint details
 
 ---
 
-## Request Headers
+## Header Parameters
 
 List all supported request headers. Mark required headers and describe accepted values.
 
@@ -84,7 +88,7 @@ Document all supported query parameters including defaults, allowed values, and 
 
 ---
 
-## Request Body
+## Body Parameters
 
 Describe the JSON request body. Include nesting rules, required fields, enums, validation, and limits.
 
@@ -100,12 +104,12 @@ Describe the JSON request body. Include nesting rules, required fields, enums, v
 Provide a complete working request that users can copy and run.
 
 ```http
-working copy of the API call
+Working copy of the API call
 ```
 
 ---
 
-## Successful Response
+## Successful Response*
 
 Explain what a successful response means before showing the payload.
 
@@ -139,22 +143,7 @@ Document the expected errors, causes, rate limits, and recommended resolutions.
 
 ---
 
-## Status Codes
 
-List all HTTP status codes returned by the API.
-
-| Code        | Meaning     | When Returned |
-|:------------|:------------|:--------------|
-| lorem ipsum | lorem ipsum | lorem ipsum   |
-| lorem ipsum | lorem ipsum | lorem ipsum   |
-
----
-
-## Rate Limits
-
-Describe throttling limits, quotas, burst limits, and retry recommendations.
-
----
 
 ## Pagination
 
@@ -162,27 +151,28 @@ Explain pagination parameters and response fields if applicable.
 
 ---
 
-## Filtering and Sorting
+## Filtering and Sorting*
 
 Describe supported filtering and sorting options if applicable.
 
 ---
 
-## Idempotency
+## Idempotency*
 
 Explain whether repeated requests are safe and whether idempotency keys are supported.
 
 ---
 
-## Versioning
+## Versioning*
 
 Document version-specific behavior and compatibility notes, if applicable.
 
+
 ---
 
-## Notes and Limitations
+## Limitations
 
-Document important caveats, unsupported scenarios, rate limits (see above), and behavioral constraints.
+API related limitations, if applicable.
 
 ---
 
@@ -196,28 +186,8 @@ Link related endpoints, workflows, or follow-up APIs.
 
 ---
 
-## API functionality-specific section 
 
-Include here functionality-specific content for a particular API. Be mindful of the placement of such an API-specific section.
 
-As example, some other API docs contain the following sections that are specific to the functionality of those APIs.
 
-- Timers configuration
-- Webhook configuration
-- Webhook sample response
-- Context variables
-- Interaction status logs
-- Current limitations
-- Pagination limitations
-- Timestamp and time zone behavior
-- Asynchronous processing details
-- Bulk import/export behavior
-- Campaign or template-specific options
-- Real-time processing considerations
-- Request lifecycle/workflow
-- Supported file formats
-- Callback events
-- Retry behavior
-- Data retention
-- Performance considerations
-- Security considerations
+
+
