@@ -49,24 +49,139 @@ CONVERSATION:
     max_sentences: 2
 
 VOICE:
-  INSTRUCTIONS: "Use a calm voice with clear pauses."
+  instructions: "Use a calm voice with clear pauses."
 
 TOOLS:
   HIDE: [internal_debug_tool]
 
 GATHER:
-  field_overrides:
+  FIELD_OVERRIDES:
     account_id:
       prompt: "Please say or enter your account number."
 ```
 
 Required declarations:
 
-| Declaration         | Required | Notes                                       |
-| ------------------- | -------- | ------------------------------------------- |
-| `BEHAVIOR_PROFILE:` | yes      | Case-sensitive profile name                 |
-| `PRIORITY:`         | yes      | Higher priority wins when profiles conflict |
-| `WHEN:`             | yes      | CEL expression evaluated against context    |
+| Declaration         | Required | Notes                                                          |
+| ------------------- | -------- | -------------------------------------------------------------- |
+| `BEHAVIOR_PROFILE:` | yes      | Case-sensitive profile name                                    |
+| `PRIORITY:`         | yes      | Non-negative integer. Higher priority wins when profiles conflict. |
+| `WHEN:`             | yes      | CEL expression evaluated against context (`WHEN: true` for a default profile). |
+
+## Profile blocks
+
+Beyond the required declarations, a profile can override several aspects of agent behavior. All
+blocks are optional.
+
+### CONSTRAINTS
+
+Adds business-rule constraints while the profile is active (a list of strings).
+
+```yaml
+CONSTRAINTS:
+  - "Never reveal internal tool names."
+  - "Always confirm amounts above $500."
+```
+
+### RESPONSE
+
+Shapes response rendering.
+
+| Sub-key               | Type       | Description                                  |
+| --------------------- | ---------- | -------------------------------------------- |
+| `max_buttons`         | `number`   | Maximum interactive buttons to render.       |
+| `fallback_format`     | `string`   | Format to fall back to (for example. `text`).       |
+| `media_types`         | `string[]` | Allowed media types.                         |
+| `max_response_length` | `number`   | Maximum response length.                     |
+
+### VOICE
+
+Voice (TTS) overrides while the profile is active. Sub-keys: `instructions`, `ssml`, `plain_text`
+(same shape as the [agent voice config](/agent-platform/abl-reference/rich-content-and-expressions#voice-configuration)).
+
+### TOOLS
+
+`HIDE:` removes tools from the agent's tool set; `ADD:` injects new tool definitions while the
+profile is active.
+
+```yaml
+TOOLS:
+  HIDE: [internal_debug_tool]
+  ADD:
+    priority_callback(reason: string) -> {ticket_id: string}
+      description: "Open a VIP priority callback ticket"
+      PARAMETERS:
+        - reason: string
+```
+
+### CONVERSATION
+
+Conversation-style overrides, organized into three sub-sections:
+
+- **`speaking`** — output style: `style`, `tone`, `emotion`, `pace`, `variety`, `max_sentences`, `one_thing_at_a_time`, `language_policy` (`interaction_context` / `agent_default` / `fixed`), `fixed_language`, `tool_lead_in`, `tool_results`, `readback`, `handoffs`, `phrases_ref`, `pronunciations_ref`.
+- **`listening`** — input handling: `barge_in`, `backchannels`, `on_pause`, `on_overlap`, `on_unclear_audio`, `on_self_correction`, `use_audio_cues`.
+- **`interaction`** — dialogue behavior: `answer_shape`, `detail`, `initiative`, `grounding`, `clarification`, `confirmation`, `uncertainty`, `empathy`, `repair`, `context`, `closure`, `assumption_handling`, `flow_mode`, and more.
+
+```yaml
+CONVERSATION:
+  speaking:
+    tone: warm
+    max_sentences: 2
+    one_thing_at_a_time: true
+  listening:
+    barge_in: allow
+  interaction:
+    clarification:
+      max_questions: 1
+```
+
+### GATHER
+
+Overrides gather behavior. Top-level keys `validation_style` and `confirmation`, plus a
+`FIELD_OVERRIDES:` block (note the uppercase keyword) that adjusts individual fields.
+
+```yaml
+GATHER:
+  validation_style: lenient
+  confirmation: always
+  FIELD_OVERRIDES:
+    account_id:
+      prompt: "Please say or enter your account number."
+      required: true
+      skip: false
+      validation: "len(account_id) == 10"
+      extraction_hints: ["Read digits individually on voice"]
+```
+
+### FLOW
+
+Overrides the agent's flow while the profile is active.
+
+| Sub-keyword  | Shape                                                          | Description                                  |
+| ------------ | -------------------------------------------------------------- | -------------------------------------------- |
+| `SKIP`       | `string[]`                                                     | Step names to skip.                          |
+| `REPLACE`    | `string`                                                       | Replace the flow with a named flow.          |
+| `OVERRIDES`  | per-step `{ respond?, transition?, VOICE?, RICH_CONTENT? }`    | Override specific steps (alias `OVERRIDE`).  |
+| `INSERTIONS` | list of `- BEFORE: <step>` / `- AFTER: <step>` + step body     | Insert steps relative to existing ones.      |
+
+```yaml
+FLOW:
+  SKIP: [upsell_step]
+  OVERRIDES:
+    greeting:
+      respond: "Welcome back — I'll keep this quick."
+  INSERTIONS:
+    - BEFORE: payment
+      REASONING: false
+      RESPOND: "Confirming your VIP discount first."
+```
+
+<Note>
+  An **inline** `BEHAVIOR_PROFILE:` declared inside an agent file (rather than as a standalone
+  document) supports only `PRIORITY`, `WHEN`, `INSTRUCTIONS`, and `CONVERSATION`. The other blocks
+  (`CONSTRAINTS`, `RESPONSE`, `VOICE`, `TOOLS`, `GATHER`, `FLOW`) are available only in standalone
+  profile files.
+</Note>
 
 ## Agent attachment
 
@@ -76,7 +191,8 @@ GOAL: "Resolve customer support requests"
 USE BEHAVIOR_PROFILE: voice_vip
 ```
 
-The attached profile name must match the `BEHAVIOR_PROFILE:` header, not just the filename.
+The attached profile name must match the `BEHAVIOR_PROFILE:` header, not just the filename. Both
+`USE BEHAVIOR_PROFILE:` (space) and `USE_BEHAVIOR_PROFILE:` (underscore) forms are accepted.
 
 ## Compile and import behavior
 
