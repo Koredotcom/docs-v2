@@ -3,7 +3,7 @@ title: Public API name
 description: Describe what the API does, preferably in about 160 characters.
 ---
 
-Uses of this template:
+This template to document APIs is a comprehensive template with potential sections that may be present in an API doc. All sections aren't mandatory. Uses of this template:
 
 - Use to document APIs and ensure no relevant section is missing
 - Use as a template with AI tools.
@@ -12,26 +12,27 @@ Uses of this template:
 
 ---
 
-## API Summary
-
-Describe what the API does, when it should be used, and the business problem it solves.
+Provide a concise description of the API and its purpose. Mention any important behavior or limitations.
 
 | Field              | Value |
 |--------------------|-------|
+| HTTP method        |       |
 | API name           |       |
 | Version            |       |
-| HTTP method        |       |
-| Endpoint           |       |
+| Endpoint URL       |       |
+| Content Type       |       |
 | Product/Service    |       |
-| API category       |       |
+| API category*      |       |
 | Authentication     |       |
-| Permissions/Scopes |       |
+| API Scopes         |       |
+| Permissions*       |       |
 
 ---
 
-## Overview
 
-Provide a concise description of the API and its purpose. Mention any important behavior or limitations.
+## Rate Limits
+
+Describe throttling limits, quotas, burst limits, and retry recommendations.
 
 ---
 
@@ -51,7 +52,7 @@ endpoint details
 
 ---
 
-## Request Headers
+## Header Parameters
 
 List all supported request headers. Mark required headers and describe accepted values.
 
@@ -84,7 +85,7 @@ Document all supported query parameters including defaults, allowed values, and 
 
 ---
 
-## Request Body
+## Body Parameters
 
 Describe the JSON request body. Include nesting rules, required fields, enums, validation, and limits.
 
@@ -100,24 +101,22 @@ Describe the JSON request body. Include nesting rules, required fields, enums, v
 Provide a complete working request that users can copy and run.
 
 ```http
-working copy of the API call
+Working copy of the API call
 ```
 
 ---
 
-## Successful Response
+## API Response
 
 Explain what a successful response means before showing the payload.
 
-### Sample Response
+Provide a sample response.
 
 ```json
 sample response json
 ```
 
----
-
-## Response Parameters
+### Response Parameters
 
 Describe every field returned in the response.
 
@@ -126,11 +125,9 @@ Describe every field returned in the response.
 | lorem ipsum | lorem ipsum | lorem ipsum | lorem ipsum             |
 | lorem ipsum | lorem ipsum | lorem ipsum | lorem ipsum             |
 
----
+### Error Responses
 
-## Error Responses
-
-Document the expected errors, causes, rate limits, and recommended resolutions.
+Document the expected errors, causes, rate limits, and recommended resolutions, if applicable.
 
 | HTTP Status | Error Code  | Cause       | Resolution  |
 |:------------|:------------|:------------|:------------|
@@ -139,30 +136,13 @@ Document the expected errors, causes, rate limits, and recommended resolutions.
 
 ---
 
-## Status Codes
-
-List all HTTP status codes returned by the API.
-
-| Code        | Meaning     | When Returned |
-|:------------|:------------|:--------------|
-| lorem ipsum | lorem ipsum | lorem ipsum   |
-| lorem ipsum | lorem ipsum | lorem ipsum   |
-
----
-
-## Rate Limits
-
-Describe throttling limits, quotas, burst limits, and retry recommendations.
-
----
-
-## Pagination
+## Paginate
 
 Explain pagination parameters and response fields if applicable.
 
 ---
 
-## Filtering and Sorting
+## Filter and Sort
 
 Describe supported filtering and sorting options if applicable.
 
@@ -170,7 +150,7 @@ Describe supported filtering and sorting options if applicable.
 
 ## Idempotency
 
-Explain whether repeated requests are safe and whether idempotency keys are supported.
+Explain whether repeated requests are safe and whether idempotency keys are supported, if applicable.
 
 ---
 
@@ -180,44 +160,16 @@ Document version-specific behavior and compatibility notes, if applicable.
 
 ---
 
-## Notes and Limitations
+## Limitations
 
-Document important caveats, unsupported scenarios, rate limits (see above), and behavioral constraints.
+API related limitations, if applicable.
 
 ---
 
 ## Related APIs
 
-Link related endpoints, workflows, or follow-up APIs.
+Link related endpoints, workflows, or follow-up APIs, if any.
 
 * [API name](/api-link)
 * [API name](/api-link)
 * [API name](/api-link)
-
----
-
-## API functionality-specific section 
-
-Include here functionality-specific content for a particular API. Be mindful of the placement of such an API-specific section.
-
-As example, some other API docs contain the following sections that are specific to the functionality of those APIs.
-
-- Timers configuration
-- Webhook configuration
-- Webhook sample response
-- Context variables
-- Interaction status logs
-- Current limitations
-- Pagination limitations
-- Timestamp and time zone behavior
-- Asynchronous processing details
-- Bulk import/export behavior
-- Campaign or template-specific options
-- Real-time processing considerations
-- Request lifecycle/workflow
-- Supported file formats
-- Callback events
-- Retry behavior
-- Data retention
-- Performance considerations
-- Security considerations
