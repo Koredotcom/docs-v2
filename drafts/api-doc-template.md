@@ -3,17 +3,14 @@ title: Public API name
 description: Describe what the API does, preferably in about 160 characters.
 ---
 
-Uses of this template:
+This template to document APIs is a comprehensive template with potential sections that may be present in an API doc. All sections aren't mandatory. Uses of this template:
 
 - Use to document APIs and ensure no relevant section is missing
 - Use as a template with AI tools.
 - Ensure consistency and coverage during peer review
 - Gather API details from engineering
-- Sample reference doc: https://docs.cognigy.com/api-reference/endpoints/list-endpoint-api-keys
 
-- {/* Optional */}
 ---
-
 
 Provide a concise description of the API and its purpose. Mention any important behavior or limitations.
 
@@ -39,13 +36,13 @@ Describe throttling limits, quotas, burst limits, and retry recommendations.
 
 ---
 
-## Prerequisites* 
+## Prerequisites
 
 List any prerequisites such as enabled features, roles, licenses, dependencies, or setup required before working with this API.
 
 ---
 
-## Endpoint*
+## Endpoint
 
 Specify the complete endpoint URL and explain path variables if applicable.
 
@@ -109,19 +106,17 @@ Working copy of the API call
 
 ---
 
-## Successful Response*
+## API Response
 
 Explain what a successful response means before showing the payload.
 
-### Sample Response
+Provide a sample response.
 
 ```json
 sample response json
 ```
 
----
-
-## Response Parameters
+### Response Parameters
 
 Describe every field returned in the response.
 
@@ -130,11 +125,9 @@ Describe every field returned in the response.
 | lorem ipsum | lorem ipsum | lorem ipsum | lorem ipsum             |
 | lorem ipsum | lorem ipsum | lorem ipsum | lorem ipsum             |
 
----
+### Error Responses
 
-## Error Responses
-
-Document the expected errors, causes, rate limits, and recommended resolutions.
+Document the expected errors, causes, rate limits, and recommended resolutions, if applicable.
 
 | HTTP Status | Error Code  | Cause       | Resolution  |
 |:------------|:------------|:------------|:------------|
@@ -143,30 +136,27 @@ Document the expected errors, causes, rate limits, and recommended resolutions.
 
 ---
 
-
-
-## Pagination
+## Paginate
 
 Explain pagination parameters and response fields if applicable.
 
 ---
 
-## Filtering and Sorting*
+## Filter and Sort
 
 Describe supported filtering and sorting options if applicable.
 
 ---
 
-## Idempotency*
+## Idempotency
 
-Explain whether repeated requests are safe and whether idempotency keys are supported.
+Explain whether repeated requests are safe and whether idempotency keys are supported, if applicable.
 
 ---
 
-## Versioning*
+## Versioning
 
 Document version-specific behavior and compatibility notes, if applicable.
-
 
 ---
 
@@ -178,16 +168,8 @@ API related limitations, if applicable.
 
 ## Related APIs
 
-Link related endpoints, workflows, or follow-up APIs.
+Link related endpoints, workflows, or follow-up APIs, if any.
 
 * [API name](/api-link)
 * [API name](/api-link)
 * [API name](/api-link)
-
----
-
-
-
-
-
-
