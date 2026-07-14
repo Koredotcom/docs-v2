@@ -86,7 +86,7 @@ HANDOFF:
     CONTEXT:
       pass: [search_context, user_preferences, budget]
       summary: "User looking to book new travel"
-    RETURN: false
+    EXPECT_RETURN: false
 ```
 
 #### Routing rule properties
@@ -301,6 +301,85 @@ BEHAVIOR:
 | `allowedDirectActions` | `string[]` | No       | `[]`    | Actions the Supervisor can perform directly.                |
 | `forbiddenActions`     | `string[]` | No       | `[]`    | Actions the Supervisor must never perform.                  |
 
+### Intents
+
+In addition to `INTENT_MATCH` inside a routing rule, a Supervisor may declare a top-level `INTENTS:`
+block listing intent labels (and optional lexical-fallback behavior) that routing and classification
+draw on. Supervisors can also hand off to **other supervisors**, enabling hierarchical composition,
+and may declare an `ON_ERROR` block to handle routing failures.
+
+### Execution pipeline (pre-classification)
+
+<Note>
+  This is an advanced, opt-in optimization. Most supervisors do not need it — routing works without
+  an `EXECUTION` block.
+</Note>
+
+A Supervisor can enable a pre-classification pipeline that runs a smaller, faster model before the
+main reasoning LLM. The classifier detects user intent and can short-circuit routing for obvious
+cases, avoiding the cost of a full reasoning call.
+
+```yaml
+SUPERVISOR: Support_Router
+
+EXECUTION:
+  model: claude-sonnet-4-5-20250929   # main reasoning model
+  pipeline:
+    enabled: true
+    mode: sequential          # 'parallel' | 'sequential'
+    shortCircuit:
+      enabled: true
+      confidenceThreshold: 0.85
+    toolFilter:
+      enabled: true
+      maxTools: 6
+    keywordVeto:
+      enabled: true
+      keywords: [reset, cancel, undo]
+    intentBridge:
+      enabled: true
+      programmaticThreshold: 0.85
+      guidedThreshold: 0.5
+      outOfScopeDecline: true
+      multiIntentSignal: true
+
+HANDOFF:
+  - TO: Billing_Agent
+    WHEN: intent.category == "billing"
+  - TO: General_Inquiry
+    WHEN: true
+```
+
+<Note>
+  The classifier **model** is not selected in the agent's `EXECUTION.pipeline` block — it is resolved
+  from **project-level runtime configuration** via `modelSource` (`default` uses the platform's
+  tool-selection model; `tenant` uses a specific tenant model identified by `tenantModelId`). A
+  `model:` key inside the `pipeline` block is deprecated and ignored by the runtime. The top-level
+  `EXECUTION.model` still sets the **main reasoning** model as usual.
+</Note>
+
+#### Pipeline options
+
+| Option                             | Type      | Default     | Description                                                                                          |
+| ---------------------------------- | --------- | ----------- | ---------------------------------------------------------------------------------------------------- |
+| `enabled`                          | `boolean` | `false`     | Enable the pre-classification pipeline.                                                              |
+| `mode`                             | `string`  | `parallel`  | `parallel` — classifier and main LLM run simultaneously; `sequential` — classifier runs first, main LLM only if no short-circuit. |
+| `shortCircuit.enabled`             | `boolean` | `true`      | Allow direct routing when classifier confidence is high.                                            |
+| `shortCircuit.confidenceThreshold` | `number`  | `0.85`      | Minimum confidence to skip the reasoning loop.                                                      |
+| `toolFilter.enabled`               | `boolean` | `true`      | Filter tools to only relevant ones before reasoning.                                                |
+| `toolFilter.maxTools`              | `number`  | `6`         | Maximum tools passed to the reasoning loop.                                                          |
+| `keywordVeto.enabled`              | `boolean` | `true`      | Prevent short-circuit when the user mentions local tool keywords.                                   |
+| `keywordVeto.keywords`             | `string[]`| `[]`        | Additional keywords that veto short-circuit routing.                                                |
+| `intentBridge.enabled`             | `boolean` | `true`      | Bridge classifier intent into routing decisions.                                                    |
+| `intentBridge.programmaticThreshold` | `number`| `0.85`      | Confidence at/above which intent routing is applied programmatically.                               |
+| `intentBridge.guidedThreshold`     | `number`  | `0.5`       | Confidence at/above which intent is offered to the model as guidance.                               |
+| `intentBridge.outOfScopeDecline`   | `boolean` | `true`      | Decline out-of-scope requests detected by the classifier.                                           |
+| `intentBridge.multiIntentSignal`   | `boolean` | `true`      | Signal when the message contains multiple distinct intents.                                         |
+
+For pure routing supervisors, `sequential` mode with `shortCircuit.enabled: true` gives the best
+cost savings. In `parallel` mode the classifier adds latency protection but no cost savings, since
+both calls run regardless.
+
 ---
 
 ## HANDOFF
@@ -318,66 +397,179 @@ HANDOFF:
       pass: [customer_id, beneficiary_name, amount, sanctions_match_score]
       summary: "Wire flagged during sanctions screening (score: {{sanctions_match_score}})."
       history: full
-      grant_memory: [user.compliance_notes]
-    RETURN: true
-    ON_RETURN: "resume_if_cleared"
-    MAP:
-      compliance_decision: sanctions_clear
-      review_notes: compliance_review_notes
+      memory_grants:
+        - path: user.compliance_notes
+          access: readwrite
+    EXPECT_RETURN: true
+    ON_FAILURE: ESCALATE
+    ON_RETURN:
+      action: continue
+      map:
+        compliance_decision: sanctions_clear
+        review_notes: compliance_review_notes
 ```
 
 ### Properties
 
-| Property        | Type                    | Required | Default | Description                                                                                  |
-| --------------- | ----------------------- | -------- | ------- | -------------------------------------------------------------------------------------------- |
-| `TO`            | `string`                | Yes      | --      | Target agent name.                                                                           |
-| `WHEN`          | `string`                | Yes      | --      | Condition that triggers the handoff.                                                         |
-| `PRIORITY`      | `number`                | No       | --      | Evaluation priority. Lower values are evaluated first when multiple handoff rules match.     |
-| `CONTEXT`       | `object`                | Yes      | --      | Context to pass to the target agent. See [Context](#handoff-context).                        |
-| `RETURN`        | `boolean`               | Yes      | --      | Whether control should return to this agent after the target completes.                      |
-| `ON_RETURN`     | `string`                | No       | --      | Instruction for handling the return (for example. step to resume at).                               |
-| `MAP`           | `Record<string,string>` | No       | --      | Return value mapping. Keys are target agent result fields; values are parent variable names. |
-| `REMOTE`        | `object`                | No       | --      | Remote agent configuration. Same structure as DELEGATE remote.                               |
-| `ASYNC`         | `boolean`               | No       | `false` | Use async dispatch with push notifications for remote agents.                                |
-| `ASYNC_TIMEOUT` | `number`                | No       | --      | Timeout in seconds for async handoff.                                                        |
+| Property         | Type                    | Required | Default  | Description                                                                                  |
+| ---------------- | ----------------------- | -------- | -------- | -------------------------------------------------------------------------------------------- |
+| `TO`             | `string`                | Yes      | --       | Target agent name.                                                                           |
+| `WHEN`           | `string`                | Yes      | --       | Condition that triggers the handoff.                                                         |
+| `PRIORITY`       | `number`                | No       | --       | Evaluation priority. Lower values are evaluated first when multiple handoff rules match.     |
+| `CONTEXT`        | `object`                | Yes      | --       | Context to pass to the target agent. See [Context](#handoff-context).                        |
+| `EXPECT_RETURN`  | `boolean`               | Yes      | `false`  | Whether control should return to this agent after the target completes. `RETURN` is accepted as a backward-compatible alias. |
+| `ON_FAILURE`     | `string` / `object`     | No       | --       | Parent-side fallback for setup or dispatch failures **before** the target accepts the handoff. See [Handoff failure strategies](#handoff-failure-strategies). |
+| `ON_RETURN`      | `string` / `object`     | No       | --       | How to handle the target returning control. See [Return expectations](#return-expectations). |
+| `EXPERIENCE_MODE`| `string`                | No       | --       | End-user experience when the transfer happens. See [Experience modes](#experience-modes).    |
+| `REMOTE`         | `object`                | No       | --       | Remote agent configuration. Can also be expressed as top-level `LOCATION`/`ENDPOINT`/`PROTOCOL` keys. See [Remote agent support](#remote-agent-support). |
+| `ASYNC`          | `boolean`               | No       | `false`  | Use async dispatch with push notifications for remote agents.                                |
+| `ASYNC_TIMEOUT`  | `number`                | No       | --       | Timeout in seconds for async handoff. (Also accepted as `TIMEOUT`.)                          |
+
+<Note>
+  The primary keyword is **`EXPECT_RETURN`**. The older `RETURN` keyword is still parsed for
+  backward compatibility, but new agents should use `EXPECT_RETURN`. The legacy top-level `MAP`
+  block is superseded by `ON_RETURN.map` (see [Return expectations](#return-expectations)).
+</Note>
 
 ### Handoff context
 
 The `CONTEXT` block defines what information the target agent receives.
 
-| Property       | Type       | Required | Default | Description                                                                            |
-| -------------- | ---------- | -------- | ------- | -------------------------------------------------------------------------------------- |
-| `pass`         | `string[]` | Yes      | --      | Session variable names to include in the handoff context.                              |
-| `summary`      | `string`   | Yes      | --      | Human-readable summary of why the handoff is occurring. Supports `{{}}` interpolation. |
-| `history`      | `string`   | No       | --      | Conversation history strategy. See [History strategies](#history-strategies).          |
-| `grant_memory` | `string[]` | No       | --      | Persistent memory paths to grant the target agent access to.                           |
+| Property        | Type       | Required | Default | Description                                                                            |
+| --------------- | ---------- | -------- | ------- | -------------------------------------------------------------------------------------- |
+| `pass`          | `string[]` | Yes      | --      | Session variable names to include in the handoff context.                              |
+| `summary`       | `string`   | Yes      | --      | Human-readable summary of why the handoff is occurring. Supports `{{}}` interpolation. |
+| `history`       | `string` / `object` | No | `auto` | Conversation history strategy. See [History strategies](#history-strategies).          |
+| `memory_grants` | `object[]` | No       | --      | Persistent memory paths to grant the target agent access to. See [Memory grants](#memory-grants). |
+
+<Warning>
+  The legacy `grant_memory: [path, ...]` form is **no longer supported** and produces a parse
+  error. Use `memory_grants` with explicit `path`/`access` entries instead (see
+  [Memory grants](#memory-grants)).
+</Warning>
+
+`CONTEXT` may also be expressed as a shorthand where `pass`, `summary`, and `history` appear as
+direct siblings of the handoff entry rather than nested under `CONTEXT:`.
 
 ### History strategies
 
 The `history` property controls how much conversation history the target agent receives.
 
-| Value          | Behavior                                                 |
-| -------------- | -------------------------------------------------------- |
-| `none`         | No conversation history is passed.                       |
-| `summary_only` | Only the `summary` text is passed, no raw messages.      |
-| `full`         | The complete conversation history is passed.             |
-| `last_N`       | The last N messages are passed. Specify as `last_n: 10`. |
+| Value                          | Behavior                                                                            |
+| ------------------------------ | ----------------------------------------------------------------------------------- |
+| `auto`                         | Platform default. Uses the handoff summary when available; otherwise passes a bounded recent transcript. Usually you can omit `history` entirely. |
+| `none`                         | No conversation history is passed. The target agent starts fresh.                   |
+| `summary_only`                 | Only the `summary` text is passed, no raw messages.                                 |
+| `full`                         | The complete conversation history is passed.                                        |
+| `{ mode: last_n, count: <n> }` | The last N messages are passed.                                                     |
 
 ```yaml
 CONTEXT:
   pass: [customer_id, amount]
   summary: "Customer needs fraud review."
-  history: last_n: 10
+  history:
+    mode: last_n
+    count: 10
 ```
+
+<Note>
+  The legacy shorthand `history: last_10` is still accepted during the compatibility window, but
+  new agents should use the typed `mode` + `count` block.
+</Note>
 
 ### Return expectations
 
-When `RETURN: true`, the calling agent pauses and waits for the target agent to complete. Upon return:
+When `EXPECT_RETURN: true`, the calling agent pauses and waits for the target agent to complete.
+When the target explicitly returns control (via its built-in return capability), the parent resumes.
+When `EXPECT_RETURN: false`, the handoff is a one-way transfer and the calling agent's turn ends.
 
-1. The `MAP` block (if present) writes the target's result fields into the parent's session variables.
-2. The `ON_RETURN` instruction guides what happens next (for example. resume a step, re-evaluate conditions).
+`ON_RETURN` controls what happens when the target returns. It accepts either a **string** (the name
+of a named return handler, or a built-in action) or a **structured block**:
 
-When `RETURN: false`, the handoff is a one-way transfer. The calling agent's session ends.
+```yaml
+HANDOFF:
+  - TO: Authentication_Agent
+    WHEN: user.is_authenticated == false
+    CONTEXT:
+      pass: [session_context]
+      summary: "User needs authentication"
+    EXPECT_RETURN: true
+    ON_RETURN:
+      action: continue          # continue | resume_intent
+      handler: route_to_booking # optional: named RETURN_HANDLERS entry
+      resume_with: latest_session_user_utterance
+      map:                      # child result field -> parent variable
+        user_id: auth_result.user_id
+        auth_token: auth_result.token
+      set:                      # parent assignments after mapping
+        auth_summary: "Authenticated {{auth_result.user_id}}"
+```
+
+#### `ON_RETURN` properties
+
+| Property      | Type                    | Description                                                                                          |
+| ------------- | ----------------------- | ---------------------------------------------------------------------------------------------------- |
+| `action`      | `string`                | Built-in resume behavior: `continue` (resume the parent's current flow) or `resume_intent` (re-run routing against the original user intent with the returned context). |
+| `handler`     | `string`                | Name of a [named return handler](#return-handlers) declared in the top-level `RETURN_HANDLERS:` block. |
+| `resume_with` | `string`                | Which utterance to replay when resuming. One of `original_handoff_utterance`, `latest_child_user_utterance`, `latest_session_user_utterance`, `forwarded_return_message`. |
+| `map`         | `Record<string,string>` | Copies child return fields into parent variables (child key → parent variable).                      |
+| `set`         | `Record<string,string>` | Parent assignments applied after `map`, using the same templated assignment shape as flow `ON_RESULT` branches. |
+
+### Return handlers
+
+A top-level `RETURN_HANDLERS:` block declares reusable named handlers that run on the parent after a
+`EXPECT_RETURN: true` child returns. Reference one from `ON_RETURN.handler`.
+
+```yaml
+RETURN_HANDLERS:
+  route_to_booking:
+    RESPOND: "You're verified — let's finish your booking."
+    CLEAR: [pending_auth_reason]
+    CONTINUE: true          # leave the parent waiting for the next user turn
+    # RESUME_INTENT: true   # or replay the parent's last user message
+```
+
+| Property        | Type       | Description                                                         |
+| --------------- | ---------- | ------------------------------------------------------------------ |
+| `RESPOND`       | `string`   | Message to send when the handler runs.                             |
+| `CLEAR`         | `string[]` | Session variables to reset after the child returns.                |
+| `CONTINUE`      | `boolean`  | Leave the parent waiting for the next user turn.                   |
+| `RESUME_INTENT` | `boolean`  | Replay the parent's last user message through routing.             |
+
+### Handoff failure strategies
+
+`ON_FAILURE` defines a parent-side fallback for failures that occur **before** the target accepts the
+handoff — for example target lookup, pre-transfer validation, or dispatch failures. It does not
+replace the timeout path after an accepted returnable handoff, and it does not fire when a downstream
+child later reports its own failure.
+
+```yaml
+HANDOFF:
+  - TO: Specialist_Agent
+    WHEN: needs_specialist == true
+    CONTEXT:
+      pass: [user_id, query]
+      summary: "User needs specialist help"
+    ON_FAILURE: ESCALATE          # CONTINUE | ESCALATE | RESPOND "message"
+```
+
+| Value              | Behavior                                                       |
+| ------------------ | -------------------------------------------------------------- |
+| `CONTINUE`         | Silently continue in the current agent.                        |
+| `ESCALATE`         | Trigger human escalation.                                      |
+| `RESPOND "message"`| Send a message and continue in the current agent.              |
+
+### Experience modes
+
+`EXPERIENCE_MODE` shapes how the transfer is presented to the end user. It is valid on both
+`HANDOFF` and `DELEGATE`.
+
+| Value                  | Behavior                                                                 |
+| ---------------------- | ------------------------------------------------------------------------ |
+| `shared_voice_handoff` | Voice channels — hand off while keeping a single shared voice experience. |
+| `visible_handoff`      | The user is told the conversation is being transferred.                  |
+| `silent_delegate`      | The sub-agent runs without a user-visible transfer.                      |
+| `human_escalation`     | Present the transfer as an escalation to a human.                        |
 
 ### Async dispatch
 
@@ -390,7 +582,7 @@ HANDOFF:
     CONTEXT:
       pass: [case_id, documents]
       summary: "Documents require external review."
-    RETURN: true
+    EXPECT_RETURN: true
     REMOTE:
       location: remote
       endpoint: "https://review.partner.com/api/v1/submit"
@@ -401,14 +593,25 @@ HANDOFF:
 
 ### Memory grants
 
-Use `grant_memory` to give the target agent access to specific persistent memory paths. Without this, the target agent cannot read or write the parent's persistent variables.
+Use `memory_grants` to give the target agent scoped access to specific persistent memory paths.
+Without this, the target agent cannot read or write the parent's persistent variables. Each grant
+declares a `path` and an `access` level.
 
 ```yaml
 CONTEXT:
   pass: [user_id, booking_reference]
   summary: "User needs to authenticate to manage booking."
-  grant_memory: [user.last_verified_at]
+  memory_grants:
+    - path: user.last_verified_at
+      access: read
+    - path: workflow.auth_token
+      access: readwrite
 ```
+
+| Property | Type     | Required | Default | Description                                             |
+| -------- | -------- | -------- | ------- | ------------------------------------------------------- |
+| `path`   | `string` | Yes      | --      | Persistent memory path being granted.                   |
+| `access` | `string` | No       | `read`  | Access level: `read` or `readwrite`.                    |
 
 ---
 
@@ -438,15 +641,18 @@ DELEGATE:
 ### Properties
 
 | Property          | Type                    | Required | Default | Description                                                                                             |
-|-------------------|-------------------------|----------|---------|---------------------------------------------------------------------------------------------------------|--|
-| `AGENT`           | `string`                | Yes      | --      | Name of the sub-agent to invoke.                                                                        |
+|-------------------|-------------------------|----------|---------|---------------------------------------------------------------------------------------------------------|
+| `AGENT`           | `string`                | Yes      | --      | Name of the sub-agent to invoke. `TO` is accepted as an alias.                                          |
 | `WHEN`            | `string`                | Yes      | --      | Condition that must be true for delegation to occur.                                                    |
-| `PURPOSE`         | `string`                | Yes      | --      | Description of why this delegation exists. Included in trace events.                                    |
-| `INPUT`           | `Record<string,string>` | Yes      | --      | Input mapping. Keys are sub-agent parameter names; values are expressions from the parent's context.    |
+| `PURPOSE`         | `string`                | Yes      | --      | Description of why this delegation exists. Included in trace events. `SUMMARY` is accepted as an alias. |
+| `INPUT`           | `Record<string,string>` | Yes      | --      | Input mapping. Keys are sub-agent parameter names; values are expressions from the parent's context. `PASS` is accepted as an alias. |
 | `RETURNS`         | `Record<string,string>` | Yes      | --      | Output mapping. Keys are sub-agent result fields; values are parent context variable names to write to. |
 | `USE_RESULT`      | `string`                | Yes      | --      | Instructions for interpreting the sub-agent's result.                                                   |
+| `MEMORY_GRANTS`   | `object[]`              | No       | --      | Persistent memory paths to grant the sub-agent, each with `path` and `access` (`read` / `readwrite`). Same shape as [handoff memory grants](#memory-grants). |
 | `TIMEOUT`         | `string`                | No       | --      | Maximum time to wait for the sub-agent. Format: `"Ns"` (seconds).                                       |
 | `ON_FAIL`         | `string`, `object`      | No       | --      | Action when the sub-agent fails or times out. See [Failure strategies](#delegate-failure-strategies).   |
+| `EXPERIENCE_MODE` | `string`                | No       | --      | End-user experience for the delegation. See [Experience modes](#experience-modes).                      |
+| `REMOTE`          | `object`                | No       | --      | Remote agent configuration. Can also be given as top-level `LOCATION`/`ENDPOINT`/`PROTOCOL` keys. See [Remote agent support](#remote-agent-support). |
 | `FAILURE_MESSAGE` | `string`                | No       | --      | Message to display when delegation fails.                                                               |
 
 ### Input/output mapping
@@ -516,14 +722,32 @@ DELEGATE:
 | `location` | `local`, `remote` | No       | `local` | Whether the agent is co-located or remote.                             |
 | `endpoint` | `string`          | No       | --      | URL for remote agent invocation.                                       |
 | `protocol` | `a2a` , `rest`    | No       | --      | Communication protocol. `a2a` for Agent-to-Agent, `rest` for REST API. |
-| `auth`     | `object`          | No       | --      | Authentication configuration.                                          |
+| `auth`     | `object`          | No       | --      | Authentication configuration. `type` is `bearer` or `api_key`; an optional `header` names the header to carry the credential. Credential values are resolved from runtime config / auth-profile resolution — never inlined in ABL. |
 | `timeout`  | `string`          | No       | --      | Override timeout for the remote call.                                  |
+
+<Note>
+  `LOCATION: remote` is explicit and recommended, but the compiler also treats an `ENDPOINT`
+  without `LOCATION` as remote. The remote block can be authored either nested under `REMOTE:` or
+  as top-level `LOCATION`/`ENDPOINT`/`PROTOCOL` keys on the entry.
+</Note>
 
 ---
 
-## FAN_OUT
+## Parallel delegation (fan-out)
 
-FAN_OUT executes multiple delegate calls in parallel and collects their results. This is useful when several independent sub-agents need to process data simultaneously.
+<Note>
+  There is no `FAN_OUT:` section in ABL. Fan-out is a runtime capability, not an authored
+  construct — agents do not declare it directly.
+</Note>
+
+When a single user message contains **multiple distinct requests** that need different specialists,
+a supervisor's runtime can dispatch them in parallel and then synthesize the branch results into one
+unified response. This is exposed to the reasoning model as a built-in `__fan_out__` system tool
+(you never write this tool yourself) and is bounded to **2–5 sub-tasks** per message.
+
+Separately, when multiple `DELEGATE` entries have their `WHEN` conditions satisfied on the same
+turn, the runtime can run those delegations concurrently. Each delegation runs in its own scope and
+its `RETURNS` are mapped back into the parent context as it completes.
 
 ```yaml
 DELEGATE:
@@ -544,8 +768,6 @@ DELEGATE:
     RETURNS:
       score: fraud_score
 ```
-
-When multiple DELEGATE entries have their conditions satisfied simultaneously, the runtime can execute them in parallel (fan-out). Each delegation runs independently, and results are mapped back into the parent context as each completes.
 
 ---
 
@@ -575,23 +797,40 @@ ESCALATE:
     - conversation_history
 
   routing:
+    connection: livechat
     queue: "wire_operations_l2"
-    skill_tags: [wire_transfer, compliance]
-    priority_boost: 1
+    skills: [wire_transfer, compliance]
+    priority: 1
 
   on_human_complete:
     - IF human.resolved == true: COMPLETE
     - IF human.needs_agent == true: HANDOFF to specified_agent
+
+  CONNECTOR_ACTION: create_servicenow_incident
 ```
 
 ### Trigger properties
 
-| Property   | Type       | Required | Default | Description                                                   |
-| ---------- | ---------- | -------- | ------- | ------------------------------------------------------------- |
-| `WHEN`     | `string`   | Yes      | --      | Condition that triggers escalation.                           |
-| `REASON`   | `string`   | Yes      | --      | Human-readable reason for the escalation.                     |
-| `PRIORITY` | `string`   | Yes      | --      | Priority level: `low`, `medium`, `high`, or `critical`.       |
-| `TAGS`     | `string[]` | No       | --      | Tags for routing and categorization in the human agent queue. |
+| Property   | Type                    | Required | Default    | Description                                                   |
+| ---------- | ----------------------- | -------- | ---------- | ------------------------------------------------------------- |
+| `WHEN`     | `string`                | Yes      | --         | Condition that triggers escalation.                           |
+| `REASON`   | `string`                | Yes      | --         | Human-readable reason for the escalation.                     |
+| `PRIORITY` | `string` / `number`     | No       | `medium`   | Priority level: `low`, `medium`, `high`, `critical`, or a non-negative integer. |
+| `TAGS`     | `string[]`              | No       | --         | Tags for routing and categorization in the human agent queue. |
+| `SET`      | `Record<string,string>` | No       | --         | Session variable assignments applied when this trigger fires (`key = value`). |
+
+<Note>
+  `PRIORITY` is optional and defaults to `medium`. Note that `ESCALATE` inside an `ON_ERROR` handler
+  is **not** parsed — to escalate from an error handler use `THEN: ESCALATE with REASON: "..."`
+  instead of an inline `ESCALATE:` block.
+</Note>
+
+### Connector action
+
+`CONNECTOR_ACTION` names a connector action to invoke for ITSM integration when the escalation
+fires (for example, opening an incident in an external ticketing system). It is declared at the top
+level of the `ESCALATE` block, alongside `triggers`, `context_for_human`, `routing`, and
+`on_human_complete`.
 
 ### Priority levels
 
@@ -629,11 +868,21 @@ context_for_human:
 
 The `routing` block controls how the escalation is routed in the human agent system.
 
-| Property         | Type       | Required | Default | Description                                           |
-| ---------------- | ---------- | -------- | ------- | ----------------------------------------------------- |
-| `queue`          | `string`   | No       | --      | Target queue name in the human agent system.          |
-| `skill_tags`     | `string[]` | No       | --      | Required skills for the human agent.                  |
-| `priority_boost` | `number`   | No       | --      | Additional priority boost applied to the queue entry. |
+| Property      | Type       | Required | Default | Description                                                       |
+| ------------- | ---------- | -------- | ------- | ----------------------------------------------------------------- |
+| `connection`  | `string`   | No       | --      | Human-agent connection/channel to route through.                  |
+| `queue`       | `string`   | No       | --      | Target queue name in the human agent system.                      |
+| `skills`      | `string[]` | No       | --      | Required skills for the human agent.                              |
+| `priority`    | `number`   | No       | --      | Numeric routing priority for the queue entry.                     |
+| `post_agent`  | `string`   | No       | --      | What happens after the human agent finishes: `return` or `end`.   |
+
+<Note>
+  Earlier drafts used `skill_tags` and `priority_boost`. The current runtime contract uses `skills`
+  and `priority` — the older keys are silently ignored. Additional advanced routing keys
+  (`sub_type`, `named_agents`, `named_agent_options`, `agent_matching_conditions`, `voice`,
+  `flow_policy_ref` / `transfer_flow_policy_ref`, `provider_config`) are also supported for
+  human-agent integrations.
+</Note>
 
 ### Post-completion actions
 
@@ -739,14 +988,14 @@ HANDOFF:
     CONTEXT:
       pass: [user_id, conversation_summary]
       summary: "User requests human assistance"
-    RETURN: false
+    EXPECT_RETURN: false
 
   - TO: Sales_Agent
     WHEN: intent.category == "new_booking"
     CONTEXT:
       pass: [search_context, preferences]
       summary: "User looking to book"
-    RETURN: false
+    EXPECT_RETURN: false
 
 ESCALATE:
   triggers:

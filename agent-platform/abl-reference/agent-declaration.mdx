@@ -267,6 +267,25 @@ IDENTITY:
     - "Cannot process payments directly"
 ```
 
+### SYSTEM_PROMPT
+
+The `SYSTEM_PROMPT:` section is an advanced escape hatch that supplies a **complete, custom system
+prompt**, replacing the prompt the platform would otherwise generate from `GOAL:`, `PERSONA:`, and
+`LIMITATIONS:`.
+
+```yaml
+SYSTEM_PROMPT: |
+  You are a wire operations specialist. Follow the bank's compliance
+  procedures exactly. Never release a wire without dual authorization.
+```
+
+<Warning>
+  When `SYSTEM_PROMPT:` is present, the auto-generated prompt is **not** used — the goal, persona,
+  and limitations are no longer automatically composed into the system prompt. Prefer the structured
+  `GOAL:`/`PERSONA:`/`LIMITATIONS:` sections unless you specifically need full control of the prompt
+  text.
+</Warning>
+
 ---
 
 ## Execution Configuration
@@ -303,7 +322,14 @@ All properties are optional. When omitted, the platform applies its built-in def
 | `enable_thinking`          | `boolean` | No       | `false`          | Enable extended thinking (Anthropic Claude models)                                                  |
 | `thinking_budget`          | `number`  | No       | Platform default | Token budget allocated to extended thinking                                                         |
 | `compaction_threshold`     | `number`  | No       | Platform default | Context-usage ratio (0.0--1.0) that triggers auto-compaction                                        |
+| `compaction`               | `object`  | No       | Platform default | Fine-grained compaction policy overrides. See [Compaction policy overrides](#compaction-policy-overrides). |
 | `inline_gather`            | `boolean` | No       | `false`          | When `true`, gather fields are collected inline during conversation rather than as a separate phase |
+| `concurrency`              | `string`  | No       | `serial`         | Message-processing strategy: `serial`, `preemptive`, or `parallel`. See [Message concurrency](#message-concurrency). |
+| `max_queue_depth`          | `number`  | No       | `10`             | Maximum pending messages held in the per-session queue.                                             |
+| `max_concurrent_messages`  | `number`  | No       | Platform default | Maximum concurrent message executions when `concurrency: parallel`.                                 |
+| `conversation_history_window` | `number` | No     | Platform default | Number of prior conversation messages to include in the LLM context.                                |
+| `voice`                    | `object`  | No       | _none_           | Agent-level voice (TTS) configuration. See [Voice configuration](/agent-platform/abl-reference/rich-content-and-expressions#voice-configuration). |
+| `pipeline`                 | `object`  | No       | disabled         | Pre-classification / tool-filter pipeline (supervisors). See [Multi-Agent & Supervisor](/agent-platform/abl-reference/multi-agent-and-supervisor#execution-pipeline-pre-classification). |
 
 ### Extended thinking
 
@@ -338,6 +364,60 @@ EXECUTION:
 
 When the ratio of used tokens to available tokens exceeds this threshold, the runtime compacts older conversation history into a summary, freeing space for new messages while preserving essential context.
 
+#### Compaction policy overrides
+
+For fine-grained control, the `compaction:` sub-block overrides how three categories of context are
+compacted. This is advanced tuning — most agents only need `compaction_threshold`.
+
+```yaml
+EXECUTION:
+  compaction:
+    tool_results:
+      strategy: structured      # none | truncate | structured | summarize
+      max_chars: 2000
+      keep_recent: 3
+    prior_turns:
+      strategy: compact         # none | placeholder | compact | summarize
+      assistant_preview_chars: 200
+    prompt_context:
+      projection_strategy: summary   # preview | summary | metadata
+      value_max_chars: 500
+      total_max_chars: 4000
+```
+
+| Sub-block        | Purpose                                        | `strategy` values                              |
+| ---------------- | ---------------------------------------------- | ---------------------------------------------- |
+| `tool_results`   | How historical tool-call results are compacted | `none`, `truncate`, `structured`, `summarize`  |
+| `prior_turns`    | How older conversation turns are compacted     | `none`, `placeholder`, `compact`, `summarize`  |
+| `prompt_context` | How injected prompt-context values are projected | `projection_strategy`: `preview`, `summary`, `metadata` |
+
+Each sub-block accepts additional character-budget and retention keys (for example. `max_chars`,
+`keep_recent`, `assistant_preview_chars`, `value_max_chars`, `total_max_chars`).
+
+### Message concurrency
+
+The `concurrency` property controls how a session handles multiple inbound messages.
+
+```yaml
+EXECUTION:
+  concurrency: preemptive     # serial | preemptive | parallel
+  max_queue_depth: 10
+  max_concurrent_messages: 3
+```
+
+| Value        | Behavior                                                                       |
+| ------------ | ------------------------------------------------------------------------------ |
+| `serial`     | (Default) Process one message at a time; additional messages queue.            |
+| `preemptive` | A new message can interrupt/replace in-flight processing of a superseded turn. |
+| `parallel`   | Process up to `max_concurrent_messages` messages concurrently.                 |
+
+`max_queue_depth` (default `10`) bounds how many messages wait in the per-session queue.
+
+<Note>
+  `concurrency`, `max_queue_depth`, `max_concurrent_messages`, and the `EXECUTION.voice` block are
+  supported in the `.agent.abl` format. The `.agent.yaml` format does not yet parse these keys.
+</Note>
+
 ### Per-operation model routing
 
 The `models:` sub-block within `EXECUTION:` allows you to route different operations to different LLM models. This enables cost optimization by using faster, cheaper models for simple tasks and more capable models for complex reasoning.
@@ -357,14 +437,25 @@ The `models:` block maps operation names to model identifiers. The `model` prope
 
 #### Recognized operation names
 
-| Operation      | Description                                                                   |
-| -------------- | ----------------------------------------------------------------------------- |
-| `extraction`   | Extracting structured data from user messages (for example. gather field extraction) |
-| `response_gen` | Generating user-facing responses                                              |
-| `reasoning`    | Complex reasoning, planning, and decision-making                              |
-| `coordination` | Multi-agent coordination and routing decisions                                |
+| Operation        | Description                                                                   |
+| ---------------- | ----------------------------------------------------------------------------- |
+| `extraction`     | Extracting structured data from user messages (for example. gather field extraction) |
+| `validation`     | Validating extracted or gathered values                                       |
+| `tool_selection` | Selecting which tool to call (also used by the classification pipeline)        |
+| `response_gen`   | Generating user-facing responses                                              |
+| `summarization`  | Summarizing conversation history during compaction                            |
+| `reasoning`      | Complex reasoning, planning, and decision-making                              |
+| `realtime_voice` | Low-latency voice-channel turns                                               |
+| `coordination`   | Multi-agent coordination and routing decisions                                |
+| `embedding`      | Embedding generation                                                          |
+| `title`          | Conversation/title generation                                                 |
 
-Custom operation names are also accepted and are resolved at runtime if the platform supports them.
+Any other operation name is accepted by the parser but only resolved at runtime if the platform recognizes it.
+
+<Note>
+  `EXECUTION.compaction.model` is deprecated — use `EXECUTION.models.summarization` instead to set
+  the model used when summarizing history.
+</Note>
 
 ### Complete execution example
 

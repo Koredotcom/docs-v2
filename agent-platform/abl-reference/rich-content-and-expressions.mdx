@@ -76,13 +76,19 @@ VOICE:
 
 ### Rich content formats
 
-The `RICH_CONTENT:` block provides format-specific variants of a response. The runtime selects the variant matching the delivery channel.
+The rich-content block provides format-specific variants of a response. The runtime selects the variant matching the delivery channel.
+
+<Note>
+  In the `.agent.abl` format the block keyword is **`FORMATS:`**. The `.agent.yaml` format accepts
+  `rich_content:` or `formats:`. (`RICH_CONTENT:` is a legacy alias accepted only in flow-step
+  overrides.)
+</Note>
 
 #### Syntax
 
 ```yaml
 RESPOND: "Here are your flight options."
-RICH_CONTENT:
+FORMATS:
   MARKDOWN: |
     ## Flight Options
     | Flight | Departure | Arrival | Price |
@@ -114,6 +120,8 @@ RICH_CONTENT:
 
 #### Rich content properties
 
+**Channel-specific string formats:**
+
 | Property        | Type     | Required | Default | Description                                                    |
 | --------------- | -------- | -------- | ------- | -------------------------------------------------------------- |
 | `MARKDOWN`      | `string` | No       | --      | Formatted markdown text.                                       |
@@ -122,7 +130,31 @@ RICH_CONTENT:
 | `SLACK`         | `string` | No       | --      | JSON string conforming to the Slack Block Kit format.          |
 | `AG_UI`         | `string` | No       | --      | JSON string for AG-UI / CopilotKit events.                     |
 | `WHATSAPP`      | `string` | No       | --      | JSON string for WhatsApp interactive messages.                 |
-| `CAROUSEL`      | `object` | No       | --      | Carousel of cards. See [Carousels](#carousels).                |
+
+**Structured template formats** (channel-neutral; the runtime renders them per channel):
+
+| Property        | Type     | Description                                                                 |
+| --------------- | -------- | --------------------------------------------------------------------------- |
+| `CAROUSEL`      | `object` | Scrollable card collection. See [Carousels](#carousels).                    |
+| `QUICK_REPLIES` | `array`  | Quick-reply chips: each `{ id, label, iconUrl? }`.                          |
+| `LIST`          | `object` | `{ title?, items: [{ title, subtitle?, imageUrl?, defaultActionUrl? }] }`.  |
+| `IMAGE`         | `object` | `{ url, alt?, thumbnailUrl?, caption? }`.                                    |
+| `VIDEO`         | `object` | `{ url, alt?, thumbnailUrl?, caption? }`.                                    |
+| `AUDIO`         | `object` | `{ url, alt?, thumbnailUrl?, caption? }`.                                    |
+| `FILE`          | `object` | `{ url, filename, sizeBytes?, mimeType? }`.                                  |
+| `KPI`           | `object` | `{ label, value, unit?, trend?: up/down/flat, iconUrl? }`.                   |
+| `TABLE`         | `object` | `{ columns: [{ key, header, align?: left/center/right }], rows, maxVisibleRows? }`. |
+| `CHART`         | `object` | `{ type: bar/line/pie, title?, data: [{ label, value, color? }] }`.         |
+| `FORM`          | `object` | `{ title?, fields: [ActionElement], submitLabel? }`.                        |
+| `PROGRESS`      | `object` | `{ label?, value, max?, variant?: bar/circle }`.                            |
+| `FEEDBACK`      | `object` | `{ prompt, type: thumbs/stars/scale, max? }`.                               |
+
+<Note>
+  Named templates (in the `TEMPLATES:` block) may also declare a `RENDERABLES:` list — customer-owned
+  structured payloads with `name`, `payload`, optional `targets` (`api`/`sdk_websocket`/`http_async`),
+  `fallbackText`, and `schemaRef`. Data-rich templates (KPI, TABLE, CHART, LIST, CAROUSEL, …) also
+  support collection binding via `from:` / `template:` to render one entry per array item.
+</Note>
 
 ### Carousels
 
@@ -131,7 +163,7 @@ Carousels display a horizontal scrollable collection of cards, each with a title
 #### Syntax
 
 ```yaml
-RICH_CONTENT:
+FORMATS:
   CAROUSEL:
     - title: "Economy Class"
       subtitle: "$289 - UA 891"
@@ -389,6 +421,8 @@ ABL expressions are used in conditions (`WHEN`, `CHECK`, constraint rules), valu
 | `not_in`   | `a NOT IN [x]` | Value is not in the list.                             |
 | `matches`  | `a matches r`  | Value matches a regular expression.                   |
 | `contains` | `a contains b` | String contains substring, or array contains element. |
+| `startsWith` | `a startsWith b` | String starts with a prefix.                        |
+| `endsWith` | `a endsWith b` | String ends with a suffix.                            |
 
 #### Logical operators
 
@@ -398,17 +432,16 @@ ABL expressions are used in conditions (`WHEN`, `CHECK`, constraint rules), valu
 | `OR`     | `a OR b`  | At least one must be true.    |
 | `NOT`    | `NOT a`   | Negates the condition.        |
 
-Logical operators are case-insensitive (`AND`, `and`, `And` are equivalent).
+Write logical operators in uppercase (`AND`, `OR`, `NOT`). `!` is also accepted as a prefix negation.
 
 #### Unary operators
 
-| Operator     | Syntax           | Description                                       |
-| ------------ | ---------------- | ------------------------------------------------- |
-| `NOT`        | `NOT condition`  | Negates a condition.                              |
-| `IS SET`     | `var IS SET`     | True if the variable is not null/undefined.       |
-| `IS NOT SET` | `var IS NOT SET` | True if the variable is null or undefined.        |
-| `exists`     | `EXISTS var`     | True if the variable exists in context.           |
-| `empty`      | `EMPTY var`      | True if the variable is empty (null, "", [], {}). |
+| Operator     | Syntax                | Description                                                    |
+| ------------ | --------------------- | ------------------------------------------------------------- |
+| `NOT` / `!`  | `NOT condition` / `!condition` | Negates a condition.                                 |
+| `IS SET`     | `var IS SET`          | True if the variable is not null/undefined (empty string counts as set). |
+| `IS NOT SET` | `var IS NOT SET`      | True if the variable is null or undefined.                    |
+| `is_number`  | `var is_number`       | True if the variable is a number.                             |
 
 #### Operator precedence
 
@@ -472,7 +505,7 @@ RESPOND: "Your balance is {{formatted_balance}}."
 
 ### Built-in function reference
 
-ABL provides 36 built-in functions organized into seven categories. All functions are called with `FUNCTION_NAME(arg1, arg2, ...)` syntax. Function names are case-insensitive.
+ABL provides 36 built-in functions organized into seven categories. All functions are called with `FUNCTION_NAME(arg1, arg2, ...)` syntax. Function names are **uppercase**.
 
 #### Math functions
 
@@ -580,7 +613,31 @@ Example: `FORMAT_DATE("2024-03-15T10:30:00Z", "YYYY-MM-DD HH:mm")` returns `"202
 
 `COALESCE` considers `0` and `false` as valid (non-null) values: `COALESCE(0, "fallback")` returns `0`.
 
-`UNIQUE_ID` generates cryptographically random IDs suitable for reference numbers.
+`UNIQUE_ID` generates a random alphanumeric string suitable for reference numbers. It is **not** cryptographically secure — do not use it for tokens or secrets.
+
+#### Content-analysis functions (CEL guardrails)
+
+CEL-based [guardrail](/agent-platform/abl-reference/guardrails) checks have access to an additional
+`abl.*` namespace of content-analysis helpers:
+
+| Function                                | Description                                        |
+| --------------------------------------- | -------------------------------------------------- |
+| `abl.contains_pii(text)`                | True if the text contains PII.                     |
+| `abl.detect_pii(text)`                  | Structured PII detection result.                   |
+| `abl.redact_pii(text)`                  | Returns the text with PII redacted.                |
+| `abl.matches_pattern(text, pattern)`    | Regex match (RE2-backed).                          |
+| `abl.not_matches_pattern(text, pattern)`| Negation of `matches_pattern`.                     |
+| `abl.word_count(text)`                  | Word count.                                        |
+| `abl.sentence_count(text)`              | Sentence count.                                    |
+| `abl.contains_url(text)`                | True if the text contains a URL.                   |
+| `abl.contains_email(text)`              | True if the text contains an email address.        |
+| `abl.contains_code(text)`               | True if the text contains a fenced code block.     |
+
+<Note>
+  In CEL expressions the core functions above are also available under the `abl.` namespace with
+  lowercase names (e.g. `abl.upper(x)`), and CEL-native operators (`&&`, `||`, `!`, `%`, `in`,
+  ternary `? :`) and macros (`size()`, `has()`) can be used.
+</Note>
 
 ### Nested function calls
 
