@@ -37,12 +37,14 @@ ON_START:
 | Property       | Type                    | Required | Default | Description                                                                                    |
 | -------------- | ----------------------- | -------- | ------- | ---------------------------------------------------------------------------------------------- |
 | `SET`          | `Record<string,string>` | No       | --      | Variable assignments executed at session start.                                                |
-| `CALL`         | `string`                | No       | --      | Tool to call during initialization.                                                            |
+| `CALL`         | `string`                | No       | --      | Tool to call during initialization (supports `WITH:`/`AS:`).                                   |
 | `DELEGATE`     | `string`                | No       | --      | Agent to delegate to during initialization.                                                    |
 | `RESPOND`      | `string`                | No       | --      | Greeting or welcome message sent to the user.                                                  |
+| `MESSAGE_KEY`  | `string`                | No       | --      | Locale catalog key used to localize the greeting.                                              |
 | `VOICE`        | `object`                | No       | --      | Voice-specific overrides for the response. See [Rich Content](/agent-platform/abl-reference/rich-content-and-expressions). |
-| `RICH_CONTENT` | `object`                | No       | --      | Rich content format variants. See [Rich Content](/agent-platform/abl-reference/rich-content-and-expressions).              |
+| `RICH_CONTENT` | `object`                | No       | --      | Rich content format variants (the `.agent.abl` keyword is `FORMATS:`). See [Rich Content](/agent-platform/abl-reference/rich-content-and-expressions). |
 | `ACTIONS`      | `object`                | No       | --      | Interactive actions attached to the response.                                                  |
+| `BRANCHES`     | `object[]`              | No       | --      | Conditional greeting branches (`IF`/`ELSE`). See [Conditional greeting](#conditional-greeting). |
 
 ### Template references in ON_START
 
@@ -67,6 +69,22 @@ ON_START:
 ```
 
 The tool call executes first, and its result is available in the session context when the RESPOND message is rendered.
+
+### Conditional greeting
+
+Use a `BRANCHES:` block to vary the greeting based on session context. Each branch is an `IF`
+(or `CONDITION`) with a fallback `ELSE`, and can carry `RESPOND`, `MESSAGE_KEY`, `VOICE`, rich
+content, and `ACTIONS`.
+
+```yaml
+ON_START:
+  CALL: check_returning_user()
+  BRANCHES:
+    - IF: user.is_returning == true
+      RESPOND: "Welcome back, {{user.name}}!"
+    - ELSE:
+      RESPOND: "Welcome! How can I help you today?"
+```
 
 ## HOOKS
 
@@ -110,11 +128,12 @@ Each hook supports the same set of action properties:
 | Property       | Type                    | Required | Default | Description                                         |
 | -------------- | ----------------------- | -------- | ------- | --------------------------------------------------- |
 | `SET`          | `Record<string,string>` | No       | --      | Variable assignments.                               |
-| `CALL`         | `string`                | No       | --      | Tool to call.                                       |
+| `CALL`         | `string`                | No       | --      | Tool to call (supports `WITH:`/`AS:`).              |
 | `RESPOND`      | `string`                | No       | --      | Message to send (uncommon in hooks, but supported). |
 | `VOICE`        | `object`                | No       | --      | Voice-specific overrides.                           |
 | `RICH_CONTENT` | `object`                | No       | --      | Rich content format variants.                       |
 | `ACTIONS`      | `object`                | No       | --      | Interactive actions.                                |
+| `critical`     | `boolean`               | No       | `false` | If `true`, a hook failure aborts the turn; otherwise the failure is logged and execution continues. |
 
 ### Example: audit logging hook
 
@@ -168,15 +187,30 @@ ON_ERROR:
 
 ### Error types
 
-| Error type          | When it occurs                                         |
-| ------------------- | ------------------------------------------------------ |
-| `tool_timeout`      | A tool call exceeds its timeout.                       |
-| `tool_error`        | A tool call returns an error.                          |
-| `validation_error`  | User input fails validation.                           |
-| `llm_error`         | The LLM call fails (rate limit, model error, etc.).    |
-| `routing_failure`   | The Supervisor cannot route a message.                 |
-| `agent_unavailable` | A target agent for handoff or delegate is unavailable. |
-| `timeout`           | A general timeout (session idle, async operation).     |
+The error `type` (the handler's key) is a **free-form label matched by name** — it is not validated
+against a fixed enum. A handler fires only when the runtime raises an error of that exact type.
+Commonly used types include:
+
+| Error type         | When it occurs                                      |
+| ------------------ | --------------------------------------------------- |
+| `tool_timeout`     | A tool call exceeds its timeout.                    |
+| `tool_error`       | A tool call returns an error.                       |
+| `invalid_input`    | User input cannot be parsed.                        |
+| `validation_error` | Gathered/extracted data fails validation.           |
+| `api_error`        | An external API call fails.                         |
+| `unknown_error`    | An unexpected error occurred.                       |
+
+Use `subtypes` (or the `SUBTYPE:` singular alias) to match more finely within a type.
+
+#### Inline shorthand
+
+For a handler that only takes a terminal action, use the single-line form `error_name: ACTION`:
+
+```yaml
+ON_ERROR:
+  unknown_error: ESCALATE
+  api_error: HANDOFF Live_Agent
+```
 
 ### Error handler properties
 
@@ -186,11 +220,13 @@ ON_ERROR:
 | `VOICE`           | `object`   | No       | --      | Voice-specific overrides for the response.                                    |
 | `RICH_CONTENT`    | `object`   | No       | --      | Rich content format variants.                                                 |
 | `ACTIONS`         | `object`   | No       | --      | Interactive actions.                                                          |
+| `SET`             | `Record<string,string>` | No | --   | Variable assignments applied when this error is handled.                      |
 | `RETRY`           | `number`   | No       | --      | Number of retry attempts before executing `THEN`.                             |
 | `RETRY_DELAY`     | `number`   | No       | --      | Delay in milliseconds between retries.                                        |
 | `RETRY_BACKOFF`   | `string`   | No       | --      | Backoff strategy for retries. See [Retry strategies](#retry-strategies).      |
 | `RETRY_MAX_DELAY` | `number`   | No       | --      | Maximum delay between retries in milliseconds.                                |
 | `THEN`            | `string`   | No       | --      | Action after retries are exhausted. See [Then actions](#then-actions).        |
+| `HANDOFF_TARGET`  | `string`   | No       | --      | Explicit target agent for `THEN: HANDOFF` (alternative to `HANDOFF <agent>`). |
 | `BACKTRACK_TO`    | `string`   | No       | --      | Target step for `backtrack` action.                                           |
 | `subtypes`        | `string[]` | No       | --      | Error subtypes for fine-grained matching (for example. `[rate_limit, model_error]`). |
 
@@ -206,11 +242,12 @@ ON_ERROR:
 
 | Action      | Behavior                                                    |
 | ----------- | ----------------------------------------------------------- |
-| `CONTINUE`  | Continue the conversation, skipping the failed operation.   |
-| `ESCALATE`  | Trigger human escalation.                                   |
-| `HANDOFF`   | Transfer to a specified agent (for example. `HANDOFF Live_Agent`). |
-| `COMPLETE`  | End the conversation.                                       |
-| `backtrack` | Return to a previous step specified by `BACKTRACK_TO`.      |
+| `CONTINUE`   | Continue the conversation, skipping the failed operation.   |
+| `ESCALATE`   | Trigger human escalation.                                   |
+| `HANDOFF`    | Transfer to a specified agent (for example. `HANDOFF Live_Agent`, or via `HANDOFF_TARGET`). |
+| `COMPLETE`   | End the conversation.                                       |
+| `RETRY_STEP` | Re-run the current flow step from the beginning.            |
+| `BACKTRACK`  | Return to a previous step specified by `BACKTRACK_TO`.      |
 
 ### Step-level error handlers
 
@@ -241,6 +278,7 @@ FLOW:
 | `RETRY_BACKOFF`   | `string`   | No       | --      | Backoff strategy.                         |
 | `RETRY_MAX_DELAY` | `number`   | No       | --      | Maximum retry delay (ms).                 |
 | `THEN`            | `string`   | No       | --      | Action after retries are exhausted.       |
+| `HANDOFF_TARGET`  | `string`   | No       | --      | Explicit target agent for `THEN: HANDOFF`. |
 | `BACKTRACK_TO`    | `string`   | No       | --      | Target step for backtrack.                |
 
 ## Error handler resolution order
