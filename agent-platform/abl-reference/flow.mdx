@@ -281,9 +281,27 @@ Each field in a flow `GATHER:` supports these properties:
 | `depends_on`                           | `string[]`                   | No       | _none_     | Field dependencies                  |
 | `prompt_mode`                          | `"ask"` , `"extract_only"`  | No       | `"ask"`    | Prompt usage mode                   |
 
-#### Strategy
+<Note>
+  Flow gather fields also accept the same additional properties as top-level
+  [GATHER](/agent-platform/abl-reference/gather) fields: `entity_ref`, `options`, `message_key`,
+  `satisfied_by`, `validation_process`, `retry_prompt`, `max_retries`, `preferences`, `sensitive`,
+  `sensitive_display`, `mask_config`, `pii_type`, `transient`, `extraction_pattern`,
+  `extraction_group`, and `semantics`. In addition, a flow gather field may carry `rich_content`
+  format variants for its prompt. Note that flow gather uses `validation:` where the top-level
+  section uses `validate:`.
+</Note>
 
-The `STRATEGY:` property on a flow `GATHER:` block controls the collection approach:
+#### GATHER block properties
+
+Alongside `FIELDS:`, a flow `GATHER:` block accepts these block-level properties:
+
+| Property      | Type                              | Description                                                     |
+| ------------- | --------------------------------- | --------------------------------------------------------------- |
+| `STRATEGY`    | `"llm"` , `"pattern"` , `"hybrid"`| Collection approach (see below).                                |
+| `PROMPT`      | `string`                          | A single prompt used to collect the whole block.               |
+| `MESSAGE_KEY` | `string`                          | Locale catalog key for the block prompt.                        |
+
+The `STRATEGY:` value controls the collection approach:
 
 | Value     | Description                                         |
 | --------- | --------------------------------------------------- |
@@ -450,6 +468,56 @@ FLOW:
 | `SORT_BY` | `string`                 | No       | _none_  | Sort field and direction (`asc` or `desc`)   |
 | `LIMIT`   | `number`                 | No       | _none_  | Maximum number of items in the output        |
 
+### LOG
+
+The `LOG:` action emits a trace-only diagnostic (not shown to the user). Use the inline or block form:
+
+```yaml
+FLOW:
+  audit:
+    REASONING: false
+    LOG: "Entering audit step"
+    # or, with a level:
+    # LOG:
+    #   MESSAGE: "Balance below threshold"
+    #   LEVEL: warn          # debug | info | warn | error
+    THEN: next_step
+```
+
+### AWAIT_ATTACHMENT
+
+The `AWAIT_ATTACHMENT:` action pauses the step until the user uploads a file.
+
+```yaml
+FLOW:
+  collect_id_doc:
+    REASONING: false
+    AWAIT_ATTACHMENT:
+      NAME: id_document
+      PROMPT: "Please upload a photo of your ID."
+      CATEGORY: image        # image | document | audio | video
+      REQUIRED: true
+      TIMEOUT: 120
+      ON_TIMEOUT: manual_review
+    THEN: verify_id
+```
+
+| Property     | Type      | Description                                                         |
+| ------------ | --------- | ------------------------------------------------------------------ |
+| `NAME`       | `string`  | Variable the uploaded attachment is stored under.                  |
+| `PROMPT`     | `string`  | Message asking the user to upload.                                 |
+| `CATEGORY`   | `string`  | `image`, `document`, `audio`, or `video`.                          |
+| `REQUIRED`   | `boolean` | Whether the upload is mandatory.                                   |
+| `TIMEOUT`    | `number`  | Seconds to wait for the upload.                                    |
+| `ON_TIMEOUT` | `string`  | Step to transition to if the upload times out.                     |
+
+### MESSAGE_KEY and BEHAVIOR
+
+Two additional step-level properties:
+
+- **`MESSAGE_KEY:`** — a locale catalog key used to localize the step's `RESPOND:` message.
+- **`BEHAVIOR:`** — free-form guidance text appended to the step's reasoning goal (a convenience alias that folds into `GOAL`).
+
 ---
 
 ## Branching and control flow
@@ -465,6 +533,20 @@ FLOW:
     CHECK: account_status == "active"
     ON_FAIL: inactive_account
     THEN: proceed
+```
+
+`ON_FAIL:` also accepts a structured block for recovery flows — `COLLECT:` (fields to re-collect),
+`GOTO:` (step), `RETRY: true`, `RESPOND:`, and `THEN:`:
+
+```yaml
+FLOW:
+  validate_details:
+    REASONING: false
+    CHECK: routing_number_valid == true
+    ON_FAIL:
+      RESPOND: "That routing number looks off — let's try again."
+      COLLECT: [routing_number]
+      GOTO: collect_routing
 ```
 
 ### ON_RESULT
@@ -596,19 +678,39 @@ FLOW:
 
 #### Digression properties
 
-| Property    | Type       | Required | Default | Description                               |
-| ----------- | ---------- | -------- | ------- | ----------------------------------------- |
-| `INTENT`    | `string`   | Yes      | --      | Intent pattern to match                   |
-| `KEYWORDS`  | `string[]` | No       | _none_  | Explicit keywords for matching            |
-| `CONDITION` | `string`   | No       | _none_  | Additional condition to check             |
-| `RESPOND`   | `string`   | No       | _none_  | Response message                          |
-| `RESUME`    | `boolean`  | No       | `false` | Return to the current step after handling |
-| `GOTO`      | `string`   | No       | _none_  | Transition to a specific step             |
-| `DELEGATE`  | `string`   | No       | _none_  | Delegate to another agent                 |
-| `CALL`      | `string`   | No       | _none_  | Tool to invoke                            |
-| `CLEAR`     | `string[]` | No       | _none_  | Variables to clear                        |
+| Property      | Type       | Required | Default | Description                                        |
+| ------------- | ---------- | -------- | ------- | -------------------------------------------------- |
+| `INTENT`      | `string`   | Yes      | --      | Intent pattern to match                            |
+| `KEYWORDS`    | `string[]` | No       | _none_  | Explicit keywords for matching                     |
+| `CONDITION`   | `string`   | No       | _none_  | Additional condition to check                      |
+| `RESPOND`     | `string`   | No       | _none_  | Response message                                   |
+| `MESSAGE_KEY` | `string`   | No       | _none_  | Locale catalog key for the response                |
+| `SET`         | `Record<string,string>` | No | _none_ | Variable assignments (within the `DO:` block)   |
+| `RESUME`      | `boolean`  | No       | `false` | Return to the current step after handling          |
+| `GOTO`        | `string`   | No       | _none_  | Transition to a specific step                      |
+| `HANDOFF`     | `string`   | No       | _none_  | Hand off to another agent (supports `RETURN:` / `ON_RETURN:`) |
+| `DELEGATE`    | `string`   | No       | _none_  | Delegate to another agent (requires `RETURN: true`) |
+| `CALL`        | `string`   | No       | _none_  | Tool to invoke                                     |
+| `CLEAR`       | `string[]` | No       | _none_  | Variables to clear                                 |
 
-When `RESUME: true`, the user returns to the interrupted step after the digression response. When `GOTO:` is specified, the flow transitions to that step instead.
+When `RESUME: true`, the user returns to the interrupted step after the digression response. When `GOTO:` is specified, the flow transitions to that step instead. `RESUME`, `GOTO`, and `HANDOFF` are terminal.
+
+<Note>
+  For multiple ordered actions, use the canonical `DO:` block instead of flat keys. Each list item is
+  an action (`RESPOND`, `SET`, `CLEAR`, `CALL`, `HANDOFF`, `DELEGATE`, `GOTO`, `RESUME`), and
+  `HANDOFF`/`DELEGATE` may carry `RETURN:` and `ON_RETURN:` (with `MAP:`). Mixing flat keys with a
+  `DO:` block is discouraged.
+
+  ```yaml
+  DIGRESSIONS:
+    - INTENT: "check balance"
+      DO:
+        - RESPOND: "Let me pull that up."
+        - HANDOFF: Account_Info
+          RETURN: true
+        - RESUME: true
+  ```
+</Note>
 
 ### Global digressions
 
@@ -658,14 +760,15 @@ FLOW:
 
 #### Sub-intent properties
 
-| Property  | Type                     | Required | Default | Description                                 |
-| --------- | ------------------------ | -------- | ------- | ------------------------------------------- |
-| `INTENT`  | `string`                 | Yes      | --      | Intent pattern to match                     |
-| `RESPOND` | `string`                 | No       | _none_  | Response message                            |
-| `CLEAR`   | `string[]`               | No       | _none_  | Variables to clear (triggers re-collection) |
-| `SET`     | `Record<string, string>` | No       | _none_  | Variables to set                            |
-| `CALL`    | `string`                 | No       | _none_  | Tool to invoke                              |
-| `RESUME`  | `boolean`                | No       | `true`  | Stay in the current step                    |
+| Property      | Type                     | Required | Default | Description                                 |
+| ------------- | ------------------------ | -------- | ------- | ------------------------------------------- |
+| `INTENT`      | `string`                 | Yes      | --      | Intent pattern to match                     |
+| `RESPOND`     | `string`                 | No       | _none_  | Response message                            |
+| `MESSAGE_KEY` | `string`                 | No       | _none_  | Locale catalog key for the response         |
+| `CLEAR`       | `string[]`               | No       | _none_  | Variables to clear (triggers re-collection) |
+| `SET`         | `Record<string, string>` | No       | _none_  | Variables to set                            |
+| `CALL`        | `string`                 | No       | _none_  | Tool to invoke                              |
+| `RESUME`      | `boolean`                | No       | `true`  | Stay in the current step                    |
 
 ---
 
@@ -786,6 +889,9 @@ ACTIONS:
   SUBMIT_ID: "form_submit"
 ```
 
+The `ACTIONS:` block also accepts an optional `RENDER_ID:` to give the whole action set a stable
+identifier for rendering/telemetry.
+
 ### ON_ACTION callbacks
 
 The `ON_ACTION:` block defines handlers for user interactions with action elements:
@@ -804,24 +910,36 @@ ON_ACTION:
 
 #### ON_ACTION handler properties
 
-| Property    | Type                     | Required | Default | Description                                                |
-| ----------- | ------------------------ | -------- | ------- | ---------------------------------------------------------- |
-| `ACTION`    | `string`                 | Yes      | --      | The `id` of the action element that triggered this handler |
-| `CONDITION` | `string`                 | No       | _none_  | Optional value-based condition                             |
-| `RESPOND`   | `string`                 | No       | _none_  | Response message                                           |
-| `SET`       | `Record<string, string>` | No       | _none_  | Variable assignments                                       |
-| `THEN`      | `string`                 | No       | _none_  | Step to transition to                                      |
+| Property               | Type                     | Required | Default | Description                                                |
+| ---------------------- | ------------------------ | -------- | ------- | ---------------------------------------------------------- |
+| `ACTION`               | `string`                 | Yes      | --      | The `id` of the action element that triggered this handler |
+| `CONDITION`            | `string`                 | No       | _none_  | Optional value-based condition                             |
+| `RESPOND`              | `string`                 | No       | _none_  | Response message                                           |
+| `SET`                  | `Record<string, string>` | No       | _none_  | Variable assignments                                       |
+| `CLEAR`                | `string[]`               | No       | _none_  | Variables to clear                                         |
+| `CALL`                 | `string`                 | No       | _none_  | Tool to invoke (requires `AS`)                             |
+| `LOG`                  | `string`                 | No       | _none_  | Trace-only diagnostic                                      |
+| `HANDOFF`              | `string`                 | No       | _none_  | Hand off to another agent                                  |
+| `DELEGATE`             | `string`                 | No       | _none_  | Delegate to another agent (`RETURN:`/`ON_RETURN:` supported) |
+| `COMPLETE`             | `boolean`                | No       | _none_  | Terminal — mark the flow complete                          |
+| `THEN` / `GOTO` / `TRANSITION` | `string`         | No       | _none_  | Step to transition to (three interchangeable keywords)     |
+
+<Note>
+  For multiple ordered actions in one handler, use a canonical `DO:` block whose list items are
+  actions (`SET`, `CLEAR`, `LOG`, `RESPOND`, `CALL`, `GOTO`/`TRANSITION`/`THEN`, `HANDOFF`,
+  `DELEGATE`, `COMPLETE`).
+</Note>
 
 ### Rich content
 
-Steps can include rich content in multiple formats alongside `RESPOND:` messages. The runtime selects the appropriate format based on the channel:
+Steps can include rich content in multiple formats alongside `RESPOND:` messages. The runtime selects the appropriate format based on the channel. In the `.agent.abl` format the block keyword is `FORMATS:`; the `.agent.yaml` format also accepts `rich_content` / `formats`.
 
 ```yaml
 FLOW:
   show_summary:
     REASONING: false
     RESPOND: "Here is your transfer summary."
-    RICH_CONTENT:
+    FORMATS:
       MARKDOWN: |
         ## Wire Transfer Summary
         | Field | Value |
@@ -835,6 +953,9 @@ FLOW:
 
 #### Rich content format properties
 
+The runtime recognizes these format keys. In addition to the messaging formats, several structured
+template types are available (see [Rich Content & Expressions](/agent-platform/abl-reference/rich-content-and-expressions) for their schemas):
+
 | Format          | Description                       |
 | --------------- | --------------------------------- |
 | `MARKDOWN`      | Formatted markdown text           |
@@ -843,6 +964,19 @@ FLOW:
 | `SLACK`         | Slack Block Kit JSON              |
 | `AG_UI`         | AG-UI / CopilotKit event JSON     |
 | `WHATSAPP`      | WhatsApp interactive message JSON |
+| `CAROUSEL`      | Scrollable cards (title/subtitle/image/buttons); can also be authored as a standalone block after `RESPOND:` |
+| `QUICK_REPLIES` | Quick-reply chips                 |
+| `LIST`          | Vertical list of items            |
+| `IMAGE`         | Image with caption/alt            |
+| `VIDEO`         | Video with caption/alt            |
+| `AUDIO`         | Audio with caption/alt            |
+| `FILE`          | File attachment                   |
+| `KPI`           | KPI metric tile                   |
+| `TABLE`         | Columns + rows                    |
+| `CHART`         | Bar/line/pie chart                |
+| `FORM`          | Form fields + submit              |
+| `PROGRESS`      | Progress bar/circle               |
+| `FEEDBACK`      | Thumbs/stars/scale feedback       |
 
 ### Voice configuration
 
@@ -886,11 +1020,31 @@ FLOW:
       tool_timeout:
         RESPOND: "The service is responding slowly. Retrying..."
         RETRY: 2
+        RETRY_DELAY: 1000
+        RETRY_BACKOFF: exponential
+        RETRY_MAX_DELAY: 8000
         THEN: CONTINUE
       tool_error:
         RESPOND: "An error occurred. Let me try a different approach."
         THEN: fallback_step
 ```
+
+Common error types are `tool_timeout`, `tool_error`, `invalid_input`, `validation_error`,
+`api_error`, and `unknown_error` (the type is not restricted to a fixed set).
+
+#### Step ON_ERROR handler properties
+
+| Property          | Type      | Description                                                                        |
+| ----------------- | --------- | ---------------------------------------------------------------------------------- |
+| `SUBTYPE`         | `string`  | Narrow the handler to a specific error subtype.                                    |
+| `RESPOND`         | `string`  | Message to show when the error fires.                                              |
+| `RETRY`           | `number`  | Retry attempts before giving up.                                                   |
+| `RETRY_DELAY`     | `number`  | Delay (ms) between retries.                                                        |
+| `RETRY_BACKOFF`   | `string`  | Backoff strategy: `fixed`, `exponential`, or `linear`.                             |
+| `RETRY_MAX_DELAY` | `number`  | Maximum delay (ms) between retries.                                                |
+| `BACKTRACK_TO`    | `string`  | Step to backtrack to (used with `THEN: BACKTRACK`).                                |
+| `HANDOFF_TARGET`  | `string`  | Target agent (used with `THEN: HANDOFF`).                                          |
+| `THEN`            | `string`  | Next action: `CONTINUE`, `COMPLETE`, `ESCALATE`, `BACKTRACK`, `RETRY_STEP`, `HANDOFF`, or a step name. |
 
 ## Complete example
 

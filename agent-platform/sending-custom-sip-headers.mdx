@@ -1,0 +1,112 @@
+---
+title: "Sending Custom SIP Headers on Voice Transfers"
+sidebarTitle: "Sending Custom SIP Headers"
+---
+
+When a voice agent transfers a live call to an external SIP destination, you can include custom SIP headers with the transfer. The receiving system can use these headers for call routing or to carry business context, such as a queue or skill hint, campaign ID, transfer reason, or any other custom payload.
+
+<Note>
+  - This capability applies to the **Kore Voice Gateway** voice channel. - This
+  capability is currently in **Alpha**. The platform builds and sends the
+  transfer request with the configured custom headers, but header delivery
+  depends on the gateway and receiving SIP peer. Validate the behavior in your
+  SIP environment before using it in production.
+</Note>
+
+This guide covers transfers that use the **SIP REFER** method.
+
+## How Custom SIP Headers Are Applied
+
+Custom SIP headers are controlled at three levels:
+
+```text
+Platform-supported headers
+         ↓
+Project-level Allowed Transfer Headers
+         ↓
+Agent-level header names and values
+         ↓
+SIP REFER transfer
+```
+
+A header is forwarded only when:
+
+- Its name is supported by the platform.
+- It is added to the project's Allowed Transfer Headers list.
+- A header value is configured for the transfer in the agent.
+
+## Platform-Supported Headers
+
+The platform supports a fixed set of header names for voice transfers. Headers with other names are not forwarded. Supported header names are:
+
+```text
+x-custom-data      x-session-id       x-tenant-id        x-agent-id
+x-contact-id       x-project-id       x-correlation-id   x-request-id
+x-queue            x-skill            x-campaign         user-to-user
+x-transfer-reason
+```
+
+<Note>
+  - Header names are case-insensitive and normalized to lowercase. 
+  - You cannot add new header names. A header must first be part of the platform-supported set.
+</Note>
+
+## Configure Allowed Transfer Headers for the Project
+
+At the project level, select which platform-supported headers to forward during voice transfers.
+
+- Go to **Project Settings** > **Agent Transfer** > **Voice Gateway**.
+- Enable **Header Passthrough**.
+- Under **Allowed Transfer Headers**, select and add the headers that project agents can use. You can select only from the predefined set of platform-supported headers.
+- Save the configuration.
+  For example, if the project allows the following, agents can use these headers in transfer configurations. Other platform-supported headers are not forwarded unless they are also added to this list.
+
+```text
+x-queue
+x-skill
+x-transfer-reason
+```
+
+## Configure SIP Headers in the Agent
+
+After a header is allowed at the project level, configure its value for the agent's transfer.
+
+1. Open the agent in **Studio** > **Agent Editor**.
+2. Open the **Escalation** configuration.
+3. Under **Routing**, expand **Voice Settings**.
+4. Set **Transfer Method** to **SIP REFER**.
+5. Under SIP Headers, add the required header name and value:
+   - Header name — Select or specify a header permitted by the project's Allowed Transfer Headers configuration, for example, `x-queue`.
+   - Header value — Specify the value to send, for example, `tier2`.
+6. Select **+ Add Header** to configure additional headers.
+7. Save the agent.
+
+Example:
+
+```yaml
+ESCALATE:
+  routing:
+    connection: <your-connection>
+    voice:
+      transfer_method: refer
+      sip_headers:
+        x-queue: "tier2"
+        x-transfer-reason: "billing"
+```
+
+In this example:
+
+- `x-queue` and `x-transfer-reason` must be supported by the platform.
+- Both headers must be added to the project's Allowed Transfer Headers list.
+- The agent supplies the values tier2 and billing for the transfer.
+
+## Troubleshooting
+
+| Symptom                                 | Likely cause / fix                                                                                         |
+| --------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| Header never arrives                    | Name isn't on the platform allowlist → use an allowed name.                                                |
+| No custom headers at all                | **Header Passthrough** is off → turn it on.                                                                |
+| Only some headers arrive                | They were excluded by your project **Allowed Transfer Headers** list, or you exceeded the 10-header limit. |
+| Value looks cut off                     | Value exceeded 256 characters and was truncated.                                                           |
+| Need a `BYE`-based release with headers | Not supported yet (the `bye` method is blocked in settings).                                               |
+| Want a re-INVITE instead of REFER       | Choose **SIP INVITE** as the transfer method (requires a valid `sip:`/`sips:` target URI).                 |

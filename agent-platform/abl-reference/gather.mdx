@@ -37,9 +37,12 @@ Within a `FLOW:` step, gather uses a different syntax. See [GATHER within FLOW](
 | Property             | Type                                  | Required | Default      | Description                                                             |
 | -------------------- | ------------------------------------- | -------- | ------------ | ----------------------------------------------------------------------- |
 | `prompt`             | `string`                              | Yes      | --           | The question or instruction shown to the user to collect this field     |
-| `type`               | `string`                              | No       | `"string"`   | Data type for the field value                                           |
+| `message_key`        | `string`                              | No       | _none_       | Locale catalog key used to localize the `prompt`                        |
+| `type`               | `string`                              | No       | `"string"`   | Data type for the field value (see [Field types](#field-types))         |
 | `required`           | `boolean`                             | No       | `true`       | Whether the field must be collected before proceeding                   |
 | `default`            | `any`                                 | No       | _none_       | Default value used if the user does not provide one                     |
+| `entity_ref`         | `string`                              | No       | _none_       | Bind to a named entity from the `ENTITIES:` section (see [Entity binding](#entity-binding)) |
+| `options`            | `string[]`                            | No       | _none_       | Allowed values for enum-style fields (see [Enum options](#enum-options)) |
 | `validate`           | `string`                              | No       | _none_       | Validation expression (see [Validation](#validation))                   |
 | `validation_process` | `"REGEX"` , `"CODE"` , `"LLM"`      | No       | _none_       | How validation is performed                                             |
 | `retry_prompt`       | `string`                              | No       | _none_       | Custom prompt shown when validation fails                               |
@@ -47,33 +50,105 @@ Within a `FLOW:` step, gather uses a different syntax. See [GATHER within FLOW](
 | `infer`              | `boolean`                             | No       | `false`      | Allow the LLM to infer the value from context                           |
 | `infer_confidence`   | `number`                              | No       | `0.8`        | Minimum confidence threshold for accepting inferred values (0.0--1.0)   |
 | `infer_confirm`      | `boolean`                             | No       | `true`       | Whether to confirm inferred values with the user                        |
-| `extraction_hints`   | `string[]`                            | No       | _none_       | Hints to guide the LLM's value extraction                               |
 | `prompt_mode`        | `"ask"` , `"extract_only"`           | No       | `"ask"`      | Whether the prompt is shown to the user or used only for LLM extraction |
 | `range`              | `boolean`                             | No       | `false`      | Collect as a range `{low, high}` instead of a scalar                    |
 | `list`               | `boolean`                             | No       | `false`      | Collect as an array instead of a scalar                                 |
 | `preferences`        | `boolean`                             | No       | `false`      | Categorize into accept/desire/avoid/refuse preference sets              |
 | `activation`         | `string` , `{when: string}`          | No       | `"required"` | Activation mode (see [Progressive activation](#progressive-activation)) |
 | `depends_on`         | `string[]`                            | No       | _none_       | Fields that must be collected before this field activates               |
+| `satisfied_by`       | `string[]`                            | No       | _none_       | Provenance classes allowed to satisfy this field (see [Value provenance](#value-provenance)) |
 | `sensitive`          | `boolean`                             | No       | `false`      | Whether this field carries PII                                          |
 | `sensitive_display`  | `"redact"` , `"mask"` , `"replace"` | No       | _none_       | How sensitive values are displayed outside the gather context           |
 | `mask_config`        | `{showFirst, showLast, char}`         | No       | _none_       | Masking configuration when `sensitive_display` is `"mask"`              |
+| `pii_type`           | `string`                              | No       | _none_       | Explicit PII classification for shape-preserving masking (see [Sensitive fields](#sensitive-fields)) |
 | `transient`          | `boolean`                             | No       | `false`      | Whether PII auto-cleans after gather completes                          |
 | `extraction_pattern` | `string`                              | No       | _none_       | Custom regex pattern for value extraction                               |
 | `extraction_group`   | `number`                              | No       | `0`          | Capture group index for `extraction_pattern`                            |
 | `semantics`          | `object`                              | No       | _none_       | Supplemental metadata about the value (see [Semantics](#semantics))     |
 
+<Note>
+  `extraction_hints` is a **flow-step gather** property, not a top-level `GATHER:` property — at the
+  top level it is not parsed. See [GATHER within FLOW](/agent-platform/abl-reference/flow#gather-in-flow-steps).
+</Note>
+
 ## Field types
 
 The `type` property specifies the expected data type for the field value:
 
-| Type      | Description     | Example values          |
-| --------- | --------------- | ----------------------- |
-| `string`  | Free-text value | `"John Smith"`, `"USD"` |
-| `number`  | Numeric value   | `42`, `150.75`          |
-| `boolean` | True/false      | `true`, `false`         |
-| `date`    | Calendar date   | `"2026-03-15"`          |
-| `email`   | Email address   | `"user@example.com"`    |
-| `phone`   | Phone number    | `"+1-555-123-4567"`     |
+| Type        | Description                          | Example values          |
+| ----------- | ------------------------------------ | ----------------------- |
+| `string`    | Free-text value                      | `"John Smith"`, `"USD"` |
+| `text`      | Longer free-text value               | `"..."`                 |
+| `free_text` | Unconstrained free text              | `"..."`                 |
+| `number`    | Numeric value                        | `42`, `150.75`          |
+| `integer`   | Whole number                         | `42`                    |
+| `float`     | Decimal number                       | `3.14`                  |
+| `currency`  | Monetary amount                      | `19.99`                 |
+| `boolean`   | True/false                           | `true`, `false`         |
+| `date`      | Calendar date                        | `"2026-03-15"`          |
+| `datetime`  | Date and time                        | `"2026-03-15T14:30:00"` |
+| `email`     | Email address                        | `"user@example.com"`    |
+| `phone`     | Phone number                         | `"+1-555-123-4567"`     |
+| `enum`      | One of a fixed set (see `options`)   | `"domestic"`            |
+| `pattern`   | Value matching a regex               | `"AB1234"`              |
+| `location`  | Geographic location                  | `"San Francisco, CA"`   |
+
+## Entity binding
+
+Instead of declaring `type`, `options`, and validation inline, a field can reference a reusable
+named entity from the [`ENTITIES:`](/agent-platform/abl-reference/nlu) section via `entity_ref`. The
+field then inherits the entity's type, allowed values, synonyms, and validation.
+
+```yaml
+GATHER:
+  request:
+    entity_ref: request_type    # defined in the ENTITIES: section
+    prompt: "What type of request do you have?"
+```
+
+<Note>
+  A field with `entity_ref` should not also declare `type`, `options`, or values — the referenced
+  entity owns that contract.
+</Note>
+
+## Enum options
+
+For enum-style fields, `options` lists the allowed values directly. Use it as an alternative to
+`validate: enum(...)`. Both inline and block forms are accepted:
+
+```yaml
+GATHER:
+  plan:
+    prompt: "Which plan would you like?"
+    type: enum
+    options: [basic, pro, enterprise]
+
+  region:
+    prompt: "Which region?"
+    type: enum
+    options:
+      - "us-east"
+      - "eu-west"
+```
+
+## Value provenance
+
+The `satisfied_by` property restricts which sources may satisfy a field — useful for fields that
+must come from an authoritative system rather than user claims.
+
+```yaml
+GATHER:
+  account_balance:
+    prompt: "What is your current balance?"
+    type: number
+    satisfied_by: [authoritative_tool, system]
+```
+
+| Value                | Description                                                       |
+| -------------------- | ----------------------------------------------------------------- |
+| `user_input`         | The value may be provided directly by the user.                   |
+| `authoritative_tool` | The value may be supplied by an authoritative tool result.        |
+| `system`             | The value may be set by the system/session.                       |
 
 ## Validation
 
@@ -144,7 +219,6 @@ GATHER:
     required: true
     validate: enum(domestic, international)
     infer: true
-    extraction_hints: ["If beneficiary country is US, infer domestic. Otherwise international."]
 
   currency:
     prompt: "What currency?"
@@ -163,9 +237,13 @@ GATHER:
 | `infer`            | `boolean`  | `false` | Enable LLM inference for this field                                         |
 | `infer_confidence` | `number`   | `0.8`   | Minimum confidence (0.0--1.0) the LLM must have to accept an inferred value |
 | `infer_confirm`    | `boolean`  | `true`  | Whether to ask the user to confirm inferred values                          |
-| `extraction_hints` | `string[]` | _none_  | Natural-language hints guiding the LLM's extraction logic                   |
 
 When the LLM's confidence in an inferred value falls below `infer_confidence`, the runtime falls back to asking the user directly using the `prompt`.
+
+<Note>
+  To steer extraction with natural-language hints (`extraction_hints`), use a **flow-step** gather
+  field — see [GATHER within FLOW](/agent-platform/abl-reference/flow#gather-in-flow-steps).
+</Note>
 
 ## Range collection
 
@@ -295,6 +373,19 @@ GATHER:
       char: "*"
 ```
 
+When the field name is non-canonical, add `pii_type` so the redactor can produce a shape-preserving
+mask:
+
+```yaml
+GATHER:
+  member_id:
+    prompt: "Your membership ID?"
+    type: string
+    sensitive: true
+    sensitive_display: mask
+    pii_type: custom      # email | phone | ssn | credit_card | address | name | custom
+```
+
 ### Sensitive display modes
 
 | Mode      | Description                                | Example output |
@@ -371,12 +462,15 @@ GATHER:
 
 | Property     | Type       | Description                           |
 | ------------ | ---------- | ------------------------------------- |
-| `format`     | `string`   | Expected format description           |
-| `components` | `string[]` | Sub-components of the value           |
-| `unit`       | `string`   | Unit of measurement                   |
-| `lookup`     | `string`   | Lookup table reference for validation |
-| `convert_to` | `string`   | Target unit for conversion            |
-| `locale`     | `string`   | Locale for parsing                    |
+| `format`           | `string`   | Expected format description                                              |
+| `components`       | `string[]` | Sub-components of the value                                              |
+| `unit`             | `string`   | Unit of measurement                                                     |
+| `lookup`           | `string`   | Lookup table reference for validation                                   |
+| `convert_to`       | `string`   | Target unit for conversion                                              |
+| `locale`           | `string`   | Locale for parsing                                                      |
+| `temporal`         | `string`   | Temporal direction for date/datetime fields: `future`, `past`, or `any` (default). `future` biases to the next occurrence and rejects past dates; `past` rejects future dates. |
+| `enum_set`         | `string[]` | Allowed enumeration values (alternative to top-level `options`).         |
+| `kore_entity_type` | `string`   | Kore entity type hint used for recognition.                             |
 
 ## Complete example
 
@@ -393,7 +487,6 @@ GATHER:
     required: true
     validate: enum(domestic, international)
     infer: true
-    extraction_hints: ["If beneficiary country is US, infer domestic. Otherwise international."]
 
   beneficiary_name:
     prompt: "Full legal name on the beneficiary's account?"
@@ -418,7 +511,6 @@ GATHER:
     type: string
     required: true
     infer: true
-    extraction_hints: ["Map descriptions to standard purpose codes."]
 
   reference:
     prompt: "Reference or memo for the beneficiary? (optional)"
