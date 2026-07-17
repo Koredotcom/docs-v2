@@ -319,9 +319,12 @@ When `user_name` gets a value during the conversation (from a `GATHER` step, `SE
 
 | Property | Type   | Required | Default | Description                                                                                                                                                                       |
 | -------- | ------ | -------- | ------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| WHEN     | string | Yes      | --      | Condition expression that triggers the store operation. Evaluated after each turn.                                                                                                |
-| STORE    | object | Yes      | --      | Defines the value expression and the target persistent path. Syntax: `value_expr -> target_path`.                                                                                 |
-| TTL      | string | No       | --      | Time-to-live for the stored fact. After expiration, the value is deleted. Examples: "30d", "24h". TTL values use a duration string: s - Seconds, m - Minutes, h - Hours, d - Days |
+| WHEN      | string  | Yes      | --          | Condition expression that triggers the store operation. Evaluated after each turn.                                                                                                |
+| STORE     | object  | Yes      | --          | Defines the value expression and the target persistent path. Inline syntax: `value_expr -> target_path`. Use the block form (below) to add array-write modifiers.                 |
+| OPERATION | string  | No       | `overwrite` | Write mode for an **array** target. `overwrite` replaces the whole value (legacy). `append` adds the value to the existing array. Block form only.                                 |
+| UNIQUE    | boolean | No       | `false`     | When appending, skip values already present in the array (first occurrence kept). Block form only.                                                                                |
+| MAXSIZE   | number  | No       | --          | When appending, cap the array length. Oldest items are evicted first (FIFO). Block form only.                                                                                     |
+| TTL       | string  | No       | --          | Time-to-live for the stored fact. After expiration, the value is deleted. Examples: "30d", "24h". TTL values use a duration string: s - Seconds, m - Minutes, h - Hours, d - Days |
 
 ### Store computed values
 
@@ -333,6 +336,41 @@ MEMORY:
     - WHEN: action_completed == true
       STORE: {booking_id: selected_booking, action: action_type, date: now} -> user.booking_history
 ```
+
+### Append to an array (accumulate a list)
+
+By default a Remember trigger *overwrites* the target each time it fires. To
+accumulate values into a list instead — booking history, recent searches,
+visited topics — use the multi-line `STORE` block with `operation: append`.
+
+```yaml
+MEMORY:
+  persistent:
+    - user.booking_history
+      TYPE: array
+      DEFAULT_VALUE: []
+
+  remember:
+    - WHEN: action_completed == true
+      STORE:
+        value: {booking_id: selected_booking, action: action_type, date: now}
+        target: user.booking_history
+        operation: append
+        unique: true      # skip records already in the list
+        maxSize: 20       # keep only the 20 most recent (FIFO)
+```
+
+- **`operation: append`** — adds the value to the existing array instead of
+  replacing it. A scalar is appended as one item; an array value is concatenated.
+- **`unique: true`** — drops duplicates, keeping the first occurrence. Objects
+  are compared by value.
+- **`maxSize: N`** — caps the list at `N` items, evicting the oldest first.
+
+<Note>
+  Array modifiers require the block form of `STORE` shown above — the inline
+  `value -> target` arrow form does not accept them. Without `operation: append`,
+  the trigger keeps the default overwrite behavior.
+</Note>
 
 ## Recall
 
@@ -425,11 +463,16 @@ MEMORY:
 
   persistent:
     - user.booking_history
+      TYPE: array
+      DEFAULT_VALUE: []
     - user.preferences
 
   remember:
     - WHEN: action_completed == true
-      STORE: {booking_id: selected_booking, action: action_type, date: now} -> user.booking_history
+      STORE:
+        value: {booking_id: selected_booking, action: action_type, date: now}
+        target: user.booking_history
+        operation: append
     - WHEN: user_preference IS SET
       STORE: user_preference -> user.preferences
 
