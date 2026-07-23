@@ -232,6 +232,7 @@ TOOLS:
 | `soap_version`    | `"1.1"` , `"1.2"`                                     | No       | `"1.1"`                  | SOAP version (when `protocol: soap`).                                          |
 | `soap_action`     | `string`                                              | No       | _none_                   | `SOAPAction` header (1.1) or action media-type parameter (1.2).               |
 | `on_soap_fault`   | `"error"` , `"data"`                                  | No       | _none_                   | How to handle `<soap:Fault>` — `error` throws, `data` returns the fault payload. |
+| `wsdl_*`          | see [WSDL operation binding](#wsdl-operation-binding) | No       | _none_                   | Bind a SOAP tool to a stored WSDL operation instead of authoring the envelope. |
 
 ### Path parameters
 
@@ -428,6 +429,59 @@ TOOLS:
 | `soap_version`  | `"1.1"` , `"1.2"`   | `"1.1"`  | SOAP envelope version.                                                   |
 | `soap_action`   | `string`            | _none_   | `SOAPAction` header (1.1) or action media-type parameter (1.2).          |
 | `on_soap_fault` | `"error"` , `"data"`| _none_   | `error` raises on `<soap:Fault>`; `data` returns the fault as the result. |
+
+#### WSDL operation binding
+
+Instead of hand-writing the SOAP envelope, a SOAP tool can bind to an operation
+from a WSDL asset stored in the project [WSDL Repository](/agent-platform/tools/wsdl-repo).
+When bound, the runtime resolves the operation's namespace, `SOAPAction`, and SOAP
+version from the stored WSDL and **generates the request body from the tool's
+JSON input** — no manual `body` template is needed. The request `endpoint` still
+comes from the tool: bulk-created tools are populated with the WSDL service
+address (or an endpoint override), and hand-authored tools must set `endpoint`
+explicitly.
+
+Reference the WSDL by name; the platform resolves it to a stable asset/version
+at save time:
+
+```yaml
+TOOLS:
+  lookup_policy(policy_number: string) -> {status: string, holder: string}
+    description: "Look up an insurance policy"
+    type: http
+    endpoint: "https://legacy.example.com/PolicyService"
+    method: POST
+    protocol: soap
+    soap_version: "1.1"
+    wsdl_asset: "PolicyService"       # asset name in the WSDL Repository
+    wsdl_version: latest              # version number or "latest" (default)
+    wsdl_operation: "lookupPolicy"
+```
+
+| Property                | Type     | Required | Description                                                                                     |
+| ----------------------- | -------- | -------- | ----------------------------------------------------------------------------------------------- |
+| `wsdl_asset`            | `string` | No       | WSDL asset **name** to bind. Resolved to `wsdl_asset_id` at save time.                           |
+| `wsdl_version`          | `string` | No       | Version number (for example `2`) or `latest`. Defaults to the asset's latest version.            |
+| `wsdl_operation`        | `string` | Yes\*    | Name of the WSDL operation to invoke.                                                            |
+| `wsdl_asset_id`         | `string` | Yes\*    | Stable asset ID. Written automatically when `wsdl_asset` is resolved; may be authored directly.  |
+| `wsdl_version_id`       | `string` | Yes\*    | Stable immutable version ID. Written automatically when `wsdl_version` is resolved.              |
+| `wsdl_service`          | `string` | No       | WSDL `service` name (when an operation is ambiguous across services).                            |
+| `wsdl_port`             | `string` | No       | WSDL `port` name.                                                                                |
+| `wsdl_binding`          | `string` | No       | WSDL `binding` name.                                                                             |
+| `wsdl_target_namespace` | `string` | No       | Target namespace override for body generation.                                                   |
+| `wsdl_element`          | `string` | No       | Root request element name, when it differs from the operation name.                              |
+
+<Note>
+  `*` A WSDL binding requires `wsdl_operation` plus a resolved asset/version. Author
+  either the by-name pair (`wsdl_asset` + optional `wsdl_version`) — which the
+  platform rewrites to `wsdl_asset_id` / `wsdl_version_id` on save — or the stable
+  IDs directly. Versions are immutable: a bound tool keeps calling its pinned
+  version until you repoint it, so a WSDL update never silently changes behavior.
+</Note>
+
+If a WSDL construct is unsupported, author a manual SOAP tool with an explicit
+`body` template instead — the binding fields and a manual body are mutually
+exclusive per tool.
 
 ### Request variants
 
