@@ -1,0 +1,106 @@
+---
+title: WSDL Repository
+sidebarTitle: WSDL Repository
+---
+
+The WSDL Repository lets you upload and manage Web Services Description Language (WSDL) files for SOAP-based services.
+
+After you upload a WSDL file, the platform parses the service definition and makes the SOAP operations available to create SOAP-based HTTP tools.
+
+The WSDL Repository centralizes WSDL assets so that you can reuse it across workflows and agents.
+
+## Prerequisites
+
+Make sure that:
+
+- The WSDL file is a valid file.
+- The WSDL contains a valid SOAP service definition.
+- The service endpoints referenced in the WSDL are reachable from the platform deployment environment.
+
+## Upload a WSDL
+
+1. Navigate to your project and open **Tools**.
+2. Select the **WSDL Repository** tab.
+3. Enter the asset details - name and description.
+4. Click **Upload WSDL**. Select the WSDL file from your local filesystem.
+
+After you upload the WSDL, the platform takes the following actions:
+
+- Validates the WSDL.
+- Parses the service definition.
+- Discovers available services and operations.
+- Extracts request and response schemas.
+- Stores the WSDL as a reusable asset.
+- Makes the operations available to create SOAP-based HTTP tools.
+
+**Dry Run** — Identifies and lists the operations from the uploaded WSDL, without creating any tools. Use this option to preview the HTTP tools that the platform will generate from the operations defined in the uploaded WSDL.
+
+**Create Tools** — Creates SOAP-based HTTP tools from the WSDL operations in bulk. The platform names each tool after its WSDL operation name, prepended with the value in the **Name prefix** field (for example, prefix `soap` + operation `FahrenheitToCelsius` → `soap_fahrenheit_to_celsius`). The prefix applies globally to every operation in the asset.
+
+## Manage WSDL assets
+
+Uploaded WSDL files appear in the **Assets** list, searchable by name. Selecting an asset shows:
+
+| Field                 | Description                                                              |
+|:----------------------|:-------------------------------------------------------------------------|
+| **Operations**        | Number of operations discovered in the uploaded WSDL.                    |
+| **Dependents**        | Number of tools or workflows that are using this WSDL asset.             |
+| **Latest version**    | Current version of the uploaded WSDL asset.                              |
+| **Name prefix**       | Prefix applied to the names of tools generated from the WSDL operations. |
+| **Endpoint override** | Optional. Overrides the service endpoint defined in the WSDL. For example, you can redirect requests from a development or test endpoint defined in the WSDL to `https://billing.example.com/soap`. Leave this field blank to use the endpoint specified in the WSDL. |
+
+From the asset page, you can:
+
+**Add version** — Upload a new version of the WSDL under the same asset, preserving version history.
+**Download** — Download the stored WSDL file.
+**Archive** — Retire the asset without deleting it. 
+
+## Create an HTTP tool using a WSDL asset
+
+1. In your project, go to **Tools**.
+2. Click **New Tool** → **HTTP Tool**.
+3. In the HTTP Config form, provide the following configurations.
+
+    | Field                      | Description                                                                                           |
+    |:---------------------------|:------------------------------------------------------------------------------------------------------|
+    | **Name**                   | Specifies the name of the HTTP tool. For example, `get_customer`.                                     |
+    | **Description**            | Provides a brief description of the tool.                                                             |
+    | **Protocol**               | Specifies the communication protocol. Set this value to `SOAP`.                                       |
+    | **SOAP Version**           | Specifies the SOAP version to use. Select `SOAP 1.1` or `SOAP 1.2` based on your WSDL.                |
+    | **SOAPAction**             | Specifies the `soapAction` value for the selected WSDL operation. If left blank, the platform automatically populates this field from the uploaded WSDL after the WSDL asset is selected. |
+    | **Fault Handling**         | Specifies how the platform handles SOAP faults. Leave the default option, `Treat fault as error`, unless the service returns business outcomes within `<soap:Fault>` elements. |
+    | **WSDL Binding Operation** | Specifies the WSDL asset, binding version, and operation to invoke for this tool.                     |
+    | **Method**                 | Specifies the HTTP method used to invoke the SOAP service. This field is automatically set to `POST`. |
+    | **Auth Profile**           | Specifies the WS-Security authentication profile used for the SOAP request. Leave field blank if authentication isn't required. Most enterprise SOAP services use WS-Security UsernameToken or X.509 certificate authentication. Create a WS-Security profile under `Project Settings > Auth Profiles > Custom Profile > WS-Security` and provide the required authentication details. When the tool invokes the SOAP service, the platform automatically generates and injects the required `<wsse:Security>` header into the request. |
+    | **Parameters**             | Define the inputs the LLM will provide when calling the tool.                                         |
+    | **Return type**            | Define the Return type: what the tool returns to the agent. Example: `{name: string, tier: string, account_number: string}` |
+
+4.  Click **Next** to review the configuration and test the tool. 
+
+## Using the tool in an agent
+
+A WSDL-bound SOAP tool is still an HTTP tool. The difference is that it carries
+WSDL binding fields and omits the manual SOAP body template — the platform
+generates the request envelope from the tool's JSON input.
+
+In the ABL editor, reference the asset by name and (optionally) pin a version:
+
+```yaml
+TOOLS:
+  get_customer(customer_id: string) -> {name: string, tier: string}
+    type: http
+    endpoint: "https://core.example.com/CoreApi"   # WSDL service address or an override
+    method: POST
+    protocol: soap
+    wsdl_asset: "CoreApi"        # name from the WSDL Repository
+    wsdl_version: latest         # or a specific version number
+    wsdl_operation: "GetCustomer"
+```
+
+On save, the platform resolves `wsdl_asset`/`wsdl_version` to stable, immutable
+IDs. Because versions are immutable, uploading a new WSDL version does not change
+existing tools until you repoint them. See the full field reference in
+[HTTP tools → WSDL operation binding](/agent-platform/abl-reference/tools#wsdl-operation-binding).
+A WSDL-bound SOAP-based HTTP tool is an HTTP tool. The important difference is that this tool carries WSDL binding fields and can omit a manual SOAP body template.
+
+Attach the tool to the agent like any other tool, through the designer or the ABL editor.
