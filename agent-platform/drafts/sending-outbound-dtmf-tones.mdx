@@ -1,0 +1,88 @@
+---
+title: "Sending Outbound DTMF Tones"
+sidebarTitle: "Outbound DTMF Tones"
+---
+
+Voice agents can send outbound DTMF (touch-tone) digits into an active call, for example to traverse a business IVR menu by pressing "1" for billing or "2#" to confirm a selection.
+
+<Note>
+  - This capability applies to active calls on the **Realtime LLM Voice** and
+  **Pipeline Voice** channels (Kore.ai Voice Gateway / Jambonz). - **VXML
+  IVR**, **Genesys Audio Connector**, and **AudioCodes** do not support
+  outbound DTMF in this release. Calls on those channels fail closed if the
+  agent attempts to send DTMF. - This is separate from the existing Studio
+  manual softphone keypad, which is unchanged, and from inbound DTMF
+  collection (caller keypresses gathered through the agent's existing IVR
+  input handling), which is also unchanged.
+</Note>
+
+## How It Works
+
+During an active voice call, the agent can decide to send DTMF digits, for example after recognizing it has reached an IVR menu:
+
+```text
+Agent reaches IVR menu
+         ↓
+Agent sends DTMF digits
+         ↓
+Platform validates digits and call state
+         ↓
+Digits dispatched in order to the voice provider
+         ↓
+Redacted status recorded in traces / eval artifacts / Studio inspection
+```
+
+Digits are dispatched one at a time, in order, with a configurable pause between digits. Raw digits are never written to logs, traces, eval artifacts, or Studio evidence — only a digit count and a status are recorded.
+
+## Fields
+
+| Field               | Required | Default | Notes                                                                                          |
+| ------------------- | -------- | ------- | ------------------------------------------------------------------------------------------------ |
+| `digits`             | Yes      | —       | Only `0-9`, `*`, and `#`. 1–64 characters.                                                       |
+| `durationMs`         | No       | `250`   | Tone duration per digit, in milliseconds. Range: `50–5000`.                                       |
+| `interDigitDelayMs`  | No       | `300`   | Delay between digits, in milliseconds. Range: `50–5000`.                                          |
+| `reason`             | No       | —       | Up to 256 characters. Do not include PINs, account numbers, or the DTMF digits themselves. |
+
+<Note>
+  Pauses inside a call flow (for example, waiting for an IVR menu to finish
+  playing before sending digits) are handled as separate wait steps, not by
+  embedding non-DTMF characters in `digits`.
+</Note>
+
+## Call-State Behavior
+
+| Call State                                                          | Result                     |
+| --------------------------------------------------------------------- | --------------------------- |
+| Active, connected call                                                 | Digits dispatch immediately |
+| Active playback / agent speaking                                       | Digits dispatch immediately, without queuing behind playback |
+| Inactive, closed, on hold without media, dialing, or already transferred | Fails closed before dispatch |
+| Channel/provider without outbound DTMF support (VXML IVR, Genesys Audio Connector, AudioCodes) | Fails closed before dispatch |
+| Invalid digits or out-of-range timing                                  | Fails closed before dispatch |
+
+## Status Codes
+
+| Code                        | Meaning                                                             |
+| ---------------------------- | -------------------------------------------------------------------- |
+| `VOICE_DTMF_DISPATCHED`       | Digits were sent to the provider in order.                           |
+| `VOICE_DTMF_INVALID`          | `digits` failed validation (empty, too long, or disallowed characters), or `durationMs`/`interDigitDelayMs` was out of range. |
+| `VOICE_DTMF_UNSUPPORTED`      | The active channel/provider does not support outbound DTMF.          |
+| `VOICE_DTMF_INACTIVE`         | The call was not in a state that allows dispatch (see table above).  |
+| `VOICE_DTMF_PROVIDER_ERROR`   | The platform could not deliver a digit command to the provider.      |
+
+A successful `VOICE_DTMF_DISPATCHED` result means the platform sent the tones — it does not confirm that the far-end IVR accepted or acted on them. There is currently no delivery acknowledgment or automatic retry.
+
+## Privacy and Evidence
+
+DTMF digits can carry sensitive information such as PINs or account numbers. Runtime traces, eval run artifacts, and Studio inspection show only a redacted digit count and status — never the raw digits sent during a call.
+
+## Known Limitations
+
+- Kore.ai Voice Gateway (KoreVG/Jambonz) is the only supported provider in this release.
+- No provider delivery acknowledgment or automatic retry.
+- No pause syntax inside `digits` — model pauses as separate wait steps.
+
+## Related Pages
+
+- [Creating Voice Agents](/agent-platform/enable-voice)
+- [Voice Channels](/agent-platform/channels/voice)
+- [Sending Custom SIP Headers on Voice Transfers](/agent-platform/sending-custom-sip-headers)
