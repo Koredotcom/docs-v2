@@ -84,6 +84,25 @@ NLU:
       EXAMPLES_FILE: "./nlu/product_inquiry_examples.txt"
 ```
 
+## Categories
+
+The `categories:` sub-block declares coarse-grained message categories matched by keyword patterns.
+Categories are a lighter-weight classification than full intents (no examples or entity bindings).
+
+```yaml
+NLU:
+  categories:
+    - NAME: billing
+      PATTERNS: ["invoice", "charge", "refund", "payment"]
+    - NAME: technical
+      PATTERNS: ["error", "bug", "not working", "broken"]
+```
+
+| Property   | Type       | Required | Default | Description                          |
+| ---------- | ---------- | -------- | ------- | ------------------------------------ |
+| `NAME`     | `string`   | Yes      | --      | Unique category identifier.          |
+| `PATTERNS` | `string[]` | Yes      | --      | Keyword patterns for matching.       |
+
 ## Entity extraction
 
 Entities are structured values extracted from user messages. ABL supports six entity types.
@@ -140,6 +159,7 @@ NLU:
 | `SYNONYMS`   | `Record<string, string[]>` | No       | --      | Synonym mappings. Keys are canonical values.    |
 | `PATTERN`    | `string`                   | No       | --      | Regular expression (for `pattern` type).        |
 | `VALIDATION` | `string`                   | No       | --      | Validation description or expression.           |
+| `SENSITIVE`  | `boolean`                  | No       | `false` | Marks extracted values as PII for privacy-aware handling. |
 
 ### Synonyms
 
@@ -175,7 +195,7 @@ NLU:
 | `enabled`   | `boolean` | Yes      | --      | Whether embeddings-based matching is active.                        |
 | `provider`  | `string`  | No       | --      | Embedding model provider name.                                      |
 | `model`     | `string`  | No       | --      | Specific model identifier.                                          |
-| `baseUrl`   | `string`  | No       | --      | Custom endpoint URL for the embedding service.                      |
+| `base_url`  | `string`  | No       | --      | Custom endpoint URL for the embedding service.                      |
 | `threshold` | `number`  | No       | --      | Similarity threshold (0.0--1.0). Below this, the match is rejected. |
 | `cache_ttl` | `number`  | No       | --      | Cache duration in seconds for computed embeddings.                  |
 
@@ -318,6 +338,68 @@ NLU:
     - "Fedwire -- Federal Reserve real-time settlement system"
     - "OFAC -- Office of Foreign Assets Control"
 ```
+
+## Named entities (`ENTITIES:` section)
+
+Separate from the `NLU:` block, the top-level `ENTITIES:` section defines **reusable** semantic
+entities that are shared by both NLU (for recognition) and [GATHER](/agent-platform/abl-reference/gather)
+(via `entity_ref`). Declaring an entity once lets multiple fields and agents reuse the same type,
+allowed values, synonyms, and validation.
+
+```yaml
+ENTITIES:
+  request_type:
+    TYPE: enum
+    VALUES: [REQ_REFUND, REQ_EXCHANGE, REQ_CANCEL]
+    SYNONYMS:
+      REQ_REFUND: [refund, money back, reimburse]
+      REQ_EXCHANGE: [exchange, swap]
+
+  booking_ref:
+    TYPE: pattern
+    PATTERN: "^[A-Z]{2}[0-9]{4,6}$"
+    VALIDATION: "Two letters followed by 4-6 digits"
+    SENSITIVE: false
+```
+
+| Property     | Type                       | Required | Default    | Description                                                    |
+| ------------ | -------------------------- | -------- | ---------- | -------------------------------------------------------------- |
+| `TYPE`       | `string`                   | No       | `"string"` | One of the 15 unified types (see below).                       |
+| `VALUES`     | `string[]`                 | No       | --         | Canonical values (for `enum`).                                 |
+| `SYNONYMS`   | `Record<string, string[]>` | No       | --         | Canonical value → alternative forms.                           |
+| `PATTERN`    | `string`                   | No       | --         | Regex (for `pattern`).                                         |
+| `VALIDATION` | `string`                   | No       | --         | Intrinsic validation expression/description.                   |
+| `SENSITIVE`  | `boolean`                  | No       | `false`    | Marks the value as PII.                                        |
+
+Top-level entities accept the full unified type set: `string`, `text`, `free_text`, `number`,
+`integer`, `float`, `currency`, `boolean`, `date`, `datetime`, `email`, `phone`, `enum`, `pattern`,
+`location`.
+
+<Note>
+  This is a distinct section from `NLU: entities:`. Top-level `ENTITIES:` defaults `TYPE` to
+  `string` and supports all 15 types, whereas the `NLU: entities:` sub-block defaults to `enum` and
+  supports only 6 types (`enum`, `pattern`, `location`, `date`, `number`, `free_text`). A GATHER
+  field's `entity_ref` points at a top-level `ENTITIES:` entry.
+</Note>
+
+## Intent categories (`INTENTS:` section)
+
+The top-level `INTENTS:` section declares supervisor routing categories (distinct from
+`NLU: intents:`). Each entry is a category name with an optional description, and the block can set
+a lexical-fallback mode.
+
+```yaml
+INTENTS:
+  LEXICAL_FALLBACK: when_unavailable
+  new_booking: "Customer wants to book new travel"
+  manage_booking: "Change or cancel an existing booking"
+  billing
+```
+
+| Property          | Type     | Description                                                                          |
+| ----------------- | -------- | ------------------------------------------------------------------------------------ |
+| category name     | `string` | Intent category identifier; optionally followed by `: "description"`.                |
+| `LEXICAL_FALLBACK` | `string` | When to fall back to lexical matching: `never`, `when_unavailable`, or `always`.     |
 
 ## Related pages
 

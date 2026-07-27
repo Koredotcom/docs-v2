@@ -1,0 +1,171 @@
+---
+title: Creating Voice Agents
+---
+
+Voice agents enable real-time spoken interactions between users and AI agents. A typical voice interaction involves a telephony provider, Voice Gateway, voice models, and the agent runtime.
+
+At a high level:
+
+```text
+Caller ↔ Telephony Provider ↔ Voice Gateway ↔ Voice Processing ↔ Agent Runtime
+```
+
+The voice processing flow depends on the agent's voice architecture.
+
+## Core Components
+
+| Component          | Role                                                                                               |
+|--------------------|----------------------------------------------------------------------------------------------------|
+| Telephony Provider | Establishes inbound or outbound calls and provides phone or SIP connectivity.                      |
+| Voice Gateway      | Connects telephony infrastructure with the agent and manages voice sessions and audio routing.     |
+| Voice Models       | Process incoming speech and generate spoken responses.                                             |
+| Agent Runtime      | Applies agent instructions, maintains context, accesses knowledge, and invokes tools or workflows. |
+
+## Voice Architectures
+
+Agent Platform supports different voice processing architectures, including:
+
+**Pipeline Voice** — Processes speech through separate speech-to-text (STT), agent/LLM, and text-to-speech (TTS) stages.
+
+```text
+Audio → STT → Agent/LLM → TTS → Audio
+```
+
+**Realtime LLM Voice** — Uses a speech-to-speech (S2S) model for real-time audio interaction with agent and tool integration.
+
+```text
+Audio → Realtime S2S Model → Audio
+```
+
+## Steps to Enable Voice Interaction
+
+### Step 1: Configure Voice Service Credentials
+
+Configure the credentials required by the voice models you plan to use.
+
+- Go to: **Workspace Settings > AI Configuration > Voice Services**
+- Voice service credentials are managed at the workspace level and can be reused across projects.
+- Configure credentials based on the voice architecture:
+  - For **Realtime LLM Voice**, configure credentials for a supported S2S provider, such as OpenAI Realtime, Google Gemini Live, or Grok Realtime.
+  - For **Pipeline Voice**, configure the required STT and TTS service credentials.
+
+For configuration instructions, see [Configure Voice Services](/agent-platform/administration/ai-configuration#voice-services).
+
+### Step 2: Create a Voice Channel
+
+Create a voice channel to make the agent available via voice.
+
+- Go to **Deployments > Channels**
+- Under **Voice**, select one of the following:
+  - **Realtime LLM Voice** — For real-time conversations using S2S models.
+  - **Pipeline Voice** — For voice interactions, using separate STT, agent/LLM, and TTS stages.
+- Other voice integrations, such as VXML IVR, Genesys Audio Connector, and AudioCodes, are also available. [Learn more](/agent-platform/channels).
+
+For configuration instructions, see:
+
+- [Configure Realtime LLM Voice](/agent-platform/channels/voice#set-up-realtime-llm-voice)
+- [Configure Pipeline Voice](/agent-platform/channels/voice#set-up-pipeline-voice)
+
+#### Configuring Realtime LLM Voice
+
+When creating a Realtime LLM Voice channel, configure the channel, call routing, and S2S model settings. [Learn More](/agent-platform/channels#set-up-realtime-llm-voice).
+
+1. Provide the basic details.
+   - **Display Name** — Enter a name to identify the channel.
+   - **Provider Verification Strength** — Specify how strongly the platform trusts identity assertions received from the channel or provider.
+2. Select the **Voice Provider** used to connect the voice channel with the agent. The Voice Gateway manages the voice session and routes audio between the call connection and the configured voice processing path. Default Voice Provider: **Kore.ai Voice Gateway**.
+3. Configure **Call Routing**. Choose how calls reach the voice agent. You can enable one or both of the following routes.
+   - **Soft Phone** — Enable Soft Phone to call the agent directly from the browser. Select **Launch dialer** to start a test call.
+   - **Phone Number (DID)** — Enable Phone Number (DID) to connect a real phone number to the voice agent. Select the telephony provider and configure the phone number. For example, when using Twilio, you can purchase and assign a phone number to the channel.
+     - Configure the supported call directions: **Inbound calls** route calls received on the configured number to the voice agent, and **Outbound calls** allow the configured number to be used for campaign dialout.
+4. Select the **S2S Provider** that processes the voice interaction. Configure provider-specific settings. Supported providers include:
+   - Google Gemini Live (S2S)
+   - Grok Realtime (S2S)
+   - OpenAI Realtime
+
+Available settings vary by S2S provider. [Find more details here](/agent-platform/administration/ai-configuration#voice-services).
+
+#### Configuring Pipeline Voice
+
+Create a Pipeline Voice channel when you want speech processing to use separate stages:
+
+```
+Audio → STT → Agent/LLM → TTS → Audio
+```
+
+Configure the required:
+
+- **STT service** to convert incoming speech to text.
+- **Agent/LLM processing** to interpret the request and generate a response.
+- **TTS service** to convert the generated response into speech.
+
+Pipeline Voice allows speech recognition and speech generation services to be configured independently.
+
+For detailed configuration instructions, see [Configure Pipeline Voice](/agent-platform/channels/voice#set-up-pipeline-voice).
+
+### Step 3: Test the Voice Agent
+
+Before using a production phone number, test the end-to-end voice interaction with the built-in Soft Phone.
+
+For a Realtime LLM Voice channel:
+
+1. Enable Soft Phone.
+2. Select Launch dialer.
+3. Start a call with the agent.
+4. Verify that the agent can receive speech and return audio responses.
+5. Verify tool execution and agent behavior via traces.
+
+After successful testing, configure a Phone Number (DID) when the agent needs to support real inbound or outbound calls.
+
+## Agent Level Voice Configurations
+
+By default, `RESPOND:` blocks in ABL work as-is; the runtime automatically strips markdown and passes clean text to TTS. The `VOICE:` block is optional and only needed when you want to override the default behavior for a specific step:
+
+```yaml
+RESPOND: "Your appointment is confirmed."
+VOICE:
+  ssml: "<speak>Your appointment is <emphasis>confirmed</emphasis>.<break time='500ms'/></speak>"
+  plain_text: "Your appointment is confirmed."
+```
+
+Use it when you need:
+
+- SSML markup — prosody, pauses, emphasis, phonemes
+- A different spoken version than the text — e.g. `RESPOND:` has a formatted table but you want a short spoken summary
+- Voice-specific instructions for real-time providers (OpenAI Realtime / Gemini Live)
+
+[Learn More](/agent-platform/abl-reference/rich-content-and-expressions#voice-configuration)
+
+### Agent-level voice defaults
+
+Use a `BEHAVIOR_PROFILE` to set voice behavior defaults for the whole agent without changing every `RESPOND:` block.
+
+```yaml
+# voice-optimized.behavior_profile.abl
+BEHAVIOR_PROFILE: voice-optimized
+PRIORITY: 10
+WHEN: context.channel == "voice"
+INSTRUCTIONS: "Keep responses under 2 sentences. No bullet points or markdown formatting."
+VOICE:
+  instructions: "Speak in a warm, conversational tone."
+RESPONSE_RULES:
+  max_buttons: 0
+  fallback_format: plain_text
+  max_response_length: 200
+```
+
+To reference it in your agent:
+
+```yaml
+AGENT: SupportAgent
+USE BEHAVIOR_PROFILE: voice-optimized
+```
+
+This applies the voice defaults to every response on that channel. [Learn More](/agent-platform/administration/agent-behavior-settings#behavior-profiles).
+
+## Related Pages
+
+- [Configure Real Time Voice Channel](/agent-platform/channels/voice#set-up-realtime-llm-voice)
+- [Configure Pipeline Voice Channel](/agent-platform/channels/voice#set-up-pipeline-voice)
+- [Pass Custom SIP Headers on Voice Transfer](/agent-platform/sending-custom-sip-headers)
+- [Handle Incoming SIP Headers in Agents](/agent-platform/handle-incoming-sip-headers)

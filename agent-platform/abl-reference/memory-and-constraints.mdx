@@ -3,7 +3,10 @@ title: 'Memory and Constraints'
 sidebarTitle: Memory and Constraints
 ---
 
-This page documents two related ABL constructs: the `MEMORY:` block for managing session and persistent state, and the `CONSTRAINTS:` block for enforcing business rules.
+This page documents two related ABL constructs: 
+
+* [`MEMORY:`](#memory) manages session and persistent state.
+* [`CONSTRAINTS:`](#constraints) enforces business rules.
 
 ---
 
@@ -70,15 +73,16 @@ You can declare a session variable with a bare name (minimal form) or with addit
 | `TYPE`        | `string`, `number`, `boolean`, `date`, `array`, `object`      | No       | --            | Value type for runtime validation and field resolution.                            |
 | `DESCRIPTION` | `string`                                                      | No       | --            | Human-readable description of the variable's purpose.                              |
 | `INITIAL`     | any                                                           | No       | `null`        | Initial value assigned when the session starts.                                    |
-| `RESET`       | `per_session`, `per_step`, `never`                            | No       | `per_session` | When to reset the variable. See [Reset behavior](#reset-behavior).                 |
+| `RESET`       | `per_session`, `per_activation`, `per_step`, `never`          | No       | `per_session` | When to reset the variable. See [Reset behavior](#reset-behavior).                 |
 
 #### Reset behavior
 
-| Value         | Behavior                                                                                                    |
-| ------------- | ----------------------------------------------------------------------------------------------------------- |
-| `per_session` | Variable is initialized at session start and cleared when the session ends. This is the default.            |
-| `per_step`    | Variable is reset to its initial value at the start of each flow step. Useful for step-scoped accumulators. |
-| `never`       | Variable persists for the lifetime of the runtime process. Use sparingly; prefer persistent memory instead. |
+| Value            | Behavior                                                                                                    |
+| ---------------- | ----------------------------------------------------------------------------------------------------------- |
+| `per_session`    | Variable is initialized at session start and cleared when the session ends. This is the default.            |
+| `per_activation` | Variable is reset each time the agent is (re)activated within a session (for example. on re-entry after a handoff). |
+| `per_step`       | Variable is reset to its initial value at the start of each flow step. Useful for step-scoped accumulators. |
+| `never`          | Variable persists for the lifetime of the runtime process. Use sparingly; prefer persistent memory instead. |
 
 #### Example: typed session variables
 
@@ -111,7 +115,15 @@ MEMORY:
       TYPE: array
       DESCRIPTION: "Recent wire transfer history"
       ACCESS: readwrite
-      DEFAULT: []
+      DEFAULT_VALUE: []
+    - user.ssn
+      SCOPE: user
+      SENSITIVE: true
+      SENSITIVE_DISPLAY: mask
+      MASK_CONFIG:
+        showFirst: 0
+        showLast: 4
+        char: "*"
     - project.exchange_rates
       SCOPE: project
       ACCESS: read
@@ -123,18 +135,24 @@ Persistent variable paths use dot notation. The first segment typically indicate
 
 | Property      | Type                                                     | Required | Default     | Description                                                                |
 | ------------- | -------------------------------------------------------- | -------- | ----------- | -------------------------------------------------------------------------- |
-| `path`        | `string`                                                 | Yes      | --          | Dot-notation path (for example. `user.preferred_chains`).                         |
-| `SCOPE`       | `user`, `project`                                        | No       | `user`      | Ownership scope. `user` is per-user; `project` is shared across all users. |
-| `ACCESS`      | `read`, `write`, `readwrite`                             | No       | `readwrite` | Access direction. Constrains whether the agent can read, write, or both.   |
-| `TYPE`        | `string`, `number`, `boolean`, `date`, `array`, `object` | No       | --          | Value type for runtime validation.                                         |
-| `UNIT`        | `string`                                                 | No       | --          | Unit of the stored value (for example. `USD`, `km`). Informational metadata only. |
-| `DEFAULT`     | any                                                      | No       | `null`      | Default value when no fact exists in the store.                            |
-| `DESCRIPTION` | `string`                                                 | No       | --          | Human-readable description.                                                |
+| `path`              | `string`                                                 | Yes      | --          | Dot-notation path (for example. `user.preferred_chains`).                         |
+| `SCOPE`             | `user`, `project`, `execution_tree`                      | No       | `user`      | Ownership scope. See [Scoping rules](#scoping-rules).                       |
+| `ACCESS`            | `read`, `write`, `readwrite`                             | No       | `readwrite` | Access direction. Constrains whether the agent can read, write, or both.   |
+| `TYPE`              | `string`, `number`, `boolean`, `date`, `array`, `object` | No       | --          | Value type for runtime validation.                                         |
+| `UNIT`              | `string`                                                 | No       | --          | Unit of the stored value (for example. `USD`, `km`). Informational metadata only. |
+| `DEFAULT_VALUE`     | any                                                      | No       | `null`      | Default value when no fact exists in the store.                            |
+| `DESCRIPTION`       | `string`                                                 | No       | --          | Human-readable description.                                                |
+| `SENSITIVE`         | `boolean`                                                | No       | `false`     | Marks the value as PII for privacy-aware handling.                         |
+| `SENSITIVE_DISPLAY` | `redact`, `mask`, `replace`                              | No       | --          | How the value is displayed outside its context (when `SENSITIVE: true`).   |
+| `MASK_CONFIG`       | `{showFirst, showLast, char}`                            | No       | --          | Masking configuration when `SENSITIVE_DISPLAY` is `mask`.                  |
 
 #### Scoping rules
 
 - **User scope** (`SCOPE: user`): Values are unique per authenticated user. Two users in the same project see different values for the same path.
 - **Project scope** (`SCOPE: project`): Values are shared across all users within the project. Useful for reference data, feature flags, or global configuration.
+- **Execution-tree scope** (`SCOPE: execution_tree`): Values are shared across one handoff tree / long-running execution — visible to the agents participating in that orchestration but not persisted per-user or per-project.
+
+<Note>As shorthand, a `READS:` sub-block declares persistent paths with `ACCESS: read`, and a `WRITES:` sub-block declares them with `ACCESS: write` — an alternative to listing each path under `persistent:` with an explicit `ACCESS`.</Note>
 
 ### Remember triggers
 
@@ -152,13 +170,34 @@ MEMORY:
       STORE: preferred_language -> user.language
 ```
 
+Array targets can accumulate values instead of being overwritten, using the block form of `STORE`:
+
+```yaml
+MEMORY:
+  remember:
+    - WHEN: search_completed
+      STORE:
+        value: last_query
+        target: user.recent_searches
+        operation: append   # overwrite (default) | append
+        unique: true        # optional — skip duplicates
+        maxSize: 10         # optional — FIFO cap
+```
+
+The modifiers are only read from the block form; the inline `value -> target`
+arrow form always uses `overwrite`. `append`, `unique`, and `maxSize` apply to
+`array`-typed targets in `user`, `project`, and `execution_tree` scopes.
+
 #### Properties
 
-| Property | Type     | Required | Default | Description                                                                                           |
-| -------- | -------- | -------- | ------- | ----------------------------------------------------------------------------------------------------- |
-| `WHEN`   | `string` | Yes      | --      | Condition expression that triggers the store operation. Evaluated after each turn.                    |
-| `STORE`  | `object` | Yes      | --      | Defines the value expression and the target persistent path. Syntax: `value_expr -> target_path`.     |
-| `TTL`    | `string` | No       | --      | Time-to-live for the stored fact. After expiration, the value is deleted. Examples: `"30d"`, `"24h"`. |
+| Property    | Type                  | Required | Default     | Description                                                                                                    |
+| ----------- | --------------------- | -------- | ----------- | -------------------------------------------------------------------------------------------------------------- |
+| `WHEN`      | `string`              | Yes      | --          | Condition expression that triggers the store operation. Evaluated after each turn.                             |
+| `STORE`     | `object`              | Yes      | --          | Value expression and target path. Inline syntax: `value_expr -> target_path`; block form to add modifiers.     |
+| `operation` | `overwrite`, `append` | No       | `overwrite` | Array-write mode. `append` adds to the existing array; `overwrite` replaces the whole value. Block form only.  |
+| `unique`    | `boolean`             | No       | `false`     | When `append`, drop duplicate items (first occurrence kept; deep-equality for objects). Block form only.       |
+| `maxSize`   | `number`              | No       | --          | When `append`, cap array length, evicting oldest items first (FIFO). Block form only.                          |
+| `TTL`       | `string`              | No       | --          | Time-to-live for the stored fact. After expiration, the value is deleted. Examples: `"30d"`, `"24h"`.          |
 
 #### TTL format
 
@@ -185,7 +224,7 @@ MEMORY:
     - ON: session:start
       ACTION: inject_context
       PATHS: [user.name, user.language, user.preferred_agent]
-    - ON: search:before
+    - ON: tool:search_flights:after
       ACTION: load_memory
       DOMAIN: "travel_preferences"
     - ON: session:start
@@ -205,10 +244,24 @@ MEMORY:
 
 #### Recall events
 
-| Event           | When it fires                                          |
-| --------------- | ------------------------------------------------------ |
-| `session:start` | When a new session initializes, before any user input. |
-| `search:before` | Before a search or retrieval operation.                |
+`ON:` accepts these canonical lifecycle event patterns:
+
+| Event pattern                | When it fires                                                    |
+| ---------------------------- | ---------------------------------------------------------------- |
+| `session:start`              | When a new session initializes, before any user input.           |
+| `session:end`                | When a session ends.                                             |
+| `agent:<name>:before`        | Before a specific agent runs (use `agent:*:before` for any).     |
+| `agent:<name>:after`         | After a specific agent runs (use `agent:*:after` for any).       |
+| `tool:<name>:after`          | After a specific tool runs (use `tool:*:after` for any).         |
+| `entity:<field>:extracted`   | When a named entity/field is extracted from user input.          |
+| `step:enter:<name>`          | On entering a specific flow step.                                |
+| `step:exit:<name>`           | On exiting a specific flow step.                                 |
+
+<Warning>
+  Legacy event names such as `search:before`, `ON_START`, or `ON_SEARCH` are no longer supported and
+  are rejected during compilation — use the canonical patterns above. Note that `tool:<name>:before`
+  is not a valid recall event (only `tool:<name>:after`).
+</Warning>
 
 #### Recall actions
 
@@ -332,6 +385,17 @@ Supported structural targets today:
 - `BEFORE returning results`
 
 Non-structural `BEFORE` targets are retained for compatibility, but they are warning-only and have no runtime effect. Prefer `IMPLIES` or `WHEN` for that form.
+
+#### IMPLIES
+
+`IMPLIES` is an inline condition operator (not a top-level keyword) for expressing conditional
+requirements. `A IMPLIES B` is lowered to `NOT (A) OR (B)` — that is, "if A holds, then B must also
+hold." Use it inside the condition of a `REQUIRE`/`LIMIT`/`RESTRICT` rule:
+
+```yaml
+- REQUIRE transfer_type == "international" IMPLIES swift_code IS SET
+  ON_FAIL: "International transfers require a SWIFT/BIC code."
+```
 
 ### Constraint properties
 

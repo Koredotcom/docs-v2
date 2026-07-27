@@ -5,6 +5,21 @@ sidebarTitle: ABL Overview
 
 Agent Blueprint Language (ABL) is the enterprise control plane for agentic AI — a schema-driven language purpose-built for multi-agent orchestration where deterministic governance meets autonomous reasoning. ABL spans the full control spectrum: delegate autonomously, supervise selectively, or lock down as a deterministic state machine. Agent definitions compile into immutable artifacts, and AI can author blueprints just as humans do.
 
+## Design principles
+
+ABL agents are goal-driven rather than script-driven. Rather than encoding an explicit numbered
+state machine, you declare the outcome the agent should achieve and the rules it must respect, and
+the runtime reasons toward that goal — falling back to deterministic execution wherever you need it.
+
+1. **Goal-oriented** — agents work toward a declared `GOAL:`, not through hard-coded scripts.
+2. **Constraint-guarded** — business rules are enforced by `CONSTRAINTS:` and `GUARDRAILS:`, independent of step order.
+3. **Memory-enabled** — agents can remember user and session state across turns and sessions.
+4. **Composable** — agents can `DELEGATE:` to sub-agents or `HANDOFF:` to peers and supervisors.
+5. **Human-in-the-loop** — `ESCALATE:` provides explicit paths to human operators.
+
+Reasoning and determinism are not either/or. An agent reasons by default; adding a `FLOW:` section
+lets you make any part of the conversation deterministic, step by step (see [Auto-detection](#auto-detection)).
+
 ## File structure
 
 An ABL document is a plain-text file composed of top-level **sections**, each introduced by an uppercase keyword followed by a colon. Sections can appear in any order, but by convention the `AGENT:` declaration comes first.
@@ -80,9 +95,16 @@ All other sections are optional. If a section is omitted, its value defaults to 
 | `HOOKS:`         | Lifecycle event handlers        | [Lifecycle & Hooks](/agent-platform/abl-reference/lifecycle-and-hooks#hooks)                   |
 | `NLU:`           | Natural language understanding  | [NLU](/agent-platform/abl-reference/nlu)                                                       |
 | `MULTI_INTENT:`  | Multi-intent configuration      | [NLU](/agent-platform/abl-reference/nlu)                                                       |
+| `INTENTS:`       | Intent categories (routing)     | [NLU](/agent-platform/abl-reference/nlu#intent-categories-intents-section)                     |
+| `ENTITIES:`      | Reusable named entities         | [NLU](/agent-platform/abl-reference/nlu#named-entities-entities-section)                       |
 | `LOOKUP_TABLES:` | Reference data for validation   | [Data Types & Utilities](/agent-platform/abl-reference/data-types-and-utilities#lookup-tables) |
-| `SYSTEM_PROMPT:` | Custom system prompt template   | --                                                                 |
+| `SYSTEM_PROMPT:` | Custom system prompt template   | [Agent declaration](/agent-platform/abl-reference/agent-declaration#system_prompt)             |
 | `ATTACHMENTS:`   | File/media collection           | [Data Types & Utilities](/agent-platform/abl-reference/data-types-and-utilities#attachments)   |
+| `DESTINATIONS:`  | Outbound HTTP delivery targets  | --                                                                 |
+| `TRANSFER_FLOW_POLICIES:` | Named policies referenced by escalation routing | --                                            |
+| `RETURN_HANDLERS:` | Named parent-resume handlers for returnable handoffs | [Multi-Agent & Supervisor](/agent-platform/abl-reference/multi-agent-and-supervisor#return-handlers) |
+| `ACTION_HANDLERS:` | Reusable interactive-action handlers | --                                                            |
+| `CONVERSATION:`  | Conversation-behavior configuration | --                                                             |
 
 ## Syntax rules
 
@@ -101,9 +123,7 @@ TOOLS:
 
 ### Keywords
 
-Section keywords are **uppercase** by convention and followed by a colon (`:`). Keywords are case-insensitive at the parser level -- `AGENT:`, `agent:`, and `Agent:` all parse identically. However, uppercase is the canonical style for the ABL format.
-
-In YAML format files (`.agent.yaml`), lowercase keywords are used exclusively.
+Section keywords are followed by a colon (`:`). In the `.agent.abl` format, section keywords **must be uppercase** (`AGENT:`, `GOAL:`, `TOOLS:`, …). In the `.agent.yaml` format, they **must be lowercase** (`agent:`, `goal:`, …). Mixed case is not supported, and the two formats do not accept each other's casing.
 
 ### Comments
 
@@ -161,7 +181,7 @@ Within an agent document, execution mode is **not** declared via a global `MODE:
 
 Any agent can optionally include a `FLOW:` section to add structured execution steps. Adding a `FLOW:` section gives the agent a step-by-step execution graph. Each step within the flow declares `REASONING: true` or `REASONING: false` to control whether that individual step uses LLM reasoning or deterministic execution.
 
-> **Note:** The `MODE:` keyword is deprecated and produces a parser error if used. Remove it and use per-step `REASONING:` declarations within `FLOW:` instead.
+<Note>The `MODE:` keyword is deprecated and produces a parser error if used. Remove it and use per-step `REASONING:` declarations within `FLOW:` instead.</Note>
 
 ## YAML format
 
@@ -204,17 +224,43 @@ VERSION: "2.0.0"
 
 When omitted, the version defaults to `"1.0.0"`. The version is stored in the document metadata and can be used for compatibility tracking.
 
+## Compilation
+
+ABL source files are compiled to a typed intermediate representation (**AgentIR**) at deploy time.
+The runtime loads and executes the IR directly — there is no code-generation step.
+
+```yaml
+ABL source (.agent.abl / .agent.yaml)
+        │
+        ▼
+   Parser        → parses the document into an AST
+        │
+        ▼
+   Compiler      → produces a CompilationOutput: a map of AgentIR
+        │           instances (one per agent, including supervisors)
+        │           plus the entry agent
+        ▼
+   Runtime       → loads the IR and executes it (reasoning loop,
+                   flow steps, routing, constraint checking)
+```
+
+Each agent (and supervisor) compiles to a single `AgentIR` that gathers the document's sections into
+typed configuration — identity (from `GOAL`/`PERSONA`/`LIMITATIONS`, including a generated system
+prompt), tools, gather, constraints and guardrails, coordination (handoffs/delegates/escalation),
+completion, and memory. Supervisors are ordinary agents with routing populated, so a project's
+agents and supervisors all live in one registry and can compose hierarchically.
+
 ## Template interpolation
 
 Throughout ABL, string values support template interpolation using double-brace syntax:
 
-```
+```text
 "Hello, {{customer_name}}. Your balance is {{balance}}."
 ```
 
 Conditional blocks use Handlebars-style helpers:
 
-```
+```text
 "{{#if exchange_rate}}Rate: {{exchange_rate}}{{/if}}"
 ```
 
