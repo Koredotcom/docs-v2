@@ -8,18 +8,11 @@ noindex: true
 
 The Agent Platform SDK is a TypeScript/JavaScript library for embedding agent chat and voice interactions in web applications. It supports vanilla JavaScript, React hooks, and a web component for drop-in integration. For the full SDK reference, see the [SDKs Overview](/agent-platform/sdks).
 
-This guide explains how to configure Artemis SDK authentication end to end across Studio, the browser SDK, the customer backend, and deployment/runtime settings.
+This guide explains how to configure Artemis SDK authentication end to end across Studio, the browser SDK, your backend, and deployment and runtime settings.
 
-It covers these scenarios:
+<Important>Before you set up E2E auth, [install the Agent Platform SDK](/agent-platform/sdks#install-web-sdk).</Important>
 
-1. [Public anonymous SDK](#scenario-1-public-anonymous-sdk)
-2. [Runtime-signed Hosted Exchange bootstrap](#scenario-2-runtime-signed-hosted-exchange)
-3. [Customer-issued shared-secret JWE](#scenario-3-customer-issued-shared-secret-jwe)
-4. [Customer-issued public-key JWE with customer-signed payload](#scenario-4-customer-issued-public-key-jwe)
-
-<Note>Before you set up E2E auth, [install the Agent Platform SDK](/agent-platform/sdks#install-web-sdk).</Note>
-
-## Scenario Selection
+## Scenario selection
 
 | Scenario                                                                           | Browser credential                                        | Customer backend responsibility                                                                                                                                               | Runtime responsibility                                                                                                                                                                  | When to use                                                                                                                                   |
 | ---------------------------------------------------------------------------------- | --------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -30,14 +23,12 @@ It covers these scenarios:
 
 Public-key customer JWE has two layers:
 
-- The outer JWE gives confidentiality to Runtime using `RSA-OAEP-256` and
-  `A256GCM`.
-- The inner JWS gives issuer authentication using the customer signing private
-  key and Runtime-configured customer signing public key.
+- The outer JWE gives confidentiality to Runtime using `RSA-OAEP-256` and `A256GCM`.
+- The inner JWS gives issuer authentication using the customer signing private key and Runtime-configured customer signing public key.
 
-Do not treat public-key encryption alone as issuer authentication.
+Don't treat public-key encryption alone as issuer authentication.
 
-## Shared Runtime Flow After Bootstrap
+## Shared runtime flow after bootstrap
 
 All four scenarios converge after browser initialization:
 
@@ -57,8 +48,7 @@ sequenceDiagram
   Runtime->>Bot: verified session identity + custom attributes
 ```
 
-
-## Permission And Origin Resolution
+## Permission and origin resolution
 
 Public API key permissions are stored as coarse `chat` and `voice` booleans.
 Runtime expands them to SDK permissions:
@@ -68,14 +58,9 @@ Runtime expands them to SDK permissions:
 | `chat=true`           | `session:send_message`, `session:read`, `attachment:read`, `attachment:write`, `attachment:delete` |
 | `voice=true`          | `session:voice`, `session:read`                                                                    |
 
-Runtime-signed Hosted Exchange tokens derive permissions from the channel's
-active public API key. The `/api/v1/sdk/customer-sessions` request body does not
-accept `permissions`.
+Runtime-signed Hosted Exchange tokens derive permissions from the channel's active public API key. The `/api/v1/sdk/customer-sessions` request body doesn't accept `permissions`.
 
-Customer-issued JWE payloads may include a narrower `permissions` array. Runtime
-normalizes the requested values, adds `session:read` for interactive or
-attachment grants, intersects the requested set with the channel's active public
-API key permissions, and rejects the token if the effective set is empty.
+Customer-issued JWE payloads may include a narrower `permissions` array. Runtime normalizes the requested values, adds `session:read` for interactive or attachment grants, intersects the requested set with the channel's active public API key permissions, and rejects the token if the effective set is empty.
 
 Allowed customer-issued permission values:
 
@@ -88,21 +73,20 @@ Allowed customer-issued permission values:
 
 Origin enforcement happens after Runtime resolves the channel:
 
-- Public-key SDK init checks the public API key origins and, if present, legacy
-  channel-config origins.
-- Hosted Exchange bootstrap init checks both the channel-config origins and the
-  bound public API key origins after the bootstrap token is verified.
-- Empty or unset allowed-origin lists behave as unrestricted in code. Production
-  channels should always configure explicit HTTPS origins.
+- Public-key SDK init checks the public API key origins and, if present, legacy channel-config origins.
+- Hosted Exchange bootstrap init checks both the channel-config origins and the bound public API key origins after the bootstrap token is verified.
+- Empty or unset allowed-origin lists behave as unrestricted in code. Production channels should always configure explicit HTTPS origins.
 
-## Shared Studio Prerequisites
+## Shared Studio prerequisites
 
 1. Create or select the project that owns the SDK channel.
 2. Create or select the deployment the SDK channel should route to.
 3. Create or select a public SDK API key for the project.
 4. Set allowed origins on the public API key or managed channel key.
+
    - Include the exact browser origins that will host the SDK.
-   - Do not rely on wildcard origins for production flows.
+   - Don't rely on wildcard origins for production flows.
+
 5. Create an SDK channel and bind it to the deployment or environment.
 6. Keep the channel active only after customer backend and browser changes are
    deployed.
@@ -110,21 +94,16 @@ Origin enforcement happens after Runtime resolves the channel:
 The Studio channel auth mode decides the setup path:
 
 - `anonymous` for public anonymous SDK.
-- `hosted_exchange` for Runtime-signed, customer-issued shared-secret JWE, and
-  customer-issued public-key JWE.
+- `hosted_exchange` for Runtime-signed, customer-issued shared-secret JWE, and customer-issued public-key JWE.
 
-## Shared Deployment Prerequisites
+## Shared deployment prerequisites
 
 Runtime must have:
 
-- `JWT_SECRET`, `AUTH_SDK_BOOTSTRAP_SIGNING_SECRET`, and
-  `AUTH_SDK_SESSION_SIGNING_SECRET` configured consistently across Runtime pods.
-- `ENCRYPTION_MASTER_KEY` configured when Hosted Exchange token envelope JWE is
-  required or preferred.
-- `AUTH_SDK_JWE_ENABLED` unset or `true` when JWE issuance/verification should
-  be available.
-- `REDIS_URL` configured for distributed SDK session state, WebSocket tickets,
-  replay protection, and rotation locks.
+- `JWT_SECRET`, `AUTH_SDK_BOOTSTRAP_SIGNING_SECRET`, and `AUTH_SDK_SESSION_SIGNING_SECRET` configured consistently across Runtime pods.
+- `ENCRYPTION_MASTER_KEY` configured when Hosted Exchange token envelope JWE is required or preferred.
+- `AUTH_SDK_JWE_ENABLED` unset or `true` when JWE issuance/verification should be available.
+- `REDIS_URL` configured for distributed SDK session state, WebSocket tickets, replay protection, and rotation locks.
 - MongoDB available for SDK channel, public key, and customer JWE key metadata.
 - HTTPS between browser, customer backend, and Runtime.
 
@@ -153,9 +132,9 @@ Expected ready response:
 If `jwe_required` is configured and capability is not ready, Runtime must fail
 closed instead of returning signed Hosted Exchange tokens.
 
-## Scenario 1: Public Anonymous SDK
+## Scenario 1: Public anonymous SDK
 
-### Studio Setup
+### Studio setup
 
 1. Open the project deployment channel settings in Studio.
 2. Create or edit an SDK channel.
@@ -168,7 +147,7 @@ closed instead of returning signed Hosted Exchange tokens.
 Do not configure `sdkTokenEnvelopePolicy` or `customerIssuedJwe` on anonymous
 channels. Runtime rejects those settings unless `auth.mode=hosted_exchange`.
 
-### Customer Server Changes
+### Customer server changes
 
 No customer server auth endpoint is required.
 
@@ -184,7 +163,7 @@ as:
 Do not put channel server secrets, customer JWE secrets, Runtime private keys, or
 customer signing private keys in browser-rendered HTML or JavaScript.
 
-### Browser SDK Changes
+### Browser SDK changes
 
 Core SDK:
 
@@ -210,7 +189,7 @@ await sdk.connect();
 
 Public-key variants:
 
-```ts
+```ts expandable=true
 // Channel name instead of channel ID.
 new AgentSDK({
   endpoint: 'https://runtime.example.com',
@@ -279,33 +258,31 @@ Custom element:
 5. Confirm `/api/v1/sdk/ws-ticket` succeeds before WebSocket connect.
 6. Disable the channel or remove the origin and confirm new sessions fail.
 
-## Scenario 2: Runtime-Signed Hosted Exchange
+## Scenario 2: Runtime-signed hosted exchange
 
-This path adds a customer backend endpoint, but lets Runtime mint the bootstrap
-artifact. The browser never sees the Hosted Exchange channel server secret.
+This path adds a customer backend endpoint, but lets Runtime mint the bootstrap artifact. The browser never sees the Hosted Exchange channel server secret.
 
-### Studio Setup
+### Studio setup
 
 1. Open the project deployment channel settings in Studio.
 2. Create or edit an SDK channel.
 3. Set SDK auth mode to `hosted_exchange`.
 4. Configure allowed origins.
 5. Select `sdkTokenEnvelopePolicy`:
+
    - `signed` for signed-token compatibility.
-   - `jwe_preferred` for rollout where JWE is used when Runtime capability is
-     ready.
-   - `jwe_required` after the capability endpoint shows Runtime can issue and
-     verify JWE.
+   - `jwe_preferred` for rollout where JWE is used when Runtime capability is ready.
+   - `jwe_required` after the capability endpoint shows Runtime can issue and verify JWE.
+
 6. Save the channel.
 7. Copy the Hosted Exchange server secret when Studio reveals it.
 8. Store the server secret only in the customer backend secret manager.
 
-### Customer Server Changes
+### Customer server changes
 
-Add a backend endpoint that authenticates the customer in the customer's system,
-then calls Runtime:
+Add a backend endpoint that authenticates the customer in the customer's system, then calls Runtime.
 
-```ts
+```ts expandable=true
 import express from 'express';
 
 const router = express.Router();
@@ -405,11 +382,11 @@ Recommended customer backend controls:
 - Do not return the channel server secret to the browser.
 - Do not log `bootstrapToken`, sensitive data, or secure custom attributes.
 
-### Browser SDK Changes
+### Browser SDK changes
 
-Use a `bootstrapTokenProvider` so each fresh init gets a new short-lived token:
+Use a `bootstrapTokenProvider` so each new init gets a new short-lived token:
 
-```ts
+```ts expandable=true
 import { AgentSDK } from '@koreai/artemis-web-sdk';
 
 const sdk = new AgentSDK({
@@ -433,9 +410,9 @@ const sdk = new AgentSDK({
 await sdk.connect();
 ```
 
-React:
+**React**
 
-```tsx
+```tsx expandable=true
 import { AgentProvider, ChatWidget } from '@koreai/artemis-web-sdk/react';
 
 async function getBootstrapToken() {
@@ -460,9 +437,9 @@ export function SupportChat() {
 }
 ```
 
-Custom element:
+**Custom element**
 
-```html
+```html expandable=true
 <script type="module">
   const widget = document.createElement('agent-widget');
   widget.setAttribute('endpoint', 'https://runtime.example.com');
@@ -494,7 +471,7 @@ The widget reads SDK config during its connection/bootstrap lifecycle.
 5. Replay the same bootstrap token and confirm Runtime rejects it.
 6. Confirm SDK refresh and WebSocket ticket flows succeed.
 
-## Scenario 3: Customer-Issued Shared-Secret JWE
+## Scenario 3: Customer-issued shared-secret JWE
 
 This flow requires no new Artemis API call: the customer backend pulls secure
 data, encrypts the customer bootstrap payload, and the browser passes the compact
@@ -504,7 +481,7 @@ Shared-secret mode authenticates the issuer by possession of the scoped channel
 secret and authenticates ciphertext integrity through `A256GCM`. It does not use
 a separate asymmetric customer signature.
 
-### Studio Setup
+### Studio setup
 
 1. Open the SDK channel in Studio.
 2. Set SDK auth mode to `hosted_exchange`.
@@ -533,17 +510,13 @@ Customer-issued JWE config shape:
 }
 ```
 
-### Customer Server Changes
+### Customer server changes
 
-Install a JOSE implementation:
-
-```bash
-npm install jose
-```
+Install a JOSE implementation using the command `npm install jose`.
 
 Mint the compact JWE server-side:
 
-```ts
+```ts expandable=true
 import { CompactEncrypt } from 'jose';
 import { randomUUID } from 'node:crypto';
 
@@ -677,7 +650,7 @@ API key permissions. For example, requesting `session:voice` on a channel whose
 public key has `voice=false` produces no voice grant. If the intersection is
 empty, `/api/v1/sdk/init` returns a Hosted Exchange permissions error.
 
-### Browser SDK Changes
+### Browser SDK changes
 
 Use the same Hosted Exchange browser configuration as Runtime-signed bootstrap:
 
@@ -714,13 +687,13 @@ Do not pass `apiKey`, `channelId`, `channelName`, `deploymentSlug`,
    - In-flight tokens minted before rotation still work until expiry.
    - Newly minted tokens using the old secret fail.
 
-## Scenario 4: Customer-Issued Public-Key JWE
+## Scenario 4: Customer-issued public-key JWE
 
 This is the preferred no-new-Artemis-API-call option for higher-assurance
 flows. The customer backend signs the payload, encrypts it to Runtime, and the
 browser passes only the resulting compact JWE.
 
-### Key Ownership
+### Key ownership
 
 | Key material                        | Owner                       | Stored where                                                       | Purpose                                                     |
 | ----------------------------------- | --------------------------- | ------------------------------------------------------------------ | ----------------------------------------------------------- |
@@ -729,7 +702,7 @@ browser passes only the resulting compact JWE.
 | Runtime channel private decrypt key | Runtime                     | Runtime key store / database protected by platform encryption      | Decrypts outer JWE. Never leaves Runtime.                   |
 | Runtime channel public encrypt key  | Runtime and customer        | Studio shows safe key metadata after customer JWE key rotation     | Customer encrypts outer JWE for Runtime.                    |
 
-### Studio Setup
+### Studio setup
 
 1. Generate a customer signing key pair in the customer environment.
 2. Copy only the customer signing public key.
@@ -743,8 +716,7 @@ browser passes only the resulting compact JWE.
 10. Save the channel.
 11. Rotate the customer-issued JWE key.
 12. Copy the Runtime channel public encryption key and `keyId`.
-13. Store the Runtime public encryption key and `keyId` in customer backend
-    configuration.
+13. Store the Runtime public encryption key and `keyId` in customer backend configuration.
 
 Example customer signing key generation:
 
@@ -760,10 +732,7 @@ openssl rsa \
   -out customer-signing-public.pem
 ```
 
-Upload `customer-signing-public.pem` to Studio. Store
-`customer-signing-private.pem` only in the customer backend secret manager or
-HSM. The TypeScript example below expects the private key in PKCS#8 PEM format
-and the public key in SPKI PEM format.
+Upload `customer-signing-public.pem` to Studio. Store `customer-signing-private.pem` only in the customer backend secret manager or HSM. The TypeScript example below expects the private key in PKCS#8 PEM format and the public key in SPKI PEM format.
 
 Customer-issued public-key JWE config shape:
 
@@ -779,17 +748,13 @@ Customer-issued public-key JWE config shape:
 }
 ```
 
-### Customer Server Changes
+### Customer server changes
 
-Install a JOSE implementation:
-
-```bash
-npm install jose
-```
+Install a JOSE implementation using the command `npm install jose`.
 
 Mint the signed-then-encrypted bootstrap token:
 
-```ts
+```ts expandable=true
 import { CompactEncrypt, CompactSign, importPKCS8, importSPKI } from 'jose';
 import { randomUUID } from 'node:crypto';
 
@@ -892,7 +857,7 @@ Required inner JWS header fields:
 
 The inner JWS payload uses the same claim shape as shared-secret mode.
 
-### Browser SDK Changes
+### Browser SDK changes
 
 Use the same Hosted Exchange browser configuration:
 
@@ -926,7 +891,7 @@ const sdk = new AgentSDK({
    - In-flight tokens minted before rotation still work until expiry.
    - Newly minted tokens using the retired key fail.
 
-## Studio Operations Checklist
+## Studio operations checklist
 
 For public anonymous SDK:
 
@@ -963,7 +928,7 @@ For customer-issued public-key JWE:
 6. `customerIssuedJwe.maxAgeSeconds` matches the customer backend token TTL.
 7. `acceptRuntimeIssued` matches the migration plan.
 
-## Studio API Automation Payloads
+## Studio API automation payloads
 
 Use these shapes when automating setup through Studio instead of clicking through
 the channel configuration UI.
@@ -1062,7 +1027,7 @@ For shared-secret mode, `customerIssuedJweSecret.secret` is returned once in the
 same response. Store it immediately in the customer backend secret manager. It
 will not be available from later safe metadata reads.
 
-## Customer Backend Checklist
+## Customer backend checklist
 
 All Hosted Exchange customer backend endpoints should:
 
@@ -1088,7 +1053,7 @@ Required customer backend material by scenario:
 | Customer-issued shared-secret JWE | Customer JWE `keyId` and shared secret.                                                        |
 | Customer-issued public-key JWE    | Customer signing private key, Runtime channel public encryption key, and customer JWE `keyId`. |
 
-## Browser SDK Checklist
+## Browser SDK checklist
 
 For public anonymous SDK:
 
@@ -1110,7 +1075,7 @@ For all Hosted Exchange scenarios:
 - Handle bootstrap failure as an auth/session startup failure, not as a bot
   error.
 
-## Manual Runtime Probes
+## Manual runtime probes
 
 Use these probes after Studio and customer backend setup. Replace placeholders
 with environment-specific values and do not paste real secrets into tickets,
@@ -1179,7 +1144,7 @@ Negative probes worth running:
 | Use public-key customer JWE with `cty=application/json`.                  | `401 Invalid or expired bootstrap token`                             |
 | Use shared-secret customer JWE with `cty=application/jose`.               | `401 Invalid or expired bootstrap token`                             |
 
-## Deployment Checklist
+## Deployment checklist
 
 Runtime:
 
@@ -1221,7 +1186,7 @@ Browser app:
    uses cookies.
 4. Do not persist bootstrap tokens in local storage.
 
-## End-To-End Cutover Plan
+## End-to-end cutover plan
 
 1. Create or update the SDK channel in Studio.
 2. Set allowed origins and deployment binding.
@@ -1242,7 +1207,7 @@ Browser app:
     channels, or set `sdkTokenEnvelopePolicy=jwe_required` for Runtime-issued
     Hosted Exchange channels.
 
-## Expanded Scenario Coverage Matrix
+## Expanded scenario coverage matrix
 
 Use this matrix for implementation review, QA planning, and customer security
 approval. A complete rollout should cover the positive path and at least the
