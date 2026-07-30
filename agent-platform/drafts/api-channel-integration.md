@@ -86,9 +86,9 @@ The ABL platform owner must also confirm that:
 - The public key has `session:send_message` permission.
 - The customer's request origin is allowed.
 
-The channel binding determines which deployed agent handles the request.
-Customers should not select or override a different deployment in normal API
-Channel requests.
+The channel binding determines which deployed agent handles the request. You must not select or override a different deployment in normal API Channel requests.
+
+{/* AG: Check if the above sentence is required? */}
 
 ## Choose the authentication mode
 
@@ -257,13 +257,11 @@ For one conversation, keep these values together:
 }
 ```
 
-Do not use a `sessionId` with a token that belongs to a different user,
-project, channel, or tenant.
+Do not use a `sessionId` with a token that belongs to a different user, project, channel, or tenant.
 
 ### Step 5: Refresh the SDK token before it expires
 
-SDK session tokens currently have a four-hour lifetime. Refresh the token
-before expiration, for example five minutes early:
+SDK session tokens currently have a four-hour lifetime. Refresh the token before expiration, for example five minutes early:
 
 ```http
 POST /api/v1/sdk/refresh
@@ -277,18 +275,13 @@ curl --request POST "${ABL_RUNTIME_URL}/api/v1/sdk/refresh" \
   --data "{}"
 ```
 
-The response contains a new `token` and `expiresIn`. Replace the old token
-atomically in the conversation record.
+The response contains a new `token` and `expiresIn`. Replace the old token atomically in the conversation record.
 
-The current token must still be valid when `/refresh` is called. If an
-anonymous token has already expired, a new `/init` creates a new anonymous
-identity; start a new conversation instead of attaching an old `sessionId`.
+The current token must still be valid when `/refresh` is called. If an anonymous token has already expired, a new `/init` creates a new anonymous identity; start a new conversation instead of attaching an old `sessionId`.
 
 ## Hosted Exchange implementation
 
-Hosted Exchange is a two-stage token exchange. It keeps the channel secret on
-the trusted customer backend while allowing ABL to associate conversations
-with a verified customer identity.
+Hosted Exchange is a two-stage token exchange. It keeps the channel secret on the trusted customer backend while allowing ABL to associate conversations with a verified customer identity.
 
 ### Step 1: Store the channel secret securely
 
@@ -303,8 +296,7 @@ export ABL_CHANNEL_SECRET="sk_replace_with_channel_secret"
 export ABL_REQUEST_ORIGIN="https://app.customer.com"
 ```
 
-The channel secret is shown when the channel is created or rotated. It must be
-treated like a password.
+The channel secret is shown when the channel is created or rotated. It must be treated like a password.
 
 ### Step 2: Request a single-use bootstrap token
 
@@ -346,10 +338,8 @@ Example response:
 Rules for `verifiedUserId`:
 
 - Use the customer's stable internal user identifier.
-- Do not use an email address or phone number unless that is an approved
-  identity design.
-- Do not allow the browser to choose this value. Derive it from the
-  authenticated backend session.
+- Do not use an email address or phone number unless that is an approved identity design.
+- Do not allow the browser to choose this value. Derive it from the authenticated backend session.
 
 Keep `customAttributes` small and include only values required by the agent.
 
@@ -366,26 +356,19 @@ curl --request POST "${ABL_RUNTIME_URL}/api/v1/sdk/init" \
   }'
 ```
 
-Do not include `X-Public-Key`, `channelId`, or `channelName` in this request.
-Hosted initialization uses only the `bootstrapToken`.
+Do not include `X-Public-Key`, `channelId`, or `channelName` in this request. Hosted initialization uses only the `bootstrapToken`.
 
 The response is the same SDK token response shown in the public-key flow.
 
 ### Step 4: Send and continue the conversation
 
-Use the returned SDK token with `/api/v1/chat/agent`. The first request omits
-`sessionId`; every later request includes the returned `sessionId`.
+Use the returned SDK token with `/api/v1/chat/agent`. The first request omits `sessionId`; every later request includes the returned `sessionId`.
 
 ### Step 5: Refresh before expiration
 
-Call `/api/v1/sdk/refresh` with the current `X-SDK-Token`, exactly as shown in
-the public-key flow.
+Call `/api/v1/sdk/refresh` with the current `X-SDK-Token`, exactly as shown in the public-key flow.
 
-If the SDK token has fully expired, the backend can perform a new Hosted
-Exchange for the same verified user. Whether an earlier conversation may be
-resumed is controlled by the configured identity and session policy. The
-safest implementation is to refresh proactively and treat a failed resume as
-a request to begin a new conversation.
+If the SDK token has fully expired, the backend can perform a new Hosted Exchange for the same verified user. Whether an earlier conversation may be resumed is controlled by the configured identity and session policy. The safest implementation is to refresh proactively and treat a failed resume as a request to begin a new conversation.
 
 ## Chat request reference
 
@@ -433,14 +416,11 @@ Example:
 }
 ```
 
-Do not put passwords, access tokens, payment data, or unnecessary personal data
-in `metadata`, `sessionMetadata`, or `customAttributes`.
+Do not put passwords, access tokens, payment data, or unnecessary personal data in `metadata`, `sessionMetadata`, or `customAttributes`.
 
 ## REST response and server message types
 
-The REST endpoint returns one JSON document per request. It does not send
-WebSocket-style messages. Your application should understand the following
-top-level response fields.
+The REST endpoint returns one JSON document per request. It does not send WebSocket-style messages. Your application should understand the following top-level response fields.
 
 | Field              | Meaning                                   | Customer action                      |
 | ------------------ | ----------------------------------------- | ------------------------------------ |
@@ -499,9 +479,7 @@ integration.
 }
 ```
 
-When the user selects an option, call `/api/v1/chat/agent` again with the same
-`sessionId`. Send the selected element's `value` as the message when present;
-otherwise follow the agent contract supplied by the platform owner.
+When the user selects an option, call `/api/v1/chat/agent` again with the same `sessionId`. Send the selected element's `value` as the message when present; otherwise follow the agent contract supplied by the platform owner.
 
 ### End-user authorization required
 
@@ -523,9 +501,7 @@ otherwise follow the agent contract supplied by the platform owner.
 }
 ```
 
-When `action.type` is `auth_required`, pause the business action and follow the
-authorization experience agreed with the ABL platform owner. Do not repeatedly
-resend the same chat message while authorization is pending.
+When `action.type` is `auth_required`, pause the business action and follow the authorization experience agreed with the ABL platform owner. Do not repeatedly resend the same chat message while authorization is pending.
 
 ### AI-agent handoff or delegation
 
@@ -541,20 +517,13 @@ resend the same chat message while authorization is pending.
 }
 ```
 
-This response means one ABL AI agent handed work to another ABL AI agent. It
-does not mean that a human contact-center agent joined the conversation. The
-same REST request/response flow continues with the same `sessionId`.
+This response means one ABL AI agent handed work to another ABL AI agent. It does not mean that a human contact-center agent joined the conversation. The same REST request/response flow continues with the same `sessionId`. 
 
-Possible action types include `continue`, `waiting_for_action`,
-`auth_required`, `handoff`, `delegate`, `complete`, and other
-forward-compatible values. Treat unknown action types safely: display the
-`response`, preserve the `sessionId`, and do not assume the conversation has
-ended unless the public outcome says so.
+Possible action types include `continue`, `waiting_for_action`, `auth_required`, `handoff`, `delegate`, `complete`, and other forward-compatible values. Treat unknown action types safely: display the `response`, preserve the `sessionId`, and do not assume the conversation has ended unless the public outcome says so.
 
 ## Optional SSE streaming
 
-Use SSE when the user interface should display the response while it is being
-generated.
+Use SSE when the user interface should display the response while it is being generated.
 
 Call:
 
@@ -614,8 +583,7 @@ The server can also send comment-only heartbeat frames:
 : heartbeat
 ```
 
-Ignore heartbeat comments. A stream is complete only after `done` or `error`,
-or when the connection ends unexpectedly.
+Ignore heartbeat comments. A stream is complete only after `done` or `error`, or when the connection ends unexpectedly.
 
 Important streaming rules:
 
@@ -623,22 +591,15 @@ Important streaming rules:
 - Save the `sessionId` from the initial `session` event.
 - Concatenate `token.data.delta` in `index` order.
 - Stop loading indicators on `done` or `error`.
-- Do not automatically replay the message after an uncertain disconnect.
-  The server may already have processed it.
-- Tool events are informational. Do not expose raw tool arguments or results
-  unless the customer experience has explicitly approved them.
-- The stream belongs to one agent turn. It ends after `done` or `error` and
-  does not remain open to receive human-agent messages that arrive later.
+- Do not automatically replay the message after an uncertain disconnect. The server may already have processed it.
+- Tool events are informational. Do not expose raw tool arguments or results unless the customer experience has explicitly approved them.
+- The stream belongs to one agent turn. It ends after `done` or `error` and does not remain open to receive human-agent messages that arrive later.
 
 ## Asynchronous human-agent transfer
 
-Human-agent transfer is different from AI-agent `handoff` or `delegate`.
-It transfers the conversation from the ABL AI agent to a human-agent desktop
-such as SmartAssist, Genesys, Five9, Salesforce, ServiceNow, or another
-configured provider.
+Human-agent transfer is different from AI-agent `handoff` or `delegate`. It transfers the conversation from the ABL AI agent to a human-agent desktop such as SmartAssist, Genesys, Five9, Salesforce, ServiceNow, or another configured provider.
 
-This section documents both the behavior that exists today and the delivery
-decision required for a REST-only API Channel.
+This section documents both the behavior that exists today and the delivery decision required for a REST-only API Channel.
 
 ### Important REST-only limitation
 
@@ -650,31 +611,18 @@ POST /api/v1/chat/agent
 POST /api/v1/sdk/refresh
 ```
 
-can initialize a session, initiate a transfer, and forward later customer
-messages to the human agent. It cannot, by itself, deliver a human agent's
-unsolicited messages to the customer application.
+can initialize a session, initiate a transfer, and forward later customer messages to the human agent. It cannot, by itself, deliver a human agent's unsolicited messages to the customer application.
 
-Human-agent events are asynchronous. A human agent might join or send a message
-seconds or minutes after the customer's last REST request has completed. A
-normal REST response cannot be sent when no customer request is open.
-
-The optional `/api/v1/chat/agent/stream` endpoint does not remove this
-limitation:
+Human-agent events are asynchronous. A human agent might join or send a message seconds or minutes after the customer's last REST request has completed. A normal REST response cannot be sent when no customer request is open. The optional `/api/v1/chat/agent/stream` endpoint does not remove this limitation:
 
 - Its SSE stream belongs to one agent turn.
 - It ends after the `done` or `error` event.
 - It is not a permanent subscription to the human-agent conversation.
-- It must not be kept open or repeatedly invoked as an undocumented polling
-  mechanism.
+- It must not be kept open or repeatedly invoked as an undocumented polling mechanism.
 
-The current Runtime can push human-transfer events to a connected SDK
-WebSocket. The base API Channel contract does not create that WebSocket and
-does not currently define a customer webhook or customer-facing polling API
-for these events.
+The current Runtime can push human-transfer events to a connected SDK WebSocket. The base API Channel contract does not create that WebSocket and does not currently define a customer webhook or customer-facing polling API for these events.
 
-Therefore, do not promise complete live human-agent chat through a REST-only
-API Channel until an asynchronous delivery mechanism has been selected and
-enabled.
+Therefore, do not promise complete live human-agent chat through a REST-only API Channel until an asynchronous delivery mechanism has been selected and enabled.
 
 ### Supported-behavior matrix
 
@@ -720,9 +668,7 @@ POST_AGENT
     +-- postAgentAction = "end" ----> ENDED
 ```
 
-Internally, transfer sessions can move through `pending`, `queued`, `active`,
-`post_agent`, and `ended`. Customer integrations should use public lifecycle
-events instead of depending directly on internal state names.
+Internally, transfer sessions can move through `pending`, `queued`, `active`, `post_agent`, and `ended`. Customer integrations should use public lifecycle events instead of depending directly on internal state names.
 
 ### Step 1: Configure transfer before customer integration
 
@@ -733,17 +679,15 @@ The ABL platform owner must configure:
 - The routing queue, skills, priority, or named-agent rules.
 - The behavior when the queue is unavailable or outside business hours.
 - The post-agent action:
+
   - `return`: return subsequent conversation control to the AI agent.
   - `end`: finish the runtime conversation after the human agent disconnects.
+
 - The asynchronous delivery mechanism that the API Channel customer will use.
 
-Hosted Exchange is recommended when transfer context must contain a stable,
-verified customer identity. Arbitrary `metadata.customerId` does not establish
-that identity.
+Hosted Exchange is recommended when transfer context must contain a stable, verified customer identity. Arbitrary `metadata.customerId` does not establish that identity.
 
-Before launch, the platform owner and customer must agree on which transfer
-data may be shared with the human-agent provider, including transcript,
-contact details, attachments, locale, and other context.
+Before launch, the platform owner and customer must agree on which transfer data may be shared with the human-agent provider, including transcript, contact details, attachments, locale, and other context.
 
 ### Step 2: Customer asks for a human agent
 
@@ -761,8 +705,7 @@ curl --request POST "${ABL_RUNTIME_URL}/api/v1/chat/agent" \
   }"
 ```
 
-The AI agent decides whether to invoke its configured transfer behavior. The
-initiating turn normally returns user-facing text such as:
+The AI agent decides whether to invoke its configured transfer behavior. The initiating turn normally returns user-facing text such as:
 
 ```json
 {
@@ -778,19 +721,14 @@ initiating turn normally returns user-facing text such as:
 }
 ```
 
-The exact transfer-start response is agent-dependent. The current REST
-contract does not guarantee one dedicated `human_transfer_started` action or
-status. In particular:
+The exact transfer-start response is agent-dependent. The current REST contract does not guarantee one dedicated `human_transfer_started` action or status. In particular:
 
 - `action.type: "handoff"` normally represents AI-agent-to-AI-agent routing.
 - Customer code must not interpret every `handoff` as a human transfer.
 - User-facing response text must not be parsed to infer transfer state.
-- Reliable transfer state must come from the selected asynchronous transfer
-  event delivery contract.
+- Reliable transfer state must come from the selected asynchronous transfer event delivery contract.
 
-If a customer requires an explicit transfer-start acknowledgement in the REST
-response, that must be defined as an additional public contract before
-implementation.
+If a customer requires an explicit transfer-start acknowledgement in the REST response, that must be defined as an additional public contract before implementation.
 
 ### Step 3: Transfer enters the human-agent queue
 
@@ -798,8 +736,7 @@ After the transfer provider accepts the request, lifecycle events can indicate:
 
 - The conversation is queued.
 - A waiting message is available.
-- Queue position or estimated wait time changed, when supplied by the
-  provider.
+- Queue position or estimated wait time changed, when supplied by the   provider.
 - No agent is available.
 - The request is outside business hours.
 - The queue is invalid.
@@ -818,9 +755,7 @@ Transfer initiation results can include:
 | `declined`      | Provider or agent declined the transfer |
 | `failed`        | Transfer could not be created           |
 
-These provider transfer results are not guaranteed as top-level fields in the
-base `/chat/agent` response. The customer-facing asynchronous contract must
-map them to lifecycle events or an equivalent public status model.
+These provider transfer results are not guaranteed as top-level fields in the base `/chat/agent` response. The customer-facing asynchronous contract must map them to lifecycle events or an equivalent public status model.
 
 ### Step 4: Customer sends a message while transfer is active
 
@@ -834,8 +769,7 @@ The customer continues using the same endpoint, SDK identity, and `sessionId`:
 }
 ```
 
-When the Runtime marks the transfer active, it forwards the message to the
-human-agent provider instead of sending it through the AI agent.
+When the Runtime marks the transfer active, it forwards the message to the human-agent provider instead of sending it through the AI agent.
 
 The REST turn can expose:
 
@@ -849,15 +783,12 @@ The REST turn can expose:
 }
 ```
 
-The response text may be empty or may contain channel fallback text. Customer
-applications should:
+The response text may be empty or may contain channel fallback text. Customer applications should:
 
-- Treat `action.type: "transfer_active"` as confirmation that this outbound
-  user message was routed to the active transfer.
+- Treat `action.type: "transfer_active"` as confirmation that this outbound user message was routed to the active transfer.
 - Avoid displaying an empty response bubble.
 - Avoid displaying generic fallback text as if it came from the human agent.
-- Wait for the asynchronous `agent:message` event for the human agent's actual
-  reply.
+- Wait for the asynchronous `agent:message` event for the human agent's actual reply.
 - Keep using the same identity-scoped SDK token and `sessionId`.
 - Serialize messages for the conversation to preserve user-visible ordering.
 
@@ -879,19 +810,14 @@ When a supported SDK WebSocket is connected, the Runtime uses this envelope:
 }
 ```
 
-The envelope's `sessionId` identifies the transfer session. It is not
-guaranteed to equal the `sessionId` used with `/api/v1/chat/agent`. The existing
-Web SDK handles this correlation internally. A new customer webhook or polling
-contract must include an explicit, stable way to correlate:
+The envelope's `sessionId` identifies the transfer session. It is not guaranteed to equal the `sessionId` used with `/api/v1/chat/agent`. The existing Web SDK handles this correlation internally. A new customer webhook or polling contract must include an explicit, stable way to correlate:
 
 - The customer conversation.
 - The ABL chat `sessionId`.
 - The transfer session identifier.
 - The verified end-user identity.
 
-Do not correlate conversations using timestamps, message text, or human-agent
-names. Event data is sanitized before public delivery, but its optional fields
-can vary by provider. Customer code must ignore unknown fields.
+Do not correlate conversations using timestamps, message text, or human-agent names. Event data is sanitized before public delivery, but its optional fields can vary by provider. Customer code must ignore unknown fields.
 
 #### Message-type layers
 
@@ -903,13 +829,11 @@ There is one top-level transfer envelope:
 }
 ```
 
-`agent_transfer_event` is a WebSocket server-message type in the current SDK
-transport. It is not a response type returned by `/api/v1/chat/agent`.
+`agent_transfer_event` is a WebSocket server-message type in the current SDK transport. It is not a response type returned by `/api/v1/chat/agent`.
 
 #### Top-level SDK server-message types
 
-At the published Web SDK transport layer, there are currently 20 top-level
-server-message `type` values:
+At the published Web SDK transport layer, the top-level server-message `type` values are listed below.
 
 | Category                 | Top-level `type` values                                                                                                    |
 | ------------------------ | -------------------------------------------------------------------------------------------------------------------------- |
@@ -919,18 +843,6 @@ server-message `type` values:
 | Error and health         | `error`, `tool_warnings`, `session_health`                                                                                 |
 | Media and human transfer | `agent_media`, `agent_transfer_event`                                                                                      |
 | Feedback                 | `feedback.ack`                                                                                                             |
-
-That is:
-
-```text
-3 response
-+ 5 activity/routing
-+ 6 authentication
-+ 3 error/health
-+ 2 media/transfer
-+ 1 feedback
-= 20 top-level SDK server-message types
-```
 
 This is a Web SDK transport contract, not the REST API Channel response contract. The raw Runtime WebSocket can contain additional internal wire messages, such as trace envelopes, that the SDK translates or drops. Customers must not implement against those internal messages.
 
