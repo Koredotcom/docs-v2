@@ -1,28 +1,26 @@
-# API Channel Integration Guide
+---
+title: Integrate using API Channel
+audience: Customer backend and application developers  
+---
 
-**Audience:** Customer backend and application developers  
-**Protocol:** HTTPS REST; optional Server-Sent Events (SSE)  
-**WebSocket required:** No  
-**Authentication:** Public-key bootstrap or Hosted Exchange
+The API Channel is intended for applications that want to own their user interface and call the agent from their own backend or application code. Unlike the Web SDK Channel, it does not provide or create a chat widget. The customer application sends one HTTP request for every user message.
 
-This guide explains how to connect a customer application to an ABL agent through
-an API Channel.
+Protocol: HTTPS REST. Server-Sent Events (SSE) is optional.
+Authentication: Public-key bootstrap or Hosted Exchange.
 
-The API Channel is intended for applications that want to own their user
-interface and call the agent from their own backend or application code. Unlike
-the Web SDK Channel, it does not provide or create a chat widget. The customer
-application sends one HTTP request for every user message.
+{/* AG: Check the need for prerequisites */}
 
-## 1. How the API Channel works
+## How the API Channel works
 
-The basic integration has three steps:
+The integration requires three-step:
 
 1. Obtain an SDK session token.
 2. Send the user's first message to the chat endpoint.
-3. Save the returned `sessionId` and include it in every later message in that
-   conversation.
+3. Save the returned `sessionId` and include it in every later message in that conversation.
 
 The normal request flow is:
+
+{/* AG: Convert to Mermaid diagram? */}
 
 ```text
 Customer application                         ABL Runtime
@@ -45,15 +43,14 @@ Customer application                         ABL Runtime
         |<----------------------------------------|
 ```
 
-There is no persistent WebSocket connection in this flow. Use:
+There is no persistent WebSocket connection in this flow.
 
-- `POST /api/v1/chat/agent` for a normal JSON response.
-- `POST /api/v1/chat/agent/stream` when token-by-token SSE streaming is
-  required.
+- Use `POST /api/v1/chat/agent` for a normal JSON response.
+- Use `POST /api/v1/chat/agent/stream` when token-by-token SSE streaming is required.
 
 ### API call summary
 
-| Endpoint                             | When it is called                                                                             |
+| Endpoint                             | When is it called                                                                             |
 | ------------------------------------ | --------------------------------------------------------------------------------------------- |
 | `POST /api/v1/sdk/customer-sessions` | Hosted Exchange only: once when a trusted backend needs a bootstrap token for a verified user |
 | `POST /api/v1/sdk/init`              | Once when an end-user application session starts or needs a new SDK identity                  |
@@ -61,14 +58,11 @@ There is no persistent WebSocket connection in this flow. Use:
 | `POST /api/v1/chat/agent/stream`     | Alternative to `/chat/agent`: once for every user message that should stream over SSE         |
 | `POST /api/v1/sdk/refresh`           | Before the current SDK token expires                                                          |
 
-Do not call both chat endpoints for the same message. Choose either the normal
-REST endpoint or the SSE endpoint for that turn.
+Don't call both chat endpoints for the same message. Choose either the normal REST endpoint or the SSE endpoint for that turn.
 
-Human-agent transfer requires an additional asynchronous delivery mechanism;
-the endpoints in this table do not provide complete human-agent event delivery.
-See [Asynchronous human-agent transfer](#9-asynchronous-human-agent-transfer).
+Human-agent transfer requires an additional asynchronous delivery mechanism; the endpoints in this table don't provide complete human-agent event delivery. See [Asynchronous human-agent transfer](#asynchronous-human-agent-transfer).
 
-## 2. Information required from the ABL platform owner
+## Information required from the ABL platform owner
 
 Before implementation begins, obtain the following values:
 
@@ -96,7 +90,7 @@ The channel binding determines which deployed agent handles the request.
 Customers should not select or override a different deployment in normal API
 Channel requests.
 
-## 3. Choose the authentication mode
+## Choose the authentication mode
 
 ### Option A: Public-key bootstrap
 
@@ -139,7 +133,7 @@ untrusted client.
 The `metadata.customerId` field on a chat request does not establish identity.
 Use Hosted Exchange and `verifiedUserId` when verified identity is required.
 
-## 4. Quick start: public-key bootstrap
+## Quick start: public-key bootstrap
 
 ### Step 1: Set the integration values
 
@@ -296,7 +290,7 @@ The current token must still be valid when `/refresh` is called. If an
 anonymous token has already expired, a new `/init` creates a new anonymous
 identity; start a new conversation instead of attaching an old `sessionId`.
 
-## 5. Hosted Exchange implementation
+## Hosted Exchange implementation
 
 Hosted Exchange is a two-stage token exchange. It keeps the channel secret on
 the trusted customer backend while allowing ABL to associate conversations
@@ -399,7 +393,7 @@ resumed is controlled by the configured identity and session policy. The
 safest implementation is to refresh proactively and treat a failed resume as
 a request to begin a new conversation.
 
-## 6. Chat request reference
+## Chat request reference
 
 ### Required fields
 
@@ -448,7 +442,7 @@ Example:
 Do not put passwords, access tokens, payment data, or unnecessary personal data
 in `metadata`, `sessionMetadata`, or `customAttributes`.
 
-## 7. REST response and server message types
+## REST response and server message types
 
 The REST endpoint returns one JSON document per request. It does not send
 WebSocket-style messages. Your application should understand the following
@@ -563,7 +557,7 @@ forward-compatible values. Treat unknown action types safely: display the
 `response`, preserve the `sessionId`, and do not assume the conversation has
 ended unless the public outcome says so.
 
-## 8. Optional SSE streaming
+## Optional SSE streaming
 
 Use SSE when the user interface should display the response while it is being
 generated.
@@ -642,7 +636,7 @@ Important streaming rules:
 - The stream belongs to one agent turn. It ends after `done` or `error` and
   does not remain open to receive human-agent messages that arrive later.
 
-## 9. Asynchronous human-agent transfer
+## Asynchronous human-agent transfer
 
 Human-agent transfer is different from AI-agent `handoff` or `delegate`.
 It transfers the conversation from the ABL AI agent to a human-agent desktop
@@ -652,7 +646,7 @@ configured provider.
 This section documents both the behavior that exists today and the delivery
 decision required for a REST-only API Channel.
 
-### 9.1 Important REST-only limitation
+### Important REST-only limitation
 
 The three-call API Channel flow:
 
@@ -688,7 +682,7 @@ Therefore, do not promise complete live human-agent chat through a REST-only
 API Channel until an asynchronous delivery mechanism has been selected and
 enabled.
 
-### 9.2 Supported-behavior matrix
+### Supported-behavior matrix
 
 | Capability                                                                      | Base REST API Channel     |
 | ------------------------------------------------------------------------------- | ------------------------- |
@@ -704,7 +698,7 @@ enabled.
 | Base API Channel provides a documented transfer-event polling endpoint          | Not currently provided    |
 | Web SDK receives transfer events over its connected WebSocket                   | Supported                 |
 
-### 9.3 End-to-end transfer lifecycle
+### End-to-end transfer lifecycle
 
 The logical transfer lifecycle is:
 
@@ -736,7 +730,7 @@ Internally, transfer sessions can move through `pending`, `queued`, `active`,
 `post_agent`, and `ended`. Customer integrations should use public lifecycle
 events instead of depending directly on internal state names.
 
-### 9.4 Step 1: Configure transfer before customer integration
+### Step 1: Configure transfer before customer integration
 
 The ABL platform owner must configure:
 
@@ -757,7 +751,7 @@ Before launch, the platform owner and customer must agree on which transfer
 data may be shared with the human-agent provider, including transcript,
 contact details, attachments, locale, and other context.
 
-### 9.5 Step 2: Customer asks for a human agent
+### Step 2: Customer asks for a human agent
 
 The customer application sends a normal chat request:
 
@@ -804,7 +798,7 @@ If a customer requires an explicit transfer-start acknowledgement in the REST
 response, that must be defined as an additional public contract before
 implementation.
 
-### 9.6 Step 3: Transfer enters the human-agent queue
+### Step 3: Transfer enters the human-agent queue
 
 After the transfer provider accepts the request, lifecycle events can indicate:
 
@@ -834,7 +828,7 @@ These provider transfer results are not guaranteed as top-level fields in the
 base `/chat/agent` response. The customer-facing asynchronous contract must
 map them to lifecycle events or an equivalent public status model.
 
-### 9.7 Step 4: Customer sends a message while transfer is active
+### Step 4: Customer sends a message while transfer is active
 
 The customer continues using the same endpoint, SDK identity, and `sessionId`:
 
@@ -873,7 +867,7 @@ applications should:
 - Keep using the same identity-scoped SDK token and `sessionId`.
 - Serialize messages for the conversation to preserve user-visible ordering.
 
-### 9.8 Step 5: Human-agent events are delivered asynchronously
+### Step 5: Human-agent events are delivered asynchronously
 
 When a supported SDK WebSocket is connected, the Runtime uses this envelope:
 
@@ -949,11 +943,9 @@ contract. The raw Runtime WebSocket can contain additional internal wire
 messages, such as trace envelopes, that the SDK translates or drops. Customers
 must not implement against those internal messages.
 
-#### Examples for all 20 top-level SDK server-message types
+#### Examples for all 20 top-level SDK server message types
 
-The following examples show the normalized `TransportServerMessage` objects
-consumed by the Web SDK. They are not raw Runtime WebSocket frames, REST API
-Channel responses, or SSE events.
+The following examples show the normalized `TransportServerMessage` objects consumed by the Web SDK. They're not raw Runtime WebSocket frames, REST API Channel responses, or SSE events.
 
 ##### 1. `response_start`
 
@@ -966,8 +958,7 @@ Indicates that a new assistant response has started.
 }
 ```
 
-Customer handling: create a pending assistant message associated with
-`messageId`.
+Customer handling: create a pending assistant message associated with `messageId`.
 
 ##### 2. `response_chunk`
 
@@ -981,13 +972,11 @@ Contains one piece of a streaming assistant response.
 }
 ```
 
-Customer handling: append `content` to the matching pending message. More than
-one chunk can arrive for the same `messageId`.
+Customer handling: append `content` to the matching pending message. More than one chunk can arrive for the same `messageId`.
 
 ##### 3. `response_end`
 
-Completes the assistant response and provides its final content and optional
-presentation data.
+Completes the assistant response and provides its final content and optional presentation data.
 
 ```json
 {
@@ -1009,8 +998,7 @@ presentation data.
 }
 ```
 
-Customer handling: replace any accumulated draft with the final `content`,
-render supported optional fields, and mark the response complete.
+Customer handling: replace any accumulated draft with the final `content`, render supported optional fields, and mark the response complete.
 
 ##### 4. `typing_update`
 
@@ -1027,8 +1015,7 @@ Customer handling: show or hide the typing indicator based on `isTyping`.
 
 ##### 5. `thought`
 
-Provides a customer-safe activity or thought summary when the channel's
-activity-visibility policy allows it.
+Provides a customer-safe activity or thought summary when the channel's activity-visibility policy allows it.
 
 ```json
 {
@@ -1041,8 +1028,7 @@ activity-visibility policy allows it.
 }
 ```
 
-Customer handling: display only in an approved activity area. Do not treat it
-as the final assistant response or expose unapproved diagnostic content.
+Customer handling: display only in an approved activity area. Don't treat it as the final assistant response or expose unapproved diagnostic content.
 
 ##### 6. `handoff`
 
@@ -1059,8 +1045,7 @@ Reports an AI-agent-to-AI-agent routing change.
 }
 ```
 
-Customer handling: optionally show an AI routing notice. This event does not
-mean that a human contact-center agent connected.
+Customer handling: optionally show an AI routing notice. This event doesn't mean that a human contact-center agent connected.
 
 ##### 7. `status_update`
 
@@ -1076,8 +1061,7 @@ Provides temporary progress text for the current operation.
 }
 ```
 
-Customer handling: show the temporary status without adding it as a permanent
-chat message.
+Customer handling: show the temporary status without adding it as a permanent chat message.
 
 ##### 8. `status_clear`
 
@@ -1110,8 +1094,7 @@ Requests just-in-time authorization for a paused tool call.
 }
 ```
 
-Customer handling: show an authorization experience for the named profile and
-associate its result with `toolCallId`.
+Customer handling: show an authorization experience for the named profile and associate its result with `toolCallId`.
 
 ##### 10. `auth_required`
 
@@ -1138,13 +1121,11 @@ Reports one or more preflight authorization requirements.
 }
 ```
 
-Customer handling: render the pending authorization requirements and do not
-repeatedly resend the blocked user message.
+Customer handling: render the pending authorization requirements and don't repeatedly resend the blocked user message.
 
 ##### 11. `auth_gate_updated`
 
-Updates the pending and satisfied requirements for an existing authorization
-gate.
+Updates the pending and satisfied requirements for an existing authorization gate.
 
 ```json
 {
@@ -1168,8 +1149,7 @@ gate.
 }
 ```
 
-Customer handling: replace the current authorization-gate state with these
-arrays.
+Customer handling: replace the current authorization-gate state with these arrays.
 
 ##### 12. `auth_gate_satisfied`
 
@@ -1183,13 +1163,11 @@ Indicates that every preflight authorization requirement has been satisfied.
 }
 ```
 
-Customer handling: close or mark the authorization gate complete and allow the
-conversation to continue.
+Customer handling: close or mark the authorization gate complete and allow the conversation to continue.
 
 ##### 13. `auth_challenge_resolved`
 
-Indicates that a just-in-time authorization challenge for a specific tool call
-has been resolved.
+Indicates that a just-in-time authorization challenge for a specific tool call has been resolved.
 
 ```json
 {
@@ -1200,13 +1178,11 @@ has been resolved.
 }
 ```
 
-Customer handling: mark the matching authorization card or tool call as
-connected.
+Customer handling: mark the matching authorization card or tool call as connected.
 
 ##### 14. `message_queued`
 
-Indicates that a user message was queued, commonly while preflight
-authorization is unresolved.
+Indicates that a user message was queued, commonly while preflight authorization is unresolved.
 
 ```json
 {
@@ -1217,8 +1193,7 @@ authorization is unresolved.
 }
 ```
 
-Customer handling: show a queued state and do not submit another copy of the
-same message.
+Customer handling: show a queued state and do not submit another copy of the same message.
 
 ##### 15. `error`
 
@@ -1235,8 +1210,7 @@ Reports a customer-safe transport or execution error.
 }
 ```
 
-Customer handling: stop the current loading state, display a safe error, and
-apply the agreed retry policy.
+Customer handling: stop the current loading state, display a safe error, and apply the agreed retry policy.
 
 ##### 16. `tool_warnings`
 
@@ -1250,8 +1224,7 @@ Provides non-fatal warnings associated with tool configuration or execution.
 }
 ```
 
-Customer handling: log or display warnings only when approved. The
-conversation can normally continue.
+Customer handling: log or display warnings only when approved. The conversation can normally continue.
 
 ##### 17. `session_health`
 
@@ -1272,13 +1245,11 @@ Provides one or more health diagnostics for the current session.
 }
 ```
 
-Customer handling: treat warnings as non-terminal. For error-severity
-diagnostics, show a safe failure state and collect support information.
+Customer handling: treat warnings as non-terminal. For error-severity diagnostics, show a safe failure state and collect support information.
 
 ##### 18. `agent_media`
 
-Carries a human-agent media event such as a WebRTC call, screen-share, or
-co-browse invitation.
+Carries a human-agent media event such as a WebRTC call, screen-share, or co-browse invitation.
 
 ```json
 {
@@ -1301,8 +1272,7 @@ co-browse invitation.
 }
 ```
 
-Customer handling: process only explicitly supported media kinds and actions.
-Do not expose raw provider credentials or endpoints.
+Customer handling: process only explicitly supported media kinds and actions. Do not expose raw provider credentials or endpoints.
 
 ##### 19. `agent_transfer_event`
 
@@ -1322,8 +1292,7 @@ Carries an asynchronous human-agent lifecycle or content event.
 }
 ```
 
-Customer handling: branch on the nested `event.type`. Do not assume the outer
-`sessionId` equals the REST chat `sessionId`.
+Customer handling: branch on the nested `event.type`. Don't assume the outer `sessionId` equals the REST chat `sessionId`.
 
 ##### 20. `feedback.ack`
 
@@ -1339,19 +1308,13 @@ Acknowledges a previously submitted feedback action.
 }
 ```
 
-Customer handling: mark the matching feedback control as submitted. When
-`success` is `false`, the optional `error` object contains a safe error code and
-message.
+Customer handling: mark the matching feedback control as submitted. When `success` is `false`, the optional `error` object contains a safe error code and message.
 
-These message types are forward-compatible. SDK consumers should ignore
-unknown top-level types rather than terminating the connection.
+These message types are forward-compatible. SDK consumers should ignore unknown top-level types rather than terminating the connection.
 
 #### Nested human-transfer event types
 
-Its nested `event.type` identifies the transfer event. The current generic
-transfer contract defines 14 core nested event types. SDK delivery can also
-produce one derived attachment event, `agent.attachment`. That gives customers
-15 transfer-specific nested event names to handle or safely ignore.
+Its nested `event.type` identifies the transfer event. The current generic transfer contract defines 14 core nested event types. SDK delivery can also produce one derived attachment event, `agent.attachment`. That gives customers 15 transfer-specific nested event names to handle or safely ignore.
 
 |   # | Nested `event.type`       | Meaning                                                     | Recommended customer behavior                                |
 | --: | ------------------------- | ----------------------------------------------------------- | ------------------------------------------------------------ |
@@ -1382,7 +1345,7 @@ voice, media, forms, or a particular agent desktop. The customer must:
 - Safely ignore unknown future event types.
 - Never treat an unknown event as proof that the transfer ended.
 
-### 9.9 Example event sequence
+### Example event sequence
 
 A typical transfer sequence over an asynchronous delivery channel is:
 
@@ -1464,7 +1427,7 @@ Example disconnected event:
 Queue position, wait time, agent details, and message field names are
 provider-dependent and may be absent. The integration must not require them.
 
-### 9.10 Step 6: Select an asynchronous delivery mechanism
+### Step 6: Select an asynchronous delivery mechanism
 
 The platform owner and customer must select one of the following designs.
 
@@ -1539,7 +1502,7 @@ contract must define:
 Internal session, analytics, and agent-transfer history APIs must not be exposed
 to customers as an undocumented polling substitute.
 
-### 9.11 Recommended REST-only customer architecture
+### Recommended REST-only customer architecture
 
 For a customer that requires a REST-only API Channel and human transfer, the
 recommended target architecture is:
@@ -1569,7 +1532,7 @@ existing WebSocket, SSE, mobile push, or polling infrastructure. That
 customer-facing connection is owned and secured by the customer; it is not the
 ABL API Channel WebSocket.
 
-### 9.12 Customer-side transfer state
+### Customer-side transfer state
 
 Store transfer state with the existing conversation record:
 
@@ -1603,7 +1566,7 @@ Do not let the browser select the ABL `sessionId`, customer identity, or
 transfer ownership record. Resolve them from the authenticated customer
 backend session.
 
-### 9.13 Post-agent behavior
+### Post-agent behavior
 
 When the human agent disconnects:
 
@@ -1618,7 +1581,7 @@ The customer must not assume that `agent:disconnected` immediately means the
 entire session can be deleted. Keep the conversation record for the retention
 period agreed with the platform owner.
 
-### 9.14 Failure and recovery rules
+### Failure and recovery rules
 
 #### Transfer cannot be created
 
@@ -1657,7 +1620,7 @@ For `outside_hours`, `no_agents`, `queue_invalid`, `declined`, or `failed`:
 - If no event identifier or ordering contract exists, the delivery design is
   incomplete and must be resolved before launch.
 
-### 9.15 Attachment, form, and media limitations
+### Attachment, form, and media limitations
 
 Human-agent transfer may include:
 
@@ -1681,7 +1644,7 @@ Each capability requires an explicit customer contract for:
 Do not render arbitrary provider HTML, URLs, forms, or media credentials
 directly.
 
-### 9.16 Transfer-specific security requirements
+### Transfer-specific security requirements
 
 - Prefer Hosted Exchange so the transfer has a verified end-user identity.
 - Never accept a customer-supplied `verifiedUserId` without authenticating the
@@ -1696,7 +1659,7 @@ directly.
 - Audit transfer initiation, connection, failure, and termination without
   logging SDK tokens or channel secrets.
 
-### 9.17 Transfer go-live checklist
+### Transfer go-live checklist
 
 - [ ] The business has chosen AI-to-AI handoff, human-agent transfer, or both.
 - [ ] A human-agent provider and routing configuration are active.
@@ -1721,7 +1684,7 @@ directly.
 - [ ] Customer documentation states any event-retention or message-loss
       limitations.
 
-### 9.18 Customer implementation decision
+### Customer implementation decision
 
 Before a customer implements human-agent transfer, record the following
 decision:
@@ -1746,7 +1709,7 @@ If any of the asynchronous delivery, authentication, identity, idempotency,
 ordering, or recovery fields are undefined, the integration is not ready to be
 presented as complete human-agent transfer.
 
-## 10. Node.js reference implementation
+## Node.js reference implementation
 
 The following example uses the built-in `fetch` available in Node.js 20 or
 later. It shows both token bootstrap modes and synchronous REST chat.
@@ -1902,7 +1865,7 @@ does not receive asynchronous human-agent events. Do not use it as a complete
 human-transfer implementation without one of the published delivery contracts
 described in Section 9.
 
-## 11. Error handling
+## Error handling
 
 Error response bodies can contain either an `error` string or a structured
 `error` object. Handle both:
@@ -1952,7 +1915,7 @@ Recommended policy:
 5. Never run two chat requests concurrently for the same conversation unless
    the agent design explicitly supports it.
 
-## 12. Security requirements
+## Security requirements
 
 - Use HTTPS only.
 - Keep `X-SDK-Channel-Secret` on the trusted backend.
@@ -1973,7 +1936,7 @@ Recommended policy:
 Disabling the channel, revoking its public key, changing its permissions, or
 removing its valid deployment binding can invalidate existing SDK tokens.
 
-## 13. Go-live validation checklist
+## Go-live validation checklist
 
 Complete these tests in a non-production environment before launch:
 
@@ -1994,9 +1957,9 @@ Complete these tests in a non-production environment before launch:
       customer-side request ID, project ID, and session ID without receiving any
       secret or token.
 - [ ] If human-agent transfer is enabled, every item in the
-      [transfer go-live checklist](#917-transfer-go-live-checklist) is complete.
+      [transfer go-live checklist](#transfer-go-live-checklist) is complete.
 
-## 14. Troubleshooting
+## Troubleshoot integration issues
 
 ### `/sdk/init` returns `401`
 
@@ -2034,8 +1997,7 @@ different identity.
 
 ### Every message starts a new conversation
 
-Save the `sessionId` returned by the first chat response and include it in the
-body of every later request.
+Save the `sessionId` returned by the first chat response and include it in the body of every later request.
 
 ### The browser does not receive streamed tokens
 
@@ -2048,23 +2010,21 @@ Confirm that:
 
 ### Human-agent messages do not arrive in the API Channel
 
-This is expected when only the base REST endpoints are configured. Human-agent
-messages arrive asynchronously after the original chat request has completed.
+This is expected when only the base REST endpoints are configured. Human-agent messages arrive asynchronously after the original chat request has completed.
 
 Confirm that:
 
-- A customer webhook, supported WebSocket, or customer-facing polling contract
-  has been selected.
+- A customer webhook, supported WebSocket, or customer-facing polling contract has been selected.
 - The selected asynchronous mechanism is enabled for the channel.
-- Transfer events are correlated to the correct ABL chat session and customer
-  conversation.
+- Transfer events are correlated to the correct ABL chat session and customer conversation.
 - The customer's callback or realtime connection is healthy.
 - Recovery or transcript backfill is configured for missed events.
 
-Per-turn `/api/v1/chat/agent/stream` SSE is not a human-agent event
-subscription.
+Per-turn `/api/v1/chat/agent/stream` SSE is not a human-agent event subscription.
 
-## 15. Implementation summary
+## Implementation summary
+
+{/* AG: This section should be the first one after prerequisites? */}
 
 For a basic API Channel integration:
 
@@ -2085,6 +2045,4 @@ For a basic API Channel integration:
     asynchronous event delivery, correlation, ordering, idempotency, and
     recovery are defined and tested.
 
-Use the endpoint paths and integration values supplied by the ABL Studio
-Channel configuration for the deployed release. Do not construct alternative
-runtime endpoint paths without confirmation from the ABL platform owner.
+Use the endpoint paths and integration values supplied by the ABL Studio Channel configuration for the deployed release. Do not construct alternative runtime endpoint paths without confirmation from the ABL platform owner.
