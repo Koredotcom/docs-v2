@@ -3,7 +3,7 @@ title: Integrate using API Channel
 audience: Customer backend and application developers  
 ---
 
-The API Channel is intended for applications that want to own their user interface and call the agent from their own backend or application code. Unlike the Web SDK Channel, it does not provide or create a chat widget. The customer application sends one HTTP request for every user message.
+The API Channel is intended for applications that want to own their user interface and call the agent from their own backend or application code. Unlike the Web SDK Channel, it doesn't provide or create a chat widget. The customer application sends one HTTP request for every user message.
 
 Protocol: HTTPS REST. Server-Sent Events (SSE) is optional.
 Authentication: Public-key bootstrap or Hosted Exchange.
@@ -103,9 +103,7 @@ The application calls `/api/v1/sdk/init` with:
 
 The returned SDK token represents one API Channel session identity.
 
-Important: do not create one token and reuse it for all customers. Create and
-store a separate token for each end-user application session. Reusing a token
-across users can mix their identity and conversation ownership.
+<Caution>Don't use one token for all customers. Create and store a separate token for each user application session. Reusing a token across users can mix their identity and conversation ownership.</Caution>
 
 ### Option B: Hosted Exchange
 
@@ -118,8 +116,7 @@ The trusted customer backend:
 2. Exchanges that bootstrap token for a four-hour SDK session token.
 3. Uses the SDK session token to call the chat API.
 
-The channel secret must never be sent to a browser, mobile app, or other
-untrusted client.
+<Important>Don't send channel secret to a browser, mobile app, or other untrusted client.</Important>
 
 ### Recommended choice
 
@@ -130,8 +127,7 @@ untrusted client.
 | Stable user identity across sign-ins              | Hosted Exchange      |
 | Server-to-server integration with a known user ID | Hosted Exchange      |
 
-The `metadata.customerId` field on a chat request does not establish identity.
-Use Hosted Exchange and `verifiedUserId` when verified identity is required.
+The `metadata.customerId` field on a chat request does not establish identity. Use Hosted Exchange and `verifiedUserId` when verified identity is required.
 
 ## Quick start: public-key bootstrap
 
@@ -147,9 +143,7 @@ export ABL_PUBLIC_KEY="pk_replace_with_public_key"
 export ABL_REQUEST_ORIGIN="https://app.customer.com"
 ```
 
-`ABL_REQUEST_ORIGIN` must be the value approved by the ABL platform owner.
-Server-side HTTP clients can set the `Origin` header explicitly. Omit it only
-when the platform owner confirms that the deployment does not require it.
+`ABL_REQUEST_ORIGIN` must be the value approved by the ABL platform owner. Server-side HTTP clients can set the `Origin` header explicitly. Omit it only when the platform owner confirms that the deployment does not require it.
 
 ### Step 2: Initialize an SDK session
 
@@ -192,7 +186,7 @@ Save:
 - `token`: send it as `X-SDK-Token` on chat requests.
 - `expiresIn`: use it to schedule a proactive token refresh.
 
-Treat the token as opaque. Do not decode it or depend on its internal format.
+Treat the token as opaque. Don't decode it or depend on its internal format.
 
 ### Step 3: Send the first user message
 
@@ -938,10 +932,7 @@ That is:
 = 20 top-level SDK server-message types
 ```
 
-This is a Web SDK transport contract, not the REST API Channel response
-contract. The raw Runtime WebSocket can contain additional internal wire
-messages, such as trace envelopes, that the SDK translates or drops. Customers
-must not implement against those internal messages.
+This is a Web SDK transport contract, not the REST API Channel response contract. The raw Runtime WebSocket can contain additional internal wire messages, such as trace envelopes, that the SDK translates or drops. Customers must not implement against those internal messages.
 
 #### Examples for all 20 top-level SDK server message types
 
@@ -1334,11 +1325,9 @@ Its nested `event.type` identifies the transfer event. The current generic trans
 |  14 | `agent:waiting_message`   | Provider supplied a waiting update                          | Display the safe waiting text                                |
 |  15 | `agent.attachment`        | Derived SDK event for a human-agent attachment              | Show a safe authenticated download action                    |
 
-The delimiter is significant: the core events use a colon, while the derived
-attachment event currently uses a dot.
+The delimiter is significant: the core events use a colon, while the derived attachment event uses a dot.
 
-Not every provider emits every event. Some events are meaningful only for
-voice, media, forms, or a particular agent desktop. The customer must:
+Not every provider emits every event. Some events are meaningful only for voice, media, forms, or a particular agent desktop. The customer must:
 
 - Implement the events required by its approved experience.
 - Safely ignore known but unsupported events.
@@ -1359,7 +1348,7 @@ agent:message
 agent:disconnected
 ```
 
-Example queued event:
+An example for queued event:
 
 ```json
 {
@@ -1376,7 +1365,7 @@ Example queued event:
 }
 ```
 
-Example connected event:
+An example for connected event:
 
 ```json
 {
@@ -1392,7 +1381,7 @@ Example connected event:
 }
 ```
 
-Example human-agent message:
+An example for human-agent message:
 
 ```json
 {
@@ -1408,7 +1397,7 @@ Example human-agent message:
 }
 ```
 
-Example disconnected event:
+An example for disconnected event:
 
 ```json
 {
@@ -1424,8 +1413,7 @@ Example disconnected event:
 }
 ```
 
-Queue position, wait time, agent details, and message field names are
-provider-dependent and may be absent. The integration must not require them.
+Queue position, wait time, agent details, and message field names are provider-dependent and may be absent. The integration must not require them.
 
 ### Step 6: Select an asynchronous delivery mechanism
 
@@ -1433,18 +1421,15 @@ The platform owner and customer must select one of the following designs.
 
 #### Option A: Customer webhook
 
-This is the recommended design for backend-first API Channel integrations.
-ABL pushes transfer lifecycle events to a customer-owned HTTPS endpoint.
+This is the recommended design for backend-first API Channel integrations. ABL pushes transfer lifecycle events to a customer-owned HTTPS endpoint.
 
-The base API Channel does not currently define this webhook. Before using this
-option, the platform must add or publish a contract that defines:
+The base API Channel does not currently define this webhook. Before using this option, the platform must add or publish a contract that defines:
 
 - How the callback URL is registered and changed.
 - Authentication, preferably request signing or mutually authenticated TLS.
 - The exact provider-neutral event envelope.
 - Tenant, project, channel, user, and session ownership fields.
-- Stable correlation between the customer conversation, ABL chat session, and
-  transfer session.
+- Stable correlation between the customer conversation, ABL chat session, and   transfer session.
 - Event identifier and ordering semantics.
 - Retry schedule and maximum attempts.
 - Duplicate-delivery behavior.
@@ -1458,37 +1443,27 @@ The customer webhook must:
 
 - Return a success status only after the event is durably accepted.
 - Authenticate every callback before processing it.
-- Bind the event to the expected tenant, project, channel, user, ABL chat
-  session, and transfer session.
+- Bind the event to the expected tenant, project, channel, user, ABL chat   session, and transfer session.
 - Process duplicate deliveries idempotently.
 - Preserve per-conversation ordering where possible.
 - Reject oversized or invalid payloads.
 - Avoid logging credentials or sensitive message content.
 
-Do not invent a callback endpoint or assume a payload until the platform owner
-provides the published webhook contract.
+Do not invent a callback endpoint or assume a payload until the platform owner provides the published webhook contract.
 
 #### Option B: Supported long-lived WebSocket
 
-The existing Web SDK uses a WebSocket and receives
-`agent_transfer_event` messages.
+The existing Web SDK uses a WebSocket and receives `agent_transfer_event` messages.
 
-Using that transport for an API Channel would change the API Channel from
-REST-only to a hybrid REST/WebSocket integration. It requires an explicitly
-supported connection, authentication, resume, backpressure, heartbeat,
-reconnection, and transcript-recovery contract.
+Using that transport for an API Channel would change the API Channel from REST-only to a hybrid REST/WebSocket integration. It requires an explicitly supported connection, authentication, resume, backpressure, heartbeat, reconnection, and transcript-recovery contract.
 
-Do not connect an API Channel customer directly to an internal or Web
-SDK-specific WebSocket endpoint unless the platform owner publishes it as a
-supported API Channel contract.
+Do not connect an API Channel customer directly to an internal or Web SDK-specific WebSocket endpoint unless the platform owner publishes it as a supported API Channel contract.
 
 #### Option C: Customer-facing polling API
 
-The customer periodically requests transfer events or transcript changes after
-its last cursor.
+The customer periodically requests transfer events or transcript changes after its last cursor.
 
-The base API Channel does not currently publish such an endpoint. A polling
-contract must define:
+The base API Channel does not currently publish such an endpoint. A polling contract must define:
 
 - An SDK-token-authenticated, identity-scoped endpoint.
 - A stable cursor or event sequence.
@@ -1499,13 +1474,11 @@ contract must define:
 - Rate limits.
 - Terminal transfer state.
 
-Internal session, analytics, and agent-transfer history APIs must not be exposed
-to customers as an undocumented polling substitute.
+Internal session, analytics, and agent-transfer history APIs must not be exposed to customers as an undocumented polling substitute.
 
 ### Recommended REST-only customer architecture
 
-For a customer that requires a REST-only API Channel and human transfer, the
-recommended target architecture is:
+For a customer that requires a REST-only API Channel and human transfer, the recommended target architecture is:
 
 ```text
 Customer UI
@@ -1527,10 +1500,7 @@ Customer callback endpoint <--------------+
 Customer UI
 ```
 
-The customer's own backend can deliver callback events to its UI using its
-existing WebSocket, SSE, mobile push, or polling infrastructure. That
-customer-facing connection is owned and secured by the customer; it is not the
-ABL API Channel WebSocket.
+The customer's own backend can deliver callback events to its UI using its existing WebSocket, SSE, mobile push, or polling infrastructure. That customer-facing connection is owned and secured by the customer; it is not the ABL API Channel WebSocket.
 
 ### Customer-side transfer state
 
@@ -1550,7 +1520,7 @@ Store transfer state with the existing conversation record:
 }
 ```
 
-Recommended customer-visible states:
+**Recommended states**
 
 | Customer state     | Enter when                              | Exit when                          |
 | ------------------ | --------------------------------------- | ---------------------------------- |
@@ -1562,24 +1532,17 @@ Recommended customer-visible states:
 | `ended`            | Post-agent policy ends the session      | New conversation only              |
 | `transfer_failed`  | Transfer cannot be created              | AI fallback or retry policy        |
 
-Do not let the browser select the ABL `sessionId`, customer identity, or
-transfer ownership record. Resolve them from the authenticated customer
-backend session.
+Do not let the browser select the ABL `sessionId`, customer identity, or transfer ownership record. Resolve them from the authenticated customer backend session.
 
 ### Post-agent behavior
 
 When the human agent disconnects:
 
-- `postAgentAction: "return"` clears the active transfer state and allows
-  later messages to return to the ABL AI agent.
-- `postAgentAction: "end"` completes the runtime session. The customer should
-  start a new conversation for later messages.
-- Some providers can run post-agent work such as customer-satisfaction surveys
-  or after-call work before the transfer is fully ended.
+- `postAgentAction: "return"` clears the active transfer state and allows later messages to return to the ABL AI agent.
+- `postAgentAction: "end"` completes the runtime session. The customer should start a new conversation for later messages.
+- Some providers can run post-agent work such as customer-satisfaction surveys or after-call work before the transfer is fully ended.
 
-The customer must not assume that `agent:disconnected` immediately means the
-entire session can be deleted. Keep the conversation record for the retention
-period agreed with the platform owner.
+The customer must not assume that `agent:disconnected` immediately means the entire session can be deleted. Keep the conversation record for the retention period agreed with the platform owner.
 
 ### Failure and recovery rules
 
@@ -1596,29 +1559,21 @@ For `outside_hours`, `no_agents`, `queue_invalid`, `declined`, or `failed`:
 
 - Do not blindly replay the message after an uncertain network failure.
 - The provider may already have received it.
-- Reconcile through the selected transfer event or transcript contract before
-  retrying.
+- Reconcile through the selected transfer event or transcript contract before retrying.
 
 #### Asynchronous connection is lost
 
 - Mark the customer UI as reconnecting.
-- Do not declare the human agent disconnected solely because the customer
-  delivery connection dropped.
-- Resume from the last acknowledged cursor or request a transcript snapshot if
-  the selected contract supports it.
-- If the selected contract has no replay or backfill, document that messages
-  can be missed during disconnection and do not claim reliable transfer
-  support.
+- Do not declare the human agent disconnected solely because the customer delivery connection dropped.
+- Resume from the last acknowledged cursor or request a transcript snapshot if the selected contract supports it.
+- If the selected contract has no replay or backfill, document that messages can be missed during disconnection and do not claim reliable transfer support.
 
 #### Events arrive more than once or out of order
 
 - Use the published event identifier for idempotency.
-- Apply events only to the matching customer, channel, ABL chat session, and
-  transfer session.
-- Do not move from a terminal state back to `queued` because of a delayed
-  event.
-- If no event identifier or ordering contract exists, the delivery design is
-  incomplete and must be resolved before launch.
+- Apply events only to the matching customer, channel, ABL chat session, and transfer session.
+- Do not move from a terminal state back to `queued` because of a delayed event.
+- If no event identifier or ordering contract exists, the delivery design is incomplete and must be resolved before launch.
 
 ### Attachment, form, and media limitations
 
@@ -1641,23 +1596,18 @@ Each capability requires an explicit customer contract for:
 - Media credential redaction.
 - Expiration and cleanup.
 
-Do not render arbitrary provider HTML, URLs, forms, or media credentials
-directly.
+Do not render arbitrary provider HTML, URLs, forms, or media credentials directly.
 
 ### Transfer-specific security requirements
 
 - Prefer Hosted Exchange so the transfer has a verified end-user identity.
-- Never accept a customer-supplied `verifiedUserId` without authenticating the
-  customer first.
-- Bind transfer events to tenant, project, channel, end user, ABL chat session,
-  and transfer session.
-- Do not expose provider credentials, internal IDs, routing configuration, raw
-  provider payloads, or internal runtime state.
+- Never accept a customer-supplied `verifiedUserId` without authenticating the customer first.
+- Bind transfer events to tenant, project, channel, end user, ABL chat session, and transfer session.
+- Do not expose provider credentials, internal IDs, routing configuration, raw provider payloads, or internal runtime state.
 - Sign webhook deliveries and protect against replay.
 - Rate-limit message sending and callback processing.
 - Redact sensitive transcript content according to the agreed policy.
-- Audit transfer initiation, connection, failure, and termination without
-  logging SDK tokens or channel secrets.
+- Audit transfer initiation, connection, failure, and termination without logging SDK tokens or channel secrets.
 
 ### Transfer go-live checklist
 
@@ -1666,11 +1616,9 @@ directly.
 - [ ] Hosted Exchange is used when verified identity is required.
 - [ ] The post-agent action is explicitly configured as `return` or `end`.
 - [ ] An asynchronous delivery mechanism has been published and enabled.
-- [ ] The customer can receive queued, connected, message, and disconnected
-      events.
+- [ ] The customer can receive queued, connected, message, and disconnected events.
 - [ ] Transfer events are authenticated and identity-scoped.
-- [ ] Transfer-session events are reliably correlated to the correct ABL chat
-      session and customer conversation.
+- [ ] Transfer-session events are reliably correlated to the correct ABL chat session and customer conversation.
 - [ ] Duplicate and out-of-order events are handled.
 - [ ] Disconnection recovery and transcript backfill are tested.
 - [ ] Customer messages sent during transfer reach the human-agent provider.
@@ -1679,15 +1627,12 @@ directly.
 - [ ] Empty `transfer_active` responses do not create blank message bubbles.
 - [ ] Attachments, forms, and media are disabled unless explicitly supported.
 - [ ] The `return` and `end` post-agent paths are tested.
-- [ ] Tokens, provider credentials, and sensitive transfer payloads are absent
-      from logs.
-- [ ] Customer documentation states any event-retention or message-loss
-      limitations.
+- [ ] Tokens, provider credentials, and sensitive transfer payloads are absent from logs.
+- [ ] Customer documentation states any event-retention or message-loss limitations.
 
 ### Customer implementation decision
 
-Before a customer implements human-agent transfer, record the following
-decision:
+Before a customer implements human-agent transfer, record the following decisions.
 
 ```text
 Transfer provider:
@@ -1705,16 +1650,13 @@ Post-agent action: return | end
 Attachments/forms/media enabled:
 ```
 
-If any of the asynchronous delivery, authentication, identity, idempotency,
-ordering, or recovery fields are undefined, the integration is not ready to be
-presented as complete human-agent transfer.
+If any of the asynchronous delivery, authentication, identity, idempotency, ordering, or recovery fields are undefined, the integration is not ready to be presented as complete human-agent transfer.
 
 ## Node.js reference implementation
 
-The following example uses the built-in `fetch` available in Node.js 20 or
-later. It shows both token bootstrap modes and synchronous REST chat.
+The following example uses the built-in `fetch` available in Node.js 20 or later. It shows both token bootstrap modes and synchronous REST chat.
 
-```js
+```js expandable=true
 class AblApiError extends Error {
   constructor(status, body) {
     const apiMessage =
@@ -1850,7 +1792,7 @@ const secondTurn = await sendMessage({
 console.log(secondTurn.response);
 ```
 
-In a real service:
+In a service:
 
 - Store the conversation record in a server-side session store or database.
 - Key it by the authenticated customer and the customer's conversation ID.
@@ -1860,15 +1802,13 @@ In a real service:
 - Serialize concurrent messages for the same `sessionId`.
 - Apply a client timeout that is longer than the agreed agent execution time.
 
-This Node.js sample implements the base synchronous REST conversation only. It
-does not receive asynchronous human-agent events. Do not use it as a complete
-human-transfer implementation without one of the published delivery contracts
-described in Section 9.
+This Node.js sample implements the base synchronous REST conversation only. It does not receive asynchronous human-agent events. Do not use it as a complete human-transfer implementation without one of the published delivery contracts described in Section 9.
+
+{/* AG: Add link to what used to be Section 9. */}
 
 ## Error handling
 
-Error response bodies can contain either an `error` string or a structured
-`error` object. Handle both:
+Error response bodies can contain either an `error` string or a structured `error` object.
 
 ```json
 {
@@ -1880,7 +1820,7 @@ Error response bodies can contain either an `error` string or a structured
 }
 ```
 
-Common HTTP statuses:
+**How to handle common HTTP statuses**
 
 | Status | Meaning                                                                        | Recommended handling                                                     |
 | ------ | ------------------------------------------------------------------------------ | ------------------------------------------------------------------------ |
@@ -1898,43 +1838,32 @@ Common HTTP statuses:
 
 ### Safe retry policy
 
-Do not automatically retry `/api/v1/chat/agent` after a network timeout,
-connection reset, `500`, or `504` when it is unclear whether execution began.
-The agent may have already completed a tool call or changed external state, and
-the API does not accept a customer idempotency key in this request contract.
+Do not automatically retry `/api/v1/chat/agent` after a network timeout, connection reset, `500`, or `504` when it is unclear whether execution began. The agent may have already completed a tool call or changed external state, and the API does not accept a customer idempotency key in this request contract.
 
 Recommended policy:
 
 1. Retry `429` only after the server-provided delay.
-2. Retry `503` with short, bounded exponential backoff when the response
-   clearly indicates the request was not executed.
-3. On `401`, refresh or initialize once, then stop if authentication still
-   fails.
-4. On an uncertain chat failure, show a recoverable error to the user and
-   reconcile the business operation before resending.
-5. Never run two chat requests concurrently for the same conversation unless
-   the agent design explicitly supports it.
+2. Retry `503` with short, bounded exponential backoff when the response clearly indicates the request was not executed.
+3. On `401`, refresh or initialize once, then stop if authentication still fails.
+4. On an uncertain chat failure, show a recoverable error to the user and reconcile the business operation before resending.
+5. Never run two chat requests concurrently for the same conversation unless the agent design explicitly supports it.
 
 ## Security requirements
 
 - Use HTTPS only.
 - Keep `X-SDK-Channel-Secret` on the trusted backend.
-- Never expose the channel secret in browser JavaScript, a mobile binary, URLs,
-  analytics, logs, or error messages.
+- Never expose the channel secret in browser JavaScript, a mobile binary, URLs, analytics, logs, or error messages.
 - Treat bootstrap tokens and SDK tokens as sensitive opaque values.
 - Do not reuse an SDK token across different end users.
-- Bind each stored `sessionId` to the same customer identity and SDK token
-  context that created it.
+- Bind each stored `sessionId` to the same customer identity and SDK token context that created it.
 - Validate the authenticated customer before loading a stored conversation.
 - Configure an explicit production origin allowlist.
 - Send the minimum required personal data.
-- Rotate the channel secret and revoke affected sessions after suspected
-  exposure.
+- Rotate the channel secret and revoke affected sessions after suspected   exposure.
 - Do not request or display runtime debug state through the customer API.
 - Ignore unknown response fields and action types rather than failing open.
 
-Disabling the channel, revoking its public key, changing its permissions, or
-removing its valid deployment binding can invalidate existing SDK tokens.
+Disabling the channel, revoking its public key, changing its permissions, or removing its valid deployment binding can invalidate existing SDK tokens.
 
 ## Go-live validation checklist
 
@@ -1951,15 +1880,13 @@ Complete these tests in a non-production environment before launch:
 - [ ] `auth_required` is handled without repeatedly resending the message.
 - [ ] Interactive actions render and send the correct selection.
 - [ ] `429`, `503`, timeout, and network-disconnect experiences are tested.
-- [ ] If SSE is used, `session`, `token`, `done`, `error`, and heartbeats are
-      handled correctly.
-- [ ] Customer support can locate a failed request using the timestamp,
-      customer-side request ID, project ID, and session ID without receiving any
-      secret or token.
-- [ ] If human-agent transfer is enabled, every item in the
-      [transfer go-live checklist](#transfer-go-live-checklist) is complete.
+- [ ] If SSE is used, `session`, `token`, `done`, `error`, and heartbeats are handled correctly.
+- [ ] Customer support can locate a failed request using the timestamp, customer-side request ID, project ID, and session ID without receiving any secret or token.
+- [ ] If human-agent transfer is enabled, every item in the [transfer go-live checklist](#transfer-go-live-checklist) is complete.
 
 ## Troubleshoot integration issues
+
+{/* AG: Can we convert this to a table? */}
 
 ### `/sdk/init` returns `401`
 
@@ -1970,30 +1897,26 @@ Check that the public key or channel secret:
 - Belongs to the same tenant, project, and channel.
 - Is being sent in the correct header.
 
-For Hosted Exchange, confirm that the channel uses the Hosted Exchange
-authentication mode.
+For Hosted Exchange, confirm that the channel uses the Hosted Exchange authentication mode.
 
 ### `/sdk/init` returns `403 Origin not allowed`
 
-Compare the exact `Origin` header with the origin configured for the public
-key. Scheme, host, and port are significant.
+Compare the exact `Origin` header with the origin configured for the public key. Scheme, host, and port are significant.
 
 ### `/sdk/init` returns `409`
 
-More than one channel may be associated with the key. Send the exact
-`channelId` supplied by the platform owner.
+More than one channel may be associated with the key. Send the exact `channelId` supplied by the platform owner.
 
 ### Chat returns `404` for a known `sessionId`
 
-Confirm that:
+Make sure that:
 
 - The same project and channel are being used.
 - The session belongs to the same end-user identity.
 - The application did not mix tokens or session IDs between users.
 - The stored session ID was not overwritten by another conversation.
 
-The runtime can return `404` instead of revealing that a session belongs to a
-different identity.
+The runtime can return `404` instead of revealing that a session belongs to a different identity.
 
 ### Every message starts a new conversation
 
@@ -2001,7 +1924,7 @@ Save the `sessionId` returned by the first chat response and include it in the b
 
 ### The browser does not receive streamed tokens
 
-Confirm that:
+Make sure that:
 
 - The client calls `/api/v1/chat/agent/stream`.
 - The request sends `Accept: text/event-stream`.
@@ -2012,7 +1935,7 @@ Confirm that:
 
 This is expected when only the base REST endpoints are configured. Human-agent messages arrive asynchronously after the original chat request has completed.
 
-Confirm that:
+Make sure that:
 
 - A customer webhook, supported WebSocket, or customer-facing polling contract has been selected.
 - The selected asynchronous mechanism is enabled for the channel.
@@ -2028,21 +1951,16 @@ Per-turn `/api/v1/chat/agent/stream` SSE is not a human-agent event subscription
 
 For a basic API Channel integration:
 
-1. Get the Runtime URL, project ID, channel ID, origin, and authentication
-   credential from the ABL platform owner.
+1. Get the Runtime URL, project ID, channel ID, origin, and authentication credential from the ABL platform owner.
 2. Call `/api/v1/sdk/init` to obtain an SDK token.
 3. Call `/api/v1/chat/agent` once for every user message.
 4. Omit `sessionId` on the first turn.
 5. Save the returned `sessionId`.
-6. Include that `sessionId` and the same identity-scoped SDK token on every
-   later turn.
+6. Include that `sessionId` and the same identity-scoped SDK token on every later turn.
 7. Refresh the SDK token before its four-hour expiration.
 8. Use `/api/v1/chat/agent/stream` only when SSE streaming is needed.
 9. Do not create a WebSocket connection for the API Channel.
-10. If human-agent transfer is required, select and publish a webhook,
-    supported WebSocket, or polling contract before implementation.
-11. Do not describe REST-only human-agent transfer as complete until
-    asynchronous event delivery, correlation, ordering, idempotency, and
-    recovery are defined and tested.
+10. If human-agent transfer is required, select and publish a webhook, supported WebSocket, or polling contract before implementation.
+11. Do not describe REST-only human-agent transfer as complete until asynchronous event delivery, correlation, ordering, idempotency, and recovery are defined and tested.
 
 Use the endpoint paths and integration values supplied by the ABL Studio Channel configuration for the deployed release. Do not construct alternative runtime endpoint paths without confirmation from the ABL platform owner.
