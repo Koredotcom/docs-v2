@@ -306,21 +306,46 @@ COMMUNICATION:
 
 ### Behavior settings
 
-
-The `BEHAVIOR` block defines whether the Supervisor can respond directly to users or must always route to an agent.
+The `BEHAVIOR` block declares the Supervisor's execution **role**, which governs how it participates
+in coordination.
 
 ```yaml
 BEHAVIOR:
-  canRespondDirectly: false
-  allowedDirectActions: [greet, clarify_intent]
-  forbiddenActions: [make_booking, process_payment, access_account]
+  role: orchestrator     # router | orchestrator | assistant
 ```
 
 | Property               | Type       | Required | Default | Description                                                 |
 | ---------------------- | ---------- | -------- | ------- | ----------------------------------------------------------- |
-| `canRespondDirectly`   | `boolean`  | Yes      | --      | Whether the Supervisor can send messages directly to users. |
-| `allowedDirectActions` | `string[]` | No       | `[]`    | Actions the Supervisor can perform directly.                |
-| `forbiddenActions`     | `string[]` | No       | `[]`    | Actions the Supervisor must never perform.                  |
+| `role`                 | `string`   | No*      | --      | Execution role: `router`, `orchestrator`, or `assistant`. See [Execution roles](#execution-roles). |
+| `canRespondDirectly`   | `boolean`  | No       | --      | **Deprecated** — migrate to `role`. Retained as a compatibility fallback (see below). |
+| `allowedDirectActions` | `string[]` | No       | `[]`    | **Deprecated** compatibility field; does not authorize runtime operations. |
+| `forbiddenActions`     | `string[]` | No       | `[]`    | **Deprecated** compatibility field; does not authorize runtime operations. |
+
+<Note>
+  \*`role` is optional, but omitting it on an agent that has a `BEHAVIOR` block produces a
+  deprecation warning and falls back to legacy inference. Declaring `role` is the recommended,
+  forward-compatible form.
+</Note>
+
+#### Execution roles
+
+| Role           | Responds directly? | Can `DELEGATE`? | Meaning                                                                 |
+| -------------- | ------------------ | --------------- | ----------------------------------------------------------------------- |
+| `router`       | No                 | No              | Routes each message to a child agent via `HANDOFF`. Requires at least one `HANDOFF` target. |
+| `orchestrator` | Yes                | Yes             | Coordinates child agents and may also synthesize/respond directly. Required to use `DELEGATE`. |
+| `assistant`    | Yes (leaf)         | Yes             | A leaf agent that handles conversations directly. **Not valid on a `SUPERVISOR` document.** |
+
+<Warning>
+  **Breaking changes in this release:**
+  - `canRespondDirectly` is deprecated in favor of `role`. If both are present and **conflict**
+    (`canRespondDirectly: true` ↔ `orchestrator`, `false` ↔ `router`), compilation fails
+    (`AGENT_EXECUTION_ROLE_CONFLICT`). Remove the deprecated field or pick the matching role.
+  - A `SUPERVISOR` must be `router` or `orchestrator` — `role: assistant` fails compilation.
+  - `role: router` requires at least one `HANDOFF` ownership target.
+  - Only an `orchestrator` may declare `DELEGATE:` — a `router` (or `assistant`) that uses
+    `DELEGATE` fails compilation (`AGENT_RETURNED_WORK_REQUIRES_ORCHESTRATOR`). Routers hand off;
+    orchestrators own returned work.
+</Warning>
 
 ### Intents
 
@@ -468,6 +493,7 @@ The `CONTEXT` block defines what information the target agent receives.
 | `pass`          | `string[]` | Yes      | --      | Session variable names to include in the handoff context.                              |
 | `summary`       | `string`   | Yes      | --      | Human-readable summary of why the handoff is occurring. Supports `{{}}` interpolation. |
 | `history`       | `string` / `object` | No | `auto` | Conversation history strategy. See [History strategies](#history-strategies).          |
+| `set`           | `Record<string,string>` | No | --   | Route-scoped variable assignments applied **before** the target agent is invoked (inject computed values without a separate step). |
 | `memory_grants` | `object[]` | No       | --      | Persistent memory paths to grant the target agent access to. See [Memory grants](#memory-grants). |
 
 <Warning>
@@ -655,6 +681,17 @@ CONTEXT:
 
 
 DELEGATE invokes a sub-agent synchronously, waits for it to complete, and maps the result back into the calling agent's context. The sub-agent runs in its own scope and does not have direct access to the parent's session variables.
+
+<Warning>
+  **Breaking changes in this release:**
+  - `DELEGATE` may only be declared by an [`orchestrator`](#execution-roles). A `router` or
+    `assistant` that uses `DELEGATE` fails compilation.
+  - `DELEGATE` is a one-shot internal call — it cannot wait for multi-turn user input. If the target
+    agent has **required** `GATHER` fields, you must supply them in `INPUT:` (or make them
+    optional/defaulted). An unmapped required field fails compilation
+    (`DELEGATE_CHILD_GATHER_INPUT_UNMAPPED`); model a user-interactive child as an
+    `EXPECT_RETURN: true` `HANDOFF` instead.
+</Warning>
 
 ### Syntax
 
@@ -978,11 +1015,30 @@ COMPLETE:
 ### Properties
 
 
-| Property  | Type     | Required | Default | Description                                                            |
-| --------- | -------- | -------- | ------- | ---------------------------------------------------------------------- |
-| `WHEN`    | `string` | Yes      | --      | Condition expression. The agent completes when this evaluates to true. |
-| `RESPOND` | `string` | No       | --      | Final message to the user. Supports `{{}}` template interpolation.     |
-| `STORE`   | `string` | No       | --      | Collection or path name to store the completion result for analytics.  |
+| Property   | Type                    | Required | Default | Description                                                            |
+| ---------- | ----------------------- | -------- | ------- | ---------------------------------------------------------------------- |
+| `WHEN`     | `string`                | Yes      | --      | Boolean condition over session state. The agent completes when this evaluates to true. |
+| `RESPOND`  | `string`                | No       | --      | Final message to the user. Supports `{{}}` template interpolation.     |
+| `SET`      | `Record<string,string>` | No       | --      | Session assignments applied when the completion fires (for example, clear the sticky flag that triggered it). |
+| `TERMINAL` | `boolean`               | No       | `true`  | When `false`, the response renders (including interactive widgets like a closing feedback collector) **without** ending the session — control returns to the agent for the next turn. |
+| `STORE`    | `string`                | No       | --      | Collection or path name to store the completion result for analytics.  |
+
+<Warning>
+  `COMPLETE`'s `WHEN` is **deterministic** — it must be a boolean expression over session state.
+  Plain-English / intent-style text is rejected at compile time (`PLAIN_ENGLISH_COMPLETE_WHEN`). Use
+  `NLU`/routing for intent matching, not `COMPLETE WHEN`.
+</Warning>
+
+Example of a non-terminal completion that collects feedback and then keeps the session open:
+
+```yaml
+COMPLETE:
+  - WHEN: feedback_requested == true
+    RESPOND: "Thanks! How would you rate this conversation?"
+    SET:
+      feedback_requested: "false"
+    TERMINAL: false
+```
 
 ### Rich content in completion
 
