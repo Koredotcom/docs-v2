@@ -40,6 +40,7 @@ Within a `FLOW:` step, gather uses a different syntax. See [GATHER within FLOW](
 | -------------------- | ------------------------------------- | -------- | ------------ | ----------------------------------------------------------------------- |
 | `prompt`             | `string`                              | Yes      | --           | The question or instruction shown to the user to collect this field     |
 | `message_key`        | `string`                              | No       | _none_       | Locale catalog key used to localize the `prompt`                        |
+| `description`        | `string`                              | No       | _none_       | Semantic, model-facing description of what the value represents (distinct from `prompt`). Overrides a referenced entity's description. |
 | `type`               | `string`                              | No       | `"string"`   | Data type for the field value (see [Field types](#field-types))         |
 | `required`           | `boolean`                             | No       | `true`       | Whether the field must be collected before proceeding                   |
 | `default`            | `any`                                 | No       | _none_       | Default value used if the user does not provide one                     |
@@ -66,12 +67,9 @@ Within a `FLOW:` step, gather uses a different syntax. See [GATHER within FLOW](
 | `transient`          | `boolean`                             | No       | `false`      | Whether PII auto-cleans after gather completes                          |
 | `extraction_pattern` | `string`                              | No       | _none_       | Custom regex pattern for value extraction                               |
 | `extraction_group`   | `number`                              | No       | `0`          | Capture group index for `extraction_pattern`                            |
+| `extraction_hints`   | `string[]`                            | No       | _none_       | Example surface forms that guide LLM extraction. Merged on top of a referenced entity's hints; an explicit empty list clears inherited hints. |
+| `strategy`           | `"auto"` , `"ml"` , `"llm"` , `"hybrid"` , `"pattern"` | No | _none_ | Per-field extraction strategy override (see [Extraction strategy](#extraction-strategy)). |
 | `semantics`          | `object`                              | No       | _none_       | Supplemental metadata about the value (see [Semantics](#semantics))     |
-
-<Note>
-  `extraction_hints` is a **flow-step gather** property, not a top-level `GATHER:` property — at the
-  top level it is not parsed. See [GATHER within FLOW](/agent-platform/abl-reference/flow#gather-in-flow-steps).
-</Note>
 
 ## Field types
 
@@ -251,10 +249,38 @@ GATHER:
 
 When the LLM's confidence in an inferred value falls below `infer_confidence`, the runtime falls back to asking the user directly using the `prompt`.
 
-<Note>
-  To steer extraction with natural-language hints (`extraction_hints`), use a **flow-step** gather
-  field — see [GATHER within FLOW](/agent-platform/abl-reference/flow#gather-in-flow-steps).
-</Note>
+Use `extraction_hints` to steer extraction with example surface forms:
+
+```yaml
+GATHER:
+  transfer_type:
+    prompt: "Is this domestic or international?"
+    type: string
+    infer: true
+    extraction_hints: ["If beneficiary country is US, infer domestic. Otherwise international."]
+```
+
+## Extraction strategy
+
+The `strategy` property selects how a value is extracted. It can be set per field, and the same
+enum is available as a block-level default on flow-step gather.
+
+| Value     | Behavior                                                          |
+| --------- | ----------------------------------------------------------------- |
+| `auto`    | Let the platform choose the best available strategy (default behavior when unset). |
+| `ml`      | Use the ML/NLU entity model.                                      |
+| `llm`     | Use the LLM to extract the value.                                 |
+| `pattern` | Use pattern/regex extraction (pairs with `extraction_pattern`).   |
+| `hybrid`  | Combine ML and LLM extraction.                                    |
+
+```yaml
+GATHER:
+  phone_number:
+    prompt: "What is your phone number?"
+    type: phone
+    strategy: pattern
+    extraction_pattern: "\\d{3}-\\d{3}-\\d{4}"
+```
 
 ## Range collection
 
