@@ -102,8 +102,10 @@ Shapes response rendering.
 ### VOICE
 
 
-Voice (TTS) overrides while the profile is active. Sub-keys: `instructions`, `ssml`, `plain_text`
-(same shape as the [agent voice config](/agent-platform/abl-reference/rich-content-and-expressions#voice-configuration)).
+Voice (TTS) overrides while the profile is active. Accepts the full
+[voice configuration](/agent-platform/abl-reference/rich-content-and-expressions#voice-configuration)
+— `instructions`, `ssml`, `plain_text`, `provider`, `voice_id`, `speed`, `pace`, `temperature`, and
+`auto_tts_language_switch`.
 
 ### TOOLS
 
@@ -127,7 +129,7 @@ TOOLS:
 Conversation-style overrides, organized into three sub-sections:
 
 - **`speaking`** — output style: `style`, `tone`, `emotion`, `pace`, `variety`, `max_sentences`, `one_thing_at_a_time`, `language_policy` (`interaction_context` / `agent_default` / `fixed`), `fixed_language`, `tool_lead_in`, `tool_results`, `readback`, `handoffs`, `phrases_ref`, `pronunciations_ref`.
-- **`listening`** — input handling: `barge_in`, `backchannels`, `on_pause`, `on_overlap`, `on_unclear_audio`, `on_self_correction`, `use_audio_cues`.
+- **`listening`** — input handling: `barge_in`, `backchannels`, `on_pause`, `on_overlap`, `on_unclear_audio`, `on_self_correction`, `use_audio_cues`, and the voice sub-blocks `on_no_input`, `on_caller_backchannel`, and `on_hold` (see [Voice turn-taking](#voice-turn-taking)).
 - **`interaction`** — dialogue behavior: `answer_shape`, `detail`, `initiative`, `grounding`, `clarification`, `confirmation`, `uncertainty`, `empathy`, `repair`, `context`, `closure`, `assumption_handling`, `flow_mode`, and more.
 
 ```yaml
@@ -141,6 +143,50 @@ CONVERSATION:
   interaction:
     clarification:
       max_questions: 1
+```
+
+#### Voice turn-taking
+
+For voice/telephony channels, three `listening` sub-blocks control turn-taking behavior:
+
+**`on_no_input`** — handle caller silence.
+
+| Field | Type | Description |
+| ----- | ---- | ----------- |
+| `enabled` | `boolean` | Toggle no-input handling. |
+| `mode` | `"static"` , `"dynamic"` | Static prompts vs. LLM-generated re-prompts. |
+| `timeout_ms` | `number` | Silence duration before triggering. |
+| `relaxed_interval_ms` | `number` | Extended interval between retries. |
+| `max_retries` | `number` | Maximum no-input retries. |
+| `on_exhausted` | `"hangup"` , `"transfer"` , `"custom"` | Action when retries run out. |
+| `exhausted_message` | `string` | Message when retries are exhausted. |
+| `order` | `"sequence"` , `"random"` | Prompt play order. |
+| `play_style` | `"looped"` , `"once"` , `"non_looped"` | Whether prompts repeat. |
+| `messages` | `object[]` | Static re-prompt texts. |
+| `generation` | `object` | Dynamic prompt generation (`mode: dynamic`): `enabled`, `model_source`, `model_id`, `prompt_ref`, `max_output_tokens`. |
+
+**`on_caller_backchannel`** — recognize caller acknowledgements ("uh-huh", "okay") without treating them as a turn: `enabled`, `phrases`, `max_words`, `max_duration_ms`.
+
+**`on_hold`** — handle caller hold requests ("hold on a sec"): `enabled`, `phrases`, `grace_ms`, `max_holds`, `suppress_response`.
+
+```yaml
+CONVERSATION:
+  listening:
+    on_no_input:
+      enabled: true
+      mode: static
+      timeout_ms: 5000
+      max_retries: 2
+      on_exhausted: transfer
+      messages:
+        - text: "Are you still there?"
+    on_caller_backchannel:
+      enabled: true
+      phrases: ["uh-huh", "okay", "go on"]
+    on_hold:
+      enabled: true
+      phrases: ["hold on", "give me a sec"]
+      grace_ms: 15000
 ```
 
 ### GATHER
