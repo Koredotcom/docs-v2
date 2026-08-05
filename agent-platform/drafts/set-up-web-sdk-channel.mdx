@@ -1,0 +1,333 @@
+---
+title: "Set up Web SDK Channel"
+---
+
+<Badge icon="arrow-left" color="gray">[Back to SDK](/agent-platform/channels#sdk)</Badge>
+
+Embed a chat widget in your website with a single script tag, or integrate it directly using the npm package. The Web SDK channel connects a chat and voice widget on your site to a specific agent deployment.
+
+This guide covers three parts:
+
+1. [Create a Web SDK Channel]() - configure authentication, origins, and widget behavior in Studio.
+2. [Implement the Widget on Website]() - add the widget to your site using the npm package or script tag, for either authentication mode.
+3. [Manage an Existing Channel]() - review, edit, test, and redeploy a channel after it's created.
+
+## Create a Web SDK Channel
+
+The Web SDK channel connects a browser-based chat or voice widget to your agent.  
+It supports two authentication modes - **Anonymous / Public-key bootstrap** for client-only apps, and **Hosted token exchange** for setups where a backend can hold a server secret.
+
+<Note>Choose your authentication mode before you begin - it determines which additional fields apply later in this setup.</Note>
+
+To configure a Web SDK channel, go to **Deployments** > **Channels** > **SDK** > **Web SDK** > **+ New** and complete the following steps in order.
+
+<Steps>
+  <Step title="Set Up the Connection">
+    On the **New Web SDK Connection** page, provide:
+    - **Display Name** - Label for the connection (up to 255 characters)  
+    - **Environment** - Tracks the active deployment for this channel  
+    - **Authentication** - Choose **Anonymous / Public-key bootstrap** or **Hosted token exchange**
+  </Step>
+
+  <Step title="Choose an Authentication Mode">
+    | Mode | When to Use |
+    |------|-------------|
+    | **Anonymous / Public-key bootstrap** | Use when the chat is anonymous or low assurance, and verified identity or sensitive attributes are not required. |
+    | **Hosted token exchange** | Use when the user is signed in, identity must be verified, or sensitive attributes are required. |
+
+    > Create a separate SDK key per environment (development, staging, production). Scope each key's permissions to only what that environment needs. Do not reuse keys across environments.
+  </Step>
+
+  <Step title="Set the Token Envelope Policy (Hosted Token Exchange Only)">
+    | Option | Meaning |
+    |--------|---------|
+    | **Use runtime default** | Defers to the project-level default policy |
+    | **Signed tokens** | Issues signed bootstrap/session tokens only |
+    | **Prefer encrypted tokens (jwe_preferred)** | Uses encrypted tokens when available; falls back to signed tokens |
+    | **Require encrypted tokens (jwe_required)** | Requires encrypted tokens end-to-end; fails closed if encryption is unavailable |
+  </Step>
+
+  <Step title="Select the Public SDK Key and Create the Channel">
+    - Create an SDK key. [Learn how to create an SDK key](/agent-platform/administration/general-settings#api-keys).
+    - Select the **Public SDK Key** the browser will use during bootstrap  
+    - Click **Create** to generate the channel
+  </Step>
+
+  <Step title="Configure Additional Settings">
+
+  Once the channel is created, select it, then go to the Configuration tab to update the following fields:
+    - **Allowed Origins (CORS)** - One URL per line (scheme + host + optional port only)  
+    - **Server Secret (Hosted token exchange only)** - Generated once; copy immediately into your backend. Rotate as needed  
+    - **Customer-issued Encrypted Bootstrap (Hosted token exchange only)** - Toggle to accept customer‑backend‑issued JWE bootstrap tokens
+  </Step>
+
+  <Step title="Configure Widget Behavior">
+    - **Widget Mode** — Chat Only, Voice Only, or Chat + Voice  
+    - **Features** — Toggle Chat and Voice independently  
+    - **Show Agent Activity Updates** — Off by default; shows transient handoff/delegate activity  
+    - **Theme** — Choose a preset, or select **Add themes** to open the theme editor:  
+      - **General > Placement** — Anchor position and offset from the edge  
+      - **Style > Typography, Shape & Spacing** — Fonts, colors, corner radius, and spacing  
+      - **Components > Launcher, Header, Message Bubble, Composer** — Per‑component colors, text, and behavior, with a live preview alongside  
+      - **Composer > Attachment Button** — Toggle to show or hide the attachment icon in the message compose area  
+    - **Welcome Message** — First message shown to users (e.g., “Hello! How can I help you today?”)  
+  </Step>
+
+  <Step title="Save the Channel">
+    - Select **Save Configuration**, then **Save Changes**
+  </Step>
+
+  <Step title="Test the Channel">
+    Open the **Testing** tab, generate a **Secure Preview Link**, and confirm you get a complete response. See the **Testing** tab reference below for setup code once you're ready to add the widget to your site.
+  </Step>
+
+</Steps>
+
+---
+
+## Implement the Widget on Website
+
+Use `AgentWidget` when you want the built-in floating chat button and panel, with chat and voice unified in a single widget. Learn more about the [Web SDK](/agent-platform/sdks#agentsdk).
+
+- **Choose one of:**
+  - **Option A:** Anonymous / Public-key Bootstrap  
+  - **Option B:** Hosted Token Exchange  
+  - **Other Integration Options:** React, fully custom UI  
+
+
+<Steps>
+  <Step title="Option A: Anonymous / Public-key Bootstrap">
+    1. **Collect Values from Studio**  
+       - Runtime endpoint  
+       - Project ID  
+       - SDK channel ID  
+       - Publishable SDK key (pk_...)  
+       - Allowed origins  
+
+       > The pk_... key is safe for browser code. It is protected by allowed origins, environment scoping, and rate limits.
+
+    2. **Install the SDK**
+    ```bash
+    npm install @koreai/artemis-web-sdk
+    ```
+
+    3. **Initialize the Widget**
+
+    Call `AgentWidget.init()` once at app-shell mount, and `AgentWidget.destroy(widget)` on unmount in SPAs. The publishable key is meant to live in the browser - don't hide it server-side. Protect it instead with allowed origins, environment-specific keys, scoped permissions, quotas, and rate limits.
+    
+    ```
+    import { AgentWidget } from '@koreai/artemis-web-sdk';
+
+    const widget = AgentWidget.init({
+      endpoint: 'https://agents.example.com',
+      projectId: 'project_123',
+      apiKey: 'pk_your_publishable_sdk_key',
+      channelId: 'channel_123',
+      clientSessionIdentifier: true,
+      mode: 'chat',
+      position: 'bottom-right',
+      chatEnabled: true,
+      voiceEnabled: false,
+      placeholder: 'How can we help?',
+      theme: {
+        assistantName: 'Support Assistant',
+        primaryColor: '#2563eb',
+        primaryForegroundColor: '#ffffff',
+        backgroundColor: '#ffffff',
+        textColor: '#1e293b',
+        launcherLabel: 'Chat with us',
+      },
+    });
+
+    export function removeArtemisWidget(): void {
+      AgentWidget.destroy(widget);
+    }
+    ```
+
+    4. **Optional: Add Non-Sensitive Personalization**
+    ```
+    const widget = AgentWidget.init({
+      endpoint: 'https://agents.example.com',
+      projectId: 'project_123',
+      apiKey: 'pk_your_publishable_sdk_key',
+      channelId: 'channel_123',
+      userContext: {
+        userId: 'anonymous-browser-id',
+        customAttributes: {
+          currentPage: 'support',
+          productArea: 'billing',
+        },
+      },
+      mode: 'chat',
+    });
+    ```
+    > Do not place sensitive data or authorization decisions in `userContext`.
+  </Step>
+
+  <Step title="Option B: Hosted Token Exchange">
+    1. **Collect Values from Studio**  
+       - Runtime endpoint  
+       - Project ID  
+       - SDK channel ID  
+       - Server secret (sk_...)  
+       - Token envelope policy  
+       - Allowed origins  
+
+    2. **Store Server Configuration**  
+       Save values in backend configuration (for example: `ARTEMIS_SDK_CHANNEL_SECRET`).
+
+    3. **Add Backend Bootstrap Endpoint**  
+       Implement a secure route (`/api/agent/bootstrap`) to mint short‑lived bootstrap tokens using the server secret.
+
+    4. **Add Browser Token Provider**
+      ```transcript
+      import { AgentWidget } from '@koreai/artemis-web-sdk';
+
+      async function getArtemisBootstrapToken(): Promise<string> {
+      const response = await fetch('/api/agent/bootstrap', {
+      method: 'POST',
+      credentials: 'include',
+      cache: 'no-store',
+      headers: {
+        'content-type': 'application/json',
+        // Include the customer's normal CSRF header when required.
+      },
+      body: '{}',
+      });
+
+      if (!response.ok) {
+      throw new Error('Unable to start support chat');
+      }
+
+      const body = (await response.json()) as { bootstrapToken?: string };
+      if (!body.bootstrapToken) {
+      throw new Error('Support chat bootstrap response is invalid');
+      }
+
+      return body.bootstrapToken;
+      }
+
+      const widget = AgentWidget.init({
+      endpoint: 'https://agents.example.com',
+      projectId: 'project_123',
+      bootstrapTokenProvider: getArtemisBootstrapToken,
+      mode: 'chat',
+      position: 'bottom-right',
+      chatEnabled: true,
+      voiceEnabled: false,
+      });
+      ```
+    > Hosted Exchange browser config must not include `apiKey`, `channelId`, or sensitive values. Tokens bind these automatically.
+  </Step>
+
+  <Step title="Other Integration Options">
+    - **React** - `AgentProvider` and `ChatWidget` components at `@koreai/artemis-web-sdk/react` for React 18 apps, supporting both Option A and Option B.
+    - **Fully custom UI** - the headless `AgentSDK` class exposes `connect()`, `chat().send()`, and message/typing/streaming events for teams rendering their own chat interface.
+
+    See [React SDK reference](/agent-platform/sdks#react) and [Custom UI / Headless SDK reference](/agent-platform/sdks#agentsdk) for full implementation details.
+  </Step>
+</Steps>
+
+## Manage an existing channel
+
+Opening a channel from **Deployments** > **Channels** > **Web SDK** shows four tabs: **Overview**, **Configuration**, **Deployment**, and **Testing**.
+
+<Tabs>
+  <Tab title="Overview">
+    The **Connection Summary** shows these fields.
+
+    | Field | Description |
+    | ----- | ----------- |
+    | **Status** | for example: *Active* |
+    | **Created** | Timestamp the channel was created |
+    | **Updated** | Timestamp of the last change |
+    | **Environment** | for example: `dev` |
+    | **Source Type** | `SDK Channel` |
+    | **Source ID** | Unique channel identifier (UUID) |
+  </Tab>
+
+  <Tab title="Configuration">
+    Contains the same **General** (Display Name), **Authentication**, and widget behavior settings described in [Create a Web SDK Channel](#create-a-web-sdk-channel) above, editable at any time. Changing the auth mode, token envelope policy, allowed origins, or public key here updates the live channel immediately after **Save Changes**.
+  </Tab>
+
+  <Tab title="Deployment">
+    The **Deployment** tab shows these fields.
+
+
+    | Field | Description |
+    | ----- | ----------- |
+    | **Agent Version** | An **Environment** dropdown (for example: `Development`) that selects which deployed version handles incoming messages. |
+    | **Active Deployment** | Shows the bound deployment version and when it was deployed. |
+
+    Click **Save Changes** after switching the environment/version.
+  </Tab>
+
+  <Tab title="Testing">
+    Select **+ Generate Link** under **Secure Preview Link** then test the widget by sending a message and confirming you get a complete response.
+
+    Under **Add to Your Site**, toggle between **Script tag** and **npm package** for this channel's setup code.
+
+    #### npm package
+
+    The tab generates the exact install command and initialization code for this channel, with real values already filled in.
+
+    1. **Install the package**
+
+       Choose `npm`, `pnpm`, or `yarn`:
+
+       ```bash
+       npm install @koreai/artemis-web-sdk
+       ```
+
+    2. **Initialize the widget**
+
+       ```typescript theme={null}
+       import { AgentWidget } from '@koreai/artemis-web-sdk';
+
+       AgentWidget.init({
+         projectId: '019f3c37-2f58-7e9b-a4b3-d871325fbcaa',
+         apiKey: process.env.AGENT_PUBLIC_API_KEY, // starts with pk_ca3b8ed5
+         endpoint: 'https://agents-staging.kore.ai',
+         channelId: '019f4146-4314-7a11-b5e7-e8c8aa97d773',
+         clientSessionIdentifier: true,
+         mode: 'chat',
+         position: 'bottom-right',
+         chatEnabled: true,
+         voiceEnabled: false,
+         placeholder: 'Type a message...',
+       });
+       ```
+
+    <Note>
+      Replace `AGENT_PUBLIC_API_KEY` with the environment variable that holds your publishable key (starts with `pk_...`).
+    </Note>
+
+    #### Script tag
+
+    ```html theme={null}
+    <!-- Agent SDK Widget -->
+    <!-- Replace YOUR_PUBLIC_API_KEY with a full key that starts with pk_ca3b8ed5 -->
+    <script src="https://agents-staging.kore.ai/api/sdk/embed/script" defer></script>
+    <agent-widget
+      project-id="PROJECT ID"
+      api-key="YOUR_PUBLIC_API_KEY"
+      endpoint="https://agents-staging.kore.ai"
+      channel-id="CHANNEL ID"
+      client-session-identifier="true"
+      chat-enabled="true"
+      voice-enabled="false"
+      mode="chat"
+      position="bottom-right"
+    ></agent-widget>
+    ```
+
+    1. Copy the above embed code.
+    2. Replace the API key placeholder with your actual key.
+    3. Paste the code before the closing `</body>` tag.
+    4. The widget will appear on your site automatically.
+
+    <Note>
+      Just add the API key. Use **npm package** for production integrations; **Script tag** only if you need a versioned embed URL for the target environment.
+    </Note>
+  </Tab>
+</Tabs>
