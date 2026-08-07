@@ -1,0 +1,315 @@
+---
+title: DTMF Support in Artemis Voice Agents
+sidebarTitle: DTMF Support in Artemis Voice Agents
+---
+
+Dual-Tone Multi-Frequency (DTMF) enables callers and voice agents to communicate using telephone keypad tones during an active voice call.
+
+Artemis provides built-in support for both inbound DTMF (caller-to-agent) and outbound DTMF (agent-to-external IVR), allowing developers to build complete IVR experiences without implementing custom telephony logic.
+
+## DTMF Architecture
+
+DTMF is supported for pipeline voice agents through the Kore Voice Gateway. Currently, it is not available for realtime voice agents. The platform exposes DTMF functionality through three built-in system tools:
+
+| Tool | Direction | Purpose |
+|---|---|---|
+| `ivr_menu` | Inbound | Present a menu and collect a single keypad selection. |
+| `ivr_digit_input` | Inbound | Collect multi-digit keypad input such as account numbers or PINs. |
+| `send_dtmf` | Outbound | Send keypad tones into an active call to control an external IVR. |
+
+These tools are implemented by the platform runtime and require no HTTP endpoint or custom tool implementation.
+
+## How DTMF Works
+
+When a caller presses a key during a voice call, the tone is detected by the voice gateway and delivered directly to the Artemis runtime. The process follows these steps:
+
+```text
+Caller presses a key
+       │
+       ▼
+KoreVG detects DTMF
+       │
+       ▼
+KoreVG sends an event containing the digit data (data.digits) to the runtime
+       │
+       ▼
+Runtime processes the event
+       │
+       ▼
+Digit string delivered to the agent
+       |
+  ▼
+Redacted status recorded in traces / eval artifacts / Studio inspection
+```
+
+Unlike speech recognition, DTMF input does not use Automatic Speech Recognition (ASR). Every valid keypress is considered deterministic and is assigned a confidence score of 1.0.
+
+## DTMF Capabilities
+
+### Enabling DTMF Capabilities
+
+As discussed above, the DTMF feature is built-in and can be implemented by the system tools. To use these tools within your agent, add the tools definition to the Tools section of the ABL file.
+
+## DTMF Tools
+
+### Presenting an IVR Menu
+
+Use `ivr_menu` when callers need to select from a numbered menu.
+
+The tool plays a prompt, waits for a single keypad press, and maps the selected digit to a workflow step or intent.
+
+**Tool Definition**
+
+```
+TOOLS:
+  ivr_menu(
+    prompt: string,
+    dtmfMappings: object[],
+    noInputConfig: object,
+    noMatchConfig: object,
+    bargeIn: boolean = false,
+    language: string = "en"
+  ) -> {digit: string, matched: boolean, mappedIntent: string, branch: string}
+    description: "Present a DTMF menu to the voice caller. The caller presses a digit to select an option. Use for voice IVR flows with numbered choices."
+```
+
+**Input Parameters**
+
+| Parameter | Type | Required | Description |
+|---|---|---|---|
+| `prompt` | string | Yes | TTS message played to the caller |
+| `dtmfMappings` | array | Yes | 1–12 mappings of `{key, nextStep, intent?}`. Keys: 0–9, *, # |
+| `noInputConfig` | object | Yes | `{timeout: 1-120s, maxRetries: 0-10, message: string}` |
+| `noMatchConfig` | object | Yes | `{maxRetries: 0-10, message: string}` |
+| `bargeIn` | boolean | No | Allow caller to press key while prompt plays. Default: false |
+| `language` | string | No | Language code for TTS playback (e.g. "en", "es") |
+
+**Example**
+
+```
+CALL: ivr_menu
+WITH:
+  prompt: "Press 1 for Billing, 2 for Support, or 0 for an agent."
+
+  dtmfMappings:
+    - key: "1"
+      nextStep: billing
+      intent: billing
+
+    - key: "2"
+      nextStep: support
+      intent: support
+
+    - key: "0"
+      nextStep: escalate
+      intent: agent
+```
+
+### Collecting Multi-Digit Input
+
+Use `ivr_digit_input` when callers must enter a sequence of digits.
+
+The tool continues collecting digits until one of the following occurs:
+
+- Maximum digits reached
+- Ending key pressed
+- Inter-digit timeout expires
+
+**Tool definition**
+
+```
+ivr_digit_input(
+    prompt: string,
+    maxDigits?: number,
+    endingKeyPress?: string,
+    interDigitTimeout?: number,
+    noInputConfig: object,
+    noMatchConfig: object,
+    language?: string
+) -> object
+description: "Collect multiple DTMF digits from the caller."
+```
+
+**Input Parameters**
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `prompt` | string | Yes | TTS message played to the caller asking them to enter digits. |
+| `maxDigits` | number (integer) | No | Maximum digits to collect before finalizing. Default: 10. If `endingKeyPress` is also set, internally increments by 1 to account for the terminator key. |
+| `endingKeyPress` | string | No | Key the caller presses to signal they're done (for example, #). Collection stops early when this key is pressed. |
+| `interDigitTimeout` | number (integer, milliseconds) | No | How long to wait after each keypress before assuming input is complete. Default: 2000 ms. |
+| `noInputConfig` | object | Yes | What to do when the caller presses nothing. |
+| `noMatchConfig` | object | Yes | What to do when the input doesn't satisfy conditions. |
+| `language` | string | No | BCP 47 language code for TTS rendering (for example, "en" or "es"). |
+
+**noInputConfig Sub-fields**
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `timeout` | number (integer, seconds) | Yes | Seconds to wait for the first digit before triggering no-input. |
+| `maxRetries` | number (integer) | Yes | How many times to re-play the prompt on silence. |
+| `message` | string | Yes | TTS message played when the caller doesn't press anything. |
+
+**noMatchConfig Sub-fields**
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `maxRetries` | number (integer) | Yes | How many times to re-play the prompt when input is invalid. |
+| `message` | string | Yes | TTS message played when input doesn't match expectations. |
+
+**Example**
+
+```
+CALL: ivr_digit_input
+WITH:
+   prompt: "Please enter your 6-digit PIN followed by the pound key."
+    maxDigits: 6
+    endingKeyPress: "#"
+    interDigitTimeout: 3000
+    noInputConfig:
+      timeout: 15
+      maxRetries: 2
+      message: "I didn't receive any input. Please enter your PIN."
+    noMatchConfig:
+      maxRetries: 1
+      message: "Entry incomplete. Please enter your full PIN."
+    language: "en"
+```
+
+### Sending DTMF to External IVRs
+
+Use `send_dtmf` when Artemis needs to navigate another IVR after a call has been established.
+
+Typical examples include:
+
+- Selecting a department
+- Navigating hospital booking systems
+- Banking IVRs
+- Telecom IVRs
+- Legacy call routing systems
+
+Unlike the inbound tools, `send_dtmf` transmits keypad tones rather than collecting them.
+
+**How it works**
+
+During an active voice call, the agent can decide to send DTMF digits, for example after recognizing it has reached an IVR menu:
+
+```text
+Agent reaches IVR menu
+         ↓
+Agent sends DTMF digits
+         ↓
+Platform validates digits and call state
+         ↓
+Digits dispatched in order to the voice provider
+         ↓
+Redacted status recorded in traces / eval artifacts / Studio inspection
+```
+
+Digits are dispatched one at a time, in order, with a configurable pause between digits. Raw digits are never written to logs, traces, eval artifacts, or Studio evidence — only a digit count and a status are recorded.
+
+**Tool Definition**
+
+```
+TOOLS:
+  send_dtmf(
+      digits: string,
+      durationMs?: number,
+      interDigitDelayMs?: number,
+      reason?: string
+  ) -> object
+```
+
+Once declared, `send_dtmf` behaves like any other tool available to the LLM: during an active call, the model decides when to call it and what `digits` to pass, based on the conversation so far and your agent's `GOAL`, `PERSONA`, and `INSTRUCTIONS`. For example, an `INSTRUCTIONS` line such as "When the IVR menu asks you to select a department, call `send_dtmf` with the digit for that option" steers the model without hardcoding the digits at author time.
+
+**Example**
+
+```
+CALL: send_dtmf
+WITH:
+  digits: "{{booking_code}}"
+  durationMs: 300
+  interDigitDelayMs: 500
+  reason: "Selecting doctor queue"
+```
+
+The runtime validates the request before dispatching digits sequentially to the voice provider.
+
+**Input Parameters**
+
+| Field | Required | Notes |
+|---|---|---|
+| `digits` | Yes | Only 0-9, *, and #. 1–64 characters. |
+| `durationMs` | No | Tone duration per digit, in milliseconds. Range: 50-5000. Default: 250. |
+| `interDigitDelayMs` | No | Delay between digits, in milliseconds. Range: 50-5000. Default: 300. |
+| `reason` | No | Up to 256 characters. Do not include PINs, account numbers, or the |
+
+<Note>Pauses inside a call flow (for example, waiting for an IVR menu to finish playing before sending digits) are handled as separate wait steps, not by embedding non-DTMF characters in `digits.</Note>
+
+**Call-State Behavior**
+
+| Call State | Result |
+|---|---|
+| Active, connected call | Digits dispatch immediately |
+| Active playback/agent speaking | Digits dispatch immediately, without queuing behind playback |
+| Inactive, closed, on hold without media, dialing, or already transferred | Fails closed before dispatch |
+| Channel/provider without outbound DTMF support (VXML IVR, Genesys Audio Connector, AudioCodes) | Fails closed before dispatch |
+| Invalid digits or out-of-range timing | Fails closed before dispatch |
+
+**Status Codes**
+
+| Code | Meaning |
+|---|---|
+| `VOICE_DTMF_DISPATCHED` | Digits were sent to the provider in order. |
+| `VOICE_DTMF_INVALID` | `digits` failed validation (empty, too long, or disallowed characters), or `durationMs`/`interDigitDelayMs` was out of range. |
+| `VOICE_DTMF_UNSUPPORTED` | The active channel/provider does not support outbound DTMF. |
+| `VOICE_DTMF_INACTIVE` | The call was not in a state that allows dispatch (see table above). |
+| `VOICE_DTMF_PROVIDER_ERROR` | The platform could not deliver a digit command to the provider. |
+
+A successful `VOICE_DTMF_DISPATCHED` result means the platform sent the tones — it does not confirm that the far-end IVR accepted or acted on them. There is currently no delivery acknowledgment or automatic retry.
+
+## Privacy and Evidence
+
+DTMF digits can carry sensitive information such as PINs or account numbers. Runtime traces, eval run artifacts, and Studio inspection show only a redacted digit count and status — never the raw digits sent during a call.
+
+## Known Limitations
+
+- Kore.ai Voice Gateway (KoreVG) is the only supported provider in this release.
+- No provider delivery acknowledgment or automatic retry is available for this method.
+- No pause syntax inside `digits`; model pauses as separate wait steps.
+
+**Example**
+
+The following workflow combines inbound and outbound DTMF.
+
+```
+Caller
+   │
+   ▼
+ivr_menu
+   │
+Caller presses 1
+   │
+booking_code = "1"
+   │
+   ▼
+Connect to hospital IVR
+   │
+   ▼
+send_dtmf("1")
+   │
+   ▼
+Hospital routes caller
+```
+
+This pattern is commonly used for appointment booking and external IVR automation.
+
+## Best Practices
+
+- Use `ivr_menu` for single-choice menus.
+- Use `ivr_digit_input` for collecting structured numeric data.
+- Use `send_dtmf` only after the external IVR is ready to receive keypad input.
+- Enable barge-in where faster caller interaction is desired.
+- Validate all tool results before continuing the workflow.
+- Always provide a fallback or escalation path for invalid input or DTMF failures.
+- Include DTMF tools only in voice-enabled agents.
