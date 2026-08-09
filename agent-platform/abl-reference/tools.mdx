@@ -19,6 +19,7 @@ The `type:` property selects how a tool is executed. The supported values are:
 | `async_webhook` | Fire-and-callback async HTTP. See [Async webhook tools](#async-webhook-tools).              |
 | `workflow`      | Invoke a durable workflow on the workflow engine. See [Workflow tools](#workflow-tools).    |
 | `searchai`      | Query a SearchAI knowledge base. See [SearchAI tools](#searchai-tools).                     |
+| `table`         | Structured CRUD against an Agent Table. See [Table tools](#table-tools).                    |
 
 ## Tool declaration syntax
 
@@ -234,10 +235,14 @@ TOOLS:
 | `timeout`         | `number`                                              | No       | `EXECUTION.tool_timeout` | Request timeout in milliseconds                                                |
 | `retry`           | `number`                                              | No       | _none_                   | Number of retry attempts on failure                                            |
 | `retry_delay`     | `number`                                              | No       | _none_                   | Delay in milliseconds between retries                                          |
+| `retry_policy`    | `object`                                              | No       | _none_                   | Structured backoff policy (richer alternative to `retry`/`retry_delay`). See [Retry policy](#retry-policy). |
 | `headers`         | `Record<string, string>`                              | No       | _none_                   | Custom HTTP headers                                                            |
-| `query_params`    | `Record<string, string>`                              | No       | _none_                   | Query string parameters                                                        |
+| `query_params`    | `Record<string,string>` / `object[]`                  | No       | _none_                   | Query string parameters. A `key: value` block keeps insertion order; an array of `{key, value}` also allows duplicate keys. |
 | `body_type`       | `"json"` , `"form"` , `"xml"` , `"text"`              | No       | _none_                   | Request body encoding.                                                         |
+| `body_mode`       | `"auto"` , `"none"`                                   | No       | `"auto"`                 | For non-GET methods: `auto` serializes remaining params as the body; `none` sends no body. |
 | `body_template`   | `string`                                              | No       | _none_                   | Custom body template with interpolation. `body` is accepted as an alias.       |
+| `body_schema`     | `string`                                              | No       | _none_                   | JSON Schema for the request body (used with `use_body_schema: true`).          |
+| `use_body_schema` | `boolean`                                             | No       | `false`                  | Author/validate the request body from `body_schema`.                           |
 | `request_variants`| `object[]`                                            | No       | _none_                   | Conditional request variants selected by a `when` expression. See [Request variants](#request-variants). |
 | `rate_limit`      | `number`                                              | No       | _none_                   | Maximum requests per second                                                    |
 | `circuit_breaker` | `{threshold, resetMs}`                                | No       | _none_                   | Circuit breaker configuration                                                  |
@@ -427,6 +432,35 @@ TOOLS:
 | ----------- | -------- | ------------------------------------------------------- |
 | `threshold` | `number` | Number of consecutive failures before the circuit opens |
 | `resetMs`   | `number` | Milliseconds to wait before trying the endpoint again   |
+
+### Retry policy
+
+`retry_policy` is a structured backoff configuration — a richer alternative to the scalar
+`retry`/`retry_delay` fields (both forms are still accepted).
+
+```yaml
+TOOLS:
+  flaky_api(id: string) -> {data: string}
+    type: http
+    endpoint: "https://api.example.com/{id}"
+    method: GET
+    retry_policy:
+      strategy: exponential     # fixed | exponential
+      initial_delay_ms: 200
+      multiplier: 2
+      max_delay_ms: 5000
+      max_retries: 4
+      jitter: full              # none | full
+```
+
+| Property           | Type                    | Default | Description                                              |
+| ------------------ | ----------------------- | ------- | -------------------------------------------------------- |
+| `strategy`         | `"fixed"` , `"exponential"` | --  | Backoff strategy (required).                             |
+| `initial_delay_ms` | `number`                | --      | Delay before the first retry.                            |
+| `multiplier`       | `number`                | --      | Growth factor per attempt (for `exponential`).           |
+| `max_delay_ms`     | `number`                | --      | Ceiling on the delay between attempts.                   |
+| `max_retries`      | `number`                | --      | Maximum retry attempts.                                  |
+| `jitter`           | `"none"` , `"full"`     | --      | Randomization applied to the delay.                      |
 
 ### SOAP support
 
@@ -761,6 +795,34 @@ TOOLS:
 
 ---
 
+## Table tools
+
+Table tools perform structured CRUD against an **Agent Table** — a project-, user-, or
+session-scoped datastore.
+
+```yaml
+TOOLS:
+  save_note(title: string, body: string) -> {id: string}
+    description: "Store a customer note"
+    type: table
+    table: customer_notes
+    scope: end_user
+    operations: [get, query, insert, update]
+```
+
+### Table binding properties
+
+| Property         | Type       | Required | Default            | Description                                                        |
+| ---------------- | ---------- | -------- | ------------------ | ------------------------------------------------------------------ |
+| `type`           | `"table"`  | Yes      | --                 | Declares this as a table tool.                                     |
+| `table`          | `string`   | Yes      | --                 | Primary table slug (`^[a-z_][a-z0-9_]*$`). `table_name` is an alias. |
+| `scope`          | `string`   | No       | --                 | `project`, `end_user`, or `session`. The scope key is derived from trusted session context, never authored in the binding. |
+| `operations`     | `string[]` | No       | read-only (`get`/`query`/`count`) | Allowed operations: `get`, `query`, `count`, `insert`, `update`, `delete`, `upsert`, `bulkInsert`, `bulkUpsert`. |
+| `tables`         | `string[]` | No       | --                 | Additional tables to JOIN (max 8).                                 |
+| `query_template` | `string`   | No       | --                 | Optional query template.                                           |
+
+---
+
 ## Tool file imports
 
 
@@ -942,6 +1004,7 @@ TOOLS:
 | `essential_fields`       | `string[]` | Fields to preserve verbatim when compacting this tool's result. |
 | `max_description_length` | `number`   | Maximum characters kept for descriptive fields.                 |
 | `summary_timeout_ms`     | `number`   | Timeout for LLM summarization of this tool's result.            |
+| `max_search_tokens`      | `number`   | Token budget for SearchAI knowledge-base result context sent to the LLM. |
 
 ### Input/output transforms (`process`)
 
@@ -1002,12 +1065,29 @@ TOOLS:
     pii_access: user
 ```
 
-| Value   | Description                                      |
-| ------- | ------------------------------------------------ |
-| `tools` | Tool can access PII data from other tool results |
-| `user`  | Tool can access user-provided PII                |
-| `logs`  | PII from this tool may appear in logs            |
-| `llm`   | PII from this tool is sent to the LLM            |
+| Value      | Description                                              |
+| ---------- | -------------------------------------------------------- |
+| `original` | Tool can access the original, unredacted PII values (broadest access). |
+| `tools`    | Tool can access PII data from other tool results         |
+| `user`     | Tool can access user-provided PII                        |
+| `logs`     | PII from this tool may appear in logs                    |
+| `llm`      | PII from this tool is sent to the LLM                    |
+
+### Secret scrubbing
+
+An always-on scrubber masks credentials (API keys, bearer tokens, private keys, passwords) in a
+tool's output. Set `scrub_secrets: false` to opt a specific tool out (for example, when the tool's
+job is to return a token your flow needs). This is independent of `pii_access`, which governs PII
+rather than credentials.
+
+```yaml
+TOOLS:
+  mint_token(scope: string) -> {token: string}
+    type: http
+    endpoint: "/api/token"
+    method: POST
+    scrub_secrets: false
+```
 
 ### Context access
 
@@ -1025,6 +1105,13 @@ TOOLS:
       read: [user.id, user.email]
       write: [user.name, user.updated_at]
 ```
+
+<Warning>
+  `context_access` is validated against your `MEMORY:` declarations. A tool that declares a `read`
+  of a **write-only** memory path (or a `write` of a **read-only** path) now fails compilation, and
+  at runtime a tool is blocked from executing if its declared memory is unavailable. Declare the
+  matching `MEMORY:` access mode for every path a tool reads or writes.
+</Warning>
 
 ### Store result
 
