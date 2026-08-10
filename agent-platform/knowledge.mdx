@@ -149,8 +149,22 @@ Upload files directly from your local system. Uploaded files are ingested immedi
 
 - Supported file types: PDF, DOCX, TXT, CSV, MD, XLSX, JSON, HTML.
 - Max file size: 100 MB per file
+- Max batch size: 40 files per upload.
 
 <Note>If the source file changes, you need to re-upload it.</Note>
+
+
+**Metadata Fields**
+
+While uploading a file, you can tag the upload with file metadata:
+
+* **Essential Fields** - the most commonly used fields like Author, Category, Tags, Department.
+* **More Fields** - a list of additional fields covering document metadata such as Title, Content Summary, Language.
+* **Advanced (custom JSON)** — add custom fields not covered by the standard list, as JSON, e.g. `{"custom_string_1": "value", "custom_number_1": 42}`.
+
+<Note> Fields filled in during upload become searchable. Only filled fields create vocabulary entries for natural language queries — empty fields are not indexed.</Note>
+
+Click **Upload** to start ingestion. The uploaded content is automatically indexed after the ingestion completes. 
 
 #### Web crawl
 
@@ -174,8 +188,8 @@ Navigate to **Sources** > **Add Source** > **Web Crawler** to manage web sources
 
 **Crawl Strategy**
 
-- **Rendering** controls how pages are processed before content is extracted. Set to Adaptive by default — HTTP is fast for static pages, while the browser handles tabs and accordions. Adaptive automatically detects which approach a page needs. Use Adaptive for most sites. If your site is a JavaScript-heavy frameworks, Adaptive ensures dynamic content like expandable sections is captured correctly.
-- **Learned patterns** determines whether the crawler reuses extraction patterns from previous crawl runs. Set to Keep by default, which reuses known page layouts and skips the AI layout detection step — making repeat crawls faster. Select Reset after a site redesign or template change so the crawler re-learns the new structure from scratch.
+- **Rendering** controls how pages are processed before content is extracted. **Standard** option fetches the raw HTTP response only. It is the fastest option, but doesn't capture content that's rendered client-side (e.g. React/Vue apps, JS-loaded sections). Best for static HTML sites. **Full rendering** loads the page in a headless browser and executes JavaScript before extracting content, capturing dynamic content like expandable sections, tabs, and client-rendered text. Slower and more resource-intensive, but necessary for JavaScript-heavy sites. **Auto** allows the system to automatically choose per page whether a lightweight HTTP fetch or full browser rendering is needed, based on page characteristics. 
+- **Learned patterns** determines whether the crawler reuses extraction patterns from previous crawl runs. Set to **Keep** by default, which reuses known page layouts and skips the AI layout detection step — making repeat crawls faster. Select **Reset** after a site redesign or template change so the crawler re-learns the new structure from scratch.
 - **Crawl Speed** controls the delay between page requests. The default is 200ms. Note that fast speeds may trigger rate limiting on external sites.
 
 **Limits**
@@ -186,11 +200,26 @@ Navigate to **Sources** > **Add Source** > **Web Crawler** to manage web sources
 
 **Content Processing**
 
-- **Content cleanup** removes unnecessary elements like headers, footers, and head tags before ingestion. 
-- ** Duplicate content** controls how pages with identical content at different URLs are handled.
-- **Cookie consent** rejects or closes cookie popups before extraction — never accepts tracking.
+- **Extraction quality** controls how aggressively the crawler cleans and filters page content during extraction. Default is **Balanced**.
+  
+  | Option | Description |
+  | --- | --- |
+  | Thorough | Keeps more content from each page. |
+  | Balanced | Default quality and completeness for most sites. |
+  | Minimal | Aggressively strips noise. |
+  | Custom | Fine-tune quality gate and content preservation thresholds manually. |
 
-**Extraction Preview** shows a sample of what will be extracted from each section using the current configuration before the full crawl runs. 
+  **Custom thresholds**
+
+  | Field | Description |
+  | --- | --- |
+  | Quality gate | Minimum quality score required to accept extracted content, on a 0–1 scale (default 0.5). Lower values are more permissive — more content is accepted even if extraction confidence is lower. |
+  | Content preservation | How much of the original content to keep when cleaning, on a 0–1 scale (default 0.3). Lower values clean more aggressively, stripping more content. |
+
+- **Duplicate content** - Controls how pages with identical content at different URLs are handled. Options: **Deduplicate** (default) or **Keep all**.
+* **Cookie consent** - Rejects or closes cookie popups before extraction; never accepts tracking. Options: **Auto-dismiss** (default) or **Ignore**.
+
+**Extraction Preview** shows samples of what will be extracted from each section using the current configuration before the full crawl runs. 
 
 #### Connectors
 
@@ -416,6 +445,47 @@ Controls the LLM used at query time to understand and process queries.
 
 <Note>Query Intelligence applies to direct search queries only. It is not used when searching through Agent and Tools.</Note>
 
+### Knowledge Graph
+
+Knowledge Graph classifies documents against a configurable taxonomy, extracts entities from your content, and links them into a searchable graph, in addition to the standard chunk-based search index.
+
+Standard knowledge base search retrieves chunks based on text similarity, treating each chunk largely as an independent unit. Knowledge Graph adds structure on top of this. It organizes content into a taxonomy (such as , domain → category → product → attribute) and connects related entities across documents, so the platform understands not just *what text matches a query*, but *how concepts relate to each other*.
+
+This is useful when:
+
+* Your content naturally maps to a structured taxonomy — such as a product catalog, service categories, or a domain with defined categories and attributes.
+* You want to answer relationship-aware queries, such as "what products fall under Pharmacy" or "what attributes does this product have" — questions that depend on structure, not just text similarity.
+* The same entity (a product, term, or concept) appears across multiple documents, and you want it recognized and linked as a single connected entity rather than treated as separate, unrelated mentions.
+* You want to filter or facet search results by category, product, or attribute, rather than relying purely on keyword or semantic match.
+
+### Setting Up the Knowledge Graph
+
+Setting up Knowledge Graph involves:
+
+1. Picking an industry domain (or letting AI generate one).
+2. Building a taxonomy of products and attributes for that domain.
+3. Automatically classifying every document against the taxonomy.
+4. Extracting entities from content and linking them into the graph.
+
+- Navigate to **Knowledge Graph** in the left sidebar of the knowledge base.
+- Click **Select your domain**.
+- Configure **Taxonomy**: Configuring the taxonomy defines the schema that the Knowledge Graph will classify the content against.
+
+  | Field | Description |
+  | --- | --- |
+  | Domain | The industry domain the taxonomy is based on. |
+  | Generate Profile with AI | Automatically generates a taxonomy profile using AI, based on the website provided.|
+  | Organization Name | Optional. Your organization's name, used to help AI generate a more relevant taxonomy profile. |
+  | Which products do you offer? | Optional. Select the products/services relevant to your organization. Available options are grouped by category (e.g., Clinical Care, Health Insurance, Pharmacy, Diagnostics for a Healthcare domain) and vary by the selected domain. Click **Show Advanced** for additional options. |
+
+- Click **Set Up Taxonomy** to save the configuration and create the taxonomy.
+
+Once a taxonomy is configured, click **Run Enrichment** to classify documents and extract entities against the taxonomy, building the knowledge graph. Re-run enrichment after taxonomy changes or when new content has been added to the knowledge base.
+
+- **Graph View** - Visualizes the knowledge graph as a network of connected nodes.
+-  **Statistics** — Summary metrics about the documents as per the taxonomy.
+- **Attributes** — Lists the attributes defined in the taxonomy and their occurrences in the indexed content. 
+
 ### Search and test
 
 The Search and Test tab lets you validate the knowledge base configuration by running queries against indexed content before connecting it to an agent. It shows exactly how the knowledge base will respond to a query, including which chunks are returned, how they are ranked, and how each stage of the search pipeline performed.
@@ -432,7 +502,13 @@ Enter a query in the Query field and configure the following settings before run
 
 **Top K** defines the maximum number of chunks returned per query. Set this based on how much context the agent needs to compose an accurate response. A higher value returns more context but increases token consumption when the agent processes the results.
 
-**Resolve Mode** controls how results are resolved and ranked when multiple chunks from the same or different sources are returned. &lt;add details of alias, exact, fuzzy>
+**Resolve Mode** controls how results are resolved and ranked when multiple chunks from the same or different sources are returned. Three modes are available:
+
+  | Mode | Description |
+  | --- | --- |
+  | Exact | Matches query terms exactly against indexed content. |
+  | Alias | Resolves query terms through configured vocabulary aliases, matching both the alias and its canonical term. Default. |
+  | Fuzzy | Matches query terms approximately, tolerating minor variations such as typos or partial matches. |
 
 {/* Removed in 1.3.0
 **Preprocessing**, when enabled, applies transformations to the query before execution, including spell correction, synonym expansion, and entity recognition. Enable this when your users are likely to use natural language queries with varied phrasing or common misspellings.
