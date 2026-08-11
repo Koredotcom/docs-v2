@@ -1000,10 +1000,12 @@ Agents can respond with more than plain text. Every RESPOND statement supports d
 
 Use `RESPOND` to return inline text or multi-line messages. Values from variables, memory, and tool outputs can be referenced using `{{ }}` interpolation.
 
+**Single response message**
+
 ```yaml
 RESPOND: "Hello {{customer_name}}, welcome back!"
 ```
-For multi-line content, use pipe symbol.
+For **multi-line** content, use pipe symbol.
 
 ```yaml
  RESPOND: |
@@ -1012,10 +1014,88 @@ For multi-line content, use pipe symbol.
       To: {{beneficiary_name}}
       Amount: {{amount}} {{currency}}
 ```
-For reusable or channel-specific responses, reference a template instead.
+For reusable or channel-specific responses, reference a **template** instead.
 
 ```yaml
 RESPOND: TEMPLATE(welcome_message)
+```
+**Multiple Responses in a single agent turn**
+
+An agent can send multiple responses during a single user turn. Each response is emitted as an independent message and streamed to the client in the order it is generated.
+
+A single turn can include any combination of:
+
+- Plain text messages
+- Template messages
+- Multiple template messages
+- A mix of template and text messages
+
+Each message is delivered separately and is not merged with subsequent responses. Template messages continue to use the existing client rendering logic.
+
+**Example**
+
+The following example sends a template message, followed by a plain-text message, and then another template message within the same turn.
+
+```yaml
+TEMPLATES:
+  first_template:
+    DEFAULT: "First template fallback"
+    RENDERABLES:
+      - NAME: com.example.first_template.v1
+        PAYLOAD_JSON:
+          title: "First template"
+          type: "custom_card"
+          body:
+            heading: "Account summary"
+            status: "Active"
+        TARGETS: [api, sdk_websocket]
+        FALLBACK_TEXT: "First template fallback"
+
+  second_template:
+    DEFAULT: "Second template fallback"
+    RENDERABLES:
+      - NAME: com.example.second_template.v1
+        PAYLOAD_JSON:
+          title: "Second template"
+          type: "custom_card"
+          body:
+            heading: "Next actions"
+            actions:
+              - label: "View details"
+                value: "view_details"
+        TARGETS: [api, sdk_websocket]
+        FALLBACK_TEXT: "Second template fallback"
+
+FLOW:
+  entry_point: first
+
+steps:
+  - first
+  - middle
+  - last
+
+first:
+  REASONING: false
+  RESPOND: TEMPLATE(first_template)
+  THEN: middle
+
+middle:
+  REASONING: false
+  RESPOND: "This is the plain-text message between the two templates."
+  THEN: last
+
+last:
+  REASONING: false
+  RESPOND: TEMPLATE(second_template)
+  THEN: COMPLETE
+```
+
+For the preceding flow, the client receives the following messages in order:
+
+```text
+1. **Template message** (`first_template`)
+2. **Plain-text message**
+3. **Template message** (`second_template`)
 ```
 
 ### Templates
