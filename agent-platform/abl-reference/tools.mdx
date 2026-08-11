@@ -1128,6 +1128,57 @@ TOOLS:
     store_result: false
 ```
 
+### Reusing secrets across tools (SecretRef)
+
+Some flows need a credential produced by one tool (a one-time token, session key, or OTP) to be sent
+to a *later* tool — without ever exposing the raw value to the LLM. SecretRef captures such values
+into an encrypted, session-scoped **secret vault** and restores them into downstream tool calls.
+
+- **Producer** — the tool that returns the secret declares a `RESULT_SECRETS:` block. Each entry
+  captures a result field into the vault under a key, in the form
+  `<result_path> -> <vault_key> (options)`.
+- **Consumer** — a downstream tool declares a `SECRET_ACCESS:` block listing the vault keys it may
+  read, then references them with the `{{_secret.<key>}}` placeholder in its `headers` or
+  `body_template`.
+
+```yaml
+TOOLS:
+  # Producer: capture the OTP token into the vault, never exposing it to the model
+  request_otp(account_id: string) -> {otp_token: string, expires_in: number}
+    type: http
+    endpoint: "/api/otp/request"
+    method: POST
+    RESULT_SECRETS:
+      otp_token -> txn_otp (consumers: [convert_transaction_to_emi], ttl: 300, single_use: true)
+
+  # Consumer: restore the vaulted secret into a header — the model never sees it
+  convert_transaction_to_emi(txn_id: string) -> {status: string}
+    type: http
+    endpoint: "/api/txn/convert"
+    method: POST
+    SECRET_ACCESS:
+      READ: [txn_otp]
+    headers:
+      X-OTP-Token: "{{_secret.txn_otp}}"
+```
+
+#### `RESULT_SECRETS` entry options
+
+| Option        | Type       | Description                                                                 |
+| ------------- | ---------- | --------------------------------------------------------------------------- |
+| `<path>`      | `string`   | Result field to capture (left of `->`).                                     |
+| `<vault_key>` | `string`   | Vault key to store it under (right of `->`).                                |
+| `consumers`   | `string[]` | Tool names allowed to restore this secret. Omit to allow any consumer that declares `SECRET_ACCESS`. |
+| `ttl`         | `number`   | Time-to-live in seconds before the vaulted secret expires.                  |
+| `single_use`  | `boolean`  | When `true`, the secret is consumed (invalidated) after its first use.      |
+
+<Note>
+  SecretRef is **fail-closed**: the vault is invisible to the LLM, `{{_secret.X}}` resolves only in
+  `headers` and `body_template` (never forwarded as a query/body param on its own), and an
+  unresolved reference substitutes an empty string — the literal `{{_secret.X}}` placeholder is
+  never sent upstream as a credential.
+</Note>
+
 **Related articles:**
 
 - [Language overview](/agent-platform/abl-reference/language-overview) -- file structure and syntax
