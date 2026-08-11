@@ -345,7 +345,6 @@ Use **Refresh** to reload the log. Use **Export CSV** to download the current fi
 
 ## Key management
 
-
 The Key Management Service (KMS) lets you control the encryption keys used to protect sensitive workspace data. Instead of relying on platform-managed keys, you can provide your own key material from a supported cloud provider.
 
 - **Navigation**: Settings > Team > Key Management
@@ -354,15 +353,13 @@ The Key Management Service (KMS) lets you control the encryption keys used to pr
 
 ### Configuration
 
-
-When **Platform Managed** is selected as the tenant-level KMS provider, the platform’s built-in encryption service is used. No tenant-specific external key connection is stored in this mode.  
-
-Encryption is governed by the platform administrator. Policies for compliance, rotation, and re-encryption are read-only here. To bring your own key, choose a different provider. 
+Select a **Provider** from the dropdown to configure the tenant-level KMS. The fields shown depend on the provider selected.
 
 **Supported KMS providers**
 
 | Provider             | Key type                | Region support      |
 |----------------------|-------------------------|---------------------|
+| **Platform Managed** | Platform-governed keys  | Managed by platform |
 | **AWS KMS**          | Symmetric CMK (AES-256) | All AWS regions     |
 | **Azure Key Vault**  | RSA or AES keys         | All Azure regions   |
 | **Azure Managed HSM**| Symmetric AES-256 keys  | All Azure regions   |
@@ -370,7 +367,119 @@ Encryption is governed by the platform administrator. Policies for compliance, r
 | **External KMS**     | Any REST-compatible KMS | Self-hosted or SaaS |
 | **Platform Managed** | Platform-governed keys  | Managed by platform |
 
----
+#### Platform Managed
+ 
+Use the platform-managed KMS provider. No tenant-specific external key connection is stored in this mode.
+ 
+<Note>Platform Managed encryption is governed by Kore. You can select it, but its policy, compliance, rotation, and re-encryption settings are read-only. To bring your own key, choose a different provider.</Note>
+
+#### AWS KMS
+ 
+| Field                     | Description                                                        |
+| ------------------------- | ------------------------------------------------------------------- |
+| AWS Region                | The AWS region hosting the key, for example `us-east-1`.            |
+| KMS Key ARN               | The full ARN of the CMK, for example `arn:aws:kms:us-east-1:123456789:key/abcd-1234`. |
+| Credential Overrides (JSON) | Optional. Override the platform's default AWS credentials with a JSON object (for example `clientId` / `clientSecret`). |
+ 
+#### Azure Key Vault
+ 
+| Field         | Description                                                        |
+| ------------- | -------------------------------------------------------------------- |
+| Key Vault URL | The vault's URL, for example `https://your-vault.vault.azure.net`.   |
+| Key Name      | The name of the key within the vault.                                 |
+| Auth Method   | **Service Account / Service Principal** or **Workload Identity Federation (secretless)**. |
+ 
+**Service Account / Service Principal**
+ 
+Use the Azure app registration or service principal that can read, wrap, and unwrap this key.
+ 
+<Note>For cross-tenant access, register this application in the customer Azure tenant via admin consent and assign the Key Vault Crypto User role on the target key vault.</Note>
+| Field           | Description                                                    |
+| --------------- | ---------------------------------------------------------------- |
+| Tenant ID       | The Azure directory (tenant) ID.                                  |
+| Client ID       | The application (client) ID.                                     |
+| Credential type | **Client secret** or **Certificate (PEM)**.                       |
+| Client Secret   | Required when Credential type is Client secret.                   |
+ 
+**Workload Identity Federation (secretless)**
+ 
+Secretless auth for a vault in this or another Azure directory. The customer directory trusts this platform's workload identity - nothing to store, expire, or rotate.
+ 
+| Field     | Description                        |
+| --------- | ------------------------------------ |
+| Tenant ID | The Azure directory (tenant) ID.     |
+| Client ID | The application (client) ID.         |
+ 
+Under **Federated credential setup (customer side)**, register these exact values as a federated credential on the app registration in the customer's Azure directory: **OIDC issuer**, **Subject**, and **Audience** (each has a **Copy** button).
+ 
+1. Create (or pick) an app registration in the customer's Azure directory and note its Directory (tenant) ID and Application (client) ID.
+2. On that app, add a federated credential with the issuer, subject, and audience shown above.
+3. Grant the app the Key Vault Crypto User role scoped to the target vault only - never subscription-wide.
+4. Enter the two IDs here, then use **Test connection** before saving.
+
+<Note>A newly created federated credential can take several minutes to propagate in Microsoft Entra ID. If the connection test fails right after setup, wait a few minutes and retry.</Note>
+
+Use **Test Connection** to verify the provider connection before saving configuration.
+ 
+#### Azure Managed HSM
+ 
+| Field                 | Description                                                          |
+| --------------------- | ----------------------------------------------------------------------- |
+| Managed HSM URL       | The HSM's URL, for example `https://your-hsm.managedhsm.azure.net`.     |
+| Managed HSM Key Name  | The name of the key within the Managed HSM, for example `tenant-kek-primary`. |
+| Auth Method           | **Service Account / Service Principal** or **Workload Identity Federation (secretless)**. |
+ 
+**Service Account / Service Principal**
+ 
+Use the Azure app registration or service principal that can read, wrap, and unwrap this key.
+ 
+<Note>For cross-tenant access, register this application in the customer Azure tenant via admin consent and assign the Key Vault Crypto User role on the target key vault.</Note>
+| Field           | Description                                                    |
+| --------------- | ---------------------------------------------------------------- |
+| Tenant ID       | The Azure directory (tenant) ID.                                  |
+| Client ID       | The application (client) ID.                                     |
+| Credential type | **Client secret** or **Certificate (PEM)**.                       |
+| Client Secret   | Required when Credential type is Client secret.                   |
+ 
+**Workload Identity Federation (secretless)**
+ 
+Secretless auth for a vault in this or another Azure directory. The customer directory trusts this platform's workload identity - nothing to store, expire, or rotate.
+ 
+| Field     | Description                        |
+| --------- | ------------------------------------ |
+| Tenant ID | The Azure directory (tenant) ID.     |
+| Client ID | The application (client) ID.         |
+ 
+Under **Federated credential setup (customer side)**, register these exact values as a federated credential on the app registration in the customer's Azure directory: **OIDC issuer**, **Subject**, and **Audience** (each has a **Copy** button).
+ 
+1. Create (or pick) an app registration in the customer's Azure directory and note its Directory (tenant) ID and Application (client) ID.
+2. On that app, add a federated credential with the issuer, subject, and audience shown above.
+3. Grant the app the Key Vault Crypto User role scoped to the target vault only - never subscription-wide.
+4. Enter the two IDs here, then use **Test connection** before saving.
+ 
+#### Google Cloud KMS
+ 
+| Field              | Description                                                                              |
+| ------------------ | ------------------------------------------------------------------------------------------- |
+| Location           | The GCP location, for example `us-east1`.                                                    |
+| Key Resource Name  | Full resource path, for example `projects/my-project/locations/us-east1/keyRings/my-ring/cryptoKeys/my-key`. |
+| Auth Method        | **Default Credentials** or **Service Account / Service Principal**.                         |
+| Credential Overrides (JSON) | Optional. Override the default credentials with a JSON object (for example `clientId` / `clientSecret`). |
+ 
+#### External KMS
+ 
+Connect any REST-compatible KMS, self-hosted or SaaS.
+ 
+| Field                 | Description                                                                 |
+| --------------------- | ------------------------------------------------------------------------------ |
+| External KMS Endpoint | The base URL of the external KMS, for example `https://kms.example.com`.       |
+| External Key ID       | The key identifier at the external provider, for example `tenant-kek-primary`. |
+| Auth Method           | **API Key**, **mTLS**, **OAuth2 Client Credentials**, or **HMAC-SHA256**.       |
+| Credential Overrides (JSON) | Optional JSON object with provider-specific credential fields (for example `clientId` / `clientSecret`). |
+ 
+**External Endpoint Validation**
+ 
+Before saving the tenant KMS configuration, enter the endpoint, key ID, and auth method, then click **Validate Endpoint** to confirm the platform can reach and authenticate against the external provider.
 
 ### Policies
 
