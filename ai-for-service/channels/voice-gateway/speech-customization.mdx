@@ -2,8 +2,6 @@
 title: Speech Customization (Call Control Parameters)
 sidebarTitle: Speech Customization (Call Control Parameters)
 noindex: true
-hidden: true
-mode: center
 ---
 <Badge icon="arrow-left" color="gray">[Back to Voice Gateway Advanced Configuration](/ai-for-service/channels#advanced-configuration)</Badge>
 
@@ -145,6 +143,7 @@ node.alternativeLanguages: [
 | Support Indian language voice automation        | `sttProvider`, `ttsProvider`, `ttsLanguage`, `sttLanguage`, `voiceName` | Uses Sarvam ASR and TTS to build voice bots for Indian language speakers. Configure speech rate and variation through `ttsOptions`. |
 | Privacy and compliance control                | `mipOptOut`                                         | Prevents the system from using customer audio data for model training.                                                                                                            |
 | Debugging and quality monitoring              | `azureAudioLogging`                                 | Enables logging to help analyze recognition errors, audio quality, and language detection issues during testing and troubleshooting.                                              |
+| Handle caller silence in Realtime LLM sessions.                                             |`userNoInputTimeoutMS`, `botNoInputTimeoutMS`, `botNoInputSpeech`, `botNoInputRetries`, `botNoInputGiveUpTimeoutMS` |  Plays a re-engagement nudge when the caller is silent after the LLM finishes its turn, and handles LLM response delays - preventing abandoned calls from staying connected indefinitely.  |
 
 ## Cloned Voices
 
@@ -276,6 +275,7 @@ Barge-In lets the Voice Gateway to detect and respond when a user interrupts the
 | `listenDuringPrompt`  | Boolean (`true` or `false`) | All   | If set to `false`, the bot won't listen to user speech until it finishes playing the response. Defaults to `true`.       | `true`  |
 | `bargeInMinWordCount` | Number                   | All   | When barge-in is enabled, this defines the minimum number of words required to interrupt the bot's speech. Defaults to `1`. | `1`     |
 | `bargeInOnDTMF`       | Boolean (`true` or `false`) | All   | If `true`, DTMF input during bot speech interrupts playback, and the system starts collecting speech input.                     | `true`  |
+| `backchannelWords`       | Array of strings | All   | Defines words or phrases that don't interrupt the bot when spoken during audio playback. The audio continues playing and the system sends a `speechDetected` event instead of triggering barge-in. This setting applies only during playback - after playback completes, the system treats these words as normal speech.                     | uh-huh, okay, got it  |
 
 ### Timeout Related Parameters
 
@@ -285,7 +285,7 @@ These parameters control how long the Voice Gateway waits for user input (speech
 
 | Parameter                        | Type                  | Scope | Description                                                                                                                                       | Example                        |
 | :-------------------------------- | :--------------------- | :----- | :------------------------------------------------------------------------------------------------------------------------------------------------- | :------------------------------ |
-| `userNoInputTimeoutMS`           | Number (milliseconds) | All   | Maximum wait time to receive user input. If set to `0`, Voice Gateway waits indefinitely.                                                         | `"userNoInputTimeoutMS": 20000 → waits 20 seconds before timeout.` |
+| `userNoInputTimeoutMS`           | Number (milliseconds) | All   |Maximum wait time to receive user input after the bot finishes its turn. If set to 0, Voice Gateway waits indefinitely. Applies to both dialog-based bots and Realtime Speech-to-Speech (S2S) LLM sessions.                                                          | `"userNoInputTimeoutMS": 20000 → waits 20 seconds before timeout.` |
 | `dtmfCollectInterDigitTimeoutMS` | Number (milliseconds) | All   | Timeout between DTMF digit inputs. If the user doesn't enter another digit within this time, the gateway submits the collected digits to the bot. |               `"dtmfCollectInterDigitTimeoutMS": 3000 → waits up to 3 seconds between key presses.`                 |
 | `dtmfCollectSubmitDigit`         | Number                | All   | Defines a special DTMF digit that submits all collected digits immediately to the bot, bypassing timeout and max digit wait.                      |            `"dtmfCollectSubmitDigit": 9 → pressing 9 submits the digits entered so far.`                    |
 | `dtmfCollectMaxDigits`           | Number                | All   | Maximum number of DTMF digits to collect. If the user enters more than this number, only the first `maxDigits` are accepted.                      | `"dtmfCollectMaxDigits": 5 → only the first 5 digits are accepted.`     |
@@ -697,6 +697,56 @@ The Barge-In feature controls Voice Gateway behavior in scenarios where the user
 | `dtmfCollectminDigits`           | Number                                                                               | STT-Google and Microsoft TTS-Not Required | Minimum number of DTMF digits to collect. Default: 1.                                                               |
 | `dtmfCollectnumDigits`           | Number                                                                               | STT-Google and Microsoft TTS-Not Required | Exact number of DTMF digits to collect.                                                                                       |
 | `input`                          | Array of strings Valid values: `['digits']`, `['speech']`, `['digits', 'speech']` | STT-Google and Microsoft TTS-Not Required | Specifies allowed input types.Default: `['digits']`.                                                                 |
+
+### Backchannel Words
+
+Backchannel words are short acknowledgments - like uh-huh, okay, or got it - that callers say while listening without intending to interrupt. By default, any speech during playback triggers barge-in and stops the audio.
+
+Configuring `backchannelWords` signals Voice Gateway to keep the audio playing when a caller speaks one of these words during playback, instead of treating it as a barge-in. When Voice Gateway matches an utterance to a configured word, it:
+
+- Skips intent detection and dialog execution for that input.
+- Leaves session context — including the last captured user input — unchanged.
+- Excludes the utterance from NLP Insights and intent-training data.
+- Doesn’t count the utterance against no-input timeouts or retry limits.
+- Still records the utterance in the conversation transcript, marked as a backchannel.
+
+**Configuration**
+
+To set `backchannel` Words at the app level or the channel level. Channel-level values override app-level values for that channel. Node-level configuration isn’t supported.
+
+- Each entry must be non-empty after trimming and have a maximum length of 100 characters.
+- Lists support a maximum of 100 entries.
+- Voice Gateway removes duplicate entries automatically after normalization.
+- An empty array or an omitted parameter turns off the feature for that scope with no runtime impact.
+
+**How it works**
+
+1. Audio playback starts.
+2. The caller speaks during playback.
+3. Voice Gateway normalizes the detected phrase - converting to lowercase, trimming whitespace, and stripping punctuation - and checks it against the configured list.
+4. If the phrase matches a configured backchannel word, audio continues playing and Voice Gateway sends a `speechDetected` event with backchannel metadata. Barge-in doesn't trigger.
+5. If the phrase doesn't match, standard barge-in behavior applies.
+
+
+After playback completes, the system treats these words as normal speech and doesn’t classify them as backchannels.
+
+**Array semantics**
+
+| Value              | Behavior                                        |
+| :----------------- | :---------------------------------------------- |
+| Non-empty array    | Replaces the active backchannel word list.       |
+| Empty array (`[]`) | Clears the list and turns off backchannel classification. |
+| Parameter omitted  | Keeps the current active list unchanged.         |
+
+**Example Configuration**
+
+```json
+{
+  "backchannelWords": ["uh-huh", "okay", "got it", "sure", "yes", "correct"]
+}
+```
+
+<Note>Backchannel detection uses exact normalized phrase matching. Voice Gateway converts detected speech to lowercase, trims whitespace, and strips punctuation before comparing it against the list.</Note>
 
 ### Language Detection
 
