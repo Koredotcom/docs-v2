@@ -393,6 +393,8 @@ ENTITIES:
 | `PATTERN`    | `string`                   | No       | --         | Regex (for `pattern`).                                         |
 | `VALIDATION` | `string`                   | No       | --         | Intrinsic validation expression/description.                   |
 | `SENSITIVE`  | `boolean`                  | No       | `false`    | Marks the value as PII.                                        |
+| `DESCRIPTION` | `string`                  | No       | --         | Semantic, model-facing description of what the entity value represents. A GATHER field's `entity_ref` inherits it. |
+| `EXTRACTION_HINTS` | `string[]`           | No       | --         | Example surface forms that guide extraction. Inherited by GATHER fields that reference the entity. |
 
 Top-level entities accept the full unified type set: `string`, `text`, `free_text`, `number`,
 `integer`, `float`, `currency`, `boolean`, `date`, `datetime`, `email`, `phone`, `enum`, `pattern`,
@@ -424,6 +426,50 @@ INTENTS:
 | ----------------- | -------- | ------------------------------------------------------------------------------------ |
 | category name     | `string` | Intent category identifier; optionally followed by `: "description"`.                |
 | `LEXICAL_FALLBACK` | `string` | When to fall back to lexical matching: `never`, `when_unavailable`, or `always`.     |
+
+## Multi-intent handling (`MULTI_INTENT:`)
+
+The top-level `MULTI_INTENT:` section configures how the agent handles a single user message that
+contains **more than one intent** — for example, *"Book me a flight to NYC and also cancel my hotel
+reservation."* When enabled, the NLU pipeline detects and triages multiple intents per turn, and the
+`strategy` controls how they are dispatched.
+
+```yaml
+MULTI_INTENT:
+  strategy: primary_queue
+  unknown_relationship_strategy: sequential
+  max_intents: 5
+  confidence_threshold: 0.7
+  queue_max_age_ms: 300000
+  enabled: true
+```
+
+### Properties
+
+| Property                        | Type      | Default        | Description                                                                 |
+| ------------------------------- | --------- | -------------- | --------------------------------------------------------------------------- |
+| `enabled`                       | `boolean` | `true`         | Whether multi-intent detection and triage is active.                        |
+| `strategy`                      | `string`  | `primary_queue`| How detected intents are dispatched. See [Strategies](#multi-intent-strategies). |
+| `unknown_relationship_strategy` | `string`  | `parallel`     | Fallback strategy when the relationship between intents is unknown: `sequential`, `parallel`, or `disambiguate`. |
+| `max_intents`                   | `number`  | `3`            | Maximum intents to consider per message (1–10).                             |
+| `confidence_threshold`          | `number`  | `0.6`          | Minimum confidence (0.0–1.0) for a secondary intent to be accepted.         |
+| `queue_max_age_ms`              | `number`  | `600000`       | Time-to-live for queued intents in milliseconds (0–3,600,000). After this, queued intents are dropped. |
+
+### Multi-intent strategies
+
+| Strategy        | Behavior                                                                                       |
+| --------------- | ---------------------------------------------------------------------------------------------- |
+| `primary_queue` | Handle the highest-confidence intent immediately; queue the rest and surface them one-by-one after it completes. (Default.) |
+| `sequential`    | Execute the detected intents one at a time in order, carrying context forward between them.    |
+| `parallel`      | Fan out to sub-agents simultaneously (supervisor agents only).                                 |
+| `disambiguate`  | Present the detected intents to the user and ask which to handle first.                        |
+| `auto`          | Let the model decide at runtime based on the assessed relationships between the intents.       |
+
+<Note>
+  The user-facing prompts for the `disambiguate` and `primary_queue` flows (the "I noticed more than
+  one request…" text) are customizable via the [`MESSAGES:`](/agent-platform/abl-reference/lifecycle-and-hooks#messages) block
+  (keys such as `multi_intent_disambiguate_header` and `multi_intent_queued_notice`).
+</Note>
 
 ---
 
