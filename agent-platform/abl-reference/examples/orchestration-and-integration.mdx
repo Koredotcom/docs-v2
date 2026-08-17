@@ -471,7 +471,7 @@ COMPLETE:
     RESPOND: "Your selection is ready for booking."
 ```
 
-<Note>ABL handles parallel tool execution natively -- when the LLM determines that multiple tools are independent, the runtime executes them concurrently. For step-based execution, you can use `DELEGATE` blocks with `PARALLEL: true` to explicitly fan out.</Note>
+<Note>ABL handles parallel tool execution natively -- when the LLM determines that multiple tools are independent, the runtime executes them concurrently. Parallel delegation is implicit as well: when several `DELEGATE` entries have their `WHEN` conditions satisfied on the same turn, the runtime can run those sub-agent calls concurrently and map each result back as it completes (there is no explicit `PARALLEL` flag on `DELEGATE`).</Note>
 
 ---
 
@@ -818,7 +818,7 @@ ESCALATE:
     - escalation_reason
   routing:
     queue: "live_agent_support"
-    skill_tags: [context_preservation]
+    skills: [context_preservation]
 ```
 
 **Key context-preservation features:**
@@ -885,7 +885,7 @@ TOOLS:
     type: http
     endpoint: "https://your-instance.salesforce.com/services/data/v59.0/parameterizedSearch/"
     method: GET
-    auth: oauth2
+    auth: oauth2_client
     hints:
       cacheable: true
       latency: medium
@@ -897,7 +897,7 @@ TOOLS:
     type: http
     endpoint: "https://your-instance.salesforce.com/services/data/v59.0/sobjects/Account/{account_id}"
     method: GET
-    auth: oauth2
+    auth: oauth2_client
     hints:
       cacheable: true
       timeout: 8000
@@ -908,7 +908,7 @@ TOOLS:
     type: http
     endpoint: "https://your-instance.salesforce.com/services/data/v59.0/sobjects/Case"
     method: POST
-    auth: oauth2
+    auth: oauth2_client
     hints:
       side_effects: true
       timeout: 10000
@@ -919,7 +919,7 @@ TOOLS:
     type: http
     endpoint: "https://your-instance.salesforce.com/services/data/v59.0/sobjects/Case/{case_id}"
     method: PATCH
-    auth: oauth2
+    auth: oauth2_client
     hints:
       side_effects: true
       timeout: 8000
@@ -951,7 +951,7 @@ COMPLETE:
    - **Client ID:** Your Connected App consumer key
    - **Client Secret:** Your Connected App consumer secret
    - **Scopes:** `api refresh_token`
-4. The runtime automatically handles token refresh when `auth: oauth2` is specified.
+4. The runtime automatically handles token refresh when `auth: oauth2_client` (or `oauth2_user`) is specified.
 
 #### Error Handling
 
@@ -1130,7 +1130,7 @@ TOOLS:
     type: http
     endpoint: "https://api.emailservice.example.com/v1/messages"
     method: GET
-    auth: oauth2
+    auth: oauth2_client
     hints:
       timeout: 15000
 
@@ -1140,7 +1140,7 @@ TOOLS:
     type: http
     endpoint: "https://api.emailservice.example.com/v1/messages/reply"
     method: POST
-    auth: oauth2
+    auth: oauth2_client
     hints:
       side_effects: true
       timeout: 10000
@@ -1590,13 +1590,15 @@ ON_ERROR:
 
 #### Authentication Methods
 
-| Auth Type    | ABL Declaration | How It Works                                                             |
-| ------------ | --------------- | ------------------------------------------------------------------------ |
-| Bearer Token | `auth: bearer`  | Sends `Authorization: Bearer <token>` header                             |
-| API Key      | `auth: api_key` | Sends the key as a header or query parameter (configured in credentials) |
-| OAuth2       | `auth: oauth2`  | Handles token acquisition and refresh automatically                      |
-| Basic Auth   | `auth: basic`   | Sends `Authorization: Basic <base64(user:pass)>` header                  |
-| None         | (omit `auth`)   | No authentication header sent                                            |
+| Auth Type              | ABL Declaration       | How It Works                                                             |
+| ---------------------- | --------------------- | ------------------------------------------------------------------------ |
+| Bearer Token           | `auth: bearer`        | Sends `Authorization: Bearer <token>` header                             |
+| API Key                | `auth: api_key`       | Sends the key as a header or query parameter (configured in credentials) |
+| OAuth2 (client creds)  | `auth: oauth2_client` | Server-to-server client-credentials flow; runtime handles token refresh  |
+| OAuth2 (user)          | `auth: oauth2_user`   | Authorization-code flow with user-scoped tokens                          |
+| SAML                   | `auth: saml`          | SAML assertion-based authentication                                      |
+| Custom                 | `auth: custom`        | Custom headers via `auth_config` (use this for Basic auth)               |
+| None                   | `auth: none` (or omit)| No authentication header sent                                            |
 
 #### Credential Configuration
 

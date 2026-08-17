@@ -136,7 +136,9 @@ FLOW:
   search_results:
     REASONING: false
     CALL: search_hotels(destination, checkin_date, checkout_date, 1)
-    ON_FAIL: "No hotels found for your criteria. Let's try different dates."
+    ON_FAIL:
+      GOTO: get_dates
+      RESPOND: "No hotels found for your criteria. Let's try different dates."
     RESPOND: |
       I found these hotels for you:
       {{#each hotels}}
@@ -357,31 +359,31 @@ TOOLS:
   navigate(url: string, waitFor: string = "load", timeout: number = 30000) -> {success: boolean, url: string, title: string, statusCode: number}
     type: mcp
     server: "crawler"
-    tool: "navigate"
+    server_tool: "navigate"
     description: "Navigate to a URL in a browser and wait for page load"
 
   get_page_content(includeHtml: boolean = true, includeText: boolean = true) -> {url: string, title: string, html: string, text: string}
     type: mcp
     server: "crawler"
-    tool: "get_page_content"
+    server_tool: "get_page_content"
     description: "Get current page HTML and text content"
 
   extract_links(filter: string = "", includeExternal: boolean = false, limit: number = 50) -> {links: object[], count: number}
     type: mcp
     server: "crawler"
-    tool: "extract_links"
+    server_tool: "extract_links"
     description: "Extract all links from the current page"
 
   extract_elements(selector: string, attributes: string[] = ["text"], limit: number = 50) -> {elements: object[], count: number}
     type: mcp
     server: "crawler"
-    tool: "extract_elements"
+    server_tool: "extract_elements"
     description: "Extract elements matching a CSS selector"
 
   take_screenshot(fullPage: boolean = false) -> {screenshot: string, format: string}
     type: mcp
     server: "crawler"
-    tool: "take_screenshot"
+    server_tool: "take_screenshot"
     description: "Take a screenshot of the current page"
 
 GATHER:
@@ -406,7 +408,7 @@ COMPLETE:
 | --------- | ------- |
 | `type: mcp` | Routes the tool call through an MCP server instead of direct HTTP. |
 | `server: "crawler"` | Identifies which MCP server to connect to (configured in the project's MCP settings). |
-| `tool: "navigate"` | The specific tool name on the MCP server. |
+| `server_tool: "navigate"` | The specific tool name on the MCP server (defaults to the ABL tool name if omitted). |
 | Full feature support | MCP tools support the full range of ABL tool features: parameters, return types, `hints`, `on_result` handlers. |
 
 <Note>See [MCP Tools](/agent-platform/tools/mcp) for details on registering MCP servers with your project.</Note>
@@ -476,7 +478,9 @@ MEMORY:
     - user.name
     - user.customer_id
   recall:
-    - ON_START: "Check if user is returning and has recent context"
+    - ON: session:start
+      ACTION: prompt_llm
+      INSTRUCTION: "Check if user is returning and has recent context"
 
 HANDOFF:
   # P1 -- Account inquiries
@@ -928,8 +932,8 @@ ESCALATE:
 
   routing:
     queue: "loan_underwriting"
-    skill_tags: [underwriting, credit_review]
-    priority_boost: 1
+    skills: [underwriting, credit_review]
+    priority: 1
 
   on_human_complete:
     - IF human.approved == true: CONTINUE
@@ -1162,8 +1166,9 @@ HANDOFF:
       summary: "Wire flagged during sanctions screening"
       history: auto
     EXPECT_RETURN: true
-    MAP:
-      compliance_decision: sanctions_clear
+    ON_RETURN:
+      map:
+        compliance_decision: sanctions_clear
 
   - TO: Branch_Manager
     WHEN: fee_waiver_requested == true
@@ -1193,7 +1198,7 @@ ESCALATE:
 
   routing:
     queue: "wire_operations_l2"
-    skill_tags: [wire_transfer, compliance]
+    skills: [wire_transfer, compliance]
 
 # --- COMPLETE ---
 
