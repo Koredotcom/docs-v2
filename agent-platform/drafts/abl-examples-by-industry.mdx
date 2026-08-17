@@ -4,13 +4,19 @@ title: Examples by Industry
 
 Production-quality ABL examples organized by industry vertical. Each example is drawn from or inspired by real agent deployments in the platform's example library.
 
-## Banking and Financial Services
+> **Repo reference:** All source files are in the `examples/` directory. File paths are noted for each example.
+
+> **Intent routing note:** When an example routes on `intent.category`, define the matching categories in the supervisor's top-level `INTENTS:` section. `INTENTS:` declares classifier vocabulary; `HANDOFF:` maps categories to agents.
+
+---
+
+## Banking & Financial Services
 
 ### Jupiter: 12-Agent Enterprise Banking
 
 Jupiter is a full-service retail banking platform with 12 specialist agents orchestrated by a single supervisor. It handles credit cards, loans, deposit accounts, and debit/ATM services.
 
-Source: `examples/jupiter/supervisor.agent.abl` + `examples/jupiter/agents/`
+> **Source:** `examples/jupiter/supervisor.agent.abl` + `examples/jupiter/agents/`
 
 **Architecture:**
 
@@ -29,19 +35,20 @@ Jupiter_Supervisor (supervisor)
   |-- Lending_Advisory (P10)
   |-- Credit_Card_Advisory (P11)
   |-- Savings_Optimizer (P12)
-  |-- Live_Agent_Transfer (P0 -- human escalation)
+  |-- ESCALATE (P0 -- human escalation)
   |-- Farewell_Agent (P13)
   |-- Fallback_Handler (P14)
 ```
 
 **Supervisor definition:**
 
-```yaml
+```abl
 SUPERVISOR: Jupiter_Supervisor
 VERSION: "1.0"
 DESCRIPTION: "Top-level orchestrator for Jupiter -- inbound customer service for a full-service retail bank"
 
-GOAL: "Route inbound customer requests to the right banking specialist with full context preservation"
+
+GOAL: "Route inbound customer requests to the right banking specialist with relevant context"
 
 PERSONA: |
   Senior virtual banking concierge for Jupiter Bank.
@@ -68,7 +75,6 @@ ON_START:
 
 MEMORY:
   session:
-    - current_intent
     - routing_history
     - handoff_count
     - authentication_level
@@ -90,23 +96,30 @@ TOOLS:
   check_authentication_status(session_id: string) -> {is_authenticated: boolean, auth_level: string}
     description: "Check current session authentication level"
 
-HANDOFF:
-  # P0: Immediate human escalation
-  - TO: Live_Agent_Transfer
-    WHEN: intent.category == "escalation" OR user.wants_human_agent == true OR user.frustration_detected == true
-    CONTEXT:
-      pass: [customer_id, conversation_summary, transfer_reason, authentication_level]
-      summary: "Customer requests human assistance or is showing frustration"
-    RETURN: false
+INTENTS:
+  human_escalation: "Customer requests a human queue, operator, or manual review."
+  fraud: "Customer reports fraud."
+  suspicious_activity: "Customer reports suspicious account activity."
+  farewell: "Customer is ending the conversation."
 
+RETURN_HANDLERS:
+  route_authenticated_request:
+    RESUME_INTENT: true
+
+  check_additional_needs:
+    RESPOND: "What else can I help with?"
+    RESUME_INTENT: true
+
+HANDOFF:
   # P1: Authentication gate
   - TO: Identity_Verification
     WHEN: authentication_level == "none" AND intent.requires_auth == true
     CONTEXT:
       pass: [customer_id, session_context, return_intent]
       summary: "Customer needs identity verification before accessing account services"
-    RETURN: true
-    ON_RETURN: "route_authenticated_request"
+    EXPECT_RETURN: true
+    ON_RETURN:
+      handler: route_authenticated_request
 
   # P2: Fraud & security (time-sensitive)
   - TO: Fraud_Claims
@@ -114,8 +127,9 @@ HANDOFF:
     CONTEXT:
       pass: [customer_id, authentication_level, conversation_context]
       summary: "Customer reporting fraud or suspicious activity"
-    RETURN: true
-    ON_RETURN: "check_additional_needs"
+    EXPECT_RETURN: true
+    ON_RETURN:
+      handler: check_additional_needs
 
   # P3-P12: Domain specialists...
   # (Each follows the same pattern with category-specific routing)
@@ -125,10 +139,14 @@ HANDOFF:
     WHEN: intent.category == "farewell"
     CONTEXT:
       pass: [session_context, conversation_summary]
-    RETURN: false
+    EXPECT_RETURN: false
 
 ESCALATE:
   triggers:
+    - WHEN: intent.category == "human_escalation" OR intent.confidence < 0.5
+      REASON: "Customer requests human assistance or the route is uncertain"
+      PRIORITY: high
+
     - WHEN: routing_failures >= 3
       REASON: "Multiple routing failures"
       PRIORITY: high
@@ -146,10 +164,10 @@ ESCALATE:
 
 **Key takeaways:**
 
-- Ordered HANDOFF rules ensure the most urgent needs (human escalation, auth) are handled first.
-- Authentication is a gate: the supervisor sends unauthenticated users to Identity_Verification before routing to any account-sensitive agent.
-- VIP detection in ESCALATE ensures high-value customers receive priority treatment.
-- RETURN: true on most handoffs means the supervisor regains control and can handle additional requests in the same session.
+- Ordered `HANDOFF` rules ensure the most urgent needs (human escalation, auth) are handled first.
+- Authentication is a gate: the supervisor sends unauthenticated users to `Identity_Verification` before routing to any account-sensitive agent.
+- VIP detection in `ESCALATE` ensures high-value customers receive priority treatment.
+- `EXPECT_RETURN: true` on most handoffs means the supervisor regains control and can handle additional requests in the same session.
 
 ---
 
@@ -157,13 +175,13 @@ ESCALATE:
 
 BankNexus is a streamlined banking assistant with three core capabilities: balance checks, fund transfers, and transaction history.
 
-Source: `examples/banknexus/supervisor.agent.abl` + `examples/banknexus/agents/`
+> **Source:** `examples/banknexus/supervisor.agent.abl` + `examples/banknexus/agents/`
 
-```yaml
+```abl
 SUPERVISOR: BankNexus_Supervisor
 VERSION: "2.0"
 DESCRIPTION: "Top-level orchestrator for the BankNexus digital banking assistant"
-GOAL: "Route customers to the right banking specialist with full context preservation"
+GOAL: "Route customers to the right banking specialist with relevant context"
 
 PERSONA: |
   Professional digital banking assistant for BankNexus.
@@ -171,7 +189,6 @@ PERSONA: |
 
 MEMORY:
   session:
-    - current_intent
     - routing_history
     - handoff_count
   persistent:
@@ -181,40 +198,53 @@ MEMORY:
   recall:
     - ON_START: "Check if user is returning or has account preferences"
 
-HANDOFF:
-  - TO: Live_Agent_Transfer
-    WHEN: intent.category == "escalation" OR user.frustration_detected == true
-    CONTEXT:
-      pass: [user_id, customer_id, conversation_summary]
-      summary: "User requests human assistance"
-    RETURN: false
+INTENTS:
+  human_escalation: "Customer requests human assistance."
+  check_balance: "Customer wants to check account balance."
+  account_inquiry: "Customer asks about account details."
+  transfer: "Customer wants to transfer funds."
+  send_money: "Customer wants to send money."
+  transaction_history: "Customer wants transaction history."
 
+RETURN_HANDLERS:
+  await_next_request:
+    RESPOND: "What else can I help with?"
+    RESUME_INTENT: true
+
+HANDOFF:
   - TO: Get_Balance
     WHEN: intent.category == "check_balance" OR intent.category == "account_inquiry"
     CONTEXT:
       pass: [customer_id, session_context]
       summary: "Customer wants to check account balance"
-    RETURN: true
-    ON_RETURN: "await_next_request"
+    EXPECT_RETURN: true
+    ON_RETURN:
+      handler: await_next_request
 
   - TO: Fund_Transfer
     WHEN: intent.category == "transfer" OR intent.category == "send_money"
     CONTEXT:
       pass: [customer_id, session_context]
       summary: "Customer wants to transfer funds"
-    RETURN: true
-    ON_RETURN: "await_next_request"
+    EXPECT_RETURN: true
+    ON_RETURN:
+      handler: await_next_request
 
   - TO: Transaction_History
     WHEN: intent.category == "transaction_history"
     CONTEXT:
       pass: [customer_id, session_context]
       summary: "Customer wants to view transactions"
-    RETURN: true
-    ON_RETURN: "await_next_request"
+    EXPECT_RETURN: true
+    ON_RETURN:
+      handler: await_next_request
 
 ESCALATE:
   triggers:
+    - WHEN: intent.category == "human_escalation" OR intent.confidence < 0.5
+      REASON: "Customer requests human assistance or the route is uncertain"
+      PRIORITY: high
+
     - WHEN: routing_failures >= 3
       REASON: "Multiple routing failures"
       PRIORITY: high
@@ -232,9 +262,9 @@ COMPLETE:
 
 **BankNexus Fund Transfer agent (with steps):**
 
-Source: `examples/banknexus/agents/fund_transfer.agent.abl`
+> **Source:** `examples/banknexus/agents/fund_transfer.agent.abl`
 
-```yaml
+```abl
 AGENT: Fund_Transfer
 VERSION: "2.0"
 DESCRIPTION: "Handles fund transfers with validation, limits, and execution"
@@ -378,9 +408,9 @@ FLOW:
 
 A multi-agent system for credit/debit card transaction dispute resolution, with stages for intake, validation, information collection, and submission.
 
-Source: `examples/DisputeTransaction/supervisor.agent.abl`
+> **Source:** `examples/DisputeTransaction/supervisor.agent.abl`
 
-```yaml
+```abl
 SUPERVISOR: DisputeTransaction_Supervisor
 VERSION: "1.0"
 DESCRIPTION: "Multi-agent orchestrator for transaction dispute resolution"
@@ -400,6 +430,10 @@ MEMORY:
     - selected_transaction_ids
     - dispute_id
 
+RETURN_HANDLERS:
+  proceed_to_submission:
+    CONTINUE: true
+
 HANDOFF:
   # P1 -- Complete dispute processing
   - TO: Dispute
@@ -407,16 +441,9 @@ HANDOFF:
     CONTEXT:
       pass: [profile_id, session_context, channel_type]
       summary: "End-to-end dispute processing: intake, card/transaction selection, validation, and confirmation"
-    RETURN: true
-    ON_RETURN: "proceed_to_submission"
-
-  # P2 -- Escalation to human
-  - TO: Agent_Transfer
-    WHEN: escalation_required == true OR not_supported_agent_transfer == true
-    CONTEXT:
-      pass: [customer_info, dispute_context, conversation_history, escalation_reason]
-      summary: "Escalation to human agent"
-    RETURN: false
+    EXPECT_RETURN: true
+    ON_RETURN:
+      handler: proceed_to_submission
 
   # P3 -- Feedback collection
   - TO: Feedback_Agent
@@ -424,7 +451,18 @@ HANDOFF:
     CONTEXT:
       pass: [session_id, dispute_id]
       summary: "Collect post-dispute feedback"
-    RETURN: false
+    EXPECT_RETURN: false
+
+ESCALATE:
+  triggers:
+    - WHEN: escalation_required == true OR not_supported_agent_transfer == true
+      REASON: "Dispute requires human review or unsupported transfer handling."
+      PRIORITY: high
+  context_for_human:
+    - customer_info
+    - dispute_context
+    - conversation_summary
+    - escalation_reason
 
 COMPLETE:
   - WHEN: dispute_id != ""
@@ -442,14 +480,14 @@ COMPLETE:
 
 A comprehensive travel booking system with agents for search, sales, booking management, payments, authentication, and live agent transfer.
 
-Source: `examples/travel/supervisor.agent.abl` + `examples/travel/agents/`
+> **Source:** `examples/travel/supervisor.agent.abl` + `examples/travel/agents/`
 
 **Architecture:**
 
 ```
 LastMinute_Supervisor (supervisor)
   |
-  |-- Live_Agent_Transfer (P1 -- escalation + complaints)
+  |-- Live_Agent_Transfer (P1 -- machine transfer adapter for escalation + complaints)
   |-- Farewell_Agent (P3)
   |-- Authentication_Agent (P4 -- auth gate for booking mgmt)
   |-- Booking_Manager (P4 -- authenticated users)
@@ -467,12 +505,12 @@ LastMinute_Supervisor (supervisor)
 
 **Supervisor:**
 
-```yaml
+```abl
 SUPERVISOR: LastMinute_Supervisor
 VERSION: "2.0"
 DESCRIPTION: "Top-level orchestrator for the virtual travel booking assistant"
 
-GOAL: "Route customers to the right specialist with full context preservation"
+GOAL: "Route customers to the right specialist with relevant context"
 
 PERSONA: |
   Professional travel booking assistant. Friendly, efficient, and helpful.
@@ -490,10 +528,10 @@ ON_START:
 
 MEMORY:
   session:
-    - current_intent
     - routing_history
     - user_name
     - user_id
+    - authenticated
     - booking_context
     - search_context
     - budget
@@ -509,31 +547,36 @@ MEMORY:
       ACTION: inject_context
       PATHS: [user.name, user.language, user.preferred_agent]
 
-HANDOFF:
-  # P1 -- Escalation and complaints
-  - TO: Live_Agent_Transfer
-    WHEN: intent.category == "escalation" OR user.wants_human_agent == true
-    CONTEXT:
-      pass: [user_id, conversation_summary, transfer_reason, booking_context]
-      summary: "User requests human assistance or is showing frustration"
-    RETURN: false
+INTENTS:
+  human_escalation: "Customer asks for human assistance."
+  manage_existing_booking: "Customer wants to manage an existing booking."
+  new_booking: "Customer wants to make a new booking."
+  travel_search: "Customer is searching for travel options."
 
+RETURN_HANDLERS:
+  route_to_booking_manager:
+    CONTINUE: true
+
+HANDOFF:
   # P4 -- Auth gate for booking management
   - TO: Authentication_Agent
-    WHEN: user.is_authenticated == false AND intent.category == "manage_existing_booking"
+    WHEN: authenticated == false AND intent.category == "manage_existing_booking"
     CONTEXT:
       pass: [session_context, return_to]
       summary: "User needs to authenticate to manage booking"
-    RETURN: true
-    ON_RETURN: "route_to_booking_manager"
+    EXPECT_RETURN: true
+    ON_RETURN:
+      handler: route_to_booking_manager
+      set:
+        authenticated = true
 
   # P4 -- Authenticated booking management
   - TO: Booking_Manager
-    WHEN: user.is_authenticated == true AND intent.category == "manage_existing_booking"
+    WHEN: authenticated == true AND intent.category == "manage_existing_booking"
     CONTEXT:
       pass: [user_id, booking_context, auth_token]
       summary: "Authenticated user managing their reservation"
-    RETURN: false
+    EXPECT_RETURN: false
 
   # P5 -- New bookings and travel search
   - TO: Sales_Agent
@@ -541,14 +584,25 @@ HANDOFF:
     CONTEXT:
       pass: [search_context, user_preferences, budget]
       summary: "User looking to book new travel"
-    RETURN: false
+    EXPECT_RETURN: false
+
+ESCALATE:
+  triggers:
+    - WHEN: intent.category == "human_escalation"
+      REASON: "Customer requests human assistance."
+      PRIORITY: high
+  context_for_human:
+    - user_id
+    - conversation_summary
+    - transfer_reason
+    - booking_context
 ```
 
 **Booking Manager with delegate sub-agents:**
 
-Source: `examples/travel/agents/booking_manager.agent.abl`
+> **Source:** `examples/travel/agents/booking_manager.agent.abl`
 
-```yaml
+```abl
 AGENT: Booking_Manager
 VERSION: "2.0"
 DESCRIPTION: "Helps authenticated customers view, modify, upgrade, or cancel bookings"
@@ -581,9 +635,10 @@ CONSTRAINTS:
       ON_FAIL: "This is a non-modifiable fare. Let me connect you with phone support."
 
   always:
-    - REQUIRE user.is_authenticated == true
+    - REQUIRE authenticated == true
       ON_FAIL: HANDOFF Authentication_Agent
 
+# Synchronous sub-agent calls
 DELEGATE:
   - AGENT: Fee_Calculator
     WHEN: action_type == "modify" OR action_type == "upgrade"
@@ -622,9 +677,9 @@ COMPLETE:
 
 A focused agent with structured steps for hotel booking.
 
-Source: `examples/flow-test/hotel_booking_flow.agent.abl`
+> **Source:** `examples/flow-test/hotel_booking_flow.agent.abl`
 
-```yaml
+```abl
 AGENT: Hotel_Booking_Flow
 GOAL: "Guide users through a complete hotel booking process step by step"
 
@@ -734,10 +789,10 @@ FLOW:
 
 Multilingual Insurance is a healthcare insurance platform serving Spanish-speaking customers in a regional market. The supervisor routes users through validation, payment inquiries, refund guidance, and human transfer.
 
-Source: `examples/multilingual-insurance-support/supervisor.agent.abl` + `examples/multilingual-insurance-support/agents/`
+> **Source:** `examples/multilingual-insurance-support/supervisor.agent.abl` + `examples/multilingual-insurance-support/agents/`
 
-```yaml
-AGENT: Multilingual_Insurance_Supervisor
+```abl
+SUPERVISOR: Multilingual_Insurance_Supervisor
 GOAL: "Orchestrate Multilingual Insurance health insurance customer service"
 
 PERSONA: |
@@ -745,35 +800,48 @@ PERSONA: |
   Speaks formal Spanish (usted, not tu).
   Patient, helpful, and knowledgeable about health coverage.
 
+INTENTS:
+  payment_inquiry: "Customer asks about payment, balance, amount owed, pago, saldo, debo, or cuanto."
+  refund_guidance: "Customer asks about refund, reimbursement, reembolso, devolucion, or claim guidance."
+  human_transfer: "Customer asks for a human, agent, agente, humano, or persona."
+  farewell: "Customer is ending the conversation, saying bye, gracias, adios, or chao."
+
 HANDOFF:
   # Validate via web vs. WhatsApp channel
   - TO: User_Validator
     WHEN: user.is_validated == false AND session.channel != "whatsapp"
-    PASS: [session_context]
+    CONTEXT:
+      pass: [session_context]
 
   - TO: Whatsapp_User_Check
     WHEN: user.is_validated == false AND session.channel == "whatsapp"
-    PASS: [session_context, inbound_number]
+    CONTEXT:
+      pass: [session_context, inbound_number]
 
-  # Domain routing (Spanish intent matching)
+  # Domain routing (Spanish and English examples live in INTENTS/NLU, not raw WHEN keywords)
   - TO: Pending_Payments
-    WHEN: intent contains "payment" OR intent contains "pago" OR intent contains "saldo" OR intent contains "debo" OR intent contains "cuanto"
-    PASS: [user_id]
+    WHEN: intent.category == "payment_inquiry"
+    CONTEXT:
+      pass: [user_id]
 
   - TO: Refund_Guidance
-    WHEN: intent contains "refund" OR intent contains "reembolso" OR intent contains "devolucion" OR intent contains "claim"
-    PASS: [user_id]
+    WHEN: intent.category == "refund_guidance"
+    CONTEXT:
+      pass: [user_id]
 
+  # Transfer_To_SAC is a machine transfer adapter; direct human queues use ESCALATE.
   - TO: Transfer_To_SAC
-    WHEN: intent contains "agent" OR intent contains "agente" OR intent contains "humano" OR intent contains "persona"
-    PASS: [user_id, transfer_reason]
+    WHEN: intent.category == "human_transfer"
+    CONTEXT:
+      pass: [user_id, transfer_reason]
 
   - TO: Fallback_Handler
     WHEN: intent.unclear == true
-    PASS: [session_context]
+    CONTEXT:
+      pass: [session_context]
 
   - TO: Farewell_Agent
-    WHEN: intent contains "bye" OR intent contains "gracias" OR intent contains "adios" OR intent contains "chao"
+    WHEN: intent.category == "farewell"
 
 COMPLETE:
   - WHEN: handoff_successful == true
@@ -782,19 +850,19 @@ COMPLETE:
 
 **Key design decisions:**
 
-- Channel-aware validation: WhatsApp users are validated by phone number; web users go through a different flow.
-- Bilingual intent matching: Spanish and English keywords are both supported in WHEN conditions.
-- Formal register: The persona explicitly specifies formal Spanish (usted) to match the healthcare context.
+- **Channel-aware validation:** WhatsApp users are validated by phone number; web users go through a different flow.
+- **Bilingual intent matching:** Spanish and English examples belong in `INTENTS`/`NLU`; `HANDOFF` routes on the resulting `intent.category`.
+- **Formal register:** The persona explicitly specifies formal Spanish (`usted`) to match the healthcare context.
 
 ---
 
-### Neptune: Life and Health Insurance
+### Neptune: Life & Health Insurance
 
 Neptune Insurance handles claim filing, claim status checks, premium payments, policy renewals, policy inquiries, complaint handling, and document submission across both life and health insurance products.
 
-Source: `examples/neptune/supervisor.agent.abl`
+> **Source:** `examples/neptune/supervisor.agent.abl`
 
-```yaml
+```abl
 SUPERVISOR: Neptune_Supervisor
 VERSION: "1.0"
 DESCRIPTION: "Inbound customer service for Neptune Insurance -- life and health insurance"
@@ -818,7 +886,6 @@ MEMORY:
     - customer_id
     - customer_name
     - active_policies
-    - current_intent
     - authentication_level
     - insurance_type
   persistent:
@@ -839,22 +906,37 @@ TEMPLATES:
 ON_START:
   RESPOND: TEMPLATE(welcome)
 
-HANDOFF:
-  # P0: Escalation
-  - TO: human_agent
-    WHEN: intent.frustration_level == "high" OR user.wants_human_agent == true
-    CONTEXT:
-      pass: [customer_id, customer_name, authentication_level, routing_history]
-      summary: "Customer requesting human assistance or showing frustration"
-    RETURN: false
+INTENTS:
+  human_escalation: "Customer asks for human assistance."
+  general_inquiry: "Customer asks a general insurance question."
+  file_claim: "Customer wants to file a claim."
+  new_claim: "Customer wants to open a new claim."
+  claim_status: "Customer asks about an existing claim."
+  track_claim: "Customer wants to track a claim."
+  pay_premium: "Customer wants to pay a premium."
+  payment: "Customer asks about payment."
+  renew_policy: "Customer wants to renew a policy."
+  renewal: "Customer asks about renewal."
+  policy_details: "Customer asks for policy details."
+  benefits: "Customer asks about benefits."
 
+RETURN_HANDLERS:
+  route_to_specialist:
+    RESUME_INTENT: true
+
+  check_additional_needs:
+    RESPOND: "What else can I help with?"
+    RESUME_INTENT: true
+
+HANDOFF:
   # P1: Auth gate
   - TO: identity_verification
-    WHEN: authentication_level == "none" AND current_intent != "general_inquiry"
+    WHEN: authentication_level == "none" AND intent.category != "general_inquiry"
     CONTEXT:
-      pass: [customer_id, current_intent, insurance_type]
-    RETURN: true
-    ON_RETURN: "route_to_specialist"
+      pass: [customer_id, insurance_type]
+    EXPECT_RETURN: true
+    ON_RETURN:
+      handler: route_to_specialist
 
   # P2: Claim filing
   - TO: claim_filing
@@ -862,39 +944,44 @@ HANDOFF:
     CONTEXT:
       pass: [customer_id, active_policies, insurance_type]
       summary: "Customer wants to file a new insurance claim"
-    RETURN: true
-    ON_RETURN: "check_additional_needs"
+    EXPECT_RETURN: true
+    ON_RETURN:
+      handler: check_additional_needs
 
   # P3: Claim status
   - TO: claim_status
     WHEN: intent.category == "claim_status" OR intent.category == "track_claim"
     CONTEXT:
       pass: [customer_id, active_policies]
-    RETURN: true
+    EXPECT_RETURN: true
 
   # P4: Premium payment
   - TO: premium_payment
     WHEN: intent.category == "pay_premium" OR intent.category == "payment"
     CONTEXT:
       pass: [customer_id, active_policies]
-    RETURN: true
+    EXPECT_RETURN: true
 
   # P5: Policy renewal
   - TO: policy_renewal
     WHEN: intent.category == "renew_policy" OR intent.category == "renewal"
     CONTEXT:
       pass: [customer_id, active_policies, insurance_type]
-    RETURN: true
+    EXPECT_RETURN: true
 
   # P6: Policy details
   - TO: policy_inquiry
     WHEN: intent.category == "policy_details" OR intent.category == "benefits"
     CONTEXT:
       pass: [customer_id, active_policies, insurance_type]
-    RETURN: true
+    EXPECT_RETURN: true
 
 ESCALATE:
   triggers:
+    - WHEN: intent.category == "human_escalation"
+      REASON: "Customer requests human assistance."
+      PRIORITY: high
+
     - WHEN: routing_history.length > 3
       REASON: "Customer routed multiple times without resolution"
       PRIORITY: high
@@ -913,7 +1000,7 @@ ESCALATE:
 
 A multi-agent NOC system that triages incoming network alarms and routes them to specialist agents based on alarm category and severity.
 
-Source: `examples/telco/supervisor.agent.abl` + `examples/telco/agents/`
+> **Source:** `examples/telco/supervisor.agent.abl` + `examples/telco/agents/`
 
 **Architecture:**
 
@@ -931,7 +1018,7 @@ NOC_Supervisor (supervisor)
 
 **Supervisor:**
 
-```yaml
+```abl
 SUPERVISOR: NOC_Supervisor
 VERSION: "1.0"
 DESCRIPTION: "Top-level NOC orchestrator -- triages alarms and routes to specialists"
@@ -969,26 +1056,29 @@ MEMORY:
   recall:
     - ON_START: "Check active alarms and current shift context"
 
+INTENTS:
+  upgrade_campaign: "Operator asks about an OS upgrade campaign."
+
 HANDOFF:
   - TO: Network_Triage
     WHEN: alarm.category IN ["link_degradation", "fiber_cut", "hardware_warning", "capacity_threshold", "power_failure"]
     CONTEXT:
       pass: [alarm_id, severity, site_code, category]
       summary: "New alarm requires triage and classification"
-    RETURN: true
+    EXPECT_RETURN: true
 
   - TO: Incident_Manager
     WHEN: severity == "critical" OR severity == "major"
     CONTEXT:
       pass: [alarm_id, severity, site_code, affected_subscribers]
       summary: "High-severity issue requires incident management"
-    RETURN: true
+    EXPECT_RETURN: true
 
   - TO: OS_Upgrade_Coordinator
     WHEN: intent.category == "upgrade_campaign"
     CONTEXT:
       pass: [region, target_os, strategy]
-    RETURN: true
+    EXPECT_RETURN: true
 
 ESCALATE:
   triggers:
@@ -1005,9 +1095,9 @@ ESCALATE:
 
 **Network Triage agent (with steps):**
 
-Source: `examples/telco/agents/network_triage.agent.abl`
+> **Source:** `examples/telco/agents/network_triage.agent.abl`
 
-```yaml
+```abl
 AGENT: Network_Triage
 VERSION: "1.0"
 DESCRIPTION: "First-line triage -- assesses alarms, classifies severity, routes to specialists"
@@ -1092,21 +1182,21 @@ HANDOFF:
     CONTEXT:
       pass: [alarm_id, site_code, severity, affected_subscribers]
       summary: "Triage complete -- link issue requires diagnostics"
-    RETURN: false
+    EXPECT_RETURN: false
 
   - TO: Capacity_Planner
     WHEN: category == "capacity_threshold"
     CONTEXT:
       pass: [alarm_id, site_code, severity, region]
       summary: "Triage complete -- capacity issue requires planning"
-    RETURN: false
+    EXPECT_RETURN: false
 
   - TO: Maintenance_Scheduler
     WHEN: category == "hardware_warning" OR category == "power_failure"
     CONTEXT:
       pass: [alarm_id, site_code, severity, equipment_type]
       summary: "Triage complete -- hardware issue requires maintenance"
-    RETURN: false
+    EXPECT_RETURN: false
 ```
 
 ---
@@ -1117,9 +1207,9 @@ HANDOFF:
 
 A multi-agent retail commerce supervisor with six specialist agents for product discovery, sales, order tracking, returns, loyalty, and human escalation.
 
-Source: `examples/retail/supervisor.agent.abl` + `examples/retail/agents/`
+> **Source:** `examples/retail/supervisor.agent.abl` + `examples/retail/agents/`
 
-```yaml
+```abl
 SUPERVISOR: Retail_Supervisor
 VERSION: "1.0"
 DESCRIPTION: "Multi-agent retail commerce supervisor"
@@ -1159,51 +1249,63 @@ TEMPLATES:
 ON_START:
   RESPOND: TEMPLATE(welcome)
 
-HANDOFF:
-  # P1 -- Human escalation
-  - TO: Live_Agent
-    WHEN: user.wants_human_agent == true OR user.frustration_detected == true
-    CONTEXT:
-      pass: [customer_id, conversation_summary, intent, sentiment]
-    RETURN: false
+INTENTS:
+  human_escalation: "Customer requests human assistance."
+  order_inquiry: "Customer asks about an order."
+  shipping: "Customer asks about shipping or delivery."
+  return: "Customer wants to return an item."
+  refund: "Customer asks about refund status or eligibility."
+  loyalty: "Customer asks about loyalty."
+  rewards: "Customer asks about rewards."
+  checkout: "Customer wants checkout help."
+  cart: "Customer asks about cart contents."
+  browse: "Customer is browsing products."
+  search: "Customer searches products."
+  recommend: "Customer wants recommendations."
+  complaint: "Customer has a complaint."
 
+HANDOFF:
   # P2 -- Order tracking
   - TO: Order_Tracking
     WHEN: intent.category == "order_inquiry" OR intent.category == "shipping"
     CONTEXT:
       pass: [customer_id, order_id, session_context]
-    RETURN: false
+    EXPECT_RETURN: false
 
   # P3 -- Returns and refunds
   - TO: Returns_And_Refunds
     WHEN: intent.category == "return" OR intent.category == "refund"
     CONTEXT:
       pass: [customer_id, order_id, item_id]
-    RETURN: false
+    EXPECT_RETURN: false
 
   # P4 -- Loyalty
   - TO: Loyalty
     WHEN: intent.category == "loyalty" OR intent.category == "rewards"
     CONTEXT:
       pass: [customer_id]
-    RETURN: false
+    EXPECT_RETURN: false
 
   # P5 -- Checkout
   - TO: Sales_Agent
     WHEN: intent.category == "checkout" OR intent.category == "cart"
     CONTEXT:
       pass: [customer_id, cart_contents]
-    RETURN: false
+    EXPECT_RETURN: false
 
   # P6 -- Product browsing
   - TO: Product_Advisor
     WHEN: intent.category == "browse" OR intent.category == "search" OR intent.category == "recommend"
     CONTEXT:
       pass: [customer_id, search_context, preferences]
-    RETURN: false
+    EXPECT_RETURN: false
 
 ESCALATE:
   triggers:
+    - WHEN: intent.category == "human_escalation" OR intent.confidence < 0.5
+      REASON: "Customer requests human assistance or the route is uncertain."
+      PRIORITY: high
+
     - WHEN: customer_tier == "VIP" AND intent.category == "complaint"
       REASON: "VIP customer with complaint"
       PRIORITY: critical
@@ -1214,7 +1316,7 @@ ESCALATE:
       PRIORITY: high
 ```
 
-**Key design pattern:** The retail supervisor uses multi-format TEMPLATES with DEFAULT, MARKDOWN, and HTML variants. The runtime selects the appropriate format based on the channel (chat widget, web app, or headless API).
+**Key design pattern:** The retail supervisor uses multi-format `TEMPLATES` with `DEFAULT`, `MARKDOWN`, and `HTML` variants. The runtime selects the appropriate format based on the channel (chat widget, web app, or headless API).
 
 ---
 
@@ -1222,9 +1324,9 @@ ESCALATE:
 
 A multi-agent device customer support system handling device issues, account problems, repairs, warranty checks, and subscriptions.
 
-Source: `examples/device-care-support/agents/device_care_supervisor.agent.abl` + `examples/device-care-support/agents/`
+> **Source:** `examples/device-care-support/agents/device_care_supervisor.agent.abl` + `examples/device-care-support/agents/`
 
-```yaml
+```abl
 SUPERVISOR: Device_Care_Supervisor
 VERSION: "1.0"
 DESCRIPTION: "Multi-agent device customer care for devices, accounts, repairs, and subscriptions"
@@ -1246,44 +1348,52 @@ MEMORY:
     - steps_tried
     - data_loss_risk
 
-HANDOFF:
-  # P1 -- Human escalation
-  - TO: Live_Agent
-    WHEN: user.wants_human_agent == true OR user.repeated_failures == true
-    CONTEXT:
-      pass: [account_id, device_type, serial_number, issue_summary, steps_tried]
-    RETURN: false
+INTENTS:
+  human_escalation: "Customer requests human assistance."
+  device_issue: "Customer has a device issue."
+  troubleshooting: "Customer needs troubleshooting."
+  account: "Customer asks about their account."
+  cloud_storage: "Customer asks about cloud storage."
+  repair: "Customer asks about repair."
+  warranty: "Customer asks about warranty."
+  subscription: "Customer asks about a subscription."
+  billing: "Customer asks about billing."
 
+HANDOFF:
   # P2 -- Device troubleshooting
   - TO: Device_Support
     WHEN: intent.category == "device_issue" OR intent.category == "troubleshooting"
     CONTEXT:
       pass: [device_type, serial_number, issue_description, account_id]
-    RETURN: false
+    EXPECT_RETURN: false
 
-  # P3 -- Account and cloud storage
+  # P3 -- account ID and cloud storage
   - TO: Account_Support
     WHEN: intent.category == "account" OR intent.category == "cloud_storage"
     CONTEXT:
       pass: [account_id, issue_type]
-    RETURN: false
+    EXPECT_RETURN: false
 
   # P4 -- Repairs and warranty
   - TO: Repair_And_Warranty
     WHEN: intent.category == "repair" OR intent.category == "warranty"
     CONTEXT:
       pass: [device_type, serial_number, issue_description]
-    RETURN: false
+    EXPECT_RETURN: false
 
   # P5 -- Subscriptions
   - TO: Subscription_Support
     WHEN: intent.category == "subscription" OR intent.category == "billing"
     CONTEXT:
       pass: [account_id, subscription_name]
-    RETURN: false
+    EXPECT_RETURN: false
 
 ESCALATE:
   triggers:
+    - WHEN: intent.category == "human_escalation" OR repeated_failures == true
+      REASON: "Customer requests human assistance or repeated failures require human review."
+      PRIORITY: high
+
     - WHEN: data_loss_risk == true
       REASON: "Potential data loss requires specialist attention"
       PRIORITY: high
@@ -1298,11 +1408,11 @@ ESCALATE:
 
 A three-agent airline system with flight search, operational analytics, and policy Q&A -- all using knowledge base search with vocabulary resolution.
 
-Source: `examples/airlines/supervisor.agent.abl` + `examples/airlines/agents/`
+> **Source:** `examples/airlines/supervisor.agent.abl` + `examples/airlines/agents/`
 
 **Supervisor:**
 
-```yaml
+```abl
 SUPERVISOR: Airlines_Supervisor
 
 EXECUTION:
@@ -1325,23 +1435,34 @@ TEMPLATES:
 ON_START:
   RESPOND: TEMPLATE(welcome)
 
+INTENTS:
+  flight_search: "Customer asks for flight search or availability."
+  policy: "Customer asks about airline policies."
+  analytics: "Customer asks for operational analytics."
+
 HANDOFF:
   - TO: Flight_Search
     WHEN: intent.category == "flight_search"
-    PASS: query
+    CONTEXT:
+      pass: [query]
+      summary: "User is asking about flight search."
 
   - TO: Policy_Advisor
     WHEN: intent.category == "policy"
-    PASS: query
+    CONTEXT:
+      pass: [query]
+      summary: "User needs airline policy guidance."
 
   - TO: Analytics
     WHEN: intent.category == "analytics"
-    PASS: query
+    CONTEXT:
+      pass: [query]
+      summary: "User is asking for operational analytics."
 ```
 
 **Flight Search agent (RAG with vocabulary resolution):**
 
-```yaml
+```abl
 AGENT: Flight_Search
 
 EXECUTION:
@@ -1366,7 +1487,7 @@ INSTRUCTIONS: |
 
 **Analytics agent (aggregation queries):**
 
-```yaml
+```abl
 AGENT: Analytics
 
 EXECUTION:
@@ -1391,16 +1512,18 @@ INSTRUCTIONS: |
 
 ## Summary: Industry Pattern Matrix
 
-| Industry | Example | Agents | Structure | Key Patterns |
-|---|---|---|---|---|
-| Banking | Jupiter | 12+ | Supervisor + agents with flow | Auth gate, priority routing, VIP escalation |
-| Banking | BankNexus | 3 | Supervisor + agents with flow | Focused routing, fund transfer flow |
-| Banking | DisputeTransaction | 3 | Supervisor + agents | Stage-based routing, feedback collection |
-| Travel | Travel Booking | 10 | Supervisor + agents | Auth gate, delegates, payment handoff |
-| Travel | Hotel Booking | 1 | Agent with flow | Step-by-step flow, tool calls |
-| Healthcare | Multilingual Insurance | 7+ | Supervisor + agents | Spanish, WhatsApp channel routing |
-| Insurance | Neptune | 10+ | Supervisor + agents | Claim pipeline, empathetic persona |
-| Telecom | NOC | 6 | Supervisor + agents with flow | Alarm triage, SLA escalation |
-| Retail | Retail Commerce | 6 | Supervisor + agents | Multi-format templates, VIP detection |
-| Retail | Device Care | 4 | Supervisor + agents | Support voice, data loss escalation |
-| Airlines | Airlines | 3 | Supervisor + agents | RAG search, vocabulary resolution |
+| Industry   | Example                | Agents | Structure                     | Key Patterns                                |
+| ---------- | ---------------------- | ------ | ----------------------------- | ------------------------------------------- |
+| Banking    | Jupiter                | 12+    | Supervisor + agents with flow | Auth gate, priority routing, VIP escalation |
+| Banking    | BankNexus              | 3      | Supervisor + agents with flow | Focused routing, fund transfer flow         |
+| Banking    | DisputeTransaction     | 3      | Supervisor + agents           | Stage-based routing, feedback collection    |
+| Travel     | Travel Booking         | 10     | Supervisor + agents           | Auth gate, delegates, payment handoff       |
+| Travel     | Hotel Booking          | 1      | Agent with flow               | Step-by-step flow, tool calls               |
+| Healthcare | Multilingual Insurance | 7+     | Supervisor + agents           | Spanish, WhatsApp channel routing           |
+| Insurance  | Neptune                | 10+    | Supervisor + agents           | Claim pipeline, empathetic persona          |
+| Telecom    | NOC                    | 6      | Supervisor + agents with flow | Alarm triage, SLA escalation                |
+| Retail     | Retail Commerce        | 6      | Supervisor + agents           | Multi-format templates, VIP detection       |
+| Retail     | Device Care            | 4      | Supervisor + agents           | Support voice, data loss escalation         |
+| Airlines   | Airlines               | 3      | Supervisor + agents           | RAG search, vocabulary resolution           |
+
+---
