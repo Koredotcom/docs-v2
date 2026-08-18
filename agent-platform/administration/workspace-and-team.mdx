@@ -383,51 +383,45 @@ Use the platform-managed KMS provider. No tenant-specific external key connectio
  
 #### Azure Key Vault
  
-| Field         | Description                                                        |
-| ------------- | -------------------------------------------------------------------- |
-| Key Vault URL | The vault's URL, for example `https://your-vault.vault.azure.net`.   |
-| Key Name      | The name of the key within the vault.                                 |
-| Auth Method   | **Service Account / Service Principal** or **Workload Identity Federation (secretless)**. |
+| Field | Description |
+| ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| Key Vault URL | The vault's URL, for example `https://your-vault.vault.azure.net`. |
+| Azure key version (optional) | Pin this scope to one Azure key version using the 32-character hexadecimal version ID. Leave empty to follow Azure's current key version. |
+| Key Name | The name of the key within the vault, for example `my-encryption-key`. |
+| Auth Method | **Service Account / Service Principal** or **Platform workload identity**. |
  
 **Service Account / Service Principal**
  
 Use the Azure app registration or service principal that can read, wrap, and unwrap this key.
  
 <Note>For cross-tenant access, register this application in the customer Azure tenant via admin consent and assign the Key Vault Crypto User role on the target key vault.</Note>
-| Field           | Description                                                    |
-| --------------- | ---------------------------------------------------------------- |
-| Tenant ID       | The Azure directory (tenant) ID.                                  |
-| Client ID       | The application (client) ID.                                     |
-| Credential type | **Client secret** or **Certificate (PEM)**.                       |
-| Client Secret   | Required when Credential type is Client secret.                   |
  
-**Workload Identity Federation (secretless)**
+| Field           | Description                                     |
+| --------------- | ----------------------------------------------- |
+| Tenant ID       | The Azure directory (tenant) ID.                |
+| Client ID       | The application (client) ID.                    |
+| Credential type | **Client secret** or **Certificate (PEM)**.     |
+| Client Secret   | Required when Credential type is Client secret. |
  
-Secretless auth for a vault in this or another Azure directory. The customer directory trusts this platform's workload identity - nothing to store, expire, or rotate.
+**Platform workload identity**
  
-| Field     | Description                        |
-| --------- | ------------------------------------ |
-| Tenant ID | The Azure directory (tenant) ID.     |
-| Client ID | The application (client) ID.         |
+Enter the customer Entra directory ID. The platform uses its own managed Azure application - no client ID, secret, or federated credential.
  
-Under **Federated credential setup (customer side)**, register these exact values as a federated credential on the app registration in the customer's Azure directory: **OIDC issuer**, **Subject**, and **Audience** (each has a **Copy** button).
+| Field | Description |
+| ---------------------------- | ------------------------------------------------------------------------------------------------------------ |
+| Customer Entra directory ID | The customer's Azure directory (tenant) ID. |
  
-1. Create (or pick) an app registration in the customer's Azure directory and note its Directory (tenant) ID and Application (client) ID.
-2. On that app, add a federated credential with the issuer, subject, and audience shown above.
-3. Grant the app the Key Vault Crypto User role scoped to the target vault only - never subscription-wide.
-4. Enter the two IDs here, then use **Test connection** before saving.
-
-<Note>A newly created federated credential can take several minutes to propagate in Microsoft Entra ID. If the connection test fails right after setup, wait a few minutes and retry.</Note>
-
+Your Azure administrator must grant the platform's managed Azure application access to the target key vault.
+ 
 Use **Test Connection** to verify the provider connection before saving configuration.
- 
+  
 #### Azure Managed HSM
  
 | Field                 | Description                                                          |
 | --------------------- | ----------------------------------------------------------------------- |
 | Managed HSM URL       | The HSM's URL, for example `https://your-hsm.managedhsm.azure.net`.     |
 | Managed HSM Key Name  | The name of the key within the Managed HSM, for example `tenant-kek-primary`. |
-| Auth Method           | **Service Account / Service Principal** or **Workload Identity Federation (secretless)**. |
+| Auth Method           | **Service Account / Service Principal** or **Platform workload identity**. |
  
 **Service Account / Service Principal**
  
@@ -441,21 +435,13 @@ Use the Azure app registration or service principal that can read, wrap, and unw
 | Credential type | **Client secret** or **Certificate (PEM)**.                       |
 | Client Secret   | Required when Credential type is Client secret.                   |
  
-**Workload Identity Federation (secretless)**
+**Platform workload identity**
  
-Secretless auth for a vault in this or another Azure directory. The customer directory trusts this platform's workload identity - nothing to store, expire, or rotate.
+Enter the customer Entra directory ID. The platform uses its own managed Azure application - no client ID, secret, or federated credential.
  
-| Field     | Description                        |
-| --------- | ------------------------------------ |
-| Tenant ID | The Azure directory (tenant) ID.     |
-| Client ID | The application (client) ID.         |
- 
-Under **Federated credential setup (customer side)**, register these exact values as a federated credential on the app registration in the customer's Azure directory: **OIDC issuer**, **Subject**, and **Audience** (each has a **Copy** button).
- 
-1. Create (or pick) an app registration in the customer's Azure directory and note its Directory (tenant) ID and Application (client) ID.
-2. On that app, add a federated credential with the issuer, subject, and audience shown above.
-3. Grant the app the Key Vault Crypto User role scoped to the target vault only - never subscription-wide.
-4. Enter the two IDs here, then use **Test connection** before saving.
+| Field | Description |
+| ---------------------------- | ------------------------------------------------------------------------------------------------------------ |
+| Customer Entra directory ID | The customer's Azure directory (tenant) ID. |
  
 #### Google Cloud KMS
  
@@ -487,21 +473,23 @@ Before saving the tenant KMS configuration, enter the endpoint, key ID, and auth
 | Setting              | Options                                                                 | Default        |
 |----------------------|-------------------------------------------------------------------------|----------------|
 | **Failure Policy**   | **Fail Closed** - all encryption/decryption stops <br /> **Graceful Degradation** - continue with cached DEKs until KMS reconnects | Fail Closed    |
-| **Compliance Level** | **Standard**, **PCI DSS**, **HIPAA**, **FIPS 140‑3**                    | Standard       |
+| **Compliance Level** | **Standard**, **PCI DSS**, **HIPAA**, **GDPR**, **SOC 2**, **NIST SP 800-57**, **FIPS 140‑3**                    | Standard       |
 
 ### Rotation and re-encryption settings
-
-
+ 
 Key rotation can happen automatically (if the provider supports scheduled rotation) or manually, by creating a new key version on demand from the Encryption Keys tab.
-
-| Setting | Description |
-|---------|-------------|
-| DEK Epoch Interval | Frequency of DEK generation. |
-| DEK Max Usage Count | Maximum DEK usage before rotation. |
-| Destroy retired DEKs | Enables automatic destruction after the retention period. |
-| KEK Rotation Period | Frequency of KEK rotation. |
-| Enable automatic re-encryption | Automatically queues re-encryption jobs after rotation. |
-
+ 
+Tune DEK epoch length, KEK age policy, and whether retired DEKs are ever destroyed.
+ 
+| Setting                        | Description                                                                          |
+| ------------------------------- | ------------------------------------------------------------------------------------ |
+| DEK Epoch Interval (hours)     | Frequency of DEK generation, in hours, for example `720`.                            |
+| DEK Max Usage Count            | Maximum DEK usage before rotation, for example `1073741824`.                         |
+| KEK rotation policy (days) / recommended maximum | Frequency of KEK rotation, in days, for example `365`.             |
+| Last KEK rewrap completed      | Read-only. Timestamp of the most recent KEK rewrap, or `Never` if one hasn't run yet. |
+| Destroy retired DEKs           | Enables automatic destruction after the retention period.                            |
+| Enable automatic re-encryption | Automatically queues re-encryption jobs after rotation.                              |
+ 
 Re-encryption also includes **Concurrency** (parallel jobs), **Batch Size** (records per batch), and **Max Retries** (retry attempts for failed jobs). Click **Save Configuration** to apply.
 
 ### Scopes
