@@ -1,13 +1,17 @@
 ---
 title: Examples by Pattern
+sidebarTitle: By Pattern
 ---
+
+Complete, runnable ABL agent examples organized by pattern, from simple reasoning agents to full multi-construct reference implementations.
 
 Complete, runnable ABL examples organized by agent pattern. Each example includes the full ABL definition, an explanation of key constructs, and guidance on when to use that pattern.
 
-## Getting Started with ABL Patterns
+<Note>Copy any example into the ABL Studio visual editor to see the flow graph rendered in real time.</Note>
 
-ABL agent definitions range from a single conversational agent to multi-agent systems with compliance gates, memory, and human oversight. The examples in this section are organized so you can start with the simplest pattern that fits your use case and layer in complexity only when you need it.
+<Note>When an example routes on `intent.category`, define the matching categories in the supervisor's top-level `INTENTS:` section. `INTENTS:` declares classifier vocabulary; `HANDOFF:` maps categories to agents.</Note>
 
+---
 
 ## Simple Agent
 
@@ -67,10 +71,12 @@ COMPLETE:
 
 **Key concepts:**
 
-- No FLOW section -- the agent uses LLM reasoning by default to select tools and responses each turn.
-- GATHER -- declares information the agent should collect, but the LLM decides when and how to ask.
-- LIMITATIONS -- prompt-level boundaries the LLM uses for refusals, caveats, and scope guidance.
-- COMPLETE -- conditions that signal the conversation has reached a successful end state.
+| Construct | Purpose |
+| --------- | ------- |
+| No `FLOW` section | The agent uses LLM reasoning by default to select tools and responses each turn. |
+| `GATHER` | Declares information the agent should collect, but the LLM decides _when_ and _how_ to ask. |
+| `LIMITATIONS` | Prompt-level boundaries the LLM uses for refusals, caveats, and scope guidance. |
+| `COMPLETE` | Conditions that signal the conversation has reached a successful end state. |
 
 ---
 
@@ -175,12 +181,14 @@ COMPLETE:
 
 **Key concepts:**
 
-- FLOW section -- adding a FLOW section gives the agent a fixed step graph.
-- entry_point / steps -- declares the step sequence and starting point.
-- THEN: -- explicit transitions between steps.
-- REASONING: false -- disables LLM reasoning within a step (deterministic execution).
-- CALL -- invokes a tool with specific parameters.
-- GATHER within a step -- collects input before moving to the next step.
+| Construct | Purpose |
+| --------- | ------- |
+| `FLOW` section | Gives the agent a fixed step graph. |
+| `entry_point` / `steps` | Declares the step sequence and starting point. |
+| `THEN:` | Explicit transition between steps. |
+| `REASONING: false` | Disables LLM reasoning within a step (deterministic execution). |
+| `CALL` | Invokes a tool with specific parameters. |
+| `GATHER` within a step | Collects input before moving to the next step. |
 
 ---
 
@@ -248,21 +256,22 @@ COMPLETE:
 
 **Key concepts:**
 
-- type: http -- marks the tool as an HTTP API call.
-- endpoint -- the full URL of the API.
-- method -- HTTP method (GET, POST, PUT, DELETE).
-- auth: bearer -- the runtime injects a Bearer token from the project's credential store.
-- hints -- optional metadata that helps the runtime optimize tool execution:
-  - cacheable -- whether results can be cached across turns.
-  - latency -- expected response time (fast, medium, slow).
-  - timeout -- maximum wait time in milliseconds.
-  - side_effects -- whether the call modifies external state.
+| Construct | Purpose |
+| --------- | ------- |
+| `type: http` | Marks the tool as an HTTP API call. |
+| `endpoint` | The full URL of the API. |
+| `method` | HTTP method (`GET`, `POST`, `PUT`, `DELETE`). |
+| `auth: bearer` | The runtime injects a Bearer token from the project's credential store. |
+| `hints.cacheable` | Whether results can be cached across turns. |
+| `hints.latency` | Expected response time (`fast`, `medium`, `slow`). |
+| `hints.timeout` | Maximum wait time in milliseconds. |
+| `hints.side_effects` | Whether the call modifies external state. |
 
 ---
 
 ## Agent with Code Sandbox
 
-Code sandbox tools run arbitrary code in a secure, isolated environment. The runtime provides a memory API so sandbox code can read and write agent session state.
+Code sandbox tools run arbitrary code in a secure, isolated environment. The runtime provides a `memory` API so sandbox code can read and write agent session state.
 
 **When to use:** Complex calculations, data transformations, custom formatting, or any logic that is easier to express in code than in tool parameters.
 
@@ -315,9 +324,11 @@ COMPLETE:
 
 **Key concepts:**
 
-- Sandbox tools are declared with a signature but no type: http or type: mcp -- the runtime resolves them from Project Tools (code files uploaded to the project).
-- The memory API is injected automatically. Sandbox code can read session state with memory.get_content() and persist results with memory.set_content().
-- Sandbox execution is isolated -- the code cannot access the network, filesystem, or other sessions.
+| Construct | Purpose |
+| --------- | ------- |
+| No `type:` on the tool | Sandbox tools are declared with a signature but no `type: http` or `type: mcp` -- the runtime resolves them from **Project Tools** (code files uploaded to the project). |
+| `memory` API | Injected automatically. Sandbox code can read session state with `memory.get_content()` and persist results with `memory.set_content()`. |
+| Isolated execution | The sandbox code cannot access the network, filesystem, or other sessions. |
 
 ---
 
@@ -396,12 +407,175 @@ COMPLETE:
 
 **Key concepts:**
 
-- type: mcp -- routes the tool call through an MCP server instead of direct HTTP.
-- server: "crawler" -- identifies which MCP server to connect to (configured in the project's MCP settings).
-- tool: "navigate" -- the specific tool name on the MCP server.
-- MCP tools support the full range of ABL tool features: parameters, return types, hints, on_result handlers.
+| Construct | Purpose |
+| --------- | ------- |
+| `type: mcp` | Routes the tool call through an MCP server instead of direct HTTP. |
+| `server: "crawler"` | Identifies which MCP server to connect to (configured in the project's MCP settings). |
+| `tool: "navigate"` | The specific tool name on the MCP server. |
+| Full feature support | MCP tools support the full range of ABL tool features: parameters, return types, `hints`, `on_result` handlers. |
 
-Cross-reference: See the MCP Configuration Guide for details on registering MCP servers with your project.
+<Note>See [MCP Tools](/agent-platform/tools/mcp) for details on registering MCP servers with your project.</Note>
+
+---
+
+## Multi-Agent with Supervisor
+
+A supervisor agent routes incoming requests to specialist agents based on intent. It does not handle domain logic itself -- it classifies the user's need and hands off to the right agent, with optional context passing.
+
+**When to use:** Any application with multiple distinct capabilities -- customer service with different departments, enterprise platforms with specialized functions, or any system where one agent cannot handle all request types.
+
+```yaml
+SUPERVISOR: Support_Supervisor
+VERSION: "1.0"
+DESCRIPTION: "Routes customer requests to the right specialist agent"
+
+GOAL: "Identify the customer's need and route to the correct specialist with relevant context"
+
+PERSONA: |
+  Professional customer service coordinator. Quickly understands
+  the customer's intent and connects them with the right specialist.
+  Never attempts to handle domain-specific requests directly.
+
+LIMITATIONS:
+  - "Cannot access or modify accounts directly -- routes to specialists"
+  - "Cannot process transactions or payments"
+  - "Cannot override security policies"
+
+TEMPLATES:
+  welcome: |
+    Welcome! I can help you with:
+    - Account inquiries and balance checks
+    - Fund transfers and payments
+    - Technical support and troubleshooting
+    How can I assist you today?
+
+ON_START:
+  RESPOND: TEMPLATE(welcome)
+
+INTENTS:
+  human_escalation: "Customer explicitly asks for a human queue, operator, or manual review."
+  balance: "Customer wants a balance check."
+  account_details: "Customer wants account information."
+  transfer: "Customer wants to transfer funds."
+  send_money: "Customer wants to send money."
+  technical: "Customer needs technical support."
+  troubleshooting: "Customer needs troubleshooting help."
+  farewell: "Customer is ending the conversation."
+  unknown: "Customer intent is ambiguous and needs clarification."
+
+RETURN_HANDLERS:
+  check_additional_needs:
+    RESPOND: "What else can I help with?"
+    RESUME_INTENT: true
+
+  reclassify_intent:
+    RESPOND: "I can route you once I understand the request."
+    RESUME_INTENT: true
+
+MEMORY:
+  session:
+    - name: handoff_count
+      type: number
+      INITIAL: 0
+  persistent:
+    - user.name
+    - user.customer_id
+  recall:
+    - ON_START: "Check if user is returning and has recent context"
+
+HANDOFF:
+  # P1 -- Account inquiries
+  - TO: Account_Inquiry
+    WHEN: intent.category == "balance" OR intent.category == "account_details"
+    CONTEXT:
+      summary: "Customer wants account information"
+      history: auto
+    EXPECT_RETURN: true
+    ON_RETURN:
+      handler: check_additional_needs
+
+  # P2 -- Fund transfers
+  - TO: Fund_Transfer
+    WHEN: intent.category == "transfer" OR intent.category == "send_money"
+    CONTEXT:
+      summary: "Customer wants to transfer funds"
+      history: auto
+    EXPECT_RETURN: true
+    ON_RETURN:
+      handler: check_additional_needs
+
+  # P3 -- Technical support
+  - TO: Tech_Support
+    WHEN: intent.category == "technical" OR intent.category == "troubleshooting"
+    CONTEXT:
+      summary: "Customer needs technical assistance"
+      history: auto
+    EXPECT_RETURN: true
+    ON_RETURN:
+      handler: check_additional_needs
+
+  # P4 -- Farewell
+  - TO: Farewell_Agent
+    WHEN: intent.category == "farewell"
+    CONTEXT:
+      summary: "Customer ending conversation"
+      history: auto
+    EXPECT_RETURN: false
+
+  # P5 -- Fallback
+  - TO: Fallback_Handler
+    WHEN: intent.category == "unknown" OR intent.unclear == true
+    CONTEXT:
+      summary: "Need clarification on customer intent"
+      history: auto
+    EXPECT_RETURN: true
+    ON_RETURN:
+      handler: reclassify_intent
+
+ESCALATE:
+  triggers:
+    - WHEN: intent.category == "human_escalation" OR intent.confidence < 0.5
+      REASON: "Customer requests human assistance or the route is uncertain."
+      PRIORITY: high
+
+    - WHEN: routing_failures >= 3
+      REASON: "Multiple routing failures -- system issue"
+      PRIORITY: high
+
+    - WHEN: handoff_count >= 4
+      REASON: "Customer bounced between too many agents"
+      PRIORITY: high
+      TAGS: [ux_failure]
+
+  context_for_human:
+    - conversation_summary
+    - last_intent
+
+ON_ERROR:
+  routing_failure:
+    RESPOND: "I'm having trouble understanding your request. Let me connect you with someone who can help."
+    RETRY: 1
+    THEN: ESCALATE
+
+COMPLETE:
+  - WHEN: handoff_successful == true
+    RESPOND: "I've connected you with the right specialist."
+
+  - WHEN: user.session_ended == true
+    RESPOND: "Thank you for contacting us. Have a great day!"
+```
+
+**Key concepts:**
+
+| Construct | Purpose |
+| --------- | ------- |
+| `SUPERVISOR:` | Declares this agent as a supervisor (router) rather than a domain agent. |
+| `HANDOFF` | Ordered list of routing rules. Each entry specifies the target agent, trigger condition, context to pass, and whether control returns after the handoff. |
+| `CONTEXT.pass` | Array of session variables forwarded to the child agent. |
+| `CONTEXT.summary` | Human-readable description of why the handoff is happening. |
+| `EXPECT_RETURN: true` / `false` | Whether the supervisor regains control after the child completes. |
+| `ON_RETURN` | What to do when control returns (for example, check if the customer has additional needs). |
+| `ESCALATE` | System-level triggers for transferring to a human supervisor. |
 
 ---
 
@@ -459,13 +633,15 @@ COMPLETE:
 
 **Key concepts:**
 
-- vocabulary_resolve -- maps user terms to structured metadata filters before searching.
-- search_hybrid -- combines vector similarity with keyword matching for high precision.
-- search_vector -- fallback for broader semantic search when hybrid returns few results.
-- INSTRUCTIONS -- step-by-step guidance for the reasoning LLM on how to use the tools.
-- Always include source attribution so users can verify answers against original documents.
+| Construct | Purpose |
+| --------- | ------- |
+| `vocabulary_resolve` | Maps user terms to structured metadata filters before searching. |
+| `search_hybrid` | Combines vector similarity with keyword matching for high precision. |
+| `search_vector` | Fallback for broader semantic search when hybrid returns few results. |
+| `INSTRUCTIONS` | Step-by-step guidance for the reasoning LLM on how to use the tools. |
+| Source attribution | Always include source attribution so users can verify answers against original documents. |
 
-Cross-reference: See the SearchAI Guide for knowledge base ingestion, indexing, and search strategy configuration.
+<Note>See [Knowledge Bases and Knowledge Tools](/agent-platform/knowledge) for knowledge base ingestion, indexing, and search strategy configuration.</Note>
 
 ---
 
@@ -496,6 +672,7 @@ TOOLS:
     description: "Look up account by user ID (not PII)"
 
 GUARDRAILS:
+  # Block Social Security Numbers in user input
   ssn_detection:
     kind: input
     check: abl.matches_pattern(input, "\\b\\d{3}-\\d{2}-\\d{4}\\b")
@@ -503,6 +680,7 @@ GUARDRAILS:
     message: "I noticed you shared what looks like an SSN. I've redacted it for your protection. Please avoid sharing sensitive numbers."
     priority: 0
 
+  # Block credit card numbers in user input
   credit_card_detection:
     kind: input
     check: abl.matches_pattern(input, "\\b\\d{4}[- ]?\\d{4}[- ]?\\d{4}[- ]?\\d{4}\\b")
@@ -510,6 +688,7 @@ GUARDRAILS:
     message: "Credit card number detected and automatically redacted for your security."
     priority: 0
 
+  # Prevent the agent from outputting SSN-like patterns
   ssn_output_prevention:
     kind: output
     check: abl.matches_pattern(output, "\\b\\d{3}-\\d{2}-\\d{4}\\b")
@@ -517,6 +696,7 @@ GUARDRAILS:
     message: "Response blocked: cannot include SSN patterns in output."
     priority: 0
 
+  # Block harmful content in both directions
   harmful_content:
     kind: both
     llm_check: "Does this content request harmful instructions or unsafe behavior?"
@@ -524,6 +704,7 @@ GUARDRAILS:
     message: "Escalating to human review for safety assessment."
     priority: 0
 
+  # Warn on overly long responses
   response_length:
     kind: output
     check: abl.word_count(output) > 1000
@@ -538,21 +719,22 @@ COMPLETE:
 
 **Key concepts:**
 
-- GUARDRAILS -- a named map of safety checks applied to inputs, outputs, or both.
-- kind: input / kind: output / kind: both -- when the check runs.
-- check -- a CEL violation predicate. When it returns true, the guardrail fires. Use llm_check for natural-language judgments and provider for model-backed checks.
-- action -- what happens when the guardrail fires:
-  - redact -- removes the sensitive content and continues.
-  - block -- stops the message entirely.
-  - warn -- logs a warning but allows the message through.
-  - escalate -- routes to human review.
-- priority -- lower numbers run first. Priority 0 guardrails are non-negotiable.
+| Construct | Purpose |
+| --------- | ------- |
+| `GUARDRAILS` | A named map of safety checks applied to inputs, outputs, or both. |
+| `kind: input` / `output` / `both` | When the check runs. |
+| `check` | A CEL violation predicate. When it returns `true`, the guardrail fires. Use `llm_check` for natural-language judgments and `provider` for model-backed checks. |
+| `action: redact` | Removes the sensitive content and continues. |
+| `action: block` | Stops the message entirely. |
+| `action: warn` | Logs a warning but allows the message through. |
+| `action: escalate` | Routes to human review. |
+| `priority` | Lower numbers run first. Priority 0 guardrails are non-negotiable. |
 
 ---
 
 ## Agent with Memory and Recall
 
-ABL supports three memory scopes: session (in-memory, per-conversation), user (persistent, per-user), and project (shared across all users). The remember and recall blocks control when data flows between scopes.
+ABL supports three memory scopes: **session** (in-memory, per-conversation), **user** (persistent, per-user), and **project** (shared across all users). The `remember` and `recall` blocks control when data flows between scopes.
 
 **When to use:** Personalization, returning-user detection, preference learning, and any agent that improves over time by remembering past interactions.
 
@@ -578,6 +760,7 @@ TOOLS:
     description: "Search available hotels"
 
 MEMORY:
+  # Session memory -- lives only for this conversation
   session:
     - search_results
       TYPE: object
@@ -589,7 +772,9 @@ MEMORY:
       TYPE: string
       DESCRIPTION: "Display currency for this session"
 
+  # Persistent memory -- survives across conversations
   persistent:
+    # User-scoped (private to this user)
     - PATH: user.preferred_destinations
       SCOPE: user
       ACCESS: readwrite
@@ -605,6 +790,8 @@ MEMORY:
       ACCESS: read
       TYPE: string
       DESCRIPTION: "Loyalty tier from CRM -- read-only"
+
+    # Project-scoped (shared across all users)
     - PATH: active_promotions
       SCOPE: project
       ACCESS: read
@@ -616,6 +803,7 @@ MEMORY:
       TYPE: array
       DESCRIPTION: "Trending destinations from aggregate search data"
 
+  # Persist data from session to long-term storage
   remember:
     - WHEN: booking_confirmed == true
       STORE: {destination: destination, travelers: num_travelers} -> user.travel_preferences
@@ -624,6 +812,7 @@ MEMORY:
       STORE: user.preferred_destinations -> user.preferred_destinations
       TTL: 90d
 
+  # Load data from long-term storage into session
   recall:
     - ON: session:start
       ACTION: inject_context
@@ -639,19 +828,21 @@ COMPLETE:
 
 **Key concepts:**
 
-- session -- ephemeral key-value pairs that exist only during the conversation.
-- persistent with SCOPE: user -- data stored per-user in the persistent fact store.
-- persistent with SCOPE: project -- shared data visible to all agents and users in the project.
-- ACCESS: read / ACCESS: readwrite -- controls whether the agent can modify persistent data.
-- remember -- rules that copy session data to persistent storage on specific triggers.
-- recall -- rules that load persistent data into the session at specific lifecycle events.
-- TTL: 90d -- time-to-live for persisted data; automatically cleaned up after expiration.
+| Construct | Purpose |
+| --------- | ------- |
+| `session` | Ephemeral key-value pairs that exist only during the conversation. |
+| `persistent` with `SCOPE: user` | Data stored per-user in the persistent fact store. |
+| `persistent` with `SCOPE: project` | Shared data visible to all agents and users in the project. |
+| `ACCESS: read` / `readwrite` | Controls whether the agent can modify persistent data. |
+| `remember` | Rules that copy session data to persistent storage on specific triggers. |
+| `recall` | Rules that load persistent data into the session at specific lifecycle events. |
+| `TTL: 90d` | Time-to-live for persisted data; automatically cleaned up after expiration. |
 
 ---
 
 ## Agent with Human-in-the-Loop
 
-Human-in-the-loop agents pause execution at critical decision points and wait for a human operator to approve, reject, or override before proceeding. The ESCALATE block defines when and how to involve humans.
+Human-in-the-loop agents pause execution at critical decision points and wait for a human operator to approve, reject, or override before proceeding. The `ESCALATE` block defines when and how to involve humans.
 
 **When to use:** High-value transactions, compliance decisions, content moderation, and any workflow where automated decisions need human oversight.
 
@@ -702,24 +893,31 @@ GATHER:
     type: number
     required: true
 
+INTENTS:
+  human_escalation: "Customer requests a human loan officer."
+
 ESCALATE:
   triggers:
+    # High-value loans require human underwriter
     - WHEN: loan_amount > 50000
       REASON: "Loan amount exceeds automated approval threshold"
       PRIORITY: medium
       TAGS: [underwriting, high_value]
 
+    # High-risk applicants require human review
     - WHEN: risk_score > 70
       REASON: "Risk score {{risk_score}} exceeds threshold -- manual review required"
       PRIORITY: high
       TAGS: [underwriting, high_risk]
 
+    # Credit check returned adverse factors
     - WHEN: credit_check.recommendation == "manual_review"
       REASON: "Credit check flagged for manual review: {{credit_check.factors}}"
       PRIORITY: high
       TAGS: [credit, manual_review]
 
-    - WHEN: user.wants_human_agent == true
+    # Customer explicitly requests human
+    - WHEN: intent.category == "human_escalation"
       REASON: "Customer requested to speak with a loan officer"
       PRIORITY: medium
       TAGS: [human_request]
@@ -732,7 +930,7 @@ ESCALATE:
     - credit_score
     - risk_score
     - risk_tier
-    - conversation_history
+    - conversation_summary
 
   routing:
     queue: "loan_underwriting"
@@ -761,147 +959,14 @@ COMPLETE:
 
 **Key concepts:**
 
-- ESCALATE.triggers -- conditions that pause the agent and route to a human operator.
-- PRIORITY -- controls queue priority: critical, high, medium, low.
-- TAGS -- metadata tags that help the routing system match the right human agent.
-- context_for_human -- data forwarded to the human agent's interface.
-- routing.queue -- the human agent queue to route to.
-- on_human_complete -- what the agent does when the human completes their review.
-
----
-
-## Multi-Agent with Supervisor
-
-A supervisor agent routes incoming requests to specialist agents based on intent. It does not handle domain logic itself -- it classifies the user's need and hands off to the right agent, with optional context passing.
-
-**When to use:** Any application with multiple distinct capabilities -- customer service with different departments, enterprise platforms with specialized functions, or any system where one agent cannot handle all request types.
-
-```yaml
-SUPERVISOR: Support_Supervisor
-VERSION: "1.0"
-DESCRIPTION: "Routes customer requests to the right specialist agent"
-
-GOAL: "Identify the customer's need and route to the correct specialist with full context"
-
-PERSONA: |
-  Professional customer service coordinator. Quickly understands
-  the customer's intent and connects them with the right specialist.
-  Never attempts to handle domain-specific requests directly.
-
-LIMITATIONS:
-  - "Cannot access or modify accounts directly -- routes to specialists"
-  - "Cannot process transactions or payments"
-  - "Cannot override security policies"
-
-TEMPLATES:
-  welcome: |
-    Welcome! I can help you with:
-    - Account inquiries and balance checks
-    - Fund transfers and payments
-    - Technical support and troubleshooting
-    How can I assist you today?
-
-ON_START:
-  RESPOND: TEMPLATE(welcome)
-
-MEMORY:
-  session:
-    - current_intent
-    - routing_history
-    - handoff_count
-  persistent:
-    - user.name
-    - user.customer_id
-  recall:
-    - ON_START: "Check if user is returning and has recent context"
-
-HANDOFF:
-  - TO: Live_Agent
-    WHEN: user.wants_human_agent == true OR user.frustration_detected == true
-    CONTEXT:
-      pass: [customer_id, conversation_summary, transfer_reason]
-      summary: "Customer requesting human assistance"
-    RETURN: false
-
-  - TO: Account_Inquiry
-    WHEN: intent.category == "balance" OR intent.category == "account_details"
-    CONTEXT:
-      pass: [customer_id, session_context]
-      summary: "Customer wants account information"
-    RETURN: true
-    ON_RETURN: "check_additional_needs"
-
-  - TO: Fund_Transfer
-    WHEN: intent.category == "transfer" OR intent.category == "send_money"
-    CONTEXT:
-      pass: [customer_id, session_context]
-      summary: "Customer wants to transfer funds"
-    RETURN: true
-    ON_RETURN: "check_additional_needs"
-
-  - TO: Tech_Support
-    WHEN: intent.category == "technical" OR intent.category == "troubleshooting"
-    CONTEXT:
-      pass: [customer_id, device_info, session_context]
-      summary: "Customer needs technical assistance"
-    RETURN: true
-    ON_RETURN: "check_additional_needs"
-
-  - TO: Farewell_Agent
-    WHEN: intent.category == "farewell"
-    CONTEXT:
-      pass: [session_context, conversation_summary]
-      summary: "Customer ending conversation"
-    RETURN: false
-
-  - TO: Fallback_Handler
-    WHEN: intent.unclear == true OR intent.confidence < 0.5
-    CONTEXT:
-      pass: [session_context, last_message]
-      summary: "Need clarification on customer intent"
-    RETURN: true
-    ON_RETURN: "reclassify_intent"
-
-ESCALATE:
-  triggers:
-    - WHEN: routing_failures >= 3
-      REASON: "Multiple routing failures -- system issue"
-      PRIORITY: high
-
-    - WHEN: handoff_count >= 4
-      REASON: "Customer bounced between too many agents"
-      PRIORITY: high
-      TAGS: [ux_failure]
-
-  context_for_human:
-    - customer_id
-    - conversation_history
-    - routing_history
-    - last_intent
-
-ON_ERROR:
-  routing_failure:
-    RESPOND: "I'm having trouble understanding your request. Let me connect you with someone who can help."
-    RETRY: 1
-    THEN: HANDOFF Live_Agent
-
-COMPLETE:
-  - WHEN: handoff_successful == true
-    RESPOND: "I've connected you with the right specialist."
-
-  - WHEN: user.session_ended == true
-    RESPOND: "Thank you for contacting us. Have a great day!"
-```
-
-**Key concepts:**
-
-- SUPERVISOR: -- declares this agent as a supervisor (router) rather than a domain agent.
-- HANDOFF -- ordered list of routing rules. Each entry specifies the target agent, trigger condition, context to pass, and whether control returns after the handoff.
-- CONTEXT.pass -- array of session variables forwarded to the child agent.
-- CONTEXT.summary -- human-readable description of why the handoff is happening.
-- RETURN: true / RETURN: false -- whether the supervisor regains control after the child completes.
-- ON_RETURN -- what to do when control returns (e.g., check if the customer has additional needs).
-- ESCALATE -- system-level triggers for transferring to a human supervisor.
+| Construct | Purpose |
+| --------- | ------- |
+| `ESCALATE.triggers` | Conditions that pause the agent and route to a human operator. |
+| `PRIORITY` | Controls queue priority: `critical`, `high`, `medium`, `low`. |
+| `TAGS` | Metadata tags that help the routing system match the right human agent. |
+| `context_for_human` | Data forwarded to the human agent's interface. |
+| `routing.queue` | The human agent queue to route to. |
+| `on_human_complete` | What the agent does when the human completes their review. |
 
 ---
 
@@ -909,7 +974,7 @@ COMPLETE:
 
 This comprehensive example demonstrates every major ABL construct for an agent without a FLOW section. The LLM reasons through each turn, selecting tools and formulating responses dynamically. It is based on the wire transfer specialist from the platform's reference examples.
 
-Source file: `examples/reference/agent_complete.agent.abl`
+> **Source file:** `examples/reference/agent_complete.agent.abl`
 
 ```yaml
 AGENT: Wire_Transfer_Specialist
@@ -921,6 +986,8 @@ DESCRIPTION: |
   workflows, cut-off time enforcement, and irrevocability safeguards.
 
 LANGUAGE: "en"
+
+# --- IDENTITY & BEHAVIOR ---
 
 GOAL: |
   Process the customer's outbound wire transfer request accurately and securely.
@@ -947,6 +1014,8 @@ INSTRUCTIONS: |
   collecting wire details. For international wires, confirm the purpose code.
   Read back the full wire details and get explicit confirmation before executing.
   Never execute a wire on implied consent.
+
+# --- TOOLS (HTTP with hints) ---
 
 TOOLS:
   verify_account(account_id: string) -> {account_id: string, owner_name: string, status: string, available_balance: number, daily_wire_limit: number, daily_wire_used: number}
@@ -984,6 +1053,8 @@ TOOLS:
       side_effects: true
       timeout: 15000
 
+# --- GATHER ---
+
 GATHER:
   source_account:
     prompt: "Which account would you like to send the wire from?"
@@ -1015,6 +1086,8 @@ GATHER:
     required: true
     infer: true
 
+# --- MEMORY ---
+
 MEMORY:
   session:
     - customer_id
@@ -1032,6 +1105,8 @@ MEMORY:
     - user.frequent_beneficiaries
     - user.wire_history_30d
 
+# --- CONSTRAINTS ---
+
 CONSTRAINTS:
   always:
     - REQUIRE customer_verified == true
@@ -1040,7 +1115,7 @@ CONSTRAINTS:
     - REQUIRE account_status == "active"
       ON_FAIL: "Wire transfers can only be initiated from active accounts."
 
-  action_rules:
+  action_rules: # label only; use WHEN / BEFORE if you need explicit runtime scoping
     - REQUIRE amount <= available_balance
       ON_FAIL: "The amount exceeds your available balance of {{available_balance}} {{currency}}."
 
@@ -1049,6 +1124,8 @@ CONSTRAINTS:
 
     - REQUIRE sanctions_clear == true
       ON_FAIL: HANDOFF Compliance_Officer
+
+# --- DELEGATE (synchronous sub-agent calls) ---
 
 DELEGATE:
   - AGENT: Sanctions_Screening
@@ -1079,14 +1156,19 @@ DELEGATE:
     ON_FAILURE: escalate
     TIMEOUT: "10s"
 
+INTENTS:
+  human_escalation: "Customer requests a human specialist."
+
+# --- HANDOFF ---
+
 HANDOFF:
   - TO: Compliance_Officer
     WHEN: sanctions_clear == false
     CONTEXT:
       pass: [customer_id, beneficiary_name, beneficiary_country, amount, sanctions_match_score]
       summary: "Wire flagged during sanctions screening"
-      history: full
-    RETURN: true
+      history: auto
+    EXPECT_RETURN: true
     MAP:
       compliance_decision: sanctions_clear
 
@@ -1095,7 +1177,9 @@ HANDOFF:
     CONTEXT:
       pass: [customer_id, amount, daily_wire_limit]
       summary: "Customer requesting fee waiver"
-    RETURN: true
+    EXPECT_RETURN: true
+
+# --- ESCALATE ---
 
 ESCALATE:
   triggers:
@@ -1104,7 +1188,7 @@ ESCALATE:
       PRIORITY: critical
       TAGS: [compliance, sanctions]
 
-    - WHEN: user.wants_human_agent == true
+    - WHEN: intent.category == "human_escalation"
       REASON: "Customer requesting human specialist"
       PRIORITY: medium
 
@@ -1112,11 +1196,13 @@ ESCALATE:
     - customer_id
     - beneficiary_name
     - amount
-    - conversation_history
+    - conversation_summary
 
   routing:
     queue: "wire_operations_l2"
     skill_tags: [wire_transfer, compliance]
+
+# --- COMPLETE ---
 
 COMPLETE:
   - WHEN: confirmation_number IS SET AND transfer_status == "released"
@@ -1132,6 +1218,8 @@ COMPLETE:
       Your wire has been queued for the next processing window.
       **Queue Reference:** {{queue_reference}}
       **Scheduled:** {{next_processing_date}}
+
+# --- LIFECYCLE ---
 
 ON_START:
   SET:
@@ -1153,12 +1241,16 @@ ON_ERROR:
     RETRY: 1
     THEN: CONTINUE
 
+# --- EXECUTION ---
+
 EXECUTION:
   model: "claude-sonnet-4-5-20250929"
   temperature: 0.1
   max_tokens: 4096
   max_reasoning_iterations: 8
   fallback_model: "claude-haiku-4-5-20251001"
+
+# --- TEMPLATES ---
 
 TEMPLATES:
   wire_confirmation:
@@ -1175,6 +1267,8 @@ TEMPLATES:
       | Fees | {{total_fees}} |
       | Status | {{status}} |
 
+# --- GUARDRAILS ---
+
 GUARDRAILS:
   account_number_masking:
     kind: output
@@ -1189,6 +1283,8 @@ GUARDRAILS:
     action: redact
     message: "Please never share passwords or PINs in this chat."
     priority: 0
+
+# --- NLU ---
 
 NLU:
   intents:
@@ -1213,6 +1309,8 @@ NLU:
     - "Fedwire -- Federal Reserve real-time settlement for domestic USD"
     - "OFAC -- Office of Foreign Assets Control, administers US sanctions"
 
+# --- HOOKS ---
+
 HOOKS:
   before_turn:
     SET:
@@ -1220,13 +1318,35 @@ HOOKS:
   after_turn:
     CALL: log_wire_audit_event()
 
+# --- MESSAGES ---
+
 MESSAGES:
   error_default: "Something went wrong. I've logged the issue and will retry."
   constraint_blocked: "That action cannot be completed due to regulatory restrictions."
-  escalation_format: "Connecting you with a specialist from our {{queue}} team."
+  escalation_format: "Connecting you with a specialist. Reason: {{reason}}."
 ```
 
-This example demonstrates: GOAL, PERSONA, LIMITATIONS, INSTRUCTIONS, TOOLS (HTTP with hints), GATHER (with validation, inference, and extraction hints), MEMORY (session + persistent), CONSTRAINTS (labeled groups such as always + action_rules; labels are organizational only), DELEGATE (synchronous sub-agent calls), HANDOFF (with context and return mapping), ESCALATE (with routing and human completion handlers), COMPLETE (multiple conditions), ON_START, ON_ERROR, EXECUTION, TEMPLATES (multi-format), GUARDRAILS, NLU (intents, entities, glossary), HOOKS, and MESSAGES.
+This example demonstrates every major construct available to an agent without a `FLOW` section:
+
+| Construct | Purpose |
+| --------- | ------- |
+| `GOAL` / `PERSONA` / `LIMITATIONS` | Identity and behavioral boundaries for the LLM |
+| `INSTRUCTIONS`                     | Step-by-step guidance for the reasoning LLM |
+| `TOOLS`                             | HTTP tools with `hints` for caching, latency, and timeouts |
+| `GATHER`                            | Input collection with validation, inference, and extraction hints |
+| `MEMORY`                            | Session and persistent variables |
+| `CONSTRAINTS`                       | Labeled rule groups such as `always` and `action_rules`; labels are organizational only |
+| `DELEGATE`                          | Synchronous sub-agent calls |
+| `HANDOFF`                           | Context passing and return mapping between agents |
+| `ESCALATE`                          | Routing and human completion handlers |
+| `COMPLETE`                          | Multiple completion conditions |
+| `ON_START` / `ON_ERROR`             | Lifecycle hooks for session start and error recovery |
+| `EXECUTION`                         | Model, temperature, and fallback configuration |
+| `TEMPLATES`                         | Multi-format response templates |
+| `GUARDRAILS`                        | Input and output safety checks |
+| `NLU`                               | Intents, entities, and glossary |
+| `HOOKS`                             | Before/after-turn logic |
+| `MESSAGES`                          | Reusable message strings |
 
 ---
 
@@ -1234,7 +1354,7 @@ This example demonstrates: GOAL, PERSONA, LIMITATIONS, INSTRUCTIONS, TOOLS (HTTP
 
 This comprehensive example demonstrates every major ABL construct for an agent with a FLOW section. It follows the same wire transfer scenario but uses a deterministic step graph instead of relying solely on LLM reasoning.
 
-Source file: `examples/reference/agent_with_flow_complete.agent.abl`
+> **Source file:** `examples/reference/agent_with_flow_complete.agent.abl`
 
 ```yaml
 AGENT: Wire_Transfer_Flow
@@ -1256,6 +1376,8 @@ LIMITATIONS:
   - "Cannot process wires to sanctioned countries"
   - "Cannot override daily wire limits"
   - "Cannot reverse a wire after execution"
+
+# --- TOOLS ---
 
 TOOLS:
   verify_account(account_id: string) -> {owner_name: string, status: string, available_balance: number, daily_wire_limit: number, daily_wire_used: number}
@@ -1295,6 +1417,8 @@ TOOLS:
     hints:
       side_effects: true
 
+# --- MEMORY ---
+
 MEMORY:
   session:
     - customer_name
@@ -1312,10 +1436,14 @@ MEMORY:
     - total_fees
     - confirmation_number
 
+# --- CONSTRAINTS ---
+
 CONSTRAINTS:
   always:
     - REQUIRE customer_verified == true
       ON_FAIL: "I need to verify your identity first."
+
+# --- FLOW ---
 
 FLOW:
   entry_point: start
@@ -1340,14 +1468,18 @@ FLOW:
     - wire_failed
     - cleanup
 
+  # Global digressions -- available at every step
   global_digressions:
+    # Use ESCALATE for direct human queues.
     - INTENT: "cancel"
       RESPOND: "Wire transfer cancelled. No funds have been debited."
       GOTO: cleanup
 
     - INTENT: "speak to agent"
       RESPOND: "Let me connect you with a wire specialist."
-      DELEGATE: Live_Agent_Transfer
+      THEN: ESCALATE with REASON: "Customer requested human support"
+
+  # --- Step definitions ---
 
   start:
     REASONING: false
@@ -1567,12 +1699,16 @@ FLOW:
     RESPOND: "Is there anything else I can help you with?"
     THEN: COMPLETE
 
+# --- COMPLETION ---
+
 COMPLETE:
   - WHEN: confirmation_number IS SET
     RESPOND: "Wire complete. Reference: {{confirmation_number}}"
 
   - WHEN: user.cancelled == true
     RESPOND: "Wire cancelled. No funds were debited."
+
+# --- ERROR HANDLING ---
 
 ON_ERROR:
   tool_timeout:
@@ -1588,17 +1724,31 @@ ON_ERROR:
 
 **Key flow constructs demonstrated:**
 
-| Construct | Purpose |
-|---|---|
-| FLOW / entry_point / steps | Declares the step graph and starting point |
-| THEN: | Explicit transition to the next step |
-| REASONING: false | Disables LLM reasoning for deterministic steps |
-| CALL ... WITH ... AS | Tool call with named parameters and result binding |
-| ON_RESULT / IF / ELSE | Conditional branching based on tool results |
-| SET | Assign session variables |
-| CLEAR | Reset session variables between flows |
-| GATHER within a step | Collect user input with validation |
-| ON_INPUT | Branch based on user response content |
-| CORRECTIONS: true | Allow users to correct previously entered values |
-| global_digressions | Intents handled at any step (cancel, help, transfer) |
-| FORMAT_CURRENCY, MASK, ADD, SUB | Built-in expression functions |
+| Construct                               | Purpose                                              |
+| --------------------------------------- | ---------------------------------------------------- |
+| `FLOW` / `entry_point` / `steps`        | Declares the step graph and starting point           |
+| `THEN:`                                 | Explicit transition to the next step                 |
+| `REASONING: false`                      | Disables LLM reasoning for deterministic steps       |
+| `CALL ... WITH ... AS`                  | Tool call with named parameters and result binding   |
+| `ON_RESULT` / `IF` / `ELSE`             | Conditional branching based on tool results          |
+| `SET`                                   | Assign session variables                             |
+| `CLEAR`                                 | Reset session variables between flows                |
+| `GATHER` within a step                  | Collect user input with validation                   |
+| `ON_INPUT`                              | Branch based on user response content                |
+| `CORRECTIONS: true`                     | Allow users to correct previously entered values     |
+| `global_digressions`                    | Intents handled at any step (cancel, help, transfer) |
+| `FORMAT_CURRENCY`, `MASK`, `ADD`, `SUB` | Built-in expression functions                        |
+
+---
+
+**Related articles:**
+
+- [Multi-Agent and Supervisor](/agent-platform/abl-reference/multi-agent-and-supervisor) -- full reference for `HANDOFF`, `DELEGATE`, `ESCALATE`, and `COMPLETE`
+- [Flow](/agent-platform/abl-reference/flow) -- deterministic step graphs used by the flow-based patterns
+- [Gather](/agent-platform/abl-reference/gather) -- input collection, validation, and inference options
+- [Guardrails](/agent-platform/abl-reference/guardrails) -- input/output safety checks used in the guardrails pattern
+- [Memory and Constraints](/agent-platform/abl-reference/memory-and-constraints) -- session, persistent, and project-scoped memory used in the memory and recall pattern
+- [NLU](/agent-platform/abl-reference/nlu) -- intents, entities, and glossary declarations
+- [Examples by Industry](/agent-platform/drafts/abl-examples-by-industry) -- these same patterns applied in production banking, travel, healthcare, and retail examples
+- [Orchestration & Integration Examples](/agent-platform/drafts/orchestration-and-integration-examples) -- named multi-agent topologies and external service integration recipes
+
