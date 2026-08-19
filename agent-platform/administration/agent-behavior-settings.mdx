@@ -1,6 +1,6 @@
 ---
-title: Agent Behavior Settings
-sidebarTitle: Agent Behavior
+title: Agent behavior settings
+sidebarTitle: Agent behavior
 ---
 
 Agent behavior settings configure context-driven overrides, alerting, human handoff, and real-time agent assistance.
@@ -103,21 +103,112 @@ All settings default to **Inherit**, meaning the agent's base configuration appl
 
 ## Alert settings
 
-
-The **Alerts** page serves as an inbox for workflow approvals and proactive notifications.
+The **Alert Settings** page defines rules that trigger notifications when project metrics breach a threshold. The runtime evaluates each rule on a fixed cadence and delivers a notification by email or webhook when the condition matches.
 
 **Navigation**: **Project** → **Settings** → **Alert Settings**
 
-**Tabs**
+When the project has no rules yet, the page shows an empty state. Select **Create alert rule** to open the rule editor, or **Browse available metrics** to review every metric the evaluator can alert on before you start.
 
-| Tab            | Purpose                                                                                          |
-|----------------|--------------------------------------------------------------------------------------------------|
-| **Approvals**      | Review and act on pending workflow and agent approvals, data entry requests, and completed items. |
-| **Alert Rules**    | Configure rules that trigger proactive notifications based on system events or thresholds.       |
+Typical uses include containment rate drops, error spikes, latency increases, and sentiment degradation.
 
-Filter the **Approvals** tab by source (**Workflow** or **Agent**) and type (**All**, **Approvals**, **Data Entry**). Toggle **Include completed** to view historical approvals alongside pending items.
+### Create an alert rule
 
-<Note>The **Approvals** tab requires the `human_task:read` permission. If your role lacks this permission, the system displays a "Forbidden: missing required permission" message.</Note>
+Select **Create alert rule** to open the **Create alert rule** panel. The footer tracks what the rule still needs (for example, `Still needed: name, metric, recipients`) and keeps **Save rule** available once you supply those values. Select **Cancel** to discard the rule.
+
+| Field | Description | Default |
+|---|---|---|
+| **Rule name** *(required)* | A descriptive name for the rule (for example, `LLM latency p95 too high`). | Empty |
+| **Evaluating** | Controls whether the evaluator picks the rule up on its next cycle. Turn it off to keep the rule in the list but paused. | Enabled |
+| **Subject** | The metric family the rule watches: **Agent**, **LLM**, **Tool**, **Voice**, or **Others**. The subject determines which metrics the **Metric** list offers and whether a scope selector appears. | Agent |
+| **Agent** *(Agent subject only)* | Limits the rule to a single agent. Leave it as **Any agent (project-wide)** to watch the whole project. | Any agent (project-wide) |
+| **LLM** *(LLM subject only)* | Limits the rule to a single LLM. Leave it as **Any LLM (project-wide)** to watch the whole project. | Any LLM (project-wide) |
+| **Metric** *(required)* | The metric the rule evaluates. The list reflects the selected subject. Selecting a metric shows its allowed aggregations and parameters. | Select a metric |
+| **Condition** | The comparison the evaluator applies between the metric value and the threshold (for example, **Greater than >**). | Greater than > |
+| **Threshold** *(required)* | The value the metric must cross for the rule to fire. Use the stepper controls or enter a value directly. | 0 |
+| **Window** *(required)* | How far back the rule looks when it evaluates the metric, in minutes. | 10 min |
+| **Evaluate every** *(required)* | How often the evaluator runs the rule, in minutes. | 10 min |
+| **Cooldown** *(required)* | How long the rule stays quiet after it fires, in minutes. Use this to suppress repeat notifications for an ongoing condition. | 10 min |
+| **Deliver via** | The delivery channel for the notification: **Email** or **Webhook**. | Email |
+| **Recipients** *(required)* | Destinations for the notification. Separate email addresses with commas or new lines. Every recipient receives the alert. | Empty |
+
+### Subject scopes
+
+| Subject | What the rule watches | Scope selector |
+|---|---|---|
+| **Agent** | LLM metrics attributed to agent activity. | **Agent**, defaulting to all agents in the project. |
+| **LLM** | LLM metrics across the project, independent of the calling agent. | **LLM**, defaulting to all LLMs in the project. |
+| **Tool** | Tool execution volume, failures, and latency from platform events. | None. The rule applies project-wide. |
+| **Voice** | Voice session, TTS, ASR, and connection metrics from platform events. | None. The rule applies project-wide. |
+| **Others** | Trace records and conversation sentiment metrics. | None. The rule applies project-wide. |
+
+### Available metrics
+
+Select **Browse available metrics** to open the **Available metrics** panel. The panel lists every metric the evaluator can alert on, sourced from the runtime catalog, so it stays in sync as new metrics ship. Metrics are grouped into the same five tabs as the **Subject** control: **Agent**, **LLM**, **Tool**, **Voice**, and **Others**.
+
+Each metric card carries three badges and a set of attributes.
+
+| Attribute | Description |
+|---|---|
+| **Subject badge** | The tab the metric belongs to: **Agent**, **LLM**, **Tool**, **Voice**, or **Others**. |
+| **Category badge** | The type of signal: **Operational** (throughput, latency, cost), **Error** (failures), or **Quality** (sentiment, confidence). |
+| **Status badge** | **Existing** for metrics carried over from earlier releases, **New** for metrics added in this release. |
+| **Source** | The data stream the metric reads from: **LLM metrics**, **Platform events**, **Trace records**, or **Conversation sentiment**. |
+| **Default window** | The window value prefilled when you select the metric. Every metric in the catalog currently uses 10 minutes. |
+| **Aggregations** | The aggregations the metric accepts. **Fixed expression** and **Fixed query** mean the runtime computes the value and you can't choose an aggregation. |
+| **Channel filter** | Whether you can restrict the rule to a specific channel. |
+| **Channel connection scope** | Whether you can restrict the rule to a specific channel connection. |
+| **Tool name and type filters** | Whether you can restrict the rule to specific tool names or tool types. |
+| **Parameters** | Additional inputs the metric requires (for example, `slow_ms` for **Slow trace count**). |
+
+#### Agent and LLM metrics
+
+The **Agent** and **LLM** tabs list the same LLM metrics group. The **Agent** tab scopes each metric to agent activity, and the **LLM** tab scopes it to the LLM. All metrics in this group read from the **LLM metrics** source and support no channel or tool filters.
+
+| Metric | Category | Status | Description | Aggregations |
+|---|---|---|---|---|
+| **LLM latency** | Operational | Existing | Per-call latency from the LLM metrics stream. | p95, p99, avg, max, min |
+| **LLM cost (window total)** | Operational | Existing | Sum of estimated LLM cost over the window. | sum, avg, max, min, p95, p99 |
+| **Total tokens** | Operational | Existing | Tokens consumed over the window. | sum, avg, p95, p99, max, min |
+| **LLM error rate** | Error | Existing | Share of LLM calls in the window that failed. | See note |
+
+#### Tool metrics
+
+Tool metrics read from the **Platform events** source. All three support channel filters, channel connection scope, and tool name and type filters.
+
+| Metric | Category | Status | Description | Aggregations |
+|---|---|---|---|---|
+| **Tool execution count** | Operational | New | Total completed or failed tool calls in the window. | Fixed expression |
+| **Tool error count / rate** | Error | New | Failed tool calls. The notification includes failed calls divided by terminal calls. | Fixed expression |
+| **Tool latency** | Operational | New | Per-call tool execution latency. | p95, p99, avg, max, min |
+
+#### Voice metrics
+
+Voice metrics read from the **Platform events** source. All support channel filters and channel connection scope, and none support tool name and type filters.
+
+| Metric | Category | Status | Description | Aggregations |
+|---|---|---|---|---|
+| **Voice session errors** | Error | New | Voice sessions that ended because of a terminal technical error. | Fixed expression |
+| **TTS failure count** | Error | New | Text-to-speech operations whose delivery ended in failure. | Fixed expression |
+| **Avg ASR confidence** | Quality | New | Average confidence from speech recognitions that reported a real score. | Fixed expression |
+| **Voice connection latency** | Operational | New | Time required to establish a voice gateway session. | p95, p99, avg, max |
+
+#### Other metrics
+
+The **Others** tab groups trace and sentiment metrics.
+
+**Trace records**
+
+| Metric | Category | Status | Description | Aggregations | Filters |
+|---|---|---|---|---|---|
+| **Trace duration** | Operational | Existing | End-to-end trace duration from `spatial_trace_records`. | p95, p99, avg, max, min | None |
+| **Slow trace count** | Operational | New | Number of root traces exceeding the configured duration threshold. Takes the `slow_ms` parameter. | Fixed query | None |
+
+**Conversation sentiment**
+
+| Metric | Category | Status | Description | Aggregations | Filters |
+|---|---|---|---|---|---|
+| **Conversation sentiment** | Quality | Existing | Average sentiment across conversations in the window. | avg, min, max, p95 | Channel filter |
+| **Frustration rate** | Quality | Existing | See note | See note | See note |
 
 ---
 
@@ -160,7 +251,7 @@ Default Routing sets the fallback connection, queue, priority, and post-transfer
 
 | Setting              | Description                                                                                                                                                                                                 | Default                       |
 |----------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-------------------------------|
-| **Connection**       | Agent desktop connection for transfers. Select a configured connection or leave as **None (use agent‑level config)** to defer to the agent's own setting. To add a new connection, select **+**, which opens a dialog window listing supported providers: **Kore SmartAssist, Genesys Cloud, Salesforce, ServiceNow, and Five9**. | None (use agent‑level config) |
+| **Connection**       | Agent desktop connection for transfers. Select a configured connection or leave as **None (use agent‑level config)** to defer to the agent's own setting. To add a new connection, select **+**, and select a supported provider from the dialog window. | None (use agent‑level config) |
 | **Queue**            | Default queue ID for routing. The platform routes transferred conversations to this queue unless the agent specifies a different one.                                                                       | `default`                     |
 | **Priority**         | Default priority level for transferred conversations. Scale: 0 (lowest) to 10 (highest).                                                                                                                    | 5                             |
 | **Post-Agent Action**| What happens after the human agent ends the conversation. **Return to bot** hands control back to the AI agent. **End session** terminates the session entirely.                                             | Return to bot                 |
