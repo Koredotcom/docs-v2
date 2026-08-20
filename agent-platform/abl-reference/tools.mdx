@@ -49,20 +49,22 @@ name(parameters) -> return_type
 ### Parameter syntax
 
 
-Each parameter follows the format `name: type` with an optional default value:
+Each parameter follows the format `name: type`, optionally marked optional with `?` and/or given a default value:
 
 ```yaml
 param_name: type
+param_name?: type              # optional (no default)
 param_name: type = default_value
 ```
 
 | Component   | Description                              | Examples                              |
 | ----------- | ---------------------------------------- | ------------------------------------- |
 | `name`      | Parameter identifier (snake_case)        | `account_id`, `query`, `limit`        |
+| `?`         | Optional marker after the name — makes the parameter optional without giving it a default | `note?: string` |
 | `type`      | Data type                                | `string`, `number`, `boolean`, `date` |
-| `= default` | Default value (makes parameter optional) | `= 10`, `= "USD"`, `= true`           |
+| `= default` | Default value (also makes the parameter optional) | `= 10`, `= "USD"`, `= true`           |
 
-Parameters without a default value are required. Parameters with a default value are optional.
+A parameter is required only when it has **neither** a `?` marker **nor** a default value. Both `name?: type` and `name: type = default` make it optional.
 
 ### Parameter types
 
@@ -96,7 +98,6 @@ TOOLS:
 
 #### Array parameters
 
-
 Array types use the `[]` suffix:
 
 ```yaml
@@ -107,11 +108,7 @@ TOOLS:
 
 #### Parameter enrichment and sources
 
-
-The `parameters:` block does more than describe nested object fields — it can enrich any
-signature-declared parameter with a description, validation, visibility, and a **value source**.
-This lets you inject values (from system state, config, auth, an expression, or a lookup table)
-without the LLM having to supply them, and optionally hide them from the model.
+The `parameters:` block does more than describe nested object fields — it can enrich any signature-declared parameter with a description, validation, visibility, and a **value source**. This lets you inject values (from system state, config, auth, an expression, or a lookup table) without the LLM having to supply them, and optionally hide them from the model.
 
 ```yaml
 TOOLS:
@@ -143,6 +140,35 @@ TOOLS:
 | `properties`    | `object`  | Nested object field schema (for `object` params).                                |
 | `items`         | `object`  | Item schema (for array params).                                                  |
 
+<Note>`default_source` is accepted as an alias for `source` (both set the parameter's value source). Some compile-time diagnostics — for example the [trusted SIP transfer destination](#trusted-sip-transfer-destinations) check — refer to the key by its `default_source` spelling.</Note>
+
+#### Trusted SIP transfer destinations
+
+The built-in `call_transfer` voice tool takes a `sipTransferId` parameter — a `sip:`/`sips:` endpoint URI. To pin a **fixed, trusted** transfer target for the agent (rather than letting the model choose one, or relying on project settings), declare `call_transfer` with its signature in `TOOLS:` and enrich the `sipTransferId` parameter with a literal `default` and `default_source: config`:
+
+```yaml
+TOOLS:
+  # Pin the agent's SIP transfer destination on the built-in call_transfer tool.
+  call_transfer(callTransferType: string, sipTransferId: string) -> object
+    params:                       # `parameters:` is an accepted alias
+      sipTransferId:
+        default: "sip:premium-support@sbc.example.com"
+        default_source: config
+```
+
+The `params:` block enriches the signature-parsed parameter by name — it does not redeclare the built-in's implementation. Marking the default `default_source: config` does two things: the runtime reads the destination **server-side from the compiled agent** (never from the tool-call arguments, which carry model- and caller-influenced values), and it **hides the parameter from the model's tool schema** entirely, so the LLM never sees a destination field to fill.
+
+At SIP transfer time the runtime resolves the destination in order: (1) the authored `sipTransferId` default, if present and valid; (2) the project-configured `voice.sipTransferTargetUri` (Agent Transfer settings); (3) otherwise the call fails with a missing-target error. `default_source: system` is treated as trusted the same way (for platform-injected declarations).
+
+The compiler enforces that an authored destination is safe to trust:
+
+| Diagnostic | Severity | Fires when |
+| ---------- | -------- | ---------- |
+| `INVALID_SIP_TRANSFER_DESTINATION` | Error | A trusted-source (`config`/`system`) `sipTransferId` default is empty, contains a `{{ }}` template, is not a valid `sip:`/`sips:` URI, or uses a dynamic source (`expr`, `lookup`, `runtime`, `auth`). The destination must be a static literal — a target derived from conversation data could be influenced by the caller. |
+| `UNTRUSTED_SIP_TRANSFER_DESTINATION` | Warning | A `sipTransferId` default is declared with `default_source` **absent or `model`**. The value is treated as model-supplied and is **ignored at transfer time** (behavior is unchanged from before) — add `default_source: config` to make it the agent's trusted destination. |
+
+Omit the `sipTransferId` default entirely to rely solely on the project-configured Agent Transfer target. For a **dynamic** per-call target, configure it in project Agent Transfer settings rather than the DSL — templated `sipTransferId` defaults are rejected by design.
+
 ### Return type
 
 
@@ -165,7 +191,6 @@ TOOLS:
 
 ### Description
 
-
 The `description:` property provides a natural-language explanation of what the tool does. The LLM uses this description to decide when and how to call the tool.
 
 ```yaml
@@ -181,7 +206,6 @@ Write meaningful descriptions that help the LLM understand:
 - What data it returns
 
 ### Hints
-
 
 The `hints:` block provides execution metadata that the runtime uses for optimization:
 
@@ -207,7 +231,6 @@ TOOLS:
 
 ## HTTP tools
 
-
 HTTP tools call REST API endpoints. They're the most common tool type.
 
 ```yaml
@@ -224,7 +247,6 @@ TOOLS:
 ```
 
 ### HTTP binding properties
-
 
 | Property          | Type                                                  | Required | Default                  | Description                                                                    |
 |-------------------|-------------------------------------------------------|----------|--------------------------|--------------------------------------------------------------------------------|
@@ -254,7 +276,6 @@ TOOLS:
 
 ### Path parameters
 
-
 Use curly braces in the endpoint to reference tool parameters:
 
 ```yaml
@@ -266,7 +287,6 @@ TOOLS:
 ```
 
 ### Headers
-
 
 Custom headers are specified as key-value pairs:
 
@@ -391,8 +411,7 @@ TOOLS:
         balance_error: error.message
 ```
 
-Beyond `set:`, both `on_result:` and `on_error:` accept an ordered `do:` action block that can run `SET`, `CLEAR`, `LOG`, `RESPOND`, `CALL`, `GOTO`/`THEN`, `HANDOFF`, `DELEGATE`, `RETURN`, `FORMATS`,
-and `COMPLETE` actions, with conditional `IF:`/`WHEN:`/`ELSE:` branches.
+Beyond `set:`, both `on_result:` and `on_error:` accept an ordered `do:` action block that can run `SET`, `CLEAR`, `LOG`, `RESPOND`, `CALL`, `GOTO`/`THEN`, `HANDOFF`, `DELEGATE`, `RETURN`, `FORMATS`, and `COMPLETE` actions, with conditional `IF:`/`WHEN:`/`ELSE:` branches.
 
 ### SSRF protection
 
@@ -437,14 +456,14 @@ TOOLS:
       jitter: full              # none | full
 ```
 
-| Property           | Type                    | Default | Description                                              |
-| ------------------ | ----------------------- | ------- | -------------------------------------------------------- |
-| `strategy`         | `"fixed"` , `"exponential"` | --  | Backoff strategy (required).                             |
-| `initial_delay_ms` | `number`                | --      | Delay before the first retry.                            |
-| `multiplier`       | `number`                | --      | Growth factor per attempt (for `exponential`).           |
-| `max_delay_ms`     | `number`                | --      | Ceiling on the delay between attempts.                   |
-| `max_retries`      | `number`                | --      | Maximum retry attempts.                                  |
-| `jitter`           | `"none"` , `"full"`     | --      | Randomization applied to the delay.                      |
+| Property           | Type                        | Default | Description                                    |
+|--------------------|-----------------------------|---------|------------------------------------------------|
+| `strategy`         | `"fixed"` , `"exponential"` | --      | Backoff strategy (required).                   |
+| `initial_delay_ms` | `number`                    | --      | Delay before the first retry.                  |
+| `multiplier`       | `number`                    | --      | Growth factor per attempt (for `exponential`). |
+| `max_delay_ms`     | `number`                    | --      | Ceiling on the delay between attempts.         |
+| `max_retries`      | `number`                    | --      | Maximum retry attempts.                        |
+| `jitter`           | `"none"` , `"full"`         | --      | Randomization applied to the delay.            |
 
 ### SOAP support
 
@@ -463,15 +482,14 @@ TOOLS:
     on_soap_fault: error       # error | data
 ```
 
-| Property        | Type                | Default  | Description                                                              |
-| --------------- | ------------------- | -------- | ------------------------------------------------------------------------ |
-| `protocol`      | `"rest"` , `"soap"` | `"rest"` | Wire protocol.                                                           |
-| `soap_version`  | `"1.1"` , `"1.2"`   | `"1.1"`  | SOAP envelope version.                                                   |
-| `soap_action`   | `string`            | _none_   | `SOAPAction` header (1.1) or action media-type parameter (1.2).          |
-| `on_soap_fault` | `"error"` , `"data"`| _none_   | `error` raises on `<soap:Fault>`; `data` returns the fault as the result. |
+| Property        | Type                 | Default  | Description                                                               |
+|-----------------|----------------------|----------|---------------------------------------------------------------------------|
+| `protocol`      | `"rest"` , `"soap"`  | `"rest"` | Wire protocol.                                                            |
+| `soap_version`  | `"1.1"` , `"1.2"`    | `"1.1"`  | SOAP envelope version.                                                    |
+| `soap_action`   | `string`             | _none_   | `SOAPAction` header (1.1) or action media-type parameter (1.2).           |
+| `on_soap_fault` | `"error"` , `"data"` | _none_   | `error` raises on `<soap:Fault>`; `data` returns the fault as the result. |
 
 #### WSDL operation binding
-
 
 Instead of hand-writing the SOAP envelope, a SOAP tool can bind to an operation from a WSDL asset stored in the project [WSDL Repository](/agent-platform/tools/wsdl-repo). When bound, the runtime resolves the operation's namespace, `SOAPAction`, and SOAP version from the stored WSDL and **generates the request body from the tool's JSON input** — no manual `body` template is needed. The request `endpoint` still comes from the tool: bulk-created tools are populated with the WSDL service address (or an endpoint override), and hand-authored tools must set `endpoint` explicitly.
 
@@ -545,7 +563,6 @@ TOOLS:
 
 ### MCP binding properties
 
-
 | Property      | Type                     | Required | Default   | Description                                                              |
 |---------------|--------------------------|----------|-----------|--------------------------------------------------------------------------|
 | `type`        | `"mcp"`                  | Yes      | --        | Declares this as an MCP tool                                             |
@@ -554,7 +571,6 @@ TOOLS:
 | `headers`     | `Record<string, string>` | No       | _none_    | Per-call headers, supporting `{{config.X}}` / `{{session.X}}` templates. |
 
 ### Server configuration
-
 
 The `server` value is a logical name that maps to an MCP server configuration in the project's runtime settings. Server configuration (transport type, connection URL, authentication) is managed at the project level, not in the ABL file.
 
@@ -567,7 +583,6 @@ The platform supports these MCP transport types.
 | `websocket` | WebSocket-based transport                              |
 
 ### Dynamic tool discovery
-
 
 MCP servers can expose multiple tools. When you declare an MCP tool in ABL, you bind a specific tool from the server. If the tool name on the MCP server differs from the tool name in your ABL file, use `server_tool:` to specify the server-side name.
 
@@ -583,7 +598,6 @@ TOOLS:
 ---
 
 ## Code tools (sandbox)
-
 
 Code tools execute user-provided JavaScript or Python code in an isolated sandbox environment with resource limits and no network access.
 
@@ -603,7 +617,6 @@ TOOLS:
 
 ### Sandbox binding properties
 
-
 | Property    | Type                         | Required | Default          | Description                                           |
 | ----------- | ---------------------------- | -------- | ---------------- | ----------------------------------------------------- |
 | `type`      | `"sandbox"`                  | Yes      | --               | Declares this as a sandbox tool                       |
@@ -614,7 +627,6 @@ TOOLS:
 
 ### Isolation
 
-
 Sandbox tools execute in a gVisor-isolated environment with the following restrictions:
 
 - No network access
@@ -623,7 +635,6 @@ Sandbox tools execute in a gVisor-isolated environment with the following restri
 - Each execution runs in a new environment
 
 ### JavaScript runtime
-
 
 JavaScript code tools have access to standard JavaScript built-ins. The code should return a value matching the declared return type.
 
@@ -641,7 +652,6 @@ TOOLS:
 ```
 
 ### Python runtime
-
 
 Python code tools use a sandboxed Python interpreter. The code should return a dictionary matching the declared return type.
 
@@ -661,7 +671,6 @@ TOOLS:
 
 ## Lambda tools
 
-
 Lambda tools invoke cloud serverless functions. The function name is a logical identifier resolved to an actual endpoint (ARN, URL) at runtime through the project's function registry.
 
 ```yaml
@@ -676,7 +685,6 @@ TOOLS:
 
 ### Lambda binding properties
 
-
 | Property   | Type       | Required | Default          | Description                                              |
 |------------|------------|----------|------------------|----------------------------------------------------------|
 | `type`     | `"lambda"` | Yes      | --               | Declares this as a lambda tool                           |
@@ -687,7 +695,6 @@ TOOLS:
 ---
 
 ## Async webhook tools
-
 
 Async webhook tools send an HTTP request with a callback URL injected into the payload. The external system processes the request asynchronously and posts the result back to the callback URL when complete.
 
@@ -703,7 +710,6 @@ TOOLS:
 ```
 
 ### Async webhook binding properties
-
 
 | Property             | Type                           | Required | Default         | Description                                                     |
 |----------------------|--------------------------------|----------|-----------------|-----------------------------------------------------------------|
@@ -749,7 +755,6 @@ TOOLS:
 
 ## SearchAI tools
 
-
 SearchAI tools query a SearchAI knowledge base (KB) index, letting an agent ground its answers in the indexed content.
 
 ```yaml
@@ -764,7 +769,6 @@ TOOLS:
 
 ### SearchAI binding properties
 
-
 | Property              | Type     | Required | Default | Description                                                        |
 | --------------------- | -------- | -------- | ------- | ------------------------------------------------------------------ |
 | `type`                | `"searchai"` | Yes  | --      | Declares this as a SearchAI tool.                                  |
@@ -778,8 +782,7 @@ TOOLS:
 
 ## Table tools
 
-Table tools perform structured CRUD against an **Agent Table** — a project-, user-, or
-session-scoped datastore.
+Table tools perform structured CRUD against an **Agent Table** — a project-, user-, or session-scoped datastore.
 
 ```yaml
 TOOLS:
@@ -806,11 +809,9 @@ TOOLS:
 
 ## Tool file imports
 
-
 You can organize the tool definitions into reusable `.tools.abl` files and import it into agent documents. This lets you share tool definitions across multiple agents.
 
 ### Tool file format
-
 
 A `.tools.abl` file starts with a `TOOLS:` section that can include shared defaults:
 
@@ -836,7 +837,6 @@ TOOLS:
 
 ### Shared defaults
 
-
 The following defaults can be set at the top of a `.tools.abl` file and apply to all tools in the file.
 
 | Default       | Type                     | Description                                       |
@@ -850,7 +850,6 @@ The following defaults can be set at the top of a `.tools.abl` file and apply to
 | `headers`     | `Record<string, string>` | Default headers applied to all tools              |
 
 ### Import syntax
-
 
 Import tools from a `.tools.abl` file into an agent using the `file:` directive within the `TOOLS:` section.
 
@@ -867,7 +866,6 @@ The import specifies:
 Project bundle import can also synthesize tool stubs from inline agent `TOOLS:` signatures during apply. That keeps imported agents compileable even when the bundle didn't include companion `.tools.abl` files, and the next export writes those synthesized stubs back out as `tools/<name>.tools.abl`.
 
 ### Example
-
 
 Given the file `tools/hotels-api.tools.abl`.
 
@@ -1056,10 +1054,7 @@ TOOLS:
 
 ### Secret scrubbing
 
-An always-on scrubber masks credentials (API keys, bearer tokens, private keys, passwords) in a
-tool's output. Set `scrub_secrets: false` to opt a specific tool out (for example, when the tool's
-job is to return a token your flow needs). This is independent of `pii_access`, which governs PII
-rather than credentials.
+An always-on scrubber masks credentials (API keys, bearer tokens, private keys, passwords) in a tool's output. Set `scrub_secrets: false` to opt a specific tool out (for example, when the tool's job is to return a token your flow needs). This is independent of `pii_access`, which governs PII rather than credentials.
 
 ```yaml
 TOOLS:
@@ -1087,12 +1082,7 @@ TOOLS:
       write: [user.name, user.updated_at]
 ```
 
-<Warning>
-  `context_access` is validated against your `MEMORY:` declarations. A tool that declares a `read`
-  of a **write-only** memory path (or a `write` of a **read-only** path) now fails compilation, and
-  at runtime a tool is blocked from executing if its declared memory is unavailable. Declare the
-  matching `MEMORY:` access mode for every path a tool reads or writes.
-</Warning>
+<Warning> `context_access` is validated against your `MEMORY:` declarations. A tool that declares a `read` of a **write-only** memory path (or a `write` of a **read-only** path) now fails compilation, and  at runtime a tool is blocked from executing if its declared memory is unavailable. Declare the   matching `MEMORY:` access mode for every path a tool reads or writes. </Warning>
 
 ### Store result
 
@@ -1113,10 +1103,12 @@ TOOLS:
 
 Some flows need a credential produced by one tool (a one-time token, session key, or OTP) to be sent to a later tool — without ever exposing the raw value to the LLM. SecretRef captures such values into an encrypted, session-scoped **secret vault** and restores them into downstream tool calls.
 
-- **Producer** — the tool that returns the secret declares a `RESULT_SECRETS:` block. Each entry captures a result field into the vault under a key, in the form `<result_path> -> <vault_key> (options)`.
-- **Consumer** — a downstream tool declares a `SECRET_ACCESS:` block listing the vault keys it may read, then references them with the `{{_secret.<key>}}` placeholder in its `headers` or `body_template`.
+- **Producer** — the tool that returns the secret declares a `RESULT_SECRETS:` block. Each entry captures a result field into the vault under a key, in the form `<result_path> -> <vault_key> (options)`. Capture works on **every tool type** — HTTP, code sandbox, and `workflow` tools can all produce vaulted secrets.
+- **Consumer** — a downstream tool declares a `SECRET_ACCESS:` block listing the vault keys it may read, then references them with the `{{_secret.<key>}}` placeholder in its `headers` or `body_template`. Only **HTTP tools** can consume secrets — `{{_secret.<key>}}` resolves in the HTTP request path alone.
 
-```yaml
+<Warning>Declaring `SECRET_ACCESS` on a non-HTTP tool (a `workflow` or code-sandbox tool) is a **compile error** (`SECRET_REF_UNSUPPORTED_CONSUMER_TYPE`): the executor cannot resolve `{{_secret.<key>}}`, so the single-use vault entry would be consumed without delivering the value, and the next authorized consumer would fail with "already used". If you reached for a workflow tool to assemble a variable-length batch payload from a secret, build it directly in an HTTP tool with `{{#each input.<parameter>}}` in the `body_template` instead. (`RESULT_SECRETS` capture is unaffected and still works on workflow tools.)</Warning>
+
+```yaml expandable=true
 TOOLS:
   # Producer: capture the OTP token into the vault, never exposing it to the model
   request_otp(account_id: string) -> {otp_token: string, expires_in: number}
