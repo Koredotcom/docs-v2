@@ -1,0 +1,109 @@
+# How to combine reasoning steps with deterministic FLOW steps
+
+Use this pattern when a conversation needs both flexible judgment and predictable execution. A good enterprise flow often has one or two places where the agent should reason, such as understanding urgency or explaining a result, surrounded by deterministic steps that collect data, set variables, call tools, branch, and finish reliably.
+
+## Concept
+
+ABL treats reasoning and deterministic behavior as step-level choices inside `FLOW`. `REASONING: true` gives a step a goal-driven reasoning zone. `REASONING: false` makes the step scripted: it should use explicit actions such as `GATHER`, `SET`, `CALL`, `RESPOND`, `ON_INPUT`, `ON_RESULT`, and `THEN`.
+
+Use reasoning steps for judgment: interpreting messy user language, choosing a tone, deciding whether a situation is urgent, or explaining a result. Use deterministic steps for control: collecting required fields, setting session values, invoking tools, branching on known outputs, and ending the flow.
+
+Do not use the old `MODE:` pattern. Current ABL expects `REASONING: true` or `REASONING: false` on each `FLOW` step. A deterministic step with a `GOAL` or `AVAILABLE_TOOLS` is misleading because those only affect reasoning behavior.
+
+## Minimal working example
+
+```abl
+AGENT: Claim_Intake_Agent
+GOAL: "Collect claim details, reason about urgency, and route to the right next step"
+PERSONA: "Careful claims intake specialist"
+
+FLOW:
+  entry_point: collect_claim
+
+  collect_claim:
+    REASONING: false
+    GATHER:
+      - policy_id:
+          prompt: "What is your policy ID?"
+          type: string
+          required: true
+      - claim_type:
+          prompt: "What type of claim are you filing?"
+          type: string
+          required: true
+    THEN: assess_urgency
+
+  assess_urgency:
+    REASONING: true
+    GOAL: "Decide whether the claim sounds urgent, routine, or unclear. Ask one brief clarification question if needed."
+    THEN: prepare_summary
+
+  prepare_summary:
+    REASONING: false
+    SET:
+      claim_summary = "Policy " + policy_id + " reported a " + claim_type + " claim"
+    THEN: explain_next_steps
+
+  explain_next_steps:
+    REASONING: true
+    GOAL: "Explain the next steps in plain language using policy_id, claim_type, and claim_summary."
+    THEN: COMPLETE
+```
+
+## How it works
+
+The first step is deterministic because the platform should collect `policy_id` and `claim_type` before doing anything else. The second step is reasoning because urgency is not always a clean enum: the user may describe an accident, water damage, loss, injury, or uncertainty in their own words. The third step is deterministic again because it constructs a known variable. The final reasoning step turns the known state into a user-facing explanation.
+
+This structure makes the flow easier to test. You can verify that required fields are collected before `assess_urgency`, that `claim_summary` is set before `explain_next_steps`, and that completion happens only after the explanation step.
+
+## Common variations
+
+### Reason first, then collect
+
+Start with a reasoning step when users may open with broad language like "I need help with something that happened yesterday." The reasoning step can decide what to ask next, then transition into deterministic collection.
+
+### Collect first, then reason
+
+Start with deterministic collection when compliance, eligibility, identity, or required intake fields must exist before any judgment is useful.
+
+### Reason after a tool result
+
+Use a deterministic `CALL` and `ON_RESULT` to fetch known data, then use a reasoning step to explain the result. This keeps tool execution predictable while allowing the final response to adapt to the user.
+
+## Verification
+
+- Validate the project and confirm every `FLOW` step declares `REASONING: true` or `REASONING: false`.
+- Test a routine claim, an urgent claim, and an unclear claim.
+- Confirm `collect_claim` gathers both fields before `assess_urgency`.
+- Confirm `prepare_summary` sets `claim_summary` before `explain_next_steps`.
+- Inspect the trace for step enter and exit events so you can prove the flow moved through deterministic and reasoning steps in the expected order.
+
+## Production readiness checklist
+
+- Keep deterministic steps free of unused goals and available-tool lists.
+- Keep reasoning goals narrow enough that the model knows what decision or explanation it owns.
+- Add fallback paths for unclear user input, failed tool calls, and exhausted attempts.
+- Use deterministic steps for required data, compliance checks, and side-effecting actions.
+- Use traces to monitor unexpected loops, skipped steps, and repeated clarification turns.
+
+## Common mistakes
+
+| Mistake                                  | Why it happens                                     | How to avoid it                                                         |
+| ---------------------------------------- | -------------------------------------------------- | ----------------------------------------------------------------------- |
+| Using `MODE:` for the whole agent        | Older examples may show agent-level execution mode | Declare `REASONING` on each flow step                                   |
+| Putting a `GOAL` on a deterministic step | The step looks like it needs explanation           | Move the goal to a reasoning step or remove it                          |
+| Making every step reasoning-enabled      | Flexible behavior feels attractive during design   | Use deterministic steps for control, data movement, tools, and branches |
+| Making every step deterministic          | The flow becomes brittle for messy language        | Add reasoning zones where interpretation or explanation is required     |
+
+## Troubleshooting
+
+| Symptom                                          | Likely cause                                   | What to check                                             |
+| ------------------------------------------------ | ---------------------------------------------- | --------------------------------------------------------- |
+| The validator says a step must declare reasoning | A `FLOW` step is missing `REASONING`           | Add `REASONING: true` or `REASONING: false` to every step |
+| A deterministic step does not use its goal       | `REASONING: false` ignores step goals          | Move the goal to a reasoning step                         |
+| The flow skips useful judgment                   | A transition jumps around the reasoning step   | Check `THEN`, `ON_INPUT`, and `ON_RESULT` branches        |
+| The agent loops in explanation                   | The reasoning goal is too broad or has no exit | Narrow the goal and transition to `COMPLETE`              |
+
+## Related HowTos
+
+- How to choose between a reasoning agent and a FLOW-based agent
