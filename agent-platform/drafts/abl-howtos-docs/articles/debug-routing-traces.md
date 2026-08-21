@@ -1,23 +1,14 @@
-# How to debug routing decisions with traces and metadata
+# How to debug routing decisions in traces
 
-Routing must be observable. The runtime emits routing and handoff trace events, including condition checks and multi-intent decisions. You can also set `_meta.*` values in ABL so dashboards and trace filters can group related routing behavior.
+Use this when support, QA, or partners need to understand why a user went to one specialist instead of another, or why a route silently fell through to fallback.
 
-Use this when support, QA, or partners need to understand why a user went to one specialist instead of another.
+## Concept
 
-## How the pattern works
+Every `HANDOFF` decision, whether deterministic (`WHEN: intent.category == "billing"`) or semantic (`WHEN: "the request is about billing"`), produces a trace event describing what was evaluated and why a target was or wasn't selected. The runtime does not just log "routed to Billing_Agent" — it records the condition it evaluated, the context available at evaluation time, the outcome, and (for temporary child agents) what came back through `ON_RETURN`.
 
-1. The supervisor receives the user message and keeps ownership until a route matches.
-2. Intent categories, runtime context, gathered values, or tool results provide the routing evidence.
-3. `HANDOFF` entries are evaluated in the authored order and the matching child receives only the declared context.
-4. If the child is temporary, it returns through `ON_RETURN`; if it owns the conversation, it remains the active agent.
+One thing surprises people the first time they read a routing trace: **not every routing event is visible at every trace verbosity level.** The runtime supports `minimal`, `standard`, `verbose`, and `debug` verbosity. If you're not seeing an event you expect (like `handoff_condition_check` for a route that *didn't* match), raise verbosity before assuming the event doesn't exist.
 
-## Design choices
-
-- Set stable `_meta.*` dimensions such as entry channel and routing version.
-- Inspect `handoff_condition_check`, `deterministic_routing`, `deterministic_handoff`, and `multi_intent_*` events depending on the route type.
-- Validate the selected target, condition result, context values, and returned child fields.
-
-## Validated example
+## Minimal working example
 
 ```abl
 SUPERVISOR: Traceable_Routing_Supervisor
@@ -25,7 +16,7 @@ GOAL: "Make routing decisions easy to inspect in traces"
 
 ON_START:
   SET:
-    _meta.entry_channel = session.interaction.current.channel
+    _meta.entry_channel = session.channel
     _meta.routing_version = "support-router-v3"
 
 INTENTS:
@@ -66,35 +57,84 @@ AGENT: Fallback_Triage_Agent
 GOAL: "Clarify unclear requests"
 ```
 
+`customer_id`, `account_id`, `issue_summary`, and `conversation_summary` are shown as passed context fields; declare them via `MEMORY` or populate them via `GATHER`/tool results in your actual project — this example assumes they already exist as project-local session values.
+
+## How it works
+
+- The supervisor keeps ownership until a `HANDOFF` condition matches, evaluated in authored order.
+- Each evaluated condition emits `handoff_condition_check` with a shape similar to:
+
+  ```json
+  {
+    "event": "handoff_condition_check",
+    "condition": "intent.category == \"billing\"",
+    "result": false,
+    "evaluatedContext": { "intent.category": "technical_support" },
+    "target": "Billing_Agent",
+    "whenOutcome": "deterministic_no_match"
+  }
+  ```
+
+  For a matched deterministic route, the runtime also emits `deterministic_routing` and `deterministic_handoff`; for a matched semantic (quoted natural-language) `WHEN`, `whenOutcome` reflects the semantic evaluation path instead.
+
+- If a condition references a variable that is not yet set anywhere in scope, the runtime emits `route_condition_unresolved` instead of silently treating it as a non-match — check for this event before concluding "the condition just didn't match."
+- If a flow-level return suppresses a condition that would otherwise have matched (for example, the conversation is mid-flow and routing is intentionally deferred), the runtime emits `handoff_condition_suppressed`.
+- Once a target is selected, `handoff_context_pass_resolved` records what the resolved `CONTEXT.pass` values actually were, and `handoff_context_set_applied` records any `CONTEXT.set` writes applied to the child.
+- When `EXPECT_RETURN: true` is used (as in the fallback route above), the child's return path emits `handoff_return_handler`, and `ON_RETURN.action: resume_intent` produces a `resume_intent` trace entry showing what intent processing resumed with.
+- Remember: since `HISTORY` is omitted from every `HANDOFF` above, each child receives the full conversation history by default (the platform default when `HISTORY` is unset). Set `HISTORY: auto` or another explicit strategy if you want bounded/summary history instead, and expect the trace's history-related fields to reflect whichever strategy is in effect.
+- `_meta.*` values (like `_meta.entry_channel` above) are not routing logic — they're custom trace dimensions for filtering/grouping in dashboards. You can `SET _meta.*` in `ON_START`, in flow steps, in lifecycle hooks, and in `ON_ERROR`/`ESCALATE` triggers, not only at conversation start.
+
 ## Common variations
 
-- Debug deterministic route conditions.
-- Debug semantic handoff conditions.
-- Debug multi-intent queue, disambiguation, or fan-out decisions.
+### Debugging a semantic (natural-language) condition
+
+Quoted `WHEN` text like `WHEN: "the request does not clearly match billing or technical support"` produces the same `handoff_condition_check` event, but `whenOutcome` distinguishes the semantic evaluation path from a deterministic one. There's no separate event name to search for — filter on `whenOutcome` instead.
+
+### Debugging multiple intents in one message
+
+Multi-intent routing emits its own event family instead of a single glob: `multi_intent_plan_built` (the queue was constructed), `multi_intent_target_resolved` (a queue entry resolved to a target agent), `multi_intent_queued` (an entry queued for later processing), `multi_intent_sequential` plus `multi_intent_sequential_task_start`/`_task_complete`/`_executed` (sequential processing), and `multi_intent_parallel` (parallel processing). Search for the specific event you expect rather than a wildcard.
+
+### Debugging trace visibility
+
+If an event you expect isn't showing up, check the trace verbosity setting first (`minimal`/`standard`/`verbose`/`debug`) before assuming the routing logic is wrong — some events only appear at `verbose` or `debug`.
 
 ## Verification
 
-- Parse the ABL and confirm there are no parser errors or parser warnings.
-- Compile the ABL and confirm there are no compiler errors or compiler warnings.
-- Test at least one matching utterance for each route and one utterance for the fallback or clarification path.
-- Inspect traces for the selected target, condition result, passed context, and return behavior when `EXPECT_RETURN: true` is used.
+- Parse and compile the ABL and confirm there are no parser or compiler errors/warnings.
+- Test at least one matching utterance for each deterministic route, one for the semantic fallback, and one that should trigger `route_condition_unresolved` (reference a variable you know is unset).
+- Inspect the trace for: the selected `target`, the `condition` actually evaluated (matches your literal authored text), `evaluatedContext`, and — for `EXPECT_RETURN: true` routes — the `handoff_return_handler` and `resume_intent` entries.
+- Raise trace verbosity to `verbose` or `debug` if an expected event isn't appearing.
 
-## Production checklist
+## Production readiness checklist
 
 - Every specialist route has a clear owner and a concise context summary.
 - Deterministic conditions use declared, gathered, tool-result, runtime, or returned fields.
 - Semantic conditions are quoted as natural-language `WHEN` text.
-- Temporary child agents produce every field mapped in `ON_RETURN`.
-- Fallback behavior is explicit and does not hide missing intent coverage.
+- Temporary child agents (`EXPECT_RETURN: true`) produce every field mapped in `ON_RETURN`, verified via `handoff_return_handler`/`resume_intent` traces.
+- Fallback behavior is explicit and does not hide missing intent coverage — confirm via `route_condition_unresolved` and `handoff_condition_suppressed` that nothing is silently falling through.
+- `_meta.*` dimensions are stable, low-cardinality values (not raw user text), set consistently across the surfaces where routing decisions can occur (not just `ON_START`).
+- Trace verbosity is set appropriately for the environment (higher in staging/debugging, tuned for volume/cost in production).
 
 ## Common mistakes
 
-- Do not rely on ad hoc logs when trace events exist.
-- Do not set high-cardinality metadata such as raw user utterance as a dashboard dimension.
-- Do not debug only the chosen route; inspect skipped candidates and condition results.
+| Mistake                                                             | Why it happens                                                                       | How to avoid it                                                                                                      |
+| --------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
+| Only checking `handoff_condition_check` for the matched route       | Skipped candidates are just as diagnostic when a route unexpectedly loses to another | Inspect all `handoff_condition_check` entries in the turn, not just the one that matched                             |
+| Setting `_meta.*` only in `ON_START`                                | The article/example historically only showed `ON_START`                              | Also set `_meta.*` in flow steps, hooks, or `ON_ERROR`/`ESCALATE` when the dimension should reflect later-turn state |
+| Setting high-cardinality `_meta.*` values (e.g. raw user utterance) | Seems convenient for debugging one session                                           | Use stable, low-cardinality values; high-cardinality dimensions break dashboard aggregation                          |
+| Not finding an expected trace event                                 | Trace verbosity is below the level that surfaces it                                  | Raise verbosity to `verbose`/`debug` before concluding the event doesn't fire                                        |
+
+## Troubleshooting
+
+| Symptom                                                                                         | Likely cause                                                                                                                                    | What to check                                                                                                                 |
+| --------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| A route you expect to match never fires, and there's no `handoff_condition_check` for it at all | Trace verbosity is too low, or the flow suppressed the condition before it was ever evaluated                                                   | Raise verbosity; check for a `handoff_condition_suppressed` entry                                                             |
+| A condition evaluates to a non-match even though the variable looks set in your test            | The variable is a different path than the condition references, or it's unset at evaluation time                                                | Look for `route_condition_unresolved`; confirm the variable's actual path via `evaluatedContext` in `handoff_condition_check` |
+| A temporary child agent's fields never make it back to the parent                               | Missing or mismatched `ON_RETURN` field mapping                                                                                                 | Inspect `handoff_return_handler` for the actual returned payload shape                                                        |
+| Child agent has less/more conversation context than expected                                    | `HISTORY` was omitted and the platform default (`full`) applied, or an explicit strategy elsewhere in the project differs from what you assumed | Check `HISTORY`/`CONTEXT.history` on the `HANDOFF`; confirm against the current platform default                              |
 
 ## Related HowTos
 
 - How to design a supervisor that routes users to specialist agents
-- How to decide when to delegate, hand off, or use a workflow
-- How to pass context between agents
+- How to route conversations based on user intent
+- How to handle users with multiple intents in one message

@@ -1,0 +1,94 @@
+---
+title: How to design channel-specific welcome experiences
+sidebarTitle: Channel-specific welcome
+---
+
+Use this pattern when web chat, voice, messaging, or async channels need different startup behavior.
+
+## Concept
+
+Channels do not all deliver startup content the same way. Some support proactive `ON_START` messages. Some suppress startup payloads and allow `ON_START` only for side effects such as setting values or delegating. A good channel-specific welcome separates the authored conversation welcome from launcher text, placeholder text, and channel-native connection messages.
+
+In ABL, use startup context and `ON_START BRANCHES` to vary the welcome content. Use channel configuration for launcher copy that appears outside the conversation transcript.
+
+## Minimal working example
+
+```yaml
+AGENT: Channel_Welcome_Agent
+GOAL: "Adapt welcome copy by channel context"
+
+ON_START:
+  SET: channel_name = session.channel
+  BRANCHES:
+    - IF: channel_name == "voice"
+      RESPOND: "Thanks for calling. Say billing, orders, or agent."
+        VOICE:
+          PLAIN_TEXT: "Thanks for calling. Say billing, orders, or agent."
+    - ELSE:
+      RESPOND: "Welcome. You can type billing, orders, or agent."
+        FORMATS:
+          markdown: |
+            **Welcome.** Type a topic to begin.
+
+FLOW:
+  entry_point: ready
+  steps:
+    - ready
+
+ready:
+  REASONING: false
+  RESPOND: "Ready."
+  THEN: COMPLETE
+```
+
+## How it works
+
+The runtime copies the channel name into `channel_name`, evaluates branches in order, and selects the first matching response. The voice branch includes a `VOICE` payload. The non-voice branch includes markdown.
+
+## Common variations
+
+### Keep launcher copy separate
+
+```yaml
+AGENT: Launcher_Copy_Agent
+GOAL: "Keep channel launcher copy separate from the ABL startup message"
+
+ON_START:
+  RESPOND: "Welcome inside the conversation."
+
+FLOW:
+  entry_point: ready
+  steps:
+    - ready
+
+ready:
+  REASONING: false
+  RESPOND: "Ask a question to continue."
+  THEN: COMPLETE
+```
+
+Launcher welcome text, placeholder text, and connecting status text are channel configuration. The ABL `ON_START` response is conversation content.
+
+## Verification
+
+Start sessions for each target channel. Confirm the conversation transcript receives the ABL welcome only on channels that support proactive startup delivery. For suppressed channels, confirm `ON_START` side effects still run and traces include `dsl_on_start_skipped`.
+
+## Common mistakes
+
+| Mistake                                      | Why it happens                                                            | How to avoid it                                                                   |
+| -------------------------------------------- | ------------------------------------------------------------------------- | --------------------------------------------------------------------------------- |
+| Treating launcher text as the ABL welcome    | Both appear near session start in web chat.                               | Keep launcher copy in channel configuration and conversation copy in `ON_START`.  |
+| Writing one welcome for every channel        | Text chat, voice, and async channels have different delivery constraints. | Branch from channel context and test the deployed channel contract.               |
+| Putting channel side effects inside branches | `ON_START` branches select responses, not startup side effects.           | Run `SET` or `CALL` at top-level `ON_START`, then branch on the resulting values. |
+
+## Troubleshooting
+
+If a welcome appears twice in web chat, check whether the SDK launcher message and ABL `ON_START` response say the same thing. If a voice greeting is too long, move details into the next turn and keep startup speech short.
+
+## Production readiness checklist
+
+- Test each deployed channel separately.
+- Keep launcher copy and conversation copy distinct.
+- Use `VOICE` payloads for voice-specific phrasing.
+- Provide text fallback for rich content.
+- Verify suppression behavior for async channels.

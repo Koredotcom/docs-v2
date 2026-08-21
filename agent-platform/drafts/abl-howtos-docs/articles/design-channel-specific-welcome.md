@@ -15,7 +15,7 @@ AGENT: Channel_Welcome_Agent
 GOAL: "Adapt welcome copy by channel context"
 
 ON_START:
-  SET: channel_name = session.interaction.current.channel
+  SET: channel_name = session.channel
   BRANCHES:
     - IF: channel_name == "voice"
       RESPOND: "Thanks for calling. Say billing, orders, or agent."
