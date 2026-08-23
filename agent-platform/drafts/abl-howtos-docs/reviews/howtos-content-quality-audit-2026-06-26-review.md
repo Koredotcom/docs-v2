@@ -1,7 +1,7 @@
 # HowTos Content Quality Audit
 
 **Date:** 2026-06-26  
-**Scope:** Drafts for topics 1.1 through 1.4 under `docs/guides/HowTos/reviews/`  
+**Scope:** Drafts for topics 1.1 through 1.4 under `agent-platform/drafts/abl-howtos-docs/reviews/`  
 **Verdict:** refresh needed before customer/partner review
 
 ## Review method

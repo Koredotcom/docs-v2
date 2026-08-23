@@ -1,0 +1,110 @@
+---
+title: How to design reusable agents and modules for large projects
+sidebarTitle: Reusable agents and modules
+---
+
+Use this pattern when a project has many assistants, specialists, tools, and workflows that need to be composed without duplicating responsibilities or creating routing ambiguity.
+
+## Concept
+
+Reusable design in ABL starts with stable agent boundaries. A reusable agent owns a business capability, has a clear goal, accepts a predictable context package, and can be called from more than one supervisor or entry point.
+
+Do not make reuse mean "one giant shared agent." Reuse works best when specialists are small enough to be reliable but broad enough to represent a durable business capability, such as product advice, order status, billing disputes, identity verification, or appointment scheduling.
+
+For tools, current validation rejects removed `FROM ... USE` tool import syntax in agent DSL. Keep agent files focused on agent behavior and manage tool implementations through project tools and deployment configuration.
+
+## Minimal working example
+
+```yaml
+SUPERVISOR: Commerce_Supervisor
+GOAL: "Route shopping requests to reusable commerce specialists"
+PERSONA: "Concise commerce routing supervisor"
+
+HANDOFF:
+  - TO: Product_Advisor
+    WHEN: "The user asks for product recommendations, comparisons, or availability"
+    PASS: [customer_id, locale]
+    SUMMARY: "User needs shopping advice"
+  - TO: Order_Status_Agent
+    WHEN: "The user asks about an existing order, delivery, or return status"
+    PASS: [customer_id, order_id]
+    SUMMARY: "User needs order status help"
+```
+
+```yaml
+AGENT: Product_Advisor
+GOAL: "Help customers compare products and choose the best option"
+PERSONA: "Practical shopping advisor"
+```
+
+```yaml
+AGENT: Order_Status_Agent
+GOAL: "Help customers understand order, delivery, and return status"
+PERSONA: "Precise order support specialist"
+```
+
+## How it works
+
+The supervisor is reusable because it routes to stable capability agents. The specialist agents are reusable because they describe their responsibility without depending on one specific entry point. The `PASS` fields are the integration contract between the supervisor and specialists.
+
+In a large project, keep the reusable boundary visible in three places: the agent goal, the routing condition, and the context package. If those three disagree, reuse becomes fragile.
+
+Since neither `HANDOFF` above declares `HISTORY`, each specialist now receives the full conversation history by default (the current platform default when `HISTORY` is omitted).
+
+## Common variations
+
+### Shared specialist agent
+
+Use one specialist from several supervisors when the business capability is truly the same. For example, `Order_Status_Agent` can serve commerce chat, WhatsApp, and voice entry points if the required context is consistent.
+
+### Channel-specific wrapper
+
+Use a thin channel-specific supervisor when routing or welcome behavior differs by channel, while the underlying specialists remain shared.
+
+### Project manifest composition
+
+Use the project manifest to list the agents, entry agent, and project assets. Keep agent names stable because handoff targets depend on them.
+
+### Shared tool implementations
+
+Manage reusable tool implementations in Project Tools. Agent DSL should declare behavior and use tools through validated current syntax; do not rely on removed `FROM ... USE` imports.
+
+## Verification
+
+- Validate the full project group, not only one agent file.
+- Confirm every handoff target exists in the same project.
+- Test each reusable specialist from every entry point that can route to it.
+- Confirm every `PASS` field has a source before handoff.
+- Inspect traces to prove the active agent changes to the intended specialist.
+
+## Production readiness checklist
+
+- Agent names are stable and unique.
+- Each reusable agent has one durable business capability.
+- Handoff context is minimal, explicit, and privacy-reviewed.
+- Shared specialists have tests from each supervisor or channel entry point.
+- Tool bindings and permissions are configured outside removed import syntax.
+- Ownership is clear for shared modules so one team does not break another team's entry point.
+
+## Common mistakes
+
+| Mistake                                  | Why it happens                   | How to avoid it                                                |
+| ---------------------------------------- | -------------------------------- | -------------------------------------------------------------- |
+| Reusing an agent with a vague goal       | It feels flexible                | Define a durable business capability                           |
+| Passing too much context                 | Teams want reuse to be easy      | Pass only fields the specialist needs                          |
+| Depending on removed tool import syntax  | Older examples may still show it | Use current Project Tools setup                                |
+| Sharing specialists without shared tests | The first entry point works      | Test every supervisor and channel that can call the specialist |
+
+## Troubleshooting
+
+| Symptom                                       | Likely cause                                        | What to check                                              |
+| --------------------------------------------- | --------------------------------------------------- | ---------------------------------------------------------- |
+| Handoff target is not found                   | Agent name mismatch or missing project asset        | Compare `TO:` targets with project agent names             |
+| Specialist gives entry-point-specific answers | Its goal or persona includes one channel or journey | Rewrite it around the reusable capability                  |
+| A shared change breaks another flow           | No owner or compatibility test for the module       | Add cross-entry tests before changing shared specialists   |
+| Tool setup fails after reuse                  | Tool implementation was assumed in agent DSL        | Verify Project Tools bindings and deployment configuration |
+
+## Related articles
+
+- [How to decide whether to build one agent or multiple specialist agents](/agent-platform/abl/howto/choose-single-agent-or-specialists).
+- [How to design a supervisor that routes users to specialist agents](/agent-platform/abl/howto/design-supervisor-routing-agent).

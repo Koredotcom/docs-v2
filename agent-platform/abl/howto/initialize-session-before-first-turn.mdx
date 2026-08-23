@@ -1,0 +1,89 @@
+---
+title: How to initialize session variables before the first user turn
+sidebarTitle: Initialize session variables
+---
+
+Use this pattern when flow steps, routing, templates, or tools need known session values before the user says anything.
+
+## Concept
+
+Startup initialization belongs in `ON_START`. Values set there are written into session data before the welcome response and before the entry flow runs. This is useful for counters, channel labels, selected locale, feature flags, campaign markers, and any value that should be stable for the rest of the conversation.
+
+Keep initialization deterministic. `ON_START SET` is for values already available at startup, not values that require asking the user.
+
+## Minimal working example
+
+```yaml
+AGENT: Session_Init_Agent
+GOAL: "Initialize session values before the first flow step"
+
+ON_START:
+  SET: retry_count = 0
+  SET: channel_name = session.channel
+  SET: preferred_language = session.interaction.current.language
+  RESPOND: "Session is ready."
+
+FLOW:
+  entry_point: show_context
+  steps:
+    - show_context
+
+show_context:
+  REASONING: false
+  RESPOND: "Channel {{channel_name}}, language {{preferred_language}}, retries {{retry_count}}."
+  THEN: COMPLETE
+```
+
+## How it works
+
+`SET` assignments run before `RESPOND`. Assignment values are resolved against runtime session values. The flow can use the initialized variables immediately.
+
+## Common variations
+
+### Initialize project or campaign values
+
+Use constants or channel-supplied values for campaign and entry-state variables. This example uses constants; in a real channel integration, those values are usually copied from trusted session metadata.
+
+```yaml
+AGENT: Metadata_Init_Agent
+GOAL: "Copy startup metadata into session variables"
+
+ON_START:
+  SET: campaign_id = "summer-renewal"
+  SET: landing_page = "member portal"
+  RESPOND: "Welcome from {{landing_page}}."
+
+FLOW:
+  entry_point: ready
+  steps:
+    - ready
+
+ready:
+  REASONING: false
+  RESPOND: "Campaign {{campaign_id}} is active for this session."
+  THEN: COMPLETE
+```
+
+## Verification
+
+Start a session and inspect session values after initialization. Confirm `retry_count`, `channel_name`, and `preferred_language` are present before the first flow response. In traces, check `dsl_set` events with `source: on_start`.
+
+## Common mistakes
+
+| Mistake                                   | Why it happens                                         | How to avoid it                                                         |
+| ----------------------------------------- | ------------------------------------------------------ | ----------------------------------------------------------------------- |
+| Setting values that are not available yet | Startup runs before the first user turn.               | Use `ON_START SET` only for constants and pre-existing runtime context. |
+| Using different names later in the flow   | Startup values are easy to rename while drafting.      | Reuse the exact variable names in templates, `WHEN`, `PASS`, and tools. |
+| Collecting user input with startup `SET`  | Initialization and data collection get mixed together. | Use `GATHER` for user-provided values.                                  |
+
+## Troubleshooting
+
+If a variable renders as empty, verify the runtime path exists. For channel-specific fields, confirm the channel actually supplies the value before the session starts. If the value should come from the user, collect it with `GATHER` instead of startup `SET`.
+
+## Production readiness checklist
+
+- Initialize only values available before the first user turn.
+- Keep names consistent with later `WHEN`, `PASS`, and template references.
+- Avoid writing sensitive values unless they are needed.
+- Trace every startup assignment during validation.
+- Reset counters intentionally when a new session starts.

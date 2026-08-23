@@ -1,0 +1,143 @@
+---
+title: How to use EXECUTION.pipeline for agent routing, classification, and short-circuiting
+sidebarTitle: Use the execution pipeline
+---
+
+Use `EXECUTION.pipeline` when a supervisor or routing agent needs classifier-assisted routing before the normal reasoning path decides what to do.
+
+## Concept
+
+`EXECUTION.pipeline` is the agent execution pipeline, not a Knowledge Base ingestion pipeline, custom operational pipeline, or workflow. It sits in the agent execution path and can classify the user's message, compare the result with known routing targets, short-circuit obvious single-intent requests, and keep ambiguous or risky requests in the normal guided reasoning path.
+
+Use it when routing quality, latency, or tool selection depends on a fast classification pass. Do not use it to orchestrate long-running work. Durable waits, approvals, schedules, and multi-hour work belong in workflows.
+
+The pipeline is disabled by default unless the project-level gate and effective configuration enable it. Agent-level configuration can tune or opt out of behavior, but project configuration still matters for whether the pipeline actually runs.
+
+## Minimal working example
+
+```yaml
+SUPERVISOR: Support_Router
+GOAL: "Route support requests using classifier-assisted pipeline decisions"
+PERSONA: "Concise support routing supervisor"
+
+EXECUTION:
+  pipeline:
+    enabled: true
+    mode: sequential
+    model: "gpt-4.1-mini"
+    shortCircuit:
+      enabled: true
+      confidenceThreshold: 0.9
+    keywordVeto:
+      enabled: true
+      keywords: ["refund", "cancel", "fraud"]
+    intentBridge:
+      enabled: true
+      programmaticThreshold: 0.85
+      guidedThreshold: 0.5
+      outOfScopeDecline: true
+      multiIntentSignal: true
+
+HANDOFF:
+  - TO: Billing_Agent
+    WHEN: "The user asks about invoices, balances, billing errors, refunds, or payments"
+    SUMMARY: "User needs billing support"
+  - TO: Technical_Support_Agent
+    WHEN: "The user asks about device setup, errors, troubleshooting, or service outage"
+    SUMMARY: "User needs technical support"
+  - TO: General_Fallback_Agent
+    WHEN: "The request is unclear, unsupported, or does not match a specialist"
+    SUMMARY: "User needs clarification or general support"
+```
+
+```yaml
+AGENT: Billing_Agent
+GOAL: "Resolve billing, invoice, refund, and payment questions"
+PERSONA: "Billing specialist"
+```
+
+```yaml
+AGENT: Technical_Support_Agent
+GOAL: "Troubleshoot device, software, and service issues"
+PERSONA: "Technical support specialist"
+```
+
+```yaml
+AGENT: General_Fallback_Agent
+GOAL: "Clarify unclear support requests and route users to the right next step"
+PERSONA: "General support specialist"
+```
+
+## How it works
+
+The classifier first tries to identify the user's intent category. If there is one high-confidence intent with a known category, short-circuiting can let the router choose the target without spending a full reasoning turn.
+
+Short-circuiting is intentionally conservative. It does not fire for low-confidence results, `null` categories, multiple intents, disabled short-circuit config, or keyword-veto matches. Keyword veto is useful for words like `refund`, `cancel`, `fraud`, or sensitive tool names where you want guided reasoning or escalation to inspect the request before direct routing.
+
+`intentBridge` controls what happens after classification:
+
+| Tier         | Typical situation                                             | Expected behavior                                           |
+| ------------ | ------------------------------------------------------------- | ----------------------------------------------------------- |
+| Programmatic | Classification is confident enough for deterministic handling | Route or decline according to configured policy             |
+| Guided       | Classification is useful but not certain                      | Hide or prioritize routing choices while allowing reasoning |
+| Autonomous   | Classifier is absent, empty, or too uncertain                 | Let the normal reasoning path decide                        |
+
+Since none of the `HANDOFF` entries above declare `HISTORY`, each specialist now receives the full conversation history by default (the current platform default when `HISTORY` is omitted).
+
+## Common variations
+
+### Fast single-intent routing
+
+Enable `shortCircuit` for high-volume support routers where users usually ask one clear thing, such as "What is my balance?" or "My device will not start."
+
+### Sensitive keyword veto
+
+Enable `keywordVeto` when certain words should prevent direct short-circuiting. This keeps risky requests in guided reasoning even when the classifier is confident.
+
+### Multi-intent detection
+
+Enable `multiIntentSignal` when users often ask for more than one thing in a single turn, such as "Cancel my subscription and refund my last payment."
+
+### Out-of-scope decline
+
+Use `outOfScopeDecline` when the classifier can confidently detect that a request does not belong to any supported category.
+
+## Verification
+
+- Test a high-confidence single-intent request and confirm the intended specialist is selected.
+- Test a low-confidence or broad request and confirm it stays in guided reasoning.
+- Test a multi-intent request and confirm it does not short-circuit as a single route.
+- Test a veto keyword like `refund` or `fraud` and confirm short-circuiting is blocked.
+- Inspect traces for classifier result, confidence, selected category, veto keywords, and final route.
+
+## Production readiness checklist
+
+- Routing categories are distinct and map clearly to handoff targets.
+- Fallback target exists for unclear, unsupported, or no-match requests.
+- Project-level pipeline configuration is enabled where the agent is deployed.
+- Thresholds are tested against real utterances, not only synthetic examples.
+- Sensitive keywords are reviewed by product, support, and compliance owners.
+- Trace dashboards monitor classifier confidence, short-circuit rate, veto rate, fallback rate, and misroutes.
+
+## Common mistakes
+
+| Mistake                                      | Why it happens                     | How to avoid it                                                                               |
+| -------------------------------------------- | ---------------------------------- | --------------------------------------------------------------------------------------------- |
+| Treating `EXECUTION.pipeline` as a workflow  | Both use the word pipeline         | Use workflows for durable orchestration; use `EXECUTION.pipeline` for agent execution routing |
+| Enabling short-circuit for ambiguous routing | It looks faster                    | Keep a fallback path and use conservative confidence thresholds                               |
+| Forgetting project-level enablement          | Agent config looks complete        | Verify effective runtime pipeline config, not only ABL syntax                                 |
+| Missing fallback agent                       | The classifier cannot always match | Add a fallback route and test no-match requests                                               |
+
+## Troubleshooting
+
+| Symptom                                   | Likely cause                                                                 | What to check                                      |
+| ----------------------------------------- | ---------------------------------------------------------------------------- | -------------------------------------------------- |
+| Pipeline config compiles but does not run | Project gate is absent or disabled                                           | Check effective project pipeline config            |
+| Obvious request does not short-circuit    | Confidence below threshold, multiple intents, null category, or veto keyword | Inspect classifier trace data                      |
+| Sensitive request routes too quickly      | Keyword veto is missing or disabled                                          | Add sensitive keywords and retest                  |
+| Classifier invents a category             | Category is not in known routing set                                         | Confirm the route categories and fallback behavior |
+
+## Related articles
+
+- [How to configure EXECUTION.pipeline models, modes, thresholds, and fallbacks](/agent-platform/abl/howto/configure-agent-execution-pipeline).
+- [How to design a supervisor that routes users to specialist agents](/agent-platform/abl/howto/design-supervisor-routing-agent).

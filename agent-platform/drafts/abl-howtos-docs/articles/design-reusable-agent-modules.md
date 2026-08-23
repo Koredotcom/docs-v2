@@ -46,6 +46,8 @@ The supervisor is reusable because it routes to stable capability agents. The sp
 
 In a large project, keep the reusable boundary visible in three places: the agent goal, the routing condition, and the context package. If those three disagree, reuse becomes fragile.
 
+Since neither `HANDOFF` above declares `HISTORY`, each specialist now receives the full conversation history by default (the current platform default when `HISTORY` is omitted).
+
 ## Common variations
 
 ### Shared specialist agent
