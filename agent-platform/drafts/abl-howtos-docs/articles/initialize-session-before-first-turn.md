@@ -16,7 +16,7 @@ GOAL: "Initialize session values before the first flow step"
 
 ON_START:
   SET: retry_count = 0
-  SET: channel_name = session.interaction.current.channel
+  SET: channel_name = session.channel
   SET: preferred_language = session.interaction.current.language
   RESPOND: "Session is ready."
 

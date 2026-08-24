@@ -42,6 +42,8 @@ The refund agent owns policy explanation, not payment actions. Its limitation is
 
 This separation matters in enterprise assistants because customers do not care which internal team owns an issue. They ask naturally. The agent goal and limitations keep the self-service experience helpful while preventing the wrong agent from taking a sensitive action.
 
+Since the `HANDOFF` above omits `HISTORY`, `Billing_Specialist` now receives the full conversation history by default (the current platform default when `HISTORY` is omitted) — set an explicit `HISTORY` strategy if you want bounded or summary-only context instead.
+
 ## Common variations
 
 ### Short persona
