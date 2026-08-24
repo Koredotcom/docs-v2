@@ -87,6 +87,10 @@ start:
 
 The welcome message presents choices. The flow gathers `startup_choice`. The handoff conditions use that same field. The specialist agents are included so the compiler and deployment can resolve the targets.
 
+`startup_choice` is declared both at the top level and inside `capture_choice`. Keep only the flow-step `GATHER` if the field is only ever collected inside that step; a top-level declaration is only needed if `HANDOFF` conditions must reference the field before the flow step that collects it has run in a given turn. When in doubt, declare the field once, in the flow step that actually collects it.
+
+Since neither `HANDOFF` example above declares `HISTORY`, each specialist now receives the full conversation history by default (the current platform default when `HISTORY` is omitted).
+
 ## Common variations
 
 ### Route from a known entry topic

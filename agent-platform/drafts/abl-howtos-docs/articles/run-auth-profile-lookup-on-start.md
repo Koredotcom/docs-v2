@@ -55,7 +55,7 @@ GOAL: "Welcome authenticated users and avoid exposing account data before identi
 
 ON_START:
   BRANCHES:
-    - IF: session.account_id != ""
+    - IF: session.account_id IS SET
       RESPOND: "Welcome. I found your account context."
     - ELSE:
       RESPOND: "Welcome. Please sign in before account-specific actions."

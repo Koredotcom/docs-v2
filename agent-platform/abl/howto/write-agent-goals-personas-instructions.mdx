@@ -1,0 +1,117 @@
+---
+title: How to write effective agent goals, personas, instructions, and limitations
+sidebarTitle: Goals, personas, limitations
+---
+
+Use this pattern when an agent needs a clear job boundary, a consistent voice, and explicit limits that prevent it from taking work owned by another agent, tool, workflow, or human team.
+
+## Concept
+
+An agent definition needs more than a name. The `GOAL` says what outcome the agent owns. `PERSONA` describes how it should communicate while doing that work. `LIMITATIONS` define what it must not do. Together, these sections give the runtime enough identity to build useful prompts and give your project team a stable contract for routing, testing, and escalation.
+
+Write the goal as an owned responsibility, not a slogan. Write the persona as observable behavior, not a brand adjective list. Write limitations as enforceable boundaries that point to the next action when possible.
+
+## Minimal working example
+
+```yaml
+AGENT: Refund_Policy_Agent
+GOAL: "Answer refund policy questions and explain next steps without creating refund requests"
+PERSONA: |
+  Calm policy specialist.
+  Uses short answers first, then offers details.
+  Separates confirmed policy facts from suggested next steps.
+
+LIMITATIONS:
+  - "Does not approve refunds"
+  - "Does not change order or payment records"
+  - "Routes payment disputes to Billing_Specialist"
+
+HANDOFF:
+  - TO: Billing_Specialist
+    WHEN: "The user asks to dispute a charge, reverse a payment, or override a refund decision"
+    PASS: [order_id, customer_id]
+    SUMMARY: "User needs billing or payment-dispute help"
+```
+
+```yaml
+AGENT: Billing_Specialist
+GOAL: "Handle billing and payment-dispute requests"
+PERSONA: "Billing specialist"
+```
+
+## How it works
+
+The refund agent owns policy explanation, not payment actions. Its limitation is not just "do not process refunds"; it also names the correct boundary for disputes. The `HANDOFF` makes that boundary executable by routing charge disputes to `Billing_Specialist`.
+
+This separation matters in enterprise assistants because customers do not care which internal team owns an issue. They ask naturally. The agent goal and limitations keep the self-service experience helpful while preventing the wrong agent from taking a sensitive action.
+
+Since the `HANDOFF` above omits `HISTORY`, `Billing_Specialist` now receives the full conversation history by default (the current platform default when `HISTORY` is omitted) — set an explicit `HISTORY` strategy if you want bounded or summary-only context instead.
+
+## Common variations
+
+### Short persona
+
+Use a one-line persona for simple specialists:
+
+```yaml
+AGENT: Billing_Answer_Agent
+GOAL: "Answer billing questions without changing account records"
+PERSONA: "Concise billing specialist who explains account actions clearly"
+```
+
+### Multiline persona
+
+Use a multiline persona when tone, format, and operating style matter:
+
+```yaml
+AGENT: Identity_Verification_Agent
+GOAL: "Verify user identity before sensitive account actions"
+PERSONA: |
+  Direct and reassuring.
+  Confirms critical identifiers before explaining next steps.
+  Avoids legal or financial promises.
+```
+
+### IDENTITY section
+
+Some projects use `IDENTITY:` to group role, persona, expertise, and limitations. Use it only when the project standard prefers that shape; otherwise, `GOAL`, `PERSONA`, and `LIMITATIONS` are easier to scan.
+
+## Verification
+
+- Test an in-scope request and confirm the agent answers directly.
+- Test a boundary request and confirm it hands off, delegates, or declines instead of improvising.
+- Test a sensitive request, such as refund approval or payment reversal, and confirm the limitation is respected.
+- Inspect the handoff target and passed fields so the receiving agent has enough context.
+
+## Production readiness checklist
+
+- Every agent has one primary responsibility.
+- Limitations name prohibited work and the correct next path.
+- Routing conditions align with the same boundaries described in limitations.
+- Sensitive actions are handled by the right specialist, workflow, tool, or human escalation.
+- Test cases cover in-scope, adjacent, out-of-scope, and ambiguous requests.
+
+## Common mistakes
+
+| Mistake                         | Why it happens                                       | How to avoid it                                                               |
+| ------------------------------- | ---------------------------------------------------- | ----------------------------------------------------------------------------- |
+| Goal is too broad               | The agent becomes a catch-all                        | Use one owned outcome per agent                                               |
+| Persona is only branding        | It does not guide behavior                           | Describe response style, confirmation behavior, and tone                      |
+| Limitations have no route       | The agent knows what not to do but not what next     | Pair important limits with handoff, delegate, escalation, or refusal behavior |
+| Limitations conflict with tools | A tool enables an action the agent says it cannot do | Review tools and limitations together                                         |
+
+## Troubleshooting
+
+| Symptom                                | Likely cause                                | What to check                                   |
+| -------------------------------------- | ------------------------------------------- | ----------------------------------------------- |
+| Agent answers outside its scope        | Goal or limitations are too broad           | Tighten the goal and add boundary tests         |
+| Agent refuses too much                 | Limitations are written as general warnings | Rewrite them as specific prohibited actions     |
+| Handoff happens without useful context | `PASS` fields are missing or unset          | Confirm field sources and target-agent needs    |
+| Two agents claim the same request      | Responsibilities overlap                    | Rewrite goals around ownership, not departments |
+
+---
+
+**Related articles**
+
+- [How to define clear responsibilities for each enterprise agent](/agent-platform/abl/howto/define-agent-responsibilities).
+- [How to design a supervisor that routes users to specialist agents](/agent-platform/abl/howto/design-supervisor-routing-agent).

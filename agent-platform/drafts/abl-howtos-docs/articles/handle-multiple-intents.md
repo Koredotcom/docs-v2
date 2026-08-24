@@ -1,24 +1,28 @@
 # How to handle messages that contain multiple user intents
 
-Multi-intent routing handles a single message such as “check my balance, pay my bill, and update my address.” ABL exposes `MULTI_INTENT` so the supervisor can queue, sequence, fan out, or ask the user to disambiguate depending on strategy and relationship between intents.
+Use this pattern when customers naturally bundle several tasks into a single message, such as "check my balance, pay my bill, and update my address." The `MULTI_INTENT:` section lets the agent detect, triage, and dispatch those intents instead of silently dropping secondary requests.
 
-Use this when customers naturally bundle tasks and the experience should not drop secondary intents.
+## Concept
 
-## How the pattern works
+When a user message contains more than one intent, ABL can detect the individual intents, assess their relationships, and handle them according to a configurable strategy. The `MULTI_INTENT:` section is a top-level ABL block available on both `AGENT:` and `SUPERVISOR:` declarations.
 
-1. The supervisor receives the user message and keeps ownership until a route matches.
-2. Intent categories, runtime context, gathered values, or tool results provide the routing evidence.
-3. `HANDOFF` entries are evaluated in the authored order and the matching child receives only the declared context.
-4. If the child is temporary, it returns through `ON_RETURN`; if it owns the conversation, it remains the active agent.
+The system uses three layers to decide multi-intent behavior:
 
-## Design choices
+1. **Agent-level** — the `MULTI_INTENT:` section in the agent's ABL.
+2. **Project-level** — the project runtime configuration (set in Studio or via API).
+3. **Platform defaults** — built-in fallback values.
 
-- `primary_queue` handles the best intent first and queues alternatives.
-- `sequential` queues all detected work in order when later intents depend on earlier results.
-- `parallel` is only safe for supervisor fan-out to independent agent targets; runtime downgrades unsafe cases.
-- `disambiguate` asks the user to choose when detected intents are ambiguous.
+Agent-level settings take precedence over project-level, which takes precedence over platform defaults.
 
-## Validated example
+When multi-intent detection is enabled, the NLU pipeline assesses the relationship between detected intents as one of:
+
+- **independent** — intents can be handled in any order with no dependency between them.
+- **dependent** — later intents require results from earlier ones.
+- **ambiguous** — the system cannot determine the relationship.
+
+This assessment drives strategy resolution, especially for the `auto` strategy.
+
+## Minimal working example
 
 ```abl
 SUPERVISOR: Multi_Intent_Service_Supervisor
@@ -39,21 +43,21 @@ INTENTS:
 HANDOFF:
   - TO: Balance_Agent
     WHEN: intent.category == "check_balance"
-    EXPECT_RETURN: true
+    RETURN: true
     CONTEXT:
       pass: [customer_id, account_id]
       summary: "Customer wants to check balance."
 
   - TO: Bill_Payment_Agent
     WHEN: intent.category == "pay_bill"
-    EXPECT_RETURN: true
+    RETURN: true
     CONTEXT:
       pass: [customer_id, account_id]
       summary: "Customer wants to pay a bill."
 
   - TO: Address_Update_Agent
     WHEN: intent.category == "update_address"
-    EXPECT_RETURN: true
+    RETURN: true
     CONTEXT:
       pass: [customer_id]
       summary: "Customer wants to update address."
@@ -68,35 +72,230 @@ AGENT: Address_Update_Agent
 GOAL: "Handle address changes"
 ```
 
-## Common variations
+The `customer_id` and `account_id` variables passed via `CONTEXT: pass:` must be gathered, set from runtime context, or populated by a tool result before the handoff executes. These are project-local assumptions — replace them with the actual variable names your agents produce.
 
-- Primary intent plus queued alternatives.
-- Sequential dependent work such as authenticate, then payment, then confirmation.
-- Parallel supervisor fan-out for independent service tasks.
+When `history:` is omitted on a `HANDOFF`, the child agent receives the full parent conversation history (the current platform default is `full`).
+
+## How it works
+
+1. The agent receives the user message and multi-intent detection runs as part of the NLU pipeline.
+2. Detected intents are filtered by `confidence_threshold` — only intents above the threshold are considered.
+3. The number of considered intents is capped at `max_intents`.
+4. The NLU layer assesses the relationship between the intents (independent, dependent, or ambiguous).
+5. The `strategy` (or `auto` resolution based on the relationship assessment) determines how intents are dispatched.
+6. For `primary_queue` and `sequential`, queued intents are surfaced after the current intent completes. Queued intents expire after `queue_max_age_ms` milliseconds.
+
+## MULTI_INTENT properties
+
+| Property                        | Type    | Default         | Valid range                                                       | Description                                                                                                                                                |
+| ------------------------------- | ------- | --------------- | ----------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `enabled`                       | boolean | `true`          | true/false                                                        | Whether multi-intent detection is active.                                                                                                                  |
+| `strategy`                      | string  | `primary_queue` | `primary_queue`, `sequential`, `parallel`, `disambiguate`, `auto` | How detected intents are dispatched.                                                                                                                       |
+| `unknown_relationship_strategy` | string  | `parallel`      | `sequential`, `parallel`, `disambiguate`                          | Fallback strategy when the intent relationship cannot be determined. Used by the `auto` strategy and supervisor routing when relationship data is missing. |
+| `max_intents`                   | integer | `3`             | 1 - 10                                                            | Maximum number of intents to consider per message.                                                                                                         |
+| `confidence_threshold`          | number  | `0.6`           | 0.0 - 1.0                                                         | Minimum confidence for a secondary intent to be accepted.                                                                                                  |
+| `queue_max_age_ms`              | integer | `600000`        | 0 - 3,600,000                                                     | Time-to-live for queued intents in milliseconds. Expired intents are dropped.                                                                              |
+
+## Strategy reference
+
+### primary_queue (default)
+
+Handle the highest-confidence intent immediately and queue the rest. After the primary intent completes, the agent surfaces queued intents one by one for confirmation. The user can accept, decline, or let them expire.
+
+### sequential
+
+Execute detected intents one at a time in authored or detected order. Context from earlier intents carries forward. Use when later intents depend on earlier results — for example, authenticate first, then process payment, then send confirmation.
+
+```abl
+AGENT: Sequential_Support
+GOAL: "Handle dependent support requests in order"
+
+MULTI_INTENT:
+  strategy: sequential
+  max_intents: 4
+  confidence_threshold: 0.7
+
+FLOW:
+  entry_point: detect
+  steps:
+    - detect
+    - authenticate
+    - payment
+    - confirmation
+
+detect:
+  REASONING: false
+  ON_INPUT:
+    - IF: input contains "pay"
+      THEN: authenticate
+    - ELSE:
+      RESPOND: "How can I help?"
+      THEN: COMPLETE
+
+authenticate:
+  REASONING: false
+  RESPOND: "Authentication complete."
+  THEN: payment
+
+payment:
+  REASONING: false
+  RESPOND: "Payment processed."
+  THEN: confirmation
+
+confirmation:
+  REASONING: false
+  RESPOND: "Confirmation sent."
+  THEN: COMPLETE
+```
+
+### parallel
+
+Fan out to sub-agents simultaneously. Only available for supervisor agents that route to independent child agents. The runtime enforces safety:
+
+- If the agent is not a supervisor, `parallel` downgrades to `sequential`.
+- If the relationship between intents is `dependent`, `parallel` downgrades to `sequential`.
+- If the relationship is `ambiguous`, `parallel` downgrades to `disambiguate`.
+
+```abl
+SUPERVISOR: Parallel_Service_Supervisor
+GOAL: "Handle independent customer requests in parallel"
+
+MULTI_INTENT:
+  enabled: true
+  strategy: parallel
+  unknown_relationship_strategy: parallel
+
+HANDOFF:
+  - TO: Billing_Specialist
+    WHEN: intent.category == "billing"
+    RETURN: true
+    CONTEXT:
+      pass: [customer_id]
+
+  - TO: Shipping_Specialist
+    WHEN: intent.category == "shipping"
+    RETURN: true
+    CONTEXT:
+      pass: [customer_id, order_id]
+
+AGENT: Billing_Specialist
+GOAL: "Handle billing inquiries"
+
+AGENT: Shipping_Specialist
+GOAL: "Handle shipping inquiries"
+```
+
+### disambiguate
+
+Present detected intents to the user and ask which to handle first. The user selects by number or by exact intent name. The disambiguation prompt text is customizable.
+
+### auto
+
+Let the model decide the strategy at runtime based on the assessed relationship between intents:
+
+- **independent** intents on a supervisor resolve to `parallel`; on a non-supervisor, they resolve to `sequential`.
+- **dependent** intents resolve to `sequential` regardless of agent type.
+- **ambiguous** intents resolve to `disambiguate`.
+
+```abl
+SUPERVISOR: Auto_Router
+GOAL: "Route customer requests using relationship-aware strategy"
+
+MULTI_INTENT:
+  strategy: auto
+  unknown_relationship_strategy: sequential
+  max_intents: 5
+
+INTENTS:
+  billing: "Billing and payment questions."
+  technical: "Technical support and troubleshooting."
+  account: "Account management tasks."
+
+HANDOFF:
+  - TO: Billing_Agent
+    WHEN: intent.category == "billing"
+    RETURN: true
+
+  - TO: Technical_Agent
+    WHEN: intent.category == "technical"
+    RETURN: true
+
+  - TO: Account_Agent
+    WHEN: intent.category == "account"
+    RETURN: true
+
+AGENT: Billing_Agent
+GOAL: "Handle billing questions"
+
+AGENT: Technical_Agent
+GOAL: "Handle technical support"
+
+AGENT: Account_Agent
+GOAL: "Handle account management"
+```
+
+## Customizing user-facing prompts
+
+The disambiguation and queue-surfacing prompts can be customized through the `MESSAGES:` block:
+
+```abl
+MESSAGES:
+  multi_intent_disambiguate_header: "I noticed your message may contain multiple requests. Which would you like me to help with first?"
+  multi_intent_disambiguate_option: "{{index}}. {{intent}} (confidence: {{confidence}})"
+  multi_intent_disambiguation_reprompt: "Please choose an option, pause, or cancel."
+  multi_intent_queued_notice: "I will address your other requests after completing the current one."
+  multi_intent_queued_follow_up: "Next: {{next_intent}}. Would you like me to help with that?"
+```
 
 ## Verification
 
-- Parse the ABL and confirm there are no parser errors or parser warnings.
-- Compile the ABL and confirm there are no compiler errors or compiler warnings.
-- Test at least one matching utterance for each route and one utterance for the fallback or clarification path.
-- Inspect traces for the selected target, condition result, passed context, and return behavior when `EXPECT_RETURN: true` is used.
+- Parse and compile the ABL to confirm there are no errors or warnings.
+- Send a test utterance that contains two or more intents covered by your `INTENTS:` or `HANDOFF:` conditions.
+- Inspect traces for `multi_intent_plan_built` to confirm the detected strategy and targets.
+- For `primary_queue`, check for `multi_intent_queue_surfaced` traces when the primary intent completes.
+- For `disambiguate`, check for `multi_intent_disambiguate_choice` traces.
+- For `parallel`, check for `multi_intent_parallel_executed` traces.
+- Confirm that a single-intent utterance bypasses multi-intent handling and routes normally.
+- Test a message where all intents fall below `confidence_threshold` to verify fallback behavior.
 
-## Production checklist
+## Production readiness checklist
 
 - Every specialist route has a clear owner and a concise context summary.
 - Deterministic conditions use declared, gathered, tool-result, runtime, or returned fields.
 - Semantic conditions are quoted as natural-language `WHEN` text.
-- Temporary child agents produce every field mapped in `ON_RETURN`.
+- Temporary child agents (with `RETURN: true`) produce every field mapped in `ON_RETURN`.
 - Fallback behavior is explicit and does not hide missing intent coverage.
+- `max_intents` is set to a value that matches realistic customer behavior (typically 2-5); values above 5 may degrade conversation quality.
+- `confidence_threshold` is tuned to avoid false positives from low-confidence secondary intents.
+- `queue_max_age_ms` is set to a reasonable session window (default 600,000 ms = 10 minutes; maximum 3,600,000 ms = 1 hour).
+- For `parallel` strategy on a supervisor, confirm all target agents can operate independently.
+- Consider setting `unknown_relationship_strategy` to `sequential` or `disambiguate` if safety is more important than speed.
+- If using `auto` strategy, test with messages that produce each relationship type (independent, dependent, ambiguous).
+- Review and customize disambiguation and queue prompts via `MESSAGES:` for your brand voice.
 
 ## Common mistakes
 
-- Do not enable parallel fan-out for dependent work.
-- Do not set `max_intents` so high that the user loses control of the conversation.
-- Do not assume queued intents survive forever; queue age is configurable.
+| Mistake                                       | Why it happens                                        | How to avoid it                                                                                                               |
+| --------------------------------------------- | ----------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| Enabling `parallel` on a non-supervisor agent | Only supervisors can fan out to sub-agents            | The runtime automatically downgrades to `sequential`, but configure it explicitly to avoid confusion                          |
+| Setting `max_intents` above 5                 | Hoping to catch every possible intent                 | High values fragment the conversation; keep it at 3-5 for production                                                          |
+| Assuming queued intents never expire          | Not realizing `queue_max_age_ms` has a finite default | Set `queue_max_age_ms` to match your expected session duration                                                                |
+| Using `EXPECT_RETURN` instead of `RETURN`     | Copying from older examples                           | `EXPECT_RETURN` is a legacy alias; use `RETURN: true` or `RETURN: false`                                                      |
+| Omitting `unknown_relationship_strategy`      | Not realizing the field exists                        | The default is `parallel`; set it to `sequential` or `disambiguate` if your intents might have dependencies                   |
+| Using `parallel` for dependent work           | Assuming all fan-out is safe                          | With `auto` strategy the runtime detects this; with explicit `parallel` it downgrades dependent relationships to `sequential` |
+
+## Troubleshooting
+
+| Symptom                                        | Likely cause                                                                 | What to check                                                                                    |
+| ---------------------------------------------- | ---------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------ |
+| Secondary intents are silently dropped         | `confidence_threshold` is too high or `max_intents` is too low               | Lower `confidence_threshold` or increase `max_intents`; inspect `multi_intent_plan_built` traces |
+| Parallel routes execute sequentially           | Agent is not a supervisor, or intents have dependent/ambiguous relationships | Check traces for strategy downgrade; confirm the agent uses `SUPERVISOR:` declaration            |
+| Disambiguation prompt does not appear          | Strategy is not `disambiguate` (or `auto` with ambiguous relationships)      | Check `multi_intent_disambiguate_choice` traces; verify strategy config                          |
+| Queued intents expire before the user is asked | `queue_max_age_ms` is too short for the conversation flow                    | Increase `queue_max_age_ms` (max 3,600,000 ms)                                                   |
+| User sees default English prompts              | Custom `MESSAGES:` block not set                                             | Add customized `multi_intent_disambiguate_header` and `multi_intent_queued_notice` to MESSAGES   |
 
 ## Related HowTos
 
 - How to design a supervisor that routes users to specialist agents
-- How to decide when to delegate, hand off, or use a workflow
-- How to pass context between agents
+- How to route conversations based on user intent
+- How to ask a clarification question before routing

@@ -79,6 +79,8 @@ Short-circuiting is intentionally conservative. It does not fire for low-confide
 | Guided       | Classification is useful but not certain                      | Hide or prioritize routing choices while allowing reasoning |
 | Autonomous   | Classifier is absent, empty, or too uncertain                 | Let the normal reasoning path decide                        |
 
+Since none of the `HANDOFF` entries above declare `HISTORY`, each specialist now receives the full conversation history by default (the current platform default when `HISTORY` is omitted).
+
 ## Common variations
 
 ### Fast single-intent routing
