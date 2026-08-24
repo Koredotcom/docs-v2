@@ -16,7 +16,7 @@
 - **Improve verification and production checklist.** Replace generic "parse and compile" guidance with specific trace events and variable-sourcing checks.
 - **Add ON_FAILURE mention.** HANDOFF supports `ON_FAILURE` for pre-dispatch failures. The article should note this for production readiness.
 - **Expand common variations with actual examples.** The current "Common variations" section is a bullet list with no ABL code.
-- **Fix Related HowTos.** Use existing article file references, not free-text titles.
+- **Fix Related HowTos.** Replace the generic titles carried over from the original draft (several of which didn't correspond to any existing or planned article) with three titles that match articles actually published in this refresh round: `design-supervisor-routing-agent`, `route-by-user-intent`, `debug-routing-traces`.
 
 ## Evidence
 
@@ -266,11 +266,9 @@ When a specialist should return control after completing its task:
 
 ## Related HowTos
 
-- [Design a supervisor that routes users to specialist agents](design-supervisor-routing-agent.md)
-- [Route by user intent](route-by-user-intent.md)
-- [Pass context between agents](switch-active-agent.md)
-- [Route to a fallback agent](route-to-fallback-agent.md)
-- [Debug routing traces](debug-routing-traces.md)
+- How to design a supervisor that routes users to specialist agents
+- How to route conversations based on user intent
+- How to debug routing decisions in traces
 
 ```
 

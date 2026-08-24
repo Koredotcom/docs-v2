@@ -1,51 +1,9 @@
-# HowTo Review: route-with-supervisor-priority
-
-**Date:** 2026-08-21
-**Article:** `agent-platform/drafts/abl-howtos-docs/articles/route-with-supervisor-priority.md`
-**Topic:** 3.2 - Routing and multi-agent orchestration / route-with-supervisor-priority
-**Verdict:** update-needed
-
-## Proposed changes
-
-- **[Critical] Fix incorrect claim about child context**: Step 3 states "the matching child receives only the declared context." Since ABLP-3301 (~2026-08-04), omitting `HISTORY:` defaults to `full` -- the child receives the entire parent conversation history plus the declared PASS fields and summary. Updated to reflect this and added explicit `HISTORY: auto` to the auth gate example where summary-first behavior is intended.
-- **[Critical] Add fallback route and ON_FAILURE**: The original article had no fallback route for unmatched messages and no ON_FAILURE strategy. Added a fallback handoff with `WHEN: true` and `ON_FAILURE: RESPOND` to relevant entries, both verified as supported constructs.
-- **[Important] Declare PASS variables in SESSION memory or mark as project-local assumptions**: The original passes `customer_id`, `customer_tier`, `account_id`, `conversation_summary` without declaring them. Added these to MEMORY:SESSION and added a note about project-local assumptions.
-- **[Important] Expand "How the pattern works" with history default explanation**: Explained the `full` default history strategy, the priority-from-authored-order compilation, and when to use explicit `HISTORY:` or `PRIORITY:` fields.
-- **[Important] Add code examples to "Common variations"**: Each variation now has an ABL snippet showing the pattern, not just a bullet description.
-- **[Important] Add troubleshooting table**: Common symptoms, causes, and what to check.
-- **[Moderate] Add explicit PRIORITY variant**: Shows how to use the `PRIORITY:` field to override authored order.
-- **[Moderate] Improve verification section**: Added trace inspection guidance and expected routing decisions.
-- **[Moderate] Expand production readiness checklist**: Added history strategy awareness, variable declaration completeness, fallback path, and ON_FAILURE guidance.
-- **[Minor] Note CONTEXT shorthand support**: Mentioned that PASS/SUMMARY can appear at HANDOFF top-level instead of nested under CONTEXT.
-
-## Evidence
-
-| Claim                                                            | Current evidence                                                                                                                                                                                                                                                                                                                                                                                                              | Impact                                                                                                                                        |
-| ---------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
-| "the matching child receives only the declared context"          | `DEFAULT_HANDOFF_HISTORY_STRATEGY = 'full'` in `packages/compiler/src/platform/contracts/contract-source-data.ts`; runtime `resolveHistoryStrategy()` in `apps/runtime/src/services/execution/routing-executor.ts` falls through to this default when `history` is omitted; test assertion `expect(DEFAULT_HANDOFF_HISTORY_STRATEGY).toBe('full')` in `apps/runtime/src/__tests__/sessions/session-threading-context.test.ts` | **Critical** -- customers will not know child agents receive full parent conversation history, risking context leakage in sensitive scenarios |
-| Authored order determines evaluation priority                    | compiler.ts `priority: idx + 1` and routing-executor.ts `sorted = [...rules].sort((a, b) => (a.priority ?? Infinity) - (b.priority ?? Infinity))`                                                                                                                                                                                                                                                                             | Confirmed correct; article guidance to "put mandatory gates first" is sound                                                                   |
-| `is_authenticated != true` guard expression                      | ABLP-2996 fix (commit `91bb41f26a`) corrected single-segment root-level variable emission in expression-parser.ts; test `['status', 'state["status"]']`                                                                                                                                                                                                                                                                       | The article's guard is now correct; previously would have generated malformed evaluator code                                                  |
-| Quoted NL WHEN condition                                         | `isNaturalLanguageRoutingHint()` in `packages/compiler/src/platform/constructs/routing-condition-classifier.ts`; WHEN value preserved as-is by parser                                                                                                                                                                                                                                                                         | Confirmed valid                                                                                                                               |
-| `resume_intent` ON_RETURN action                                 | `BUILTIN_HANDOFF_ON_RETURN_ACTIONS = new Set(['continue', 'resume_intent'])` in routing-executor.ts                                                                                                                                                                                                                                                                                                                           | Confirmed valid                                                                                                                               |
-| ON_RETURN MAP validation                                         | `validate-cross-agent.ts` checks child field existence: "ON_RETURN maps child field ... but ... does not declare or obviously produce ..."                                                                                                                                                                                                                                                                                    | Confirmed valid; article's MAP uses `is_authenticated` which Authentication_Agent does produce via GATHER                                     |
-| `INITIAL:` is canonical keyword                                  | Parser comment in agent-based-parser.ts: "INITIAL: is canonical; initial_value: is accepted as a legacy alias"                                                                                                                                                                                                                                                                                                                | No impact (article shows no initialization)                                                                                                   |
-| Auto-guard applies to CONSTRAINTS, not HANDOFF WHEN              | `autoGuardConstraint()` called only in constraint compilation path in compiler.ts                                                                                                                                                                                                                                                                                                                                             | Not directly relevant to this article's WHEN conditions                                                                                       |
-| PASS variables fall back to type=string if not in SESSION memory | `resolvePassFields()` in compiler.ts                                                                                                                                                                                                                                                                                                                                                                                          | Undeclared PASS vars will compile but lose type/description metadata                                                                          |
-| No fallback route in original article                            | routing-executor.ts skips literal-true fallback rules during deterministic evaluation but uses them as reasoning fallback                                                                                                                                                                                                                                                                                                     | Gap -- unmatched messages have no explicit path                                                                                               |
-
-## Files to update after approval
-
-- `agent-platform/drafts/abl-howtos-docs/articles/route-with-supervisor-priority.md`
-- `agent-platform/drafts/abl-howtos-docs/evidence/route-with-supervisor-priority-2026-08-21-evidence.md`
-
+---
+title: How to design supervisor routing with priority gates
+sidebarTitle: Routing priority gates
 ---
 
-## Proposed replacement article body
-
-````markdown
-# How to design supervisor routing with priority gates
-
-Use this pattern when your supervisor must enforce mandatory checks -- authentication, fraud screening, regulatory consent, or VIP escalation -- before the reasoning model selects a business route.
+Use this pattern when your supervisor must enforce mandatory checks — authentication, fraud screening, regulatory consent, or VIP escalation — before the reasoning model selects a business route.
 
 ## Concept
 
@@ -60,7 +18,7 @@ When a gate hands off with `EXPECT_RETURN: true`, the child agent runs and then 
 
 ### History default
 
-When you omit `HISTORY:` on a handoff, the platform default is `full` -- the child agent receives the entire parent conversation history. This is important to understand because:
+When you omit `HISTORY:` on a handoff, the platform default is `full` — the child agent receives the entire parent conversation history. This is important to understand because:
 
 - For temporary gate agents (authentication, compliance), you may want `HISTORY: auto` (summary-first, falling back to the last 5 messages) or `HISTORY: none` to avoid passing unnecessary context.
 - For permanent ownership transfers (billing specialist), `full` is usually appropriate so the specialist has complete conversation context.
@@ -69,7 +27,7 @@ The supported history strategies are: `full` (default), `auto`, `none`, `summary
 
 ## Minimal working example
 
-```abl
+```yaml
 SUPERVISOR: Priority_Routing_Supervisor
 GOAL: "Apply mandatory gates before semantic routing"
 
@@ -164,7 +122,6 @@ GOAL: "Resolve account requests"
 AGENT: Support_Agent
 GOAL: "Resolve support requests"
 ```
-````
 
 ## How it works
 
@@ -182,7 +139,7 @@ GOAL: "Resolve support requests"
 
 Use `EXPECT_RETURN: true` with `ON_RETURN: action: resume_intent` so the supervisor reprocesses the original user intent after authentication completes. Set `HISTORY: auto` to give the auth agent only a summary instead of full conversation history.
 
-```abl
+```yaml
 HANDOFF:
   - TO: Auth_Gate
     WHEN: is_authenticated != true
@@ -201,7 +158,7 @@ HANDOFF:
 
 Place the VIP check after mandatory gates but before standard business routes. Use a quoted natural-language WHEN condition when the routing evidence comes from business context rather than a single ABL field.
 
-```abl
+```yaml
 HANDOFF:
   - TO: VIP_Concierge
     WHEN: "the customer has a platinum or enterprise tier and is requesting priority service"
@@ -215,7 +172,7 @@ HANDOFF:
 
 When you need to override the default authored-order priority, use the `PRIORITY:` field. Lower values are evaluated first.
 
-```abl
+```yaml
 HANDOFF:
   - TO: Compliance_Check
     WHEN: transaction_amount > 10000
@@ -243,7 +200,7 @@ HANDOFF:
 
 PASS, SUMMARY, and HISTORY can also appear as direct siblings of the handoff entry instead of nested under CONTEXT. Both forms are equivalent.
 
-```abl
+```yaml
 HANDOFF:
   - TO: Billing_Agent
     WHEN: intent.category == "billing"
@@ -256,7 +213,7 @@ HANDOFF:
 ## Verification
 
 - Parse the ABL and confirm there are no parser errors or warnings.
-- Compile the ABL and confirm there are no compiler errors. Review any warnings about undeclared field references -- these indicate variables that must be supplied at runtime from context, tool results, or project configuration.
+- Compile the ABL and confirm there are no compiler errors. Review any warnings about undeclared field references — these indicate variables that must be supplied at runtime from context, tool results, or project configuration.
 - Test each routing path with a representative utterance:
   - For the authentication gate: send any message when `is_authenticated` is not set. Expect the supervisor to route to Authentication_Agent.
   - For the VIP route: send "I need to speak with someone about my enterprise account" when the customer tier is platinum. Expect Priority_Care_Agent.
@@ -300,12 +257,10 @@ HANDOFF:
 | resume_intent does not re-route after gate return                    | The ON_RETURN action is set to `continue` instead of `resume_intent`, or the MAP does not update the gate variable | Set `action: resume_intent` in ON_RETURN and verify the MAP updates the condition variable (e.g., is_authenticated) |
 | Unmatched messages produce no response                               | No fallback route exists in the HANDOFF block                                                                      | Add a `WHEN: true` fallback entry as the last HANDOFF entry                                                         |
 
-## Related HowTos
+---
 
-- How to design a supervisor that routes users to specialist agents
-- How to route conversations based on user intent
-- How to route unclear requests to a fallback agent
+**Related articles**
 
-```
-
-```
+- [How to design a supervisor that routes users to specialist agents](/agent-platform/abl/howto/design-supervisor-routing-agent).
+- [How to route conversations based on user intent](/agent-platform/abl/howto/route-by-user-intent).
+- [How to route unclear requests to a fallback agent](/agent-platform/abl/howto/route-to-fallback-agent).

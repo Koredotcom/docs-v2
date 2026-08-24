@@ -1,44 +1,7 @@
-# HowTo Review: handle-multiple-intents
-
-**Date:** 2026-08-21
-**Article:** `agent-platform/drafts/abl-howtos-docs/articles/handle-multiple-intents.md`
-**Topic:** 3.6 - Handle messages that contain multiple user intents
-**Verdict:** update-needed
-
-## Proposed changes
-
-- Add `auto` strategy (the fifth strategy) with explanation of LLM-assessed intent relationship types (`independent`, `dependent`, `ambiguous`) and how `auto` resolves to concrete strategies.
-- Add `unknown_relationship_strategy` field documentation (default: `parallel`, valid values: `sequential`, `parallel`, `disambiguate`).
-- Add validation ranges for all numeric fields: `max_intents` 1-10, `confidence_threshold` 0.0-1.0, `queue_max_age_ms` 0-3,600,000.
-- Document all defaults explicitly: `enabled: true`, `strategy: primary_queue`, `unknown_relationship_strategy: parallel`, `max_intents: 3`, `confidence_threshold: 0.6`, `queue_max_age_ms: 600000`.
-- Change `EXPECT_RETURN: true` to `RETURN: true` (canonical form; `EXPECT_RETURN` is a legacy alias).
-- Add full parallel downgrade rules: non-supervisor agents -> sequential; dependent relationships -> sequential; ambiguous relationships -> disambiguate.
-- Add config precedence documentation: agent-level DSL > project-level runtime config > platform defaults.
-- Add that MULTI_INTENT works on both `AGENT:` and `SUPERVISOR:` declarations.
-- Add MESSAGES customization section for disambiguation and queue prompts.
-- Add note about HANDOFF `history` default being `full` when omitted.
-- Restructure article to match template: add Concept section, expand Common variations with real examples, convert mistakes/troubleshooting to table format, add proper verification with trace event types.
-- Add `sequential`, `disambiguate`, and `auto` strategy examples.
-- Fix Related HowTos: the original three titles didn't correspond to any existing or planned article; replaced with three that match articles actually published in this refresh round.
-
-## Evidence
-
-| Claim                                                                 | Current evidence                                                                                                                                  | Impact                                                                                          |
-| --------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------- |
-| Only 4 strategies (primary_queue, sequential, parallel, disambiguate) | `multi-intent-config.ts` MULTI_INTENT_STRATEGIES array includes `auto` as 5th strategy; `multi-intent-strategy.ts` resolveStrategy handles `auto` | Customer misses auto strategy capability                                                        |
-| unknown_relationship_strategy not mentioned                           | `multi-intent-config.ts` line 31 default `parallel`; `schema.ts` line 3017; `compiler.ts` lines 229-237 validation                                | Customer cannot configure fallback for unknown intent relationships                             |
-| No validation ranges shown                                            | `multi-intent-config.ts` lines 21-26: MIN/MAX constants for all numeric fields                                                                    | Customer may author out-of-range values and get silent compilation errors                       |
-| EXPECT_RETURN is legacy                                               | `agent-based-parser.ts` lines 5605-5610: EXPECT_RETURN parsed identically to RETURN; all current tests use RETURN                                 | Customer uses outdated keyword                                                                  |
-| Parallel downgrade logic incomplete                                   | `multi-intent-strategy.ts` lines 84-94: three downgrade paths                                                                                     | Customer cannot predict runtime behavior for parallel strategy                                  |
-| HANDOFF history default now `full`                                    | `contract-source-data.ts` line 3: `DEFAULT_HANDOFF_HISTORY_STRATEGY = 'full'`                                                                     | Example omits history; customer should know child receives full conversation history by default |
-| MULTI_INTENT works on AGENT: too                                      | `multi-intent-parse.test.ts` uses AGENT:; `MULTI_INTENT_MULTI_TURN_DSL` in regression tests uses AGENT:                                           | Customer incorrectly assumes supervisor-only                                                    |
-| MESSAGES customization not mentioned                                  | `constants.ts` lines 109-118; `nlu.mdx` line 434                                                                                                  | Customer cannot customize UX prompts for disambiguation/queue flows                             |
-| Config precedence not documented                                      | `multi-intent-types.ts` lines 209-227: resolveMultiIntentConfig                                                                                   | Customer cannot predict which config layer wins                                                 |
-
-## Proposed replacement article body
-
-````markdown
-# How to handle messages that contain multiple user intents
+---
+title: How to handle messages that contain multiple user intents
+sidebarTitle: Multiple intents
+---
 
 Use this pattern when customers naturally bundle several tasks into a single message, such as "check my balance, pay my bill, and update my address." The `MULTI_INTENT:` section lets the agent detect, triage, and dispatch those intents instead of silently dropping secondary requests.
 
@@ -48,23 +11,23 @@ When a user message contains more than one intent, ABL can detect the individual
 
 The system uses three layers to decide multi-intent behavior:
 
-1. **Agent-level** -- the `MULTI_INTENT:` section in the agent's ABL.
-2. **Project-level** -- the project runtime configuration (set in Studio or via API).
-3. **Platform defaults** -- built-in fallback values.
+1. **Agent-level** — the `MULTI_INTENT:` section in the agent's ABL.
+2. **Project-level** — the project runtime configuration (set in Studio or via API).
+3. **Platform defaults** — built-in fallback values.
 
 Agent-level settings take precedence over project-level, which takes precedence over platform defaults.
 
 When multi-intent detection is enabled, the NLU pipeline assesses the relationship between detected intents as one of:
 
-- **independent** -- intents can be handled in any order with no dependency between them.
-- **dependent** -- later intents require results from earlier ones.
-- **ambiguous** -- the system cannot determine the relationship.
+- **independent** — intents can be handled in any order with no dependency between them.
+- **dependent** — later intents require results from earlier ones.
+- **ambiguous** — the system cannot determine the relationship.
 
 This assessment drives strategy resolution, especially for the `auto` strategy.
 
 ## Minimal working example
 
-```abl
+```yaml
 SUPERVISOR: Multi_Intent_Service_Supervisor
 GOAL: "Handle messages that contain more than one customer intent"
 
@@ -111,16 +74,15 @@ GOAL: "Handle bill payment"
 AGENT: Address_Update_Agent
 GOAL: "Handle address changes"
 ```
-````
 
-The `customer_id` and `account_id` variables passed via `CONTEXT: pass:` must be gathered, set from runtime context, or populated by a tool result before the handoff executes. These are project-local assumptions -- replace them with the actual variable names your agents produce.
+The `customer_id` and `account_id` variables passed via `CONTEXT: pass:` must be gathered, set from runtime context, or populated by a tool result before the handoff executes. These are project-local assumptions — replace them with the actual variable names your agents produce.
 
 When `history:` is omitted on a `HANDOFF`, the child agent receives the full parent conversation history (the current platform default is `full`).
 
 ## How it works
 
 1. The agent receives the user message and multi-intent detection runs as part of the NLU pipeline.
-2. Detected intents are filtered by `confidence_threshold` -- only intents above the threshold are considered.
+2. Detected intents are filtered by `confidence_threshold` — only intents above the threshold are considered.
 3. The number of considered intents is capped at `max_intents`.
 4. The NLU layer assesses the relationship between the intents (independent, dependent, or ambiguous).
 5. The `strategy` (or `auto` resolution based on the relationship assessment) determines how intents are dispatched.
@@ -145,9 +107,9 @@ Handle the highest-confidence intent immediately and queue the rest. After the p
 
 ### sequential
 
-Execute detected intents one at a time in authored or detected order. Context from earlier intents carries forward. Use when later intents depend on earlier results -- for example, authenticate first, then process payment, then send confirmation.
+Execute detected intents one at a time in authored or detected order. Context from earlier intents carries forward. Use when later intents depend on earlier results — for example, authenticate first, then process payment, then send confirmation.
 
-```abl
+```yaml
 AGENT: Sequential_Support
 GOAL: "Handle dependent support requests in order"
 
@@ -197,7 +159,7 @@ Fan out to sub-agents simultaneously. Only available for supervisor agents that 
 - If the relationship between intents is `dependent`, `parallel` downgrades to `sequential`.
 - If the relationship is `ambiguous`, `parallel` downgrades to `disambiguate`.
 
-```abl
+```yaml
 SUPERVISOR: Parallel_Service_Supervisor
 GOAL: "Handle independent customer requests in parallel"
 
@@ -238,7 +200,7 @@ Let the model decide the strategy at runtime based on the assessed relationship 
 - **dependent** intents resolve to `sequential` regardless of agent type.
 - **ambiguous** intents resolve to `disambiguate`.
 
-```abl
+```yaml
 SUPERVISOR: Auto_Router
 GOAL: "Route customer requests using relationship-aware strategy"
 
@@ -279,7 +241,7 @@ GOAL: "Handle account management"
 
 The disambiguation and queue-surfacing prompts can be customized through the `MESSAGES:` block:
 
-```abl
+```yaml
 MESSAGES:
   multi_intent_disambiguate_header: "I noticed your message may contain multiple requests. Which would you like me to help with first?"
   multi_intent_disambiguate_option: "{{index}}. {{intent}} (confidence: {{confidence}})"
@@ -335,16 +297,10 @@ MESSAGES:
 | Queued intents expire before the user is asked | `queue_max_age_ms` is too short for the conversation flow                    | Increase `queue_max_age_ms` (max 3,600,000 ms)                                                   |
 | User sees default English prompts              | Custom `MESSAGES:` block not set                                             | Add customized `multi_intent_disambiguate_header` and `multi_intent_queued_notice` to MESSAGES   |
 
-## Related HowTos
+---
 
-- How to design a supervisor that routes users to specialist agents
-- How to route conversations based on user intent
-- How to ask a clarification question before routing
+**Related articles**
 
-```
-
-## Files to update after approval
-
-- `agent-platform/drafts/abl-howtos-docs/articles/handle-multiple-intents.md`
-- `agent-platform/drafts/abl-howtos-docs/evidence/handle-multiple-intents-2026-08-21-evidence.md`
-```
+- [How to design a supervisor that routes users to specialist agents](/agent-platform/abl/howto/design-supervisor-routing-agent).
+- [How to route conversations based on user intent](/agent-platform/abl/howto/route-by-user-intent).
+- [How to ask a clarification question before routing](/agent-platform/abl/howto/clarify-before-routing).
