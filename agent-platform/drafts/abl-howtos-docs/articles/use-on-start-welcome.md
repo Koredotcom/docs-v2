@@ -15,7 +15,7 @@ AGENT: On_Start_Welcome_Agent
 GOAL: "Run startup logic before the first user message"
 
 ON_START:
-  SET: startup_source = session.interaction.current.channel
+  SET: startup_source = session.channel
   RESPOND: "Hello. I am ready to help."
 
 FLOW:

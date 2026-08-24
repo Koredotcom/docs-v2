@@ -111,6 +111,8 @@ COMPLETE:
 
 The supervisor gathers `customer_id`, then passes it with `PASS`. `RETURN: true` on account support means bounded specialist work can return to the supervisor. `RETURN: false` on order status and live agent means the target keeps ownership.
 
+Since none of the `HANDOFF` entries above declare `HISTORY`, each specialist now receives the full conversation history by default (the current platform default when `HISTORY` is omitted). Also, because each `WHEN` here is a single-field comparison (`intent.category == "account"`), an unset field simply makes the comparison evaluate `false` — no error, and the trace shows your literal source text.
+
 ## Common variations
 
 ### Plain-language routing variation

@@ -105,6 +105,8 @@ PERSONA: "Escalation specialist"
 
 `intentBridge.programmaticThreshold` and `intentBridge.guidedThreshold` split routing into deterministic, guided, and autonomous behavior. Defaults exist, but production values should be tuned from real traffic.
 
+Since none of the `HANDOFF` entries in the full configuration example declare `HISTORY`, each specialist now receives the full conversation history by default (the current platform default when `HISTORY` is omitted).
+
 ## Common variations
 
 | Variation                              | Use when                                                                  | Configuration focus                                                    |
