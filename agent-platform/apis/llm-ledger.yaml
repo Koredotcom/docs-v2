@@ -1,0 +1,608 @@
+openapi: 3.1.0
+info:
+  title: ABL Public Analytics LLM Ledger API
+  version: 1.0.0
+  summary: Retrieve a project-scoped ledger of individual LLM calls.
+  description: |
+    Returns one row for every individual LLM call made in a project, with its model,
+    provider, token counts, latency, and cost. Calls are listed individually — nothing
+    is rolled up per conversation turn.
+
+    Use `dataMode` to control detail. `summary` returns the facts about each call.
+    `full` adds the exact prompt sent and response received under each call's `payload`,
+    so you do not need a second request to retrieve them.
+
+    Authenticate with the `x-api-key` header. The key must be bound to the project you
+    are querying and have `analytics:read` permission.
+  x-source-release: release_Artemis_1.5.0
+  x-source-commit: 267794d75528a9ecb5ed70822451e43f91c15212
+servers:
+  - url: https://{host}
+    variables: { host: { default: runtime.example.com } }
+security: [{ ApiKeyAuth: [] }]
+tags: [{ name: LLM Ledger }]
+paths:
+  /api/public/analytics/projects/{projectId}/llm-ledger:
+    get:
+      tags: [LLM Ledger]
+      operationId: listPublicLlmLedger
+      summary: List LLM calls
+      description: |
+        `fromDate` and `toDate` are required. `fromDate` is included in the results and
+        `toDate` is not, so a full day is
+        `fromDate=2026-08-04T00:00:00Z&toDate=2026-08-05T00:00:00Z`.
+
+        All other filters are optional and match exactly. Filters combine with AND, so
+        adding more narrows the results.
+
+        `source` and `sourceSubtype` also accept older spellings and translate them for
+        you — see those parameters for the details.
+      parameters:
+        - $ref: '#/components/parameters/ProjectId'
+        - name: fromDate
+          in: query
+          required: true
+          schema: { type: string, format: date-time }
+        - name: toDate
+          in: query
+          required: true
+          schema: { type: string, format: date-time }
+        - name: limit
+          in: query
+          description: |
+            How many calls to return. When `dataMode=full`, a page may come back with
+            fewer rows than requested so the response stays within the 1 MiB size limit
+            — check `hasMore` rather than assuming a short page is the last one.
+          schema: { type: integer, minimum: 1, maximum: 10000, default: 100 }
+        - name: offset
+          in: query
+          schema: { type: integer, minimum: 0, default: 0 }
+        - name: sessionIds
+          in: query
+          description: |
+            Filter to specific sessions. Pass up to 10,000 session IDs, comma-separated
+            or by repeating the parameter.
+          style: form
+          explode: false
+          schema: { type: array, maxItems: 10000, uniqueItems: true, items: { type: string, minLength: 1 } }
+        - name: channel
+          in: query
+          description: |
+            Filter by the channel the conversation took place on. Design-time calls,
+            such as Studio test calls, are not tied to a channel and will not match any
+            channel filter.
+
+            Matched exactly as stored, with no alias handling. Unlike the sessions
+            endpoint, shorthand such as `web` or `sms` is not expanded here — use the
+            exact channel name such as `web_chat` or `twilio_sms`.
+
+            Not restricted to a fixed list, so an unrecognised value returns no results
+            rather than an error. Cannot be empty (`400 INVALID_FILTER`).
+          schema:
+            type: string
+            enum: [http_async, slack, line, msteams, whatsapp, messenger, instagram, twilio_sms, zendesk, telegram, genesys, genesys_open_messaging, ai4w, kore_agent_assist, email, voice_vxml, korevg, audiocodes, genesys_audio_connector, voice_pipeline, voice_realtime, voice, voice_twilio, voice_livekit, ag_ui, a2a, sdk_websocket, web_debug, web_chat, api, http]
+        - name: source
+          in: query
+          description: |
+            Filter by which part of the platform made the call — for example `runtime`
+            for live agent traffic, or `evals` for evaluation runs.
+
+            You can pass either the current name or an older one; the older spellings
+            listed under `x-alias-groups` are translated for you, and matching is
+            case-insensitive with `-` and spaces treated as `_`. So `agent_session`
+            finds the same calls as `runtime`.
+
+            Not restricted to a fixed list, so an unrecognised value returns no results
+            rather than an error. Cannot be empty (`400 INVALID_FILTER`).
+          schema: { type: string, enum: [runtime, runtime_internal, arch, evals, pipelines, guardrails, knowledge, studio_test_calls, channels, agent_session, eval, analytics_pipeline, analytics_query, guardrail, search_ai, prompt_library, model_health, model_admin, 'health:credential-store', sdk_widget_localization] }
+          x-alias-groups:
+            runtime: [runtime, agent_session]
+            runtime_internal: [runtime_internal]
+            arch: [arch]
+            evals: [evals, eval]
+            pipelines: [pipelines, analytics_pipeline]
+            guardrails: [guardrails, guardrail]
+            knowledge: [knowledge, search_ai, analytics_query]
+            studio_test_calls: [studio_test_calls, prompt_library, model_health, model_admin, 'health:credential-store']
+            channels: [channels, sdk_widget_localization]
+        - name: sourceSubtype
+          in: query
+          description: |
+            Filter by the specific purpose of the call within its source — for example
+            `response_generation` for replies to users, or `guardrails` for safety
+            checks.
+
+            Older spellings are translated for you, as listed under `x-alias-groups`. If
+            you also pass `source`, translation is limited to that source's subtypes; on
+            its own, subtype names are resolved across all sources.
+
+            Not restricted to a fixed list, so an unrecognised value returns no results
+            rather than an error. Cannot be empty (`400 INVALID_FILTER`).
+          schema: { type: string, enum: [response_generation, conversation_history_compaction, ner_gather_llm_extraction, model_based_pii_entity_recognizer, model_entity_preview, llm_backed_validation, searchai_kb_query_intelligence, searchai_query_assistance, routing_pipeline, pipeline_classifier, pipeline_tool_filter, pipeline_merge, contextual_filler_generation, tool_result_summarization, sip_handoff_summary, semantic_execution, legacy_nlu_fallback, general_assistance, project_assistance, eval_remediation, evaluation_suite_generation, natural_language_analytics_query, text_to_sql, guardrails, studio_test_calls, widget_copy_translation, tool_use_iteration, response_gen, realtime_response, conversation_compaction, nlu_entity_extraction, kb_classify_rewrite, field_validation, agent_building, eval_suite_creation, eval_design_time_asset_generation, nl_to_sql, nl_query, query_intelligence, prompt_test, prompt_experiment, credential_health_check, translation_generation] }
+          x-alias-groups:
+            response_generation: [tool_use_iteration, response_gen, realtime_response]
+            conversation_history_compaction: [conversation_compaction]
+            ner_gather_llm_extraction: [nlu_entity_extraction]
+            searchai_kb_query_intelligence: [kb_classify_rewrite]
+            llm_backed_validation: [field_validation]
+            general_assistance: [agent_building]
+            evaluation_suite_generation: [eval_suite_creation, eval_design_time_asset_generation]
+            natural_language_analytics_query: [nl_to_sql, nl_query]
+            text_to_sql: [nl_to_sql]
+            searchai_query_assistance: [query_intelligence]
+            studio_test_calls: [prompt_test, prompt_experiment, credential_health_check]
+            widget_copy_translation: [translation_generation]
+        - name: status
+          in: query
+          description: |
+            Filter to successful or failed calls. Any other value is rejected with `400
+            INVALID_STATUS`.
+          schema: { type: string, enum: [success, failed] }
+        - name: model
+          in: query
+          description: |
+            Filter by model, using the exact model id as recorded, such as `gpt-4o`.
+            There is no fixed list, because each tenant can register its own models.
+            Calls recorded without a model id appear as `unknown` and can be found with
+            `model=unknown`. Cannot be empty (`400 INVALID_FILTER`).
+          schema: { type: string, minLength: 1 }
+        - name: provider
+          in: query
+          description: |
+            Filter by model provider, such as `openai` or `azure`. Calls recorded
+            without a provider appear as `unknown` and can be found with
+            `provider=unknown`.
+
+            Not restricted to a fixed list, so an unrecognised value returns no results
+            rather than an error. The values below are the providers the platform can
+            call. Cannot be empty (`400 INVALID_FILTER`).
+          schema: { type: string, minLength: 1, x-common-values: [openai, anthropic, azure, bedrock, microsoft_foundry, google, gemini, vertex, vertex_ai, google_vertex, cohere, groq, mistral, fireworks, togetherai, together, perplexity, deepseek, xai, openrouter, litellm, openai_compatible, ultravox, custom, mock, unknown] }
+        - name: environment
+          in: query
+          description: |
+            Filter by environment. Note that this endpoint stores `development` rather
+            than `dev` — unlike the sessions endpoint, which uses `dev`. Design-time
+            calls, such as Studio test calls, are not tied to an environment and will
+            not match this filter.
+
+            Matched exactly as stored. Not restricted to a fixed list, so an
+            unrecognised value returns no results rather than an error. Cannot be empty
+            (`400 INVALID_FILTER`).
+          schema: { type: string, enum: [development, staging, production, working-copy] }
+        - name: name
+          in: query
+          description: Exact effective agent name, operation type, or provider fallback.
+          schema: { type: string, minLength: 1 }
+        - name: channelType
+          in: query
+          description: Exact transport-specific channel type.
+          schema: { type: string, enum: [http_async, slack, line, msteams, whatsapp, messenger, instagram, twilio_sms, zendesk, telegram, genesys, genesys_open_messaging, ai4w, kore_agent_assist, email, voice_vxml, korevg, audiocodes, genesys_audio_connector, voice_pipeline, voice_realtime, voice, voice_twilio, voice_livekit, ag_ui, a2a, sdk_websocket, web_debug, web_chat, api, http] }
+        - name: dataMode
+          in: query
+          description: |
+            How much detail to return per call. `summary` returns the facts about each
+            call. `full` also includes the prompt sent and the response received, under
+            `payload`, where these were stored.
+          schema: { type: string, enum: [summary, full], default: summary }
+        - name: sortBy
+          in: query
+          schema: { type: string, enum: [timestamp, latencyMs, cost, totalTokens], default: timestamp }
+        - name: sortOrder
+          in: query
+          schema: { type: string, enum: [asc, desc], default: asc }
+      responses:
+        '200':
+          description: LLM ledger page returned successfully.
+          headers:
+            Cache-Control: { schema: { type: string }, example: 'private, no-store, max-age=0' }
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/LlmLedgerResponse' }
+              examples:
+                summary:
+                  summary: Summary mode
+                  value:
+                    success: true
+                    statusCode: 200
+                    total: 1
+                    limit: 100
+                    offset: 0
+                    dataMode: summary
+                    hasMore: false
+                    generations:
+                      - id: 'sess-1:call-1:2026-08-04T09:59:36.316Z:GPT-5.2:azure:1396:780:11659:0'
+                        model: GPT-5.2
+                        agentName: Support Agent
+                        provider: azure
+                        environment: production
+                        status: success
+                        inputTokens: 1396
+                        cachedTokens: 224
+                        completionTokens: 500
+                        reasoningTokens: 280
+                        outputTokens: 780
+                        totalTokens: 2176
+                        latencyMs: 11659
+                        timeToFirstTokenMs: 0
+                        streamingUsed: false
+                        cost: 0.42
+                        timestamp: '2026-08-04T09:59:36.316Z'
+                        sessionId: sess-1
+                        callId: call-1
+                        traceId: trace-1
+                        eventId: event-1
+                        source: runtime
+                        sourceSubtype: response_generation
+                        sourceLabel: Runtime
+                        sourceSubtypeLabel: Response Generation
+                        sourceId: agent-1
+                        channel: web_chat
+                        channelType: web_chat
+                        statusCode: 200
+                        payloadState: available
+                full:
+                  summary: Full mode with inline request and response
+                  value:
+                    success: true
+                    statusCode: 200
+                    total: 1
+                    limit: 100
+                    offset: 0
+                    dataMode: full
+                    hasMore: false
+                    generations:
+                      - id: 'sess-1:call-1:2026-08-04T09:59:36.316Z:GPT-5.2:azure:1396:780:11659:0'
+                        model: GPT-5.2
+                        agentName: Support Agent
+                        provider: azure
+                        environment: production
+                        status: success
+                        inputTokens: 1396
+                        cachedTokens: 224
+                        completionTokens: 500
+                        reasoningTokens: 280
+                        outputTokens: 780
+                        totalTokens: 2176
+                        latencyMs: 11659
+                        timeToFirstTokenMs: 0
+                        streamingUsed: false
+                        cost: 0.42
+                        timestamp: '2026-08-04T09:59:36.316Z'
+                        sessionId: sess-1
+                        callId: call-1
+                        traceId: trace-1
+                        eventId: event-1
+                        source: runtime
+                        sourceSubtype: response_generation
+                        sourceLabel: Runtime
+                        sourceSubtypeLabel: Response Generation
+                        sourceId: agent-1
+                        channel: web_chat
+                        channelType: web_chat
+                        statusCode: 200
+                        payloadState: available
+                        payload:
+                          request:
+                            model: GPT-5.2
+                            messages: [{ role: user, content: Hello }]
+                          response:
+                            text: 'How can I help?'
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '413': { $ref: '#/components/responses/ResponseTooLarge' }
+        '429': { $ref: '#/components/responses/RateLimited' }
+        '500': { $ref: '#/components/responses/InternalError' }
+        '503': { $ref: '#/components/responses/Unavailable' }
+components:
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: x-api-key
+      description: Project-bound API key. Do not send an Authorization header.
+  parameters:
+    ProjectId:
+      name: projectId
+      in: path
+      required: true
+      schema: { type: string, minLength: 1 }
+  schemas:
+    LlmLedgerResponse:
+      type: object
+      additionalProperties: false
+      required: [success, statusCode, total, limit, offset, dataMode, hasMore, generations]
+      properties:
+        success:
+          type: boolean
+          const: true
+          description: |
+            Always true on a successful response.
+        statusCode:
+          type: integer
+          const: 200
+          description: |
+            HTTP status code returned by the provider — 200 when the call succeeded.
+        total:
+          type: integer
+          minimum: 0
+          description: |
+            Total number of calls matching your filters, across all pages.
+        limit:
+          type: integer
+          minimum: 1
+          maximum: 10000
+          description: |
+            The page size applied to this response.
+        offset:
+          type: integer
+          minimum: 0
+          description: |
+            The offset applied to this response.
+        dataMode:
+          type: string
+          enum: [summary, full]
+          description: |
+            The detail level applied to this response, echoing your request.
+        hasMore:
+          type: boolean
+          description: |
+            Whether more pages are available after this one.
+        generations:
+          type: array
+          items: { $ref: '#/components/schemas/LlmGeneration' }
+          description: |
+            The LLM calls on this page.
+    LlmGeneration:
+      type: object
+      additionalProperties: false
+      required: [id, model, agentName, provider, environment, status, inputTokens, cachedTokens, completionTokens, reasoningTokens, outputTokens, totalTokens, latencyMs, timeToFirstTokenMs, streamingUsed, cost, timestamp, sessionId, callId, traceId, eventId, source, sourceSubtype, sourceLabel, sourceSubtypeLabel, sourceId, channel, channelType, statusCode, payloadState]
+      properties:
+        id: { type: string, description: Stable composite identifier derived from call attributes. }
+        model:
+          type: string
+          description: |
+            The model used, as recorded — for example `gpt-4o`. There is no fixed list,
+            since each tenant can register its own models. `unknown` when no model was
+            recorded.
+          minLength: 1
+        agentName: { type: string, description: Agent name, falling back to operation type or provider. }
+        provider:
+          type: string
+          description: |
+            The model provider, such as `openai` or `azure`. `unknown` when no provider
+            was recorded. The values below are the providers the platform can call, but
+            this is not a fixed list.
+          minLength: 1
+          x-common-values: [openai, anthropic, azure, bedrock, microsoft_foundry, google, gemini, vertex, vertex_ai, google_vertex, cohere, groq, mistral, fireworks, togetherai, together, perplexity, deepseek, xai, openrouter, litellm, openai_compatible, ultravox, custom, mock, unknown]
+        environment:
+          type: string
+          description: |
+            The environment the call ran in. Empty for design-time calls that have no
+            conversation behind them, such as Arch, evaluation runs, pipelines, and
+            Studio test calls.
+          enum: ['', development, staging, production, working-copy]
+        status:
+          type: string
+          enum: [success, failed]
+          description: |
+            Whether the call succeeded or failed.
+        inputTokens:
+          type: number
+          minimum: 0
+          description: |
+            Tokens in the prompt sent to the model.
+        cachedTokens:
+          type: number
+          minimum: 0
+          description: |
+            Input tokens served from the provider's prompt cache. These are part of inputTokens
+            and usually cost less.
+        completionTokens:
+          type: number
+          minimum: 0
+          description: |
+            Tokens the model generated as its answer, not counting reasoning tokens.
+        reasoningTokens:
+          type: number
+          minimum: 0
+          description: |
+            Tokens the model spent on internal reasoning. Billed as output but not part of the
+            visible answer.
+        outputTokens:
+          type: number
+          minimum: 0
+          description: |
+            All tokens the model produced — the answer plus any reasoning.
+        totalTokens:
+          type: number
+          minimum: 0
+          description: |
+            Input plus output tokens for this call.
+        latencyMs:
+          type: number
+          minimum: 0
+          description: |
+            Total time the call took, in milliseconds.
+        timeToFirstTokenMs:
+          type: [number, 'null']
+          minimum: 0
+          description: |
+            Time until the first token arrived, in milliseconds. Meaningful for streamed calls;
+            null otherwise.
+        streamingUsed:
+          type: boolean
+          description: |
+            Whether the response was streamed back token by token.
+        cost: { type: number, minimum: 0, description: Estimated cost. No currency field exists on this endpoint; values are implicitly USD. }
+        timestamp:
+          type: string
+          format: date-time
+          description: |
+            When the call was made.
+        sessionId:
+          type: string
+          description: |
+            The conversation this call belongs to. Empty for calls made outside a conversation,
+            such as Studio test calls.
+        callId:
+          type: string
+          description: |
+            Identifier of the individual LLM call.
+        traceId:
+          type: string
+          description: |
+            The trace this call belongs to. Use it to look the call up in the traces API.
+        eventId:
+          type: string
+          description: |
+            The trace event that recorded this call. Use it with the traces API for the full
+            execution context.
+        source:
+          type: string
+          description: |
+            Which part of the platform made the call. Older recorded spellings are
+            translated to the current name where possible; anything unrecognised is
+            returned as recorded.
+          enum: [runtime, runtime_internal, arch, evals, pipelines, guardrails, knowledge, studio_test_calls, channels]
+        sourceSubtype:
+          type: string
+          description: |
+            What the call was used for within its source, such as `response_generation`.
+            Older recorded spellings are translated to the current name where possible;
+            anything unrecognised is returned as recorded.
+          enum: [response_generation, conversation_history_compaction, ner_gather_llm_extraction, model_based_pii_entity_recognizer, model_entity_preview, llm_backed_validation, searchai_kb_query_intelligence, searchai_query_assistance, routing_pipeline, pipeline_classifier, pipeline_tool_filter, pipeline_merge, contextual_filler_generation, tool_result_summarization, sip_handoff_summary, semantic_execution, legacy_nlu_fallback, general_assistance, project_assistance, eval_remediation, evaluation_suite_generation, natural_language_analytics_query, text_to_sql, guardrails, studio_test_calls, widget_copy_translation]
+        sourceLabel:
+          type: string
+          description: |
+            A display-ready name for `source`, such as `Studio test calls`. If the
+            source is not one of the known values, its raw value is returned here
+            instead.
+          enum: [Runtime, 'Runtime Internal', Arch, Evals, Pipelines, Guardrails, Knowledge, 'Studio test calls', Channels]
+        sourceSubtypeLabel:
+          type: string
+          description: |
+            A display-ready name for `sourceSubtype`, such as `Response Generation`. The
+            25 labels below cover the known subtypes; anything else is returned as its
+            raw value, so this list is not exhaustive. Note that `routing_pipeline`
+            currently has no display name and is returned as `routing_pipeline`.
+          x-common-values: ['Response Generation', 'Conversation history compaction', 'NER / gather LLM extraction', 'Model-based PII/entity recognizer', 'Model entity preview', 'LLM-backed validation', 'SearchAI KB Query Intelligence', 'Pipeline classifier', 'Pipeline tool filter', 'Pipeline merge', 'Contextual filler generation', 'Tool-result summarization', 'SIP handoff summary', 'Semantic execution', 'SearchAI query assistance', 'Legacy NLU fallback', 'General assistance', 'Project assistance', 'Eval remediation', 'Evaluation suite generation', 'Natural-language analytics query', 'Text-to-SQL', 'Guardrails', 'Studio test calls', 'Widget copy translation']
+          x-label-map:
+            response_generation: 'Response Generation'
+            conversation_history_compaction: 'Conversation history compaction'
+            ner_gather_llm_extraction: 'NER / gather LLM extraction'
+            model_based_pii_entity_recognizer: 'Model-based PII/entity recognizer'
+            model_entity_preview: 'Model entity preview'
+            llm_backed_validation: 'LLM-backed validation'
+            searchai_kb_query_intelligence: 'SearchAI KB Query Intelligence'
+            pipeline_classifier: 'Pipeline classifier'
+            pipeline_tool_filter: 'Pipeline tool filter'
+            pipeline_merge: 'Pipeline merge'
+            contextual_filler_generation: 'Contextual filler generation'
+            tool_result_summarization: 'Tool-result summarization'
+            sip_handoff_summary: 'SIP handoff summary'
+            semantic_execution: 'Semantic execution'
+            searchai_query_assistance: 'SearchAI query assistance'
+            legacy_nlu_fallback: 'Legacy NLU fallback'
+            general_assistance: 'General assistance'
+            project_assistance: 'Project assistance'
+            eval_remediation: 'Eval remediation'
+            evaluation_suite_generation: 'Evaluation suite generation'
+            natural_language_analytics_query: 'Natural-language analytics query'
+            text_to_sql: 'Text-to-SQL'
+            guardrails: 'Guardrails'
+            studio_test_calls: 'Studio test calls'
+            widget_copy_translation: 'Widget copy translation'
+        sourceId:
+          type: string
+          description: |
+            Identifier of whatever made the call — usually the agent ID.
+        channel:
+          type: string
+          description: |
+            The channel the conversation took place on, exactly as recorded. Empty for
+            calls with no conversation behind them, such as Studio test calls.
+          enum: ['', http_async, slack, line, msteams, whatsapp, messenger, instagram, twilio_sms, zendesk, telegram, genesys, genesys_open_messaging, ai4w, kore_agent_assist, email, voice_vxml, korevg, audiocodes, genesys_audio_connector, voice_pipeline, voice_realtime, voice, voice_twilio, voice_livekit, ag_ui, a2a, sdk_websocket, web_debug, web_chat, api, http]
+        channelType:
+          type: string
+          description: Empty for calls made outside a channel session.
+          enum: ['', http_async, slack, line, msteams, whatsapp, messenger, instagram, twilio_sms, zendesk, telegram, genesys, genesys_open_messaging, ai4w, kore_agent_assist, email, voice_vxml, korevg, audiocodes, genesys_audio_connector, voice_pipeline, voice_realtime, voice, voice_twilio, voice_livekit, ag_ui, a2a, sdk_websocket, web_debug, web_chat, api, http]
+        statusCode:
+          type: integer
+          minimum: 100
+          maximum: 599
+          description: |
+            HTTP status code returned by the provider — 200 when the call succeeded.
+        payloadState:
+          type: string
+          enum: [available, omitted, missing, unknown]
+          description: |
+            Whether the prompt and response were kept for this call: `available` (returned when
+            dataMode=full), `omitted` (kept but not returned), `missing` (never kept), `unknown`
+            (not recorded).
+        payload:
+          $ref: '#/components/schemas/LlmPayload'
+          description: Present only in full mode when at least one stored payload side exists.
+    LlmPayload:
+      type: object
+      additionalProperties: false
+      required: [request, response]
+      properties:
+        request: { description: Exact stored request payload, or null when only a response is stored. }
+        response: { description: Exact stored response payload, or null when only a request is stored. }
+    ErrorEnvelope:
+      type: object
+      required: [error]
+      properties:
+        success:
+          type: boolean
+          const: false
+          description: |
+            Always false on an error response.
+        error:
+          description: |
+            Details of what went wrong. `code` is a stable machine-readable value; `message` is
+            human-readable.
+          type: object
+          required: [code, message]
+          properties:
+            code: { type: string }
+            message: { type: string }
+            details: { type: object, additionalProperties: true }
+        message:
+          type: string
+          description: Present on some authorization denials in addition to `error.message`.
+        required:
+          description: Permission(s) the caller was missing. Present on authorization denials.
+          oneOf: [{ type: string }, { type: array, items: { type: string } }]
+  responses:
+    BadRequest:
+      description: |
+        The request could not be understood. Common causes: `fromDate` or `toDate`
+        missing or not a valid timestamp, `fromDate` not earlier than `toDate`, an
+        unrecognised query parameter, an empty filter value, an invalid value for
+        `status`, `dataMode`, `sortBy` or `sortOrder`, or a `limit` or `offset` outside
+        the allowed range. The `error.code` says which.
+      content: { application/json: { schema: { $ref: '#/components/schemas/ErrorEnvelope' } } }
+    Unauthorized:
+      description: Missing or invalid `x-api-key`, or Authorization was supplied.
+      content: { application/json: { schema: { $ref: '#/components/schemas/ErrorEnvelope' } } }
+    Forbidden:
+      description: The key lacks `analytics:read`.
+      content: { application/json: { schema: { $ref: '#/components/schemas/ErrorEnvelope' } } }
+    NotFound:
+      description: Project not found or concealed because it is outside the key's scope.
+      content: { application/json: { schema: { $ref: '#/components/schemas/ErrorEnvelope' } } }
+    ResponseTooLarge:
+      description: One full-mode generation exceeds the 1 MiB response budget.
+      content: { application/json: { schema: { $ref: '#/components/schemas/ErrorEnvelope' } } }
+    RateLimited:
+      description: Tenant request rate limit exceeded.
+      content: { application/json: { schema: { $ref: '#/components/schemas/ErrorEnvelope' } } }
+    InternalError:
+      description: Unexpected LLM ledger query failure.
+      content: { application/json: { schema: { $ref: '#/components/schemas/ErrorEnvelope' } } }
+    Unavailable:
+      description: LLM ledger backing store unavailable.
+      content: { application/json: { schema: { $ref: '#/components/schemas/ErrorEnvelope' } } }
