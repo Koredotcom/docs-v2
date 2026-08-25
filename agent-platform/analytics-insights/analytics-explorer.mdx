@@ -9,9 +9,11 @@ The **Analytics Explorer** page monitors event volume, LLM performance, token co
 
 **Date range**: Set at the upper-right area of the page, for example **Last 7 days**. Every tab follows this range.
 
+**Filters**: Select **All environments** and **All channels** at the top of the page to narrow the data by deployment environment and channel. Filter selections are reflected in the page URL, so you can bookmark a filtered view or share it with a colleague.
+
 ![Analytics Explorer](/agent-platform/images/analytics-overview.png)
 
-The page organizes its detail into five tabs.
+The page organizes its detail into six tabs.
 
 | Tab                   | What it shows                                                            |
 |-----------------------|--------------------------------------------------------------------------|
@@ -19,6 +21,7 @@ The page organizes its detail into five tabs.
 | **LLM Performance**   | Model-level latency, token, error, and throughput metrics.               |
 | **Sessions Explorer** | Session-level records with filters, columns, and export.                 |
 | **Traces Explorer**   | Individual trace events, with timeline and waterfall views.              |
+| **Generations**       | Every recorded model call, with latency, token, and cost detail.        |
 | **Query**             | Ad-hoc SQL against project event data.                                   |
 
 ## Overview
@@ -59,11 +62,13 @@ Status chips filter the list to **All**, **Active**, **Completed**, **Escalated*
 |---------------------|-----------------------------------------------------------------------------------------|
 | **Search sessions** | Matches sessions by keyword.                                                            |
 | **Channel**         | Filters by the channel the session arrived on. Defaults to **All channels**.            |
-| **Environment**     | Filters by deployment environment, for example `dev`. Defaults to **All environments**. |
+| **Environment**     | Filters by deployment environment: `development`, `staging`, `production`, or `working-copy`. Defaults to **All environments**. |
 | **Source**          | Filters by session source. Defaults to **All sources**.                                 |
 | **Filters**         | Opens additional filter options.                                                        |
 
 Select **Columns** to choose which columns the table displays. Select **Export** to download the session list.
+
+<Note>Sessions started from a project's working copy — the pre-deployment draft — are recorded under the `working-copy` environment. Filter it out to keep pre-deployment testing from skewing your production metrics, or select it to review draft behavior on its own.</Note>
 
 ### Session list
 
@@ -84,7 +89,7 @@ Expand a row to see the full session ID, channel, trace event count, and last ac
 
 ## Traces explorer
 
-**Traces Explorer** inspects the individual events inside a session. Two sub-tabs divide the view: **Traces** for all execution events, and **Generations** for model generations.
+**Traces Explorer** inspects the individual events inside a session.
 
 ### Filter traces
 
@@ -124,12 +129,47 @@ An **LLM Call** event adds model execution detail: **Model**, **Provider**, **In
 
 A **Tool Call** event shows the **Tool** name, an expandable **Input**, and **Show raw data** for the unformatted payload.
 
+
+## Generations
+
+The **Generations** tab lists every model call the platform recorded, drawn from a unified LLM call ledger. The ledger captures calls from across the platform in one place — agent turns, pipeline runs, and guardrail evaluations alike — so you can account for model spend and latency across the whole project instead of one surface at a time.
+
+Use **Search generations** to match calls by keyword, **Filters** for additional filter options, **Columns** to choose which columns the table displays, and **Export** to download the list.
+
+### Generation list
+
+| Column           | Description                                                                                          |
+|------------------|------------------------------------------------------------------------------------------------------|
+| **Model**        | Model that served the call, for example `gpt-5.2`.                                                   |
+| **Name**         | Caller that issued the request — an agent name such as `MainSupervisor`, or an internal operation such as `pipeline_generate_text` or `guardrail_evaluation`. |
+| **Status**       | Outcome of the call, for example `Success`.                                                          |
+| **Channel**      | Channel the call originated on, for example `web_debug`. Shows `--` for calls not tied to a channel, such as pipeline runs. |
+| **Source**       | Part of the platform that issued the call. See [Sources](#sources).                                  |
+| **Latency**      | Time the call took end to end.                                                                       |
+| **Total Tokens** | Input and output tokens combined.                                                                    |
+| **Cost**         | Estimated cost for the call. Values below the display threshold show as `<$0.001`.                   |
+| **Start Time**   | Date and time the call started.                                                                      |
+| **TTFT**         | Time to first token. Shows `NA` when the call didn't report one.                                     |
+
+### Sources
+
+The **Source** column shows a readable label rather than an internal identifier, so you can tell at a glance which part of the platform issued a call.
+
+| Source               | What it covers                                                             |
+|----------------------|----------------------------------------------------------------------------|
+| **Runtime**          | Model calls agents make while handling conversations.                      |
+| **Runtime Internal** | Supporting model calls the runtime makes outside the agent's own turn.     |
+| **Pipelines**        | Model calls made by analytics pipelines, such as LLM-as-judge evaluations. |
+| **Guardrails**       | Model calls made while evaluating content against guardrail policies.      |
+
+<Note>Filter by **Source** to separate what your agents spend from what evaluation and safety checks spend. Pipeline and guardrail calls run on every qualifying conversation, so they can account for a large share of total calls without appearing in any single agent's numbers.</Note>
+
 ## Query
 
 The **Query** tab runs SQL against project event data for investigations the pre-built views don't cover.
 
 1. Select a table, for example `abl_platform.platform_events`.
-2. Write your SQL, or select **Example Queries** to start from a template.
+2. Write your SQL, or select **Example Queries** to start from a template. Templates include a starter query for the feedback table, which returns ratings, comments, and the custom dimensions captured on each session.
 3. Select **Execute**. Select **Clear** to empty the editor.
 
 Queries use the same scoping tokens as dashboard widgets. Use `{tenantId:String}` and `{projectId:String}` for tenant and project isolation, and `{from:DateTime64(3)}` and `{to:DateTime64(3)}` to follow the selected time range. `{sessionId:String}` is optional. Results are capped at 1,000 rows.
