@@ -1,0 +1,105 @@
+---
+title: How to personalize a welcome message for returning users
+sidebarTitle: Personalize the welcome
+---
+<Badge icon="arrow-left" color="gray">[Back to how-to guides](/agent-platform/abl/how-to/overview#conversation-entry-and-welcome-experience)</Badge>
+
+Use this pattern when the agent should recognize a known user and make the first turn feel specific to that user.
+
+## Concept
+
+Personalization at startup has two moving pieces: a source of user context and an `ON_START` response that uses it. The context can come from runtime session values, channel metadata copied into session values, memory recall, or a startup tool call.
+
+Use only low-risk personalization in the welcome. Do not expose sensitive account details until identity and authorization are established.
+
+## Minimal working example
+
+```yaml expandable=true
+AGENT: Returning_User_Welcome_Agent
+GOAL: "Personalize the welcome message for a known user"
+
+TOOLS:
+  lookup_profile(memberId: string) -> {content: string, first_name: string, tier: string}
+    description: "Lookup the returning user's profile"
+    side_effects: false
+    confirm: never
+    params:
+      memberId:
+        description: "Member identifier supplied by the channel session"
+
+ON_START:
+  CALL: lookup_profile
+    WITH:
+      memberId: session.member_id
+    AS: profile
+  RESPOND: "Welcome back {{profile.first_name}}. You are on the {{profile.tier}} plan."
+
+FLOW:
+  entry_point: ask_need
+  steps:
+    - ask_need
+
+ask_need:
+  REASONING: false
+  RESPOND: "What can I help you with today?"
+  THEN: COMPLETE
+```
+
+## How it works
+
+The tool call runs during startup. Its result is stored under `profile` because the call uses `AS: profile`. The response interpolates `profile.first_name` and `profile.tier`.
+
+The tool is declared as read-only with `side_effects: false` and `confirm: never`, because a profile lookup should not require the user to approve a side effect.
+
+## Common variations
+
+### Personalize by segment
+
+Use startup `SET` when the value is already known at session start.
+
+```yaml expandable=true
+AGENT: Segment_Welcome_Agent
+GOAL: "Use returning-user segment metadata in the welcome"
+
+ON_START:
+  SET: customer_segment = "premium"
+  BRANCHES:
+    - IF: customer_segment == "premium"
+      RESPOND: "Welcome back. Your priority support lane is ready."
+    - ELSE:
+      RESPOND: "Welcome back. How can I help?"
+
+FLOW:
+  entry_point: ready
+  steps:
+    - ready
+
+ready:
+  REASONING: false
+  RESPOND: "Ready."
+  THEN: COMPLETE
+```
+
+## Verification
+
+Start a session with a known `session.member_id`. Confirm that the startup tool receives the member id, the `profile` value is available in session data, and the welcome uses the returned profile fields. In traces, look for startup tool execution followed by `dsl_respond`.
+
+## Common mistakes
+
+| Mistake                                         | Why it happens                                        | How to avoid it                                                                                   |
+| ----------------------------------------------- | ----------------------------------------------------- | ------------------------------------------------------------------------------------------------- |
+| Exposing sensitive account facts in the welcome | Personalization is mistaken for authorization.        | Use only low-risk fields until identity and permissions are verified.                             |
+| Forgetting `AS` on the startup lookup           | The response cannot reference a stable result object. | Bind the startup tool result with `AS` and interpolate from that object.                          |
+| Making a read-only lookup look side-effecting   | Tool metadata is incomplete.                          | Declare startup lookups with `side_effects: false`, `confirm: never`, and parameter descriptions. |
+
+## Troubleshooting
+
+If the welcome shows an empty value, verify the tool result shape and the `AS` name. If the tool fails, the runtime logs the startup call error and continues; use a fallback response that does not depend on the tool result when the lookup is not guaranteed.
+
+## Production readiness checklist
+
+- Personalize with non-sensitive fields only.
+- Make startup lookup tools read-only.
+- Define parameter descriptions for tool inputs.
+- Provide a generic fallback when profile data is unavailable.
+- Do not assume channel metadata exists unless the channel integration supplies it.

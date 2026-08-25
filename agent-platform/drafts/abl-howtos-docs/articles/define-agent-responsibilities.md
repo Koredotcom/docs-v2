@@ -129,6 +129,8 @@ COMPLETE:
 
 The account-security agent owns identity verification and recovery. Billing and human assistance are outside that responsibility and are represented as handoff boundaries.
 
+Since neither `HANDOFF` entry above declares `HISTORY`, each target now receives the full conversation history by default (the current platform default when `HISTORY` is omitted). Also, because each `WHEN` here is a single-field comparison (`intent.category == "billing"`), an unset field simply makes the comparison evaluate `false` — no error, and the trace shows your literal source text.
+
 ## How to write strong goals
 
 Weak goal: "Help customers with account stuff."

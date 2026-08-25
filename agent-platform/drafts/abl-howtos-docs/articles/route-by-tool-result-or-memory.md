@@ -1,23 +1,14 @@
 # How to route by tool result, profile lookup, or remembered state
 
-Some routes cannot be selected from the user utterance alone. The supervisor first calls a lookup tool, binds the result, then routes using deterministic conditions over that result. This is the pattern for premium routing, existing-case routing, risk routing, entitlement routing, and remembered preference routing.
+Use this when routing depends on customer profile, case status, fraud risk, policy coverage, entitlement, remembered preference, or any state loaded before the handoff — not just the user's utterance.
 
-Use this when routing depends on customer profile, case status, fraud risk, policy coverage, entitlement, remembered preference, or any state loaded before the handoff.
+## Concept
 
-## How the pattern works
+Some routes cannot be decided from what the user typed. The supervisor first calls a read-only lookup tool, binds the result with `AS`, then routes with deterministic conditions over that result's fields. This is the pattern for premium routing, existing-case routing, risk routing, entitlement routing, and remembered-preference routing.
 
-1. The supervisor receives the user message and keeps ownership until a route matches.
-2. Intent categories, runtime context, gathered values, or tool results provide the routing evidence.
-3. `HANDOFF` entries are evaluated in the authored order and the matching child receives only the declared context.
-4. If the child is temporary, it returns through `ON_RETURN`; if it owns the conversation, it remains the active agent.
+One behavior is worth knowing before you move past the happy path: **you don't have to copy tool-result fields into separate session variables before routing on them.** You can reference the `AS`-bound object's fields directly in `WHEN`; a flat copy (`SET profile_tier = profile.tier`) is only useful if you also want to pass a shorter, flatter set of fields through `CONTEXT.pass`.
 
-## Design choices
-
-- Declare the lookup tool with parameter descriptions and `side_effects: false` for read-only routing enrichment.
-- Bind tool output with `AS` and route against fields such as `profile.fraud_risk`.
-- Prefer deterministic expressions when the lookup returns structured values.
-
-## Validated example
+## Minimal working example
 
 ```abl
 SUPERVISOR: Tool_Result_Routing_Supervisor
@@ -84,35 +75,62 @@ AGENT: Standard_Service_Agent
 GOAL: "Serve standard customers"
 ```
 
+`customer_id` is referenced as both a tool parameter and a `CONTEXT.pass` field with no declared source in this example — treat it as a project-local assumption (typically populated earlier from authentication or a prior turn) and declare it via `MEMORY` in your actual project.
+
+## How it works
+
+- `ON_START` calls the read-only lookup tool once, before any `HANDOFF` is evaluated, and binds the result to `profile` with `AS`.
+- Each `HANDOFF`'s `WHEN` is evaluated in authored order. Every condition here is a plain equality comparison (`profile.fraud_risk == "high"`, `profile.has_open_case == true`, `profile.tier == "premium"`) — if the field hasn't resolved yet, the comparison simply evaluates `false` rather than erroring, so you don't need to write `profile.fraud_risk IS SET AND profile.fraud_risk == "high"` yourself.
+- The `SET` step that copies `profile.tier`/`profile.has_open_case`/`profile.fraud_risk` into flat variables is not required for the `WHEN` conditions to work — they reference `profile.*` directly. The copies exist here only so the flatter names can be listed in `CONTEXT.pass`; you can pass `profile` itself (or a subset via a shorthand) instead if you prefer not to duplicate fields.
+- The fallback route uses a quoted natural-language condition. Keep this kind of fallback text in lowercase, ordinary sentence form — a quoted condition containing an uppercase `AND`/`OR`/`NOT` can be misclassified by the runtime as a structured deterministic expression rather than natural language, which will not evaluate the way you intend. Lowercase words like "or"/"and" inside ordinary sentences (as in this example) are handled correctly.
+- Since none of the `HANDOFF` entries declare `HISTORY`, each child now receives the full conversation history by default (the current platform default when `HISTORY` is omitted). Set `HISTORY: auto` (or another explicit strategy) if you specifically want bounded/summary history instead.
+- `lookup_customer_profile` is declared with `side_effects: false` and `confirm: never` because it's a read-only enrichment call used purely to decide a route — it should never require user confirmation and should never be confused with a state-changing action.
+
 ## Common variations
 
-- Route existing cases to a continuation agent.
-- Route premium customers to a premium care specialist.
-- Route high-risk customers to fraud or compliance review before service.
+### Routing on remembered/persistent state instead of a live lookup
+
+Replace the `ON_START CALL ... AS: profile` step with a read from persistent memory (see the memory HowTos for declaring and recalling scoped memory), then route on the recalled fields the same way — the `WHEN` conditions don't change shape.
+
+### Passing the bound object instead of flat copies
+
+If you don't need a smaller/renamed field set in `CONTEXT.pass`, skip the flat `SET` copies entirely and pass `profile` (or specific `profile.*` paths) directly.
 
 ## Verification
 
-- Parse the ABL and confirm there are no parser errors or parser warnings.
-- Compile the ABL and confirm there are no compiler errors or compiler warnings.
-- Test at least one matching utterance for each route and one utterance for the fallback or clarification path.
-- Inspect traces for the selected target, condition result, passed context, and return behavior when `EXPECT_RETURN: true` is used.
+- Parse and compile the ABL and confirm there are no parser or compiler errors/warnings.
+- Test at least one utterance that resolves to each of the four routes, including the fallback path (no fraud, no open case, non-premium tier).
+- Inspect the trace for the selected target and the evaluated condition — you'll see your literal authored condition text, since HANDOFF conditions are not rewritten by the compiler.
+- Confirm the fallback route's semantic condition resolves as intended by testing an utterance where all three deterministic conditions are false.
 
-## Production checklist
+## Production readiness checklist
 
+- The lookup tool is declared read-only (`side_effects: false`) and never requires confirmation for a routing-only call.
 - Every specialist route has a clear owner and a concise context summary.
-- Deterministic conditions use declared, gathered, tool-result, runtime, or returned fields.
-- Semantic conditions are quoted as natural-language `WHEN` text.
-- Temporary child agents produce every field mapped in `ON_RETURN`.
-- Fallback behavior is explicit and does not hide missing intent coverage.
+- Deterministic conditions reference fields that are actually present on the tool's declared return shape.
+- Quoted natural-language fallback text avoids uppercase `AND`/`OR`/`NOT`.
+- `customer_id` (or any other assumed pre-existing variable) has a real declared source in your project, not just an assumption carried over from this example.
+- Fallback behavior is explicit and does not hide missing routing coverage.
 
 ## Common mistakes
 
-- Do not call a side-effecting tool just to decide a route.
-- Do not route on a copied variable if the result object can be referenced directly and validated.
-- Do not pass the entire profile when the child only needs tier, risk, or case state.
+| Mistake                                                                               | Why it happens                                                                    | How to avoid it                                                                                                     |
+| ---------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
+| Calling a side-effecting tool just to decide a route                                  | Reusing an existing action tool instead of declaring a dedicated read-only lookup | Declare a separate tool with `side_effects: false` and `confirm: never` for routing-only enrichment                 |
+| Assuming a flat `SET` copy is required before routing on a tool result                | Copying feels like the "safe" pattern                                             | Reference the `AS`-bound object's fields directly in `WHEN`; only copy when you need a flatter `CONTEXT.pass` shape |
+| Writing uppercase `AND`/`OR`/`NOT` inside a quoted natural-language fallback `WHEN`   | It reads naturally to a human author                                              | Keep quoted fallback conditions in ordinary lowercase sentence form                                                 |
+| Passing the entire profile object when the child only needs tier, risk, or case state | Convenience                                                                       | Pass only the specific fields each specialist needs                                                                 |
+
+## Troubleshooting
+
+| Symptom                                                                          | Likely cause                                                                                   | What to check                                                                                              |
+| ------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| The fallback route fires even when a deterministic condition should have matched | The tool result field wasn't populated by the time `HANDOFF` conditions were evaluated         | Confirm `ON_START CALL ... AS` completed before `HANDOFF` evaluation; check the tool's actual return shape |
+| A quoted fallback condition behaves unpredictably                                | Uppercase `AND`/`OR`/`NOT` inside the quoted text was misclassified as a structured expression | Rewrite the fallback text in ordinary lowercase sentence form                                              |
+| A child agent has more/less conversation context than expected                   | `HISTORY` was omitted and the current platform default (`full`) applied                        | Set an explicit `HISTORY` strategy if you need bounded/summary history                                     |
 
 ## Related HowTos
 
 - How to design a supervisor that routes users to specialist agents
-- How to decide when to delegate, hand off, or use a workflow
-- How to pass context between agents
+- How to route conversations based on user intent
+- How to pass specific fields between agents

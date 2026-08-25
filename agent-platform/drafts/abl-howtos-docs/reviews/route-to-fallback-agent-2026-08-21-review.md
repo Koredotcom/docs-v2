@@ -1,0 +1,168 @@
+# HowTo Review: route-to-fallback-agent
+
+**Date:** 2026-08-21
+**Article:** `agent-platform/drafts/abl-howtos-docs/articles/route-to-fallback-agent.md`
+**Topic:** 3.5 - How to route unclear requests to a fallback agent
+**Verdict:** update-needed
+
+## Proposed changes
+
+- Good news first: the article's central pattern — `EXPECT_RETURN: true` + `ON_RETURN: { action: resume_intent, MAP: {...} }` — was the highest-risk item given ABLP-2996's handoff-return-resume hardening work landing after this article was drafted. It was checked directly against current parser/type/compiler code and test fixtures and is **fully accurate, unchanged**. No correctness fix needed here.
+- Correction to an earlier draft of this review: `HANDOFF`/`SUPERVISOR` `WHEN` conditions are **not** rewritten into an `IS NOT SET OR ...` form — that compiler rewriting (`autoGuardConstraint`) only applies to `CONSTRAINTS`/`REQUIRE` conditions. Equality comparisons like `intent.category == "billing"` already handle an unset field correctly on their own (it simply evaluates `false`), and the trace shows the literal authored condition text.
+- Note the current `HANDOFF` history default (`full` when `HISTORY` is omitted, changed from `auto`) since all 3 `HANDOFF` entries omit it.
+- Mention the simpler legacy shorthand `ON_RETURN: "resume_intent"` (no `MAP`) as an alternative when a fallback child doesn't need to map any fields back to the parent — the article only shows the structured form.
+- Mark `customer_id`, `account_id`, `issue_summary`, `conversation_summary` as project-local assumptions (companion-resource rule) — only `clarified_intent` is declared via `MEMORY`/`GATHER` in the example.
+- Rename "Design choices" to "How it works" and convert "Common mistakes" to a table; add a "Troubleshooting" section (currently missing) — template completeness gaps flagged by persona review.
+
+## Evidence
+
+| Claim                                                                                                 | Current evidence                                                                                                                                                                                                                                                  | Impact                                                                                                      |
+| ----------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| `ON_RETURN: { action: resume_intent, MAP: {...} }` is current and accurate                            | `packages/core/src/parser/agent-based-parser.ts:5590-5654,5704-5731`; `packages/core/src/types/agent-based.ts:1465-1474`; `packages/compiler/src/platform/contracts/contract-source-data.ts:6` (`HANDOFF_ON_RETURN_ACTION_VALUES` still includes `resume_intent`) | No correctness change needed — confirms the article's core pattern survived recent hardening work unchanged |
+| `autoGuardConstraint` only applies to `CONSTRAINTS`/`REQUIRE`, never to `HANDOFF`/`SUPERVISOR` `WHEN` | `packages/compiler/src/platform/ir/compiler.ts:2414` (its single caller)                                                                                                                                                                                          | No article change; corrects an earlier draft that wrongly claimed HANDOFF conditions get rewritten          |
+| HANDOFF history default changed `auto` → `full`                                                       | `packages/compiler/src/platform/contracts/contract-source-data.ts:3`, ABLP-3301                                                                                                                                                                                   | Add note                                                                                                    |
+| A legacy string-only `ON_RETURN: "resume_intent"` shorthand also exists                               | `HandoffOnReturnAST = string \| HandoffOnReturnConfig` type; `packages/core/src/__tests__/parser-handoff-enhanced.test.ts:193`                                                                                                                                    | Add as a mentioned alternative                                                                              |
+| `customer_id`/`account_id`/`issue_summary`/`conversation_summary` have no declared source             | No MEMORY/GATHER for these in the example                                                                                                                                                                                                                         | Mark as project-local assumptions                                                                           |
+
+## Full evidence file
+
+See `agent-platform/drafts/abl-howtos-docs/evidence/route-to-fallback-agent-2026-08-21-evidence.md` for the complete Scenario and variant map, Operational readiness map, Example validation, Red-team coverage pass, Persona simulation review, and Quality scorecard (all criteria reach 4 or 5 after the changes proposed here).
+
+## Proposed replacement article body
+
+````markdown
+# How to route unclear or unsupported requests to a fallback agent
+
+A fallback agent is not a dumping ground; it is a specialist for clarification, unsupported requests, conflicting intents, and safe recovery. The fallback can either complete the conversation or return a clarified signal so the supervisor can resume routing.
+
+Use this when the supervisor cannot confidently choose a specialist or when the user asks for something outside the supported intent catalog.
+
+## Concept
+
+Keep clear deterministic or intent routes first, and put a quoted semantic fallback condition last for vague, unsupported, or conflicting requests. When the fallback should re-enter normal routing after clarifying, use `EXPECT_RETURN: true` with `ON_RETURN: { action: resume_intent, MAP: {...} }` — the fallback child gathers whatever's missing, and `MAP` copies its result back into a parent-owned variable your supervisor can route on next turn.
+
+One thing affects how this looks once you look past the syntax: **`HANDOFF` history defaults to `full` when omitted.** Every route below omits `HISTORY`, so each child (including the fallback) now receives the entire conversation by default.
+
+## Minimal working example
+
+```abl
+SUPERVISOR: Fallback_Routing_Supervisor
+GOAL: "Send clear requests to specialists and unclear requests to a fallback agent"
+
+INTENTS:
+  billing: "Billing and payment requests."
+  technical_support: "Product troubleshooting requests."
+
+HANDOFF:
+  - TO: Billing_Agent
+    WHEN: intent.category == "billing"
+    EXPECT_RETURN: false
+    CONTEXT:
+      pass: [customer_id, account_id]
+      summary: "Customer needs billing help."
+
+  - TO: Technical_Support_Agent
+    WHEN: intent.category == "technical_support"
+    EXPECT_RETURN: false
+    CONTEXT:
+      pass: [customer_id, issue_summary]
+      summary: "Customer needs technical support."
+
+  - TO: Fallback_Triage_Agent
+    WHEN: "the request is vague, unsupported, conflicting, or missing enough information to choose a specialist"
+    EXPECT_RETURN: true
+    CONTEXT:
+      pass: [customer_id, conversation_summary]
+      summary: "Clarify the customer's request and return if a specialist can be chosen."
+    ON_RETURN:
+      action: resume_intent
+      MAP:
+        clarified_intent: clarified_intent
+
+AGENT: Billing_Agent
+GOAL: "Resolve billing requests"
+
+AGENT: Technical_Support_Agent
+GOAL: "Resolve technical support requests"
+
+AGENT: Fallback_Triage_Agent
+GOAL: "Clarify unsupported or ambiguous requests"
+
+MEMORY:
+  SESSION:
+    - clarified_intent
+
+GATHER:
+  clarified_intent:
+    TYPE: string
+    PROMPT: "Which area should handle this request?"
+    REQUIRED: true
+
+COMPLETE:
+  - WHEN: clarified_intent IS SET
+    RESPOND: "Thanks, I captured the clarified route."
+```
+````
+
+`customer_id`, `account_id`, `issue_summary`, and `conversation_summary` are shown as passed context with no declared source in this example — treat them as project-local assumptions (typically populated from authentication or an earlier turn) and declare them via `MEMORY` in your actual project.
+
+## How it works
+
+- The fallback route's `WHEN` is a quoted natural-language condition, evaluated only when neither deterministic route above it matched.
+- `EXPECT_RETURN: true` makes `Fallback_Triage_Agent` a temporary child: it gathers `clarified_intent` from the user, then its `COMPLETE` fires once that field `IS SET`.
+- `ON_RETURN.action: resume_intent` tells the supervisor to resume routing after the child returns. `MAP: { clarified_intent: clarified_intent }` copies the child's gathered value (left side, child key) into the parent supervisor's own `clarified_intent` session variable (right side, parent key) — declared here in the supervisor's own `MEMORY.SESSION`.
+- If you don't need to map any fields back — the fallback child only needs to signal "done, try routing again" — you can use the simpler shorthand `ON_RETURN: "resume_intent"` instead of the structured `action`/`MAP` block.
+- Since `HISTORY` is omitted from every `HANDOFF`, each child (including the fallback) receives the full conversation history by default.
+
+## Common variations
+
+- Clarify and return to the supervisor (shown above).
+- Complete unsupported requests directly in the fallback agent with a safe explanation, without ever returning to the supervisor (`EXPECT_RETURN: false`, or omit `ON_RETURN` and let the fallback's own `COMPLETE` end the conversation).
+- Escalate to a human after repeated clarification failures instead of looping the fallback indefinitely.
+- Use the plain string shorthand `ON_RETURN: "resume_intent"` when the fallback child doesn't need to map any fields back.
+
+## Verification
+
+- Parse and compile the ABL and confirm there are no parser or compiler errors/warnings.
+- Test at least one matching utterance for each specialist route and one clearly ambiguous utterance that should hit the fallback.
+- Confirm the fallback's `COMPLETE` fires once `clarified_intent IS SET`, and that the parent's `clarified_intent` reflects the child's gathered value after return.
+- Inspect the trace for the selected target, the evaluated condition (matches your literal authored text for the deterministic routes), and the `ON_RETURN`/`MAP` application on return.
+
+## Production readiness checklist
+
+- Every specialist route has a clear owner and a concise context summary.
+- The fallback's `MAP` targets a variable the parent actually declares and routes on next turn.
+- Semantic conditions are quoted as natural-language `WHEN` text.
+- Fallback behavior is explicit and does not hide missing intent coverage — use trace review to find requests that keep landing in fallback and add real routes for them.
+- Any variable assumed to already exist (like `customer_id` above) has a real declared source in your project.
+
+## Common mistakes
+
+| Mistake                                                     | Why it happens                                                                    | How to avoid it                                                                                    |
+| ----------------------------------------------------------- | --------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
+| Using literal `true` as the only route                      | Looks like a simple catch-all                                                     | Only do this intentionally, and document that it's a deliberate catch-all, not a missing condition |
+| Mapping a clarified field the fallback child never produces | `MAP` target doesn't match anything the child's `GATHER`/`COMPLETE` actually sets | Confirm the child key in `MAP` matches a field the child truly returns                             |
+| Letting fallback silently absorb missing intent coverage    | Fallback "just works" so gaps go unnoticed                                        | Review fallback-route traces periodically and add real specialist routes for recurring patterns    |
+
+## Troubleshooting
+
+| Symptom                                                                     | Likely cause                                                                                    | What to check                                                                    |
+| --------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------- |
+| The parent's `clarified_intent` is never updated after the fallback returns | `MAP` key mismatch, or the child never actually sets the mapped field                           | Confirm child-side field name in `MAP` matches what `GATHER`/`COMPLETE` produces |
+| Routing doesn't resume after the fallback returns                           | `ON_RETURN.action` isn't `resume_intent`, or `EXPECT_RETURN` was `false`                        | Confirm `EXPECT_RETURN: true` and `ACTION: resume_intent` are both set           |
+| A specialist route unexpectedly falls through to the fallback               | The referenced field wasn't populated yet, or the condition evaluated differently than expected | Inspect the trace's evaluated condition and `evaluatedContext`                   |
+| Child agent has more/less conversation context than expected                | `HISTORY` omitted; current default (`full`) applied                                             | Set an explicit `HISTORY` strategy if bounded/summary history is intended        |
+
+## Related HowTos
+
+- How to design a supervisor that routes users to specialist agents
+- How to route conversations based on user intent
+- How to pass specific fields between agents
+
+```
+
+## Files to update after approval
+
+- `agent-platform/drafts/abl-howtos-docs/articles/route-to-fallback-agent.md`
+- `agent-platform/drafts/abl-howtos-docs/evidence/route-to-fallback-agent-2026-08-21-evidence.md` (already current)
+```

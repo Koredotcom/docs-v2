@@ -138,6 +138,8 @@ COMPLETE:
 
 `AGENTS:` is a readable roster. `HANDOFF` is the executable routing surface. `customer_id` is gathered before handoff and passed to the specialists with `PASS`.
 
+Since none of the `HANDOFF` entries above declare `HISTORY`, each specialist now receives the full conversation history by default (the current platform default when `HISTORY` is omitted). Also, because each `WHEN` here is a single-field comparison (`intent.category == "account"`), an unset field simply makes the comparison evaluate `false` — no error, and the trace shows your literal source text.
+
 ## When to use handoff
 
 Use `HANDOFF` when the target agent should own the next part of the conversation.
