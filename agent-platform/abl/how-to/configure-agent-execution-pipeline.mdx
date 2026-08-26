@@ -1,0 +1,176 @@
+---
+title: How to configure EXECUTION.pipeline models, modes, thresholds, and fallbacks
+sidebarTitle: Configure the pipeline
+---
+<Badge icon="arrow-left" color="gray">[Back to how-to guides](/agent-platform/abl/how-to/overview#agent-architecture-and-design)</Badge>
+
+Use this guide when the agent execution pipeline exists but needs tuning for model choice, mode, confidence thresholds, tool filtering, keyword veto, intent bridging, and fallback behavior.
+
+## Concept
+
+`EXECUTION.pipeline` configuration is a set of routing controls. It does not replace the supervisor's handoff rules. Instead, it helps the runtime decide how aggressively to use classification before the normal reasoning path.
+
+The effective pipeline configuration is resolved from agent-level settings, project-level settings, and defaults. Agent settings can override project settings for the same field. Project settings can fill fields the agent does not specify. Defaults fill the rest. The pipeline is disabled by default, and an agent-level opt-out remains a veto even when the project is enabled.
+
+## Minimal working example
+
+Use this when you only need to enable the execution pipeline and keep the first deployment conservative.
+
+```yaml
+AGENT: Pipeline_Minimal_Agent
+GOAL: "Answer support questions with execution pipeline assistance"
+
+EXECUTION:
+  pipeline:
+    enabled: true
+    mode: sequential
+    shortCircuit:
+      enabled: true
+      confidenceThreshold: 0.9
+
+COMPLETE:
+  - WHEN: true
+    RESPOND: "I can help with your support request."
+```
+
+This example enables the pipeline, keeps mode predictable with `sequential`, and allows short-circuiting only at high confidence.
+
+## Full configuration example
+
+Treat this as a separate project-level routing example from the minimal agent above.
+
+```yaml expandable=true
+SUPERVISOR: Insurance_Router
+GOAL: "Route insurance requests with tuned classifier thresholds and fallbacks"
+PERSONA: "Careful insurance routing supervisor"
+
+EXECUTION:
+  pipeline:
+    enabled: true
+    mode: parallel
+    model: "gpt-4.1-mini"
+    shortCircuit:
+      enabled: true
+      confidenceThreshold: 0.92
+    toolFilter:
+      enabled: true
+      maxTools: 3
+    keywordVeto:
+      enabled: true
+      keywords: ["appeal", "fraud", "legal"]
+    intentBridge:
+      enabled: true
+      programmaticThreshold: 0.88
+      guidedThreshold: 0.6
+      outOfScopeDecline: false
+      multiIntentSignal: true
+
+HANDOFF:
+  - TO: Claims_Agent
+    WHEN: "The user asks to file, check, or update a claim"
+    SUMMARY: "User needs claims support"
+  - TO: Benefits_Agent
+    WHEN: "The user asks about coverage, eligibility, benefits, or plan rules"
+    SUMMARY: "User needs benefits support"
+  - TO: Escalation_Agent
+    WHEN: "The user mentions appeals, fraud, legal risk, or a complaint"
+    SUMMARY: "User may need escalation review"
+```
+
+```yaml
+AGENT: Claims_Agent
+GOAL: "Help members with claim filing and claim status"
+PERSONA: "Claims support specialist"
+```
+
+```yaml
+AGENT: Benefits_Agent
+GOAL: "Explain plan benefits, coverage, and eligibility"
+PERSONA: "Benefits specialist"
+```
+
+```yaml
+AGENT: Escalation_Agent
+GOAL: "Handle escalations, complaints, appeals, and risk-sensitive requests"
+PERSONA: "Escalation specialist"
+```
+
+## How it works
+
+`mode` controls how the pipeline work is organized. Use `sequential` when you want simpler, more predictable behavior. Use `parallel` when your deployment is tuned for faster classification and filtering paths.
+
+`model` chooses the classifier model. Prefer a model that is strong enough for category decisions but inexpensive enough for every turn where the pipeline runs.
+
+`shortCircuit.confidenceThreshold` controls when a single classified intent can bypass broader reasoning. Higher thresholds reduce misroutes but may send more traffic to guided reasoning.
+
+`toolFilter.maxTools` limits how many tools remain visible after filtering. Use it when the agent has many tools or routing tools and the classifier can narrow the relevant set.
+
+`keywordVeto.keywords` prevents short-circuiting when sensitive words appear. These words should reflect business risk, not just common nouns.
+
+`intentBridge.programmaticThreshold` and `intentBridge.guidedThreshold` split routing into deterministic, guided, and autonomous behavior. Defaults exist, but production values should be tuned from real traffic.
+
+Since none of the `HANDOFF` entries in the full configuration example declare `HISTORY`, each specialist now receives the full conversation history by default (the current platform default when `HISTORY` is omitted).
+
+## Common variations
+
+| Variation                              | Use when                                                                  | Configuration focus                                                    |
+| -------------------------------------- | ------------------------------------------------------------------------- | ---------------------------------------------------------------------- |
+| Conservative launch                    | Misroutes are expensive or the category set is new.                       | `mode: sequential`, high `confidenceThreshold`, keyword veto enabled.  |
+| Low-latency routing                    | You have measured latency budget and strong monitoring.                   | `mode: parallel`, small tool set, tuned thresholds.                    |
+| Classifier-assisted but not autonomous | The classifier should guide reasoning but not route alone.                | Keep `guidedThreshold` lower than `programmaticThreshold`.             |
+| Sensitive-topic routing                | Legal, fraud, cancellation, refund, or complaint paths need extra review. | Add `keywordVeto.keywords` and escalation routes.                      |
+| Agent opt-out                          | Project enables the pipeline but one agent is not ready.                  | Set agent-level `pipeline.enabled: false` and verify effective config. |
+
+## Configuration checklist
+
+| Setting                            | Start with                            | Tighten when                                                 |
+| ---------------------------------- | ------------------------------------- | ------------------------------------------------------------ |
+| `mode`                             | `sequential`                          | You have latency evidence and monitoring for `parallel`      |
+| `shortCircuit.confidenceThreshold` | High, such as `0.9` or above          | Misroutes are more expensive than slower routing             |
+| `programmaticThreshold`            | Higher than guided threshold          | Direct routing or decline must be conservative               |
+| `guidedThreshold`                  | Middle confidence range               | You want classifier help without full automation             |
+| `keywordVeto.keywords`             | Sensitive terms and side-effect terms | Compliance, refund, legal, fraud, or cancellation risk grows |
+| `toolFilter.maxTools`              | Small enough to reduce noise          | Tool lists become large or overlapping                       |
+
+## Verification
+
+- Validate the ABL and confirm the pipeline block compiles into execution settings.
+- Compare effective config when only project settings exist, only agent settings exist, and both exist.
+- Test confidence just below and at `guidedThreshold`.
+- Test confidence just below and at `programmaticThreshold`.
+- Test `keywordVeto` with each sensitive keyword.
+- Test agent opt-out when the project pipeline is enabled.
+- Inspect traces for selected mode, classifier model, thresholds, veto, and tiered action.
+
+## Production readiness checklist
+
+- Project-level and agent-level pipeline settings are documented together.
+- Thresholds are chosen from real utterance samples and reviewed after launch.
+- Escalation or fallback exists for sensitive and ambiguous categories.
+- Keyword veto terms are reviewed for false positives and false negatives.
+- Tool filtering does not hide tools needed for safe recovery.
+- Dashboards track tier distribution, short-circuit rate, guided rate, autonomous rate, and fallback rate.
+
+## Common mistakes
+
+| Mistake                                 | Why it happens                          | How to avoid it                                    |
+| --------------------------------------- | --------------------------------------- | -------------------------------------------------- |
+| Lowering programmatic threshold too far | It increases automation                 | Keep direct routing conservative until measured    |
+| Using keyword veto as a routing rule    | Veto only blocks short-circuiting       | Keep routing logic in handoff rules and categories |
+| Assuming agent opt-in is enough         | Runtime has project-level gate behavior | Verify effective config in the deployed project    |
+| Filtering tools too aggressively        | Smaller tool lists look cleaner         | Test failure recovery and edge cases               |
+
+## Troubleshooting
+
+| Symptom                           | Likely cause                                              | What to check                                          |
+| --------------------------------- | --------------------------------------------------------- | ------------------------------------------------------ |
+| Agent config is ignored           | Project pipeline is disabled or absent                    | Compare agent, project, and effective config           |
+| Guided behavior happens too often | Programmatic threshold is too high or categories are weak | Review classifier confidence and category distinctness |
+| Direct routing happens too often  | Thresholds are too low or veto terms are missing          | Raise thresholds and add sensitive veto words          |
+| Tool choice gets worse            | `toolFilter.maxTools` is too small                        | Increase max tools or improve tool descriptions        |
+
+---
+
+**Related articles**
+
+- [How to use EXECUTION.pipeline for agent routing, classification, and short-circuiting](/agent-platform/abl/how-to/use-agent-execution-pipeline).

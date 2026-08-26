@@ -1,0 +1,118 @@
+---
+title: How to configure model, timeout, and execution settings for an agent
+sidebarTitle: Configure execution settings
+---
+<Badge icon="arrow-left" color="gray">[Back to how-to guides](/agent-platform/abl/how-to/overview#agent-architecture-and-design)</Badge>
+
+Use `EXECUTION` when an agent needs explicit model choice, response limits, timeout boundaries, concurrency behavior, thinking settings, history windowing, voice settings, or execution-pipeline configuration.
+
+## Concept
+
+`EXECUTION` is the agent-level configuration surface for runtime behavior. It does not decide whether a flow step is reasoning or deterministic; that is handled by step-level `REASONING`. Instead, `EXECUTION` controls the environment in which the agent runs: which model to use, how long LLM and tool calls can wait, how many iterations are allowed, how much history is retained, and how concurrent messages are handled.
+
+Use explicit settings when the default behavior is not enough for cost, latency, safety, or operational predictability. Keep settings minimal for simple agents. Add settings only when you can explain why the value exists and how it will be tested.
+
+## Minimal working example
+
+```yaml expandable=true
+AGENT: Enterprise_Support_Agent
+GOAL: "Answer customer support questions with bounded model and execution behavior"
+PERSONA: "Concise support assistant"
+
+EXECUTION:
+  model: gpt-4.1-mini
+  temperature: 0.2
+  max_tokens: 1200
+  tool_timeout: 8000
+  llm_timeout: 15000
+  session_idle_timeout: 1800000
+  max_reasoning_iterations: 4
+  max_flow_iterations: 12
+  concurrency: preemptive
+  maxQueueDepth: 20
+  maxConcurrentMessages: 3
+  enable_thinking: true
+  thinking_budget: 1024
+  conversation_history_window: 12
+  fallback_model: gpt-4.1-mini
+```
+
+## How it works
+
+The parser accepts both snake_case and some camelCase forms for several execution settings. The compiler lowers the values into the agent execution IR. Runtime components then use that execution contract to bound model calls, tool calls, history, concurrency, and related behavior.
+
+The most common settings are:
+
+| Setting                       | Use it for                                        |
+| ----------------------------- | ------------------------------------------------- |
+| `model`                       | Primary model for the agent                       |
+| `temperature`                 | Response variability                              |
+| `max_tokens`                  | Output budget                                     |
+| `tool_timeout`                | Maximum wait for tool calls                       |
+| `llm_timeout`                 | Maximum wait for LLM calls                        |
+| `session_idle_timeout`        | Idle session boundary                             |
+| `max_reasoning_iterations`    | Preventing reasoning loops                        |
+| `max_flow_iterations`         | Preventing flow loops                             |
+| `concurrency`                 | Serial, preemptive, or parallel handling strategy |
+| `conversation_history_window` | Number of recent turns to retain                  |
+| `fallback_model`              | Backup model when fallback is configured          |
+
+## Common variations
+
+### Low-latency support agent
+
+Use a smaller model, low token budget, short LLM timeout, and small history window when the agent handles high-volume support questions.
+
+### Careful enterprise agent
+
+Use lower temperature, bounded reasoning iterations, and explicit timeout values when the agent answers regulated, contractual, or account-related questions.
+
+### Voice or realtime agent
+
+Use voice-specific execution settings and stricter latency budgets. Test the experience in the voice channel because a setting that works in chat may feel slow on a call.
+
+### Agent execution pipeline
+
+Use nested `EXECUTION.pipeline` only when you need agent routing, classification, short-circuiting, tool filtering, keyword veto, or intent bridging. That is a separate decision from choosing a base model or timeout.
+
+## Verification
+
+- Validate the agent and confirm `EXECUTION` compiles into the agent execution settings.
+- Test a normal model response and a slow model response against `llm_timeout`.
+- Test a normal tool call and a slow tool call against `tool_timeout`.
+- Inspect traces for model, timeout, and execution-path metadata.
+- Load test concurrency settings before using `parallel` or high queue depths in production.
+
+## Production readiness checklist
+
+- Every non-default setting has an owner and reason.
+- Timeout values match the channel experience and downstream service SLOs.
+- Token limits are high enough for expected answers but low enough for cost control.
+- Iteration limits prevent loops without cutting off valid flows.
+- Fallback behavior is tested, not just configured.
+- Voice settings are tested with real turn-taking and latency expectations.
+
+## Common mistakes
+
+| Mistake                                       | Why it happens                       | How to avoid it                                    |
+| --------------------------------------------- | ------------------------------------ | -------------------------------------------------- |
+| Using top-level `MODEL:`                      | It looks natural as a section        | Put `model` under `EXECUTION`                      |
+| Using `MODE:` for reasoning/scripted behavior | Older patterns used agent-level mode | Use step-level `REASONING` in `FLOW`               |
+| Setting timeouts too high                     | Avoids visible failures in testing   | Match timeouts to user experience and service SLOs |
+| Copying settings across agents                | It is faster during setup            | Tune by agent role, channel, and risk              |
+
+## Troubleshooting
+
+| Symptom                        | Likely cause                                    | What to check                                             |
+| ------------------------------ | ----------------------------------------------- | --------------------------------------------------------- |
+| Parser rejects `MODEL:`        | Model is not a top-level section                | Move it to `EXECUTION.model`                              |
+| Agent is slow under load       | Timeout or concurrency settings are too loose   | Check traces, queue depth, and downstream service latency |
+| Agent stops mid-flow           | Iteration limit is too low                      | Inspect step count and loop behavior                      |
+| Costs are higher than expected | Model, token, or history settings are too large | Review `model`, `max_tokens`, and history window          |
+
+---
+
+**Related articles**
+
+- [How to use EXECUTION.pipeline for agent routing, classification, and short-circuiting](/agent-platform/abl/how-to/use-agent-execution-pipeline).
+- [How to combine reasoning steps with deterministic FLOW steps](/agent-platform/abl/how-to/combine-reasoning-and-flow-steps).
