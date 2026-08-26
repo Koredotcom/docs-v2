@@ -1,0 +1,405 @@
+---
+title: Use the Artemis Platform CLI
+sidebarTitle: Build using CLI
+---
+
+The Artemis Platform CLI lets you create, review, customize, test, and deploy agents, tools, and enterprise content connectors from your terminal or CI pipeline, without opening the browser. The CLI supports both interactive development and repeatable automation workflows.
+
+Before you begin, [install and configure the CLI](/agent-platform/install-cli).
+
+## Create
+
+### Create a project
+
+```bash
+artemis-platform-cli projects create "Support Automation" \
+  --description "Customer support agents and workflows"
+
+artemis-platform-cli projects list
+artemis-platform-cli projects select <project-slug>
+```
+
+### Create an agent
+
+Create an agent from an ABL file:
+
+```bash
+artemis-platform-cli agents create support_agent \
+  --file ./agents/support.agent.abl
+```
+
+### Create tools
+
+Create an HTTP tool and associate it with an ABL file:
+
+```bash
+artemis-platform-cli tools create lookup_order \
+  --description "Look up an order by ID" \
+  --type http \
+  --endpoint https://api.example.com/orders/lookup \
+  --method POST \
+  --file ./tools/lookup-order.tools.abl
+
+artemis-platform-cli tools get lookup_order
+```
+
+### Connect enterprise content
+
+Connectors ingest enterprise content into a SearchAI index. The available options vary by connector type. Use the help command to see the current options:
+
+```bash
+artemis-platform-cli connector create --help
+```
+
+For example, create and authenticate a SharePoint connector:
+
+```bash
+artemis-platform-cli connector create sharepoint "Support Knowledge" \
+  --index-id <index-id> \
+  --tenant-url https://<tenant>.sharepoint.com \
+  --client-id <azure-application-id>
+
+artemis-platform-cli connector auth <connector-id>
+```
+
+After completing OAuth authentication, start a full synchronization and check its status:
+
+```bash
+artemis-platform-cli connector sync start <connector-id>
+artemis-platform-cli connector sync status <connector-id>
+```
+
+Use `connector filter --help` and `connector permission --help` to configure the content scope and permission mode before production ingestion.
+
+### Generate a project with Arch AI
+
+Start an Arch AI onboarding session to generate a new project from natural language:
+
+```bash
+artemis-platform-cli arch session new
+artemis-platform-cli arch session list
+```
+
+Send the initial build request:
+
+```bash
+artemis-platform-cli arch send \
+  "Add order-status support and update the project"
+```
+
+To generate using Arch AI, you must configure a primary model. You can create a session even when the tenant isn't configured for generation.
+
+**Related content:** 
+
+- Continue an Arch AI conversation in [Iterate with Arch AI](#iterate-with-arch-ai).
+- Inspect its output in [Inspect Arch AI-generated state](#inspect-arch-ai-generated-state).
+- Refresh ingested content in [Keep enterprise content current](#keep-enterprise-content-current).
+
+## Review
+
+### Inspect and compile an agent
+
+```bash
+artemis-platform-cli agents get support_agent
+artemis-platform-cli agents compile support_agent
+```
+
+### Inspect Arch AI-generated state
+
+After Arch AI generates or updates a project, inspect the resulting state:
+
+```bash
+artemis-platform-cli arch summary --project <project-id>
+artemis-platform-cli arch health --project <project-id>
+```
+
+### Export and verify a project package
+
+Export the supported project layers:
+
+```bash
+artemis-platform-cli export \
+  --project <project-id> \
+  --output ./exports \
+  --all-layers \
+  --include-deployments
+```
+
+Verify the exported files locally:
+
+```bash
+artemis-platform-cli verify ./exports/<project-slug>
+artemis-platform-cli lockfile recompute ./exports/<project-slug> --check
+```
+
+**Related content:** 
+
+Arch AI-generated projects are,
+
+- Created in [Generate a project with Arch AI](#generate-a-project-with-arch-ai).
+- Refined in [Iterate with Arch AI](#iterate-with-arch-ai).
+
+## Customize
+
+### Update an agent
+
+Update an agent from an ABL file and read it back:
+
+```bash
+artemis-platform-cli agents update support_agent \
+  --file ./agents/support-v2.agent.abl
+
+artemis-platform-cli agents get support_agent
+```
+
+### Keep enterprise content current
+
+After the initial full synchronization, run an incremental synchronization to pick up content changes:
+
+```bash
+artemis-platform-cli connector sync start <connector-id> --delta
+artemis-platform-cli connector sync status <connector-id>
+```
+
+### Iterate with Arch AI
+
+Open a session for an existing project and continue the conversation:
+
+```bash
+artemis-platform-cli arch session new --project <project-id>
+```
+
+Send a follow-up request or start an interactive chat:
+
+```bash
+artemis-platform-cli arch send \
+  "Add order-status support and update the project"
+
+artemis-platform-cli arch chat
+```
+
+### Track customizations with Git
+
+Git operations require a project-shared authentication profile created by a Platform administrator.
+
+Initialize Git synchronization:
+
+```bash
+artemis-platform-cli git init \
+  --project <project-id> \
+  --provider bitbucket \
+  --repo <repository-url> \
+  --auth-profile <profile-id> \
+  --branch main \
+  --sync-path /artemis
+
+artemis-platform-cli git status --project <project-id>
+```
+
+Push project state to Git:
+
+```bash
+artemis-platform-cli git push \
+  --project <project-id> \
+  --branch main \
+  --message "Update Artemis project"
+```
+
+**Related content:** 
+
+- Apply incoming Git changes in [Apply Git updates](#apply-git-updates).
+- Start the initial content sync in [Connect enterprise content](#connect-enterprise-content).
+
+## Test
+
+### Test models and agents
+
+Agent execution requires a working primary model connection. List and test available models before testing an agent:
+
+```bash
+artemis-platform-cli models list
+artemis-platform-cli models test <model-id>
+
+artemis-platform-cli agents test support_agent \
+  --message "Check order CERT-1001"
+```
+
+If model testing fails, ask a tenant administrator to configure and select a primary model before retrying agent, evaluation, or Arch generation commands.
+
+### Validate and evaluate a project
+
+The `lifecycle` command tree is designed for CI and release automation. Each invocation writes one versioned JSON envelope to stdout and returns a stable exit code.
+
+Validate a project package, then run an evaluation gate:
+
+```bash
+artemis-platform-cli lifecycle validate ./exports/<project-slug> \
+  --project <project-id> \
+  --preview
+
+artemis-platform-cli lifecycle eval run \
+  --project <project-id> \
+  --set <eval-set-id> \
+  --wait \
+  --min-pass-rate 0.90 \
+  --min-score 0.80
+```
+
+<Important>Continue with synchronization, import, release publication, deployment, and evidence only after the validation preview and the evaluation succeed.</Important>
+
+## Deploy
+
+### Apply Git updates
+
+Preview a pull before applying it:
+
+```bash
+artemis-platform-cli git pull --project <project-id> --branch main
+```
+
+Apply the pull after reviewing the preview:
+
+```bash
+artemis-platform-cli git pull --project <project-id> --branch main --apply
+```
+
+### Import a project package
+
+Preview an import before applying it:
+
+```bash
+artemis-platform-cli import ./exports/<project-slug> \
+  --project <project-id> \
+  --dry-run
+```
+
+Review the preview before applying the import. Then apply the package and run post-import checks:
+
+```bash
+artemis-platform-cli import ./exports/<project-slug> \
+  --project <project-id> \
+  --acknowledge-warnings
+
+artemis-platform-cli doctor --project <project-id>
+```
+
+Do not acknowledge warnings until you understand the proposed changes. Use a dedicated project when evaluating an unfamiliar package.
+
+### Synchronize a validated package
+
+Once validation and evaluation succeed, synchronize the package:
+
+```bash
+artemis-platform-cli lifecycle sync ./exports/<project-slug> \
+  --project <project-id>
+```
+
+{/* AG: Need to check which lifecycle.md guide before publishing link to it.
+
+For the complete CI workflow, including safe synchronization, deployment transitions, evidence generation, and exit codes, see the Lifecycle CLI Guide.
+
+*/}
+
+**Related content:**
+
+- Push local customizations before pulling in [Track customizations with Git](#track-customizations-with-git).
+
+## Automate and integrate
+
+### Use the CLI in CI
+
+CI jobs can provide a user access token without writing it to CLI storage:
+
+```bash
+export KORE_API_TOKEN='<user-access-token>'
+```
+
+Store the token in your CI secret manager. Don't place access tokens in command arguments, committed scripts, build logs, or documentation.
+
+To isolate CLI state for a CI job, set a separate configuration directory:
+
+```bash
+export ARTEMIS_PLATFORM_CLI_CONFIG_DIR="$(mktemp -d)"
+```
+
+The directory must be an absolute path. Remove it when the job finishes.
+
+### Use the CLI with MCP
+
+You can run the CLI as an MCP stdio server. To start the server, use the command `artemis-platform-cli mcp`. A sample config for your MCP client to launch the CLI is below.
+
+```json
+{
+  "mcpServers": {
+    "artemis-platform": {
+      "command": "artemis-platform-cli",
+      "args": ["mcp"],
+      "env": {
+        "KORE_API_URL": "https://example.com",
+        "KORE_RUNTIME_API_URL": "https://example.com",
+        "KORE_SEARCHAI_API_URL": "https://example.com"
+      }
+    }
+  }
+}
+```
+
+The MCP process uses the same stored login, selected workspace, selected project, and service URLs as direct CLI commands.
+
+If your desktop MCP client doesn't inherit or can't use the `PATH` value, it can't launch the CLI directly. In such a case, use the absolute binary path returned by the command `command -v artemis-platform-cli`. Keep the stdout reserved for MCP JSON-RPC messages.
+
+## Reference
+
+### CLI commands
+
+The following commands provide the primary CLI capabilities:
+
+| Command | Purpose |
+|----------|---------|
+| `login`, `logout`, `whoami` | Authenticate and inspect identity |
+| `workspaces`, `projects` | Select and manage context |
+| `agents`, `tools`, `models` | Author, compile, and test agent resources |
+| `connector` | Configure and synchronize enterprise content |
+| `export`, `import`, `verify`, `doctor`, `lockfile` | Move and validate project packages |
+| `git` | Synchronize project state with a Git repository |
+| `lifecycle` | Run machine-readable evaluation, release, and deployment automation |
+| `arch` | Use Arch AI without the browser |
+| `mcp` | Expose Platform capabilities over MCP stdio |
+| `config` | Manage service URLs and inspect local state paths |
+
+Use the installed command help as the syntax source of truth:
+
+```bash
+artemis-platform-cli --help
+artemis-platform-cli <command> --help
+artemis-platform-cli <command> <subcommand> --help
+```
+
+### Troubleshooting
+
+| Problem | Resolution |
+|---------|------------|
+| `Not authenticated` | Run `login`, then confirm with `whoami`. In CI, check `KORE_API_TOKEN`. |
+| `No active project` | Run `projects select <slug>` or provide `--project <id>`. |
+| Connector commands return 404 | Check `searchAiApiUrl` or `KORE_SEARCHAI_API_URL`. |
+| `No API key configured` | Ask an administrator to configure and select a tenant primary model. |
+| Connector is not authenticated | Run `connector auth <connector-id>` and complete OAuth. |
+| `No git integration configured` | Create an authorized Git profile, then run `git init`. |
+| `IMPORT_PREVIEW_STALE` | Generate a new preview and use its new digest. |
+| `OUTCOME_UNKNOWN` | Read the affected resource with `get`, `list`, or `status` before deciding whether to retry. |
+| MCP client cannot start the command | Configure the absolute binary path returned by `command -v`. |
+
+For the configured service URLs and CLI state paths, run:
+
+```bash
+artemis-platform-cli config show
+```
+
+### Safety considerations
+
+- Use explicit project IDs in automation.
+- Read previews before applying imports, synchronization operations, or Git pulls.
+- Do not bypass qualification gates without an approval record and reason.
+- Do not retry an `OUTCOME_UNKNOWN` mutation blindly. Read the authoritative resource state first.
+- Keep API tokens, OAuth credentials, provider keys, and Git credentials out of command arguments and logs.
+- Use non-production projects and repositories when evaluating a release candidate.

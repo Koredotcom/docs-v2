@@ -1,0 +1,192 @@
+# How to define clear responsibilities for each enterprise agent
+
+Use this guide when an agent is becoming too broad, too vague, or difficult for customers, builders, and support teams to reason about.
+
+## Concept
+
+An agent responsibility is a contract. It says what the agent owns, what it can do, what it must not do, what information it needs, and when it should stop, hand off, or escalate.
+
+Clear responsibilities make routing safer. A supervisor can only route well when every specialist has a distinct job.
+
+| Surface       | What it defines                                                           |
+| ------------- | ------------------------------------------------------------------------- |
+| `GOAL`        | The business outcome the agent owns.                                      |
+| `PERSONA`     | How the agent communicates.                                               |
+| `LIMITATIONS` | What the agent should not claim or attempt.                               |
+| `GATHER`      | Information the agent must collect.                                       |
+| `CONSTRAINTS` | Conditions that must be true before proceeding.                           |
+| `TOOLS`       | External capabilities the agent can use.                                  |
+| `HANDOFF`     | When another agent should take ownership.                                 |
+| `DELEGATE`    | When another agent should provide a result while this agent stays active. |
+| `COMPLETE`    | When the agent can finish the interaction.                                |
+
+Limitations guide the model. For hard enforcement, pair them with tools, constraints, guardrails, permissions, and handoff boundaries.
+
+## Decision guide
+
+| Use this design choice             | When it fits                                                                                    |
+| ---------------------------------- | ----------------------------------------------------------------------------------------------- |
+| Keep one agent                     | One business owner, one data boundary, one tool set, and one success definition cover the work. |
+| Split into specialist agents       | Different owners, permissions, policies, tools, or completion criteria are involved.            |
+| Add handoff boundaries             | Another agent should own the rest of the customer journey.                                      |
+| Add delegate boundaries            | The current agent needs a subtask result but should remain the active conversation owner.       |
+| Add constraints, guardrails, tools | A limitation must be enforced rather than only described.                                       |
+| Add human escalation               | Verification, safety, policy, or customer frustration requires a person.                        |
+
+## Responsibility worksheet
+
+Before writing the agent, answer these questions:
+
+| Question                                   | Example answer                                                            |
+| ------------------------------------------ | ------------------------------------------------------------------------- |
+| What business outcome does this agent own? | Recover account access after identity verification.                       |
+| What must it never do?                     | Bypass verification or answer billing questions.                          |
+| What information must it collect?          | `account_id`, `verification_method`.                                      |
+| Which tools or data can it use?            | Identity verification tools, account recovery tools.                      |
+| When should it hand off?                   | Billing request, human request, verification cannot continue.             |
+| How does it complete?                      | Required identity context is present and the next recovery step is clear. |
+
+## Minimal working example: account-security specialist project
+
+This example is a project-level set. The responsibility boundary is visible in the account-security agent, and the handoff targets are defined in the same project.
+
+`agents/account-security-agent.agent.abl`
+
+```abl
+AGENT: Account_Security_Agent
+GOAL: "Verify identity and help users recover account access"
+
+PERSONA: |
+  Security-conscious account support specialist.
+  Explains verification steps clearly.
+
+LIMITATIONS:
+  - "Cannot bypass identity verification"
+  - "Cannot answer billing questions"
+
+INTENTS:
+  billing: "Billing, invoices, payments, or subscription charges"
+  human_help: "User asks for a person or verification cannot continue"
+
+GATHER:
+  account_id:
+    prompt: "What is your account ID?"
+    type: string
+    required: true
+  verification_method:
+    prompt: "How would you like to verify your identity?"
+    type: string
+    required: true
+
+CONSTRAINTS:
+  - REQUIRE account_id IS SET
+    ON_FAIL: "I need your account ID before I can continue."
+
+HANDOFF:
+  - TO: Billing_Support_Agent
+    WHEN: intent.category == "billing"
+    PASS: [account_id]
+    SUMMARY: "Customer needs billing support"
+    RETURN: false
+  - TO: Live_Agent
+    WHEN: intent.category == "human_help"
+    PASS: [account_id]
+    SUMMARY: "Customer needs a human agent or cannot continue verification"
+    RETURN: false
+
+COMPLETE:
+  - WHEN: account_id IS SET AND verification_method IS SET
+    RESPOND: "I can continue account recovery for {{account_id}} using {{verification_method}} verification."
+```
+
+`agents/billing-support-agent.agent.abl`
+
+```abl
+AGENT: Billing_Support_Agent
+GOAL: "Answer billing questions after account-security handoff"
+
+GATHER:
+  account_id:
+    prompt: "What account should I review?"
+    type: string
+    required: true
+
+COMPLETE:
+  - WHEN: account_id IS SET
+    RESPOND: "I can continue billing support for {{account_id}}."
+```
+
+`agents/live-agent.agent.abl`
+
+```abl
+AGENT: Live_Agent
+GOAL: "Transfer customers to a human support specialist"
+
+COMPLETE:
+  - WHEN: true
+    RESPOND: "I will connect you with a human support specialist."
+```
+
+The account-security agent owns identity verification and recovery. Billing and human assistance are outside that responsibility and are represented as handoff boundaries.
+
+Since neither `HANDOFF` entry above declares `HISTORY`, each target now receives the full conversation history by default (the current platform default when `HISTORY` is omitted). Also, because each `WHEN` here is a single-field comparison (`intent.category == "billing"`), an unset field simply makes the comparison evaluate `false` — no error, and the trace shows your literal source text.
+
+## How to write strong goals
+
+Weak goal: "Help customers with account stuff."
+
+Strong goal: "Verify identity and help users recover account access."
+
+A strong goal names the business outcome, the user, and the scope. It should be narrow enough that an owner can say whether the agent succeeded.
+
+## How to write useful limitations
+
+| Limitation                            | Why it helps                                        |
+| ------------------------------------- | --------------------------------------------------- |
+| `Cannot bypass identity verification` | Prevents unsafe account recovery.                   |
+| `Cannot approve refunds`              | Separates policy explanation from financial action. |
+| `Cannot provide medical diagnosis`    | Draws a regulated-domain boundary.                  |
+
+For regulated or high-risk actions, do not rely on limitations alone. Add hard boundaries through tools, constraints, guardrails, permissions, or human handoff.
+
+## When to split an agent
+
+Split an agent when it has more than one business owner, more than one permission model, conflicting limitations, different tools by topic, or different success criteria by request type.
+
+Keep one agent when the same owner, policy, tools, data, and success criteria apply across the conversation.
+
+Use `DELEGATE` instead of splitting when the active agent only needs a subtask result and should keep the user conversation.
+
+## Verification
+
+1. Validate the account-security agent and its handoff targets together.
+2. Send: "I need to recover my account." Confirm `account_id` and `verification_method` are gathered.
+3. Send: "I have a billing question." Confirm the route goes to `Billing_Support_Agent` and passes `account_id`.
+4. Send: "I want to talk to someone." Confirm the route goes to `Live_Agent`.
+5. Inspect trace/debug output for selected handoff target, passed context, and final active agent.
+
+## Production readiness checklist
+
+- Each specialist has one primary business owner and one primary outcome.
+- Required fields are gathered or otherwise populated before tools, handoffs, or completion need them.
+- Sensitive or regulated actions are enforced with tools, constraints, guardrails, permissions, or human handoff.
+- Out-of-scope intents have handoff routes.
+- Success, out-of-scope, human escalation, and failure paths have test utterances.
+- Trace/debug output shows clear ownership transitions.
+
+## Common mistakes
+
+| Mistake                                  | Why it happens                                                   | How to avoid it                                                                  |
+| ---------------------------------------- | ---------------------------------------------------------------- | -------------------------------------------------------------------------------- |
+| Writing vague goals                      | The builder starts from a department name instead of an outcome. | Name the exact business outcome.                                                 |
+| Treating limitations as hard enforcement | Limitations are easy to write and read.                          | Add constraints, tools, guardrails, permissions, or handoff for hard boundaries. |
+| Creating overlapping specialists         | Teams define agents by org chart instead of user outcomes.       | Use distinct goals and test ambiguous requests.                                  |
+| Handing off without context              | The boundary is defined, but the target lacks state.             | Pass only the fields the target needs and verify they are populated.             |
+
+## Troubleshooting
+
+| Symptom                               | Likely cause                                                      | What to check                                                                   |
+| ------------------------------------- | ----------------------------------------------------------------- | ------------------------------------------------------------------------------- |
+| A specialist answers outside its area | Goal or limitations are too broad, or no handoff boundary exists. | Tighten `GOAL`, add specific `LIMITATIONS`, and add `HANDOFF` routes.           |
+| Required fields warn or appear unused | The agent collects fields but never consumes them.                | Use the fields in completion, tools, memory, handoff, delegate, or constraints. |
+| Supervisor routing is inconsistent    | Specialist responsibilities overlap.                              | Revisit each specialist's owner, outcome, and out-of-scope routes.              |

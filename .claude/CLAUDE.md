@@ -8,6 +8,7 @@ If you make major edits or structure changes, let the user know the summary of c
 
 ## Article structure and formatting standards
 
+- Check for discrepancy or doc bug such as content duplication, incorrect flow from a developer perspective, etc. when you make major edits to any article, irrespective of whether the prompt asks you to review or not. Don't make edits for these discrepancy checks but escalate for a human review in your report.
 - Start articles with the most important answer and not concepts or reasoning.
 - Always use Markdown syntax. If anything requires HTML syntax, ask the user.
 - When referring to any sub-heading in the article, link to its anchor.

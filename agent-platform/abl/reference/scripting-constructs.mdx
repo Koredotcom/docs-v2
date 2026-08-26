@@ -1,0 +1,822 @@
+---
+title: 'ABL programming and scripting constructs'
+sidebarTitle: Scripting constructs
+---
+
+ABL supports two complementary execution styles:
+
+- **Reasoning mode**: The agent has no `FLOW:` section, and the runtime decides how to pursue the goal.
+- **Scripted flow mode**: The agent has a `FLOW:` section and follows authored steps, actions, guards, and transitions.
+
+Use scripted flows when ordering, auditability, predictable cost, or strict business rules matter. Typical examples include payments, identity verification, regulated disclosures, onboarding forms, and support procedures with fixed escalation rules.
+
+This guide treats ABL as a programming and logic language: variables, expressions, validation, branching, state reset, collection processing, tool calls, retries, and terminal paths. Agent coordination is an integration boundary rather than the focus of this page — see [Multi-Agent and Supervisor](/agent-platform/abl-reference/multi-agent-and-supervisor) for `DELEGATE`, `HANDOFF`, and `ESCALATE`. Every flow step must declare `REASONING: true` or `REASONING: false`.
+
+---
+
+## Minimal scripted flow example
+
+```yaml
+AGENT: Account_Support
+
+GOAL: "Help the customer resolve an account request."
+
+FLOW:
+  start:
+    REASONING: false
+    RESPOND: "I can help with your account."
+    THEN: collect_account
+
+  collect_account:
+    REASONING: false
+    GATHER:
+      - account_id: required
+    THEN: lookup_account
+
+  lookup_account:
+    REASONING: false
+    CALL: get_account
+      WITH:
+        account_id: account_id
+      AS: accountResult
+    THEN: show_account
+
+  show_account:
+    REASONING: false
+    RESPOND: "Your account is {{accountResult.status}}."
+    THEN: COMPLETE
+```
+
+---
+
+## Flow structure and execution
+
+### FLOW
+
+`FLOW:` defines the scripted state machine. Steps are named blocks. A step can transition to any other step, which allows linear flows, branches, retries, loops, and terminal paths.
+
+Use it for:
+
+- Fixed process ordering.
+- Deterministic tool execution.
+- Compliance or audit requirements.
+- High-volume workflows where unnecessary LLM turns should be avoided.
+
+```yaml
+FLOW:
+  start -> collect -> validate -> complete
+```
+
+The arrow notation communicates a sequence. The named step blocks contain the actual behavior.
+
+Learn more: [Flow structure](/agent-platform/abl-reference/flow#flow-structure).
+
+### REASONING
+
+`REASONING` controls whether a step is deterministic or LLM-assisted:
+
+```yaml
+FLOW:
+  deterministic_check:
+    REASONING: false
+    CHECK: amount > 0
+    THEN: process
+
+  interpret_request:
+    REASONING: true
+    GOAL: "Determine which supported request the customer is making."
+    EXIT_WHEN: request_type != null
+    THEN: route_request
+```
+
+Use `false` for explicit actions and boolean conditions. Use `true` when the step needs flexible interpretation, tool selection, or reasoning that can't be represented as deterministic expressions.
+
+Reasoning-step controls include `GOAL`, `AVAILABLE_TOOLS`, `EXIT_WHEN`, `MAX_TURNS`, and `STEP_CONSTRAINTS`.
+
+Learn more: [Per-step REASONING toggle](/agent-platform/abl-reference/flow#per-step-reasoning-toggle).
+
+### WHEN
+
+`WHEN` is an entry guard. The step runs only when its condition is true.
+
+```yaml
+international_details:
+  REASONING: false
+  WHEN: transfer_type == "international"
+  GATHER:
+    - swift_code: required
+  THEN: validate_transfer
+```
+
+Learn more: [Entry guards](/agent-platform/abl-reference/flow#entry-guards).
+
+### MAX_ATTEMPTS and ON_EXHAUSTED
+
+`MAX_ATTEMPTS` limits retries for a step. `ON_EXHAUSTED` routes to a recovery step once the limit is reached.
+
+```yaml
+verify_pin:
+  REASONING: false
+  MAX_ATTEMPTS: 3
+  ON_EXHAUSTED: lock_account
+  GATHER:
+    - pin: required
+  THEN: check_pin
+```
+
+Learn more: [Attempt limiting](/agent-platform/abl-reference/flow#attempt-limiting).
+
+### THEN
+
+`THEN` is the normal next transition.
+
+```yaml
+complete_profile:
+  REASONING: false
+  SET: profile_complete = true
+  THEN: confirmation
+```
+
+`THEN` can point to a named step or a terminal action such as `COMPLETE`.
+
+Learn more: [THEN / ON_FAIL](/agent-platform/abl-reference/flow#then-%2F-on_fail).
+
+---
+
+## User interaction constructs
+
+### RESPOND
+
+`RESPOND` sends text to the user. Responses support `{{variable}}` interpolation and multiline pipe blocks. The FLOW reference sometimes labels this concept "SAY / RESPOND" — `RESPOND:` is the canonical flow action used in ABL examples.
+
+```yaml
+summary:
+  REASONING: false
+  RESPOND: |
+    Please confirm:
+    Amount: {{amount}}
+    Destination: {{beneficiary_name}}
+  THEN: confirm
+```
+
+Use it for instructions, confirmations, validation messages, receipts, and error recovery.
+
+Learn more: [SAY / RESPOND](/agent-platform/abl-reference/flow#say-%2F-respond).
+
+### PRESENT
+
+`PRESENT` shows context before a `GATHER` operation.
+
+```yaml
+review:
+  REASONING: false
+  PRESENT: |
+    Name: {{beneficiary_name}}
+    Account: {{MASK(beneficiary_account, "last4")}}
+    Amount: {{FORMAT_CURRENCY(amount, "USD")}}
+  GATHER:
+    - confirmation: required
+  THEN: confirm
+```
+
+Learn more: [PRESENT](/agent-platform/abl-reference/flow#present).
+
+### GATHER
+
+`GATHER` collects one or more fields from the user. It can specify type, required status, prompt, defaults, validation, extraction strategy, and correction behavior.
+
+```yaml
+collect_booking:
+  REASONING: false
+  GATHER:
+    FIELDS:
+      - destination: required
+      - checkin:
+          TYPE: date
+          REQUIRED: true
+          PROMPT: "When would you like to check in?"
+      - guests:
+          TYPE: number
+          DEFAULT: 2
+    STRATEGY: hybrid
+  CORRECTIONS: true
+  COMPLETE_WHEN: destination AND checkin
+  THEN: search
+```
+
+Use field validation for intrinsic values such as date format or account-number shape. Use `CHECK` or `CONSTRAINTS` for cross-field rules.
+
+Learn more: [GATHER](/agent-platform/abl-reference/gather) for the full field-type and validation reference, or [GATHER in flow steps](/agent-platform/abl-reference/flow#gather-in-flow-steps) for flow-specific syntax.
+
+---
+
+## State and data constructs
+
+### SET
+
+`SET` assigns values to session variables. The right-hand side can be a literal, variable, dotted result path, or built-in expression.
+
+```yaml
+initialize:
+  REASONING: false
+  SET:
+    status = "pending"
+    retry_count = 0
+    request_id = UNIQUE_ID(12)
+    created_at = NOW()
+  THEN: collect_details
+```
+
+Inline assignment is useful inside branches:
+
+```yaml
+ON_INPUT:
+  - IF: input == "express"
+    SET: shipping_method = "express"
+    THEN: calculate_shipping
+```
+
+Use `SET` for normalization, derived values, flags, counters, tool-result extraction, and workflow IDs.
+
+Learn more: [SET](/agent-platform/abl-reference/flow#set).
+
+### CLEAR
+
+`CLEAR` removes variables from session state. This is useful when the user changes an earlier choice and dependent values must be recollected.
+
+```yaml
+change_destination:
+  REASONING: false
+  CLEAR: [destination, hotel_id, room_id, booking_total]
+  RESPOND: "Let's start with the new destination."
+  THEN: collect_destination
+```
+
+Clear all dependent values, not just the field the user changed.
+
+Learn more: [CLEAR](/agent-platform/abl-reference/flow#clear).
+
+### TRANSFORM
+
+`TRANSFORM` applies a declarative array pipeline. The stages are `FILTER`, `MAP`, `SORT_BY`, and `LIMIT`.
+
+```yaml
+prepare_results:
+  REASONING: false
+  TRANSFORM: searchResult.hotels AS hotel INTO visible_hotels
+    FILTER: hotel.rating >= 4
+    MAP:
+      name: hotel.name
+      price: FORMAT_CURRENCY(hotel.price_per_night, "USD")
+      rating: hotel.rating
+    SORT_BY: rating DESC
+    LIMIT: 5
+  THEN: show_results
+```
+
+Use `TRANSFORM` for search results, transaction lists, catalog filtering, reporting data, and safe presentation shaping. It avoids embedding collection-processing logic in prompts.
+
+Learn more: [TRANSFORM](/agent-platform/abl-reference/flow#transform).
+
+---
+
+## Tool execution constructs
+
+### CALL
+
+`CALL` invokes a registered tool. Keep one tool call per step when sequencing matters, and chain calls through `THEN`.
+
+```yaml
+CALL: get_balance
+  WITH:
+    account_id: account_id
+  AS: balanceResult
+```
+
+`WITH` maps tool parameters to literals, variables, dotted paths, or expressions. `AS` stores the result for later use.
+
+Learn more: [Tools](/agent-platform/abl-reference/tools) for tool declaration and binding types.
+
+### ON_SUCCESS, ON_FAILURE, and ON_FAIL
+
+`ON_SUCCESS` and `ON_FAILURE` handle the two basic outcomes of a tool call.
+
+```yaml
+submit_request:
+  REASONING: false
+  CALL: create_ticket
+    WITH:
+      subject: subject
+      description: description
+    AS: ticketResult
+  ON_SUCCESS:
+    RESPOND: "Ticket {{ticketResult.id}} was created."
+    THEN: complete
+  ON_FAIL:
+    RESPOND: "I could not create the ticket."
+    THEN: retry_or_escalate
+```
+
+Use `ON_SUCCESS` and `ON_FAILURE` for structured success/failure handling around a `CALL`. Use `ON_RESULT` when the tool returns several business outcomes that require different paths. Use `ON_FAIL` for `CHECK` failure routing and other documented failure fallbacks. `ON_FAILURE` is also used by handoff configuration, so its meaning depends on where it appears.
+
+Learn more: [ON_SUCCESS / ON_FAIL](/agent-platform/abl-reference/flow#on_success-%2F-on_fail).
+
+### ON_RESULT
+
+`ON_RESULT` branches on fields in a tool result or deterministic flow context. Branches are evaluated in author order; the first matching branch wins.
+
+```yaml
+validate_recipient:
+  REASONING: false
+  CALL: verify_recipient
+    WITH:
+      routing_number: routing_number
+      account_number: account_number
+    AS: recipientResult
+  ON_RESULT:
+    - IF: recipientResult.status == "valid"
+      SET:
+        recipient_name = recipientResult.account_holder
+      THEN: collect_amount
+    - IF: recipientResult.status == "account_closed"
+      RESPOND: "That account is closed. Please provide another account."
+      THEN: collect_recipient
+    - ELSE:
+      RESPOND: "The recipient details could not be verified."
+      THEN: collect_recipient
+```
+
+Learn more: [ON_RESULT](/agent-platform/abl-reference/flow#on_result).
+
+### CHECK
+
+`CHECK` evaluates a deterministic boolean guard after state has been gathered or a tool has returned.
+
+```yaml
+check_limits:
+  REASONING: false
+  CHECK: amount <= balanceResult.available AND amount <= daily_limit
+  ON_FAIL: over_limit
+  THEN: confirm_transfer
+```
+
+Use `CHECK` for local step prerequisites. If `CHECK` is false and no `ON_FAIL` target is provided, the step halts rather than automatically choosing a recovery path. Use `CONSTRAINTS` for reusable business rules that apply across multiple steps or boundaries.
+
+Learn more: [CHECK](/agent-platform/abl-reference/flow#check).
+
+### CONSTRAINTS
+
+`CONSTRAINTS` declares reusable business invariants outside an individual step. Constraints are flattened and evaluated in declaration order on each turn; labels organize them but don't control execution order. A constraint can `REQUIRE`, `WARN`, `LIMIT`, or `RESTRICT` a condition, optionally scoped with `WHEN`, and define `ON_FAIL` behavior.
+
+```yaml
+CONSTRAINTS:
+  transfer_rules:
+    - REQUIRE account_id != null
+      ON_FAIL: "I need to verify your account before continuing."
+    - LIMIT amount <= daily_limit
+      WHEN: amount != null
+      ON_FAIL: ESCALATE
+```
+
+Use constraints for rules that must remain true across several paths or at a tool/result boundary. Use `CHECK` when the rule is local to one flow step. `LIMIT` and `RESTRICT` remain distinct constraint kinds, but initially share the runtime handling path. If a failed constraint must clear state before retrying, add a `CLEAR:` list to the `ON_FAIL` block (or route to a dedicated step that performs `CLEAR`) — a plain string or `ESCALATE` `ON_FAIL` does not clear variables on its own. See [Memory and Constraints](/agent-platform/abl-reference/memory-and-constraints#constraints) for the full constraint syntax, severity levels, and evaluation order.
+
+---
+
+## Branching and navigation
+
+### ON_INPUT
+
+`ON_INPUT` routes based on the current user input using deterministic boolean expressions.
+
+```yaml
+confirm:
+  REASONING: false
+  RESPOND: "Would you like me to submit this request?"
+  ON_INPUT:
+    - IF: input == "yes" OR input == "confirm"
+      THEN: submit
+    - IF: input == "no" OR input == "cancel"
+      THEN: cancelled
+    - ELSE:
+      RESPOND: "Please answer yes or no."
+      THEN: confirm
+```
+
+Use `ON_INPUT` for explicit, reproducible choices. Don't use it to make an LLM semantic judgment — use `DIGRESSIONS` or a reasoning step for that.
+
+Learn more: [ON_INPUT](/agent-platform/abl-reference/flow#on_input).
+
+### IF and ELSE
+
+`IF` defines a branch condition. An omitted condition represents `ELSE`. Both appear in `ON_INPUT` and `ON_RESULT` branches.
+
+### GOTO
+
+`GOTO` jumps directly to a named step. It's useful for cancellation, correction, and recovery paths.
+
+```yaml
+cancelled:
+  REASONING: false
+  CLEAR: [draft_request, confirmation]
+  RESPOND: "Your request has been cancelled."
+  THEN: COMPLETE
+```
+
+### DIGRESSIONS
+
+`DIGRESSIONS` handle intent-based escapes from the current step. Unlike `ON_INPUT`, digressions are for semantic intents such as help, cancellation, or an urgent request.
+
+```yaml
+collect_details:
+  REASONING: true
+  GATHER:
+    - account_id: required
+  DIGRESSIONS:
+    - INTENT: "help"
+      DO:
+        - RESPOND: "I need your account number to continue."
+        - RESUME
+    - INTENT: "cancel"
+      DO:
+        - RESPOND: "I cancelled the request."
+        - GOTO: cancelled
+```
+
+`global_digressions` can be declared under `FLOW` for behavior available in every step. A digression can `RESPOND`, `SET`, `CLEAR`, `CALL`, `DELEGATE`, `HANDOFF`, `GOTO`, or `RESUME`.
+
+Learn more: [Digressions](/agent-platform/abl-reference/flow#digressions) and [Global digressions](/agent-platform/abl-reference/flow#global-digressions).
+
+### SUB_INTENTS
+
+`SUB_INTENTS` handle step-local intents without leaving the step.
+
+```yaml
+collect_address:
+  REASONING: false
+  GATHER:
+    - address: required
+  SUB_INTENTS:
+    - INTENT: "change address"
+      CLEAR: [address, delivery_quote]
+      RESPOND: "Please provide the new address."
+    - INTENT: "why do you need this"
+      RESPOND: "We use it to calculate delivery eligibility."
+```
+
+Learn more: [Sub-intents](/agent-platform/abl-reference/flow#sub-intents).
+
+### COMPLETE_WHEN
+
+`COMPLETE_WHEN` defines when a collection step is complete. This is especially useful when several fields may be extracted from one user message.
+
+```yaml
+collect_profile:
+  REASONING: false
+  GATHER:
+    FIELDS:
+      - name: required
+      - email: required
+      - phone: optional
+  COMPLETE_WHEN: name AND email
+  THEN: validate_profile
+```
+
+`COMPLETE_WHEN` controls collection completion. It isn't a replacement for a final business-rule `CHECK` or `CONSTRAINT`.
+
+Learn more: [COMPLETE_WHEN](/agent-platform/abl-reference/flow#complete_when).
+
+---
+
+## Programming and logic patterns
+
+### Re-entry as looping
+
+ABL doesn't use a general-purpose `WHILE` or `FOR` statement in an authored flow. A loop is expressed by transitioning back to a named step with `THEN` or `GOTO`. State variables provide the loop condition; `MAX_ATTEMPTS` bounds execution of a step, but it isn't a general-purpose loop predicate.
+
+```yaml
+collect_code:
+  REASONING: false
+  MAX_ATTEMPTS: 3
+  ON_EXHAUSTED: lock_account
+  GATHER:
+    - verification_code: required
+  THEN: validate_code
+
+validate_code:
+  REASONING: false
+  CALL: verify_code
+    WITH:
+      code: verification_code
+    AS: codeResult
+  ON_RESULT:
+    - IF: codeResult.valid == true
+      THEN: continue_flow
+    - ELSE:
+      RESPOND: "That code is not valid. Please try again."
+      THEN: collect_code
+```
+
+### Guarded state transitions
+
+Use `WHEN`, `CHECK`, `ON_INPUT`, and `ON_RESULT` as the equivalent of guarded statements. Keep predicates side-effect-free and put mutations in `SET` or `CLEAR` actions.
+
+```yaml
+approve:
+  REASONING: false
+  WHEN: request_status == "ready"
+  CHECK: reviewer_id != null AND amount <= approval_limit
+  ON_FAIL: approval_required
+  THEN: submit
+```
+
+### Counters and bounded retries
+
+Use `SET` to maintain counters and `MAX_ATTEMPTS` to enforce a hard bound.
+
+```yaml
+retryable_call:
+  REASONING: false
+  SET: attempt_count = ADD(COALESCE(attempt_count, 0), 1)
+  CALL: submit_request
+    AS: result
+  ON_FAILURE:
+    THEN: retry_or_escalate
+  THEN: complete
+
+retry_or_escalate:
+  REASONING: false
+  CHECK: attempt_count < 3
+  ON_FAIL: escalate
+  THEN: retryable_call
+```
+
+### Terminal paths
+
+`COMPLETE` ends the flow. `ESCALATE` ends the scripted path by routing to a human. Both should be explicit for success, cancellation, validation failure, and unrecoverable error paths.
+
+```yaml
+complete:
+  REASONING: false
+  RESPOND: "Your request is complete."
+  THEN: COMPLETE
+```
+
+Learn more: [COMPLETE](/agent-platform/abl-reference/multi-agent-and-supervisor#complete) and [ESCALATE](/agent-platform/abl-reference/multi-agent-and-supervisor#escalate).
+
+### ON_ERROR
+
+`ON_ERROR` handles named runtime or tool errors at the agent level or, with a `TYPE` entry, at an individual flow step. Use it for centralized recovery, retry, response, or escalation policy. Use `ON_FAILURE` for structured call failure handling and `ON_FAIL` for guard/fallback failure routing.
+
+```yaml
+ON_ERROR:
+  tool_timeout:
+    RESPOND: "The service is taking too long. I will try once more."
+    RETRY: 1
+    THEN: retry_request
+  tool_error:
+    RESPOND: "The service could not complete the request."
+    RETRY: 0
+    THEN: ESCALATE with REASON: "Tool failure after scripted recovery"
+```
+
+For escalation from an error handler, use `THEN: ESCALATE with REASON: "..."`. Don't use an unsupported nested escalation-priority form inside `ON_ERROR`.
+
+Step-level handlers can additionally narrow an error with `SUBTYPE`, add retry delay/backoff, or route validation failures back to a collection step:
+
+```yaml
+search:
+  REASONING: false
+  CALL: search_catalog
+  ON_ERROR:
+    - TYPE: tool_error
+      SUBTYPE: timeout
+      RETRY: 2
+      RETRY_DELAY: 3000
+      RETRY_BACKOFF: exponential
+      THEN: ESCALATE with REASON: "Catalog search timed out"
+```
+
+The runtime's flow order is significant: response, gather, call, check, result/failure handling, input handling, then the default transition. Don't assume a later action runs after a branch has already transitioned.
+
+Top-level `COMPLETE` rules can also define conditional completion responses. Interactive `ACTIONS` and `ON_ACTION` can be used as a typed input alternative to free-form `ON_INPUT` branching when the valid choices are known.
+
+Learn more: [ON_ERROR handlers](/agent-platform/abl-reference/lifecycle-and-hooks#on_error-handlers) for agent-level errors, or [step-level error handling](/agent-platform/abl-reference/flow#step-level-error-handling) for the `TYPE`/`SUBTYPE` form shown above.
+
+---
+
+## Built-in expression functions
+
+Expressions can be used in `SET`, `CHECK`, `WHEN`, `ON_INPUT`, `ON_RESULT`, `FILTER`, `MAP`, and templates. Boolean expressions support comparisons and `AND`/`OR`/`NOT`. Keep them side-effect-free.
+
+| Category   | Functions                                                                                           |
+| ---------- | ----------------------------------------------------------------------------------------------------|
+| Math       | `ADD`, `SUB`, `MUL`, `DIV`, `ROUND`, `ABS`, `MIN`, `MAX`                                             |
+| String     | `UPPER`, `LOWER`, `TRIM`, `SUBSTRING`, `REPLACE`, `SPLIT`, `JOIN`, `PAD_START`, `PAD_END`, `REPEAT`  |
+| Formatting | `MASK`, `FORMAT_CURRENCY`, `FORMAT_DATE`, `ORDINAL`                                                 |
+| Type       | `IS_ARRAY`, `IS_NUMBER`, `IS_STRING`, `TO_NUMBER`, `TO_STRING`                                       |
+| Array      | `LENGTH`, `ARRAY_FIND`, `ARRAY_FIND_INDEX`                                                           |
+| Object     | `OBJECT_KEYS`, `OBJECT_VALUES`, `OBJECT_MERGE`                                                       |
+| Utility    | `COALESCE`, `NOW`, `UNIQUE_ID`                                                                       |
+
+Example normalization:
+
+```yaml
+SET:
+  normalized_phone = REPLACE(TRIM(phone), "-", "")
+  display_total = FORMAT_CURRENCY(total, "USD")
+  safe_account = MASK(account_number, "last4")
+```
+
+Guard nullable results before arithmetic or field access. `TO_NUMBER` can return `null`, and `DIV` returns `null` on division by zero — use `COALESCE`, `CHECK`, or a result branch before continuing. See [Expressions and functions](/agent-platform/abl-reference/rich-content-and-expressions#expressions-and-functions) for the complete function reference, operator precedence, and type coercion rules.
+
+---
+
+## End-to-end example: funds transfer
+
+The following example combines collection, normalization, tool calls, checks, result branching, correction, cancellation, and completion.
+
+```yaml expandable=true
+AGENT: Funds_Transfer
+
+GOAL: "Safely collect, validate, and submit a customer funds transfer."
+
+TOOLS:
+  verify_recipient(routing_number: string, account_number: string)
+    -> {status: string, account_holder: string}
+  get_balance(account_id: string) -> {available: number}
+  create_transfer(account_id: string, recipient_account: string, amount: number)
+    -> {status: string, transfer_id: string, error: string}
+
+FLOW:
+  global_digressions:
+    - INTENT: "cancel"
+      DO:
+        - RESPOND: "The transfer has been cancelled."
+        - CLEAR: [amount, recipient_account, transferResult]
+        - GOTO: cancelled
+
+  start:
+    REASONING: false
+    SET:
+      status = "collecting"
+      request_id = UNIQUE_ID(12)
+    THEN: collect_recipient
+
+  collect_recipient:
+    REASONING: false
+    GATHER:
+      FIELDS:
+        - routing_number: required
+        - account_number: required
+    CORRECTIONS: true
+    THEN: verify_recipient
+
+  verify_recipient:
+    REASONING: false
+    CALL: verify_recipient
+      WITH:
+        routing_number: routing_number
+        account_number: account_number
+      AS: recipientResult
+    ON_RESULT:
+      - IF: recipientResult.status == "valid"
+        SET:
+          recipient_name = recipientResult.account_holder
+          recipient_account = account_number
+        THEN: collect_amount
+      - IF: recipientResult.status == "account_closed"
+        RESPOND: "That account is closed. Please provide another account."
+        CLEAR: [account_number, recipient_account]
+        THEN: collect_recipient
+      - ELSE:
+        RESPOND: "I could not verify those details. Please check them."
+        THEN: collect_recipient
+
+  collect_amount:
+    REASONING: false
+    PRESENT: "Transferring to {{recipient_name}}."
+    GATHER:
+      - raw_amount:
+          TYPE: string
+          REQUIRED: true
+    SET:
+      amount = TO_NUMBER(REPLACE(TRIM(raw_amount), "$", ""))
+    CHECK: amount > 0
+    ON_FAIL: invalid_amount
+    THEN: load_balance
+
+  load_balance:
+    REASONING: false
+    CALL: get_balance
+      WITH:
+        account_id: account_id
+      AS: balanceResult
+    CHECK: amount <= balanceResult.available
+    ON_FAIL: insufficient_funds
+    THEN: confirm
+
+  confirm:
+    REASONING: false
+    RESPOND: |
+      Transfer {{FORMAT_CURRENCY(amount, "USD")}} to {{recipient_name}}?
+      Reply yes to submit or no to cancel.
+    ON_INPUT:
+      - IF: input == "yes" OR input == "confirm"
+        THEN: submit
+      - IF: input == "no" OR input == "cancel"
+        THEN: cancelled
+      - IF: input == "change"
+        CLEAR: [amount, raw_amount]
+        THEN: collect_amount
+      - ELSE:
+        RESPOND: "Please reply yes, no, or change."
+        THEN: confirm
+
+  submit:
+    REASONING: false
+    CALL: create_transfer
+      WITH:
+        account_id: account_id
+        recipient_account: recipient_account
+        amount: amount
+      AS: transferResult
+    ON_RESULT:
+      - IF: transferResult.status == "submitted"
+        RESPOND: "Transfer submitted: {{transferResult.transfer_id}}."
+        THEN: complete
+      - IF: transferResult.status == "duplicate"
+        RESPOND: "This transfer appears to have already been submitted."
+        THEN: complete
+      - ELSE:
+        RESPOND: "The transfer could not be submitted."
+        THEN: escalate
+
+  invalid_amount:
+    REASONING: false
+    RESPOND: "Please enter a positive transfer amount."
+    THEN: collect_amount
+
+  insufficient_funds:
+    REASONING: false
+    RESPOND: "The requested amount exceeds your available balance."
+    THEN: collect_amount
+
+  cancelled:
+    REASONING: false
+    RESPOND: "The transfer was cancelled."
+    THEN: COMPLETE
+
+  escalate:
+    REASONING: false
+    RESPOND: "I am connecting you with a specialist."
+    THEN: ESCALATE with REASON: "Transfer submission failed"
+
+  complete:
+    REASONING: false
+    SET:
+      status = "complete"
+      completed_at = NOW()
+    RESPOND: "Your transfer request is complete."
+    THEN: COMPLETE
+```
+
+---
+
+## Choose the right construct
+
+| Programming need                                     | Preferred construct                                       |
+| ---------------------------------------------------- | --------------------------------------------------------- |
+| Store or derive a value                              | `SET`                                                     |
+| Reset stale or dependent state                       | `CLEAR`                                                   |
+| Collect user data                                    | `GATHER`                                                  |
+| Show a review before collecting confirmation         | `PRESENT`                                                 |
+| Invoke a tool                                        | `CALL`                                                    |
+| Validate a local prerequisite                        | `CHECK`                                                   |
+| Branch on explicit user input                        | `ON_INPUT` with `IF` / `ELSE`                             |
+| Branch on tool business outcomes                     | `ON_RESULT`                                               |
+| Handle tool success versus failure                   | `ON_SUCCESS` / `ON_FAILURE`                               |
+| Route a guard or documented fallback failure         | `ON_FAIL`                                                 |
+| Filter or shape a list                               | `TRANSFORM`                                               |
+| Jump to a recovery or cancellation step              | `GOTO` or `THEN`                                          |
+| Handle semantic interruptions                        | `DIGRESSIONS`                                             |
+| Handle a step-local request                          | `SUB_INTENTS`                                             |
+| Bound a retry loop                                   | `SET`, `CHECK`, `MAX_ATTEMPTS`, and re-entry via `THEN`   |
+| End processing                                       | `COMPLETE`                                                |
+| Involve a human after scripted recovery is exhausted | `ESCALATE`                                                |
+| Offer known choices as typed input                   | `ACTIONS` and `ON_ACTION`                                 |
+
+---
+
+## Design guidelines
+
+1. Keep deterministic work in `REASONING: false` steps and reserve reasoning steps for interpretation or open-ended decisions.
+2. Use one `CALL` per step when tool ordering and failure routing matter.
+3. Prefer `ON_RESULT` for business statuses such as `valid`, `duplicate`, or `account_closed`. Use `ON_FAILURE` for tool execution failures and `ON_FAIL` for guard/fallback failures where documented.
+4. Clear dependent state whenever an earlier user choice changes.
+5. Use `ON_INPUT` for explicit boolean conditions and `DIGRESSIONS` for semantic intent handling.
+6. Use `CHECK` for local prerequisites and `CONSTRAINTS` for reusable cross-step or boundary rules.
+7. Shape arrays with `TRANSFORM` before presenting them to the user.
+8. Make every normal, failure, cancellation, retry, and escalation path explicit.
+9. Treat re-entry to a named step as a loop and always give it a bounded exit condition.
+10. Keep calculations and data shaping in expressions and `TRANSFORM`. Keep user-facing wording in `RESPOND`.
+11. Use `DELEGATE` and `HANDOFF` only when the problem genuinely crosses an agent ownership boundary.
