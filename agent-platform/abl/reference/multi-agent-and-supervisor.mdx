@@ -817,6 +817,7 @@ ESCALATE:
 | `PRIORITY` | `string` / `number`     | No       | `medium`   | Priority level: `low`, `medium`, `high`, `critical`, or a non-negative integer. |
 | `TAGS`     | `string[]`              | No       | --         | Tags for routing and categorization in the human agent queue. |
 | `SET`      | `Record<string,string>` | No       | --         | Session variable assignments applied when this trigger fires (`key = value`). |
+| `GENESYS_SIP_HEADERS` | `object` | No | -- | Per-trigger override of the Genesys SIP transfer headers attached when this escalation transfers a voice call. See [Genesys SIP transfer headers](#genesys-sip-transfer-headers). |
 
 <Note>`PRIORITY` is optional and defaults to `medium`. Note that `ESCALATE` inside an `ON_ERROR` handler is **not** parsed — to escalate from an error handler use `THEN: ESCALATE with REASON: "..."` instead of an inline `ESCALATE:` block.</Note>
 
@@ -869,6 +870,53 @@ The `routing` block controls how the escalation is routed in the human agent sys
 | `post_agent`  | `string`   | No       | --      | What happens after the human agent finishes: `return` or `end`.   |
 
 <Note>Earlier drafts used `skill_tags` and `priority_boost`. The current runtime contract uses `skills` and `priority` — the older keys are silently ignored. Additional advanced routing keys (`sub_type`, `named_agents`, `named_agent_options`, `agent_matching_conditions`, `voice`, `flow_policy_ref` / `transfer_flow_policy_ref`, `provider_config`) are also supported for human-agent integrations.</Note>
+
+#### Genesys SIP transfer headers
+
+When an escalation transfers a **voice** call to Genesys (through the Genesys Audio Connector), `genesys_sip_headers` attaches custom SIP headers to the transfer — carrying the target queue, a reason code, and optional metadata. Declare a default under `routing:` and/or an override on individual triggers with the `GENESYS_SIP_HEADERS:` block. A trigger's block takes precedence over the routing default.
+
+```yaml expandable=true
+ESCALATE:
+  triggers:
+    - WHEN: intent.category == "billing_dispute"
+      REASON: "Billing dispute requires a specialist."
+      PRIORITY: high
+      GENESYS_SIP_HEADERS:                 # per-trigger override
+        queue_header_key: "X-Genesys-Queue"
+        queue_name: "billing_disputes"
+        reason_header_key: "X-Genesys-Reason"
+        reason: "billing_dispute"
+        metadata_header_key: "X-Genesys-Data"
+        metadata:
+          tier: "gold"
+          region: "us-east"
+
+  routing:
+    connection: livechat
+    queue: "billing_l2"
+    genesys_sip_headers:                    # routing-level default for all triggers
+      queue_header_key: "X-Genesys-Queue"
+      queue_name: "billing_default"
+```
+
+Each field is optional. The `*_header_key` fields name a SIP header; the paired field supplies its value.
+
+| Field                 | Type                 | Description                                                                    |
+| --------------------- | -------------------- | ------------------------------------------------------------------------------ |
+| `queue_header_key`    | `string`             | SIP header **name** that carries the queue.                                    |
+| `queue_name`          | `string`             | Value placed in the queue header.                                              |
+| `reason_header_key`   | `string`             | SIP header **name** that carries the reason.                                   |
+| `reason`              | `string`             | Value placed in the reason header.                                             |
+| `metadata_header_key` | `string`             | SIP header **name** that carries the metadata.                                 |
+| `metadata`            | `string` or `object` | A string is sent verbatim; a map is serialized to a compact JSON string.       |
+
+The compiler validates the block against the same limits the runtime transfer enforces:
+
+- Header-name fields (`*_header_key`) must be RFC 3261 tokens, at most 64 characters.
+- Header values (`queue_name`, `reason`, and the serialized `metadata`) must contain no CR/LF/NUL characters and stay within 1024 UTF-8 bytes.
+- `metadata` must be a string or a non-empty map — arrays and scalar values are rejected; an empty `{}` is ignored.
+- Two header-name fields must not resolve to the same SIP header key (compared case-insensitively). A collision (`GENESYS_SIP_HEADER_KEY_COLLISION`) is a compile error, because the transfer rejects colliding header keys at runtime.
+- Unrecognized fields are ignored with a warning. Keys may be written in `snake_case` or `camelCase` (for example `queue_header_key` or `queueHeaderKey`).
 
 #### Transfer flow policies
 
