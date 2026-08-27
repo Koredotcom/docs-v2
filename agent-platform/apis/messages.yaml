@@ -1,0 +1,436 @@
+openapi: 3.1.0
+info:
+  title: ABL Public Analytics Messages API
+  version: 1.0.0
+  summary: Retrieve project-scoped conversation messages.
+  description: |
+    Returns the messages exchanged in a project's conversations, in order. Message
+    content is filtered according to the project's PII policy before it is returned, so
+    sensitive values may be masked or removed.
+
+    Give either a date range (`fromDate` and `toDate` together) or a list of
+    `sessionIds`.
+
+    For paging, prefer `cursor`: pass the `nextCursor` value from the previous response.
+    `offset` also works, and `skip` is an older name for `offset` that is still
+    accepted. Use only one of the three in a single request.
+
+    Authenticate with the `x-api-key` header. The key must be bound to the project you
+    are querying and have `analytics:read` permission.
+  x-source-release: release_Artemis_1.5.0
+  x-source-commit: 267794d75528a9ecb5ed70822451e43f91c15212
+servers:
+  - url: https://{host}
+    variables: { host: { default: runtime.example.com } }
+security: [{ ApiKeyAuth: [] }]
+tags: [{ name: Messages }]
+paths:
+  /api/public/analytics/projects/{projectId}/conversation-history:
+    get:
+      tags: [Messages]
+      operationId: listPublicAnalyticsMessages
+      summary: List conversation messages
+      description: |
+        Messages are ordered by time, then by message ID to keep the order stable.
+        Different filters combine with AND, and multiple values in the same filter
+        combine with OR.
+
+        A date-range query with no other filter that would span more than 10,000
+        sessions is rejected with `400`, so narrow the range or add `sessionIds` for
+        busy projects.
+      parameters:
+        - $ref: '#/components/parameters/ProjectId'
+        - $ref: '#/components/parameters/FromDate'
+        - $ref: '#/components/parameters/ToDate'
+        - $ref: '#/components/parameters/SessionIds'
+        - name: channelUIds
+          in: query
+          description: |
+            Filter to messages from specific end users, using the identity recorded for
+            them on the channel. Pass up to 100 values, comma-separated or by repeating
+            the parameter.
+          style: form
+          explode: false
+          schema: { type: array, maxItems: 100, uniqueItems: true, items: { type: string, minLength: 1 } }
+        - name: channel
+          in: query
+          description: |
+            Filter by the channel the conversation took place on. Pass up to 100 values,
+            comma-separated or by repeating the parameter.
+
+            Matched exactly as stored, with no alias handling. Unlike the sessions
+            endpoint, `web` and `web_chat` are different values here, and shorthand such
+            as `sms` or `sdk_http` matches nothing — use the exact channel name.
+
+            Not restricted to a fixed list, so an unrecognised value returns no results
+            rather than an error.
+          style: form
+          explode: false
+          schema:
+            type: array
+            maxItems: 100
+            uniqueItems: true
+            items:
+              type: string
+              enum: [http_async, slack, line, msteams, whatsapp, messenger, instagram, twilio_sms, zendesk, telegram, genesys, genesys_open_messaging, ai4w, kore_agent_assist, email, voice_vxml, korevg, audiocodes, genesys_audio_connector, voice_pipeline, voice_realtime, voice, voice_twilio, voice_livekit, ag_ui, a2a, sdk_websocket, web_debug, web_chat, api, http]
+        - name: environment
+          in: query
+          description: |
+            Filter by environment. Pass up to 100 values, comma-separated or by
+            repeating the parameter. Matched exactly as stored.
+
+            Not restricted to a fixed list, so an unrecognised value returns no results
+            rather than an error, though in practice only the four values below are
+            stored.
+          style: form
+          explode: false
+          schema:
+            type: array
+            maxItems: 100
+            uniqueItems: true
+            items: { type: string, enum: [dev, staging, production, working-copy] }
+        - $ref: '#/components/parameters/TraceDimension'
+        - name: cursor
+          in: query
+          description: |
+            Pass the `nextCursor` value from the previous response to get the next page.
+            Do not use together with `offset` or `skip`.
+          schema: { type: string, minLength: 1 }
+        - name: offset
+          in: query
+          description: |
+            Number of messages to skip before the first one returned. Do not use
+            together with `cursor` or `skip`.
+          schema: { type: integer, minimum: 0, default: 0 }
+        - name: skip
+          in: query
+          deprecated: true
+          description: |
+            An older name for `offset`, kept for compatibility. Prefer `offset`. Do not
+            use together with `cursor` or `offset`.
+          schema: { type: integer, minimum: 0 }
+        - name: limit
+          in: query
+          description: |
+            How many messages to return. A page may come back with fewer than requested
+            so the response stays within the 1 MiB size limit — check `hasMore` rather
+            than assuming a short page is the last one.
+          schema: { type: integer, minimum: 1, maximum: 10000, default: 100 }
+        - name: direction
+          in: query
+          description: |
+            Sort order by time: `asc` for oldest first, `desc` for newest first.
+          schema: { type: string, enum: [asc, desc], default: asc }
+      responses:
+        '200':
+          description: Message page returned successfully.
+          headers:
+            Cache-Control: { schema: { type: string }, example: 'private, no-store, max-age=0' }
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/MessageListResponse' }
+              example:
+                success: true
+                totalRecords: 2
+                hasMore: false
+                offset: 0
+                limit: 100
+                messages:
+                  - id: msg-01J4S8Y2
+                    sessionId: sess-01J4S8Y1
+                    type: incoming
+                    role: user
+                    content: Hello
+                    channel: web_chat
+                    sourceChannel: web_chat
+                    environment: production
+                    channelUId: contact-123
+                    traceDimensions:
+                      accountTier: gold
+                    traceId: trace-123
+                    attachmentIds: []
+                    hasPII: false
+                    metadata: { clientVersion: 1.4.2 }
+                    sequence: 1
+                    agentName: null
+                    timestamp: '2026-08-05T14:30:00.000Z'
+                    createdAt: '2026-08-05T14:30:00.120Z'
+                    updatedAt: '2026-08-05T14:30:00.120Z'
+                  - id: msg-01J4S8Y3
+                    sessionId: sess-01J4S8Y1
+                    type: outgoing
+                    role: assistant
+                    content: How can I help?
+                    channel: web_chat
+                    sourceChannel: web_chat
+                    environment: production
+                    channelUId: contact-123
+                    traceDimensions: { accountTier: gold }
+                    traceId: trace-124
+                    attachmentIds: []
+                    hasPII: false
+                    metadata:
+                      isLlmGenerated: true
+                      responseProvenance:
+                        schemaVersion: 1
+                        kind: llm
+                        disclaimerRequired: true
+                        usedLlmInternally: true
+                    sequence: 2
+                    agentName: Support Agent
+                    timestamp: '2026-08-05T14:30:01.000Z'
+                    createdAt: '2026-08-05T14:30:01.100Z'
+                    updatedAt: '2026-08-05T14:30:01.100Z'
+                nextCursor: null
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '413': { $ref: '#/components/responses/ResponseTooLarge' }
+        '429': { $ref: '#/components/responses/RateLimited' }
+        '500': { $ref: '#/components/responses/InternalError' }
+        '503': { $ref: '#/components/responses/Unavailable' }
+components:
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: x-api-key
+      description: Project-bound API key. Do not send an Authorization header.
+  parameters:
+    ProjectId:
+      name: projectId
+      in: path
+      required: true
+      schema: { type: string, minLength: 1 }
+    FromDate:
+      name: fromDate
+      in: query
+      description: Inclusive ISO 8601 timestamp. Required with `toDate` unless `sessionIds` is supplied.
+      schema: { type: string, format: date-time }
+    ToDate:
+      name: toDate
+      in: query
+      description: Exclusive ISO 8601 timestamp. Required with `fromDate` unless `sessionIds` is supplied.
+      schema: { type: string, format: date-time }
+    SessionIds:
+      name: sessionIds
+      in: query
+      description: |
+        Filter to specific sessions. Pass up to 10,000 session IDs, comma-separated or
+        by repeating the parameter. Can be used instead of a date range.
+      style: form
+      explode: false
+      schema: { type: array, maxItems: 10000, uniqueItems: true, items: { type: string, minLength: 1 } }
+    TraceDimension:
+      name: traceDimensions[key]
+      in: query
+      description: |
+        Filter by a custom dimension recorded against the session. Replace `key` with
+        the dimension name — for example `traceDimensions[tier]=gold`. Repeat with
+        different keys to require all of them. Values match exactly.
+      allowReserved: true
+      schema: { type: string }
+      x-dynamic-parameter: true
+  schemas:
+    MessageListResponse:
+      type: object
+      additionalProperties: false
+      required: [success, totalRecords, hasMore, offset, limit, messages, nextCursor]
+      properties:
+        success:
+          type: boolean
+          const: true
+          description: |
+            Always true on a successful response.
+        totalRecords:
+          type: integer
+          minimum: 0
+          description: |
+            Total number of messages matching your filters, across all pages.
+        hasMore:
+          type: boolean
+          description: |
+            Whether more pages are available after this one.
+        offset:
+          type: integer
+          minimum: 0
+          description: |
+            The offset applied to this response.
+        limit:
+          type: integer
+          minimum: 1
+          maximum: 10000
+          description: |
+            The page size applied to this response.
+        messages:
+          type: array
+          items: { $ref: '#/components/schemas/Message' }
+          description: |
+            The messages on this page.
+        nextCursor: { type: [string, 'null'], description: Opaque cursor for the next page. }
+    Message:
+      type: object
+      additionalProperties: false
+      required: [id, sessionId, type, role, content, channel, sourceChannel, environment, channelUId, traceDimensions, traceId, attachmentIds, hasPII, metadata, sequence, agentName, timestamp, createdAt, updatedAt]
+      properties:
+        id:
+          type: string
+          description: |
+            The message identifier.
+        sessionId:
+          type: string
+          description: |
+            The conversation this message belongs to.
+        type:
+          type: string
+          enum: [incoming, outgoing, system, tool]
+          description: |
+            Direction of the message: `incoming` from the end user, `outgoing` to the end user,
+            `system` for platform messages, `tool` for tool output.
+        role:
+          type: string
+          enum: [user, assistant, system, tool]
+          description: |
+            Who the message is attributed to, in the usual chat sense.
+        content:
+          type: string
+          description: |
+            The message text, after the project PII policy has been applied.
+        channel:
+          type: string
+          description: Stored session channel, matched exactly by the `channel` filter.
+          enum: ['', http_async, slack, line, msteams, whatsapp, messenger, instagram, twilio_sms, zendesk, telegram, genesys, genesys_open_messaging, ai4w, kore_agent_assist, email, voice_vxml, korevg, audiocodes, genesys_audio_connector, voice_pipeline, voice_realtime, voice, voice_twilio, voice_livekit, ag_ui, a2a, sdk_websocket, web_debug, web_chat, api, http]
+        sourceChannel:
+          type: string
+          description: |
+            The channel this individual message came in on. This can differ from the
+            session's `channel` if the conversation moved between channels part-way
+            through.
+          enum: ['', http_async, slack, line, msteams, whatsapp, messenger, instagram, twilio_sms, zendesk, telegram, genesys, genesys_open_messaging, ai4w, kore_agent_assist, email, voice_vxml, korevg, audiocodes, genesys_audio_connector, voice_pipeline, voice_realtime, voice, voice_twilio, voice_livekit, ag_ui, a2a, sdk_websocket, web_debug, web_chat, api, http]
+        environment:
+          description: |
+            The environment the conversation ran in. Null when not recorded.
+          type: [string, 'null']
+          enum: [dev, staging, production, working-copy, null]
+        channelUId: { type: [string, 'null'], description: Resolved end-user identity for the channel session. }
+        traceDimensions:
+          type: [object, 'null']
+          additionalProperties: { type: string }
+          description: |
+            Custom dimensions recorded against the session, as key/value pairs.
+        traceId:
+          type: [string, 'null']
+          description: |
+            The trace covering how this message was produced. Use it with the traces endpoint.
+        attachmentIds:
+          type: array
+          items: { type: string }
+          description: |
+            Identifiers of any files attached to the message.
+        hasPII:
+          type: boolean
+          description: |
+            Whether personal information was detected in this message. When true, the content you
+            see may be masked.
+        metadata:
+          type: object
+          additionalProperties: true
+          description: Sanitized message metadata. Assistant messages include normalized response provenance.
+          properties:
+            isLlmGenerated:
+              type: boolean
+              description: |
+                Whether this message was generated by a model rather than scripted.
+            responseProvenance: { $ref: '#/components/schemas/ResponseProvenance' }
+        sequence:
+          type: [number, 'null']
+          minimum: 0
+          description: |
+            Position of the message within its session, starting at 1.
+        agentName:
+          type: [string, 'null']
+          description: |
+            The agent that produced this message. Null for user messages.
+        timestamp:
+          type: string
+          format: date-time
+          description: |
+            When the message was sent.
+        createdAt:
+          type: string
+          format: date-time
+          description: |
+            When the message record was created.
+        updatedAt:
+          type: string
+          format: date-time
+          description: |
+            When the message record was last changed.
+    ResponseProvenance:
+      type: object
+      additionalProperties: false
+      required: [schemaVersion, kind, disclaimerRequired, usedLlmInternally]
+      properties:
+        schemaVersion: { type: integer, const: 1, description: Version of this provenance metadata contract. }
+        kind:
+          type: string
+          enum: [scripted, llm, mixed]
+          description: '`scripted` for authored output, `llm` for model-generated output, or `mixed` when both contributed.'
+        disclaimerRequired: { type: boolean, description: True when the customer-visible response was LLM-generated. }
+        usedLlmInternally: { type: boolean, description: Whether an LLM contributed internally, including to scripted final output. }
+    ErrorEnvelope:
+      type: object
+      required: [error]
+      properties:
+        success:
+          type: boolean
+          const: false
+          description: |
+            Always false on an error response.
+        error:
+          description: |
+            Details of what went wrong. `code` is a stable machine-readable value; `message` is
+            human-readable.
+          type: object
+          required: [code, message]
+          properties:
+            code: { type: string }
+            message: { type: string }
+            details: { type: object, additionalProperties: true }
+        message:
+          type: string
+          description: Present on some authorization denials in addition to `error.message`.
+        required:
+          description: Permission(s) the caller was missing. Present on authorization denials.
+          oneOf: [{ type: string }, { type: array, items: { type: string } }]
+  responses:
+    BadRequest:
+      description: |
+        The request could not be understood. Common causes: an invalid or one-sided date
+        range, neither a date range nor `sessionIds` supplied, more than one of
+        `cursor`, `offset`, and `skip` used together, too many filter values, or a
+        date-range query that would span more than 10,000 sessions. The `error.code`
+        says which.
+      content: { application/json: { schema: { $ref: '#/components/schemas/ErrorEnvelope' } } }
+    Unauthorized:
+      description: Missing or invalid `x-api-key`, or Authorization was supplied.
+      content: { application/json: { schema: { $ref: '#/components/schemas/ErrorEnvelope' } } }
+    Forbidden:
+      description: The key lacks `analytics:read`.
+      content: { application/json: { schema: { $ref: '#/components/schemas/ErrorEnvelope' } } }
+    NotFound:
+      description: Project not found or concealed because it is outside the key's scope.
+      content: { application/json: { schema: { $ref: '#/components/schemas/ErrorEnvelope' } } }
+    ResponseTooLarge:
+      description: A single rendered message cannot fit within the 1 MiB response budget.
+      content: { application/json: { schema: { $ref: '#/components/schemas/ErrorEnvelope' } } }
+    RateLimited:
+      description: Tenant request rate limit exceeded.
+      content: { application/json: { schema: { $ref: '#/components/schemas/ErrorEnvelope' } } }
+    InternalError:
+      description: Unexpected conversation-history failure.
+      content: { application/json: { schema: { $ref: '#/components/schemas/ErrorEnvelope' } } }
+    Unavailable:
+      description: Conversation-history or trace-dimension backing store unavailable.
+      content: { application/json: { schema: { $ref: '#/components/schemas/ErrorEnvelope' } } }
