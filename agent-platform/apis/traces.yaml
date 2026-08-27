@@ -1,0 +1,883 @@
+openapi: 3.1.0
+info:
+  title: ABL Public Analytics Traces API
+  version: 1.0.0
+  summary: Retrieve grouped trace events and optional full payloads.
+  description: |
+    Returns the execution events recorded while agents ran — LLM calls, tool calls,
+    agent decisions, and failures — grouped by the trace they belong to.
+
+    Choose how much detail you want with `dataMode`. `summary` returns the key facts
+    about each event, such as model, token counts, duration, and whether it failed.
+    `full` returns the same fields plus the complete request and response content for
+    each event.
+
+    Paging counts events, not traces, so a long trace can be split across two pages.
+
+    Authenticate with the `x-api-key` header. The key must be bound to the project you
+    are querying and have `analytics:read` permission.
+  x-source-release: release_Artemis_1.5.0
+  x-source-commit: 267794d75528a9ecb5ed70822451e43f91c15212
+servers:
+  - url: https://{host}
+    variables: { host: { default: runtime.example.com } }
+security: [{ ApiKeyAuth: [] }]
+tags: [{ name: Traces }]
+paths:
+  /api/public/analytics/projects/{projectId}/traces:
+    get:
+      tags: [Traces]
+      operationId: listPublicAnalyticsTraces
+      summary: List trace events grouped by trace
+      description: |
+        `fromDate` and `toDate` are required. `fromDate` is included in the results and
+        `toDate` is not, so a full day is
+        `fromDate=2026-08-05T00:00:00Z&toDate=2026-08-06T00:00:00Z`.
+
+        To page through results, pass the `nextCursor` value from the previous response
+        back as `cursor`. Keep every other parameter the same — a cursor is tied to the
+        filters, data mode, and sort order it was created with, and changing any of them
+        makes it invalid.
+
+        To fetch one specific event, filter by `eventId`. There is no separate
+        single-event endpoint.
+
+        If you request an event name this API does not support, it is ignored rather
+        than rejected, and listed back to you in `meta.unsupportedEventNamesRequested`.
+      parameters:
+        - $ref: '#/components/parameters/ProjectId'
+        - name: fromDate
+          in: query
+          required: true
+          schema: { type: string, format: date-time }
+        - name: toDate
+          in: query
+          required: true
+          schema: { type: string, format: date-time }
+        - name: limit
+          in: query
+          description: |
+            How many events to return. Counted before events are grouped into traces, so
+            a page of 100 events may contain fewer than 100 traces.
+          schema: { type: integer, minimum: 1, maximum: 10000, default: 100 }
+        - name: cursor
+          in: query
+          description: |
+            Pass the `nextCursor` value from the previous response to get the next page.
+            Keep all other parameters unchanged.
+          schema: { type: string, minLength: 1 }
+        - name: eventTypes
+          in: query
+          description: |
+            Filter by category of event. Pass one or more values, comma-separated or by
+            repeating the parameter. An unrecognised value is rejected with `400`.
+
+            Each category covers a fixed set of event names: `llm` covers
+            `llm.call.completed`; `tool` covers `tool.call.completed` and
+            `tool.call.skipped`; `decision` covers `agent.decision`; and `error` covers
+            both failure events, `llm.call.failed` and `tool.call.failed`.
+          style: form
+          explode: false
+          schema:
+            type: array
+            uniqueItems: true
+            maxItems: 4
+            items: { type: string, enum: [llm, tool, decision, error] }
+        - name: eventNames
+          in: query
+          description: |
+            Filter by specific event name, when `eventTypes` is broader than you need.
+            Pass up to 20 values, comma-separated or by repeating the parameter.
+
+            Unrecognised names are not rejected. They are ignored and returned to you in
+            `meta.unsupportedEventNamesRequested`, so only the names listed below will
+            actually select data.
+          style: form
+          explode: false
+          schema:
+            type: array
+            uniqueItems: true
+            maxItems: 20
+            items:
+              type: string
+              enum: [llm.call.completed, llm.call.failed, tool.call.completed, tool.call.failed, tool.call.skipped, agent.decision]
+          examples:
+            supported: { value: [llm.call.completed, tool.call.failed] }
+        - name: sessionIds
+          in: query
+          description: |
+            Filter to specific sessions. Pass up to 10,000 session IDs, comma-separated
+            or by repeating the parameter.
+          style: form
+          explode: false
+          schema: { type: array, maxItems: 10000, uniqueItems: true, items: { type: string, minLength: 1 } }
+        - name: eventId
+          in: query
+          description: |
+            Return only the event with this ID.
+          schema: { type: string, minLength: 1 }
+        - name: traceId
+          in: query
+          description: |
+            Return only events belonging to this trace.
+          schema: { type: string, minLength: 1 }
+        - name: agentName
+          in: query
+          description: |
+            Filter to events produced by this agent. Matched exactly; agent names are
+            set by whoever built the project, so there is no fixed list.
+          schema: { type: string, minLength: 1 }
+        - name: decisionKind
+          in: query
+          description: |
+            Filter agent decision events by the kind of decision made, for example
+            `routing` or `escalation`.
+
+            Matched exactly, and not restricted to a fixed list — new decision kinds can
+            be added by the platform at any time, so an unrecognised value returns no
+            results rather than an error. The values below are the ones currently in
+            use.
+          schema:
+            type: string
+            minLength: 1
+            x-common-values: [routing, handoff, escalation, completion, retry, backtrack, stop, pause, resume, reopen, waive, save_eval_suite, promote_candidate_to_eval_suite, promote_generated_project_lifecycle]
+        - name: channel
+          in: query
+          description: |
+            Filter by the channel the conversation took place on. Pass a single value;
+            if you repeat the parameter only the first value is used, and a
+            comma-separated list is treated as one literal value rather than a list.
+
+            Matched exactly as stored, with no alias handling. This differs from the
+            sessions endpoint, which accepts shorthand such as `web` or `sms` and
+            expands it. Here you must use the exact channel name: `web_chat` rather than
+            `web`, `twilio_sms` rather than `sms`, and the specific voice channel such
+            as `voice_vxml` or `audiocodes` rather than `voice`.
+
+            Not restricted to a fixed list, so an unrecognised value returns no results
+            rather than an error, and a newly added channel works before the list below
+            is updated.
+          schema:
+            type: string
+            enum: [http_async, slack, line, msteams, whatsapp, messenger, instagram, twilio_sms, zendesk, telegram, genesys, genesys_open_messaging, ai4w, kore_agent_assist, email, voice_vxml, korevg, audiocodes, genesys_audio_connector, voice_pipeline, voice_realtime, voice, voice_twilio, voice_livekit, ag_ui, a2a, sdk_websocket, web_debug, web_chat, api, http]
+        - name: environment
+          in: query
+          description: |
+            Filter by the environment the events were recorded in. Pass a single value;
+            if you repeat the parameter only the first value is used.
+
+            Matched exactly as stored. Not restricted to a fixed list, so an
+            unrecognised value returns no results rather than an error.
+          schema: { type: string, enum: [dev, staging, production, working-copy] }
+        - name: hasError
+          in: query
+          description: |
+            Set to `true` to return only events that failed, or `false` for only those
+            that succeeded. Omit to return both. Accepts `true`, `false`, `1`, or `0`.
+          schema: { type: boolean }
+        - name: dataMode
+          in: query
+          description: |
+            How much detail to return per event. `summary` returns the key facts. `full`
+            adds the complete request and response content under
+            `eventData.payloadData`.
+          schema: { type: string, enum: [summary, full], default: summary }
+        - name: sortOrder
+          in: query
+          schema: { type: string, enum: [asc, desc], default: asc }
+      responses:
+        '200':
+          description: Trace event page returned successfully.
+          headers:
+            Cache-Control: { schema: { type: string }, example: 'private, no-store, max-age=0' }
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/TraceListResponse' }
+              examples:
+                summary:
+                  summary: Summary mode
+                  value:
+                    traces:
+                      - traceId: trace-123
+                        sessionId: sess-123
+                        environment: production
+                        channel: web_chat
+                        agentName: Support Agent
+                        deploymentId: deploy-123
+                        events:
+                          - eventId: evt-123
+                            eventSeq: 7
+                            eventCursor: cursor-7
+                            payloadVersion: 1
+                            eventType: llm
+                            eventName: llm.call.completed
+                            timestamp: '2026-08-05T14:30:00.000Z'
+                            ingestedAt: '2026-08-05T14:30:00.050Z'
+                            spanId: span-123
+                            reasonCode: null
+                            operationType: response_gen
+                            agentExecutionPolicySource: legacy_agent
+                            responseContribution: customer_visible
+                            actor: { actorId: agent-123, actorType: agent, contactId: null }
+                            durationMs: 842
+                            hasError: false
+                            error: null
+                            eventData:
+                              model: gpt-5.2
+                              provider: openai
+                              inputTokens: 120
+                              outputTokens: 35
+                              totalTokens: 155
+                              reasoningTokens: 5
+                              cachedTokens: 20
+                              audioInputTokens: 0
+                              audioOutputTokens: 0
+                              estimatedCost: { amount: 0.0021, currency: USD }
+                              latencyMs: 842
+                              streamingUsed: true
+                              toolCallCount: 0
+                              timeToFirstTokenMs: 180
+                              cacheCreationTokens: 0
+                              finishReason: stop
+                              retryAttempt: 0
+                    pageInfo: { hasMore: false, nextCursor: null }
+                    meta:
+                      fromDate: '2026-08-05T00:00:00.000Z'
+                      toDate: '2026-08-06T00:00:00.000Z'
+                      dataMode: summary
+                      sortOrder: asc
+                      supportedEventTypes: [llm, tool, decision, error]
+                      supportedEventNames: [llm.call.completed, llm.call.failed, tool.call.completed, tool.call.failed, tool.call.skipped, agent.decision]
+                      unsupportedEventNamesRequested: []
+                full:
+                  summary: Full LLM payload mode
+                  value:
+                    traces:
+                      - traceId: trace-123
+                        sessionId: sess-123
+                        environment: production
+                        channel: web_chat
+                        agentName: Support Agent
+                        deploymentId: deploy-123
+                        events:
+                          - eventId: evt-123
+                            eventSeq: 7
+                            eventCursor: cursor-7
+                            payloadVersion: 1
+                            eventType: llm
+                            eventName: llm.call.completed
+                            timestamp: '2026-08-05T14:30:00.000Z'
+                            ingestedAt: '2026-08-05T14:30:00.050Z'
+                            spanId: span-123
+                            reasonCode: null
+                            operationType: response_gen
+                            agentExecutionPolicySource: legacy_agent
+                            responseContribution: customer_visible
+                            actor: null
+                            durationMs: 842
+                            hasError: false
+                            error: null
+                            eventData:
+                              model: gpt-5.2
+                              provider: openai
+                              inputTokens: 120
+                              outputTokens: 35
+                              totalTokens: 155
+                              reasoningTokens: 5
+                              cachedTokens: 20
+                              audioInputTokens: 0
+                              audioOutputTokens: 0
+                              estimatedCost: { amount: 0.0021, currency: USD }
+                              latencyMs: 842
+                              streamingUsed: true
+                              toolCallCount: 0
+                              timeToFirstTokenMs: 180
+                              cacheCreationTokens: 0
+                              finishReason: stop
+                              retryAttempt: 0
+                              payloadData:
+                                request:
+                                  systemPrompt: You are a support agent.
+                                  messages: [{ role: user, content: Hello }]
+                                  tools: []
+                                  model: gpt-5.2
+                                  provider: openai
+                                response:
+                                  schemaVersion: 1
+                                  kind: llm_response
+                                  text: How can I help?
+                                  usage: { inputTokens: 120, outputTokens: 35 }
+                    pageInfo: { hasMore: false, nextCursor: null }
+                    meta:
+                      fromDate: '2026-08-05T00:00:00.000Z'
+                      toDate: '2026-08-06T00:00:00.000Z'
+                      dataMode: full
+                      sortOrder: asc
+                      supportedEventTypes: [llm, tool, decision, error]
+                      supportedEventNames: [llm.call.completed, llm.call.failed, tool.call.completed, tool.call.failed, tool.call.skipped, agent.decision]
+                      unsupportedEventNamesRequested: []
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '413': { $ref: '#/components/responses/ResponseTooLarge' }
+        '429': { $ref: '#/components/responses/RateLimited' }
+        '500': { $ref: '#/components/responses/InternalError' }
+        '503': { $ref: '#/components/responses/Unavailable' }
+components:
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: x-api-key
+      description: Project-bound API key. Do not send an Authorization header.
+  parameters:
+    ProjectId:
+      name: projectId
+      in: path
+      required: true
+      schema: { type: string, minLength: 1 }
+  schemas:
+    TraceListResponse:
+      type: object
+      additionalProperties: false
+      required: [traces, pageInfo, meta]
+      properties:
+        traces:
+          type: array
+          items: { $ref: '#/components/schemas/Trace' }
+          description: |
+            The traces on this page. One trace groups the events from a single run.
+        pageInfo:
+          $ref: '#/components/schemas/PageInfo'
+          description: |
+            Paging information for this response.
+        meta:
+          $ref: '#/components/schemas/TraceMeta'
+          description: |
+            Echo of the query that produced this response, plus the values this API supports.
+    Trace:
+      type: object
+      additionalProperties: false
+      required: [traceId, sessionId, environment, channel, agentName, deploymentId, events]
+      properties:
+        traceId:
+          type: [string, 'null']
+          description: |
+            Identifier shared by all events from one run. Null when the events were recorded
+            without one.
+        sessionId:
+          type: string
+          description: |
+            The conversation these events belong to.
+        environment:
+          type: [string, 'null']
+          description: Empty values are normalized to `null` on output.
+          enum: [dev, staging, production, working-copy, null]
+        channel:
+          type: [string, 'null']
+          description: |
+            The channel the conversation took place on, exactly as recorded. `null` when
+            the event was not tied to a channel.
+          enum: [http_async, slack, line, msteams, whatsapp, messenger, instagram, twilio_sms, zendesk, telegram, genesys, genesys_open_messaging, ai4w, kore_agent_assist, email, voice_vxml, korevg, audiocodes, genesys_audio_connector, voice_pipeline, voice_realtime, voice, voice_twilio, voice_livekit, ag_ui, a2a, sdk_websocket, web_debug, web_chat, api, http, null]
+        agentName:
+          type: [string, 'null']
+          description: |
+            The agent that ran. Null when not recorded.
+        deploymentId:
+          type: [string, 'null']
+          description: |
+            The deployment the agent was running under.
+        events:
+          type: array
+          items: { $ref: '#/components/schemas/TraceEvent' }
+          description: |
+            The events in this trace that fall on the current page. A long trace can continue on
+            the next page.
+    TraceEvent:
+      oneOf:
+        - $ref: '#/components/schemas/LlmEvent'
+        - $ref: '#/components/schemas/ToolEvent'
+        - $ref: '#/components/schemas/DecisionEvent'
+        - $ref: '#/components/schemas/ErrorEvent'
+      discriminator:
+        propertyName: eventType
+        mapping:
+          llm: '#/components/schemas/LlmEvent'
+          tool: '#/components/schemas/ToolEvent'
+          decision: '#/components/schemas/DecisionEvent'
+          error: '#/components/schemas/ErrorEvent'
+    EventBase:
+      type: object
+      required: [eventId, eventSeq, eventCursor, payloadVersion, eventType, eventName, timestamp, ingestedAt, spanId, reasonCode, operationType, agentExecutionPolicySource, responseContribution, actor, durationMs, hasError, error, eventData]
+      properties:
+        eventId:
+          type: string
+          description: |
+            Identifier of this event. Pass it to the `eventId` filter to fetch just this one.
+        eventSeq:
+          type: [integer, 'null']
+          minimum: 0
+          description: |
+            Position of this event in the run, used to keep events in order.
+        eventCursor:
+          type: [string, 'null']
+          description: |
+            Paging marker for this event. Not usually needed — use `pageInfo.nextCursor`
+            instead.
+        payloadVersion:
+          type: [integer, 'null']
+          minimum: 0
+          description: |
+            Internal version of the event format. Useful only when comparing old and new
+            records.
+        eventType:
+          type: string
+          enum: [llm, tool, decision, error]
+          description: |
+            Category of event.
+        eventName:
+          type: string
+          enum: [llm.call.completed, llm.call.failed, tool.call.completed, tool.call.failed, tool.call.skipped, agent.decision]
+          description: |
+            The specific event that was recorded.
+        timestamp:
+          type: string
+          format: date-time
+          description: |
+            When the event happened.
+        ingestedAt:
+          type: [string, 'null']
+          format: date-time
+          description: |
+            When the platform stored the event. Slightly later than `timestamp`.
+        spanId:
+          type: [string, 'null']
+          description: |
+            Identifier for this step within the trace, for lining events up with external
+            tracing tools.
+        reasonCode:
+          type: [string, 'null']
+          description: |
+            A short code explaining why the event happened or what it resulted in, for
+            example the reason a decision was taken or a call failed. Not restricted to
+            a fixed list — each part of the platform sets its own codes, and for some
+            event kinds this falls back to the event name itself. `null` when the event
+            records no reason.
+        operationType:
+          type: [string, 'null']
+          description: |
+            What the LLM call was being used for. For agent responses this is normally
+            `response_gen` (generating a reply) or `coordination` (deciding where to
+            route). Other parts of the platform — guardrails, pipelines, Arch, SearchAI,
+            and Studio test calls — set their own values, so this is not restricted to a
+            fixed list. The values below are the most common.
+          x-common-values: [response_gen, coordination, extraction, validation, tool_selection, reasoning]
+          x-other-producer-values: [chat_complete, guardrail_evaluation, realtime_response, pipeline_classify, pipeline_generate_text, pipeline_generate_object, route_selection, response_synthesis]
+        agentExecutionPolicySource:
+          type: [string, 'null']
+          description: |
+            How the platform worked out what role the agent was playing. `explicit`
+            means the agent declares its role directly, which is the current approach.
+            The three `legacy_` values mean the role had to be inferred from an older
+            agent definition. Always one of these four values, or `null` when the event
+            is not an agent LLM call.
+          enum: [explicit, legacy_agent, legacy_supervisor_flag, legacy_compiled_route_only, null]
+        responseContribution:
+          type: [string, 'null']
+          description: |
+            Whether this event's output reached the end user. `customer_visible` means
+            it formed part of the reply; `internal_only` means it was used behind the
+            scenes. Not restricted to a fixed list, though the values below are the ones
+            the platform currently sets.
+          x-common-values: [internal_only, customer_visible, customer_visible_candidate, customer_visible_interim, none, simulated]
+        actor:
+          description: Who or what triggered the event. Null when not recorded.
+          oneOf: [{ $ref: '#/components/schemas/Actor' }, { type: 'null' }]
+        durationMs:
+          type: [integer, 'null']
+          minimum: 0
+          description: |
+            How long the step took, in milliseconds.
+        hasError:
+          type: boolean
+          description: |
+            Whether this event represents a failure.
+        error:
+          description: |
+            Details of what went wrong. `code` is a stable machine-readable value; `message` is
+            human-readable.
+          oneOf: [{ $ref: '#/components/schemas/EventError' }, { type: 'null' }]
+    LlmEvent:
+      allOf:
+        - $ref: '#/components/schemas/EventBase'
+        - type: object
+          properties:
+            eventType: { const: llm }
+            eventName: { const: llm.call.completed }
+            eventData:
+              $ref: '#/components/schemas/LlmEventData'
+              description: |
+                The event details, which differ by event type.
+    ToolEvent:
+      allOf:
+        - $ref: '#/components/schemas/EventBase'
+        - type: object
+          properties:
+            eventType: { const: tool }
+            eventName: { type: string, enum: [tool.call.completed, tool.call.skipped] }
+            eventData: { $ref: '#/components/schemas/ToolEventData' }
+    DecisionEvent:
+      allOf:
+        - $ref: '#/components/schemas/EventBase'
+        - type: object
+          properties:
+            eventType: { const: decision }
+            eventName: { const: agent.decision }
+            eventData: { $ref: '#/components/schemas/DecisionEventData' }
+    ErrorEvent:
+      allOf:
+        - $ref: '#/components/schemas/EventBase'
+        - type: object
+          properties:
+            eventType: { const: error }
+            eventName: { type: string, enum: [llm.call.failed, tool.call.failed] }
+            eventData:
+              type: object
+              additionalProperties: false
+              properties: { payloadData: { $ref: '#/components/schemas/PayloadData' } }
+    LlmEventData:
+      type: object
+      additionalProperties: false
+      required: [model, provider, inputTokens, outputTokens, totalTokens, reasoningTokens, cachedTokens, audioInputTokens, audioOutputTokens, estimatedCost, latencyMs, streamingUsed, toolCallCount, timeToFirstTokenMs, cacheCreationTokens, finishReason, retryAttempt]
+      properties:
+        model:
+          type: string
+          description: |
+            The model used for this call.
+        provider:
+          type: string
+          description: |
+            The provider that served the call, such as `openai` or `azure`.
+        inputTokens:
+          type: [integer, 'null']
+          minimum: 0
+          description: |
+            Tokens in the prompt sent to the model.
+        outputTokens:
+          type: [integer, 'null']
+          minimum: 0
+          description: |
+            All tokens the model produced — answer plus any reasoning.
+        totalTokens:
+          type: [integer, 'null']
+          minimum: 0
+          description: |
+            Input plus output tokens for this call.
+        reasoningTokens:
+          type: [integer, 'null']
+          minimum: 0
+          description: |
+            Tokens spent on internal model reasoning. Billed as output but not part of the
+            visible answer.
+        cachedTokens:
+          type: [integer, 'null']
+          minimum: 0
+          description: |
+            Input tokens served from the provider prompt cache. Part of inputTokens, and usually
+            cheaper.
+        audioInputTokens:
+          type: [integer, 'null']
+          minimum: 0
+          description: |
+            Audio tokens in the prompt, for voice models.
+        audioOutputTokens:
+          type: [integer, 'null']
+          minimum: 0
+          description: |
+            Audio tokens in the response, for voice models.
+        estimatedCost:
+          description: |
+            Estimated cost of this call. Null when no price is known for the model.
+          oneOf: [{ $ref: '#/components/schemas/Money' }, { type: 'null' }]
+        latencyMs:
+          type: [integer, 'null']
+          minimum: 0
+          description: |
+            How long the call took, in milliseconds.
+        streamingUsed:
+          type: [boolean, 'null']
+          description: |
+            Whether the response was streamed back token by token.
+        toolCallCount:
+          type: [integer, 'null']
+          minimum: 0
+          description: |
+            How many tool calls the model asked for in this response.
+        timeToFirstTokenMs:
+          type: [integer, 'null']
+          minimum: 0
+          description: |
+            Time until the first token arrived, in milliseconds. Meaningful for streamed calls.
+        cacheCreationTokens:
+          type: [integer, 'null']
+          minimum: 0
+          description: |
+            Input tokens written into the provider prompt cache for reuse by later calls.
+        finishReason:
+          type: [string, 'null']
+          description: |
+            Why the model stopped generating: `stop` when it finished normally, `length`
+            when it hit the token limit, `tool_calls` when it asked to call a tool,
+            `content_filter` when output was blocked, `error` on failure.
+            Provider-specific wording is converted to these five values where the
+            platform recognises it, but an unconverted provider value can still appear.
+          x-common-values: [stop, length, tool_calls, content_filter, error]
+        retryAttempt:
+          type: [integer, 'null']
+          minimum: 0
+          description: |
+            Which attempt this was. 0 on the first try, higher after a retry.
+        payloadData: { $ref: '#/components/schemas/PayloadData' }
+    ToolEventData:
+      type: object
+      additionalProperties: false
+      required: [toolName, toolType, success, latencyMs, resultSizeBytes, executionSkipped, operationalFailure]
+      properties:
+        toolName:
+          type: string
+          description: |
+            Name of the tool that was called.
+        toolType:
+          type: [string, 'null']
+          description: |
+            What kind of tool was called — an HTTP endpoint, an MCP server, a workflow,
+            and so on. The values below cover the built-in tool kinds; a custom tool can
+            report its own value.
+          x-common-values: [http, mcp, sandbox, lambda, connector, workflow, searchai, async_webhook, table]
+        success:
+          type: [boolean, 'null']
+          description: |
+            Always false on an error response.
+        latencyMs:
+          type: [integer, 'null']
+          minimum: 0
+          description: |
+            How long the tool call took, in milliseconds.
+        resultSizeBytes:
+          type: [integer, 'null']
+          minimum: 0
+          description: |
+            Size of what the tool returned, in bytes.
+        executionSkipped:
+          type: [boolean, 'null']
+          description: |
+            True when the tool was chosen but not actually run — for example when a guard
+            blocked it.
+        operationalFailure:
+          type: [boolean, 'null']
+          description: |
+            True when the tool failed for an infrastructure reason, such as a timeout, rather
+            than returning a normal error.
+        payloadData: { $ref: '#/components/schemas/PayloadData' }
+    DecisionEventData:
+      type: object
+      additionalProperties: false
+      required: [decisionKind, decision, outcome, matched, reasoning]
+      properties:
+        decisionKind:
+          type: string
+          description: |
+            The kind of decision the agent made, for example `routing` or `escalation`.
+            Not restricted to a fixed list, since new decision kinds can be added at any
+            time. Returned as `unknown` when the event does not record one.
+          x-common-values: [routing, handoff, escalation, completion, retry, backtrack, stop, pause, resume, reopen, waive, save_eval_suite, promote_candidate_to_eval_suite, promote_generated_project_lifecycle, unknown]
+        decision:
+          type: [string, 'null']
+          description: |
+            What the agent decided, such as the agent it routed to. Free text, and not
+            always present.
+        outcome:
+          type: [string, 'null']
+          description: |
+            The agent's stated reasoning. Always `null` in `summary` mode; look in
+            `payloadData.details` when using `dataMode=full`.
+        matched:
+          type: [boolean, 'null']
+          description: |
+            Whether the decision matched a configured rule.
+        reasoning: { type: [string, 'null'], description: Summary mode currently returns null; detailed reasoning may be in full-mode payload details. }
+        payloadData: { $ref: '#/components/schemas/PayloadData' }
+    PayloadData:
+      type: object
+      additionalProperties: false
+      description: |
+        The full content of the event, returned only when `dataMode=full`. LLM calls use
+        `request` and `response`; tool calls and decisions use `input`, `output`, and
+        `details`.
+      properties:
+        request: { description: Complete sanitized LLM request payload }
+        response: { description: Complete sanitized LLM response payload }
+        input: { description: Complete sanitized event input }
+        output: { description: Complete sanitized event output }
+        details: { type: object, additionalProperties: true, description: Remaining sanitized event-specific fields. }
+    Actor:
+      type: object
+      additionalProperties: false
+      required: [actorId, actorType, contactId]
+      properties:
+        actorId:
+          type: [string, 'null']
+          description: |
+            Identifier of the user, contact, or agent that triggered the event.
+        actorType:
+          type: [string, 'null']
+          description: |
+            Who or what triggered the event: `user` or `contact` for a person, `agent`
+            for an AI agent, `system` for the platform itself. Anything else is returned
+            as `null`.
+          enum: [user, contact, system, agent, null]
+        contactId:
+          type: [string, 'null']
+          description: |
+            The contact record associated with the event, when the actor is a known person.
+    EventError:
+      type: object
+      additionalProperties: false
+      required: [type, message]
+      properties:
+        type:
+          type: [string, 'null']
+          description: |
+            A short error identifier, such as a platform error code or the name of the
+            underlying error class. Free text, limited to letters, digits, and the
+            characters `_ . : -`. Anything longer or containing other characters is
+            returned as `null`.
+          pattern: '^[a-zA-Z0-9_.:-]{1,128}$'
+          maxLength: 128
+          x-common-values: [internal_error, unknown_error, app_error, execution_error, llm_error, provider_error, channel_send_failed, channel_send_exception, channel_adapter_unavailable, webhook_delivery_failed, webhook_client_error, websocket_not_open, voice_setup_error, tts_delivery_failure]
+        message: { type: [string, 'null'], description: Currently redacted to null on the public surface. }
+    Money:
+      type: object
+      additionalProperties: false
+      required: [amount, currency]
+      properties:
+        amount:
+          type: number
+          minimum: 0
+          description: |
+            The cost amount.
+        currency:
+          type: string
+          description: |
+            Three-letter currency code, uppercase. `USD` unless the recorded cost
+            specifies something else.
+          pattern: '^[A-Z]{3}$'
+          default: USD
+          example: USD
+    PageInfo:
+      type: object
+      additionalProperties: false
+      required: [hasMore, nextCursor]
+      properties:
+        hasMore:
+          type: boolean
+          description: |
+            Whether more pages are available after this one.
+        nextCursor:
+          type: [string, 'null']
+          description: |
+            Pass this back as `cursor` to fetch the next page. Null on the last page.
+    TraceMeta:
+      type: object
+      additionalProperties: false
+      required: [fromDate, toDate, dataMode, sortOrder, supportedEventTypes, supportedEventNames, unsupportedEventNamesRequested]
+      properties:
+        fromDate:
+          type: string
+          format: date-time
+          description: |
+            The start of the range applied to this response.
+        toDate:
+          type: string
+          format: date-time
+          description: |
+            The end of the range applied to this response.
+        dataMode:
+          type: string
+          enum: [summary, full]
+          description: |
+            The detail level applied to this response.
+        sortOrder:
+          type: string
+          enum: [asc, desc]
+          description: |
+            The sort order applied to this response.
+        supportedEventTypes:
+          type: array
+          items: { type: string, enum: [llm, tool, decision, error] }
+          description: |
+            Every event category this API can return.
+        supportedEventNames:
+          type: array
+          description: The complete set of event names this API can select.
+          items:
+            type: string
+            enum: [llm.call.completed, llm.call.failed, tool.call.completed, tool.call.failed, tool.call.skipped, agent.decision]
+        unsupportedEventNamesRequested:
+          type: array
+          description: |
+            Any `eventNames` values you sent that this API does not support. They were
+            ignored rather than rejected. Use this to spot typos when a query returns
+            fewer results than expected.
+          items: { type: string }
+    ErrorEnvelope:
+      type: object
+      required: [error]
+      properties:
+        success:
+          type: boolean
+          const: false
+          description: |
+            Always false on an error response.
+        error:
+          description: |
+            Details of what went wrong. `code` is a stable machine-readable value; `message` is
+            human-readable.
+          type: object
+          required: [code, message]
+          properties:
+            code: { type: string }
+            message: { type: string }
+            details: { type: object, additionalProperties: true }
+        message:
+          type: string
+          description: Present on some authorization denials in addition to `error.message`.
+        required:
+          description: Permission(s) the caller was missing. Present on authorization denials.
+          oneOf: [{ type: string }, { type: array, items: { type: string } }]
+  responses:
+    BadRequest:
+      description: Invalid date range, filter, data mode, limit, sort order, boolean, or cursor.
+      content: { application/json: { schema: { $ref: '#/components/schemas/ErrorEnvelope' } } }
+    Unauthorized:
+      description: Missing or invalid `x-api-key`, or Authorization was supplied.
+      content: { application/json: { schema: { $ref: '#/components/schemas/ErrorEnvelope' } } }
+    Forbidden:
+      description: The key lacks `analytics:read`.
+      content: { application/json: { schema: { $ref: '#/components/schemas/ErrorEnvelope' } } }
+    NotFound:
+      description: Project not found or concealed because it is outside the key's scope.
+      content: { application/json: { schema: { $ref: '#/components/schemas/ErrorEnvelope' } } }
+    ResponseTooLarge:
+      description: One full-mode event exceeds the 1 MiB response budget.
+      content: { application/json: { schema: { $ref: '#/components/schemas/ErrorEnvelope' } } }
+    RateLimited:
+      description: Tenant request rate limit exceeded.
+      content: { application/json: { schema: { $ref: '#/components/schemas/ErrorEnvelope' } } }
+    InternalError:
+      description: Unexpected trace query failure.
+      content: { application/json: { schema: { $ref: '#/components/schemas/ErrorEnvelope' } } }
+    Unavailable:
+      description: Trace backing store unavailable.
+      content: { application/json: { schema: { $ref: '#/components/schemas/ErrorEnvelope' } } }
