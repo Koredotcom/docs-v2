@@ -1,0 +1,369 @@
+---
+title: Genesys Audio Connector
+sidebarTitle: Genesys Audio Connector
+---
+
+<Badge icon="arrow-left" color="gray">[Back to voice channels](/agent-platform/channels#voice)</Badge>
+
+Create a project-owned Genesys Audio Connector connection, choose a Voice mode, configure that mode's speech settings, wire the connection into Genesys Architect, and validate live audio before enabling traffic.
+
+<Note>
+  **Voice mode can't be changed after the connection is created.** Choose **Pipeline** for independent speech-to-text, LLM, and text-to-speech providers, or **Realtime** for a single speech-to-speech (S2S) model with lower latency. If you need the other architecture later, create a new connection.
+</Note>
+
+
+### Where setup happens
+ 
+Setup moves back and forth between Genesys Cloud and Studio. Here's where each step happens:
+ 
+| Step | Where |
+| --- | --- |
+| [Prepare Genesys Cloud and authentication](#prepare-genesys-cloud-and-authentication) | Genesys Cloud |
+| [Create the connection in Studio](#create-the-connection-in-studio) | Studio |
+| [Configure the connection](#configure-the-connection) | Studio |
+| [Wire the Genesys Architect flow](#wire-the-genesys-architect-flow) | Genesys Cloud |
+| [Run live validation before enabling traffic](#run-live-validation-before-enabling-traffic) | Studio + Genesys Cloud |
+
+## Prepare Genesys Cloud and authentication
+
+<Steps>
+  <Step title="Select the owning Genesys region and organization">
+    Sign in to the regional Genesys Cloud organization that owns the voice deployment. Studio uses this region to select the matching Genesys API host.
+  </Step>
+
+  <Step title="Identify the voice deployment">
+    In Genesys Cloud Admin, identify the voice deployment associated with the intended Architect flow and copy its Voice Deployment ID.
+  </Step>
+
+  <Step title="Generate a project API key">
+    Generate a project-specific Audio Connector API key for this connection. Configure the matching value in Genesys when you wire the Architect flow.
+  </Step>
+
+  <Step title="Keep environments and credentials separate">
+    Use separate API keys, voice deployments, and connections for development and production. Never share one connection's credentials across environments.
+  </Step>
+</Steps>
+
+## Create the connection in Studio
+
+To configure a Genesys Audio Connector channel, go to **Deployments** -> **Channels** -> **VOICE** -> **Genesys Audio Connector** -> **+ New** and complete the following steps in order.
+
+<Steps>
+  <Step title="Enter a Display Name">
+    Give the connection a label, for example `Genesys Audio Connector Production`.
+  </Step>
+
+  <Step title="Enter the Genesys Organization ID and Allowed Region">
+    Enter the exact Genesys Organization ID and select the region that owns it, for example `US East (N. Virginia)`. A mismatched region can make valid credentials appear unavailable.
+  </Step>
+
+  <Step title="Enter the Voice Deployment ID">
+    Paste the voice deployment ID associated with the intended Architect flow.
+  </Step>
+
+  <Step title="Choose the Voice mode">
+    Select **Pipeline** or **Realtime**. This choice is permanent for the connection - see the note above.
+  </Step>
+
+  <Step title="Set the Activation Mode">
+    Start in **Diagnostics only** so the Testing tab can collect evidence without treating the setup as production-ready. Switch to **Enabled** only after validation passes.
+  </Step>
+
+  <Step title="Enter the API Key and optional Webhook Signature Secret">
+    Enter the project-specific Audio Connector API key. **Webhook Signature Secret** is optional at creation - set it when Genesys is configured to sign outbound requests.
+  </Step>
+
+  <Step title="Set Max Session Seconds">
+    Set the maximum duration for a single voice session, in seconds (default: `1800`).
+  </Step>
+
+  <Step title="Complete common connection settings">
+    | Field | Description |
+    | --- | --- |
+    | **Environment** | Select an environment to follow its active deployment, or leave the default to use the working copy. |
+    | **Provider Verification Strength** | **Weak** is the default. Choose **Strong** only for channels or providers whose identity assertions you trust for stronger continuity and linking decisions. |
+    | **Initial Status** | **Active** connections can be used immediately. **Inactive** connections stay saved but disabled until you activate them. |
+  </Step>
+
+  <Step title="Create the connection">
+    Select **Create**. The next step - configuring speech settings for your chosen Voice mode - happens after creation, on the connection's **Configuration** tab.
+  </Step>
+</Steps>
+
+### Connection fields reference
+
+| Field | Description |
+| --- | --- |
+| **Display Name** | A label for the connection. |
+| **Genesys Organization ID** | Your Genesys Cloud organization identifier. |
+| **Allowed Region** | The Genesys region this connection is scoped to. |
+| **Voice Deployment ID** | The voice deployment associated with the intended Architect flow. |
+| **Voice mode** | **Pipeline** (independent STT/LLM/TTS providers) or **Realtime** (single S2S model). Permanent after creation. |
+| **Activation Mode** | **Diagnostics only** (default, safe - setup and validation, no production traffic), **Enabled** (processes live calls), or **Disabled**. |
+| **API Key** | A project-specific Audio Connector API key. |
+| **Webhook Signature Secret** | Optional at creation. Configure the identical value in Genesys when signed HTTP signaling is enabled. Referred to as **HTTP Message Signature Secret** later, on the Credentials tab - same value, different label. |
+| **Max Session Seconds** | Maximum duration for a single voice session, in seconds. Default: `1800`. |
+
+## Configure the connection
+
+After creation, open the connection and go to its **Configuration** tab to set up speech behavior for the Voice mode you chose.
+
+<Tabs>
+  <Tab title="Pipeline mode">
+    <Steps>
+      <Step title="Configure Speech Recognition">
+        | Field | Description |
+        | --- | --- |
+        | **Provider** | The speech-to-text credential set to use, for example `Deepgram Speech Credentials`. |
+        | **Language** | The recognition language, for example `Multilingual`. |
+        | **STT Model** | The recognition model, for example `Nova 3 (latest, most accurate)`. |
+        | **Minimum STT confidence** | Reject transcripts below this confidence (0–1) and treat them as no-input. `0` disables the gate. Provider-relative - calibrate per channel. |
+        | **Custom vocabulary** | Domain-specific terms to bias recognition toward. Select **Add phrase** and set a **Phrase** (for example `ACME, policy number`) and optional **Boost**. Deepgram Nova-3 and Flux use keyterm prompting and ignore boost; older Deepgram models use keyword intensifiers. |
+      </Step>
+
+      <Step title="Configure Speech Synthesis">
+        Optionally enable **A different voice per language** to give each language its own voice instead of one voice for every caller. Then set:
+
+        | Field | Description |
+        | --- | --- |
+        | **Provider** | The text-to-speech credential set to use, for example `ElevenLabs (TTS) Credentials`. |
+        | **Language** | The synthesis language, for example `Arabic`. |
+        | **Voice** | The voice used for synthesized speech. |
+        | **TTS Model** | The synthesis model, for example `Eleven Multilingual v2`. |
+
+        <Note>If you selected an ElevenLabs voice, an **ElevenLabs Voice Settings** panel lets you override **Speed**, **Stability**, **Similarity boost**, **Style exaggeration**, and **Speaker boost** for this connection, plus a **Preview Voice** field to hear the configured voice before saving.</Note>
+      </Step>
+
+      <Step title="Configure Conversation Controls">
+        | Field | Description |
+        | --- | --- |
+        | **Barge-in** | Allow the caller to interrupt the agent while it is speaking. |
+        | **Speech Timeout (ms)** | The time the agent waits for caller speech before it times out, for example `3000`. |
+        | **Welcome Message** | The opening prompt the agent speaks, such as `Hello! How can I help you today?`. |
+        | **Noise isolation** | Apply server-side noise reduction to inbound call audio to filter out background voices and ambient noise. |
+      </Step>
+
+      <Step title="Configure the Transfer Queue">
+        | Field | Description |
+        | --- | --- |
+        | **Transfer Queue Header Key** | SIP transfer header name that carries the queue, for example `X-Queue`. Must match what Genesys expects. Required for escalate-to-human. |
+        | **Transfer Queue Name** | The Genesys queue used when the agent transfers a caller to a human, for example `Kore Inbound`. Must match a queue configured in Genesys. |
+      </Step>
+
+      <Step title="Save your changes">
+        Select **Save Changes**.
+      </Step>
+    </Steps>
+  </Tab>
+
+  <Tab title="Realtime mode">
+    Under **Realtime LLM Voice Settings**, select an **S2S Provider**. Only the panel for the selected provider applies to this connection.
+
+    <AccordionGroup>
+      <Accordion title="Grok Realtime (S2S)">
+        | Field | Description |
+        | --- | --- |
+        | **Model** | The Grok Realtime model, for example `grok-voice-latest (recommended)`. |
+        | **Voice** | The synthesized voice, for example `Ara (default)`. |
+        | **Temperature** | Response creativity, from `0.0` (Focused) to `2.0` (Creative). Default: `1`. |
+        | **Threshold** | Turn-detection sensitivity, from `0.0` (Sensitive) to `1.0` (Conservative). Default: `0.5`. |
+        | **Silence Duration (ms)** | Quiet time before the caller turn is treated as complete. Default: `500`. |
+        | **Prefix Padding (ms)** | Audio kept before detected speech so the start of the caller's utterance is preserved. Default: `300`. |
+
+        The xAI Grok Realtime API provides low-latency voice conversations with function calling support.
+      </Accordion>
+
+      <Accordion title="Google Gemini Live (S2S)">
+        | Field | Description |
+        | --- | --- |
+        | **Model** | The Gemini Live model, for example `Gemini 3.1 Flash Live (Latest)`. |
+        | **Voice** | The synthesized voice, for example `Puck - Upbeat`. |
+        | **Pending tool fillers** | Allow Gemini Live to acknowledge long-running project tools while the original tool call remains pending. |
+        | **Temperature** | Response creativity, from `0.0` (Deterministic) to `2.0` (Creative). Default: `1`. |
+
+        Under **Voice Activity Detection** - controls when Gemini starts listening to a caller turn and how long it waits before closing that turn:
+
+        | Field | Description |
+        | --- | --- |
+        | **Start Sensitivity** | Higher detects speech sooner but may trigger on noise; lower waits for a stronger speech signal. Default: `Default`. |
+        | **End Sensitivity** | Higher ends turns sooner for lower latency; lower allows longer pauses before Gemini responds. Default: `Default`. |
+        | **Silence Duration (ms)** | Milliseconds of non-speech before Gemini closes the caller turn. Increase to allow pauses; decrease for faster responses. Default: `100`. |
+        | **Prefix Padding (ms)** | Milliseconds of detected speech required before Gemini commits a speech start. Lower values catch shorter utterances but can increase false starts. Default: `20`. |
+
+        Google Gemini Live provides multimodal voice conversations with low latency.
+      </Accordion>
+
+      <Accordion title="OpenAI Realtime (S2S)">
+        | Field | Description |
+        | --- | --- |
+        | **Model** | The OpenAI Realtime model, for example `gpt-realtime-1.5 (recommended)`. |
+        | **Voice** | The synthesized voice, for example `Marin (recommended)`. |
+
+        Under **Turn Detection** - tunes how OpenAI detects speech starts and decides when the caller has finished speaking:
+
+        | Field | Description |
+        | --- | --- |
+        | **Speech detection sensitivity** | Lower values pick up quieter speech; higher values reduce background-noise triggers. Default: `0.5`. |
+        | **Silence Duration (ms)** | Quiet time before OpenAI treats the caller turn as complete. Default: `700`. |
+        | **Prefix Padding (ms)** | Audio kept before detected speech so the beginning of the caller utterance is preserved. Default: `300`. |
+
+        The OpenAI Realtime API provides low-latency voice conversations with function calling support.
+      </Accordion>
+    </AccordionGroup>
+
+    The following fields apply regardless of which S2S provider you select:
+
+    | Field | Description |
+    | --- | --- |
+    | **Noise isolation** | Apply server-side noise reduction to inbound call audio to filter out background voices and ambient noise. |
+    | **Transfer Queue Header Key** | SIP transfer header name that carries the queue, for example `X-Queue`. Must match what Genesys expects. Required for escalate-to-human. |
+    | **Transfer Queue Name** | The Genesys queue used when the agent transfers a caller to a human, for example `Kore Inbound`. Must match a queue configured in Genesys. |
+
+    Select **Save Changes**.
+  </Tab>
+</Tabs>
+
+## Wire the Genesys Architect flow
+
+<Steps>
+  <Step title="Copy the AudioHook Callback URL">
+    Open the connection's **Testing** tab and copy the **AudioHook Callback URL** - a `wss://` URL with an embedded connection ID, for example `wss://korevg-np.audiosocket.kore.ai/audiosocket/genesysconnect/<connection-id>`. Preserve the full URL and connection ID; do not substitute a generic Runtime WebSocket.
+  </Step>
+
+  <Step title="Configure an Audio Connector action">
+    In the intended Architect flow, add or update the Audio Connector action and paste the callback and API key into the corresponding integration fields.
+  </Step>
+
+  <Step title="Use the supported audio framing">
+    Keep the configured PCMU framing, sample rate, channel count, and media direction aligned with the platform contract. Transcoding or buffering at an intermediate proxy adds latency and can corrupt audio.
+  </Step>
+
+  <Step title="Map completion and disconnect variables">
+    Capture normal completion, caller hangup, gateway error, and fallback outcomes so Architect can continue or exit the flow deterministically.
+  </Step>
+</Steps>
+
+## Run live validation before enabling traffic
+
+<Steps>
+  <Step title="Place an isolated sandbox call">
+    Use a dedicated Architect test flow and test number. Confirm session creation, greeting playback, caller speech, agent response, barge-in, and clean hangup.
+  </Step>
+
+  <Step title="Validate media and backpressure">
+    Confirm PCMU framing, bidirectional audio, queue behavior, packet loss, and disconnect variables under normal speech, silence, interruption, and rapid turn-taking.
+  </Step>
+
+  <Step title="Capture the voice latency budget">
+    Record audio jitter p95, first audio p95, STT first partial p95, TTS first audio p95, and representative end-to-end turn latency. Investigate regressions before promotion.
+  </Step>
+
+  <Step title="Save trace and operational evidence">
+    On the **Testing** tab, record AudioHook and KoreVG session IDs, Architect flow name and version, Runtime trace IDs, sandbox evidence, dashboard and alert references, concurrency, and fallback results, then select **Save Evidence**.
+  </Step>
+
+  <Step title="Promote only after validation passes">
+    Mark validation **Passed**, retain the evidence, then change **Activation Mode** to **Enabled**. Keep a tested rollback or fallback path available.
+  </Step>
+</Steps>
+
+### Promotion gate checklist
+
+Before switching a connection from **Diagnostics only** to **Enabled**, confirm all four areas below have passing evidence:
+
+| Gate | What to confirm |
+| --- | --- |
+| **1. Architect sandbox call** | Greeting, caller speech, agent audio, barge-in, and hangup all work. AudioHook and KoreVG session IDs are captured. |
+| **2. Media contract** | PCMU framing, bidirectional audio, and backpressure hold up under packet loss and disconnect scenarios. |
+| **3. Latency and capacity evidence** | Audio jitter p95, first audio p95, STT first partial p95, TTS first audio p95, and concurrency are all recorded. |
+| **4. Promote Diagnostics only -> Enabled** | Passed evidence, trace IDs, flow version, dashboards, alerts, and a tested rollback or fallback path are all in place. |
+
+## Manage the channel connection
+
+Opening a connection from **Deployments** -> **Channels** -> **VOICE** -> **Genesys Audio Connector** shows six tabs: **Overview**, **Credentials**, **Configuration**, **Deployment**, **Testing**, and **Activity**.
+
+<Tabs>
+  <Tab title="Overview">
+    The **Connection Summary** shows these fields.
+
+    | Field | Description |
+    | --- | --- |
+    | **Status** | For example: *Active* |
+    | **Created** | Timestamp the channel was created |
+    | **Updated** | Timestamp of the last change |
+    | **Environment** | For example: `Working Copy (draft)` |
+    | **Source Type** | `Channel Connection` |
+    | **Source ID** | Unique channel identifier (UUID) |
+
+    Under **Setup Instructions**, the tab shows the **Genesys Organization ID** and the **SIP URI** for reference. Select the copy icon next to either value to copy it.
+  </Tab>
+
+  <Tab title="Credentials">
+    Credentials are saved and encrypted after creation; fields show placeholder text and accept new values only if you want to update them.
+
+    | Field | Description |
+    | --- | --- |
+    | **Use Auth Profile** | Toggle on to authenticate through a saved Auth Profile instead of an API key. |
+    | **API Key** | Shown as *(saved - enter to update)*; leave blank to keep the current value. |
+    | **HTTP Message Signature Secret** | Shown as *(saved - enter to update)*; leave blank to keep the current value. This is the same secret set as **Webhook Signature Secret** at creation. |
+
+    Select **Save Credentials** to apply any changes.
+  </Tab>
+
+  <Tab title="Configuration">
+    Shows **General** (Display Name, Provider Verification Strength) plus the Pipeline or Realtime speech settings described in [Configure the connection](#configure-the-connection) above, editable at any time. Select **Save Changes** to apply.
+  </Tab>
+
+  <Tab title="Deployment">
+    | Field | Description |
+    | --- | --- |
+    | **Agent Version** | An **Environment** dropdown that selects which deployed version handles incoming messages. |
+    | **Active Deployment** | Shows the bound deployment version and date, or `Working Copy (draft)` if nothing has been deployed to an environment yet. |
+
+    <Note>If the connection is running on the working copy, a banner reads: *"This channel is running on the Working Copy (draft). Working copy is intended for testing. For a stable production setup, deploy your agent to an environment and bind this channel to that environment."*</Note>
+
+    Select **Save Changes** after switching the environment or version.
+  </Tab>
+
+  <Tab title="Testing">
+    The **Audio Connector Health** panel shows:
+
+    | Field | Description |
+    | --- | --- |
+    | **AudioHook Target** | The execution target for this connection, for example `KoreVG (SAVG audiosocket)`. |
+    | **Last Success** / **Last Failure** | Timestamps of the most recent diagnostic outcomes, or a prompt such as *Live Architect validation required*. |
+    | **Provider URL** | The underlying provider endpoint the connection routes to. |
+    | **AudioHook Callback URL** | The full `wss://` URL to configure in the Architect Audio Connector action. |
+
+    The **Live Validation Evidence** panel records the results of the checks in [Run live validation before enabling traffic](#run-live-validation-before-enabling-traffic).
+
+    | Field | Description |
+    | --- | --- |
+    | **Validated At** | Timestamp of the last passing validation. |
+    | **Trace IDs** | Number or list of Runtime traces captured during validation. |
+    | **Certification Status** | For example: `Not started`. |
+    | **Runbook Reference** / **Dashboard Reference** / **Alert Reference** | Links or IDs for the operator runbook, dashboard, and alert configuration used during validation. |
+    | **Runtime Trace IDs** / **Sandbox Evidence References** | Free-text fields for trace IDs and sandbox evidence links. |
+    | **Validation Summary** | Free-text summary of the validation outcome. |
+    | **Audio Runtime Target** | The runtime target validated, for example `KoreVG (SAVG audiosocket)`. |
+    | **Architect Flow Name** / **Architect Flow Version** | The Architect flow and version used during validation. |
+    | **AudioHook Session ID** / **KoreVG Session ID** | Session identifiers captured during the validation call. |
+    | **PCMU framing verified** / **Backpressure verified** / **Disconnect variables verified** / **Fallback path verified** | Checkboxes confirming each part of the media contract. |
+    | **Audio Jitter P95 (ms)** / **First Audio P95 (ms)** / **STT First Partial P95 (ms)** / **TTS First Audio P95 (ms)** | Recorded latency metrics from validation. |
+    | **Max Concurrent Sessions** / **Packet Loss (%)** | Recorded capacity and reliability metrics from validation. |
+
+    Select **Save Evidence** to record your results.
+  </Tab>
+</Tabs>
+
+## Security, capacity, and reliability boundaries
+
+<Warning>Keep the API key and HTTP Message Signature Secret in Genesys and encrypted Studio credentials. Use distinct values per environment and rotate exposed credentials.</Warning>
+
+**Audio** - Don't log raw audio or sensitive transcript content. Use scrubbed trace identifiers and aggregate voice phase metrics for operational debugging.
+
+**Capacity** - Validate the expected concurrent-session ceiling and queue pressure. KoreVG has bounded per-session queues and environment-level capacity controls.
+
+**Fallback** - Define what Architect does when the AudioHook can't connect, media stalls, STT or TTS fails, or the agent exceeds its response budget.
+
+**Observability** - Monitor connection failures, audio jitter, packet loss, STT, LLM, and TTS phase latency, session termination reasons, and fallback activation.

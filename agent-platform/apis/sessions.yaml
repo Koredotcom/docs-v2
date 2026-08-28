@@ -1,0 +1,489 @@
+openapi: 3.1.0
+info:
+  title: ABL Public Analytics Sessions API
+  version: 1.0.0
+  summary: Retrieve project-scoped session analytics.
+  description: |
+    Returns one row per conversation session in a project, summarising how it went:
+    which channel it came in on, how it ended, how many messages were exchanged, how
+    many tokens were used, and what it cost.
+
+    Give either a date range (`fromDate` and `toDate` together) or a list of
+    `sessionIds`. Other filters are optional. Different filters combine with AND, and
+    multiple values in the same filter combine with OR — so
+    `channel=web_chat,voice&status=ended` means web chat or voice sessions that have
+    ended.
+
+    Authenticate with the `x-api-key` header. The key must be bound to the project you
+    are querying and have `session:read` permission.
+  x-source-release: release_Artemis_1.5.0
+  x-source-commit: 267794d75528a9ecb5ed70822451e43f91c15212
+servers:
+  - url: https://{host}
+    description: ABL Runtime public endpoint
+    variables:
+      host:
+        default: runtime.example.com
+security:
+  - ApiKeyAuth: []
+tags:
+  - name: Sessions
+paths:
+  /api/public/analytics/projects/{projectId}/sessions:
+    get:
+      tags: [Sessions]
+      operationId: listPublicAnalyticsSessions
+      summary: List session summaries
+      description: |
+        Use `limit` and `offset` to page through the results. The response includes
+        message, trace-event, and token counts per session, but not the messages or
+        trace details themselves. Use the conversation-history endpoint for messages and
+        the traces endpoint for execution detail.
+      parameters:
+        - $ref: '#/components/parameters/ProjectId'
+        - $ref: '#/components/parameters/FromDateOptional'
+        - $ref: '#/components/parameters/ToDateOptional'
+        - $ref: '#/components/parameters/SessionIds'
+        - name: containmentType
+          in: query
+          description: |
+            Filter by how the session was resolved — whether the agent handled it or it
+            went to a human. Pass one or more values, comma-separated or by repeating
+            the parameter, up to 100.
+
+            Values are case-sensitive and anything else is rejected with `400
+            INVALID_CONTAINMENT_TYPE`.
+          style: form
+          explode: false
+          schema:
+            type: array
+            maxItems: 100
+            uniqueItems: true
+            items:
+              type: string
+              enum: [contained, contained_resolved, contained_partial, contained_unresolved, escalated, abandoned]
+        - name: environment
+          in: query
+          description: |
+            Filter by environment. Pass one or more values, comma-separated or by
+            repeating the parameter.
+
+            Values are case-sensitive and anything else is rejected with `400
+            INVALID_ENVIRONMENT`. Use `dev`, not `development` or `prod` — the service
+            handles both stored spellings for you behind the scenes, but only accepts
+            the four values below as input.
+          style: form
+          explode: false
+          schema:
+            type: array
+            maxItems: 4
+            uniqueItems: true
+            items:
+              type: string
+              maxLength: 128
+              enum: [dev, staging, production, working-copy]
+        - name: channelUId
+          in: query
+          description: |
+            Filter to sessions belonging to specific end users, using the identity
+            recorded for them on the channel. Pass up to 100 values, comma-separated or
+            by repeating the parameter.
+          style: form
+          explode: false
+          schema:
+            type: array
+            maxItems: 100
+            uniqueItems: true
+            items: { type: string, minLength: 1 }
+        - name: channel
+          in: query
+          description: |
+            Filter by the channel the conversation came in on. Pass one or more values,
+            comma-separated or by repeating the parameter, up to 50 distinct channels of
+            128 characters each.
+
+            This endpoint understands shorthand. Values are grouped into channel
+            families before matching, and each family also matches its older stored
+            spellings, so `channel=web`, `channel=sdk_web`, and `channel=web_chat` all
+            return the same web-chat sessions. The groupings are listed under
+            `x-alias-groups`, and those alias spellings are accepted here even though
+            they are not in the enum — the enum is kept identical across all the public
+            analytics endpoints so there is one channel list to learn.
+
+            Because of that grouping, asking for one specific voice channel such as
+            `channel=voice_pipeline` returns all voice sessions, not just that
+            transport. Use the traces endpoint if you need to distinguish them.
+
+            Not restricted to a fixed list, so an unrecognised value returns no results
+            rather than an error.
+          style: form
+          explode: false
+          schema:
+            type: array
+            maxItems: 50
+            uniqueItems: true
+            items:
+              type: string
+              maxLength: 128
+              enum: [http_async, slack, line, msteams, whatsapp, messenger, instagram, twilio_sms, zendesk, telegram, genesys, genesys_open_messaging, ai4w, kore_agent_assist, email, voice_vxml, korevg, audiocodes, genesys_audio_connector, voice_pipeline, voice_realtime, voice, voice_twilio, voice_livekit, ag_ui, a2a, sdk_websocket, web_debug, web_chat, api, http]
+          x-alias-groups:
+            web_chat: [web, sdk_web, sdk_chat, chat, webchat, sdk_websocket, sdk_ws, sdk-ws, ws]
+            web_debug: [debug_websocket, web_debug_socket]
+            api: [http, sdk_http, sdk_api]
+            twilio_sms: [sms, twilio]
+            voice: [vxml, voice_vxml, korevg, audiocodes, genesys_audio_connector, voice_pipeline, voice_realtime, voice_twilio, voice_livekit, twilio_voice]
+        - $ref: '#/components/parameters/TraceDimension'
+        - name: status
+          in: query
+          description: |
+            Filter by the session's current state. Pass a single value; if you repeat
+            the parameter only the first value is used.
+
+            Case-sensitive, and anything else is rejected with `400 INVALID_STATUS`.
+            Note that sessions can be stored with a status of `failed`, but `failed` is
+            not accepted as a filter value here.
+          schema:
+            type: string
+            enum: [active, idle, ended, completed, escalated, abandoned, archived]
+        - name: limit
+          in: query
+          description: |
+            How many sessions to return. A page may come back with fewer than requested
+            so the response stays within the 1 MiB size limit — check `hasMore` rather
+            than assuming a short page is the last one.
+          schema: { type: integer, minimum: 1, maximum: 10000, default: 100 }
+        - name: offset
+          in: query
+          schema: { type: integer, minimum: 0, default: 0 }
+      responses:
+        '200':
+          description: Session page returned successfully.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SessionListResponse' }
+              example:
+                success: true
+                total: 1
+                offset: 0
+                limit: 100
+                hasMore: false
+                sessions:
+                  - id: sess-01J4S8Y1
+                    channel: web_chat
+                    environment: production
+                    status: ended
+                    containmentType: contained_resolved
+                    createdAt: '2026-08-01T00:00:00.000Z'
+                    lastActivityAt: '2026-08-01T00:05:00.000Z'
+                    endedAt: '2026-08-01T00:05:30.000Z'
+                    messageCount: { user: 3, agent: 4, total: 7 }
+                    traceEventCount: { llm_call: 2, decision: 1, tool_call: 5, error: 1, total: 12 }
+                    tokenCount:
+                      inputTokens: 100
+                      cachedTokens: 10
+                      completionTokens: 32
+                      reasoningTokens: 8
+                      outputTokens: 40
+                      totalTokens: 140
+                    traceDimensions:
+                      accountTier: gold
+                    estimatedCost: 0.0025
+                    durationMs: 330000
+                    idleDurationMs: 30000
+                    isTest: null
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '413': { $ref: '#/components/responses/ResponseTooLarge' }
+        '429': { $ref: '#/components/responses/RateLimited' }
+        '500': { $ref: '#/components/responses/InternalError' }
+        '503': { $ref: '#/components/responses/Unavailable' }
+components:
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: x-api-key
+      description: Project-bound API key. Do not send an Authorization header with this API.
+  parameters:
+    ProjectId:
+      name: projectId
+      in: path
+      required: true
+      description: Project identifier bound to the API key.
+      schema: { type: string, minLength: 1 }
+    FromDateOptional:
+      name: fromDate
+      in: query
+      description: Inclusive ISO 8601 start timestamp. Required with `toDate` unless `sessionIds` is supplied.
+      schema: { type: string, format: date-time }
+    ToDateOptional:
+      name: toDate
+      in: query
+      description: Exclusive ISO 8601 end timestamp. Required with `fromDate` unless `sessionIds` is supplied.
+      schema: { type: string, format: date-time }
+    SessionIds:
+      name: sessionIds
+      in: query
+      description: |
+        Filter to specific sessions. Pass up to 10,000 session IDs, comma-separated or
+        by repeating the parameter. Can be used instead of a date range.
+      style: form
+      explode: false
+      schema:
+        type: array
+        maxItems: 10000
+        uniqueItems: true
+        items: { type: string, minLength: 1 }
+    TraceDimension:
+      name: traceDimensions[key]
+      in: query
+      description: |
+        Filter by a custom dimension recorded against the session. Replace `key` with
+        the dimension name — for example `traceDimensions[accountTier]=gold`. Repeat
+        with different keys to require all of them. Values match exactly. Remember to
+        URL-encode the brackets if your HTTP client does not do it for you.
+      allowReserved: true
+      schema: { type: string }
+      x-dynamic-parameter: true
+  schemas:
+    SessionListResponse:
+      type: object
+      additionalProperties: false
+      required: [success, sessions, total, offset, limit, hasMore]
+      properties:
+        success:
+          type: boolean
+          const: true
+          description: |
+            Always true on a successful response.
+        sessions:
+          description: The sessions on this page.
+          type: array
+          items: { $ref: '#/components/schemas/Session' }
+        total:
+          type: integer
+          minimum: 0
+          description: |
+            Total number of sessions matching your filters, across all pages.
+        offset:
+          type: integer
+          minimum: 0
+          description: |
+            The offset applied to this response.
+        limit:
+          type: integer
+          minimum: 1
+          maximum: 10000
+          description: |
+            The page size applied to this response.
+        hasMore:
+          type: boolean
+          description: |
+            Whether more pages are available after this one.
+    Session:
+      type: object
+      additionalProperties: false
+      required: [id, channel, environment, status, containmentType, createdAt, lastActivityAt, endedAt, messageCount, traceEventCount, tokenCount, traceDimensions, estimatedCost, durationMs, idleDurationMs, isTest]
+      properties:
+        id:
+          type: string
+          description: |
+            The session identifier. Use it with the conversation-history and traces endpoints.
+        channel:
+          type: string
+          description: |
+            The channel the conversation came in on, exactly as recorded — not grouped
+            into a family the way the `channel` filter is. Empty when no channel was
+            recorded.
+          enum: ['', http_async, slack, line, msteams, whatsapp, messenger, instagram, twilio_sms, zendesk, telegram, genesys, genesys_open_messaging, ai4w, kore_agent_assist, email, voice_vxml, korevg, audiocodes, genesys_audio_connector, voice_pipeline, voice_realtime, voice, voice_twilio, voice_livekit, ag_ui, a2a, sdk_websocket, web_debug, web_chat, api, http]
+        environment:
+          type: string
+          description: Empty when the source column is null.
+          enum: ['', development, staging, production, working-copy]
+        status:
+          type: string
+          description: |
+            The session's state. `failed` can appear here even though it cannot be used
+            as a `status` filter value. Empty when no status was recorded.
+          enum: ['', active, idle, ended, completed, failed, escalated, abandoned, archived]
+        containmentType:
+          description: |
+            How the session was resolved — whether the agent handled it or it went to a human.
+          type: string
+          enum: [contained, contained_resolved, contained_partial, contained_unresolved, escalated, abandoned]
+        createdAt:
+          type: [string, 'null']
+          format: date-time
+          description: |
+            When the session started.
+        lastActivityAt:
+          type: [string, 'null']
+          format: date-time
+          description: |
+            When the last message or event occurred in the session.
+        endedAt:
+          type: [string, 'null']
+          format: date-time
+          description: |
+            When the session ended. Null while it is still open.
+        messageCount: { $ref: '#/components/schemas/MessageCount' }
+        traceEventCount: { $ref: '#/components/schemas/TraceEventCount' }
+        tokenCount: { $ref: '#/components/schemas/TokenCount' }
+        traceDimensions:
+          description: |
+            Custom dimensions recorded against the session, as key/value pairs.
+            Filter on these with the traceDimensions[key] parameter.
+          type: object
+          additionalProperties: { type: string }
+        estimatedCost: { type: number, minimum: 0, description: Estimated cost in the platform billing currency. }
+        durationMs:
+          type: number
+          minimum: 0
+          description: |
+            Total elapsed time from start to end, in milliseconds.
+        idleDurationMs:
+          type: number
+          minimum: 0
+          description: |
+            Part of the duration where nothing happened — time spent waiting, in milliseconds.
+            Useful for separating real handling time from waiting.
+        isTest: { type: ['boolean', 'null'], description: Reserved field; currently returned as null. }
+    MessageCount:
+      type: object
+      additionalProperties: false
+      required: [user, agent, total]
+      properties:
+        user:
+          type: number
+          minimum: 0
+          description: |
+            Messages sent by the end user.
+        agent:
+          type: number
+          minimum: 0
+          description: |
+            Messages sent by the agent.
+        total:
+          type: number
+          minimum: 0
+          description: |
+            Total number of trace events recorded for the session.
+    TraceEventCount:
+      type: object
+      additionalProperties: false
+      required: [llm_call, decision, tool_call, error, total]
+      properties:
+        llm_call:
+          type: number
+          minimum: 0
+          description: |
+            Number of LLM calls made during the session.
+        decision:
+          type: number
+          minimum: 0
+          description: |
+            Number of agent decisions taken, such as routing choices.
+        tool_call:
+          type: number
+          minimum: 0
+          description: |
+            Number of tool calls made.
+        error:
+          type: number
+          minimum: 0
+          description: |
+            Number of failed events during the session.
+        total:
+          type: number
+          minimum: 0
+          description: |
+            Total number of trace events recorded for the session.
+    TokenCount:
+      type: object
+      additionalProperties: false
+      required: [inputTokens, cachedTokens, completionTokens, reasoningTokens, outputTokens, totalTokens]
+      properties:
+        inputTokens:
+          type: number
+          minimum: 0
+          description: |
+            Tokens in the prompts sent to models across the session.
+        cachedTokens:
+          type: number
+          minimum: 0
+          description: |
+            Input tokens served from the provider prompt cache. Part of inputTokens, and usually
+            cheaper.
+        completionTokens:
+          type: number
+          minimum: 0
+          description: |
+            Tokens generated as answers, not counting reasoning tokens.
+        reasoningTokens:
+          type: number
+          minimum: 0
+          description: |
+            Tokens spent on internal model reasoning. Billed as output but not part of any visible
+            answer.
+        outputTokens:
+          type: number
+          minimum: 0
+          description: |
+            All tokens produced by models — answers plus reasoning.
+        totalTokens:
+          type: number
+          minimum: 0
+          description: |
+            Input plus output tokens for the whole session.
+    ErrorEnvelope:
+      type: object
+      required: [error]
+      properties:
+        success:
+          type: boolean
+          const: false
+          description: |
+            Always false on an error response.
+        error:
+          description: |
+            Details of what went wrong. `code` is a stable machine-readable value; `message` is
+            human-readable.
+          type: object
+          required: [code, message]
+          properties:
+            code: { type: string }
+            message: { type: string }
+            details: { type: object, additionalProperties: true }
+        message:
+          type: string
+          description: Present on some authorization denials in addition to `error.message`.
+        required:
+          description: Permission(s) the caller was missing. Present on authorization denials.
+          oneOf: [{ type: string }, { type: array, items: { type: string } }]
+  responses:
+    BadRequest:
+      description: Invalid or unsupported filters, pagination, date range, or required-filter combination.
+      content: { application/json: { schema: { $ref: '#/components/schemas/ErrorEnvelope' } } }
+    Unauthorized:
+      description: Missing or invalid `x-api-key`, or an Authorization header was supplied.
+      content: { application/json: { schema: { $ref: '#/components/schemas/ErrorEnvelope' } } }
+    Forbidden:
+      description: The key lacks `session:read` for its bound project.
+      content: { application/json: { schema: { $ref: '#/components/schemas/ErrorEnvelope' } } }
+    NotFound:
+      description: Project not found or deliberately concealed because it is outside the key's project scope.
+      content: { application/json: { schema: { $ref: '#/components/schemas/ErrorEnvelope' } } }
+    ResponseTooLarge:
+      description: A single session cannot fit within the 1 MiB response budget.
+      content: { application/json: { schema: { $ref: '#/components/schemas/ErrorEnvelope' } } }
+    RateLimited:
+      description: Tenant request rate limit exceeded.
+      content: { application/json: { schema: { $ref: '#/components/schemas/ErrorEnvelope' } } }
+    InternalError:
+      description: Unexpected query failure.
+      content: { application/json: { schema: { $ref: '#/components/schemas/ErrorEnvelope' } } }
+    Unavailable:
+      description: Analytics backing store unavailable.
+      content: { application/json: { schema: { $ref: '#/components/schemas/ErrorEnvelope' } } }
