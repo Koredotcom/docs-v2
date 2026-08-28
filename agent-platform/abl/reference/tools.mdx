@@ -164,10 +164,38 @@ The compiler enforces that an authored destination is safe to trust:
 
 | Diagnostic | Severity | Fires when |
 | ---------- | -------- | ---------- |
-| `INVALID_SIP_TRANSFER_DESTINATION` | Error | A trusted-source (`config`/`system`) `sipTransferId` default is empty, contains a `{{ }}` template, is not a valid `sip:`/`sips:` URI, or uses a dynamic source (`expr`, `lookup`, `runtime`, `auth`). The destination must be a static literal — a target derived from conversation data could be influenced by the caller. |
+| `INVALID_SIP_TRANSFER_DESTINATION` | Error | A trusted-source (`config`/`system`) `sipTransferId` default is empty, is not a valid `sip:`/`sips:` URI, uses a dynamic source (`expr`, `lookup`, `runtime`, `auth`), or contains a `{{ }}` template other than an admitted inbound-header placeholder (see [Inbound SIP header placeholders](#inbound-sip-header-placeholders)). The destination's user/host must be a static literal — a target derived from conversation data could be influenced by the caller. |
 | `UNTRUSTED_SIP_TRANSFER_DESTINATION` | Warning | A `sipTransferId` default is declared with `default_source` **absent or `model`**. The value is treated as model-supplied and is **ignored at transfer time** (behavior is unchanged from before) — add `default_source: config` to make it the agent's trusted destination. |
 
-Omit the `sipTransferId` default entirely to rely solely on the project-configured Agent Transfer target. For a **dynamic** per-call target, configure it in project Agent Transfer settings rather than the DSL — templated `sipTransferId` defaults are rejected by design.
+Omit the `sipTransferId` default entirely to rely solely on the project-configured Agent Transfer target.
+
+##### Inbound SIP header placeholders
+
+The one template form allowed in a `sipTransferId` default is `{{sip.<header>}}`. At transfer time the runtime replaces it with the value of an inbound SIP header from the **current call's trusted SIP metadata** (the headers the call arrived with) — never from conversation data or model output. Use it to forward an inbound header onto the transfer leg, for example a `User-to-User` correlation token or a tracing header:
+
+```yaml
+TOOLS:
+  call_transfer(callTransferType: string, sipTransferId: string) -> object
+    params:
+      sipTransferId:
+        default: "sip:premium-support@sbc.example.com?User-to-User={{sip.user-to-user}}&X-Trace-Id={{sip.x-trace-id}}"
+        default_source: config
+```
+
+**Syntax.** `{{sip.<header>}}`, where `<header>` is the inbound SIP header name, matched case-insensitively (for example `{{sip.user-to-user}}` reads the inbound `User-to-User` header).
+
+Placeholders are constrained so inbound data can *decorate* the transfer but never *redirect* it. The compiler rejects the default with `INVALID_SIP_TRANSFER_DESTINATION` unless every placeholder satisfies all of:
+
+| Rule | Requirement |
+| ---- | ----------- |
+| **Position** | A placeholder may appear only in the URI's header section (the `?Name=value&…` part after `?`). A placeholder anywhere in the user/host — the part that determines where the call is dialed — is rejected (`placeholder_outside_headers`). |
+| **Whole value only** | A placeholder must be the *entire* value of a URI header (`?X-Trace-Id={{sip.x-trace-id}}`), not embedded in a larger value and not partial. |
+| **Value, not name** | A placeholder may never appear in a URI-header *name* (`placeholder_in_header_name`) — an inbound value must not become a header key. |
+| **Admitted headers** | Only `User-to-User` and any `x-*` header may carry a placeholder value (`inadmissible_header_name` otherwise). |
+
+Any other use of `{{ }}` — a general expression/variable template, a placeholder in the user/host, or a malformed placeholder — remains an error; only `{{sip.<header>}}` in an admitted header value is interpolated. The URI's user and host are always static.
+
+For a fully **dynamic** per-call target (choosing a different host per call), configure it in project Agent Transfer settings rather than the DSL.
 
 ### Return type
 
