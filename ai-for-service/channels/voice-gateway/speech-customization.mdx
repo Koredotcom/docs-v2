@@ -277,6 +277,47 @@ Barge-In lets the Voice Gateway to detect and respond when a user interrupts the
 | `bargeInOnDTMF`       | Boolean (`true` or `false`) | All   | If `true`, DTMF input during bot speech interrupts playback, and the system starts collecting speech input.                     | `true`  |
 | `backchannelWords`       | Array of strings | All   | Defines words or phrases that don't interrupt the bot when spoken during audio playback. The audio continues playing and the system sends a `speechDetected` event instead of triggering barge-in. This setting applies only during playback - after playback completes, the system treats these words as normal speech.                     | uh-huh, okay, got it  |
 
+### Turn Detection Parameters
+
+Turn detection determines when a caller has finished speaking by combining voice activity detection, acoustic turn probability, streaming ASR transcripts, text-based end-of-utterance scoring, and expected-answer hints. This model is ASR-provider agnostic.
+
+When `turnDetectionEnable` is set to `true`, the platform automatically derives expected-answer configuration from the entity selected in the Entity node. The following parameters are fetched and sent automatically:
+
+* `turnDetectionExpectedType`
+* `turnDetectionExpectedLength`
+* `turnDetectionExpectedMin`
+* `turnDetectionExpectedMax`
+* `turnDetectionExpectedOptions`
+* `turnDetectionExpectedPattern`
+* `turnDetectionOpenEnded`
+
+| Parameter                       | Type              | Description                                                                                                                                                                                                                                                                          | Example                                      |
+| :------------------------------ | :---------------- | :----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :------------------------------------------- |
+| `turnDetectionEnable`           | Boolean           | Turns on intelligent turn detection for the speech gather. When turned on, the platform determines when the caller has finished speaking without requiring manual speech-segmentation or delay configuration.                                                                          | `true`                                       |
+| `turnDetectionPrefetch`         | Boolean           | Turns on speculative transcript hints so the application can begin preparing a response before the turn is committed. The application must not play the response until it receives the final committed event. Default: `false`.                                                        | `true`                                       |
+| `turnDetectionModel`            | String (enum)     | Selects the acoustic turn-detection model. Supported value: `smart_turn` (default).                                                                                                                                                                                                  | `"smart_turn"`                               |
+| `turnDetectionEouThreshold`     | Number            | Controls the balance between response speed and patience. Lower values respond faster; higher values wait longer and reduce the chance of interrupting the caller. Values map to the nearest supported profile: 0.3, 0.4, 0.5, 0.6, or 0.7. Supported range: 0.3 - 0.7. Default: 0.5. | `0.5`                                        |
+| `turnDetectionOpenEnded`        | Boolean           | Indicates that the question expects a narrative or multi-part answer. Applies longer holds and prevents aggressive fast commits at sentence boundaries. Use for questions such as "Please describe the issue." Default: `false`.                                                        | `true`                                       |
+| `turnDetectionExpectedType`     | String (enum)     | Identifies the expected shape of the caller's answer. Supported values: `digits`, `phone`, `date`, `time`, `email`, `spelling`, `choice`, `yesno`, `number`, `regex`. Auto-derived from the configured entity type when `turnDetectionEnable` is `true`.                              | `"digits"`                                   |
+| `turnDetectionExpectedLength`   | Integer           | Specifies the exact expected number of digits or spelled characters. Applicable to `digits` and `spelling`. The answer is held while below this length and considered complete when the required length is reached.                                                                    | `6`                                          |
+| `turnDetectionExpectedMin`      | Number or Integer | Specifies the minimum acceptable value or length. For `digits`, the minimum number of digits. For `number`, the minimum permitted numeric value.                                                                                                                                      | `4`                                          |
+| `turnDetectionExpectedMax`      | Number or Integer | Specifies the maximum acceptable value or length. For `digits`, the maximum number of digits. For `number`, the maximum permitted numeric value. Reaching the maximum lets the answer be considered complete.                                                                          | `6`                                          |
+| `turnDetectionExpectedOptions`  | Array of strings  | Specifies permitted answers for the `choice` expected type. Matching is case and punctuation-insensitive, and the option may display within a longer short response.                                                                                                                  | `["billing", "technical support", "sales"]`  |
+| `turnDetectionExpectedPattern`  | String            | Defines a regular expression for structured answers that can't be represented by the standard expected types. Applicable only when `turnDetectionExpectedType` is `regex`. The complete normalized answer must match the pattern.                                                      | `"[A-Z]{3}[- ]?\\d{6}"`                     |
+
+Example Configuration:
+
+```json
+{
+  "turnDetectionEnable": true,
+  "turnDetectionModel": "smart_turn",
+  "turnDetectionEouThreshold": 0.5,
+  "turnDetectionOpenEnded": false,
+  "turnDetectionExpectedType": "digits",
+  "turnDetectionExpectedLength": 6
+}
+```
+
 ### Timeout Related Parameters
 
 These parameters control how long the Voice Gateway waits for user input (speech or DTMF).
@@ -563,6 +604,29 @@ Apart from generic parameters like `ttsLanguage` and `voiceName`, which are comm
 * `sample_rate` (string): This enables you to set the sample rate of the audio output, offering control over the quality and clarity of the sound produced.
 * `Container`: The Container feature lets users to specify the desired file format wrapper for the output audio generated through text-to-speech synthesis.
 
+**Aura-2 voice controls**
+
+When the model is set to an Aura-2 voice (for example, `aura-2-thalia-en`), two additional `ttsOptions` parameters are available: `speed` and `pronunciations`.
+
+| Parameter       | Range      | Default | Description                                                                                                          |
+| :-------------- | :--------- | :------ | :------------------------------------------------------------------------------------------------------------------- |
+| `speed`         | 0.7 - 1.5  | 1.0     | Controls the speech rate. Values below 1.0 slow speech down; values above 1.0 speed it up.                          |
+| `pronunciations` | —         | —       | Defines pronunciation overrides for specific words using IPA (International Phonetic Alphabet) notation.             |
+
+These settings appear only when an Aura-2 model is selected. Values outside the supported range, or malformed pronunciation entries, are rejected with a validation error before the request is sent. [Learn more](https://developers.deepgram.com/docs/tts-voice-controls).
+
+Example configuration:
+
+```json
+{
+  "ttsProvider": "deepgram",
+  "ttsOptions": {
+    "model": "aura-2-thalia-en",
+    "speed": 0.7
+  }
+}
+```
+
 These parameters provide additional flexibility for developers to fine-tune the audio output to meet their specific needs. Set all these parameters inside ttsOptions. [Learn more](https://developers.deepgram.com/docs/tts-rest).
 
 ### AWS
@@ -707,7 +771,7 @@ Configuring `backchannelWords` signals Voice Gateway to keep the audio playing w
 - Skips intent detection and dialog execution for that input.
 - Leaves session context — including the last captured user input — unchanged.
 - Excludes the utterance from NLP Insights and intent-training data.
-- Doesn’t count the utterance against no-input timeouts or retry limits.
+- Doesn't count the utterance against no-input timeouts or retry limits.
 - Still records the utterance in the conversation transcript, marked as a backchannel phrase.
 
 **Configuration**
