@@ -1,0 +1,133 @@
+---
+title: Multilingual Message Localization and Translation Framework
+sidebarTitle: Multilingual Message Localization and Translation
+noindex: true
+---
+
+Contact Center AI optimizes how multilingual conversations are handled by prioritizing administrator-configured localized messages over machine translation, reducing unnecessary translation calls, and ensuring a consistent language experience for both agents and customers.
+
+## How it works
+
+The framework governs how messages are resolved and delivered in multilingual conversations. It applies to system messages, standard responses, flow and dialog messages, and all other configurable message types.
+
+* Configured locale messages always take precedence over machine translation.
+* Translation is a fallback mechanism - it applies only when a configured locale is unavailable.
+* The bot's default language is the universal fallback when no locale is configured.
+
+## Language resolution
+
+When a message is triggered, the platform resolves the language in the following order:
+
+1. If a message is configured for the required locale, that message is delivered. No translation is applied.
+1. If no configured message exists for the required locale, the platform falls back to the bot's default language.
+1. If translation is enabled, the fallback message is translated into the required target language.
+1. If translation is disabled, the bot's default language message is delivered without translation.
+
+## Translation persistence
+
+To reduce repeated translation costs and improve response times, the platform caches translated messages and reuses them when the same translation is needed again.
+
+Before invoking the translation service, the platform checks whether a translation already exists for the combination of original message, source language, and target language.
+
+| Condition                            | Action                                                                                   |
+| :----------------------------------- | :--------------------------------------------------------------------------------------- |
+| Matching translation found in cache  | Cached translation is returned. Translation service isn't invoked.                        |
+| No matching translation in cache     | Translation service is called. Both the original and translated messages are saved.      |
+
+Cached translations are retained for 15 days. After the cache expires, a new translation is generated on the next request.
+
+This means an agent who handles a conversation after a transfer doesn't trigger a duplicate translation call - the platform retrieves the already-translated message from cache instead.
+
+<Note>Translation persistence applies only to messages that are translated at runtime. Messages resolved directly from administrator-configured locale content bypass both translation and the cache.</Note>
+
+## Message resolution by type
+
+**System messages**
+
+System messages resolve from configured locale content. Translation isn't applied to system messages.
+
+For agents:
+
+| Translation Setting                                                        | Language Used to Resolve the Message |
+| :------------------------------------------------------------------------- | :----------------------------------- |
+| Translation enabled                                                        | Agent Applied Language.              |
+| Conditionally disabled (agent and customer share a common language)        | User Preferred Language.             |
+| Translation disabled                                                       | Conversation Language.               |
+
+For customers:
+
+System messages always resolve using the User Preferred Language, regardless of translation settings.
+
+Missing locale:
+
+| Translation Setting   | Fallback Behavior                                                                                    |
+| :-------------------- | :--------------------------------------------------------------------------------------------------- |
+| Translation enabled   | The bot default language messages are delivered and translated into the required target language.     |
+| Translation disabled  | The bot default language messages are delivered without translation.                                 |
+
+**Standard responses**
+
+Standard responses prioritize configured locale content and minimize translation.
+
+| Translation Setting      | Filter Applied          | Delivery                                                                           |
+| :----------------------- | :---------------------- | :--------------------------------------------------------------------------------- |
+| Translation enabled      | Agent Applied Language  | User Preferred locale is delivered if available. Otherwise translated.             |
+| Conditionally disabled   | User Preferred Language | User Preferred locale is delivered. If missing, an empty response displays.        |
+| Translation disabled     | Conversation Language   | Conversation language locale is delivered. If missing, an empty response displays. |
+
+<Note>
+- Empty localized standard responses remain empty - they aren't translated or substituted. Administrators must configure all required locale variants for standard responses to ensure agents can access them in every supported language.
+- If regex-based PII redaction is enabled, un-redacted data may still be sent to the translation engine.
+</Note>
+
+**Flow and Dialog messages**
+
+Messages configured in flows or dialogs follow locale-first resolution.
+
+For customers: Messages resolve using User Preferred Language. If the locale exists, the configured message is delivered. If unavailable, the message is translated into User Preferred Language.
+
+For agents:
+
+| Translation Setting    | Language Used to Resolve the Message |
+| :--------------------- | :----------------------------------- |
+| Translation enabled    | Agent Applied Language.               |
+| Conditionally disabled | User Preferred Language.              |
+| Translation disabled   | Conversation Language.                |
+
+Translation fallback applies only when the resolved locale is unavailable.
+
+**Disposition summaries**
+
+Disposition summaries use translation, unlike system messages.
+
+| Translation Setting    | Behavior                                                  |
+| :--------------------- | :-------------------------------------------------------- |
+| Translation enabled    | Summary is translated to Agent Applied Language.          |
+| Conditionally disabled | Summary is displayed in User Preferred Language.          |
+| Translation disabled   | Summary is displayed in Conversation Language.            |
+
+## Conditional translation
+
+When an agent and customer share a common language, the platform automatically turns off translation for that conversation. This prevents unnecessary translation calls when both parties can communicate directly.
+
+This is known as Conditionally Disabled translation. The platform detects the overlap between the agent's known languages and the customer's preferred language and suppresses translation without any manual action required.
+
+## Multilingual configuration validation
+
+When administrators save multilingual message configurations, the platform validates that all required locales are present. If any mandatory locale is missing, the save is blocked and a validation message identifies the missing locale.
+
+This applies consistently across all configurable message types.
+
+## Language deletion validation
+
+Before a language can be deleted from the platform, the platform checks whether it is referenced by any Contact Center multilingual configuration. If the language is in use, deletion is prevented.
+
+The language can only be deleted after all Contact Center dependencies on it are removed.
+
+## Administrator best practices
+
+To get the most out of the multilingual framework, administrators should:
+
+* Configure locale-specific message variants for all supported languages used by the contact center.
+* Avoid leaving locale entries empty — empty localized standard responses are shown as empty to agents and aren't substituted with a translation.
+* Review and maintain locale configurations when adding or removing supported languages.
