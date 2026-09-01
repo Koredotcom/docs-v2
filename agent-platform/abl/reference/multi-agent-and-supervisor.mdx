@@ -1,5 +1,5 @@
 ---
-title: 'Multi-Agent and supervisor'
+title: Multi-agent and supervisor
 sidebarTitle: Multi-Agent and supervisor
 ---
 
@@ -799,6 +799,11 @@ ESCALATE:
     queue: "wire_operations_l2"
     skills: [wire_transfer, compliance]
     priority: 1
+    voice:                            # voice-channel transfer settings (see below)
+      transfer_method: refer
+      call_transfer_type: sip
+      sip_headers:
+        X-Escalation-Reason: "sanctions_review"
 
   on_human_complete:
     - IF human.resolved == true: COMPLETE
@@ -868,8 +873,34 @@ The `routing` block controls how the escalation is routed in the human agent sys
 | `skills`      | `string[]` | No       | --      | Required skills for the human agent.                              |
 | `priority`    | `number`   | No       | --      | Numeric routing priority for the queue entry.                     |
 | `post_agent`  | `string`   | No       | --      | What happens after the human agent finishes: `return` or `end`.   |
+| `voice`       | `object`   | No       | --      | Voice-channel transfer settings — how the live call leg is handed off at the SIP/transport layer. See [Voice transfer settings](#voice-transfer-settings). |
 
-<Note>Earlier drafts used `skill_tags` and `priority_boost`. The current runtime contract uses `skills` and `priority` — the older keys are silently ignored. Additional advanced routing keys (`sub_type`, `named_agents`, `named_agent_options`, `agent_matching_conditions`, `voice`, `flow_policy_ref` / `transfer_flow_policy_ref`, `provider_config`) are also supported for human-agent integrations.</Note>
+<Note>Earlier drafts used `skill_tags` and `priority_boost`. The current runtime contract uses `skills` and `priority` — the older keys are silently ignored. Additional advanced routing keys (`sub_type`, `named_agents`, `named_agent_options`, `agent_matching_conditions`, `flow_policy_ref` / `transfer_flow_policy_ref`, `provider_config`, `metadata`) are also supported for human-agent integrations.</Note>
+
+#### Voice transfer settings
+
+When an escalation routes over a **voice** channel, the optional `routing.voice` block controls how the live call leg is handed off at the SIP/transport layer. It is ignored on non-voice channels.
+
+```yaml
+ESCALATE:
+  routing:
+    connection: livechat
+    queue: "wire_operations_l2"
+    voice:
+      transfer_method: refer            # invite | refer | bye
+      call_transfer_type: sip           # sip | pstn (omit to infer from project config)
+      sip_headers:                      # forwarded to the receiving SBC / contact center
+        X-Escalation-Reason: "sanctions_review"
+        X-Priority: "1"
+```
+
+| Field                | Type                             | Description                                                                                                                                                                              |
+| -------------------- | -------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `transfer_method`    | `"invite"` \| `"refer"` \| `"bye"` | SIP signaling method used to transfer the active call leg.                                                                                                                             |
+| `call_transfer_type` | `"sip"` \| `"pstn"`              | Whether to move the call over SIP or PSTN. Omit to infer from project configuration — SIP when a `sipTransferTargetUri` is configured, PSTN when only a `pstnTransferTargetNumber` is. |
+| `sip_headers`        | `Record<string,string>`          | Custom SIP headers forwarded on the transfer to the receiving SBC or contact center.                                                                                                     |
+
+<Note>`call_transfer_type` selects a **transport, not a destination** — the transfer target is always project-owned (Agent Transfer settings). Authored DSL cannot name a phone number or SIP URI here, the same boundary the built-in `call_transfer` tool enforces. For Genesys Audio Connector transfers, use the dedicated `genesys_sip_headers` block below rather than `sip_headers`.</Note>
 
 #### Genesys SIP transfer headers
 
