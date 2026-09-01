@@ -1,0 +1,266 @@
+---
+title: Quality AI integration with Artemis
+sidebarTitle: Quality AI
+noindex: true
+---
+
+This guide explains how to configure the By AI Agent metric in Quality AI to run AI-based evaluations through Artemis. The metric uses a parent metric with multiple sub-metrics, each with its own question, weight, and logic, and a single evaluation call processes all sub-metrics and returns results with justifications.
+
+Supervisors can pass metadata to the Execute API request through `requestMeta`. The system maps configured custom fields to key-value pairs and includes `conversationId` by default.
+
+By AI Agent connects to your Artemis project through project-based authentication set up when you create the metric.
+
+## When to use this metric
+
+Use this metric type for evaluation scenarios that require:
+
+| Scenario | Description |
+|----------|-------------|
+| **Multi-dimensional assessments** | Evaluate several facets (sub-metrics) under one parent metric. |
+| **Autonomous AI analysis** | Use AI agents to interpret, reason, and assess interactions with contextual understanding. |
+| **Weighted evaluations** | Assign different weights to sub-metrics to prioritize specific aspects. |
+| **Efficient execution** | Reduce redundant API calls by evaluating multiple sub-metrics within one agentic request. |
+| **Seamless configuration** | Select agentic applications from the same workspace without entering endpoint URLs. |
+| **Context-aware evaluations** | Pass custom metadata (for example, customer ID, ticket ID) to enable external data lookups during evaluation. |
+
+## Prerequisites
+
+Before creating a By AI Agent metric, confirm:
+
+- Access to both Quality AI and Agent Platform, using the same workspace on both.
+- Permissions to view and deploy project/app.
+- The By AI Agent Metric feature enabled for your workspace account.
+- At least one project/app is configured on the Agent Platform with the required response structure.
+- Custom fields in the Quality AI custom field registry to enable request metadata mapping.
+- A deployed Artemis project with its Project Key, Project ID, Deployment ID, and Channel ID.
+
+---
+
+## Configure a By AI Agent metric
+
+### Step 1: Navigate to metric configuration
+
+1. Navigate to **Quality AI** > **Configure** > **Evaluation Forms** > **Evaluation Metrics**.
+2. Click **+ New Evaluation Metric**.
+3. From the **Evaluation Metrics Measurement Type** dropdown, select **By AI Agent**.
+
+### Step 2: Create the parent metric
+
+1. Enter a descriptive **Name** (for example, Compliance Disclosure).
+2. Select the **Language** for the AI Agent's evaluation.
+3. The **Question** field is defined later under sub-metrics.
+
+### Step 3: Connect to Artemis
+
+Enter the details of the Artemis project to evaluate against:
+
+| Field | Description |
+|-------|-------------|
+| **Project Key** | Identifies the Artemis project. The system uses it to create and periodically refresh the authentication token. |
+| **Project ID** | Used with the authentication token to call the agent API and determine the specific agent. |
+| **Deployment ID** | Identifies the specific agent deployment used for evaluation. |
+| **Channel ID** | Identifies the channel that attributes the source of the request. |
+
+<Note>By AI Agent V2 uses project-key-based authentication. The system creates the authentication token from the Project Key, refreshes it periodically, and sets the required origin header on the run API automatically; no manual token management is needed.</Note>
+
+### Step 4: Test the connection and fetch sub-metrics
+
+1. Click **Test Connection**.
+2. The system sends a test call to the selected app and retrieves available sub-metrics for configuration.
+3. On success, the panel confirms the connection and shows how many sub-metrics the agent application includes.
+
+<Note>If the agentic app response doesn't match the required contract, Test Connection fails and blocks configuration.</Note>
+
+---
+
+### Step 5: Configure sub-metrics
+
+Upon successful connection, the system displays all sub-metrics returned by the agentic app with their reference names.
+
+Click **Edit** next to the **Weightage** field to open the sub-metric configuration panel, where you can define the following:
+
+| Field | Description |
+|-------|-------------|
+| **Display Name** | Label for the sub-metric. |
+| **Question** | Evaluation question for this sub-metric. |
+| **Evaluation Criteria** | Assign a weightage to each outcome (**Yes** / **No**). |
+| **Fatal Error** | If enabled, failing this sub-metric marks the entire interaction as a critical failure. |
+
+<Note>Sub-metric weightages must add up to 100%; they split the score within the parent metric's total.</Note>
+
+### Step 6: Configure custom field propagation
+
+Optionally, configure custom fields to send to the Agent Platform as metadata for evaluations that depend on conversation data. These fields populate the `requestMeta` object of the [Execute API](/agent-platform/v1/apis/agentic-apps/execute#sample-request) request.
+
+1. Select a conversation-level **Custom Field**.
+2. Define **Header Name** as the key in `requestMeta`.
+3. Add multiple mappings using **+ Add Custom Field**.
+
+For Agent AI and Express sources, `customConversationId` is automatically included in `requestMeta`.
+
+When all details are configured, click **Create** to save the metric for AI Agent evaluation.
+
+---
+
+## Set up the response format
+
+Ensure the Agent Platform response follows the required JSON contract for sub-metric evaluation.
+
+1. Navigate to your AI Agent configuration in the Agent Platform.
+2. Locate the **Description** field.
+3. Follow the [Response format](/ai-for-service/quality-ai/configure/evaluation-criteria/metrics-measurement-types/by-ai-agent#response-format-for-sub-metrics) specification.
+
+---
+
+## Example use case: UDAP compliance
+
+For financial services compliance, a single parent metric can evaluate multiple aspects in one API call:
+
+| Sub-metric | Weight | What it evaluates |
+|-----------|--------|------------------|
+| Fee Disclosure | 25% | All applicable fees are clearly explained |
+| Interest Rate Accuracy | 30% | Interest rate information is accurate |
+| Benefit Explanation | 20% | Benefits are clearly described |
+| Exclusion Details | 15% | All exclusions are clearly listed |
+| Terms Clarity | 10% | Overall clarity of terms |
+
+Each sub-metric is evaluated independently with a single API call, providing detailed justifications for each aspect.
+
+---
+
+## Evaluation flow
+
+The system sends a single evaluation request that includes:
+
+- Conversation data (transcripts and sub-metrics).
+- `requestMeta` (`conversationId` and configured custom fields).
+
+The agent evaluates all sub-metrics and returns structured results. The system maps results and displays adherence with reasoning.
+
+---
+
+## Request metadata in the Execute API
+
+The system sends metadata in the `requestMeta` object of the Execute API.
+
+The `requestMeta` object includes:
+
+- **Contents**: the `conversationId` (always included for Agent AI and Express sources) and custom fields configured for the metric, represented as key-value pairs.
+
+- **Custom field mapping rules**: the system derives keys from Header Names and sources values from conversation-level custom fields. It supports configuration of multiple custom fields per metric.
+
+**Example**:
+
+```json
+{
+  "requestMeta": {
+    "customConversationId": "AWS_Mono_22April0xxxx",
+    "phone_number": "862684xxxx"
+  }
+}
+```
+
+<Note>This metadata is used only during evaluation execution and isn't stored in the results.</Note>
+
+---
+
+## Response format for sub-metrics
+
+The Agent Platform must return responses in this JSON format for Quality AI to process sub-metric results:
+
+```json
+{
+  "botId": "string",
+  "accountId": "string",
+  "conversationId": "string",
+  "agentEvaluation": [
+    {
+      "PARENTMETRIC_ID_VALUE": {
+        "subMetrics": [
+          {
+            "subMetricId": "string",
+            "subMetricName": "string",
+            "justification": "string",
+            "messageIds": ["array"],
+            "timestamps": ["array"],
+            "source": "agent | customer",
+            "isQualified": "YES | NO | NA",
+            "failureReason": "string"
+          }
+        ]
+      }
+    }
+  ]
+}
+```
+
+### Sample response
+
+```json
+{
+  "botId": "bot_001",
+  "accountId": "account_001",
+  "conversationId": "conv_001",
+  "agentEvaluation": [
+    {
+      "eval_001": {
+        "subMetrics": [
+          {
+            "subMetricId": "sm_001",
+            "subMetricName": "Loan Inquiry Identification",
+            "justification": "Agent correctly identified the customer's loan-related query.",
+            "messageIds": ["msg_001"],
+            "timestamps": ["2025-10-17T10:00:00Z"],
+            "source": "agent",
+            "isQualified": "YES",
+            "failureReason": ""
+          },
+          {
+            "subMetricId": "sm_002",
+            "subMetricName": "Loan Eligibility Explanation",
+            "justification": "Agent provided loan eligibility information.",
+            "messageIds": ["msg_002", "msg_004"],
+            "timestamps": ["2025-10-17T10:00:10Z", "2025-10-17T10:00:35Z"],
+            "source": "agent",
+            "isQualified": "YES",
+            "failureReason": ""
+          }
+        ]
+      }
+    }
+  ]
+}
+```
+
+<Note>The Agent Platform contract strictly defines the response format; Quality AI only consumes and maps the response and doesn't modify the contract.</Note>
+
+## Audit logs (By AI Agent V2)
+
+For By AI Agent V2 (Artemis) metrics, the **Audit Screen** records an audit log for each evaluation so you can review and debug agent calls. The log lists one entry per sub-metric evaluation:
+
+| Column | Description |
+|-------|-------------|
+| **Timestamp** | Date and time of the evaluation call. |
+| **Request Payload** | The payload sent to the agent API. |
+| **Response** | The response returned by the agent. |
+| **Sub-metric** | The sub-metric evaluated in the call. |
+| **Status** | Outcome of the call, **Success** or **Failed**. |
+| **View Payload** | Opens the full request and response, including the trace, for debugging. |
+
+## Manage evaluation metrics
+
+### Edit an evaluation metric
+
+1. Select a **By AI Agent** metric.
+2. Click **Edit** to update the required metric details and fields.
+
+<Note>When you update a By AI Agent V2 connection field (Project Key, Project ID, Deployment ID, or Channel ID), the system records a change log entry, for example: "Project ID was updated from &#123;old value&#125; to &#123;new value&#125; for metric &#123;metric name&#125; of type By AI Agent."</Note>
+
+### Delete an evaluation metric
+
+Before deleting a metric:
+
+- Remove it from all associated evaluation forms (for example, Chat Form – COMMON, New Points Based).
+- Reassign any linked attributes (for example, Agent AI Metric Attribute-1) to a different metric.
+
+The system allows deletion only after you resolve all dependencies and save the changes.
