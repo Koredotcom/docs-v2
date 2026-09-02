@@ -1,0 +1,222 @@
+---
+title: Read Campaign contact data in an Artemis runtime session
+---
+
+<Badge icon="arrow-left" color="gray">[Back to Campaign integration guide](/agent-platform/integrations/campaign)</Badge>
+
+This guide explains how an Artemis agent can use the customer and campaign fields supplied by an AI for Service (CCAI) campaign during an outbound voice session.
+
+## Supported data contract
+
+Campaign contact fields are available under `customerData.userInfo`. This includes standard contact fields and custom columns imported with the campaign contact list.
+
+Campaign control fields are stored under `customerData`; they aren't a part of `userInfo`.
+
+| Data                         | Runtime path                      | Example                              |
+| ---------------------------- | --------------------------------- | ------------------------------------ |
+| Standard contact field       | `customerData.userInfo.<field>`   | `customerData.userInfo.firstName`    |
+| Custom contact-list column   | `customerData.userInfo.<column>`  | `customerData.userInfo.policyNumber` |
+| Campaign identifier          | `customerData.campaignId`         | `customerData.campaignId`            |
+| Campaign instance identifier | `customerData.campaignInstanceId` | `customerData.campaignInstanceId`    |
+| Dial-list record identifier  | `customerData.campaignDialListId` | `customerData.campaignDialListId`    |
+| Dialer/provider field        | `customerData.<field>`            | `customerData.dialerType`            |
+| Assigned-agent information   | `customerData.agent.<field>`      | `customerData.agent.agentId`         |
+
+There are no standard nested `customerData.custom` or `customerData.metadata` objects in the current campaign contract. Don't use those paths for contact-list columns.
+
+## Prerequisites
+
+- Campaigns for Artemis is enabled and configured.
+- The campaign uses the intended Artemis project and deployment.
+- The campaign contact list contains the fields the agent needs.
+- Contact-list column names are known exactly, including capitalization.
+
+<Steps>
+  <Step title="Add Contact Fields to the Campaign List"> 
+
+ Create or import a campaign contact list with the required standard and custom columns. For example:
+
+    | number         | firstName | lastName | policyNumber | segment | preferredLanguage |
+    | -------------- | --------- | -------- | ------------ | ------- | ----------------- |
+    | `+15551234567` | `John`    | `Doe`    | `P-8801`     | `gold`  | `en-US`           |
+
+    The campaign service stores these contact values in its `userInfo` object.
+
+    Use stable, ABL-friendly column names. For example, prefer `policyNumber` over `Policy Number`. Renaming a contact-list column also requires updating every ABL reference to that field.
+    </Step>
+
+    <Step title="Start the Campaign Session"> 
+
+    When the campaign starts a supported outbound call, it sends campaign data in the voice-provider tag. Artemis copies the received data into the Runtime session under:
+
+    ```text
+    session.data.values.customerData
+    ```
+
+    A representative Runtime value is:
+
+    ```json expandable=true
+    {
+    "campaignId": "campaign-123",
+    "campaignInstanceId": "instance-456",
+    "campaignDialListId": "contact-789",
+    "phoneNumber": "+15551234567",
+    "userInfo": {
+        "number": "+15551234567",
+        "firstName": "John",
+        "lastName": "Doe",
+        "policyNumber": "P-8801",
+        "segment": "gold",
+        "preferredLanguage": "en-US"
+    }
+    }
+    ```
+
+    `session.data.values.customerData` describes the internal Runtime storage location. In ABL templates, use the shorter `customerData...` path.
+    </Step>
+
+    <Step title="Read Contact Fields in ABL"> 
+
+    Use dotted-path interpolation to access a field:
+
+    ```text
+    {{customerData.userInfo.<fieldName>}}
+    ```
+
+    Examples:
+
+    ```text
+    {{customerData.userInfo.firstName}}
+    {{customerData.userInfo.policyNumber}}
+    {{customerData.userInfo.segment}}
+    {{customerData.userInfo.preferredLanguage}}
+    ```
+
+    The same interpolation syntax can be used in supported ABL text fields such as goals, personas, system prompts, and transfer messages.
+    
+
+    **Renewal Campaign Agent Example**
+
+    ```yaml expandable=true
+    AGENT: Renewal_Campaign_Agent
+
+    GOAL: |
+    Assist the customer with their renewal campaign.
+
+    Campaign context:
+    - Customer: {{customerData.userInfo.firstName}}
+    - Customer ID: {{customerData.userInfo.customerId}}
+    - Policy number: {{customerData.userInfo.policyNumber}}
+    - Campaign ID: {{customerData.campaignId}}
+
+    Never invent a value when campaign context is missing.
+
+    PERSONA: |
+    You are a concise and professional renewal specialist.
+    ```
+
+    **Deterministic Flow Example**
+
+    ```yaml expandable=true
+    AGENT: Renewal_Campaign_Agent
+
+    GOAL: 'Help customers with policy renewals.'
+
+    FLOW:
+    entry_point: campaign_greeting
+
+    steps:
+        - campaign_greeting
+        - assist_customer
+
+    campaign_greeting:
+        REASONING: false
+        RESPOND: 'Hello {{customerData.userInfo.firstName}}. I am calling about policy {{customerData.userInfo.policyNumber}}.'
+        THEN: assist_customer
+
+    assist_customer:
+        REASONING: true
+        GOAL: |
+        Help the customer with their renewal.
+        Use campaign {{customerData.campaignId}} and segment
+        {{customerData.userInfo.segment}} as context.
+        MAX_TURNS: 5
+    ```
+
+    For campaign control data, omit `userInfo`:
+
+    ```text
+    {{customerData.campaignId}}
+    {{customerData.campaignInstanceId}}
+    {{customerData.campaignDialListId}}
+    {{customerData.dialerType}}
+    ```
+    </Step>
+
+    <Step title="Handle Missing Values Safely"> 
+
+    The agent must not rely on a contact field unless the selected campaign dialing path sends it. Write prompts so the conversation works even when an optional value is absent.
+
+    Recommended behavior:
+
+    - Use a field only after confirming that it is populated for the campaign list.
+    - Don't speak placeholders or internal identifiers to the customer.
+    - Ask the customer for a missing value only when it is necessary for the task.
+    - Don't guess or fabricate a missing campaign value.
+
+    Example instruction:
+
+    ```yaml
+    PERSONA: |
+    Address the caller by first name when it is available.
+    If the first name is unavailable, use a neutral greeting.
+    Never read an unresolved template or internal campaign identifier aloud.
+    ```
+    </Step>
+
+    <Step title="Verify the Data During a Test Call"> 
+
+    1. Create a test contact with distinctive, non-production values.
+    2. Start the campaign against a non-production Artemis deployment.
+    3. Confirm the call reaches the expected project and agent.
+    4. Inspect the Runtime session or trace and locate `data.values.customerData`.
+    5. Confirm the required contact fields appear under `customerData.userInfo`.
+    6. Confirm the ABL response resolves the intended dotted paths.
+    7. Repeat with a record that omits optional fields to verify the fallback behavior.
+
+    Don't add raw customer data to application logs merely to verify interpolation. Use the authorized session or trace view and follow the project's PII-handling policy.
+    </Step>
+</Steps>
+
+## Dialing-mode limitation
+
+The current campaign implementation doesn't propagate contact data identically in every dialing mode:
+
+- **Agentless:** explicitly adds the complete `userInfo` object to the outbound provider tag. Standard and custom contact fields can therefore reach `customerData.userInfo`.
+- **Progressive and power-related paths:** currently add selected values such as phone number, full name, user ID, assigned-agent data, and campaign identifiers, but do not consistently add the complete `userInfo` object.
+
+Before depending on arbitrary custom contact fields in a progressive or power campaign, verify that the actual Runtime session contains them. If they are absent, the campaign producer must propagate `userInfo`; an ABL-only change can't recover data that wasn't sent.
+
+## Troubleshoot issues
+
+| Symptom                                                   | Likely cause                                                         | Resolution                                                   |
+|:--------------------------------------------------------- |:-------------------------------------------------------------------- |:------------------------------------------------------------ |
+| `customerData.userInfo` is absent                         | The dialing path didn't send the full contact object                | Check the dialing mode and inspect the outbound campaign tag |
+| A custom field is absent                                  | The source contact lacks the column, or the producer omitted it      | Verify the campaign list record and producer payload         |
+| A value doesn't resolve                                   | The ABL path or field capitalization differs from the contact column | Use the exact `customerData.userInfo.<fieldName>` path       |
+| `customerData.custom` or `customerData.metadata` is empty | Those aren't standard campaign containers                           | Move/read the contact field under `customerData.userInfo`    |
+| Campaign IDs are absent under `userInfo`                  | Control fields live directly under `customerData`                    | Use `customerData.campaignId` and related root paths         |
+| The field exists in Campaigns but not in Runtime          | Data wasn't included in the provider tag                            | Fix or enable propagation in the campaign producer           |
+
+## Security and privacy
+
+Campaign contact data can contain personally identifiable information. Only include fields required for the conversation, avoid exposing internal identifiers, and apply the project's guardrail and PII policies before using customer data in model-visible prompts or spoken responses.
+
+## References
+
+```text
+Contact/custom field: {{customerData.userInfo.<fieldName>}}
+Campaign field:       {{customerData.<fieldName>}}
+Internal storage:     session.data.values.customerData
+Unsupported contract: customerData.custom / customerData.metadata
+```
