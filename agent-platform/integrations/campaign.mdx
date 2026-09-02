@@ -1,0 +1,150 @@
+---
+title: CCAI outbound campaign integration with Artemis
+sidebarTitle: Campaign
+---
+
+This guide explains how to configure the AI for Service (CCAI) outbound voice campaign to place calls through Artemis and trigger a specific deployed agent for each call. It reflects the current Campaigns for Artemis implementation.
+
+## How agent triggering works
+
+AI for Service doesn't select an Artemis agent by name. Three bindings link the campaign to the agent:
+
+1. The AI for Service campaign links to an Artemis project through a project ID and an API key.
+1. The campaign selects one Artemis voice connection, a voice channel connection in that project.
+1. The voice connection binds to a specific deployment (deploymentId). That deployment is the agent that runs when the call connects.
+
+The deployment bound to the selected voice connection determines which agent answers the campaign call. To change the triggered agent, either change the deployment bound to that connection or select a different connection.
+
+## Prerequisites
+
+Before configuring the campaign, confirm the following:
+
+* Access to the CCAI Campaigns module in AI for Service.
+* An Artemis domain, environment, project ID, and a project-scoped API key (`abl_...`).
+* A deployed agent in that project.
+* At least one voice channel connection in that project and environment, bound to the target deployment, with outbound calling enabled.
+
+<Steps>
+  <Step title="Configure the Artemis project">
+    Complete this configuration first. AI for Service reads these values when the campaign links to the project.
+
+    1. Create or select the project. Note the Project ID, for example `019dd2a0-d7cf-7854-a3c1-eaa78c6d8d6d`.
+    1. Build and deploy the agent that handles campaign calls. Deploying the agent to a target environment (dev, staging, or prod) produces a deployment. Campaign calls trigger the deployment, not the draft agent.
+    1. Create a voice channel connection and bind it to the deployed agent:
+
+        * Supported voice channel types include korevg (Voice Gateway, primary), genesys_audio_connector, voice_twilio, voice_pipeline, and voice_realtime (any isVoice type in the manifest).
+        * Configure the caller ID, phone numbers, and carrier/trunk (BYOC SIP or the shared carrier).
+        * Enable outbound calling (config.outboundCall must not be false). Inbound calling is independent (config.inboundCall).
+        * Bind the connection to the deployment so the connection carries a deploymentId. This binding determines which agent answers.
+    1. Generate a project API key (`abl_...`) with access to the project. AI for Service uses this key to authenticate to the internal campaign endpoints. These endpoints require API-key authentication (`requireApiKeyAuth`) and the `channel_connection:read` and `workflow:execute` permissions to list connections.
+
+    `GET /api/internal/campaigns/voice-connections?projectId=...&environment=...` returns the connection with a non-null `voiceAppSid`, a resolved `trunkName`, `dialoutUrl`, and the bound `deploymentId`.
+  </Step>
+
+  <Step title="Configure the CCAI campaign in AI for Service">
+
+    1. Go to **CCAI** > **Campaigns**.
+    1. Click **Create New Voice Campaign**, or edit an existing voice campaign. [Learn more](/ai-for-service/contact-center/campaigns#create-a-voice-campaign).
+    1. Select the dialing mode **Agentless**, and turn on **Enable Campaigns for Artemis**.
+    1. Click **Edit Settings** and enter the Artemis linkage:
+
+        | Field        | Description                          | Example                                  |
+        | :----------- | :----------------------------------- | :--------------------------------------- |
+        | Domain Name  | Artemis domain URL                   | `https://agents-dev.kore.ai`             |
+        | Environment  | Environment of the deployment/connection | `dev`, `staging`, `prod`             |
+        | Project Name | Display name for reference           | Customer Support Project                 |
+        | Project ID   | Artemis project ID                   | `019dd2a0-d7cf-7854-a3c1-eaa78c6d8d6d`   |
+        | API Key      | Project-scoped API key               | `abl_...`                                |
+
+    1. Click **Save**.
+    1. In the campaign's caller ID or voice connection section, select the voice connection whose bound deployment is the target agent. This selection (the connectionId) determines the agent.
+    1. Configure the contact list, DNC settings, scheduling, and dispositions as usual, then save or start the campaign.
+
+    The environment entered must match the environment where the deployment and voice connection reside. The endpoints filter connections by `projectId` and `environment`.
+  </Step>
+</Steps>
+
+## Supported dialing modes
+
+Campaigns for Artemis supports one dialing mode, **Agentless**. The agent handles the call end-to-end; Start Flow and experienceFlow aren't used in V2.
+
+In Agentless mode, the outbound tag carries the complete userInfo object, so standard and custom contact fields reach the Runtime session. For details, see [Read Campaign Contact Data in an Artemis Runtime Session](/agent-platform/integrations/read-campaign-contact-data).
+
+## What reaches the agent
+
+AI for Service places campaign context in the Jambonz call tag. Artemis copies this context into the Runtime session at `session.data.values.customerData`, where the agent reads it with dotted-path interpolation:
+
+```yaml
+{{customerData.userInfo.firstName}} # contact / custom fields
+{{customerData.campaignId}} # campaign control fields
+{{customerData.campaignInstanceId}}
+{{customerData.campaignDialListId}}
+```
+
+Example `customerData`:
+
+```yaml
+{
+  "provider": "abl_v2",
+  "dialerType": "Agentless",
+  "campaignId": "campaign-123",
+  "campaignInstanceId": "instance-456",
+  "campaignDialListId": "contact-789",
+  "phoneNumber": "+15551234567",
+  "userInfo": { "firstName": "John", "lastName": "Doe", "policyNumber": "P-8801" },
+  "agent": { "agentId": "..." }
+}
+```
+
+## Call status relay back to AI for Service
+
+After a successful dial, AI for Service registers the call through `POST /api/internal/campaigns/call-context` (stored in Redis with a 24-hour TTL). As the call progresses, Runtime relays `call:status` events back to AI for Service, normalizing raw states to campaign values such as `trying`, `early-media`, `in-progress`, `busy`, `no-answer`, `completed`, `failed`, and `machine_detected`.
+
+Runtime posts these values to the CCAI campaign status endpoint (`/campaign/api/v1/trigger/callStatus`, and the progressive-agent variant). Runtime requires the `CAMPAIGN_API_BASE_URL` setting to know where to send these updates.
+
+## Verify with a test call
+
+1. Create a test contact with distinctive, non-production values.
+1. Confirm the campaign points to a non-production project or environment and the intended voice connection.
+1. Start the campaign against one test record.
+1. Confirm the call reaches the expected deployment or agent, the one bound to the selected connection.
+1. Inspect the Runtime session or trace and locate `data.values.customerData`. Confirm the expected contact fields appear under `customerData.userInfo`.
+1. Confirm the agent's responses resolve the intended `{{customerData...}}` paths.
+1. Confirm call-status updates appear in CCAI.
+
+<Note>Don't add raw customer data to application logs to verify interpolation. Use the authorized session/trace view according to the project's PII policy.</Note>
+
+## Troubleshooting
+
+| Symptom                                          | Likely cause                                                                                      | Recommended action                                                                                                              |
+| :----------------------------------------------- | :------------------------------------------------------------------------------------------------ | :------------------------------------------------------------------------------------------------------------------------------ |
+| Voice connections don't load in CCAI             | Wrong domain or environment, invalid or expired API key, or wrong project scope.                     | Verify the Domain Name, Environment, and Project ID, and confirm the API key belongs to the project.                            |
+| A connection is missing from the list            | The connection is not a voice type, is in another environment, or is deleted.                     | Confirm the connection is a voice channel in the selected project and environment.                                              |
+| Calls don't trigger                              | The connection lacks outbound calling, has no phone number, or the campaign is not active.        | Enable outbound calling on the connection, verify the caller ID or contacts, and set the campaign to Active.                    |
+| The wrong agent answers                          | The selected connection is bound to a different deployment.                                        | Rebind the connection to the intended deployment, or select the correct connection.                                             |
+| A BYOC call fails or uses the wrong trunk        | The BYOC connection lacks a distinct carrier, so the fallback is refused.                          | Set the BYOC connection's own carrier; it must not equal the shared default.                                                    |
+| `customerData.userInfo` is missing at runtime    | The dialing mode didn't send the full contact object.                                             | Check the dialing mode; see the contact-data guide's dialing-mode limitation.                                                   |
+
+## CCAI validation messages
+
+| Message                                                                          | Meaning                                                      | Action                                          |
+| :------------------------------------------------------------------------------- | :----------------------------------------------------------- | :---------------------------------------------- |
+| Invalid Domain Name provided.                                                    | The domain isn't a valid URL.                                | Verify the domain host.                         |
+| API Key is invalid or expired.                                                   | The key is wrong, expired, or revoked.                       | Generate or copy a valid API key.               |
+| API key doesn't have access to the specified Project ID.                         | The key is valid but not for this project.                   | Use a key with access to the project.           |
+| Project ID not found.                                                            | The project doesn't exist or is inaccessible.                | Verify the project ID.                          |
+| Unable to connect to Agent Platform campaign voice connections endpoint.         | The domain or environment doesn't resolve the endpoint.      | Verify the Domain Name and Environment.         |
+| Unable to connect to the specified Agent Platform environment.                   | The platform is unavailable, or a server error occurred.     | Retry later, or contact support.                |
+
+## Security and privacy
+
+Store the Artemis API key securely. Never share it in tickets, screenshots, or logs. If the key is shared, update the campaign settings.
+
+Campaign contact data can contain PII. Include only the fields the conversation needs, avoid exposing internal identifiers, and apply the project's guardrail and PII policies before using customer data in model-visible prompts or spoken responses.
+
+---
+
+**Related topics**
+
+- [Read Campaign Contact Data in an Artemis Runtime Session](/agent-platform/integrations/read-campaign-contact-data)
+- [CCAI integration with Artemis](/agent-platform/integrations/ccai)
