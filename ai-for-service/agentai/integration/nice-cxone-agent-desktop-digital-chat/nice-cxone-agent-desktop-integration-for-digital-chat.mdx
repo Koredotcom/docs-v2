@@ -1,0 +1,220 @@
+---
+title: Agent AI Integration with NICE CXone Agent Desktop for Digital Chat
+sidebarTitle: NICE CXone Agent Desktop Integration for Digital Chat
+noindex: true
+---
+
+This guide explains how to integrate the Agent AI widget with NICE CXone Agent Desktop for digital chat. The integration supports the following Agent AI capabilities: Automation, [Agent Coaching](/ai-for-service/agentai/agent-experience/agent-realtime-coaching), [Agent Playbook](/ai-for-service/agentai/agent-experience/playbook), [Sentiment Analysis](/ai-for-service/agentai/agent-experience/agent-assist-widget-v3), [conversation transcript](/ai-for-service/agentai/agent-experience/agent-assist-widget-v3#transcript-tab), [end-of-conversation summary](/ai-for-service/agentai/agent-experience/agent-assist-widget-v3#generate-summary), and custom data passing, such as agent name and ID.
+
+## Shared Responsibilities
+
+For details, see [Shared Responsibilities](/ai-for-service/agentai/integration/nice-max/nice-max-desktop-chat-and-voice#shared-responsibilities) and follow only the responsibilities that apply to digital chat.
+
+## NICE CXOne Admin
+
+See [NICE CXOne Admin](/ai-for-service/agentai/integration/nice-max/nice-max-desktop-chat-and-voice#nice-cxone-admin) for further details.
+
+## Kore.ai Admin
+
+Provide the Studio script for digital chat: The support team provisions the Studio script required for the NICE CXone digital chat integration.
+
+## Prerequisites
+
+Before starting with this integration guide, verify that you have the following:
+
+* A NICE CXone administrator account. The account must be allowed to create digital automatic call distribution (ACD) skills, configure digital points of contact, configure digital chat channels, import/edit studio scripts, and assign agents who have the necessary roles and permissions to accept digital chat interactions in Agent Desktop.
+* NICE CXone Studio installed on a supported Windows computer. NICE CXone Studio is the application used to import and edit the integration script.
+* Access to Kore.ai Agent AI, with permission to create or configure an AI agent.
+* The following information from the Kore.ai administrator or support team:
+    * **Agent AI widget URL:** The web address used to open the Agent AI panel.
+    * **Bot ID:** Identifies the AI agent that will assist the human agent.
+    * **Client ID:** Identifies the NICE CXone integration.
+    * **Client Secret:** A private key used to authenticate the integration.
+    * **Digital chat Studio script:** The script that connects NICE CXone to Agent AI.
+
+## Definitions
+
+See [Definitions](/ai-for-service/agentai/integration/nice-max/nice-max-desktop-chat-and-voice#definitions) for more details.
+
+## Configuration Steps
+
+Complete the following steps in order:
+
+1. Import and configure the digital chat script in NICE CXone Studio.
+2. Create a digital ACD skill in NICE CXone.
+3. Create a digital chat channel.
+4. Connect the chat channel to the correct skill and studio script.
+5. Test the integration from the customer chat entry point.
+6. Verify that the Agent AI widget, transcript, custom data, and conversation summary work correctly.
+
+<Note>This guide applies only to digital chat. Do not configure voice-related settings such as **SIP URI** or **Audio Relay Endpoint**.</Note>
+
+### Import and Configure the Digital Chat Script in NICE CXone Studio
+
+The Studio script connects NICE CXone to Agent AI and defines the following:
+
+* Which AI agent to use.
+* How to authenticate with Agent AI.
+* Which language to use.
+* Which chat conversation to connect to.
+* What additional information to send to Agent AI.
+
+#### Import the script
+
+1. Download the **[JSON Studio script](https://raw.githubusercontent.com/Koredotcom/docs-v2/2a6bb9632b62d9b0bc518df3cccba08bdff01c1d/ai-for-service/assets/nice-agent-desktop-digital-chat-messaging-sample.json)** Kore.ai provides for digital chat.
+2. Open **[NICE CXone Studio](https://na1.nice-incontact.com/studio)** on your Windows computer or access Nice CXone Cloud.
+3. Select **File** > **Import from File**.
+4. Select the downloaded JSON file.
+5. Select the **Snippet** tile to open the script editor. 
+    ![open-script-editor](/ai-for-service/agentai/integration/nice-cxone-agent-desktop-digital-chat/images/open-script-editor.png)
+
+6. Update the following parameters:
+    1. **Kore.ai parameters**:
+        1. Bot Client ID: clientId
+        2. Bot Client Secret: clientSecret
+        3. Bot ID: botId
+        4. Agent AI Widget URL: baseUrl
+        5. Bot language code: `language`. The default value is `en`. See [Supported Languages](/ai-for-service/agentai/agent-experience/supported-languages) for supported AI agent language codes.
+    2. **Custom data**: Use the custom data object to pass additional context to the AI agent. At run time, the data is available in the AI agent's UserContext. See [Access Custom Data in Agent AI Bot](/ai-for-service/agentai/agent-experience#access-custom-data) for instructions.
+    3. Add one key-value pair per line to the custom data object. For example:
+        6. customdata.agentName="Agent"
+        7. customdata.agentID="1234" 
+	
+    ```javascript
+    ASSIGN global:clientSecret="<Kore.ai Client Secret>"
+    ASSIGN global:clientId="<Kore.ai Client ID>"
+    ASSIGN global:botId="<Kore.ai Bot ID>"
+    ASSIGN global:baseUrl="https://platform.kore.ai/koreagentassist-sdk-v3/UI/agentassist-iframe.html"
+    ASSIGN global:language="en"
+
+    // 'customdata' object can be utilized to pass additional information to Agent AI Bot for better context
+    DYNAMIC customdata
+    customdata.agentName="John Doe"
+
+    DYNAMIC scriptparams
+    scriptparams.clientId="{clientId}"
+    scriptparams.clientSecret="{clientSecret}"
+    scriptparams.botId="{botId}"
+    scriptparams.conversationId="{contactid}"
+    scriptparams.threadIdOnExternalPlatform="{__threadidonexternalplatform}"
+    scriptparams.channelId="{__channelid}"
+    scriptparams.source="nice"
+    scriptparams.isCall=false
+    scriptparams.channel="chat"
+    scriptparams.baseUrl="{baseUrl}"
+    scriptparams.interactiveLanguage="{language}"
+    scriptparams.customdata="{customdata.asJSON()}"
+    ASSIGN scriptparamsjson="{scriptparams.asJSON()}"
+
+    scriptparamsjson = scriptparamsjson.urlencode()
+    ```
+7. Select **Apply** in the **Snippet Editor**.
+8. Select **Save** in the upper-right corner of **Studio**.
+
+### Create a Digital ACD Skill in NICE CXone Setup
+
+An ACD skill is a routing category. It helps NICE CXone decide which agents should receive a chat.
+
+1. Go to the **NICE CXone** home page.
+2. Select the **Application Launcher** in the upper-left corner.
+3. Select **ACD**.
+4. Under **Contact Settings**, select **ACD Skills**.
+5. Select **Create New** > **Single Skill**.
+6. Set **Media Type** to **Digital** to handle text-based chats instead of phone calls.
+7. Select the appropriate **Campaign**.
+8. Select **Create**. 
+    ![create-skill](/ai-for-service/agentai/integration/nice-cxone-agent-desktop-digital-chat/images/create-skill.png)
+
+### Configure a Digital Chat Channel in NICE CXone Setup
+
+The digital chat channel is the customer-facing entry point where chats begin. Connect the channel to both the Studio script and the ACD skill.
+
+1. On the **NICE CXone** home page, select the **Application Launcher** > **ACD**.
+2. Select **Digital** > **Points of Contact Digital**.
+3. Select the **Chat** tile. 
+    ![configure-digital-chat](/ai-for-service/agentai/integration/nice-cxone-agent-desktop-digital-chat/images/configure-digital-chat.png)
+
+4. Select **Create Messaging Channel**.
+5. Enter a name in the **Channel name** field.
+6. On the **Points of Contact Digital** page, select **Edit** for the channel you created. 
+    ![edit-digital-channel](/ai-for-service/agentai/integration/nice-cxone-agent-desktop-digital-chat/images/edit-digital-channel.png)
+
+7. Select the **studio script** and **default skill** for the channel.  
+8. Select **Save**. 
+<Note> Assign at least one disposition to the digital ACD skill. A disposition is the outcome the agent selects  when the conversation ends–for example, **Resolved** or **Closed**.The end-of-conversation summary requires a disposition to appear and remain available. Without a disposition, the chat screen may close automatically when the conversation ends. </Note>
+
+## Validate the Digital Chat Integration
+
+1. Go to the **NICE CXone** home page.
+2. Select the **Application Launcher**.
+3. Select **OMNICHANNEL ROUTING** > **Agent**.
+4. Select **Integrated Softphone** > **Connect**.
+5. Set the agent status to **Available**. 
+    ![agent-status-available](/ai-for-service/agentai/integration/nice-cxone-agent-desktop-digital-chat/images/agent-status-available.png) 
+
+6. Return to the **NICE CXone** home page and select **Application Launcher** > **ACD**.
+7. Select **Digital** > **Points of Contact Digital**.
+8. Select the **Chat** tile.
+9. Select **Initialization & Test** for your channel. 
+    ![initialization-and-test-channel](/ai-for-service/agentai/integration/nice-cxone-agent-desktop-digital-chat/images/initialization-and-test-channel.png) 
+
+10. Select the **chat** icon in the lower-right corner of the initialization page. 
+    ![chat-icon](/ai-for-service/agentai/integration/nice-cxone-agent-desktop-digital-chat/images/chat-icon.png)
+
+11. Enter your name in the message initialization form and send a greeting such as **Hi** or **Hello** to start a chat. A chat request appears in **Agent Desktop**. 
+    ![chat-request-agent-desktop](/ai-for-service/agentai/integration/nice-cxone-agent-desktop-digital-chat/images/chat-request-agent-desktop.png)
+
+12. Verify that **Agent Desktop** assigns the chat to you.
+13. From the status menu, select **Resolved** or **Closed** to end the conversation. 
+    ![end-conversation](/ai-for-service/agentai/integration/nice-cxone-agent-desktop-digital-chat/images/end-conversation.png) 
+
+14. Select **Unassign & Dismiss** to disconnect the chat. 
+    ![unassign-and-dismiss](/ai-for-service/agentai/integration/nice-cxone-agent-desktop-digital-chat/images/unassign-and-dismiss.png)
+
+## Validation Checklist
+
+* Verify the Agent AI widget loads in **Agent Desktop** when an agent receives a chat.
+* Verify customer and agent messages appear in the conversation transcript.
+* Verify the AI agent receives the custom data you configured in itsUserContext.
+* Resolve or close the chat and verify the end-of-conversation summary appears.
+* Verify **Unassign & Dismiss** disconnects the completed chat.
+
+## Best Practices
+
+* Use separate chat channels and skills for testing and live customer conversations.
+* Verify the widget URL, **Bot ID**, **Client ID**, and **Client Secret** before saving the Studio script.
+* Keep a record of each version of the Studio script and the changes you make to it.
+* After changing the script, skill, or channel connection, start a new test chat. Existing chats may continue using the previous configuration.
+* Assign a disposition to the skill so that the conversation summary remains available.
+* Before turning on the integration for customers, test the complete process:
+    * Chat routing
+    * Agent AI panel opening
+    * Transcript updates
+    * Custom data transfer
+    * Summary generation
+    * Conversation closure
+
+## Troubleshooting
+
+| **Issue** | **Resolution** |
+|---|---|
+| Agent AI screen pop-up doesn’t open | Verify the Agent AI widget URL, **Bot ID**, **Client ID**, and **Client Secret** in the Studio script. Verify that the Studio script you configured associates with the digital channel. |
+| Chat is not routed to the agent | - Verify that the digital channel uses the correct skill and studio script.<br /> - Verify that you assigned the agent to the skill and the agent has an **Available** status. |
+| Conversation transcript does not update | Verify the Studio script passes the `conversationId`, `threadIdOnExternalPlatform`, and `channelId` values. |
+| Custom data is missing | Verify that the custom data object contains valid key-value pairs and that you include it in `scriptparams` as JSON. |
+| Conversation summary does not appear | Verify that you assigned a disposition to the digital ACD skill and ended the chat with a **Resolved** or **Closed** status. |
+| Studio script changes do not take effect | Save the Studio script, verify that the updated script associates with the channel, and start a new chat session. |
+
+## View Interaction Details in Kore
+
+During and after a digital chat, agents can review the interaction in the Agent AI widget. The widget displays the conversation transcript, conversation summary, and customer interaction history.
+
+For additional conversation details, go to **Kore Platform** > **Automation AI** > **Analytics** > **Conversations**.
+
+## Additional Notes
+
+* The integration uses a screen pop-up to load the Agent AI widget in NICE CXone Agent Desktop; you don’t need Agent Assist Hub configuration.
+* This guide supports digital chat only. Voice, SIP, Audio Relay Endpoint, and SIP URI settings do not apply.
+* The Studio script passes NICE CXone conversation identifiers and custom data you configured to Agent AI.
+* The summary pop-up requires you to assign a disposition to the digital ACD skill.
+* After updating the Studio script or channel mapping, start a new chat session to validate the changes.
