@@ -1,16 +1,19 @@
 import { useEffect, useState } from "react";
 
+// Provides the search field and filters the FAQ content on the page.
 export const FAQSearch = () => {
   const [query, setQuery] = useState("");
   const [resultCount, setResultCount] = useState(null);
 
   useEffect(() => {
+    // Wait for Mintlify to finish rendering the MDX content.
     const timer = setTimeout(() => {
       const searchInput = document.getElementById("faq-search");
       const main = searchInput?.closest("main");
 
       if (!main) return;
 
+      // Find FAQ category and question headings, excluding headings in code blocks.
       const headings = Array.from(main.querySelectorAll("h2, h3")).filter(
         (heading) => !heading.closest("pre, code")
       );
@@ -19,12 +22,14 @@ export const FAQSearch = () => {
       let currentCategory = null;
       let currentFaq = null;
 
+      // Build a structure that associates each FAQ question with its answer content.
       headings.forEach((heading) => {
         if (heading.tagName === "H2") {
           currentCategory = {
             heading,
             faqs: [],
           };
+
           categories.push(currentCategory);
           currentFaq = null;
         } else if (heading.tagName === "H3" && currentCategory) {
@@ -35,6 +40,7 @@ export const FAQSearch = () => {
 
           currentCategory.faqs.push(currentFaq);
 
+          // Collect everything between this question and the next FAQ/category heading.
           let element = heading.nextElementSibling;
 
           while (
@@ -48,12 +54,15 @@ export const FAQSearch = () => {
         }
       });
 
+      // Normalize text so searches are case-insensitive and whitespace-independent.
       const normalize = (text) =>
         text.toLowerCase().replace(/\s+/g, " ").trim();
 
+      // Show only FAQs whose question or answer contains every search term.
       const applyFilter = (value) => {
         const normalizedQuery = normalize(value);
 
+        // Restore the complete FAQ page when the search field is empty.
         if (!normalizedQuery) {
           categories.forEach((category) => {
             category.heading.style.display = "";
@@ -71,6 +80,7 @@ export const FAQSearch = () => {
           return;
         }
 
+        // Split multi-word searches so every word must be present in the FAQ.
         const terms = normalizedQuery.split(/\s+/);
         let matches = 0;
 
@@ -78,6 +88,7 @@ export const FAQSearch = () => {
           let categoryHasMatch = false;
 
           category.faqs.forEach((faq) => {
+            // Search both the FAQ question and all of its answer content.
             const questionText = faq.heading.textContent || "";
 
             const answerText = faq.elements
@@ -94,12 +105,14 @@ export const FAQSearch = () => {
               categoryHasMatch = true;
               matches += 1;
 
+              // Keep matching FAQ questions and answers visible.
               faq.heading.style.display = "";
 
               faq.elements.forEach((element) => {
                 element.style.display = "";
               });
             } else {
+              // Hide nonmatching FAQ questions and their answers.
               faq.heading.style.display = "none";
 
               faq.elements.forEach((element) => {
@@ -108,17 +121,21 @@ export const FAQSearch = () => {
             }
           });
 
+          // Hide a category when none of its FAQs match the search.
           category.heading.style.display = categoryHasMatch ? "" : "none";
         });
 
         setResultCount(matches);
       };
 
+      // Make the filter function available to the search input.
       main.__faqSearchApplyFilter = applyFilter;
 
+      // Start with all FAQs visible.
       applyFilter("");
     }, 0);
 
+    // Remove the timer and filter reference when the component is unmounted.
     return () => {
       clearTimeout(timer);
 
@@ -131,6 +148,7 @@ export const FAQSearch = () => {
     };
   }, []);
 
+  // Apply the filter whenever the user changes the search text.
   const handleChange = (event) => {
     const value = event.target.value;
 
@@ -144,6 +162,7 @@ export const FAQSearch = () => {
     }
   };
 
+  // Clear the search and restore all FAQs.
   const handleClear = () => {
     setQuery("");
 
@@ -157,6 +176,7 @@ export const FAQSearch = () => {
 
   return (
     <div style={{ marginBottom: "2rem" }}>
+      {/* Search field label */}
       <label
         htmlFor="faq-search"
         style={{
@@ -165,7 +185,7 @@ export const FAQSearch = () => {
           marginBottom: "0.5rem",
         }}
       >
-        Search this FAQ article
+        Filter the FAQs using keywords
       </label>
 
       <div
@@ -175,12 +195,13 @@ export const FAQSearch = () => {
           alignItems: "center",
         }}
       >
+        {/* Search input */}
         <input
           id="faq-search"
           type="search"
           value={query}
           onChange={handleChange}
-          placeholder="Search questions and answers..."
+          placeholder="Type a keyword or a phrase..."
           aria-describedby="faq-search-results"
           style={{
             flex: 1,
@@ -194,6 +215,7 @@ export const FAQSearch = () => {
           }}
         />
 
+        {/* Show the clear button only when a search is active. */}
         {query && (
           <button
             type="button"
@@ -212,6 +234,7 @@ export const FAQSearch = () => {
         )}
       </div>
 
+      {/* Display the number of matching FAQs. */}
       <div
         id="faq-search-results"
         aria-live="polite"
