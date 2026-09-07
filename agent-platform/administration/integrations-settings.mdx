@@ -3,78 +3,288 @@ title: Integrations settings
 sidebarTitle: Integrations
 ---
 
-Integrations connect your project to external systems for version control and authentication.
+Integrations connect your project to the external systems it depends on: a Git repository for version control, and the authentication credentials that let agents reach third-party services.
 
 ## Git integration
 
-The **Git** page lets you connect a Git repository to sync agents and localization assets with version control.
+The **Git** page connects a repository so agents and localization assets live under version control rather than only in Studio.
 
-**Navigation**: **Project** → **Settings** → **Git**
+**Navigation**: **Project** -> **Settings** -> **Git**
 
 ### Connect a repository
 
-Click **Connect Repository** to open the connection dialog. Configure the following fields:
+Select **Connect Repository**, complete the fields, then select **Test connection**. Test before you connect, because a wrong branch, path, or credential fails at the first sync rather than at connection time. Select **Connect** to finish.
 
-| Field                 | Description                                                                         |
-|-----------------------|-------------------------------------------------------------------------------------|
-| **Provider**          | The Git hosting provider (for example, GitHub).                                     |
-| **Repository URL**    | The full URL of the repository (for example, `https://github.com/org/repo`).        |
-| **Branch**            | The branch to sync with (for example, `main`).                                      |
-| **Sync Path**         | The directory path within the repository to sync. Use `/` for the repository root.  |
-| **Use Auth Profile**  | Toggle to use an existing auth profile instead of inline credentials.               |
-| **Credential Type**   | Authentication method: **Personal Access Token** or **SSH Key**.                    |
-| **Secret ID**         | The secret reference identifier for the credential.                                 |
-| **Conflict Strategy** | How the system resolves conflicts when both Studio and the repository have changes. |
+| Field | Description |
+|---|---|
+| **Provider** | Selects the Git hosting service. It determines which credential types the **Auth Profile** picker accepts, so set it before you prepare a credential. |
+| **Repository URL** | Points at the repository over HTTPS or SSH. It addresses the repository only. The folder this project occupies inside it comes from **Sync Path** further down. |
+| **Repository Layout** | Decides whether this project shares a repository with others or takes one of its own. Choose a shared folder when you want every project's history in one place and one set of repository permissions. Choose a dedicated repository when a project needs its own access control or its own release cadence. |
+| **Branch** | Sets the branch the project reads and writes. Point non-production projects at a branch other than the one your builds run from, so an experiment in Studio doesn't reach it. |
+| **Sync Path** | Sets the folder inside the repository that this project owns. Use the repository root when the project has the repository to itself, and a named folder when several projects share one. |
+| **Path Preview** | Shows the location the platform resolved from your layout, path, and branch. Read it before you connect. It's the one place the three fields appear as the single destination they combine into. |
+| **Auth Profile** | Selects the stored credential the sync uses. Select **Create Git token profile** to build one without leaving the dialog. |
+| **Conflict Strategy** | Decides what happens when Studio and the repository both change the same thing. Settle this before your first push rather than during your first conflict, since the strategy determines which side loses work. |
 
-Click **Test Connection** before saving. After you enable Git integration, you can push agent definitions to the repository, pull changes into the Studio editor, and use conflict resolution tools to manage simultaneous edits.
+### Credentials by provider
 
+The picker lists only profile types that carry a token or key the sync can present on its own. OAuth App profiles never appear, whichever provider you choose, because they authorize tools and connectors interactively and the sync has no user to prompt. A working OAuth App profile for the same provider is therefore not a substitute, and its absence from the list isn't a fault.
+
+| Provider | What to prepare |
+|---|---|
+| **GitHub** | A Bearer Token profile holding a personal access token, or an SSH Key profile. |
+| **GitLab** | A Bearer Token or API Key profile holding a project access token, or an SSH Key profile. OAuth Token grants don't appear here either. |
+| **Bitbucket** | A raw repository or workspace access token, or an SSH Key profile. Atlassian API tokens need storing in the combined email and token form rather than as the token alone, which is the most common reason a valid Bitbucket credential fails. OAuth Token grants don't appear here either. |
+| **Azure DevOps** | A Bearer Token or API Key profile holding an Azure DevOps personal access token. Grant it Code read and write, add Code manage if you want branch and pull request operations, and add a webhook subscription scope if you want automatic sync. SSH Key and OAuth profiles aren't supported for this provider at all, so plan on a token. |
+
+Once the integration is live, you can push agent definitions, pull repository changes into Studio, and resolve conflicts when edits collide.
 ---
 
 ## Auth profiles
 
-The **Auth Profiles** page lets you manage authentication credentials for connectors and integrations.
+An auth profile is a reusable credential that connectors, tools, and integrations reference by name. Defining credentials here rather than inside each tool means a rotation touches one profile instead of every tool that uses it.
 
-**Navigation**: **Project** → **Settings** → **Auth Profiles**
+**Navigation**: **Project** -> **Settings** -> **Auth Profiles**
 
-**Tabs**
+### Project and workspace profiles
 
-| Tab              | Purpose                                                                 |
-|------------------|-------------------------------------------------------------------------|
-| **All Profiles** | View and manage all authentication profiles configured for the project. |
-| **Integrations** | View profiles associated with specific third-party integrations.        |
+Every profile carries a scope, and the scope decides where it's managed and who can change it. Check it before you plan any credential work, because some of the profiles in this list aren't yours to edit.
 
-Each profile entry displays the profile name, test status, active/inactive status, environment scope, auth type, source, and whether it is project-level or inherited from the workspace. Workspace-inherited profiles show a **Manage in Workspace** link, and you can't edit them at the project level.
+| Scope | Description |
+|---|---|
+| **Workspace** | Credentials the tenant shares across every project. They appear in this list so you can see what's available, but the actions column offers only **Manage in Workspace**. Edit them under workspace administration, where a change reaches every project at once. |
+| **Project** | Credentials this project owns. Only these carry the enable toggle, edit, and overflow actions in the project list. |
 
-### Create an auth profile
+The distinction decides who can act. If a workspace profile needs different credentials for one project, create a project profile rather than asking for the workspace one to change, since editing the shared profile affects projects you don't own.
 
-Click **Add Profile** to open the profile type selector. Choose from the following authentication types:
+### Find a profile
 
-**Basic Authentication**
+Environment tabs across the top narrow the list by environment, and each tab carries the number of profiles that resolve for it. Filters on the right narrow by status, authentication type, and source, and a search box matches on profile name.
 
-| Type              | Description                                            |
-|-------------------|--------------------------------------------------------|
-| **API Key**       | Static API key sent through header or query parameter. |
-| **Bearer Token**  | Static bearer token in Authorization header.           |
-| **Basic Auth**    | HTTP Basic authentication with username and password.  |
-| **Custom Header** | Send one or more custom auth headers.                  |
+The counts differ between tabs because environments inherit credentials they don't define. A profile appears under an environment whether it holds credentials specific to that environment or falls back to the default set.
+
+### Profile list
+
+The list holds every profile this project can reach, whether it owns them or inherits them from the workspace. The columns tell you what each profile authenticates, where it's managed, and whether it still works.
+
+| Column | Description |
+|---|---|
+| **Name** | Identifies the profile. This is the name tools reference, so renaming affects everything bound to it. |
+| **Auth Type** | Reports the authentication mechanism the profile implements. |
+| **Scope** | Reports whether the workspace or this project owns the profile, and therefore where you can edit it. |
+| **Owner** | Names the person who created the profile. It's the first thing to check before you disable a credential you didn't set up. |
+| **Created At** | Dates the profile. Useful when you're auditing which credentials predate a rotation policy. |
+| **Status** | Reports whether the profile is active or revoked. A revoked profile stays in the list rather than disappearing, so anything still referencing it fails with a traceable cause rather than a missing reference. |
+
+### Create a profile
+
+Select **New Profile** and choose one of two routes. The route decides how much you configure by hand and how much the platform already knows.
+
+| Route | When to use it |
+|---|---|
+| **Integration Profile** | The service you're connecting to is one the platform already supports. The integration carries the authentication mechanisms that service accepts, so you supply credentials rather than working out how the provider expects to be authenticated. |
+| **Custom Profile** | The service isn't in the integration list, or you need a mechanism the integration doesn't cover. You choose the authentication type yourself and complete every field. |
+
+Prefer the integration route where it's available. It removes the part of this task most likely to go wrong, which is matching a provider to the right authentication mechanism and endpoint set.
+
+### Integration profiles
+
+The integration picker lists the services the platform supports, grouped by what they're for: communication, productivity, storage, CRM and sales, service management, AI and development, and document processing.
+
+Each tile names the service, the authentication types that service accepts, and how many profiles the project already holds for it. Read the profile count first, because an existing profile is usually a credential to reuse rather than a duplicate to create.
+
+The tiles also tell you what you're in for before you commit. Some services accept a single authentication type, some accept several and leave the choice to you, and a few need no credential at all.
+
+Search by name when the service you want isn't in view, then select **Continue**.
+
+### Custom profiles
+
+Choosing **Custom Profile** takes you to the authentication type selector. Choose the type the provider requires. The type determines the configuration and secret fields you complete next, and you can't change the fundamental mechanism afterward without creating a new profile.
+
+**Basic authentication**
+
+| Type | When to choose it |
+|---|---|
+| **API Key** | The provider issues a long-lived static key and expects it on every request. It's the simplest type and handles no expiry or refresh, so rotation stays entirely your responsibility. |
+| **Bearer Token** | The provider issues a static token that belongs in the Authorization header. It differs from API Key mainly in placement, so follow what the provider's documentation specifies. |
+| **Basic Auth** | The provider still accepts a username and password pair. These credentials rarely expire on their own, which makes them the ones most often forgotten in a rotation. |
+| **Custom Header** | The provider needs more than one header, or a header arrangement the API Key type can't express. |
 
 **OAuth 2.0**
 
-| Type                   | Description                                                |
-|------------------------|------------------------------------------------------------|
-| **OAuth 2.0 App**      | OAuth application credentials (client ID + secret).        |
-| **Client Credentials** | Machine-to-machine OAuth through client credentials grant. |
+| Type | When to choose it |
+|---|---|
+| **OAuth 2.0 App** | A user grants access to their own account. This is the only type that produces per-user credentials, so choose it when the agent acts on behalf of the person it's talking to rather than on behalf of your organization. |
+| **Client Credentials** | The project itself is the client and no end user is involved. You get token refresh without ever prompting anyone to authorize. |
+| **Password Credentials (ROPC)** | The provider offers no alternative. The flow requires your project to hold the resource owner's username and password, which is why most providers now discourage it. Treat it as a compatibility path rather than a design choice. |
 
-**Enterprise Identity**
+**Advanced**
 
-| Type                | Description                                                     |
-|---------------------|-----------------------------------------------------------------|
-| **Azure AD**        | Microsoft Entra ID (Azure Active Directory) for enterprise SSO. |
-| **mTLS**            | Mutual TLS with client certificate and private key.             |
-| **AWS IAM (SigV4)** | Sign requests with AWS Signature Version 4.                     |
-| **SSH Key**         | Authenticate with SSH private key credentials.                  |
-| **Digest Auth**     | HTTP Digest authentication with challenge-response.             |
-| **Kerberos**        | SPNEGO/Kerberos authentication for enterprise systems.          |
-| **SAML**            | SAML assertion-based authentication flow.                       |
-| **HAWK**            | HAWK MAC request signing.                                       |
-| **WS-Security**     | SOAP WS-Security UsernameToken / certificate auth.              |
+| Type | When to choose it |
+|---|---|
+| **AWS IAM (SigV4)** | The AWS service signs requests rather than accepting a token. |
+| **Azure AD** | The provider authenticates through Microsoft Entra ID. |
+| **Kerberos-SPNEGO Auth** | An internal enterprise service authenticates through the domain rather than through a token. |
+| **SAML** | The provider expects a SAML assertion rather than a credential on the request. |
+| **WS-Security** | A SOAP service expects WS-Security headers. |
+
+**Transport security**
+
+| Type | When to choose it |
+|---|---|
+| **mTLS** | The provider authenticates the client at the transport layer with a certificate rather than at the application layer with a credential. It pairs with network controls in a way token-based types can't. |
+
+### Fields common to every profile
+
+These fields appear whichever authentication type you choose. They cover how you identify the profile, who supplies the credential, and who can use it.
+
+| Field | Description |
+|---|---|
+| **Profile Name** | Names the profile for reference from tools and connectors. Choose a name that carries the provider and the environment, because a list of profiles sorted by name is how anyone later works out what to rotate. |
+| **Description** | Records what the profile is for. It's the only context another member gets when deciding whether a credential is safe to disable. |
+| **Usage Mode** | Decides who supplies the credential and when. It's the most consequential choice on the form, because it also determines the profile's scope and whether users ever see an authorization prompt. |
+| **Scope** | Reports the sharing model the platform derived from the usage mode. You don't set it directly, so change the usage mode when you need a different scope. |
+| **Visible to project members** | Controls whether project members can use the profile. Turn it off for credentials that only specific automated paths should reach. |
+
+**Usage modes**
+
+| Mode | Behavior |
+|---|---|
+| **Preconfigured** | An administrator supplies credentials at setup time and users never authorize anything. The resulting scope is shared, so every session uses the same credential and the provider sees one identity for all your traffic. |
+| **Preflight** | The user authorizes upfront, before the session starts. The resulting scope is per-user, so the agent acts as the person it's talking to and the provider's own permissions apply per individual. |
+
+**Block until authorized** appears with authorization-based modes. When it's on, the session holds incoming messages and the welcome message until the user finishes authorizing. It trades a slower greeting for the certainty that the agent never starts work it can't complete, which suits agents whose first action always needs the credential.
+
+### Secrets
+
+Every type collects its secrets in a separate section. The platform encrypts them at rest and never displays them again after saving.
+
+That's worth planning around: you can replace a secret but you can't read one back. Record credentials in your own secret store at the time you create the profile, because the platform won't serve as your copy.
+
+### Environment credentials
+
+An existing profile holds a credential set per environment. Environments that carry no credentials of their own fall back to the default set, and the editor states which ones are falling back.
+
+Fallback is a convenience and a risk in the same mechanism. A profile with only default credentials works in production immediately, using the same credential as development. Add environment-specific credentials wherever production must not share an identity, a rate limit, or an audit trail with your lower environments.
+
+### Configuration by authentication type
+
+The configuration and secret fields below are specific to each type. Complete them, then select **Create Profile**.
+
+**API Key**
+
+| Field | Description |
+|---|---|
+| **Header Name** | Names the header or parameter that carries the key. |
+| **Placement** | Decides whether the key travels in a header or a query parameter. Prefer a header where the provider supports it, since query parameters reach server logs and browser history. |
+| **Prefix** | Adds a string ahead of the key value for providers that expect one. |
+| **API Key** | The key itself. |
+
+**Bearer Token**
+
+| Field | Description |
+|---|---|
+| **Authorization Prefix** | Sets the scheme name the provider expects ahead of the token. Change it only when the provider documents something other than the standard scheme. |
+| **Token** | The token itself. |
+
+**Basic Auth**
+
+| Field | Description |
+|---|---|
+| **Username** and **Password** | The credential pair the provider accepts. |
+
+**Custom Header**
+
+| Field | Description |
+|---|---|
+| **Headers** | Holds one or more header name and value pairs, both required on each row. Add a row for each header the provider needs. |
+
+**OAuth 2.0 App**
+
+| Field | Description |
+|---|---|
+| **Discovery / Server URL** | Points at the provider's base URL. Select **Discover and fill** to populate the endpoints, scopes, and PKCE settings automatically. Try this before completing the endpoint fields by hand, since a discovered configuration matches what the provider actually publishes. |
+| **Authorization URL** | The endpoint that presents the consent screen to the user. |
+| **Token URL** | The endpoint that exchanges an authorization code for a token. |
+| **Refresh URL** | The endpoint that renews an expired token. Without it, users reauthorize whenever the token expires. |
+| **Scopes** | Requests the permissions the agent needs. Leave it empty for providers that neither require nor advertise scopes. Requesting more than the agent uses makes the consent screen harder for users to accept. |
+| **Require PKCE** | Adds a proof key to the authorization exchange. Enable it wherever the provider supports it, and expect it to be mandatory for providers that follow OAuth 2.1. |
+| **PKCE Challenge Method** | Selects the challenge algorithm. |
+| **Additional Authorization Parameters** | Appends extra key and value pairs to the authorization URL for providers that need parameters outside the standard set. |
+| **Callback URL** | The redirect the provider must send users back to. Copy it into the provider's authorized redirect list before you authorize, because authorization fails at the provider rather than in Studio when it's missing. |
+| **Client ID** and **Client Secret** | The application credentials the provider issued. |
+
+**Client Credentials**
+
+| Field | Description |
+|---|---|
+| **Authorize Using** | Selects how the client proves its identity to the token endpoint. |
+| **Token URL** | The endpoint that issues tokens. |
+| **Refresh Token URL** | The endpoint that renews them. |
+| **Scopes** | Requests permissions, separated by spaces. |
+| **Client ID** and **Client Secret** | The application credentials the provider issued. |
+
+**Password Credentials (ROPC)**
+
+| Field | Description |
+|---|---|
+| **Token URL** | The endpoint that issues tokens. |
+| **Scopes** | Requests permissions, separated by spaces. |
+| **Audience** | Names the intended recipient of the token for providers that require it. |
+| **Client ID**, **Client Secret**, **Username**, **Password** | The application credentials plus the resource owner's own credentials, which this flow needs and the other OAuth types don't. |
+
+**AWS IAM (SigV4)**
+
+| Field | Description |
+|---|---|
+| **Region** | Sets the region used in the signature. A mismatch here produces a signature error rather than a permission error, which is worth knowing when you're diagnosing a failure. |
+| **Service** | Names the AWS service the signature targets. |
+| **Bucket** | Names the S3 bucket, for S3 targets only. |
+| **Endpoint** | Points at an S3-compatible endpoint when the target isn't AWS itself. |
+| **Access Key ID** and **Secret Access Key** | The IAM credentials. |
+| **Session Token** | Carries the token for temporary credentials. Profiles built on temporary credentials stop working when those credentials expire, so use long-lived credentials for anything running unattended. |
+
+**Azure AD**
+
+| Field | Description |
+|---|---|
+| **Azure Tenant ID** | Identifies the directory that issues tokens. |
+| **Resource** | Names the resource the token grants access to. |
+| **Scopes** | Requests permissions, separated by spaces. |
+| **Client ID** and **Client Secret** | The registered application credentials. |
+
+**Kerberos-SPNEGO Auth**
+
+| Field | Description |
+|---|---|
+| **Service Principal URL** | Identifies the service principal the ticket targets. |
+| **Auth Check URL** | The endpoint used to verify that authentication succeeded. |
+| **Authentication Type** | Sets the SPNEGO GSS flag the enterprise authentication path uses. |
+
+**SAML**
+
+| Field | Description |
+|---|---|
+| **IdP Metadata URL** | Points at the identity provider's metadata. |
+| **Entity ID** | Identifies this service to the identity provider. |
+| **ACS URL** | The endpoint that consumes the assertion. |
+| **Private Key** and **Certificate** | The key material used to sign and verify assertions. |
+
+**WS-Security**
+
+| Field | Description |
+|---|---|
+| **mustUnderstand** | Sets the SOAP mustUnderstand flag on the security header, which tells the recipient it must process the header rather than ignore it. |
+| **Password digest algorithm** | Selects the digest algorithm. Move away from the default only when the SOAP provider explicitly requires it, since many older SOAP stacks reject the stronger algorithm. |
+| **Username**, **Password**, **Certificate** | The credential the header carries, with an optional certificate. |
+
+**mTLS**
+
+| Field | Description |
+|---|---|
+| **Client Certificate (PEM)** and **Client Private Key (PEM)** | The certificate and key that identify this client during the TLS handshake. |
+| **CA Certificate (PEM)** | Supplies the certificate authority when the provider uses one the platform doesn't already trust. |
+
+### Authorize an existing profile
+
+Profiles that use an authorization-based usage mode need someone to complete the flow before the credential works. Open the profile and select **Authorize**, then select **Save Changes** to keep any edits you made alongside it.

@@ -3,267 +3,408 @@ title: General settings
 sidebarTitle: General
 ---
 
-General settings manage project membership, authentication keys, model availability, runtime behavior, data lifecycle, compile-time variables, and localization assets.
+General settings govern project membership, authentication keys, model availability, runtime behavior, data lifecycle, compile-time variables, and localization assets.
 
 ## Members
 
-The **Members** page lets you view and manage who has access to your project and what they can do.
+The **Members** page controls who reaches your project and what they can do inside it.
 
-**Navigation**: **Project** → **Settings** → **Members**
+**Navigation**: **Project** -> **Settings** -> **Members**
 
-The page displays a table of all project members with name, email, role, join date, and a **Remove** action. To add a new project member, click **Add Member**, select an existing workspace member, choose a role, and save.
+The page lists every project member with their name, email, role, and join date. Select **Add Member** to grant access to an existing workspace member, then assign a role. Removing a member revokes their access at once rather than at their next sign-in.
 
-**Project roles**
+### Project roles
 
-| Role          | Capabilities                                                                       |
-|---------------|------------------------------------------------------------------------------------|
-| **Admin**     | Full access: manage members, settings, agents, deployments.                        |
-| **Developer** | Create and modify agents, tools, workflows, imports, and project resources.        |
-| **Tester**    | Read project resources, create and read sessions, run simulations, view analytics. |
-| **Viewer**    | Read-only access to project resources, sessions, and analytics.                    |
+A role bundles the permissions a member holds everywhere in the project. Assign the narrowest role that still lets someone do their job, since the roles differ less in what they can see than in what they can change.
 
-Click **Remove** next to a member to revoke their access immediately.
+| Role | Capabilities |
+|---|---|
+| **Admin** | Manages members, settings, agents, and deployments. Assign it to the people who own the project's configuration, since this role can change anything the other three roles depend on. |
+| **Developer** | Creates and modifies agents, tools, workflows, imports, and project resources. This is the working role for anyone building the agent. |
+| **Tester** | Reads project resources, creates and reads sessions, runs simulations, and views analytics. It lets someone exercise the agent thoroughly without risking the configuration they're testing. |
+| **Viewer** | Reads project resources, sessions, and analytics. Use it for stakeholders who need reporting rather than the build. |
 
 ---
 
 ## API keys
 
-The **API Keys** page lets you create and manage API keys for programmatic access to the project runtime.
+The **API Keys** page issues and revokes the credentials that carry programmatic access to the project runtime.
 
-**Navigation**: **Project** → **Settings** → **API Keys**
+**Navigation**: **Project** -> **Settings** -> **API Keys**
 
-**Tabs**
+| Tab | Description |
+|---|---|
+| **SDK Keys** | Credentials that client-side SDKs and web widgets present to the project runtime. These travel to browsers and devices, so treat them as public and scope them accordingly. |
+| **Platform Keys** | Credentials for server-to-server integrations and administrative API access. These stay on infrastructure you control and carry broader authority than SDK keys. |
 
-| Tab               | Purpose                                                                              |
-|-------------------|--------------------------------------------------------------------------------------|
-| **SDK Keys**      | Keys that client-side SDKs and web widgets use to interact with the project runtime. |
-| **Platform Keys** | Keys for server-to-server integrations and administrative API access.                |
+Select **Create Key**, name it descriptively, and optionally set an expiration date. Each entry shows the key name, a masked prefix, and the date something last used it. The last-used date is the field that matters during an audit, because it identifies keys you can revoke without breaking anything.
 
-To create a key, click **Create Key**, provide a descriptive name, and optionally set an expiration date. Each key entry shows the key name, a masked key prefix, and the last-used date. Click the **Delete** icon next to a key to revoke it permanently.
+Deleting a key revokes it permanently and immediately. Anything still presenting that key stops working, so confirm the last-used date before you delete.
 
-<Note>Use separate keys for each environment (development, staging, production) and rotate them regularly.</Note>
+<Note>Issue a separate key for each environment and rotate them on a schedule. A single shared key means one compromise forces you to rotate everywhere at once.</Note>
 
 ---
 
 ## Models
 
-The **Model Configuration** page lets you configure which LLM models are available for agents in this project.
+The **Models** page decides which models this project can use and which model serves each platform feature. It carries two tabs: **Model Configs** sets the pool, and **Feature config** routes work within that pool.
 
-**Navigation**: **Project** → **Settings** → **Models**
+**Navigation**: **Project** -> **Settings** -> **Models**
 
-Click **Add from Catalog** to browse models from your workspace catalog. The first model you add becomes the default for new agents. Click **Configure Workspace** to manage workspace-level model providers and registrations.
+### Model Configs
 
-Each model entry shows the model name, provider, supported capabilities (chat, function calling, vision, streaming), token limits, and pricing information.
+This tab defines the project's selected models. Selection is an allowlist rather than a preference. Only selected models appear in the project's model pickers and feature routing, so nothing downstream can reach a model you haven't selected here.
+
+Two counters at the top compare the models you selected with the models your workspace makes eligible. The gap between them tells you how much of the workspace catalog this project deliberately excludes.
+
+Each selected model shows its provider, whether the workspace shares it, and a readiness status. A model reports ready once its connection resolves, and a model that stops being ready takes every feature bound to it down with it.
+
+**Project default.** The default applies to this project only and doesn't change the workspace. Features that don't carry a tier binding or an override resolve to it, which makes it the fallback for the widest set of operations on the page.
+
+Select **Add models** to bring eligible models into the project, and **Save selection** to apply the change.
+
+**Model access rollout.** A banner appears while the project still holds references to models outside the selected set. Until you resolve those references, the project can't move to enforcing selection only. Treat the count in the banner as work remaining before enforcement, not as an error in the current configuration.
+
+### Feature config
+
+This tab routes individual platform features to models. It exists because a project runs many different operations, and matching each to a model sized for it costs less than sending everything to one capable model.
+
+**Per-operation routing** switches the page between two ways of working. With tier routing, each feature runs on the model bound to its tier, so changing one tier moves every feature on it. Per-operation routing lets features diverge from their tier. Start with tiers and reach for per-operation routing only where a specific feature justifies it, since divergence you set once is easy to forget later.
+
+#### Tier bindings
+
+Four tiers draw from the project's selected models. The tier names describe the trade the model makes rather than a fixed capability level, so rebind them as your model pool changes.
+
+| Tier | When to bind a model here |
+|---|---|
+| **Fast** | High-volume mechanical work where per-call cost dominates and a weaker answer costs little. |
+| **Balanced** | The everyday workload, where neither cost nor judgment is the binding constraint. |
+| **Powerful** | Work where judgment quality justifies the slowest and most expensive option. |
+| **Voice** | Realtime speech-to-speech conversation, which needs a model built for it rather than a strong text model. |
+
+A tier with no model bound leaves every feature on it unresolved. The page warns you before release when a binding is missing or a connection needs repair, because an unresolved feature fails at runtime rather than falling back silently.
+
+#### Feature table
+
+Features group by the part of the platform they serve: authoring and diagnosis, live conversation runtime, knowledge processing, conversation insights, evaluation, and ingestion pipelines. Each row carries the feature's stable key, which is the identifier to use when you discuss routing with support rather than the display name.
+
+| Column | Description |
+|---|---|
+| **Tier or override** | Sets whether the feature follows its default tier or binds directly to a model. Overrides draw only from the project's selected bindings, so you can't route a feature to a model the project hasn't selected. |
+| **Resolves to** | Shows the model the feature actually reaches after tier bindings and overrides apply. Read this column rather than the tier column when you're diagnosing behavior, because it reflects the outcome rather than the intent. |
+| **From** | Shows where the resolution came from, which distinguishes a deliberate binding from a fallback to the project default. |
+| **Status** | Reports whether the feature can run. Ready means it resolves to a working model. Not configured means the resolution path ends without a model. Unavailable means the platform doesn't yet offer the feature for execution, so no binding will make it run. |
+
+Select **Why this model?** on a row to see the resolution path that produced the result. Select **Save feature config** to apply changes.
 
 ---
 
 ## Runtime configuration
 
-The **Runtime Configuration** page centralizes the behavioral controls that govern how your agent processes input, handles multi-intent turns, infers missing field values, converts currencies, generates filler messages, protects user data, and validates field values at runtime. Changes take effect for all agent deployments within the project.
+The **Runtime Configuration** page holds the behavioral controls that govern how the project's agents read input, handle multiple requests in one turn, fill in unstated values, occupy callers during waits, expose their own activity, protect personal data, and bound their own tool use.
 
-**Navigation**: **Project** → **Settings** → **Runtime Config**
+**Navigation**: **Project** -> **Settings** -> **Runtime Config**
 
-Use the **Reset to Defaults** button in the top-right corner to revert all settings to their factory values. Click **Save** to apply any changes.
+Changes here apply to every agent deployment in the project, so treat this page as project-wide policy rather than per-agent tuning. Each group appears as a collapsible card. Select **Save** to apply changes, or **Reset to defaults** to return every setting on the page to its factory value.
 
-Each configuration group appears as a collapsible card. Click a card header to expand or collapse it.
+### Extraction pipeline
 
-**Extraction Pipeline**
+This section decides how the runtime turns a raw user message into structured field values.
 
-The **Extraction Pipeline** section controls how the platform extracts structured field values from raw user messages.
+| Field | Description |
+|---|---|
+| **Extraction Strategy** | Chooses which extraction stages run and in what order. Pattern matching costs nothing and handles predictable formats; model-backed extraction catches what patterns miss but adds latency and cost to every turn that needs it. Change it when your fields sit at one extreme or the other, either structured enough that the model call is waste, or conversational enough that patterns alone leave fields unfilled. Language detection and resolution run under every strategy. |
 
-| Field                         | Description                                                                                                                             |
-|-------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------|
-| **Extraction Strategy**       | Determines the method the platform uses to extract field values from user input. `auto` selects the best-fit strategy.                  |
-| **Correction Detection**      | Sets the method the platform uses to detect when a user corrects a previously provided answer. `ml` uses a machine-learning classifier. |
-| **NLU Provider**              | Selects the NLU provider for entity extraction and intent detection. `standard` uses the platform's built-in NLU engine.                |
-| **Sidecar Timeout (ms)**      | Maximum time in milliseconds the platform waits for a sidecar response before timing out. Default: `500`.                               |
-| **Circuit Breaker Threshold** | Number of consecutive sidecar failures that trigger the circuit breaker, bypassing the sidecar until it recovers. Default: `5`.         |
+### Multi-intent recognition
 
-**Multi-Intent Recognition**
+This section handles messages that ask for more than one thing at once. Without it, the runtime acts on the first request it recognizes and the rest of the message goes unanswered.
 
-The **Multi-Intent Recognition** section configures how the platform detects and handles messages that express more than one user intent in a single turn.
+| Field | Description |
+|---|---|
+| **Enable Multi-Intent** | Turns on detection of several intents in one message. Leave it off for narrow transactional flows, where a second detected intent is more often a misread than a real request. |
+| **Strategy** | Sets the order in which the runtime works through detected intents. The choice decides whether the user gets a fast answer to their first request or waits while the agent works the whole message. |
+| **Unknown Relationship Strategy** | Chooses the fallback for same-turn supervisor routing when relationship data isn't available. Relationship data normally decides ordering, so without it the runtime needs a standing instruction rather than a judgment. |
+| **Max Intents** | Caps how many intents the runtime acts on in one turn. Each additional intent comes from a less certain reading of the message, so raising this raises the chance of acting on something the user didn't ask for. |
+| **Confidence Threshold** | Sets the minimum classifier confidence needed to act on a detected intent. Raise it when the agent answers requests the user didn't make, and lower it when the agent ignores genuine second requests. |
+| **Queue Max Age (ms)** | Sets how long a queued intent stays eligible for handling. It stops the agent from returning to a request the user has since abandoned or resolved another way. |
 
-| Field                             | Description                                                                                                                                |
-|-----------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------|
-| **Enable Multi-Intent**           | Toggles multi-intent detection on or off. When enabled, the platform attempts to identify and act on multiple intents in a single message. |
-| **Strategy**                      | Defines the execution order for detected intents. Default: `primary_queue`. See multi-intent strategies below.  |
-| **Unknown Relationship Strategy** | Fallback strategy when the platform can't determine the relationship between detected intents. Default: `parallel`.|
-| **Max Intents**                   | Maximum number of intents the platform processes in a single turn. Default: `3`. Possible values: `1-10`.                                                          |
-| **Confidence Threshold**          | Minimum confidence score `(0 - 1)` required to act on a detected intent. Default: `0.6`.                                                       |
-| **Queue Max Age (ms)**            | Maximum time in milliseconds a queued intent remains eligible for processing. Default: `600000`. Max value: `3,600,000`.                   |
+**Multi-intent strategies**
 
-    **Multi intent strategies**
+| Value | Behavior |
+|---|---|
+| `primary_queue` | Handles the first intent immediately and queues the rest, addressing them in sequence once the primary completes. |
+| `sequential` | Addresses intents one at a time in detection order, finishing each before starting the next. |
+| `parallel` | Dispatches all intents at once and resolves them concurrently. |
+| `disambiguate` | Asks the user which request to handle first. |
+| `auto` | Lets the runtime choose based on the intent relationship and conversation context. |
 
-    | Value | Behavior |
-    |-------|----------|
-    | `primary_queue` | First intent is handled immediately; others are queued and addressed in sequence after the primary completes. |
-    | `sequential` | Intents are addressed one by one in detection order, waiting for each to complete before starting the next. |
-    | `parallel` | All intents are dispatched simultaneously and resolved concurrently. |
-    | `disambiguate` | When multiple intents are detected, ask the user to clarify which one they want handled first. |
-    | `auto` | The runtime selects the best strategy based on the intent relationship and conversation context. |
+**Unknown relationship strategies**
 
-    **Unknown Relationship strategy**
+| Value | Behavior |
+|---|---|
+| `sequential` | Addresses the intents one at a time in detection order. |
+| `parallel` | Handles the intents concurrently. |
+| `disambiguate` | Asks the user which intent to prioritize. |
 
-    When the classifier can't determine how two intents relate to each other, this field is used.
+[Learn More](/agent-platform/abl-reference/nlu#multi-intent-handling-multi_intent)
 
-    | Value | Behavior |
-    |-------|----------|
-    | `sequential` | Address them one at a time in detection order. |
-    | `parallel` | Handle them concurrently. |
-    | `disambiguate` | Ask the user which intent to prioritize. |
+### Field inference
 
-    [Learn More](/agent-platform/abl-reference/nlu#multi-intent-handling-multi_intent)
+This section lets the runtime infer values the user hasn't stated, which shortens conversations at the cost of occasionally guessing wrong.
 
-**Field Inference**
+| Field | Description |
+|---|---|
+| **Confidence Threshold** | Sets the minimum confidence needed to accept an inferred value. Inference trades accuracy for fewer questions, and this field is where you set that trade. |
+| **Require User Confirmation** | Presents inferred values to the user before the agent applies them. Keep it on wherever a wrong inference costs money or changes a record, since confirmation is far cheaper than reversal. |
+| **Model Tier** | Selects the tier that serves inference calls. Inference runs often and on small decisions, so this choice affects per-turn latency more than most model settings. |
+| **Max Fields Per Pass** | Caps how many fields one inference call attempts. Fewer fields per pass means more calls, each of them more reliable. |
 
-The **Field Inference** section enables the platform to use an LLM to infer values for fields the user hasn't explicitly provided.
+### Currency conversion
 
-| Field                         | Description                                                                                         |
-|-------------------------------|-----------------------------------------------------------------------------------------------------|
-| **Confidence Threshold**      | Minimum confidence score (0–1) required to accept an inferred field value. Default: `0.8`.          |
-| **Require User Confirmation** | When enabled, the agent presents inferred values to the user for confirmation before applying them. |
-| **Model Tier**                | Selects the LLM tier for inference calls. `fast` uses a lower-latency model optimized for speed.    |
-| **Max Fields Per Pass**       | Maximum number of fields the platform attempts to infer in a single LLM call. Default: `3`.         |
+This section decides where exchange rates come from when an agent quotes or converts an amount. Agents that never handle money can leave it alone.
 
-**Currency Conversion**
+| Field | Description |
+|---|---|
+| **Currency Mode** | Selects whether the runtime converts currency using rates held in the platform or rates fetched live. Held rates keep results reproducible across a conversation and across environments. Live rates keep them current. Choose on whether your users compare quotes over time. |
 
-| Field             | Description                                                                                                               |
-|-------------------|---------------------------------------------------------------------------------------------------------------------------|
-| **Currency Mode** | Sets the conversion mode. `static` uses fixed exchange rates configured in the platform rather than live API-based rates. |
+### Reasoning pipeline
 
-**Reasoning Pipeline**
-
-The **Reasoning Pipeline** is an experimental pre-reasoning layer that runs a lightweight classifier before each agent reasoning turn.
+The reasoning pipeline runs a lightweight classifier ahead of each reasoning turn so the runtime can route programmatically and narrow the tool set before the main model call.
 
 <Warning>
-**Experimental Feature — Read Before Enabling**
+**Experimental feature. Read before enabling.**
 
-- Requires a configured `tool_selection` model in your LLM provider settings.
-- Adds one additional LLM call before each reasoning turn, typically 200–500 ms.
-- If the pipeline model fails three consecutive times, the circuit breaker bypasses the pipeline for 60 seconds.
-
+- The pipeline needs a configured `tool_selection` model. Without one it skips silently rather than reporting an error.
+- It adds one model call ahead of each reasoning turn.
+- After three consecutive pipeline model failures, a circuit breaker bypasses the pipeline temporarily so the failure doesn't add latency to every turn.
 </Warning>
 
-| Field               | Description                                                                                                                          |
-|:--------------------|:-------------------------------------------------------------------------------------------------------------------------------------|
-| **Enable Pipeline** | Activates the pre-reasoning classifier and tool filter. Disabled by default. Enable only after configuring a `tool_selection` model. |
+| Field | Description |
+|---|---|
+| **Enable Pipeline** | Runs the classifier ahead of reasoning to enable short-circuit routing and tool filtering. Everything else in this section depends on it. |
+| **Execution Mode** | Decides whether the classifier and tool filter run together or one after the other. Running them together costs less time. Running them in sequence lets the classifier result decide whether the tool filter is needed at all. |
+| **Pipeline Model** | Selects the model that performs intent classification. The pipeline runs on every turn, so this choice sets a recurring latency and cost floor for the whole project. |
+| **Short Circuit** | Lets the runtime skip the reasoning loop when classifier confidence runs high. Most of the pipeline's latency saving comes from here, and so does most of its risk, because no reasoning step follows to catch a misclassification. |
+| **Short Circuit Threshold** | Sets the confidence a classification needs before the runtime routes programmatically. Treat it as the safety margin on short-circuiting. |
+| **Tool Filter** | Narrows the tool set sent to the model based on classifier analysis. Large catalogs degrade tool selection accuracy, so filtering helps most in projects that expose many tools. |
+| **Max Tools** | Caps how many tools reach the reasoning loop. |
+| **Keyword Veto** | Overrides classifier routing when specified keywords appear. Use it for terms where you'd rather not depend on a classifier judgment at all. |
+| **Veto Keywords** | Holds the comma-separated keywords that trigger the veto. |
+| **Intent Bridge** | Publishes classifier output into session state so WHEN conditions and multi-intent dispatch can read it. Without it, the classifier's work stays inside the pipeline and your authored logic can't act on it. |
+| **Programmatic Threshold** | Sets the confidence needed for Tier 1 actions, where the runtime declines or routes without a model call. |
+| **Guided Threshold** | Sets the confidence needed for Tier 2 behavior, where the runtime keeps the reasoning loop but shapes it by hiding tools and adding routing hints. Set it below the programmatic threshold, since guided actions leave the model room to recover and programmatic ones don't. |
+| **Out-of-Scope Decline** | Declines out-of-scope queries programmatically. It removes a model call from every off-topic turn, which pays off most on public channels where off-topic volume runs high. |
+| **Multi-Intent Signal** | Injects multi-intent hints into the reasoning turn when the classifier detects more than one intent. |
 
-**Filler Settings**
+### Tool call policy
 
-**Filler Settings** configure the transient status messages the platform sends to users while the agent processes a response.
+This section bounds the deterministic CALL actions that tool lifecycle hooks invoke. The limits apply only to those hook-driven calls. Side-effecting target tools still run through the normal confirmation flow, so this section doesn't weaken confirmation.
 
-| Field                    | Description                                                                                                               |
-|--------------------------|---------------------------------------------------------------------------------------------------------------------------|
-| **Fillers Enabled**      | Master toggle for the filler system. When off, the platform emits no filler messages.                                     |
-| **Chat Fillers**         | When enabled, filler messages appear as transient `status_update` messages in chat clients.                               |
-| **Voice Fillers**        | When enabled, the agent speaks filler messages aloud on voice channels while processing.                                  |
-| **Chat Delay (ms)**      | Minimum elapsed processing time before the platform emits a static chat filler. Default: `1200`.                          |
-| **Voice Delay (ms)**     | Minimum elapsed processing time before the platform emits a static voice filler. Default: `500`.                          |
-| **Cooldown (ms)**        | Minimum interval between consecutive static filler emissions in the same turn. Default: `3000`.                           |
-| **Max Per Turn**         | Maximum number of filler messages per agent turn. Default: `5`.                                                           |
-| **Status Tags**          | When enabled, the platform surfaces `<status>` tags that the response model emits inline as filler messages.              |
-| **Generated Fillers**    | When enabled, the platform uses a lightweight LLM call to generate contextual filler messages. Requires **Filler Model**. |
-| **Filler Model**         | The LLM the platform uses for contextual filler generation. Defaults to the project's runtime default model.              |
-| **Conversation History** | Number of recent messages (0–20) included in the filler generation prompt for context-aware fillers. Default: `0`.        |
-| **Previous Fillers**     | Number of previously emitted fillers (0–20) included in the prompt to avoid repetition. Default: `0`.                     |
-| **Filler Prompt**            | Optional prompt-library override for contextual filler generation. Supports `{{userMessage}}`, `{{conversationHistory}}`, and `{{previousFillers}}` placeholders. |
+| Field | Description |
+|---|---|
+| **Boundary CALLs Enabled** | Allows tool lifecycle hooks to invoke another tool deterministically. Turning it off removes an entire class of chained behavior, so confirm nothing depends on it before you do. |
+| **Max CALL Depth** | Caps nested boundary CALL depth in a single turn. The runtime clamps depth to five whatever you save, so use this field to set a stricter limit than the platform's own, not a looser one. |
+| **Max CALLs Per Turn** | Caps boundary CALL fan-out across one runtime turn. The runtime clamps this to twenty whatever you save. Fan-out limits matter more than depth limits, because a single wide hook can issue far more calls than a deep chain. |
 
-**Voice Speech Recognition**
- 
-Project-wide defaults for voice speech recognition. A channel connection can override these.
- 
-| Field                             | Description                                                                                                                                                             |
-| ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **Default minimum STT confidence** | Reject transcripts below this confidence (0–1) and treat them as no-input. `0` disables the gate. Provider-relative - calibrate in staging before production. Default: `0.00`. |
+### Streaming safety
 
-**PII Redaction**
+This section decides what the runtime does when a safety check fires on a response it has already begun sending. It's the one safety control where timing matters as much as outcome.
 
-| Field                     | Description                                                                                                                    |
-|---------------------------|--------------------------------------------------------------------------------------------------------------------------------|
-| **Enable PII Protection** | Activates detection and redaction of PII types across conversations. Baseline credential scrubbing stays active even when off. |
-| **Redact Input**          | When enabled, the platform redacts PII in user messages before sending them to the LLM.                                        |
-| **Redact Output**         | When enabled, the platform redacts PII in agent responses before delivering them to the user.                                  |
+| Field | Description |
+|---|---|
+| **Safety Mode** | Decides how the runtime handles a final-output safety intervention on a response that's already streaming. The difficulty is timing: by the time an intervention fires, part of the response may have reached the user. Projects created before this setting existed stay on legacy passthrough until you change it here, so review the value explicitly rather than assuming the project runs current behavior. |
 
-**Lookup Tables**
+### Output item analytics
 
-The **Lookup Tables** section manages the reference tables the platform uses to validate field values and perform fuzzy matching during extraction.
+Runtime responses often carry repeated structures such as a list of results. Analytics rows don't store raw response JSON, so you have to declare anything you want to query later here first. A mapping tells the runtime which array to capture and which scalar fields inside it to record.
 
-<Note>**Project Canonical** tables defined here are the recommended source of truth for field validation. **Agent-local** `LOOKUP_TABLES` in individual agent configurations remain available for backward compatibility.</Note>
+Mappings are project-scoped and additive, and they only take effect for responses produced after you add them. Declare a dimension before you need it, because you can't recover a field retrospectively.
 
-Click **+ Add Lookup Table** to create the first table.
+| Field | Description |
+|---|---|
+| **Mapping key** | Names the analytics category this item family reports under. Queries group on this key, so keep it stable once collection starts. Renaming it splits your history into two unrelated series. |
+| **Item array path** | Absolute path to the repeated array inside the response. |
+| **Item key path** | Optional relative path that gives each item a stable identity across responses. Set it when you need to follow the same item over time rather than count occurrences. |
+| **Max items** | Caps the rows captured per response for this mapping. It bounds what an unusually large response costs you in analytics writes. |
+| **Description** | Author-facing note explaining what the repeated item represents. It's the only place a later reader learns why the mapping exists. |
+| **Item dimensions** | Declares the scalar fields inside each item that the runtime records, each with a name, a path, and a type. The runtime doesn't store fields you don't declare, and no query can recover them later. |
+
+### While the caller waits
+
+This group configures what a caller experiences while the agent thinks or works: spoken filler phrases, background hold audio, or both together. The settings interact, so read the whole group before you change any one part.
+
+#### Filler settings
+
+Fillers are transient status messages the runtime emits while work is in progress. They exist because silence during a long turn reads as a failure, particularly on voice.
+
+| Field | Description |
+|---|---|
+| **Fillers Enabled** | Master switch for the filler system. With it off, nothing else in this section emits anything. |
+| **Chat Fillers** | Shows status update messages in chat clients. |
+| **Voice Fillers** | Speaks status updates on voice channels. Voice needs fillers more than chat does, because a chat user can see that something is in progress and a caller can't. |
+| **Chat Delay** | Sets the wait before a static chat filler appears. Set it above the time a normal turn takes, so fillers mark genuinely slow turns rather than interrupting fast ones. |
+| **Voice Delay** | Sets the wait before a static voice filler is spoken. Callers tolerate silence for less time than chat users, so this typically sits below the chat delay. |
+| **Cooldown** | Sets the minimum interval between static fillers. It stops a long turn from producing a stream of status messages that says nothing new. |
+| **Max Per Turn** | Caps fillers emitted during one turn. |
+| **Status Tags** | Uses the status tags the response model emits as fillers, which lets the model say what it's actually doing instead of emitting a generic wait message. |
+| **Generated Fillers** | Uses a lightweight model call to produce contextual fillers. This makes the wait message specific to the conversation at the cost of a call on turns that are already slow. |
+| **Include emitted filler in agent context** | Lets later same-turn voice reasoning account for a contextual filler the runtime already emitted. It doesn't add the filler to conversation history, so this changes what the agent knows within the turn rather than what the transcript records. |
+| **Filler Model** | Selects the model that generates contextual fillers. |
+| **Output Tokens** | Caps the response length for built-in contextual filler generation. Fillers should be short, and a low cap enforces that more reliably than the prompt does. |
+| **Prompt Override Tokens** | Caps the response length when a filler prompt override is in use. Overrides usually ask for more than the built-in prompt does, which is why they carry a separate limit. |
+| **Conversation History** | Sets how many recent messages the filler prompt includes. More history makes fillers more specific and each generation call more expensive. |
+| **Previous Fillers** | Sets how many already-emitted fillers the prompt includes. Its purpose is avoiding repetition within a turn, so it matters most when the max per turn runs high. |
+| **Filler Prompt** | Selects a prompt-library version that replaces the built-in filler prompt. Select **Clone built-in** to start from the platform's prompt rather than an empty one. The prompt accepts placeholders for the user message, the conversation history, and previously emitted fillers. |
+
+#### Background audio
+
+Background audio is looped hold music the voice gateway plays during compute waits. It covers silence without the agent having to say anything.
+
+| Field | Description |
+|---|---|
+| **Background Audio Enabled** | Plays uploaded hold audio while the agent works. |
+| **Audio File** | Holds the WAV or MP3 clip the gateway fetches. |
+| **Start Delay** | Sets the silence before the audio begins. This is the field that most often stops background audio from working: a spoken filler interrupts the audio, so a filler that arrives first prevents the audio from starting at all. Either lower this delay or raise the spoken filler delay so one has room to begin before the other. |
+| **When To Play** | Chooses the moments the gateway plays audio. Select at least one, or the audio never plays despite being enabled. Playing between sentences depends on the gateway, since some text-to-speech vendors send audio continuously and leave no gap to play into. |
+
+#### Greeting audio
+
+Greeting clips play as soon as a call connects, ahead of the agent's first turn. They cover the gap between answer and first response, which is the moment a caller is most likely to think the line is dead.
+
+#### Activity updates
+
+This section sets the visibility policy for what the runtime reveals about its own work. The policy is a ceiling rather than a guarantee, because channels apply only what they support.
+
+The exposure settings deserve particular care. Tool, workflow, and agent names describe your internal architecture, and a name that helps an internal user diagnose a problem tells an external user how your system is built.
+
+| Field | Description |
+|---|---|
+| **Fillers** | Exposes the status messages generated while runtime work is in progress. |
+| **Action Progress** | Exposes progress for memory, knowledge, workflow, tool start, and retry events. It's the safest form of progress reporting, since it says work is happening without saying what. |
+| **Tool Preview** | Controls whether tool input and output previews are hidden or redacted. Previews can carry data the user supplied moments ago, so redaction and hiding aren't equivalent choices. |
+| **Decisions** | Exposes safe decision labels as action progress. |
+| **Thought Summaries** | Exposes model and step thinking summaries when the runtime emits them. Summaries explain reasoning that the agent may not stand behind in its final answer, so exposing them can raise questions the response then contradicts. |
+| **System Notices** | Exposes authentication, approval, and waiting-for-input notices. These usually need to stay visible, because they tell the user that the agent is waiting on them rather than working. |
+| **Debug Details** | Exposes redacted debug activity meant for internal review. |
+| **Expose Tool Names** | Shows tool names in activity messages. |
+| **Expose Workflow Names** | Shows workflow and step names. |
+| **Expose Agent Names** | Shows agent names where the channel supports it. In multi-agent projects this reveals that a handoff occurred, which reads as competence internally and as confusion externally. |
+| **Maximum Text** | Caps visible characters per activity update. |
+
+### Voice no-input defaults
+
+This section sets what happens when a voice caller goes silent. Silence is ambiguous, since it can mean the caller is thinking, has walked away, or didn't hear the prompt, and these settings decide how long the agent waits before treating it as a problem.
+
+| Field | Description |
+|---|---|
+| **Enabled** | Turns on no-input handling for voice sessions. |
+| **Mode** | Chooses between authored prompts and contextual generated prompts. Generated prompts fall back to the authored and default prompts, so choosing them adds a behavior rather than replacing one. |
+| **Timeout** | Sets the silence that must pass before a no-input prompt fires. Too short interrupts a caller who's reading something out, and too long lets a caller believe the call has dropped. |
+| **Max Retries** | Sets how many no-input prompts the agent issues before it takes the terminal action. |
+| **Relaxed Interval** | Sets the extended timeout interval used in dynamic mode. |
+| **Play Order** | Sets the order in which no-input messages play. |
+| **Play Style** | Sets how messages repeat across retries. Repeating the same prompt signals a system that isn't listening, so this choice affects how a stuck caller reads the failure. |
+
+### Voice speech recognition
+
+These are project-wide defaults. A channel connection can override them, so check the connection before you conclude the project value is what's running.
+
+| Field | Description |
+|---|---|
+| **Default minimum STT confidence** | Rejects transcripts below this confidence and treats them as no-input. Confidence scores are provider-relative rather than absolute, so a value that works for one speech provider won't carry over to another. Calibrate in staging before you set it in production, and set it to zero to disable the gate entirely. |
+
+### PII redaction
+
+This section controls how the runtime handles personally identifiable information in conversations. Baseline credential and secret scrubbing protects logs and read APIs whether or not PII protection is on, so the settings here extend that protection rather than establishing it.
+
+| Field | Description |
+|---|---|
+| **Enable PII Protection** | Detects and redacts PII in conversations. It's the switch the rest of this section depends on. |
+| **Redact Input** | Redacts PII in user messages before they reach the model. Redaction is context-aware and exempts fields the agent is actively gathering, so turning it on doesn't break a flow that legitimately asks for a phone number. |
+| **Redact Output** | Redacts PII in agent responses before delivery. Its purpose is stopping the agent from echoing back PII the user already provided, which is a common way collected data reaches a transcript. |
+| **Classify explicit DTMF using project PII patterns** | Matches a completed keypad entry to the project's enabled PII patterns, so a recognized value carries a type and a validation status while anything else stays a generic token. Raw digits never reach the model either way, so this setting changes how an entry is labelled rather than whether it's protected. |
+| **Detection methods allowed** | Sets the ceiling on which detection engines the project's patterns may use. Each pattern still selects its own method on the PII Protection page, so this field decides what's available to them rather than what they do. |
+
+### Lookup tables
+
+Lookup tables are the reference data the runtime uses to validate field values and perform fuzzy matching during extraction.
+
+<Note>Project lookup tables defined here are the canonical source for gather validation and fuzzy matching. Agent-local `LOOKUP_TABLES` remain available only as an experimental compatibility lane, so build new work on project tables.</Note>
+
+| Field | Description |
+|---|---|
+| **Table Name** | Names the table for reference from field validation. |
+| **Source** | Selects where the table's values come from, which decides whether you maintain them here or elsewhere. |
+| **Values** | Holds the comma-separated values for an inline table. |
+| **Case Sensitive** | Requires an exact case match. Leave it off for anything a user types, since typed input rarely matches your stored casing. |
+| **Fuzzy Match** | Accepts near matches. It rescues misspellings and transcription errors at the cost of occasionally accepting a value the user didn't mean, so it suits voice input more than typed input. |
 
 ---
 
 ## Data retention
 
-The **Data Retention** page configures how long eval transcripts, eval scores, and production score rows remain available for this project.
+The **Data Retention** page sets how long evaluation and scoring data stays available to this project.
 
-**Navigation**: **Project** → **Settings** → **Data Retention**
+**Navigation**: **Project** -> **Settings** -> **Data Retention**
 
-**Retention categories**
+Retention is a deletion policy rather than a storage preference. Once a window passes, the data is gone and no longer available for trend analysis, so set these values around the longest comparison you expect to run rather than the storage you expect to use.
 
-| Category                | Description                                                    | Default  |
-|-------------------------|----------------------------------------------------------------|----------|
-| **Eval conversations**  | Retention period for evaluation conversation transcripts.      | 730 days |
-| **Eval scores**         | Duration for which the system stores evaluation score records. | 730 days |
-| **Production scores**   | Availability period for production scoring data.               | 365 days |
-| **Synthetic eval runs** | Retention period for synthetic evaluation run data.            | 30 days  |
+| Category | Description |
+|---|---|
+| **Eval conversations** | Holds evaluation conversation transcripts. Transcripts are what let you re-read a failed evaluation rather than only seeing that it failed. |
+| **Eval scores** | Holds evaluation score records. Scores outlive their usefulness more slowly than transcripts, since trend comparison needs the numbers rather than the conversations. |
+| **Production scores** | Holds production scoring data, which is the basis for the quality trends in Insights. |
+| **Synthetic eval runs** | Holds synthetic evaluation run data. These runs are reproducible on demand, which is why they carry the shortest window. |
 
-**Retention Windows**
-Below the summary cards, the **Retention Windows** section lets you edit the TTL (time-to-live) value in days for each category.
-
-| Field                                | Description                                                   |
-|--------------------------------------|---------------------------------------------------------------|
-| **Eval conversation transcript TTL** | Number of days to retain evaluation conversation transcripts. |
-| **Eval score TTL**                   | Number of days to retain evaluation score records.            |
-| **Production score TTL**             | Number of days to retain production scoring data.             |
-| **Synthetic eval TTL**               | Number of days to retain synthetic evaluation run data.       |
-
-Click **Save** to apply changes or **Reset** to restore all values to their defaults.
+The **Retention Windows** section below the summary sets the time-to-live in days for each category. Select **Save** to apply changes or **Reset** to restore defaults.
 
 ---
 
 ## Config variables
 
-The **Config Variables** page lets you define key-value pairs that the system resolves at compile time through `{{config.KEY}}` syntax.
+The **Config Variables** page defines key-value pairs that the platform resolves at compile time through `{{config.KEY}}` syntax.
 
-**Navigation**: **Project** → **Settings** → **Config Variables**
+**Navigation**: **Project** -> **Settings** -> **Config Variables**
 
-Use config variables to store shared values such as API endpoints, feature flags, and persona-specific content that agents reference across the project. The page shows all defined variables with a filter-by-key search and namespace grouping. Click **Namespaces** to organize variables into logical groups.
+Use config variables for values that several agents share and that change between environments, such as endpoints, feature flags, and persona-specific content. The alternative is repeating the value in each agent, which turns an endpoint change into an audit.
 
 ### Add a variable
 
-Click **Add Variable** to create a new entry. Each variable includes the following fields:
+Each variable is one key the platform substitutes wherever your agents reference it. The fields below define the key, its value, and the context a later reader needs.
 
-| Field           | Description                                                                                              |
-|-----------------|----------------------------------------------------------------------------------------------------------|
-| **Key**         | Unique identifier for the variable (for example, `API_BASE_URL`). Reference in code as `{{config.KEY}}`. |
-| **Value**       | The value you assign to the key, which the platform resolves at compile time.                            |
-| **Namespaces**  | Logical grouping for the variable. Defaults to **Auto**.                                                 |
-| **Description** | Optional description explaining the variable's purpose.                                                  |
+Select **Add Variable**, then complete the fields.
 
-Click the **checkmark** to save or the **×** to discard. You can override variables per deployment environment.
+| Field | Description |
+|---|---|
+| **Key** | Uniquely identifies the variable and forms the reference used in code. Changing a key later breaks every reference to it, so settle naming before the value spreads. |
+| **Value** | Holds what the platform substitutes at compile time. You can override it per deployment environment, which is the mechanism that lets one project target different endpoints. |
+| **Namespaces** | Groups related variables so a large set stays navigable. |
+| **Description** | Explains what the variable is for. It's the only context a later reader gets when deciding whether a variable is safe to change. |
 
-<Note>Config variables resolve at compile time. Changes require recompilation to take effect.</Note>
+<Note>Config variables resolve at compile time rather than at runtime, so a changed value reaches your agents only after recompilation.</Note>
 
 ---
 
 ## Localization
 
-The **Localization** page lets you manage locale JSON assets with a full-width editor and sync them through the existing Git integration.
+The **Localization** page manages locale JSON assets in Studio and syncs them through the project's Git integration.
 
-**Navigation**: **Project** → **Settings** → **Localization**
+**Navigation**: **Project** -> **Settings** -> **Localization**
 
-The page displays the total number of assets, locales, and shared assets. The platform stores locale assets as project-level JSON files and exports them to Git under the same path contract that project import/export uses (for example, `locales/en/_shared.json` or `locales/fr/booking_agent.json`). If Git isn't connected, a status indicator shows **Git not connected** with a link to **Open Git Settings**.
+The platform stores locale assets as project-level JSON files and exports them to Git under the same path contract that project import and export use. Keeping paths in the canonical shape is what lets assets round-trip cleanly, so a path you improvise here becomes a merge problem later.
+
+Counters at the top report the assets, locales, and shared assets the project holds. A status indicator reports when Git isn't connected, with a link to **Open Git Settings**. Until you connect Git, assets stay in project storage and don't reach version control, which means no diffs and no review.
+
+Search by locale, file path, or description, and narrow the list by locale or by scope when the asset count grows past browsing.
 
 ### Create a localization asset
 
-Click **New Asset** to open the asset editor. Complete the following fields:
+An asset is one locale JSON file holding translated strings, either shared across the project or scoped to a single agent. Creating one here puts it under the same path contract Git and project export use.
 
-| Field           | Description                                                                                 |
-|:----------------|---------------------------------------------------------------------------------------------|
-| **Relative Path**    | The locale file path in canonical `locale/asset.json` format (for example, `en/_shared.json`). Keep paths in this shape so Git, export, and import round-trip cleanly. |
-| **Description** | Optional context for translators and reviewers.                                             |
-| **JSON Editor** | Full-width code editor for the locale JSON content. Edit the asset directly in the browser. |
+Select **New Asset** to open the editor, then complete the fields and select **Create**. Saving writes the asset into project storage and keeps the Git export path aligned.
 
-Use **Upload JSON** to import an existing file, or **Prettify** to auto-format the JSON content. Click **Save** to create the asset.
+| Field | Description |
+|---|---|
+| **Relative Path** | Sets the locale file path in the canonical locale and asset shape. This path determines where the asset lands in Git and whether import and export find it again. |
+| **Description** | Gives translators and reviewers the context the JSON itself doesn't carry. |
+| **JSON Editor** | Edits the locale content directly. Select **Upload JSON** to bring in an existing file, or **Prettify** to reformat what's there. |
