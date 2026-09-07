@@ -288,38 +288,49 @@ PII Handling controls how the platform treats personally identifiable informatio
 
 ## Recording
 
-Once call recording is available at the workspace level, a project admin can turn it on for individual projects. Recording applies only to calls that start after you enable this setting - calls already in progress or completed earlier aren't captured retroactively.
+An account admin must turn on call recording for the workspace (**Account** → **Workspace Settings**) before a project admin can turn it on for individual projects. Recording applies only to calls that start after you enable this setting - calls already in progress or completed earlier aren't captured retroactively.
 
-<Note>An account admin must turn on call recording for the workspace (**Account** → **Workspace Settings**) before you can turn it on for a project. If your project’s Settings menu doesn’t show the **Recording** option, ask your account admin to enable it.</Note>
+<Note>This is different from the **Record call** switch in the Studio softphone. The softphone switch captures a temporary audio file for a single test call in your browser; you can only download it, and it's lost as soon as you close the popover. It never appears on the session page and isn't affected by the settings on this page.</Note>
 
 **Navigation**: **Project** → **Settings** → **Recording**
 
+You need the project admin or developer role to change these settings. Tester and viewer roles can only view them.
+
 | Setting                      | Description                                                                                                                            | Default  |
-|------------------------------|----------------------------------------------------------------------------------------------------------------------------------------|----------|
+|------------------------------|------------------------------------------------------------------------------------------------------------------------------------------|----------|
 | **Enable call recording**    | Turns call recording on for this project. KoreVG calls attach the SIPREC recording configuration once enterprise recording is enabled. | Disabled |
 | **Override account default** | Uses this project's recording setting instead of the workspace-level recording default.                                                | Disabled |
-| **Retention days**           | Number of days a completed recording stays available before it's automatically deleted, unless it's marked immutable.                  | 90 days  |
+| **Retention days**           | Number of days a completed recording stays available before it's automatically deleted, unless it's marked immutable. Accepts 1-2555 days; an empty field is treated as 1 day. Your workspace can also set a minimum and maximum, and the project value stays within those limits. | 90 days  |
 
-Click **Save changes** to apply your settings, or **Reset** to discard them.
+Click **Save changes** to apply your settings, or **Reset** to discard unsaved changes and restore the last saved values.
 
 After a call ends, the runtime fetches and stores the finalized audio in the background, so a recording isn't available immediately. Retention cleanup runs hourly and removes expired recordings automatically unless they're marked immutable.
 
+<Note>A change to **Retention days** applies only to recordings created after you save it. Existing recordings keep the retention period that was in effect when they were created.</Note>
+
 ### Playback recordings
 
-Recordings appear inside the session they belong to, in a **Call Recording** panel alongside the rest of that session's detail and diagnostics.
+Recordings appear inside the session they belong to, in a **Call Recording** panel alongside the rest of that session's detail and diagnostics. There's no single list of every recording in a project - open the session you want from **Sessions** to find its recording.
 
 **Navigation**: **Project** → **Sessions** → select a session
 
 | Status          | Meaning                                                                                                                                                              |
 |-----------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | No status shown | The call hasn't finished, or recording wasn't on for the call. The panel reads **No recording is available for this session yet.** Click **Refresh** to check again. |
+| **Pending**     | The call ended and the recording is queued for collection. Click **Refresh** to check again.                                                                        |
 | **Fetching**    | The call has ended and the runtime is retrieving and storing the audio. Playback isn't available yet.                                                                |
 | **Completed**   | The recording is stored and ready to play or download.                                                                                                               |
+| **Failed**      | The audio couldn't be collected or stored. Read the failure reason on the panel, then contact Kore support.                                                          |
+| **Deleted**     | The audio is gone and only the entry remains. This is final.                                                                                                          |
 
-Once a recording **Completed**, the panel shows its duration, storage size, and retention (expiry) date. Authorized users (with recording:read/write permissions) can:
+A recording usually is **Completed** within a few minutes; it can take up to about 15 minutes. The panel doesn't refresh on its own, so click **Refresh** to check. Treat a recording as a problem only after about 15 minutes have passed.
+
+Once a recording is **Completed**, the panel shows its duration, storage size, and retention (expiry) date. Authorized users (project admin, developer, tester, or viewer, with recording:read permission) can:
 
 - Play/pause, seek/zoom waveform, rewind/fast‑forward 10s, adjust speed (0.75x–2x), and download audio.
 - Click **Open conversation** or **Open traces** to jump to the matching point in the session's transcript or trace view - playback position stays synced with both.
+
+Every playback, download, setting change, lock, and delete is written to the audit log.
 
 {/*
 
@@ -327,6 +338,39 @@ Once a recording **Completed**, the panel shows its duration, storage size, and 
 
 */}
 
-Deleting a recording requires the **recording:delete** permission. Deleting removes the audio from storage and marks the recording deleted in the session; if storage deletion fails, the recording isn't marked deleted and can be retried. Recordings marked immutable can't be deleted manually or removed by retention cleanup. Deleting a project, session, or the workspace also deletes any recordings that belong to it.
+### Locking and deleting recordings
+
+A locked (immutable) recording is never deleted - not by retention cleanup, and not by a delete request. Locking requires the **recording:mark-immutable** permission (project admin role only). This permission must be granted separately - a general admin grant doesn't include it.
+
+<Note>Locking and deleting a recording aren't yet available as buttons in Studio. The session panel offers play, download, and refresh only. To lock a recording for a legal hold, or to delete one for a customer request, use the platform recording API or contact Kore support.</Note>
+
+Deleting a recording requires the **recording:delete** permission (project admin and developer roles). Deleting removes the audio from storage and marks the recording deleted in the session; if storage deletion fails, the recording isn't marked deleted and can be retried. Recordings marked immutable can't be deleted manually or removed by retention cleanup. Deleting a project, session, or the workspace also deletes any recordings that belong to it.
 
 <Note>For calls recorded through an externally hosted provider (for example, CCAI), deleting the recording removes its metadata from the platform but doesn't delete the underlying media from the external provider.</Note>
+
+### Compliance considerations
+
+- **Tell the caller yourself.** The platform doesn't play a "this call is recorded" announcement or show the caller a recording indicator. If your region requires consent or a notice, add it to your agent's opening prompt.
+- **Storage location.** Recordings are stored in the storage configured for your workspace. Use your own storage account if the audio must stay in a specific region. The session panel shows whether storage is Kore-managed or customer-managed.
+
+### If recording doesn't start
+
+Check these in order - the first "no" is usually the cause.
+
+1. Does **Workspace Settings** show the **Call Recording** section? If not, contact your Kore representative to add the feature to your workspace.
+2. Is the workspace-level switch turned on and saved? If not, ask your account admin to enable it.
+3. Does the project **Settings** menu show **Recording**? If not, the workspace switch is off.
+4. Is **Enable call recording** on for the project, and did you click **Save changes**?
+5. Was the call started after you saved the setting? Recording only applies to new calls.
+6. Did you wait about 15 minutes and click **Refresh**?
+
+If all six check out and there's still no recording, contact Kore support with the project name, session ID, and call time.
+
+### Turning recording off
+
+| Goal                                       | Action                                                                      | Effect                                                                        |
+|---------------------------------------------|--------------------------------------------------------------------------------|----------------------------------------------------------------------------------|
+| Stop recording new calls in one project    | Turn off **Enable call recording** in project **Settings** → **Recording** | New calls aren't recorded. Existing recordings stay and remain playable.     |
+| Hide recording across the whole workspace  | Turn off the workspace-level **Call Recording** switch                     | Recording settings and audio are hidden in every project. Nothing is deleted. |
+| Remove the feature completely              | Contact your Kore representative                                            | Every recording surface disappears.                                          |
+
