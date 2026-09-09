@@ -1,0 +1,278 @@
+---
+title: Set up Webhooks (HTTP Async)
+sidebarTitle: Webhooks (HTTP Async)
+---
+
+<Badge icon="arrow-left" color="gray">[Back to webhook channels](/agent-platform/channels#webhook)</Badge>
+
+Send messages to your agent over HTTP and receive the agent's reply as a callback to your own server. Artemis accepts the message, acknowledges it immediately, then posts the completed response to your callback URL as a separate request.
+
+Use this channel for server-to-server integrations where your application owns the user interface and can't hold a connection open while the agent works. If your application needs the reply on the same connection, use the API channel instead.
+
+## How the exchange works
+
+The channel splits one conversational turn into two HTTP exchanges. Your application sends the message and receives an acknowledgement, then Artemis calls your server back with the agent's answer.
+
+| Stage | Direction | What happens | Identifiers |
+| ----- | --------- | ------------ | ----------- |
+| 1 | Your server to Artemis | Your application posts the message to the HTTP Async message endpoint. | `project_id`, `subscription_id`, `session_key` |
+| 2 | Artemis to your server | Artemis returns `202 Accepted` to confirm it queued the message. | `message_id`, `session_key` |
+| 3 | Inside Artemis | Artemis resolves the project, deployment, agent, and session, then queues execution. | `session_id` |
+| 4 | Inside Artemis | The agent runs. Long-running tools can suspend execution and resume it later. | Suspension ID, when applicable |
+| 5 | Artemis to your server | Artemis posts the completed agent response to your callback URL. | `message_id`, `session_key` |
+| 6 | Your server to Artemis | Your callback endpoint returns `200 OK` and stores the event idempotently. | `message_id` |
+
+The `202 Accepted` response confirms acceptance only. Treat the callback as the business response, and don't resend a message while Artemis is still processing it.
+
+## Before you begin
+
+Complete the following before you create the connection. You need an active deployment, a Platform API key, and an HTTPS endpoint that receives the callback.
+
+<Steps>
+  <Step title="Deploy the agent">
+    Deploy the agent to the target environment and confirm which deployment handles incoming messages. Use a deployment rather than a draft version, and tell your integration team which agent answers first.
+  </Step>
+
+  <Step title="Create a Platform API key">
+    Go to **Deployments** -> **API Keys** -> **Platform keys** and create a key for this integration.
+
+    Assign only the scope that authorizes HTTP Async message submission. Don't grant deployment administration, project write, or API key administration scopes. Record the exact scope label your tenant shows, because the deployed platform version determines those labels.
+
+    Store the key in your secret manager, and define rotation, expiry, ownership, and emergency revocation before you go to production. Never put the key in the request body or in source code.
+  </Step>
+
+  <Step title="Prepare your callback endpoint">
+    Stand up an HTTPS endpoint that accepts a JSON `POST`, returns `200 OK` quickly, and processes each `message_id` once. Artemis calls this endpoint with the agent response, so allow traffic from the Artemis environment you're integrating with.
+  </Step>
+</Steps>
+
+## Create the channel connection in Artemis
+
+Each connection creates a webhook subscription that holds your callback URL, the events you want, and its own identifier. Open **Deployments** -> **Channels** -> **WEBHOOK** -> **Webhooks (HTTP Async)** and expand **Setup instructions** to see the current guidance for your environment.
+
+<Steps>
+  <Step title="Add the webhook subscription">
+    Select **+ New** and supply the following.
+
+    | Field | Description |
+    | ----- | ----------- |
+    | **Display Name** | A label for the connection, for example `Order Support Callback`. The connections list shows this name. |
+    | **Callback URL** | The HTTPS endpoint on your server that receives agent responses. Artemis posts a JSON body to this URL for every event you subscribe to. |
+    | **Event Subscriptions** | The events Artemis delivers to your callback URL. Choose **Agent Response** (`agent.response`) for completed agent replies, **Agent Status** (`agent.status`) for status transitions, and **Agent Media** (`agent.media`) for media output. |
+  </Step>
+
+  <Step title="Copy the subscription ID">
+    Open the connection and go to the **Overview** tab. Copy the **Source ID** from the **Connection Summary**. Your application sends this value as `subscription_id`.
+
+    Take the project identifier from the Artemis URL while the project is open, in the form `/projects/{project_id}/deployments`.
+  </Step>
+
+  <Step title="Send a test message">
+    Go to the **Testing** tab, enter a message, and select **Send Test Message**. Open the **Activity** tab to confirm the delivery reached your endpoint.
+  </Step>
+</Steps>
+
+## Send a message
+
+Your application posts to a fixed platform route and names the target integration in the request body. Replace `{host}` with the Artemis host for your environment, for example `agents-dev.kore.ai` or `agents-staging.kore.ai`.
+
+```http
+POST https://{host}/api/v1/channels/http-async/message
+X-API-Key: abl_<platform-key>
+Content-Type: application/json
+
+{
+  "project_id": "01a00e62-84f9-7c41-9502-0acf40789e8b",
+  "subscription_id": "01a08410-6544-7dd6-be6a-1a0e4d6a06e7",
+  "message": "Hey!",
+  "session_key": "customer-002",
+  "metadata": {
+    "customerName": "Subbu"
+  }
+}
+```
+
+The `project_id` and `subscription_id` route the request. The `X-API-Key` header authenticates it.
+
+### Request fields
+
+The body carries the routing identifiers, the message text, and your conversation key.
+
+| Field | Required | Description |
+| ----- | -------- | ----------- |
+| `project_id` | Yes | The Artemis project that owns the webhook subscription. |
+| `subscription_id` | Yes | The **Source ID** from the connection's **Overview** tab. Don't substitute an identifier from a different channel. |
+| `message` | Yes | The user message text you want the agent to answer. |
+| `session_key` | Yes | Your conversation key. Send a key of your own on the first message, for example a customer ID. On every follow-up message, send the exact canonical `session_key` that Artemis returned in the acknowledgement. |
+| `metadata` | No | Business context your application owns. Artemis returns this object unchanged in the callback. Keep secrets and correlation keys out of it. |
+
+### Acknowledgement
+
+Artemis replies immediately to confirm it queued the message. This response isn't the agent's answer.
+
+```http
+HTTP/1.1 202 Accepted
+Content-Type: application/json
+
+{
+  "message_id": "10a49805-3eda-45ab-830a-c3c49145a1da",
+  "session_key": "http_async:019dcf8c-4f78-759f-aa58-3dd72d26d229:01a08410-6544-7dd6-be6a-1a0e4d6a06e7:customer-002",
+  "status": "accepted",
+  "_note": "Message has been queued for processing. Response will be delivered to your callback URL."
+}
+```
+
+Save the `message_id`, the returned `session_key`, the request timestamp, `project_id`, and `subscription_id` with your conversation record. The returned `session_key` carries an Artemis namespace. Store it exactly as Artemis returns it, and don't reconstruct or alter it.
+
+### Callback
+
+When the agent finishes, Artemis posts the response to your callback URL.
+
+```http
+POST https://client.example.com/artemis/callback
+Content-Type: application/json
+
+{
+  "message_id": "a996d19e-1703-47ee-8b9b-1df894cb3182",
+  "session_key": "http_async:019dcf8c-4f78-759f-aa58-3dd72d26d229:01a08410-6544-7dd6-be6a-1a0e4d6a06e7:customer-002",
+  "response": "You said: Hey2! What else can I help you with?",
+  "channel_output": {
+    "kind": "text",
+    "text": "You said: Hey2! What else can I help you with?"
+  },
+  "outcome": {
+    "status": "ok",
+    "usedFallback": false
+  },
+  "trace_context": {
+    "session_id": "5914535f-dfc4-49f6-9c3d-5301777dcd87",
+    "delivery": "correlation_only"
+  },
+  "session_id": "5914535f-dfc4-49f6-9c3d-5301777dcd87",
+  "is_new_session": false,
+  "response_metadata": {
+    "isLlmGenerated": true,
+    "responseProvenance": {
+      "schemaVersion": 1,
+      "kind": "mixed",
+      "disclaimerRequired": true,
+      "usedLlmInternally": true
+    }
+  },
+  "metadata": {
+    "customerName": "Subbu"
+  }
+}
+```
+
+Authenticate the callback, validate the payload with your schema, persist the event, and return `200 OK` promptly. Make your endpoint idempotent, because Artemis can deliver the same event more than once.
+
+### Callback fields
+
+The callback repeats the identifiers from the acknowledgement and adds the agent output with its provenance.
+
+| Field | Type | Description |
+| ----- | ---- | ----------- |
+| `message_id` | String | The identifier from the acknowledgement. Use it as the idempotency key for the delivered response. |
+| `session_key` | String | The canonical conversation key. Use it to find your conversation record, and resend this exact value on the next request. |
+| `response` | String | The agent's reply as plain text. |
+| `channel_output` | Object | The channel-renderable form of the reply. Read `channel_output.text` for text replies. |
+| `outcome` | Object | The processing result, including `status` and whether the agent used a fallback. |
+| `trace_context` | Object | The runtime session identifier and the delivery context you use for tracing. |
+| `session_id` | String | The Artemis runtime session identifier for this conversation. |
+| `is_new_session` | Boolean | Whether Artemis created a new runtime session for this request. |
+| `response_metadata` | Object | Provenance for the reply, including whether an LLM generated it and whether it requires a disclaimer. |
+| `metadata` | Object | The `metadata` object from your request. Artemis returns it unchanged. |
+
+Artemis doesn't return `intent` or `conv_status`. If your application needs either one, agree it as an extension inside `metadata`.
+
+## Correlate requests and continue conversations
+
+Three identifiers carry the exchange, and each one does a different job. Mixing them up splits conversations and duplicates responses.
+
+| Identifier | What it identifies | How to use it |
+| ---------- | ------------------ | ------------- |
+| `message_id` | A single accepted message | Match the callback to the request that produced it, and use it as your idempotency key. |
+| `session_key` | Your conversation | Send the exact canonical value from the acknowledgement on every follow-up message. Don't change it between turns. |
+| `session_id` | The Artemis runtime session | Store it with the conversation record for tracing. Don't generate one per message. |
+
+Persist `project_id`, `subscription_id`, `session_key`, and `session_id` with each conversation record. Correlate on `message_id` and `session_key` only, never on `intent` or a `metadata` value.
+
+## Secure the callback
+
+Artemis authenticates your outbound request with the `X-API-Key` header. Your server owns the security of the return path, so decide how you'll authenticate the callback before you go to production.
+
+Serve the callback endpoint over HTTPS and reject unauthenticated requests. HMAC signing or mTLS suits high-assurance integrations, and bearer token authentication works where that matches your approved configuration. Agree the mechanism with your Artemis delivery team, then test it end to end.
+
+Async tool callbacks follow a different rule. Artemis documents a per-suspension HMAC-SHA256 signature in the `X-Callback-Signature` header, which applies when an external system calls the Artemis suspension callback. It doesn't apply when Artemis calls your webhook.
+
+## Manage the channel connection
+
+Opening a connection from **Deployments** -> **Channels** -> **WEBHOOK** -> **Webhooks (HTTP Async)** shows five tabs. The controls beside the connection name pause or delete the subscription.
+
+<Tabs>
+  <Tab title="Overview">
+    The **Connection Summary** shows these fields.
+
+    | Field | Description |
+    | ----- | ----------- |
+    | **Status** | The current state of the subscription, for example *Active*. |
+    | **Created** | Date and time of creation. |
+    | **Updated** | Date and time of the last change. |
+    | **Environment** | The environment this subscription belongs to, for example `Working Copy (draft)`. |
+    | **Source Type** | `Webhook Subscription`. |
+    | **Source ID** | The subscription identifier (UUID). Your application sends this value as `subscription_id`. |
+
+    **Setup Instructions** shows the **Callback URL** currently registered for the subscription, with a control that copies it.
+  </Tab>
+
+  <Tab title="Configuration">
+    Under **General**, update the **Display Name**.
+
+    Under **Webhooks (HTTP Async) Settings**, choose where Artemis sends events and which events it sends.
+
+    | Field | Description |
+    | ----- | ----------- |
+    | **Callback URL** | The HTTPS endpoint on your server that receives agent responses. Changing it redirects every later delivery for this subscription. |
+    | **Event Subscriptions** | The events Artemis delivers. Choose **Agent Response** (`agent.response`) for completed agent replies, **Agent Status** (`agent.status`) for status transitions, and **Agent Media** (`agent.media`) for media output. |
+
+    Select **Save Changes** to apply your changes.
+  </Tab>
+
+  <Tab title="Deployment">
+    This tab doesn't bind the subscription to a deployment.
+
+    A webhook subscription receives events from every active deployment in the project, so the tab offers no environment or version selector.
+  </Tab>
+
+  <Tab title="Testing">
+    Use this tab to confirm the subscription reaches your endpoint before you wire up your application.
+
+    Enter text in **Test Message** and select **Send Test Message**. Artemis sends the message through the webhook subscription and records the result on the **Activity** tab.
+  </Tab>
+
+  <Tab title="Activity">
+    **Recent Deliveries** lists the delivery attempts Artemis made for this subscription, and **Refresh** reloads the list.
+
+    Check this tab to confirm a test message reached your endpoint, and to review delivery status when your application stops receiving callbacks.
+  </Tab>
+</Tabs>
+
+## Production readiness checklist
+
+Work through the following before you promote the integration. Record evidence for each item rather than relying on one passing test.
+
+| Check | What to do |
+| ----- | ---------- |
+| Environment | Document the base URL for each environment separately, and confirm the integration points at the one you intend. |
+| Routing | Confirm that `project_id` and `subscription_id` resolve to the project, deployment, and agent you intend. |
+| Authentication | Confirm a valid API key succeeds, and that Artemis rejects missing, invalid, expired, and under-scoped keys. |
+| Secrets | Hold the API key and any callback credentials in an approved secret manager, and define rotation and revocation. |
+| Acknowledgement | Persist the `202` identifiers, and never show the acknowledgement to a user as the agent's answer. |
+| Callback security | Document the callback authentication mechanism and test it. |
+| Callback reliability | Return `200 OK` quickly and handle duplicate deliveries idempotently. |
+| Correlation | Trace one request that links `message_id`, the acknowledged `session_key`, the callback `session_key`, and `session_id`. |
+| Session continuity | Send a follow-up message with the canonical `session_key` and confirm it reaches the existing session. |
+| Schema | Version and validate the required fields and any `metadata` extensions you agreed. |
+| Failure handling | Test rate limiting, authentication failures, server errors, timeouts, duplicates, and malformed callbacks. |
+| Observability | Log the timestamp, `project_id`, `subscription_id`, `session_key`, `session_id`, `message_id`, status, and latency, and exclude secrets. |
