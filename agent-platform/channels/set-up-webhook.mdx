@@ -186,6 +186,28 @@ The callback repeats the identifiers from the acknowledgement and adds the agent
 
 Artemis doesn't return `intent` or `conv_status`. If your application needs either one, agree it as an extension inside `metadata`.
 
+## Handle errors
+
+Your application and your callback endpoint can each encounter failures. Handle each category on its own path instead of resending a message blindly.
+
+### Request errors
+
+| Status | Cause | What to do |
+| ------ | ----- | ---------- |
+| `401` / `403` | The `X-API-Key` is missing, invalid, expired, or doesn't carry the scope for HTTP Async message submission. | Check the key value and its assigned scope under **Deployments** -> **API Keys** -> **Platform keys**. |
+| `429` | Your application sent requests faster than the channel accepts them. | Back off and retry after a delay instead of resending immediately. |
+| `5xx` | Artemis failed to accept the request. | Retry with backoff. Don't assume the message reached the agent. |
+
+Only resend a message after a failed request. Don't resend just because the callback hasn't arrived yet — the `202 Accepted` response means Artemis already queued it.
+
+### Callback delivery
+
+Artemis can call your callback URL more than once for the same event, and long-running or suspended tool executions can delay a callback beyond what a synchronous exchange would take. Design your endpoint to do the following.
+
+- Validate the payload against the [callback fields](#callback-fields) table before you persist it, and reject anything that doesn't match.
+- Process each `message_id` once, and treat a repeated `message_id` as already handled rather than as a new event.
+- Return `200 OK` as soon as you've accepted the event, and do the rest of your processing after you respond.
+
 ## Correlate requests and continue conversations
 
 Three identifiers carry the exchange, and each one does a different job. Mixing them up splits conversations and duplicates responses.
