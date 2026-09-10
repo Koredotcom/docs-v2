@@ -1,0 +1,196 @@
+---
+title: Artemis API Overview
+sidebarTitle: Overview
+---
+
+This document covers how to invoke and use the Artemis REST APIs for authentication, request format, error handling, pagination, and more.
+
+## Prerequisites
+
+Before calling any API endpoint, ensure the following are in place:
+
+* An Artemis account with access to the relevant workspace  
+* A Project created within that workspace  
+* Generated API credentials (Platform Key).  
+* Confirmed scopes and permissions assigned to the credentials for the endpoints you intend to call.
+
+## Authentication
+
+A platform key is a long-lived bearer credential scoped to a tenant, a project, and a set of scopes.
+
+The format is `abl_<48 hex characters>`, for example `abl_3f7a1c9e42b8dxxxxa1e8c7b4d29f0a3e5c8b1d7f2a4exxxx`. The headers are in the format `X-API-Key: <platform key>`.
+
+### Create a platform key
+
+Navigation: **Project → Settings → API Keys → Platform Keys → New Key**.
+
+| Field        | Value                                                  |
+|--------------|--------------------------------------------------------|
+| Key Name     | Example: `acme-search-integration`.                    |
+| Scopes       | Example: `Execute Chat`, `Execute Workflows`.          |
+| Environments | Choose the environment with which the key is required. |
+| Expires      | 30 days, 90 days, never, custom date.                  |
+
+Copy the generated key. It isn't shown again.
+
+## Scopes and permissions
+
+Scopes determine which resources and actions a given set of credentials can access. Requests made with credentials that lack the required scope for an endpoint fail during authorization, even if authentication succeeds.
+
+Every API request must include the API key in the X-API-Key header. Keys are tied to explicit scopes (for example, execute chat) assigned at creation. Note that access is scope-based, not origin-based.
+
+| Execution scope        | Description                                                            |
+|:-----------------------|:-----------------------------------------------------------------------|
+| Execute Workflows      | Execute workflows via Process API                                      |
+| Invoke Draft Workflows | Invoke draft (unpublished) workflow versions via API key.              |
+| Read Workflows         | Read workflow definitions and status                                   |
+| Execute Chat           | Send messages to agents via Chat API                                   |
+| Execute HTTP Async     | Initialize HTTP Async sessions and enqueue asynchronous agent messages |
+| Read Attachments       | Read session attachment metadata, processing status, and download URLs |
+| Upload Attachments     | Upload session attachments and retry attachment processing             |
+
+
+| Management scope                          | Description                                                                                                                    |
+|:------------------------------------------|:-------------------------------------------------------------------------------------------------------------------------------|
+| Read Agents                               | List and inspect agent configurations.                                                                                         |
+| Write Agents                              | Create and update agent configurations.                                                                                        |
+| Read Channel Connections                  | Read project channel connection details for service integrations.                                                              |
+| Write Channel Connections                 | Create, update, and deactivate/delete project channel connections for service integrations.                                    |
+| Read HTTP Async                           | Read HTTP Async webhook subscriptions and delivery status.                                                                     |
+| Manage HTTP Async                         | Create, update, and deactivate HTTP Async webhook subscriptions.                                                               |
+| Read Deployments                          | List deployment status and history.                                                                                            |
+| Write Deployments                         | Create and promote deployments.                                                                                                |
+| Read Solution Workbench                   | Read published solution contracts, configuration, releases, and analytics.                                                     |
+| Release Solution Workbench Configurations | Validate and release approved solution configuration versions.                                                                 |
+| Read Sessions                             | Read session history and transcripts                                                                                           |
+| Write Sessions                            | Attach external provider metadata to sessions (for example, post-transfer contact-center metadata) and trigger transcript sync |
+| Close Sessions                            | Close sessions with an explicit disposition                                                                                    |
+| Read Recordings                           | Read call recording metadata and media URLs                                                                                    |
+| Initiate Outbound Calls                   | Place on-demand outbound voice calls through a configured KoreVG channel                                                       |
+| Read Outbound Calls                       | Look up and list outbound call attempts and their retained logs                                                                |
+| Create Releases                           | Build immutable CI/CD releases                                                                                                 |
+| Read Releases                             | Read CI/CD releases and status                                                                                                 |
+| Download Release Bundle                   | Download the immutable release bundle (sensitive)                                                                              |
+| Git Sync                                  | Pull approved branch/tag/commit into a project                                                                                 |
+| Git Push                                  | Push Studio changes to a feature/main branch                                                                                   |
+| Git Checkout                              | Switch or create the project source branch                                                                                     |
+| Git Force Override                        | Override loss-prevention on git sync (high privilege)                                                                          |
+| Deploy Release                            | Deploy a release to an environment                                                                                             |
+| Promote Release                           | Promote a release across environments                                                                                          |
+| Rollback                                  | Roll back an environment to a previous release                                                                                 |
+| Run Evals                                 | Run eval suites as CI/CD gates                                                                                                 |
+| Read Deployment Health                    | Read deployment/runtime health checks.                                                                                         |
+| Read Audit Evidence                       | Read CI/CD audit evidence packs.                                                                                               |
+| Manage CI/CD Webhooks                     | Manage deployment-event webhook subscriptions.                                                                                 |
+| Bypass Gate                               | Bypass qualification gate (high privilege, audited).                                                                           |
+| Force Lock Release                        | Force-release a stale deployment lock (high privilege).                                                                        |
+
+| Knowledge base scope       | Description                                                                      |
+|:---------------------------|:---------------------------------------------------------------------------------|
+| Query Knowledge Base       | Execute search queries against knowledge bases.                                  |
+| Read Knowledge Base        | Read knowledge base metadata and configurations.                                 |
+| Ingest Documents           | Upload files and ingest data into knowledge bases.                               |
+| Write Document Permissions | Set document-level ACL permissions during ingestion.                             |
+| Read Field Intelligence    | Read Field Intelligence field summaries and details for project knowledge bases. |
+| Preview Field Intelligence | Preview Field Intelligence changes without saving those.                         |
+| Write Field Intelligence   | Create and update Field Intelligence configuration.                              |
+| Refresh Field Intelligence | Request Field Intelligence projection refresh jobs.                              |
+| Import Field Intelligence  | Import source-derived Field Intelligence configuration.                          |
+
+| Analytics scope | Description                                                |
+|:----------------|:-----------------------------------------------------------|
+| Read Analytics  | Read analytics dashboards, metrics, and saved widget data. |
+
+| Administration scope | Description                             |
+|:---------------------|:----------------------------------------|
+| Read Workspace       | Read workspace settings and usage data. |
+
+## Base URL
+
+All API requests target your platform instance base URL of the format `https://example.com/api/public`. For URL of your instance, {{artemis.url}}.
+
+## Common request parameters
+
+| Element             | Description                                                | Example                               |
+|---------------------|------------------------------------------------------------|---------------------------------------|
+| X-API-Key header    | Carries the platform key used to authenticate the request. | X-API-Key: `abl_xxxxx`                |
+| Content-Type header | Specifies the payload format.                              | `application/json`                    |
+| Request body        | Endpoint-specific payload.                                 | See individual endpoint reference.    |
+| projectSlug         | Unique identifier for the project                          | Project > Settings > Advanced > slug. |
+| agentSlug           | Unique identifier for the agent                            | Agent > Settings > slug               |
+
+## Pagination
+
+List endpoints use **offset-based pagination**:
+
+| Parameter | Type    | Default | Description                  |
+|-----------|---------|---------|------------------------------|
+| limit     | integer | 50      | Items per page (maximum 200) |
+| offset    | integer | 0       | Items to skip                |
+
+Example
+
+```json
+# Fetch page 1
+
+GET /api/projects/proj_abc/sessions?limit=50&offset=0
+
+# Fetch page 2
+GET /api/projects/proj_abc/sessions?limit=50&offset=50
+```
+
+Paginated responses include a pagination object.
+
+```json
+{
+  "success": true,
+  "sessions": [...],
+  "pagination": {
+    "total": 142,
+    "limit": 50,
+    "offset": 0
+  }
+}
+```
+
+{/* AG: Hide rate limit info for now; check casing of response headers.
+
+## Rate limits
+
+The platform enforces per-tenant sliding-window rate limits, applied across all API keys within that tenant.
+
+**Default limits**
+
+| Limit               | Scope                  | Default                   |
+|---------------------|------------------------|---------------------------|
+| Requests            | Per tenant, per minute | 100 req per minute        |
+| LLM tokens          | Per tenant, per minute | 100,000 tokens per minute |
+| Concurrent sessions | Per tenant             | 50 sessions               |
+| Tool calls          | Per tenant, per minute | 200 calls per minute      |
+
+Default rate limits are configurable. Contact your platform administrator for tenant-specific limits.
+
+**Rate limit response headers** — every API response includes the following headers.
+
+| Header                | Description                                          |
+|-----------------------|------------------------------------------------------|
+| `X-RateLimit-Limit`   | Current limit for this window                        |
+| X-RateLimit-Remaining | Requests remaining in the current window             |
+| X-RateLimit-Reset     | Unix timestamp when the window resets                |
+| Retry-After           | Seconds until retry is allowed (present on 429 only) |
+
+*/}
+
+## Error handling for APIs
+
+| Code                  | HTTP | Description                      | Fix                                          |
+|-----------------------|------|----------------------------------|----------------------------------------------|
+| `BAD_REQUEST`         | 400  | Invalid or missing fields        | Check request body schema                    |
+| `VALIDATION_ERROR`    | 400  | Field value type mismatch        | Review field types and ranges                |
+| `UNAUTHORIZED`        | 401  | Auth failed                      | Verify key is valid and not expired          |
+| `FORBIDDEN`           | 403  | Insufficient permissions         | Check credential scope                       |
+| `NOT_FOUND`           | 404  | Resource missing or inaccessible | Verify resource ID and access rights         |
+| `RATE_LIMIT_EXCEEDED` | 429  | Request rate limit hit           | Back off and retry after Retry-After         |
+| `QUEUE_FULL`          | 429  | Execution queue at capacity      | Reduce concurrency, retry after retryAfterMs |
+| `INTERNAL_ERROR`      | 500  | Unexpected server error          | Retry after a brief delay                    |
+| `SERVICE_UNAVAILABLE` | 503  | Backend dependency offline       | Retry later                                  |
