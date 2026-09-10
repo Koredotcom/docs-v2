@@ -169,8 +169,6 @@ The compiler enforces that an authored destination is safe to trust:
 
 Omit the `sipTransferId` default entirely to rely solely on the project-configured Agent Transfer target.
 
-{/* Mel: To include in 1.6.0
-
 ##### Inbound SIP header placeholders
 
 The one template form allowed in a `sipTransferId` default is `{{sip.<header>}}`. At transfer time the runtime replaces it with the value of an inbound SIP header from the **current call's trusted SIP metadata** (the headers the call arrived with) — never from conversation data or model output. Use it to forward an inbound header onto the transfer leg, for example a `User-to-User` correlation token or a tracing header:
@@ -193,13 +191,33 @@ Placeholders are constrained so inbound data can *decorate* the transfer but nev
 | **Position** | A placeholder may appear only in the URI's header section (the `?Name=value&…` part after `?`). A placeholder anywhere in the user/host — the part that determines where the call is dialed — is rejected (`placeholder_outside_headers`). |
 | **Whole value only** | A placeholder must be the *entire* value of a URI header (`?X-Trace-Id={{sip.x-trace-id}}`), not embedded in a larger value and not partial. |
 | **Value, not name** | A placeholder may never appear in a URI-header *name* (`placeholder_in_header_name`) — an inbound value must not become a header key. |
-| **Admitted headers** | Only `User-to-User` and any `x-*` header may carry a placeholder value (`inadmissible_header_name` otherwise). |
+| **Admitted destination header** | Only `User-to-User` and any `x-*` header may *carry* a placeholder value (`inadmissible_header_name` otherwise). |
+| **Admitted source header** | The inbound header *read from* — the `<name>` in `{{sip.<name>}}` — must **also** be admissible (`User-to-User` or `x-*`), so an admitted destination header cannot launder an arbitrary inbound header's value (`inadmissible_source_header` otherwise). |
 
 Any other use of `{{ }}` — a general expression/variable template, a placeholder in the user/host, or a malformed placeholder — remains an error; only `{{sip.<header>}}` in an admitted header value is interpolated. The URI's user and host are always static.
 
-For a fully **dynamic** per-call target (choosing a different host per call), configure it in project Agent Transfer settings rather than the DSL.
+##### Dynamic destinations
 
-*/}
+For a destination chosen at runtime, replace the static `default` with a `template` and an `approved_authorities` allow-list. The template is a **two-zone** SIP URI: a static shape whose authority (user/host/port) is filled from `{{route.*}}` placeholders, plus the same inbound `{{sip.<header>}}` header decoration described above. The `{{route.*}}` values are produced by a [`RESOLVE_SIP_DESTINATION`](/agent-platform/abl/reference/flow#resolve_sip_destination) flow step, which runs before the transfer and commits the chosen authority to a trusted server-side routing channel.
+
+```yaml
+TOOLS:
+  call_transfer(callTransferType: string, sipTransferId: string) -> object
+    params:
+      sipTransferId:
+        default_source: config
+        template: "sip:{{route.vdn}}@{{route.ip}}:{{route.port}};user=phone?User-to-User={{sip.user-to-user}}"
+        approved_authorities:
+          - "sip:521001@172.0.41.7:5060"
+          - "sip:521002@172.0.41.7:5060"
+          - "sip:5220[0-9][0-9]@172.0.41.7:5060"
+```
+
+- **Zone 1 — authority** (before `?`): `{{route.vdn}}`, `{{route.ip}}`, `{{route.port}}` are filled from the `RESOLVE_SIP_DESTINATION` feeder's result — its return shape must use exactly those keys.
+- **Zone 2 — headers** (after `?`): `{{sip.<header>}}` placeholders, resolved server-side from trusted inbound SIP metadata, under the same rules as static defaults above.
+- **`approved_authorities`** is a mandatory allow-list — the resolved destination must match one entry or the transfer is refused. Each entry must be a **literal** SIP authority with an explicit scheme, host, and port (no default-port inference, no wildcard host). The VDN (user part) may be an exact digit string or a constrained digit-class pattern using single-digit ranges only — e.g. `5220[0-9][0-9]`. Regex metacharacters, alternation, anchors, groups, and any query/header/param section are rejected.
+
+The compiler validates both surfaces against the same predicates the runtime matcher uses (so a compile-accepted entry is never runtime-rejected): a malformed template raises `INVALID_SIP_TRANSFER_DESTINATION`; a bad allow-list entry raises `INVALID_APPROVED_SIP_AUTHORITY` (not a literal authority with a literal VDN, host, and explicit port) or `UNSAFE_SIP_AUTHORITY_PATTERN` (unsafe VDN pattern).
 
 ### Return type
 
@@ -807,6 +825,7 @@ TOOLS:
 | `index_id`            | `string` | Yes      | --      | SearchAI KB index to query.                                        |
 | `kb_name`             | `string` | No       | --      | Display name for the knowledge base.                               |
 | `search_instructions` | `string` | No       | --      | Extra instructions injected into the search/classification prompt. |
+| `retrieval_profile`   | `string` | No       | --      | Set to `object-aware` to use object-aware retrieval against the KB index. |
 
 <Note>SearchAI tools are tenant-scoped; the tenant binding is applied by the platform. Do not hardcode a `tenant_id` in shared/exported definitions.</Note>
 

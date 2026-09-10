@@ -404,6 +404,21 @@ Values can be:
 - Variable references: `amount` (resolves the session variable `amount`)
 - Literal strings: `"domestic"`
 - Expressions: `COALESCE(reference, "")`
+- **Nested objects** — a key with no inline value followed by an indented sub-block becomes a nested object argument, for tools whose schema requires object parameters:
+
+```yaml
+CALL: ivr_digit_input
+  WITH:
+    prompt: "Enter your account number"
+    noInputConfig:
+      timeoutMs: 5000
+      maxRetries: 2
+    noMatchConfig:
+      message: "That didn't match. Please try again."
+  AS: digitResult
+```
+
+Nesting is preserved by indentation. Scalar leaves keep their raw form and are coerced at runtime (`"30"` → `30`, `"[15, 16]"` → `[15, 16]`).
 
 ### SET
 
@@ -547,6 +562,33 @@ Two additional step-level properties:
 - **`MESSAGE_KEY:`** — a locale catalog key used to localize the step's `RESPOND:` message.
 - **`BEHAVIOR:`** — free-form guidance text appended to the step's reasoning goal (a convenience alias that folds into `GOAL`).
 
+### RESOLVE_SIP_DESTINATION
+
+`RESOLVE_SIP_DESTINATION:` is a step action that computes a dynamic SIP transfer authority (VDN/host/port) **before** a `call_transfer` step runs. It runs a *feeder* — a workflow tool or a session memory key — matches the candidate against the `approved_authorities` allow-list declared on the `call_transfer` tool's `sipTransferId` parameter, and commits the approved authority to a trusted server-side routing channel that the transfer then reads. The model never sees or sets the destination.
+
+```yaml
+FLOW:
+  resolve_destination:
+    REASONING: false
+    RESOLVE_SIP_DESTINATION:
+      FROM_WORKFLOW: "lookup_vdn_by_region_language"   # or: FROM_MEMORY: routing_decision
+      TIMEOUT_MS: 1500
+    THEN: transfer_step
+
+  transfer_step:
+    REASONING: false
+    CALL: call_transfer(callTransferType: "sip")
+    THEN: COMPLETE
+```
+
+| Sub-key         | Type     | Description                                                                 |
+| --------------- | -------- | -------------------------------------------------------------------------- |
+| `FROM_WORKFLOW` | `string` | Name of a workflow tool invoked as the destination feeder.                 |
+| `FROM_MEMORY`   | `string` | Session memory key to read as the feeder (use instead of `FROM_WORKFLOW`). |
+| `TIMEOUT_MS`    | `number` | Hard timeout for the feeder, in milliseconds.                              |
+
+The feeder's result supplies the `{{route.vdn}}` / `{{route.ip}}` / `{{route.port}}` values for the `sipTransferId` `template`. The two-zone template and the `approved_authorities` allow-list are declared on the tool parameter — see [Dynamic destinations](/agent-platform/abl/reference/tools#dynamic-destinations) in the tools reference.
+
 ---
 
 ## Branching and control flow
@@ -687,6 +729,8 @@ FLOW:
         RESPOND: "Please type 'yes' to confirm or 'no' to cancel."
         THEN: confirm
 ```
+
+<Warning>A step that has only `ON_INPUT` branches — no `RESPOND`/prompt and no default (`ELSE`) branch — traps any unmatched input on the same step forever. The compiler warns (`FLOW_PROMPTLESS_ON_INPUT_UNMATCHED_TRAP`): add a default `ELSE` route or an authored prompt unless the wait is intentional.</Warning>
 
 ### Digressions
 
@@ -1054,6 +1098,25 @@ FLOW:
 | `SSML`         | `string` | W3C SSML markup for TTS engines                      |
 | `INSTRUCTIONS` | `string` | Natural language voice style instructions            |
 | `PLAIN_TEXT`   | `string` | Voice-optimized plaintext (fallback for all engines) |
+| `BARGE_IN`     | `"allow"` \| `"disallow"` | Whether the caller may interrupt (barge in on) this spoken output. |
+
+#### Scoped barge-in
+
+`barge_in` (values `allow` / `disallow`) sets whether the caller can interrupt a specific spoken output — for example, forcing a compliance disclosure to finish. It may be authored at three scopes, from broadest to narrowest, with the narrower winning:
+
+```yaml
+FLOW:
+  notice:
+    REASONING: false
+    BARGE_IN: disallow            # step-wide: applies to this step's outputs
+    RESPOND: "This required notice must play in full."
+      VOICE:
+        BARGE_IN: allow           # per-RESPOND override for this output
+```
+
+It can also be set on a named template's `VOICE:` block. Placing `barge_in` on the agent-wide `EXECUTION.voice` block, or on branch/handler voice blocks, is rejected (`VOICE_BARGE_IN_ILLEGAL_PLACEMENT`); an invalid value is `VOICE_INVALID_BARGE_IN`.
+
+<Note>This scoped, per-output policy is distinct from the agent-wide barge-in behavior authored under `CONVERSATION` → `listening`. Use scoped `barge_in` to protect (or open up) individual utterances.</Note>
 
 ---
 

@@ -897,10 +897,35 @@ ESCALATE:
 | Field                | Type                             | Description                                                                                                                                                                              |
 | -------------------- | -------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `transfer_method`    | `"invite"` \| `"refer"` \| `"bye"` | SIP signaling method used to transfer the active call leg.                                                                                                                             |
-| `call_transfer_type` | `"sip"` \| `"pstn"`              | Whether to move the call over SIP or PSTN. Omit to infer from project configuration — SIP when a `sipTransferTargetUri` is configured, PSTN when only a `pstnTransferTargetNumber` is. |
+| `call_transfer_type` | `"sip"` \| `"pstn"` \| `"custom"` | Whether to move the call over SIP or PSTN, or run a **custom** tool sequence (see below). Omit `sip`/`pstn` to infer from project configuration — SIP when a `sipTransferTargetUri` is configured, PSTN when only a `pstnTransferTargetNumber` is. |
 | `sip_headers`        | `Record<string,string>`          | Custom SIP headers forwarded on the transfer to the receiving SBC or contact center.                                                                                                     |
+| `custom_tools`       | `string[]`                       | Required when `call_transfer_type: custom` — an ordered list of existing project tool names run as the transfer sequence. See [Custom voice transfer](#custom-voice-transfer).           |
 
-<Note>`call_transfer_type` selects a **transport, not a destination** — the transfer target is always project-owned (Agent Transfer settings). Authored DSL cannot name a phone number or SIP URI here, the same boundary the built-in `call_transfer` tool enforces. For Genesys Audio Connector transfers, use the dedicated `genesys_sip_headers` block below rather than `sip_headers`.</Note>
+<Note>For `sip`/`pstn`, `call_transfer_type` selects a **transport, not a destination** — the transfer target is always project-owned (Agent Transfer settings). Authored DSL cannot name a phone number or SIP URI here, the same boundary the built-in `call_transfer` tool enforces. For Genesys Audio Connector transfers, use the dedicated `genesys_sip_headers` block below rather than `sip_headers`.</Note>
+
+#### Custom voice transfer
+
+`call_transfer_type: custom` (ABLP-3552, CXone/NICE integration) replaces the SIP/PSTN leg transfer with an ordered sequence of **project tools**. Instead of moving the call, the runtime keeps the Artemis audio leg live and runs the named tools serially as a notification sequence — for example, obtaining a token from one HTTP tool and signaling an external contact-center API with the next.
+
+```yaml
+ESCALATE:
+  triggers:
+    - WHEN: caller.requests_human == true
+      REASON: "Caller requested an agent"
+      PRIORITY: high
+  routing:
+    voice:
+      call_transfer_type: custom
+      custom_tools:
+        - nice_token        # first tool may capture a SecretRef result
+        - signal_api        # next tool may consume that reference
+```
+
+- `custom_tools` is an ordered list of **1–8** exact, existing project **HTTP** tool names, invoked in the authored order. The first tool may capture a [SecretRef](/agent-platform/abl/reference/tools#reuse-secrets-across-tools-secretref) that a later tool consumes.
+- `custom` routing is **mutually exclusive** with a `connection` — a custom escalation has no SIP/PSTN connection.
+- The compiler validates shape (blocking errors): the transfer type must be `sip`/`pstn`/`custom`; `custom` requires 1–8 `custom_tools`; each name must be a non-empty ASCII identifier (`^[A-Za-z0-9][A-Za-z0-9_.-]{0,127}$`); names must be unique. Tool **existence and HTTP kind** are enforced at runtime (a non-HTTP or unknown tool is rejected then).
+
+<Warning>Custom voice transfer is **notification-only** in this version — it signals an external system while the caller stays on the Artemis leg; it does not hand the live call off to a human queue. Use `sip`/`pstn` (or `ESCALATE` routing to a human connection) when the call itself must be transferred.</Warning>
 
 #### Genesys SIP transfer headers
 

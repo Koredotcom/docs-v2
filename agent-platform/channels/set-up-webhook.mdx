@@ -13,16 +13,38 @@ Use this channel for server-to-server integrations where your application owns t
 
 The channel splits one conversational turn into two HTTP exchanges. Your application sends the message and receives an acknowledgement, then Artemis calls your server back with the agent's answer.
 
-| Stage | Direction | What happens | Identifiers |
-| ----- | --------- | ------------ | ----------- |
-| 1 | Your server to Artemis | Your application posts the message to the HTTP Async message endpoint. | `project_id`, `subscription_id`, `session_key` |
-| 2 | Artemis to your server | Artemis returns `202 Accepted` to confirm it queued the message. | `message_id`, `session_key` |
-| 3 | Inside Artemis | Artemis resolves the project, deployment, agent, and session, then queues execution. | `session_id` |
-| 4 | Inside Artemis | The agent runs. Long-running tools can suspend execution and resume it later. | Suspension ID, when applicable |
-| 5 | Artemis to your server | Artemis posts the completed agent response to your callback URL. | `message_id`, `session_key` |
-| 6 | Your server to Artemis | Your callback endpoint returns `200 OK` and stores the event idempotently. | `message_id` |
+
+```mermaid actions={false}
+%%{init: {'theme': 'base', 'themeVariables': {'background': 'transparent', 'primaryColor': '#EAF8E4', 'primaryTextColor': '#1a1a1a', 'primaryBorderColor': '#5CC83A', 'lineColor': '#5CC83A', 'secondaryColor': 'transparent', 'tertiaryColor': 'transparent', 'clusterBkg': 'transparent', 'clusterBorder': '#5CC83A', 'titleColor': '#1a1a1a', 'clusterLabelBackground': 'transparent', 'edgeLabelBackground': '#EAF8E4', 'actorBkg': '#EAF8E4', 'actorBorder': '#5CC83A', 'actorTextColor': '#1a1a1a', 'actorLineColor': '#5CC83A', 'signalColor': '#5CC83A', 'signalTextColor': '#2F9E1E', 'labelBoxBkgColor': '#EAF8E4', 'labelBoxBorderColor': '#5CC83A', 'labelTextColor': '#1a1a1a', 'loopTextColor': '#2F9E1E', 'noteBkgColor': '#EAF8E4', 'noteBorderColor': '#5CC83A', 'noteTextColor': '#1a1a1a', 'activationBorderColor': '#5CC83A', 'activationBkgColor': '#EAF8E4', 'sequenceNumberColor': '#2F9E1E'}}}%%
+sequenceDiagram
+    participant Client as Client application
+    participant Artemis as Artemis HTTP Async
+    participant Agent as Agent runtime
+    participant Callback as Client callback API
+
+    Client->>Artemis: 1. POST message + project/subscription
+    Artemis-->>Client: 2. 202 Accepted + id
+    Artemis->>Agent: 3. Resolve, queue, execute
+    Agent-->>Agent: 4. Suspend / resume if needed
+    Agent-->>Artemis: 5. Response ready
+    Artemis->>Callback: 6. POST callback payload
+    Callback-->>Artemis: 7. 200 OK
+
+    Note over Client,Callback: Correlate: session_key → session_id → message_id
+```
+
+| Stage | What happens | Identifiers |
+| ----- | ------------ | ----------- |
+| 1. Your server to Artemis | Your application posts the message to the HTTP Async endpoint. | `project_id`, `subscription_id`, `session_key` |
+| 2. Artemis to your server | Artemis returns `202 Accepted` to confirm it queued the message. | `message_id`, `session_key` |
+| 3. Inside Artemis | Artemis resolves the project, deployment, agent, and session, then queues execution. | `session_id` |
+| 4. Inside Artemis | The agent runs. Long-running tools can suspend execution and resume it later. | Suspension ID, when applicable |
+| 5. Artemis to your server | Artemis posts the completed agent response to your callback URL. | `message_id`, `session_key` |
+| 6. Your server to Artemis | Your callback endpoint returns `200 OK` and stores the event idempotently. | `message_id` |
+
 
 The `202 Accepted` response confirms acceptance only. Treat the callback as the business response, and don't resend a message while Artemis is still processing it.
+
 
 ## Before you begin
 
@@ -87,7 +109,7 @@ Content-Type: application/json
   "message": "Hey!",
   "session_key": "customer-002",
   "metadata": {
-    "customerName": "Subbu"
+    "customerName": "John"
   }
 }
 ```
@@ -105,6 +127,8 @@ The body carries the routing identifiers, the message text, and your conversatio
 | `message` | Yes | The user message text you want the agent to answer. |
 | `session_key` | Yes | Your conversation key. Send a key of your own on the first message, for example a customer ID. On every follow-up message, send the exact canonical `session_key` that Artemis returned in the acknowledgement. |
 | `metadata` | No | Business context your application owns. Artemis returns this object unchanged in the callback. Keep secrets and correlation keys out of it. |
+
+The request doesn't take a `session_id` field. A unique `session_key` on its own creates the session.
 
 ### Acknowledgement
 
@@ -160,7 +184,7 @@ Content-Type: application/json
     }
   },
   "metadata": {
-    "customerName": "Subbu"
+    "customerName": "John"
   }
 }
 ```
@@ -185,6 +209,28 @@ The callback repeats the identifiers from the acknowledgement and adds the agent
 | `metadata` | Object | The `metadata` object from your request. Artemis returns it unchanged. |
 
 Artemis doesn't return `intent` or `conv_status`. If your application needs either one, agree it as an extension inside `metadata`.
+
+## Handle errors
+
+Your application and your callback endpoint can each encounter failures. Handle each category on its own path instead of resending a message blindly.
+
+### Request errors
+
+| Status | Cause | What to do |
+| ------ | ----- | ---------- |
+| `401` / `403` | The `X-API-Key` is missing, invalid, expired, or doesn't carry the scope for HTTP Async message submission. | Check the key value and its assigned scope under **Deployments** -> **API Keys** -> **Platform keys**. |
+| `429` | Your application sent requests faster than the channel accepts them. | Back off and retry after a delay instead of resending immediately. |
+| `5xx` | Artemis failed to accept the request. | Retry with backoff. Don't assume the message reached the agent. |
+
+Only resend a message after a failed request. Don't resend just because the callback hasn't arrived yet — the `202 Accepted` response means Artemis already queued it.
+
+### Callback delivery
+
+Artemis can call your callback URL more than once for the same event, and long-running or suspended tool executions can delay a callback beyond what a synchronous exchange would take. Design your endpoint to do the following.
+
+- Validate the payload against the [callback fields](#callback-fields) table before you persist it, and reject anything that doesn't match.
+- Process each `message_id` once, and treat a repeated `message_id` as already handled rather than as a new event.
+- Return `200 OK` as soon as you've accepted the event, and do the rest of your processing after you respond.
 
 ## Correlate requests and continue conversations
 
@@ -257,22 +303,3 @@ Opening a connection from **Deployments** -> **Channels** -> **WEBHOOK** -> **We
     Check this tab to confirm a test message reached your endpoint, and to review delivery status when your application stops receiving callbacks.
   </Tab>
 </Tabs>
-
-## Production readiness checklist
-
-Work through the following before you promote the integration. Record evidence for each item rather than relying on one passing test.
-
-| Check | What to do |
-| ----- | ---------- |
-| Environment | Document the base URL for each environment separately, and confirm the integration points at the one you intend. |
-| Routing | Confirm that `project_id` and `subscription_id` resolve to the project, deployment, and agent you intend. |
-| Authentication | Confirm a valid API key succeeds, and that Artemis rejects missing, invalid, expired, and under-scoped keys. |
-| Secrets | Hold the API key and any callback credentials in an approved secret manager, and define rotation and revocation. |
-| Acknowledgement | Persist the `202` identifiers, and never show the acknowledgement to a user as the agent's answer. |
-| Callback security | Document the callback authentication mechanism and test it. |
-| Callback reliability | Return `200 OK` quickly and handle duplicate deliveries idempotently. |
-| Correlation | Trace one request that links `message_id`, the acknowledged `session_key`, the callback `session_key`, and `session_id`. |
-| Session continuity | Send a follow-up message with the canonical `session_key` and confirm it reaches the existing session. |
-| Schema | Version and validate the required fields and any `metadata` extensions you agreed. |
-| Failure handling | Test rate limiting, authentication failures, server errors, timeouts, duplicates, and malformed callbacks. |
-| Observability | Log the timestamp, `project_id`, `subscription_id`, `session_key`, `session_id`, `message_id`, status, and latency, and exclude secrets. |
