@@ -1,0 +1,725 @@
+openapi: 3.1.0
+info:
+  title: Project Import / Export API
+  version: 1.0.0
+  summary: Project-scoped APIs for importing and exporting platform project configuration.
+  description: |
+    Starts asynchronous project import and export operations and exposes their
+    status. The operations use the same dependency discovery, validation,
+    staging, activation, and rollback flow as the Studio Builder experience.
+
+    Warnings are informational and do not block completion. Errors are blocking,
+    are preserved on the operation, and must be propagated to the caller.
+servers:
+  - url: https://{host}
+    description: Replace with your base URL of the platform.
+security:
+  - apiKey: []
+tags:
+  - name: Project Import
+    description: Import project configuration into an existing project.
+  - name: Project Export
+    description: Export project configuration as a portable archive.
+paths:
+  /v1/projects/{projectId}/import:
+    post:
+      tags: [Project Import]
+      operationId: createProjectImport
+      summary: Start a project import
+      x-required-platform-key-scope: project_io.write
+      description: |
+        Starts an asynchronous import. The server runs the Builder-equivalent
+        preview and dependency validation before applying any mutation. Blocking
+        validation errors prevent staging and activation.
+      parameters:
+        - $ref: '#/components/parameters/ProjectId'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ImportRequest'
+      responses:
+        '202':
+          description: Import accepted for asynchronous processing.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OperationAcceptedResponse'
+              example:
+                success: true
+                operationId: imp_01JIMPORT123
+                status: queued
+                statusUrl: /v1/projects/proj_123/import/imp_01JIMPORT123
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: Idempotency conflict or another import is already running.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '413':
+          $ref: '#/components/responses/PayloadTooLarge'
+  /v1/projects/{projectId}/import/{importId}:
+    get:
+      tags: [Project Import]
+      operationId: getProjectImportStatus
+      summary: Get project import status
+      x-required-platform-key-scope: project_io.write
+      parameters:
+        - $ref: '#/components/parameters/ProjectId'
+        - $ref: '#/components/parameters/ImportId'
+      responses:
+        '200':
+          description: Current import operation status.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ImportStatusResponse'
+              example:
+                success: true
+                data:
+                  id: imp_01JIMPORT123
+                  type: import
+                  status: completed
+                  phase: completed
+                  progressPercent: 100
+                  layers:
+                    core: activated
+                    connections: activated
+                    workflows: activated
+                  dependencyValidation:
+                    valid: true
+                    missing: []
+                    circular: []
+                  applied:
+                    created: 3
+                    updated: 2
+                    deleted: 0
+                    toolsCreated: 1
+                    toolsUpdated: 1
+                    toolsDeleted: 0
+                  warnings: []
+                  errors: []
+                  createdAt: '2026-09-01T09:00:00Z'
+                  completedAt: '2026-09-01T09:00:14Z'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /v1/projects/{projectId}/export:
+    post:
+      tags: [Project Export]
+      operationId: createProjectExport
+      summary: Start a project export
+      x-required-platform-key-scope: project_io.read
+      description: |
+        Starts an asynchronous export. The server checks project readiness,
+        discovers agent/tool dependencies, includes required dependency layers,
+        assembles the archive, and generates its manifest and lockfile.
+      parameters:
+        - $ref: '#/components/parameters/ProjectId'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ExportRequest'
+      responses:
+        '202':
+          description: Export accepted for asynchronous processing.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OperationAcceptedResponse'
+              example:
+                success: true
+                operationId: exp_01JEXPORT123
+                status: queued
+                statusUrl: /v1/projects/proj_123/export/exp_01JEXPORT123
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+  /v1/projects/{projectId}/export/{exportId}:
+    get:
+      tags: [Project Export]
+      operationId: getProjectExportStatus
+      summary: Get project export status
+      x-required-platform-key-scope: project_io.read
+      parameters:
+        - $ref: '#/components/parameters/ProjectId'
+        - $ref: '#/components/parameters/ExportId'
+      responses:
+        '200':
+          description: Current export operation status and result metadata.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExportStatusResponse'
+              example:
+                success: true
+                data:
+                  id: exp_01JEXPORT123
+                  type: export
+                  status: completed
+                  phase: packaging
+                  progressPercent: 100
+                  dependencyValidation:
+                    valid: true
+                    missing: []
+                    circular: []
+                  manifest:
+                    name: customer-support
+                    version: 1.0.0
+                    entryAgent: support-agent
+                    layers: [core, connections, workflows]
+                    requiredEnvVars: [CRM_BASE_URL]
+                  lockfile:
+                    version: 2
+                    layers:
+                      core: sha256:abc123...
+                      connections: sha256:def456...
+                  downloadUrl: https://api.example.com/v1/archives/exp_01JEXPORT123/download
+                  expiresAt: '2026-09-01T10:00:14Z'
+                  warnings: []
+                  errors: []
+                  createdAt: '2026-09-01T09:00:00Z'
+                  completedAt: '2026-09-01T09:00:14Z'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+components:
+  securitySchemes:
+    apiKey:
+      type: apiKey
+      in: header
+      name: x-api-key
+      description: |
+        Project-bound Platform Key supplied in the x-api-key header. The key
+        must include the operation's required scope: project_io.read for export
+        operations or project_io.write for import operations. A pipeline that
+        promotes changes normally requires both scopes.
+
+  parameters:
+    ProjectId:
+      name: projectId
+      in: path
+      required: true
+      description: Project identifier. The project must belong to the authenticated tenant.
+      schema:
+        type: string
+        minLength: 1
+    ImportId:
+      name: importId
+      in: path
+      required: true
+      description: Identifier returned when the import operation is created.
+      schema:
+        type: string
+        minLength: 1
+    ExportId:
+      name: exportId
+      in: path
+      required: true
+      description: Identifier returned when the export operation is created.
+      schema:
+        type: string
+        minLength: 1
+    IdempotencyKey:
+      name: Idempotency-Key
+      in: header
+      required: false
+      description: Client-generated key used to safely retry operation creation.
+      schema:
+        type: string
+        minLength: 1
+        maxLength: 128
+
+  schemas:
+    ImportRequest:
+      type: object
+      required: [files]
+      additionalProperties: false
+      properties:
+        files:
+          type: object
+          description: Normalized relative archive paths mapped to UTF-8 file contents.
+          minProperties: 1
+          additionalProperties:
+            type: string
+        layers:
+          type: array
+          description: Optional allowlist of project layers to import. If omitted, layers are detected from the bundle. Values are core, connections, prompts, guardrails, workflows, evals, search, channels, vocabulary, or tables. Required dependencies must also be present or the import fails validation.
+          uniqueItems: true
+          items:
+            $ref: '#/components/schemas/LayerName'
+        excludedLayers:
+          type: array
+          description: Optional list of detected layers to skip. Values are core, connections, prompts, guardrails, workflows, evals, search, channels, vocabulary, or tables. Excluding a referenced dependency can produce a blocking import error.
+          uniqueItems: true
+          items:
+            $ref: '#/components/schemas/LayerName'
+        conflictStrategy:
+          type: string
+          description: Conflict behavior for records that already exist in the target project. replace overwrites matching content, skip preserves the target record, and merge upserts or merges matching content.
+          enum: [replace, skip, merge]
+          default: merge
+        deleteUnmatched:
+          type: boolean
+          default: false
+          description: Remove target content not represented by the imported content. Review preview deletes carefully.
+        importMode:
+          type: string
+          description: Validation compatibility mode. compatibility preserves behavior for older archives and clients; strict applies the current import validation rules.
+          enum: [compatibility, strict]
+          default: compatibility
+        bindingResolutions:
+          type: object
+          description: Explicit target resolutions for ambiguous imported bindings.
+          additionalProperties:
+            type: object
+            additionalProperties: true
+        authProfileMapping:
+          type: object
+          description: Map exported auth-profile names to target profile IDs.
+          additionalProperties:
+            type: string
+        portabilityOptions:
+          type: object
+          description: Optional target-environment adaptation settings, such as portable tool-binding repair, evaluation-reference normalization, or post-import validation.
+          additionalProperties: true
+        conflictBaseFiles:
+          type: object
+          description: Optional base files used for three-way merge conflict detection.
+          additionalProperties:
+            type: string
+        conflictResolutions:
+          type: object
+          description: User-approved resolutions keyed by normalized archive path.
+          additionalProperties:
+            type: string
+
+    ExportRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        format:
+          type: string
+          description: Output archive representation. zip is the recommended public download format; folder returns a folder-style file map; tar.gz returns a gzip-compressed tar archive.
+          enum: [zip, folder, tar.gz]
+          default: zip
+        layers:
+          type: array
+          description: Optional export layer selection. core is always included. The exporter adds recognized required dependency layers for SearchAI, workflow, and table tools, or returns an error if an explicit selection cannot satisfy dependencies.
+          uniqueItems: true
+          items:
+            $ref: '#/components/schemas/LayerName'
+        dslFormat:
+          type: string
+          description: Agent definition serialization format. source preserves authored DSL; yaml requests compiled YAML where compiler context is available.
+          enum: [source, yaml]
+          default: source
+        includeDeployments:
+          type: boolean
+          description: Include deployment records and deployment configuration in the export. Environment credentials are not included.
+          default: false
+        includeVersionHistory:
+          type: boolean
+          description: Include non-deleted agent and workflow version history when supported. Disabled by default to keep exports configuration-focused.
+          default: false
+        includeKnowledgeBaseDocuments:
+          type: boolean
+          description: Include extracted Knowledge Base document text in the search layer. Disabled by default because document content can be large.
+          default: false
+        environments:
+          type: array
+          description: Optional environment names used to scope environment-specific export data.
+          uniqueItems: true
+          items:
+            type: string
+        maxKnowledgeBaseDocumentBytes:
+          type: integer
+          description: Maximum extracted-text size for an individual exported Knowledge Base document, in bytes.
+          minimum: 1
+        maxTotalKnowledgeBaseDocumentBytes:
+          type: integer
+          description: Aggregate extracted-text size limit for all exported Knowledge Base documents, in bytes.
+          minimum: 1
+
+    LayerName:
+      type: string
+      description: Project configuration layer. core=agents/tools/core metadata; connections=connectors; prompts=prompt bundles; guardrails=guardrail policies; workflows=workflows; evals=evaluation data; search=SearchAI configuration; channels=channel definitions; vocabulary=domain vocabulary; tables=Agent Tables definitions.
+      enum:
+        - core
+        - connections
+        - prompts
+        - guardrails
+        - workflows
+        - evals
+        - search
+        - channels
+        - vocabulary
+        - tables
+
+    OperationStatus:
+      type: string
+      description: Current asynchronous operation state. queued=accepted and waiting; validating=checking input and dependencies; staging=writing staged records; activating=making staged records active; packaging=assembling the export artifact; processing=worker is executing the operation; completed=finished successfully; failed=finished with an error; rolling_back=import is undoing partial activation; reverted=import completed with changes reverted.
+      enum:
+        - queued
+        - validating
+        - staging
+        - activating
+        - packaging
+        - processing
+        - completed
+        - failed
+        - rolling_back
+        - reverted
+
+    LayerOperationStatus:
+      type: string
+      description: State of one requested import layer. pending=not started; staged=validated and staged; activated=visible in the target project; skipped=excluded or not requested; failed=layer processing failed; rolled_back=layer changes were reverted.
+      enum: [pending, staged, activated, skipped, failed, rolled_back]
+
+    OperationAcceptedResponse:
+      type: object
+      required: [success, operationId, status, statusUrl]
+      properties:
+        success:
+          type: boolean
+          const: true
+          description: Indicates that the operation request was accepted for processing.
+        operationId:
+          type: string
+          description: Stable identifier for polling this operation.
+        status:
+          $ref: '#/components/schemas/OperationStatus'
+        statusUrl:
+          type: string
+          format: uri-reference
+          description: Relative URL that can be polled for the operation status.
+
+    ImportStatusResponse:
+      type: object
+      required: [success, data]
+      properties:
+        success:
+          type: boolean
+          const: true
+          description: Indicates that the status request was read successfully. The operation itself may still be running or may have failed; inspect data.status and data.errors.
+        data:
+          description: Import operation record and its current validation, dependency, progress, result, warning, and error state.
+          $ref: '#/components/schemas/ImportOperation'
+
+    ExportStatusResponse:
+      type: object
+      required: [success, data]
+      properties:
+        success:
+          type: boolean
+          const: true
+          description: Indicates that the status request was read successfully. The operation itself may still be running or may have failed; inspect data.status and data.errors.
+        data:
+          description: Export operation record and, after completion, the manifest, lockfile, and archive download URL.
+          $ref: '#/components/schemas/ExportOperation'
+
+    ImportOperation:
+      allOf:
+        - $ref: '#/components/schemas/BaseOperation'
+        - type: object
+          required: [type, dependencyValidation]
+          properties:
+            type:
+              type: string
+              const: import
+              description: Identifies this operation as a project import.
+            dependencyValidation:
+              description: Dependency graph result for the imported project content.
+              $ref: '#/components/schemas/DependencyValidation'
+            applied:
+              description: Counts of records changed after a successful import.
+              $ref: '#/components/schemas/AppliedCounts'
+            preview:
+              description: Calculated import changes and preview digest, when preview data is available.
+              $ref: '#/components/schemas/ImportPreview'
+
+    ExportOperation:
+      allOf:
+        - $ref: '#/components/schemas/BaseOperation'
+        - type: object
+          required: [type, dependencyValidation]
+          properties:
+            type:
+              type: string
+              const: export
+              description: Identifies this operation as a project export.
+            dependencyValidation:
+              description: Dependency graph result for the exported project content.
+              $ref: '#/components/schemas/DependencyValidation'
+            manifest:
+              type: object
+              description: Export manifest containing project metadata, included layers, entity metadata, required provisioning values, and content references.
+              additionalProperties: true
+            lockfile:
+              type: object
+              description: Export lockfile containing content hashes used to verify archive integrity.
+              additionalProperties: true
+            downloadUrl:
+              type: string
+              format: uri
+              description: Short-lived archive download URL, available after completion.
+            expiresAt:
+              type: string
+              format: date-time
+              description: Time at which the archive download URL expires.
+
+    BaseOperation:
+      type: object
+      required:
+        - id
+        - type
+        - status
+        - progressPercent
+        - warnings
+        - errors
+        - createdAt
+      properties:
+        id:
+          type: string
+          description: Stable identifier for the import or export operation.
+        type:
+          type: string
+          description: Operation kind. Values are import or export.
+          enum: [import, export]
+        status:
+          $ref: '#/components/schemas/OperationStatus'
+        phase:
+          type: string
+          description: Current high-level processing phase. Import values are validating, staging, activating, rolling_back, completed, failed, or reverted. Export values are queued, processing, packaging, completed, or failed.
+          enum:
+            [
+              queued,
+              validating,
+              staging,
+              activating,
+              processing,
+              packaging,
+              rolling_back,
+              completed,
+              failed,
+              reverted,
+            ]
+          nullable: true
+        progressPercent:
+          type: integer
+          description: Estimated completion percentage from 0 to 100. This is progress reporting, not a guarantee of remaining duration.
+          minimum: 0
+          maximum: 100
+        layers:
+          type: object
+          description: Per-layer import progress. Keys are layer names and values use the LayerOperationStatus enum.
+          additionalProperties:
+            type: string
+            $ref: '#/components/schemas/LayerOperationStatus'
+        warnings:
+          type: array
+          description: Non-blocking diagnostics. Warnings are retained for visibility and do not make the operation fail.
+          items:
+            $ref: '#/components/schemas/Diagnostic'
+        errors:
+          type: array
+          description: Blocking diagnostics. Any error means the operation did not complete successfully and must be propagated to the caller.
+          items:
+            $ref: '#/components/schemas/Diagnostic'
+        createdAt:
+          type: string
+          format: date-time
+          description: Time at which the operation was created.
+        completedAt:
+          type: string
+          format: date-time
+          nullable: true
+          description: Time at which the operation reached a terminal state; null while it is running.
+
+    DependencyValidation:
+      type: object
+      required: [valid, missing, circular]
+      properties:
+        valid:
+          type: boolean
+          description: True when all discovered dependencies were resolved and no circular dependencies were detected.
+        missing:
+          type: array
+          description: Dependencies referenced by the bundle but not found in the bundle or target project.
+          items:
+            $ref: '#/components/schemas/DependencyIssue'
+        circular:
+          type: array
+          description: Circular agent dependency paths detected during validation.
+          items:
+            type: array
+            items:
+              type: string
+
+    DependencyIssue:
+      type: object
+      required: [source, target, type]
+      properties:
+        source:
+          type: string
+          description: Name or path of the content that declares the dependency.
+        target:
+          type: string
+          description: Name, path, or identifier of the referenced dependency.
+        type:
+          type: string
+          description: Dependency relationship, such as handoff, delegate, inline_handoff, tool_import, profile_use, workflow, searchai, or table.
+        sourceLayer:
+          description: Layer containing the content that declares the dependency.
+          $ref: '#/components/schemas/LayerName'
+        targetLayer:
+          description: Layer expected to contain the referenced dependency.
+          $ref: '#/components/schemas/LayerName'
+        path:
+          type: string
+          description: Archive file path containing the reference, when available.
+
+    Diagnostic:
+      type: object
+      required: [code, message]
+      properties:
+        code:
+          type: string
+          description: Stable machine-readable diagnostic code.
+        message:
+          type: string
+          description: Human-readable explanation of the diagnostic.
+        stage:
+          type: string
+          description: Processing stage that produced the diagnostic, such as request, validation, staging, activation, or packaging.
+        layer:
+          $ref: '#/components/schemas/LayerName'
+        path:
+          type: string
+          description: Archive file path associated with the diagnostic, when available.
+        line:
+          type: integer
+          minimum: 1
+          description: One-based source line associated with a syntax diagnostic, when available.
+        details:
+          type: object
+          description: Additional structured diagnostic context. Contents depend on the diagnostic code.
+          additionalProperties: true
+
+    AppliedCounts:
+      type: object
+      additionalProperties: false
+      properties:
+        created:
+          type: integer
+          description: Number of records created by the import.
+          minimum: 0
+        updated:
+          type: integer
+          description: Number of records updated by the import.
+          minimum: 0
+        deleted:
+          type: integer
+          description: Number of records deleted by the import.
+          minimum: 0
+        toolsCreated:
+          type: integer
+          description: Number of tool records created by the import.
+          minimum: 0
+        toolsUpdated:
+          type: integer
+          description: Number of tool records updated by the import.
+          minimum: 0
+        toolsDeleted:
+          type: integer
+          description: Number of tool records deleted by the import.
+          minimum: 0
+
+    ImportPreview:
+      type: object
+      properties:
+        previewDigest:
+          type: string
+          description: Digest identifying the exact preview input and calculated changes.
+        changes:
+          type: object
+          description: Per-entity or per-layer create, update, delete, and unchanged counts calculated during preview.
+          additionalProperties: true
+        dependencyValidation:
+          $ref: '#/components/schemas/DependencyValidation'
+
+    ErrorResponse:
+      type: object
+      required: [success, error]
+      properties:
+        success:
+          type: boolean
+          const: false
+        error:
+          $ref: '#/components/schemas/Diagnostic'
+
+  responses:
+    BadRequest:
+      description: Invalid request, archive, layer selection, or operation parameters.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    Unauthorized:
+      description: Authentication required or invalid.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    Forbidden:
+      description: Authenticated principal lacks the required project scope.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    NotFound:
+      description: Project or operation was not found in the authenticated tenant/project scope.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    Conflict:
+      description: Operation conflicts with current project state or another operation.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    PayloadTooLarge:
+      description: Request exceeds the public import payload or file limits.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
