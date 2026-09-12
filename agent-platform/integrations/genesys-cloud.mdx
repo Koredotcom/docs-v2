@@ -1,0 +1,133 @@
+---
+title: Genesys Cloud integration
+sidebarTitle: Genesys Cloud
+---
+
+<Badge icon="arrow-left" color="gray">[Back to list of integrations](/agent-platform/integrations#agent-desktop)</Badge>
+
+For secure, bidirectional communication between the AI application and live representatives, you can integrate Genesys Cloud CX Agent Desktop with an Artemis project.
+
+The integration requires:
+
+1. [Genesys Cloud setup](#genesys-cloud-setup) — create a queue, an inbound message flow, and a deployment in Genesys Cloud Admin.
+2. [Artemis project configuration](#artemis-project-configuration) using the organization ID, deployment ID, and queue name from Genesys Cloud. Set it as the default Agent Transfer route.
+
+After the configuration is complete, Artemis routes escalated conversations to the configured Genesys Cloud queue, and a live Genesys Cloud agent can pick up the interaction from their Agent Desktop with full conversation context carried over.
+
+**Important considerations**
+
+- **Integration modes**: The integration supports two modes — **Web Messaging** (Web Messaging API + Messenger Deployment, recommended) and **WebChat** (Guest Chat v2 API + Third-Party Widget Deployment). Choose the mode that matches the deployment you create in Genesys Cloud.
+- **No OAuth**: This is a configuration-only connection. Artemis authenticates to Genesys Cloud using the deployment and organization details entered during setup — there's no auth profile to configure.
+
+## Prerequisites
+
+- Access to Genesys Cloud Admin with permission to create queues, inbound message flows, and deployments (Messenger or Widget).
+- Artemis project access with permission to open **Project** > **Integration**, and **Project Settings** > **Agent Transfer**.
+
+---
+
+## Genesys Cloud setup
+
+<Steps>
+  <Step title="Create a queue">
+    1. Go to **Admin** > **Contact Center** > **Queues**.
+    2. Create or select the target queue.
+    3. Note the exact **queue name** — it's case-sensitive and must match what you enter in Artemis.
+    4. Assign agents to the queue and configure its service level and routing rules.
+  </Step>
+
+  <Step title="Create an inbound message flow">
+    1. Go to **Admin** > **Architect**.
+    2. Create an inbound message flow that transfers to the queue created above.
+    3. Add a **Transfer to ACD** action and select the target queue.
+    4. Save and publish the flow.
+  </Step>
+
+  <Step title="Create a deployment">
+    Which deployment you create depends on the integration mode you plan to use in Artemis.
+
+    | Mode | Where to create it | What to copy |
+    |------|---------------------|---------------|
+    | Web Messaging | **Admin** > **Message** > **Messenger Deployments** — create a deployment and attach it to the inbound message flow from step 2. | Messenger Deployment ID |
+    | WebChat | **Admin** > **Contact Center** > **Widgets** — create a **Third Party** widget and route it to the flow from step 2. | Widget Deployment Key |
+  </Step>
+
+  <Step title="Note your region URLs">
+    Genesys Cloud is region-specific. Confirm the URLs for your organization's region.
+
+    | Region | Login URL | WebSocket URL (Web Messaging) |
+    |--------|-----------|--------------------------------|
+    | US East / West | `https://login.mypurecloud.com` | `wss://webmessaging.mypurecloud.com/v1` |
+    | Germany | `https://login.mypurecloud.de` | `wss://webmessaging.mypurecloud.de/v1` |
+    | Ireland | `https://login.euw2.pure.cloud` | `wss://webmessaging.euw2.pure.cloud/v1` |
+    | Australia | `https://login.mypurecloud.com.au` | `wss://webmessaging.mypurecloud.com.au/v1` |
+
+    You can also find your login URL in your browser's address bar while signed in to Genesys Cloud Admin. The API URL is derived automatically by replacing `login.` with `api.`.
+  </Step>
+
+  <Step title="Note your Organization ID">
+    Go to **Admin** > **Account Settings** > **Organization Settings** and copy the **Organization ID**.
+  </Step>
+</Steps>
+
+---
+
+## Artemis project configuration
+
+1. Go to **Project** > **Integration** > **Agent Desktop** > **Genesys Cloud**.
+2. Select **Connect**. The **Connect Genesys Cloud** configuration dialog opens.
+3. Configure the following fields:
+
+    | Artemis connection field | Source | Notes |
+    |---------------------------|--------|-------|
+    | Connection Name | Enter a unique connection name. | A friendly name to identify this connection, such as `My Genesys Cloud`. |
+    | Integration Type | Choose based on the deployment created in [Genesys Cloud setup](#genesys-cloud-setup). | `messaging` — Web Messaging (recommended). `webchat` — Guest Chat v2 / Third-Party Widget. |
+    | Genesys Cloud Login URL | Genesys Cloud region URL. See [Genesys Cloud setup](#genesys-cloud-setup). | Used to derive the Guest Chat API base URL for WebChat mode. |
+    | Organization ID | Genesys Admin → Account Settings → Organization Settings. | Copy exactly. |
+    | Deployment ID | Web Messaging: Admin → Message → Messenger Deployments. WebChat: Admin → Contact Center → Widgets → Third Party. | Must match the Integration Type selected above. |
+    | Queue Name | Genesys Admin → Contact Center → Queues. | Must exactly match the queue referenced by your Architect inbound message flow. Case-sensitive. |
+    | Genesys WebSocket URL (optional) | Genesys Cloud region URL. See [Genesys Cloud setup](#genesys-cloud-setup). | Required for Web Messaging mode, such as `wss://webmessaging.mypurecloud.com/v1`. |
+    | Webhook Callback URL (optional) | Bring your own key. | ABL Runtime webhook for inbound agent events: `https://your-runtime/api/v1/agent-transfer/webhooks/genesys?tid=<tenantId>`. |
+
+4. Click **Create Connection**.
+5. Use the Genesys Cloud integration for Agent Transfer routing: <br />
+   Go to **Project Settings** > **Agent Transfer** > **Default Routing** > **Connection** and select the integration.
+
+When an agent escalates a conversation, Artemis routes it to the configured Genesys Cloud Agent Desktop queue.
+
+### Validation checklist
+
+| Validation item | Expected result |
+|:-----------------|:------------------|
+| Create a Genesys Cloud queue | Queue is visible in Admin > Contact Center > Queues and has assigned agents. |
+| Publish inbound message flow | Flow is published in Architect and transfers to the target queue. |
+| Create a deployment | Messenger Deployment ID or Widget Deployment Key is available. |
+| Create Artemis Genesys Cloud connection | Connection saved with a unique name, login URL, organization ID, deployment ID, and queue name. |
+| Set default Agent Transfer route | Genesys Cloud connection is selected in Project Settings > Agent Transfer > Default Routing. |
+| Initiate test transfer | Test conversation escalates without connection errors. See [verify the connection](#verify-the-connection). |
+
+
+## Verify the connection
+
+1. Trigger an agent transfer in the test conversation in your Artemis project.
+2. Open Genesys Cloud **Agent Desktop** and accept the incoming interaction from the configured queue.
+3. Confirm that messages sent from the test conversation appear on the agent side, and that agent replies appear back in the Artemis conversation.
+
+---
+
+## Troubleshoot integration issues
+
+| Symptom | Likely cause | Recommended action |
+|---------|---------------|----------------------|
+| Connection fails with a "not configured" error | One or more required fields are missing from the connection | Re-open the connection and verify Organization ID, Deployment ID, and Queue Name are all filled in. |
+| Transfer fails immediately in Web Messaging mode | Genesys WebSocket URL is missing | Add the region-specific WebSocket URL to the connection — required for the `messaging` integration type. |
+| Genesys returns a 400 error when creating the conversation | Integration Type doesn't match the deployment created | Confirm the Deployment ID belongs to the same mode selected in Integration Type, and switch modes if needed. |
+| WebSocket connection is refused (403) | The Genesys deployment restricts allowed domains | In the deployment's settings in Genesys Cloud, allow all domains or add the Artemis domain to the allow list. |
+| WebSocket connection not found (404) | Wrong WebSocket URL for the region | Verify the region-specific endpoint against the region URLs table in [Genesys Cloud setup](#genesys-cloud-setup). |
+| Agent never receives the interaction | Queue Name doesn't exactly match the queue referenced by the Architect inbound message flow | Confirm the queue name is spelled and cased exactly as in Genesys Admin > Contact Center > Queues, and that the flow is published. |
+
+
+{{related}}
+
+- [Transfer sessions](/agent-platform/transfer-sessions)
+- [Escalate to a human agent](/agent-platform/escalate)
