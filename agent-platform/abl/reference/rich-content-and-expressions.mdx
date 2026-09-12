@@ -151,7 +151,7 @@ FORMATS:
 | `CHART`         | `object` | `{ type: bar/line/pie, title?, data: [{ label, value, color? }] }`.         |
 | `FORM`          | `object` | `{ title?, fields: [ActionElement], submitLabel? }`.                        |
 | `PROGRESS`      | `object` | `{ label?, value, max?, variant?: bar/circle }`.                            |
-| `FEEDBACK`      | `object` | `{ prompt, type: thumbs/stars/scale, max?, submit_label?, pending_message?, success_message?, error_message?, comment_threshold?, comment_prompt?, comment_placeholder? }`. |
+| `FEEDBACK`      | `object` | Rating/feedback survey. `{ FEEDBACK_TEMPLATE?, prompt, type: thumbs/star/scale, max?, submit_label?, pending_message?, success_message?, error_message?, comment_threshold?, comment_prompt?, comment_placeholder?, when?, <field>_rules? }`. See [FEEDBACK surveys](#feedback-surveys). |
 
 <Note>Named templates (in the `TEMPLATES:` block) may also declare a `RENDERABLES:` list — customer-owned structured payloads with `name`, `payload`, optional `targets` (`api`/`sdk_websocket`/`http_async`), `fallbackText`, and `schemaRef`. Data-rich templates (KPI, TABLE, CHART, LIST, CAROUSEL, …) also support collection binding via `from:` / `template:` to render one entry per array item.</Note>
 
@@ -161,6 +161,60 @@ Two cross-cutting modifiers apply to structured templates:
 
 - **`when`** — a conditional render guard (expression). On an agent-level rich-content block, the template renders only when the expression is truthy at reasoning finalization. Available on the rich-content block and on each structured template.
 - **`adaptive`** — on `LIST`, `KPI`, and `TABLE` templates whose items/rows are bound to a tool variable, set `adaptive: true` to let the reasoning agent narrow which items/rows/columns render for the user's request.
+
+### FEEDBACK surveys
+
+A `FEEDBACK` block renders a rating/feedback card. Author it inside a `RICH_CONTENT:` (or `FORMATS:`) block.
+
+<Warning>**Inline feedback is deprecated** (`DEPRECATED_INLINE_FEEDBACK`). A `FEEDBACK` block without a `FEEDBACK_TEMPLATE` still compiles, but the compiler warns: *"Inline feedback is deprecated and will be removed in a future version. Define a survey in the project Surveys area and reference it with `FEEDBACK_TEMPLATE`."* Prefer referencing a project survey template.</Warning>
+
+#### Referencing a survey template
+
+Set `FEEDBACK_TEMPLATE` to a project survey name. The `prompt` and `type` (the survey's **measure**) then come from the template, so they become optional here; any copy fields you do set act as **per-string overrides** (useful for translation):
+
+```yaml
+RICH_CONTENT:
+  FEEDBACK:
+    FEEDBACK_TEMPLATE: Post_Chat_NPS
+    prompt: "How likely are you to recommend us?"   # optional copy override
+```
+
+When a template is named you may **not** override the measure — `type`, `max`, `scoring`, `range`, and `comment_threshold` are owned by the template, and setting them alongside a template is a compile error. Naming a template that doesn't exist in the project is an error (`UNKNOWN_SURVEY_TEMPLATE`).
+
+#### Inline FEEDBACK (deprecated)
+
+Without a template, `prompt` and `type` are required:
+
+| Field | Type | Description |
+| ----- | ---- | ----------- |
+| `prompt` | `string` | The question (aliases: `question`, `label`). |
+| `type` | `"thumbs"` \| `"star"` \| `"scale"` | Rating measure. `stars` is an accepted alias for `star`. |
+| `max` | `number` | Maximum rating value (for `star`/`scale`). |
+| `submit_label` | `string` | Submit-button label. |
+| `pending_message` / `success_message` / `error_message` | `string` | Status copy. |
+| `comment_prompt` / `comment_placeholder` | `string` | Free-text comment field copy. |
+| `comment_threshold` | `number` | Rating at/below which the comment field is requested. |
+| `when` | `string` | Conditional render guard (expression). |
+
+#### Condition-based wording (`<field>_rules`)
+
+To vary wording by condition — the second way to translate a survey, kept next to the source copy — add a `<field>_rules` list. Each rule has a `when` expression and the field's replacement text (the field key, or the alias `value`). Rules are ordered, first match wins:
+
+```yaml
+FEEDBACK:
+  FEEDBACK_TEMPLATE: Post_Chat_NPS
+  prompt: "How likely are you to recommend us?"
+  prompt_rules:
+    - when: "language == 'es'"
+      prompt: "¿Nos recomendaría?"          # or:  value: "¿Nos recomendaría?"
+  comment_placeholder_rules:
+    - when: "language == 'es'"
+      value: "Cuéntenos más..."
+```
+
+Only **wording** fields accept rules: `prompt`, `submit_label`, `pending_message`, `success_message`, `error_message`, `comment_prompt`, `comment_placeholder`. There is no `type_rules`/`max_rules` — the measure is never rule-selectable.
+
+<Note>Copy rules are evaluated **before the customer answers**, so a `when` expression may reference `max`, `language`, `channel`, and `session` (as `session.<name>`) but **not** `rating`. An invalid condition is a compile error (`INVALID_SURVEY_CONDITION`).</Note>
 
 ### Carousels
 
