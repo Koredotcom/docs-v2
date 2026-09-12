@@ -1,0 +1,311 @@
+openapi: 3.1.0
+info:
+  title: Public Feedback Survey API
+  version: 1.0.0
+  description: >-
+    Partner-facing survey capture and retrieval. A partner
+    collects ratings in their own channels, submits them here against a survey
+    referenced by name, then polls the survey's responses back with stable
+    keyset pagination.
+
+    Authentication is by platform API key only (x-api-key: abl_*, or
+    Authorization: Bearer abl_*). The key is the registered origin: its clientId
+    is resolved server-side and stamped on every submitted response, so a body
+    can never set origin, capture method, the survey template id, or a score —
+    those fields are refused rather than ignored. A user session (JWT) has no
+    clientId and is refused on both endpoints.
+
+    Retrieval returns the survey's COMPLETE responses — runtime-captured and
+    every integration's — to any credential holding the read scope; the audience
+    is the project's own team, not mutually-distrusting partners. Each row
+    carries response_source so a caller can still separate capture paths.
+servers:
+  - url: /
+paths:
+  /api/public/feedback/projects/{projectId}:
+    post:
+      operationId: submitSurveyResponse
+      summary: Submit a rating against a named survey
+      description: >-
+        Records one rating for the survey named in the body. The rating is
+        validated against the survey's own control range (thumbs 0-1, star 1-5,
+        scale 0-10) and REJECTED rather than clamped when out of range, so a
+        fabricated value can never reach the score. The response counts toward
+        the survey's headline figure by default, scored by the survey's own
+        method exactly as a runtime-captured response is. Requires the
+        feedback-survey:write permission.
+      parameters:
+        - $ref: '#/components/parameters/ProjectId'
+        - $ref: '#/components/parameters/ApiKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/SubmitRequest' }
+      responses:
+        '201': { $ref: '#/components/responses/SubmitAccepted' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/SurveyNotFound' }
+        '422': { $ref: '#/components/responses/Unprocessable' }
+        '429': { $ref: '#/components/responses/RateLimited' }
+        '500': { $ref: '#/components/responses/ServerError' }
+    get:
+      operationId: listSurveyResponses
+      summary: List the project's survey responses
+      description: >-
+        Returns a page of responses, oldest first, with an opaque keyset cursor.
+        The cursor is keyset (timestamp, response_id) rather than an offset, so a
+        client polling forward through history never skips a response or sees one
+        twice as new rows arrive. No per-response score is returned: a score is a
+        property of a population, not of one answer. Requires the
+        feedback-survey:read permission.
+      parameters:
+        - $ref: '#/components/parameters/ProjectId'
+        - $ref: '#/components/parameters/ApiKey'
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Cursor'
+        - $ref: '#/components/parameters/SurveyFilter'
+        - $ref: '#/components/parameters/From'
+        - $ref: '#/components/parameters/To'
+      responses:
+        '200': { $ref: '#/components/responses/ResponsePage' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/SurveyNotFound' }
+        '429': { $ref: '#/components/responses/RateLimited' }
+        '500': { $ref: '#/components/responses/ServerError' }
+components:
+  parameters:
+    ProjectId: { name: projectId, in: path, required: true, schema: { type: string } }
+    ApiKey:
+      { name: x-api-key, in: header, required: true, schema: { type: string, pattern: '^abl_' } }
+    Limit:
+      name: limit
+      in: query
+      required: false
+      description: >-
+        Responses per page. Values above the maximum are capped rather than
+        rejected; a missing or non-positive value falls back to the default.
+      schema: { type: integer, minimum: 1, maximum: 200, default: 50 }
+    Cursor:
+      name: cursor
+      in: query
+      required: false
+      description: >-
+        Opaque keyset cursor from a prior page's nextCursor. A cursor this
+        endpoint did not issue is rejected with 400 INVALID_CURSOR rather than
+        silently restarting the feed.
+      schema: { type: string, maxLength: 512 }
+    SurveyFilter:
+      name: survey
+      in: query
+      required: false
+      description: >-
+        Restrict the page to one survey, by its name. A name that resolves to no
+        survey is a 404, not an empty page.
+      schema: { type: string }
+    From:
+      name: from
+      in: query
+      required: false
+      description: Inclusive lower bound on submitted_at.
+      schema: { type: string, format: date-time }
+    To:
+      name: to
+      in: query
+      required: false
+      description: Inclusive upper bound on submitted_at.
+      schema: { type: string, format: date-time }
+  schemas:
+    RatingType:
+      type: string
+      description: >-
+        The survey's rating control. Each implies the range its rating is
+        checked against: thumbs 0-1 (0 dislike, 1 like), star 1-5, scale 0-10.
+        text collects no rating.
+      enum: [thumbs, star, scale, text]
+    SubmitRequest:
+      type: object
+      additionalProperties: false
+      required: [survey, rating]
+      properties:
+        survey:
+          type: string
+          description: The survey this rating answers, by name.
+        rating:
+          type: number
+          description: >-
+            The value given, on the survey control's own scale. Validated
+            against the resolved survey's range and rejected (422 INVALID_INPUT)
+            when out of range — never clamped.
+        session_id:
+          type: string
+          description: The conversation this rating belongs to, if the caller knows it.
+        comment:
+          type: string
+          maxLength: 4000
+          description: Open-text comment. Optional; readable by any caller holding the read scope.
+        externalUserId:
+          type: string
+          description: The caller's own identifier for the respondent. Never used for scoring.
+        channel:
+          type: string
+          description: The caller's own channel label for this response.
+        response_source:
+          type: string
+          default: external
+          description: >-
+            How the caller categorises the capture source. Stored as given so a
+            partner can distinguish its own sub-sources. It does not change
+            origin (resolved from the credential) or the score.
+        message_id:
+          type: string
+          description: The caller's own message or turn identifier, stored for correlation.
+      # These reach a figure or an attribution and are resolved server-side from
+      # the credential, so the endpoint REFUSES a body that carries any of them
+      # (400 FIELD_NOT_ACCEPTED) rather than ignoring it: origin, sourceProvider,
+      # source_provider, score, captureMethod, capture_method, surveyTemplateId,
+      # survey_template_id. additionalProperties:false above also refuses any
+      # other unrecognised field (400 UNKNOWN_FIELD).
+    SubmitResult:
+      type: object
+      required: [success, data]
+      properties:
+        success: { type: boolean, const: true }
+        data:
+          type: object
+          required: [response_id]
+          properties:
+            response_id:
+              type: string
+              description: The stored response's stable id. A repeated submission returns the original id.
+    PublicSurveyResponse:
+      type: object
+      required:
+        - response_id
+        - survey
+        - survey_id
+        - rating
+        - rating_type
+        - submitted_at
+        - session_id
+        - channel
+        - response_source
+        - has_comment
+        - comment_length
+      properties:
+        response_id: { type: string, description: The response's stable id. }
+        survey:
+          type: string
+          description: >-
+            The survey's CURRENT name, for display only. Empty when the survey
+            was since deleted, or when the response answered no survey. Never
+            correlate on this; use survey_id.
+        survey_id:
+          type: string
+          description: The survey's stable identity. This is what the response is attributed to and what survives a rename.
+        rating: { type: number, description: The value given, on the control's own scale. }
+        rating_type: { $ref: '#/components/schemas/RatingType' }
+        submitted_at: { type: string, format: date-time }
+        session_id: { type: string }
+        channel: { type: string }
+        response_source:
+          type: string
+          description: >-
+            How the response was captured: runtime for in-product capture, or the
+            submitter's own label (default external) for API submissions.
+        comment:
+          type: string
+          description: The comment, when one was given. Absent when the response carried none.
+        has_comment: { type: boolean }
+        comment_length:
+          type: integer
+          minimum: 0
+          description: Length of the comment, or 0 when none. Lets a caller size a comment before displaying it.
+    ResponsePage:
+      type: object
+      required: [success, data]
+      properties:
+        success: { type: boolean, const: true }
+        data:
+          type: object
+          required: [responses, nextCursor]
+          properties:
+            responses:
+              type: array
+              items: { $ref: '#/components/schemas/PublicSurveyResponse' }
+            nextCursor:
+              type: [string, 'null']
+              description: Cursor for the next page, or null when this is the last page.
+    Error:
+      type: object
+      required: [success, error]
+      properties:
+        success: { type: boolean, const: false }
+        error:
+          type: object
+          required: [code, message]
+          properties:
+            code: { type: string, description: A stable, machine-readable error code. }
+            message: { type: string, description: A human-readable explanation. }
+  responses:
+    SubmitAccepted:
+      description: The rating was recorded.
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/SubmitResult' }
+    ResponsePage:
+      description: A page of responses.
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ResponsePage' }
+    BadRequest:
+      description: >-
+        The request shape was invalid. Codes: INVALID_BODY, SURVEY_REQUIRED,
+        RATING_REQUIRED, INVALID_COMMENT, COMMENT_TOO_LONG, FIELD_NOT_ACCEPTED,
+        UNKNOWN_FIELD (submit); INVALID_CURSOR (list).
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    Unauthorized:
+      description: Authentication is required. Code AUTHENTICATION_REQUIRED.
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    Forbidden:
+      description: >-
+        The credential is not permitted. ORIGIN_UNRESOLVED when the credential
+        has no registered origin (for example a user session rather than an API
+        key); otherwise a missing feedback-survey:write / feedback-survey:read
+        permission.
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    SurveyNotFound:
+      description: The named survey does not exist in this project. Code SURVEY_NOT_FOUND.
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    Unprocessable:
+      description: >-
+        The rating could not be accepted. TEMPLATE_COLLECTS_NO_RATING when the
+        survey is free-text; INVALID_INPUT when the rating is outside the
+        control's range (the message names the accepted range).
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    RateLimited:
+      description: The credential's rate allowance is exhausted.
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    ServerError:
+      description: >-
+        The request could not be completed. SUBMIT_FAILED on submit,
+        RETRIEVAL_FAILED on list.
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
