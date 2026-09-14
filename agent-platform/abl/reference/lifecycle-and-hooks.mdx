@@ -144,19 +144,33 @@ Each hook supports the same set of action properties:
 | `VOICE`        | `object`                | No       | --      | Voice-specific overrides.                           |
 | `RICH_CONTENT` | `object`                | No       | --      | Rich content format variants.                       |
 | `ACTIONS`      | `object`                | No       | --      | Interactive actions.                                |
-| `SET_INTERACTION_LANGUAGE`   | `string`  | No | -- | Set the authoritative session interaction language to a BCP-47 tag (for example `es`, `es-ES`, `fr-CA`). Subsequent actions and turns use it. |
+| `SET_INTERACTION_LANGUAGE`   | `string`  | No | -- | Set the authoritative session interaction language — a literal BCP-47 tag (for example `es`, `es-ES`, `fr-CA`) or a dynamic value that resolves to one at runtime. Subsequent actions and turns use it. |
 | `CLEAR_INTERACTION_LANGUAGE` | `boolean` | No | -- | Remove the interaction-language override, reverting to automatic detection. Takes no value. |
 | `critical`     | `boolean`               | No       | `false` | If `true`, a hook failure aborts the turn; otherwise the failure is logged and execution continues. |
 
-`SET_INTERACTION_LANGUAGE` and `CLEAR_INTERACTION_LANGUAGE` are action-list actions — like `SET` and `CLEAR`, they can appear in any action list (`ON_START`, `HOOKS`, `ON_ACTION` handlers). Use them to pin the language the agent responds in — for example, after detecting a caller's preferred language or reading it from a profile:
+`SET_INTERACTION_LANGUAGE` and `CLEAR_INTERACTION_LANGUAGE` are action-list actions — like `SET` and `CLEAR`, they can appear in any action list (`ON_START`, `HOOKS`, `ON_ACTION` handlers). Use them to pin the language the agent responds in — for example, after detecting a caller's preferred language or reading it from a profile.
+
+The value is classified when the agent is compiled:
+
+1. **Literal tag** — a value that canonicalizes as BCP-47 (`es`, `fr-CA`, …) is validated and fixed at compile time.
+2. **Dynamic value** — anything else that looks like a session-variable path (`user.preferred_language`), a `{{template}}`, or a `${dotted.path}` expression is resolved at runtime, using the same value resolution as an ordinary `SET`.
+3. Anything that is neither a valid literal tag nor a recognized dynamic form is a compile error.
 
 ```yaml
 HOOKS:
   before_turn:
+    # Dynamic — resolved from session state each time the hook runs
     - SET_INTERACTION_LANGUAGE: "{{user.preferred_language}}"
+    # Equivalent dotted-path and ${...} forms are also accepted:
+    # - SET_INTERACTION_LANGUAGE: user.preferred_language
+    # - SET_INTERACTION_LANGUAGE: "${user.preferred_language}"
+
+ON_START:
+  # Literal — validated once at compile time
+  - SET_INTERACTION_LANGUAGE: "es-MX"
 ```
 
-An unrecognized or non-canonical tag is rejected at compile time.
+<Note>A dynamic value is resolved and re-validated at **runtime**: if it doesn't resolve to a canonical BCP-47 tag, or resolves to a language the voice channel isn't configured to support, the override is not applied and the session keeps its current language.</Note>
 
 ### Example: audit logging hook
 
@@ -354,6 +368,35 @@ MESSAGES:
   `voice_nomatch`, `voice_noinput`, …), and the `greeting` / `out_of_scope` messages. Set only the
   keys you want to override.
 </Note>
+
+### Filler overrides (voice)
+
+On a voice channel, the runtime speaks a short filler phrase (for example "One moment.") to avoid dead air while a tool call, reasoning step, handoff, delegation, extraction, or constraint check runs. `MESSAGES:` lets you override these with deterministic, author-controlled text using `filler_<operation>` keys:
+
+```yaml
+MESSAGES:
+  filler_general: "One moment, please."
+  filler_tool_call: "Let me look that up for you."
+  filler_reasoning: "Let me think about that."
+  filler_handoff: "Connecting you now."
+  filler_delegation: "Checking with a specialist."
+  filler_extraction: "Let me pull those details."
+  filler_constraint_check: "Verifying that for you."
+```
+
+| Key | Spoken while… |
+| --- | -------------- |
+| `filler_general`          | No more specific operation filler applies (the fallback). |
+| `filler_tool_call`        | A tool call is in flight.                                 |
+| `filler_reasoning`        | A reasoning step is running.                               |
+| `filler_handoff`          | A `HANDOFF` is in progress.                                 |
+| `filler_delegation`       | A `DELEGATE` is in progress.                                |
+| `filler_extraction`       | The agent is extracting/gathering structured data.          |
+| `filler_constraint_check` | A `CONSTRAINT` is being evaluated.                          |
+
+Add a `_<language>` suffix (any BCP-47 primary language subtag, for example `filler_tool_call_es`) to supply a localized variant. At runtime the first match wins, from most to least specific: `filler_<operation>_<language>` → `filler_<operation>` → `filler_general_<language>` → `filler_general` → the platform's built-in localized fallback.
+
+<Warning>Filler overrides are **static, deterministic text** — unlike other `MESSAGES:` keys, they do **not** support `{{}}` interpolation. User input is never substituted into a filler, by design.</Warning>
 
 ---
 
