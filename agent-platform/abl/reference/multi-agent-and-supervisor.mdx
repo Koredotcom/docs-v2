@@ -875,7 +875,63 @@ The `routing` block controls how the escalation is routed in the human agent sys
 | `post_agent`  | `string`   | No       | --      | What happens after the human agent finishes: `return` or `end`.   |
 | `voice`       | `object`   | No       | --      | Voice-channel transfer settings — how the live call leg is handed off at the SIP/transport layer. See [Voice transfer settings](#voice-transfer-settings). |
 
-<Note>Earlier drafts used `skill_tags` and `priority_boost`. The current runtime contract uses `skills` and `priority` — the older keys are silently ignored. Additional advanced routing keys (`sub_type`, `named_agents`, `named_agent_options`, `agent_matching_conditions`, `flow_policy_ref` / `transfer_flow_policy_ref`, `provider_config`, `metadata`) are also supported for human-agent integrations.</Note>
+<Note>Earlier drafts used `skill_tags` and `priority_boost`. The current runtime contract uses `skills` and `priority` — the older keys are silently ignored. The `routing` block also accepts several [advanced routing keys](#advanced-routing-keys) for richer human-agent integrations.</Note>
+
+#### Advanced routing keys
+
+Beyond `connection` / `queue` / `skills` / `priority`, the `routing` block accepts additional keys for richer human-agent (contact center) integrations. Some are structured; others (`flow_policy`, `provider_config`, `metadata`) are **opaque pass-throughs** whose shape is defined by the receiving human-agent integration rather than validated by the ABL compiler. Every key accepts `snake_case` or `camelCase`.
+
+```yaml expandable=true
+ESCALATE:
+  routing:
+    connection: livechat
+    queue: "wire_operations_l2"
+    skills: [wire_transfer, compliance]
+    priority: 1
+
+    # Route to specific named human agents, optionally waiting for one to be free
+    named_agents: ["jane.doe", "john.smith"]
+    named_agent_options:
+      wait_for_agent: true
+      wait_duration_seconds: 120
+
+    # Constrain which agents may pick up the conversation
+    agent_matching_conditions:
+      skills: [wire_transfer]
+      skill_groups: [compliance_l2]
+      agent_groups: [emea_desk]
+
+    # Provider-defined routing sub-type and adapter configuration
+    sub_type: "priority_callback"
+    provider_config:
+      campaign_id: "Q3-collections"
+      disposition_required: true
+
+    # Wait / no-agent behavior, declared in a TRANSFER_FLOW_POLICIES block
+    flow_policy_ref: standard_wait
+
+    # Opaque key-value pairs forwarded on the transfer payload's metadata
+    metadata:
+      case_id: "{{case_id}}"
+      segment: "gold"
+  triggers:
+    - WHEN: user.wants_human_agent == true
+      REASON: "User requested human support"
+      PRIORITY: high
+```
+
+| Key | Type | Description |
+| --- | ---- | ----------- |
+| `sub_type` | `string` | Provider-defined routing sub-type / channel hint for the human-agent system. |
+| `named_agents` | `string[]` | Request specific human agents by name or id. |
+| `named_agent_options` | `object` | Options that apply when `named_agents` is set: `wait_for_agent` (`boolean`) and `wait_duration_seconds` (`number`). |
+| `agent_matching_conditions` | `object` | Constrain who may receive the transfer: `skills`, `skill_groups`, and `agent_groups` (each `string[]`). |
+| `flow_policy_ref` / `transfer_flow_policy_ref` | `string` | Name of a policy declared in a `TRANSFER_FLOW_POLICIES:` block that governs wait / no-agent behavior. See [Transfer flow policies](#transfer-flow-policies). |
+| `flow_policy` / `transfer_flow_policy` | `object` | The same policy authored **inline** instead of by reference. Free-form; shape defined by the integration. |
+| `provider_config` | `object` | Opaque provider-specific adapter configuration. Shape defined by the human-agent integration, not the ABL parser. |
+| `metadata` | `object` | Opaque key-value pairs delivered with the escalation on the transfer payload's metadata. Supports `{{ }}` interpolation. Reserved keys (`reason`, `priority`, flow policy) are always set by the runtime and cannot be overridden here. |
+
+<Note>These keys are hints for the receiving human-agent system — the valid `sub_type` values, `provider_config` shape, and inline `flow_policy` structure are defined by that integration, not the ABL compiler. Voice-channel transfer settings live under `routing.voice` (see [Voice transfer settings](#voice-transfer-settings)).</Note>
 
 #### Voice transfer settings
 
@@ -897,35 +953,10 @@ ESCALATE:
 | Field                | Type                             | Description                                                                                                                                                                              |
 | -------------------- | -------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `transfer_method`    | `"invite"` \| `"refer"` \| `"bye"` | SIP signaling method used to transfer the active call leg.                                                                                                                             |
-| `call_transfer_type` | `"sip"` \| `"pstn"` \| `"custom"` | Whether to move the call over SIP or PSTN, or run a **custom** tool sequence (see below). Omit `sip`/`pstn` to infer from project configuration — SIP when a `sipTransferTargetUri` is configured, PSTN when only a `pstnTransferTargetNumber` is. |
+| `call_transfer_type` | `"sip"` \| `"pstn"`               | Whether to move the call over SIP or PSTN. Omit to infer from project configuration — SIP when a `sipTransferTargetUri` is configured, PSTN when only a `pstnTransferTargetNumber` is. |
 | `sip_headers`        | `Record<string,string>`          | Custom SIP headers forwarded on the transfer to the receiving SBC or contact center.                                                                                                     |
-| `custom_tools`       | `string[]`                       | Required when `call_transfer_type: custom` — an ordered list of existing project tool names run as the transfer sequence. See [Custom voice transfer](#custom-voice-transfer).           |
 
-<Note>For `sip`/`pstn`, `call_transfer_type` selects a **transport, not a destination** — the transfer target is always project-owned (Agent Transfer settings). Authored DSL cannot name a phone number or SIP URI here, the same boundary the built-in `call_transfer` tool enforces. For Genesys Audio Connector transfers, use the dedicated `genesys_sip_headers` block below rather than `sip_headers`.</Note>
-
-#### Custom voice transfer
-
-`call_transfer_type: custom` (ABLP-3552, CXone/NICE integration) replaces the SIP/PSTN leg transfer with an ordered sequence of **project tools**. Instead of moving the call, the runtime keeps the Artemis audio leg live and runs the named tools serially as a notification sequence — for example, obtaining a token from one HTTP tool and signaling an external contact-center API with the next.
-
-```yaml
-ESCALATE:
-  triggers:
-    - WHEN: caller.requests_human == true
-      REASON: "Caller requested an agent"
-      PRIORITY: high
-  routing:
-    voice:
-      call_transfer_type: custom
-      custom_tools:
-        - nice_token        # first tool may capture a SecretRef result
-        - signal_api        # next tool may consume that reference
-```
-
-- `custom_tools` is an ordered list of **1–8** exact, existing project **HTTP** tool names, invoked in the authored order. The first tool may capture a [SecretRef](/agent-platform/abl/reference/tools#reuse-secrets-across-tools-secretref) that a later tool consumes.
-- `custom` routing is **mutually exclusive** with a `connection` — a custom escalation has no SIP/PSTN connection.
-- The compiler validates shape (blocking errors): the transfer type must be `sip`/`pstn`/`custom`; `custom` requires 1–8 `custom_tools`; each name must be a non-empty ASCII identifier (`^[A-Za-z0-9][A-Za-z0-9_.-]{0,127}$`); names must be unique. Tool **existence and HTTP kind** are enforced at runtime (a non-HTTP or unknown tool is rejected then).
-
-<Warning>Custom voice transfer is **notification-only** in this version — it signals an external system while the caller stays on the Artemis leg; it does not hand the live call off to a human queue. Use `sip`/`pstn` (or `ESCALATE` routing to a human connection) when the call itself must be transferred.</Warning>
+<Note>`call_transfer_type` selects a **transport, not a destination** — the transfer target is always project-owned (Agent Transfer settings). Authored DSL cannot name a phone number or SIP URI here, the same boundary the built-in `call_transfer` tool enforces. For Genesys Audio Connector transfers, use the dedicated `genesys_sip_headers` block below rather than `sip_headers`.</Note>
 
 #### Genesys SIP transfer headers
 
@@ -1082,6 +1113,17 @@ COMPLETE:
       - id: view_itinerary
         type: button
         label: "View Itinerary"
+```
+
+`FORMATS`/`RICH_CONTENT`, `VOICE`, and `ACTIONS` are recognized regardless of where they appear in the condition — immediately after `RESPOND`, after `STORE`/`SET`/`TERMINAL`, or on a condition with **no** `RESPOND` at all (for example, a completion that renders only a `FEEDBACK` card):
+
+```yaml
+COMPLETE:
+  - WHEN: transfer_status == "released"
+    STORE: "wire_transfers"
+    RICH_CONTENT:
+      FEEDBACK:
+        FEEDBACK_TEMPLATE: Post_Chat_NPS
 ```
 
 ### Completion evaluation
