@@ -1,0 +1,255 @@
+---
+title: Set up WhatsApp
+sidebarTitle: WhatsApp
+---
+
+<Badge icon="arrow-left" color="gray">[Back to messaging or digital channels](/agent-platform/channels#messaging-or-digital)</Badge>
+
+Connect your agent to a WhatsApp Business sender so customers reach it from WhatsApp. Artemis reaches WhatsApp through a Business Solution Provider, and the provider you choose decides which credentials you collect, which webhook route you register, and where the sender lives.
+
+## Choose a provider first
+
+The provider selector changes the whole setup rather than one field. Pick the provider before you collect anything, and keep the identifier, credentials, webhook route, and provider-side sender on that single path. Credentials from one provider never work with another's route.
+
+| Provider | Routing identifier | Outbound credentials | Inbound verification |
+|---|---|---|---|
+| **Meta Cloud API** | Phone Number ID | Access Token and Phone Number ID | App Secret and Verify Token |
+| **Infobip** | WhatsApp phone number, digits only | Base URL with an API key or basic auth | Network allowlist |
+| **Gupshup** | Business number the provider sends in the callback body | API username and password | Optional bearer token secret |
+
+Each provider also has its own webhook route. Meta uses the generic WhatsApp route, while Infobip and Gupshup each add their provider slug to the URL. Copy the route that matches the provider you selected in Artemis rather than assuming one URL serves all three.
+
+The rest of this article follows Meta Cloud API, which is the path most projects start on because Meta issues a test sender and test credentials without a business account.
+
+## Before you begin
+
+Complete these tasks in Meta before you create the connection in Artemis. You need access to [Meta for Developers](https://developers.facebook.com/).
+
+<Steps>
+  <Step title="Create an app and add WhatsApp">
+    1. Sign in to [Meta for Developers](https://developers.facebook.com/) and create an app.
+    2. Add the **WhatsApp** product to the app.
+    3. Create a WhatsApp Business account when Meta prompts you, or select an existing one.
+
+    Meta provisions a test business phone number and a temporary access token as part of this flow. Both work for testing and neither works in production.
+  </Step>
+
+  <Step title="Copy the access token and Phone Number ID">
+    1. Go to **WhatsApp** -> **API Setup**.
+    2. Copy the **Access Token**.
+    3. Copy the **Phone Number ID**.
+
+    <Warning>The Phone Number ID isn't the phone number. It's Meta's internal identifier for the sender, and entering the displayed number instead is the most common reason a connection never receives traffic.</Warning>
+
+    The token on this page expires within 24 hours. See [Create a permanent access token](#create-a-permanent-access-token) before you move past testing.
+  </Step>
+
+  <Step title="Copy the App Secret">
+    1. Go to **App settings** -> **Basic**.
+    2. Select **Show** next to **App secret** and copy the value.
+
+    Artemis uses the App Secret to confirm that an inbound callback genuinely came from Meta.
+  </Step>
+
+  <Step title="Choose a Verify Token">
+    Choose any secret string. Meta doesn't issue this one, so you invent it and use the same value in two places: the Artemis connection, and the webhook configuration in Meta. A mismatch fails webhook verification.
+  </Step>
+
+  <Step title="Add a test recipient">
+    While the app stays in development mode, Meta delivers only to numbers you register.
+
+    1. Go to **WhatsApp** -> **API Setup**.
+    2. Add your own WhatsApp number under the recipient field.
+    3. Enter the verification code Meta sends you.
+  </Step>
+</Steps>
+
+## Create the channel connection in Artemis
+
+Create the connection before you register the webhook in Meta. Provider callbacks can arrive as soon as you save the webhook, and the runtime has to resolve an inbound sender to a saved connection before it can authenticate the event.
+
+<Steps>
+  <Step title="Enter the connection details">
+    Open Artemis, select the project, and go to **Deployments** -> **Channels** -> **WhatsApp** -> **+ New**. Complete the fields on the **New WhatsApp Connection** dialog.
+
+    | Field | Description |
+    | ----- | ----------- |
+    | **Display Name** | Labels the connection in Artemis. Up to 255 characters. |
+    | **Phone Number ID** | Routes inbound messages to this connection. The runtime matches the sender identifier on each callback to this value, so a wrong entry here produces a connection-not-found result rather than an authentication error. |
+    | **Provider** | Selects the Business Solution Provider. It decides which credential fields the dialog shows and which webhook route you register later. |
+    | **Access Token** | Authenticates outbound messages. |
+    | **Phone Number ID** | Identifies the sender for outbound messages. For Meta Cloud API this takes the same value as the routing identifier above. |
+    | **App Secret** | Verifies the signature Meta puts on each inbound callback. |
+    | **Verify Token** | The string you chose. Enter the same value when you configure the webhook in Meta. |
+    | **Environment** | Selects a published environment so the connection follows its active deployment. Leave the default to use the working copy while you develop, and bind it to an environment later from the **Deployment** tab. |
+    | **Provider Verification Strength** | Sets how far the runtime trusts the provider's identity assertion when it links a sender to a session. Choose **Strong** only for providers whose assertions you trust for continuity and linking decisions. |
+    | **Initial Status** | **Active** connections work immediately. **Inactive** connections stay saved but disabled until you activate them. Set this to **Active**. |
+
+    <Tip>Meta Cloud API asks for the Phone Number ID twice, once as the routing identifier and once as an outbound credential. Enter the same value in both. Other providers use different values in each field, which is why they stay separate.</Tip>
+
+    Select **Create**.
+  </Step>
+
+  <Step title="Copy the webhook URL">
+    Open the connection and copy the **Webhook URL**.
+
+    The URL carries the route for the provider you selected, so copy it rather than constructing it. If the dialog reports that the runtime URL is unavailable, configure Runtime first, then reopen the connection.
+  </Step>
+</Steps>
+
+## Configure the webhook in Meta
+
+The webhook is what turns a one-way integration into a conversation. Until Meta has a callback URL, your agent can send but never receives.
+
+<Steps>
+  <Step title="Register the callback URL">
+    1. In your Meta app, go to **WhatsApp** -> **Configuration**.
+    2. Select **Edit** beside **Webhook**.
+    3. Enter the Artemis **Webhook URL** as the callback URL.
+    4. Enter the same **Verify Token** you entered in Artemis.
+    5. Select **Verify and save**.
+  </Step>
+
+  <Step title="Subscribe to message events">
+    Subscribe the webhook to the **messages** field. Meta verifies the URL whether or not you subscribe to anything, so a verified webhook with no subscription looks correct and still delivers nothing.
+  </Step>
+</Steps>
+
+## Test the connection
+
+Artemis doesn't synthesize provider callbacks, so a real WhatsApp message is the only way to confirm the integration works end to end.
+
+<Steps>
+  <Step title="Send an inbound message">
+    From a WhatsApp account registered as a test recipient, send a unique message to the business sender, such as `whatsapp setup check 001`. A distinctive string makes the message easy to find in session records.
+  </Step>
+
+  <Step title="Confirm a single reply">
+    Check that the agent replies once, from the intended sender and the intended environment. Duplicate replies point to duplicate provider subscriptions, another automation on the same number, or repeated webhook delivery rather than an agent fault.
+
+    If no reply arrives, open **Sessions** and search for the message you sent. A session that exists tells you the webhook works and the outbound path failed, while no session tells you nothing reached the runtime at all. The two need different fixes, so make this check before you change any configuration.
+  </Step>
+
+  <Step title="Exercise interactive outputs">
+    If the agent sends buttons or lists, select a button and a list row and confirm the action returns to the same session. WhatsApp limits how many reply buttons a message carries and how long their labels run, so check your authored content renders in WhatsApp rather than only in preview.
+  </Step>
+
+  <Step title="Exercise each enabled media type">
+    Test only the message types your provider enables, then confirm the agent handles the downloaded attachment rather than only acknowledging it.
+  </Step>
+</Steps>
+
+<Warning>A webhook that returns 2xx proves only that Meta reached the runtime. It says nothing about whether your outbound credentials work. Always confirm a real two-way conversation before you call the channel done.</Warning>
+
+## Create a permanent access token
+
+The token on the API Setup page expires within 24 hours, which is enough to test and not enough to run. Replace it with a system user token before anyone depends on the channel.
+
+<Steps>
+  <Step title="Create a system user">
+    1. Open **Meta Business Suite** and go to **Business settings**.
+    2. Go to **Users** -> **System users** and add a system user.
+  </Step>
+
+  <Step title="Assign assets and generate the token">
+    1. Select the system user and select **Assign assets**.
+    2. Assign your WhatsApp Business account and app.
+    3. Generate a token with the `whatsapp_business_messaging` and `whatsapp_business_management` permissions.
+    4. Copy the token and update the **Access Token** on the Artemis connection.
+  </Step>
+</Steps>
+
+## Move to production
+
+A test sender covers development and nothing else. Before real customers reach the agent, complete business verification, add a payment method, register a business phone number in WhatsApp Manager, and get your display name approved.
+
+Two WhatsApp rules shape what your agent can say:
+
+**The customer service window.** After a customer messages you, you can reply freely for 24 hours. Outside that window, an outbound message needs an approved template, so an agent that reaches out first needs templates approved before it can start a conversation at all.
+
+**Separate senders per environment.** Use different apps, senders, credentials, webhooks, and connections for development and production. Sharing a sender means test traffic reaches the same conversation history as customer traffic.
+
+## Manage the channel connection
+
+Opening a WhatsApp connection from **Deployments** -> **Channels** shows four tabs. The header carries the connection name, its environment, its status, and a delete control.
+
+<Tabs>
+  <Tab title="Overview">
+    **Connection Summary** records what the connection is and when it changed.
+
+    | Field | Description |
+    |---|---|
+    | **Status** | Reports whether the connection is active. |
+    | **Created** and **Updated** | Time the connection's creation and its last change. |
+    | **Environment** | Names the environment the connection is bound to. |
+    | **Source Type** | Reads `Channel Connection`. |
+    | **Source ID** | Identifies the connection uniquely. Quote it when you raise a support ticket. |
+
+    **Setup Instructions** below the summary carries the two values you need on the Meta side, each with a copy control.
+
+    | Value | Description |
+    |---|---|
+    | **Webhook URL** | The callback URL to register in Meta. It already carries the route for the provider you selected, so copy it rather than building it by hand. |
+    | **Phone Number ID** | The routing identifier this connection matches inbound messages to. Check it here first when messages arrive and no session appears. |
+  </Tab>
+
+  <Tab title="Credentials">
+    The platform encrypts credentials after you save them, so every field reads as saved rather than showing its value. Leave a field empty to keep the current value, or enter a new value to replace it.
+
+    | Field | Description |
+    |---|---|
+    | **Use Auth Profile** | Switches the connection to a saved auth profile in place of the fields below. Prefer it when the same credentials serve more than one connection, since a rotation then touches one profile. |
+    | **Access Token** | Authenticates outbound messages. Replace it here when you move from a temporary token to a system user token. |
+    | **Phone Number ID** | Identifies the sender for outbound messages. |
+    | **App Secret** | Verifies the signature on inbound callbacks. |
+    | **Verify Token** | The string the webhook handshake compares. Changing it here breaks the webhook until you change it in Meta as well. |
+
+    Select **Save Credentials** to apply your changes.
+  </Tab>
+
+  <Tab title="Configuration">
+    Under **General**, update the **Display Name** and the **Provider Verification Strength**.
+
+    Under **WhatsApp Settings**, the **Phone Number ID** appears read-only. You can't change it after creation, so a connection pointed at the wrong sender needs replacing rather than editing.
+
+    **Authorization message**
+
+    The connection sends this message when a tool needs the user to authorize before the conversation continues. Edit the template to match your agent's voice, since the default reads as system text rather than as the agent talking.
+
+    The editor lists the variables you can insert, offers a preview, and expands to show every available variable. The variables cover the number of outstanding authorizations, the profile each one belongs to, and the link the user follows.
+
+    Select **Save Changes** to apply your changes.
+  </Tab>
+
+  <Tab title="Deployment">
+    **Agent Version** carries an **Environment** dropdown that selects which deployed version handles incoming messages.
+
+    **Active Deployment** shows the bound version and when someone deployed it. Check this pair when the channel connects but the agent behaves like an older build: the connection follows whatever the environment currently has deployed, not the version you last edited.
+
+    Select **Save Changes** after you switch the environment.
+  </Tab>
+</Tabs>
+
+## Key values reference
+
+| Value | Where it comes from | Where it's used |
+| ----- | ------------------- | --------------- |
+| **Phone Number ID** | **WhatsApp** -> **API Setup** in the Meta app | The routing identifier and the outbound credential field in Artemis |
+| **Access Token** | **WhatsApp** -> **API Setup** for testing, or a system user token for production | The **Access Token** field in Artemis |
+| **App Secret** | **App settings** -> **Basic** in the Meta app | The **App Secret** field in Artemis |
+| **Verify Token** | You choose it | The **Verify Token** field in Artemis, and the webhook configuration in Meta |
+| **Webhook URL** | The Artemis WhatsApp connection | The callback URL in **WhatsApp** -> **Configuration** in the Meta app |
+
+## Troubleshooting
+
+| Symptom | Where to look |
+|---|---|
+| The agent never replies, and a session exists | Meta accepts inbound messages from anyone in development mode but delivers only to verified recipients. Add your number to the allowed recipient list under **WhatsApp** -> **API Setup** in the Meta app. |
+| The agent never replies, and no session exists | Nothing reached the runtime. Confirm the webhook subscribes to the `messages` field, that the callback URL verified successfully, and that the App Secret matches the one in the Meta app. |
+| The runtime reports no connection found | Compare the sender identifier on the inbound callback with the value saved in Artemis, and confirm the provider selector matches the provider that sent it. |
+| Inbound messages arrive but no reply goes out | Check the outbound credential, the sender identifier, the account-specific base URL where your provider uses one, the connection status, and whether a runnable deployment exists. |
+| Customers receive duplicate replies | Remove duplicate provider subscriptions, disable any other automation on the number, and account for provider retry behavior. |
+| Text works but buttons or lists fail | Check the provider's limits, the reply payload IDs, whether your provider supports the interactive type, and how the agent handles the returned action. |
+| Text works but media fails | Confirm the provider enabled that message type, the credentials can download media, size and host policies allow it, and the agent handles attachments. |
+| Outbound sends fail outside the customer service window | Send an approved WhatsApp template instead. |
+
