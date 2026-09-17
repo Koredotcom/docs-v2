@@ -124,7 +124,11 @@ Review the summary, then select **Create Template**.
 
 ## Reference a template from an agent
 
-An agent presents a survey when its response includes a `FEEDBACK` block that references the template by name. Copy the snippet from the template's **Usage** tab and paste it into the agent's response block.
+An agent presents a survey when its response includes a `FEEDBACK` block that references the template by name. Copy the snippet from the template's **Usage** tab and paste it into the agent's response block in the ABL editor.
+
+Where you place the block depends on how the agent is built. A flow-based agent attaches the survey to a specific step. A reasoning agent has no fixed step to attach to, so it attaches the survey to a `COMPLETE` branch. Both forms use the same `FEEDBACK` block.
+
+<Warning>The `FEEDBACK_TEMPLATE` value must match the template **Name** verbatim. If the names don't match, the survey doesn't render. After you add the block, deploy the project to start collecting responses.</Warning>
 
 ### Default rendering
 
@@ -135,6 +139,84 @@ RICH_CONTENT:
   FEEDBACK:
     FEEDBACK_TEMPLATE: Testing_feedback   # the reference
 ```
+
+### Add a survey to a flow-based agent
+
+In a flow-based agent, add the `FEEDBACK` block to the step where you want to ask for feedback. The following agent greets the caller, moves to a dedicated `ask_feedback` step, and presents the survey there.
+
+```yaml
+AGENT: midflow_survey_test
+GOAL: "Verify a survey on a mid-flow step"
+PERSONA: "Calm and brief"
+
+FLOW:
+  entry_point: greet
+  steps:
+    - greet
+    - ask_feedback
+
+greet:
+  REASONING: false
+  RESPOND: "Hello, this is a survey test call. Please say anything to continue."
+  ON_INPUT:
+    - ELSE:
+      THEN: ask_feedback
+
+ask_feedback:
+  REASONING: false
+  RESPOND: "Feel free to let us know how you feel"
+  RICH_CONTENT:
+    FEEDBACK:
+      FEEDBACK_TEMPLATE: test_npse
+
+  THEN: COMPLETE
+```
+
+Note the following about this example.
+
+- The step's `RESPOND` text introduces the survey. The `RICH_CONTENT` block renders the survey itself below that message.
+- `THEN: COMPLETE` ends the conversation once the step runs, so the survey is the last thing the end user sees.
+- Placing the survey on its own step keeps the ask separate from the work the agent was doing. You can attach the block to any step instead, including one in the middle of a flow.
+
+### Add a survey to a reasoning agent
+
+A reasoning agent decides its own path, so there's no fixed step to attach the survey to. Add the `FEEDBACK` block to a `COMPLETE` branch instead, and let the branch conditions decide when the agent asks.
+
+```yaml
+FLOW:
+  steps:
+    - execute_confirmed_action
+
+  execute_confirmed_action:
+    REASONING: true
+    available_tools:
+      - create_replacement
+      - issue_refund
+      - apply_goodwill_credit
+    instruction: |
+      Validate the action request first.
+      Execute only the requested confirmed action.
+      # instruction trimmed for brevity
+    THEN: COMPLETE
+
+COMPLETE:
+  - WHEN: status IS SET AND actions IS SET AND follow_up IS SET
+    RESPOND: ""
+    RICH_CONTENT:
+      FEEDBACK:
+        FEEDBACK_TEMPLATE: Post_Chat_LikeDislike   # the reference
+  - WHEN: failures IS SET
+    RESPOND: ""
+```
+
+Note the following about this example.
+
+- The agent evaluates `COMPLETE` branches in order and runs the first branch whose `WHEN` condition matches.
+- The first branch represents a successful outcome, so the survey attaches there. The agent asks for feedback only when it completed the work.
+- The failure branch carries no `FEEDBACK` block, so the agent doesn't ask for a rating on an interaction that failed.
+- `RESPOND: ""` leaves the response text empty, so the survey is the only thing the branch renders. The agent has already said what it needed to say during the reasoning step.
+
+<Tip>Attach the survey to outcome branches rather than to the reasoning step itself. A reasoning step can run several times in one conversation, and each pass through a `FEEDBACK` block presents the survey again.</Tip>
 
 ### Override wording
 
@@ -201,11 +283,3 @@ Create the API key under **Settings > API Keys** with the scopes you need.
 | `feedback.surveys.read`   | Retrieving responses.                     |
 
 <Warning>Retrieval returns comment text to any caller that holds the read scope. Issue the read scope only to systems that are allowed to see open text.</Warning>
-
-## Delete a template
-
-Open the template and select **Delete**.
-
-## What's next
-
-After an agent starts collecting responses, analyze them on the [Feedback Insights](/agent-platform/analytics-insights/customer-voice#feedback-insights) page. To review individual ratings and comments captured across the project, see [Customer Voice](/agent-platform/analytics-insights/customer-voice).
