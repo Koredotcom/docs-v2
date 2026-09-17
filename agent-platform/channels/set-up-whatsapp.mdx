@@ -3,45 +3,72 @@ title: Set up WhatsApp
 sidebarTitle: WhatsApp
 ---
 
-<Badge icon="arrow-left" color="gray">[Back to messaging or digital channels](/agent-platform/channels#messaging-or-digital-channels)</Badge>
+<Badge icon="arrow-left" color="gray">[Back to messaging or digital channels](/agent-platform/channels#messaging-or-digital)</Badge>
 
 Connect your agent to a WhatsApp Business sender so customers reach it from WhatsApp. Artemis reaches WhatsApp through a Business Solution Provider, and the provider you choose decides which credentials you collect, which webhook route you register, and where the sender lives.
 
+The setup requires:
+
+1. [Choose a provider](#choose-a-provider-first), then complete either [Meta setup](#meta-setup) or [Infobip setup](#infobip-setup) to collect the routing identifier and credentials.
+2. [Artemis channel configuration](#artemis-channel-configuration) using those values, then copy the generated webhook URL.
+3. [Webhook configuration with your provider](#webhook-configuration-with-your-provider): register the callback URL so inbound messages reach Artemis.
+
+After the configuration is complete, your provider posts inbound WhatsApp messages to Artemis, which matches the sender identifier to this connection and hands the message to the deployed agent.
+
+**Important considerations**
+
+- **The provider selector changes the whole setup**: It decides which credential fields the dialog shows and which webhook route you register. Credentials from one provider never work with another's route, so pick the provider before you collect anything.
+- **Who owns the WhatsApp Business account differs by provider**: On Meta Cloud API you hold it directly and Meta issues a test sender in minutes, which is why most projects start there. On Infobip, Infobip holds it and onboards the sender for you, which removes the Meta paperwork at the cost of a provisioning wait.
+- **The Meta test token expires within 24 hours**: To test and not to run. See [Create a permanent access token](#create-a-permanent-access-token).
+- **Verification proves less than it appears to**: A webhook that returns 2xx proves only that your provider reached the runtime. It says nothing about whether your outbound credentials work.
+
+## Prerequisites
+
+- An account with your chosen Business Solution Provider: A Meta developer account, or an Infobip account.
+- For production on either path, the business details Meta requires for verification. Both routes wait on Meta review, so start early.
+- An HTTPS-reachable Artemis runtime, since Meta calls the callback URL during verification.
+- Artemis project access with permission to open **Deployments** -> **Channels**, and a deployed agent in the environment you intend to bind.
+
+---
+
 ## Choose a provider first
 
-The provider selector changes the whole setup rather than one field. Pick the provider before you collect anything, and keep the identifier, credentials, webhook route, and provider-side sender on that single path. Credentials from one provider never work with another's route.
+Pick the provider before you collect anything, and keep the identifier, credentials, webhook route, and provider-side sender on that single path.
 
 | Provider | Routing identifier | Credentials |
 |---|---|---|
 | **Meta Cloud API** | Phone Number ID | Access Token and Phone Number ID for outbound, App Secret and Verify Token for inbound verification |
-| **Infobip** | WhatsApp phone number, digits only | Base URL with an API key or basic auth, plus a network allowlist for inbound verification |
+| **Infobip** | WhatsApp phone number, digits only | API Base URL with an API key or basic auth, plus a network allowlist for inbound verification |
 | **Gupshup** | Business number the provider sends in the callback body | API username and password, plus an optional bearer token secret for inbound verification |
 
 Each provider also has its own webhook route. Meta uses the generic WhatsApp route, while Infobip and Gupshup each add their provider slug to the URL. Copy the route that matches the provider you selected in Artemis rather than assuming one URL serves all three.
 
-The rest of this article follows Meta Cloud API, which is the path most projects start on because Meta issues a test sender and test credentials without a business account.
+Work through the provider section that matches your choice, then rejoin the shared path at [Artemis channel configuration](#artemis-channel-configuration).
 
-## Set up the Meta app
+---
 
-Everything in this section happens in Meta, before you open Artemis. Work through it in order, because each screen depends on the one before it. Meta covers the same ground in its own words in the [Cloud API get started guide](https://developers.facebook.com/docs/whatsapp/cloud-api/get-started).
+## Meta setup
+
+Complete this section only if you selected Meta Cloud API. Everything here happens in Meta, before you open Artemis, and each screen depends on the one before it. Meta covers the same ground in its own words in the [Cloud API get started guide](https://developers.facebook.com/docs/whatsapp/cloud-api/get-started).
 
 <Steps>
   <Step title="Register as a Meta developer">
-    Go to [Meta for Developers](https://developers.facebook.com/) and sign in with your Facebook account. Meta walks you through developer registration the first time, which asks you to confirm an email address and a phone number.
+    1. Go to [Meta for Developers](https://developers.facebook.com/) and sign in with your Facebook account.
+    2. Complete developer registration when Meta prompts you, confirming an email address and a phone number.
 
     A personal Facebook account gets you started. You need a Meta Business portfolio only when you move past the test sender.
   </Step>
 
   <Step title="Create the app">
-    Open [My Apps](https://developers.facebook.com/apps/) and select **Create App**.
+    1. Open [My Apps](https://developers.facebook.com/apps/) and select **Create App**.
+    2. When Meta asks what the app does, choose the business messaging use case, or choose **Other** and then **Business** as the app type if Meta shows you that older flow.
+    3. Enter an app name and a contact email, attach a Meta Business portfolio if you have one, and create the app.
 
-    Meta asks what you want the app to do. Choose the business messaging use case, or choose **Other** and then **Business** as the app type if Meta shows you that older flow. The app type matters, because only a business app exposes the WhatsApp product.
-
-    Enter an app name and a contact email, attach a Meta Business portfolio if you have one, and create the app. Meta opens the App Dashboard.
+    The app type matters, because only a business app exposes the WhatsApp product. Meta opens the App Dashboard once the app exists.
   </Step>
 
   <Step title="Add the WhatsApp product">
-    On the App Dashboard, scroll the **Add products to your app** list to **WhatsApp** and select **Set up**. If you've navigated away from that screen, the left menu carries an **Add product** entry that returns you to the same list.
+    1. On the App Dashboard, scroll the **Add products to your app** list to **WhatsApp** and select **Set up**. If you've navigated away from that screen, the left menu carries an **Add product** entry that returns you to the same list.
 
     Meta provisions several things at once: a test WhatsApp Business Account, a test business phone number that reaches up to five verified recipients at no cost, and a set of pre-approved message templates. The left menu now shows a **WhatsApp** section containing **API Setup** and **Configuration**, which are the two screens you'll use.
 
@@ -51,9 +78,8 @@ Everything in this section happens in Meta, before you open Artemis. Work throug
   <Step title="Find the Access Token and Phone Number ID">
     Go to **WhatsApp** -> **API Setup** in the left menu. This screen carries most of what Artemis needs.
 
-    Select **Generate access token** and complete the prompt, then copy the token. Meta issues a fresh one each time you open this panel, and it expires within 24 hours.
-
-    Below the **From** field, Meta shows the test business phone number, and directly beneath that, a numeric **Phone Number ID**. Copy the ID.
+    1. Select **Generate access token** and complete the prompt, then copy the token. Meta issues a fresh one each time you open this panel, and it expires within 24 hours.
+    2. Below the **From** field, Meta shows the test business phone number, and directly beneath that, a numeric **Phone Number ID**. Copy the ID.
 
     <Warning>The Phone Number ID isn't the phone number. It's Meta's internal identifier for the sender, and entering the displayed number instead is the most common reason a connection never receives traffic. The two values sit next to each other on this screen, which is exactly why they get swapped.</Warning>
 
@@ -61,9 +87,11 @@ Everything in this section happens in Meta, before you open Artemis. Work throug
   </Step>
 
   <Step title="Find the App Secret">
-    The App Secret lives outside the WhatsApp section, so the left menu is the only way to reach it. Go to **App settings** -> **Basic**.
+    The App Secret lives outside the WhatsApp section, so the left menu is the only way to reach it.
 
-    Select **Show** beside **App secret**. Meta asks you to re-enter your Facebook password, then reveals the value. Copy it.
+    1. Go to **App settings** -> **Basic**.
+    2. Select **Show** beside **App secret**.
+    3. Re-enter your Facebook password when Meta asks, then copy the value.
 
     Meta signs every inbound callback with this secret, and Artemis checks that signature. A wrong value here means every inbound message fails verification even though the webhook itself verified successfully, which makes it a confusing failure to diagnose later.
   </Step>
@@ -77,92 +105,154 @@ Everything in this section happens in Meta, before you open Artemis. Work throug
   <Step title="Add a test recipient">
     While the app stays in development mode, Meta delivers only to numbers you register, so your own number receives nothing until you add it.
 
-    Return to **WhatsApp** -> **API Setup**. Select the **To** field, choose **Manage phone number list**, and add your WhatsApp number. Meta sends a confirmation code in WhatsApp, which you enter to verify the number.
+    1. Return to **WhatsApp** -> **API Setup**.
+    2. Select the **To** field and choose **Manage phone number list**.
+    3. Add your WhatsApp number, then enter the confirmation code Meta sends you in WhatsApp.
 
     You can register up to five recipients. Select your number in the **To** field once it verifies.
   </Step>
 </Steps>
 
-## Create the channel connection in Artemis
+---
 
-Create the connection before you register the webhook in Meta. Provider callbacks can arrive as soon as you save the webhook, and the runtime has to resolve an inbound sender to a saved connection before it can authenticate the event.
+## Infobip setup
+
+Complete this section only if you selected Infobip. Infobip owns the WhatsApp Business account and the sender, so you collect three things from the Infobip web interface rather than from Meta: the sender number, your account's API base URL, and an API key.
 
 <Steps>
-  <Step title="Enter the connection details">
-    Open Artemis, select the project, and go to **Deployments** -> **Channels** -> **WhatsApp** -> **+ New**.
+  <Step title="Get a WhatsApp sender">
+    1. Sign in to the [Infobip web interface](https://portal.infobip.com/login/).
+    2. Go to **Channels and Numbers** -> **Channels** -> **WhatsApp** -> **Senders**.
+    3. Note the sender number. Artemis wants it as digits only, with no plus sign, spaces, or punctuation.
 
-    | Field | What it controls |
-    | ----- | ---------------- |
-    | **Display Name** | The label operators see in the connections list. Name it for the sender and the environment it serves, because a project can hold several WhatsApp connections. Routing ignores this value. |
-    | **Phone Number ID** | Routes inbound messages to this connection. The runtime matches the sender identifier on each callback to this value, so a wrong entry here produces a connection-not-found result rather than an authentication error. |
-    | **Provider** | Selects the Business Solution Provider. It decides which credential fields the dialog shows and which webhook route you register later, so set it before you fill in anything below it. |
-    | **Access Token** | Authenticates every outbound message Artemis sends. |
-    | **Phone Number ID** | Identifies the sender on outbound messages. For Meta Cloud API this takes the same value as the routing identifier above. |
-    | **App Secret** | Verifies the signature Meta puts on each inbound callback. Without it, Artemis can't confirm that a callback came from Meta. |
-    | **Verify Token** | The string you chose. Meta echoes it during the webhook handshake, and Artemis compares the two. |
-    | **Environment** | The published environment whose active deployment answers incoming messages. Leave the default to use the working copy while you develop, and bind the connection to an environment later from the **Deployment** tab. |
-    | **Provider Verification Strength** | How far the runtime trusts the provider's identity assertion when it links a sender to an existing session. Choose **Strong** only when you trust the provider's assertions enough to base continuity and account-linking decisions on them. |
-    | **Initial Status** | Whether the connection starts handling messages. **Active** takes traffic immediately. **Inactive** saves the configuration in a disabled state, which suits a connection you're staging ahead of a launch. |
-
-    <Tip>Meta Cloud API asks for the Phone Number ID twice, once as the routing identifier and once as an outbound credential. Enter the same value in both. Other providers use different values in each field, which is why they stay separate.</Tip>
-
-    Select **Create**.
+    A trial account comes with a shared test sender that reaches numbers you verify, which is enough to prove the integration works. A production sender goes through Infobip onboarding, where Infobip registers the number with Meta and runs business verification on your behalf. Infobip's [WhatsApp over API guide](https://www.infobip.com/docs/whatsapp/whatsapp-over-api) covers what the channel supports once the sender is live. Start that process early, because it waits on Meta review rather than on Infobip.
   </Step>
 
-  <Step title="Copy the webhook URL">
-    Open the connection and copy the **Webhook URL** from the **Overview** tab.
+  <Step title="Find your API base URL">
+    Infobip gives every account a personalized base URL in the form `xxxxx.api.infobip.com`, which you'll see on the homepage once you sign in. Infobip explains the scheme under [base URL](https://www.infobip.com/docs/developer-resources/about-infobip-apis/base-url).
 
-    The URL carries the route for the provider you selected, so copy it rather than constructing it. If the dialog reports that the runtime URL is unavailable, configure Runtime first, then reopen the connection.
+    This URL isn't a credential. It routes your requests to the data center serving your account, so a wrong one degrades or fails the integration rather than exposing it. Enter it in Artemis with the `https://` scheme.
+  </Step>
+
+  <Step title="Create an API key">
+    1. Go to **Developer Tools** -> **API Keys** and create a key for this integration.
+    2. Copy the key when Infobip displays it and store it in your secret manager.
+
+    Infobip also shows an existing key on the homepage, but a dedicated key per integration lets you revoke this one without disturbing anything else.
+
+    If your account authenticates with a username and password instead, note those rather than a key, and select basic authentication as the method when you create the connection.
   </Step>
 </Steps>
 
-## Configure the webhook in Meta
+---
 
-The webhook is what turns a one-way integration into a conversation. Until Meta has a callback URL, your agent can send but never receives.
+## Artemis channel configuration
 
-<Steps>
-  <Step title="Register the callback URL">
+Create the connection before you register the webhook with your provider. Provider callbacks can arrive as soon as you save the webhook, and the runtime has to resolve an inbound sender to a saved connection before it can authenticate the event.
+
+1. Open Artemis and select the project.
+2. Go to **Deployments** -> **Channels** -> **WhatsApp** -> **+ New**. The **New WhatsApp Connection** dialog opens.
+3. Configure the fields that apply whichever provider you chose:
+
+    | Artemis connection field | Source / Notes | What it controls |
+    |---|---|---|
+    | Display Name | You choose it | The label operators see in the connections list. Name it for the sender and the environment it serves, because a project can hold several WhatsApp connections. Routing ignores this value. |
+    | Provider | Your chosen Business Solution Provider | Decides which credential fields the dialog shows and which webhook route you register later, so set it before you fill in anything below it. |
+    | Environment | Your published environments | The environment whose active deployment answers incoming messages. Leave the working copy default only while you develop, and bind the connection to an environment later from the **Deployment** tab. |
+    | Provider Verification Strength | Defaults to **Weak** | How far the runtime trusts the provider's identity assertion when it links a sender to an existing session. Choose **Strong** only when you trust the provider's assertions enough to base continuity and account-linking decisions on them. |
+    | Initial Status | Defaults to **Active** | Whether the connection starts handling messages. **Active** takes traffic immediately. **Inactive** saves the configuration in a disabled state, which suits a connection you're staging ahead of a launch. |
+
+4. Configure the routing identifier and credential fields, which change with the provider:
+
+    <Tabs>
+      <Tab title="Meta Cloud API">
+        | Artemis connection field | Source / Notes | What it controls |
+        |---|---|---|
+        | Phone Number ID | **WhatsApp** -> **API Setup**, below the test phone number | Routes inbound messages to this connection. The runtime matches the sender identifier on each callback to this value, so a wrong entry here produces a connection-not-found result rather than an authentication error. |
+        | Access Token | **WhatsApp** -> **API Setup**, or a system user token for production | Authenticates every outbound message Artemis sends. |
+        | Phone Number ID | Same value as the routing identifier | Identifies the sender on outbound messages. |
+        | App Secret | **App settings** -> **Basic** | Verifies the signature Meta puts on each inbound callback. Without it, Artemis can't confirm that a callback came from Meta. |
+        | Verify Token | You invent it | Meta echoes it during the webhook handshake, and Artemis compares the two. |
+
+        <Tip>Meta Cloud API asks for the Phone Number ID twice, once as the routing identifier and once as an outbound credential. Enter the same value in both. Other providers use different values in each field, which is why they stay separate.</Tip>
+      </Tab>
+
+      <Tab title="Infobip">
+        | Artemis connection field | Source / Notes | What it controls |
+        |---|---|---|
+        | WhatsApp Phone Number | **Channels and Numbers** -> **Channels** -> **WhatsApp** -> **Senders** | Routes inbound messages to this connection. Enter the sender number as digits only, because a stray plus sign or space produces a connection-not-found result. |
+        | Authentication Method | Matches how your Infobip account is set up | Whether Artemis authenticates with an API key or with a username and password. |
+        | API Base URL | The Infobip homepage, in the form `xxxxx.api.infobip.com` | Your account's personalized host, entered with the `https://` scheme. Requests to the wrong base URL take a suboptimal route or fail outright. |
+        | API Key | **Developer Tools** -> **API Keys** | The key Artemis sends on every outbound call to Infobip. The dialog shows credential fields for basic authentication instead when you select that method. |
+
+        Infobip doesn't sign its callbacks with a shared secret the way Meta does, so Artemis verifies inbound traffic by source network. Confirm with your Infobip contact which addresses their platform sends from, and allowlist those before you go live.
+      </Tab>
+    </Tabs>
+
+5. Select **Create**.
+6. Open the connection and copy the **Webhook URL** from the **Overview** tab. The URL carries the route for the provider you selected, so copy it rather than constructing it. If the dialog reports that the runtime URL is unavailable, configure Runtime first, then reopen the connection.
+
+---
+
+## Webhook configuration with your provider
+
+The webhook is what turns a one-way integration into a conversation. Until your provider has a callback URL, your agent can send but never receives.
+
+<Tabs>
+  <Tab title="Meta Cloud API">
     In your Meta app, go to **WhatsApp** -> **Configuration** in the left menu. The **Webhook** row sits at the top of this screen.
 
-    Select **Edit**. Meta opens a dialog with two fields. Paste the Artemis **Webhook URL** into the callback URL field, and the same **Verify Token** you entered in Artemis into the verify token field.
+    1. Select **Edit**. Meta opens a dialog with two fields.
+    2. Paste the Artemis **Webhook URL** into the callback URL field, and the same **Verify Token** you entered in Artemis into the verify token field.
+    3. Select **Verify and save**. Meta immediately calls the URL with a challenge and expects your verify token back, so the dialog stays open with an error when the handshake fails. A dialog that closes means the URL verified.
+    4. Below the webhook row, find the webhook fields list, select **Manage**, and subscribe to the **messages** field.
 
-    Select **Verify and save**. Meta immediately calls the URL with a challenge and expects your verify token back, so the dialog stays open with an error when the handshake fails. A dialog that closes means the URL verified.
-  </Step>
+    Verification alone delivers nothing. Meta verifies the URL whether or not you subscribe to anything, so a verified webhook with no subscription looks correct on screen and still sends your agent no traffic. Check this first when the setup looks right and nothing arrives.
+  </Tab>
 
-  <Step title="Subscribe to message events">
-    Verification alone delivers nothing. Below the webhook row, find the webhook fields list, select **Manage**, and subscribe to the **messages** field.
+  <Tab title="Infobip">
+    In the Infobip web interface, go to **Channels and Numbers** -> **Channels** -> **WhatsApp** -> **Senders**.
 
-    Meta verifies the URL whether or not you subscribe to anything, so a verified webhook with no subscription looks correct on screen and still sends your agent no traffic. Check this first when the setup looks right and nothing arrives.
-  </Step>
-</Steps>
+    1. Find the tile for your sender and open its three-dot menu.
+    2. Select **Edit configuration**.
+    3. Turn on forwarding to a URL, which Infobip labels as forwarding to HTTP in some accounts, and paste the Artemis **Webhook URL** into the URL field.
+    4. Select **Save**.
 
-## Test the connection
+    Infobip has no verification handshake, so saving the configuration is the whole registration. Infobip documents what arrives on that URL under [inbound messages](https://www.infobip.com/docs/whatsapp/message-types-and-templates/inbound-messages). Nothing confirms the URL works until a real message arrives, which makes the test in the next section the only proof you have.
+
+    Configuration lives on the sender rather than on the account, so a second sender needs its own forwarding configuration and its own Artemis connection.
+  </Tab>
+</Tabs>
+
+### Validation checklist
+
+| Validation item | Expected result |
+|:---|:---|
+| Choose a provider | The provider selected in Artemis matches the account where the sender lives. |
+| Complete provider setup | Meta: app created, WhatsApp product added, test recipient verified. Infobip: sender available, base URL and API key collected. |
+| Collect credentials | Routing identifier and credentials copied from the same provider account. |
+| Create the Artemis connection | Connection saved as **Active** with the provider's fields and the intended environment. |
+| Register the callback URL | Meta: the webhook dialog closes after **Verify and save**. Infobip: forwarding is on for that sender. |
+| Subscribe the events | Meta only: the webhook subscribes to the **messages** field. |
+| Send a live message | A real WhatsApp conversation produces exactly one agent reply. See [Verify the connection](#verify-the-connection). |
+
+## Verify the connection
 
 Artemis doesn't synthesize provider callbacks, so a real WhatsApp message is the only way to confirm the integration works end to end.
 
-<Steps>
-  <Step title="Send an inbound message">
-    From a WhatsApp account you registered as a test recipient, send the business sender a short message you can search for later. A distinctive string makes the message easy to find in session records.
-  </Step>
+1. From a WhatsApp account you registered as a test recipient, send the business sender a short message you can search for later. A distinctive string makes the message easy to find in session records.
+2. Check that the agent replies once, from the intended sender and the intended environment. Duplicate replies point to duplicate provider subscriptions, another automation on the same number, or repeated webhook delivery rather than an agent fault.
+3. If no reply arrives, open **Sessions** and search for the message you sent. A session that exists tells you the webhook works and the outbound path failed, while no session tells you nothing reached the runtime at all. The two need different fixes, so make this check before you change any configuration.
+4. If the agent sends buttons or lists, select a button and a list row and confirm the action returns to the same session. WhatsApp limits how many reply buttons a message carries and how long their labels run, so check that your authored content renders in WhatsApp rather than only in preview.
+5. Test only the message types your provider enables, then confirm the agent handles the downloaded attachment rather than only acknowledging it.
 
-  <Step title="Confirm a single reply">
-    Check that the agent replies once, from the intended sender and the intended environment. Duplicate replies point to duplicate provider subscriptions, another automation on the same number, or repeated webhook delivery rather than an agent fault.
+<Warning>A webhook that returns 2xx proves only that your provider reached the runtime. It says nothing about whether your outbound credentials work. Always confirm a real two-way conversation before you call the channel done.</Warning>
 
-    If no reply arrives, open **Sessions** and search for the message you sent. A session that exists tells you the webhook works and the outbound path failed, while no session tells you nothing reached the runtime at all. The two need different fixes, so make this check before you change any configuration.
-  </Step>
-
-  <Step title="Exercise interactive outputs">
-    If the agent sends buttons or lists, select a button and a list row and confirm the action returns to the same session. WhatsApp limits how many reply buttons a message carries and how long their labels run, so check that your authored content renders in WhatsApp rather than only in preview.
-  </Step>
-
-  <Step title="Exercise each enabled media type">
-    Test only the message types your provider enables, then confirm the agent handles the downloaded attachment rather than only acknowledging it.
-  </Step>
-</Steps>
-
-<Warning>A webhook that returns 2xx proves only that Meta reached the runtime. It says nothing about whether your outbound credentials work. Always confirm a real two-way conversation before you call the channel done.</Warning>
+---
 
 ## Create a permanent access token
+
+This section applies to Meta Cloud API only. Infobip API keys don't expire on a schedule, so rotate them on your own policy instead.
 
 The token on the API Setup page expires within 24 hours, which is enough to test and not enough to run. Replace it with a system user token, which lasts until you revoke it. Meta explains how the token types differ under [access tokens](https://developers.facebook.com/docs/whatsapp/access-tokens).
 
@@ -170,35 +260,43 @@ This work happens in Meta Business Suite rather than the App Dashboard, and it n
 
 <Steps>
   <Step title="Create a system user">
-    Open [Meta Business Suite](https://business.facebook.com/), select your business portfolio from the dropdown at the top of the page, and select its settings icon to open **Business settings**.
+    1. Open [Meta Business Suite](https://business.facebook.com/) and select your business portfolio from the dropdown at the top of the page.
+    2. Select its settings icon to open **Business settings**.
+    3. Go to **Users** -> **System users** and select **Add**.
+    4. Name the system user, set its role to **Admin**, and create it.
 
-    Go to **Users** -> **System users** and select **Add**. Name the system user, set its role to **Admin**, and create it. A system user represents your integration rather than a person, which is why its token survives staff changes.
+    A system user represents your integration rather than a person, which is why its token survives staff changes.
   </Step>
 
   <Step title="Assign the app and the WhatsApp account">
-    Select the system user you created and select **Assign assets**.
-
-    Assign your app and your WhatsApp Business account, granting full control on each. Reload the page and confirm both show as assigned before you continue, because a token generated before the assets attach can't reach them.
+    1. Select the system user you created and select **Assign assets**.
+    2. Assign your app and your WhatsApp Business account, granting full control on each.
+    3. Reload the page and confirm both show as assigned before you continue, because a token generated before the assets attach can't reach them.
   </Step>
 
   <Step title="Generate and store the token">
-    Select **Generate token**, choose your app, and set the expiration to never.
-
-    Select the `whatsapp_business_messaging` permission so the token can send and receive messages, and `whatsapp_business_management` so it can manage templates and account settings. Generate the token.
-
-    Meta displays the token once and never again, so copy it straight into your secret manager. Then update the **Access Token** on the Artemis connection from the **Credentials** tab.
+    1. Select **Generate token**, choose your app, and set the expiration to never.
+    2. Select the `whatsapp_business_messaging` permission so the token can send and receive messages, and `whatsapp_business_management` so it can manage templates and account settings.
+    3. Generate the token and copy it straight into your secret manager, because Meta displays it once and never again.
+    4. Update the **Access Token** on the Artemis connection from the **Credentials** tab.
   </Step>
 </Steps>
 
+---
+
 ## Move to production
 
-A test sender covers development and nothing else. Before real customers reach the agent, complete business verification, add a payment method, register a business phone number in WhatsApp Manager, and get your display name approved. Each of these waits on review from Meta, so start them well ahead of your launch date.
+A test sender covers development and nothing else. Who does the production paperwork depends on your provider.
 
-Two WhatsApp rules shape what your agent can say:
+On Meta Cloud API, you complete business verification, add a payment method, register a business phone number in WhatsApp Manager, and get your display name approved, all from [Meta Business Suite](https://business.facebook.com/). On Infobip, Infobip runs the sender registration and verification for you, and you supply the business details it asks for. Either way the work waits on Meta review, so start it well ahead of your launch date.
+
+Two WhatsApp rules shape what your agent can say, whichever provider carries the traffic:
 
 **The customer service window.** After a customer messages you, you can reply freely for 24 hours. Outside that window, an outbound message needs an approved template, so an agent that reaches out first needs templates approved before it can start a conversation at all. Template approval is its own review, and a rejected template blocks the conversation you wrote it for.
 
-**Separate senders per environment.** Use different apps, senders, credentials, webhooks, and connections for development and production. Sharing a sender means test traffic reaches the same conversation history as customer traffic.
+**Separate senders per environment.** Use different senders, credentials, webhooks, and connections for development and production. Sharing a sender means test traffic reaches the same conversation history as customer traffic.
+
+---
 
 ## Manage the channel connection
 
@@ -216,24 +314,24 @@ Opening a WhatsApp connection from **Deployments** -> **Channels** shows four ta
     | **Source Type** | Reads `Channel Connection`. |
     | **Source ID** | Identifies the connection uniquely. Quote it when you raise a support ticket. |
 
-    **Setup Instructions** below the summary carries the two values you need on the Meta side, each with a copy control.
+    **Setup Instructions** below the summary carries the values you need on the provider side, each with a copy control.
 
     | Value | Description |
     |---|---|
-    | **Webhook URL** | The callback URL to register in Meta. It already carries the route for the provider you selected, so copy it rather than building it by hand. |
-    | **Phone Number ID** | The routing identifier this connection matches inbound messages to. Check it here first when messages arrive and no session appears. |
+    | **Webhook URL** | The callback URL to register with your provider. It already carries the provider route, so copy it rather than building it by hand. |
+    | Routing identifier | The value this connection matches inbound messages to, shown as the Phone Number ID or the WhatsApp phone number depending on your provider. Check it here first when messages arrive and no session appears. |
   </Tab>
 
   <Tab title="Credentials">
     The platform encrypts credentials after you save them, so every field reads as saved rather than showing its value. Leave a field empty to keep the current value, or enter a new value to replace it.
 
+    The fields below the first one change with your provider. Meta Cloud API shows the access token, Phone Number ID, App Secret, and Verify Token. Infobip shows the authentication method, API base URL, and either an API key or basic authentication credentials.
+
     | Field | Description |
     |---|---|
     | **Use Auth Profile** | Switches the connection to a saved auth profile in place of the fields below. Prefer it when the same credentials serve more than one connection, since a rotation then touches one profile. |
-    | **Access Token** | Authenticates outbound messages. Replace it here when you move from a temporary token to a system user token. |
-    | **Phone Number ID** | Identifies the sender for outbound messages. |
-    | **App Secret** | Verifies the signature on inbound callbacks. |
-    | **Verify Token** | The string the webhook handshake compares. Changing it here breaks the webhook until you change it in Meta as well. |
+    | Outbound credential | Authenticates outbound messages. Replace it here when you rotate a Meta token or an Infobip API key. |
+    | Inbound verification | Confirms that a callback came from your provider. Changing the Verify Token here breaks the Meta webhook until you change it in Meta as well. |
 
     Select **Save Credentials** to apply your changes.
   </Tab>
@@ -241,7 +339,7 @@ Opening a WhatsApp connection from **Deployments** -> **Channels** shows four ta
   <Tab title="Configuration">
     Under **General**, update the **Display Name** and the **Provider Verification Strength**.
 
-    Under **WhatsApp Settings**, the **Phone Number ID** appears read-only. You can't change it after creation, so a connection pointed at the wrong sender needs replacing rather than editing.
+    Under **WhatsApp Settings**, the routing identifier appears read-only. You can't change it after creation, so a connection pointed at the wrong sender needs replacing rather than editing.
 
     **Authorization message**
 
@@ -261,27 +359,78 @@ Opening a WhatsApp connection from **Deployments** -> **Channels** shows four ta
   </Tab>
 </Tabs>
 
+---
+
 ## Key values reference
 
-Each value sits on a different Meta screen, and two of them look alike enough to swap by accident. Use this table to collect everything in one pass.
+Each value sits on a different provider screen, and two of them look alike enough to swap by accident. Use the table for your provider to collect everything in one pass.
 
-| Value | Where to find it in Meta | Where it goes |
-| ----- | ------------------------ | ------------- |
-| **Phone Number ID** | **WhatsApp** -> **API Setup**, directly below the test business phone number | The routing identifier and the outbound credential field in Artemis |
-| **Access Token** | **WhatsApp** -> **API Setup** for testing. For production, **Business settings** -> **Users** -> **System users** in Meta Business Suite | The **Access Token** field in Artemis |
-| **App Secret** | **App settings** -> **Basic**, revealed by selecting **Show** | The **App Secret** field in Artemis |
-| **Verify Token** | You choose it | The **Verify Token** field in Artemis, and the webhook configuration in Meta |
-| **Webhook URL** | The **Overview** tab of the Artemis connection | The callback URL in **WhatsApp** -> **Configuration** in the Meta app |
+<Tabs>
+  <Tab title="Meta Cloud API">
+    | Value | Where to find it | Where it goes |
+    | ----- | ---------------- | ------------- |
+    | **Phone Number ID** | **WhatsApp** -> **API Setup**, directly below the test business phone number | The routing identifier and the outbound credential field in Artemis |
+    | **Access Token** | **WhatsApp** -> **API Setup** for testing. For production, **Business settings** -> **Users** -> **System users** in Meta Business Suite | The **Access Token** field in Artemis |
+    | **App Secret** | **App settings** -> **Basic**, revealed by selecting **Show** | The **App Secret** field in Artemis |
+    | **Verify Token** | You choose it | The **Verify Token** field in Artemis, and the webhook configuration in Meta |
+    | **Webhook URL** | The **Overview** tab of the Artemis connection | The callback URL in **WhatsApp** -> **Configuration** in the Meta app |
+  </Tab>
 
-## Troubleshooting
+  <Tab title="Infobip">
+    | Value | Where to find it | Where it goes |
+    | ----- | ---------------- | ------------- |
+    | Sender number | **Channels and Numbers** -> **Channels** -> **WhatsApp** -> **Senders** | The **WhatsApp Phone Number** field in Artemis, as digits only |
+    | **API Base URL** | The homepage of the Infobip web interface, in the form `xxxxx.api.infobip.com` | The **API Base URL** field in Artemis, with the `https://` scheme |
+    | **API Key** | **Developer Tools** -> **API Keys** | The **API Key** field in Artemis |
+    | **Webhook URL** | The **Overview** tab of the Artemis connection | The forwarding URL in the sender's **Edit configuration** screen |
+  </Tab>
+</Tabs>
 
-| Symptom | Where to look |
-|---|---|
-| The agent never replies, and a session exists | Meta accepts inbound messages from anyone in development mode but delivers only to verified recipients. Add your number under **WhatsApp** -> **API Setup** in the Meta app. |
-| The agent never replies, and no session exists | Nothing reached the runtime. Confirm the webhook subscribes to the `messages` field, that the callback URL verified successfully, and that the App Secret matches the one in the Meta app. |
-| The runtime reports no connection found | Compare the sender identifier on the inbound callback with the value saved in Artemis, and confirm the provider selector matches the provider that sent it. |
-| Inbound messages arrive but no reply goes out | Check the outbound credential, the sender identifier, the account-specific base URL where your provider uses one, the connection status, and whether a runnable deployment exists. A temporary Meta token that expired overnight produces exactly this symptom. |
-| Customers receive duplicate replies | Remove duplicate provider subscriptions, disable any other automation on the number, and account for provider retry behavior. |
-| Text works but buttons or lists fail | Check the provider's limits, the reply payload IDs, whether your provider supports the interactive type, and how the agent handles the returned action. |
-| Text works but media fails | Confirm the provider enabled that message type, the credentials can download media, size and host policies allow it, and the agent handles attachments. |
-| Outbound sends fail outside the customer service window | Send an approved WhatsApp template instead. |
+---
+
+## Troubleshoot connection issues
+
+| Symptom | Likely cause | Recommended action |
+|---|---|---|
+| The agent never replies, and a session exists | The recipient isn't verified on a test sender | On Meta, development mode accepts inbound messages from anyone but delivers only to verified recipients, so add your number under **WhatsApp** -> **API Setup**. On an Infobip trial sender, verify the recipient number in Infobip. |
+| The agent never replies, and no session exists | Nothing reached the runtime | On Meta, confirm the webhook subscribes to the `messages` field, that the callback URL verified, and that the App Secret matches. On Infobip, confirm forwarding is on for that sender and that the URL matches the connection. |
+| The runtime reports no connection found | The routing identifier doesn't match the inbound callback | Compare the sender identifier on the inbound callback with the value saved in Artemis, and confirm the provider selector matches the provider that sent it. On Infobip, check for a plus sign or spaces in the saved number. |
+| Inbound messages arrive but no reply goes out | The outbound credential is wrong or expired | Check the outbound credential, the sender identifier, the account-specific base URL where your provider uses one, the connection status, and whether a runnable deployment exists. A temporary Meta token that expired overnight produces exactly this symptom. |
+| Inbound callbacks reach the runtime but fail verification | The inbound verification setting doesn't match the provider | On Meta, the App Secret doesn't match the app that sent the callback. On Infobip, your allowlist is missing the address their platform sent from. |
+| Customers receive duplicate replies | More than one subscription or automation answers the same number | Remove duplicate provider subscriptions, disable any other automation on the number, and account for provider retry behavior. |
+| Text works but buttons or lists fail | The content exceeds a provider limit, or the authored action is gone | Check the provider's limits, the reply payload IDs, whether your provider supports the interactive type, and how the agent handles the returned action. |
+| Text works but media fails | The message type isn't enabled, or the file breaks a policy | Confirm the provider enabled that message type, the credentials can download media, size and host policies allow it, and the agent handles attachments. |
+| Outbound sends fail outside the customer service window | The 24-hour window has closed | Send an approved WhatsApp template instead. |
+
+---
+
+## Provider reference
+
+Use these pages when you need detail beyond what this article covers.
+
+<Tabs>
+  <Tab title="Meta Cloud API">
+    | Resource | Use it for |
+    | -------- | ---------- |
+    | [Cloud API get started](https://developers.facebook.com/docs/whatsapp/cloud-api/get-started) | Meta's own walkthrough of app creation, the test sender, and the first test message. |
+    | [Access tokens](https://developers.facebook.com/docs/whatsapp/access-tokens) | How user, system user, and business tokens differ, and which permissions each one needs. |
+    | [My Apps](https://developers.facebook.com/apps/) | Returning to an app you created, or checking which app owns a sender. |
+    | [Meta Business Suite](https://business.facebook.com/) | Business settings, system users, business verification, and WhatsApp Manager. |
+  </Tab>
+
+  <Tab title="Infobip">
+    | Resource | Use it for |
+    | -------- | ---------- |
+    | [WhatsApp over API](https://www.infobip.com/docs/whatsapp/whatsapp-over-api) | Sender configuration, inbound routing, and what Infobip supports on the channel. |
+    | [Inbound messages](https://www.infobip.com/docs/whatsapp/message-types-and-templates/inbound-messages) | The message types users can send you and how Infobip stores inbound media. |
+    | [Base URL](https://www.infobip.com/docs/developer-resources/about-infobip-apis/base-url) | Why Infobip personalizes the base URL and what a wrong one does. |
+    | [Developer resources](https://www.infobip.com/docs/developer-resources) | Authentication methods, API keys, and the wider API reference. |
+  </Tab>
+</Tabs>
+
+{{related}}
+
+- [Channels](/agent-platform/channels)
+- [Set up Messenger](/agent-platform/channels/set-up-messenger)
+- [Set up LINE](/agent-platform/channels/set-up-line)
+- [Set up Telegram](/agent-platform/channels/set-up-telegram)

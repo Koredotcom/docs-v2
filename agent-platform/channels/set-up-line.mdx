@@ -7,14 +7,34 @@ sidebarTitle: LINE
 
 Connect a LINE Official Account to your agent so people reach it in LINE for chat and media messaging. You create the Official Account, enable the Messaging API on it, collect two credentials and one identifier, then register a webhook and verify it before any real traffic arrives.
 
-LINE splits this across two consoles, and each owns a different half of the job.
+The setup requires:
+
+1. [LINE setup](#line-setup): Create the Official Account, enable the Messaging API, and collect the Channel Secret, Channel Access Token, and Destination ID.
+2. [Artemis channel configuration](#artemis-channel-configuration) using those three values, then copy the generated webhook URL.
+3. [Webhook configuration in LINE](#webhook-configuration-in-line): Register the webhook URL, verify it, and switch delivery on.
+
+After the configuration is complete, LINE posts every event for the channel to Artemis, which resolves the connection from the payload and hands the message to the deployed agent.
+
+**Important considerations**
+
+- **Two consoles, two halves of the job**: LINE splits the work between LINE Official Account Manager and the LINE Developers Console. Sign in to both with the same account, because the Developers Console asks first-time users to register a developer profile with a name and email, and an account that skips that step can't see the channel it just created.
+- **Official Account Manager creates the channel, not the Developers Console**: LINE removed the ability to create Messaging API channels directly in the Developers Console in September 2024. Enabling the Messaging API on the Official Account creates the channel.
+- **Provider selection is permanent**: You can't change or remove the provider afterwards, and a person receives a different user ID under each provider, so moving an account later would break every stored user reference.
+- **The Destination ID is not shown in either console**: It comes from an API call. Three identifiers that are shown look plausible and none of them route. See [How Artemis routes LINE events](#how-artemis-routes-line-events).
 
 | Console | What you do there |
 | ------- | ----------------- |
 | [LINE Official Account Manager](https://manager.line.biz/) | Create the Official Account, enable the Messaging API, and turn off LINE's automatic replies. |
 | [LINE Developers Console](https://developers.line.biz/console/) | Copy the Channel Secret and access token, set the webhook URL, and find the friend-add QR code. |
 
-Sign in to both with the same account. The Developers Console asks first-time users to register a developer profile with a name and email, and an account that skips that step can't see the channel it just created.
+## Prerequisites
+
+- A LINE Business ID, registered with an existing personal LINE account or with an email address. See [LINE setup](#line-setup).
+- The admin role on the Official Account and on the Messaging API channel. Several steps hide their controls from lower roles rather than reporting a permission error.
+- The admin role on the provider you intend to use, if you plan to select an existing one. A provider only appears in the selection list when your account holds that role on it.
+- Artemis project access with permission to open **Deployments** -> **Channels**, and a deployed agent in the environment you intend to bind.
+
+---
 
 ## How Artemis routes LINE events
 
@@ -27,27 +47,30 @@ LINE sends every event for a channel to one URL, so Artemis identifies the conne
 | **Channel Access Token** | LINE | Authorizes outbound calls: replies, push messages, bot info lookups, and the loading indicator. |
 | **Webhook URL** | Artemis | Receives events. The route carries no Destination ID, because the destination travels in the signed body. |
 
-Three LINE identifiers look plausible in the Destination ID field and none of them route. The **Channel ID** on the Basic settings tab is numeric. The **Bot basic ID** on the Messaging API tab starts with `@`. **Your user ID**, also on the Basic settings tab, is your own personal LINE account, not the bot's. The correct value comes from an API call, covered below.
+Three LINE identifiers look plausible in the Destination ID field and none of them route. The **Channel ID** on the Basic settings tab is numeric. The **Bot basic ID** on the Messaging API tab starts with `@`. **Your user ID**, also on the Basic settings tab, is your own personal LINE account, not the bot's. The correct value comes from an API call, covered in [LINE setup](#line-setup).
 
-## Create the Official Account and enable the Messaging API
+---
 
-Start here even if someone has already created an Official Account, because enabling the Messaging API is what creates the channel you'll configure.
+## LINE setup
+
+Complete all of this in LINE before you open Artemis. Start at the beginning even if someone has already created an Official Account, because enabling the Messaging API is what creates the channel you'll configure.
 
 <Steps>
   <Step title="Register a LINE Business ID">
-    LINE accounts for business sit behind a Business ID, which you can register with an existing personal LINE account or with an email address. Register one at [account.line.biz](https://account.line.biz/signup?redirectUri=https://entry.line.biz/form/entry/unverified) if your organization doesn't already have one.
+    LINE accounts for business sit behind a Business ID, which you can register with an existing personal LINE account or with an email address.
 
-    Use an account your team can keep. This identity carries the admin role for everything that follows.
+    1. Go to [account.line.biz](https://account.line.biz/signup?redirectUri=https://entry.line.biz/form/entry/unverified) and register a Business ID, if your organization doesn't already have one.
+    2. Use an account your team can keep. This identity carries the admin role for everything that follows.
   </Step>
 
   <Step title="Create the Official Account">
-    Complete LINE's [Official Account entry form](https://entry.line.biz/form/entry/unverified) with your business details. Submitting it creates the account.
-
-    Open [LINE Official Account Manager](https://manager.line.biz/) and confirm the new account appears in your list before you continue.
+    1. Complete LINE's [Official Account entry form](https://entry.line.biz/form/entry/unverified) with your business details. Submitting it creates the account.
+    2. Open [LINE Official Account Manager](https://manager.line.biz/) and confirm the new account appears in your list before you continue.
   </Step>
 
   <Step title="Enable the Messaging API">
-    In Official Account Manager, select the account, then open **Settings** -> **Messaging API** and enable the Messaging API. This is what creates the channel that Artemis connects to.
+    1. In Official Account Manager, select the account.
+    2. Go to **Settings** -> **Messaging API** and enable the Messaging API. This is what creates the channel that Artemis connects to.
 
     You can't do this anywhere else. LINE removed the ability to create Messaging API channels directly in the Developers Console in September 2024, so an attempt to start from the developer side has nothing to create.
   </Step>
@@ -63,19 +86,20 @@ Start here even if someone has already created an Official Account, because enab
   <Step title="Turn off LINE's automatic replies">
     A new channel arrives with greeting messages and auto-reply messages enabled, which means a person gets one LINE-managed response and one agent response to the same message.
 
-    Reach the settings from either console. In Official Account Manager, open **Settings** -> **Response settings**. In the Developers Console, the channel's **Messaging API** tab shows **Greeting messages** and **Auto-reply messages** with an **Edit** link beside each that opens Official Account Manager at the right place.
+    Reach the settings from either console:
 
-    Disable both when the agent should own every reply. Keeping a greeting message is reasonable if you author it deliberately, but leaving the defaults on reads to users as a broken bot rather than as a settings problem.
+    1. In Official Account Manager, open **Settings** -> **Response settings**.
+    2. Or in the Developers Console, open the channel's **Messaging API** tab, where **Greeting messages** and **Auto-reply messages** each carry an **Edit** link that opens Official Account Manager at the right place.
+
+    LINE recommends disabling both for a first Messaging API bot, and explains why under [settings on LINE Official Account Manager](https://developers.line.biz/en/docs/messaging-api/building-bot/#line-manager-settings). Disable both when the agent should own every reply. Keeping a greeting message is reasonable if you author it deliberately, but leaving the defaults on reads to users as a broken bot rather than as a settings problem.
   </Step>
-</Steps>
 
-## Collect the credentials
-
-All three values live in the Developers Console, spread across two tabs of the same channel. Sign in at [developers.line.biz/console](https://developers.line.biz/console/), select your provider, then select the Messaging API channel.
-
-<Steps>
   <Step title="Copy the Channel Secret from Basic settings">
-    Open the **Basic settings** tab and copy **Channel secret**. You need the admin role on the channel to see it.
+    All three credential values live in the Developers Console, spread across two tabs of the same channel.
+
+    1. Sign in at [developers.line.biz/console](https://developers.line.biz/console/).
+    2. Select your provider, then select the Messaging API channel.
+    3. Open the **Basic settings** tab and copy **Channel secret**. You need the admin role on the channel to see it.
 
     Take care not to grab the **Channel ID** or **Your user ID** from the same screen. Both sit nearby, both look like credentials, and neither works.
   </Step>
@@ -98,12 +122,16 @@ All three values live in the Developers Console, spread across two tabs of the s
   </Step>
 
   <Step title="Get the Destination ID from Get bot info">
-    The console never shows this value, so you call for it. Use LINE's [Get bot info](https://developers.line.biz/en/reference/messaging-api/#get-bot-info) endpoint with the channel access token you just issued, and copy the `userId` from the response.
+    The console never shows this value, so you call for it.
 
-    ```bash
-    curl -v -X GET https://api.line.me/v2/bot/info \
-      -H "Authorization: Bearer {channel access token}"
-    ```
+    1. Use LINE's [Get bot info](https://developers.line.biz/en/reference/messaging-api/#get-bot-info) endpoint with the channel access token you just issued.
+
+        ```bash
+        curl -v -X GET https://api.line.me/v2/bot/info \
+          -H "Authorization: Bearer {channel access token}"
+        ```
+
+    2. Copy the `userId` from the response.
 
     The value begins with `U` and matches the `destination` field LINE puts in every webhook for this channel. Run this from a secure terminal rather than a shared one, since the command carries your token.
   </Step>
@@ -113,31 +141,40 @@ All three values live in the Developers Console, spread across two tabs of the s
   </Step>
 </Steps>
 
-## Create the channel connection in Artemis
+---
+
+## Artemis channel configuration
 
 Create the connection before you verify the webhook in LINE. LINE's verification request has to resolve to an active connection and authenticate with that connection's Channel Secret, so an unsaved connection fails verification.
 
-Go to **Deployments** -> **Channels** -> **LINE** -> **+ New** and complete the following.
+1. Open Artemis and select the project.
+2. Go to **Deployments** -> **Channels** -> **LINE** -> **+ New**. The **New LINE Connection** dialog opens.
+3. Configure the following fields:
 
-| Field | What it controls |
-| ----- | ---------------- |
-| **Display Name** | The label operators see in the connections list. Name it for the Official Account and the environment it serves, because a project can hold several LINE connections. Routing ignores this value. |
-| **Destination ID** | The routing key. Enter the `U`-prefixed bot user ID from Get bot info. |
-| **Channel Access Token** | The credential for every outbound call Artemis makes to LINE. |
-| **Channel Secret** | The key Artemis uses to verify the signature on each inbound event. |
-| **Environment** | The published environment whose active deployment answers incoming messages. Leave the working copy default only while you develop. |
-| **Provider Verification Strength** | How far Artemis trusts LINE's identity assertion when it links a person to an existing session. **Weak** suits most deployments. Choose **Strong** only when you trust those assertions enough to base continuity and account-linking decisions on them. |
-| **Initial Status** | Whether the connection starts handling messages. Set it to **Active**, because LINE's verification resolves only when the connection is already active. |
+    | Artemis connection field | Source / Notes | What it controls |
+    |---|---|---|
+    | Display Name | You choose it | The label operators see in the connections list. Name it for the Official Account and the environment it serves, because a project can hold several LINE connections. Routing ignores this value. |
+    | Destination ID | The `userId` from Get bot info. See [LINE setup](#line-setup). | The routing key. It begins with `U`. |
+    | Channel Access Token | Developers Console > channel > **Messaging API** tab | The credential for every outbound call Artemis makes to LINE. |
+    | Channel Secret | Developers Console > channel > **Basic settings** tab | The key Artemis uses to verify the signature on each inbound event. |
+    | Environment | Your published environments | The environment whose active deployment answers incoming messages. Leave the working copy default only while you develop. |
+    | Provider Verification Strength | Defaults to **Weak** | How far Artemis trusts LINE's identity assertion when it links a person to an existing session. **Weak** suits most deployments. Choose **Strong** only when you trust those assertions enough to base continuity and account-linking decisions on them. |
+    | Initial Status | Defaults to **Active** | Whether the connection starts handling messages. Set it to **Active**, because LINE's verification resolves only when the connection is already active. |
 
-Select **Create**, then open the connection and copy the **Webhook URL** from the **Overview** tab.
+4. Select **Create**.
+5. Open the connection and copy the **Webhook URL** from the **Overview** tab. You need it for the next section.
 
-## Configure and verify the webhook in LINE
+---
+
+## Webhook configuration in LINE
 
 LINE separates saving the URL from switching delivery on, so a verified webhook can still deliver nothing. Complete all three parts, in the Developers Console on the channel's **Messaging API** tab.
 
 <Steps>
   <Step title="Paste the webhook URL">
-    Find **Webhook settings**, select **Edit** under **Webhook URL**, paste the Artemis endpoint exactly as shown, and select **Update**.
+    1. Find **Webhook settings**.
+    2. Select **Edit** under **Webhook URL**.
+    3. Paste the Artemis endpoint exactly as shown and select **Update**.
 
     LINE accepts one endpoint per channel. Don't append the Destination ID, the Channel ID, a project ID, or any connection identifier, because Artemis routes from the signed body rather than the path.
 
@@ -165,41 +202,32 @@ LINE separates saving the URL from switching delivery on, so a verified webhook 
   <Step title="Restrict API access by IP, if you chose a long-lived token">
     The channel's **Security** tab accepts a list of IP addresses, individually or in CIDR notation, that may call the LINE Platform with a long-lived token.
 
-    This narrows the blast radius of an indefinite credential considerably, so it's worth doing whenever you pick that token type. It doesn't apply to the other three.
+    This narrows the blast radius of an indefinite credential considerably, so it's worth doing whenever you pick that token type. LINE covers the setting under [restrict who can call the API](https://developers.line.biz/en/docs/messaging-api/building-bot/#configure-security-settings). It doesn't apply to the other three.
   </Step>
 </Steps>
 
-## Test a real LINE conversation
+### Validation checklist
+
+| Validation item | Expected result |
+|:---|:---|
+| Complete LINE setup | Official Account created, Messaging API enabled, and greeting and auto-reply messages disabled. |
+| Collect credentials | Channel Secret, Channel Access Token, and the `U`-prefixed Destination ID copied from the matching channel. |
+| Create the Artemis connection | Connection saved as **Active** with the Destination ID, both credentials, and the intended environment. |
+| Register the webhook URL | LINE reports **Success** when you select **Verify**. |
+| Enable delivery | **Use webhook** shows as turned on. |
+| Send a live message | A real LINE conversation produces exactly one agent reply. See [Verify the connection](#verify-the-connection). |
+
+## Verify the connection
 
 Artemis has no synthetic test for this channel, so a real conversation is the only end-to-end proof.
 
-<Steps>
-  <Step title="Add the Official Account as a friend">
-    Scan the QR code or use the add-friend link on the **Messaging API** tab.
+1. Add the Official Account as a friend by scanning the QR code or using the add-friend link on the **Messaging API** tab. Test from an ordinary LINE account rather than an identity that exists only as a console administrator, because the two behave differently.
+2. Send a short message you can search for later, and confirm the agent replies in the same chat.
+3. Count the replies. Two responses to one message means greeting messages or auto-reply messages are still enabled, not that the agent ran twice.
+4. Send each input type your agent supports, and confirm its authored behavior for each. Receiving a media event isn't the same as handling it, so test the authored path rather than only the delivery.
+5. Test groups only if you need them. Enable **Allow bot to join group chats** in Official Account Manager, invite the bot, then message or mention it. Confirm sessions stay scoped to the LINE source, so a group conversation and a one-to-one conversation with the same person don't merge.
 
-    Test from an ordinary LINE account rather than an identity that exists only as a console administrator, because the two behave differently.
-  </Step>
-
-  <Step title="Send a unique text message">
-    Send a short message you can search for later, and confirm the agent replies in the same chat.
-  </Step>
-
-  <Step title="Confirm exactly one response">
-    Count the replies. Two responses to one message means greeting messages or auto-reply messages are still enabled, not that the agent ran twice.
-  </Step>
-
-  <Step title="Exercise each input type your agent supports">
-    Send the message types your Official Account will receive, and confirm the agent's authored behavior for each.
-
-    Receiving a media event isn't the same as handling it. An agent flow that expects text will accept an image event and then have nothing to do with it, so test the authored path rather than only the delivery.
-  </Step>
-
-  <Step title="Test groups only if you need them">
-    Enable **Allow bot to join group chats** in Official Account Manager when group or multi-person conversations matter, invite the bot, then message or mention it.
-
-    Confirm sessions stay scoped to the LINE source, so a group conversation and a one-to-one conversation with the same person don't merge.
-  </Step>
-</Steps>
+---
 
 ## Secure the connection
 
@@ -212,6 +240,8 @@ Rotation invalidates immediately on both credentials. Reissuing a Channel Secret
 Keep both values out of browser code, screenshots, tickets, and source control, and update Artemis the moment LINE reissues or revokes either one.
 
 Use distinct providers or channels for development and production, or at minimum distinct credentials and connections. Pointing two environments at one webhook mixes test traffic into real conversation history.
+
+---
 
 ## Manage the channel connection
 
@@ -271,21 +301,23 @@ Opening a connection shows four tabs. The delete control sits beside the connect
   </Tab>
 </Tabs>
 
-## Troubleshooting
+---
 
-Match the symptom to the check. Most failures trace to the Destination ID, a reissued credential, or the **Use webhook** toggle.
+## Troubleshoot connection issues
 
-| Symptom | What to check |
-| ------- | ------------- |
-| Verify doesn't report success | Confirm the connection exists and is active, that the Artemis endpoint is reachable over public HTTPS with a certificate from a trusted authority and a complete chain, that the URL carries no extra path segment, and that LINE receives a 200 response. |
-| Artemis reports no connection found | Replace the Destination ID with the `U`-prefixed `userId` from Get bot info. The Channel ID, the Bot basic ID, and personal user IDs don't route. |
-| Signature verification fails | Copy the Channel Secret from the matching channel's **Basic settings**, check whether another administrator reissued it, and confirm no proxy or middleware rewrites the raw body. |
-| Verification succeeded but no messages arrive | Turn on **Use webhook**. A saved and verified URL delivers nothing until you do. |
-| Messages arrive but the agent doesn't reply | Confirm the Channel Access Token is current and neither expired nor revoked, the connection is active, and the bound environment has a runnable deployment. A v2.1 token that passed its 30-day ceiling produces exactly this symptom. |
-| People receive two replies | Disable greeting messages and auto-reply messages, or author them so they don't overlap with the agent. |
-| Direct messages work but groups don't | Enable **Allow bot to join group chats**, reinvite the bot if you changed the setting after inviting it, and confirm the test event comes from the expected group or room. |
-| Text works but media doesn't | Confirm Artemis supports the event type, the token can download message content, attachment limits allow the file, and the agent flow handles attachments. |
-| The provider you want isn't in the list | Your account lacks the admin role on it. Ask a provider admin to grant the role rather than creating a second provider. |
+| Symptom | Likely cause | Recommended action |
+|---|---|---|
+| Verify doesn't report success | The connection isn't active, the endpoint isn't reachable, or the certificate chain is incomplete | Confirm the connection exists and is active, that the Artemis endpoint is reachable over public HTTPS with a certificate from a trusted authority and a complete chain, that the URL carries no extra path segment, and that LINE receives a 200 response. |
+| Artemis reports no connection found | The Destination ID holds the wrong identifier | Replace it with the `U`-prefixed `userId` from Get bot info. The Channel ID, the Bot basic ID, and personal user IDs don't route. |
+| Signature verification fails | The Channel Secret doesn't match, or a proxy rewrote the body | Copy the Channel Secret from the matching channel's **Basic settings**, check whether another administrator reissued it, and confirm no proxy or middleware rewrites the raw body. |
+| Verification succeeded but no messages arrive | **Use webhook** is off | Turn on **Use webhook**. A saved and verified URL delivers nothing until you do. |
+| Messages arrive but the agent doesn't reply | The access token expired, someone revoked it, or no deployment can run | Confirm the Channel Access Token is current, the connection is active, and the bound environment has a runnable deployment. A v2.1 token past its 30-day ceiling produces exactly this symptom. |
+| People receive two replies | LINE's own automatic replies are still enabled | Disable greeting messages and auto-reply messages, or author them so they don't overlap with the agent. |
+| Direct messages work but groups don't | The bot can't join group chats, or it joined before you changed the setting | Enable **Allow bot to join group chats**, reinvite the bot if you changed the setting after inviting it, and confirm the test event comes from the expected group or room. |
+| Text works but media doesn't | The event type, the token, the size limit, or the agent flow blocks it | Confirm Artemis supports the event type, the token can download message content, attachment limits allow the file, and the agent flow handles attachments. |
+| The provider you want isn't in the list | Your account lacks the admin role on it | Ask a provider admin to grant the role rather than creating a second provider. |
+
+---
 
 ## LINE reference
 
@@ -299,3 +331,10 @@ Use these LINE pages and consoles when you need detail beyond what this article 
 | [Build a bot](https://developers.line.biz/en/docs/messaging-api/building-bot/) | Tokens, the webhook URL, verification, and the certificate requirements. |
 | [Channel access tokens](https://developers.line.biz/en/docs/basics/channel-access-token/) | How the four token types differ and which suits your rotation policy. |
 | [Messaging API reference](https://developers.line.biz/en/reference/messaging-api/) | Endpoint detail, including [Get bot info](https://developers.line.biz/en/reference/messaging-api/#get-bot-info) and webhook event objects. |
+
+{{related}}
+
+- [Channels](/agent-platform/channels)
+- [Set up Messenger](/agent-platform/channels/set-up-messenger)
+- [Set up WhatsApp](/agent-platform/channels/set-up-whatsapp)
+- [Set up Telegram](/agent-platform/channels/set-up-telegram)
