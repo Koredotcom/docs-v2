@@ -24,10 +24,13 @@ Typical scenarios include:
 2. When a trigger condition is met:
    - A new task is created in the Inbox for a human agent to review and proceed.
    - Agent execution is suspended.
-3. A human agent reviews and completes the task.
-4. After completion:
-   - The system executes configured post-completion actions.
-   - The workflow may resume, transfer, or end.
+   - A transfer payload is constructed from:
+      - `context_for_human`
+      - `routing.metadata`
+      - any provider-specific routing fields.
+3. The payload is sent to the configured human agent provider.
+4. A human agent reviews and completes the task.
+5. After the human interaction completes, the configured `on_human_complete` actions determine whether the workflow resumes, hands off to another agent, or completes.
 
 Configure Escalation using the following fields. 
 
@@ -48,24 +51,28 @@ Configure Escalation using the following fields.
 ```yaml
 ESCALATE:
   triggers:
-    - WHEN: condition
-      REASON: "reason for escalation"
+    - WHEN: intent = transfer to customer support
+      REASON: "requested"
       PRIORITY: medium
-      TAGS: [tag1, tag2]
-
   context_for_human:
-    - variable1
-    - variable2
-
+    - customer_id
+    - summary
   routing:
-    queue: "queue_name"
-    skills: [skill1, skill2]
-    priority: 1
+    connection: "152f48d0-290e-4293-87e9-d8d9138ad58d"
+    routing:
+      queue: queue_name
+      skills:
+        - skill1
+        - skill2
+      priority: 1
+      metadata:
+        sentiment_score: "{{sentiment_score}}"
+        attempt_count: "{{retry_count}}"
+        customer_tier: "{{customer.tier}}"
 
   on_human_complete:
     - IF human.resolved == true: COMPLETE
 ```
-
 ## Trigger properties
 
 | Property | Type     | Required | Description                                                   |
@@ -114,10 +121,23 @@ Controls how escalation is routed to the human system.
 | queue          | string   | No       | Target queue in the human agent system.  |
 | skills         | string[] | No       | Required skills for the human agent.     |
 | priority       | number   | No       | Numeric routing priority for the queue entry. | 
+| metadata       | object   | No       | Key value pairs for passing metadata to the receiving agent. | 
 | voice | -   | No       | Optional block controlling how the voice call is handed off at the SIP/transport layer when escalating on a voice channel | 
 | voice.transfer_method | -   | No       | SIP signaling method used to transfer the call: `invite`, `refer`, or `bye`.| 
 | voice.call_transfer_type | -   | No       | Whether to move the call over `sip` or `pstn`. Omit to infer from project configuration. The target is always project-owned — this selects a transport, not a destination. | 
 | voice.sip_headers | -   | No       | Key-value map of custom SIP headers to forward on the transfer to the receiving SBC or contact center. | 
+
+<Note> 
+- Use `context_for_human` for passing existing session variables to agents.
+- Use `routing.metadata` for additional information like computed values, routing hints, summaries, that improves the human agent's context or routing abilities.
+</Note>
+
+### Metadata propagation
+
+During an escalation, metadata is propagated differently depending on the channel:
+
+**Voice channels(SIP)**: Metadata configured in the ESCALATE block is automatically converted into SIP headers and sent to the receiving voice platform during the transfer. You can also use routing.voice.sip_headers to define additional custom SIP headers or override the header mapping when needed.
+**Digital channels**: Metadata is forwarded to the receiving desktop or contact-center platform as key-value pairs through the provider's handoff API or WebSocket connection. The exact format depends on the integration and the capabilities of the receiving platform.
 
 ## Post-completion behavior
 
