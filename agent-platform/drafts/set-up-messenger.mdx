@@ -1,0 +1,284 @@
+---
+title: Set up Messenger
+sidebarTitle: Messenger
+---
+
+<Badge icon="arrow-left" color="gray">[Back to messaging or digital channels](/agent-platform/channels#messaging-or-digital)</Badge>
+
+Connect a Facebook Page to your agent so people reach it through Messenger. You prepare one Meta app and one Page, hand Artemis four values from them, then register a signed webhook that Meta verifies before it sends anything.
+
+The whole setup depends on one rule: the Page ID, Page Access Token, App Secret, Verify Token, and webhook subscription must all belong to the same Meta app and Page. Mixing values from two apps produces failures that look unrelated to each other.
+
+All the Meta work happens in the App Dashboard at [Meta for Developers](https://developers.facebook.com/), across three screens. The Messenger settings screen holds the Page connection, the token, and the webhook controls. **App settings** -> **Basic** holds the App Secret. The **Roles** tab holds the testers who can reach your Page before review.
+
+## How Artemis routes Messenger events
+
+Meta sends every Page event to one generic URL, so Artemis identifies the connection from the payload rather than the path. It reads the Page ID out of the signed event and matches it to a connection.
+
+| Piece | Who owns it | What it does |
+| ----- | ----------- | ------------ |
+| **Facebook Page ID** | Meta | Routes inbound events. Artemis reads the Page ID from each signed webhook and matches it to this connection. |
+| **Page Access Token** | Meta | Authorizes outbound replies through the Messenger Send API. It scopes to one Page, so a token for a different Page fails to send. |
+| **App Secret** | Meta | Verifies the `X-Hub-Signature-256` header on every inbound POST. Artemis computes the HMAC over the unchanged request body and rejects anything that doesn't match. |
+| **Verify Token** | You | Answers Meta's one-time verification challenge when you save the callback URL. It does nothing after that. |
+| **Webhook URL** | Artemis | Receives events. The route ends at the generic Messenger path and carries no Page ID, because the Page ID travels in the payload. |
+
+One Page ID routes to one active connection. Reusing a Page means deactivating the existing connection first, or the second one has nothing to route to.
+
+## Prepare the Meta app and Page
+
+Do this work in Meta before you open Artemis. Meta covers the same ground in its [Messenger Platform quick start](https://developers.facebook.com/docs/messenger-platform/getting-started/quick-start/).
+
+<Steps>
+  <Step title="Create or open a business app">
+    Sign in to [Meta for Developers](https://developers.facebook.com/), open [My Apps](https://developers.facebook.com/apps/), and create an app or open the one that will own this connection.
+
+    Meta asks what the app does. Choose the business messaging use case, or choose **Other** and then **Business** as the app type if Meta shows you that older flow. Only a business app exposes the Messenger product, so choosing the wrong type means creating a second app rather than converting the first.
+
+    Use separate apps or Pages for development and production, because app mode and Page subscriptions belong to the app.
+  </Step>
+
+  <Step title="Add the Messenger product">
+    On the App Dashboard, find **Messenger** in the products list and select **Set up**. The left menu then carries a Messenger section holding the settings screen you'll return to several times.
+
+    Meta renames this screen between app types, so you may see **Messenger API Settings**, or **Messenger** followed by **Settings**. Whichever label appears, the screen you want holds three areas together: a Page connection, a token generation panel, and webhook controls. If the screen you're looking at has only one of those, you're on the wrong one.
+  </Step>
+
+  <Step title="Connect the Facebook Page">
+    In the token generation area, add or select the Page customers will message. Meta asks you to authorize the app on that Page.
+
+    Your account needs enough access on both sides. Meta requires that whoever generates the Page token can perform the messaging and moderate tasks on the Page, so an editor or viewer role fails here even when everything on the app side looks right. Sort the Page role out before you continue, because the failure it produces later looks like a token problem.
+  </Step>
+
+  <Step title="Generate and copy the Page Access Token">
+    With the Page selected in the **Page** dropdown, a token appears in the **Page Access Token** field. Select the field to copy it.
+
+    Two behaviors here catch people out. Meta doesn't store the token in this screen, so you can't come back and read it; you generate a fresh one instead. And each time you select the Page from the dropdown, Meta generates a new token, while every token it generated earlier keeps working. That means an accidental extra generation doesn't break anything, but it does leave live credentials you didn't intend to create, so treat each generation as deliberate.
+
+    This token is Page-scoped rather than user-scoped. A user token, or a token generated for a different Page, authenticates successfully and then fails to deliver replies.
+  </Step>
+
+  <Step title="Find the numeric Page ID">
+    Artemis routes on the Page's numeric ID, which is a different value from everything else Meta shows you about the Page.
+
+    Open the Page in Facebook and look under its **About** information, where Facebook lists the Page ID among the page's transparency details. Meta Business Suite also shows it in the Page's settings.
+
+    Don't substitute the Meta App ID, the Business ID, the Page username from the Page's web address, or the page-scoped user ID. That last one, the PSID, appears in every inbound event and identifies the customer, not the Page: Meta issues each person a different PSID for each Page they message.
+  </Step>
+
+  <Step title="Copy the App Secret">
+    The App Secret sits outside the Messenger section, so the left menu is the only route to it. Go to **App settings** -> **Basic**, select **Show** beside **App secret**, re-enter your Facebook password when Meta asks, and copy the value.
+
+    Artemis uses this secret to verify that an inbound event genuinely came from Meta. Take it from the same app that owns the Messenger product, since an App Secret from a neighboring app produces a signature failure on every single message.
+  </Step>
+
+  <Step title="Choose a Verify Token">
+    Invent a high-entropy secret string. Meta doesn't issue this one, so you create it and enter the same value twice: once in Artemis, once in the Meta webhook configuration.
+
+    Artemis lets you save a connection without it, but Meta's verification can't succeed until a matching non-empty value exists in both places.
+  </Step>
+
+  <Step title="Add testers and plan for Live mode">
+    While the app stays in development mode, Page tokens reach only Facebook accounts holding an administrator, developer, or tester role on the app. Grant those roles from the **Roles** tab of your app settings, and have each person accept the invitation before you test with them.
+
+    Before ordinary customers can message the Page, submit the app for review on the messaging permissions, complete business verification, and switch the app to Live mode using the control at the top of the App Dashboard.
+
+    A successful test with a role-holding account proves nothing about public access. Plan to repeat it with an account holding no role once the app goes Live.
+  </Step>
+</Steps>
+
+## Create the channel connection in Artemis
+
+Create the connection before you configure the callback in Meta. Meta sends its verification request the moment you save the webhook, and Artemis can only answer that challenge from a stored Verify Token.
+
+Go to **Deployments** -> **Channels** -> **Messenger** -> **+ New** and complete the following.
+
+| Field | What it controls |
+| ----- | ---------------- |
+| **Display Name** | The label operators see in the connections list. Name it for the Page and the environment it serves, because a project can hold several Messenger connections. Routing ignores this value. |
+| **Facebook Page ID** | The routing key. Enter the numeric Page ID you found above. |
+| **Page Access Token** | The credential for outbound replies. Paste the token you generated for this exact Page. |
+| **App Secret** | The key Artemis uses to verify the signature on every inbound event. |
+| **Verify Token** | The string you invented. Enter the identical value in Meta when you register the callback. |
+| **Environment** | The published environment whose active deployment answers incoming messages. Leave the working copy default only while you develop. |
+| **Provider Verification Strength** | How far Artemis trusts Meta's identity assertion when it links a person to an existing session. **Weak** suits most deployments. Choose **Strong** only when you trust those assertions enough to base continuity and account-linking decisions on them. |
+| **Initial Status** | Whether the connection starts handling messages. Set it to **Active**, because Meta's verification challenge resolves only when the connection is already active. |
+
+Select **Create**, then open the connection and copy the **Webhook URL** from the **Overview** tab.
+
+## Verify and subscribe the webhook in Meta
+
+Registration has two halves, and completing only the first is the most common way a setup fails silently. Meta verifies the URL whether or not you subscribe to anything.
+
+<Steps>
+  <Step title="Open the webhook controls">
+    Return to the Messenger settings screen in the same Meta app and find the webhooks area. Add a callback for the Page object.
+
+    Configure the URL here rather than under another Meta product. A callback registered under a different product verifies successfully and delivers nothing to this connection, which is a slow failure to trace because both screens report success.
+  </Step>
+
+  <Step title="Enter the callback URL and Verify Token">
+    Paste the Artemis **Webhook URL** exactly as shown, and enter the same **Verify Token** you saved in Artemis.
+
+    Don't append a Page ID, a connection ID, a query string, or a trailing segment. Artemis takes the Page ID from the signed payload, so anything added to the path breaks the route rather than refining it.
+  </Step>
+
+  <Step title="Complete the verification challenge">
+    Save the callback. Meta immediately calls the URL with a subscribe challenge and expects your Verify Token echoed back.
+
+    Artemis answers only when the token matches an active connection, so a failure here points at the token, the connection status, or public reachability over HTTPS rather than at the URL itself.
+  </Step>
+
+  <Step title="Subscribe to messages and messaging_postbacks">
+    In the webhook fields list, select **Manage** and subscribe the Page webhook to `messages` and `messaging_postbacks`.
+
+    The `messages` field carries text, attachments, and quick-reply payloads, so it's required even for an agent that only handles text. Subscribe `messaging_postbacks` as well if your agent sends buttons, since a button tap arrives as a separate event type carrying the authored payload rather than as a message.
+  </Step>
+
+  <Step title="Subscribe the Page and save">
+    Confirm this app and webhook list the intended Page as subscribed, then save the app changes.
+
+    If Meta asks for permissions review or Page task access for your current app mode, complete that before you test with anyone outside your app roles.
+  </Step>
+</Steps>
+
+## Test a real Page conversation
+
+Artemis doesn't synthesize Meta events, so a real Messenger conversation is the only end-to-end proof.
+
+<Steps>
+  <Step title="Message the Page from an allowed account">
+    While the app sits in development mode, use a Facebook account holding an app or Page role. Open the connected Page in Messenger and send a short message you can search for later.
+
+    Confirm Meta reports a successful webhook delivery and that Artemis opens one session.
+  </Step>
+
+  <Step title="Confirm one reply from the same Page">
+    Check that a single outbound reply appears in the same conversation.
+
+    A send failure at this point usually means the token belongs to the wrong Page, the messaging permission is missing, someone revoked the token, or the app mode still restricts delivery.
+  </Step>
+
+  <Step title="Exercise quick replies and postbacks">
+    Trigger a quick reply and a button postback, and confirm each returns to the same session. Artemis normalizes both into action events, so the authored action ID and value still have to exist in the agent.
+  </Step>
+
+  <Step title="Send each message type your Page will use">
+    Artemis downloads image, video, audio, and file attachments before the agent processes them. Location, sticker, and fallback attachments arrive as events rather than as files, so an agent that expects a downloadable attachment won't find one.
+  </Step>
+
+  <Step title="Repeat the test after the app goes Live">
+    Once Meta approves the app and you switch it to Live mode, run the same test from an account with no app or Page role. This is the only check that proves ordinary customers can reach the agent.
+  </Step>
+</Steps>
+
+## Messenger limits
+
+Meta enforces these boundaries on outbound content, and Artemis applies them before it calls the Send API. Design your agent's responses to fit them.
+
+| Area | Limit |
+| ---- | ----- |
+| Buttons | Button templates carry up to 3 buttons, with titles capped at 20 characters. |
+| Quick replies | Up to 13 choices, with titles capped at 20 characters. |
+| Carousels | Generic-template carousels carry up to 10 cards and up to 3 buttons per card. |
+| Postback payloads | Up to 1,000 characters, which is the authored value your agent branches on. |
+| Messaging window | Meta's standard messaging window lets you reply freely for 24 hours after a person messages the Page. Outside it, you need an approved message tag. A valid Page Access Token doesn't bypass this. |
+| Media | Remote media has to stay reachable from Artemis and within attachment size, content-type, and network-safety policies. |
+
+## Secure the connection
+
+Messenger authentication runs in one direction only, which is easy to misread. Meta signs what it sends you; your Verify Token does nothing after setup.
+
+Every Messenger POST carries `X-Hub-Signature-256`. Artemis computes HMAC-SHA256 over the raw request body using your App Secret and rejects a missing or mismatched signature. Any proxy or middleware in front of Artemis has to preserve the exact request bytes, because reformatting the JSON changes the digest even when the content stays identical.
+
+Keep the three secrets distinct in your own operational notes. The Verify Token protects only the initial challenge and is a string you invented. The App Secret authenticates inbound traffic. The Page Access Token authorizes outbound sends, and you can rotate it without touching the Page ID, so a token rotation never requires a new connection.
+
+Artemis rejects Messenger events older than five minutes as replay protection. Replaying a captured payload during debugging therefore fails by design, and a live message is the only way to retest.
+
+Use separate Meta apps or Pages, credentials, callbacks, and connections for development and production.
+
+## Manage the channel connection
+
+Opening a connection shows four tabs. The delete control sits beside the connection name.
+
+<Tabs>
+  <Tab title="Overview">
+    **Connection Summary** reports the connection's state and identity.
+
+    | Field | Description |
+    | ----- | ----------- |
+    | **Status** | Whether the connection currently handles messages. |
+    | **Created** and **Updated** | Date and time of creation, and of the last change. |
+    | **Environment** | The environment whose deployment answers messages. |
+    | **Source Type** | Reads `Channel Connection`. |
+    | **Source ID** | Identifies the connection uniquely. Quote it when you raise a support ticket. |
+
+    **Setup Instructions** shows the **Webhook URL** to register in Meta and the **Facebook Page ID** this connection matches events to, each with a copy control. Check the Page ID here first when messages arrive and no session appears.
+  </Tab>
+
+  <Tab title="Credentials">
+    Artemis encrypts credentials after you save them, so each field reads as saved rather than showing its value. Leave a field empty to keep the current value, or enter a new one to replace it.
+
+    | Field | Description |
+    | ----- | ----------- |
+    | **Use Auth Profile** | Draws the credentials from a saved auth profile instead of the fields below. Prefer it when the same credentials serve more than one connection, since a rotation then touches one profile. |
+    | **Page Access Token** | Replace it here when you generate a new token in Meta. The Page ID stays the same, so you don't need a new connection. |
+    | **App Secret** | Replace it here if you move the Messenger product to a different Meta app. |
+    | **Verify Token** | Changing this breaks Meta's webhook until you enter the matching value in Meta as well. |
+
+    Select **Save Credentials** to apply your changes.
+  </Tab>
+
+  <Tab title="Configuration">
+    Under **General**, rename the connection with **Display Name**, and revisit **Provider Verification Strength** if your trust posture for this Page changes.
+
+    Under **Messenger Settings**, **Facebook Page ID** appears read-only. Artemis routes inbound events by this value, so changing it would orphan the connection. Create a new connection to serve a different Page.
+
+    **Authorization Message** controls what the person sees when a tool needs them to authorize something before the conversation continues. Write the template with these variables.
+
+    | Scope | Variables | Use |
+    | ----- | --------- | --- |
+    | Message | `{{total}}`, `{{completed}}`, `{{remaining}}` | Summarize progress across every pending authorization, typically in a lead-in line above the list. |
+    | Repeat block | `{{#authorizations}}` and `{{/authorizations}}` | Wrap the section Artemis repeats once per pending authorization. |
+    | Item | `{{profileName}}`, `{{authLink}}`, `{{authUrl}}`, `{{index}}`, `{{count}}` | Identify and link each authorization inside the repeat block. |
+
+    Item variables resolve only inside the repeat block. Use the preview to check the wording, and remember it fills from live pending authorizations at runtime.
+
+    Select **Save Changes** to apply your changes.
+  </Tab>
+
+  <Tab title="Deployment">
+    Choose which deployed version of the agent answers messages on this connection.
+
+    Under **Agent Version**, set **Environment** to the environment you want the connection to follow. **Active Deployment** then shows the version currently serving traffic and when someone deployed it.
+
+    Check this pair when the channel connects but the agent behaves like an older build. The connection follows whatever the environment currently has deployed, not the version you last edited. Select **Save Changes** after you switch the environment.
+  </Tab>
+</Tabs>
+
+## Troubleshooting
+
+Match the symptom to the check. Most failures trace to a value taken from the wrong app or Page, or to a webhook that verified without subscribing.
+
+| Symptom | What to check |
+| ------- | ------------- |
+| Callback verification fails | Create the connection before you save the callback, enter the same non-empty Verify Token in both systems, use the URL exactly as Artemis shows it, and confirm the endpoint is reachable over public HTTPS. |
+| Inbound requests return 401 | The App Secret came from a different Meta app, or a proxy altered the request body or dropped the `X-Hub-Signature-256` header. |
+| Artemis reports no connection found | Compare the Page ID in the webhook payload with the numeric **Facebook Page ID** saved in Artemis, and confirm the connection is active. A PSID or an App ID in this field produces exactly this result. |
+| Verification succeeded but no messages arrive | Subscribe the `messages` and `messaging_postbacks` fields, confirm the app lists the intended Page as subscribed, and check the app mode, tester roles, and outstanding permissions. |
+| Messages arrive but replies fail | Generate a fresh Page Access Token for the same Page, confirm your account can perform the messaging and moderate tasks on the Page, and confirm the bound environment has a runnable deployment. |
+| Everything works for your team and nobody else | The app is still in development mode. Complete app review and business verification, switch to Live, then retest from an account with no role. |
+| Text works but buttons fail | Keep button and quick-reply counts and label lengths within the limits above, then confirm the authored action still exists in the agent. |
+| Text works but attachments fail | Confirm the attachment URL is reachable, that policy allows its host, content type, and size, and that the agent handles the downloaded file. |
+| Artemis ignores replayed events | Expected. Artemis rejects events older than five minutes. Send a new live message instead of replaying a captured payload. |
+
+## Meta reference
+
+Use these Meta pages when you need detail beyond what this article covers.
+
+| Resource | Use it for |
+| -------- | ---------- |
+| [Messenger Platform quick start](https://developers.facebook.com/docs/messenger-platform/getting-started/quick-start/) | Meta's own walkthrough of app setup, Page token generation, and the first webhook. |
+| [Send API reference](https://developers.facebook.com/docs/messenger-platform/reference/send-api/) | Outbound message types, message tags, and the messaging window rules. |
+| [My Apps](https://developers.facebook.com/apps/) | Returning to an app you created, or checking which app owns a Page subscription. |
+| [Meta Business Suite](https://business.facebook.com/) | Page settings, Page roles, and business verification. |
