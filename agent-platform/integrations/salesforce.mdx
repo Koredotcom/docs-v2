@@ -1,0 +1,129 @@
+---
+title: Salesforce integration
+sidebarTitle: Salesforce
+---
+
+<Badge icon="arrow-left" color="gray">[Back to list of integrations](/agent-platform/integrations#agent-desktop)</Badge>
+
+For secure, bidirectional communication between the AI application and live representatives, you can integrate Salesforce Service Cloud Agent Desktop with an Artemis project.
+
+The integration requires:
+
+1. [Salesforce setup](#salesforce-setup) — create an Embedded Service Deployment (MIAW) or a Connected App (BYOC) in Salesforce.
+2. [Artemis project configuration](#artemis-project-configuration) using the organization ID and the deployment or Connected App details from Salesforce. Set it as the default Agent Transfer route.
+
+After the configuration is complete, Artemis routes escalated conversations to the configured Salesforce queue, and a live Salesforce agent can pick up the interaction from the Service Console with full conversation context carried over.
+
+**Important considerations**
+
+- **Auth types**: The integration supports two auth types — **MIAW** (Messaging for In-App and Web, SCRT 2.0 unauthenticated guest messaging, recommended) and **BYOC** (Bring Your Own Connected App, using OAuth with a client credentials grant). Choose the type that matches the setup you complete in Salesforce.
+- **No OAuth for MIAW**: MIAW is a configuration-only connection — Artemis authenticates using only the SCRT URL, Organization ID, and Deployment Developer Name. If you need an authenticated connection, use BYOC and create a Connected App in Salesforce.
+
+## Prerequisites
+
+- Access to Salesforce Setup with permission to create Embedded Service Deployments (MIAW) or Connected Apps (BYOC), and to configure Omni-Channel routing.
+- Artemis project access with permission to open **Project** > **Integration**, and **Project Settings** > **Agent Transfer**.
+
+---
+
+## Salesforce setup
+
+<Tabs>
+  <Tab title="MIAW (recommended)">
+  For more details on the setup steps, refer to the Salesforce documentation for <a href="https://help.salesforce.com/s/articleView?id=service.miaw_deployment_custom.htm&type=5" target="_blank" rel="noopener noreferrer">Messaging for In-App and Web  &nearr;</a>.
+    <Steps>
+      <Step title="Create an Embedded Service Deployment">
+        1. Go to **Setup** > **Embedded Service Deployments**.
+        2. Create a new **Messaging for In-App and Web** deployment (or use an existing one).
+        3. Note the deployment's **Developer Name** (for example, `My_Messaging_Deployment`).
+        4. Open the deployment's **Code Snippet** and copy the **SCRT URL** (for example, `https://your-org.develop.my.salesforce-scrt.com`).
+      </Step>
+
+      <Step title="Note your Organization ID">
+        1. Go to **Setup** > **Company Information**.
+        2. Copy the **Salesforce.com Organization ID** — it starts with `00D`.
+      </Step>
+
+      <Step title="Configure routing">
+        1. Go to **Setup** > **Routing Configuration** (Omni-Channel) and configure the queues and skills used to assign incoming interactions to agents.
+        2. Test the routing flow in the Salesforce Service Console before connecting Artemis.
+      </Step>
+    </Steps>
+  </Tab>
+
+  <Tab title="BYOC">
+  For more details on the setup steps, refer to the Salesforce documentation for <a href="https://help.salesforce.com/s/articleView?id=xcloud.connected_app_client_credentials_setup.htm&type=5" target="_blank" rel="noopener noreferrer">Connected App Client Credentials Setup &nearr;</a>.
+    <Steps>
+      <Step title="Create a Connected App">
+        1. Go to **Setup** > **App Manager** > **New Connected App**.
+        2. Enable OAuth settings and enable the **Client Credentials Flow**.
+        3. Assign a run-as user for the client credentials flow.
+        4. Save, then open **Manage Consumer Details** to copy the **Consumer Key** (Client ID) and **Consumer Secret** (Client Secret).
+      </Step>
+
+      <Step title="Note your Salesforce SCRT instance URL">
+        Copy your org's SCRT instance URL, for example, `https://your-org.my.salesforce-scrt.com`.
+      </Step>
+    </Steps>
+  </Tab>
+</Tabs>
+
+---
+
+## Artemis project configuration
+
+1. Go to **Project** > **Integration** > **Agent Desktop** > **Salesforce**.
+2. Select **Connect**. The **Connect Salesforce** configuration dialog opens.
+3. Configure the following fields:
+
+    | Artemis connection field | Applies to | Source / Notes |
+    |----------------------------|-------------|------------------|
+    | Connection Name | Both | Enter a unique connection name, such as `My Salesforce`. |
+    | Auth Type | Both | `miaw` — Messaging for In-App and Web (no OAuth, recommended). `byoc_oauth` — BYOC Interaction Service with Connected App OAuth. |
+    | SCRT URL (optional) | MIAW only | Your SCRT 2.0 endpoint URL from the Embedded Service Code Snippet. See [Salesforce setup](#salesforce-setup). |
+    | Organization ID | Both | Salesforce Setup > Company Information (starts with `00D`). |
+    | Deployment Developer Name (optional) | MIAW only | The Embedded Service Deployment developer name from Setup > Embedded Service Deployments. |
+    | Instance URL (optional) | BYOC only | Your Salesforce SCRT instance URL. See [Salesforce setup](#salesforce-setup). |
+    | Client ID (optional) | BYOC only | Consumer Key from your Connected App settings. |
+    | Client Secret (optional) | BYOC only | Consumer Secret from your Connected App settings. |
+    | Webhook Callback URL (optional) | Both | ABL Runtime webhook for inbound agent events: `https://your-runtime/api/v1/agent-transfer/webhooks/salesforce?tid=<tenantId>`. |
+
+4. Click **Create Connection**.
+5. Use the Salesforce integration for Agent Transfer routing: <br />
+   Go to **Project Settings** > **Agent Transfer** > **Default Routing** > **Connection** and select the integration.
+
+When an agent escalates a conversation, Artemis routes it to the configured Salesforce Agent Desktop system.
+
+### Validation checklist
+
+| Validation item | Expected result |
+|:------------------|:-------------------|
+| Complete Salesforce setup | Embedded Service Deployment ready (MIAW) or Connected App created with Client Credentials Flow enabled (BYOC). |
+| Note Organization ID | Organization ID copied from Setup > Company Information. |
+| Create Artemis Salesforce connection | Connection saved with a unique name, Auth Type, and the fields required for that auth type. |
+| Set default Agent Transfer route | Salesforce connection is selected in Project Settings > Agent Transfer > Default Routing. |
+| Initiate test transfer | Test conversation escalates without connection errors. See [verify the connection](#verify-the-connection). |
+
+## Verify the connection
+
+1. Trigger an agent transfer in the test conversation in your Artemis project.
+2. Open the Salesforce **Service Console** (Omni-Channel) and accept the incoming interaction from the configured queue.
+3. Confirm that messages sent from the test conversation appear on the agent side, and that agent replies appear back in the Artemis conversation.
+
+---
+
+## Troubleshoot integration issues
+
+| Symptom | Likely cause | Recommended action |
+|---------|---------------|----------------------|
+| Connection fails with a "no credentials" error | Required MIAW or BYOC fields are missing from the connection | Re-open the connection and verify Organization ID plus the fields required for your Auth Type — SCRT URL and Deployment Developer Name for MIAW; Instance URL, Client ID, and Client Secret for BYOC. |
+| MIAW authentication fails with a 401 error | Invalid Organization ID or Deployment Developer Name | Re-check both values against Setup > Company Information and Setup > Embedded Service Deployments. |
+| MIAW authentication fails with a 403 error | The Embedded Service deployment restricts allowed domains | In the deployment's settings in Salesforce, allow all domains or add the Artemis/runtime domain to the allow list. |
+| Real-time connection fails with a 404 error | Invalid or mistyped SCRT URL | Re-copy the SCRT URL from the deployment's Code Snippet in Setup > Embedded Service Deployments. |
+| BYOC connection is unauthorized | Incorrect Client ID / Client Secret, or the Client Credentials Flow isn't enabled on the Connected App | Verify the Consumer Key and Consumer Secret in Manage Consumer Details, and confirm the Client Credentials Flow is enabled with a run-as user assigned. |
+| Agent never receives the interaction | Routing configuration doesn't route the deployment's channel to an active queue | Verify the Omni-Channel routing configuration and queue assignment in Salesforce Setup. |
+
+{{related}}
+
+- [Transfer sessions](/agent-platform/transfer-sessions)
+- [Escalate to a human agent](/agent-platform/escalate)
