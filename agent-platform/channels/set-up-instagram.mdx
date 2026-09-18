@@ -1,0 +1,331 @@
+---
+title: Set up Instagram
+sidebarTitle: Instagram
+---
+
+<Badge icon="arrow-left" color="gray">[Back to messaging or digital channels](/agent-platform/channels#messaging-or-digital)</Badge>
+
+Connect an Instagram professional account to your agent so people reach it through Instagram direct messages. Instagram messaging runs on the Messenger Platform. You prepare a Meta app and a Facebook Page alongside the Instagram account, then register a signed webhook that Meta verifies before it sends anything.
+
+The setup requires:
+
+1. [Instagram and Meta setup](#instagram-and-meta-setup): Confirm the account is professional, link it to a Facebook Page, add the Instagram product to a Meta app, and collect the account ID, Page Access Token, and App Secret.
+2. [Artemis channel configuration](#artemis-channel-configuration) using those values, then copy the generated webhook URL.
+3. [Webhook configuration in Meta](#webhook-configuration-in-meta): Verify the callback and subscribe the professional account to the message events.
+
+After the configuration is complete, a direct message to the professional account opens a session in Artemis, the bound deployment answers it, and the reply returns to the same Instagram conversation.
+
+**Important considerations**
+
+- **Instagram messaging runs through a Facebook Page**: The Page issues the access token that authorizes outbound replies, so the Instagram account, the Page, the Meta app, the App Secret, and the webhook subscription all have to belong to one linked set. Values from two apps produce failures that look unrelated to each other.
+- **Three Meta identifiers compete for one field**: Artemis routes on the Instagram Account ID. The Facebook Page ID, the Meta App ID, and the Instagram-scoped ID that identifies a customer all appear nearby and none of them route.
+- **Create the connection before the webhook**: Meta's verification challenge carries the Verify Token but no account ID, so Artemis finds the connection by the stored token. An unsaved connection fails verification.
+- **Development mode limits who can test**: Only assigned app roles and eligible testers can exercise the integration until you complete permission review and switch the app to Live.
+
+## Prerequisites
+
+- An Instagram **Business** or **Creator** account. A personal account can't support this integration, and converting it is the first step below.
+- A Facebook Page linked to that Instagram account, on which your account can perform the messaging and moderate tasks. Meta requires both tasks of whoever generates the Page Access Token.
+- A Meta developer account with permission to create a business app, add the Instagram product, and reveal the App Secret.
+- Artemis project access with permission to open **Deployments** -> **Channels**, and a deployed agent in the environment you intend to bind.
+
+---
+
+## How Artemis routes Instagram events
+
+Meta sends every event for the account to one generic URL, so Artemis identifies the connection from the payload rather than the path. It reads the Instagram account ID out of the signed event and matches it to a connection.
+
+| Piece | Who owns it | What it does |
+| ----- | ----------- | ------------ |
+| **Instagram Account ID** | Meta | Routes inbound events. Artemis reads the account ID from each signed webhook and matches it to this connection. |
+| **Page Access Token** | Meta | Authorizes outbound replies. Artemis sends to the account's messages endpoint using it as a bearer token, so the token has to belong to the Page linked to this account and carry the Instagram messaging permission. |
+| **App Secret** | Meta | Verifies the `X-Hub-Signature-256` header on every inbound POST. Artemis computes the HMAC over the unchanged request body and rejects anything that doesn't match. |
+| **Verify Token** | You | Answers Meta's one-time verification challenge when you save the callback URL. It does nothing after that. |
+| **Webhook URL** | Artemis | Receives events. The route carries no account ID, because the account ID travels in the payload. |
+
+Artemis scopes each conversation to the account and the sender together, so one person messaging two of your professional accounts holds two separate sessions.
+
+---
+
+## Instagram and Meta setup
+
+Do this work in Instagram and Meta before you open Artemis. Meta covers the same ground in its [Instagram messaging get started guide](https://developers.facebook.com/docs/messenger-platform/instagram/get-started).
+
+<Steps>
+  <Step title="Confirm the account is professional">
+    1. Open the Instagram app and go to your profile.
+    2. Open the menu, then **Settings and privacy**.
+    3. Find the account type setting and switch the account to **Business** or **Creator**.
+
+    Instagram messaging works only on a professional account, and the [Instagram Platform overview](https://developers.facebook.com/docs/instagram-platform/overview/) sets out what each account type supports. A personal account can't support this integration at all, so confirm this before you spend time in the App Dashboard.
+  </Step>
+
+  <Step title="Link the account to a Facebook Page">
+    1. In Instagram, open the professional account settings and find the linked accounts or connected Page setting.
+    2. Connect the Facebook Page that will issue the Page Access Token.
+    3. Confirm the link from the Page side as well, so both surfaces agree.
+
+    The Page is what makes messaging work. Meta routes Instagram conversations through the linked Page, which is why the token you use later belongs to the Page rather than to Instagram.
+  </Step>
+
+  <Step title="Create or select a Meta business app">
+    1. Sign in to [Meta for Developers](https://developers.facebook.com/) and open [My Apps](https://developers.facebook.com/apps/).
+    2. Create an app, choosing the business messaging use case, or open the app that will own this connection.
+    3. Add the Instagram product and configure Instagram messaging for the linked Page and account.
+
+    Keep development and production on separate apps and accounts, because app mode and webhook subscriptions belong to the app.
+  </Step>
+
+  <Step title="Assign access and generate the Page Access Token">
+    1. Grant the app, its testers, and any system users the Instagram messaging and Page permissions they need.
+    2. Complete any permission review Meta requires for your current app mode.
+    3. Generate a Page Access Token for the linked Page and copy it.
+
+    Meta requires the `instagram_manage_messages` permission on the token, and requires that whoever requests it can perform the messaging and moderate tasks on the Page. A token generated without both produces a clean-looking connection that fails on the first reply.
+
+    Token lifetime follows the user token behind it. A short-lived user token yields a Page token good for about an hour. A long-lived user token yields one with no expiry, so use the long-lived path for anything beyond a first test.
+  </Step>
+
+  <Step title="Find the Instagram Account ID">
+    Artemis routes on the numeric professional account ID, which is neither the `@username` nor the Page ID.
+
+    Meta surfaces it in the Instagram messaging setup area of the App Dashboard alongside the connected account. You can also query the linked Page for its connected Instagram professional account in the Graph API Explorer, which returns the same numeric ID.
+
+    Don't substitute the `@username`, the Facebook Page ID, the Meta App ID, a profile URL, or the Instagram-scoped ID. That last one, the IGSID, appears in every inbound event and identifies the customer: Meta issues each person a different scoped ID for each account they message.
+  </Step>
+
+  <Step title="Copy the App Secret">
+    1. In the left menu of the App Dashboard, go to **App settings** -> **Basic**.
+    2. Click **Show** beside **App secret**.
+    3. Re-enter your Facebook password when Meta asks, then copy the value.
+
+    Take it from the same Meta app that owns the Instagram webhook. An App Secret from a neighboring app produces a signature failure on every event, which is a confusing failure to trace because nothing else looks wrong.
+  </Step>
+
+  <Step title="Choose a Verify Token">
+    Invent a long random string. Meta doesn't issue this one, so you create it and enter the same value twice: once in Artemis, once in the Meta webhook form.
+
+    Use a different value per environment, and treat it as a secret rather than a label. It's your shared challenge secret, distinct from both the Page Access Token and the App Secret.
+  </Step>
+
+  <Step title="Plan for testers and Live mode">
+    While the app sits in development mode, only accounts holding an app role or an eligible Instagram tester role can exercise the integration.
+
+    Before ordinary people can message the account, complete permission review and switch the app to Live using the control at the top of the App Dashboard. A successful test with a role-holding account proves nothing about public access.
+  </Step>
+</Steps>
+
+---
+
+## Artemis channel configuration
+
+Create the connection before you configure the callback in Meta. Meta's verification request carries the Verify Token but no account ID, so Artemis resolves the challenge from the stored token and needs the connection to exist and be active.
+
+1. Open Artemis and select the project.
+2. Go to **Deployments** -> **Channels** -> **Instagram** -> **+ New**.
+3. Configure the following fields:
+
+    | Artemis connection field | Source / Notes |
+    |---|---|
+    | Display Name | The label operators see in the connections list. Name it for the account and the environment it serves, because a project can hold several Instagram connections. Routing ignores this value. |
+    | Instagram Account ID | The routing key. Enter the numeric professional account ID. From the Instagram messaging area of the Meta App Dashboard, or from the linked Page in the Graph API Explorer. |
+    | Page Access Token | Authorizes outbound replies. Use the token generated for the Facebook Page linked to this Instagram account, carrying the Instagram messaging permission. |
+    | App Secret | Verifies the signature Meta puts on each inbound event. From **App settings** -> **Basic** in the same Meta app that owns the webhook. |
+    | Verify Token | The string you invented. Enter the identical value in Meta when you register the callback. |
+    | Environment | The published environment whose active deployment answers incoming messages. Leave the working copy default only while you develop. |
+    | Provider Verification Strength | How far Artemis trusts Meta's identity assertion when it links a person to an existing session. **Weak** suits most deployments. Choose **Strong** only when you trust those assertions enough to base continuity and account-linking decisions on them. |
+    | Initial Status | Whether the connection starts handling messages. Set it to **Active**, because Meta's verification challenge resolves only when the connection is already active. |
+
+4. Click **Create**.
+5. Open the connection and copy the **Webhook URL** from the **Overview** tab. <br />
+   Copy it exactly. The route carries no account identifier, and adding one breaks the callback rather than refining it.
+
+### Validation checklist
+
+| Validation item | Expected result |
+|:---|:---|
+| Convert the Instagram account | Account shows as Business or Creator and is eligible for Instagram messaging. |
+| Link the Facebook Page | Instagram account and Page show as linked from both sides, with messaging and moderate tasks available to you. |
+| Prepare the Meta app | Instagram product added, permissions assigned, and a non-expired Page Access Token generated for the linked Page. |
+| Collect the routing identifier | Numeric Instagram Account ID copied, distinct from the `@username`, Page ID, and App ID. |
+| Create the Artemis connection | Connection saved as Active with the account ID, Page Access Token, App Secret, and Verify Token. |
+| Register the callback | Meta reports the webhook verified, with `messages` and `messaging_postbacks` subscribed and the intended account connected. |
+| Bind a deployment | The connection's **Deployment** tab shows a runnable active deployment. |
+| Send a real message | Test direct message reaches the agent and the reply returns once. See [Verify the connection](#verify-the-connection). |
+
+---
+
+## Webhook configuration in Meta
+
+Registration has two halves, and completing only the first is the most common way a setup fails silently. Meta verifies the URL whether or not you subscribe to anything.
+
+<Steps>
+  <Step title="Enter the callback URL and Verify Token">
+    1. In the same Meta app, open the Instagram webhook configuration.
+    2. Paste the Artemis **Webhook URL** exactly as shown.
+    3. Enter the same **Verify Token** you saved in Artemis.
+    4. Click the control that verifies and saves the callback.
+
+    Meta sends a subscribe challenge and expects your Verify Token echoed back. Artemis returns the challenge only when the token matches an active Instagram connection. A failure here points at the token, the connection status, or public reachability over HTTPS rather than at the URL itself.
+
+    Don't append an account ID, a connection ID, a query string, or a trailing segment.
+  </Step>
+
+  <Step title="Subscribe to messages and messaging_postbacks">
+    Subscribe the Instagram webhook to `messages` and `messaging_postbacks`, then save the subscription.
+
+    The `messages` field carries text, attachments, and quick-reply payloads, so it's required even for an agent that only handles text. `messaging_postbacks` carries the action callbacks behind buttons and template elements.
+  </Step>
+
+  <Step title="Subscribe the intended professional account">
+    Confirm the app connects to the same Instagram account, and that the Page subscription includes it.
+
+    Artemis resolves each event by the account ID in the signed payload, so an app subscribed to a different account delivers events that no connection claims.
+  </Step>
+
+  <Step title="Preserve the signed request through your ingress">
+    Meta signs every POST with `X-Hub-Signature-256`, and Artemis computes the HMAC over the exact raw bytes.
+
+    Any proxy or middleware in front of Artemis has to pass the body through untouched and keep the header. Parsing and reserializing the JSON changes the digest even when the content stays identical, which produces a signature failure that looks like a credential problem.
+  </Step>
+</Steps>
+
+---
+
+## Verify the connection
+
+Artemis doesn't synthesize Meta events, so a real Instagram conversation is the only end-to-end proof.
+
+1. From an account holding an app or Instagram tester role, send the professional account a short direct message you can search for later.
+2. Confirm Meta reports a successful delivery and that Artemis opens one session. <br />
+   Artemis ignores echo events, so your own outbound messages shouldn't create extra turns.
+3. Check that a single reply reaches the original sender in the same conversation. <br />
+   A send failure here usually means the Page Access Token is wrong or expired, the account linkage broke, the messaging permission is missing, or the conversation has fallen outside the messaging window.
+4. Trigger an authored quick reply and a template action, and confirm each resumes the same session rather than starting a new one.
+5. Send an image, video, audio file, and document, and confirm the agent handles the downloaded attachment. <br />
+   Artemis downloads signed Meta CDN URLs promptly because they expire, so a delay in your own processing isn't the same as a delivery failure.
+6. Once Meta approves the app and you switch it to Live, repeat the test from an account with no role. This is the only check that proves ordinary people can reach the agent.
+
+---
+
+## Instagram channel behavior and limits
+
+Meta enforces these boundaries, and Artemis applies its own download policy on inbound media. Design your agent's responses to fit them.
+
+| Area | Limit |
+| ---- | ----- |
+| Quick replies | Buttons and selects become quick replies, capped at 13 options with visible titles truncated to 20 characters. |
+| Carousels | Generic-template rich content supports at most 10 elements, each carrying at most 3 buttons. |
+| Unsupported inputs | Artemis ignores share, story mention, like-heart, reel, sticker, and fallback-only attachments rather than turning them into blank agent turns. |
+| Media downloads | Image, video, audio, and file downloads accept only recognized Meta and Instagram CDN hosts, time out after 30 seconds, and cap at 100 MB streaming. |
+| Messaging window | Meta can reject outbound delivery outside the Instagram messaging window, which runs 24 hours from the person's message. A human agent tag extends that to 7 days for approved use cases. |
+| Rate limits | Meta allows roughly 100 calls per second per account for text messages, and roughly 10 per second for audio or video. |
+
+---
+
+## Secure the connection
+
+Instagram authentication runs in one direction only, which is easy to misread. Meta signs what it sends you; your Verify Token does nothing after setup.
+
+Every POST requires `X-Hub-Signature-256` generated with the matching App Secret, and Artemis rejects a missing or invalid signature before it queues anything. Signature validation covers the exact raw bytes, so preserve the request body, its content encoding, the header, and the external scheme through your ingress.
+
+Keep the three secrets distinct in your own operational notes. The Verify Token protects only the one-time challenge, and you rotate it in both Artemis and Meta together. The App Secret authenticates inbound traffic. The Page Access Token authorizes outbound messages, so encrypt it, redact it from logs, grant least privilege, monitor its expiry, and never expose it to browser code.
+
+Use separate Meta apps and accounts for development and production, or at minimum isolated credentials, tokens, webhook subscriptions, and connections.
+
+---
+
+## Manage the channel connection
+
+Opening a connection shows four tabs. The delete control sits beside the connection name.
+
+<Tabs>
+  <Tab title="Overview">
+    **Connection Summary** reports the connection's state and identity.
+
+    | Field | Description |
+    | ----- | ----------- |
+    | **Status** | Whether the connection currently handles messages. |
+    | **Created** and **Updated** | Date and time of creation, and of the last change. |
+    | **Environment** | The environment whose deployment answers messages. |
+    | **Source Type** | Reads `Channel Connection`. |
+    | **Source ID** | Identifies the connection uniquely. Quote it when you raise a support ticket. |
+
+    **Setup Instructions** shows the **Webhook URL** to register in Meta and the **Instagram Account ID** this connection matches events to, each with a copy control. Check the account ID here first when messages arrive and no session appears.
+  </Tab>
+
+  <Tab title="Credentials">
+    Artemis encrypts credentials after you save them, so each field reads as saved rather than showing its value. Leave a field empty to keep the current value, or enter a new one to replace it.
+
+    | Field | Description |
+    | ----- | ----------- |
+    | **Use Auth Profile** | Draws the credentials from a saved auth profile instead of the fields below. Prefer it when the same credentials serve more than one connection, since a rotation then touches one profile. |
+    | **Page Access Token** | Replace it here when you generate a new token in Meta. The account ID stays the same, so you don't need a new connection. |
+    | **App Secret** | Replace it here if you move the Instagram product to a different Meta app. |
+    | **Verify Token** | Changing this breaks Meta's webhook until you enter the matching value in Meta as well. |
+
+    Click **Save Credentials** to apply your changes.
+  </Tab>
+
+  <Tab title="Configuration">
+    Under **General**, rename the connection with **Display Name**, and revisit **Provider Verification Strength** if your trust posture for this account changes.
+
+    Under **Instagram Settings**, **Instagram Account ID** appears read-only. Artemis routes inbound events by this value, so changing it would orphan the connection. Create a new connection to serve a different account.
+
+    **Authorization Message** controls what the person sees when a tool needs them to authorize something before the conversation continues. Write the template with these variables.
+
+    | Scope | Variables | Use |
+    | ----- | --------- | --- |
+    | Message | `{{total}}`, `{{completed}}`, `{{remaining}}` | Summarize progress across every pending authorization, typically in a lead-in line above the list. |
+    | Repeat block | `{{#authorizations}}` and `{{/authorizations}}` | Wrap the section Artemis repeats once per pending authorization. |
+    | Item | `{{profileName}}`, `{{authLink}}`, `{{authUrl}}`, `{{index}}`, `{{count}}` | Identify and link each authorization inside the repeat block. |
+
+    Item variables resolve only inside the repeat block. Use the preview to check the wording, and remember it fills from live pending authorizations at runtime.
+
+    Click **Save Changes** to apply your changes.
+  </Tab>
+
+  <Tab title="Deployment">
+    Choose which deployed version of the agent answers messages on this connection.
+
+    Under **Agent Version**, set **Environment** to the environment you want the connection to follow. **Active Deployment** then shows the version currently serving traffic and when someone deployed it.
+
+    Check this pair when the channel connects but the agent behaves like an older build. The connection follows whatever the environment currently has deployed, not the version you last edited. Click **Save Changes** after you switch the environment.
+  </Tab>
+</Tabs>
+
+---
+
+## Troubleshoot connection issues
+
+| Symptom | Likely cause | Recommended action |
+|---|---|---|
+| Meta can't verify the callback | The connection doesn't exist yet, the tokens differ, or the endpoint isn't publicly reachable | Create the connection and set it to Active first, use the exact saved Verify Token in both systems, expose the runtime over public HTTPS, and keep the generic Instagram webhook path. |
+| Inbound requests return 401 | The App Secret belongs to a different app, or ingress altered the signed request | Confirm the App Secret comes from the app that owns the webhook, preserve `X-Hub-Signature-256`, and stop proxies from parsing and reserializing the JSON body. |
+| Artemis reports no connection found | The account ID in the payload doesn't match the saved value | Compare the account ID in the signed payload with the **Instagram Account ID** saved in Artemis, and confirm the connection is Active. A Page ID or an IGSID in this field produces exactly this result. |
+| Verification succeeded but no messages arrive | The subscription is missing, or the sender isn't eligible in the current app mode | Subscribe `messages` and `messaging_postbacks`, connect the intended professional account, inspect Meta's delivery log, and confirm the sender holds a role while the app is in Development. |
+| Inbound works but outbound fails | The Page Access Token is wrong, expired, or under-permissioned, or the window closed | Verify the token, the account linkage, the Instagram messaging permission, the token expiry, the messaging window, and reachability of the Graph API. |
+| Text works but actions don't | `messaging_postbacks` isn't subscribed, or the payload exceeds channel limits | Subscribe the field, then keep authored quick replies and template payloads within the limits above. |
+| Text works but attachments fail | The media type, host, size, or signed URL falls outside policy | Use image, video, audio, or file, confirm the signed URL hasn't expired, confirm the host is a recognized Meta CDN, keep the download within 100 MB, and confirm your attachment policy accepts it. |
+| Meta rejects replies after a delay | The conversation fell outside the messaging window | Reproduce inside an active conversation, then review Meta's current Instagram messaging window and approved use cases. |
+
+---
+
+## Meta reference
+
+Use these Meta pages when you need detail beyond what this article covers.
+
+| Resource | Use it for |
+| -------- | ---------- |
+| [Instagram Platform overview](https://developers.facebook.com/docs/instagram-platform/overview/) | Account eligibility, how the pieces fit together, and rate limits. |
+| [Instagram messaging get started](https://developers.facebook.com/docs/messenger-platform/instagram/get-started) | Meta's own walkthrough of app setup, permissions, and Page token generation. |
+| [Instagram messaging overview](https://developers.facebook.com/docs/instagram-messaging/overview) | Conversation entry points, supported message types, and the inbox model. |
+| [Send a message](https://developers.facebook.com/docs/messenger-platform/instagram/features/send-message) | Outbound message formats, media limits, and the messaging window rules. |
+| [My Apps](https://developers.facebook.com/apps/) | Returning to an app you created, or checking which app owns a subscription. |
+| [Meta Business Suite](https://business.facebook.com/) | Page roles, linked accounts, and business verification. |
+
+{{related}}
+
+- [Set up Messenger](/agent-platform/channels/set-up-messenger)
+- [Set up WhatsApp](/agent-platform/channels/set-up-whatsapp)
+- [Set up LINE](/agent-platform/channels/set-up-line)
