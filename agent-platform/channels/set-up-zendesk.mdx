@@ -1,0 +1,323 @@
+---
+title: Set up Zendesk
+sidebarTitle: Zendesk
+---
+
+<Badge icon="arrow-left" color="gray">[Back to messaging or digital channels](/agent-platform/channels#messaging-or-digital)</Badge>
+
+Connect a Zendesk Sunshine Conversations app to your agent so customers reach it through any messaging channel that app already serves. Sunshine Conversations normalizes Web Widget, social channels, and SMS into one API, so Artemis integrates once and inherits every entry point the app carries.
+
+The setup requires:
+
+1. [Zendesk setup](#zendesk-setup): Select or create the Sunshine Conversations app, copy its App ID, and create an API key.
+2. [Artemis channel configuration](#artemis-channel-configuration) using those values, then copy the generated webhook URL.
+3. [Webhook configuration in Zendesk](#webhook-configuration-in-zendesk): Register that URL as a conversations integration and subscribe it to the message and postback triggers.
+
+After the configuration is complete, a customer message on any channel connected to the app opens a session in Artemis, the bound deployment answers it, and the reply posts back into the same conversation as a business author.
+
+**Important considerations**
+
+- **The App ID does two jobs**: It routes inbound events and identifies the app for outbound replies. The connection dialog asks for it twice, once as the routing identifier and once as a credential, and both have to name the same Sunshine Conversations app.
+- **Two setup paths exist**: Zendesk Suite customers work in Admin Center, while accounts with a separate Sunshine Conversations license use the Sunshine Conversations dashboard. The values are the same either way; the navigation isn't.
+- **Webhook verification is optional and needs middleware**: Artemis expects an `x-api-key` header carrying an HMAC of the raw body, which Sunshine Conversations doesn't send natively. Leave **Webhook Secret** empty unless something in front of Artemis generates that header.
+- **Artemis doesn't create the customer entry point**: The app still needs a connected channel or client through which a customer can start a conversation. Registering the webhook adds no channel of its own.
+
+## Prerequisites
+
+- A Sunshine Conversations app with at least one customer-facing channel already connected, such as Web Widget or a social channel.
+- Zendesk Suite Professional or above with Agent Workspace activated, if you're working in Admin Center. The Conversations API page doesn't appear on lower plans.
+- Administrator access in Zendesk, since only an administrator can create the API key.
+- Artemis project access with permission to open **Deployments** -> **Channels**, and a deployed agent in the environment you intend to bind.
+
+---
+
+## How Artemis routes Zendesk events
+
+Artemis puts the App ID at the end of the webhook path and resolves the connection from that segment, then uses the matching app in the payload for replies.
+
+| Piece | Who owns it | What it does |
+| ----- | ----------- | ------------ |
+| **App ID** | Zendesk | Routes inbound events. Artemis appends it to the webhook path, so the generic Zendesk webhook route alone can't resolve a connection. It also identifies the app on outbound calls. |
+| **API Key ID** | Zendesk | The username half of the HTTP Basic credential Artemis uses to post replies. |
+| **API Key Secret** | Zendesk | The password half. Zendesk shows it once at creation and never again. |
+| **Webhook Secret** | You | Optional. When set, Artemis requires an `x-api-key` header carrying the lowercase hexadecimal HMAC-SHA256 of the exact raw request body, and rejects anything without a match. |
+| **Webhook URL** | Artemis | Receives conversation events. It ends with the App ID, so the full URL matters rather than the route alone. |
+
+The App ID travels in a public URL and isn't a secret. It exists for deterministic lookup, so authorization rests on the API key and on whatever verification you put in front of the endpoint.
+
+---
+
+## Zendesk setup
+
+Complete the tab that matches your Zendesk account. Both paths produce the same three values: the App ID, the API Key ID, and the API Key Secret.
+
+<Tabs>
+  <Tab title="Zendesk Admin Center">
+    Use this path if your messaging runs on Zendesk Suite. Zendesk's [Conversations API keys article](https://support.zendesk.com/hc/en-us/articles/4576088682266-Using-the-Conversations-API-keys) covers the same screen.
+
+    <Steps>
+      <Step title="Open the Conversations API page">
+        1. Open Admin Center and select **Apps and integrations** in the sidebar.
+        2. Select **APIs** -> **Conversations API**.
+
+        If the page doesn't appear, your plan or workspace configuration is the cause rather than a permissions problem. The page needs Zendesk Suite Professional or above with Agent Workspace activated.
+      </Step>
+
+      <Step title="Create an API key">
+        1. Select **Create API key**.
+        2. Enter an identifying name for the key, then select **Next**.
+        3. Copy the **App ID**, **Key ID**, and **Secret** from the panel Zendesk shows.
+
+        Zendesk displays the secret once. Copy all three values into your secret manager before you close the panel, because recovering the secret means creating a replacement key.
+
+        Create a dedicated key for this Artemis connection rather than reusing one that already serves another integration. An account stores up to 10 keys, so a separate key per integration costs nothing and lets you revoke this one in isolation.
+      </Step>
+
+      <Step title="Confirm the app carries a customer channel">
+        Check that the app already carries a channel a customer can message, such as the Web Widget or a connected social channel.
+
+        Artemis attaches to an existing app rather than creating an entry point. Without a connected channel, the webhook registers correctly and no customer can ever reach it.
+      </Step>
+    </Steps>
+  </Tab>
+
+  <Tab title="Sunshine Conversations dashboard">
+    Use this path if your account holds a separate Sunshine Conversations license rather than the one bundled with Zendesk Suite.
+
+    <Steps>
+      <Step title="Select the app">
+        Sign in to the Sunshine Conversations dashboard and select the app that owns the customer-facing integration, or create one.
+
+        Keep development and production on separate apps. An app aggregates every channel it serves, so sharing one mixes test conversations into customer history.
+      </Step>
+
+      <Step title="Copy the App ID">
+        Open the app's settings and copy the app-level identifier.
+
+        Sunshine Conversations surfaces several identifiers that look similar. Don't substitute a Zendesk subdomain, an integration ID, a conversation ID, a user ID, a webhook ID, or the API key ID. The App ID identifies the app itself and never changes.
+      </Step>
+
+      <Step title="Create a server-side API key">
+        1. Open the **Settings** tab, then find the **API keys** section.
+        2. Create a key for this Artemis connection.
+        3. Copy both the **Key ID** and the **Key Secret** while the secret is still visible.
+
+        These two values authorize outbound messages for every conversation in the app, so treat the secret as a high-value credential and store it only in your secret manager.
+      </Step>
+    </Steps>
+  </Tab>
+</Tabs>
+
+---
+
+## Artemis channel configuration
+
+Create the connection before you register the webhook. The callback URL ends with the App ID, and Artemis resolves inbound events only after an active connection exists to resolve them to.
+
+1. Open Artemis and select the project.
+2. Go to **Deployments** -> **Channels** -> **Zendesk** -> **+ New**.
+3. Configure the following fields:
+
+    | Artemis connection field | Source / Notes |
+    |---|---|
+    | Display Name | The label operators see in the connections list. Name it for the app and the environment it serves, because a project can hold several Zendesk connections. Routing ignores this value. |
+    | App ID (identifier) | The routing key. Artemis writes it into the webhook path and selects the connection from it. Enter the exact Sunshine Conversations App ID. |
+    | App ID (credential) | The same value again, used for provider operations. A mismatch between the two can accept one app's inbound route and then fail or misdirect the outbound reply. |
+    | API Key ID | The username half of the Basic credential for outbound messages. From the same app as the App ID. |
+    | API Key Secret | The password half. Zendesk shows it once at key creation. |
+    | Webhook Secret | Optional. Set it only when something in front of Artemis can add the matching `x-api-key` HMAC header. Leave it empty otherwise, or every inbound event fails. |
+    | Environment | The published environment whose active deployment answers incoming messages. Leave the working copy default only while you develop. |
+    | Provider Verification Strength | How far Artemis trusts Zendesk's identity assertion when it links a customer to an existing session. **Weak** suits most deployments. Choose **Strong** only when you trust those assertions enough to base continuity and account-linking decisions on them. |
+    | Initial Status | Whether the connection starts handling messages. Set it to **Active**, because Artemis resolves inbound webhooks only for an active connection. |
+
+4. Select **Create**.
+5. Open the connection and copy the **Webhook URL** from the **Overview** tab. <br />
+   The URL ends with the App ID. Copy the whole thing, because the generic Zendesk webhook path can't identify which connection an event belongs to.
+
+### Validation checklist
+
+| Validation item | Expected result |
+|:---|:---|
+| Select the Sunshine Conversations app | App identified, with at least one customer channel already connected to it. |
+| Copy the App ID | App-level identifier copied, distinct from subdomain, integration, conversation, user, webhook, and key IDs. |
+| Create the API key | Key ID and Key Secret copied and stored while the secret was visible. |
+| Create the Artemis connection | Connection saved as Active, with the same App ID in both the identifier and credential fields. |
+| Copy the webhook URL | Webhook URL copied from the **Overview** tab, ending with the App ID. |
+| Register the integration | Conversations integration created in the same app, targeting that URL. |
+| Subscribe the triggers | `conversation:message` subscribed, plus `conversation:postback` if the agent sends buttons. |
+| Bind a deployment | The connection's **Deployment** tab shows a runnable active deployment. |
+| Send a real message | Test conversation reaches the agent and one reply appears. See [Verify the connection](#verify-the-connection). |
+
+---
+
+## Webhook configuration in Zendesk
+
+Zendesk calls the webhook a conversations integration in Admin Center, and a webhook in the Sunshine Conversations dashboard. Both create the same object. Zendesk documents the Admin Center route in [Creating conversations integrations in Admin Center](https://support.zendesk.com/hc/en-us/articles/4576083789850-Creating-conversations-integrations-in-Admin-Center).
+
+<Steps>
+  <Step title="Open the integrations page">
+    In Admin Center, select **Apps and integrations** in the sidebar, then **Integrations** -> **Conversations integrations**, and select **Create integration**.
+
+    In the Sunshine Conversations dashboard, add a webhook from the app's integrations area instead. Create it in the same app that issued your API key, because a webhook registered on a neighboring app delivers events that this connection can't claim.
+  </Step>
+
+  <Step title="Enter the Artemis webhook URL">
+    Paste the complete **Webhook URL** from the connection's **Overview** tab, including the App ID segment at the end.
+
+    Zendesk sends an HTTP HEAD request to the root domain when you save, checking that the domain resolves and a service answers. A save that fails at this point points at reachability rather than at the path.
+  </Step>
+
+  <Step title="Subscribe to the message and postback triggers">
+    Select **Conversation message** to receive customer text, which Zendesk sends as `conversation:message`.
+
+    Add the postback trigger as well if your agent sends buttons. Postback taps arrive as `conversation:postback` rather than as messages, so an agent with buttons and no postback subscription answers text and then goes silent when someone taps. Artemis ignores event types it doesn't support, so extra triggers cause no harm beyond noise.
+  </Step>
+
+  <Step title="Save and confirm delivery">
+    Save the integration, then check the delivery history after your first test to confirm Zendesk receives a 2xx response.
+
+    Preserve the event identifiers Zendesk sends. Artemis deduplicates on the first event ID, so middleware that rewrites identifiers turns a provider retry into a duplicate agent turn.
+  </Step>
+</Steps>
+
+---
+
+## Verify the connection
+
+Artemis doesn't synthesize Zendesk events, so a real conversation through a connected channel is the only end-to-end proof.
+
+1. From the app's connected customer channel, send a short message you can search for later. <br />
+   Use the actual customer client rather than an agent-side tool, because the two produce different author types.
+2. Confirm one `conversation:message` delivery, one Artemis session, and one agent turn.
+3. Check that the reply appears in the same customer conversation. <br />
+   Artemis posts it as a business author through the Sunshine Conversations API, so the reply shows as coming from the business rather than from an agent.
+4. Send an authored response carrying a button, tap it in the customer client, and confirm the postback resumes the same conversation with the action value you authored.
+5. Confirm the agent's own reply doesn't trigger a second turn. <br />
+   Artemis ignores business-authored message events by design. A loop here means middleware is rewriting agent messages as customer or user authors.
+
+---
+
+## Message behavior and limits
+
+Sunshine Conversations normalizes many channels into one API, which shapes what your agent can rely on.
+
+| Area | Behavior |
+| ---- | -------- |
+| Channel coverage | The connection inherits every channel the app serves. A reply that renders well in the Web Widget may fall back to plain text on SMS, so author for the least capable channel your app carries. |
+| Buttons | Zendesk falls back automatically where a channel lacks native buttons, for example rendering a link button as a hyperlink. Test the fallback rather than assuming the authored form. |
+| Postbacks | Postback buttons stay tappable after use, so the same action can arrive more than once. Make your authored handling idempotent. |
+| Author types | Artemis processes customer-authored events and ignores business-authored ones, which is what stops the agent answering itself. |
+| Retries | Zendesk retries failed deliveries. Artemis deduplicates on the first event ID, so leave event identifiers untouched in transit. |
+| Switchboard control | When a custom integration holds control of a conversation, Agent Workspace doesn't receive it, so messages appear without a ticket. Plan handoff explicitly if human agents need to take over. |
+
+---
+
+## Secure the connection
+
+The API key is the credential that matters here, and nothing protects the inbound side unless you add that protection yourself.
+
+The Key ID and Key Secret authorize the Sunshine Conversations REST API for every conversation in the app. Use a dedicated key for this connection, keep it in encrypted storage, redact it from diagnostics, and revoke keys you no longer use. Rotating the key means updating both halves in Artemis together, because Artemis sends them as one Basic credential.
+
+Webhook verification is optional in this connection contract, and that's a deliberate trade rather than an oversight. With **Webhook Secret** empty, Artemis accepts inbound events without a signature. Setting it requires every request to carry an `x-api-key` header holding the lowercase hexadecimal HMAC-SHA256 of the untouched raw body, which Sunshine Conversations doesn't produce on its own. So you either put middleware in front of Artemis that generates the header exactly that way, or you enforce an equivalent control at your ingress.
+
+Don't paste the API Key Secret into **Webhook Secret**. They protect opposite directions, and reusing one value for both spreads a single compromise across inbound and outbound paths.
+
+Use distinct Sunshine Conversations apps or API keys, webhooks, secrets, and connections for development and production.
+
+---
+
+## Manage the channel connection
+
+Opening a connection shows four tabs. The delete control sits beside the connection name.
+
+<Tabs>
+  <Tab title="Overview">
+    **Connection Summary** reports the connection's state and identity.
+
+    | Field | Description |
+    | ----- | ----------- |
+    | **Status** | Whether the connection currently handles messages. |
+    | **Created** and **Updated** | Date and time of creation, and of the last change. |
+    | **Environment** | The environment whose deployment answers messages. |
+    | **Source Type** | Reads `Channel Connection`. |
+    | **Source ID** | Identifies the connection uniquely. Quote it when you raise a support ticket. |
+
+    **Setup Instructions** shows the **Webhook URL** to register in Zendesk and the **App ID** it ends with, each with a copy control. Compare the App ID here with the one in the payload whenever Artemis reports no connection found.
+  </Tab>
+
+  <Tab title="Credentials">
+    Artemis encrypts credentials after you save them, so each field reads as saved rather than showing its value. Leave a field empty to keep the current value, or enter a new one to replace it.
+
+    | Field | Description |
+    | ----- | ----------- |
+    | **Use Auth Profile** | Draws the credentials from a saved auth profile instead of the fields below. Prefer it when the same credentials serve more than one connection, since a rotation then touches one profile. |
+    | **App ID** | The credential copy of the App ID. Keep it matched to the identifier, which you can read on the **Overview** tab. |
+    | **API Key ID** | Replace it when you issue a new key in Zendesk. |
+    | **API Key Secret** | Replace it alongside the Key ID, because Artemis sends the pair as one Basic credential. |
+    | **Webhook Secret** | Set or clear the optional HMAC requirement. Clearing it returns the endpoint to accepting unsigned events. |
+
+    Select **Save Credentials** to apply your changes.
+  </Tab>
+
+  <Tab title="Configuration">
+    Under **General**, rename the connection with **Display Name**, and revisit **Provider Verification Strength** if your trust posture for this app changes.
+
+    Under **Zendesk Settings**, **App ID** appears read-only. The webhook URL is built from it, so changing it would invalidate the integration registered in Zendesk. Create a new connection to serve a different app.
+
+    **Authorization Message** controls what the customer sees when a tool needs them to authorize something before the conversation continues. Write the template with these variables.
+
+    | Scope | Variables | Use |
+    | ----- | --------- | --- |
+    | Message | `{{total}}`, `{{completed}}`, `{{remaining}}` | Summarize progress across every pending authorization, typically in a lead-in line above the list. |
+    | Repeat block | `{{#authorizations}}` and `{{/authorizations}}` | Wrap the section Artemis repeats once per pending authorization. |
+    | Item | `{{profileName}}`, `{{authLink}}`, `{{authUrl}}`, `{{index}}`, `{{count}}` | Identify and link each authorization inside the repeat block. |
+
+    Item variables resolve only inside the repeat block. Check the preview, and remember the message may render on a channel that strips formatting.
+
+    Select **Save Changes** to apply your changes.
+  </Tab>
+
+  <Tab title="Deployment">
+    Choose which deployed version of the agent answers messages on this connection.
+
+    Under **Agent Version**, set **Environment** to the environment you want the connection to follow. **Active Deployment** then shows the version currently serving traffic.
+
+    A connection left on the working copy shows a warning, because the working copy changes as you edit the agent. Bind the connection to a published environment before customers reach it. Select **Save Changes** after you switch.
+  </Tab>
+</Tabs>
+
+---
+
+## Troubleshoot connection issues
+
+| Symptom | Likely cause | Recommended action |
+|---|---|---|
+| The webhook returns connection not found | The URL doesn't carry the right App ID, or the connection isn't active | Confirm the URL ends with the exact App ID saved in Artemis, confirm the connection is Active, and confirm the payload's app identifier names the same app. |
+| Outbound replies return 401 or 403 | The API key doesn't belong to the credential App ID, or someone revoked it | Verify the Key ID and Key Secret come from the same app as the credential App ID, and confirm nobody regenerated or revoked the key. |
+| Customer messages never arrive | The integration sits on another app, the trigger isn't subscribed, or the endpoint isn't reachable | Confirm the integration lives in the same app as the credentials, subscribe `conversation:message`, confirm the endpoint answers over public HTTPS, and check Zendesk's delivery history for a 2xx. |
+| Inbound processing works but no reply appears | The payload lacks a conversation reference, the credentials mismatch, or no deployment can run | Confirm the payload carries the conversation identifier, the app credentials match, the bound environment has a runnable deployment, and the Zendesk API is reachable. |
+| The webhook returns 401 after you set Webhook Secret | Nothing is generating the expected header | Have your middleware set `x-api-key` to the lowercase hexadecimal HMAC-SHA256 of the untouched raw body, or clear the field for an intentionally unsigned deployment. |
+| Replies create repeated turns | Something rewrites the author type | Inspect the event author type. Artemis ignores business authors, so a loop means middleware is presenting agent messages as customer or user authors. |
+| Text works but buttons don't | The postback trigger isn't subscribed, or the channel can't render the action | Subscribe `conversation:postback`, confirm the customer channel supports reply actions, and confirm the authored action payload returns unchanged. |
+| Messages appear in Zendesk but agents receive no ticket | Switchboard control sits with a custom integration rather than Agent Workspace | Check which integration holds control of the conversation, and pass control to Agent Workspace when a human agent needs to take over. |
+
+---
+
+## Zendesk reference
+
+Use these Zendesk pages when you need detail beyond what this article covers.
+
+| Resource | Use it for |
+| -------- | ---------- |
+| [Using the Conversations API keys](https://support.zendesk.com/hc/en-us/articles/4576088682266-Using-the-Conversations-API-keys) | Creating and managing API keys in Admin Center, and the plan requirements. |
+| [Creating conversations integrations in Admin Center](https://support.zendesk.com/hc/en-us/articles/4576083789850-Creating-conversations-integrations-in-Admin-Center) | Registering the webhook, viewing its IDs, and editing it later. |
+| [API quickstart](https://developer.zendesk.com/documentation/conversations/getting-started/api-quickstart/) | Zendesk's own walkthrough of the webhook and the first reply. |
+| [Receiving messages](https://developer.zendesk.com/documentation/conversations/messaging-platform/programmable-conversations/receiving-messages/) | Webhook payload structure, trigger list, and switchboard control. |
+| [Structured messages](https://developer.zendesk.com/documentation/conversations/messaging-platform/programmable-conversations/structured-messages/) | Button types, postback behavior, and channel fallbacks. |
+| [Creating and managing apps](https://docs.smooch.io/guide/creating-and-managing-apps/) | App-level concepts for accounts on a standalone Sunshine Conversations license. |
+
+{{related}}
+
+- [Set up WhatsApp](/agent-platform/channels/set-up-whatsapp)
+- [Set up Messenger](/agent-platform/channels/set-up-messenger)
+- [Set up Twilio](/agent-platform/channels/set-up-twilio)
