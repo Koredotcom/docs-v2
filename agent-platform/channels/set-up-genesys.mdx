@@ -1,0 +1,320 @@
+---
+title: Set up Genesys
+sidebarTitle: Genesys
+---
+
+<Badge icon="arrow-left" color="gray">[Back to messaging or digital channels](/agent-platform/channels#messaging-or-digital)</Badge>
+
+Connect your agent to Genesys Cloud as a Bot Connector so an Architect message flow can hand a conversation to it for intent and slot processing. You install the Bot Connector integration in Genesys, bind its Stream ID and shared secret to Artemis, then call the integration from an Architect flow.
+
+This channel works differently from every other messaging channel. Genesys sends one authenticated POST carrying the user's turn and holds that request open while your agent runs, then reads the reply out of the same HTTP response. There's no callback and no later send API.
+
+The setup requires:
+
+1. [Genesys Cloud setup](#genesys-cloud-setup): install and name the Bot Connector integration, and note its Stream ID.
+2. [Artemis channel configuration](#artemis-channel-configuration) using the Stream ID and a shared secret you generate, then copy the generated Bot Connector URL.
+3. [Bot Connector configuration in Genesys](#bot-connector-configuration-in-genesys): set that URL and the same secret on the integration, activate it, and call it from an Architect flow.
+
+After the configuration is complete, an Architect flow reaching the **Call Bot Connector** action sends the turn to Artemis, the bound deployment answers inside the same request, and Architect branches on the intent your agent returns.
+
+**Important considerations**
+
+- **The response travels in the same request**: Genesys waits for your agent. Provider timeout and agent execution time have to be compatible, and this channel stays non-streaming by design.
+- **Client Secret isn't a Genesys OAuth secret**: for Bot Connector, it's a pre-shared bearer token you invent and configure identically on both sides. Substituting an OAuth integration secret fails unless Genesys sends that same value on the webhook request.
+- **Bot Connector needs a subscription change**: Genesys requires you to contact Genesys Cloud Sales before the integration becomes available to install.
+- **Architect intents must already exist**: Artemis returns intent names that Genesys matches to branches in your flow. It doesn't create or validate them, so a name that doesn't exist in Architect produces a branch that never fires.
+
+## Prerequisites
+
+- A Genesys Cloud organization with the Bot Connector integration available on your subscription, in the region that owns the Architect flow.
+- Admin access in Genesys Cloud, with permission to install integrations and edit Architect flows.
+- An Architect message flow where the conversation should reach the agent, or permission to create one.
+- Artemis project access with permission to open **Deployments** -> **Channels**, and a deployed agent in the environment you intend to bind.
+
+---
+
+## How Artemis handles Bot Connector requests
+
+Genesys posts to a URL ending in the Stream ID, so Artemis resolves the connection from that path segment and the conversation from the payload.
+
+| Piece | Who owns it | What it does |
+| ----- | ----------- | ------------ |
+| **Stream ID** | Genesys | Routes inbound requests. Artemis reads the final path segment and matches it to an active connection. It's a routing identifier rather than a secret. |
+| **Client Secret** | You | Authenticates the request. Artemis compares the token Genesys sends with the stored secret using a timing-safe check. |
+| Genesys conversation ID | Genesys | Identifies each end-user session inside the connection. Artemis keys the session to it, so reusing it continues the conversation and changing it starts a new one. |
+| **Webhook URL** | Artemis | Receives the Bot Connector POST. It ends with the encoded Stream ID, and the generic Genesys route alone can't select a connection. |
+
+Because the exchange is synchronous, the HTTP response carries everything Genesys needs: the reply messages, the bot state, the intent, and whether the task ended. Nothing arrives later.
+
+---
+
+## Genesys Cloud setup
+
+Do this work in Genesys Cloud before you open Artemis. Genesys documents the same screens in [Configure the Genesys Bot Connector integration](https://help.genesys.cloud/articles/configure-the-genesys-bot-connector-integration/).
+
+<Steps>
+  <Step title="Sign in to the right organization and region">
+    Sign in to the Genesys Cloud organization and regional domain that own the Architect flow you intend to change.
+
+    Genesys organizations are region-specific, so a development organization's integration pointed at production Artemis produces a working-looking setup that serves the wrong traffic. Confirm the organization before you install anything.
+  </Step>
+
+  <Step title="Install the Bot Connector integration">
+    1. Select **Admin**, then under **Integrations**, select **Integrations**. On newer navigation, select **Menu** -> **IT and Integrations** -> **Integrations**.
+    2. Search for the **Genesys Bot Connector** tile and select **Install**.
+    3. On the **Details** tab, give the integration a name that identifies the agent and the environment, and add notes if your team uses them.
+
+    Pick a distinct name. Architect actions reference integrations by name, so duplicates make it easy to point a flow at the wrong one later.
+
+    Don't install the **Genesys Digital Bot Connector** tile by mistake. It's a separate integration with its own Architect action, and Artemis connects through Bot Connector. Keep this integration's lifecycle separate from Open Messaging and Audio Connector integrations too.
+
+    Genesys allows up to five Bot Connector integrations per organization, which is the practical ceiling on how many Artemis connections one organization can carry.
+  </Step>
+
+  <Step title="Copy the Stream ID">
+    Copy the Stream ID Genesys shows for this integration, exactly as it appears.
+
+    This becomes the routing identifier in Artemis and the last segment of the webhook URL. Copy it without surrounding whitespace, because a trailing space produces a 404 that looks like a missing connection.
+
+    Don't substitute the Genesys organization ID, the integration ID, an OAuth client ID, a conversation ID, or the Architect flow ID. None of them route.
+  </Step>
+
+  <Step title="Generate a Client Secret">
+    Create a high-entropy random string. You invent this value rather than Genesys issuing it, and you'll enter the identical string in two places: the Artemis connection, and the Bot Connector credentials in Genesys.
+
+    Use a different secret per environment, and store it in your secret manager. This token is the only thing standing between the public URL and your agent.
+  </Step>
+</Steps>
+
+---
+
+## Artemis channel configuration
+
+Create the connection before you configure the integration in Genesys. Artemis resolves the Stream ID and decrypts the secret before it authenticates a request, so an inactive or missing connection returns not found even when the URL is right.
+
+1. Open Artemis and select the project.
+2. Go to **Deployments** -> **Channels** -> **Genesys** -> **+ New**.
+3. Configure the following fields:
+
+    | Artemis connection field | Source / Notes |
+    |---|---|
+    | Display Name | The label operators see in the connections list. Name it for the Genesys organization and the environment it serves, because a project can hold several Genesys connections. Routing ignores this value. |
+    | Stream ID | The routing key. Artemis writes it into the webhook path and resolves the connection from it. Enter the exact value from the Bot Connector integration, with no leading or trailing whitespace. |
+    | Client Secret | The shared bearer token you generated. Artemis compares the token on each request with this encrypted value using a timing-safe check. |
+    | Environment | The published environment whose active deployment answers the Architect flow. Leave the working copy default only while you develop. |
+    | Provider Verification Strength | How far Artemis trusts Genesys's identity assertion when it links a caller to an existing session. **Weak** suits most deployments. Choose **Strong** only when you trust those assertions enough to base continuity and account-linking decisions on them. |
+    | Initial Status | Whether the connection handles requests. Set it to **Active**, because an inactive connection returns not found rather than an authentication error, which sends you looking in the wrong place. |
+
+4. Select **Create**.
+5. Open the connection and copy the **Webhook URL** from the **Overview** tab. <br />
+   The URL ends with the URL-encoded Stream ID. Copy the whole thing, because the generic Genesys route can't identify which connection a request belongs to.
+
+### Validation checklist
+
+| Validation item | Expected result |
+|:---|:---|
+| Confirm the subscription | The Genesys Bot Connector tile appears in your organization's integration list. |
+| Install the integration | Bot Connector integration installed and named distinctly, in the region that owns the flow. |
+| Copy the Stream ID | Stream ID copied exactly, with no surrounding whitespace, and distinct from organization, integration, and flow IDs. |
+| Create the Artemis connection | Connection saved as Active with the Stream ID and the shared secret. |
+| Copy the webhook URL | Bot Connector URL copied from the **Overview** tab, ending with the encoded Stream ID. |
+| Configure the integration | URL and matching secret saved on the integration, and its status set to active. |
+| Map the Architect outcomes | Intent names in Artemis match branches that already exist in the Architect flow. |
+| Wire the Architect action | **Call Bot Connector** action added to the flow, pointing at this integration, with its failure path connected. |
+| Run a test interaction | Test turn reaches the agent and Architect branches on the returned intent. See [Verify the connection](#verify-the-connection). |
+
+---
+
+## Bot Connector configuration in Genesys
+
+Return to the integration you installed and finish it with the URL and secret from Artemis, then call it from a flow.
+
+<Steps>
+  <Step title="Set the Bot Connector URL">
+    Open the integration's **Configuration** tab and set the Bot Connector URL to the **Webhook URL** from the Artemis connection.
+
+    Preserve the encoded Stream ID at the end. Genesys uses this URL to relay each utterance, so a truncated path reaches Artemis and resolves to nothing.
+  </Step>
+
+  <Step title="Add the shared secret as credentials">
+    Open the integration's **Credentials** tab and configure the same Client Secret you entered in Artemis as the bearer token.
+
+    Artemis prefers the token on an `Authorization: Bearer` header. It also accepts `x-channel-secret`, `x-ingress-secret`, or `x-webhook-secret`. It never accepts a token in the query string, so don't append one to the URL.
+  </Step>
+
+  <Step title="Activate the integration">
+    Set the integration status to active.
+
+    An inactive integration doesn't appear in Architect at all, so this step has to come before you try to add the action.
+  </Step>
+
+  <Step title="Add the Call Bot Connector action to a flow">
+    1. Open the Architect message flow that should reach the agent.
+    2. From the toolbox, drag a **Call Bot Connector** action into the flow.
+    3. Set the action's bot integration to the integration you just configured, and set the name and version fields the action asks for.
+    4. Connect the action's failure path to real handling rather than leaving it unconnected.
+
+    Genesys documents the action's inputs, timeouts, and error types in [Call Bot Connector action](https://help.genesys.cloud/articles/call-bot-connector-action/). The failure path matters: Architect takes it on execution errors and connectivity problems, and it also takes a safety path after four consecutive turns return an unchanged intent.
+  </Step>
+
+  <Step title="Validate before you publish">
+    Run Architect's validation and test the flow on a non-production interaction.
+
+    Publish only after you've confirmed the URL, the secret, the response timing, and the failure branches. A published flow with an unreachable bot fails in front of customers.
+  </Step>
+</Steps>
+
+---
+
+## Map Architect outcomes
+
+Artemis returns an intent name to Genesys at the end of each turn, and Architect branches on it. Configure the mapping on the connection's **Configuration** tab, under **Architect outcome mapping**.
+
+Turn on **Enable terminal intent mapping**, then set the intent name Artemis returns for each outcome.
+
+| Outcome | Artemis returns it when |
+| ------- | ----------------------- |
+| Continue conversation | The conversation should stay with this agent for another turn. |
+| Escalate to an agent | The conversation should transfer to a human. |
+| Close the session | The conversation should end. |
+
+Each outcome takes a **Value source** of either a literal intent name you type, or a project variable that supplies it. Use a project variable when the same agent serves several Genesys flows with different intent vocabularies, and a literal name otherwise.
+
+These names have to match intents and branches that already exist in your Architect flow. Artemis neither creates nor validates them, so a typo produces a branch Architect never takes rather than an error you can see. Agree the names with whoever owns the flow before you enter them here.
+
+---
+
+## Verify the connection
+
+Test each failure mode as well as the happy path, because Architect's branching depends on Artemis returning the right status for each one.
+
+1. Send a text turn with a unique message and a stable Genesys conversation ID. <br />
+   Confirm an HTTP 200 and one text reply in the response.
+2. Send a second turn reusing the same conversation ID, and confirm it resumes the same session. <br />
+   A different conversation ID should open a separate session.
+3. Return an authored quick reply, send its encoded payload back as the button response, and confirm the session resumes with the action value you authored.
+4. Send a request with the wrong secret and confirm it returns 401.
+5. Send a request to an unknown or inactive Stream ID and confirm it returns 404.
+6. Send malformed input and confirm it returns 400.
+7. Confirm the Architect flow handles a 503 busy response and an execution failure without looping.
+
+---
+
+## Request and response contract
+
+Genesys carries the whole turn in one exchange, so both halves have required fields.
+
+| Direction | Required content |
+| --------- | ---------------- |
+| Request | A non-empty Genesys conversation ID and an input message type. A text turn also needs the message text; a structured quick reply needs the button response payload. |
+| Response | The reply messages, the bot state, the intent name, and whether the task ended. Genesys reads all of these from the same HTTP response. |
+
+Keep the conversation ID stable across every turn in one Genesys interaction. Replacing it with the Stream ID or an ephemeral request ID resets the conversation context, which looks like the agent forgetting rather than like a configuration error.
+
+Optional session metadata crosses a trust boundary, so Artemis validates it before the agent runs. Send only the intended JSON object shape.
+
+---
+
+## Secure the connection
+
+The Stream ID appears in a public URL and isn't a secret. HTTPS and the shared token are what protect the endpoint, so never put the token in the URL or in logs.
+
+Use a unique, high-entropy Client Secret for each environment, stored only in the Genesys integration's secure credential configuration and in encrypted Artemis credentials. Rotating it means changing both sides together, because Artemis rejects a request the moment the values diverge.
+
+Prefer the `Authorization: Bearer` header. If your ingress adds or rewrites headers, make sure it preserves the one Genesys sends and strips any untrusted duplicate before the request reaches Artemis. Two competing authorization headers produce a 401 that looks like a wrong secret.
+
+Use separate Genesys integrations, Stream IDs, secrets, Architect flows or versions, and connections for development and production.
+
+---
+
+## Manage the channel connection
+
+Opening a connection shows four tabs. The delete control sits beside the connection name.
+
+<Tabs>
+  <Tab title="Overview">
+    **Connection Summary** reports the connection's state and identity.
+
+    | Field | Description |
+    | ----- | ----------- |
+    | **Status** | Whether the connection currently handles requests. |
+    | **Created** and **Updated** | Date and time of creation, and of the last change. |
+    | **Environment** | The environment whose deployment answers requests. |
+    | **Source Type** | Reads `Channel Connection`. |
+    | **Source ID** | Identifies the connection uniquely. Quote it when you raise a support ticket. |
+
+    **Setup Instructions** shows the **Webhook URL** to configure in Genesys and the **Stream ID** it ends with, each with a copy control. Compare the Stream ID here with the integration's whenever requests return 404.
+  </Tab>
+
+  <Tab title="Credentials">
+    Artemis encrypts the secret after you save it, so the field reads as saved rather than showing its value. Leave it empty to keep the current value, or enter a new one to replace it.
+
+    | Field | Description |
+    | ----- | ----------- |
+    | **Use Auth Profile** | Draws the credential from a saved auth profile instead of the field below. Prefer it when the same secret serves more than one connection, since a rotation then touches one profile. |
+    | **Client Secret** | The shared bearer token. Change it here and in the Genesys integration as one coordinated step, because the two have to match on every request. |
+
+    Select **Save Credentials** to apply your changes.
+  </Tab>
+
+  <Tab title="Configuration">
+    Under **General**, rename the connection with **Display Name**, and revisit **Provider Verification Strength** if your trust posture for this organization changes.
+
+    Under **Genesys Settings**, **Stream ID** appears read-only. The webhook URL is built from it, so changing it would invalidate the URL configured in Genesys. Create a new connection to serve a different integration.
+
+    **Authorization Message** controls what the customer sees when a tool needs them to authorize something before the conversation continues. Write the template with these variables.
+
+    | Scope | Variables | Use |
+    | ----- | --------- | --- |
+    | Message | `{{total}}`, `{{completed}}`, `{{remaining}}` | Summarize progress across every pending authorization, typically in a lead-in line above the list. |
+    | Repeat block | `{{#authorizations}}` and `{{/authorizations}}` | Wrap the section Artemis repeats once per pending authorization. |
+    | Item | `{{profileName}}`, `{{authLink}}`, `{{authUrl}}`, `{{index}}`, `{{count}}` | Identify and link each authorization inside the repeat block. |
+
+    **Architect outcome mapping** sets the intent names Artemis returns to Genesys. See [Map Architect outcomes](#map-architect-outcomes).
+
+    Select **Save Changes** to apply your changes.
+  </Tab>
+
+  <Tab title="Deployment">
+    Choose which deployed version of the agent answers requests on this connection.
+
+    Under **Agent Version**, set **Environment** to the environment you want the connection to follow. **Active Deployment** then shows the version currently serving traffic and when someone deployed it.
+
+    Check this pair when the flow reaches the agent but the agent behaves like an older build. The connection follows whatever the environment currently has deployed, not the version you last edited. Select **Save Changes** after you switch.
+  </Tab>
+</Tabs>
+
+---
+
+## Troubleshoot connection issues
+
+| Symptom | Likely cause | Recommended action |
+|---|---|---|
+| The webhook returns 404 | The Stream ID doesn't match, or the connection isn't active | Confirm the URL ends with the exact Stream ID, check the saved identifier for copied whitespace, and confirm the connection is Active in the intended project. |
+| The webhook returns 401 | The token doesn't match, or headers conflict | Send the exact Client Secret through `Authorization: Bearer` or a supported secret header, remove duplicate authorization headers at your ingress, and confirm nobody rotated the secret on one side only. |
+| The webhook returns 400 | The request is missing a required field | Include a non-empty conversation ID and an input message type. Text turns also need the message text, and structured actions need the button response payload. |
+| The webhook returns 503 busy | Concurrent turns for the same session couldn't acquire the lock | Serialize turns within a conversation and retry according to the Architect failure policy. |
+| Genesys times out before a response | Agent execution outlasts the provider timeout | Compare the configured timeout with actual execution duration, investigate model and tool latency, and keep this channel synchronous and non-streaming. |
+| Text works but quick replies don't | The response lacks structured entries, or the payload doesn't return | Confirm the response carries quick reply entries and that the selected encoded payload comes back as the button response payload. |
+| Conversation context resets between turns | The conversation ID changes each turn | Preserve the same Genesys conversation ID for every turn in one interaction, and don't replace it with the Stream ID or a per-request identifier. |
+| Architect never takes the expected branch | The intent name doesn't exist in the flow | Compare the names in **Architect outcome mapping** with the intents and branches in Architect. Artemis doesn't create or validate them. |
+| The integration doesn't appear in Architect | The integration isn't active | Set the integration's status to active in Genesys Cloud, then reopen the flow. |
+
+---
+
+## Genesys reference
+
+Use these Genesys pages when you need detail beyond what this article covers.
+
+| Resource | Use it for |
+| -------- | ---------- |
+| [About Genesys Bot Connector](https://help.genesys.cloud/articles/about-genesys-bot-connector/) | What the connector supports, including quick replies, cards, and carousels. |
+| [Configure the Genesys Bot Connector integration](https://help.genesys.cloud/articles/configure-the-genesys-bot-connector-integration/) | Installing the integration, its tabs, and activating it. |
+| [Call Bot Connector action](https://help.genesys.cloud/articles/call-bot-connector-action/) | Action inputs, response timeouts, session variables, error types, and failure paths. |
+| [About Genesys Digital Bot Connector](https://help.genesys.cloud/articles/about-genesys-digital-bot-connector/) | Telling the two connectors apart, if you're unsure which one your flow uses. |
+
+{{related}}
+
+- [Set up Zendesk](/agent-platform/channels/set-up-zendesk)
+- [Set up Twilio SMS](/agent-platform/channels/set-up-twilio-sms)
+- [Set up WhatsApp](/agent-platform/channels/set-up-whatsapp)
