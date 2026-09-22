@@ -5,6 +5,10 @@ sidebarTitle: Sessions
 
 A session represents a conversation between an agent in an Artemis project and a user. The platform creates a session at the beginning of a conversation and uses it for each message exchange between the user and the agent. The session persists throughout the entire conversation, even as the user is transferred between agents.
 
+It stores the conversation context, maintains state across interactions, and remains active until it is closed.
+
+Closing a session finalizes the conversation and is essential for platform operations. When a session closes, the platform finalizes billing, computes conversation metrics such as containment, resolution, and abandonment, and, on messaging channels, ensures the user's next message starts a new conversation rather than resuming an existing one. 
+
 {/* AG: items to be documented when available or in the next round of updates
 
 - How to search sessions. How to filter and/or sort to zero-in on a few specific sessions.
@@ -44,11 +48,11 @@ Every session has a unique Session ID. Sessions are always scoped to a tenant an
 | Messages     | Count of messages exchanged in the session                                                         |
 | Cost         | Estimated LLM cost in USD                                                                          |
 
-## Session Details
+## Session details
 
-Click a session row to open the detail panel. It lists the following details. 
+Click a session row to open the detail panel. It lists the following details.
 
-### Engagement 
+### Engagement
 
 | **Field**           | **Description**                                                                 |
 | ------------------- | ------------------------------------------------------------------------------- |
@@ -281,3 +285,114 @@ If you've verified all six checks and the recording is still unavailable, contac
 ## API access
 
 Session details are also available via APIs. See [session APIs](/agent-platform/api-reference/list-session-summaries).
+
+## Session Closure
+
+### What happens when a session closes
+
+When a session closes, regardless of how it is closed, the platform performs the following lifecycle operations:
+
+- Persists any pending conversation data.
+- Records the session disposition and final status.
+- Publishes a session completion event for downstream services.
+- Finalizes billing metrics. A session is the billable unit. Session duration and engaged time are calculated when the session closes.
+- Finalizes reporting metrics. The session `disposition` and `status` fields are used to derive reporting metrics such as containment, resolution, and abandonment rates.
+- Releases session resources associated with the conversation.
+
+### Closing a session
+
+A session can be closed by the agent, automatically by the platform, or when a conversation is transferred to another system. Whenever a session is closed, the platform records the following fields for the session:
+
+- `disposition` — why the conversation ended.
+- `status` — current state of the session.
+
+The `disposition` field can have the following values. The `status` is automatically derived from the `disposition`.
+
+| Disposition | Meaning | Status |
+|-------------|---------|-----------------|
+| `completed` | The conversation reached its natural end | `completed` |
+| `abandoned` | The user walked away | `abandoned` |
+| `agent_hangup` | The agent side dropped the conversation | `abandoned` |
+| `transferred` | Handed to a human or another system | `escalated` |
+| `failed` | Ended because of a system failure | `abandoned` |
+| `timeout` | Closed automatically after inactivity | `ended` |
+| `unengaged` | Opened but the user never really engaged | `ended` |
+
+### Closing from agent DSL
+
+The most common way to end a session is for the agent to determine that the conversation is complete. You define the completion conditions in the agent using the `COMPLETE:` block. When one of the conditions is met, the agent sends the configured final response and closes the session with the disposition and status as `completed`.
+
+```JSON
+COMPLETE:
+  WHEN: issue_resolved == true
+    RESPOND: "Glad I could help. Have a great day!"
+
+  WHEN: intent contains "bye"
+    RESPOND: "Thanks for contacting us. Goodbye!"
+```
+<Note>
+- In a multi-agent workflow, place the COMPLETE block in the agent that owns the conversation. If a COMPLETE executes in a child agent that is designed to return control to its parent, it completes only that child agent's work and returns to the parent. It does not end the overall conversation. To end the conversation, define the COMPLETE block in the supervisor agent or in a dedicated closing agent that does not return.
+- Conditions are evaluated in the order they are defined. The first matching condition is applied.
+- The final response is delivered to the user before the session closes.
+- The session is closed with the completed disposition and status.
+</Note>
+  
+Note that When `TERMINAL: false` is specified in a `COMPLETE` block, the current interaction ends, but the session remains active. The response is sent to the user, and their next message starts a new interaction within the same session. [Learn More.](/agent-platform/abl/reference/multi-agent-and-supervisor#complete)
+
+{/*  Internal APIs as of now - hence not mentioning as of now. 
+
+### Closing a session using API 
+
+Use an API to close a session
+
+- An administrator closes stale or inactive sessions.
+- Maintenance or cleanup jobs close abandoned or orphaned sessions.
+- A CRM or ticketing system marks the case as resolved outside the conversation.
+
+When closing a session through the API, specify an appropriate disposition to indicate why the session ended. The disposition is used for billing, reporting, and analytics.
+*/}
+
+### Automatic session closure
+
+The platform automatically closes sessions when they exceed configured inactivity or configured session lifetime limits, or when channel-specific events indicate that the conversation has ended.
+
+The platform can automatically close a session when it exceeds either of the following limits:
+
+- **Idle timeout**: The maximum period of user inactivity before the session is closed.
+- **Maximum session age**: The maximum lifetime of a session, regardless of activity. 
+
+When a session is closed because of either limit, it is recorded with the `timeout` disposition and the `ended` status.
+
+For asynchronous messaging channels such as WhatsApp, SMS, and email, a session may remain active across long periods of inactivity. The platform does not split these conversations into multiple sessions. Instead, it internally tracks active engagement periods or engagement segments for billing and reporting while maintaining a single session.
+
+<Note>
+- The recorded end time reflects when the session actually became inactive, not when the timeout was detected.
+- The default values of the idle timeout and max age vary by plan. 
+</Note>
+
+
+
+## Sessions and agent transfers
+
+When a conversation is transferred to a human agent or another external system, the session disposition is set to 'transferred` and status is set to 'escalated`.
+
+The session lifecycle after the external system completes the conversation on their end depends on the routing configuration.
+
+- When Post-Agent Action is set to **End Conversation**, the session is terminated and the disposition depends on the **end reason** the contact centre sends:
+
+| End reason sent | Disposition | Status |
+|-----------------|-------------|--------|
+| `transferred` | `transferred` | `escalated` |
+| `completed` / `agent_completed` / `conversation_complete` | `completed` | `completed` |
+| `abandoned` / `user_left` / `user_exit` | `abandoned` | `abandoned` |
+| `agent_hangup` | `agent_hangup` | `abandoned` |
+| `failed` / `error` | `failed` | `abandoned` |
+| Missing or unrecognized value | `completed` | `completed` |
+
+
+Post-agent action is **Return to bot**. The conversation session is **not** closed. .It remains active and no final `disposition` is recorded.
+
+- Transfer metadata is written onto the session.
+- The status changes from `escalated` back to `active`.
+- The bot resumes handling messages as usual. The session is closed later when the conversation ends through the agent, automatic timeout, or another transfer that terminates the conversation.
+
