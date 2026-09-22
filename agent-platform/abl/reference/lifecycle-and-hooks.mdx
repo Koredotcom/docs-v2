@@ -203,14 +203,10 @@ The `ON_ERROR:` block defines how the agent responds to specific error types. Ea
 
 ```yaml expandable=true
 ON_ERROR:
-  tool_timeout:
-    RESPOND: "That system is responding slowly. Let me retry."
-    RETRY: 2
-    THEN: CONTINUE
-
   tool_error:
-    RESPOND: "I hit an error accessing that service. Let me try again."
-    RETRY: 1
+    RESPOND: "That system is responding slowly. Let me retry."
+    SUBTYPE: tool_timeout
+    RETRY: 2
     THEN: CONTINUE
 
   validation_error:
@@ -227,20 +223,23 @@ ON_ERROR:
 
 ### Error types
 
-The error `type` (the handler's key) is a **free-form label matched by name** — it is not validated
-against a fixed enum. A handler fires only when the runtime raises an error of that exact type.
-Commonly used types include:
+The error `type` (the handler's key) is matched against a **fixed, canonical set** — a handler whose
+key is not one of these is flagged at compile time (`ON_ERROR_HANDLER_TYPE_DRIFT`) because it can
+never match at runtime:
 
 | Error type         | When it occurs                                      |
-| ------------------ | --------------------------------------------------- |
-| `tool_timeout`     | A tool call exceeds its timeout.                    |
-| `tool_error`       | A tool call returns an error.                       |
-| `invalid_input`    | User input cannot be parsed.                        |
-| `validation_error` | Gathered/extracted data fails validation.           |
-| `api_error`        | An external API call fails.                         |
-| `unknown_error`    | An unexpected error occurred.                       |
+| ------------------- | --------------------------------------------------- |
+| `default`           | Fallback handler used when no other type matches.   |
+| `llm_error`         | The LLM call fails or errors.                        |
+| `tool_error`        | A tool call fails. Narrow it with `SUBTYPE`/`SUBTYPES` — known subtypes include `rate_limit`, `auth_failure`, `network_error`, and `tool_timeout`. |
+| `routing_error`     | Handoff/delegation/routing resolution fails.         |
+| `validation_error`  | Gathered/extracted data fails validation.            |
+| `timeout_error`     | A non-tool operation (for example the overall turn) times out. |
+| `unknown_error`     | An unexpected error occurred.                        |
 
-Use `subtypes` (or the `SUBTYPE:` singular alias) to match more finely within a type.
+<Warning>Three names from older examples are **not** valid handler types and are silently rewritten as warnings, never matched at runtime: `tool_timeout` (use `tool_error` with `SUBTYPE: tool_timeout`), `invalid_input` (use `validation_error`), and `api_error` (use `tool_error` with an appropriate `SUBTYPE`, for example `network_error`).</Warning>
+
+Use `SUBTYPE` (single value) or `SUBTYPES` (array) to match more finely within a type — both keys are case-insensitive but conventionally written uppercase.
 
 #### Inline shorthand
 
@@ -249,7 +248,7 @@ For a handler that only takes a terminal action, use the single-line form `error
 ```yaml
 ON_ERROR:
   unknown_error: ESCALATE
-  api_error: HANDOFF Live_Agent
+  tool_error: HANDOFF Live_Agent
 ```
 
 ### Error handler properties
@@ -268,7 +267,7 @@ ON_ERROR:
 | `THEN`            | `string`                | No       | --      | Action after retries are exhausted. See [Then actions](#then-actions).               |
 | `HANDOFF_TARGET`  | `string`                | No       | --      | Explicit target agent for `THEN: HANDOFF` (alternative to `HANDOFF <agent>`).        |
 | `BACKTRACK_TO`    | `string`                | No       | --      | Target step for `backtrack` action.                                                  |
-| `subtypes`        | `string[]`              | No       | --      | Error subtypes for fine-grained matching (for example. `[rate_limit, model_error]`). |
+| `SUBTYPE` / `SUBTYPES` | `string` / `string[]` | No   | --      | Error subtype(s) for fine-grained matching within `tool_error` (for example `SUBTYPE: tool_timeout` or `SUBTYPES: [rate_limit, network_error]`). |
 
 ### Retry strategies
 
@@ -313,7 +312,7 @@ FLOW:
 | Property          | Type       | Required | Default | Description                                |
 |-------------------|------------|----------|---------|--------------------------------------------|
 | `TYPE`            | `string`   | Yes      | --      | Error type to match.                       |
-| `subtypes`        | `string[]` | No       | --      | Error subtypes for fine-grained matching.  |
+| `SUBTYPE`         | `string`   | No       | --      | Error subtype for fine-grained matching (step-level handlers accept only the singular form). |
 | `RESPOND`         | `string`   | No       | --      | Message to the user.                       |
 | `RETRY`           | `number`   | No       | --      | Retry count.                               |
 | `RETRY_DELAY`     | `number`   | No       | --      | Delay between retries (ms).                |
@@ -382,6 +381,8 @@ MESSAGES:
   filler_delegation: "Checking with a specialist."
   filler_extraction: "Let me pull those details."
   filler_constraint_check: "Verifying that for you."
+  filler_tool_call_fr: "Je vérifie cela pour vous."
+  filler_tool_call_fr-CA: "Un instant, je regarde ça pour vous."
 ```
 
 | Key | Spoken while… |
@@ -394,7 +395,11 @@ MESSAGES:
 | `filler_extraction`       | The agent is extracting/gathering structured data.          |
 | `filler_constraint_check` | A `CONSTRAINT` is being evaluated.                          |
 
-Add a `_<language>` suffix (any BCP-47 primary language subtag, for example `filler_tool_call_es`) to supply a localized variant. At runtime the first match wins, from most to least specific: `filler_<operation>_<language>` → `filler_<operation>` → `filler_general_<language>` → `filler_general` → the platform's built-in localized fallback.
+Add a `_<language>` suffix to supply a localized variant — either a bare BCP-47 primary subtag (`filler_tool_call_fr`) or a full region tag (`filler_tool_call_fr-CA`). At runtime the first match wins, checking the region tag before the bare subtag, and the operation-specific key before the general fallback:
+
+`filler_<operation>_<region-tag>` → `filler_<operation>_<language>` → `filler_<operation>` → `filler_general_<region-tag>` → `filler_general_<language>` → `filler_general` → the platform's built-in localized fallback.
+
+<Note>A key with a region tag (`filler_tool_call_fr-CA`) contains a hyphen — write it unquoted as a plain `key: value` line; both the `.agent.abl` and `.agent.yaml` formats parse the hyphen correctly.</Note>
 
 <Warning>Filler overrides are **static, deterministic text** — unlike other `MESSAGES:` keys, they do **not** support `{{}}` interpolation. User input is never substituted into a filler, by design.</Warning>
 
