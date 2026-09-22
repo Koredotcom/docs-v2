@@ -1,0 +1,316 @@
+---
+title: Set up Twilio SMS
+sidebarTitle: Twilio SMS
+---
+
+<Badge icon="arrow-left" color="gray">[Back to messaging or digital channels](/agent-platform/channels#messaging-or-digital-channels)</Badge>
+
+Connect a Twilio phone number to your agent so customers reach it over SMS and MMS. You prepare a messaging-capable sender in Twilio, hand Artemis the account credentials, and then point the number's incoming-message webhook at a connection-specific URL that Twilio signs on every request.
+
+The setup requires:
+
+1. [Twilio setup](#twilio-setup): Choose the project, get a messaging-capable number, complete sender compliance, and copy the Account SID and Auth Token.
+2. [Artemis channel configuration](#artemis-channel-configuration): Configure the connection using those credentials, then copy the generated webhook URL.
+3. [Webhook configuration in Twilio](#webhook-configuration-in-twilio): Set the number's incoming-message webhook to that URL and select HTTP POST.
+
+After you complete the configuration, an SMS to your Twilio number opens a session in Artemis, the bound deployment answers it, and the reply goes back to the sender through Twilio's Messages API.
+
+**Important considerations**
+
+- **The reply doesn't travel in the webhook response**: Artemis returns an empty TwiML acknowledgement immediately and queues the agent, then sends the reply as a separate outbound API call. A 2xx on the webhook proves delivery of the inbound message and nothing more.
+- **Twilio signs the webhook URL itself**: The signature covers the full external URL and the sorted form fields. Scheme, host, port, and path all participate, so a proxy that rewrites any of them breaks signature validation even though the request arrives intact.
+- **One account boundary**: The Account SID, Auth Token, phone number, and any Messaging Service SID have to come from the same Twilio project or subaccount. Mixing a subaccount number with parent-account credentials fails in ways that look like a configuration error.
+- **Compliance sits outside Artemis**: Sender registration, consent, and opt-out rules belong to Twilio and the carriers. A working webhook doesn't exempt your traffic from them.
+
+## Prerequisites
+
+- A Twilio account with access to the project or subaccount that owns the sender and its billing.
+- A messaging-capable Twilio phone number for the destination countries, in E.164 format with the leading plus and country code.
+- Any sender registration your traffic needs, such as [A2P 10DLC](https://www.twilio.com/docs/messaging/compliance/a2p-10dlc) brand and campaign registration for United States long-code traffic.
+- Artemis project access with permission to open **Deployments** -> **Channels**, and a deployed agent in the environment you intend to bind.
+
+---
+
+## How Artemis routes Twilio SMS messages
+
+Twilio calls a URL you choose per phone number, so Artemis puts the connection identifier in the path rather than reading it from the payload.
+
+| Piece | Who owns it | What it does |
+| ----- | ----------- | ------------ |
+| **Connection Identifier** | You | Routes inbound messages. Artemis appends it to the webhook path and resolves the connection from that segment, so the identifier has to survive in the URL exactly as Twilio calls it. |
+| **Account SID** | Twilio | Identifies the account for outbound calls to the Messages API and for authenticated MMS downloads. It starts with `AC`. |
+| **Auth Token** | Twilio | Does two jobs. Artemis uses it to validate the `X-Twilio-Signature` header on every inbound request, and to authenticate outbound API calls. |
+| **Messaging Service SID** | Twilio | Optional. When present, Artemis sends replies through that service instead of replying from the inbound number. It starts with `MG`. |
+| **Webhook URL** | Artemis | Receives the incoming-message callback. It ends with the connection identifier, and its exact external form is part of the signature. |
+
+Artemis keys each conversation to the Twilio number and the customer number together, so the same person messaging two of your Twilio numbers holds two separate sessions.
+
+---
+
+## Twilio setup
+
+Do this work in the [Twilio Console](https://www.twilio.com/console) before you open Artemis.
+
+<Steps>
+  <Step title="Open the project that owns the sender">
+    Sign in to the Twilio Console, then use the account selector at the top of the page to switch to the project or subaccount that owns the production phone number and its billing.
+
+    Everything you collect from here has to come from this one account boundary. Twilio scopes the Auth Token to the account, so credentials from a parent account can't authenticate a subaccount's traffic.
+  </Step>
+
+  <Step title="Get a messaging-capable phone number">
+    1. Go to **Phone Numbers** -> **Manage** -> **Active numbers**.
+    2. Confirm the number you intend to use lists SMS capability, and MMS as well if your agent will handle media.
+    3. If you need a new number, buy one from **Phone Numbers** -> **Buy a number**, filtering by the capabilities and country you need.
+
+    Keep the full E.164 value, including the leading plus and country code. Capability varies by country, so a number that sends SMS in one market may not support MMS in another.
+  </Step>
+
+  <Step title="Complete sender and destination compliance">
+    Finish the registration, sender-verification, consent, and opt-out requirements Twilio shows for your countries and traffic type.
+
+    United States long-code traffic needs A2P 10DLC brand and campaign registration. Carriers filter unregistered traffic rather than failing it loudly, so messages appear to send and never arrive. Twilio surfaces this as error 30034.
+
+    Configuring a webhook doesn't bypass any of this. Start compliance early, because it waits on external review rather than on you.
+  </Step>
+
+  <Step title="Copy the Account SID and Auth Token">
+    1. Open the Twilio Console dashboard for the selected account.
+    2. Find the account information panel, which shows the **Account SID** and the **Auth Token**.
+    3. Copy the `AC`-prefixed Account SID, then reveal and copy the Auth Token.
+
+    The Auth Token authenticates outbound API calls and validates inbound request signatures, so treat it as a high-value secret and store it in your secret manager rather than in a ticket or a shared document.
+  </Step>
+
+  <Step title="Decide whether to use a Messaging Service">
+    A Messaging Service is optional. Use one when you want Twilio to pick a sender from a pool, apply sticky sender behavior, or carry an A2P campaign registration.
+
+    1. Go to **Messaging** -> **Services** and create a service, or open an existing one.
+    2. Add your phone number to the service's sender pool. Twilio's [sender pool guidance](https://help.twilio.com/articles/4402705042075-Managing-a-Messaging-Service-Sender-Pool) covers the rules.
+    3. Copy the `MG`-prefixed SID.
+
+    Leave the SID out of the Artemis connection to reply from the inbound number instead. Twilio's [Messaging Services documentation](https://www.twilio.com/docs/messaging/services) explains what each mode changes.
+  </Step>
+
+  <Step title="Account for trial restrictions">
+    A trial project restricts which recipients and senders you can use, and adds branding to outbound messages.
+
+    Prove production behavior on an upgraded account with an approved sender. A trial test that works tells you the wiring is right, not that your launch will work.
+  </Step>
+</Steps>
+
+---
+
+## Artemis channel configuration
+
+Create the connection before you configure the Twilio webhook. The callback URL contains the connection identifier, so you can't finalize it in Twilio until Artemis has generated it.
+
+1. Open Artemis and select the project.
+2. Go to **Deployments** -> **Channels** -> **Twilio SMS** -> **+ New**.
+3. Configure the following fields:
+
+    | Artemis connection field | Source / Notes |
+    |---|---|
+    | Display Name | The label operators see in the connections list. Name it for the sender and the environment it serves, because a project can hold several Twilio connections. Routing ignores this value. |
+    | Connection Identifier | The routing key, which Artemis writes into the webhook path. Choose a short, stable, URL-safe value that identifies this sender. You can't change it after creation, because the webhook URL is built from it. |
+    | Account SID | Identifies the Twilio account for outbound calls and MMS downloads. From the account information panel in the Twilio Console dashboard. |
+    | Auth Token | Validates the signature on inbound requests and authenticates outbound API calls. From the same account as the Account SID. |
+    | Messaging Service SID | Optional. Supply it to send replies through that service. Leave it empty to reply from the number that received the message. |
+    | Environment | The published environment whose active deployment answers incoming messages. Leave the working copy default only while you develop. |
+    | Provider Verification Strength | How far Artemis trusts Twilio's identity assertion when it links a sender to an existing session. **Weak** suits most deployments. Choose **Strong** only when you trust those assertions enough to base continuity and account-linking decisions on them. |
+    | Initial Status | Whether the connection starts handling messages. **Active** takes traffic immediately. **Inactive** saves the configuration in a disabled state, which suits a connection you're staging ahead of a launch. |
+
+4. Select **Create**.
+5. Open the connection and copy the **Webhook URL** from the **Overview** tab. <br />
+   The URL ends with your connection identifier. Copy it exactly, because Twilio signs the complete URL and any difference invalidates the signature.
+
+### Validation checklist
+
+| Validation item | Expected result |
+|:---|:---|
+| Select the Twilio account | Account SID, Auth Token, phone number, and any Messaging Service all come from one project or subaccount. |
+| Confirm sender capability | Number lists SMS capability for the destination countries, and MMS if the agent handles media. |
+| Complete compliance | Sender registration, consent, and opt-out requirements finished for the traffic type and region. |
+| Create the Artemis connection | Connection saved as Active with a stable connection identifier and the account credentials. |
+| Copy the webhook URL | Webhook URL copied from the **Overview** tab, ending with the connection identifier. |
+| Configure the Twilio webhook | The number's incoming-message webhook points at that exact URL with HTTP POST selected. |
+| Bind a deployment | The connection's **Deployment** tab shows a runnable active deployment. |
+| Send a real SMS | Test message reaches the agent and the reply arrives once. See [Verify the connection](#verify-the-connection). |
+
+---
+
+## Webhook configuration in Twilio
+
+Twilio calls this URL every time the number receives a message. Configure it on the number itself, or on the Messaging Service when that service owns inbound handling.
+
+<Steps>
+  <Step title="Open the sender's incoming-message settings">
+    For a direct number, go to **Phone Numbers** -> **Manage** -> **Active numbers** and select the number.
+
+    For a Messaging Service that owns inbound handling, open the service and use its integration settings instead. Configure one or the other, because two handlers pointing at the same connection produce duplicate replies.
+  </Step>
+
+  <Step title="Set the incoming-message webhook">
+    1. Scroll to the **Messaging** section of the number's configuration.
+    2. In the **A message comes in** field, select **Webhook**.
+    3. Paste the Artemis **Webhook URL** exactly as shown, including the connection identifier at the end.
+    4. Select **HTTP POST** from the method dropdown.
+    5. Select **Save**.
+
+    Twilio sends `application/x-www-form-urlencoded` POST fields including `MessageSid`, `AccountSid`, `From`, `To`, `Body`, `NumMedia`, and any `MediaUrl` fields. Twilio's [incoming message webhook reference](https://www.twilio.com/docs/usage/webhooks/sms-webhooks) lists them all.
+  </Step>
+
+  <Step title="Keep the external URL identical to what Artemis expects">
+    Twilio signs the complete URL plus the sorted form fields using HMAC-SHA1 with your Auth Token, then sends the result in `X-Twilio-Signature`. Artemis validates the signature using its configured public base URL.
+
+    Configure that base URL to the same external address Twilio calls, and forward the `X-Twilio-Signature` header unchanged. HTTPS termination and reverse-proxy host and protocol settings all have to agree, because scheme, host, port, path, and form values all participate in validation.
+  </Step>
+
+  <Step title="Understand the response Twilio receives">
+    Artemis returns HTTP 200 with an empty TwiML response straight away and queues the agent. Twilio treats that as an acknowledgement and sends nothing to the customer.
+
+    The agent's reply follows separately through the Messages API. Twilio expects a response within 15 seconds and calls the fallback webhook when the primary fails or times out, which is why the acknowledgement returns before the agent runs.
+  </Step>
+</Steps>
+
+---
+
+## Verify the connection
+
+Artemis doesn't synthesize Twilio requests, so a real SMS is the only end-to-end proof.
+
+1. From an allowed recipient, send a short SMS to the Twilio number that you can search for later. <br />
+   On a trial project, the recipient has to be a verified caller ID.
+2. Confirm Twilio reports a 2xx webhook result and that Artemis opens one session.
+3. Check that the agent replies once to the original sender. <br />
+   The reply arrives from the inbound Twilio number, or from the Messaging Service when you supplied its SID. The empty TwiML acknowledgement isn't the reply, so a 2xx with no message means the outbound path failed.
+4. Send a second message from the same customer number to the same Twilio number, and confirm it continues the existing session rather than starting a new one. <br />
+   A different sender or recipient number opens a separate conversation.
+5. Send an MMS where the number, destination, and carrier support it, and confirm the agent handles the downloaded attachment.
+6. Repeat the whole test on an upgraded account with the production sender and an ordinary recipient, then check opt-in and opt-out handling, delivery status, throughput, and per-segment cost.
+
+---
+
+## SMS behavior and limits
+
+SMS is a plain-text channel with carrier economics attached, which changes how you author agent responses.
+
+| Area | Behavior |
+| ---- | -------- |
+| Formatting | SMS carries plain text only. Markdown, buttons, and rich cards have no equivalent, so author replies that read correctly without them. |
+| Message length | Carriers split long messages into multiple segments, and each segment bills separately. Unicode characters reduce the per-segment character count, so test representative content for your target countries. |
+| Delivery retries | Twilio delivers webhooks at least once and makes no ordering guarantee, so the same inbound message can arrive more than once. |
+| Media | MMS availability depends on the number, the destination, and the carrier. Artemis authenticates downloads from allowed Twilio hosts using the Account SID and Auth Token, then applies attachment type and size policy. |
+| Timeout | Twilio expects a webhook response within 15 seconds and falls back to the secondary handler after that. |
+| Compliance | Consent, opt-out keywords, and sender registration apply to every message regardless of how the agent behaves. |
+
+---
+
+## Secure the connection
+
+Twilio authentication rests on one credential doing two jobs, and on a URL that both sides have to match exactly.
+
+Every inbound request carries `X-Twilio-Signature`. Artemis computes HMAC-SHA1 over the configured public callback URL and the sorted form parameters using the Auth Token as the key. Twilio's [security guide](https://www.twilio.com/docs/usage/security) describes the same calculation from the sending side.
+
+Treat the external URL as signed data. Keep HTTPS termination, host, protocol, and port aligned with the public base URL you configured for Artemis, and pass the signature header through untouched. A reverse proxy that presents a different internal URL to Artemis breaks validation even though nothing about the message changed.
+
+The Auth Token validates inbound signatures and authorizes outbound sends, so rotate it in Twilio and Artemis as one coordinated change rather than two. A rotation applied on one side only stops inbound and outbound traffic at the same moment.
+
+Use separate Twilio subaccounts or senders, credentials, webhooks, and connections for development and production.
+
+---
+
+## Manage the channel connection
+
+Opening a connection shows four tabs. The delete control sits beside the connection name.
+
+<Tabs>
+  <Tab title="Overview">
+    **Connection Summary** reports the connection's state and identity.
+
+    | Field | Description |
+    | ----- | ----------- |
+    | **Status** | Whether the connection currently handles messages. |
+    | **Created** and **Updated** | Date and time of creation, and of the last change. |
+    | **Environment** | The environment whose deployment answers messages. |
+    | **Source Type** | Reads `Channel Connection`. |
+    | **Source ID** | Identifies the connection uniquely. Quote it when you raise a support ticket. |
+
+    **Setup Instructions** shows the **Webhook URL** to configure in Twilio and the **Connection Identifier** it ends with, each with a copy control. Compare the URL here with what Twilio actually calls whenever signature validation fails.
+  </Tab>
+
+  <Tab title="Credentials">
+    Artemis encrypts credentials after you save them, so each field reads as saved rather than showing its value. Leave a field empty to keep the current value, or enter a new one to replace it.
+
+    | Field | Description |
+    | ----- | ----------- |
+    | **Use Auth Profile** | Draws the credentials from a saved auth profile instead of the fields below. Prefer it when the same credentials serve more than one connection, since a rotation then touches one profile. |
+    | **Account SID** | Replace it here if you move the sender to a different Twilio account or subaccount. |
+    | **Auth Token** | Replace it here the moment you rotate the token in Twilio, because inbound validation and outbound sends both stop until you do. |
+    | **Messaging Service SID** | Add or replace it to route replies through a service. Clear it to reply from the inbound number instead. |
+
+    Select **Save Credentials** to apply your changes.
+  </Tab>
+
+  <Tab title="Configuration">
+    Under **General**, rename the connection with **Display Name**, and revisit **Provider Verification Strength** if your trust posture for this sender changes.
+
+    Under **Twilio SMS Settings**, **Connection Identifier** appears read-only. The webhook URL is built from it, so changing it would invalidate the URL configured in Twilio. Create a new connection to serve a different sender.
+
+    **Authorization Message** controls what the person sees when a tool needs them to authorize something before the conversation continues. Write the template with these variables.
+
+    | Scope | Variables | Use |
+    | ----- | --------- | --- |
+    | Message | `{{total}}`, `{{completed}}`, `{{remaining}}` | Summarize progress across every pending authorization, typically in a lead-in line above the list. |
+    | Repeat block | `{{#authorizations}}` and `{{/authorizations}}` | Wrap the section Artemis repeats once per pending authorization. |
+    | Item | `{{profileName}}`, `{{authLink}}`, `{{authUrl}}`, `{{index}}`, `{{count}}` | Identify and link each authorization inside the repeat block. |
+
+    Item variables resolve only inside the repeat block. Keep the wording short, because SMS renders it as plain text and long templates split into extra segments.
+
+    Select **Save Changes** to apply your changes.
+  </Tab>
+
+  <Tab title="Deployment">
+    Choose which deployed version of the agent answers messages on this connection.
+
+    Under **Agent Version**, set **Environment** to the environment you want the connection to follow. **Active Deployment** then shows the version currently serving traffic and when someone deployed it.
+
+    Check this pair when the channel connects but the agent behaves like an older build. The connection follows whatever the environment currently has deployed, not the version you last edited. Select **Save Changes** after you switch the environment.
+  </Tab>
+</Tabs>
+
+---
+
+## Troubleshoot connection issues
+
+| Symptom | Likely cause | Recommended action |
+|---|---|---|
+| Artemis reports no connection found | Twilio is calling a URL that doesn't end with this connection's identifier, or the connection isn't active | Compare the URL configured in Twilio with the **Webhook URL** on the **Overview** tab, including the trailing identifier, and confirm the connection is Active. |
+| The webhook returns 401 | The signed URL or the Auth Token doesn't match | Compare the exact external URL Twilio called with the public base URL you configured for Artemis, preserve `X-Twilio-Signature` through your ingress, and confirm the Auth Token belongs to the same Account SID. |
+| The webhook returns 200 but no session appears | The request carried nothing to process, or the queue is unhealthy | Send a message with a non-empty body or at least one media item, then check queue health. |
+| Inbound works but no reply goes out | The outbound credential, sender ownership, compliance state, or deployment is wrong | Verify the Account SID and Auth Token, confirm the account owns the sender, check destination eligibility and registration, and confirm the bound environment has a runnable deployment. |
+| The Messaging Service sends from the wrong number or fails | The service belongs to another account, or the sender isn't in its pool | Confirm the `MG` SID belongs to the same account and the intended number sits in its sender pool. Clear the SID to reply directly from the inbound number. |
+| SMS works but MMS fails | Capability, media access, or attachment policy blocks it | Confirm carrier and number support for MMS, that the Twilio media URL is reachable from an allowed host, that the credentials authenticate the download, and that content type and size pass your attachment policy. |
+| Customers receive duplicate replies | Two inbound handlers point at this connection, or Twilio retried | Confirm only one number or Messaging Service handler targets this connection, and deduplicate on `MessageSid` to absorb Twilio's retries. |
+| Long messages cost or render unexpectedly | Carrier segmentation split the message | Shorten agent replies, test representative Unicode content, and check per-segment behavior for the destination countries. |
+
+---
+
+## Twilio reference
+
+Use these Twilio pages when you need detail beyond what this article covers.
+
+| Resource | Use it for |
+| -------- | ---------- |
+| [Twilio Console](https://www.twilio.com/console) | Account credentials, active numbers, and Messaging Services. |
+| [Incoming message webhooks](https://www.twilio.com/docs/usage/webhooks/sms-webhooks) | The form fields Twilio posts and how the incoming-message webhook behaves. |
+| [Messaging webhooks overview](https://www.twilio.com/docs/usage/webhooks/messaging-webhooks) | The difference between incoming-message webhooks and status callbacks. |
+| [Security](https://www.twilio.com/docs/usage/security) | How Twilio builds the signature and what participates in it. |
+| [Messaging Services](https://www.twilio.com/docs/messaging/services) | Sender pools, sticky sender behavior, and service-level inbound handling. |
+| [A2P 10DLC](https://www.twilio.com/docs/messaging/compliance/a2p-10dlc) | Brand and campaign registration for United States long-code traffic. |
+
+{{related}}
+
+- [Set up WhatsApp](/agent-platform/channels/whatsapp)
+- [Set up Messenger](/agent-platform/channels/messenger)
+- [Set up Instagram](/agent-platform/channels/instagram)

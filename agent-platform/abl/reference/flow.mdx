@@ -1151,20 +1151,26 @@ FLOW:
         query: user_query
       AS: apiResult
     ON_ERROR:
-      tool_timeout:
+      tool_error:
         RESPOND: "The service is responding slowly. Retrying..."
+        SUBTYPE: tool_timeout
         RETRY: 2
         RETRY_DELAY: 1000
         RETRY_BACKOFF: exponential
         RETRY_MAX_DELAY: 8000
         THEN: CONTINUE
-      tool_error:
+      validation_error:
         RESPOND: "An error occurred. Let me try a different approach."
-        THEN: fallback_step
+        THEN: RETRY_STEP
 ```
 
-Common error types are `tool_timeout`, `tool_error`, `invalid_input`, `validation_error`,
-`api_error`, and `unknown_error` (the type is not restricted to a fixed set).
+The error type (the handler's key) is matched against a **fixed, canonical set** —
+`default`, `llm_error`, `tool_error`, `routing_error`, `validation_error`, `timeout_error`, and
+`unknown_error`. A key outside this set (for example the older `tool_timeout`, `invalid_input`, or
+`api_error`) is flagged at compile time (`ON_ERROR_HANDLER_TYPE_DRIFT`) and never matches at
+runtime — see [Error types](/agent-platform/abl-reference/lifecycle-and-hooks#error-types) for the
+full table and the deprecated-name mapping. Narrow `tool_error` with `SUBTYPE`/`SUBTYPES` (known
+values: `rate_limit`, `auth_failure`, `network_error`, `tool_timeout`).
 
 #### Step ON_ERROR handler properties
 
@@ -1179,7 +1185,7 @@ Common error types are `tool_timeout`, `tool_error`, `invalid_input`, `validatio
 | `RETRY_MAX_DELAY` | `number`  | Maximum delay (ms) between retries.                                                |
 | `BACKTRACK_TO`    | `string`  | Step to backtrack to (used with `THEN: BACKTRACK`).                                |
 | `HANDOFF_TARGET`  | `string`  | Target agent (used with `THEN: HANDOFF`).                                          |
-| `THEN`            | `string`  | Next action: `CONTINUE`, `COMPLETE`, `ESCALATE`, `BACKTRACK`, `RETRY_STEP`, `HANDOFF`, or a step name. |
+| `THEN`            | `string`  | Next action: `CONTINUE`, `COMPLETE`, `ESCALATE`, `BACKTRACK`, `RETRY_STEP`, or `HANDOFF`. A step name is **not** a valid value here — a flow step's own `THEN:` navigates to a step, but an `ON_ERROR` handler's `THEN:` takes only one of these six actions. |
 
 ## Complete example
 
