@@ -1,0 +1,627 @@
+openapi: 3.1.0
+info:
+  title: Outbound Dial API
+  version: 1.0.0
+  summary: Project-scoped API for placing, tracking, and terminating outbound phone/SIP calls through KoreVG.
+  description: |
+    Places an outbound call through a project's telephony channel connection, and lets you
+    track it through to completion — either by polling, by listing/searching the call log, or
+    by subscribing to a live server-sent-events stream.
+
+    Outbound calls are asynchronous by nature. Initiating a call returns immediately with an
+    `outboundCallId` and an initial `phase` of `accepted` — the call has been accepted for
+    submission, not yet answered. Track its progress with `GET .../outbound-calls/{id}`, the
+    live event stream at `GET .../outbound-calls/{id}/events`, or by listing/searching the call
+    log.
+
+    ### Call lifecycle
+
+    A call moves through `phase` values in order: `accepted` → `dialing` → `ringing` →
+    `in_progress` (answered) → `terminal` (call has ended, either way). Once a call reaches
+    `terminal`, `outcome` explains how it ended (`completed`, `busy`, `rejected`, `no_answer`,
+    `machine`, `failed`, `canceled`, or `expired`), and `failureReason` carries additional
+    detail for a non-`completed` outcome. A call that connects (`in_progress`) creates a
+    session — `sessionId` on the call record correlates to that session's own history/traces
+    once available.
+
+    ### Idempotency
+
+    Every initiate request requires an `idempotencyKey`. Retrying the identical request body
+    with the same key returns the **original** call (`200`) instead of placing a duplicate
+    call (`201` on first submission). Reusing the same key with a **different** body is
+    rejected with `409 IDEMPOTENCY_CONFLICT` — pick a new key for a genuinely different call.
+
+    ### Authentication
+
+    Authenticate with the `x-api-key` header, using a Platform API key
+    (`abl_...`) scoped to the project you are calling. Write operations (initiate, terminate)
+    require the `outbound_calls.initiate` scope; read operations (lookup, list, summary,
+    search, event stream) require `outbound_calls.read`.
+
+    ### Privacy
+
+    `destination` is always returned masked on the wire (e.g. `+1*******67`) — the full
+    number is never echoed back after initiation. `providerCallSid` (the underlying telephony
+    provider's own call identifier) is likewise masked in call-log responses. List and search
+    responses never carry an unmasked destination either; use `POST .../outbound-calls/search`
+    with the real number to look a call up by destination — it is matched against a blind
+    index server-side, so the raw number never appears in a URL or is logged in access logs.
+
+    ### Isolation
+
+    A call belonging to a different project is concealed as `404 CHANNEL_NOT_FOUND` /
+    `404 Not Found`, never `403` — the API does not disclose whether a resource exists outside
+    your project's scope.
+servers:
+  - url: https://example.com
+    description: Base URL of your platform.
+    variables: { host: { default: runtime.example.com } }
+security:
+  - ApiKeyAuth: []
+tags:
+  - name: Outbound Calls
+    description: Place and track outbound phone/SIP calls.
+paths:
+  /api/v1/project/{projectSlug}/{env}/outbound-calls:
+    post:
+      tags: [Outbound Calls]
+      operationId: initiateOutboundCall
+      summary: Initiate an outbound call
+      x-required-platform-key-scope: outbound_calls.initiate
+      description: |
+        Initiate an outbound call.
+      parameters:
+        - $ref: '#/components/parameters/ProjectSlug'
+        - $ref: '#/components/parameters/Env'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InitiateOutboundCallRequest'
+            example:
+              channelConnectionId: cc_01a09438
+              to: { type: phone, number: '+14155550123' }
+              idempotencyKey: order-4821-attempt-1
+              clientReferenceId: order-4821
+              amdMode: 'off'
+      responses:
+        '201':
+          description: A new call was created and submitted.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/InitiateOutboundCallResponse' }
+              example:
+                success: true
+                data:
+                  outboundCallId: oc_01a0a4af5a417f5186af
+                  phase: accepted
+                  initiationState: submitted
+        '200':
+          description: Idempotent replay — the original call for this `idempotencyKey` + body, returned unchanged.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/InitiateOutboundCallResponse' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/IdempotencyConflict' }
+        '502': { $ref: '#/components/responses/ProviderError' }
+        '500': { $ref: '#/components/responses/InternalError' }
+    get:
+      tags: [Outbound Calls]
+      operationId: listOutboundCalls
+      summary: List outbound calls
+      x-required-platform-key-scope: outbound_calls.read
+      description: |
+        List outbound calls.
+      parameters:
+        - $ref: '#/components/parameters/ProjectSlug'
+        - $ref: '#/components/parameters/Env'
+        - name: channelConnectionId
+          in: query
+          description: Filter to calls placed through one channel connection.
+          schema: { type: string, minLength: 1 }
+        - name: phase
+          in: query
+          description: Filter by current lifecycle phase.
+          schema: { $ref: '#/components/schemas/OutboundCallPhase' }
+        - name: outcome
+          in: query
+          description: Filter by terminal outcome. Only calls that have reached `phase=terminal` have one.
+          schema: { $ref: '#/components/schemas/OutboundCallOutcome' }
+        - name: clientReferenceId
+          in: query
+          description: Filter to calls initiated with this caller-supplied reference.
+          schema: { type: string, minLength: 1 }
+        - name: from
+          in: query
+          description: Inclusive ISO 8601 lower bound on call creation time.
+          schema: { type: string, format: date-time }
+        - name: to
+          in: query
+          description: Exclusive ISO 8601 upper bound on call creation time.
+          schema: { type: string, format: date-time }
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Cursor'
+      responses:
+        '200':
+          description: Page of matching calls.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/OutboundCallListResponse' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '500': { $ref: '#/components/responses/InternalError' }
+  /api/v1/project/{projectSlug}/{env}/outbound-calls/summary:
+    get:
+      tags: [Outbound Calls]
+      operationId: getOutboundCallsSummary
+      summary: Aggregate outbound-call KPIs for a time window
+      x-required-platform-key-scope: outbound_calls.read
+      description: |
+        Aggregate outbound-call KPIs for a time window.
+      parameters:
+        - $ref: '#/components/parameters/ProjectSlug'
+        - $ref: '#/components/parameters/Env'
+        - name: channelConnectionId
+          in: query
+          description: Restrict the summary to one channel connection.
+          schema: { type: string, minLength: 1 }
+        - name: from
+          in: query
+          description: Inclusive ISO 8601 lower bound on call creation time.
+          schema: { type: string, format: date-time }
+        - name: to
+          in: query
+          description: Exclusive ISO 8601 upper bound on call creation time.
+          schema: { type: string, format: date-time }
+      responses:
+        '200':
+          description: Aggregate counts for the window.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/OutboundCallsSummaryResponse' }
+              example:
+                success: true
+                data:
+                  total: 128
+                  answered: 91
+                  inFlight: 3
+                  machineDetected: 7
+                  byOutcome: { completed: 84, no_answer: 22, busy: 4, canceled: 10, failed: 5, rejected: 2, expired: 1 }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '500': { $ref: '#/components/responses/InternalError' }
+  /api/v1/project/{projectSlug}/{env}/outbound-calls/{outboundCallId}:
+    get:
+      tags: [Outbound Calls]
+      operationId: getOutboundCall
+      summary: Look up an outbound call by ID in the call record.
+      x-required-platform-key-scope: outbound_calls.read
+      parameters:
+        - $ref: '#/components/parameters/ProjectSlug'
+        - $ref: '#/components/parameters/Env'
+        - $ref: '#/components/parameters/OutboundCallId'
+      responses:
+        '200':
+          description: Look up an outbound call by id in the call record.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/OutboundCallResponse' }
+              example:
+                success: true
+                data:
+                  outboundCallId: oc_01a0a4af5a417f5186af
+                  channelConnectionId: cc_01a09438
+                  environment: production
+                  destinationType: phone
+                  destination: '+1*******23'
+                  clientReferenceId: order-4821
+                  initiationState: submitted
+                  phase: in_progress
+                  outcome: null
+                  failureReason: null
+                  amdMode: 'off'
+                  providerCallSid: '****************a10'
+                  sessionId: a2b5869f45e562fdd9a1eb2dd8957745
+                  statusHistory:
+                    - { phase: dialing, outcome: null, providerEventAt: '2026-09-15T10:49:11.100Z', ingestedAt: '2026-09-15T10:49:11.204Z' }
+                    - { phase: ringing, outcome: null, providerEventAt: '2026-09-15T10:49:12.800Z', ingestedAt: '2026-09-15T10:49:12.910Z' }
+                    - { phase: in_progress, outcome: null, providerEventAt: '2026-09-15T10:49:18.200Z', ingestedAt: '2026-09-15T10:49:18.305Z' }
+                  createdAt: '2026-09-15T10:49:10.466Z'
+                  updatedAt: '2026-09-15T10:49:18.305Z'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '500': { $ref: '#/components/responses/InternalError' }
+  /api/v1/project/{projectSlug}/{env}/outbound-calls/search:
+    post:
+      tags: [Outbound Calls]
+      operationId: searchOutboundCalls
+      summary: Search outbound calls by destination
+      x-required-platform-key-scope: outbound_calls.read
+      description: |
+        Search outbound calls by destination.
+      parameters:
+        - $ref: '#/components/parameters/ProjectSlug'
+        - $ref: '#/components/parameters/Env'
+      requestBody:
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/SearchOutboundCallsRequest' }
+            example:
+              destination: { type: phone, number: '+14155550123' }
+      responses:
+        '200':
+          description: Page of matching calls.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/OutboundCallListResponse' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '500': { $ref: '#/components/responses/InternalError' }
+  /api/v1/project/{projectSlug}/{env}/outbound-calls/{outboundCallId}/terminate:
+    post:
+      tags: [Outbound Calls]
+      operationId: terminateOutboundCall
+      summary: Terminate (hang up) an in-flight outbound call
+      x-required-platform-key-scope: outbound_calls.initiate
+      description: |
+        Terminate or hang up an in-flight outbound call.
+      parameters:
+        - $ref: '#/components/parameters/ProjectSlug'
+        - $ref: '#/components/parameters/Env'
+        - $ref: '#/components/parameters/OutboundCallId'
+      responses:
+        '200':
+          description: The call's post-termination state.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/TerminateOutboundCallResponse' }
+              example:
+                success: true
+                data:
+                  outboundCallId: oc_01a0a4af5a417f5186af
+                  phase: terminal
+                  outcome: canceled
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '500': { $ref: '#/components/responses/InternalError' }
+  /api/v1/project/{projectSlug}/{env}/outbound-calls/{outboundCallId}/events:
+    get:
+      tags: [Outbound Calls]
+      operationId: streamOutboundCallEvents
+      summary: Live status stream for one outbound call (server-sent events)
+      x-required-platform-key-scope: outbound_calls.read
+      description: |
+        Live status stream for one outbound call (server-sent events).
+      parameters:
+        - $ref: '#/components/parameters/ProjectSlug'
+        - $ref: '#/components/parameters/Env'
+        - $ref: '#/components/parameters/OutboundCallId'
+      responses:
+        '200':
+          description: |
+            An open `text/event-stream`. Each `data:` line is one JSON-encoded
+            `OutboundStreamEvent`.
+          content:
+            text/event-stream:
+              schema: { $ref: '#/components/schemas/OutboundStreamEvent' }
+              example: |
+                event: snapshot
+                data: {"type":"snapshot","outboundCallId":"oc_01a0a4af5a417f5186af","phase":"ringing","outcome":null,"version":2,"statusHistory":[{"phase":"dialing","outcome":null,"providerEventAt":"2026-09-15T10:49:11.100Z","ingestedAt":"2026-09-15T10:49:11.204Z"},{"phase":"ringing","outcome":null,"providerEventAt":"2026-09-15T10:49:12.800Z","ingestedAt":"2026-09-15T10:49:12.910Z"}]}
+
+                event: phase
+                data: {"type":"phase","outboundCallId":"oc_01a0a4af5a417f5186af","phase":"in_progress","outcome":null,"version":3}
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+components:
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: x-api-key
+      description: |
+        Project-bound Platform API key (`abl_...`). The key must carry `outbound_calls.initiate`
+        for write operations (initiate, terminate) or `outbound_calls.read` for read operations
+        (lookup, list, summary, search, event stream).
+  parameters:
+    ProjectSlug:
+      name: projectSlug
+      in: path
+      required: true
+      description: The project's slug.
+      schema: { type: string, minLength: 1 }
+    Env:
+      name: env
+      in: path
+      required: true
+      description: Deployment environment segment the call runs under, e.g. `production`, `staging`, `dev`.
+      schema: { type: string, minLength: 1 }
+    OutboundCallId:
+      name: outboundCallId
+      in: path
+      required: true
+      description: Identifier returned when the call was initiated.
+      schema: { type: string, minLength: 1 }
+    Limit:
+      name: limit
+      in: query
+      description: Page size.
+      schema: { type: integer, minimum: 1, maximum: 100, default: 50 }
+    Cursor:
+      name: cursor
+      in: query
+      description: Pass the previous response's `nextCursor` to get the next page.
+      schema: { type: string, minLength: 1 }
+  schemas:
+    OutboundCallPhase:
+      type: string
+      description: |
+        Lifecycle phase, in order: accepted=submitted, not yet dialing; dialing=submitted to
+        the carrier; ringing=destination is ringing; in_progress=answered, call is live;
+        terminal=call has ended (see `outcome`).
+      enum: [accepted, dialing, ringing, in_progress, terminal]
+    OutboundCallOutcome:
+      type: string
+      description: |
+        How a terminal call ended. completed=ended normally after connecting;
+        busy=destination was busy; rejected=destination actively declined/rejected the call;
+        no_answer=rang without being picked up; machine=answering machine detected (only
+        possible with `amdMode` other than `off`); failed=a hard failure prevented completion;
+        canceled=terminated by a `.../terminate` call before it connected; expired=the call was
+        abandoned before reaching a provider-reported outcome.
+      enum: [completed, busy, rejected, no_answer, machine, failed, canceled, expired]
+    OutboundAmdMode:
+      type: string
+      description: |
+        Answering-machine detection behavior. off=disabled, no AMD processing; continue=detect
+        and report via `amdResult`, but let the call proceed regardless; disconnect=detect and
+        automatically hang up on a machine.
+      enum: [off, continue, disconnect]
+    OutboundCallDestination:
+      description: Destination for the call — a phone number or a SIP URI.
+      oneOf:
+        - type: object
+          required: [type, number]
+          properties:
+            type: { type: string, enum: [phone] }
+            number: { type: string, minLength: 1, description: E.164 phone number. }
+        - type: object
+          required: [type, sipUri]
+          properties:
+            type: { type: string, enum: [sip] }
+            sipUri: { type: string, minLength: 1 }
+    InitiateOutboundCallRequest:
+      type: object
+      additionalProperties: false
+      required: [channelConnectionId, to, idempotencyKey]
+      properties:
+        channelConnectionId:
+          type: string
+          minLength: 1
+          description: The outbound-capable channel connection (telephony trunk/app) to place the call through.
+        to:
+          $ref: '#/components/schemas/OutboundCallDestination'
+        idempotencyKey:
+          type: string
+          minLength: 1
+          description: |
+            Caller-supplied key. Repeating this exact request (same key + same body) returns
+            the original call (`200`) instead of dialing again. The same key with a
+            *different* body is rejected with `409 IDEMPOTENCY_CONFLICT`.
+        clientReferenceId:
+          type: string
+          minLength: 1
+          maxLength: 256
+          description: Optional caller correlation id, echoed back on the call record and filterable via `clientReferenceId`.
+        amdMode:
+          $ref: '#/components/schemas/OutboundAmdMode'
+        sessionMetadata:
+          type: object
+          description: Optional arbitrary key/value metadata attached to the session created once the call connects.
+          additionalProperties: true
+    InitiateOutboundCallResponse:
+      type: object
+      required: [success, data]
+      properties:
+        success: { type: boolean, const: true }
+        data:
+          type: object
+          required: [outboundCallId, phase, initiationState]
+          properties:
+            outboundCallId: { type: string }
+            phase: { $ref: '#/components/schemas/OutboundCallPhase' }
+            initiationState: { $ref: '#/components/schemas/OutboundInitiationState' }
+    OutboundInitiationState:
+      type: string
+      description: |
+        Submit-lifecycle state, distinct from `phase` — tracks getting the request to the
+        telephony provider, not the call itself. created=call row written, not yet submitted;
+        provider_requesting=submit in flight; submitted=provider accepted the request;
+        provider_request_unknown=the submit outcome could not be confirmed (will be
+        reconciled); failed_to_submit=submission failed before reaching the provider.
+      enum: [created, provider_requesting, submitted, provider_request_unknown, failed_to_submit]
+    OutboundCallStatusHistoryEntry:
+      type: object
+      required: [phase, outcome, providerEventAt, ingestedAt]
+      properties:
+        phase: { $ref: '#/components/schemas/OutboundCallPhase' }
+        outcome:
+          oneOf: [{ $ref: '#/components/schemas/OutboundCallOutcome' }, { type: 'null' }]
+        providerEventAt:
+          type: [string, 'null']
+          format: date-time
+          description: When the telephony provider says the transition happened. Null when the provider did not supply a timestamp.
+        ingestedAt:
+          type: string
+          format: date-time
+          description: When the platform recorded this transition.
+    OutboundCallResource:
+      type: object
+      required:
+        - outboundCallId
+        - channelConnectionId
+        - environment
+        - destinationType
+        - destination
+        - initiationState
+        - phase
+        - outcome
+        - failureReason
+        - amdMode
+        - providerCallSid
+        - sessionId
+        - statusHistory
+        - createdAt
+        - updatedAt
+      properties:
+        outboundCallId: { type: string }
+        channelConnectionId: { type: string }
+        environment: { type: string, description: Deployment environment segment the call was placed under. }
+        destinationType: { type: string, enum: [phone, sip] }
+        destination:
+          type: string
+          description: Always masked (e.g. `+1*******23`). The unmasked value is never returned after initiation — use `.../search` to look up by real number.
+        clientReferenceId: { type: [string, 'null'] }
+        initiationState: { $ref: '#/components/schemas/OutboundInitiationState' }
+        phase: { $ref: '#/components/schemas/OutboundCallPhase' }
+        outcome:
+          oneOf: [{ $ref: '#/components/schemas/OutboundCallOutcome' }, { type: 'null' }]
+        failureReason:
+          type: [string, 'null']
+          description: Additional detail for a non-`completed` terminal outcome.
+        amdMode: { $ref: '#/components/schemas/OutboundAmdMode' }
+        providerCallSid:
+          type: [string, 'null']
+          description: The telephony provider's own call identifier, masked.
+        sessionId:
+          type: [string, 'null']
+          description: Set once the call connects (`phase=in_progress`) — correlates to the session created for the conversation.
+        statusHistory:
+          type: array
+          items: { $ref: '#/components/schemas/OutboundCallStatusHistoryEntry' }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+    OutboundCallResponse:
+      type: object
+      required: [success, data]
+      properties:
+        success: { type: boolean, const: true }
+        data: { $ref: '#/components/schemas/OutboundCallResource' }
+    OutboundCallListResponse:
+      type: object
+      required: [success, data, nextCursor]
+      properties:
+        success: { type: boolean, const: true }
+        data:
+          type: array
+          items: { $ref: '#/components/schemas/OutboundCallResource' }
+        nextCursor:
+          type: [string, 'null']
+          description: Pass as `cursor` to fetch the next page. Null when there are no more results.
+    TerminateOutboundCallResponse:
+      type: object
+      required: [success, data]
+      properties:
+        success: { type: boolean, const: true }
+        data:
+          type: object
+          required: [outboundCallId, phase, outcome]
+          properties:
+            outboundCallId: { type: string }
+            phase: { $ref: '#/components/schemas/OutboundCallPhase' }
+            outcome:
+              oneOf: [{ $ref: '#/components/schemas/OutboundCallOutcome' }, { type: 'null' }]
+    OutboundCallsSummaryResponse:
+      type: object
+      required: [success, data]
+      properties:
+        success: { type: boolean, const: true }
+        data:
+          type: object
+          required: [total, answered, inFlight, machineDetected, byOutcome]
+          properties:
+            total: { type: number, description: Total calls matching the filters. }
+            answered: { type: number, description: Calls that reached `phase=in_progress` at least once. }
+            inFlight: { type: number, description: Calls not yet at `phase=terminal`. }
+            machineDetected: { type: number, description: Calls where AMD reported an answering machine. }
+            byOutcome:
+              type: object
+              description: Count of terminal calls per `outcome` value.
+              additionalProperties: { type: number }
+    SearchOutboundCallsRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        destination:
+          $ref: '#/components/schemas/OutboundCallDestination'
+        channelConnectionId: { type: string, minLength: 1 }
+        phase: { $ref: '#/components/schemas/OutboundCallPhase' }
+        outcome: { $ref: '#/components/schemas/OutboundCallOutcome' }
+        clientReferenceId: { type: string, minLength: 1 }
+        from: { type: string, format: date-time }
+        to: { type: string, format: date-time }
+        limit: { type: integer, minimum: 1, maximum: 100 }
+        cursor: { type: string, minLength: 1 }
+    OutboundStreamEvent:
+      type: object
+      required: [type, outboundCallId, phase, outcome, version]
+      properties:
+        type:
+          type: string
+          enum: [snapshot, phase]
+          description: snapshot=the first event on the stream, current state + full history; phase=one applied transition.
+        outboundCallId: { type: string }
+        phase: { $ref: '#/components/schemas/OutboundCallPhase' }
+        outcome:
+          oneOf: [{ $ref: '#/components/schemas/OutboundCallOutcome' }, { type: 'null' }]
+        version:
+          type: integer
+          description: Monotonically increasing per call. Use to dedupe a `phase` event already covered by the initial `snapshot`.
+        statusHistory:
+          type: array
+          description: Present only on the `snapshot` event.
+          items: { $ref: '#/components/schemas/OutboundCallStatusHistoryEntry' }
+    ErrorEnvelope:
+      type: object
+      required: [success, error]
+      properties:
+        success: { type: boolean, const: false }
+        error:
+          type: object
+          required: [code, message]
+          properties:
+            code: { type: string, description: Stable machine-readable error code. }
+            message: { type: string, description: Human-readable detail. }
+            requestId: { type: string, description: Correlates this failure to platform-side logs. }
+  responses:
+    BadRequest:
+      description: |
+        The request could not be understood. `error.code` says which validation failed —
+        e.g. `INVALID_PHONE_NUMBER` for a malformed `to.number`, or `SIP_INJECTION_REJECTED`
+        for a SIP URI containing CRLF/header-injection content.
+      content: { application/json: { schema: { $ref: '#/components/schemas/ErrorEnvelope' } } }
+    Unauthorized:
+      description: Missing or invalid `x-api-key`, or the key lacks the required scope.
+      content: { application/json: { schema: { $ref: '#/components/schemas/ErrorEnvelope' } } }
+    NotFound:
+      description: |
+        `error.code=CHANNEL_NOT_FOUND` — either the `channelConnectionId` doesn't exist, or
+        the `outboundCallId` doesn't exist or belongs to a different project (isolation is
+        enforced by concealment, not a `403`).
+      content: { application/json: { schema: { $ref: '#/components/schemas/ErrorEnvelope' } } }
+    IdempotencyConflict:
+      description: '`error.code=IDEMPOTENCY_CONFLICT` — this `idempotencyKey` was already used with a different request body.'
+      content: { application/json: { schema: { $ref: '#/components/schemas/ErrorEnvelope' } } }
+    ProviderError:
+      description: |
+        The call could not be submitted to the telephony provider. `error.code` distinguishes
+        the cause: `OUTBOUND_PROVIDER_SUBMIT_FAILED` (the provider rejected the request —
+        often a transient capacity condition, safe to retry), `OUTBOUND_WEBHOOK_NOT_CONFIGURED`
+        (the project's environment is missing its outbound status-webhook signing key — a
+        deployment configuration issue, not fixable by retrying), or
+        `OUTBOUND_PROVIDER_REQUEST_UNKNOWN` (the submit outcome could not be confirmed; the
+        platform reconciles this automatically — check the call's `initiationState` shortly
+        after rather than resubmitting).
+      content: { application/json: { schema: { $ref: '#/components/schemas/ErrorEnvelope' } } }
+    InternalError:
+      description: Unexpected failure.
+      content: { application/json: { schema: { $ref: '#/components/schemas/ErrorEnvelope' } } }
