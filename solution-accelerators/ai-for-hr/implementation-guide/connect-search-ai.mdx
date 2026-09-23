@@ -1,0 +1,89 @@
+---
+title: Connect Search AI
+sidebarTitle: Connect Search AI
+---
+
+Case Management answers HR policy questions from content that Search AI indexes. Connect your policy repository, generate an auth token, and find the source filter value before the agent can answer anything.
+
+Complete all three parts. The agent offers to raise a case whenever the search returns nothing, so an incomplete connection looks like missing content to your employees.
+
+## Connect your repository
+
+Start in XO11 and configure the connector for the repository that holds your HR policies.
+
+1. Open XO11 and switch to **Search AI**.
+2. Go to **Connectors** > **All connectors**.
+3. Configure the connector for your repository, such as Confluence Cloud, and follow the connector documentation for that source.
+4. Wait for the first crawl to finish, then confirm that your policy content appears in the index.
+
+## Generate the auth token
+
+The advanced search API authenticates with a JWT that you sign with your Search AI app's client secret. Generate it once and store it with your other credentials.
+
+1. Open the app where you created the Search AI connector.
+2. Copy the **Client ID** and **Client secret**.
+3. Create a JWT with this header:
+
+```json
+{
+  "alg": "HS256",
+  "typ": "JWT"
+}
+```
+
+4. Use this payload, with your client ID in `iat`:
+
+```json
+{
+  "sub": "1234567890",
+  "iat": "cs-***"
+}
+```
+
+5. Sign the token with the client secret you copied.
+
+## Find the source filter value
+
+The advanced search API filters results by `sourceType`. Copy the exact value from an indexed chunk, because a wrong value returns content from the wrong source or nothing at all.
+
+1. In the Search AI app, go to **Browse** > **Filter**.
+2. Under **Source Title**, select your source, then click **Apply**.
+3. Click **JSON** on any chunk, scroll to the end, and copy the `sourceType` value.
+
+## Call the advanced search API
+
+The `data_retrieval` HTTP tool calls the advanced search API with the query, the user context, and the region. Use this request as your reference when you configure the tool.
+
+```bash
+curl -X POST \
+  'https://platform.kore.ai/api/public/stream/xxxx/advancedSearch' \
+  -H 'Content-Type: application/json' \
+  -H 'auth: <SEARCH_ACCESS_TOKEN>' \
+  -d '{
+    "query": "<user_query>",
+    "includeChunksInResponse": true,
+    "metaFilters": [
+      {
+        "condition": "AND",
+        "rules": [
+          {
+            "fieldName": "sourceType",
+            "fieldValue": ["YOUR.VALUE"],
+            "operator": "equals"
+          }
+        ]
+      }
+    ],
+    "customData": {
+      "userContext": {
+        "userId": "<user_email>"
+      }
+    }
+  }'
+```
+
+## Index content for both regions
+
+Case Management infers the region from the employee's message and passes either India or the US downstream. Index policy content for both regions, so employees in either location get an answer.
+
+<Tip>Name an owner for the indexed content before go-live. The agent answers only from what you index, so stale content leads to stale answers.</Tip>

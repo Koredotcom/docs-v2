@@ -1,0 +1,84 @@
+---
+title: Time Off Assistant
+sidebarTitle: Time Off Assistant
+---
+
+The Time Off Assistant handles leave and time off requests end to end. It shows balances, lists existing requests, submits new requests, and produces optimized leave plans that bridge weekends and company holidays.
+
+The agent validates balance, eligibility, holidays, and weekends before it submits anything. It never bypasses a validation, and it surfaces missing information instead of assuming it.
+
+## Flows
+
+The agent resolves every request to one of four flows. Employees describe what they want, and the agent picks the flow.
+
+| Flow | What the agent does |
+|------|---------------------|
+| **Leave balance enquiry** | Shows the current balance for every leave type. |
+| **View existing requests** | Lists the employee's active leave requests. |
+| **Create a request** | Collects the dates and leave type, validates them, confirms, and submits. |
+| **Leave optimization** | Proposes the longest continuous break for the fewest leave days. |
+
+## How date classification works
+
+The agent classifies every date in a requested range as HOLIDAY, WEEKEND, or WORKING. Only WORKING dates consume leave, which is what lets the agent stretch a break across weekends and company holidays.
+
+The agent always resolves relative ranges from the current system date, which it fetches with `get_today_date`. It never assumes or generates a date.
+
+## Tools
+
+Five tools support the four flows. Three read from Workday, and two wrap logic in a workflow.
+
+| Tool | Type | Description |
+|------|------|-------------|
+| `fetch_time_off_balance` | HTTP | Retrieves current leave balances for all leave types from Workday. |
+| `fetch_calendar_events` | HTTP | Retrieves company holidays and calendar events, which the agent uses to classify dates as HOLIDAY before it costs a request. |
+| `fetch_time_off_requests` | HTTP | Retrieves all active leave requests for the employee. |
+| `get_today_date` | Workflow | Returns the current system date, the reference for every relative range. |
+| `create_time_off_wf` | Workflow | Creates a time off request once the validations pass and the employee confirms. It calls `create_time_off` internally. |
+
+### Request bodies
+
+Each HTTP tool resolves the employee identity from a config variable at run time. Use these bodies when you configure the tools.
+
+`fetch_time_off_balance` and `fetch_calendar_events`:
+
+```json
+{
+  "userid": "{{config.EMPLOYEE_ID}}"
+}
+```
+
+`fetch_time_off_requests`:
+
+```json
+{
+  "userid": "{{config.EMPLOYEE_ID}}",
+  "filterBy": "requested"
+}
+```
+
+`create_time_off`:
+
+```json
+{
+  "userid": "{{config.EMPLOYEE_ID}}",
+  "label": "{{input.type}}",
+  "type": "{{input.type}}",
+  "requested": [
+    {
+      "start_time": {{input.fromdate}},
+      "end_time": {{input.todate}},
+      "duration": {{input.duration}}
+    }
+  ]
+}
+```
+
+## Guardrails
+
+Four rules govern every leave transaction. They protect the employee's balance and your Workday data.
+
+- The agent validates balance, eligibility, holidays, and weekends before any submission.
+- The agent submits only after explicit confirmation.
+- The agent asks for missing information instead of assuming it.
+- The agent hands a topic change to the right peer and takes the conversation back afterward.
