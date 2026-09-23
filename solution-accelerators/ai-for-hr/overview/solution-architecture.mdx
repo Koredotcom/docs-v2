@@ -1,0 +1,91 @@
+---
+title: Solution architecture
+sidebarTitle: Solution architecture
+---
+
+This page describes how AI for HR is put together: the three tiers it runs across, the agent team and how agents transfer work with HANDOFF, the shared session memory that keeps the conversation coherent, and the tool layer that connects the agents to your HR systems of record.
+
+Read it before you configure anything. The architecture explains why each configuration step exists and which team owns it.
+
+## Architecture at a glance
+
+AI for HR is a multi-agent application that runs on Agent Platform and reaches employees through AI for Work as one Autonomous Agent. HR_Supervisor classifies each request and hands it to exactly one of the specialist agents.
+
+The specialists act on Workday, ServiceNow, and Search AI through HTTP and workflow tools. The employee sees one continuous conversation throughout, whatever the request touches.
+
+## The three tiers
+
+AI for HR runs across three tiers, and each tier holds one kind of responsibility. Knowing the tiers tells you where to look when something behaves unexpectedly.
+
+| Tier | What runs there | Responsibility |
+|------|-----------------|----------------|
+| **AI for Work and orchestration** | The published Autonomous Agent | The employee-facing entry point. It carries the conversation into the agentic app. |
+| **Agent Platform agentic app** | HR_Supervisor and the specialist agents | Intent classification, routing, domain reasoning, validation, and confirmation. Every agent to agent transfer happens here. |
+| **Tools** | Workflow tools and HTTP tools | The only path to data. HTTP tools call Workday and ServiceNow. Workflow tools wrap multi-step logic, such as creating a time off request, aggregating payslips, and retrieving HR knowledge. |
+
+## The agent team
+
+One router and seven domain specialists make up the team. Each specialist owns exactly one service area, and none of them share tools or overlap in scope.
+
+| Agent | Role |
+|-------|------|
+| **HR_Supervisor** | Entry-point router. It identifies the HR intent, stores it in session memory, acknowledges, and routes to exactly one specialist. It never performs HR work and never runs an HR transaction tool. |
+| **Time Off Assistant** | Leave end to end: balances, existing requests, new requests, and optimized leave plans that bridge weekends and company holidays. |
+| **Benefit Management** | Benefit plans, enrollment, eligibility, and dependents. |
+| **Compensation** | Self-service payslip questions for the logged-in employee only, with breakdowns and aggregates but no payroll changes. |
+| **Profile Management** | Views the employee record and updates selected fields, with confirmation and documentation rules for sensitive fields. |
+| **Case Management** | Grounded HR policy answers plus HR cases: create, comment, view, and resolve. Scoped to India and the US. |
+| **Offboarding Management** | Voluntary resignation only: reasons, termination date, confirmation, and submission. |
+| **Timesheet Management** | Timesheet entries for the employee or a direct report across a date range. View-only. |
+
+For the full specification of each agent, including instructions, tools, and guardrails, see the Agents section.
+
+## How agents transfer work
+
+Agent Platform offers two ways for one agent to involve another: HANDOFF and DELEGATE. AI for HR uses HANDOFF exclusively, and it appears in two structurally different roles.
+
+| Role | How it works |
+|------|--------------|
+| **Supervisor entry routing** | HR_Supervisor carries one HANDOFF block per specialist, each gated on an intent category. Exactly one fires per turn, and the supervisor passes a short context summary with it. |
+| **Peer re-routing** | Every specialist carries a HANDOFF block for each of the other six specialists, so a topic change midway reaches the correct sibling. Seven specialists by six peers gives 42 directed peer edges, a complete mesh with no gaps. |
+
+Every HANDOFF block in the application uses `RETURN: true`, `ON_RETURN: continue`, and `ON_FAILURE: continue`. Control returns to the sending agent once the receiving agent finishes its turn.
+
+Each agent also enforces the same handoff discipline in its instructions. An agent invokes the HANDOFF instead of describing a transfer in prose, never hands off to itself, and never hands off the same message twice. Answers to its own questions, and follow-ups on what it just displayed, count as in-scope rather than a topic change.
+
+## Session memory
+
+The agents share a memory scoped to the session, which keeps the conversation coherent across handoffs. The supervisor writes to it on every turn, and the receiving specialist reads it, so the employee never repeats what they already said.
+
+| Memory key | Type | What it holds |
+|------------|------|---------------|
+| `current_intent` | string | The primary HR intent detected from the request: `time_off`, `benefits`, `compensation`, `profile_management`, `case_management`, `offboarding`, or `timesheet_management`. |
+| `target_agent` | string | The specialist agent selected for this turn. |
+
+Every agent declares the same memory block. Each entry carries a name, a `TYPE`, and a `DESCRIPTION` under `MEMORY: session:`.
+
+```text
+MEMORY:
+  session:
+    - current_intent
+      TYPE:
+      DESCRIPTION:
+```
+
+## Read and write paths
+
+The tool layer enforces one safety rule everywhere. Read paths run freely, and every write path requires explicit in-chat confirmation.
+
+A specialist retrieves and displays data as soon as it has what it needs. It submits a leave request, an enrollment, a profile change, a case action, or a resignation only after the employee confirms. Values surface verbatim from the source system, so agents never estimate or reword them.
+
+## Integration layer
+
+Three mechanisms connect the agents to your data. Together they keep tool definitions portable across environments.
+
+| Mechanism | How AI for HR uses it |
+|-----------|------------------------|
+| **HTTP tools** | Call Workday for leave, benefits, payroll, the employee master record, timesheets, and termination, and ServiceNow for the service catalog and cases. Request bodies resolve config variables at run time, such as `{{config.EMPLOYEE_ID}}`, so the same definitions work across environments. |
+| **Workflow tools** | Wrap multi-step or reference logic: resolving today's date, creating a time off request, aggregating payslips, fetching available benefits, retrieving resignation reasons, updating the profile, and retrieving HR knowledge. |
+| **Search AI** | Serves HR policy and handbook knowledge through its advanced search API, scoped to India and the US. It connects to the agentic app with a Search AI app's client ID and secret. |
+
+For the configuration procedures, see the Implementation guide.
