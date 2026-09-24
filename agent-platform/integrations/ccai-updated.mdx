@@ -18,6 +18,18 @@ The integration requires:
 
 This connection is shared infrastructure. Once it's configured, Artemis routes escalated conversations to the Contact Center app and returns its responses to the user; for voice, the same connection also carries the live call transfer.
 
+| **Section in this article** | **Description** |
+|-------------|-----------------|
+| [Prerequisites](#prerequisites) | Requirements for setting up the integration. |
+| [1: Contact Center app configuration](#step-1-contact-center-app-configuration) | Configuring the Contact Center app in AI for Service. |
+| [2: Artemis project configuration](#step-2-artemis-project-configuration) | Configuring the Artemis project for integration. |
+| [3: Configure routing](#step-3-configure-routing) | How routing works, session lifecycle settings, and routing options for digital channels. |
+| [4: Voice channel routing (SIP)](#step-4-voice-channel-routing-sip) | Additional configuration required for voice channel routing. |
+| [5: Test and Verify](#step-5-test-and-verify) | Validating the integration end to end. |
+| [Example use case: dynamic customer-profile routing](#example-use-case-dynamic-customer-profile-routing) | Routing customers to different CCAI queues based on profile data. |
+| [Customer feedback survey (CSAT)](#customer-feedback-survey-csat) | Configuring the post-conversation feedback survey. |
+| [Points to note](#points-to-note) | Attachments, transcripts, recordings, and transfer lifecycle events. |
+| [Troubleshoot integration issues](#troubleshoot-integration-issues) | Common symptoms, causes, and recommended actions. |
 
 ## Prerequisites
 
@@ -119,79 +131,7 @@ Under **Project Settings** → **Agent Transfer** → **Session Lifecycle**, ali
 
 When an agent escalates a conversation, Artemis routes it to the Contact Center app via the configured connection. The Contact Center app's response, returned through the connection, is delivered to the user.
 
-## Worked example: dynamic customer-profile routing
-
-You can send a customer to a different CCAI queue based on information Artemis already has about them. In this example, Premium customers who need help with Payments go to a specialist priority queue, while other customers go to the most appropriate standard queue. Use the same pattern for language, product, region, account status, or any other reliable profile value.
-
-### 1. Choose the profile information
-
-Use information that's available before the agent transfer and that has a clear source of truth. Keep the allowed values consistent across the customer system, Artemis, and CCAI. For example: customer tier (Premium or Standard), product or intent (Payments, Cards, General), language, or customer status (authenticated, unauthenticated, high-risk).
-
-### 2. Define the decision rules
-
-Evaluate rules from top to bottom. Put the most specific rule first, followed by broader rules, and always finish with a safe default.
-
-- Premium + Payments → Payments Priority queue, Payments skill, high priority.
-- Standard + Payments → Payments Support queue, Payments skill, normal priority.
-- Premium + any other product → Priority Support queue, Premium skill (if supported).
-- Missing or unknown profile data → General Support queue. Don't block the customer because a profile field is unavailable.
-
-The queue names and priority labels are examples. Replace them with the actual CCAI queue names, IDs, skills, and approved priority scale for your environment.
-
-### 3. Add queues and skills in the Artemis escalate block
-
-Create the required queues and skills in CCAI first, then copy their IDs into the Artemis routing logic. Use the queue ID as the destination and the skill ID as the agent qualification, and keep a general-support queue as the fallback. Set these values inside the [`escalate` block](/agent-platform/abl/reference/multi-agent-and-supervisor#escalate) in the Artemis agent that invokes the live-agent transfer.
-
-Illustrative DSL pattern:
-
-```
-escalate {
-    reason = "customer_requested_agent"
-
-    if customer.tier == "Premium"
-       and customer.product == "Payments" {
-        queueId = "QID_PAYMENTS_PRIORITY"
-        skillId = "SKILL_PAYMENTS"
-        priority = 1
-    } else if customer.product == "Payments" {
-        queueId = "QID_PAYMENTS_SUPPORT"
-        skillId = "SKILL_PAYMENTS"
-        priority = 5
-    } else if customer.tier == "Premium" {
-        queueId = "QID_PRIORITY_SUPPORT"
-        skillId = "SKILL_PREMIUM"
-        priority = 5
-    } else {
-        queueId = "QID_GENERAL_SUPPORT"
-        skillId = null
-        priority = 5
-    }
-
-    postAgentAction = "RETURN_TO_BOT"
-}
-```
-
-Replace the placeholder values with the actual CCAI IDs. The exact property names depend on the Artemis DSL version. Don't use display names when the integration requires IDs.
-
-Field reference:
-
-- `queueId`: the CCAI queue that should receive the interaction.
-- `skillId`: the CCAI skill required for the interaction, such as Payments, Spanish, or Premium Support.
-- `agentId`: an optional named-agent destination. Use it only when the business case requires direct routing.
-- `priority`: the agreed numeric priority.
-- `postAgentAction`: what Artemis does after the live-agent leg, such as `RETURN_TO_BOT` or End session.
-
-### 4. Test the escalation
-
-- Premium customer with a Payments request → Payments Priority queue plus Payments skill.
-- Standard customer with a Payments request → Payments Support queue plus Payments skill.
-- Premium customer with another product → Priority Support queue plus Premium skill.
-- Missing or invalid profile data → General Support fallback queue.
-- Selected queue has no agents or is outside business hours → CCAI in-queue or no-agent flow.
-
-The connection configuration establishes communication between Artemis and CCAI. The escalate block determines the destination for an individual conversation. Keep changing workforce decisions, such as agent availability and queue capacity, in CCAI rather than encoding them in the bot.
-
-## Voice channel routing (SIP)
+## Step 4: Voice channel routing (SIP)
 
 Voice channel routing requires some additional configuration. Follow the steps listed below.
 
@@ -252,7 +192,7 @@ In Artemis, go to **Project Settings → Agent Transfer** and enter the followin
 
 Use the [`Escalate` block](/agent-platform/abl/reference/multi-agent-and-supervisor#escalate) with `routing.voice.call_transfer_type` set to `sip` (and `transfer_method` set to `refer`, `invite`, or `bye`) to drive the live SIP call handoff. This is the recommended pattern — it works unchanged for chat and voice, with no separate tool definition needed:
 
-```
+```yaml
 ESCALATE:
   routing:
     - voice: { call_transfer_type: sip, transfer_method: refer }
@@ -261,7 +201,7 @@ ESCALATE:
 
 Alternatively, you can call the `call_transfer` tool directly, with this contract:
 
-```
+```yaml
 TOOLS:
   call_transfer(callTransferType: string, phoneNumber?: string, sipTransferId?: string, message?: string, headers?: object) -> object
     description: "Transfer the live voice call to a human agent over SIP. Call this whenever the caller asks for a human, an agent, a representative, or to be transferred. Always pass callTransferType as sip."
@@ -284,6 +224,97 @@ Saving an ABL change updates only the draft. It doesn't change the behavior of a
 5. Confirm the Artemis Realtime Voice channel has a working inbound DID if dialing from a phone. **This public inbound DID is different from the CCAI SIP routing ID.**
 
 After deployment, start a brand-new voice call to pick up the change; existing sessions keep the runtime state they began with. Verify the Realtime Voice channel binding every time you create a new version.
+
+## Step 5: Test and Verify
+
+<Warning>
+For voice, don't use the CCAI browser softphone for the final test — voice transfer doesn't work correctly from that path. Call the Artemis agent from an external mobile phone or a telephony-enabled video call, and keep the human CCAI Agent Console on a separate machine/audio endpoint when possible.
+</Warning>
+
+1. Call the Artemis agent and say a test phrase such as **"Transfer me to a human agent."** For digital channels, enter a message requesting a transfer to a live agent.
+2. Verify the expected Artemis behavior:
+   - **Voice:** The `call_transfer` tool is invoked with `callTransferType=sip`. The configured transition message (if any) is played, and the call is transferred to CCAI.
+   - **Digital:** An escalation request is initiated and the conversation is transferred to CCAI.
+3. Verify the expected CCAI behavior:
+   - **Voice:** A new voice interaction is routed to the configured queue or agent. Accept the interaction.
+   - **Digital:** A new chat conversation is routed to the configured queue or agent. Accept the interaction.
+4. Verify the transfer details:
+   - **Artemis Sessions/Trace:** Confirm that a `call_transfer` tool invocation is recorded for voice transfers, or an escalation event for digital transfers.
+   - **Artemis Transfer Sessions:** Confirm the provider is **SmartAssist**, the channel is correct (voice or chat), and the transfer completes successfully.
+   - **CCAI Agent Console:** Confirm the interaction is offered to the expected queue or agent, accepted successfully, and transitions to the **Connected** state.
+5. For voice, confirm two-way audio: caller and human can interrupt/respond naturally, and the AI no longer answers after acceptance.
+
+## Example use case: dynamic customer-profile routing
+
+You can send a customer to a different CCAI queue based on information Artemis already has about them. In this example, Premium customers who need help with Payments go to a specialist priority queue, while other customers go to the most appropriate standard queue. Use the same pattern for language, product, region, account status, or any other reliable profile value.
+
+### 1. Choose the profile information
+
+Use information that's available before the agent transfer and that has a clear source of truth. Keep the allowed values consistent across the customer system, Artemis, and CCAI. For example: customer tier (Premium or Standard), product or intent (Payments, Cards, General), language, or customer status (authenticated, unauthenticated, high-risk).
+
+### 2. Define the decision rules
+
+Evaluate rules from top to bottom. Put the most specific rule first, followed by broader rules, and always finish with a safe default.
+
+- Premium + Payments → Payments Priority queue, Payments skill, high priority.
+- Standard + Payments → Payments Support queue, Payments skill, normal priority.
+- Premium + any other product → Priority Support queue, Premium skill (if supported).
+- Missing or unknown profile data → General Support queue. Don't block the customer because a profile field is unavailable.
+
+The queue names and priority labels are examples. Replace them with the actual CCAI queue names, IDs, skills, and approved priority scale for your environment.
+
+### 3. Add queues and skills in the Artemis escalate block
+
+Create the required queues and skills in CCAI first, then copy their IDs into the Artemis routing logic. Use the queue ID as the destination and the skill ID as the agent qualification, and keep a general-support queue as the fallback. Set these values inside the [`escalate` block](/agent-platform/abl/reference/multi-agent-and-supervisor#escalate) in the Artemis agent that invokes the live-agent transfer.
+
+Illustrative DSL pattern:
+
+```yaml
+escalate {
+    reason = "customer_requested_agent"
+
+    if customer.tier == "Premium"
+       and customer.product == "Payments" {
+        queueId = "QID_PAYMENTS_PRIORITY"
+        skillId = "SKILL_PAYMENTS"
+        priority = 1
+    } else if customer.product == "Payments" {
+        queueId = "QID_PAYMENTS_SUPPORT"
+        skillId = "SKILL_PAYMENTS"
+        priority = 5
+    } else if customer.tier == "Premium" {
+        queueId = "QID_PRIORITY_SUPPORT"
+        skillId = "SKILL_PREMIUM"
+        priority = 5
+    } else {
+        queueId = "QID_GENERAL_SUPPORT"
+        skillId = null
+        priority = 5
+    }
+
+    postAgentAction = "RETURN_TO_BOT"
+}
+```
+
+Replace the placeholder values with the actual CCAI IDs. The exact property names depend on the Artemis DSL version. Don't use display names when the integration requires IDs.
+
+Field reference:
+
+- `queueId`: the CCAI queue that should receive the interaction.
+- `skillId`: the CCAI skill required for the interaction, such as Payments, Spanish, or Premium Support.
+- `agentId`: an optional named-agent destination. Use it only when the business case requires direct routing.
+- `priority`: the agreed numeric priority.
+- `postAgentAction`: what Artemis does after the live-agent leg, such as `RETURN_TO_BOT` or End session.
+
+### 4. Test the escalation
+
+- Premium customer with a Payments request → Payments Priority queue plus Payments skill.
+- Standard customer with a Payments request → Payments Support queue plus Payments skill.
+- Premium customer with another product → Priority Support queue plus Premium skill.
+- Missing or invalid profile data → General Support fallback queue.
+- Selected queue has no agents or is outside business hours → CCAI in-queue or no-agent flow.
+
+The connection configuration establishes communication between Artemis and CCAI. The escalate block determines the destination for an individual conversation. Keep changing workforce decisions, such as agent availability and queue capacity, in CCAI rather than encoding them in the bot.
 
 ## Customer feedback survey (CSAT)
 
@@ -322,25 +353,6 @@ Choose a survey frequency:
 3. If eligible, Artemis presents the survey.
 4. The customer submits a response.
 5. CCAI stores the response for reporting.
-
-## Step 4: Test and Verify
-
-<Warning>
-For voice, don't use the SmartAssist browser softphone for the final test — voice transfer doesn't work correctly from that path. Call the Artemis agent from an external mobile phone or a telephony-enabled video call, and keep the human CCAI Agent Console on a separate machine/audio endpoint when possible.
-</Warning>
-
-1. Call the Artemis agent and say a test phrase such as **"Transfer me to a human agent."** For digital channels, enter a message requesting a transfer to a live agent.
-2. Verify the expected Artemis behavior:
-   - **Voice:** The `call_transfer` tool is invoked with `callTransferType=sip`. The configured transition message (if any) is played, and the call is transferred to CCAI.
-   - **Digital:** An escalation request is initiated and the conversation is transferred to CCAI.
-3. Verify the expected CCAI behavior:
-   - **Voice:** A new voice interaction is routed to the configured queue or agent. Accept the interaction.
-   - **Digital:** A new chat conversation is routed to the configured queue or agent. Accept the interaction.
-4. Verify the transfer details:
-   - **Artemis Sessions/Trace:** Confirm that a `call_transfer` tool invocation is recorded for voice transfers, or an escalation event for digital transfers.
-   - **Artemis Transfer Sessions:** Confirm the provider is **SmartAssist**, the channel is correct (voice or chat), and the transfer completes successfully.
-   - **CCAI Agent Console:** Confirm the interaction is offered to the expected queue or agent, accepted successfully, and transitions to the **Connected** state.
-5. For voice, confirm two-way audio: caller and human can interrupt/respond naturally, and the AI no longer answers after acceptance.
 
 ## Points to note
 
