@@ -1,9 +1,14 @@
 ---
 title: CCAI integration
 sidebarTitle: CCAI
+hidden: true
 ---
 
 <Badge icon="arrow-left" color="gray">[Back to list of integrations](/agent-platform/integrations#agent-desktop-integrations)</Badge>
+
+<Note>
+Review copy — not linked in navigation. This file merges the digital and voice content back into a single article (the original shape of `ccai.mdx`) with all gaps from the source docs filled in, so you can compare it against the split version (`ccai.mdx` + `ccai-voice-transfer.mdx`). Delete this file once you've decided which structure to keep.
+</Note>
 
 For secure, bidirectional communication between the AI application and contact center agents, you can integrate the AI for Service Contact Center app with an Artemis project.
 The integration requires:
@@ -11,10 +16,20 @@ The integration requires:
 - **Contact Center app configuration** in AI for Service, using tenant, project, and token details from Artemis.
 - **Artemis project configuration**, using tokens and IDs from the Contact Center app, set as the default Agent Transfer route.
 
-This connection is shared infrastructure. Once it's configured, Artemis routes escalated conversations to the Contact Center app and returns its responses to the user.
+This connection is shared infrastructure. Once it's configured, Artemis routes escalated conversations to the Contact Center app and returns its responses to the user; for voice, the same connection also carries the live call transfer.
 
-This article covers the shared connection setup and digital channel (chat and email) routing. For voice channel setup, complete the steps in this article first, then go to [CCAI voice transfer](/agent-platform/integrations/ccai-voice-transfer).
-
+| **Section in this article** | **Description** |
+|-------------|-----------------|
+| [Prerequisites](#prerequisites) | Requirements for setting up the integration. |
+| [1: Contact Center app configuration](#step-1-contact-center-app-configuration) | Configuring the Contact Center app in AI for Service. |
+| [2: Artemis project configuration](#step-2-artemis-project-configuration) | Configuring the Artemis project for integration. |
+| [3: Configure routing](#step-3-configure-routing) | How routing works, session lifecycle settings, and routing options for digital channels. |
+| [4: Voice channel routing (SIP)](#step-4-voice-channel-routing-sip) | Additional configuration required for voice channel routing. |
+| [5: Test and Verify](#step-5-test-and-verify) | Validating the integration end to end. |
+| [Example use case: dynamic customer-profile routing](#example-use-case-dynamic-customer-profile-routing) | Routing customers to different CCAI queues based on profile data. |
+| [Customer feedback survey (CSAT)](#customer-feedback-survey-csat) | Configuring the post-conversation feedback survey. |
+| [Points to note](#points-to-note) | Attachments, transcripts, recordings, and transfer lifecycle events. |
+| [Troubleshoot integration issues](#troubleshoot-integration-issues) | Common symptoms, causes, and recommended actions. |
 
 ## Prerequisites
 
@@ -23,6 +38,7 @@ This article covers the shared connection setup and digital channel (chat and em
 - Access to an Artemis project.
 - A secure token generator or password manager to create secrets that meet the required complexity rules.
 - A test agent or flow that can reach an agent-transfer path, to validate the connection after setup.
+- For voice: Artemis production and your CCAI production environment in the same cloud region/cluster, and CCAI **App Owner** role.
 - The integration is enabled on request. To enable it, {{support}}.
 
 ## Step 1: Contact Center app configuration
@@ -41,7 +57,7 @@ This article covers the shared connection setup and digital channel (chat and em
     | Artemis tenant ID    | Artemis: Agent Chat > initiate chat > Debug > Data or Artemis Profile > Workspace ID        |  Use the tenant/workspace ID for the Artemis workspace being connected.                                                                |
     | Artemis project ID   | Artemis: Agent Chat > initiate chat > Debug > Data                                          | Use the project ID for the target Artemis project.                                                                                     |
     | Artemis webhook URL  | Artemis: Project > Integrations > Kore SmartAssist > Connect > Webhook Channel Callback URL | Copy the callback URL exactly as shown.                                                                                                |
-    | Artemis access token | Bring your own key                                                                          | Create a secret that meets the [token and secret rules](/agent-platform/integrations/ccai#token-and-secret-rules). |
+    | Artemis access token | Bring your own key                                                                          | Create a secret that meets the [token and secret rules](/agent-platform/integrations/ccai-updated#token-and-secret-rules). |
     | Artemis auth token   | Artemis: Project > Deployments > API Keys > Create a platform key                           | Create a platform key and copy the generated token. The token is shown only once, so copy it immediately; it typically starts with `abl_`. Start with the least-privilege scope your design needs, such as Read Sessions for session history and transcripts. |
 
 7. Review all Artemis Integration fields, then click **Enable Artemis Integration**. If an integration already exists for the app, click **Update Artemis Integration** instead.
@@ -69,7 +85,7 @@ Don't swap the **Artemis access token** and the **Artemis auth token**. The acce
 | App ID                       | CCAI → Flows and Channels → Artemis Integration → CCAI stream ID  | Copy exactly.                                                                                                 |
 | Account ID                   | CCAI → Flows and Channels → Artemis Integration → Account ID      | Copy exactly.                                                                                                 |
 
-## Step 3: Configure digital channel routing
+## Step 3: Configure routing
 
 ### How routing works
 
@@ -107,7 +123,7 @@ Under **Project Settings** → **Agent Transfer** → **Session Lifecycle**, ali
 - If a value is not assigned, Artemis uses the configured Agent Transfer default.
 - If data is missing or an ID is invalid, routes to the configured general-support fallback in CCAI.
 
-### Set up digital channel routing
+### Digital channel routing
 
 - Go to **Project Settings** → **Agent Transfer** → **Default Routing** → **Connection** and select the **integration**.
 - Review Queue, Priority, and Post-Agent Action.
@@ -115,15 +131,118 @@ Under **Project Settings** → **Agent Transfer** → **Session Lifecycle**, ali
 
 When an agent escalates a conversation, Artemis routes it to the Contact Center app via the configured connection. The Contact Center app's response, returned through the connection, is delivered to the user.
 
-## Step 4: Test and verify
+## Step 4: Voice channel routing (SIP)
 
-1. For digital channels, enter a message requesting a transfer to a live agent.
-2. Verify the expected Artemis behavior: an escalation request is initiated and the conversation is transferred to CCAI.
-3. Verify the expected CCAI behavior: a new chat conversation is routed to the configured queue or agent. Accept the interaction.
+Voice channel routing requires some additional configuration. Follow the steps listed below.
+
+<Note>
+Artemis production and your CCAI production environment must be in the **same cloud region/cluster** to keep the transfer on the internal Kore voice gateway. If they're in different clusters, the call leaves the Kore network and requires a purchased PSTN number and provider routing.
+</Note>
+
+### 1. Create the CCAI SIP trunk and routing number
+
+Go to **Contact Center AI** → **Flows & Channels** → **Voice Gateway** → **SIP Numbers** → **Configure SIP Trunk**. This creates the internal destination that Artemis will REFER the call to.
+
+| **CCAI SIP field**          | **Known-good baseline**                                                                                                               |
+| ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
+| SIP URI                   | Generated by CCAI. Example: `sip:savg-cusprd-sbc1.kore.ai:5060`                                                                          |
+| Network                   | List of IP addresses.                                                                                                                |
+| Incoming IPs              | Example: `54.172.60.0, 54.172.60.3, 54.244.51.0, 54.244.51.3`; confirm the current tenant allowlist with telephony administration. |
+| E.164 Syntax              | Checked                                                                                                                               |
+| DID / routing ID          | A unique routing identifier, such as `4848898755`. On this same-cluster internal path it does not need to be a purchased public DID.     |
+| DTMF Types                | `RFC 2833`                                                                                                                            |
+| SIP Transport              | `UDP`                                                                                                                                   |
+| Credentials / termination | Optional. Leave blank unless a Kore telephony administrator gives you tenant-specific values.                                         |
+
+<Note> Keep exactly one leading `sip:` in the resulting SIP number (`sip:<routing-id>@<host>:5060`). A double `sip:` prefix breaks the destination.</Note>
+
+### 2. Route the SIP number to a human destination
+
+1. Click **Next**. Reserve or select the SIP routing number and enable **Inbound Calls**. Select the intended CCAI app.
+2. Create a **Call Start Flow**. Supply a non-empty description and select the SIP number when prompted.
+3. Connect the Start node to an **Agent Transfer** node, then choose the intended queue, skill, or named employee.
+4. For every receiving employee, enable Contact Center access, Agent Console as the default experience, Voice, and the required queue/skill membership.
+5. Publish the Start Flow.
+
+<Note>
+Attaching a Start Flow can return an already-published CCAI app to **In Development**. Republish the app after this step.
+</Note>
+
+Before moving on, confirm: Agent Console is open and the human agent is **Available**; the target queue/skill or named-agent route is correct; the app and every relevant voice flow show **Published**.
+
+### 3. Publish the CCAI app
+
+Publish the CCAI app and all affected voice/Start flows.
+
+### 4. Configure Artemis agent transfer for SIP REFER
+
+In Artemis, go to **Project Settings → Agent Transfer** and enter the following configurations under **Voice Gateway**, in addition to the **Default Routing connection** configured above:
+
+| **Setting**                  | **Value**                                                                                |
+| ---------------------------- | ---------------------------------------------------------------------------------------- |
+| Gateway Type                 | `Kore Voice Gateway`                                                                       |
+| Transfer Method              | `SIP REFER`. The underlying `transfer_method` parameter also accepts `invite` or `bye`; use `refer` (SIP REFER) unless your design calls for a different signaling method. |
+| Header Passthrough           | On                                                                                       |
+| SIP Transfer Target URI      | `sip:<routing-id>@<sbc-host>:5060` with exactly one `sip:` prefix.                     |
+| PSTN target                  | Blank for an internal, same-cluster SIP path                                             |
+| SIP URI is SmartAssist trunk | `On`. This is required for SmartAssist transcript/recording synchronization and two-way audio. |
+| Allowed Transfer Headers     | Optional; add only headers required by your queue/skill routing design. [Learn More](/agent-platform/sending-custom-sip-headers).   |
+
+### 5. Configure the voice-transfer mechanism in the ABL
+
+Use the [`Escalate` block](/agent-platform/abl/reference/multi-agent-and-supervisor#escalate) with `routing.voice.call_transfer_type` set to `sip` (and `transfer_method` set to `refer`, `invite`, or `bye`) to drive the live SIP call handoff. This is the recommended pattern — it works unchanged for chat and voice, with no separate tool definition needed:
+
+```yaml
+ESCALATE:
+  routing:
+    - voice: { call_transfer_type: sip, transfer_method: refer }
+      # transfer_method: refer | invite | bye
+```
+
+Alternatively, you can call the `call_transfer` tool directly, with this contract:
+
+```yaml
+TOOLS:
+  call_transfer(callTransferType: string, phoneNumber?: string, sipTransferId?: string, message?: string, headers?: object) -> object
+    description: "Transfer the live voice call to a human agent over SIP. Call this whenever the caller asks for a human, an agent, a representative, or to be transferred. Always pass callTransferType as sip."
+```
+
+Add a clear PERSONA instruction so the agent invokes the transfer promptly and only on a genuine request: invoke the transfer immediately when the caller explicitly asks for a human, without offering alternatives or asking a follow-up question first; never merely say a transfer is starting or complete; and don't treat negated, hypothetical, quoted, historical, or third-party mentions of a human representative as a transfer request.
+
+Compile, lint, and validate. Non-blocking metadata warnings don't replace runtime validation.
+
+### 6. Deploy and bind the voice channel in Artemis
+
+<Note>
+Saving an ABL change updates only the draft. It doesn't change the behavior of a live call until you create and bind a new deployment.
+</Note>
+
+1. Open Artemis → Deployments -> Environments. Create a deployment, choose **Customize per agent**, and select **Auto-create from draft** for the voice agent. Confirm the correct Entry Agent, then deploy.
+2. Go to Channels and choose a voice channel.
+3. Select the deployment in the channel configuration.
+4. Configure other channel properties and Save.
+5. Confirm the Artemis Realtime Voice channel has a working inbound DID if dialing from a phone. **This public inbound DID is different from the CCAI SIP routing ID.**
+
+After deployment, start a brand-new voice call to pick up the change; existing sessions keep the runtime state they began with. Verify the Realtime Voice channel binding every time you create a new version.
+
+## Step 5: Test and Verify
+
+<Warning>
+For voice, don't use the CCAI browser softphone for the final test — voice transfer doesn't work correctly from that path. Call the Artemis agent from an external mobile phone or a telephony-enabled video call, and keep the human CCAI Agent Console on a separate machine/audio endpoint when possible.
+</Warning>
+
+1. Call the Artemis agent and say a test phrase such as **"Transfer me to a human agent."** For digital channels, enter a message requesting a transfer to a live agent.
+2. Verify the expected Artemis behavior:
+   - **Voice:** The `call_transfer` tool is invoked with `callTransferType=sip`. The configured transition message (if any) is played, and the call is transferred to CCAI.
+   - **Digital:** An escalation request is initiated and the conversation is transferred to CCAI.
+3. Verify the expected CCAI behavior:
+   - **Voice:** A new voice interaction is routed to the configured queue or agent. Accept the interaction.
+   - **Digital:** A new chat conversation is routed to the configured queue or agent. Accept the interaction.
 4. Verify the transfer details:
-   - **Artemis Sessions/Trace:** Confirm that an escalation event is recorded for the transfer.
-   - **Artemis Transfer Sessions:** Confirm the provider is **SmartAssist**, the channel is chat, and the transfer completes successfully.
+   - **Artemis Sessions/Trace:** Confirm that a `call_transfer` tool invocation is recorded for voice transfers, or an escalation event for digital transfers.
+   - **Artemis Transfer Sessions:** Confirm the provider is **SmartAssist**, the channel is correct (voice or chat), and the transfer completes successfully.
    - **CCAI Agent Console:** Confirm the interaction is offered to the expected queue or agent, accepted successfully, and transitions to the **Connected** state.
+5. For voice, confirm two-way audio: caller and human can interrupt/respond naturally, and the AI no longer answers after acceptance.
 
 ## Example use case: dynamic customer-profile routing
 
@@ -148,7 +267,7 @@ The queue names and priority labels are examples. Replace them with the actual C
 
 Create the required queues and skills in CCAI first, then copy their IDs into the Artemis routing logic. Use the queue ID as the destination and the skill ID as the agent qualification, and keep a general-support queue as the fallback. Set these values inside the [`escalate` block](/agent-platform/abl/reference/multi-agent-and-supervisor#escalate) in the Artemis agent that invokes the live-agent transfer.
 
-Example DSL pattern:
+Illustrative DSL pattern:
 
 ```yaml
 escalate {
@@ -238,7 +357,8 @@ Choose a survey frequency:
 ## Points to note
 
 - **Attachments**: When a user shares a file during a conversation in Artemis, the file and its associated metadata are transferred to the CCAI agent. The agent can use the attachment and its metadata as part of its reasoning and response generation. See [supported attachment types](/agent-platform/administration/security-observability-settings#attachments).
-- **Transfer lifecycle events**: When a session is escalated to a human agent in the contact center, the platform captures key events in the transfer lifecycle, such as transfer initiated, transfer completed, human agent connected, and session ended, as **platform events**. These events include transfer metadata that can be consumed by downstream integrations, workflows, and analytics.
+- **Conversation transcripts and recordings**: Recordings and transcripts from voice calls in CCAI are available in Artemis after the session ends under Sessions logs. It may take up to 10 minutes to present recordings and transcripts in Artemis due to post-session processing.
+- **Transfer lifecycle events**: When a session is escalated to a human agent in the contact center, the platform captures key events in the transfer lifecycle, such as transfer initiated, transfer completed, human agent connected, and session ended, as **platform events**. These events include transfer metadata that can be consumed by downstream integrations, workflows, and analytics. For voice interactions, Artemis retrieves and displays these events after the call is completed.
 
 ### Token and secret rules
 
@@ -262,6 +382,8 @@ Choose a survey frequency:
 | Match webhook secret                             | Matches the AI for Service Artemis access token exactly.                     |
 | Initiate test interaction                        | You can initiate a flow without authentication errors.                       |
 | Check debug data                                 | Tenant ID and project ID align with the intended workspace and project.      |
+| (Voice) New deployment created and Realtime Voice channel bound | The active deployment matches the latest ABL/agent version. |
+| (Voice) SIP URI is SmartAssist trunk is On       | Two-way audio works after the human agent accepts the interaction.           |
 
 ## Troubleshoot integration issues
 
@@ -272,11 +394,17 @@ Choose a survey frequency:
 | Wrong tenant or project is connected                   | Values copied from another workspace or project | Fetch tenant ID and project ID again from Agent Chat → Debug → Data or confirm Workspace ID in Profile. |
 | Connection name rejected                               | Connection name isn't unique                    | Use a unique name.                                                                                      |
 | Integration works before publish but not after changes | Changes saved but not published                 | Publish the AI for Service app again.                                                                   |
+| (Voice) AI never answers                                | Broken Artemis Realtime Voice inbound DID/provider/channel binding | The transfer ABL can't run before an Artemis session exists; fix the inbound binding. |
+| (Voice) AI promises a transfer, but no CCAI offer       | ABL not deployed, or voice channel bound to an older deployment | Confirm the live ABL calls the transfer with `sip`, redeploy, and rebind the voice channel. |
+| (Voice) Transfer session starts, but no CCAI offer      | SmartAssist connection, SIP target, Start Flow, publish status, or agent/queue availability issue | Check each of these in order. |
+| (Voice) CCAI offer is accepted, but there's silence and the AI still responds | "SIP URI is SmartAssist trunk" is off, or the test used the SmartAssist browser softphone | Turn the setting On; confirm SIP REFER and single-prefix target URI; retest from an external phone. |
+| (Voice) SIP target doesn't connect                      | Double `sip:` prefix                            | Use `sip:<routing-id>@<sbc-host>:5060` with exactly one prefix.                                          |
+| (Voice) Changes look right but old behavior remains     | App not republished, or ABL change not deployed | Republish CCAI after flow changes; create a new Artemis deployment after ABL changes; start a new call. |
 
 ---
 
 {{related}}
 
-- [CCAI voice transfer](/agent-platform/integrations/ccai-voice-transfer)
 - [Know more about Contact Center](/ai-for-service/contact-center)
 - [Transfer sessions](/agent-platform/transfer-sessions)
+- [Sending custom SIP headers](/agent-platform/sending-custom-sip-headers)
