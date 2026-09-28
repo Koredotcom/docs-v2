@@ -103,7 +103,7 @@ Shapes response rendering.
 
 
 Voice (TTS) overrides while the profile is active. Accepts the full
-[voice configuration](/agent-platform/abl-reference/rich-content-and-expressions#voice-configuration)
+[voice configuration](/agent-platform/abl-reference/rich-content#voice-configuration)
 — `instructions`, `ssml`, `plain_text`, `provider`, `voice_id`, `speed`, `pace`, `temperature`, and
 `auto_tts_language_switch`.
 
@@ -135,7 +135,7 @@ TOOLS:
 Conversation-style overrides, organized into three sub-sections:
 
 - **`speaking`** — output style: `style`, `tone`, `emotion`, `pace`, `variety`, `max_sentences`, `one_thing_at_a_time`, `language_policy` (`interaction_context` / `agent_default` / `fixed`), `fixed_language`, `tool_lead_in`, `tool_results`, `readback`, `handoffs`, `phrases_ref`, `pronunciations_ref`.
-- **`listening`** — input handling: `barge_in`, `backchannels`, `on_pause`, `on_overlap`, `on_unclear_audio`, `on_self_correction`, `use_audio_cues`, and the voice sub-blocks `on_no_input`, `on_caller_backchannel`, and `on_hold` (see [Voice turn-taking](#voice-turn-taking)).
+- **`listening`** — input handling: `barge_in`, `backchannels`, `on_pause`, `on_overlap`, `on_unclear_audio`, `on_self_correction`, `use_audio_cues`, and the voice sub-blocks `on_no_input`, `on_caller_backchannel`, `on_hold`, and `barge_in_continuation` (see [Voice turn-taking](#voice-turn-taking)).
 - **`interaction`** — dialogue behavior: `answer_shape`, `detail`, `initiative`, `grounding`, `clarification`, `confirmation`, `uncertainty`, `empathy`, `repair`, `context`, `closure`, `assumption_handling`, `flow_mode`, and more.
 
 ```yaml
@@ -153,7 +153,7 @@ CONVERSATION:
 
 #### Voice turn-taking
 
-For voice/telephony channels, three `listening` sub-blocks control turn-taking behavior:
+For voice/telephony channels, four `listening` sub-blocks control turn-taking behavior:
 
 **`on_no_input`** — handle caller silence.
 
@@ -171,9 +171,11 @@ For voice/telephony channels, three `listening` sub-blocks control turn-taking b
 | `messages` | `object[]` | Static re-prompt texts. |
 | `generation` | `object` | Dynamic prompt generation (`mode: dynamic`): `enabled`, `model_source`, `model_id`, `prompt_ref`, `max_output_tokens`. |
 
-**`on_caller_backchannel`** — recognize caller acknowledgements ("uh-huh", "okay") without treating them as a turn: `enabled`, `phrases`, `max_words`, `max_duration_ms`.
+**`on_caller_backchannel`** — recognize caller acknowledgements ("uh-huh", "okay") without treating them as a turn: `enabled`, `phrases`, `max_words`.
 
-**`on_hold`** — handle caller hold requests ("hold on a sec"): `enabled`, `phrases`, `grace_ms`, `max_holds`, `suppress_response`.
+<Warning>`max_duration_ms` on `on_caller_backchannel` is accepted but has **no effect** — the voice gateway cannot enforce a back-channel duration cap, so back-channels are matched on the phrase list alone. Authoring it now emits a compile warning (`CONVERSATION_BACKCHANNEL_DURATION_CAP_IGNORED`); remove it.</Warning>
+
+**`on_hold`** — handle caller hold requests ("hold on a sec"): `enabled`, `phrases`, `phrases_by_locale`, `grace_ms`, `max_holds`, `suppress_response`. `phrases_by_locale` is a `{ <BCP-47 tag>: string[] }` map of additional hold phrases selected by the caller's detected locale; its phrases are unioned with the language-neutral `phrases` list rather than replacing them. Locale keys are canonicalized at parse time (`en_us` → `en-US`).
 
 ```yaml expandable=true
 CONVERSATION:
@@ -192,8 +194,37 @@ CONVERSATION:
     on_hold:
       enabled: true
       phrases: ["hold on", "give me a sec"]
+      phrases_by_locale:
+        es-MX: ["un momento", "espérame un segundo"]
+        fr-CA: ["un instant", "attends une seconde"]
       grace_ms: 15000
 ```
+
+<Note>`phrases_by_locale` is currently authored only in the `.agent.yaml` format (`CONVERSATION.listening.on_hold.phrases_by_locale`); the legacy `.agent.abl` parser does not yet accept this key.</Note>
+
+**`barge_in_continuation`** — when a caller barges in over the bot and the speech recognizer segments their continuous speech into multiple phrase-finals (for example "change to 2 years" then, without a real pause, "recalculate the EMI"), hold each eligible final briefly and merge a following one into a single turn instead of committing each phrase as its own turn.
+
+| Field | Type | Range | Description |
+| ----- | ---- | ----- | ----------- |
+| `enabled` | `boolean` | — | Master switch. Defaults to on (platform default) when the block is omitted entirely. |
+| `window_ms` | `number` | 300–2000 | Silence window held after a final before committing it, waiting for a possible continuation. |
+| `max_hold_ms` | `number` | 500–8000 | Absolute ceiling on how long one turn may be held, regardless of how many finals merge into it. |
+| `max_merges` | `number` | 1–20 | Maximum number of finals folded into one committed turn. |
+| `max_chars` | `number` | 1–20000 | Maximum merged-transcript length before forcing a commit. |
+
+```yaml
+CONVERSATION:
+  listening:
+    barge_in: allow
+    barge_in_continuation:
+      enabled: true
+      window_ms: 700
+      max_hold_ms: 4000
+      max_merges: 4
+      max_chars: 2000
+```
+
+<Note>`barge_in_continuation` refines what happens to an *already-allowed* interruption's speech segmentation — it's a sibling of, not a replacement for, the scalar `barge_in: allow`/`disallow` policy above, and distinct from the per-output scoped `BARGE_IN` covered in [Scoped barge-in](/agent-platform/abl-reference/flow#scoped-barge-in). A project-level default can be overlaid beneath this per-agent block.</Note>
 
 ### GATHER
 

@@ -141,7 +141,7 @@ ROUTING:
 
 #### Conditional routing (WHEN clauses)
 
-WHEN clauses use the same expression syntax as [Expressions & functions](/agent-platform/abl-reference/rich-content-and-expressions#expressions-and-functions). Common patterns include:
+WHEN clauses use the same expression syntax as [Expressions & functions](/agent-platform/abl-reference/expressions-and-functions). Common patterns include:
 
 ```yaml expandable=true
 # Intent-based
@@ -877,6 +877,66 @@ The `routing` block controls how the escalation is routed in the human agent sys
 
 <Note>Earlier drafts used `skill_tags` and `priority_boost`. The current runtime contract uses `skills` and `priority` — the older keys are silently ignored. The `routing` block also accepts several [advanced routing keys](#advanced-routing-keys) for richer human-agent integrations.</Note>
 
+#### Conditional routing entries
+
+`routing:` accepts two shapes, distinguished purely by what follows the colon:
+
+- A **mapping** (`routing: { connection: ..., queue: ..., ... }`, as above) — a single, unconditional destination. This is the legacy, still-supported form.
+- A **YAML sequence** (a list of `-`-prefixed entries) — an **ordered list of conditional routing entries**, each with the same fields as the single form plus `id` and `when`. When authored as a list, `routing` itself is left unset and the entries compile into `routing_entries` instead.
+
+```yaml
+ESCALATE:
+  triggers:
+    - WHEN: intent.category == "human_escalation"
+      REASON: "Caller requested a live agent"
+      PRIORITY: high
+
+  routing:
+    - id: whatsapp
+      WHEN: system.channel == "whatsapp"
+      connection: "Genesys Agent Transfer"
+
+    - id: voice_es
+      WHEN: system.channel == "voice" && system.locale == "es"
+      voice:
+        call_transfer_type: sip
+        transfer_method: refer
+        sip_transfer_id: "sip:es_billing_queue@sbc.example.com"
+
+    - id: fallback
+      WHEN: always
+      connection: "Default Queue"
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- |
+| `id`   | `string` | Optional label for authoring/observability. Defaults to `entry_<index>` if omitted. |
+| `when` | `string` | Condition selecting this entry, in the same deterministic expression grammar as trigger `WHEN` clauses (comparisons, `AND`/`OR`/`NOT`, `IS [NOT] SET`, `has(...)`, `abl.<fn>(...)`) — **not** free text. `WHEN` (uppercase) is also accepted. Omit, or use `always` / `*`, for the unconditional default entry. |
+
+Every other field (`connection`, `queue`, `skills`, `priority`, `post_agent`, `voice`, and all the [advanced routing keys](#advanced-routing-keys)) means exactly the same thing per entry as it does in the single-object form.
+
+**Evaluation is first-match-wins, in authored order.** The compiler enforces the entry list's shape:
+
+| Rule | Enforcement |
+| ---- | ----------- |
+| At most one unconditional (default) entry | More than one entry with no `when` (or `always`/`*`) is a compile error. |
+| A default entry, if present, must be last | A default entry followed by other entries is a compile error — those entries would be unreachable. |
+| No entry is required to match | A list with no default entry is valid; if none of the entries' conditions match at runtime, routing resolution simply has no match — this isn't a compile-time exhaustiveness check. |
+
+<Note>An entry whose `WHEN` guards `system.channel == "voice"` without a `voice:` block, or guards a non-voice channel without a `connection`, gets an advisory (non-blocking) warning — worth checking, since a matched entry with neither is unlikely to route anywhere useful.</Note>
+
+##### `sip_transfer_id`
+
+A voice routing entry (or the legacy single `routing.voice` block) may declare an explicit SIP transfer destination directly in the DSL with `sip_transfer_id` — a literal or `{{ }}`-templated SIP URI:
+
+```yaml
+voice:
+  call_transfer_type: sip
+  sip_transfer_id: "sip:{{escalation_skill}}@sbc.example.com"
+```
+
+This requires `call_transfer_type: sip` — declaring `sip_transfer_id` under `pstn` or `custom` is a compile error (PSTN transfers always use the project's PSTN transfer target, not a SIP transfer id). The compiler **always** stamps the resulting destination's provenance as `config` itself — an authored `sip_transfer_id_source` value is discarded and never trusted verbatim, the same trust posture as the `call_transfer` tool's `default_source: config` gate. Omit `sip_transfer_id` to keep today's behavior: the transfer target comes from the project-configured Agent Transfer settings.
+
 #### Advanced routing keys
 
 Beyond `connection` / `queue` / `skills` / `priority`, the `routing` block accepts additional keys for richer human-agent (contact center) integrations. Some are structured; others (`flow_policy`, `provider_config`, `metadata`) are **opaque pass-throughs** whose shape is defined by the receiving human-agent integration rather than validated by the ABL compiler. Every key accepts `snake_case` or `camelCase`.
@@ -944,7 +1004,7 @@ ESCALATE:
     queue: "wire_operations_l2"
     voice:
       transfer_method: refer            # invite | refer | bye
-      call_transfer_type: sip           # sip | pstn (omit to infer from project config)
+      call_transfer_type: sip           # sip | pstn | custom (omit sip/pstn to infer from project config)
       sip_headers:                      # forwarded to the receiving SBC / contact center
         X-Escalation-Reason: "sanctions_review"
         X-Priority: "1"
@@ -953,10 +1013,36 @@ ESCALATE:
 | Field                | Type                             | Description                                                                                                                                                                              |
 | -------------------- | -------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `transfer_method`    | `"invite"` \| `"refer"` \| `"bye"` | SIP signaling method used to transfer the active call leg.                                                                                                                             |
-| `call_transfer_type` | `"sip"` \| `"pstn"`               | Whether to move the call over SIP or PSTN. Omit to infer from project configuration — SIP when a `sipTransferTargetUri` is configured, PSTN when only a `pstnTransferTargetNumber` is. |
+| `call_transfer_type` | `"sip"` \| `"pstn"` \| `"custom"` | Whether to move the call over SIP or PSTN, or run a **custom** tool sequence (see below). Omit `sip`/`pstn` to infer from project configuration — SIP when a `sipTransferTargetUri` is configured, PSTN when only a `pstnTransferTargetNumber` is. |
 | `sip_headers`        | `Record<string,string>`          | Custom SIP headers forwarded on the transfer to the receiving SBC or contact center.                                                                                                     |
+| `sip_transfer_id`    | `string`                         | Explicit SIP transfer destination URI (literal or `{{ }}`-templated). Requires `call_transfer_type: sip`. See [Conditional routing entries](#sip_transfer_id) above. |
+| `custom_tools`       | `string[]`                       | Required when `call_transfer_type: custom` — an ordered list of existing project tool names run as the transfer sequence. See [Custom voice transfer](#custom-voice-transfer).           |
 
-<Note>`call_transfer_type` selects a **transport, not a destination** — the transfer target is always project-owned (Agent Transfer settings). Authored DSL cannot name a phone number or SIP URI here, the same boundary the built-in `call_transfer` tool enforces. For Genesys Audio Connector transfers, use the dedicated `genesys_sip_headers` block below rather than `sip_headers`.</Note>
+<Note>Without `sip_transfer_id`, `call_transfer_type` selects a **transport, not a destination** — the transfer target is project-owned (Agent Transfer settings), and authored DSL cannot name a phone number or SIP URI, the same boundary the built-in `call_transfer` tool enforces by default. `sip_transfer_id` is the one explicit exception to that rule (see above). For Genesys Audio Connector transfers, use the dedicated `genesys_sip_headers` block below rather than `sip_headers`.</Note>
+
+#### Custom voice transfer
+
+`call_transfer_type: custom` (ABLP-3552, CXone/NICE integration) replaces the SIP/PSTN leg transfer with an ordered sequence of **project tools**. Instead of moving the call, the runtime keeps the Artemis audio leg live and runs the named tools serially as a notification sequence — for example, obtaining a token from one HTTP tool and signaling an external contact-center API with the next.
+
+```yaml
+ESCALATE:
+  triggers:
+    - WHEN: caller.requests_human == true
+      REASON: "Caller requested an agent"
+      PRIORITY: high
+  routing:
+    voice:
+      call_transfer_type: custom
+      custom_tools:
+        - nice_token        # first tool may capture a SecretRef result
+        - signal_api        # next tool may consume that reference
+```
+
+- `custom_tools` is an ordered list of **1–8** exact, existing project **HTTP** tool names, invoked in the authored order. The first tool may capture a [SecretRef](/agent-platform/abl/reference/tools#reuse-secrets-across-tools-secretref) that a later tool consumes.
+- `custom` routing is **mutually exclusive** with a `connection` — a custom escalation has no SIP/PSTN connection.
+- The compiler validates shape (blocking errors): the transfer type must be `sip`/`pstn`/`custom`; `custom` requires 1–8 `custom_tools`; each name must be a non-empty ASCII identifier (`^[A-Za-z0-9][A-Za-z0-9_.-]{0,127}$`); names must be unique. Tool **existence and HTTP kind** are enforced at runtime (a non-HTTP or unknown tool is rejected then).
+
+<Warning>Custom voice transfer is **notification-only** in this version — it signals an external system while the caller stays on the Artemis leg; it does not hand the live call off to a human queue. Use `sip`/`pstn` (or `ESCALATE` routing to a human connection) when the call itself must be transferred.</Warning>
 
 #### Genesys SIP transfer headers
 
@@ -1197,6 +1283,6 @@ COMPLETE:
 
 - [NLU](/agent-platform/abl-reference/nlu) -- intent classification that drives routing decisions
 - [Memory and Constraints](/agent-platform/abl-reference/memory-and-constraints) -- session and persistent state used in routing conditions
-- [Expressions and functions](/agent-platform/abl-reference/rich-content-and-expressions#expressions-and-functions) -- condition syntax for WHEN clauses
+- [Expressions and functions](/agent-platform/abl-reference/expressions-and-functions) -- condition syntax for WHEN clauses
 - [Lifecycle and hooks](/agent-platform/abl-reference/lifecycle-and-hooks) -- ON_START and hooks that interact with multi-agent flows
-- [Rich Content and expressions](/agent-platform/abl-reference/rich-content-and-expressions) -- formatting for RESPOND and COMPLETE messages
+- [Rich content](/agent-platform/abl-reference/rich-content) -- formatting for RESPOND and COMPLETE messages
