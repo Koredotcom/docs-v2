@@ -1,0 +1,115 @@
+---
+title: Validate and test AI for HR
+sidebarTitle: Validation and testing
+---
+
+Test AI for HR from the bottom up: tools first, then agents, then the full conversation in AI for Work. When every layer passes, you roll out with confidence instead of discovering issues through your employees.
+
+Use this page as your test plan. Each layer lists what to run, what a pass looks like, and where to look when something fails.
+
+## Test in three layers
+
+Each layer depends on the one below it, so a failing tool breaks every agent that calls it. Clear each layer completely before you move up.
+
+| Layer | What You Test | Pass Criteria |
+|-------|---------------|---------------|
+| **1. Tools** | Each HTTP tool and workflow on its own | The tool returns the expected data from Workday, ServiceNow, or Search AI. |
+| **2. Agents** | Routing, confirmation, and answer rules | Each agent follows its rules in every turn. |
+| **3. End to end** | Real scenarios in AI for Work | Employees complete each scenario without help. |
+
+## Layer 1: test every tool
+
+Run each HTTP tool on its own before any agent calls it. A tool that passes here rules out endpoint, header, and input problems later.
+
+1. In Agent Platform, open **Tools** and select the HTTP tool.
+2. Go to **Testing** and click **Run test**.
+3. Enter the required inputs and check the response.
+4. Repeat for every tool in your phase 1 scope.
+
+Use these inputs and pass criteria for the core tools:
+
+| Tool | Test Inputs | It Passes When |
+|------|-------------|----------------|
+| `fetch_time_off_balance` | Employee ID | Balances return for every leave type. |
+| `create_time_off` | Type, from date, to date, duration | Workday shows the new request. |
+| `benefits_for_employees` | Employee ID | That employee's available plans return. |
+| `add_dependents` | First name, gender, date of birth, relationship, address, country | The dependent appears on the employee's record. |
+| `search_payslips` | Period start, period end | Payslips return with gross pay, net pay, taxes, and deductions. |
+| `search_user` | Name | The matching employee returns. |
+| `data_retrieval` | Query, email, region | Search AI returns content for India or the US. |
+| `create_ticket` | Title, description, priority, HR service | ServiceNow shows the new case. |
+
+<Warning>`resign_user` submits a real resignation. Test it only in a test tenant with a test employee.</Warning>
+
+Finish Layer 1 by checking the workflows. Each workflow tool must appear under **Tools** > **Workflows** with the execution mode set to Synchronous.
+
+## Layer 2: verify agent behavior
+
+Agents follow strict rules for routing, confirmation, and answers. Check each rule directly, because a rule that fails quietly erodes employee trust fast.
+
+| Rule | It Passes When |
+|------|----------------|
+| **Single routing** | HR_Supervisor hands each turn to exactly one specialist and never does the HR work itself. |
+| **Peer handoff** | A topic change midway reaches the right peer, and control returns afterward. |
+| **No repeats** | The specialist reads session memory, so the employee never restates the request. |
+| **Confirm first** | No write reaches Workday or ServiceNow until the employee confirms. |
+| **Source values** | Every value matches the system of record exactly. |
+| **Cited answers** | Policy answers include source links, and a miss triggers an offer to raise a case. |
+| **Scope limits** | Compensation serves the logged-in employee only, Offboarding handles voluntary resignation only, and Timesheet Management stays view-only. |
+
+## Confirm the AI for Work connection
+
+The Autonomous Agent links AI for Work to your agentic app. Test this link before Layer 3, because every scenario travels through it.
+
+1. In AI for Work, open your workspace and go to **Autonomous Agents**.
+2. Open the agent, set the mode to Async, and test the connection. The test passes when you see "Async connection success."
+3. Open **Meta Data** and confirm that the employee's email passes to the agentic app.
+4. In Agent Platform, open **Project Settings** > **General** > **Models** and confirm that the default model matches the workspace default.
+
+Check that each context reads the email with the right path:
+
+```text
+Agent:         {{_metadata.email}}
+Workflow tool: {{vars._session._metadata.email}}
+HTTP tool:     {{session._metadata.email}}
+```
+
+## Layer 3: run the scenario suite
+
+Run every scenario in AI for Work as a pilot user would. Record the result, and retest any failure after you fix it.
+
+| # | Say This | Expect This |
+|---|----------|-------------|
+| 1 | "How much PTO do I have left this year?" | Time Off Assistant shows balances by leave type. |
+| 2 | "I want to apply for leaves." Then: "December 1 to December 19" | The assistant asks for the leave type, counts only working days, confirms, and submits. |
+| 3 | "Hey, can you tell me my total earnings and deductions for the last three months of 2020?" | Compensation shows totals from the aggregation workflow. |
+| 4 | "Which benefit plans am I enrolled in?" | Benefit Management lists each plan and answers follow-ups without a new call. |
+| 5 | "US employee leave policy" | Case Management answers for the US with source links. |
+| 6 | "I'm having trouble with a travel reimbursement. Can you help?" | Case Management searches first, then offers a case and creates it in ServiceNow after confirmation. |
+| 7 | "I need to update my phone number." | Profile Management confirms the change, then applies it. |
+| 8 | Ask about benefits during a leave request. | Benefit Management answers, then control returns to Time Off Assistant. |
+| 9 | Ask to resign. | Offboarding Management collects the reason and date, confirms, submits, and points to the exit survey. |
+| 10 | Ask for your timesheet for last week. | Timesheet Management confirms the range, then shows the entries. |
+| 11 | Ask for a colleague's payslip. | Compensation returns data for the logged-in employee only. |
+
+## Read the trace
+
+The multi-agent trace shows exactly what happened in every turn. Open it whenever a scenario fails, and you find the broken step in seconds.
+
+For a leave request, the trace lists HR_Supervisor, then the time off flow, then each tool the flow ran, such as `GetLeaveBalance`, `FetchCalenderEvents`, and `GetTodayDate`. Every step shows its model calls, tool runs, token count, duration, and status.
+
+## Evaluate quality and go live
+
+Score the agents for accuracy, relevance, and bias with AI agent evaluation before production. Repeat the evaluation every time you change instructions, tools, or knowledge content.
+
+Go live only when you clear every gate:
+
+| Gate | Requirement |
+|------|-------------|
+| **Tools** | Every tool passes Layer 1. |
+| **Agents** | Every rule passes Layer 2. |
+| **Connection** | The AI for Work connection test succeeds. |
+| **Scenarios** | Every scenario passes Layer 3. |
+| **Pilot** | Pilot users sign off. |
+
+After go-live, watch AI for Work workspace analytics: total queries, active users, tokens used, queries per agent, and top agents. Use audit logs to trace user actions and agent activity.

@@ -1,0 +1,57 @@
+---
+title: Compensation
+sidebarTitle: Compensation
+---
+
+The Compensation agent answers self-service pay questions for the logged-in employee only. It resolves the pay period from the request, retrieves the payslip records for that range, and answers using only the fields the tool returns.
+
+The agent cannot modify payroll, issue refunds, or resolve disputes. Route those requests to your payroll team.
+
+## Render modes
+
+The agent answers in one of two modes, and the employee's wording decides which. Both modes use the same payslip data.
+
+| Mode | The agent uses it when | What the employee sees |
+|------|------------------------|------------------------|
+| **VIEW** | The message contains no totaling language. | A full field breakdown for each payslip in the period. |
+| **AGGREGATE** | The message contains totaling or calculation language. | Computed totals, such as gross pay, deductions, and net pay. |
+
+All arithmetic belongs to the `aggregations` workflow, and the agent treats its output as the numeric source of truth. The agent never recomputes a total in its own response.
+
+## How a pay question flows
+
+The agent follows the same four steps on every turn that needs pay data. It asks only for what the message leaves out.
+
+1. Resolve the pay period from the message, or ask for the missing start or end.
+2. Call `search_payslips` for that range.
+3. Pick VIEW or AGGREGATE from the wording.
+4. Render the fields, or the totals the aggregation workflow returns.
+
+## Tools
+
+Two tools support the agent. One fetches the records, and one performs the arithmetic.
+
+| Tool | Type | Description |
+|------|------|-------------|
+| `search_payslips` | HTTP | Searches payslips for the authenticated employee within a date range. It returns `gross_pay`, `net_pay`, `taxes`, `deductions`, `earnings`, `currency`, `payment_date`, `pay_period`, and related payroll fields. |
+| `aggregations` | Workflow | Performs deterministic pay arithmetic and returns rows, aggregates, `payslip_count`, and binary. It calls `search_payslips` internally. |
+
+### Request body
+
+`search_payslips` resolves the employee identity server side from the config variable, so the model never supplies it.
+
+```json
+{
+  "userid": "{{config.EMPLOYEE_ID}}",
+  "period_start": "{{input.period_start}}",
+  "period_end": "{{input.period_end}}"
+}
+```
+
+## Guardrails
+
+Three rules protect payroll data and keep every figure traceable.
+
+- The agent serves the logged-in employee only.
+- The agent answers using only fields present in the tool response.
+- The agent delegates all arithmetic to the aggregation workflow.
