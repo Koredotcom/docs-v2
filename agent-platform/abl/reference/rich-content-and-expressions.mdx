@@ -181,6 +181,18 @@ RICH_CONTENT:
 
 When a template is named you may **not** override the measure — `type`, `max`, `scoring`, `range`, and `comment_threshold` are owned by the template, and setting them alongside a template is a compile error. Naming a template that doesn't exist in the project is an error (`UNKNOWN_SURVEY_TEMPLATE`).
 
+`expires_after` is the one exception to that rule — a numeric answer-window TTL (in seconds) that **is** overridable per-agent even when a template is referenced:
+
+```yaml
+RICH_CONTENT:
+  FEEDBACK:
+    FEEDBACK_TEMPLATE: Post_Chat_NPS
+    prompt: "How likely are you to recommend us?"
+    expires_after: 600    # widen the answer window to 10 minutes for this agent
+```
+
+The effective window is the agent's `expires_after` if set, else the template's own TTL, else a 300-second platform default — clamped to 30–86400 seconds either way. A survey presented to the customer can only be answered within this window; a submission after it expires is rejected.
+
 #### Inline FEEDBACK (deprecated)
 
 Without a template, `prompt` and `type` are required:
@@ -729,8 +741,18 @@ CEL-based [guardrail](/agent-platform/abl-reference/guardrails) checks have acce
 | `abl.contains_url(text)`                | True if the text contains a URL.                   |
 | `abl.contains_email(text)`              | True if the text contains an email address.        |
 | `abl.contains_code(text)`               | True if the text contains a fenced code block.     |
+| `abl.pii_equal(left, right)`            | True if two **PII-vault tokens** hold the same underlying value. See below. |
 
 <Note>In CEL expressions the core functions above are also available under the `abl.` namespace with lowercase names (e.g. `abl.upper(x)`), and CEL-native operators (`&&`, `||`, `!`, `%`, `in`, ternary `? :`) and macros (`size()`, `has()`) can be used.</Note>
+
+`abl.pii_equal(left, right)` compares two values **without ever exposing the underlying plaintext to the expression** — both `left` and `right` must be live PII-vault tokens (the opaque form a PII-classified value takes once captured, e.g. via a `sensitive: true` GATHER field), and the comparison happens inside the vault itself. Values are canonicalized before comparing (email lowercased/trimmed, phone/SSN/credit-card digits-only, etc.), so `abl.pii_equal(session.data.values.email, caller_provided_email)` matches `Member@Example.com` against `member@example.com`.
+
+```yaml
+CHECK: abl.pii_equal(session.data.values.email, caller_provided_email)
+ON_FAIL: identity_mismatch
+```
+
+<Warning>If either operand isn't a live vault token for the same PII type — missing, expired, or a plain string — `abl.pii_equal` **throws** rather than returning `false`. This is deliberate: silently returning `false` on a fault would make `!abl.pii_equal(x, y)` evaluate `true` on a comparison that couldn't actually be performed. Guard against this with `IS SET` checks on both operands before comparing, or route the resulting evaluation error through your usual error handling.</Warning>
 
 ### Nested function calls
 

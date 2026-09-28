@@ -554,6 +554,68 @@ FLOW:
 | `TIMEOUT`    | `number`  | Seconds to wait for the upload.                                    |
 | `ON_TIMEOUT` | `string`  | Step to transition to if the upload times out.                     |
 
+### SECURE_INPUT
+
+The `SECURE_INPUT:` action pauses the step to collect one or more **sensitive** values — a card number, CVV, or similar — via DTMF and/or speech, and delivers them **directly to one tool**, without the raw values ever passing through the LLM, transcript, session state, logs, or traces. It's the PCI-safe alternative to `GATHER` for data that must never reach the model.
+
+<Warning>`SECURE_INPUT` is currently authored only in the legacy `.agent.abl` (line-based) format. The `.agent.yaml` parser does not yet accept this action.</Warning>
+
+```yaml
+FLOW:
+  collect_card:
+    REASONING: false
+    SECURE_INPUT:
+      MODE: [dtmf]                          # dtmf | speech, one or both
+      FIELDS:
+        - card_number:
+            PROMPT: { en: "Please enter your 16-digit card number." }
+            COLLECT: { digits: 13..19, finishOnKey: "#" }
+            VALIDATE: [ luhn ]
+        - cvv:
+            PROMPT: { en: "And the 3-digit security code." }
+            COLLECT: { digits: 3..4 }
+      MAX_ATTEMPTS: 3
+      CANCEL: { dtmf_key: "*" }
+      CALL charge_card WITH: { pan: "{{secure.card_number}}", cvv: "{{secure.cvv}}" }
+      ON_SUCCESS: confirm
+      ON_TIMEOUT: retry_by_agent
+      ON_CANCEL: retry_by_agent
+      ON_FAIL: human_agent
+    THEN: confirm
+```
+
+| Property | Type | Description |
+| -------- | ---- | ----------- |
+| `MODE` | `("dtmf" \| "speech")[]` | Which collection channel(s) are accepted. Required; at least one. |
+| `FIELDS` | list | One or more fields to collect, in order. Each is a `- <name>:` entry with `PROMPT`, `COLLECT`, and optional `VALIDATE`. |
+| `MAX_ATTEMPTS` | `number` | Failed collection attempts allowed before `ON_FAIL`. |
+| `CANCEL` | `object` | Cancellation trigger: `dtmf_key` and/or `keywords`. |
+| `CALL <tool> WITH: {...}` | — | The **deliver** spec — the single tool invoked with the collected values. Only the inline-object `WITH:` form is supported. Reference a collected field as a whole-value placeholder `{{secure.<name>}}`. |
+| `ON_SUCCESS` | `string` | Step to transition to after successful collection and delivery. |
+| `ON_TIMEOUT` | `string` | Step to transition to if collection times out. |
+| `ON_CANCEL` | `string` | Step to transition to if the caller cancels. |
+| `ON_FAIL` | `string` | Step to transition to if delivery or validation ultimately fails. |
+
+#### Field properties
+
+| Property | Type | Description |
+| -------- | ---- | ----------- |
+| `PROMPT` | `{ <locale>: string }` or `{ template: string }` | Locale-keyed prompt text, or a reference to a named template. At least one non-empty entry is required. |
+| `COLLECT` | `object` | `digits: N..M` (min/max digit count), `finishOnKey`, `interDigitTimeoutMs`, `asrTimeoutMs` (spoken-path silence window). |
+| `VALIDATE` | list | Validation rules: a bare rule name (`luhn`), an inline object (`{ length: 4..4 }`, `{ date_mmYY: "not_past" }`), or a delegated `CALL <tool> WITH: {...}` rule. |
+
+References inside `deliver`'s `WITH:` block must be a **whole-value** placeholder — `pan: "{{secure.card_number}}"` is valid; embedding it in a larger string (`pan: "card:{{secure.card_number}}"`) or referencing an undeclared field is a compile error.
+
+<Warning>Every collected value lives only in a local secure buffer for the duration of the gate and is **zeroized on every exit path** (success, timeout, cancel, or failure) — it is never written to session state, so it cannot be referenced by `{{ }}` outside the `deliver` block, and it never appears in a trace, span, or log.</Warning>
+
+| Diagnostic | Fires when |
+| ---------- | ---------- |
+| `SECURE_INPUT_INVALID_MODE` | `MODE` is missing, empty, or contains a value other than `dtmf`/`speech`. |
+| `SECURE_INPUT_MISSING_DELIVER_TOOL` | The `CALL ... WITH:` deliver spec has no tool name. |
+| `SECURE_INPUT_MISSING_PROMPT` | No `FIELDS` are declared, or a field's `PROMPT` has neither a locale entry nor a `template` reference. |
+| `SECURE_UNKNOWN_FIELD` | A `deliver` `WITH:` value references `{{secure.<name>}}` for a field that isn't declared in `FIELDS`. |
+| `SECURE_EMBEDDED_PLACEHOLDER` | A `deliver` `WITH:` value embeds `{{secure.*}}` inside a larger string instead of using it as the whole value. |
+
 ### MESSAGE_KEY and BEHAVIOR
 
 
@@ -1100,6 +1162,39 @@ FLOW:
 | `PLAIN_TEXT`   | `string` | Voice-optimized plaintext (fallback for all engines) |
 | `BARGE_IN`     | `"allow"` \| `"disallow"` | Whether the caller may interrupt (barge in on) this spoken output. |
 | `STREAMING`    | `boolean` | TTS delivery mode for this spoken output. Omitted defaults to `true` (streaming). |
+| `END_OF_SPEECH_TURN_TYPE` | `string` | Expected shape of the caller's next answer, used to pick an end-of-speech (pause) timeout. See [Per-turn endpointing](#per-turn-endpointing). |
+| `END_OF_SPEECH_TIMEOUT_MS` | `number` | Explicit end-of-speech timeout in milliseconds, overriding the preset. |
+
+#### Per-turn endpointing
+
+`END_OF_SPEECH_TURN_TYPE` is a small, deliberately-closed vocabulary describing what kind of answer the caller is expected to give next — the runtime resolves it to a concrete end-of-speech (silence/pause) timeout for the active speech recognizer, so authors don't have to guess a millisecond value per turn:
+
+| Value | Use for |
+| ----- | ------- |
+| `simple_confirmation` | A yes/no or short acknowledgement. |
+| `structured_value` | A structured value like an account number or date. |
+| `open_ended_question` | An open-ended question expecting a longer, free-form answer. |
+| `complex_explanation` | A caller explanation that may take a while to finish. |
+| `anything_else` | Anything not covered above. |
+
+It can be set at any VOICE scope — agent-wide under `EXECUTION.voice`, on a behavior profile, on a flow step, or per `RESPOND` — with the narrowest scope winning, same as `BARGE_IN`/`STREAMING`:
+
+```yaml
+FLOW:
+  collect_value:
+    REASONING: false
+    VOICE:
+      END_OF_SPEECH_TURN_TYPE: structured_value
+      END_OF_SPEECH_TIMEOUT_MS: 900
+    RESPOND: "Please provide the value."
+      VOICE:
+        END_OF_SPEECH_TURN_TYPE: open_ended_question   # per-RESPOND override
+        END_OF_SPEECH_TIMEOUT_MS: 1400
+```
+
+`END_OF_SPEECH_TIMEOUT_MS` overrides the preset's timeout with an explicit millisecond value when set alongside (or instead of) `END_OF_SPEECH_TURN_TYPE`.
+
+<Note>Per-turn endpointing applies to the platform's own speech-recognition pipeline. It does not affect TTS streaming, and is ignored on native realtime/speech-to-speech voice models where the provider owns turn detection. Omit it to fall back to the agent's conversation-level pause configuration.</Note>
 
 #### Scoped barge-in
 
