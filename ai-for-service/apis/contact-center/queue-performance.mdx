@@ -1,0 +1,231 @@
+---
+title: Queue Performance API
+sidebarTitle: Queue Performance
+noindex: true
+---
+
+<Badge icon="arrow-left" color="gray">[Back to API List](/ai-for-service/apis/contact-center/api-list)</Badge>
+
+Returns queue performance metrics for contact-center monitoring and analytics applications. A result row is scoped to one queue, one channel/source, and one direction. Historical queue metrics and live queue statistics are returned by one request so the client does not need to query each source independently.
+
+<Note> The maximum requested time range allowed is 24 hours. Agent-roster details are not included; this API returns queue-level agent status counts only.</Note>
+
+| **Method**        | POST |
+|-------------------|------|
+| **Endpoint**      | `https://{{host}}/agentassist/api/public/analytics/account/{{accountId}}/queue-performance?sortBy=queueName:asc` |
+| **Content-Type**  | `application/json` |
+| **Authorization** | `auth: {{JWT_TOKEN}}` See [How to generate the JWT Token](/ai-for-service/apis/automation/api-introduction#generating-the-jwt-token) |
+| **API Scope**     | Configuration |
+
+## Path Parameters
+
+| Parameter | Description | Type |
+|---------------|-----------------|----------|
+| `host`        | Environment URL, for example, `https://platform.kore.ai` | String, required |
+| `accountId`       | The Account identifier. It must match the account in the public credential. | String, required |
+
+
+## Query Parameters
+
+| Parameter          | Description                                                                                                  | Type              |
+| ----------------- |----------------------------------------------------------------------------------------------------------- | :---------------- |
+| `sortBy`           | Sorts result rows using `field:direction`, for example `queueName:asc` or `queueName:desc`. The body value is used when this query parameter is omitted. | String, optional |
+
+
+## Header Parameters
+
+| Header      | Description                                                                                 | Optional/Required |
+|----------   |----------------------------------------------------------------------------------------- |---------------- |
+| `iId`       | Instance bot/stream identifier used to scope the analytics request.                        | Required          |
+
+
+## Sample Request
+
+```bash
+curl --location 'https://{{host}}/agentassist/api/public/analytics/account/{{accountId}}/queue-performance?sortBy=queueName:asc' \
+--header 'accountId: {{accountId}}' \
+--header 'auth: {{JWT_TOKEN}}' \
+--header 'iId: {{streamId}}' \
+--data '{
+  "startDate": "2026-09-08T00:00:00.000Z",
+  "endDate": "2026-09-08T23:59:59.999Z",
+  "queues": [],
+  "channels": ["Voice", "rtm", "emailInst-support"],
+  "direction": ["Inbound", "Outbound"],
+  "limit": 100,
+  "offset": 0,
+  "projection": []
+}'
+```
+
+## Request Body Parameters
+
+| Parameter      | Description                                                                                                                                                                                                 | Type             |
+|------------- |---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :--------------- |
+| `startDate`    | Start time of the session in ISO 8601 format.                                                                                                                            | String, required |
+| `endDate`      | End time of the session in ISO 8601 format. Must be greater than or equal to `startDate`; the range must not exceed 24 hours.                                                                                                | String, required |
+| `queues`       | Queue IDs to include. An empty array includes all active queues visible to the authenticated tenant.                                                                                                        | Array, optional  |
+| `channels`     | Channel aliases (`Voice`, `Chat`, `Digital`, `WhatsApp`, `Email`), call-details display labels such as `Web/Mobile Client`, or exact configured source IDs such as `rtm` or `emailInst-support`. An empty array includes all supported sources. | Array, optional  |
+| `direction`    | Direction filter. Valid values are `Inbound`, `Outbound`, and `Both`. An empty array applies no direction filter. `Both` is expanded to inbound and outbound rows.                                        | Array, optional  |
+| `limit`        | Number of result rows to return. Defaults to `100`; maximum `1000`. A row represents a queue/channel/direction combination.                                                                                | Integer, optional |
+| `offset`       | Number of result rows to skip. Defaults to `0`.                                                                                                                                                              | Integer, optional |                                                                                                                   | String, optional |
+| `projection`   | Row metrics to compute and return. If omitted or empty, all public row metrics are computed. When supplied, only the selected metrics are computed; dimension fields are always returned. | Array, optional |
+
+<Note> An empty `projection` requests all public row metrics. To reduce computation and response size, provide one or more projection values from the table below; only the selected metrics are computed.</Note>
+
+
+## Projection Values
+
+| Value                  | Returned field |
+|--------------------- |------------- |
+| `agentStatusCount`     | Available, away, busy, and offline agent counts. |
+| `totalConversation`   | Incoming plus outgoing conversations for the row. |
+| `waiting`              | Current live queue waiting count. |
+| `ongoing`              | Current ongoing/engaged interaction count. |
+| `idle`                 | Current idle interaction count. |
+| `expired`              | Current expired interaction count. |
+| `completed`            | Completed/closed conversations. |
+| `transferred`          | Conversations transferred to another agent or queue. |
+| `abandonedInQueue`     | Conversations abandoned in queue. |
+| `overdue`              | Current interactions beyond the queue wait threshold. |
+| `systemTermination`    | System-termination counts, broken down by termination reason. |
+| `ASA`                  | Average speed of answer, in milliseconds (the native analytics duration unit). |
+| `AHT`                  | Average handle time, in milliseconds (the native analytics duration unit). |
+| `accepted`             | Conversations with a queue-start/acceptance timestamp. |
+| `answered`             | Conversations answered by an agent (using the analytics metadata answer rule). |
+| `queueLoad`            | Current queue load for this queue/channel/direction dimension. |
+| `resolved`             | Resolved conversation percentage: resolved conversations divided by completed conversations, rounded to the nearest whole percent. |
+| `skillsInQueue`        | Skills configured for the queue. |
+| `topSkills`            | Skills for the row, ordered by conversation count, with conversation counts and percentages. |
+| `SLA`                  | Service-level percentage for inbound non-email rows; `N/A` for outbound or email rows. |
+
+
+
+## Sample Response
+
+```json expandable=true
+{
+  "finalResult": [
+    {
+      "queueId": "qu-577416d-3745-40e7-904c-85ba1a04xxxx",
+      "queueName": "Support Queue",
+      "channel": "Voice",
+      "direction": "Inbound",
+      "agentStatusCount": {
+        "available": 3,
+        "away": 1,
+        "busy": 2,
+        "offline": 0
+      },
+      "totalConversation": 42,
+      "waiting": 2,
+      "ongoing": 4,
+      "idle": 1,
+      "expired": 0,
+      "completed": 36,
+      "transferred": 5,
+      "abandonedInQueue": 1,
+      "overdue": 0,
+      "systemTermination": {
+        "outOfBusinessHours": 0,
+        "noAgentsAvailable": 1,
+        "networkFailure": 0,
+        "voiceGatewayError": 0,
+        "Others": 0
+      },
+      "ASA": 14,
+      "AHT": 321,
+      "accepted": 36,
+      "answered": 36,
+      "queueLoad": 4,
+      "resolved": 78,
+      "skillsInQueue": [
+        { "skillId": "sk-billing", "skillName": "Billing" },
+        { "skillId": "sk-medical", "skillName": "Medical" }
+      ],
+      "topSkills": [
+        { "skillName": "Medical", "conversationCount": 18, "conversationPercent": "43%" },
+        { "skillName": "Billing", "conversationCount": 12, "conversationPercent": "29%" }
+      ],
+      "SLA": 92
+    },
+    {
+      "queueId": "qu-577416d-3745-40e7-904c-85ba1a04xxxx",
+      "queueName": "Support Queue",
+      "channel": "emailInst-support",
+      "direction": "Outbound",
+      "agentStatusCount": {
+        "available": 3,
+        "away": 1,
+        "busy": 2,
+        "offline": 0
+      },
+      "totalConversation": 3,
+      "waiting": 0,
+      "ongoing": 0,
+      "idle": 0,
+      "expired": 0,
+      "completed": 3,
+      "transferred": 0,
+      "abandonedInQueue": 0,
+      "overdue": 0,
+      "systemTermination": {
+        "outOfBusinessHours": 0,
+        "noAgentsAvailable": 0,
+        "networkFailure": 0,
+        "voiceGatewayError": 0,
+        "Others": 0
+      },
+      "ASA": 0,
+      "AHT": 0,
+      "accepted": 3,
+      "answered": 3,
+      "queueLoad": 0,
+      "resolved": 100,
+      "skillsInQueue": [],
+      "topSkills": [],
+      "SLA": "N/A"
+    }
+  ],
+  "hasMore": false,
+  "offset": 0,
+  "limit": 100,
+  "totalResults": 2
+}
+```
+
+## Response Body Parameters
+
+| Field | Type | Description |
+|---------|------|-------------|
+| `finalResult` | Array | Paginated rows. Each row is one `queueId` + `channel` + `direction` combination. |
+| `finalResult.queueId` | String | Queue identifier. |
+| `finalResult.queueName` | String | Queue display name. |
+| `finalResult.channel` | String | `Voice` for voice sources (including `campaign`), otherwise the exact value stored in the conversation `source` field (for example `rtm` or `emailInst-support`). |
+| `finalResult.direction` | String | `Inbound` or `Outbound`, derived from the conversation subtype/metadata used by analytics. |
+| `finalResult.agentStatusCount` | Object | Queue-level counts for `available`, `away`, `busy`, and `offline` agents. These counts are not split by channel/direction and may repeat on multiple dimension rows for the same queue. |
+| `finalResult.totalConversation` | Integer | `incoming + outgoing` for the row. |
+| `finalResult.waiting` | Integer | Current waiting interactions from live queue statistics. |
+| `finalResult.ongoing` | Integer | Current ongoing/engaged interactions. |
+| `finalResult.idle` | Integer | Current idle interactions. |
+| `finalResult.expired` | Integer | Current expired interactions. |
+| `finalResult.completed` | Integer | Historical completed/closed conversations. |
+| `finalResult.transferred` | Integer | Historical transferred conversations. |
+| `finalResult.abandonedInQueue` | Integer | Historical conversations abandoned in queue. |
+| `finalResult.overdue` | Integer | Current interactions whose wait is overdue. |
+| `finalResult.systemTermination` | Object | Counts by `outOfBusinessHours`, `noAgentsAvailable`, `networkFailure`, `voiceGatewayError`, and `Others`. |
+| `finalResult.ASA` | Number | Average speed of answer in milliseconds. |
+| `finalResult.AHT` | Number | Average handle time in milliseconds. |
+| `finalResult.accepted` | Integer | Conversations with a queue-start/acceptance timestamp. |
+| `finalResult.answered` | Integer | Conversations answered by an agent using the analytics metadata answer rule. |
+| `finalResult.queueLoad` | Number | Live queue load for the row’s queue/channel/direction dimension. |
+| `finalResult.resolved` | Number | Resolved conversation percentage, calculated as resolved conversations divided by completed conversations and rounded to the nearest whole percent. Returns `0` when there are no completed conversations. |
+| `finalResult.skillsInQueue` | Array | Skills configured for the queue. |
+| `finalResult.topSkills` | Array | Skills for the row, ordered by conversation count. Each item contains `skillName`, `conversationCount`, and `conversationPercent`. |
+| `finalResult.SLA` | String | SLA percentage for inbound non-email rows. It is the string `N/A` for outbound rows and all email rows. |
+| `hasMore` | Boolean | Indicates whether more rows are available after this page. |
+| `offset` | Integer | Offset used for this page. |
+| `limit` | Integer | Requested page size. |
+| `totalResults` | Integer | Total queue/channel/direction rows before pagination. |
+
+
