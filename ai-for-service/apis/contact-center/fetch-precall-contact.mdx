@@ -1,0 +1,138 @@
+---
+title: Pre-Call Contact Fetch API
+sidebarTitle: Pre-Call Contact Fetch
+noindex: true
+---
+
+<Badge icon="arrow-left" color="gray">[Back to API List](/ai-for-service/apis/contact-center/api-list)</Badge>
+
+The Pre-Call Contact Fetch API enables the Campaign Management System (CMS) to validate or enrich a contact immediately before placing an outbound call.
+
+When configured for a campaign, CMS sends the contact details to an external API and waits for the response. The external API determines whether CMS should proceed with the call and can optionally return additional contact data. CMS makes the returned data available to the BOT or experience flow when the call proceeds.
+
+This integration is optional and is configured separately for each campaign.
+
+## When CMS Calls the API
+
+CMS calls the configured API under the following conditions:
+
+| Aspect | Behavior |
+| --- | --- |
+| `Configuration` | The API is called only when an API URL is configured for the campaign. |
+| `Scope` | The API is called once for each eligible contact after DNC, query, and other exclusion filters are applied. |
+| `Timing` | CMS calls the API immediately before placing the outbound call. |
+| `Call type` | Synchronous. CMS waits for the API response before deciding whether to place the call. |
+
+## Configure the API
+
+Configure the following fields for the campaign:
+
+| Field | Description |
+| --- | --- |
+| `API URL` | URL of the external endpoint. The endpoint must support the `POST` method. |
+| `Headers` | Optional name/value pairs, such as authentication tokens or API keys. CMS sends the configured headers with every request. |
+
+## Header Parameters and URL
+
+| **Method**        | POST |
+|-------------------|------|
+| **Endpoint**      | `https://{{host}}/agentassist/api/public/analytics/account/{{AccountId}}/agentperformance` |
+| **Content-Type**  | `application/json` |
+| **user-defined headers** | Headers configured for the campaign. CMS sends these headers as configured. |
+| **API Scope**     | Configuration |
+
+
+## Sample Request
+
+```bash
+curl --location 'https://partner.example.com/validate-contact' \
+--header 'Content-Type: application/json' \
+--header 'X-Api-Key: {configured-header-value}' \
+--data '{
+  "CampaignName": "Q3 Renewal Outreach",
+  "CampaignId": "c-3f1a9b2e-7d44-4c1a-9e2b-1a2b3c4d5e6f",
+  "DialingId": "D-000482913",
+  "contactData": {
+    "firstName": "Asha",
+    "lastName": "Rao",
+    "phoneNumber": "+91XXXXXXXXXX",
+    "accountId": "ACC-88213",
+    "planType": "Premium"
+  }
+}'
+```
+
+## Request Body Parameters
+
+| Field | Type | Required | Description |
+| --- | --- | --- | --- |
+| `CampaignName` | String | Yes | Name of the campaign. |
+| `CampaignId` | String | Yes | Internal campaign ID. The ID is prefixed with `c-`. |
+| `DialingId` | String | Yes | Internal ID of the contact within the campaign call list. |
+| `contactData` | Object | Yes | Name/value pairs containing all fields currently available on the contact record. |
+| `firstName` | String | No | First name of the contact. |
+| `lastName` | String | No | Last name of the contact. |
+| `phoneNumber` | String | No | Phone number of the contact. |
+| `accountId` | String | No | Account identifier associated with the contact. |
+| `planType` | String | No | Plan type associated with the contact. |
+
+
+## Sample Response
+
+```json expandable=true
+{
+  "contactHandling": {
+    "handle": "CALL",
+  }
+"detailedContactData": {
+    "lastPaymentStatus": "Overdue",
+    "preferredLanguage": "te-IN",
+    "riskScore": "Medium"
+  }
+}
+
+```
+
+## Response Body Parameters
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `contactHandling` | Object | Yes | Specifies how CMS should handle the contact. |
+| `handle` | String | Yes | Specifies whether CMS should proceed with or skip the call. Supported values are `CALL` and `SKIP`. |
+| `reason` | String | No | Provides the reason for the contact-handling decision. |
+| `lastPaymentStatus` | String | No | Indicates the contact's payment status. |
+| `preferredLanguage` | String | No | Specifies the contact's preferred language. |
+| `riskScore` | String | No | Indicates the contact's risk score. 
+
+## Response Handling
+
+CMS processes the response as follows:
+
+| Response | CMS Behavior |
+| --- | --- |
+| `handle = CALL` | CMS proceeds with the outbound call. |
+| `handle = SKIP` | CMS skips the contact and moves to the next eligible contact. |
+| Timeout or no response | CMS skips the contact. |
+| Non-`200` response | CMS skips the contact. |
+| Malformed response | CMS skips the contact. |
+| Missing `handle` | CMS skips the contact. |
+
+## Data Passed to the BOT
+
+When `handle` is `CALL`, CMS adds every field in the response payload to the context sent to the BOT.
+
+For Agentless campaigns, CMS also adds the response payload to the context of the experience flow.
+
+When `handle` is `SKIP`, CMS does not proceed with the call. Any returned data is logged along with the contact information.
+
+## Field Name Collisions
+
+If a field returned in the response has the same name as a field that already exists in the contact record, CMS preserves the original field name and value from the contact record.
+
+For example, if both the contact record and the response contain a field named `planType`, the original `contactData.planType` value is preserved.
+
+## Authentication
+
+The API supports static authentication headers configured for the campaign. CMS sends the configured headers with each request.
+
+Dynamic authentication mechanisms or authentication methods other than configured headers are not supported.
