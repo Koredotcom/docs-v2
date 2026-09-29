@@ -5,7 +5,7 @@ sidebarTitle: DTMF support in Artemis voice agents
 
 Dual-Tone Multi-Frequency (DTMF) enables callers and voice agents to communicate using telephone keypad tones during an active voice call.
 
-Artemis provides built-in support for both inbound DTMF (caller-to-agent) and outbound DTMF (agent-to-external IVR), allowing developers to build complete IVR experiences without implementing custom telephony logic.
+Artemis provides built-in support for both inbound DTMF (caller-to-agent) and outbound DTMF (agent-to-external IVR), allowing developers to build complete IVR experiences without implementing custom telephony logic. It also supports **secure DTMF collection** for sensitive workflows such as payment processing.
 
 ## DTMF Architecture
 
@@ -272,9 +272,88 @@ A successful `VOICE_DTMF_DISPATCHED` result means the platform sent the tones �
 
 DTMF digits can carry sensitive information such as PINs or account numbers. Runtime traces, eval run artifacts, and Studio inspection show only a redacted digit count and status — never the raw digits sent during a call.
 
+## Secure DTMF Input
+
+Use Secure DTMF Input when collecting sensitive information, such as payment card numbers, PINs, or other confidential data that must not be processed through speech recognition.
+
+During secure input collection, platform temporarily disables voice input and accepts only DTMF key presses. Spoken audio is not forwarded to the Automatic Speech Recognition (ASR) service, ensuring that sensitive information is not transcribed or processed by language models. After the secure input flow completes, normal voice interaction resumes automatically.
+
+This capability is intended for PCI-compliant payment and authentication workflows.
+
+**Example**
+
+```json
+AGENT: SecurePaymentDemo
+GOAL: "Collect a card payment (PAN, expiry, CVV) via PCI SECURE_INPUT and charge it, without ever exposing the raw digits to the model or any log/trace/session surface."
+
+TOOLS:
+  validate_card(pan)
+  charge_card(pan, exp, cvc)
+
+FLOW:
+  welcome -> offer_payment -> collect_card -> thank_you
+
+  welcome:
+    REASONING: false
+    RESPOND: "Welcome. I can take your card payment securely over the phone. Your details are handled securely."
+    THEN: offer_payment
+
+  offer_payment:
+    REASONING: false
+    GATHER:
+      - ready_to_pay:
+          type: string
+          required: true
+          infer: true
+          prompt_mode: ask
+          description: "The caller's acknowledgement to begin payment. Set this to the caller's response verbatim. ANY non-empty caller utterance or key press satisfies this — 'ready', 'yes', 'ok', 'sure', 'go ahead', 'yeah', a number, or a single word all count. Only leave it empty if the caller said nothing at all."
+          prompt: "When you're ready to pay, say 'ready' or press any key. I'll then ask for your card number, expiry, and security code."
+    THEN: collect_card
+
+  collect_card:
+    REASONING: false
+    SECURE_INPUT:
+      MODE: [dtmf, speech]
+      FIELDS:
+        - card_number:
+            PROMPT: { en: "Please enter or say your card number followed by the pound key.", es: "Por favor ingrese o diga el numero de su tarjeta seguido de la tecla numeral." }
+            COLLECT: { digits: 13..19, finishOnKey: "#", interDigitTimeoutMs: 5000, asrTimeoutMs: 5000 }
+            VALIDATE: [ luhn, { length: 13..19 }, CALL validate_card WITH { pan: "{{secure.card_number}}" } ]
+        - expiry:
+            PROMPT: { en: "Please enter the 4 digit expiry date, month then year, followed by the pound key." }
+            COLLECT: { digits: 4..4, finishOnKey: "#", interDigitTimeoutMs: 3000, asrTimeoutMs: 2500 }
+            VALIDATE: [ { date_mmYY: not_past }, { length: 4..4 } ]
+        - cvv:
+            PROMPT: { en: "Please enter your card security code, followed by the pound key." }
+            COLLECT: { digits: 3..4, finishOnKey: "#", interDigitTimeoutMs: 3000, asrTimeoutMs: 2500 }
+            VALIDATE: [ { length: 3..4 }, { regex: "^[0-9]{3,4}$" } ]
+      MAX_ATTEMPTS: 3
+      CANCEL: { dtmf_key: "*", keywords: [ "cancel", "stop" ] }
+      CALL charge_card WITH: { pan: "{{secure.card_number}}", exp: "{{secure.expiry}}", cvc: "{{secure.cvv}}" }
+      ON_SUCCESS: thank_you
+      ON_TIMEOUT: human_agent
+      ON_CANCEL: cancelled
+      ON_FAIL: human_agent
+    THEN: thank_you
+
+  thank_you:
+    REASONING: false
+    RESPOND: "Thank you. I've securely captured your card details and your payment has been processed successfully. Is there anything else I can help you with?"
+
+  human_agent:
+    REASONING: false
+    RESPOND: "I'm sorry, I wasn't able to complete that. Let me transfer you to a human agent for help with your payment."
+
+  cancelled:
+    REASONING: false
+    RESPOND: "Okay, I've cancelled the payment collection. Is there anything else I can help with?"
+
+```
+[Learn More](/agent-platform/abl/reference/flow#secure_input).
+
 ## Known Limitations
 
-- Kore.ai Voice Gateway (KoreVG) is the only supported provider in this release.
+- Kore.ai Voice Gateway (KoreVG) is the only supported provider.
 - No provider delivery acknowledgment or automatic retry is available for this method.
 - No pause syntax inside `digits`; model pauses as separate wait steps.
 
