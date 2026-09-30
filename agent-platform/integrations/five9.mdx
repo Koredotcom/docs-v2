@@ -1,0 +1,102 @@
+---
+title: Five9 integration
+sidebarTitle: Five9
+---
+
+<Badge icon="arrow-left" color="gray">[Back to list of integrations](/agent-platform/integrations#agent-desktop-integrations)</Badge>
+
+For secure, bidirectional communication between the AI application and live representatives, you can integrate Five9 Virtual Contact Center with an Artemis project.
+
+The integration requires:
+
+1. [Five9 setup](#five9-setup) — configure a Campaign (Five9's queue equivalent) that agents can log into.
+2. [Artemis project configuration](#artemis-project-configuration) using the tenant name, campaign name, and auth mode from Five9. Set it as the default Agent Transfer route.
+
+After the configuration is complete, Artemis routes escalated conversations to the configured Five9 Campaign, and a live Five9 agent can pick up the interaction from their agent desktop with full conversation context carried over.
+
+<Note>
+  **Campaign = Five9's queue.** Five9 uses "Campaign" — specifically an Inbound Campaign — as its routing/queue construct, the same role a "queue" plays in Genesys or Salesforce. It is not a marketing or outbound-dialing campaign. Agents log into a Campaign to receive routed interactions, and Artemis checks that Campaign for logged-in agents before creating a transfer.
+</Note>
+
+**Important considerations**
+
+- **Authentication modes**: The integration supports two auth modes — `anonymous` (authenticates using only the tenant name, no stored Five9 user credentials, recommended default) and `supervisor` (authenticates using a dedicated Five9 username and password). Each transfer performs a fresh authentication against Five9; Artemis does not cache or reuse tokens across conversations.
+- **Agent availability check**: Before creating a conversation, Artemis checks whether any agent is logged into the configured Campaign. If none are available, the transfer is blocked and the end user sees: *"We are currently unable to service your request. Please contact us during normal business hours."* The conversation then continues with the bot.
+
+{/* 
+- **No file attachments**: File and image sharing isn't supported in this integration.
+- **No post-agent survey**: There's no CSAT or post-agent dialog — the conversation session ends when the agent disconnects.
+- **No webhook signature verification**: Five9's anonymous messaging API doesn't support signed webhooks. Tenant isolation instead relies on the tenant ID embedded in the callback URL plus a matching active session.
+- **Skill/queue routing**: Routing beyond the configured Campaign Name (for example, skill-based routing) isn't supported in this integration.
+*/}
+
+## Prerequisites
+
+- Access to Five9 VCC Admin for your tenant.
+- Supervisor auth only: a dedicated Five9 user (username and password) created in Five9 VCC Admin > User Management.
+- Artemis project access with permission to open **Project** > **Integration**, and **Project Settings** > **Agent Transfer**.
+
+---
+
+## Five9 setup
+
+For more details on the setup steps, refer to the Five9 documentation for <a href="https://documentation.five9.com/bundle/admin-console/page/admin-console/campaigns/creating-campaigns.htm" target="_blank" rel="noopener noreferrer">Admin Console > Create Inbound Campaigns
+  &nearr;</a>.
+
+1. Log in to Five9 VCC Admin.
+2. Create a new **Inbound Campaign**:
+   - Go to **Campaigns** > **Add Campaign**.
+   - Configure the campaign settings, ensuring it is enabled for chat/messaging.
+   - Note the exact **Campaign Name**.
+3. Log in at least one agent to the campaign:
+   - Go to **Users** > **User Management**.
+   - Select an agent and log them into the campaign.
+
+---
+
+## Configure the Connection in Artemis
+
+1. Go to **Project** > **Integration** > **Agent Desktop** > **Five9**.
+2. Select **Connect**. The **Connect Five9** configuration dialog opens.
+3. Configure the following fields:
+
+    | Artemis connection field | Notes |
+    |-----------------------------|-------|
+    | Connection Name | A friendly name to identify this connection, such as `My Five9`. |
+    | Tenant Name | Your Five9 tenant name, such as `your-tenant`. |
+    | Campaign Name | Five9 Campaign for inbound routing. Must match an active Campaign with agents logged in. |
+    | Host (optional) | Five9 API host. Defaults to `app.five9.com` if left empty. |
+    | Auth Mode | Enter `anonymous` or `supervisor`. |
+    | Username (optional) | Required for supervisor auth mode. |
+    | Password (optional) | Required for supervisor auth mode. |
+    | Callback URL (optional) | Override webhook callback URL — auto-generated if left empty. Leave empty unless you have a specific reason to override it. |
+
+4. Click **Create Connection**.
+5. Use the Five9 integration for Agent Transfer routing: <br />
+   Go to **Project Settings** > **Agent Transfer** > **Default Routing** > **Connection** and select the integration.
+
+When an agent escalates a conversation, Artemis routes it to the configured Five9 Agent Desktop system.
+
+## Verify the connection
+
+1. In Five9, make sure at least one agent is logged into the configured Campaign — otherwise the transfer will be blocked with the "unable to service your request" message.
+2. Trigger an agent transfer in a test conversation in your Artemis project.
+3. Open the Five9 agent desktop and accept the incoming interaction.
+4. Confirm that messages sent from the test conversation appear on the agent side, and that agent replies appear back in the Artemis conversation.
+
+---
+
+## Troubleshoot integration issues
+
+| Symptom | Likely cause | Recommended action |
+|---------|---------------|----------------------|
+| Transfer fails with an authentication error | Invalid Tenant Name, or invalid Username/Password for supervisor mode | Re-check the Tenant Name against Five9 VCC Admin, and re-verify credentials if using supervisor auth mode. |
+| Transfer fails with a conversation creation error | Campaign Name doesn't match an active, chat/messaging-enabled Campaign | Verify the Campaign Name exactly matches an active Campaign in Five9 VCC Admin. |
+| User sees "We are currently unable to service your request" | No agent is currently logged into the configured Campaign | Log an agent into the Campaign in Five9, then retry the transfer. |
+| Agent joins but never receives messages, or agent replies never reach the user | Callback URL is unreachable, or an incorrect Callback URL override was entered | Leave Callback URL empty to use the auto-generated URL, or verify a manual override is publicly reachable. |
+| Transfer intermittently fails only for some conversations | Five9 returned a "service migrated" response while switching data centers | Artemis retries automatically on the new data center. If failures persist, retry the transfer or contact support. |
+
+{{related}}
+
+- [Transfer sessions](/agent-platform/transfer-sessions)
+- [Escalate to a human agent](/agent-platform/escalate)
