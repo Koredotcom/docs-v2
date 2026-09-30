@@ -87,7 +87,13 @@ Use `DELETE` to reset an Agent Integration.
 ```bash
 curl --location --request DELETE 'https://{{host}}/api/public/bot/{{botId}}/agentintegrations/chat/{{integration}}' \
 --header 'auth: {{jwt-token}}' \
---header 'Content-Type: application/json'
+```
+
+Use this API to reset all the configured Agent Integration.
+
+```bash
+curl --location --request DELETE 'https://{{host}}/api/public/bot/{{botId}}/agentintegrations' \
+--header 'auth: {{jwt-token}}' \
 ```
 
 ### Request Body Examples
@@ -133,9 +139,10 @@ Use `kore` as the `integration` value.
 }
 ```
 
-**ServiceNow**
+**ServiceNow - Basic Authentication**
 
 Use `servicenow` as the `integration` value.
+
 
 ```json
 {
@@ -147,8 +154,28 @@ Use `servicenow` as the `integration` value.
   "queueId": "<queueId>"
 }
 ```
+**ServiceNow - OAuth Refresh Token**
 
-**Salesforce**
+Use `servicenow` as the `integration` value.
+
+```json
+{
+  "enabled": true,
+  "config": {
+    "host": "<host>",
+    "authType": "oauth2_refresh_token",
+    "client_id": "{{client_id}}",
+    "client_secret": "{{client_secret}}",
+    "refresh_token": "{{refresh_token}}",
+    "tenant": "{{tenant}}",
+    "VAApi": true,
+    "queueId": "{{queueId}}"
+  }
+}
+```
+
+
+**Salesforce - MIAW**
 
 Use `salesforce` as the `integration` value.
 
@@ -160,6 +187,26 @@ Use `salesforce` as the `integration` value.
   "esDeveloperName": "<esDeveloperName>"
 }
 ```
+
+**Salesforce - Legacy Live Chat**
+
+Use `salesforce` as the `integration` value.
+
+```json
+{
+  "enabled": true,
+  "config": {
+    "integrationType": "liveChat",
+    "organizationId": "{{organizationId}}",
+    "liveAgentUrl": "<liveAgentUrl>",
+    "deploymentId": "{{deploymentId}}",
+    "buttonId": "{{buttonId}}"
+  }
+}
+```
+
+
+
 
 ### Sample Response for POST
 
@@ -187,3 +234,75 @@ Use `salesforce` as the `integration` value.
   "integration": "<integration>"
 }
 ```
+
+
+
+## Channel Mappings
+
+Use these APIs to read and update which Agent Integration handles each channel of an app.
+
+| Field | Value |
+| - | - |
+| **Method** | `GET` – Retrieve the current channel mappings.<br />`PUT` – Replace the entire channel mapping. |
+| **Endpoint** | `https://{{host}}/api/public/bot/{{botId}}/agentintegrations/channelmappings` |
+| **API Scope** | `agent_integrations:read` (GET)<br />`agent_integrations:write` (PUT) |
+
+### Body Parameters for PUT
+
+The `channelMappings` object has one key per channel enabled for the app, plus `default`. The set of keys is specific to each app. It is not a fixed list, and voice channels are not included.
+
+| Parameter | Required | Description |
+| - | - | - |
+| `channelMappings` | Required | Object that maps each channel to an Agent Integration. |
+| `channelMappings.default` | Required | The app's default Agent Integration. |
+| `channelMappings.<channel>` | Required | One key per enabled chat channel of the app, for example `rtm`, `agentassist`, `smartassist`, or `widgetsdk`. The value is the Agent Integration used for that channel. |
+
+<Note>
+`PUT` replaces the whole map, so a body that omits a channel would delete it. The API therefore rejects a partial map with `400` and names what is missing, for example: `channelMappings must map every channel enabled for this app. Missing: rtm, agentassist.` It also returns `400` if a channel is mapped to an integration that is not configured for the app.
+</Note>
+
+### Sample Request for GET
+
+```bash
+curl --location 'https://{{host}}/api/public/bot/{{botId}}/agentintegrations/channelmappings' \
+--header 'auth: {{jwt-token}}'
+```
+
+### Sample Response for GET
+
+The channel keys depend on the channels enabled for your app.
+
+```json
+{
+  "channelMappings": {
+    "default": "salesforce",
+    "rtm": "genesys",
+    "agentassist": "genesys",
+    "smartassist": "genesys"
+  },
+  "state": "configured",
+  "requiresPublish": true
+}
+```
+
+### Sample Request for PUT
+
+The channel keys depend on which channels the app has enabled, so copying this body verbatim fails on an app with a different set. Start from the `GET` response, which you can send back as the `PUT` body unchanged. `state` and `requiresPublish` are accepted and ignored.
+
+```bash
+curl --location --request PUT 'https://{{host}}/api/public/bot/{{botId}}/agentintegrations/channelmappings' \
+--header 'auth: {{jwt-token}}' \
+--header 'Content-Type: application/json' \
+--data-raw '{
+  "channelMappings": {
+    "default": "salesforce",
+    "rtm": "genesys",
+    "agentassist": "genesys",
+    "smartassist": "genesys"
+  },
+  "state": "configured",
+  "requiresPublish": true
+}'
+```
+
+
