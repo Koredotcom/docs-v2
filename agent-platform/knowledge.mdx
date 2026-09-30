@@ -25,50 +25,50 @@ flowchart LR
 
 1. **Ingestion**: Registers and tracks content for processing. For uploaded files, the platform checks for duplicates using content hashing, files that have already been indexed with unchanged content are skipped. For connected data sources, the platform discovers and tracks all documents within the source.
 
-1. **Extraction**: The extraction stage pulls content from your source files. Depending on the content format, different extraction strategies are used.
+2. **Extraction**: The extraction stage pulls content from your source files. Depending on the content format, different extraction strategies are used.
 
-  | Format                | Extraction approach                                                  |
-  | --------------------- | -------------------------------------------------------------------- |
-  | Plain text, Markdown  | Used as-is                                                           |
-  | HTML                  | Tags stripped, structure preserved where meaningful                  |
-  | PDF                   | Text extracted from pages (layout-aware extraction for complex PDFs) |
-  | DOCX / Office formats | Document content extracted from the file structure                   |
-  | JSON                  | Values extracted and concatenated with structural context            |
+    | Format                | Extraction approach                                                  |
+    | --------------------- | -------------------------------------------------------------------- |
+    | Plain text, Markdown  | Used as-is                                                           |
+    | HTML                  | Tags stripped, structure preserved where meaningful                  |
+    | PDF                   | Text extracted from pages (layout-aware extraction for complex PDFs) |
+    | DOCX / Office formats | Document content extracted from the file structure                   |
+    | JSON                  | Values extracted and concatenated with structural context            |
 
-    The extraction stage also captures document metadata (titles, headings, page numbers) that's used later for enrichment and search result context.
+      The extraction stage also captures document metadata (titles, headings, page numbers) that's used later for enrichment and search result context.
 
-1. **Chunking** - The chunking stage splits text into smaller segments that can be individually embedded and retrieved. The chunking strategy you choose directly affects search quality — it determines how coherent and complete each retrievable unit of content is. The platform supports three chunking strategies:
+3. **Chunking** - The chunking stage splits text into smaller segments that can be individually embedded and retrieved. The chunking strategy you choose directly affects search quality — it determines how coherent and complete each retrievable unit of content is. The platform supports three chunking strategies:
 
-  | Strategy       | How it splits                                                     | Best for                                                       |
-  | -------------- | ----------------------------------------------------------------- | -------------------------------------------------------------- |
-  | Fixed-size     | Token windows of a configurable size with overlap between chunks  | Predictable, uniform content where consistency matters         |
-  | Semantic       | Natural boundaries such as paragraphs, sections, and topic shifts | Narrative or long-form content where coherence is important    |
-  | Sliding window | Overlapping windows that slide across the full text               | Content where context continuity across boundaries is critical |
+    | Strategy       | How it splits                                                     | Best for                                                       |
+    | -------------- | ----------------------------------------------------------------- | -------------------------------------------------------------- |
+    | Fixed-size     | Token windows of a configurable size with overlap between chunks  | Predictable, uniform content where consistency matters         |
+    | Semantic       | Natural boundaries such as paragraphs, sections, and topic shifts | Narrative or long-form content where coherence is important    |
+    | Sliding window | Overlapping windows that slide across the full text               | Content where context continuity across boundaries is critical |
 
-    <Note> Chunk overlap ensures that context at chunk boundaries is not lost. A concept that spans two paragraphs will appear in both chunks when overlap is configured. Always configure overlap when your content spans section boundaries. </Note>
+      <Note> Chunk overlap ensures that context at chunk boundaries is not lost. A concept that spans two paragraphs will appear in both chunks when overlap is configured. Always configure overlap when your content spans section boundaries. </Note>
 
-1. **Enrich**: The enrichment stage adds metadata to each chunk, improving search quality and enabling filtering. The following enrichments are applied:
+4. **Enrich**: The enrichment stage adds metadata to each chunk, improving search quality and enabling filtering. The following enrichments are applied:
 
-  | Enrichment                 | What it adds                                                         |
-  | -------------------------- | -------------------------------------------------------------------- |
-  | Entity detection           | Identifies emails, URLs, dates, and monetary values within the chunk |
-  | Summary generation         | Creates a brief summary of the chunk's content                       |
-  | Language detection         | Identifies the language of the content                               |
-  | Knowledge graph extraction | Extracts entities and relationships to build a knowledge graph. This feature is available on request.      |
+    | Enrichment                 | What it adds                                                         |
+    | -------------------------- | -------------------------------------------------------------------- |
+    | Entity detection           | Identifies emails, URLs, dates, and monetary values within the chunk |
+    | Summary generation         | Creates a brief summary of the chunk's content                       |
+    | Language detection         | Identifies the language of the content                               |
+    | Knowledge graph extraction | Extracts entities and relationships to build a knowledge graph. This feature is available on request.      |
 
     Enrichment metadata is stored alongside each chunk and can be used to filter and rank search results at query time.
 
-1. **Embedding Generation**: The embedding stage converts each text chunk into a vector representation that captures its semantic meaning. These vectors enable semantic search — finding content that's conceptually related to a query even when the exact words differ.
+5. **Embedding Generation**: The embedding stage converts each text chunk into a vector representation that captures its semantic meaning. These vectors enable semantic search — finding content that's conceptually related to a query even when the exact words differ.
 
-1. **Store**: The final stage writes the processed chunks to the vector database for fast retrieval. Each stored chunk includes:
+6. **Store**: The final stage writes the processed chunks to the vector database for fast retrieval. Each stored chunk includes:
 
-   - The original text content
-   - The vector embedding
-   - Enrichment metadata
-   - Source information — document ID, source ID, and page number
-   - Permission metadata for access control
+    - The original text content
+    - The vector embedding
+    - Enrichment metadata
+    - Source information — document ID, source ID, and page number
+    - Permission metadata for access control
 
-  After a chunk is stored, it's immediately available for search.
+    After a chunk is stored, it's immediately available for search.
 
 ### Retrieval process
 
@@ -89,24 +89,18 @@ When an agent needs information from a knowledge base, the platform executes a s
 
 1. **Hybrid Search**: The platform uses hybrid search by default, combining two complementary strategies to maximize retrieval quality.
 
-   **Semantic Search**
+    - **Semantic Search** : Semantic search finds chunks whose vector embeddings are most similar to the query embedding. This helps retrieve conceptually relevant content even when the user's phrasing does not directly match the source text.
 
-   Semantic search finds chunks whose vector embeddings are most similar to the query embedding. This helps retrieve conceptually relevant content even when the user's phrasing does not directly match the source text.
+      Example:
+      A query for "How do I get my money back?" can match a chunk about "Refund policy and procedures" even though none of the query words appear in the chunk heading.
 
-   Example:
-   A query for "How do I get my money back?" can match a chunk about "Refund policy and procedures" even though none of the query words appear in the chunk heading.
+      Use semantic search when users are likely to phrase queries in natural language that differs from the terminology used in the source content.
 
-   Use semantic search when users are likely to phrase queries in natural language that differs from the terminology used in the source content.
+    - **Keyword Search**: Keyword search finds chunks containing the exact terms in the query. This helps retrieve content with specific names, product codes, technical terms, or identifiers that semantic search might miss due to low vector similarity.
 
-   **Keyword Search**
+      Use keyword search when the content contains precise terms — such as model numbers, error codes, or proper nouns — that must match exactly.
 
-   Keyword search finds chunks containing the exact terms in the query. This helps retrieve content with specific names, product codes, technical terms, or identifiers that semantic search might miss due to low vector similarity.
-
-   Use keyword search when the content contains precise terms — such as model numbers, error codes, or proper nouns — that must match exactly.
-
-   **Hybrid Search**
-
-   Hybrid search merges and re-ranks results from semantic and keyword search to produce a single ranked list of the most relevant chunks.
+    Hybrid search merges and re-ranks results from semantic and keyword search to produce a single ranked list of the most relevant chunks.
 
 2. **Re-Ranking**
 
@@ -258,6 +252,19 @@ For each connector,
 3. Field Mapping — Align source fields with the inbuilt schema. Map custom fields, if required.
 4. Permissions — Configure security settings to enable authorized access to information from the third-party applications. 
 
+**Enabling/Disabling permissions**
+
+When permission-aware ACL is disabled, all content ingested through a connector is indexed as accessible to all users as no document-level permissions are stored.
+
+Enabling permission-aware ACL does not automatically update permissions for previously indexed content. The connector continues to use the existing permission information until a permission synchronization is performed.
+
+A permission synchronization is triggered only in the following scenarios:
+
+- Manually perform a full content synchronization. Incremental or delta synchronizations do not trigger a permission sync.
+- A scheduled permission synchronization run. During a permission synchronization, the connector does not re-ingest content. It retrieves the latest permissions from the source system and applies them to the documents that are already indexed. 
+
+<Note>Until a permission synchronization completes after enabling permission aware ACL, content indexed while ACL was disabled remains accessible to all users.</Note>
+
 **Available Connectors**
 
 | Connector | Description |
@@ -375,7 +382,9 @@ To view the ingested content, follow these steps:
   - Source Info - Details of the source of the document.
   - Raw Metadata - Document metadata in JSON format.
 
-1. You can reprocess a given document or delete it.
+3. You can reprocess a given document to ingest, extract and index it again. By default, it uses the **Extraction quality** configuration for the source. Use the **Extraction Preset** option to change the config for a given document.
+
+4. Use the Delete button to delete a single page from the source. Note that if the source is synchronized again, the deleted document will be ingested again unless added to the exclude list explicitly. 
 
 ### View extracted chunks
 
