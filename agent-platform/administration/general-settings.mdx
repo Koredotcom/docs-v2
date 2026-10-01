@@ -101,7 +101,7 @@ Select **Why this model?** on a row to see the resolution path that produced the
 
 ## Runtime configuration
 
-The **Runtime Configuration** page holds the behavioral controls that govern how the project's agents read input, handle multiple requests in one turn, fill in unstated values, occupy callers during waits, expose their own activity, protect personal data, and bound their own tool use.
+The **Runtime Configuration** page holds the behavioral controls that govern how the project's agents read input, handle multiple requests in one turn, fill in unstated values, tune voice latency, recover from failures, occupy callers during waits, expose their own activity, protect personal data, and bound their own tool use.
 
 **Navigation**: **Project** -> **Settings** -> **Runtime Config**
 
@@ -112,26 +112,28 @@ Changes here apply to every agent deployment in the project, so treat this page 
 This section decides how the runtime turns a raw user message into structured field values.
 
 | Field | Description |
-|---|---|
-| **Extraction Strategy** | Chooses which extraction stages run and in what order. Pattern matching costs nothing and handles predictable formats; model-backed extraction catches what patterns miss but adds latency and cost to every turn that needs it. Change it when your fields sit at one extreme or the other, either structured enough that the model call is waste, or conversational enough that patterns alone leave fields unfilled. Language detection and resolution run under every strategy. |
+| - | - |
+| **Extraction Strategy** | Chooses which extraction stages run and in what order. Language detection and resolution always run, whatever you choose. The default, **Auto**, runs the stages in sequence: pattern matching runs first, the ML model extracts fields the patterns didn't match, and the LLM extracts anything still missing. Auto gives the best overall accuracy. Change it when your fields sit at one extreme or the other, either structured enough that a model call is waste, or conversational enough that patterns alone leave fields unfilled. The ML stage supports English, French, Spanish, Italian, and Portuguese. For other languages, extraction falls back to the LLM stage. |
+| **Confidence Threshold** | Sets the minimum confidence an extracted entity needs before the runtime accepts it. Accepts values from 0.0 to 1.0 inclusive. Default: 0.50. Raise it when the agent accepts values the user didn't give, and lower it when the agent keeps asking for values the user already supplied. |
+| **Include Confidence** | Attaches confidence scores to extracted entity values. On by default. Turn it on when downstream logic or analytics needs to see how certain an extraction was. |
 
 ### Multi-intent recognition
 
 This section handles messages that ask for more than one thing at once. Without it, the runtime acts on the first request it recognizes and the rest of the message goes unanswered.
 
 | Field | Description |
-|---|---|
-| **Enable Multi-Intent** | Turns on detection of several intents in one message. Leave it off for narrow transactional flows, where a second detected intent is more often a misread than a real request. |
-| **Strategy** | Sets the order in which the runtime works through detected intents. The choice decides whether the user gets a fast answer to their first request or waits while the agent works the whole message. |
-| **Unknown Relationship Strategy** | Chooses the fallback for same-turn supervisor routing when relationship data isn't available. Relationship data normally decides ordering, so without it the runtime needs a standing instruction rather than a judgment. |
-| **Max Intents** | Caps how many intents the runtime acts on in one turn. Each additional intent comes from a less certain reading of the message, so raising this raises the chance of acting on something the user didn't ask for. |
-| **Confidence Threshold** | Sets the minimum classifier confidence needed to act on a detected intent. Raise it when the agent answers requests the user didn't make, and lower it when the agent ignores genuine second requests. |
-| **Queue Max Age (ms)** | Sets how long a queued intent stays eligible for handling. It stops the agent from returning to a request the user has since abandoned or resolved another way. |
+| - | - |
+| **Enable Multi-Intent** | Turns on detection of several intents in one message. On by default. Turn it off for narrow transactional flows, where a second detected intent is more often a misread than a real request. |
+| **Strategy** | Sets the order in which the runtime works through detected intents. The choice decides whether the user gets a fast answer to their first request or waits while the agent works the whole message. Default: `primary_queue`. |
+| **Unknown Relationship Strategy** | Chooses the fallback for same-turn supervisor routing when relationship data isn't available. Relationship data normally decides ordering, so without it the runtime needs a standing instruction rather than a judgment. Default: `parallel`. |
+| **Max Intents** | Caps how many intents the runtime acts on in one turn. Default: 3. Each additional intent comes from a less certain reading of the message, so raising this raises the chance of acting on something the user didn't ask for. |
+| **Confidence Threshold** | Sets the minimum classifier confidence needed to act on a detected intent. Default: 0.6. Raise it when the agent answers requests the user didn't make, and lower it when the agent ignores genuine second requests. |
+| **Queue Max Age (ms)** | Sets how long a queued intent stays eligible for handling. Default: 600000 (10 minutes). It stops the agent from returning to a request the user has since abandoned or resolved another way. |
 
 **Multi-intent strategies**
 
 | Value | Behavior |
-|---|---|
+| - | - |
 | `primary_queue` | Handles the first intent immediately and queues the rest, addressing them in sequence once the primary completes. |
 | `sequential` | Addresses intents one at a time in detection order, finishing each before starting the next. |
 | `parallel` | Dispatches all intents at once and resolves them concurrently. |
@@ -141,7 +143,7 @@ This section handles messages that ask for more than one thing at once. Without 
 **Unknown relationship strategies**
 
 | Value | Behavior |
-|---|---|
+| - | - |
 | `sequential` | Addresses the intents one at a time in detection order. |
 | `parallel` | Handles the intents concurrently. |
 | `disambiguate` | Asks the user which intent to prioritize. |
@@ -150,133 +152,227 @@ This section handles messages that ask for more than one thing at once. Without 
 
 ### Field inference
 
-This section lets the runtime infer values the user hasn't stated, which shortens conversations at the cost of occasionally guessing wrong.
+This section lets the runtime use an LLM to infer values the user hasn't stated, which shortens conversations at the cost of occasionally guessing wrong.
 
 | Field | Description |
-|---|---|
-| **Confidence Threshold** | Sets the minimum confidence needed to accept an inferred value. Inference trades accuracy for fewer questions, and this field is where you set that trade. |
-| **Require User Confirmation** | Presents inferred values to the user before the agent applies them. Keep it on wherever a wrong inference costs money or changes a record, since confirmation is far cheaper than reversal. |
-| **Model Tier** | Selects the tier that serves inference calls. Inference runs often and on small decisions, so this choice affects per-turn latency more than most model settings. |
-| **Max Fields Per Pass** | Caps how many fields one inference call attempts. Fewer fields per pass means more calls, each of them more reliable. |
+| - | - |
+| **Confidence Threshold** | Sets the minimum confidence needed to accept an inferred value. Default: 0.8. Inference trades accuracy for fewer questions, and this field is where you set that trade. |
+| **Require User Confirmation** | Presents inferred values to the user before the agent applies them. On by default. Keep it on wherever a wrong inference costs money or changes a record, since confirmation is far cheaper than reversal. |
+| **Model Tier** | Selects the tier that serves inference calls. Default: `fast`. Inference runs often and on small decisions, so this choice affects per-turn latency more than most model settings. |
+| **Max Fields Per Pass** | Caps how many fields one inference call attempts. Default: 3. Fewer fields per pass means more calls, each of them more reliable. |
 
 ### Currency conversion
 
 This section decides where exchange rates come from when an agent quotes or converts an amount. Agents that never handle money can leave it alone.
 
 | Field | Description |
-|---|---|
-| **Currency Mode** | Selects whether the runtime converts currency using rates held in the platform or rates fetched live. Held rates keep results reproducible across a conversation and across environments. Live rates keep them current. Choose on whether your users compare quotes over time. |
+| - | - |
+| **Currency Mode** | Selects whether the runtime converts currency using **static** rates held in the platform or **live** rates fetched from an API. Default: `static`. Static rates keep results reproducible across a conversation and across environments. Live rates keep them current. Choose on whether your users compare quotes over time. |
 
 ### Reasoning pipeline
 
 The reasoning pipeline runs a lightweight classifier ahead of each reasoning turn so the runtime can route programmatically and narrow the tool set before the main model call.
 
 <Warning>
-**Experimental feature. Read before enabling.**
+  **Experimental feature. Read before enabling.**
 
-- The pipeline needs a configured `tool_selection` model. Without one it skips silently rather than reporting an error.
-- It adds one model call ahead of each reasoning turn.
-- After three consecutive pipeline model failures, a circuit breaker bypasses the pipeline temporarily so the failure doesn't add latency to every turn.
+  * The pipeline needs a configured `tool_selection` model in your LLM provider settings. Without one, the pipeline skips silently rather than reporting an error.
+  * It adds one extra LLM call before each reasoning turn, typically 200-500 ms. In parallel mode, the classifier and tool filter run simultaneously.
+  * If the pipeline model fails three times in a row, a circuit breaker bypasses the pipeline for 60 seconds so the failure doesn't add latency to every turn.
 </Warning>
 
 | Field | Description |
-|---|---|
+| - | - |
 | **Enable Pipeline** | Runs the classifier ahead of reasoning to enable short-circuit routing and tool filtering. Everything else in this section depends on it. |
-| **Execution Mode** | Decides whether the classifier and tool filter run together or one after the other. Running them together costs less time. Running them in sequence lets the classifier result decide whether the tool filter is needed at all. |
-| **Pipeline Model** | Selects the model that performs intent classification. The pipeline runs on every turn, so this choice sets a recurring latency and cost floor for the whole project. |
-| **Short Circuit** | Lets the runtime skip the reasoning loop when classifier confidence runs high. Most of the pipeline's latency saving comes from here, and so does most of its risk, because no reasoning step follows to catch a misclassification. |
-| **Short Circuit Threshold** | Sets the confidence a classification needs before the runtime routes programmatically. Treat it as the safety margin on short-circuiting. |
-| **Tool Filter** | Narrows the tool set sent to the model based on classifier analysis. Large catalogs degrade tool selection accuracy, so filtering helps most in projects that expose many tools. |
-| **Max Tools** | Caps how many tools reach the reasoning loop. |
-| **Keyword Veto** | Overrides classifier routing when specified keywords appear. Use it for terms where you'd rather not depend on a classifier judgment at all. |
-| **Veto Keywords** | Holds the comma-separated keywords that trigger the veto. |
-| **Intent Bridge** | Publishes classifier output into session state so WHEN conditions and multi-intent dispatch can read it. Without it, the classifier's work stays inside the pipeline and your authored logic can't act on it. |
-| **Programmatic Threshold** | Sets the confidence needed for Tier 1 actions, where the runtime declines or routes without a model call. |
-| **Guided Threshold** | Sets the confidence needed for Tier 2 behavior, where the runtime keeps the reasoning loop but shapes it by hiding tools and adding routing hints. Set it below the programmatic threshold, since guided actions leave the model room to recover and programmatic ones don't. |
-| **Out-of-Scope Decline** | Declines out-of-scope queries programmatically. It removes a model call from every off-topic turn, which pays off most on public channels where off-topic volume runs high. |
-| **Multi-Intent Signal** | Injects multi-intent hints into the reasoning turn when the classifier detects more than one intent. |
+| **Execution Mode** | Decides whether the classifier and tool filter run together or one after the other. **Parallel** runs them simultaneously, which costs less time. **Sequential** waits for the classifier result before deciding whether to run the tool filter at all. Default: `parallel`. |
+| **Pipeline Model** | Selects the model that performs intent classification. **Default** uses the project's `tool_selection` model. The pipeline runs on every turn, so this choice sets a recurring latency and cost floor for the whole project. |
+| **Short Circuit** | Skips the reasoning loop when classifier confidence is very high. Most of the pipeline's latency saving comes from here, and so does most of its risk, because no reasoning step follows to catch a misclassification. |
+| **Short Circuit Threshold** | Sets the minimum confidence (0.0-1.0) a classification needs before the runtime routes programmatically. Default: 0.85. Treat it as the safety margin on short-circuiting. |
+| **Tool Filter** | Reduces the tool set sent to the LLM based on classifier analysis. Large catalogs degrade tool selection accuracy, so filtering helps most in projects that expose many tools. |
+| **Max Tools** | Caps how many tools reach the reasoning loop. Default: 6. |
+| **Keyword Veto** | Overrides classifier routing when specific keywords appear. Use it for terms where you'd rather not depend on a classifier judgment at all. |
+| **Veto Keywords** | Holds the comma-separated keywords that trigger the veto, for example `refund, cancel, complaint`. |
+| **Intent Bridge** | Maps classifier output to session state so WHEN conditions and multi-intent dispatch can read it. Without it, the classifier's work stays inside the pipeline and your authored logic can't act on it. |
+| **Programmatic Threshold** | Sets the confidence needed for Tier 1 actions, where the runtime declines or routes without a model call (auto-decline, auto-route). Default: 0.85. |
+| **Guided Threshold** | Sets the confidence needed for Tier 2 guided reasoning, where the runtime keeps the reasoning loop but shapes it by hiding tools and adding routing hints. Default: 0.5. Set it below the programmatic threshold, since guided actions leave the model room to recover and programmatic ones don't. |
+| **Out-of-Scope Decline** | Declines out-of-scope queries programmatically, without an LLM call. It removes a model call from every off-topic turn, which pays off most on public channels where off-topic volume runs high. |
+| **Multi-Intent Signal** | Injects multi-intent hints into the reasoning turn when the classifier detects two or more intents. |
 
 ### Tool call policy
 
 This section bounds the deterministic CALL actions that tool lifecycle hooks invoke. The limits apply only to those hook-driven calls. Side-effecting target tools still run through the normal confirmation flow, so this section doesn't weaken confirmation.
 
 | Field | Description |
-|---|---|
-| **Boundary CALLs Enabled** | Allows tool lifecycle hooks to invoke another tool deterministically. Turning it off removes an entire class of chained behavior, so confirm nothing depends on it before you do. |
-| **Max CALL Depth** | Caps nested boundary CALL depth in a single turn. The runtime clamps depth to five whatever you save, so use this field to set a stricter limit than the platform's own, not a looser one. |
-| **Max CALLs Per Turn** | Caps boundary CALL fan-out across one runtime turn. The runtime clamps this to twenty whatever you save. Fan-out limits matter more than depth limits, because a single wide hook can issue far more calls than a deep chain. |
+| - | - |
+| **Boundary CALLs Enabled** | Allows tool lifecycle hooks to invoke another tool deterministically. On by default. Turning it off removes an entire class of chained behavior, so confirm nothing depends on it before you do. |
+| **Max CALL Depth** | Caps nested boundary CALL depth in a single turn. Default: 3. The runtime clamps this value to 5 even if you save a higher one, so use this field to set a stricter limit than the platform's own, not a looser one. |
+| **Max CALLs Per Turn** | Caps boundary CALL fan-out across one runtime turn. Default: 8. The runtime clamps this value to 20 even if you save a higher one. Fan-out limits matter more than depth limits, because a single wide hook can issue far more calls than a deep chain. |
 
 ### Streaming safety
 
-This section decides what the runtime does when a safety check fires on a response it has already begun sending. It's the one safety control where timing matters as much as outcome.
+This section sets project-level controls for how the runtime behaves when a safety check intervenes on a response that's already streaming. It's the one safety control where timing matters as much as outcome.
+
+<Note>Existing projects stay on **Legacy passthrough** until you change this setting.</Note>
 
 | Field | Description |
-|---|---|
-| **Safety Mode** | Decides how the runtime handles a final-output safety intervention on a response that's already streaming. The difficulty is timing: by the time an intervention fires, part of the response may have reached the user. Projects created before this setting existed stay on legacy passthrough until you change it here, so review the value explicitly rather than assuming the project runs current behavior. |
+| - | - |
+| **Safety Mode** | Decides how the runtime handles final-output safety interventions for streaming responses. The difficulty is timing: by the time an intervention fires, part of the response may have reached the user. Review the value explicitly rather than assuming the project runs current behavior. |
+
+**Safety modes**
+
+| Value | Behavior |
+| - | - |
+| **Legacy passthrough** | Keeps the behavior that existed before this setting. Default for projects created before the setting was introduced. |
+| **Buffered** | Holds streamed output back until the safety check completes, so nothing unchecked reaches the user. Adds delay before the first words appear. |
+| **Gated** | Releases streamed output in stages as each portion passes the safety check. |
+| **Terminate forward** | Stops sending further output when an intervention fires. Text already delivered stays with the user. |
+| **Retract capable** | Allows the runtime to retract output already delivered when an intervention fires, on channels that support retraction. |
 
 ### Output item analytics
 
-Runtime responses often carry repeated structures such as a list of results. Analytics rows don't store raw response JSON, so you have to declare anything you want to query later here first. A mapping tells the runtime which array to capture and which scalar fields inside it to record.
+Runtime responses often carry repeated structures such as a list of results. This section captures those repeated scalar items so you can run independent analytics queries on them.
 
-Mappings are project-scoped and additive, and they only take effect for responses produced after you add them. Declare a dimension before you need it, because you can't recover a field retrospectively.
+<Note>Mappings are project-scoped and additive. The runtime captures only the item arrays you configure and the scalar dimensions you declare. It doesn't store raw response JSON in analytics rows.</Note>
+
+A counter at the top shows how many mappings you've configured out of the 25 allowed. Select **Add mapping** to create one. Mappings only take effect for responses produced after you add them, so declare a dimension before you need it. You can't recover a field retrospectively.
 
 | Field | Description |
-|---|---|
-| **Mapping key** | Names the analytics category this item family reports under. Queries group on this key, so keep it stable once collection starts. Renaming it splits your history into two unrelated series. |
-| **Item array path** | Absolute path to the repeated array inside the response. |
-| **Item key path** | Optional relative path that gives each item a stable identity across responses. Set it when you need to follow the same item over time rather than count occurrences. |
-| **Max items** | Caps the rows captured per response for this mapping. It bounds what an unusually large response costs you in analytics writes. |
-| **Description** | Author-facing note explaining what the repeated item represents. It's the only place a later reader learns why the mapping exists. |
-| **Item dimensions** | Declares the scalar fields inside each item that the runtime records, each with a name, a path, and a type. The runtime doesn't store fields you don't declare, and no query can recover them later. |
+| - | - |
+| **Mapping key** | Names the stable analytics category for this item family. Queries group on this key, so keep it stable once collection starts. Renaming it splits your history into two unrelated series. |
+| **Item array path** | Absolute response path to the repeated array, such as `$.items[*]`. |
+| **Item key path** | Optional relative path, such as `id`, that gives each item a stable identity across responses. Set it when you need to follow the same item over time rather than count occurrences. |
+| **Max items** | Caps the rows captured per response for this mapping. Default: 25. It bounds what an unusually large response costs you in analytics writes. |
+| **Description** | Optional author-facing note explaining what the repeated item represents. It's the only place a later reader learns why the mapping exists. |
+| **Item dimensions** | Declares the scalar fields inside each item that the runtime records. A counter shows how many of the 50 allowed dimensions you've configured. Select **Add dimension** to declare one, each with a name, a path, and a type. The runtime doesn't store fields you don't declare. With no dimensions configured, rows still include the mapping, session, trace, and item metadata. |
 
+Select the trash icon on a mapping to delete it.
+
+### Voice low-latency profile
+
+This section holds channel-scoped defaults for fast voice responses. It tunes model routing, reasoning, context size, and filler behavior for voice while preserving semantic response quality, and explicit developer overrides still take precedence. It appears for projects with a voice channel.
+
+When the project has an active voice channel but the recommended defaults aren't applied, a banner reads **Recommended voice defaults are not active**. Select **Apply recommended defaults** to apply the low-latency profile in one step: fast model routing, inline gather, bounded context, and generative filler defaults.
+
+#### Voice setting differences
+
+The **Voice setting differences** table compares each voice setting's current value with the recommended one, so you can apply the profile wholesale or adopt it setting by setting. Select **Apply** on a row to apply only that recommendation, or **Apply recommended defaults** to apply them all. The rows shown depend on the profile version and on which settings your project already has.
+
+The recommended profile changes these groups of settings:
+
+| Group | What the profile sets |
+| - | - |
+| Profile | Selects the `customer_service_voice_low_latency_v1` profile. |
+| Model routing | Moves `response_gen`, `reasoning`, `coordination`, and `summarization` to the `fast` tier. |
+| Reasoning | Turns extended reasoning off (`reasoning.enabled` = `false`) and sets effort to `none`. |
+| Execution | Turns on inline gather (`execution.inline_gather`). |
+| Compaction | Bounds how much context voice carries into each turn. Covers tool results (`compaction.tool_results`), prior turns (`compaction.prior_turns`), and prompt context (`compaction.prompt_context`). Tool results use structured compaction with a 16000-character maximum and a 4000-character structured threshold. |
+| Fillers | Sets how spoken fillers are generated and bounded. Covers the generation strategy, native generative filler, the voice delay, pending-tool status nudges, output limits (tokens and characters), and the generation budget. |
+| Session | Controls synchronous session compaction (`session.synchronousCompaction`). It stays off on the live voice path. |
+
+Each row carries a tag that tells you what kind of change it makes:
+
+| Tag | Meaning |
+| - | - |
+| `latency` | Changes speed or cost only. |
+| `semantic_risk` | Can change how the agent reasons, so review these rows individually before you apply them. The reasoning settings carry this tag. |
+| `operational` | Changes how the runtime operates rather than how fast it responds or how the agent reasons. |
+
+<Tip>
+  Applying the recommended defaults overwrites your current values for every row listed. To keep a setting, apply the rows one by one instead.
+</Tip>
+
+#### Profile settings
+
+| Field | Description |
+| - | - |
+| **Profile** | Shows the applied profile name and version, for example `customer_service_voice_low_latency_v1 · v1`. Versioned profile metadata is preserved in project export and import. |
+| **Voice model routing** | Sets the model tier for each semantic operation on voice: `response_gen`, `reasoning`, `coordination`, `summarization`, `tool_selection`, `extraction`, and `validation`. Fast is the voice default for semantic operations. `realtime_voice` stays on the voice-capable tier (`voice`). |
+| **Reasoning/thinking** | Toggle plus a level dropdown (`none`, `minimal`, `low`, `medium`, `high`, `xhigh`, `max`). The profile disables extended reasoning by default for latency. Explicit agent and project settings still win. |
+| **Inline gather** | Merges entity gathering into the reasoning turn, which removes a separate model call. |
+| **Prompt context targets** | Bounds voice prompt context before generation. Default values: 6000 and 16000. Required fields and semantic tool outputs remain subject to tool contracts. |
+| **Tool-result compaction** | Uses structured projections first so voice doesn't add a serial summarization call, while preserving essential tool fields. Settings: **Strategy** (`structured`), **Max tool-result chars** (16000), **Structured threshold** (4000), **Recent results to keep** (1), **Tool description chars** (80), and **Summary timeout (ms)** (1500). |
+| **Prior-turn compaction** | Keeps a compact semantic preview of prior turns without running synchronous session compaction. Settings: **Strategy** (`compact`) and **Assistant preview chars** (120). |
+| **Prompt projection** | Bounds projected context while retaining the current request and complete small structured results. Settings: **Auto tool-result chars** (2000), **Projection strategy** (`preview`), and **Include complete small results** (on). |
+| **Generative filler bounds** | Sets the limits for generated fillers. The opener must be ready within the generation budget (at most 2 seconds) or the static fallback plays. Later lines in the same streamed batch can still arrive as follow-ups. Each line must be sayable in about 4 seconds. Defaults: 2000, 160, and 4000. |
+
+#### Filler strategy and coordination
+
+Native speech-to-speech (S2S) fillers are preferred when the provider advertises the capability. Pipeline generation and static speech remain bounded fallbacks.
+
+| Field | Description |
+| - | - |
+| **Generation source** | Chooses where fillers come from. Default: `s2s_preferred_then_pipeline_llm`, which uses the provider's native filler when available and falls back to a pipeline-generated one. |
+| **Earliest voice delay (ms)** | Sets the earliest point at which a voice filler can play. Default: 300. |
+| **Follow-up gap (ms)** | Sets the pause between a filler and the next follow-up line. Default: 1200. |
+| **Native S2S delay (ms)** | Sets the delay before a native S2S filler plays. Default: 300. |
+| **Pending-tool nudges** | Sets how many filler nudges can play while a tool is pending. Default: 1. |
+| **Pending-tool deadline (ms)** | Sets how long the runtime waits on a pending tool before nudging. Default: 2000. |
+| **Max fillers per turn** | Caps fillers in a single turn. Default: 5. |
+| **Allow native generative filler** | Lets the provider's native S2S generate fillers. On by default. |
+| **Allow pipeline generative filler** | Lets the pipeline LLM generate fillers when native generation isn't available. On by default. |
+| **Filler history messages** | Sets how many recent messages the filler generator sees. Default: 0. |
+| **Previous fillers** | Sets how many already-emitted fillers the generator sees, to avoid repetition. Default: 0. |
+| **Max output tokens** | Caps the length of a generated filler. Default: 32. |
+| **Native S2S filler prompt** | Optional provider instruction for native fillers, for example `Keep the caller informed briefly while the request is processing.` Immutable safety rules remain enforced by the runtime. |
+
+<Note>Synchronous session compaction stays disabled on the live voice path. Adjust prompt and tool-result projections instead, so the authoritative turn retains its semantic contract.</Note>
 
 ### Channel recovery and graceful failure
 
-The Channel Recovery and Graceful Failure policy defines how Runtime responds when model generation, tool execution, provider communication, or voice operations are delayed, interrupted, or fail. It enables channel-specific recovery behavior while preserving conversation state and preventing duplicate or invalid actions.
+The Channel Recovery and Graceful Failure policy defines how Runtime responds when model generation, tool execution, provider communication, or voice operations are delayed, interrupted, or fail. It enables channel-specific recovery behavior with bounded recovery, localized messages, sequential model fallback, and safe latency hedging, while preserving conversation state and preventing duplicate or invalid actions.
 
-Recovery policies are versioned and are explicitly enabled per channel. Publishing a policy does not automatically apply it to any channel until the channel opt-in is enabled.
+<Note>Recovery is opt-in per channel. Existing channels keep their current behavior until you enable this policy on that channel. Voice uses the voice adapter. Other channels use their native progress and response semantics.</Note>
+
+Recovery policies are versioned. Publishing a policy doesn't apply it to any channel until you turn on that channel's opt-in.
 
 | Setting | Description |
-|---------|-------------|
-| **Policy Status** | Specifies whether the recovery policy is in **Draft** or **Published** state. Only published policies are available for channel binding. |
-| **Default Locale** | Specifies the default locale used to render localized recovery messages when no language-specific translation is available. |
-| **Channel Opt-in** | Selects the channels that use this recovery policy. Supported channels include **Voice**, **SDK/WebSocket**, **Web Chat**, and **Messaging**. Only the selected channels apply this recovery policy. |
-| **Parent Turn Deadline (ms)** | Specifies the maximum time Runtime waits for a parent turn to complete before initiating recovery actions. When the configured deadline is reached, Runtime stops waiting indefinitely and begins the configured recovery flow. |
-| **Progress Acknowledgment Delay (ms)** | Specifies how long Runtime waits before sending a progress acknowledgment while an operation is still executing. This helps reduce perceived silence during recoverable delays. |
-| **Recovery Retries** | Specifies the maximum number of retry attempts Runtime performs for retryable operations before executing the configured fallback behavior. |
-| **Allow Progress Updates** | Enables Runtime to send periodic progress notifications while long-running operations are in progress, keeping users informed until the operation completes or recovery is initiated. |
-| **Enable Safe Request Hedging** | Allows Runtime to issue additional requests when appropriate to reduce latency or recover from uncertain provider behavior. Hedging is performed only when it is safe to avoid duplicate side effects. |
-| **Sequential Model Fallback** | Specifies the number of alternate model or provider candidates Runtime may attempt after a recoverable model failure before terminating the operation. |
-| **Model/Provider Candidates** | Specifies the ordered list of fallback model or provider candidates that Runtime evaluates during sequential model fallback. |
-| **Localized Recovery Message Catalog** | Defines the localized recovery messages used during recoverable delays and failures. Each entry includes a message key, locale, localized message text, version, and status. Runtime automatically selects the appropriate message based on the conversation locale. |
+| - | - |
+| **Policy Status** | Sets whether the policy is in **Draft** or **Published** state, shown alongside the policy version (for example, v1). Runtime reads only published policies. Drafts are stored for review and don't change live sessions. |
+| **Default Locale** | Sets the fallback locale for a published recovery message when the caller's locale isn't available. Default: `en-US`. |
+| **Channel Opt-in** | Turns recovery on for individual channels: **Voice**, **Web chat**, **SDK/WebSocket**, and **Messaging**. All channels are off by default, and only the channels you turn on apply this policy. |
+| **Parent turn deadline (ms)** | Sets the hard upper bound for the complete recoverable interaction. Default: 30000. It's separate from voice filler and TTS budgets. When the deadline is reached, Runtime stops waiting and begins the configured recovery flow. |
+| **Progress acknowledgement delay (ms)** | Sets how long Runtime waits before emitting a bounded, channel-appropriate progress update. Default: 1200. This helps reduce perceived silence during recoverable delays. |
+| **Recovery retries** | Sets the maximum retry attempts for policy-approved transient failures. Default: 1. Side effects and unknown outcomes are never blindly retried. |
+| **Allow progress updates** | Keeps the interaction active with localized progress while authoritative work is pending. On by default. |
+| **Enable safe request hedging** | Lets Runtime race duplicate requests to cut latency. Off by default. Runtime only races same-model, streaming, cancellable requests. Unknown or mutating tools fail closed, while platform-certified read-only tools use a plan-only race and execute at most one winner. |
+| **Sequential model fallback** | Turns on fallback to alternate model or provider candidates after a recoverable model failure, with a field for how many candidates Runtime may try (default: 1). Runtime selects fallback candidates only after capability, safety, tool-contract, and channel checks. |
+| **Model/provider candidates** | JSON array of ordered fallback model or provider candidates. Default: `[]`. Keep the logical model choice separate from provider selection, and mark hedge eligibility only for pure generation. |
+| **Localized recovery message catalog** | JSON array of localized, versioned message records that Runtime uses during recoverable delays and failures. Each record has a `key` (for example, `recovery.tool_waiting`), `channel`, `locale`, `text`, `allowedVariables`, `maxCharacters`, `status`, and `version`. Use only allowlisted variables. The catalog rejects internal error codes and executable markup. Runtime picks the message that matches the conversation locale. |
 
 ### While the caller waits
 
-This group configures what a caller experiences while the agent thinks or works: spoken filler phrases, background hold audio, or both together. The settings interact, so read the whole group before you change any one part.
+This group configures what a caller experiences while the agent thinks or works: spoken filler phrases, background hold-music audio, or both together. The settings interact, so read the whole group before you change any one part.
+
+<Note>
+  **How filler settings take effect.** Agent no-input messages and channel-specific Gemini settings take precedence over these project defaults. Otherwise, Runtime uses project filler pools and timing, then localized platform defaults. Native realtime fillers are available only for the `voice_realtime` tier. Genesys realtime supports pending-tool fillers but not the native coordinator filler.
+</Note>
 
 #### Filler settings
 
-Fillers are transient status messages the runtime emits while work is in progress. They exist because silence during a long turn reads as a failure, particularly on voice.
+Fillers are transient chat and voice status messages the runtime emits while work is in progress. They exist because silence during a long turn reads as a failure, particularly on voice.
 
 When the agent is processing a request, Runtime waits for the configured delay before playing a filler message. Depending on the configuration and channel capabilities, it can play a static filler, generate a contextual filler, or use provider-native realtime fillers until the final response is ready.
 
 | Field | Description |
-|---|---|
+| - | - |
 | **Fillers Enabled** | Master switch for the filler system. With it off, nothing else in this section emits anything. |
-| **Chat Fillers** | Enables filler messages for chat channels. |
-| **Voice Fillers** | Enables spoken filler messages for voice channels. Voice needs fillers more than chat does, because a chat user can see that something is in progress and a caller can't. |
-| **Chat Delay** | Time to wait before displaying a filler message in chat. Set it above the time a normal turn takes, so fillers mark genuinely slow turns rather than interrupting fast ones. |
-| **Voice Delay** | Time to wait before playing a filler message in voice channels. Callers tolerate silence for less time than chat users, so this typically sits below the chat delay. |
-| **Native realtime turn delay** | Delay before provider-native(Gemini) realtime fillers are used, when supported. |
-| **Cooldown** | Minimum time between two consecutive static filler messages. |
-| **Max Per Turn** | Caps fillers emitted during one turn. |
-| **Pending-tool status nudges** | Specifies the maximum number of native Gemini progress messages that can be emitted while waiting for a tool to complete during a single turn. The effective number is also limited by the Max per Turn setting. |
-| **Contextual filler deadline**| Maximum time allowed to generate a contextual (LLM-generated) filler before falling back to a static filler.|
-| **Static Fillers** | Use deterministic fallback phrases when a contextual filler is not available. Generated and status-tag fillers remain enabled. |
-| **Localized static filler pools (JSON)**| Defines language-specific static filler messages used for different locales. |
-| **Localized status-tag instruction (JSON)**| Configures localized instructions used to generate status-tag-based filler messages.|
+| **Chat Fillers** | Shows `status_update` messages in chat clients. |
+| **Voice Fillers** | Speaks status updates on voice channels. Voice needs fillers more than chat does, because a chat user can see that something is in progress and a caller can't. |
+| **Filler language default** | Sets the fallback language for filler speech when the session has no explicit language. Use a BCP 47 tag such as `en-US`. |
+| **Filler language override** | Forces all generated and static fillers to use this language, regardless of the session language. Use a BCP 47 tag such as `en-US`. |
+| **Chat Delay** | Sets the delay before static chat fillers are emitted. Default: 1200 ms. Set it above the time a normal turn takes, so fillers mark genuinely slow turns rather than interrupting fast ones. |
+| **Voice Delay** | Sets the delay before static voice fillers are emitted. Default: 500 ms. Callers tolerate silence for less time than chat users, so this typically sits below the chat delay. |
+| **Follow-up Gap** | Voice only. Sets the pause after a filler finishes playing before the next generated follow-up line (800-3000 ms). Default: 1200 ms. Follow-ups continue until the answer starts or the per-turn limit is reached. |
+| **Native realtime turn delay** | Sets the delay before the native Gemini realtime hold phrase. Default: 500 ms. It's independent from normal voice fillers. |
+| **Cooldown** | Sets the minimum interval between fillers across turns. Default: 3000 ms. Generated voice follow-ups within one turn are paced by the follow-up gap instead. |
+| **Max Per Turn** | Caps fillers emitted during one turn. Default: 5. |
+| **Pending-tool status nudges** | Sets the upper bound for native Gemini pending-tool progress messages per turn. Default: 3. Max Per Turn also limits the effective cap. |
+| **Contextual filler deadline** | Sets the maximum wait (ms) for a generated pending-tool filler before the runtime uses the fallback, when static fillers are enabled. Default: 500. |
+| **Static Fillers** | Uses a deterministic fallback phrase when no contextual filler is available. On voice, a static filler is only ever the opener, and follow-ups are always generated. Turning this off never plays a pre-written line in place of one that failed checks. |
+| **Localized static filler pools (JSON)** | Locale-keyed phrase arrays used by chat, voice-pipeline, and native realtime fillers. Default: `{"en": ["One moment."], "fr": ["Un instant."]}`. |
+| **Localized status-tag instruction (JSON)** | Configures localized instructions used to generate status-tag-based filler messages. |
 | **Status Tags** | Uses the status tags the response model emits as fillers, which lets the model say what it's actually doing instead of emitting a generic wait message. |
-| **Generated Fillers** | Enables LLM-generated contextual filler messages instead of using static filler text. Runtime uses a lightweight model to generate wait messages that are relevant to the current conversation. This provides more natural progress updates while adding a small amount of processing time during long-running operations. |
+| **Generated Fillers** | Enables LLM-generated contextual filler messages instead of static filler text. Runtime uses a lightweight model to generate wait messages that are relevant to the current conversation. This provides more natural progress updates while adding a small amount of processing time during long-running operations. |
 | **Include emitted filler in agent context** | Lets later same-turn voice reasoning account for a contextual filler the runtime already emitted. It doesn't add the filler to conversation history, so this changes what the agent knows within the turn rather than what the transcript records. |
 | **Filler Model** | Selects the model that generates contextual fillers. |
 | **Output Tokens** | Caps the response length for built-in contextual filler generation. Fillers should be short, and a low cap enforces that more reliably than the prompt does. |
@@ -333,6 +429,45 @@ This section sets what happens when a voice caller goes silent. Silence is ambig
 | **Relaxed Interval** | Sets the extended timeout interval used in dynamic mode. |
 | **Play Order** | Sets the order in which no-input messages play. |
 | **Play Style** | Sets how messages repeat across retries. Repeating the same prompt signals a system that isn't listening, so this choice affects how a stuck caller reads the failure. |
+
+### Caller backchannel
+
+This section sets the project default for caller backchannel acknowledgements. These are language-neutral sounds, such as "uh-huh", that the runtime treats as acknowledgements rather than interruptions, so the agent keeps speaking. Every agent that doesn't set its own backchannel inherits these defaults.
+
+| Field | Description |
+| - | - |
+| **Enabled** | Turns on backchannel handling for the project. |
+| **Phrases** | Holds the acknowledgement phrases. This is one set for all callers, regardless of language, and the runtime sends it to the voice gateway. Type a phrase and press Enter to add it. |
+
+<Note>Backchannel is only effective with at least one phrase. If you turn it on without adding any, the page shows the warning **Backchannel is on but has no phrases**.</Note>
+
+### On hold
+
+This section sets the project default for phrases a caller says to make the agent pause, such as asking it to wait a moment. Phrases are locale-aware. Every agent that doesn't set its own on-hold behavior inherits these defaults. On hold runs entirely in the runtime and needs no gateway change.
+
+| Field | Description |
+| - | - |
+| **Enabled** | Turns on on-hold detection for the project. |
+| **All locales (base)** | Holds phrases that apply in every language. Use it for phrases that work regardless of locale. |
+| **Add language** | Adds a language-specific phrase list. Select a language, then add the phrases callers use to ask for a pause in that language. |
+| **Grace (ms)** | Sets the grace period that applies to a hold. Default: 30000. |
+| **Max holds** | Sets the maximum number of holds allowed. Default: 2. |
+| **Suppress reply** | Controls whether the agent suppresses its reply when it detects an on-hold phrase. Off by default. |
+
+<Note>On hold is only effective with at least one phrase. If you turn it on without adding phrases in any language, the page shows the warning **On-hold is on but has no phrases in any language**.</Note>
+
+### Barge-in continuation window
+
+When a caller interrupts (barges in) and speech recognition splits their sentence into separate phrase-finals, this section makes the runtime hold each one briefly and merge any follow-on phrase into a single turn. Without it, the agent would treat each fragment as its own turn and may answer a half-finished sentence. This is a project-wide default, and an agent can override it.
+
+| Field | Description |
+| - | - |
+| **Enabled** | Merges segmented barge-in speech into one turn. On by default. Turn it off to commit each phrase immediately, which is the legacy behavior. |
+| **Continuation window (ms)** | Sets how long the runtime holds a barge-in final while waiting for a continuation before it commits. Range: 300-2000 ms. Default: 700. A longer window catches slower speakers but delays the agent's response. |
+| **Maximum hold (ms)** | Sets the absolute ceiling on how long one turn can be held, regardless of merges. Range: 500-8000 ms. Default: 2500. |
+| **Maximum merges** | Sets the most phrase-finals the runtime folds into one committed turn. Range: 1-20. Default: 4. |
+| **Maximum characters** | Sets the most characters of merged transcript before the runtime forces a commit. Range: 1-20000. Default: 2000. |
+
 
 ### Voice speech recognition
 
