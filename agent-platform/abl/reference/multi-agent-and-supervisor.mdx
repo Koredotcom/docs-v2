@@ -915,13 +915,15 @@ ESCALATE:
 
 Every other field (`connection`, `queue`, `skills`, `priority`, `post_agent`, `voice`, and all the [advanced routing keys](#advanced-routing-keys)) means exactly the same thing per entry as it does in the single-object form.
 
+<Note>A routing entry's `when` must be **deterministic** — it's evaluated in code against session data and the reserved `system.*` values (`system.channel`, `system.locale`, and similar), never deferred to the model. This is stricter than a trigger's `WHEN`, which may be prompt-only/semantic: a condition that's valid on a `triggers.WHEN` but isn't deterministic is a **compile-time error** on a routing entry (`ESCALATE_ROUTING_WHEN_PROMPT_ONLY`) — a live transfer destination can never depend on model judgment.</Note>
+
 **Evaluation is first-match-wins, in authored order.** The compiler enforces the entry list's shape:
 
 | Rule | Enforcement |
 | ---- | ----------- |
 | At most one unconditional (default) entry | More than one entry with no `when` (or `always`/`*`) is a compile error. |
 | A default entry, if present, must be last | A default entry followed by other entries is a compile error — those entries would be unreachable. |
-| No entry is required to match | A list with no default entry is valid; if none of the entries' conditions match at runtime, routing resolution simply has no match — this isn't a compile-time exhaustiveness check. |
+| No entry is required to match | A list with no default entry is valid; this isn't a compile-time exhaustiveness check. If none of the entries' conditions match at runtime, routing **fails closed**: no connector or voice transfer is attempted (the escalation's `HumanTask`/HITL fallback still stands). List-form routing never falls back to the project's `agentTransfer.defaultRouting` connection — that backstop applies only to the legacy single-object `routing:` form. To reach the project default from a list, author an explicit trailing default entry (omit `when`, or use `when: always`) with your own `connection`/`voice`. |
 
 <Note>An entry whose `WHEN` guards `system.channel == "voice"` without a `voice:` block, or guards a non-voice channel without a `connection`, gets an advisory (non-blocking) warning — worth checking, since a matched entry with neither is unlikely to route anywhere useful.</Note>
 
@@ -1164,8 +1166,11 @@ COMPLETE:
 | `SET`      | `Record<string,string>` | No       | --      | Session assignments applied when the completion fires (for example, clear the sticky flag that triggered it). |
 | `TERMINAL` | `boolean`               | No       | `true`  | When `false`, the response renders (including interactive widgets like a closing feedback collector) **without** ending the session — control returns to the agent for the next turn. |
 | `STORE`    | `string`                | No       | --      | Collection or path name to store the completion result for analytics.  |
+| `MODEL_CONTEXT` | `string`           | No       | --      | Text retained for the model instead of the delivered `RESPOND` in future model calls. See [MODEL_CONTEXT on a response](/agent-platform/abl-reference/flow#model_context-on-a-response). |
 
-<Warning> `COMPLETE`'s `WHEN` is **deterministic** — it must be a boolean expression over session state. Plain-English / intent-style text is rejected at compile time (`PLAIN_ENGLISH_COMPLETE_WHEN`). Use `NLU`/routing for intent matching, not `COMPLETE WHEN`. </Warning>
+<Warning> `COMPLETE`'s `WHEN` is **deterministic** — it must be a boolean expression over session state. Plain-English / intent-style text is rejected at compile time (`PLAIN_ENGLISH_COMPLETE_WHEN`). Use `NLU`/routing for intent matching, not `COMPLETE WHEN`. A fully-quoted `WHEN` (`WHEN: "status == \"done\""`) is unwrapped and evaluated the same as an unquoted one when it contains an operator — see [Quoting a condition](/agent-platform/abl-reference/expressions-and-functions#quoting-a-condition). </Warning>
+
+<Note>A `COMPLETE` condition that matches does **not** complete the agent if the agent's own `CONSTRAINTS` fail on the state it would complete with — the failing constraint's `ON_FAIL` runs instead, so a completion can never bypass a constraint that would otherwise block the same state.</Note>
 
 Example of a non-terminal completion that collects feedback and then keeps the session open:
 

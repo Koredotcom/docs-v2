@@ -3,7 +3,7 @@ title: Expressions and functions
 sidebarTitle: Expressions and functions
 ---
 
-This page documents ABL's expression language: operators, variable paths, `{{}}` template-string interpolation, the 36 built-in functions, and type coercion rules. Expressions are used in conditions (`WHEN`, `CHECK`, constraint rules), value assignments (`SET`), template interpolation (`{{}}`), and function calls. For rich content output formats (voice, cards, carousels, interactive actions, templates), see [Rich content](/agent-platform/abl-reference/rich-content).
+This page documents ABL's expression language: operators, variable paths, `{{}}` template-string interpolation, the 43 built-in functions, and type coercion rules. Expressions are used in conditions (`WHEN`, `CHECK`, constraint rules), value assignments (`SET`), template interpolation (`{{}}`), and function calls. For rich content output formats (voice, cards, carousels, interactive actions, templates), see [Rich content](/agent-platform/abl-reference/rich-content).
 
 ---
 
@@ -36,6 +36,8 @@ This page documents ABL's expression language: operators, variable paths, `{{}}`
 
 Write logical operators in uppercase (`AND`, `OR`, `NOT`). `!` is also accepted as a prefix negation.
 
+<Warning>`contains`, `matches`, `startsWith`, and `endsWith` are infix **operators** (`a contains b`), not callable functions — a condition that calls one as a bare function (`CONTAINS(ani_national, "1234567890")`) parses but has no matching overload, so it can never evaluate true; the compiler warns `CEL_CONDITION_UNRESOLVED_CALL`. Use the infix form, or the `abl.*` CEL method form (`x.contains("y")`).</Warning>
+
 ### Unary operators
 
 | Operator     | Syntax                | Description                                                    |
@@ -58,6 +60,12 @@ Use parentheses to override default precedence:
 ```yaml
 WHEN: (status == "active" OR status == "pending") AND amount > 0
 ```
+
+### Quoting a condition
+
+A `WHEN` value — in `HANDOFF`, `ON_RETURN WHEN`, `ESCALATE` triggers, `COMPLETE`, and hook `WHEN`/`RESPOND` branches — is unwrapped from its quotes and evaluated as a condition whenever it contains a condition operator: `==`, `!=`, `<`, `>`, `&&`, `||`, `!`, `IS [NOT] SET`, `contains`, `matches`, `startsWith`, `endsWith`, `in`, or a function call. So `WHEN: "dispute == true"` and `WHEN: dispute == true` are the same condition. A quoted value with none of these — a natural-language phrase such as `WHEN: "task done"` — stays a quoted literal string, which most deterministic evaluators treat as always-truthy.
+
+<Warning>Write a genuinely deterministic condition either unquoted or quoted-with-an-operator; reserve a bare quoted phrase for constructs that intentionally accept free text (a prompt-only/semantic condition). A deterministic routing or escalation entry's `when` must be an operator expression regardless of quoting — see [Deterministic-only routing](/agent-platform/abl-reference/multi-agent-and-supervisor#conditional-routing-entries).</Warning>
 
 ## Variable paths and dot notation
 
@@ -141,10 +149,35 @@ Math functions coerce string arguments to numbers automatically: `ADD("2", "3")`
 | `PAD_START` | `PAD_START(s, length, char?) -> string` | Left-pad to specified length.      | `PAD_START("42", 6, "0")` returns `"000042"`   |
 | `PAD_END`   | `PAD_END(s, length, char?) -> string`   | Right-pad to specified length.     | `PAD_END("42", 6, "0")` returns `"420000"`     |
 | `REPEAT`    | `REPEAT(s, count) -> string`            | Repeat string N times.             | `REPEAT("*", 4)` returns `"****"`              |
+| `REGEX_REPLACE` | `REGEX_REPLACE(text, pattern, replacement) -> string` | RE2-backed replace-all; `$1`-`$9` in `replacement` insert capture groups. Matching is single-pass, so `^`/`\b` anchor against the *original* string, not partial replacement output. Returns `text` unchanged on an invalid pattern — never throws. | `REGEX_REPLACE("00123", "^0", "")` returns `"0123"` |
+| `REGEX_EXTRACT` | `REGEX_EXTRACT(text, pattern, group?) -> string \| null` | First match, or capture group `group` when given. Returns `null` when nothing matches or the pattern is invalid — never throws. | `REGEX_EXTRACT("order-4821", "\\d+")` returns `"4821"` |
 
 The string functions gracefully handle `null` and `undefined` and return an empty string: `UPPER(null)` returns `""`.
 
 To prevent memory issues, the limit on string output is 100,000 characters.
+
+### Identity-matching functions
+
+These compare what a caller actually said against a stored value — they are deterministic similarity scoring, not a semantic/model judgment, built for voice identity verification (`FORMAT`/`DERIVED` session fields; see [Write authority, format and derived values](/agent-platform/abl-reference/memory-and-constraints#write-authority-format-and-derived-values)).
+
+| Function | Signature | Description |
+| -------- | --------- | ------------ |
+| `MATCH_SCORE` | `MATCH_SCORE(said, stored, kind?) -> number` | Similarity 0-100 between `said` and `stored`. Returns `-1` when there's nothing to judge — a missing/empty value, a PII vault token, or an input over 1,024 characters. `-1` is below every threshold, so `MATCH_SCORE(...) >= 70` fails closed. |
+| `MATCHES` | `MATCHES(said, stored, kind?) -> boolean` | Pass/fail form of `MATCH_SCORE` on the platform's own match bands (below). **Not a regex test** — the infix `a MATCHES "pattern"` operator (see [Comparison operators](#comparison-operators)) is the regex form. |
+| `MATCH_RESULT` | `MATCH_RESULT(said, stored, kind?) -> string` | `"match"`, `"retry"`, `"mismatch"`, or `"missing"`. |
+
+`kind` is one of `name`, `person_name`, `email`, `address`, `phone`, `digits`, `text` (default `text`); it controls how each side is read (spoken digits, spelled names, "at the rate" for `@`, and so on) before scoring. Match bands:
+
+| Kind | `match` | `retry` | `mismatch` |
+| ---- | ------- | ------- | ---------- |
+| `phone`, `digits` | every digit matches (100) | one digit slip or two swapped (50) | anything else |
+| all other kinds | score ≥ 70 | score 10-69 | score < 10 |
+
+A `-1` score (nothing to judge) always reports `"missing"`.
+
+<Note>A two-argument call (`MATCH_SCORE(said, stored)`, no explicit `kind`) infers `kind` from each operand's `FORMAT` declaration, but **only inside a session variable's `DERIVED` expression**. Everywhere else — `CONSTRAINTS`, `WHEN`, hooks, and other expressions — a two-argument call is scored as `kind: "text"` unless you pass the kind explicitly: `MATCHES(a, b, "email")`.</Note>
+
+<Warning>The **function** `MATCHES(said, stored[, kind])` and the **infix operator** `a MATCHES "pattern"` are unrelated — do not mix up their second argument. Writing `MATCHES(supplied, "^gold$")` (the function form with a regex-shaped literal) is almost certainly meant to be the infix form `supplied MATCHES "^gold$"`, and the compiler warns `MATCHES_FUNCTION_REGEX_LITERAL`. Conversely, writing `tier MATCHES "gold"` (the infix form with a plain literal) is true whenever `"gold"` appears anywhere in `tier` as a substring — not a fuzzy spoken-answer comparison — and the compiler warns `MATCHES_INFIX_LITERAL_AMBIGUOUS` since this is easy to mean the other way.</Warning>
 
 ### Formatting functions
 
@@ -224,6 +257,8 @@ An unrecognized timezone falls back to UTC.
 | Function    | Signature                      | Description                                                                               | Example                                                |
 | ----------- | --------------------------------- | ----------------------------------------------------------------------------------------------- | ---------------------------------------------------------- |
 | `COALESCE`  | `COALESCE(a, b, ...) -> any`   | Return the first non-null, non-undefined value. Returns `null` if all arguments are null. | `COALESCE(null, undefined, "hello")` returns `"hello"` |
+| `FIRST_NON_EMPTY` | `FIRST_NON_EMPTY(a, b, ...) -> any` | Return the first value that is not null, undefined, `""`, or blank. Unlike `COALESCE`, it skips an empty/blank string. | `FIRST_NON_EMPTY("", null, "hello")` returns `"hello"` |
+| `IF`        | `IF(cond, a, b) -> any`        | Eager conditional — both `a` and `b` are evaluated regardless of `cond`. Use the ternary `cond ? a : b` for lazy evaluation. | `IF(amount > 100, "high", "low")` |
 | `NOW`       | `NOW() -> string`              | Return the current timestamp as an ISO 8601 string.                                       | `NOW()` returns `"2024-03-15T10:30:00.000Z"`           |
 | `UNIQUE_ID` | `UNIQUE_ID(length?) -> string` | Generate a random alphanumeric string. Default length: 6.                                 | `UNIQUE_ID(12)` returns `"aB3kM9pQ2xLw"`               |
 
@@ -297,6 +332,8 @@ SET:
   greeting = COALESCE(user.name, "valued customer")
 ```
 
+<Note>`recent_input` is a built-in available in `SET` contexts: the caller's last 3 utterances, joined. `input_transcript` is a built-in, read-only `SET` value on realtime voice channels — the provider's transcript of the current caller turn (empty when there is none). An authored session variable with either name takes precedence over the built-in.</Note>
+
 ### In template interpolation
 
 
@@ -332,6 +369,7 @@ The evaluator applies these coercion rules during expression evaluation:
 | Numeric (`>`, `<`, etc.)   | Strings parsed to numbers. Booleans become 0/1. Arrays become length. Undefined becomes 0.                            |
 | Truthiness (bare variable) | `false`, `0`, `""`, `"false"`, `null`, `undefined`, empty arrays, empty objects are falsy. Everything else is truthy. |
 | IS SET / IS NOT SET        | Checks for null/undefined only. Empty string IS SET.                                                                  |
+| Arithmetic (`+ - * / %`)   | Works between a decimal session number and an integer literal, in either order, producing a decimal result (for example `turn_count == followup_offer_turn + 1`). Division or modulus by zero is an error — the condition does not hold — never `Infinity`. |
 
 ---
 
