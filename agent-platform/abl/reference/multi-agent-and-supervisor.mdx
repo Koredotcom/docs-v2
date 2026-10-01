@@ -915,13 +915,15 @@ ESCALATE:
 
 Every other field (`connection`, `queue`, `skills`, `priority`, `post_agent`, `voice`, and all the [advanced routing keys](#advanced-routing-keys)) means exactly the same thing per entry as it does in the single-object form.
 
+<Note>A routing entry's `when` must be **deterministic** — it's evaluated in code against session data and the reserved `system.*` values (`system.channel`, `system.locale`, and similar), never deferred to the model. This is stricter than a trigger's `WHEN`, which may be prompt-only/semantic: a condition that's valid on a `triggers.WHEN` but isn't deterministic is a **compile-time error** on a routing entry (`ESCALATE_ROUTING_WHEN_PROMPT_ONLY`) — a live transfer destination can never depend on model judgment.</Note>
+
 **Evaluation is first-match-wins, in authored order.** The compiler enforces the entry list's shape:
 
 | Rule | Enforcement |
 | ---- | ----------- |
 | At most one unconditional (default) entry | More than one entry with no `when` (or `always`/`*`) is a compile error. |
 | A default entry, if present, must be last | A default entry followed by other entries is a compile error — those entries would be unreachable. |
-| No entry is required to match | A list with no default entry is valid; if none of the entries' conditions match at runtime, routing resolution simply has no match — this isn't a compile-time exhaustiveness check. |
+| No entry is required to match | A list with no default entry is valid; this isn't a compile-time exhaustiveness check. If none of the entries' conditions match at runtime, routing **fails closed**: no connector or voice transfer is attempted (the escalation's `HumanTask`/HITL fallback still stands). List-form routing never falls back to the project's `agentTransfer.defaultRouting` connection — that backstop applies only to the legacy single-object `routing:` form. To reach the project default from a list, author an explicit trailing default entry (omit `when`, or use `when: always`) with your own `connection`/`voice`. |
 
 <Note>An entry whose `WHEN` guards `system.channel == "voice"` without a `voice:` block, or guards a non-voice channel without a `connection`, gets an advisory (non-blocking) warning — worth checking, since a matched entry with neither is unlikely to route anywhere useful.</Note>
 
