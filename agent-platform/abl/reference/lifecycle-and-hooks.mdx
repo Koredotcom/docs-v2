@@ -76,6 +76,25 @@ ON_START:
 
 The tool call executes first, and its result is available in the session context when the RESPOND message is rendered.
 
+### Guarding a CALL with WHEN
+
+An `ON_START` or hook `CALL` can carry an indented `WHEN:` guard so it only runs when the condition holds:
+
+```yaml
+ON_START:
+  CALL: find_member_by_ani
+    WITH:
+      callerAni: ani_national
+    WHEN: ani_national != ""
+
+HOOKS:
+  before_agent:
+    CALL: load_profile
+      WHEN: member_id != ""
+```
+
+<Warning>The `WHEN:` must be indented **under** `CALL:`, not written as its sibling at the same indent. A sibling `WHEN:` is not read — the call runs unconditionally, and the parser warns `W496`.</Warning>
+
 ### Conditional greeting
 
 
@@ -171,6 +190,26 @@ ON_START:
 ```
 
 <Note>A dynamic value is resolved and re-validated at **runtime**: if it doesn't resolve to a canonical BCP-47 tag, or resolves to a language the voice channel isn't configured to support, the override is not applied and the session keeps its current language.</Note>
+
+### WHEN / RESPOND branches
+
+A hook can respond conditionally: a `WHEN: <condition>` with an indented `RESPOND: "<text>"` is a **respond branch**. Branches are checked in declaration order, after the hook's own `CALL` and `SET` run, and the first branch whose condition holds wins:
+
+```yaml
+HOOKS:
+  before_turn:
+    WHEN: email_verified && !zip_supplied
+      RESPOND: "Thanks. What is the ZIP code on the account?"
+    WHEN: account_locked == true
+      RESPOND: "This account is locked. I'll connect you with support."
+```
+
+- In a **reasoning agent's `before_turn` hook**, a matched branch's text becomes the turn's reply and the model is not called for that turn. Input guardrails and escalation triggers still run first and can still intervene.
+- In **other hooks** (`before_agent`, `after_agent`, `after_turn`), a matched branch's text is sent as a message at that point in the lifecycle.
+- A `WHEN` that can't be evaluated does not hold — evaluation falls through to the next branch (or to an unconditional `RESPOND`, if present).
+- A branch can sit next to an unconditional `RESPOND:` in the same hook; the branches are the conditional alternative, evaluated independently.
+
+<Warning>A hook's `WHEN` must be valid CEL. An invalid `WHEN` (including old plain-English text left over from before this feature) is demoted to an unconditional `RESPOND` for backward compatibility, and the compiler warns `HOOK_WHEN_BRANCH_INVALID_CEL`. Fix the condition, or remove `WHEN:` if the response really is meant to run unconditionally.</Warning>
 
 ### Example: audit logging hook
 
