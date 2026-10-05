@@ -214,6 +214,21 @@ FLOW:
     THEN: confirm
 ```
 
+#### MODEL_CONTEXT on a response
+
+An optional `MODEL_CONTEXT` sits beside a FLOW step's `RESPOND` (or a `COMPLETE` condition's `RESPOND`) and replaces that response **only in future model context** — it never changes what's actually sent to the user, the stored transcript, or session values:
+
+```yaml
+FLOW:
+  show_products:
+    REASONING: false
+    RESPOND: "{{products_widget}}"
+    MODEL_CONTEXT: "Displayed products {{product_ids}}."
+    THEN: next_step
+```
+
+This is useful when the delivered response carries a large presentation payload (a widget, a card, a big table) that would otherwise bloat every later model call for no benefit — `MODEL_CONTEXT` lets the model keep a short textual summary of what the customer saw instead. `MODEL_CONTEXT` is a text scalar; a non-text value fails validation (`MODEL_CONTEXT_INVALID`). An explicitly empty value omits the response from later model requests entirely. Omit the property to keep the historical full-response behavior. See also [MODEL_CONTEXT on a tool result](/agent-platform/abl-reference/tools#model_context-on-a-tool-result) for the equivalent policy on a tool's own result.
+
 ### PRESENT
 
 
@@ -420,6 +435,33 @@ CALL: ivr_digit_input
 
 Nesting is preserved by indentation. Scalar leaves keep their raw form and are coerced at runtime (`"30"` → `30`, `"[15, 16]"` → `[15, 16]`).
 
+#### Localized WITH arguments
+
+A `WITH` value can take its text from the project's locale files (`locales/<locale>/<agent>.json` or `locales/<locale>/_shared.json`) with `"{{locale.KEY}}"`, or a bare `locale.KEY`. The text is chosen for the caller's current interaction locale (with the same fallback chain as `MESSAGE_KEY` — for example `hi-IN`, then `hi`), and `{{…}}` placeholders inside the locale text are rendered too:
+
+```yaml
+FLOW:
+  collect_card_number:
+    REASONING: false
+    CALL: ivr_digit_input
+      WITH:
+        prompt: "{{locale.CARD_PROMPT}}"
+        maxDigits: 19
+        endingKeyPress: "#"
+        noInputConfig:
+          timeout: 30
+          maxRetries: 2
+          message: "{{locale.CARD_NO_INPUT}}"
+      AS: cardNumberResult
+    ON_RESULT:
+      - IF: cardNumberResult.success == false
+        THEN: payment_input_failed
+      - ELSE:
+          THEN: validate_card_number
+```
+
+If a referenced key isn't defined for the caller's locale (and no less-specific locale in the chain provides it), the tool is **not** called — the `CALL` result is `success: false` with `error.code: "LOCALE_KEY_MISSING"`, so the step's failure branch runs and raw `{{locale.KEY}}` text never reaches the tool or the caller. Only authored text is treated as a locale reference; a session value that happens to contain `{{locale.…}}` passes through as plain data. Supported forms are `"{{locale.KEY}}"` (optionally with filters, like `"{{locale.KEY | upper}}"`, and mixed with other text) and a bare `locale.KEY`; an expression such as `locale["KEY"]` or `locale.KEY + "!"` is not supported and the `CALL` is not run.
+
 ### SET
 
 
@@ -443,6 +485,22 @@ Each assignment uses `variable = expression` syntax. The expression is resolved 
 - Function calls: `FORMAT_CURRENCY(amount, "USD")`, `COALESCE(value, "default")`, `ADD(a, b)`, `SUB(a, b)`, `ROUND(n, decimals)`
 - Unique ID generation: `UNIQUE_ID(12)`
 - Current timestamp: `NOW()`
+
+An unquoted JSON array or object literal is stored as a structured value. A JSON string's string-typed leaves may contain `{{variable}}` templates — the collection is parsed first, then its string values are rendered, so substituted data is never reinterpreted as JSON:
+
+```yaml
+SET:
+  filters = [{"field":"customer","operator":"in","value":["Public", "{{employer_name}}"]}]
+```
+
+This stores an array of objects correctly even when `employer_name` contains quotes or backslashes. Prefer a direct variable reference when constructing a computed collection instead of interpolating one into JSON-shaped text:
+
+```yaml
+SET:
+  filters = [{"field":"customer","operator":"in","value":["Public", employer_name]}]
+```
+
+Surround the whole value with quotes when JSON-shaped *text* is intentional — `SET: payload_text = '[{"customer":"{{employer_name}}"}]'` stores a string, not a structured value. A session `TYPE` declaration alone doesn't validate every `SET` write; validate structured arguments at the tool boundary (pass the variable to a typed parameter, such as `filters: object[]`, through `WITH`).
 
 ### CHECK
 
@@ -553,6 +611,68 @@ FLOW:
 | `REQUIRED`   | `boolean` | Whether the upload is mandatory.                                   |
 | `TIMEOUT`    | `number`  | Seconds to wait for the upload.                                    |
 | `ON_TIMEOUT` | `string`  | Step to transition to if the upload times out.                     |
+
+### SECURE_INPUT
+
+The `SECURE_INPUT:` action pauses the step to collect one or more **sensitive** values — a card number, CVV, or similar — via DTMF and/or speech, and delivers them **directly to one tool**, without the raw values ever passing through the LLM, transcript, session state, logs, or traces. It's the PCI-safe alternative to `GATHER` for data that must never reach the model.
+
+<Warning>`SECURE_INPUT` is currently authored only in the legacy `.agent.abl` (line-based) format. The `.agent.yaml` parser does not yet accept this action.</Warning>
+
+```yaml
+FLOW:
+  collect_card:
+    REASONING: false
+    SECURE_INPUT:
+      MODE: [dtmf]                          # dtmf | speech, one or both
+      FIELDS:
+        - card_number:
+            PROMPT: { en: "Please enter your 16-digit card number." }
+            COLLECT: { digits: 13..19, finishOnKey: "#" }
+            VALIDATE: [ luhn ]
+        - cvv:
+            PROMPT: { en: "And the 3-digit security code." }
+            COLLECT: { digits: 3..4 }
+      MAX_ATTEMPTS: 3
+      CANCEL: { dtmf_key: "*" }
+      CALL charge_card WITH: { pan: "{{secure.card_number}}", cvv: "{{secure.cvv}}" }
+      ON_SUCCESS: confirm
+      ON_TIMEOUT: retry_by_agent
+      ON_CANCEL: retry_by_agent
+      ON_FAIL: human_agent
+    THEN: confirm
+```
+
+| Property | Type | Description |
+| -------- | ---- | ----------- |
+| `MODE` | `("dtmf" \| "speech")[]` | Which collection channel(s) are accepted. Required; at least one. |
+| `FIELDS` | list | One or more fields to collect, in order. Each is a `- <name>:` entry with `PROMPT`, `COLLECT`, and optional `VALIDATE`. |
+| `MAX_ATTEMPTS` | `number` | Failed collection attempts allowed before `ON_FAIL`. |
+| `CANCEL` | `object` | Cancellation trigger: `dtmf_key` and/or `keywords`. |
+| `CALL <tool> WITH: {...}` | — | The **deliver** spec — the single tool invoked with the collected values. Only the inline-object `WITH:` form is supported. Reference a collected field as a whole-value placeholder `{{secure.<name>}}`. |
+| `ON_SUCCESS` | `string` | Step to transition to after successful collection and delivery. |
+| `ON_TIMEOUT` | `string` | Step to transition to if collection times out. |
+| `ON_CANCEL` | `string` | Step to transition to if the caller cancels. |
+| `ON_FAIL` | `string` | Step to transition to if delivery or validation ultimately fails. |
+
+#### Field properties
+
+| Property | Type | Description |
+| -------- | ---- | ----------- |
+| `PROMPT` | `{ <locale>: string }` or `{ template: string }` | Locale-keyed prompt text, or a reference to a named template. At least one non-empty entry is required. |
+| `COLLECT` | `object` | `digits: N..M` (min/max digit count), `finishOnKey`, `interDigitTimeoutMs`, `asrTimeoutMs` (spoken-path silence window). |
+| `VALIDATE` | list | Validation rules: a bare rule name (`luhn`), an inline object (`{ length: 4..4 }`, `{ date_mmYY: "not_past" }`), or a delegated `CALL <tool> WITH: {...}` rule. |
+
+References inside `deliver`'s `WITH:` block must be a **whole-value** placeholder — `pan: "{{secure.card_number}}"` is valid; embedding it in a larger string (`pan: "card:{{secure.card_number}}"`) or referencing an undeclared field is a compile error.
+
+<Warning>Every collected value lives only in a local secure buffer for the duration of the gate and is **zeroized on every exit path** (success, timeout, cancel, or failure) — it is never written to session state, so it cannot be referenced by `{{ }}` outside the `deliver` block, and it never appears in a trace, span, or log.</Warning>
+
+| Diagnostic | Fires when |
+| ---------- | ---------- |
+| `SECURE_INPUT_INVALID_MODE` | `MODE` is missing, empty, or contains a value other than `dtmf`/`speech`. |
+| `SECURE_INPUT_MISSING_DELIVER_TOOL` | The `CALL ... WITH:` deliver spec has no tool name. |
+| `SECURE_INPUT_MISSING_PROMPT` | No `FIELDS` are declared, or a field's `PROMPT` has neither a locale entry nor a `template` reference. |
+| `SECURE_UNKNOWN_FIELD` | A `deliver` `WITH:` value references `{{secure.<name>}}` for a field that isn't declared in `FIELDS`. |
+| `SECURE_EMBEDDED_PLACEHOLDER` | A `deliver` `WITH:` value embeds `{{secure.*}}` inside a larger string instead of using it as the whole value. |
 
 ### MESSAGE_KEY and BEHAVIOR
 
@@ -1050,7 +1170,7 @@ FLOW:
 
 
 The runtime recognizes these format keys. In addition to the messaging formats, several structured
-template types are available (see [Rich Content & Expressions](/agent-platform/abl-reference/rich-content-and-expressions) for their schemas):
+template types are available (see [Rich content](/agent-platform/abl-reference/rich-content) for their schemas):
 
 | Format          | Description                       |
 | --------------- | --------------------------------- |
@@ -1100,6 +1220,39 @@ FLOW:
 | `PLAIN_TEXT`   | `string` | Voice-optimized plaintext (fallback for all engines) |
 | `BARGE_IN`     | `"allow"` \| `"disallow"` | Whether the caller may interrupt (barge in on) this spoken output. |
 | `STREAMING`    | `boolean` | TTS delivery mode for this spoken output. Omitted defaults to `true` (streaming). |
+| `END_OF_SPEECH_TURN_TYPE` | `string` | Expected shape of the caller's next answer, used to pick an end-of-speech (pause) timeout. See [Per-turn endpointing](#per-turn-endpointing). |
+| `END_OF_SPEECH_TIMEOUT_MS` | `number` | Explicit end-of-speech timeout in milliseconds, overriding the preset. |
+
+#### Per-turn endpointing
+
+`END_OF_SPEECH_TURN_TYPE` is a small, deliberately-closed vocabulary describing what kind of answer the caller is expected to give next — the runtime resolves it to a concrete end-of-speech (silence/pause) timeout for the active speech recognizer, so authors don't have to guess a millisecond value per turn:
+
+| Value | Use for |
+| ----- | ------- |
+| `simple_confirmation` | A yes/no or short acknowledgement. |
+| `structured_value` | A structured value like an account number or date. |
+| `open_ended_question` | An open-ended question expecting a longer, free-form answer. |
+| `complex_explanation` | A caller explanation that may take a while to finish. |
+| `anything_else` | Anything not covered above. |
+
+It can be set at any VOICE scope — agent-wide under `EXECUTION.voice`, on a behavior profile, on a flow step, or per `RESPOND` — with the narrowest scope winning, same as `BARGE_IN`/`STREAMING`:
+
+```yaml
+FLOW:
+  collect_value:
+    REASONING: false
+    VOICE:
+      END_OF_SPEECH_TURN_TYPE: structured_value
+      END_OF_SPEECH_TIMEOUT_MS: 900
+    RESPOND: "Please provide the value."
+      VOICE:
+        END_OF_SPEECH_TURN_TYPE: open_ended_question   # per-RESPOND override
+        END_OF_SPEECH_TIMEOUT_MS: 1400
+```
+
+`END_OF_SPEECH_TIMEOUT_MS` overrides the preset's timeout with an explicit millisecond value when set alongside (or instead of) `END_OF_SPEECH_TURN_TYPE`.
+
+<Note>Per-turn endpointing applies to the platform's own speech-recognition pipeline. It does not affect TTS streaming, and is ignored on native realtime/speech-to-speech voice models where the provider owns turn detection. Omit it to fall back to the agent's conversation-level pause configuration.</Note>
 
 #### Scoped barge-in
 
@@ -1134,6 +1287,44 @@ FLOW:
 ```
 
 Omitting `streaming` defaults to `true` (streaming) at every scope.
+
+#### Step-level no-input (caller silence)
+
+A FLOW step can carry its own caller-silence policy in its own `VOICE:` block, as `ON_NO_INPUT`. It takes the same keys as `CONVERSATION.listening.on_no_input` (agent/project-wide) and applies on KoreVG pipeline voice while that step is the one waiting on the caller:
+
+```yaml
+CONVERSATION:
+  listening:
+    on_no_input:
+      enabled: true
+      mode: static
+      timeout_ms: 5000
+      max_retries: 3
+      messages:
+        - text: "Are you still there?"
+        - text: "Hello?"
+
+FLOW:
+  ask_account:
+    REASONING: false
+    RESPOND: "What's your account number?"
+    GATHER:
+      - account_number: required
+    VOICE:
+      ON_NO_INPUT:
+        timeout_ms: 10000
+        messages:
+          - text: "Could you tell me your account number, {{memo_name}}?"
+    THEN: complete
+```
+
+- **Owner.** When the silence timer starts, the step currently waiting owns the window. The block applies only to that step; after `COMPLETE`/`ESCALATE`, or on a step with no block, the agent/project policy applies as usual.
+- **Merging.** Fields merge one at a time over the project and agent policy — a step can override just `timeout_ms` and inherit everything else. `max_retries`, `relaxed_interval_ms`, `on_exhausted`, and `exhausted_message` all follow the same rule, and `enabled: true` on a step turns silence handling on for that step even when the agent has it off.
+- **Messages.** Step messages don't *replace* the agent-level list — each silence plays agent message N followed by step message N as one utterance ("Are you still there? Could you tell me your account number, Sam?"). Once the step's own list is used up, the agent message plays alone (or the platform default, if the agent has none), so a step block never ends the call sooner than the agent alone would.
+- **Retry count.** Restarts when the caller speaks, and when a different step (or the same step entered again) takes ownership of the window.
+- **Variables.** `{{var}}` placeholders render in agent messages, step messages, and `exhausted_message`. A step message with a missing variable is skipped; an agent or exhausted message with a missing variable falls back to the platform default text.
+
+<Warning>`ON_NO_INPUT` is only legal directly in a FLOW step's own `VOICE:` block. Placed under a GATHER field, `RESPOND`, a branch, a handler, or a response format, it's a compile error (`VOICE_NO_INPUT_ILLEGAL_PLACEMENT`). The YAML format uses a step-level `on_no_input:` key.</Warning>
 
 ---
 

@@ -27,7 +27,7 @@ GUARDRAILS:
 
   pii_output_prevention:
     kind: output
-    check: not_contains_ssn(response)
+    check: not_contains_ssn(output)
     action: redact
     message: "Sensitive information has been redacted."
     priority: 0
@@ -97,7 +97,7 @@ CEL (Common Expression Language) checks are fast, deterministic rules evaluated 
 GUARDRAILS:
   length_limit:
     kind: output
-    check: length(response) < 10000
+    check: length(output) < 10000
     action: warn
     message: "Response exceeds recommended length."
 
@@ -107,6 +107,25 @@ GUARDRAILS:
     action: redact
     message: "SSN detected and redacted."
 ```
+
+#### Content, session-state, and tool-result variables
+
+Every `check` is evaluated with a content variable already bound to the kind's own name — `input`, `output`, `tool_input`, `tool_output`, or `handoff` — and **`text` is always bound too, to that same checked content, regardless of `kind`**. Prefer `text` for a check you intend to reuse across kinds.
+
+`content` is an alias of `text`, but it (along with two more builtins, `session_state` — a masked view of session values — and `tool_results` — this turn's bounded tool results) is bound only when the agent sets `EXECUTION: guardrail_builtins: true`:
+
+```yaml
+EXECUTION:
+  guardrail_builtins: true
+
+GUARDRAILS:
+  no_leak:
+    kind: output
+    check: not_contains_pii(content)
+    action: block
+```
+
+<Warning>Without `guardrail_builtins: true`, a check that reads `content`, `session_state`, or `tool_results` is unbound: it errors at evaluation time and the content passes through unchecked (fails open). The compiler warns `GUARDRAIL_BUILTIN_NOT_BOUND` for this — write `text` instead, or opt in. And if the agent separately declares a session variable literally named `content`, turning the opt-in on makes `content` resolve to the checked text instead of that session variable — the compiler warns `GUARDRAIL_CONTENT_SHADOWS_SESSION_VAR`; rename the session variable, or use `text` for the checked text.</Warning>
 
 ### Tier 2: Model-based checks
 
@@ -296,5 +315,5 @@ GUARDRAILS:
 {{related}}
 
 - [Memory & Constraints](/agent-platform/abl-reference/memory-and-constraints#constraints) -- business rule enforcement (distinct from content safety)
-- [Expressions & functions](/agent-platform/abl-reference/rich-content-and-expressions#expressions-and-functions) -- CEL expression syntax for `check` properties
+- [Expressions & functions](/agent-platform/abl-reference/expressions-and-functions) -- CEL expression syntax for `check` properties
 - [Multi-Agent & Supervisor](/agent-platform/abl-reference/multi-agent-and-supervisor) -- ESCALATE action for human review

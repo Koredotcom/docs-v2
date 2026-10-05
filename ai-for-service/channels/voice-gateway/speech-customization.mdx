@@ -74,7 +74,7 @@ TTS services also use a selected voice (for example, female or male) to respond.
     `sttProvider` → `google`, `microsoft`, `sarvam`.
 
 * Use TTS for synthesizer:
-    `ttsProvider` → `google`, `microsoft`, `aws`, `sarvam`.
+    `ttsProvider` → `google`, `microsoft`, `aws`, `sarvam`, `openai`.
 
 <Note>Apply the following parameters only when STT is set as Recognizer. Otherwise, the system uses default bot-level or Voice Gateway settings. These properties are applied at the session level.</Note>
 
@@ -255,11 +255,9 @@ Examples:
 
 Continuous ASR (Automatic Speech Recognition) lets the speech-to-text engine to handle user inputs like phone numbers or customer IDs that may include pauses between utterances. This improves recognition accuracy for digit or character strings.
 
-<Note>This feature is only available for Microsoft.</Note>
+<Note>This feature is only available for Microsoft Azure.</Note>
 
-Microsoft Azure offers a property called AzureSegmentationSilenceTimeout that performs the same function as Continuous ASR. Since Azure's ASR engine handles silence detection directly (rather than the Voice Gateway), it achieves higher accuracy when merging utterances.
-
-- AzureSegmentationSilenceTimeout is more accurate than Continuous ASR. [Learn more](https://learn.microsoft.com/en-us/azure/ai-services/speech-service/how-to-recognize-speech?pivots=programming-language-csharp#change-how-silence-is-handled).
+Microsoft Azure offers a property called `AzureSegmentationSilenceTimeout` that performs the same function as Continuous ASR. Since Azure's ASR engine handles silence detection directly (rather than the Voice Gateway), it achieves higher accuracy when merging utterances. [Learn more](https://learn.microsoft.com/en-us/azure/ai-services/speech-service/how-to-recognize-speech?pivots=programming-language-csharp#change-how-silence-is-handled).
 
 **Application Scope**:
 
@@ -643,6 +641,73 @@ Amazon Polly has four voice engines that convert input text into lifelike speech
 
 `ttsEnhancedVoice = “neural”`
 
+### OpenAI STT
+
+OpenAI STT provides speech-to-text transcription through OpenAI's audio models. Configure it using call control parameters.
+
+OpenAI STT isn't available as a selectable option in the UI. To configure it, contact the [Voice Gateway team](https://support.kore.ai). The team creates a label associated with your account, which you then use as the `ttsLabel` value in the call control parameters.
+
+| Model                   | Notes                                                                                          |
+| :---------------------- | :--------------------------------------------------------------------------------------------- |
+| `gpt-live-transcribe`   | Recommended. Supports keywords, language lists, delay control, and native turn detection.      |
+| `gpt-4o-transcribe`     | Supports turn detection, prompt, and single language.                                          |
+| `gpt-4o-mini-transcribe`| Supports turn detection, prompt, and single language.                                         |
+| `gpt-transcribe`        | Supports turn detection, prompt, keywords, language lists, and single language.                |
+| `gpt-realtime-whisper`  | Supports delay and single language only.  |
+| `whisper-1`             | Supports turn detection, prompt, and single language.                                          |
+
+Parameter Support by Model
+
+Send only parameters supported by the selected model. Sending an unsupported parameter causes the session to fail.
+
+| Parameter              | `whisper-1` | `gpt-4o-transcribe` | `gpt-transcribe` | `gpt-live-transcribe` | `gpt-realtime-whisper` |
+| :--------------------- | :---------- | :------------------ | :--------------- | :-------------------- | :--------------------- |
+| `openaiTurnDetection`  | ✓           | ✓                   | ✓                | —                     | —                      |
+| `openaiPrompt`         | ✓           | ✓                   | ✓                | ✓                     | —                      |
+| `openaiKeywords`       | —           | —                   | ✓                | ✓                     | —                      |
+| `openaiLanguages`      | —           | —                   | ✓                | ✓                     | —                      |
+| `openaiLanguage`       | ✓           | ✓                   | ✓                | ✓                     | ✓                      |
+| `openaiDelay`          | —           | —                   | —                | ✓                     | ✓                      |
+
+| Parameter                       | Range                                                          | Default | Description                                                                                                                                                                                         |
+| :------------------------------ | :------------------------------------------------------------- | :------ | :-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `openaiModel`                   | See supported models                                           | —       | Selects the OpenAI speech recognition model.                                                                                                                                                        |
+| `openaiLanguage`                | Language code (for example, `en`, `hi`, `fr`).                  | —       | Specifies the single language the caller is expected to speak.                                                                                                                                      |
+| `openaiLanguages`               | Array of language codes (for example, `["en", "ar"]`).          | —       | Lists the languages that may be spoken during the call. Useful for multilingual or code-switching scenarios. Don't use together with `openaiLanguage` when the selected model expects only one language field. |
+| `openaiPrompt`                  | Text string                                                    | —       | Provides context about the call — names, products, acronyms, or special vocabulary — to improve transcription accuracy. Not supported by `gpt-realtime-whisper`.                                    |
+| `openaiKeywords`                | Array of strings                                               | —       | Lists important words OpenAI should recognize with priority, such as product names or account identifiers. Avoid line breaks and angle brackets inside a keyword.                                    |
+| `openaiTurnDetection`           | `null`, `server_vad`, `semantic_vad`.                           | —       | Configures how OpenAI detects when the caller starts or stops speaking. Set to `null` to use Voice Gateway's native turn detection instead.                                                         |
+| `openaiDelay`                   | `minimal`, `low`, `medium`, `high`, `xhigh`.                    | —       | Controls the balance between receiving transcripts quickly and giving OpenAI more time to improve accuracy.                                                                                         |
+| `openaiInputAudioNoiseReduction` | `near_field`, `far_field`.                                     | —       | Reduces background noise before transcription. Use `near_field` for a close, clear microphone; `far_field` for audio captured farther away or in a noisier environment.                             |
+
+Turn Detection Behavior
+
+Models `gpt-live-transcribe` and `gpt-realtime-whisper` don't support server-side turn detection. For these models, Voice Gateway uses its native turn detection capabilities — `mod_vad_kore`, `mod_smart_turn`, or `mod_kore_turn_taking` — and sends `input_audio_buffer.commit` at the end of detected speech.
+All other OpenAI STT models use server-side turn detection behavior as configured by `openaiTurnDetection`.
+
+Example Configuration
+
+```json
+{
+  "sttProvider": "openai",
+  "sttLanguage": "en-US",
+  "ttsLabel": "your-label-here",
+  "openaiModel": "gpt-4o-transcribe",
+  "openaiTurnDetection": {
+    "type": "server_vad",
+    "threshold": 0.5,
+    "prefix_padding_ms": 300,
+    "silence_duration_ms": 500
+  },
+  "openaiPrompt": "Transcribe the caller accurately. Preserve names, numbers, and account identifiers.",
+  "openaiLanguage": "en",
+  "openaiKeywords": ["Kore", "OpenAI", "account number"],
+  "openaiInputAudioNoiseReduction": {
+    "type": "near_field"
+  }
+}
+```
+
 ### Open AI (Whisper)
 
 Apart from generic parameters like `ttsLanguage` and `voiceName`, which are common across most TTS engines, Whisper offers a few additional parameters that enhance customization, like a model.
@@ -680,6 +745,16 @@ Example Configuration
 | pace        | 0.5 - 2.0  | 1       | Controls speech rate. Values below 1 slow speech down; values above 1 speed it up.                     |
 | temperature | 0.01 - 1.0 | 0.6     | Controls variation in speech output. Lower values produce more consistent output; higher values introduce more variation. |
 
+## TTS Limitations
+
+The following table describes how Voice Gateway processes and sends responses to the TTS provider in streaming and non-streaming modes.
+
+| Mode | Response source | How Voice Gateway processes the response | What Voice Gateway sends to the TTS provider | Limitation |
+|:---|:---|:---|:---|:---|
+| Non-streaming | Predefined text | Receives the complete text and splits it at punctuation boundaries, keeping each segment within the 1,000-character limit whenever possible. | Sends each segment separately to the TTS provider. | Supports long text through multiple TTS segments. |
+| Non-streaming | LLM-generated text | Waits for the complete LLM response, then splits it at punctuation boundaries while respecting the 1,000-character limit. | Sends each segment separately to the TTS provider. | Supports long responses through multiple TTS segments. |
+| Streaming | Predefined text | Receives the predefined text as a single stream chunk and forwards it without splitting it at punctuation boundaries. | Sends the complete chunk as one request. | Can't send the chunk for TTS generation if it exceeds 1,000 characters. |
+| Streaming | LLM-generated text | Receives the LLM response incrementally, typically in chunks or tokens. | Sends each incoming chunk to the TTS provider as received. | Supports total responses longer than 1,000 characters, but each chunk must stay within the 1,000-character limit. |
 
 ## Common Use Cases for Call Control Parameters
 
@@ -696,6 +771,30 @@ Continuous ASR (Automatic Speech Recognition) is a feature that lets tuning Spee
 ### Handling Bot Delay
 
 Configure Voice Gateway to act when the bot takes time to respond to a message.
+
+#### Add a delay between bot messages
+
+When two message nodes, or a message node and an entity node, are placed sequentially within the same node, the bot plays the prompts in sequence. By default, the next prompt starts immediately after the previous prompt finishes.
+
+To add a pause between prompts, configure a custom delay in the **Bot Response** node.
+
+**Add a custom pause**
+
+1. In the **Bot Response** node, select **Add (+)**.
+2. Select the **SmartAssist Gateway** channel with **Custom JavaScript**.
+3. Add the following function to the channel override template:
+
+   ```text
+   print(voiceUtils.pauseAndPlay(time in seconds, message to play))
+   ```
+
+   For example:
+
+   ```text
+   print(voiceUtils.pauseAndPlay(4, "Thanks for calling. This message will play after a 4-second delay."));
+   ```
+
+   This example adds a 4-second pause before the message plays. Specify the delay in seconds based on the required conversation flow.
 
 #### Handle Bot Delay After User Input
 
@@ -715,7 +814,7 @@ By setting timeout properties, configure the following actions:
 * To play a message to the user, configure a timeout on the botNoInputTimeoutMS parameter and define the action:
 * To play a textual prompt, set the prompt on the `botNoInputSpeech` parameter.
 * To play an audio file, set the file URL using the `botNoInputUrl` parameter.
-* To replay the message if the timeout exceedes multiple times, configure the number of retries using the botNoInputRetries parameter.
+* To replay the message if the timeout exceeds multiple times, configure the number of retries using the botNoInputRetries parameter.
 * Configure a separate timeout for disconnecting the call using the `botNoInputGiveUpTimeoutMS` parameter, set to 30 seconds by default.
 
 **Parameters Description**
@@ -758,7 +857,7 @@ The Barge-In feature controls Voice Gateway behavior in scenarios where the user
 
 | Parameter                    | Type                                                                             | Supporting STT/TTS                           | Description                                                                                                               |
 | :-------------------------------- | :------------------------------------------------------------------------------------ | :------------------------------------------------ | :----------------------------------------------------------------------------------------------------------------------------- |
-| `listenDuringPrompt`             | Boolean (true or false) Similar to Barge-In                                       | STT-Google and Microsoft TTS-Not Required | If `false`, the bot doesn't listen for user speech until the response finishes playing. Default: `true`.              |
+| `listenDuringPrompt`             | Boolean (true or false) Similar to Barge-In                                          | STT-Google and Microsoft TTS-Not Required | If `false`, the bot doesn't listen for user speech until the response finishes playing. Default: `true`.              |
 | `bargeInMinWordCount`            | Number                                                                               | STT-Google and Microsoft TTS-Not Required | If Barge-In is sensitive, the bot only interrupts playback after speaking the specified number of words. Default: 1. |
 | `bargeInOnDTMF`                  | Boolean                                                                              | STT-Google and Microsoft TTS-Not Required | Lets users to press a key to interrupt the audio playback. After pressing a key, the user can speak their input.            |
 | `dtmfCollectInterDigitTimeoutMS` | Number (milliseconds)                                                                | STT-Google and Microsoft TTS-Not Required | Time allowed between DTMF key presses before sending all digits to the bot.                                                   |
@@ -766,7 +865,7 @@ The Barge-In feature controls Voice Gateway behavior in scenarios where the user
 | `dtmfCollectMaxDigits`           | Number                                                                               | STT-Google and Microsoft TTS-Not Required | Maximum number of DTMF digits to collect. Example: If set to `5` and input is `1234567`, only processes `12345`.        |
 | `dtmfCollectminDigits`           | Number                                                                               | STT-Google and Microsoft TTS-Not Required | Minimum number of DTMF digits to collect. Default: 1.                                                               |
 | `dtmfCollectnumDigits`           | Number                                                                               | STT-Google and Microsoft TTS-Not Required | Exact number of DTMF digits to collect.                                                                                       |
-| `input`                          | Array of strings Valid values: `['digits']`, `['speech']`, `['digits', 'speech']` | STT-Google and Microsoft TTS-Not Required | Specifies allowed input types.Default: `['digits']`.                                                                 |
+| `input`                          | Array of strings Valid values: `['digits']`, `['speech']`, `['digits', 'speech']`    | STT-Google and Microsoft TTS-Not Required | Specifies allowed input types.Default: `['digits']`.                                                                 |
 
 ### Backchannel Words
 
@@ -878,13 +977,13 @@ ccParamList.forEach((ccParam) => {
 
 ## Best Practices for Updating ASR or TTS
 
-### When to update ASR/TTS
+### When to update ASR or TTS
 
-Every ASR/TTS update can trigger a connection or reconnection. During reconnection, messages may remain in a buffer until the system establishes the connection, which can delay or affect the call experience.
+Every ASR or TTS update can trigger a connection or reconnection. During reconnection, messages may remain in a buffer until the system establishes the connection, which can delay or affect the call experience.
 
-The system generally has sufficient time to configure ASR/TTS while establishing the call connection. Avoid unnecessary updates during the conversation.
+The system generally has sufficient time to configure ASR or TTS while establishing the call connection. Avoid unnecessary updates during the conversation.
 
-Don't update ASR/TTS unless the change is required.
+Don't update ASR or TTS unless the change is required.
 
 ### Best practices
 

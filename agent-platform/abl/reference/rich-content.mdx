@@ -1,0 +1,900 @@
+---
+title: Rich content
+sidebarTitle: Rich content
+---
+
+This page documents ABL's rich content output formats: voice configuration, format-specific content (Markdown, Adaptive Cards, HTML, Slack, WhatsApp), carousels, interactive actions, feedback surveys, and reusable templates. For the expression language (operators, functions, `{{}}` interpolation syntax), see [Expressions and functions](/agent-platform/abl-reference/expressions-and-functions).
+
+---
+
+## Rich content
+
+ABL supports multi-format output for delivering responses across different channels (web, mobile, voice, messaging platforms). The `VOICE:`, `RICH_CONTENT:`, and `ACTIONS:` blocks can be attached to any `RESPOND` statement, `COMPLETE` condition, or lifecycle handler. A pure reasoning agent (no `FLOW:`) may also declare top-level `RICH_CONTENT:` and `ACTIONS:` blocks that attach to its generated responses.
+
+### Overview
+
+A single response can include:
+
+- **Plain text** -- the default `RESPOND` string.
+- **Voice configuration** -- SSML markup or natural language voice instructions.
+- **Rich content** -- Markdown, Adaptive Cards, HTML, Slack Block Kit, WhatsApp, or AG-UI.
+- **Carousels** -- scrollable card collections with images and buttons.
+- **Interactive actions** -- buttons, select menus, and input fields.
+- **Templates** -- reusable named response definitions with interpolation.
+
+The runtime selects the appropriate format based on the delivery channel.
+
+### Voice configuration
+
+
+Voice configuration provides channel-specific voice output. The `VOICE:` block can appear alongside any `RESPOND`.
+
+#### Syntax
+
+
+```yaml
+RESPOND: "Your booking is confirmed for December 15th."
+VOICE:
+  ssml: |
+    <speak>
+      Your booking is confirmed for <say-as interpret-as="date" format="mdy">12/15/2025</say-as>.
+    </speak>
+  instructions: "Speak in a warm, congratulatory tone"
+  plain_text: "Your booking is confirmed for December fifteenth."
+```
+
+#### Voice properties
+
+| Property       | Type     | Required | Default | Description                                                                      |
+| -------------- | -------- | -------- | ------- | -------------------------------------------------------------------------------- |
+| `provider`     | `string` | No       | --      | TTS provider (for example. `elevenlabs`, `google`, `azure`, `openai`).                   |
+| `voice_id`     | `string` | No       | --      | Provider-specific voice identifier.                                              |
+| `speed`        | `number` | No       | `1.0`   | Speech-rate multiplier (`1.0` = normal).                                          |
+| `ssml`         | `string` | No       | --      | W3C SSML markup for TTS engines (Google, Azure, Amazon Polly).                   |
+| `instructions` | `string` | No       | --      | Natural language voice style instructions (OpenAI Realtime, Gemini Live).        |
+| `plain_text`   | `string` | No       | --      | Voice-optimized plaintext. Used by ElevenLabs and as a fallback for all engines. |
+| `pace`         | `number` | No       | --      | Numeric speaking-rate multiplier (authoring alias for speed/pace controls).       |
+| `temperature`  | `number` | No       | --      | Provider-specific TTS sampling/variation control.                                |
+| `auto_tts_language_switch` | `boolean` | No | --   | Switch the TTS voice/model to match the detected language of the response.       |
+
+#### SSML example
+
+```yaml
+VOICE:
+  ssml: |
+    <speak>
+      <prosody rate="slow" pitch="+2st">
+        Your wire transfer of <say-as interpret-as="currency">$50,000 USD</say-as>
+        has been executed.
+      </prosody>
+      <break time="500ms"/>
+      The confirmation number is
+      <say-as interpret-as="characters">WR-2024-88431</say-as>.
+    </speak>
+```
+
+#### Natural language instructions
+
+For voice platforms that accept style instructions rather than SSML:
+
+```yaml
+VOICE:
+  instructions: "Speak slowly and clearly, emphasizing the confirmation number. Use a professional but warm tone."
+```
+
+### Rich content formats
+
+The rich-content block provides format-specific variants of a response. The runtime selects the variant matching the delivery channel.
+
+<Note>`RICH_CONTENT:` is the canonical block keyword; `FORMATS:` is the original spelling, kept as an accepted alias. The `.agent.yaml` format accepts `rich_content:` or `formats:` the same way. Most places a rich-content block is authored — directly under a `RESPOND:` (in a flow step, `ON_START`, `HOOKS:`, or an `ON_ACTION`/`ON_ERROR` handler), in a tool's `on_result:`/`on_error:` action block, and in a `COMPLETE:` condition (including one with no `RESPOND:` at all) — accept either spelling interchangeably.</Note>
+
+#### Syntax
+
+```yaml expandable=true
+RESPOND: "Here are your flight options."
+FORMATS:
+  MARKDOWN: |
+    ## Flight Options
+    | Flight | Departure | Arrival | Price |
+    |--------|-----------|---------|-------|
+    | AA 142 | 8:00 AM   | 11:30 AM | $349 |
+    | UA 891 | 10:15 AM  | 1:45 PM  | $289 |
+
+  ADAPTIVE_CARD: |
+    {
+      "type": "AdaptiveCard",
+      "body": [
+        {"type": "TextBlock", "text": "Flight Options", "size": "large"}
+      ]
+    }
+
+  HTML: |
+    <div class="flight-results">
+      <h2>Flight Options</h2>
+      <table>...</table>
+    </div>
+
+  SLACK: |
+    {
+      "blocks": [
+        {"type": "header", "text": {"type": "plain_text", "text": "Flight Options"}}
+      ]
+    }
+```
+
+#### Rich content properties
+
+Rich content supports two kinds of properties. Channel-specific string formats carry a payload written for one channel. Structured template formats define content once, and the runtime renders it for each channel.
+
+**Channel-specific string formats:**
+
+| Property        | Type     | Required | Default | Description                                                    |
+| --------------- | -------- | -------- | ------- | -------------------------------------------------------------- |
+| `MARKDOWN`      | `string` | No       | --      | Formatted markdown text.                                       |
+| `ADAPTIVE_CARD` | `string` | No       | --      | JSON string conforming to the Microsoft Adaptive Cards schema. |
+| `HTML`          | `string` | No       | --      | HTML content for web-based channels.                           |
+| `SLACK`         | `string` | No       | --      | JSON string conforming to the Slack Block Kit format.          |
+| `AG_UI`         | `string` | No       | --      | JSON string for AG-UI / CopilotKit events.                     |
+| `WHATSAPP`      | `string` | No       | --      | JSON string for WhatsApp interactive messages.                 |
+
+**Structured template formats** (channel-neutral; the runtime renders them per channel):
+Structured templates describe content as data, such as a carousel, table, or chart. The runtime converts each template to the native format of the target channel. Templates fall into two groups: *basic templates* for simple display, and *data-rich templates* for structured data.
+
+*Basic templates* — display-only, no aggregation or layout options beyond their own items:
+
+| Property        | Type     | Description                                                                 |
+| --------------- | -------- | --------------------------------------------------------------------------- |
+| `CAROUSEL`      | `object` | Scrollable card collection. See [Carousels](#carousels).                    |
+| `QUICK_REPLIES` | `array`  | Quick-reply chips: each `{ id, label, iconUrl? }`. See [Quick replies](#quick-replies). |
+| `LIST`          | `object` | `{ title?, items: [{ title, subtitle?, imageUrl?, defaultActionUrl? }] }`. See [Lists](#lists). |
+| `IMAGE`         | `object` | `{ url, alt?, thumbnailUrl?, caption? }`. See [Media](#media-image-video-audio).                |
+| `VIDEO`         | `object` | `{ url, alt?, thumbnailUrl?, caption? }`. See [Media](#media-image-video-audio).                |
+| `AUDIO`         | `object` | `{ url, alt?, thumbnailUrl?, caption? }`. See [Media](#media-image-video-audio).                |
+| `FILE`          | `object` | `{ url, filename, sizeBytes?, mimeType? }`. See [Files](#files).                                 |
+
+*Data-rich templates* — designed to present structured/tabular data, with extra options like `adaptive` narrowing:
+
+| Property        | Type     | Description                                                                 |
+| --------------- | -------- | --------------------------------------------------------------------------- |
+| `KPI`           | `object` | `{ label, value, unit?, trend?: up/down/flat, iconUrl? }`. See [KPIs](#kpis).                    |
+| `TABLE`         | `object` | `{ columns: [{ key, header, align?: left/center/right }], rows, maxVisibleRows? }`. See [Tables](#tables). |
+| `CHART`         | `object` | `{ type: bar/line/pie, title?, data: [{ label, value, color? }] }`. See [Charts](#charts).       |
+| `FORM`          | `object` | `{ title?, fields: [ActionElement], submitLabel? }`. See [Forms](#forms).                        |
+| `PROGRESS`      | `object` | `{ label?, value, max?, variant?: bar/circle }`. See [Progress](#progress).                      |
+| `FEEDBACK`      | `object` | Rating/feedback survey. `{ FEEDBACK_TEMPLATE?, prompt, type: thumbs/star/scale, max?, submit_label?, pending_message?, success_message?, error_message?, comment_threshold?, comment_prompt?, comment_placeholder?, when?, <field>_rules? }`. See [FEEDBACK surveys](#feedback-surveys). |
+
+<Note>Named templates (in the `TEMPLATES:` block) may also declare a `RENDERABLES:` list — customer-owned structured payloads with `name`, `payload`, optional `targets` (`api`/`sdk_websocket`/`http_async`), `fallbackText`, and `schemaRef`. Several structured templates also support **collection binding** — `from:`/`template:` — to render one entry per array item; see [Collection binding](#collection-binding) for exactly which ones.</Note>
+
+#### Template modifiers
+
+Two cross-cutting modifiers apply to structured templates:
+
+- **`when`** — a conditional render guard (expression). On an agent-level rich-content block, the template renders only when the expression is truthy at reasoning finalization. Available on the rich-content block and on each structured template. See [Expressions and functions](/agent-platform/abl-reference/expressions-and-functions) for expression syntax.
+- **`adaptive`** — on `LIST`, `KPI`, and `TABLE` templates whose items/rows are bound to a tool variable, set `adaptive: true` to let the reasoning agent narrow which items/rows/columns render for the user's request.
+
+#### Collection binding
+
+Several structured templates have an array-valued property — `CAROUSEL.cards`, `QUICK_REPLIES` itself, `LIST.items`, `TABLE.columns` and `TABLE.rows`, `CHART.data`, and `FORM.fields`. Each of these accepts **three** forms:
+
+1. **A literal array** — write the items directly, as shown in every static example on this page.
+2. **A `from`/`template` binding** — resolve the array from a session variable at render time, and render one entry per array item:
+
+   ```yaml
+   data:
+     from: "{{tool_result.output.sectors}}"   # or bare, without {{ }}: tool_result.output.sectors
+     template:
+       label: "{{name}}"
+       value: "{{percentage}}"
+   ```
+
+   `from` names the session/tool-result path holding the array (the `{{ }}` wrapper is optional — both forms resolve identically). `template` is applied once per array item; inside it, `{{ }}` placeholders resolve against that item's own fields merged over the outer session data — so an item shaped `{name: "Equities", percentage: 45}` is referenced as `{{name}}`/`{{percentage}}`, **not** `{{item.name}}`. If an array element isn't an object (a bare number or string), it's exposed as `{{value}}` instead.
+
+3. **A bare string reference** — when the tool result is *already* shaped exactly like the target items (for example, a tool that already returns `{label, value, color}` objects for a chart), skip `template:` entirely:
+
+   ```yaml
+   data: "{{tool_result.output.pre_shaped_points}}"
+   ```
+
+<Note>`template` is optional within a `from` binding — a binding with only `from` behaves like the bare-string form above, applied to the resolved array. `options` on a `select`-type action element (used inside `FORM.fields` and `ACTIONS`) is itself collection-bound the same way, so a select's options list can also be tool-driven.</Note>
+
+### Carousels
+
+Carousels display a horizontal scrollable collection of cards, each with a title, subtitle, image, and action buttons.
+
+#### Syntax
+
+```yaml expandable=true
+FORMATS:
+  CAROUSEL:
+    - title: "Economy Class"
+      subtitle: "$289 - UA 891"
+      imageUrl: "https://cdn.example.com/economy.jpg"
+      defaultActionUrl: "https://booking.example.com/ua891"
+      buttons:
+        - id: select_economy
+          type: button
+          label: "Select"
+          value: "ua891_economy"
+
+    - title: "Business Class"
+      subtitle: "$1,249 - UA 891"
+      imageUrl: "https://cdn.example.com/business.jpg"
+      buttons:
+        - id: select_business
+          type: button
+          label: "Select"
+          value: "ua891_business"
+```
+
+#### Carousel card properties
+
+| Property           | Type     | Required | Default | Description                                                      |
+| ------------------ | -------- | -------- | ------- | ---------------------------------------------------------------- |
+| `title`            | `string` | Yes      | --      | Card title.                                                      |
+| `subtitle`         | `string` | No       | --      | Card subtitle or description.                                    |
+| `imageUrl`         | `string` | No       | --      | URL for the card image.                                          |
+| `defaultActionUrl` | `string` | No       | --      | URL opened when the card itself is tapped.                       |
+| `buttons`          | `array`  | No       | --      | Action buttons. See [Interactive actions](#interactive-actions). |
+
+`CAROUSEL` also accepts a `when` render guard, and `cards` supports [collection binding](#collection-binding) — resolve the cards from a tool result instead of writing them statically:
+
+```yaml
+FORMATS:
+  CAROUSEL:
+    when: hotel_results.length > 0
+    from: "{{search_result.output.hotels}}"
+    template:
+      title: "{{name}}"
+      subtitle: "{{price_display}}"
+      imageUrl: "{{photo_url}}"
+```
+
+### Quick replies
+
+Quick-reply chips give the user a small set of one-tap responses.
+
+#### Syntax
+
+```yaml
+RESPOND: "Would you like to proceed?"
+FORMATS:
+  QUICK_REPLIES:
+    - id: yes
+      label: "Yes, proceed"
+    - id: no
+      label: "No, cancel"
+```
+
+#### Quick reply properties
+
+| Property  | Type     | Required | Default | Description                             |
+| --------- | -------- | -------- | ------- | ---------------------------------------- |
+| `id`      | `string` | Yes      | --      | Value posted back when the chip is tapped. |
+| `label`   | `string` | Yes      | --      | Chip display text.                       |
+| `iconUrl` | `string` | No       | --      | Optional icon shown on the chip.         |
+
+`QUICK_REPLIES` itself supports [collection binding](#collection-binding) — the whole list can come from `from`/`template` — but, unlike the other structured templates, it has **no `when` guard**: the property is the raw collection, with no wrapping object to hang a render guard on.
+
+### Lists
+
+A vertical list of items, each with an optional subtitle, image, and tap action.
+
+#### Syntax
+
+```yaml
+FORMATS:
+  LIST:
+    title: "Nearby Branches"
+    items:
+      - title: "Downtown Branch"
+        subtitle: "0.4 miles away — open until 6 PM"
+        imageUrl: "https://cdn.example.com/downtown.jpg"
+        defaultActionUrl: "https://maps.example.com/downtown"
+      - title: "Uptown Branch"
+        subtitle: "1.2 miles away — open until 5 PM"
+```
+
+#### List properties
+
+| Property   | Type      | Required | Default | Description                                                      |
+| ---------- | --------- | -------- | ------- | ------------------------------------------------------------------ |
+| `when`     | `string`  | No       | --      | Conditional render guard. See [Template modifiers](#template-modifiers). |
+| `adaptive` | `boolean` | No       | `false` | Let the reasoning agent narrow which items render. See [Template modifiers](#template-modifiers). |
+| `title`    | `string`  | No       | --      | List heading.                                                    |
+| `items`    | `array`   | Yes      | --      | List items. Supports [collection binding](#collection-binding).  |
+
+#### List item properties
+
+| Property           | Type     | Required | Default | Description                                  |
+| ------------------ | -------- | -------- | ------- | ---------------------------------------------- |
+| `title`            | `string` | Yes      | --      | Item title.                                    |
+| `subtitle`         | `string` | No       | --      | Item subtitle or description.                  |
+| `imageUrl`         | `string` | No       | --      | URL for the item's image.                      |
+| `defaultActionUrl` | `string` | No       | --      | URL opened when the item itself is tapped.     |
+
+Dynamic example — one list item per branch a tool returns:
+
+```yaml
+FORMATS:
+  LIST:
+    title: "Nearby Branches"
+    items:
+      from: "{{search_result.output.branches}}"
+      template:
+        title: "{{branch_name}}"
+        subtitle: "{{distance_label}}"
+```
+
+### Media (image, video, audio)
+
+`IMAGE`, `VIDEO`, and `AUDIO` share an identical shape — a single media item, not a collection.
+
+#### Syntax
+
+```yaml
+FORMATS:
+  IMAGE:
+    url: "https://cdn.example.com/receipt-12345.png"
+    alt: "Payment receipt"
+    caption: "Your receipt for confirmation #12345"
+```
+
+#### Media properties
+
+| Property       | Type     | Required | Default | Description                                                              |
+| -------------- | -------- | -------- | ------- | --------------------------------------------------------------------------- |
+| `when`         | `string` | No       | --      | Conditional render guard. See [Template modifiers](#template-modifiers). |
+| `url`          | `string` | Yes      | --      | Media URL.                                                               |
+| `alt`          | `string` | No       | --      | Accessibility text (also used as a text fallback where media can't render). |
+| `thumbnailUrl` | `string` | No       | --      | Preview thumbnail, mainly for `VIDEO`/`AUDIO`.                           |
+| `caption`      | `string` | No       | --      | Caption shown alongside the media.                                       |
+
+`IMAGE`/`VIDEO`/`AUDIO` are each a single object — there's no array, so [collection binding](#collection-binding) doesn't apply here. To show several images, use a `LIST` or `CAROUSEL` instead.
+
+### Files
+
+A downloadable file attachment.
+
+#### Syntax
+
+```yaml
+FORMATS:
+  FILE:
+    url: "https://cdn.example.com/statements/2026-08.pdf"
+    filename: "August_2026_Statement.pdf"
+    sizeBytes: 184320
+    mimeType: "application/pdf"
+```
+
+#### File properties
+
+| Property    | Type     | Required | Default | Description                             |
+| ----------- | -------- | -------- | ------- | ----------------------------------------- |
+| `when`      | `string` | No       | --      | Conditional render guard. See [Template modifiers](#template-modifiers). |
+| `url`       | `string` | Yes      | --      | File URL.                                 |
+| `filename`  | `string` | Yes      | --      | Display filename.                         |
+| `sizeBytes` | `number` | No       | --      | File size in bytes, shown to the user.    |
+| `mimeType`  | `string` | No       | --      | MIME type, used to pick a file-type icon. |
+
+### KPIs
+
+A single metric tile — a label, a value, and an optional trend indicator.
+
+#### Syntax
+
+```yaml
+FORMATS:
+  KPI:
+    label: "Account Balance"
+    value: 12450.75
+    unit: "USD"
+    trend: up
+```
+
+#### KPI properties
+
+| Property   | Type                            | Required | Default | Description                                                      |
+| ---------- | -------------------------------- | -------- | ------- | ------------------------------------------------------------------ |
+| `when`     | `string`                        | No       | --      | Conditional render guard. See [Template modifiers](#template-modifiers). |
+| `adaptive` | `boolean`                        | No       | `false` | Let the reasoning agent select this KPI among other `adaptive` templates. See [Template modifiers](#template-modifiers). |
+| `label`    | `string`                        | Yes      | --      | Metric label.                                                    |
+| `value`    | `string` \| `number`             | Yes      | --      | Metric value.                                                    |
+| `unit`     | `string`                        | No       | --      | Unit suffix (for example `"USD"`, `"%"`).                        |
+| `trend`    | `"up"` \| `"down"` \| `"flat"`   | No       | --      | Trend indicator.                                                 |
+| `iconUrl`  | `string`                        | No       | --      | Icon shown on the tile.                                          |
+
+`KPI` is a **single value**, not an array — there's no [collection binding](#collection-binding) here (that's what distinguishes it from `TABLE`/`LIST`/`CHART`). To show multiple KPIs, author multiple `KPI` blocks or use a `TABLE`.
+
+### Tables
+
+Columns and rows for tabular data.
+
+#### Syntax
+
+```yaml expandable=true
+FORMATS:
+  TABLE:
+    columns:
+      - key: date
+        header: "Date"
+      - key: description
+        header: "Description"
+      - key: amount
+        header: "Amount"
+        align: right
+    rows:
+      - date: "2026-09-01"
+        description: "Direct deposit"
+        amount: "$2,450.00"
+      - date: "2026-09-03"
+        description: "Grocery store"
+        amount: "-$86.20"
+    maxVisibleRows: 10
+```
+
+#### Table properties
+
+| Property         | Type      | Required | Default | Description                                                      |
+| ---------------- | --------- | -------- | ------- | ------------------------------------------------------------------ |
+| `when`           | `string`  | No       | --      | Conditional render guard. See [Template modifiers](#template-modifiers). |
+| `adaptive`       | `boolean` | No       | `false` | Let the reasoning agent narrow which rows/columns render. See [Template modifiers](#template-modifiers). |
+| `columns`        | `array`   | Yes      | --      | Column definitions. Supports [collection binding](#collection-binding). |
+| `rows`           | `array`   | Yes      | --      | Row data — each row an object keyed by column `key`. Supports [collection binding](#collection-binding), independently of `columns`. |
+| `maxVisibleRows` | `number`  | No       | --      | Rows shown before the client truncates/paginates.                |
+
+#### Table column properties
+
+| Property | Type                                       | Required | Default | Description                          |
+| -------- | ------------------------------------------- | -------- | ------- | --------------------------------------- |
+| `key`    | `string`                                   | Yes      | --      | Row property this column reads.      |
+| `header` | `string`                                   | Yes      | --      | Column header text.                  |
+| `align`  | `"left"` \| `"center"` \| `"right"`         | No       | `left`  | Column text alignment.               |
+
+Dynamic example — columns declared statically, rows bound to a tool result (the two bindings are independent, so it's common to declare `columns` statically and bind only `rows`):
+
+```yaml expandable=true
+FORMATS:
+  TABLE:
+    columns:
+      - key: date
+        header: "Date"
+      - key: description
+        header: "Description"
+      - key: amount
+        header: "Amount"
+        align: right
+    rows:
+      from: "{{transactions_result.output.items}}"
+      template:
+        date: "{{posted_date}}"
+        description: "{{merchant_name}}"
+        amount: "{{formatted_amount}}"
+```
+
+### Charts
+
+Pie, bar, or line charts, rendered as SVG on channels that support them.
+
+<Note>
+  Currently, charts render on the Web SDK only. Color is optional — the SDK provides a default palette for dynamic charts.
+</Note>
+
+#### Syntax
+
+```yaml expandable=true
+RESPOND: "Here is the allocation:"
+FORMATS:
+  CHART:
+    type: pie
+    title: "Portfolio Allocation"
+    data:
+      - label: "Equities"
+        value: 45
+        color: "#4f46e5"
+      - label: "Bonds"
+        value: 25
+        color: "#06b6d4"
+      - label: "Cash"
+        value: 10
+        color: "#10b981"
+```
+
+#### Chart properties
+
+| Property | Type                               | Required | Default | Description                                                      |
+| -------- | ------------------------------------ | -------- | ------- | ------------------------------------------------------------------ |
+| `when`   | `string`                            | No       | --      | Conditional render guard. See [Template modifiers](#template-modifiers). |
+| `type`   | `"pie"` \| `"bar"` \| `"line"`       | Yes      | --      | Chart type.                                                       |
+| `title`  | `string`                            | No       | --      | Chart title.                                                      |
+| `data`   | `array`                             | Yes      | --      | Data points. Supports [collection binding](#collection-binding).  |
+
+#### Chart data point properties
+
+| Property | Type                | Required | Default | Description                                    |
+| -------- | -------------------- | -------- | ------- | ------------------------------------------------- |
+| `label`  | `string`            | Yes      | --      | Data point label (category / x-axis value).    |
+| `value`  | `string` \| `number` | Yes      | --      | Data point value.                              |
+| `color`  | `string`            | No       | --      | Optional hex color for this data point/slice.  |
+
+Dynamic example — one data point per array item a tool returns:
+
+```yaml
+RESPOND: "Portfolio for {{investor_id}}:"
+FORMATS:
+  CHART:
+    type: pie
+    title: "Allocation — {{investor_id}}"
+    data:
+      from: "{{tool_result.output.sectors}}"
+      template:
+        label: "{{name}}"
+        value: "{{percentage}}"
+```
+
+{/*
+<Warning>Two details are worth confirming with your channel before relying on them: an upper bound on how many data points a chart can render, and whether non-Web-SDK channels fall back to plain text. Neither is documented here because it isn't yet possible to verify against the platform's current behavior.</Warning>
+*/}
+
+### Interactive actions
+
+Interactive actions add buttons, select menus, and input fields to a response. Users interact with these elements, and the agent handles the interactions via `ON_ACTION` blocks.
+
+#### Syntax
+
+```yaml expandable=true
+RESPOND: "How would you like to proceed?"
+ACTIONS:
+  - id: confirm_wire
+    type: button
+    label: "Confirm Wire"
+    value: "confirmed"
+
+  - id: modify_amount
+    type: button
+    label: "Modify Amount"
+    value: "modify"
+
+  - id: cancel
+    type: button
+    label: "Cancel"
+    value: "cancelled"
+```
+
+#### Action element properties
+
+| Property      | Type      | Required | Default | Description                                                                 |
+| ------------- | --------- | -------- | ------- | --------------------------------------------------------------------------- |
+| `id`          | `string`  | Yes      | --      | Unique action identifier. Referenced in `ON_ACTION` handlers.               |
+| `type`        | `string`  | Yes      | --      | Element type: `button`, `select`, or `input`.                               |
+| `label`       | `string`  | Yes      | --      | Display label.                                                              |
+| `value`       | `string`  | No       | --      | Hidden value sent when the user interacts with this element.                |
+| `url`         | `string`  | No       | --      | For `button` type only: clicking opens this link instead of posting the value back to the agent. (Aliases: `link`, `web_url`.) |
+| `description` | `string`  | No       | --      | Subtitle or help text (for list items).                                     |
+| `options`     | `array`   | No       | --      | Options for `select` type. Each has `id`, `label`, `description`.           |
+| `inputType`   | `string`  | No       | --      | Input type for `input` elements: `text`, `number`, `date`, `time`, `email`. |
+| `placeholder` | `string`  | No       | --      | Placeholder text for `input` elements.                                      |
+| `required`    | `boolean` | No       | --      | Whether the input is required before submission.                            |
+
+#### Select element example
+
+```yaml
+ACTIONS:
+  - id: select_account
+    type: select
+    label: "Choose Account"
+    options:
+      - id: checking
+        label: "Checking ****4521"
+        description: "Available: $12,340.50"
+      - id: savings
+        label: "Savings ****8872"
+        description: "Available: $45,200.00"
+```
+
+#### Input element example
+
+```yaml expandable=true
+ACTIONS:
+  - id: amount_input
+    type: input
+    label: "Transfer Amount"
+    inputType: number
+    placeholder: "Enter amount"
+    required: true
+
+  - id: reference_input
+    type: input
+    label: "Reference (optional)"
+    inputType: text
+    placeholder: "Invoice number, memo, etc."
+    required: false
+  submitLabel: "Submit"
+  submitId: "submit_transfer"
+```
+
+#### Form submission
+
+When the `ACTIONS` block contains `input` elements, you can specify a `submitLabel` and `submitId` for the form submission button:
+
+| Property      | Type     | Required | Default | Description                                   |
+| ------------- | -------- | -------- | ------- | --------------------------------------------- |
+| `submitLabel` | `string` | No       | --      | Label for the form submit button.             |
+| `submitId`    | `string` | No       | --      | Action ID emitted when the form is submitted. |
+
+#### ON_ACTION handlers
+
+Handle user interactions with action elements in flow steps:
+
+```yaml expandable=true
+FLOW:
+  review_wire:
+    RESPOND: "Ready to proceed?"
+    ACTIONS:
+      - id: confirm
+        type: button
+        label: "Confirm"
+      - id: cancel
+        type: button
+        label: "Cancel"
+    ON_ACTION:
+      confirm:
+        DO:
+          - SET: user_confirmed = true
+          - RESPOND: "Executing your wire transfer."
+            FORMATS:
+              MARKDOWN: "**Executing your wire transfer.**"
+          - GOTO: execute_wire_step
+      cancel:
+        RESPOND: "Wire transfer cancelled."
+        GOTO: cleanup
+```
+
+The `ON_ACTION` handler properties are described below.
+
+| Property    | Type                    | Required | Default | Description                                   |
+| ----------- | ----------------------- | -------- | ------- | --------------------------------------------- |
+| `ACTION_ID` | `string`                | Yes      | --      | Which action element triggered this handler.  |
+| `CONDITION` | `string`                | No       | --      | Optional condition based on the action value. |
+| `DO`                           | ordered action list     | No       | --      | Preferred form when order or nested rich `FORMATS:` matters.              |
+| `RESPOND`                      | `string`                | No       | --      | Response message; supports nested `FORMATS:` inside a `DO` action.        |
+| `SET`                          | `Record<string,string>` | No       | --      | Variable assignments.                |
+| `CLEAR`                        | `string[]`              | No       | --      | Session variables to clear.                                               |
+| `CALL`                         | `string`                | No       | --      | Tool call; use `AS result_key` to store the result.                       |
+| `GOTO` / `TRANSITION` / `THEN` | `string`                | No       | --      | Flow step to transition to.                   |
+| `HANDOFF`                      | `string`                | No       | --      | Declared handoff target agent.                                            |
+| `DELEGATE`                     | `string`                | No       | --      | Declared delegate target agent; supports nested `RETURN` and `ON_RETURN`. |
+| `COMPLETE`                     | `boolean`               | No       | `true`  | Complete the current flow.                                                |
+
+If a handler `RESPOND` includes rich `FORMATS:` before terminal routing, that payload is forwarded as the fallback final channel payload. The terminal target's own rich payload takes precedence.
+
+#### Reusable handlers (`ACTION_HANDLERS:`)
+
+`ON_ACTION` inside a flow step handles actions for that step only. To define **reusable** action handlers available across the whole agent, declare a top-level `ACTION_HANDLERS:` section. Each entry is keyed by the action element `id` and uses the same grammar as `ON_ACTION` (an optional `CONDITION`, shorthand `RESPOND`/`SET`/`TRANSITION`, or a canonical `DO:` block of ordered actions — `SET`, `CLEAR`, `LOG`, `RESPOND`, `CALL`, `GOTO`/`TRANSITION`/`THEN`, `HANDOFF`, `DELEGATE`, `COMPLETE`).
+
+```yaml expandable=true
+ACTION_HANDLERS:
+  open_summary:
+    DO:
+      - SET: selected_action = "open_summary"
+      - RESPOND: TEMPLATE(account_summary)
+      - TRANSITION: display_summary
+
+  contact_support:
+    CONDITION: user.tier == "premium"
+    DO:
+      - RESPOND: "Connecting you to premium support."
+      - HANDOFF: Support_Agent
+```
+
+### Forms
+
+A form groups several [action elements](#action-element-properties) — typically `input` fields, plus a submit control — into one submission.
+
+#### Syntax
+
+```yaml expandable=true
+RESPOND: "Let's set up your transfer."
+FORMATS:
+  FORM:
+    title: "Transfer Details"
+    fields:
+      - id: amount_input
+        type: input
+        label: "Amount"
+        inputType: number
+        required: true
+      - id: memo_input
+        type: input
+        label: "Memo (optional)"
+        inputType: text
+        required: false
+    submitLabel: "Continue"
+```
+
+#### Form properties
+
+| Property      | Type     | Required | Default | Description                                                      |
+| ------------- | -------- | -------- | ------- | ------------------------------------------------------------------ |
+| `when`        | `string` | No       | --      | Conditional render guard. See [Template modifiers](#template-modifiers). |
+| `title`       | `string` | No       | --      | Form heading.                                                    |
+| `fields`      | `array`  | Yes      | --      | Form fields — the same shape as [action elements](#action-element-properties) (`id`, `type`, `label`, and the rest). Supports [collection binding](#collection-binding). |
+| `submitLabel` | `string` | No       | --      | Label for the form's submit button.                              |
+
+`FORM` doesn't have its own `submitId` — submission is handled the same way as any other `ACTIONS` form submission; see [Form submission](#form-submission) and [ON_ACTION handlers](#on_action-handlers).
+
+### Progress
+
+A progress bar or circle for a single value against a maximum.
+
+#### Syntax
+
+```yaml
+FORMATS:
+  PROGRESS:
+    label: "Document verification"
+    value: 2
+    max: 3
+    variant: bar
+```
+
+#### Progress properties
+
+| Property  | Type                      | Required | Default | Description                                    |
+| --------- | -------------------------- | -------- | ------- | ------------------------------------------------- |
+| `when`    | `string`                  | No       | --      | Conditional render guard. See [Template modifiers](#template-modifiers). |
+| `label`   | `string`                  | No       | --      | Label shown with the progress indicator.       |
+| `value`   | `number`                  | Yes      | --      | Current progress value.                        |
+| `max`     | `number`                  | No       | --      | Maximum value the progress is measured against. |
+| `variant` | `"bar"` \| `"circle"`      | No       | `bar`   | Visual style.                                  |
+
+`PROGRESS` is a single value, not an array — there's no [collection binding](#collection-binding) here.
+
+### FEEDBACK surveys
+
+A `FEEDBACK` block renders a rating/feedback card. Author it inside a `RICH_CONTENT:` (or `FORMATS:`) block.
+
+<Warning>**Inline feedback is deprecated** (`DEPRECATED_INLINE_FEEDBACK`). A `FEEDBACK` block without a `FEEDBACK_TEMPLATE` still compiles, but the compiler warns: *"Inline feedback is deprecated and will be removed in a future version. Define a survey in the project Surveys area and reference it with `FEEDBACK_TEMPLATE`."* Prefer referencing a project survey template.</Warning>
+
+#### Referencing a survey template
+
+Set `FEEDBACK_TEMPLATE` to a project survey name. The `prompt` and `type` (the survey's **measure**) then come from the template, so they become optional here; any copy fields you do set act as **per-string overrides** (useful for translation):
+
+```yaml
+RICH_CONTENT:
+  FEEDBACK:
+    FEEDBACK_TEMPLATE: Post_Chat_NPS
+    prompt: "How likely are you to recommend us?"   # optional copy override
+```
+
+When a template is named you may **not** override the measure — `type`, `max`, `scoring`, `range`, and `comment_threshold` are owned by the template, and setting them alongside a template is a compile error. Naming a template that doesn't exist in the project is an error (`UNKNOWN_SURVEY_TEMPLATE`).
+
+`expires_after` is the one exception to that rule — a numeric answer-window TTL (in seconds) that **is** overridable per-agent even when a template is referenced:
+
+```yaml
+RICH_CONTENT:
+  FEEDBACK:
+    FEEDBACK_TEMPLATE: Post_Chat_NPS
+    prompt: "How likely are you to recommend us?"
+    expires_after: 600    # widen the answer window to 10 minutes for this agent
+```
+
+The effective window is the agent's `expires_after` if set, else the template's own TTL, else a 300-second platform default — clamped to 30–86400 seconds either way. A survey presented to the customer can only be answered within this window; a submission after it expires is rejected.
+
+#### Inline FEEDBACK (deprecated)
+
+Without a template, `prompt` and `type` are required:
+
+| Field | Type | Description |
+| ----- | ---- | ----------- |
+| `prompt` | `string` | The question (aliases: `question`, `label`). |
+| `type` | `"thumbs"` \| `"star"` \| `"scale"` | Rating measure. `stars` is an accepted alias for `star`. |
+| `max` | `number` | Maximum rating value (for `star`/`scale`). |
+| `submit_label` | `string` | Submit-button label. |
+| `pending_message` / `success_message` / `error_message` | `string` | Status copy. |
+| `comment_prompt` / `comment_placeholder` | `string` | Free-text comment field copy. |
+| `comment_threshold` | `number` | Rating at/below which the comment field is requested. |
+| `when` | `string` | Conditional render guard (expression). |
+
+#### Condition-based wording (`<field>_rules`)
+
+To vary wording by condition — the second way to translate a survey, kept next to the source copy — add a `<field>_rules` list. Each rule has a `when` expression and the field's replacement text (the field key, or the alias `value`). Rules are ordered, first match wins:
+
+```yaml
+FEEDBACK:
+  FEEDBACK_TEMPLATE: Post_Chat_NPS
+  prompt: "How likely are you to recommend us?"
+  prompt_rules:
+    - when: "language == 'es'"
+      prompt: "¿Nos recomendaría?"          # or:  value: "¿Nos recomendaría?"
+  comment_placeholder_rules:
+    - when: "language == 'es'"
+      value: "Cuéntenos más..."
+```
+
+Only **wording** fields accept rules: `prompt`, `submit_label`, `pending_message`, `success_message`, `error_message`, `comment_prompt`, `comment_placeholder`. There is no `type_rules`/`max_rules` — the measure is never rule-selectable.
+
+<Note>Copy rules are evaluated **before the customer answers**, so a `when` expression may reference `max`, `language`, `channel`, and `session` (as `session.<name>`) but **not** `rating`. An invalid condition is a compile error (`INVALID_SURVEY_CONDITION`).</Note>
+
+### Templates
+
+Templates are named, reusable response definitions declared in the `TEMPLATES:` block. They support `{{}}` interpolation and multi-format variants.
+
+#### Syntax
+
+```yaml expandable=true
+TEMPLATES:
+  wire_confirmation:
+    DEFAULT: |
+      **Wire Confirmation -- {{confirmation_number}}**
+      From: ****{{source_last4}} | To: {{beneficiary_name}}
+      Amount: {{amount}} {{currency}} | Fees: {{fees}} | Total: {{total_debit}}
+      Status: {{status}} | ETA: {{estimated_arrival}}
+    MARKDOWN: |
+      ## Wire Transfer Confirmation
+      | Field | Value |
+      |-------|-------|
+      | Confirmation | {{confirmation_number}} |
+      | Amount | {{amount}} {{currency}} |
+      | Status | {{status}} |
+
+  fee_breakdown:
+    DEFAULT: |
+      **Fee Breakdown for {{transfer_type}} wire**
+      Wire fee: {{wire_fee}} {{currency}}
+      {{#if intermediary_fee}}Intermediary fee: {{intermediary_fee}} {{currency}}{{/if}}
+      **Total fees: {{total_fees}} {{currency}}**
+```
+
+#### Template properties
+
+| Property        | Type     | Required | Default | Description                                                    |
+| --------------- | -------- | -------- | ------- | -------------------------------------------------------------- |
+| `name`          | `string` | Yes      | --      | Template name (the YAML key). Referenced via `TEMPLATE(name)`. |
+| `DEFAULT`       | `string` | Yes      | --      | Default template body with `{{}}` interpolation.               |
+| `MARKDOWN`      | `string` | No       | --      | Markdown variant.                                              |
+| `ADAPTIVE_CARD` | `string` | No       | --      | Adaptive Card JSON variant.                                    |
+| `ACTIONS`       | `object` | No       | --      | Interactive actions attached to this template.                 |
+| `VOICE`         | `object` | No       | --      | Voice (TTS) overrides for this template. Same shape as [Voice configuration](#voice-configuration). |
+| `RENDERABLES`   | `object[]`| No      | --      | Customer-owned structured payload contracts (`name`, `payload`, `targets`, `fallbackText`, `schemaRef`). |
+
+#### Referencing templates
+
+Use `TEMPLATE(name)` in any RESPOND value:
+
+```yaml
+RESPOND: TEMPLATE(wire_confirmation)
+```
+
+#### Template interpolation
+
+Template bodies use the same `{{variable_name}}` interpolation and `{{#if variable}}...{{/if}}` conditional-section syntax as any other ABL string — see [Template strings](/agent-platform/abl-reference/expressions-and-functions#template-strings) in Expressions and functions for the full syntax, including calling built-in functions inside `{{}}`.
+
+```yaml
+DEFAULT: |
+  Hello, {{customer_name}}.
+  {{#if has_loyalty}}Your loyalty tier: {{loyalty_tier}}.{{/if}}
+  How can I help you today?
+```
+
+### Channel selection
+
+The runtime selects the response format based on the delivery channel.
+
+| Channel  | Priority format                          | Fallback     |
+| -------- | ---------------------------------------- | ------------ |
+| Web/SDK  | `RICH_CONTENT` (Markdown, HTML, AG-UI)   | Plain text   |
+| Mobile   | `RICH_CONTENT` (Adaptive Card, Carousel) | Plain text   |
+| Voice    | `VOICE` (SSML, instructions, plain_text) | RESPOND text |
+| Slack    | `RICH_CONTENT` (SLACK)                   | Markdown     |
+| WhatsApp | `RICH_CONTENT` (WHATSAPP)                | Plain text   |
+
+If the preferred format isn't available, the runtime falls back through the priority chain until it finds a defined format. Plain text (`RESPOND`) is always the final fallback.
+
+---
+
+{{related}}
+
+- [Expressions and functions](/agent-platform/abl-reference/expressions-and-functions) -- operators, built-in functions, `{{}}` template-string syntax, and type coercion rules
+- [Lifecycle and hooks](/agent-platform/abl-reference/lifecycle-and-hooks) -- ON_START and hooks that support rich content
+- [Multi-Agent and supervisor](/agent-platform/abl-reference/multi-agent-and-supervisor) -- COMPLETE conditions with rich responses
+- [Data Types and utilities](/agent-platform/abl-reference/data-types-and-utilities) -- types used in rich content and template fields
