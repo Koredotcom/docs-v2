@@ -217,7 +217,7 @@ TOOLS:
 
 - **Zone 1 — authority** (before `?`): `{{route.vdn}}`, `{{route.ip}}`, `{{route.port}}` are filled from the `RESOLVE_SIP_DESTINATION` feeder's result — its return shape must use exactly those keys.
 - **Zone 2 — headers** (after `?`): `{{sip.<header>}}` placeholders, resolved server-side from trusted inbound SIP metadata, under the same rules as static defaults above.
-- **`approved_authorities`** is a mandatory allow-list — the resolved destination must match one entry or the transfer is refused. Each entry must be a **literal** SIP authority with an explicit scheme, host, and port (no default-port inference, no wildcard host). The VDN (user part) may be an exact digit string or a constrained digit-class pattern using single-digit ranges only — e.g. `5220[0-9][0-9]`. Regex metacharacters, alternation, anchors, groups, and any query/header/param section are rejected.
+- **`approved_authorities`** is a mandatory allow-list — the resolved destination must match one entry or the transfer is refused. Each entry must be a **literal** SIP authority with an explicit scheme, host, and port (no default-port inference, no wildcard host). The VDN (user part) may be an exact digit string or a constrained digit-class pattern using single-digit ranges only — for example, `5220[0-9][0-9]`. Regex metacharacters, alternation, anchors, groups, and any query/header/param section are rejected.
 
 The compiler validates both surfaces against the same predicates the runtime matcher uses (so a compile-accepted entry is never runtime-rejected): a malformed template raises `INVALID_SIP_TRANSFER_DESTINATION`; a bad allow-list entry raises `INVALID_APPROVED_SIP_AUTHORITY` (not a literal authority with a literal VDN, host, and explicit port) or `UNSAFE_SIP_AUTHORITY_PATTERN` (unsafe VDN pattern).
 
@@ -304,7 +304,8 @@ TOOLS:
 |-------------------|-------------------------------------------------------|----------|--------------------------|--------------------------------------------------------------------------------|
 | `type`            | `"http"`                                              | Yes      | --                       | Declares this as an HTTP tool                                                  |
 | `endpoint`        | `string`                                              | Yes      | --                       | URL or path for the API call. Supports path parameters: `"/hotels/{hotel_id}"` |
-| `method`          | `"GET"` , `"POST"` , `"PUT"` , `"PATCH"` , `"DELETE"` | Yes      | --                       | HTTP method                                                                    |
+| `method`          | `"GET"` , `"HEAD"` , `"OPTIONS"` , `"POST"` , `"PUT"` , `"PATCH"` , `"DELETE"` | Yes      | --                       | HTTP method                                                                    |
+| `idempotency_header` | `string`                                          | No       | _none_                   | Header name the runtime sends a durable dedupe key under (for example `Idempotency-Key`). Must name a real HTTP header, be ≤128 characters, and cannot be a credential/cookie/transport/signing header (`Authorization`, `Cookie`, `Host`, `Content-Type`, `X-Amz-*`, `SOAPAction`, etc.) — an invalid value is a compile warning (`HTTP_TOOL_INVALID_IDEMPOTENCY_HEADER`) and the runtime sends no idempotency key. Omit to keep the key internal. |
 | `auth`            | `string`                                              | No       | `"none"`                 | Authentication type (see [Auth](#auth))                                        |
 | `timeout`         | `number`                                              | No       | `EXECUTION.tool_timeout` | Request timeout in milliseconds                                                |
 | `retry`           | `number`                                              | No       | _none_                   | Number of retry attempts on failure                                            |
@@ -1019,6 +1020,8 @@ TOOLS:
 
 <Note>`effect` is optional by default, but a project can opt into a **strict realtime effect metadata mode** at compile time. Under that mode, every non-system tool must declare an explicit `effect` — an undeclared one is a compile error (`REALTIME_TOOL_EFFECT_REQUIRED`): *"Tool must declare an explicit effect (read_only, state_write, or side_effect) for strict realtime effect metadata mode."* This lets the compiler safely select the guarded scheduler lane a tool runs on. Strict mode is off by default for backward compatibility; declare `effect` on every tool to stay compatible with it regardless.</Note>
 
+<Note>When neither `effect` nor `hints.side_effects` is declared, the runtime infers one: for an HTTP tool, `GET`, `HEAD`, and `OPTIONS` default to read-only and every other method defaults to side-effecting; SearchAI and read-only table bindings default to read-only; any other non-HTTP tool defaults conservatively to side-effecting. An explicit `effect`/`side_effects` always wins over the inferred default.</Note>
+
 ### Result compaction
 
 
@@ -1042,6 +1045,29 @@ TOOLS:
 | `max_description_length` | `number`   | Maximum characters kept for descriptive fields.                 |
 | `summary_timeout_ms`     | `number`   | Timeout for LLM summarization of this tool's result.            |
 | `max_search_tokens`      | `number`   | Token budget for SearchAI knowledge-base result context sent to the LLM. |
+
+### MODEL_CONTEXT on a tool result
+
+An optional `MODEL_CONTEXT` block on a tool chooses the view of its result supplied to **later model calls** — independent of [result compaction](#result-compaction) above, which is an automatic LLM-assisted summarization fallback for oversized results. `MODEL_CONTEXT` is an author-declared, deterministic replacement that always applies, regardless of result size.
+
+```yaml
+TOOLS:
+  list_products(category: string) -> object
+    type: http
+    endpoint: "/api/products"
+    method: GET
+    model_context:
+      fields: [products[].id, products[].name, total]
+```
+
+| Property   | Type       | Description                                                                 |
+| ---------- | ---------- | ----------------------------------------------------------------------------- |
+| `fields`   | `string[]` | Result paths to keep, 1-64 entries. Paths may traverse arrays with `[]` (for example `products[].id`); each segment is an identifier, at most 16 segments deep. No path may be a prefix of (or overlap) another. |
+| `template` | `string`   | A text template (`{{}}` interpolation against `result`) rendered instead of the raw result — for example `"{{result.total}} products found"`. |
+
+`fields` and `template` are mutually exclusive — choose one. The full, unprojected tool result is still available everywhere else: `CALL AS`, `ON_RESULT`, assignments, response templates, and client delivery. Omit `MODEL_CONTEXT` entirely to keep the historical full-result behavior. An invalid or empty policy (both or neither of `fields`/`template`, an empty/overlapping `fields` list, or an empty `template`) fails validation (`MODEL_CONTEXT_INVALID`); if a *valid* policy can't be projected at runtime (a path doesn't resolve, say), the model receives a bounded "unavailable" marker instead of the full result — it never silently falls back to exposing everything.
+
+<Note>Legacy `.agent.abl` format: `MODEL_CONTEXT:` with nested `FIELDS:`/`TEMPLATE:` keys, directly under the tool signature. `MODEL_CONTEXT` can also sit beside a FLOW step's `RESPOND` or a `COMPLETE` condition's `RESPOND` — see [MODEL_CONTEXT on a response](/agent-platform/abl-reference/flow#model_context-on-a-response) for that (separate) use.</Note>
 
 ### Input/output transforms (`process`)
 
@@ -1141,6 +1167,8 @@ TOOLS:
 ```
 
 <Warning> `context_access` is validated against your `MEMORY:` declarations. A tool that declares a `read` of a **write-only** memory path (or a `write` of a **read-only** path) now fails compilation, and  at runtime a tool is blocked from executing if its declared memory is unavailable. Declare the   matching `MEMORY:` access mode for every path a tool reads or writes. </Warning>
+
+<Warning>A `read` key that is only ever populated by this **same tool's own** `on_result`/`on_error` writes can never be satisfied on the tool's first call in a session — that key doesn't exist yet, so the runtime fails the call closed every time. The compiler warns `TOOL_CONTEXT_ACCESS_READ_BEFORE_WRITE` for this. The key needs a producer other than the tool itself: another tool, `ON_START`, a FLOW `SET`, or a `GATHER` field.</Warning>
 
 ### Store result
 

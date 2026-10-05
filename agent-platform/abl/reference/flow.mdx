@@ -214,6 +214,21 @@ FLOW:
     THEN: confirm
 ```
 
+#### MODEL_CONTEXT on a response
+
+An optional `MODEL_CONTEXT` sits beside a FLOW step's `RESPOND` (or a `COMPLETE` condition's `RESPOND`) and replaces that response **only in future model context** — it never changes what's actually sent to the user, the stored transcript, or session values:
+
+```yaml
+FLOW:
+  show_products:
+    REASONING: false
+    RESPOND: "{{products_widget}}"
+    MODEL_CONTEXT: "Displayed products {{product_ids}}."
+    THEN: next_step
+```
+
+This is useful when the delivered response carries a large presentation payload (a widget, a card, a big table) that would otherwise bloat every later model call for no benefit — `MODEL_CONTEXT` lets the model keep a short textual summary of what the customer saw instead. `MODEL_CONTEXT` is a text scalar; a non-text value fails validation (`MODEL_CONTEXT_INVALID`). An explicitly empty value omits the response from later model requests entirely. Omit the property to keep the historical full-response behavior. See also [MODEL_CONTEXT on a tool result](/agent-platform/abl-reference/tools#model_context-on-a-tool-result) for the equivalent policy on a tool's own result.
+
 ### PRESENT
 
 
@@ -420,6 +435,33 @@ CALL: ivr_digit_input
 
 Nesting is preserved by indentation. Scalar leaves keep their raw form and are coerced at runtime (`"30"` → `30`, `"[15, 16]"` → `[15, 16]`).
 
+#### Localized WITH arguments
+
+A `WITH` value can take its text from the project's locale files (`locales/<locale>/<agent>.json` or `locales/<locale>/_shared.json`) with `"{{locale.KEY}}"`, or a bare `locale.KEY`. The text is chosen for the caller's current interaction locale (with the same fallback chain as `MESSAGE_KEY` — for example `hi-IN`, then `hi`), and `{{…}}` placeholders inside the locale text are rendered too:
+
+```yaml
+FLOW:
+  collect_card_number:
+    REASONING: false
+    CALL: ivr_digit_input
+      WITH:
+        prompt: "{{locale.CARD_PROMPT}}"
+        maxDigits: 19
+        endingKeyPress: "#"
+        noInputConfig:
+          timeout: 30
+          maxRetries: 2
+          message: "{{locale.CARD_NO_INPUT}}"
+      AS: cardNumberResult
+    ON_RESULT:
+      - IF: cardNumberResult.success == false
+        THEN: payment_input_failed
+      - ELSE:
+          THEN: validate_card_number
+```
+
+If a referenced key isn't defined for the caller's locale (and no less-specific locale in the chain provides it), the tool is **not** called — the `CALL` result is `success: false` with `error.code: "LOCALE_KEY_MISSING"`, so the step's failure branch runs and raw `{{locale.KEY}}` text never reaches the tool or the caller. Only authored text is treated as a locale reference; a session value that happens to contain `{{locale.…}}` passes through as plain data. Supported forms are `"{{locale.KEY}}"` (optionally with filters, like `"{{locale.KEY | upper}}"`, and mixed with other text) and a bare `locale.KEY`; an expression such as `locale["KEY"]` or `locale.KEY + "!"` is not supported and the `CALL` is not run.
+
 ### SET
 
 
@@ -443,6 +485,22 @@ Each assignment uses `variable = expression` syntax. The expression is resolved 
 - Function calls: `FORMAT_CURRENCY(amount, "USD")`, `COALESCE(value, "default")`, `ADD(a, b)`, `SUB(a, b)`, `ROUND(n, decimals)`
 - Unique ID generation: `UNIQUE_ID(12)`
 - Current timestamp: `NOW()`
+
+An unquoted JSON array or object literal is stored as a structured value. A JSON string's string-typed leaves may contain `{{variable}}` templates — the collection is parsed first, then its string values are rendered, so substituted data is never reinterpreted as JSON:
+
+```yaml
+SET:
+  filters = [{"field":"customer","operator":"in","value":["Public", "{{employer_name}}"]}]
+```
+
+This stores an array of objects correctly even when `employer_name` contains quotes or backslashes. Prefer a direct variable reference when constructing a computed collection instead of interpolating one into JSON-shaped text:
+
+```yaml
+SET:
+  filters = [{"field":"customer","operator":"in","value":["Public", employer_name]}]
+```
+
+Surround the whole value with quotes when JSON-shaped *text* is intentional — `SET: payload_text = '[{"customer":"{{employer_name}}"}]'` stores a string, not a structured value. A session `TYPE` declaration alone doesn't validate every `SET` write; validate structured arguments at the tool boundary (pass the variable to a typed parameter, such as `filters: object[]`, through `WITH`).
 
 ### CHECK
 
@@ -1229,6 +1287,44 @@ FLOW:
 ```
 
 Omitting `streaming` defaults to `true` (streaming) at every scope.
+
+#### Step-level no-input (caller silence)
+
+A FLOW step can carry its own caller-silence policy in its own `VOICE:` block, as `ON_NO_INPUT`. It takes the same keys as `CONVERSATION.listening.on_no_input` (agent/project-wide) and applies on KoreVG pipeline voice while that step is the one waiting on the caller:
+
+```yaml
+CONVERSATION:
+  listening:
+    on_no_input:
+      enabled: true
+      mode: static
+      timeout_ms: 5000
+      max_retries: 3
+      messages:
+        - text: "Are you still there?"
+        - text: "Hello?"
+
+FLOW:
+  ask_account:
+    REASONING: false
+    RESPOND: "What's your account number?"
+    GATHER:
+      - account_number: required
+    VOICE:
+      ON_NO_INPUT:
+        timeout_ms: 10000
+        messages:
+          - text: "Could you tell me your account number, {{memo_name}}?"
+    THEN: complete
+```
+
+- **Owner.** When the silence timer starts, the step currently waiting owns the window. The block applies only to that step; after `COMPLETE`/`ESCALATE`, or on a step with no block, the agent/project policy applies as usual.
+- **Merging.** Fields merge one at a time over the project and agent policy — a step can override just `timeout_ms` and inherit everything else. `max_retries`, `relaxed_interval_ms`, `on_exhausted`, and `exhausted_message` all follow the same rule, and `enabled: true` on a step turns silence handling on for that step even when the agent has it off.
+- **Messages.** Step messages don't *replace* the agent-level list — each silence plays agent message N followed by step message N as one utterance ("Are you still there? Could you tell me your account number, Sam?"). Once the step's own list is used up, the agent message plays alone (or the platform default, if the agent has none), so a step block never ends the call sooner than the agent alone would.
+- **Retry count.** Restarts when the caller speaks, and when a different step (or the same step entered again) takes ownership of the window.
+- **Variables.** `{{var}}` placeholders render in agent messages, step messages, and `exhausted_message`. A step message with a missing variable is skipped; an agent or exhausted message with a missing variable falls back to the platform default text.
+
+<Warning>`ON_NO_INPUT` is only legal directly in a FLOW step's own `VOICE:` block. Placed under a GATHER field, `RESPOND`, a branch, a handler, or a response format, it's a compile error (`VOICE_NO_INPUT_ILLEGAL_PLACEMENT`). The YAML format uses a step-level `on_no_input:` key.</Warning>
 
 ---
 

@@ -75,6 +75,10 @@ You can declare a session variable with a bare name (minimal form) or with addit
 | `DESCRIPTION` | `string`                                                      | No       | --            | Human-readable description of the variable's purpose.                              |
 | `INITIAL`     | any                                                           | No       | `null`        | Initial value assigned when the session starts. (`initial_value` is accepted as a legacy alias.) |
 | `RESET`       | `per_session`, `per_activation`, `per_step`, `never`          | No       | `per_session` | When to reset the variable. See [Reset behavior](#reset-behavior).                 |
+| `SOURCE`      | `user`, `tool`                                                | No       | --            | Restricts who may write the variable. See [Write authority, format and derived values](#write-authority-format-and-derived-values). |
+| `FORMAT`      | `email`, `phone`, `digits`, `address`, `person_name`           | No       | --            | How a caller's words are read when grounding the value, and the `kind` used by `MATCH_SCORE`/`MATCHES`/`MATCH_RESULT`. Never changes `TYPE`. |
+| `DERIVED`     | expression (string)                                            | No       | --            | Expression the platform recomputes on every session write. The model cannot set a derived field. |
+| `READONLY`    | `boolean`                                                      | No       | `false`       | When `true`, the model's `__set_context__` cannot write the variable; `SET`, `on_result`, and hooks still can. |
 
 #### Reset behavior
 
@@ -100,6 +104,35 @@ MEMORY:
       INITIAL: 0
       RESET: per_step
 ```
+
+#### Write authority, format and derived values
+
+A session variable can also declare who may write it, what kind of caller-supplied value it holds, and an expression the platform computes for it — together these are the building blocks for identity-verification flows (confirming a caller against a stored profile).
+
+```yaml
+MEMORY:
+  session:
+    - supplied_email
+      TYPE: string
+      SOURCE: user
+      FORMAT: email
+    - profile_email
+      TYPE: string
+      SOURCE: tool
+    - email_verified
+      TYPE: boolean
+      DERIVED: MATCHES(supplied_email, profile_email)
+```
+
+(Legacy `.agent.abl` format: `SOURCE: user`, `FORMAT: email`, `DERIVED: MATCHES(supplied_email, profile_email)` are written the same way, uppercase, directly under the variable.)
+
+- **`SOURCE: user`** — the variable is stored only when the value is something the caller actually said; a model write of a value the caller never said is silently refused (the value is not stored) and traced by field name only, never by value. A close spelling is stored as the caller said it — for example the caller spells "Riviera" but the model writes "Rivera"; the stored value is the caller's own spelling.
+- **`SOURCE: tool`** — only a tool binding (via `on_result`/`on_error` mappings) can set the variable; a model write is refused the same way. `SET` and other FLOW-authored writes still follow the active agent's own declarations.
+- **`FORMAT`** — one of `email`, `phone`, `digits`, `address`, `person_name`. It governs how the caller's spoken/typed words are read when grounding a `SOURCE: user` value (for example, "at the rate" → `@`, spelled-out digits, spoken addresses), and supplies the default `kind` for a two-argument `MATCH_SCORE`/`MATCHES`/`MATCH_RESULT` call whose operands are both `FORMAT`-declared fields — but **only inside a `DERIVED` expression**. Elsewhere (`CONSTRAINTS`, `WHEN`, hooks, and other expressions), a two-argument call is scored as `kind: text` unless you pass the kind explicitly: `MATCHES(a, b, "email")`.
+- **`DERIVED`** — an expression (typically built from `MATCH_SCORE`/`MATCHES`/`MATCH_RESULT`, or a boolean combination of other fields) that the platform recomputes after every session write. The model can never set a `DERIVED` field directly. A derived field may reference another derived field in any declaration order. If two or more derived fields depend on each other in a cycle, **all of them are left unset** — so a rule like `verified == true` fails closed rather than evaluating against a stale or undefined value (compiler warning `DERIVED_CYCLE`). A computed value that doesn't match the field's declared `TYPE` is also left unset. A `DERIVED` expression must be valid CEL with no trailing `//` comment (CEL has no comments) and no call to a function the evaluator has no overload for — any of those is a compiler warning (`DERIVED_EXPRESSION_INVALID`); the agent still compiles, but the field never computes correctly.
+- **`READONLY: true`** — a lighter-weight opt-in than `SOURCE`/`DERIVED`: it only blocks the model's own `__set_context__` writes. `SET`, `on_result`, and hooks can still write it. Only the literal value `true` opts in.
+
+<Note>`MATCH_SCORE(said, stored, kind?)` returns 0-100 (or `-1` when there's nothing to judge — a missing value, a PII vault token, or an input over 1,024 characters; `-1` is below every threshold, so a rule written as `MATCH_SCORE(...) >= 70` fails closed). `MATCHES(said, stored, kind?)` is the pass/fail form on the platform's own match bands, and `MATCH_RESULT(said, stored, kind?)` returns `"match"`, `"retry"`, `"mismatch"`, or `"missing"`. These are a **said-versus-stored identity comparison**, not a regex test — the infix `a MATCHES "pattern"` operator is the regex form. See [Built-in function reference](/agent-platform/abl-reference/expressions-and-functions#built-in-function-reference) for the full signatures and match bands.</Note>
 
 ### Persistent variables
 
@@ -387,6 +420,20 @@ Supported structural targets today:
 
 Non-structural `BEFORE` targets are retained for compatibility, but they are warning-only and have no runtime effect. Prefer `IMPLIES` or `WHEN` for that form.
 
+<Note>
+  A `BEFORE calling <tool_name>` rule's `condition` (`REQUIRE`/`LIMIT`/`RESTRICT`) or `WHEN` can read the about-to-be-sent arguments via `tool_args`, but only when the agent sets `EXECUTION: guardrail_builtins: true`. Without it, `tool_args` is unbound: the rule cannot read the arguments, so it never holds, and the tool call is refused. The compiler warns `GUARDRAIL_BUILTIN_NOT_BOUND` for this case.
+
+  ```yaml
+  EXECUTION:
+    guardrail_builtins: true
+
+  CONSTRAINTS:
+    always:
+      - REQUIRE tool_args.amount <= daily_wire_limit BEFORE calling wire_transfer
+        ON_FAIL: "That exceeds your daily wire limit."
+  ```
+</Note>
+
 #### IMPLIES
 
 `IMPLIES` is an inline condition operator (not a top-level keyword) for expressing conditional requirements. `A IMPLIES B` is lowered to `NOT (A) OR (B)` — that is, "if A holds, then B must also hold." Use it inside the condition of a `REQUIRE`/`LIMIT`/`RESTRICT` rule:
@@ -408,15 +455,29 @@ Non-structural `BEFORE` targets are retained for compatibility, but they are war
     GOTO: collect_amount
 ```
 
-| Key       | Type       | Description                                                              |
-| --------- | ---------- | ------------------------------------------------------------------------ |
-| `RESPOND` | `string`   | Message sent to the user on failure.                                     |
-| `CLEAR`   | `string[]` | Session variables to reset on failure, so stale values are recollected.  |
-| `COLLECT` | `string[]` | Fields to re-collect before retrying.                                    |
-| `GOTO`    | `string`   | Step to route to.                                                        |
-| `RETRY`   | `boolean`  | Whether to retry the failed operation.                                   |
+| Key            | Type       | Description                                                                             |
+| -------------- | ---------- | ---------------------------------------------------------------------------------------- |
+| `RESPOND`      | `string`   | Message sent to the user on failure.                                                     |
+| `CLEAR`        | `string[]` | Session variables to reset on failure, so stale values are recollected.                  |
+| `COLLECT`      | `string[]` | Fields to re-collect before retrying.                                                    |
+| `GOTO`         | `string`   | Step to route to. A single identifier naming a declared FLOW step; anything else is spoken literally. |
+| `RETRY`        | `boolean`  | Whether to retry the failed operation.                                                   |
+| `MAX_REPEATS`  | `number`   | Failures of this constraint (per conversation) this block answers before `ON_EXHAUSTED` takes over. Omit for no cap. |
+| `ON_EXHAUSTED` | string or action | Inline action run once `MAX_REPEATS` is used up, for example `ESCALATE "identity_not_confirmed"`. |
 
 <Note>The `CLEAR` key lets an `ON_FAIL` block reset dependent state directly — you no longer need a separate `CLEAR`-only step solely to clear variables before a retry.</Note>
+
+<Note>
+  An `ON_FAIL` `RESPOND` message may use `{{_abl_constraint_fail_count}}` — this failure's 1-based ordinal for the constraint within the current conversation. Pair it with `MAX_REPEATS`/`ON_EXHAUSTED` to vary the message as attempts run out, then hand off once the cap is reached:
+
+  ```yaml
+  - REQUIRE MATCH_SCORE(supplied_email, profile_email) >= 70
+    ON_FAIL:
+      RESPOND: "That doesn't match what's on file (attempt {{_abl_constraint_fail_count}})."
+      MAX_REPEATS: 2
+      ON_EXHAUSTED: ESCALATE "identity_not_confirmed"
+  ```
+</Note>
 
 ### Constraint properties
 
@@ -477,13 +538,15 @@ For more control, use a structured block that combines multiple actions.
 
 ##### Structured ON_FAIL properties
 
-| Property  | Type                  | Required | Default | Description                                                          |
-| --------- | --------------------- | -------- | ------- | -------------------------------------------------------------------- |
+| Property       | Type                  | Required | Default | Description                                                          |
+| -------------- | --------------------- | -------- | ------- | -------------------------------------------------------------------- |
 | `RESPOND` | `string`              | No       | --      | Message to send to the user.                                         |
 | `COLLECT` | `string[]`            | No       | --      | Fields to collect from the user before re-evaluating.                |
 | `GOTO`    | `string`              | No       | --      | Flow step to jump to.                                                |
 | `RETRY`   | `boolean`             | No       | `false` | Retry the current step after handling the constraint.                |
 | `THEN`    | `continue` or `retry` | No       | --      | What to do after collection: `continue` proceeds, `retry` re-checks. |
+| `MAX_REPEATS`  | `number`              | No       | --      | Failures of this constraint (per conversation) answered before `ON_EXHAUSTED` takes over. |
+| `ON_EXHAUSTED` | string or action      | No       | --      | Inline action run once `MAX_REPEATS` is used up.                     |
 
 #### Collect and retry example
 

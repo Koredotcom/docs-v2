@@ -1,0 +1,187 @@
+---
+title: Configure Microsoft Foundry 
+---
+
+Use models from Microsoft Foundry, including OpenAI, Anthropic, Meta, and Mistral models, through a single provider integration.
+
+Microsoft Foundry hosts models from multiple providers, including OpenAI, Anthropic, Meta, Mistral, and others, through a unified deployment platform. The Microsoft Foundry catalog lets you add these models, and the platform automatically routes inference calls using the appropriate wire format, headers, and authentication scheme.
+
+## Key benefits
+
+* **One provider for multiple models** — Add Microsoft Foundry once and select models from different model families.
+* **Automatic format routing** — The platform automatically detects the API format required by the model and routes requests accordingly.
+* **Flexible authentication** — Use an API key or an Azure AD Service Principal.
+* **Backward compatibility** — Existing connections continue to work without changes.
+
+---
+
+## Supported models
+
+The platform supports any model deployed on Microsoft Foundry. The model catalog lists popular models for easy setup.
+
+If your deployed model is not listed in the catalog, you can add it using the **Custom Model** option. Custom models use the OpenAI Chat format by default. You can override the format if needed.
+
+---
+
+## Prerequisites
+
+Before you configure the provider, ensure you have the following:
+
+1. An **Azure AI Foundry resource** with at least one model deployed.
+2. **The resource endpoint**, available in the Azure portal under your Foundry resource's overview. For example, `https://your-resource.openai.azure.com`.
+3. **Authentication credentials**, either:
+    * An **API key** from the Azure portal (**Keys and Endpoint** section), or
+    * A **Service Principal** with the `Cognitive Services User` role on the resource for automatic token management.
+
+---
+
+## Authentication methods
+
+Microsoft Foundry supports the following authentication methods:
+
+| Authentication method | Description | Recommended for |
+|---|---|---|
+| **API key** (Manual Credential) | Uses an API key from the Azure portal to authenticate requests. The platform sends the key with each request. | Quick setup, individual use, and development or testing environments |
+| **Service Principal** | Enterprise-grade authentication using OAuth 2.0 client credentials. The platform automatically acquires, caches, and refreshes bearer tokens — no manual token rotation required. | Production workloads, team or organization deployments, and environments that require centralized credential management |
+
+For information about configuring each authentication method, see:
+
+* [Add a model with an API key](#add-a-model-with-an-api-key)
+* [Add a model with a Service Principal](#add-a-model-with-a-service-principal)
+
+---
+
+## Add a model with an API key
+
+Use an API key to authenticate requests to Microsoft Foundry. The platform sends the key with each request. 
+
+* For OpenAI-format models, the key is sent in the `api-key` header. 
+* For Anthropic-format models, it is sent in the `x-api-key` header.
+
+**Procedure:**
+
+1. Go to **Admin > LLM Providers**.
+2. In the **Model Catalog**, select **Add Model**.
+3. Select **Microsoft Foundry > Add manually**.
+4. Select one of the following options:
+    * **Choose from popular models** — Select a model from the curated list of Foundry models.
+    * **Enter deployment details** — Enter the deployment details for a model that is not available in the curated list.
+        1. **Display Name** — Enter a name for the model.
+        2. **Model ID** — Enter the deployment or model ID.
+        3. **Tier** — Select the appropriate model tier.
+5. Select **Add to Workspace**.
+6. From the model list, locate the Microsoft Foundry model and expand the model row.
+7. Under **Connections**, select **Add Key**.
+8. In the **Add Connection** dialog, select **Create new credential** and enter the credential details.
+
+| Field | Description |
+|---|---|
+| **Name** | A display label for this connection. |
+| **Provider** | Microsoft Foundry is selected. |
+| **API Key** | Enter your Azure API key. |
+| **Auth Mode** | Only shown for Anthropic-format models (`API Key` or `Entra Token`). |
+| **Endpoint** | Enter the base URL of your Foundry resource, for example, `https://your-resource.openai.azure.com`. Do not include a path suffix. The platform automatically appends the appropriate API path based on the model format. |
+| **Deployment ID** | Deployment name in your Azure OpenAI resource. |
+| **Anthropic Version** | Only for Anthropic models (for example, `2023-06-01`). |
+
+9. Select **Test Connection** to verify the connection.
+10. Select **Save**.
+
+---
+
+## Add a model with a Service Principal
+
+Use a Service Principal to authenticate with Microsoft Foundry using OAuth 2.0. The authentication flow is as follows:
+
+- Register a Service Principal in Azure AD and grant it access to your Foundry resource.
+- Create an Azure AD Auth Profile in the platform with the Service Principal credentials.
+- When connecting a model, select the auth profile instead of providing an API key.
+- At inference time, the platform acquires a short-lived token (`https://cognitiveservices.azure.com/.default` scope), caches it, and refreshes it automatically before expiry.
+
+<Note>
+**Token lifecycle**: Service Principal tokens are acquired on demand, cached, and refreshed before expiry. Tokens are invalidated when the auth profile is updated or deleted. If token acquisition fails, the LLM call returns an authentication error.
+</Note>
+
+**Procedure:**
+
+1. Go to **Admin > LLM Providers**.
+2. In the **Model Catalog**, select **Add Model**.
+3. Select **Microsoft Foundry**.
+4. Select **Use Service Principal**.
+5. Select **Create a new profile**.
+6. Enter the profile details:
+
+| Field | Required | Description |
+|---|---|---|
+| Auth Type | Yes | Service Principal (Azure AD). |
+| Profile Name | Yes | Enter a name for the profile. |
+| Description | No | Enter a description for the profile. |
+| Visible to project members | — | Specify whether project members can use this profile. |
+| Tenant (Directory) ID | Yes | Enter your Azure AD tenant ID. |
+| Subscription ID | Yes | Enter your Azure subscription ID. |
+| Application (Client) ID | Yes | Enter the Service Principal application ID. |
+| Client Secret | Yes | Enter the Service Principal secret value. |
+| Default scope | No | Optionally specify a default scope. |
+| Resource Group | No | Select the resource group that contains the Foundry account. |
+| Foundry Account | No | Select the Foundry account. |
+| Foundry Project | No | Select the Foundry project. |
+
+7. Select **Create profile**.
+
+8. In the **Add Model** dialog, select the Service Principal profile you created.
+
+9. If the profile does not have a default scope, select the **Resource Group**, **Foundry Account**, and **Foundry Project**.
+
+10. Select **List deployments**.
+The platform retrieves the model deployments available in the specified Foundry scope.
+
+---
+
+## Endpoint Reference
+
+| Model Format | Full Endpoint (constructed by platform) | API Key Header | Bearer Token Header |
+|---|---|---|---|
+| OpenAI Chat | `{your-base-url}/openai/v1/chat/completions` | `api-key: <key>` | `Authorization: Bearer <token>` |
+| Anthropic Messages | `{your-base-url}/anthropic/v1/messages` | `x-api-key: <key>` | `Authorization: Bearer <token>` |
+
+---
+
+## Migration from the legacy provider
+
+If you previously configured models using the **Microsoft Foundry (Anthropic)** provider (`microsoft_foundry_anthropic`):
+
+* No action is required. Existing models, connections, and credentials continue working. The legacy provider name is treated as an alias for the unified Microsoft Foundry provider.
+* New models should be added using the unified Microsoft Foundry provider, which supports all model families.
+* The legacy provider card is no longer shown in the UI for new configurations, but all existing runtime behavior is preserved.
+
+---
+
+## Troubleshooting
+
+| Symptom | Likely cause | Resolution |
+|---|---|---|
+| "Test Connection" fails with 401 | Invalid API key or expired token | Verify the key in Azure portal; for Service Principal mode, check that the secret hasn't expired. |
+| "Test Connection" fails with 404 | Incorrect endpoint or model not deployed | Confirm the base URL and that the model is deployed on the resource. |
+| Model not in catalog | Model is not listed in the catalog | Use **Custom Model** and specify the deployment name manually. |
+| Auth token acquisition failed | Service Principal credentials invalid or insufficient permissions | Verify Tenant ID, Client ID, and Client Secret; ensure the Service Principal has the **Cognitive Services User** role. |
+| Wrong response format or parsing errors | Model format mismatch | Verify the model is correctly identified; use format override if using a custom model. |
+
+---
+
+## Limits and considerations
+
+* **Rate limits** are governed by your Azure AI Foundry resource tier, not by this platform.
+* **Token caching** (Service Principal mode) uses preemptive refresh. In rare cases during Azure AD outages, cached tokens may expire without refresh. Calls fail with a clear authentication error and automatically recover when Azure AD is available again.
+* **Streaming** works identically for all models; no special configuration is required.
+* **Vision and tool use** capabilities depend on the specific model deployed, not the provider configuration. The model catalog shows supported capabilities for each model.
+
+---
+
+## FAQs
+
+| Question | Answer |
+|---|---|
+| **Do I need to specify which API format my model uses?** | No. The platform detects the API format automatically from the model catalog. For custom models that are not in the catalog, the platform defaults to the OpenAI format. |
+| **Can I use the same endpoint for multiple models?** | Yes. If you have multiple models deployed on the same Foundry resource, they share the same base endpoint. Create separate model entries and point their connections to the same URL. |
+| **What's the difference between an API key and a Service Principal?** | An API key requires you to provide a key from the Azure portal. A Service Principal uses centrally managed credentials, short-lived tokens, automatic token refresh, and Azure RBAC for fine-grained access control. |
+| **Will my existing Anthropic-on-Foundry setup break?** | No. The legacy provider is fully supported as a runtime alias. Existing configurations continue to work without changes. |
