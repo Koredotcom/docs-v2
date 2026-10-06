@@ -1,9 +1,9 @@
 ---
-title: Inbuilt tool - call_transfer 
-sidebarTitle: call transfer
+title: Inbuilt tool - call_transfer
+sidebarTitle: call_transfer
 ---
 
-The `call_transfer` tool transfers an active voice call to another destination from within an agent flow.
+The `call_transfer` tool transfers an active voice call to a SIP endpoint or a PSTN number from within an agent.
 
 Unlike `ESCALATE`, which routes a conversation through the platform's human escalation workflow, `call_transfer` performs a direct telephony transfer. Use it when your agent needs to hand the active call to another `SIP` or `PSTN` destination without creating a human escalation task.
 
@@ -17,57 +17,93 @@ Use `call_transfer` when you want to:
 
 For structured human-agent escalation with routing rules, context propagation, and post-completion actions, use `ESCALATE` instead.
 
-## Syntax
+## Declare the tool
 
-```javascript
-call_transfer(
-    callTransferType: string,
-    sipTransferId: string,
-    message: string
-)
+`call_transfer` is an inbuilt tool, so it needs no HTTP endpoint or Tool Library entry. Declare it in the `TOOLS:` section so that your flow or reasoning agent can use it.
+
+```yaml
+TOOLS:
+  call_transfer(
+      callTransferType: string,
+      message: string
+  ) -> object
 ```
+
+<Note>
+An agent that routes through `ESCALATE` with `voice.call_transfer_type: sip` or `pstn` invokes `call_transfer` itself, so you do not declare the tool for that path. To call `call_transfer` from a flow or let the model call it, declare it as shown above. A `CALL: call_transfer` step in a flow without a `TOOLS:` declaration fails validation with an undefined-tool error.
+</Note>
+
+## Parameters
 
 | Parameter | Required | Description |
 |-----------|----------|-------------|
 | `callTransferType` | Yes | Transfer type. Supported values: `sip`, `pstn`. |
-| `sipTransferId` | No | endpoint ID for SIP transfers(example, `sip:queue@host.com`). The SIP transfer URI set in Project Settings > Agent Transfer > Voice Gateway serves as the fallback when caller/model-supplied values are not available. |
 | `message` | No | Message played to the caller before the transfer begins. |
-| `phoneNumber` |No | Phone number for PSTN transfers (for example, `+1-555-0100`, `5550100`) |
-| `message` |  No | Message to play before transfer completes |
-| `language` | No | TTS language code (for example, `en-US`, `es-ES`) |
-| `headers` |  No | Custom SIP headers to forward (only allowlisted headers are sent). |
-| `resolvedTransferMethod` |No | SIP method: `"refer"`, `"invite"`or `bye`. |
+| `language` | No | TTS language code for `message` (for example, `en-US`, `es-ES`). |
+| `headers` | No | Custom SIP headers to forward on a SIP transfer. Only headers permitted by your transfer header policy are sent. |
+
+## Where the destination comes from
+
+For security, the destination is never taken from the model or from values passed in the call. The platform resolves it, so a prompt-injected conversation cannot redirect a live call.
+
+**PSTN transfers** dial the number configured in **Project Settings > Agent Transfer > Voice Gateway**. The number must be in E.164 format. If it is missing or invalid, the transfer fails and nothing is dialed.
+
+**SIP transfers** use the first destination available from this list:
+
+1. The destination returned by a `RESOLVE_SIP_DESTINATION` step earlier in the flow.
+2. The `sip_transfer_id` of the matching `ESCALATE` routing entry (when the transfer is triggered by escalation).
+3. The `sipTransferId` default declared on the tool with `default_source: config`.
+4. The SIP target configured in **Project Settings > Agent Transfer > Voice Gateway**.
+
+<Note>
+If you declare `approved_authorities` on the tool (dynamic SIP routing), the transfer requires a routing decision for the call. When none exists, or the resolved destination is not on the approved list, the transfer fails closed. It does not fall back to the project default.
+</Note>
+
+The transfer method (`refer`, `invite`, or `bye`) is also set in Project Settings, not in the call.
 
 ## How it works
 
-- The workflow resolves the appropriate destination for the current call.
-- The runtime populates the configured SIP URI template using the returned routing values.
-- Before initiating the transfer, the resolved destination is validated against the configured allow list.
-- If validation succeeds, the call is transferred.
-- If destination resolution or validation fails, the transfer is not attempted, and the flow follows the ON_FAILURE path.
+- The platform resolves the destination for the current call, as described above.
+- For dynamic routing, the SIP URI template is filled with the routed values, and the result is validated against the approved authorities.
+- If `message` is set, it is played to the caller before the transfer starts.
+- The runtime dispatches the transfer and waits for the real SIP outcome. The tool reports success only when the call actually connected.
+- If the transfer fails, the caller stays with your agent and the flow follows the `ON_FAILURE` path.
 
-<Note>: Dynamic SIP routing supports only destinations that have been explicitly configured in the project's approved authorities. If the resolved destination cannot be validated, the transfer fails, and the configured failure handler is invoked.</Note>
+On voice channels that cannot report a transfer outcome, the tool returns `status: "initiated"`. This means the transfer was started, not that it connected. Do not tell the caller the transfer succeeded in that case.
 
-### Passing custom SIP headers 
+### Passing custom SIP headers
 
-When using SIP transfers, you can attach custom SIP headers via the headers parameter on `call_transfer`.
+When using SIP transfers, you can attach custom SIP headers with the `headers` parameter on `call_transfer`.
 
-For details, see [Pass Custom SIP Headers on Voice Transfer](/agent-platform/sending-custom-sip-headers). 
+For details, see [Pass Custom SIP Headers on Voice Transfer](/agent-platform/sending-custom-sip-headers).
+
+## Errors
+
+| Code | Meaning |
+|------|---------|
+| `INVALID_INPUT` | The call arguments did not match the tool's schema. |
+| `MISSING_PHONE_NUMBER` | PSTN transfer, but no valid PSTN number is configured for the project. |
+| `MISSING_SIP_TARGET` | SIP transfer, but no destination could be resolved. |
+| `INVALID_SIP_URI` | The transfer method is `invite` and the destination is not a valid `sip:` or `sips:` URI. |
+| `SIP_ROUTING_FAILED` | Dynamic routing could not be validated for this call. The transfer was not attempted. |
+| `SIP_TRANSFER_ID_INVALID` | The authored SIP destination could not be resolved or failed safety checks. The transfer was not attempted. |
+| `MISSING_SIP_URI_HEADER` / `INVALID_SIP_URI_HEADER` | A required header value for the SIP URI is missing or invalid for this call. |
+| `VOICE_TRANSFER_UNSUPPORTED` | The current voice channel does not support transfers. |
+| `VOICE_TRANSFER_DISPATCH_UNAVAILABLE` | The voice session that owns the call is not available. |
+| `TRANSFER_DISPATCH_FAILED` | The voice gateway failed to dispatch or observe the transfer. |
 
 ## Examples
 
 **Example 1: Transfer to a configured SIP destination**
 
-Use a project-configured SIP destination when you want all calls to transfer to the same endpoint.
+Use a project-configured SIP destination when all calls transfer to the same endpoint.
 
-```json
-AGENT: trasfer_my_call
+```yaml
+AGENT: transfer_my_call
 
 TOOLS:
-  // add definition
   call_transfer(
       callTransferType: string,
-      sipTransferId: string,
       message: string
   ) -> object
 
@@ -79,18 +115,22 @@ FLOW:
       call_transfer(
         callTransferType: "sip",
         message: "Connecting you now."
-      ) // Uses configured SIP configuration.
+      )
     THEN: COMPLETE
+    ON_FAILURE: transfer_failed
 
+  transfer_failed:
+    RESPOND: "I'm sorry, I couldn't connect you right now. Please try again later."
+    THEN: COMPLETE
 ```
 
-In this example, the runtime resolves the configured `sipTransferId` from the agent configuration before initiating the transfer.
+The destination is the SIP target from Project Settings.
 
 **Example 2: Route calls dynamically**
 
 Use a workflow to determine the transfer destination at runtime. This approach is useful when calls must be routed to different queues or contact-center destinations based on customer attributes such as region, language, or business unit.
 
-```json
+```yaml
 AGENT: transfer_my_call
 
 TOOLS:
@@ -130,25 +170,35 @@ FLOW:
     THEN: COMPLETE
 ```
 
-
 **Example 3: Transfer to a PSTN number**
 
-```json
-TOOL: call_transfer
-  input:
-    callTransferType: "pstn"
-    phoneNumber: "+1-555-0100"
+```yaml
+TOOLS:
+  call_transfer(
+      callTransferType: string,
+      message: string
+  ) -> object
+
+FLOW:
+  transfer_step:
+    CALL:
+      call_transfer(
+        callTransferType: "pstn",
+        message: "Transferring you to our support line."
+      )
+    THEN: COMPLETE
+    ON_FAILURE: transfer_failed
 ```
 
-A PSTN transfer routes the call to a public telephone number.
+The number dialed is the PSTN transfer number set in Project Settings. You cannot pass a phone number in the call.
 
 ## `call_transfer` vs `ESCALATE`
 
-`call_transfer` is an immediate, stateless telephony handoff with no record kept once the call leaves. `ESCALATE`, on the other hand,  creates a trackable HumanTask (queueing, priority, SLA, optional ITSM integration) and works the same way for both voice or digital channels.
+`call_transfer` is an immediate, stateless telephony handoff with no record kept once the call leaves. `ESCALATE`, on the other hand, creates a trackable HumanTask (queueing, priority, SLA, optional ITSM integration) and works the same way for both voice and digital channels.
 
 | Feature | `call_transfer` | `ESCALATE` |
 |---------|------------------|------------|
 | **What it does** | Transfers the active voice call directly. | Creates and tracks a human escalation task. |
-| **Mechanism** | Direct SIP REFER / PSTN dial — no task record created. | Creates a HumanTask with assign/claim/resolve lifecycle, SLA tracking, and optional ITSM ticket creation. |
+| **Mechanism** | Direct SIP REFER / PSTN dial. No task record is created. | Creates a HumanTask with assign/claim/resolve lifecycle, SLA tracking, and optional ITSM ticket creation. |
 | **Channels** | Voice only. | Voice, chat, email, messaging, and campaign channels. |
 | **Task lifecycle** | Does not manage human task lifecycle. | Creates, tracks, and completes human tasks. |

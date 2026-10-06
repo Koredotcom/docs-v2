@@ -1,0 +1,62 @@
+---
+title: Inbuilt tool - route_attachment
+sidebarTitle: route_attachment
+---
+
+The `route_attachment` tool sends an uploaded file to an external system that you have configured as a named destination.
+
+## When to use
+
+Use `route_attachment` to hand a user's uploaded file to another system, such as a document processor or an archive, without exposing the destination URL to the model.
+
+## Configure a destination
+
+Declare each target in the agent's `DESTINATIONS:` section. The tool can only send to a destination declared here, so the model cannot supply its own URL.
+
+```yaml
+DESTINATIONS:
+  doc_processor:
+    url: "https://api.docprocessor.example/ingest"
+    method: POST
+    auth: bearer_token
+    headers:
+      X-Custom: "value"
+```
+
+| Field | Required | Description |
+|-------|----------|-------------|
+| `url` | Yes | HTTPS destination URL. Private and internal URLs are rejected. |
+| `method` | No | HTTP method, usually `POST` or `PUT`. |
+| `auth` | No | Auth mode or profile reference resolved by the runtime. |
+| `headers` | No | Static headers sent with the request. |
+
+## Declare the tool
+
+```yaml
+TOOLS:
+  route_attachment(attachment_id: string, destination: string, metadata?: object) -> object
+```
+
+## Parameters
+
+| Parameter | Required | Description |
+|-----------|----------|-------------|
+| `attachment_id` | Yes | The ID of the uploaded attachment. |
+| `destination` | Yes | The name of a destination declared in `DESTINATIONS:`. |
+| `metadata` | No | Additional fields to include in the request. |
+
+## What is sent
+
+The tool sends the destination a JSON body with `attachment_id`, `filename`, `mime_type`, `category`, `size_bytes`, and `download_url`, plus `metadata` if provided. The `download_url` is a time-limited public link, so the destination does not need platform credentials.
+
+## Returns
+
+On success, the destination name, the HTTP status the destination returned, and the `attachment_id`.
+
+| Error code | Meaning |
+|------------|---------|
+| `MISSING_PARAMETER` | `attachment_id` or `destination` was not provided. |
+| `ATTACHMENT_NOT_FOUND` | The attachment does not exist or is not part of this conversation. |
+| `DESTINATION_ERROR` | The destination returned a non-success HTTP status. |
+
+An unknown destination name is rejected with the list of available destinations. If the destination does not respond within 30 seconds, the request times out and the tool returns an error.

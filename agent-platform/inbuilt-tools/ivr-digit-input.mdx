@@ -1,0 +1,81 @@
+---
+title: Inbuilt tool - ivr_digit_input
+sidebarTitle: ivr_digit_input
+---
+
+The `ivr_digit_input` tool plays a prompt and collects a sequence of keypad digits, such as an account number, ZIP code, or PIN.
+
+## When to use
+
+Use `ivr_digit_input` when the caller must enter more than one digit. For a single-key menu choice, use [ivr_menu](/agent-platform/inbuilt-tools/ivr-menu).
+
+Collection stops when the maximum number of digits is reached, the ending key is pressed, or the inter-digit timeout expires. For secure collection of sensitive values, see [DTMF support in Artemis voice agents](/agent-platform/dtmf-support).
+
+## Declare the tool
+
+```yaml
+TOOLS:
+  ivr_digit_input(
+      prompt: string,
+      noInputConfig: object,
+      noMatchConfig: object,
+      maxDigits?: number,
+      minDigits?: number,
+      validation?: object,
+      endingKeyPress?: string,
+      interDigitTimeout?: number,
+      language?: string
+  ) -> object
+```
+
+## Parameters
+
+| Parameter | Required | Description |
+|-----------|----------|-------------|
+| `prompt` | Yes | Message played to the caller. |
+| `noInputConfig` | Yes | What to do when the caller presses nothing: `timeout` (1–120 seconds), `maxRetries` (0–10), and an optional `message`. If `message` is omitted, the main prompt is replayed. |
+| `noMatchConfig` | Yes | What to do when the entry fails validation: `maxRetries` (0–10) and an optional `message`. If `message` is omitted, the main prompt is replayed. |
+| `maxDigits` | No | Upper bound on digits collected, 1 to 20. Default: 10. This is not a required length. |
+| `minDigits` | No | Minimum digits before the entry is accepted, 1 to 20. Must not exceed `maxDigits`. |
+| `validation` | No | `{allowedLengths: number[]}` to require an exact or enumerated length, for example `[12]` or `[15, 16]`. Each length must be within `minDigits` and `maxDigits`, and values must be unique. |
+| `endingKeyPress` | No | Key that ends the entry, for example `#`. |
+| `interDigitTimeout` | No | Milliseconds to wait between digits, 500 to 30000. Default: 2000. |
+| `language` | No | Language code for text-to-speech. |
+
+<Note>
+If `noMatchConfig.maxRetries` is greater than 0, you must also set `minDigits` or `validation.allowedLengths`. Otherwise every entry matches and the retries can never be used, so the call is rejected.
+</Note>
+
+## Returns
+
+The tool returns the collected digits and the outcome: `success`, `noInput`, or `noMatch`.
+
+The collected digits are returned as a protected token (`{{PII:explicit_dtmf:<id>}}`), not as raw digits, so that a keypad entry such as a PIN does not reach the model or traces. The platform restores the real value only where a step needs it.
+
+## Example
+
+Collect a 12-digit account number, ending with `#`:
+
+```yaml
+TOOLS:
+  ivr_digit_input(
+      prompt: string,
+      noInputConfig: object,
+      noMatchConfig: object,
+      maxDigits?: number,
+      validation?: object,
+      endingKeyPress?: string
+  ) -> object
+
+FLOW:
+  get_account:
+    CALL:
+      ivr_digit_input(
+        prompt: "Enter your 12-digit account number, then press pound.",
+        maxDigits: 12,
+        validation: {allowedLengths: [12]},
+        endingKeyPress: "#",
+        noInputConfig: {timeout: 8, maxRetries: 2},
+        noMatchConfig: {maxRetries: 2}
+      )
+```
