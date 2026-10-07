@@ -10,7 +10,7 @@
   ];
 
   var cache = {};
-  var btn, overlay, input, list, current;
+  var wrap, input, list;
 
   function productFor(path) {
     for (var i = 0; i < PRODUCTS.length; i++) {
@@ -27,15 +27,17 @@
 
   function addStyles() {
     var css =
-      '#cs-btn{position:fixed;right:20px;bottom:20px;z-index:9998;padding:10px 16px;border-radius:999px;border:1px solid #d0d5dd;background:#fff;color:#111;font:500 14px system-ui,sans-serif;cursor:pointer;box-shadow:0 2px 10px rgba(0,0,0,.15)}' +
-      '#cs-overlay{position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.5);display:none;align-items:flex-start;justify-content:center;padding-top:10vh}' +
-      '#cs-box{width:min(640px,92vw);max-height:75vh;overflow:auto;background:#fff;color:#111;border-radius:12px;padding:16px;font-family:system-ui,sans-serif}' +
-      '#cs-input{width:100%;box-sizing:border-box;padding:12px;font-size:16px;border:1px solid #d0d5dd;border-radius:8px;background:#fff;color:#111}' +
+      '#cs-wrap{position:fixed;top:12px;left:50%;transform:translateX(-50%);z-index:9999;width:min(380px,42vw);font-family:system-ui,sans-serif}' +
+      '#cs-input{width:100%;box-sizing:border-box;height:40px;padding:0 14px;font-size:14px;border:1px solid #d0d5dd;border-radius:10px;background:#fff;color:#111;outline:none;box-shadow:0 1px 3px rgba(0,0,0,.08)}' +
+      '#cs-input:focus{border-color:#7a5af8}' +
+      '#cs-list{display:none;position:absolute;top:46px;left:0;right:0;max-height:70vh;overflow:auto;background:#fff;color:#111;border:1px solid #d0d5dd;border-radius:10px;padding:6px;box-shadow:0 8px 24px rgba(0,0,0,.18)}' +
       '.cs-item{display:block;padding:10px 8px;border-radius:8px;text-decoration:none;color:inherit;border-bottom:1px solid #eee}' +
       '.cs-item:hover{background:#f2f4f7}' +
       '.cs-t{font-weight:600;font-size:14px}.cs-h{color:#667085;font-size:13px}.cs-s{color:#475467;font-size:13px;margin-top:2px}' +
       '.cs-msg{padding:12px 8px;color:#667085;font-size:14px}' +
-      'html.dark #cs-btn,html.dark #cs-box,html.dark #cs-input{background:#18181b;color:#f4f4f5;border-color:#3f3f46}' +
+      '@media (max-width:1000px){#cs-wrap{width:min(300px,38vw)}}' +
+      '@media (max-width:640px){#cs-wrap{left:auto;right:56px;transform:none;width:44vw}}' +
+      'html.dark #cs-input,html.dark #cs-list{background:#18181b;color:#f4f4f5;border-color:#3f3f46}' +
       'html.dark .cs-item{border-color:#27272a}html.dark .cs-item:hover{background:#27272a}' +
       'html.dark .cs-h,html.dark .cs-s,html.dark .cs-msg{color:#a1a1aa}';
     var st = document.createElement('style');
@@ -43,66 +45,58 @@
     document.head.appendChild(st);
   }
 
+  function showList(on) {
+    list.style.display = on ? 'block' : 'none';
+  }
+
   function build() {
     addStyles();
-    btn = document.createElement('button');
-    btn.id = 'cs-btn';
-    btn.textContent = 'Search this product';
-    btn.onclick = open;
-    overlay = document.createElement('div');
-    overlay.id = 'cs-overlay';
-    overlay.innerHTML =
-      '<div id="cs-box"><input id="cs-input" type="search" placeholder="Search this product\'s docs..." autocomplete="off"><div id="cs-list"></div></div>';
-    overlay.addEventListener('mousedown', function (e) {
-      if (e.target === overlay) close();
+    wrap = document.createElement('div');
+    wrap.id = 'cs-wrap';
+    wrap.innerHTML =
+      '<input id="cs-input" type="search" placeholder="Search" autocomplete="off" aria-label="Search"><div id="cs-list"></div>';
+    document.body.appendChild(wrap);
+    input = wrap.querySelector('#cs-input');
+    list = wrap.querySelector('#cs-list');
+
+    input.addEventListener('focus', function () {
+      load();
+      if (input.value.trim()) showList(true);
     });
-    document.body.appendChild(btn);
-    document.body.appendChild(overlay);
-    input = overlay.querySelector('#cs-input');
-    list = overlay.querySelector('#cs-list');
     input.addEventListener('input', function () {
       run(input.value);
     });
+    document.addEventListener('mousedown', function (e) {
+      if (wrap && !wrap.contains(e.target)) showList(false);
+    });
     document.addEventListener('keydown', function (e) {
-      if (e.key === 'Escape') close();
+      if (e.key === 'Escape' && wrap && wrap.contains(document.activeElement)) {
+        showList(false);
+        input.blur();
+      }
       if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key.toLowerCase() === 'k' && productFor(location.pathname)) {
         e.preventDefault();
-        open();
+        input.focus();
+        input.select();
       }
     });
-    overlay.addEventListener('click', function (e) {
-      if (e.target.closest && e.target.closest('.cs-item')) close();
+    list.addEventListener('click', function (e) {
+      if (e.target.closest && e.target.closest('.cs-item')) showList(false);
     });
-  }
-
-  function open() {
-    overlay.style.display = 'flex';
-    input.focus();
-    load();
-  }
-  function close() {
-    overlay.style.display = 'none';
   }
 
   function load() {
     var p = productFor(location.pathname);
     if (!p) return Promise.resolve([]);
     if (!cache[p.index]) {
-      list.innerHTML = '<div class="cs-msg">Loading...</div>';
       cache[p.index] = fetch(p.index)
         .then(function (r) {
           if (!r.ok) throw new Error(r.status);
           return r.json();
         })
-        .then(function (d) {
-          if (input.value) run(input.value);
-          else list.innerHTML = '';
-          return d;
-        })
         .catch(function () {
           delete cache[p.index];
-          list.innerHTML = '<div class="cs-msg">Search is unavailable right now.</div>';
-          return [];
+          return null;
         });
     }
     return cache[p.index];
@@ -132,11 +126,17 @@
     var terms = q.toLowerCase().split(/\s+/).filter(Boolean);
     if (!terms.length) {
       list.innerHTML = '';
+      showList(false);
       return;
     }
-    var p = productFor(location.pathname);
-    if (!p || !cache[p.index]) return;
-    cache[p.index].then(function (data) {
+    showList(true);
+    list.innerHTML = '<div class="cs-msg">Searching...</div>';
+    Promise.resolve(load()).then(function (data) {
+      if (input.value !== q) return; // a newer query is running
+      if (!data) {
+        list.innerHTML = '<div class="cs-msg">Search is unavailable right now.</div>';
+        return;
+      }
       var hits = data
         .map(function (r) {
           return { r: r, s: score(r, terms) };
@@ -168,10 +168,10 @@
   // Mintlify navigates without full reloads, so re-check the URL regularly.
   function sync() {
     var on = !!productFor(location.pathname);
-    if (on && !btn) build();
-    if (btn) {
-      btn.style.display = on ? 'block' : 'none';
-      if (!on) close();
+    if (on && !wrap) build();
+    if (wrap) {
+      wrap.style.display = on ? 'block' : 'none';
+      if (!on) showList(false);
     }
   }
 
