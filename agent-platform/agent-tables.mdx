@@ -1,0 +1,164 @@
+---
+title: Agent Tables
+sidebarTitle: Agent Tables
+---
+
+Agent Tables provide a built-in structured data store for your agents. You can create tables in Studio to store operational data such as customer records, appointments, orders, inventory, or support tickets. Agents can access this data at runtime through **Table tools** without requiring an external database.
+
+Unlike conversational memory or knowledge sources, Agent Tables store structured, persistent business data that agents can create, query, update, and delete, depending on the operations permitted to the agents.
+
+<Note> The **Tables** page appears under **Resources** only if the feature is enabled for your workspace. If you don't see it, {{support}}.</Note>
+
+## Step 1: Create a table
+
+- Navigate to **Resources > Tables.**
+- Click **New Table.**
+- Enter table details.
+  - Display name: User-friendly table name displayed in Studio.
+  - Table name (slug): Unique identifier used internally and by runtime. This must be used in the queries.
+  - Scope: Determines who can access the table's data.
+  - Description: Briefly describe the usage of the table.
+
+    | **Scope** | **Description** | **Typical use cases** |
+    | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------- |
+    | **Project** | Shares data across all sessions and end users within the project. Suitable for reference or operational data that should be available to every conversation. Agent writes are audited as declassification events. | Product catalogs, inventory, FAQs, departments, pricing information |
+    | **End User** | Creates a private data partition for each customer. Each end user can access only their own records. Data is retained across conversations until deleted or erased. | Customer profiles, saved addresses, preferences, loyalty points, order history |
+    | **Session** | Creates a private data partition for a single conversation. Data is automatically cleared when the session ends. | Shopping carts, in-progress forms, temporary selections, conversation state, scratchpad data |
+
+- Next, define the table schema by specifying the columns and their properties.
+  - **Name** - Specifies the unique name used to identify the column in the table.
+  - **Type** - Defines the data type that the column can store, such as String, Number, or DateTime. To add a reference key to a column in another table, use Reference key. Set the target table and column, and choose what happens when the referenced row is deleted: Restrict (block the delete), Set null, or Cascade (delete the referencing rows). A Reference column can't be sensitive.
+  - **Required** - Makes the column mandatory when creating or updating a row.
+  - **Default value** - Automatically assigns a value if none is provided during row creation. The options are **None**, **Auto ID** (a generated unique ID, for String columns), and **Now** (the current server time, for Datetime columns).
+  - **Indexed** - Creates an index on the column to improve query performance for filtering and sorting.
+  - **Unique** - Ensures that each row contains a distinct value for the column.
+  - **Sensitive** - Encrypts the column data at rest and redacts its values in queries and logs to protect sensitive information.
+- Save the table.
+
+<Note> You can add columns to an existing table later. Changes that drop a column or change its type are blocked.</Note>
+
+## Step 2: Add records
+
+After creating a table, add records to populate it with data that your agents can retrieve and update during conversations.
+
+- Click **Add record**.
+- Enter values for each column. Required fields must be completed before saving the record.
+- Click **Save** to add the record to the table.
+
+Repeat these steps to add additional records as needed.
+
+**Points to note**
+
+- Values entered must match the data type defined for each column.
+- Columns marked as **Required** must contain a value.
+- Open the table details to review the records added to the table, view the table schema, or run sample queries to test.
+
+## Step 3: Create a tool for the table
+
+After creating a table and adding records, create a **Table tool** so your agents can access and manipulate the table data during conversations.
+
+- Go to **Tools > Tables**.
+- Create a new table tool and configure the following properties.
+
+    | Field | Description |
+    | ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+    | Tool name | Enter a unique name for the tool. This name is used to identify the tool in your agent. |
+    | Description | Provide an optional description of the tool's purpose. |
+    | Table | Select the Agent Table that the tool will read from or write to. |
+    | Joinable tables | Select additional tables that this tool can join in SQL queries. Joins are supported only on declared foreign-key columns. Leave this empty if the tool accesses a single table. |
+    | Scope | Displays the scope of the selected table (Project, End User, or Session). This should match the scope defined for the table. |
+    | Operations | Choose the operations that the tool can perform on the table. Follow the principle of least privilege. Enable only the operations required by your agent. For example, if the agent only retrieves information, select only **get**, **query**, and **count**. |
+    | SQL statement | You can provide an SQL template to define how the tool interacts with the selected table. The statement can include parameter placeholders (for example, `:status`) that are populated from the tool's input parameters at runtime. Example:<br><br>`SELECT * FROM customer_orders WHERE status = :status`<br><br>Note that this query is used to limit the results presented to the agent. |
+    | Input parameters | The values the agent supplies when it calls the tool. Each `:name` placeholder in the SQL statement needs a matching parameter. Click **Parse** to create the parameters from the statement automatically. Supported types are string, number, integer, and boolean. Add a description to each parameter so the agent knows what to pass. |
+    | Variable Namespaces | Select all the namespaces that the tool can access. |
+
+- After completing the configuration, click **Create Tool**. The Table tool is added to your project and can be attached to one or more agents.
+- To control which **variable namespaces** the tool can access, open the tool after you create it and select the namespaces on its detail page. This is optional.
+
+### Use a SQL statement
+
+The SQL statement is optional. Use it when you want the tool to do one specific, predictable thing instead of letting the agent build its own queries.
+
+When you add a statement, the agent can't change what the statement does. It supplies only the values for the `:name` placeholders. This lets you control exactly which columns, filters, and sort order the agent can use.
+
+Examples:
+
+**1. Look up orders by status [query]:**
+
+```sql
+SELECT order_id, status, total
+FROM customer_orders
+WHERE status = :status
+ORDER BY order_id
+LIMIT 10
+```
+
+**2. Look up one order [query]:**
+
+```sql
+SELECT *
+FROM customer_orders
+WHERE order_id = :order_id
+```
+
+**3. Add a row [insert]:**
+
+```sql
+INSERT INTO customer_orders (order_id, status)
+VALUES (:order_id, :status)
+```
+
+**4. Update a row [update]:**
+
+```sql
+UPDATE customer_orders
+SET status = :status
+WHERE order_id = :order_id
+```
+
+**5. Delete a row [delete]:**
+
+```sql
+DELETE FROM customer_orders
+WHERE order_id = :order_id
+```
+
+**Rules**
+
+- The statement must be a single statement that starts with **SELECT**, **INSERT**, **UPDATE**, or **DELETE**. The matching operation must be enabled on the tool. For example, a **SELECT** statement needs **query**, and an **UPDATE** statement needs **update**.
+- Write placeholders as `:name`, for example, `:status`. Never paste user-provided values into the statement.
+- The statement must contain at least one placeholder. A statement with no `:name` placeholder returns an error. If a tool needs no inputs, don't use a SQL statement.
+- Every placeholder must receive a value when the tool is called. If a value is missing, the call fails with the error: **Missing query template parameter "name"**. Define each placeholder as an input parameter, and mark it as required so the agent always provides it.
+- A statement can filter and sort only on indexed columns.
+  - Supported: **WHERE**, **ORDER BY**, **LIMIT**, **JOIN** (on declared foreign keys), and column lists.
+  - Not supported: **GROUP BY**, **HAVING**, **OFFSET**, **UNION**, **WITH**, subqueries, and aggregate functions such as **COUNT** or **SUM**. To count rows, enable the **count** operation.
+- A read returns at most **50 records**. If the response has more records, the result includes a cursor that the agent can use to fetch the next set of records.
+- If a call returns **"Query templates are not enabled for this project"**, SQL statements are turned off for your workspace. Contact your administrator.
+
+## Step 4: Add the tool to the agent
+
+To add the tool to the agent, use Studio and attach the table tool. Alternatively, use the ABL file to add the tool.
+
+```yaml
+TOOLS:
+  find_orders(status: string) -> object
+    description: "Find customer orders by status"
+    type: table
+    table: customer_orders
+    scope: project
+    operations: [query]
+    query_template: "SELECT order_id, status, total FROM customer_orders WHERE status = :status LIMIT 10"
+```
+
+For all Table tool properties, see the [Tools reference documentation](/agent-platform/abl/reference/tools).
+
+## Best Practices
+
+1. **Use placeholders for values.** Always write `:paramName` in SQL statements. Never build a statement from user text.
+2. **Grant the fewest operations.** Enable only what the agent needs. Prefer read-only tools.
+3. **Choose the right scope.** Use End user for personal data, Session for temporary data, and Project only for shared data. Agent writes to Project tables are audited.
+4. **Mark personal data as Sensitive.** Do this for phone numbers, IDs, and similar fields.
+5. **Index the columns you search or sort by.** Queries on non-indexed columns are rejected.
+6. **Describe every parameter.** Clear descriptions help the agent pass the right value.
+7. **Validate inputs.** Have the agent confirm values with the user before it writes them.
+8. **Test before you publish.** Use the Query tab to test the table, and test the tool with realistic parameter values, including missing ones.
