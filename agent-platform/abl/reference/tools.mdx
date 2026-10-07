@@ -466,6 +466,27 @@ TOOLS:
 
 Beyond `set:`, both `on_result:` and `on_error:` accept an ordered `do:` action block that can run `SET`, `CLEAR`, `LOG`, `RESPOND`, `CALL`, `GOTO`/`THEN`, `HANDOFF`, `DELEGATE`, `RETURN`, `FORMATS` (or its canonical alias `RICH_CONTENT`), and `COMPLETE` actions, with conditional `IF:`/`WHEN:`/`ELSE:` branches. A rich-content payload rendered this way — for example a `FEEDBACK` survey attached to a tool's result — works with either spelling.
 
+A `do:` action's `RESPOND` can carry its own `MODEL_CONTEXT` — a text-scalar sibling, the same idea as [MODEL_CONTEXT on a response](/agent-platform/abl-reference/flow#model_context-on-a-response), applied here to a tool lifecycle response instead of a FLOW step's:
+
+```abl
+TOOLS:
+  list_products() -> object
+    MODEL_CONTEXT:
+      FIELDS: [products[].id, products[].name, total]
+    on_result:
+      do:
+        - RESPOND: "{{result.widget}}"
+          MODEL_CONTEXT: "Displayed {{result.total}} products in order: {{result.product_summary}}."
+          COMPLETE:
+    on_error:
+      do:
+        - RESPOND: "Product search is unavailable."
+          MODEL_CONTEXT: "Product search failed; no products were displayed."
+          COMPLETE:
+```
+
+The full, protected `RESPOND` is still what's delivered and retained in the customer transcript — `MODEL_CONTEXT` only replaces what a *later* model call sees of this specific assistant turn. `result`/`error`, the tool's inputs, and any earlier `SET` in the same action are available to both templates. `MODEL_CONTEXT` without a `RESPOND` in the same action is invalid (`MODEL_CONTEXT_INVALID`). Omit it to keep the historical full-response behavior; an explicitly empty value omits that response from later model calls entirely. This is independent of the tool-level `MODEL_CONTEXT` block above — one shapes the raw tool result the model sees, the other shapes what the model retains of this particular lifecycle response.
+
 ### SSRF protection
 
 The platform enforces SSRF (Server-Side Request Forgery) protection on all HTTP tool endpoints. Private IP ranges, localhost, and internal network addresses are blocked at the runtime level. Only allowlisted domains and public endpoints are permitted for HTTP tool calls.
@@ -1227,6 +1248,14 @@ TOOLS:
 
 <Note>SecretRef is **fail-closed**: the vault is invisible to the LLM, `{{_secret.X}}` resolves only in `headers` and `body_template` (never forwarded as a query/body param on its own), and an unresolved reference substitutes an empty string — the literal `{{_secret.X}}` placeholder is never sent upstream as a credential.</Note>
 
+## Inbuilt tools
+
+Inbuilt tools are tools that the Artemis runtime provides. They cover voice transfers, IVR and DTMF, human-agent handoff, and attachment handling. These tools do not require an HTTP endpoint or a Tool Library entry for them. They are available to all agents by default. 
+
+To use these tools, declare them in the `TOOLS:` section of your agent, with its input fields and return type. Then use them as required in the agent.
+
+For the full list of built-in tools and how to use them, see [Inbuilt tools](/agent-platform/inbuilt-tools/index).
+
 ---
 
 {{related}}
@@ -1235,3 +1264,4 @@ TOOLS:
 - [Agent declaration](/agent-platform/abl-reference/agent-declaration) -- `tool_timeout` and model settings in EXECUTION.
 - [GATHER](/agent-platform/abl-reference/gather) -- information collection (often used alongside tools).
 - [FLOW](/agent-platform/abl-reference/flow) -- `CALL` action for invoking tools within flow steps.
+- [Inbuilt tools](/agent-platform/inbuilt-tools/index) -- Inbuilt tools.

@@ -420,7 +420,7 @@ MULTI_INTENT:
 | `max_intents`                   | `number`  | `3`            | Maximum intents to consider per message (1–10).                             |
 | `confidence_threshold`          | `number`  | `0.6`          | Minimum confidence (0.0–1.0) for a secondary intent to be accepted.         |
 | `queue_max_age_ms`              | `number`  | `600000`       | Time-to-live for queued intents in milliseconds (0–3,600,000). After this, queued intents are dropped. |
-| `advance_on_primary_response`   | `boolean` | `true`         | With `strategy: primary_queue`, whether the primary specialist's first delivered, non-blocking answer counts as done for queue purposes — advancing to the next queued intent in the same turn. Set `false` to require an explicit completion signal (a `COMPLETE` condition, a terminal control, or return-to-parent) before advancing. |
+| `advance_on_primary_response`   | `boolean` | `true`         | With `strategy: primary_queue`, whether the primary specialist's first delivered, non-blocking answer counts as done for queue purposes — advancing to the next queued intent in the same turn. Also applies to a `sequential` task resuming after a nested child returns, and to the option picked from a `disambiguate` menu. Set `false` to require an explicit completion signal (a `COMPLETE` condition, a terminal control, or return-to-parent) before advancing. See the note below for how a prose-only reply is judged. |
 
 ### Multi-intent strategies
 
@@ -430,9 +430,15 @@ MULTI_INTENT:
 | `sequential`    | Execute the detected intents one at a time in order, carrying context forward between them.    |
 | `parallel`      | Fan out to sub-agents simultaneously (supervisor agents only).                                 |
 | `disambiguate`  | Present the detected intents to the user and ask which to handle first.                        |
-| `auto`          | Let the model decide at runtime based on the assessed relationships between the intents.       |
+| `auto`          | Resolves at runtime from the assessed relationship between the intents: independent and dependent requests resolve to `sequential`, and ambiguous ones resolve to `disambiguate`. It never fans out — author `strategy: parallel` directly for that.       |
 
 <Note>The user-facing prompts for the `disambiguate` and `primary_queue` flows (the "I noticed more than one request…" text) are customizable via the [`MESSAGES:`](/agent-platform/abl-reference/lifecycle-and-hooks#messages) block (keys such as `multi_intent_disambiguate_header` and `multi_intent_queued_notice`).</Note>
+
+<Note>
+  A specialist with a missing required `GATHER` field, a pending input/tool confirmation, an authentication step, an escalation, or a still-waiting child keeps the floor regardless of `advance_on_primary_response`. A request whose tool/model call errored (and the customer was told) counts as finished, so the plan moves on. For a reply given only in prose (no `GATHER`) — the ambiguous case — the Runtime judges the reply itself: one that still waits on the customer (an unresolved follow-up question) keeps the floor, a finished-sounding one advances, and one the Runtime can't judge keeps the floor. Set `advance_on_primary_response: false` to keep the specialist in control regardless of what it replies.
+
+  In a `sequential` plan, the last request's specialist keeps the customer's next reply when it answers without finishing (no `COMPLETE`, no return) — the same as after a single routed request — and may hand that reply back with `__return_to_parent__` when the supervisor's handoff to it declared `RETURN: true`.
+</Note>
 
 ---
 

@@ -47,55 +47,80 @@ Deleting a key revokes it permanently and immediately. Anything still presenting
 
 ## Models
 
-The **Models** page decides which models this project can use and which model serves each platform feature. It carries two tabs: **Model Configs** sets the pool, and **Feature config** routes work within that pool.
+Use the **Models** page to choose which models your project can use and which model handles each platform feature. It has two tabs:
+
+- **Model Configs**: choose the models available to the project.
+- **Feature config**: assign models to individual features.
 
 **Navigation**: **Project** -> **Settings** -> **Models**
 
 ### Model Configs
 
-This tab defines the project's selected models. Selection is an allowlist rather than a preference. Only selected models appear in the project's model pickers and feature routing, so nothing downstream can reach a model you haven't selected here.
+Use this tab to select the models your project can use. Only selected models appear in the project's model pickers and feature settings.
 
-Two counters at the top compare the models you selected with the models your workspace makes eligible. The gap between them tells you how much of the workspace catalog this project deliberately excludes.
+The tab shows how many models you've selected out of the models your workspace makes available to the project. Each selected model shows its provider, whether it's **Workspace-shared** or **Project-restricted**, and its status: **Ready**, **Not tested**, **Connection failed**, or **Inactive**.
 
-Each selected model shows its provider, whether the workspace shares it, and a readiness status. A model reports ready once its connection resolves, and a model that stops being ready takes every feature bound to it down with it.
+To change the selection, select **Add models**, choose from the eligible models, and then select **Save selection**. Only project administrators can change the selection. Other roles see the tab as read-only.
 
-**Project default.** The default applies to this project only and doesn't change the workspace. Features that don't carry a tier binding or an override resolve to it, which makes it the fallback for the widest set of operations on the page.
+If a selected model is no longer available to the project, the tab shows a warning. Select **Remove unavailable models** to clear them, and then replace them as needed.
 
-Select **Add models** to bring eligible models into the project, and **Save selection** to apply the change.
+#### Project default
 
-**Model access rollout.** A banner appears while the project still holds references to models outside the selected set. Until you resolve those references, the project can't move to enforcing selection only. Treat the count in the banner as work remaining before enforcement, not as an error in the current configuration.
+The project default is the model the project uses when no more specific setting applies. It applies to this project only and doesn't change the workspace.
+
+- **Choose a default.** Use the **Project default (this project only)** field. The default must be one of the selected models. In a project that uses selected models only (see [Model access rollout](#model-access-rollout)), you must choose a default before you can save more than one selected model.
+- **New projects.** A new project starts with the workspace's default models selected, and one of them is set as the project default. If the workspace has no default model, the tab shows **No model configured** until you select a model.
+- **If the default becomes unavailable.** Features that use the project default switch to the next available selected model. Features assigned directly to a specific model don't switch, and they stop working until you fix or replace that model.
+
+Once a project uses selected models only, the platform never uses a model that isn't selected. The platform doesn't retry a failed request with another model.
+
+#### Model access rollout
+
+The **Model access rollout** banner shows whether your project is limited to its selected models. New projects are limited from the start. Existing projects move over in stages, and the banner shows the current stage.
+
+The banner also shows the number of unresolved references. A warning banner means the project needs repair before it can be limited to selected models. The count isn't an error in your current setup.
 
 ### Feature config
 
-This tab routes individual platform features to models. It exists because a project runs many different operations, and matching each to a model sized for it costs less than sending everything to one capable model.
+Use this tab to assign models to platform features. Different features need different models. Assigning a smaller, faster model to simple tasks and a stronger model to complex ones lowers cost.
 
-**Per-operation routing** switches the page between two ways of working. With tier routing, each feature runs on the model bound to its tier, so changing one tier moves every feature on it. Per-operation routing lets features diverge from their tier. Start with tiers and reach for per-operation routing only where a specific feature justifies it, since divergence you set once is easy to forget later.
+The **Per-operation routing** switch turns feature routing on or off for the project. When it's off, every feature uses the project default, and any saved tier models and overrides are kept but ignored. When it's on, each feature uses the model assigned to its tier, so changing a tier's model changes every feature on that tier. You can also assign a specific model to a single feature. Use overrides only when a feature needs something different, because they're easy to forget.
 
-#### Tier bindings
+If feature routing is turned off for your whole deployment, the switch is unavailable and the tab shows a notice. Your saved settings are kept and apply again when routing is turned back on.
 
-Four tiers draw from the project's selected models. The tier names describe the trade the model makes rather than a fixed capability level, so rebind them as your model pool changes.
+#### Tiers
 
-| Tier | When to bind a model here |
+Assign one of the project's selected models to each tier.
+
+| Tier | Use it for |
 |---|---|
-| **Fast** | High-volume mechanical work where per-call cost dominates and a weaker answer costs little. |
-| **Balanced** | The everyday workload, where neither cost nor judgment is the binding constraint. |
-| **Powerful** | Work where judgment quality justifies the slowest and most expensive option. |
-| **Voice** | Realtime speech-to-speech conversation, which needs a model built for it rather than a strong text model. |
+| **Fast** | High-volume, simple tasks where low cost matters most. |
+| **Balanced** | Everyday work. |
+| **Powerful** | Complex tasks that need the best judgment, at higher cost and slower speed. |
+| **Voice** | Real-time speech-to-speech conversations. |
 
-A tier with no model bound leaves every feature on it unresolved. The page warns you before release when a binding is missing or a connection needs repair, because an unresolved feature fails at runtime rather than falling back silently.
+If a tier has no model, its features use the project default. If you configure a tier but no ready model matches it, the features on that tier can't run. The page warns you about missing models and broken connections before you release the project.
 
-#### Feature table
+#### Features
 
-Features group by the part of the platform they serve: authoring and diagnosis, live conversation runtime, knowledge processing, conversation insights, evaluation, and ingestion pipelines. Each row carries the feature's stable key, which is the identifier to use when you discuss routing with support rather than the display name.
+Features are grouped by area: Arch, Runtime, Knowledge, Insights, Evals, and Pipelines. Each row shows the following:
 
 | Column | Description |
 |---|---|
-| **Tier or override** | Sets whether the feature follows its default tier or binds directly to a model. Overrides draw only from the project's selected bindings, so you can't route a feature to a model the project hasn't selected. |
-| **Resolves to** | Shows the model the feature actually reaches after tier bindings and overrides apply. Read this column rather than the tier column when you're diagnosing behavior, because it reflects the outcome rather than the intent. |
-| **From** | Shows where the resolution came from, which distinguishes a deliberate binding from a fallback to the project default. |
-| **Status** | Reports whether the feature can run. Ready means it resolves to a working model. Not configured means the resolution path ends without a model. Unavailable means the platform doesn't yet offer the feature for execution, so no binding will make it run. |
+| **Tier or override** | Whether the feature uses its tier's model or a model you assigned directly. You can only assign selected models. |
+| **Resolves to** | The model the feature actually uses. Check this column when troubleshooting. |
+| **From** | Why that model was chosen: a feature override, a tier, or the project default. |
+| **Status** | Whether the feature can run (see the following table). |
 
-Select **Why this model?** on a row to see the resolution path that produced the result. Select **Save feature config** to apply changes.
+| Status | Meaning |
+|---|---|
+| **Ready** | The feature uses a working model. |
+| **Not tested**, **Connection failed**, **Inactive**, **Unknown** | The model's connection isn't confirmed working. Check the model's connection. |
+| **Not configured** | No model is assigned. |
+| **Off** | The feature is turned off. |
+| **Unavailable** | The platform doesn't support running this feature yet. |
+
+Select **Why this model?** on a row to see how the model was chosen. Select **Save feature config** to apply your changes.
 
 ---
 
