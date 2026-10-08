@@ -1,0 +1,51 @@
+name: Build search index - AI for Service
+
+on:
+  push:
+    branches: [ai-for-service-dev]
+    paths:
+      - 'ai-for-service/**'
+      - '.github/scripts/build-index.cjs'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+# Both product workflows publish to the same branch, so run them one at a time.
+concurrency:
+  group: search-index-publish
+  cancel-in-progress: false
+
+jobs:
+  index:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Build index
+        run: node .github/scripts/build-index.cjs ai-for-service /tmp/out/ai-for-service.json
+
+      - name: Publish to search-index branch
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          REPO_URL="https://x-access-token:${GH_TOKEN}@github.com/${{ github.repository }}.git"
+          if git ls-remote --exit-code --heads "$REPO_URL" search-index >/dev/null; then
+            git clone --depth 1 --branch search-index "$REPO_URL" pub
+          else
+            mkdir pub
+            git -C pub init -b search-index
+            git -C pub remote add origin "$REPO_URL"
+          fi
+          cp /tmp/out/ai-for-service.json pub/
+          cd pub
+          git config user.name "github-actions"
+          git config user.email "github-actions@users.noreply.github.com"
+          git add .
+          if git diff --cached --quiet; then echo "No changes"; exit 0; fi
+          git commit -m "Update search index"
+          git push origin search-index
