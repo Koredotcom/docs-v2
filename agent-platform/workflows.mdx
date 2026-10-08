@@ -18,7 +18,7 @@ Typical workflow use cases include:
 
 * Durable multi-step workflow orchestration across agents, integrations, APIs, and human tasks.
 * Visual workflow builder with configurable workflow nodes and execution paths.
-* Human-in-the-loop execution using Approval and Data Entry nodes with Inbox-based task handling.
+* Human-in-the-loop execution using Human task nodes with Inbox-based task handling.
 * Trigger-based execution using webhooks, schedules, and external application events.
 * Workflow execution monitoring with execution history, flow logs, runtime metrics, and execution details inspection.
 
@@ -133,6 +133,12 @@ Use the following syntax patterns to reference workflow data between steps.
 | Input variable | `context.steps.start.<variableName>` |
 | Step output    | `context.steps.<stepName>.output`    |
 
+### Use forms in workflows
+
+You can use reusable forms to collect structured information during workflow execution. Create and manage forms under **Resources > Forms**, then use them in [Human task nodes](#human-task-node) or as [Intake form triggers](/agent-platform/workflows#intake-form-trigger). 
+
+For information about creating and configuring reusable forms, see [Forms](/agent-platform/forms).
+
 ---
 
 ## Node types
@@ -143,8 +149,7 @@ Use the following syntax patterns to reference workflow data between steps.
 | [Tool](#tool-node)               | Tools             | Executes a configured tool within the workflow (HTTP call, code execution).                             |
 | [Function](#function-node)       | Actions           | Executes custom JavaScript logic for data transformation or processing.                                 |
 | [Integration](#integration-node) | Actions           | Executes actions using configured integrations and external services.                                   |
-| [Approval](#approval-node)       | Human-in-the-loop | Waits for user approval before continuing execution.                                                    |
-| [Data Entry](#data-entry-node)   | Human-in-the-loop | Collects user input during workflow execution.                                                          |
+| [Human task](#human-task-node) | Human-in-the-loop | Pauses workflow execution and assigns a task to users for human intervention before continuing execution. |                                                        |
 | [Condition](#condition-node)     | Flow control      | Routes workflow execution based on conditions.                                                          |
 | [Loop](#loop-node)               | Flow control      | Repeats a set of workflow steps for each item in an input array using sequential or parallel execution. |
 | [Delay](#delay-node)             | Flow control      | Pauses workflow execution for a configured duration.                                                    |
@@ -261,60 +266,58 @@ If no integration connection exists, create an **auth profile** and **integratio
 
 ---
 
-### Human-in-the-loop nodes
+### Human task node
 
-Human-in-the-loop nodes pause workflow execution to collect input or approval from assigned users before execution continues. Two types of human-in-the-loop nodes are Data Entry and Approval. Assigned users can open Inbox tasks to review, approve, reject, or submit the requested information. For more information, see [Inbox](/agent-platform/inbox).
+The Human task node pauses workflow execution and assigns tasks to users for human intervention. The task can include a form that the assignee completes before the workflow continues.
 
-When a workflow reaches a Data Entry or Approval node:
+Assigned users can open tasks in Inbox to review the task, provide the requested information, or complete the configured task action. For more information, see [Inbox](/agent-platform/inbox).
 
-* A pending task is created in Inbox.
+When a workflow reaches a Human task node:
+
+* A pending task is created in the Inbox.
 * Assigned users receive notifications.
 * Workflow execution pauses until the task is completed.
-* The workflow resumes after approval, rejection, or data submission.
+* The workflow resumes after the task is completed.
 
-For details, see [Human-in-the-loop Workflows](/agent-platform/human-in-the-loop).
+The Human task node supports two ways to collect information from the assignee:
 
-#### Approval node
+* **Forms** — Select a reusable form created under **Resources > Forms**. For information about creating and configuring forms, see [Forms](/agent-platform/forms).
+* **Inline fields** — Define simple fields directly in the Human task node.
 
-Use the Approval node to pause workflow execution until an approval or rejection response is received.
+**Task**
 
-Approval nodes support human-in-the-loop workflow scenarios such as review tasks, approval checkpoints, and business decision flows.
+Use the Task tab in the Human task node to define the task request, specify how the assignee provides information, and define the outcomes available for completing the task.
 
-When workflow execution reaches this node,
+| **Setting** | **Description** |
+| :--- | :--- |
+| **Subject** | Specify the subject of the task request. |
+| **Message** | Provide instructions or context for the assignee. |
+| **Form** | Select a form for the assignee to complete. Forms are created and managed under **Resources > Forms**. The fields defined in the form are presented to the assignee as part of the task. Values submitted by the assignee are available to subsequent workflow steps. |
+| **Inline fields** | Use inline fields when the task requires additional inputs that can be defined directly in the node instead of adding them to a form. For each field, specify the field name, type, label, whether the field is required, and an optional default value. |
+| **Outcomes** | Define the options that the assignee can select to indicate how the task was completed. The selected outcome is available to subsequent workflow steps. |
 
-* A human task is created.
-* The task appears in the Inbox.
-* Workflow execution pauses.
-* A user reviews or completes the task.
-* Workflow execution resumes after task completion.
+**Assignees & SLA**
 
-| Field          | Description                                               |
-|----------------|-----------------------------------------------------------|
-| Subject        | Defines the approval request title shown to the approver. |
-| Message        | Defines the approval request instructions or details.     |
-| Assign To      | Assigns the approval task to everyone or specific users.  |
-| Enable timeout | Configures timeout handling for approval tasks.           |
-| On failure     | Defines workflow behavior when the approval step fails.   |
+Use the Assignees & SLA tab to define who can work on the task, how responses from multiple assignees are handled, and what happens as the task approaches or exceeds its completion deadline.
 
-The Approval node provides separate execution paths for **on approve** and **on reject**.
+| **Field** | **Description** |
+| :--- | :--- |
+| **Assignment** | Choose **Direct** to assign the task to a fixed list of people, or **Conditional** to assign the task based on rules. For conditional assignment, the first matching rule determines the assignee; **Default assignees** receive the task if no rule matches. |
+| **Consensus** | When multiple assignees are assigned, choose how their responses resolve the task. Available resolution modes are:<br />• **First response wins:** The first assignee to submit resolves the task.<br />• **Everyone assigned must submit:** The task is resolved after all assigned users submit.<br />• **N of the assignees must submit:** Specify the required number of responses (**N**) before the task is resolved.<br />You can also specify how the task is resolved when the required consensus cannot be reached. |
+| **Timeout** | Enable a timeout and specify the **Duration** and **Unit** to define the task completion deadline. |
+| **Reminders** | Add reminders to notify assignees before the deadline. Each reminder is triggered at a specified percentage of the deadline. You can also configure a tool to run when the reminder threshold is reached. |
+| **Escalation ladder** | Add escalation steps to take action as the task approaches or exceeds its deadline. For each step, specify when to escalate and choose whether to **Loop in a person/group** or **Go directly to a node**. Escalation steps run in the configured order. |
+| **On timeout** | Specify what happens when the task reaches its deadline without being resolved. |
 
-#### Data entry node
+**Options**
 
-Use the Data Entry node to collect structured user input during workflow execution.
+Use the Options tab to configure additional behavior for the Human task node, including external notifications, error handling, and analytics tags.
 
-Data Entry nodes support workflows that require users to manually provide information before execution can continue.
-
-| Field             | Description                                        |
-|-------------------|----------------------------------------------------|
-| Subject           | Defines the data entry request title.              |
-| Message           | Defines instructions shown to the user.            |
-| Form Fields | Use **Add Field** to add form inputs to the request. Configure each field, including its name, type, label, and default value. Default values can be a static value or an expression that references data from workflow triggers or previous workflow steps. |
-| Assign To         | Assigns the task to everyone or specific users.    |
-| Enable timeout    | Enables timeout handling for the task.             |
-| Duration and Unit | Defines the timeout duration and unit.             |
-| On Timeout        | Defines workflow behavior when the task times out.<br/><br/>Terminate workflow – Stops workflow execution when the timeout is reached.<br/>Skip this step – Continues workflow execution without waiting for the task response.|
-| On failure        | Defines workflow behavior when execution fails.    |
-
+| **Setting** | **Description** |
+| :--- | :--- |
+| **External notifications** | Enable **Send notifications outside the inbox** to notify assignees through external channels. You can add one or more notification channels and configure each channel separately.<br /><br />Available channel options include Kore Email, Gmail Send Email, and Notify via Tool. For **email** channels, specify the message format and optionally override the default task, reminder, and escalation messages. For **Notify via Tool**, select how the tool runs and configure the tools to use when the task is created, a reminder is triggered, or an escalation occurs. |
+| **Error handling** | Enable **On failure** to specify the node to execute when the Human task node fails. |
+| **Analytics tags** | Add custom key-value dimensions to workflow metric events emitted when the task completes or fails. Values can reference the workflow context. |
 
 ---
 
