@@ -3,10 +3,86 @@ title: List trace events
 openapi: "/agent-platform/api-specs/traces.yaml get /api/public/analytics/projects/{projectId}/traces"
 ---
 
-`fromDate` and `toDate` are required. `fromDate` is included in the results and `toDate` is not. So, a full day is `fromDate=2026-08-05T00:00:00Z&toDate=2026-08-06T00:00:00Z`.
+Use this endpoint to retrieve the execution events recorded while agents run. The response groups events by trace and can include LLM calls, tool calls, agent decisions, and failures. Each event provides execution metadata and, depending on the selected `dataMode`, either summary information or the complete sanitized request and response content.
 
-To page through results, pass the `nextCursor` value from the previous response back as `cursor`. Keep every other parameter the same — a cursor is tied to the filters, data mode, and sort order it was created with, and changing any of them makes it invalid.
+Use `dataMode=summary` when you need operational information such as the event type, model, token usage, duration, cost, or error status without retrieving the event payloads. Use `dataMode=full` when you need the detailed sanitized request and response content associated with the events.
 
-To fetch one specific event, filter by `eventId`. There is no separate single-event endpoint. 
+The endpoint requires a `fromDate` and `toDate` range. The start of the range is inclusive and the end is exclusive. You can further narrow the results by event type, event name, session, trace, event, agent, decision type, channel, environment, or error status. Results are paginated using a cursor; because pagination counts events before grouping them into traces, a page can contain fewer traces than the requested event limit.
 
-If you request an event name this API does not support, it is ignored, not rejected, and is listed back to you in `meta.unsupportedEventNamesRequested`.
+### Filters
+
+- `fromDate` — **Required.** Inclusive start timestamp for the time range.
+- `toDate` — **Required.** Exclusive end timestamp for the time range.
+- `eventTypes` — Filter by event category:
+  - `llm` — LLM calls
+  - `tool` — Tool calls
+  - `decision` — Agent decisions
+  - `error` — LLM and tool failures
+- `eventNames` — Filter by specific event names:
+  - `llm.call.completed`
+  - `llm.call.failed`
+  - `tool.call.completed`
+  - `tool.call.failed`
+  - `tool.call.skipped`
+  - `agent.decision`
+- `sessionIds` — Filter events belonging to specific sessions; up to 10,000 session IDs.
+- `eventId` — Return only the event with the specified ID. Use this when you need to retrieve a specific event; there is no separate single-event endpoint.
+- `traceId` — Return only events belonging to the specified trace.
+- `agentName` — Filter events produced by a specific agent. The value is matched exactly.
+- `decisionKind` — Filter agent decision events by decision type, such as `routing`, `handoff`, `escalation`, or `completion`.
+- `channel` — Filter by the exact channel name recorded for the event. Unlike the Sessions endpoint, this filter does not support channel aliases.
+- `environment` — Filter by environment: `dev`, `staging`, `production`, or `working-copy`.
+- `hasError` — Set to `true` to return only events with errors, `false` to return only events without errors, or omit the parameter to return both.
+
+The `eventTypes` filter accepts up to four categories. The `eventNames` filter accepts up to 20 names. Unsupported event names are ignored rather than rejected and are reported in `meta.unsupportedEventNamesRequested`.
+
+Use `GET` when:
+
+- You are retrieving trace data without requiring encrypted request parameters.
+- You want to inspect or troubleshoot a specific event using `eventId`.
+- You want to investigate a particular trace using `traceId`.
+- You are analyzing events for one or more sessions using `sessionIds`.
+- You need to query and page through trace data using standard URL parameters.
+
+<Caution>Do not use GET when the request parameters themselves must be encrypted. GET query strings are never encrypted.</Caution>
+
+
+
+
+
+## POST — List trace events with parameters in the request body
+
+Use this endpoint when you need the same trace data and filtering capabilities as the GET endpoint, but want to send the query parameters in the request body instead of the URL. The POST endpoint accepts the same parameters and returns the same response as GET.
+
+The POST endpoint is particularly useful when request parameters must be encrypted. When request encryption is enabled for the Platform Key, send the `TracesQueryBody` as an encrypted JWE. When request encryption is disabled, send the same parameters as a plain JSON object. Response encryption is independent of request encryption; when enabled, responses other than `401` are returned as encrypted JWE payloads.
+
+### Filters and parameters
+
+The POST endpoint supports the same filtering parameters as GET:
+
+- `fromDate` — **Required.** Inclusive start timestamp.
+- `toDate` — **Required.** Exclusive end timestamp.
+- `eventTypes` — Filter by event category: `llm`, `tool`, `decision`, or `error`.
+- `eventNames` — Filter by specific supported event name.
+- `sessionIds` — Filter by up to 10,000 session IDs.
+- `eventId` — Retrieve a specific event.
+- `traceId` — Filter events belonging to a specific trace.
+- `agentName` — Filter by the exact agent name.
+- `decisionKind` — Filter agent decision events by decision type.
+- `channel` — Filter by the exact recorded channel name.
+- `environment` — Filter by environment.
+- `hasError` — Filter for events that have or do not have errors.
+- `dataMode` — Select `summary` or `full` event details.
+- `sortOrder` — Sort results in ascending or descending order.
+
+The POST body uses the GET parameter names as JSON property names. List parameters can be sent as JSON arrays or comma-separated strings. `traceDimensions` is not a parameter in this Traces API; do not use it with this endpoint.
+
+Use `POST` method when:
+
+- The request parameters must be encrypted.
+- You want to avoid exposing potentially sensitive filter values in the URL.
+- You need to send the query as a JSON object rather than URL query parameters.
+
+When request encryption is enabled, the plaintext query object is encrypted as a flattened JWE using the configured Platform Key. A plaintext POST body is rejected when request encryption is enabled, while an encrypted body is rejected when request encryption is disabled.
+
+Do not add query parameters to a POST request. All query parameters must be supplied in the request body, and the body must be a JSON object.
