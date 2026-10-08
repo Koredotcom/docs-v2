@@ -4,8 +4,14 @@
   // To add a product later, add one more entry here.
   var PRODUCTS = [
     {
+      name: 'AI for Service',
       prefix: '/ai-for-service/',
       index: 'https://raw.githubusercontent.com/Koredotcom/docs-v2/search-index/ai-for-service.json',
+    },
+    {
+      name: 'AI for Work',
+      prefix: '/ai-for-work/',
+      index: 'https://raw.githubusercontent.com/Koredotcom/docs-v2/search-index/ai-for-work.json',
     },
   ];
 
@@ -79,7 +85,7 @@
 
   function addStyles() {
     var css =
-      '#cs-wrap{position:fixed;top:12px;left:50%;transform:translateX(-50%);z-index:9999;width:min(445px,74vw);font-family:system-ui,sans-serif}' +
+      '#cs-wrap{position:fixed;top:12px;left:50%;transform:translateX(-50%);z-index:9999;width:min(680px,74vw);font-family:system-ui,sans-serif}' +
       '#cs-input{width:100%;box-sizing:border-box;height:43px;padding:0 14px 0 38px;background-image:url("data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 width=%2716%27 height=%2716%27 viewBox=%270 0 24 24%27 fill=%27none%27 stroke=%27%23667085%27 stroke-width=%272%27 stroke-linecap=%27round%27 stroke-linejoin=%27round%27%3E%3Ccircle cx=%2711%27 cy=%2711%27 r=%278%27/%3E%3Cpath d=%27m21 21-4.3-4.3%27/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:12px center;background-size:16px;font-size:14px;border:1px solid #d0d5dd;border-radius:10px;background-color:#fff;color:#111;outline:none;box-shadow:0 1px 3px rgba(0,0,0,.08)}' +
       '#cs-input:focus{border-color:#7a5af8}' +
       '#cs-list{display:none;position:absolute;top:49px;left:0;right:0;max-height:70vh;overflow:auto;background:#fff;color:#111;border:1px solid #d0d5dd;border-radius:10px;padding:6px;box-shadow:0 8px 24px rgba(0,0,0,.18)}' +
@@ -91,6 +97,7 @@
       '.cs-r{display:flex;align-items:center;gap:10px;padding:9px 8px;border-radius:8px;font-size:14px;cursor:pointer;color:inherit}' +
       '.cs-r:hover{background:#f2f4f7}' +
       '.cs-group{border-bottom:1px solid #eee}.cs-group .cs-item{border-bottom:0}' +
+      '.cs-badge{display:inline-block;margin-left:6px;padding:1px 7px;border-radius:999px;background:#eef4ff;color:#3538cd;font-size:11px;font-weight:500;vertical-align:1px}' +
       '.cs-subs{display:flex;flex-wrap:wrap;gap:6px;padding:0 8px 10px}' +
       '.cs-sub{font-size:12px;padding:3px 8px;border-radius:999px;background:#f2f4f7;color:#475467;text-decoration:none}' +
       '.cs-sub:hover{background:#e4e7ec}' +
@@ -100,7 +107,7 @@
       '@media (max-width:640px){#cs-wrap{left:auto;right:56px;transform:none;width:72vw}}' +
       'html.dark #cs-list{background:#18181b;color:#f4f4f5;border-color:#3f3f46}' +
       'html.dark #cs-input{background-color:#18181b;color:#f4f4f5;border-color:#3f3f46}html.dark .cs-item{border-color:#27272a}html.dark .cs-item:hover{background:#27272a}' +
-      'html.dark .cs-r:hover{background:#27272a}html.dark .cs-rh{color:#a1a1aa}html.dark .cs-group{border-color:#27272a}html.dark .cs-sub{background:#27272a;color:#d4d4d8}html.dark .cs-sub:hover{background:#3f3f46}html.dark mark{background:none;color:#4ade80}html.dark .cs-h,html.dark .cs-s,html.dark .cs-msg{color:#a1a1aa}';
+      'html.dark .cs-r:hover{background:#27272a}html.dark .cs-rh{color:#a1a1aa}html.dark .cs-badge{background:#1e1b4b;color:#c7d2fe}html.dark .cs-group{border-color:#27272a}html.dark .cs-sub{background:#27272a;color:#d4d4d8}html.dark .cs-sub:hover{background:#3f3f46}html.dark mark{background:none;color:#4ade80}html.dark .cs-h,html.dark .cs-s,html.dark .cs-msg{color:#a1a1aa}';
     var st = document.createElement('style');
     st.textContent = css;
     document.head.appendChild(st);
@@ -166,21 +173,38 @@
     });
   }
 
+  // Loads every product's index and merges them into one list.
+  // If one index is missing (e.g. not built yet), the others still work.
   function load() {
-    var p = productFor(location.pathname);
-    if (!p) return Promise.resolve([]);
-    if (!cache[p.index]) {
-      cache[p.index] = fetch(p.index)
-        .then(function (r) {
-          if (!r.ok) throw new Error(r.status);
-          return r.json();
+    if (!productFor(location.pathname)) return Promise.resolve(null);
+    if (!cache.all) {
+      cache.all = Promise.all(
+        PRODUCTS.map(function (p) {
+          return fetch(p.index)
+            .then(function (r) {
+              if (!r.ok) throw new Error(r.status);
+              return r.json();
+            })
+            .then(function (d) {
+              d.forEach(function (rec) {
+                rec.product = p.name;
+              });
+              return d;
+            })
+            .catch(function () {
+              return null;
+            });
         })
-        .catch(function () {
-          delete cache[p.index];
+      ).then(function (lists) {
+        var ok = lists.filter(Boolean);
+        if (!ok.length) {
+          delete cache.all;
           return null;
-        });
+        }
+        return [].concat.apply([], ok);
+      });
     }
-    return cache[p.index];
+    return cache.all;
   }
 
   function rx(t) {
@@ -254,6 +278,8 @@
           return b.s - a.s;
         });
         var rank = secs[0].s + (secs[1] ? secs[1].s * 0.3 : 0) + (secs[2] ? secs[2].s * 0.15 : 0);
+        var cur = productFor(location.pathname);
+        if (cur && secs[0].r.product === cur.name) rank *= 1.2; // slight boost for the product being viewed
         return { secs: secs, rank: rank };
       });
       groups.sort(function (a, b) {
@@ -278,7 +304,7 @@
             })
             .join('');
           return (
-            '<div class="cs-group"><a class="cs-item" href="' + esc(best.url) + '"><div class="cs-t">' + esc(best.title) + '</div>' +
+            '<div class="cs-group"><a class="cs-item" href="' + esc(best.url) + '"><div class="cs-t">' + esc(best.title) + (best.product ? ' <span class=\"cs-badge\">' + esc(best.product) + '</span>' : '') + '</div>' +
             (best.heading ? '<div class="cs-h">' + highlight(best.heading, terms) + '</div>' : '') +
             '<div class="cs-s">' + highlight(snippet(best.text, terms), terms) + '</div></a>' +
             (subs ? '<div class="cs-subs">' + subs + '</div>' : '') +
