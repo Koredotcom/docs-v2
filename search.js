@@ -72,7 +72,8 @@
 
   function productFor(path) {
     for (var i = 0; i < PRODUCTS.length; i++) {
-      if (path.indexOf(PRODUCTS[i].prefix) === 0) return PRODUCTS[i];
+      var pre = PRODUCTS[i].prefix; // e.g. '/ai-for-service/'
+      if (path === pre.slice(0, -1) || path.indexOf(pre) === 0) return PRODUCTS[i];
     }
     return null;
   }
@@ -85,7 +86,7 @@
 
   function addStyles() {
     var css =
-      '#cs-wrap{position:fixed;top:12px;left:50%;transform:translateX(-50%);z-index:9999;width:min(680px,74vw);font-family:system-ui,sans-serif}' +
+      '#cs-wrap{position:fixed;top:12px;left:50%;transform:translateX(-50%);z-index:9999;width:min(475px,74vw);font-family:system-ui,sans-serif}' +
       '#cs-input{width:100%;box-sizing:border-box;height:43px;padding:0 14px 0 38px;background-image:url("data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 width=%2716%27 height=%2716%27 viewBox=%270 0 24 24%27 fill=%27none%27 stroke=%27%23667085%27 stroke-width=%272%27 stroke-linecap=%27round%27 stroke-linejoin=%27round%27%3E%3Ccircle cx=%2711%27 cy=%2711%27 r=%278%27/%3E%3Cpath d=%27m21 21-4.3-4.3%27/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:12px center;background-size:16px;font-size:14px;border:1px solid #d0d5dd;border-radius:10px;background-color:#fff;color:#111;outline:none;box-shadow:0 1px 3px rgba(0,0,0,.08)}' +
       '#cs-input:focus{border-color:#7a5af8}' +
       '#cs-list{display:none;position:absolute;top:49px;left:0;right:0;max-height:70vh;overflow:auto;background:#fff;color:#111;border:1px solid #d0d5dd;border-radius:10px;padding:6px;box-shadow:0 8px 24px rgba(0,0,0,.18)}' +
@@ -278,14 +279,26 @@
           return b.s - a.s;
         });
         var rank = secs[0].s + (secs[1] ? secs[1].s * 0.3 : 0) + (secs[2] ? secs[2].s * 0.15 : 0);
-        var cur = productFor(location.pathname);
-        if (cur && secs[0].r.product === cur.name) rank *= 1.2; // slight boost for the product being viewed
         return { secs: secs, rank: rank };
       });
       groups.sort(function (a, b) {
         return b.rank - a.rank;
       });
-      groups = groups.slice(0, 8);
+      // Keep a fair share of slots for each product so one product cannot crowd out the others.
+      var MAX_PAGES = 10;
+      var cap = Math.ceil(MAX_PAGES / PRODUCTS.length), used = {}, picked = [], rest = [];
+      groups.forEach(function (g) {
+        var k = g.secs[0].r.product;
+        used[k] = (used[k] || 0) + 1;
+        if (used[k] <= cap && picked.length < MAX_PAGES) picked.push(g);
+        else rest.push(g);
+      });
+      rest.forEach(function (g) {
+        if (picked.length < MAX_PAGES) picked.push(g);
+      });
+      groups = picked.sort(function (a, b) {
+        return b.rank - a.rank;
+      });
       if (!groups.length) {
         list.innerHTML = '<div class="cs-msg">No results found.</div>';
         return;
