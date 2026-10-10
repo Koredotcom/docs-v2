@@ -1,0 +1,64 @@
+---
+title: Get all recordings for a session
+openapi: "/agent-platform/api-specs/call-recordings.yaml get /api/public/recordings/projects/{projectId}/sessions/{sessionId}/recordings"
+---
+
+The Call Recording API provides read-only access to server-side call recordings associated with a conversation session. It returns recording metadata and media URLs for available audio files, supporting automated workflows such as compliance archiving, quality assurance, and analytics.
+
+A session can produce multiple recordings, such as when a call is transferred. Each recording can contain multiple files, such as separate caller and agent channels. The API does not return transcripts or other conversation text.
+
+Authenticate using a project-bound platform API key (`abl_...`) with the `recordings.read` scope. Send the key in either the `x-api-key` header or the `Authorization: Bearer` header. Studio user JWTs, JWT App assertions, and public `pk_` keys are not accepted.
+
+## Retrieve session recordings
+
+Use this endpoint to retrieve all recordings produced by a specific session. The response includes recording metadata and a list of files for each recording. Each file includes its channel, file name, size, recording timestamps, availability, and media URL details.
+
+The endpoint requires the project ID and session ID. The optional `disposition` query parameter controls how the media is delivered:
+
+- `attachment` (default): downloads the media file.
+- `inline`: allows the media to play in a browser.
+
+## Response status and availability
+
+An HTTP `200` response can include recordings or explain why recording media is not yet available. Check `data.status`, `data.retryable`, and the availability fields on individual recordings and files.
+
+| `data.status` | Meaning |
+|---|---|
+| `success` | Every file has a media URL. |
+| `partial` | At least one file has a URL and at least one does not. |
+| `call_in_progress` | No file has a URL, and the call is still in progress. |
+| `media_in_progress` | No file has a URL, and media is still being fetched or stored. |
+| `media_unavailable` | No file is available, and no media is pending. |
+
+When `data.recordings` is empty, use `data.unavailableReason` and `data.retryable` to understand why no recordings are available.
+
+A file without a URL includes an `unavailableReason` and a `retryable` flag. Retry with backoff while the relevant `retryable` value is `true`. Stop retrying when it is `false`.
+
+## Media URLs
+
+Use `urlKind` to determine how to retrieve each file:
+
+- `signed`: Send a `GET` request directly to the absolute URL without an authentication header.
+- `proxied`: Prefix the returned relative URL with the API host and send a `GET` request to it without an authentication header. Use the URL as returned; do not construct it manually.
+- `external`: Send a `GET` request directly to the customer-owned absolute URL.
+
+Media URLs are short-lived where the platform controls their expiry. The default lifetime is 900 seconds, with a maximum of 3600 seconds. The `expiresIn` field indicates the remaining lifetime in seconds when applicable; it is `null` for external URLs.
+
+Treat every media URL as a bearer secret. Anyone with access to the URL may be able to retrieve the recording.
+
+## Errors and limits
+
+- `400`: Invalid session ID or invalid `disposition`.
+- `401`: Missing, invalid, expired, or revoked credentials.
+- `403`: Missing permission, unsupported credential type, or call recording not enabled for the tenant.
+- `404`: Project or session not found within the API key's authorized scope.
+- `413`: Recording or stored-file limit exceeded.
+- `429`: Tenant request rate limit exceeded.
+- `500`: Unexpected failure.
+- `503`: Project recording settings could not be resolved; retry later.
+
+The API allows up to 64 recordings per session and, by default, up to 32 stored files across those recordings. Tenant-level request rate limits also apply.
+
+## Audit and data handling
+
+When at least one media URL is issued, the API records a `recording:public_media_urls_issued` audit event attributed to the calling API key. Responses include `Cache-Control: no-store`, `Pragma: no-cache`, and `Referrer-Policy: no-referrer`.
