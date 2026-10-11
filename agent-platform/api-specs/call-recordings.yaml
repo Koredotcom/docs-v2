@@ -1,0 +1,676 @@
+openapi: 3.1.0
+info:
+  title: Call Recording API
+  version: 1.0.0
+  summary: Project-scoped, read-only API for fetching a session's server-side call recordings with ready-to-play media URLs.
+  description: |
+    Fetches every server-side call recording a voice session produced, in one request, with a
+    media URL for each recorded file. Built for unattended jobs — compliance archiving, QA
+    sampling, analytics pipelines — that need call audio without a human's credentials.
+    This is the abl-platform equivalent of Kore XO **Fetch Call Recording v2**.
+
+    The API is read-only. Writes, deletes, legal holds and retention changes stay on the
+    internal, permission-checked routes. Transcripts and other conversation text are not
+    returned here.
+
+    ### Authentication
+
+    Send a **platform API key** (`abl_...`) that is bound to the project and holds the
+    `recordings.read` scope, either as `x-api-key: abl_...` or as
+    `Authorization: Bearer abl_...`.
+
+    `recordings.read` expands only to the `recording:read` permission. It grants no transcript,
+    session-content or write access.
+
+    Other credentials are refused with `403 PLATFORM_API_KEY_REQUIRED`, even when they carry
+    `recordings.read`:
+    - a Studio user JWT
+    - a **JWT App** assertion (`auth` header)
+    - a public `pk_` key
+
+    ### One request, every recording
+
+    A session can produce more than one recording (for example a transfer), and a recording
+    can have more than one file (for example separate `caller` / `agent` channels). Both levels
+    are always arrays: `data.recordings[].files[]`. Each file carries its own `channel`.
+
+    ### Availability model — "not yet" vs "never"
+
+    Every file entry always includes the `url` key:
+    - **`url` set:** `availability: available`, and `unavailableReason` is `null`.
+    - **`url` null:** `unavailableReason` says why, and `retryable` says whether calling again
+      can succeed.
+
+    | `unavailableReason`    | Meaning                                                         | `retryable` |
+    |------------------------|-----------------------------------------------------------------|-------------|
+    | `call_in_progress`     | The session has not ended yet                                   | **true**    |
+    | `media_in_progress`    | The call ended; the media is still being fetched or stored     | **true**    |
+    | `url_signing_failed`   | The file exists, but issuing its URL failed this time           | **true**    |
+    | `recording_disabled`   | The session was never recorded because recording was switched off (which setting is not disclosed) | false |
+    | `media_not_available`  | The recording server had no media for this call                 | false       |
+    | `auth_failed`          | The platform could not authenticate to the recording server     | false       |
+    | `storage_write_failed` | The media could not be written to storage                       | false       |
+    | `media_object_missing` | The recording is marked complete but its stored object is gone  | false       |
+    | `retention_expired`    | The recording passed its retention period                       | false       |
+    | `deleted`              | The recording was deleted                                       | false       |
+
+    `data.status` sums up the whole session:
+    - **`success`:** every file has a URL.
+    - **`partial`:** at least one file has a URL and at least one does not. Still **HTTP 200**.
+    - **`call_in_progress`:** no file has a URL, and at least one is waiting on a call that
+      hasn't ended.
+    - **`media_in_progress`:** no file has a URL, and at least one is still being fetched or
+      stored.
+    - **`media_unavailable`:** nothing is available, and nothing is still pending.
+
+    When the session has **no recording at all**:
+    - `recordings` is an empty array.
+    - The top-level `unavailableReason` and `retryable` explain why.
+    - In practice that's `call_in_progress` (retry later), `recording_disabled`, or
+      `media_not_available`.
+
+    **Retry rule:** retry with backoff while `data.retryable` is `true`, and stop when it is
+    `false`.
+
+    ### Media URLs
+
+    `urlKind` tells you how to use `url`:
+
+    | `urlKind`  | What it is | How to fetch it | `expiresIn` |
+    |------------|------------|-----------------|-------------|
+    | `signed`   | A pre-signed object-storage URL (absolute) | `GET` it directly, no auth header | Seconds until expiry |
+    | `proxied`  | A **relative** path on this host that carries a short-lived media token | Prefix it with the API host, then `GET` it with no auth header (see `getRecordingMediaContent`) | Seconds until expiry |
+    | `external` | A customer-owned recording URL (absolute) | `GET` it directly | `null` (the platform doesn't control expiry; never `0`) |
+
+    - **Lifetime:** issued URLs live for `RECORDING_PUBLIC_MEDIA_URL_TTL_SECONDS`, which
+      defaults to **900 s** and is capped at **3600 s**.
+    - **Treat every URL as a bearer secret.** Responses are sent with `Cache-Control: no-store`,
+      `Pragma: no-cache` and `Referrer-Policy: no-referrer`.
+    - **Download vs playback:** `disposition` chooses the `Content-Disposition` of the media
+      response. Use `attachment` (the default) to download, or `inline` to play in a browser.
+
+    ### Audit
+
+    Every response that issues at least one URL writes an audit record:
+    - **Action:** `recording:public_media_urls_issued`.
+    - **Principal:** attributed to the calling API key, not a shared user.
+    - **Content:** the recording IDs, file indexes, URL kinds and disposition.
+
+    Streaming through a `proxied` URL writes a second record,
+    `recording:media_content_streamed`, for each request.
+
+    ### Limits
+
+    | Limit | Default | Over the limit |
+    |---|---|---|
+    | Recordings per session | 64 | `413 RECORDING_QUERY_LIMIT_EXCEEDED` |
+    | Stored files across a session's recordings | 32 (`RECORDING_PUBLIC_RECORDING_OBJECT_LIMIT`) | `413 RECORDING_OBJECT_LIMIT_EXCEEDED` |
+    | Requests | Tenant request rate limit | `429 RATE_LIMIT_EXCEEDED` |
+
+    ### Isolation and gating
+
+    - **Other project:** a session in a project the key isn't bound to returns
+      `404 PROJECT_NOT_FOUND`, never `403`, so the API doesn't reveal whether it exists.
+    - **Feature not enabled:** for a tenant without the call-recording feature, the request
+      fails before any lookup.
+
+    ### Migrating from XO Fetch Call Recording v2
+
+    | XO | This API |
+    |---|---|
+    | `/api/public/bot/{botId}/...` | `/api/public/recordings/projects/{projectId}/sessions/{sessionId}/recordings` |
+    | App JWT (`auth` header) | Platform API key (`x-api-key` or `Authorization: Bearer abl_...`) with `recordings.read` |
+    | Lookup by call ID, time window or contact | **Session ID only** (v1). `callId` is returned on each recording. |
+    | One URL per call | List of recordings, each with a list of files and its own `channel` |
+servers:
+  - url: https://{host}
+    description: Base URL of your platform.
+    variables: { host: { default: runtime.example.com } }
+security:
+  - ApiKeyAuth: []
+  - BearerPlatformKey: []
+tags:
+  - name: Call Recordings
+    description: Fetch a session's call recordings and stream their media.
+paths:
+  /api/public/recordings/projects/{projectId}/sessions/{sessionId}/recordings:
+    get:
+      operationId: getSessionRecordings
+      tags: [Call Recordings]
+      summary: Fetch call recordings for a session
+      description:
+      security:
+        - ApiKeyAuth: []
+        - BearerPlatformKey: []
+      parameters:
+        - $ref: '#/components/parameters/ProjectId'
+        - name: sessionId
+          in: path
+          required: true
+          description: The session to look up. The only lookup key in v1.
+          schema: { type: string, minLength: 1, maxLength: 256 }
+        - $ref: '#/components/parameters/Disposition'
+      responses:
+        '200':
+          description: |
+            The session's recordings, or an explanation of why there are none.
+            Sent with `Cache-Control: no-store`, `Pragma: no-cache` and `Referrer-Policy: no-referrer`.
+          headers:
+            Cache-Control: { $ref: '#/components/headers/CacheControlNoStore' }
+            Pragma: { $ref: '#/components/headers/PragmaNoCache' }
+            Referrer-Policy: { $ref: '#/components/headers/ReferrerPolicyNoReferrer' }
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SessionRecordingsResponse' }
+              examples:
+                success:
+                  summary: Every file available (proxied storage)
+                  value:
+                    success: true
+                    data:
+                      sessionId: 7f3a0c52-9d1e-4b8a-a6f0-1c2e3d4b5a69
+                      projectId: 019ed940-1dcf-7d2b-a916-e52977189900
+                      status: success
+                      unavailableReason: null
+                      retryable: false
+                      recordings:
+                        - recordingId: 019f88d2-6b1a-7c3e-9f20-5d4c3b2a1908
+                          callId: 4c1d7e2a-0b9f-4e6d-8a35-2f1e0d9c8b7a
+                          availability: available
+                          unavailableReason: null
+                          retryable: false
+                          durationSeconds: 19
+                          immutable: false
+                          createdAt: '2026-09-02T10:14:07.000Z'
+                          retentionExpiresAt: '2026-12-01T10:14:07.000Z'
+                          files:
+                            - recordingId: 019f88d2-6b1a-7c3e-9f20-5d4c3b2a1908
+                              objectIndex: 0
+                              fileName: recording.flac
+                              channel: mixed
+                              recordingType: siprec
+                              bytes: 242323
+                              recordingStartTime: '2026-09-02T10:13:48.000Z'
+                              recordingEndTime: '2026-09-02T10:14:07.000Z'
+                              availability: available
+                              url: /api/projects/019ed940-1dcf-7d2b-a916-e52977189900/recordings/019f88d2-6b1a-7c3e-9f20-5d4c3b2a1908/media/content/eyJ2Ijoy...sig?objectIndex=0&disposition=attachment
+                              urlKind: proxied
+                              expiresIn: 900
+                              unavailableReason: null
+                              retryable: false
+                partial:
+                  summary: Two recordings — one available, one still being stored (HTTP 200)
+                  value:
+                    success: true
+                    data:
+                      sessionId: 7f3a0c52-9d1e-4b8a-a6f0-1c2e3d4b5a69
+                      projectId: 019ed940-1dcf-7d2b-a916-e52977189900
+                      status: partial
+                      unavailableReason: null
+                      retryable: true
+                      recordings:
+                        - recordingId: rec_A
+                          callId: call_A
+                          availability: available
+                          unavailableReason: null
+                          retryable: false
+                          durationSeconds: 42
+                          immutable: false
+                          createdAt: '2026-09-02T10:14:07.000Z'
+                          retentionExpiresAt: null
+                          files:
+                            - recordingId: rec_A
+                              objectIndex: 0
+                              fileName: caller.flac
+                              channel: caller
+                              recordingType: siprec
+                              bytes: 512000
+                              recordingStartTime: '2026-09-02T10:13:25.000Z'
+                              recordingEndTime: '2026-09-02T10:14:07.000Z'
+                              availability: available
+                              url: https://storage.example.com/rec_A/caller.flac?X-Amz-Signature=...
+                              urlKind: signed
+                              expiresIn: 900
+                              unavailableReason: null
+                              retryable: false
+                        - recordingId: rec_B
+                          callId: call_B
+                          availability: media_in_progress
+                          unavailableReason: media_in_progress
+                          retryable: true
+                          durationSeconds: null
+                          immutable: false
+                          createdAt: '2026-09-02T10:15:30.000Z'
+                          retentionExpiresAt: null
+                          files:
+                            - recordingId: rec_B
+                              objectIndex: 0
+                              fileName: null
+                              channel: null
+                              recordingType: null
+                              bytes: 0
+                              recordingStartTime: null
+                              recordingEndTime: null
+                              availability: media_in_progress
+                              url: null
+                              urlKind: null
+                              expiresIn: null
+                              unavailableReason: media_in_progress
+                              retryable: true
+                externalUrl:
+                  summary: External (customer-owned) URL — expiresIn is null, never 0
+                  value:
+                    success: true
+                    data:
+                      sessionId: 7f3a0c52-9d1e-4b8a-a6f0-1c2e3d4b5a69
+                      projectId: 019ed940-1dcf-7d2b-a916-e52977189900
+                      status: success
+                      unavailableReason: null
+                      retryable: false
+                      recordings:
+                        - recordingId: rec_X
+                          callId: call_X
+                          availability: available
+                          unavailableReason: null
+                          retryable: false
+                          durationSeconds: 60
+                          immutable: true
+                          createdAt: '2026-09-02T10:14:07.000Z'
+                          retentionExpiresAt: null
+                          files:
+                            - recordingId: rec_X
+                              objectIndex: 0
+                              fileName: call.wav
+                              channel: mixed
+                              recordingType: external
+                              bytes: 960044
+                              recordingStartTime: null
+                              recordingEndTime: null
+                              availability: available
+                              url: https://recordings.customer.example/call_X.wav
+                              urlKind: external
+                              expiresIn: null
+                              unavailableReason: null
+                              retryable: false
+                callInProgress:
+                  summary: Session still active — retry later
+                  value:
+                    success: true
+                    data:
+                      sessionId: 7f3a0c52-9d1e-4b8a-a6f0-1c2e3d4b5a69
+                      projectId: 019ed940-1dcf-7d2b-a916-e52977189900
+                      status: call_in_progress
+                      unavailableReason: call_in_progress
+                      retryable: true
+                      recordings: []
+                recordingDisabled:
+                  summary: Session never recorded because recording was off (verified live on dev)
+                  value:
+                    success: true
+                    data:
+                      sessionId: 6c8e7b20-cca8-48ed-9a07-d848e81fae74
+                      projectId: 01a115c5-95db-7550-9ce4-da2446e05f43
+                      status: media_unavailable
+                      unavailableReason: recording_disabled
+                      retryable: false
+                      recordings: []
+        '400':
+          description: |
+            Invalid request:
+            - `INVALID_SESSION_ID`: `sessionId` is empty or over 256 characters.
+            - `INVALID_PUBLIC_RECORDING_REQUEST`: `disposition` is not `inline` or `attachment`.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorEnvelope' }
+              examples:
+                invalidSessionId:
+                  value: { success: false, error: { code: INVALID_SESSION_ID, message: Invalid session id } }
+                invalidDisposition:
+                  value: { success: false, error: { code: INVALID_PUBLIC_RECORDING_REQUEST, message: Invalid request } }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403':
+          description: |
+            - `PERMISSION_REQUIRED`: the key lacks `recordings.read`. The response includes
+              `required: "recording:read"`.
+            - `PLATFORM_API_KEY_REQUIRED`: the credential is not a platform `abl_` key
+              (user JWT, JWT App, or `pk_` key).
+            - Also returned when call recording is not enabled for the tenant.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ForbiddenEnvelope' }
+              examples:
+                missingScope:
+                  value: { success: false, error: { code: PERMISSION_REQUIRED, message: Forbidden }, required: 'recording:read' }
+                notAPlatformKey:
+                  value: { success: false, error: { code: PLATFORM_API_KEY_REQUIRED, message: An ABL platform API key is required for this endpoint } }
+        '404':
+          description: |
+            - `PROJECT_NOT_FOUND`: the key isn't bound to this project. The response is the
+              same whether or not the project exists.
+            - `SESSION_NOT_FOUND`: no such session in this project.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorEnvelope' }
+              examples:
+                projectOutOfScope:
+                  value: { success: false, error: { code: PROJECT_NOT_FOUND, message: Project not found } }
+                sessionNotFound:
+                  value: { success: false, error: { code: SESSION_NOT_FOUND, message: Session not found } }
+        '413':
+          description: |
+            The session is over a response limit:
+            - `RECORDING_QUERY_LIMIT_EXCEEDED`: more than 64 recordings.
+            - `RECORDING_OBJECT_LIMIT_EXCEEDED`: more stored files than the object limit
+              (32 by default).
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorEnvelope' }
+              examples:
+                objectLimit:
+                  value: { success: false, error: { code: RECORDING_OBJECT_LIMIT_EXCEEDED, message: Recording object limit exceeded } }
+        '429':
+          description: Tenant request rate limit exceeded.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorEnvelope' }
+              example: { success: false, error: { code: RATE_LIMIT_EXCEEDED, message: Rate limit exceeded } }
+        '500':
+          description: Unexpected failure.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorEnvelope' }
+              example: { success: false, error: { code: INTERNAL_ERROR, message: Failed to fetch call recordings } }
+        '503':
+          description: The project's recording settings could not be resolved. Retry later.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorEnvelope' }
+              example: { success: false, error: { code: RECORDING_SETTINGS_UNAVAILABLE, message: Recording settings are unavailable } }
+
+  /api/projects/{projectId}/recordings/{recordingId}/media/content/{mediaToken}:
+    get:
+      operationId: getRecordingMediaContent
+      tags: [Call Recordings]
+      summary: Stream recording media (target of a `proxied` URL)
+      description:
+      security: []
+      parameters:
+        - $ref: '#/components/parameters/ProjectId'
+        - name: recordingId
+          in: path
+          required: true
+          schema: { type: string, minLength: 1 }
+        - name: mediaToken
+          in: path
+          required: true
+          description: Signed media token issued inside a `proxied` URL.
+          schema: { type: string, minLength: 1 }
+        - name: objectIndex
+          in: query
+          required: false
+          description: File index within the recording. Must match the token.
+          schema: { type: integer, minimum: 0, default: 0 }
+        - $ref: '#/components/parameters/Disposition'
+        - name: Range
+          in: header
+          required: false
+          description: Single byte range, e.g. `bytes=0-65535`.
+          schema: { type: string }
+      responses:
+        '200':
+          description: The full media file.
+          headers:
+            Content-Type: { description: 'Media type, e.g. `audio/flac`.', schema: { type: string } }
+            Content-Length: { schema: { type: integer } }
+            Content-Disposition: { description: '`inline` or `attachment` with the file name.', schema: { type: string } }
+          content:
+            audio/flac: { schema: { type: string, format: binary } }
+            application/octet-stream: { schema: { type: string, format: binary } }
+        '206':
+          description: Partial content for a `Range` request.
+          headers:
+            Content-Range: { schema: { type: string }, description: 'e.g. `bytes 0-65535/242323`.' }
+            Accept-Ranges: { schema: { type: string, const: bytes } }
+          content:
+            audio/flac: { schema: { type: string, format: binary } }
+        '302':
+          description: The file is an external URL; follow the redirect.
+          headers:
+            Location: { schema: { type: string, format: uri } }
+        '400':
+          description: '`INVALID_OBJECT_INDEX` or `INVALID_MEDIA_DISPOSITION`.'
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorEnvelope' }
+        '401':
+          description: Token invalid, expired, or not matching the path, `objectIndex` or `disposition`.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorEnvelope' }
+              example: { success: false, error: { code: INVALID_RECORDING_MEDIA_TOKEN, message: Invalid media token } }
+        '404':
+          description: '`RECORDING_NOT_FOUND` (no such recording or file index) or `RECORDING_MEDIA_NOT_FOUND` (stored object missing).'
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorEnvelope' }
+        '409':
+          description: The recording is not `completed` yet.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorEnvelope' }
+              example: { success: false, error: { code: RECORDING_NOT_READY, message: Recording media is not ready } }
+        '416':
+          description: Unsatisfiable `Range` header.
+          headers:
+            Content-Range: { schema: { type: string }, description: '`bytes */*`' }
+        '504':
+          description: The stream did not finish within 5 minutes.
+
+components:
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: x-api-key
+      description: Platform API key (`abl_...`) bound to the project, with the `recordings.read` scope.
+    BearerPlatformKey:
+      type: http
+      scheme: bearer
+      bearerFormat: Platform API key (abl_...)
+      description: 'The same platform API key sent as `Authorization: Bearer abl_...`. This is not a JWT.'
+
+  parameters:
+    ProjectId:
+      name: projectId
+      in: path
+      required: true
+      description: Project ID (not the slug). The key must be bound to this project.
+      schema: { type: string, minLength: 1 }
+    Disposition:
+      name: disposition
+      in: query
+      required: false
+      description: |
+        `Content-Disposition` for the media response: `attachment` (download, the default) or
+        `inline` (play in a browser). It is built into each issued URL.
+      schema: { type: string, enum: [inline, attachment], default: attachment }
+
+  headers:
+    CacheControlNoStore:
+      schema: { type: string, const: no-store }
+    PragmaNoCache:
+      schema: { type: string, const: no-cache }
+    ReferrerPolicyNoReferrer:
+      schema: { type: string, const: no-referrer }
+
+  responses:
+    Unauthenticated:
+      description: |
+        No credential, or an invalid, revoked or expired key. This response uses the platform
+        authentication envelope, which differs from the other errors.
+      content:
+        application/json:
+          schema:
+            type: object
+            required: [error]
+            properties:
+              error: { type: string }
+              requestId: { type: string }
+          examples:
+            missing:
+              value: { error: Authentication required, requestId: 2025362a547cdc87b8e9001da2fdc3f9 }
+            invalidKey:
+              value: { error: Invalid or expired API key, requestId: 97fadc6a-b413-4d9c-9c99-d4c656df4a00 }
+
+  schemas:
+    SessionStatus:
+      type: string
+      enum: [success, partial, media_in_progress, call_in_progress, media_unavailable]
+      description: Summary of the whole session. See the availability model in the API description.
+    Availability:
+      type: string
+      enum: [available, media_in_progress, unavailable]
+    UnavailableReason:
+      type: string
+      enum:
+        - call_in_progress
+        - media_in_progress
+        - auth_failed
+        - media_not_available
+        - storage_write_failed
+        - media_object_missing
+        - retention_expired
+        - deleted
+        - recording_disabled
+        - url_signing_failed
+      description: |
+        Why there is no URL. Retryable reasons: `call_in_progress`, `media_in_progress` and
+        `url_signing_failed`. All others are terminal.
+    UrlKind:
+      type: string
+      enum: [signed, proxied, external]
+      description: |
+        - `signed`: pre-signed storage URL (absolute).
+        - `proxied`: relative path on this host; prefix the host.
+        - `external`: customer-owned URL; `expiresIn` is `null`.
+
+    RecordingFile:
+      type: object
+      additionalProperties: false
+      required:
+        - recordingId
+        - objectIndex
+        - fileName
+        - channel
+        - recordingType
+        - bytes
+        - recordingStartTime
+        - recordingEndTime
+        - availability
+        - url
+        - urlKind
+        - expiresIn
+        - unavailableReason
+        - retryable
+      properties:
+        recordingId: { type: string }
+        objectIndex: { type: integer, minimum: 0, description: Position of this file within the recording. }
+        fileName: { type: [string, 'null'] }
+        channel:
+          type: [string, 'null']
+          enum: [caller, agent, mixed, null]
+          description: Which side of the call this file contains.
+        recordingType: { type: [string, 'null'] }
+        bytes: { type: integer, minimum: 0, description: '`0` when the file is unavailable.' }
+        recordingStartTime: { type: [string, 'null'], format: date-time }
+        recordingEndTime: { type: [string, 'null'], format: date-time }
+        availability: { $ref: '#/components/schemas/Availability' }
+        url:
+          type: [string, 'null']
+          description: |
+            Media URL, or `null` when none was issued. Always present, never omitted.
+            Treat a non-null value as a bearer secret.
+        urlKind:
+          oneOf: [{ $ref: '#/components/schemas/UrlKind' }, { type: 'null' }]
+        expiresIn:
+          type: [integer, 'null']
+          minimum: 1
+          description: Seconds until `url` expires. `null` for `external` URLs and when `url` is `null`. Never `0`.
+        unavailableReason:
+          oneOf: [{ $ref: '#/components/schemas/UnavailableReason' }, { type: 'null' }]
+        retryable: { type: boolean, description: '`true` only when a later call can produce a URL for this file.' }
+
+    Recording:
+      type: object
+      additionalProperties: false
+      required:
+        - recordingId
+        - callId
+        - availability
+        - unavailableReason
+        - retryable
+        - durationSeconds
+        - immutable
+        - createdAt
+        - retentionExpiresAt
+        - files
+      properties:
+        recordingId: { type: string }
+        callId: { type: string, description: Telephony call ID. Use it to correlate with XO-era records. }
+        availability:
+          $ref: '#/components/schemas/Availability'
+        unavailableReason:
+          oneOf: [{ $ref: '#/components/schemas/UnavailableReason' }, { type: 'null' }]
+          description: The first file-level reason when no file in this recording is available.
+        retryable: { type: boolean, description: '`true` if any file in this recording is retryable.' }
+        durationSeconds: { type: [number, 'null'] }
+        immutable: { type: boolean, description: Under legal hold; cannot be deleted. }
+        createdAt: { type: string, format: date-time }
+        retentionExpiresAt: { type: [string, 'null'], format: date-time }
+        files:
+          type: array
+          items: { $ref: '#/components/schemas/RecordingFile' }
+
+    SessionRecordingsResponse:
+      type: object
+      required: [success, data]
+      properties:
+        success: { type: boolean, const: true }
+        data:
+          type: object
+          additionalProperties: false
+          required: [sessionId, projectId, status, unavailableReason, retryable, recordings]
+          properties:
+            sessionId: { type: string }
+            projectId: { type: string }
+            status: { $ref: '#/components/schemas/SessionStatus' }
+            unavailableReason:
+              oneOf: [{ $ref: '#/components/schemas/UnavailableReason' }, { type: 'null' }]
+              description: Set only when `recordings` is empty. Otherwise read the per-recording and per-file reasons.
+            retryable:
+              type: boolean
+              description: Retry with backoff while this is `true`.
+            recordings:
+              type: array
+              items: { $ref: '#/components/schemas/Recording' }
+
+    ErrorEnvelope:
+      type: object
+      required: [success, error]
+      properties:
+        success: { type: boolean, const: false }
+        error:
+          type: object
+          required: [code, message]
+          properties:
+            code: { type: string, description: Stable machine-readable error code. }
+            message: { type: string, description: Human-readable detail. }
+
+    ForbiddenEnvelope:
+      allOf:
+        - $ref: '#/components/schemas/ErrorEnvelope'
+        - type: object
+          properties:
+            required:
+              type: string
+              description: The missing permission. Present on `PERMISSION_REQUIRED`.
