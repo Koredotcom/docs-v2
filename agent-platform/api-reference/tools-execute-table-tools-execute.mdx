@@ -1,0 +1,86 @@
+---
+title: Execute a specific tool
+openapi: "/agent-platform/api-specs/tool-execution.yaml post /api/v1/project/{projectSlug}/tools/{toolName}/invoke"
+---
+
+Executes a tool in a project and returns its result. The request supplies the tool's caller-defined input parameters in a JSON body. Execution is synchronous: the request waits for the tool to complete or reach its timeout.
+
+Use this endpoint to run an executable tool after identifying it and retrieving its input schema. The tool's output is returned without being reshaped by the platform, except that an Agent Table tool's output is returned as a JSON object.
+
+**Permission:** `tool:execute`, granted by the platform API key scope `tools.execute`.
+
+## Path parameters
+
+| Parameter     | Type   | Required | Description                                                             |
+|---------------|--------|----------|-------------------------------------------------------------------------|
+| `projectSlug` | string | Yes      | Project slug, not the project ID or UUID.                               |
+| `toolName`    | string | Yes      | Tool name as authored. For MCP tools, use the `alias__toolName` format. |
+
+## Request body
+
+Send a JSON object with the following properties:
+
+| Property  | Type    | Required | Description                                                                                            |
+|-----------|---------|----------|--------------------------------------------------------------------------------------------------------|
+| `params`  | object  | Yes      | Tool input matching the `input` schema returned by the Describe a tool endpoint.                       |
+| `timeout` | integer | No       | Per-call timeout in milliseconds. Minimum: `1000`; maximum: `300000`.                                  |
+| `mode`    | string  | No       | Execution mode. Omit this property or set it to `sync`. Other values return `400 ASYNC_NOT_SUPPORTED`. |
+
+The request body is strict. Unknown top-level properties and platform-derived fields are rejected rather than ignored. Platform-derived fields include values such as `tenantId`, `environment`, and `agentSession`.
+
+For Agent Table tools without a query template, `params` contains a structured call with `op` and the operands for that operation. The accepted operations depend on the tool's binding.
+
+## Authentication
+
+Use one of the supported credentials:
+
+- `x-api-key: abl_...` — platform API key.
+- `Authorization: Bearer <abl_... | JWT>` — platform API key or Studio user JWT.
+- `auth: <assertion>` — JWT App assertion.
+
+Public SDK keys (`pk_...`) are not accepted. The JWT App assertion must be sent in the `auth` header, not the `Authorization` header.
+
+The credential must have the `tool:execute` permission. A sensitive-column lookup also requires `table:sensitive:reveal`.
+
+## Response
+
+A successful response contains `success` and `data`. The `data` object includes the execution `status`, the tool's `output` when provided, and `trace` information when the caller is entitled to it.
+
+The response headers identify the tool type, resolved environment, and configuration source:
+
+| Header                | Description                                                                                     |
+|-----------------------|-------------------------------------------------------------------------------------------------|
+| `X-ABL-Tool-Type`     | Type of tool that ran.                                                                          |
+| `X-ABL-Environment`   | Environment against which the tool definition was resolved. Always `draft` on this API surface. |
+| `X-ABL-Config-Source` | Indicates whether the configuration came from a pinned version or the working copy.             |
+
+For Agent Table tools, `output` is a JSON object rather than a serialized JSON string. For other tool types, the output is returned without platform-level reshaping.
+
+## Execution considerations
+
+- Only tool types enabled for public API execution can be invoked. Agent Table tools are enabled by default; other supported types require explicit enablement.
+- The `sandbox` tool type is not executable through this API.
+- A tool's declared effect can indicate whether it is read-only, writes state, or has side effects. Review this metadata before invoking the tool.
+- Tool failures are returned using status codes appropriate to the failure. Do not assume every execution failure is a transient server error or safe to retry.
+
+## Errors
+
+| HTTP status | Description                                                                                                                                                   |
+|-------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `400`       | Malformed or invalid request, unknown key, unsupported platform field, unsupported execution mode, or forbidden operation.                                    |
+| `401`       | Missing or invalid credentials, or an unsupported public SDK key.                                                                                             |
+| `403`       | Missing execution permission, insufficient project scope, or a sensitive-column lookup without the required permission.                                       |
+| `404`       | Project or tool not found, tool type disabled, tool not executable, or public execution disabled. Some of these cases intentionally return the same response. |
+| `409`       | Conflict requiring caller action, such as a unique-constraint violation, row-version conflict, or unsupported authentication-profile mode.                    |
+| `413`       | Request payload exceeds the allowed size or structural limits.                                                                                                |
+| `415`       | Unsupported media type or charset. A JWT App configured to require payload encryption must use the required encrypted format.                                 |
+| `422`       | Tool configuration or execution failure, invalid tool response, or SOAP fault.                                                                                |
+| `429`       | Tenant request or tool-call rate limit exceeded.                                                                                                              |
+| `500`       | Unexpected execution failure.                                                                                                                                 |
+| `502`       | Tool network, HTTP, authentication, or upstream failure.                                                                                                      |
+| `503`       | A dependency is unavailable, such as an MCP server or Agent Table service.                                                                                    |
+| `504`       | The tool did not respond within its timeout.                                                                                                                  |
+
+The `429` response uses a rate-limiter-specific response format rather than the standard API error envelope. Check the response headers for rate-limit information and retry guidance.
+
+For transient dependency failures (`503`), retry with backoff. Resolve conflicts such as `409` before retrying. Do not automatically retry operations with side effects unless their retry behavior is known to be safe.
