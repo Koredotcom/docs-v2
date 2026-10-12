@@ -61,12 +61,14 @@ The Notify API sends interactive notifications to users. Notifications can inclu
 | message | object | Required | Contains notification title and body text. |
 | message.title | string | Required | Notification title. |
 | message.body | string | Required | Notification message body. |
-| category | string | Required | Category of the notification (e.g., `"agent"`). |
-| actions | array | Required | Array of interactive response buttons. |
-| actions[].title | string | Required | Button label text. |
-| actions[].type | string | Required | Action type (e.g., `"postback"`). |
-| actions[].utterance | string | Required | Text sent when the user selects the button. |
-| actions[].payload | object | Required | Custom data passed with the action. |
+| category | string | Optional | Category of the notification. Defaults to `Agent`. |
+| actions | array | Optional | Array of interactive response buttons. Defaults to an empty array, which sends the notification without buttons. |
+| actions[].title | string | Optional | Button label that the user sees. |
+| actions[].type | string | Optional | Action type, for example, `"postback"`. |
+| actions[].utterance | string | Optional | Text sent to the agent when the user selects the button. |
+| actions[].payload | object | Optional | Custom data passed to the agent with the action, for tracking and response handling. |
+
+<Note>The API validates only `to` and `message`. It does not validate the properties inside `actions`, so check that each button includes the fields your agent needs to handle the response.</Note>
 
 ### Sample Request
 
@@ -109,7 +111,7 @@ curl --location --request POST 'https://work.example.ai/api/1.1/public/agents/ag
 * The `to` email address must belong to a valid application user.
 * The `to` key accepts a single email address in the initial implementation.
 * Use custom payload data for tracking and response handling.
-* Include `actions` in the request payload to present users with interactive buttons.
+* Include `actions` in the request payload to present users with interactive buttons. If you omit `actions`, the user receives the notification without buttons.
 
 ## Audit Log API
 
@@ -124,37 +126,65 @@ The Audit Log API retrieves log data programmatically for custom reporting, SIEM
 
 ### Query Parameters
 
-All parameters are optional. Combine them to filter results.
+The `startTime` and `endTime` parameters are required. The API returns HTTP `400` if either is missing. All other parameters are optional; combine them to filter results.
 
-| Parameter | Description | Example |
-|-----------|-------------|---------|
-| `entity` | Type of resource to filter by | `entity=usergroups` |
-| `entityId` | Unique ID of a specific resource instance | `entityId=12345` |
-| `userId` | Filter by the user who performed the action | `userId=john_doe` |
-| `emailId` | Filter by the email address of the acting user | `emailId=john.doe@example.com` |
-| `startTime` / `endTime` | Time window for the query (ISO 8601 format) | `startTime=2024-12-01T00:00:00Z&endTime=2024-12-05T23:59:59Z` |
-| `action` | Type of action: `create`, `update`, or `delete` | `action=create` |
+| Parameter | Required/Optional | Description | Example |
+|-----------|-------------------|-------------|---------|
+| `startTime` | Required | Start of the time window, as an ISO 8601 timestamp in UTC. | `startTime=2024-12-01T00:00:00Z` |
+| `endTime` | Required | End of the time window, as an ISO 8601 timestamp in UTC. | `endTime=2024-12-05T23:59:59Z` |
+| `entity` | Optional | Type of resource to filter by. Case-sensitive. See [Supported Entities and Actions](#supported-entities-and-actions). | `entity=usergroup` |
+| `entityId` | Optional | Unique ID of a specific resource instance. | `entityId=12345` |
+| `userId` | Optional | Filter by the user who performed the action. | `userId=john_doe` |
+| `emailId` | Optional | Filter by the email address of the acting user. | `emailId=john.doe@example.com` |
+| `action` | Optional | Type of action, in uppercase. See [Supported Entities and Actions](#supported-entities-and-actions). | `action=CREATE` |
 
 ### Supported Entities and Actions
 
-| Entity | `entity` Key | Actions |
-|--------|-------------|-------------------|
-| User Group | `usergroup` | create, update, delete |
-| Agent | `Agent` | create, update, delete |
-| Role | `role` | create, update, delete |
-| SSO Status | `ssostatus` | update |
-| Service Account | `serviceaccount` | create, update, delete |
-| LLM Integrations | `llmintegrations` | create, update, delete |
-| Domains | `domains` | create, update, delete |
-| Rate Limits | `ratelimits` | update |
-| Email Notification Preferences | `emailnotificationpreferences` | update |
-| Business Rules | `nlprules` | create, update, delete |
-| User Enrollment | `userenrollment` | update |
+Entity values are case-sensitive. Use them exactly as shown, for example, `agent`, not `Agent`. Action values are uppercase.
+
+| Entity | Supported Actions |
+|--------|-------------------|
+| `workspace` | CREATE, UPDATE, DELETE |
+| `usergroup` | CREATE, UPDATE, DELETE |
+| `agent` | CREATE, UPDATE, DELETE, PUBLISH, UNPUBLISH, EXPORT |
+| `role` | CREATE, UPDATE, DELETE, PUBLISH, UNPUBLISH |
+| `userenrollment` | UPDATE, DELETE |
+| `useraction` | CREATE, UPDATE, DELETE |
+| `ssostatus` | UPDATE |
+| `serviceaccount` | CREATE, UPDATE, DELETE |
+| `llmintegrations` | CREATE, UPDATE, DELETE |
+| `domains` | CREATE, UPDATE, DELETE |
+| `ratelimits` | CREATE, UPDATE, DELETE |
+| `nlprules` | CREATE, UPDATE, DELETE |
+| `enterprisedirectory` | CREATE, UPDATE, DELETE |
+| `emailnotificationpreferences` | CREATE, UPDATE, DELETE |
+| `piiRule` | CREATE, UPDATE, DELETE |
+| `guardrail` | UPDATE |
+| `orchestrator` | UPDATE |
+| `dataretention` | UPDATE |
+| `scheduler` | UPDATE |
+| `useragentscheduler` | CREATE, UPDATE, DELETE |
+| `encryptionkey` | CREATE, UPDATE, DELETE |
+| `mcpconnection` | CREATE, UPDATE, DELETE |
+| `mcpserver` | CREATE, UPDATE, PUBLISH, DELETE |
+| `attachmentsettings` | UPDATE |
+| `projectssettings` | UPDATE |
+| `project` | CREATE, UPDATE, DELETE |
+| `emailtemplates` | UPDATE |
+| `employeelookupsettings` | UPDATE |
+| `personalizationandmemorysettings` | UPDATE |
+| `feedbacknotificationsettings` | UPDATE |
+| `userMemory` | CREATE, UPDATE, CLEAR, DELETE |
+| `featureonboarding` | UPDATE |
+| `enterprisesearch` | UPDATE |
+| `prebuilttools` | CREATE, UPDATE, DELETE |
+| `channels` | CREATE, UPDATE, DELETE |
+| `announcements` | CREATE, UPDATE, PUBLISH, UNPUBLISH, DELETE |
 
 ### Sample Request
 
 ```bash
-curl --location 'https://{{host}}/api/public/auditlogs?startTime=2024-12-01T23%3A59%3A59Z&endTime=2024-12-12T23%3A59%3A59Z&entity=nlprules&action=update&emailId=test.user%40example.com' \
+curl --location 'https://{{host}}/api/public/auditlogs?startTime=2024-12-01T23%3A59%3A59Z&endTime=2024-12-12T23%3A59%3A59Z&entity=nlprules&action=UPDATE&emailId=test.user%40example.com' \
 --header 'auth: {{PersonalToken}}'
 ```
 
@@ -210,10 +240,27 @@ The Trace Log API retrieves trace log records for a specified date range. Each r
 
 ### Query Parameters
 
+All query parameters are optional.
+
 | Parameter | Required/Optional | Type | Description |
 |-----------|-------------------|------|-------------|
-| `startDate` | Required | Number | Start of the date range, as a Unix timestamp in milliseconds. |
-| `endDate` | Required | Number | End of the date range, as a Unix timestamp in milliseconds. |
+| `startDate` | Optional | Number | Start of the date range, as a Unix timestamp in milliseconds. |
+| `endDate` | Optional | Number | End of the date range, as a Unix timestamp in milliseconds. |
+| `agentId` | Optional | String | Returns records for the specified agent only. |
+| `userId` | Optional | String | Returns records for the specified user only. |
+| `includeData` | Optional | Boolean | When `true`, includes the message content, the answer or data, and user details in each record. |
+| `includeTraces` | Optional | Boolean | When `true`, includes LLM trace details in each record. |
+| `includeWs` | Optional | Boolean | When `true`, includes the workspace information associated with each record. |
+
+**Date range behavior**
+
+| Parameters sent | Date range returned |
+|-----------------|---------------------|
+| `startDate` and `endDate` | The specified range. |
+| `startDate` only | A one-day range that starts at `startDate`. |
+| Neither | Approximately the previous month. |
+
+<Warning>Setting `includeData` to `true` returns message content and user details, which can include personal or confidential information. Request this data only when you need it, and store and share the response according to your organization's data protection policies.</Warning>
 
 ### Sample Request
 
@@ -283,7 +330,6 @@ curl --location \
             "totalRespTime": 4820
         }
     ],
-    "hasMore": false,
     "filters": {
         "startDate": 1744108557559,
         "endDate": 1744194957559
@@ -293,12 +339,13 @@ curl --location \
 
 ### Response Reference
 
+The API returns all trace log records in the selected date range in a single response. The API does not support pagination.
+
 **Top-level response**
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
 | `analytics` | Array of objects | The trace log records that match the requested date range. |
-| `hasMore` | Boolean | Returns `true` if more records are available beyond those returned. |
 | `filters` | Object | The date range applied to the request. |
 | `filters.startDate` | Number | Start of the applied date range, as a Unix timestamp in milliseconds. |
 | `filters.endDate` | Number | End of the applied date range, as a Unix timestamp in milliseconds. |
