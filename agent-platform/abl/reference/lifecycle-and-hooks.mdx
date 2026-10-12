@@ -112,6 +112,105 @@ ON_START:
       RESPOND: "Welcome! How can I help you today?"
 ```
 
+### ON_START language resolution
+
+A reasoning agent with no FLOW can resolve the caller's language from a startup `SET`/`CALL` and apply it before the welcome renders:
+
+```yaml
+AGENT: Welcome_Agent
+GOAL: "Help the caller"
+TOOLS:
+  resolve_runtime_context_v1() -> object
+    description: "Resolve the caller language and greeting"
+ON_START:
+  CALL: resolve_runtime_context_v1
+    AS: runtime_context
+  SET_INTERACTION_LANGUAGE: "{{runtime_context.spoken_language}}"
+  RESPOND: "{{runtime_context.greeting_text}}"
+```
+
+The tool needs an execution binding in the project. Top-level language directives resolve after top-level `SET`/`CALL` and before branch selection; a `BRANCHES` `DO:` list (below) can set the language too. On **Gemini Live** specifically, `ON_START` already runs before the initial provider setup, so the first connection uses this language in legacy, `runtime_guarded`, and `runtime_owned` orchestration modes — the channel must have the language configured in its own supported-language policy, or an unresolved/unsupported value is rejected without changing the policy default.
+
+### Start-time HANDOFF
+
+A `BRANCHES:` entry (or a bare top-level `HANDOFF:`) can hand the session to another declared local agent at start, before the first customer message is even understood. A branch's `DO:` list runs these actions in order, by default *after* the welcome renders:
+
+| Action | Effect |
+| ------ | ------ |
+| `SET:` | Assigns session values. |
+| `SET_INTERACTION_LANGUAGE:` / `CLEAR_INTERACTION_LANGUAGE:` | Sets or clears the voice language, same as elsewhere. |
+| `CALL:` | Calls a tool (`WITH:`/`AS:`, as in a FLOW step `DO:`). A failed call stops the list. |
+| `HANDOFF: <Agent>` | Hands off through the normal handoff lifecycle — the target's declared `WHEN`, `RETURN`, `CONTEXT`, `EXPERIENCE_MODE`, `ON_RETURN`, and `ON_FAILURE` all apply as usual. At most one handoff per list. |
+
+If the list sets the interaction language, the prefix through the last language directive (before any `HANDOFF`) runs *before* the welcome renders instead, and the rest after:
+
+```yaml
+SUPERVISOR: Router
+GOAL: "Route customers by the page they came from"
+
+TOOLS:
+  get_welcome(page: string) -> object
+    description: "The welcome for the page the customer came from"
+
+HANDOFF:
+  - TO: Product_Search
+    RETURN: true
+    CONTEXT:
+      pass: [page_name, welcome]
+  - TO: Order_Agent
+    RETURN: false
+
+ON_START:
+  CALL: get_welcome
+    WITH:
+      page: page_name
+    AS: welcome
+  BRANCHES:
+    - IF: page_name == "beauty_hub_screen"
+      RESPOND: "{{welcome.text}}"
+      DO:
+        - SET: entry_source = "app"
+        - HANDOFF: Product_Search
+    - ELSE:
+      RESPOND: "Hi, how can I help?"
+```
+
+A top-level `HANDOFF: <Agent>` (bare, bulleted, or the sole entry of a top-level `DO:`) runs only when **no branch matched** — a matched branch with no `DO:` list never falls back to it. With no branches at all, a bare `HANDOFF:` is instead decided by that declared route's own `WHEN` (and `ENABLED_WHEN`), checked once at session start:
+
+```yaml
+SUPERVISOR: Router
+GOAL: "Send customers who came from the sales page to Sales"
+
+HANDOFF:
+  - TO: Sales
+    WHEN: page_name == "sales"
+    RETURN: false
+
+ON_START:
+  RESPOND: "Welcome."
+  HANDOFF: Sales
+```
+
+<Warning>`DELEGATE` and any other action in an `ON_START` list is dropped with a warning (`W380`-`W388`) — it is never run from here. A handoff target that isn't a declared local `HANDOFF` entry is a compile error (`ON_START_HANDOFF_TARGET_INVALID`). The start-time handoff is local only: a route `WHEN` that only a model could judge (natural language, `intent.*`) is never satisfied at start, and a remote (A2A) target is always refused.</Warning>
+
+| Diagnostic | Severity | Catches |
+| ---------- | -------- | ------- |
+| `ON_START_HANDOFF_ACTIVATED` / `ON_START_BRANCH_DO_ACTIVATED` | warning (informational) | Confirms a top-level `HANDOFF`, or a branch's `DO:` list, really does run at session start — a reminder, not a mistake. |
+| `ON_START_HANDOFF_UNREACHABLE` | warning | A top-level `HANDOFF:` is dead code because an `ELSE` branch always matches first, so the fallback handoff can never run. |
+| `ON_START_DELEGATE_WITH_HANDOFF` | warning | `ON_START` configures both a top-level `DELEGATE:` and a handoff — when the handoff runs, the child owns the session and the delegate is never returned. Keep one or the other. |
+
+**How it runs, by start type:**
+
+- **Eager start** (no customer message yet — Web SDK/web-debug connect, pipeline voice answer, an identified agent-assist welcome): the welcome is delivered, then the child starts on its own with no synthetic customer message and speaks its own opener. Order: entry agent's `before_agent` output, the welcome, the handoff announcement (if the experience mode speaks one), the child's `before_agent` output, the child's own first output. A `RETURN: true` child stays active after that unanswered opener; ordinary return rules apply from the customer's first real message on.
+- **Lazy start** (the first customer message starts the session — HTTP chat, LiveKit, SDK `initialMessage`): the welcome is **not** delivered, and that first message is forwarded to the child once — after the entry agent's input guardrails/constraints (and, for a FLOW entry, its `before_turn` hook) — taking precedence over the entry agent's own first-turn routing.
+- **Realtime speech-to-speech** sessions run the list's `SET`/`CALL` but never the handoff itself; the entry agent keeps the session.
+
+Every outcome is recorded in the `dsl_on_start_handoff` trace (`executed`, `blocked`, `failed`, `call_failed`, `superseded_by_tool_hook`, `skipped_mode`) with a reason and identifiers only — never customer data. When the handoff doesn't run: a route `WHEN` simply not met shows nothing, not even `ON_FAILURE` text; a refused or failed handoff (a handoff guardrail, an unloaded target) shows only what the route's `ON_FAILURE` authors (`RESPOND` shows its text; `CONTINUE`, or no `ON_FAILURE`, shows nothing — never a generic failure message) — except `ESCALATE`, which escalates the session instead of keeping it with the entry agent; a target an `ENABLED_WHEN` switched off follows the normal authored-route rule (use `ON_FAILURE: CONTINUE` to keep the start silent).
+
+After the start, the route behaves as an ordinary handoff — `RETURN`, `CONTEXT`, and `ON_RETURN` apply as usual — and the child never runs its own `ON_START` (which fires once per session, for the entry agent only). A route `WHEN` that reads start data stays true for the rest of the session, so a later turn can still route back to that agent after it returns. If the handoff should really happen only at start, put the condition on a branch `IF:` and leave the route's own `WHEN` unset, or clear the triggering value on return. Pairing with `ENABLED_WHEN` cleared on return (`ENABLED_WHEN: promo_open == true` with `ON_RETURN: set: promo_open = false`) also stops the model from choosing that agent on later turns.
+
+<Note>Caller data asserted by the browser (public-key SDK init) is **not verified**. When a start-time routing decision matters, mint the caller data on your own server through the customer bootstrap endpoint rather than trusting a client-asserted value in a branch `IF:` or route `WHEN`.</Note>
+
 ## HOOKS
 
 

@@ -354,6 +354,8 @@ TOOLS:
       Accept: "application/json"
 ```
 
+<Warning>A header value that looks like a credential (a high-confidence literal secret/token/key) is a compile warning (`PLAINTEXT_HTTP_HEADER_SECRET`) — the authored request still compiles, but that value can cross export, logging, or runtime boundaries with no secret-management protection. Use `{{config.API_TOKEN}}` or an auth profile instead of a literal.</Warning>
+
 ### Auth
 
 The `auth:` property specifies the authentication mechanism. The runtime resolves credentials from the project's credential store -- the ABL document never contains actual secrets.
@@ -645,6 +647,7 @@ TOOLS:
 | `type`        | `"mcp"`                  | Yes      | --        | Declares this as an MCP tool                                             |
 | `server`      | `string`                 | Yes      | --        | MCP server name (resolved from runtime configuration)                    |
 | `server_tool` | `string`                 | No       | Tool name | Tool name on the MCP server (if different from the ABL tool name)        |
+| `output_schema` | JSON object (string) | No | -- | JSON Schema describing the tool's result, as a single JSON object literal — for example `{"type": "object", "properties": {...}}`. Invalid JSON is dropped (`TOOL_OUTPUT_SCHEMA_INVALID`). |
 | `headers`     | `Record<string, string>` | No       | _none_    | Per-call headers, supporting `{{config.X}}` / `{{session.X}}` templates. |
 
 ### Server configuration
@@ -1015,6 +1018,8 @@ TOOLS:
 | `immutable_params`    | `string[]`                                       | _none_  | Parameters that can't be changed after confirmation |
 | `consent_required_in` | `"conversation"` , `"explicit_prompt"`           | _none_  | Where consent must be obtained.                      |
 | `consent_scope`       | `string[]`                                       | _none_  | Consent scopes required before executing.            |
+
+<Note>Without a `consent_action`, a required confirmation's question is built from the first sentence of the tool's `description` ("Shall I `<description>`…?"). A `description` that opens with a noun phrase or a third-person verb reads as a broken question (compile warning `TOOL_CONFIRMATION_PHRASE_NOT_ACTION`) — write the description starting with an imperative verb ("Transfer the amount to the beneficiary"), or set `consent_action` explicitly to control the confirmation wording.</Note>
 | `consent_action`      | `string`                                         | _none_  | Named consent action to trigger.                     |
 | `consent_fallback`    | `"explicit_prompt"` , `"block"`                  | _none_  | What to do if consent isn't granted.                |
 
@@ -1122,6 +1127,8 @@ TOOLS:
 | `template` | `string`   | A text template (`{{}}` interpolation against `result`) rendered instead of the raw result — for example `"{{result.total}} products found"`. |
 
 `fields` and `template` are mutually exclusive — choose one. The full, unprojected tool result is still available everywhere else: `CALL AS`, `ON_RESULT`, assignments, response templates, and client delivery. Omit `MODEL_CONTEXT` entirely to keep the historical full-result behavior. An invalid or empty policy (both or neither of `fields`/`template`, an empty/overlapping `fields` list, or an empty `template`) fails validation (`MODEL_CONTEXT_INVALID`); if a *valid* policy can't be projected at runtime (a path doesn't resolve, say), the model receives a bounded "unavailable" marker instead of the full result — it never silently falls back to exposing everything.
+
+<Note>A rendered, non-empty view is **preserved exactly** through later history compaction and summarization, evaluated once and reused on later turns rather than re-rendered — see [MODEL_CONTEXT on a response](/agent-platform/abl-reference/flow#model_context-on-a-response) for the full preservation contract and the `AUTHORED_MODEL_CONTEXT_CAPACITY_EXCEEDED` capacity limit, which applies to both forms identically.</Note>
 
 <Note>Legacy `.agent.abl` format: `MODEL_CONTEXT:` with nested `FIELDS:`/`TEMPLATE:` keys, directly under the tool signature. `MODEL_CONTEXT` can also sit beside a FLOW step's `RESPOND` or a `COMPLETE` condition's `RESPOND` — see [MODEL_CONTEXT on a response](/agent-platform/abl-reference/flow#model_context-on-a-response) for that (separate) use.</Note>
 

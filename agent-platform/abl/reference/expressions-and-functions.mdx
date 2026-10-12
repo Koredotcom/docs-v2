@@ -158,24 +158,38 @@ To prevent memory issues, the limit on string output is 100,000 characters.
 
 ### Identity-matching functions
 
-These compare what a caller actually said against a stored value — they are deterministic similarity scoring, not a semantic/model judgment, built for voice identity verification (`FORMAT`/`DERIVED` session fields; see [Write authority, format and derived values](/agent-platform/abl-reference/memory-and-constraints#write-authority-format-and-derived-values)).
+These compare what a caller actually said against a stored value — they are deterministic similarity scoring, not a semantic/model judgment, built for voice identity verification (see [Write authority](/agent-platform/abl-reference/memory-and-constraints#write-authority) for a `READONLY` field that stores the result).
 
 | Function | Signature | Description |
 | -------- | --------- | ------------ |
 | `MATCH_SCORE` | `MATCH_SCORE(said, stored, kind?) -> number` | Similarity 0-100 between `said` and `stored`. Returns `-1` when there's nothing to judge — a missing/empty value, a PII vault token, or an input over 1,024 characters. `-1` is below every threshold, so `MATCH_SCORE(...) >= 70` fails closed. |
 | `MATCHES` | `MATCHES(said, stored, kind?) -> boolean` | Pass/fail form of `MATCH_SCORE` on the platform's own match bands (below). **Not a regex test** — the infix `a MATCHES "pattern"` operator (see [Comparison operators](#comparison-operators)) is the regex form. |
-| `MATCH_RESULT` | `MATCH_RESULT(said, stored, kind?) -> string` | `"match"`, `"retry"`, `"mismatch"`, or `"missing"`. |
+| `MATCH_RESULT` | `MATCH_RESULT(said, stored, kind?) -> string` | `"match"`, `"retry"` (a tight near-miss only), `"mismatch"`, or `"missing"`. |
 
-`kind` is one of `name`, `person_name`, `email`, `address`, `phone`, `digits`, `text` (default `text`); it controls how each side is read (spoken digits, spelled names, "at the rate" for `@`, and so on) before scoring. Match bands:
+`kind` is optional — omitted, it defaults to `text` (unchanged behavior, no warning) — and otherwise one of:
+
+| `kind` | Meaning |
+| ------ | ------- |
+| `name` / `person_name` | A personal name, scored part-by-part on how it sounds. |
+| `email` | An email address, read from spoken forms ("at the rate", "dot", spelled letters). |
+| `address` | A street address, read part by part in any order. |
+| `phone` / `digits` | Digits only, with spoken-digit and trunk/country-code handling (`phone`), or an exact digit-for-digit identifier like a member number (`digits` — no national-number truncation). |
+| `text` | Plain text similarity (the default). |
+| `auto` | Detects the kind from the **stored** value's shape: an `@` with a dotted domain → `email`; mostly digits with 7-10 digits or a leading `+` → `phone`; digits only, under 7 or 11+ with no `+` → `digits`; a house-number-plus-street-type pattern → `address`; 2-4 capitalized words → `person_name`; otherwise `text`. An explicit kind (including `"text"`) is never auto-detected — `"auto"` only applies when you pass it. |
+| `exact` | Turns off every voice allowance: matches only after Unicode normalization, trimming, case-folding, and collapsing spaces/trailing punctuation — "Steven" does not match "Stephen". |
+
+Platform-owned match bands (authors never pick a threshold):
 
 | Kind | `match` | `retry` | `mismatch` |
 | ---- | ------- | ------- | ---------- |
-| `phone`, `digits` | every digit matches (100) | one digit slip or two swapped (50) | anything else |
-| all other kinds | score ≥ 70 | score 10-69 | score < 10 |
+| `phone`, `digits` | every digit matches (100) | exactly one digit slip, or two neighbouring digits swapped (50) | anything else |
+| `email`, `name`/`person_name`, `address`, `text` | score ≥ 70 | score 50-69 (a tight near-miss only) | score < 50 |
 
 A `-1` score (nothing to judge) always reports `"missing"`.
 
-<Note>A two-argument call (`MATCH_SCORE(said, stored)`, no explicit `kind`) infers `kind` from each operand's `FORMAT` declaration, but **only inside a session variable's `DERIVED` expression**. Everywhere else — `CONSTRAINTS`, `WHEN`, hooks, and other expressions — a two-argument call is scored as `kind: "text"` unless you pass the kind explicitly: `MATCHES(a, b, "email")`.</Note>
+<Note>The guiding principle: values that *sound* the same cannot be told apart by a caller (speech-to-text just picks a spelling), so they score as a `"match"` — only values that sound genuinely different can fail. For example `email` compares the domain by sound but matches its ending exactly (`kore.ai` is not `kore.com`); `person_name` matches common respellings (`Jon`/`John`, `Steven`/`Stephen`) and scores a near-same name (`Ahmed`/`Ahmad`) as `"retry"`, never a straight mismatch, while a genuinely different name (`Mark`/`Mary`) is a `"mismatch"`; `address` reads house/unit letters and matches street words that sound alike. The matcher reads the value itself, not the sentence around it — filler words ("no", "sorry", "I mean") are not stripped, so an answer that contains them alongside the correct value still fails to match as written.</Note>
+
+<Warning>`said` must be the extracted field (for example `supplied_email`), not the raw caller utterance. An extracted field is written by the model and may already hold the stored value (for example, after a lookup tool returned the profile) — a match on the field alone does not prove the caller actually said it. A rule that grants access on a match should also confirm the caller's own words contained the value.</Warning>
 
 <Warning>The **function** `MATCHES(said, stored[, kind])` and the **infix operator** `a MATCHES "pattern"` are unrelated — do not mix up their second argument. Writing `MATCHES(supplied, "^gold$")` (the function form with a regex-shaped literal) is almost certainly meant to be the infix form `supplied MATCHES "^gold$"`, and the compiler warns `MATCHES_FUNCTION_REGEX_LITERAL`. Conversely, writing `tier MATCHES "gold"` (the infix form with a plain literal) is true whenever `"gold"` appears anywhere in `tier` as a substring — not a fuzzy spoken-answer comparison — and the compiler warns `MATCHES_INFIX_LITERAL_AMBIGUOUS` since this is easy to mean the other way.</Warning>
 
