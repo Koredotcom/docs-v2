@@ -229,6 +229,8 @@ FLOW:
 
 This is useful when the delivered response carries a large presentation payload (a widget, a card, a big table) that would otherwise bloat every later model call for no benefit — `MODEL_CONTEXT` lets the model keep a short textual summary of what the customer saw instead. `MODEL_CONTEXT` is a text scalar; a non-text value fails validation (`MODEL_CONTEXT_INVALID`). An explicitly empty value omits the response from later model requests entirely. Omit the property to keep the historical full-response behavior. See also [MODEL_CONTEXT on a tool result](/agent-platform/abl-reference/tools#model_context-on-a-tool-result) for the equivalent policy on a tool's own result.
 
+<Note>A successfully rendered, non-empty `MODEL_CONTEXT` view is **preserved exactly** through later history compaction, summarization, and automatic conversation windowing — it's never auto-shortened, replaced with a summary, or dropped for being old. It's evaluated once, when the response is produced; later turns reuse that same rendered text rather than re-evaluating the template against newer data. This doesn't raise the model's context window or bypass the usual budget: an authored view may exceed the ordinary per-value/aggregate *soft* budget, but must still fit the aggregate *hard* capacity, or the runtime reports `AUTHORED_MODEL_CONTEXT_CAPACITY_EXCEEDED` rather than silently shrinking it. Keep `MODEL_CONTEXT` to the identifiers, status, and decision facts a later turn actually needs, and fetch further detail through a read tool — a large preserved view repeats in every later prompt, which adds up in prompt size, model cost, and latency. (This guarantee needs a matching Runtime version on every process handling the session; a rollback or a mixed-version deployment can silently lose it.)</Note>
+
 ### PRESENT
 
 
@@ -320,6 +322,57 @@ Each field in a flow `GATHER:` supports these properties:
   format variants for its prompt. Note that flow gather uses `validation:` where the top-level
   section uses `validate:`.
 </Note>
+
+#### Field-level listening settings (`ASR:`)
+
+An `ASR:` block — a sibling of `VOICE:` on a single field — sets how the bot **listens** while that one field is being asked on a KoreVG voice call. Once the field is no longer being asked, the call's normal listening settings return automatically:
+
+```yaml
+FLOW:
+  get_county:
+    REASONING: false
+    GATHER:
+      - county: required
+        prompt: "Which county is the dig site in?"
+        ASR:
+          vocabulary:
+            mode: replace
+            terms: [Guilford, Mecklenburg, Wake]
+          no_input_timeout_ms: 8000
+  get_street:
+    REASONING: false
+    GATHER:
+      - street_name: required
+        prompt: "What is the street name?"
+        ASR:
+          provider: deepgram
+          model: nova-3
+          vocabulary:
+            mode: extend
+            terms:
+              default: [Boulevard]
+              en: [{ phrase: Parkway, boost: 40 }]
+              es-MX: [Privada]
+```
+
+| Key | Meaning |
+| --- | ------- |
+| `provider` | Speech engine for this field (for example `deepgram`, `google`, `azure`) — must already be configured on the project's voice channel. |
+| `model` | Recognizer model for the field. Not validated at deploy; a model the engine rejects falls back to the normal settings. |
+| `language` | Listening language for this question only — doesn't change the conversation language. |
+| `vocabulary.mode` | `replace` (only this field's words), `extend` (the call's words plus this field's, field words kept first under a limit), or `none` (no special words). Without `vocabulary`, the call's words are unchanged. |
+| `vocabulary.terms` | A plain list of words for every language, or a map of language tag (or `default`) to a list. Each entry is a string or `{ phrase, boost: 0-100 }`. The list is picked by exact tag, then base language, then `default` — lists are never merged across languages. |
+| `no_input_timeout_ms` | Silence wait for this question, `1000`-`60000` ms. Has no effect when no-input handling is off for the channel. |
+
+Rules:
+
+- Keys are strict — an unknown key is a compile error (`GATHER_ASR_UNKNOWN_KEY`). Credentials and service IDs never go in ABL.
+- At most 500 vocabulary entries per field across every language, each at most 100 characters.
+- **One listening-settings field per step.** `ASR:` applies only when its field is asked on its own; a field sharing its step with other required fields gets warning `GATHER_ASR_SHARED_STEP` and uses the normal settings when asked together.
+- **FLOW steps only.** `ASR:` on a top-level (reasoning) `GATHER` field is preserved but has no effect, with compile warning `GATHER_ASR_REASONING_UNSUPPORTED`.
+- **Deploy checks.** A `provider` that no voice channel bound to the target environment supports blocks create/promote (`GATHER_ASR_PROVIDER_UNRESOLVED`); restore/rollback warn instead. An unsupported channel (non-KoreVG voice, realtime speech-to-speech), an unsupported language, too many words for the engine, a no-input wait with no-input off, or an uncovered language list are deploy warnings.
+- At runtime, anything that can't be applied (an unknown engine, a rejected setting, a gateway that doesn't confirm the change) falls back silently to the call's normal listening settings — the call continues.
+- There's no platform switch for this feature; to stop using it, remove the `ASR:` block and redeploy.
 
 #### GATHER block properties
 
@@ -614,9 +667,9 @@ FLOW:
 
 ### SECURE_INPUT
 
-The `SECURE_INPUT:` action pauses the step to collect one or more **sensitive** values — a card number, CVV, or similar — via DTMF and/or speech, and delivers them **directly to one tool**, without the raw values ever passing through the LLM, transcript, session state, logs, or traces. It's the PCI-safe alternative to `GATHER` for data that must never reach the model.
+The `SECURE_INPUT:` action pauses the step to collect one or more **sensitive** values — a card number, CVV, or similar — via DTMF and/or speech, and delivers them **directly to one tool**, without the raw values ever passing through the LLM, transcript, session state, logs, call recordings, or traces: speech recognition is suppressed and recording is paused while the caller enters them, and the values are wiped from memory once the delivery call returns. It's the PCI-safe alternative to `GATHER` for data that must never reach the model.
 
-<Warning>`SECURE_INPUT` is currently authored only in the legacy `.agent.abl` (line-based) format. The `.agent.yaml` parser does not yet accept this action.</Warning>
+<Warning>`SECURE_INPUT` is currently authored only in the legacy `.agent.abl` (line-based) format. The `.agent.yaml` parser does not yet accept this action. It also requires a **live voice call** and the `SECURE_INPUT_ENABLED` runtime setting (off by default): without a live voice session the step takes `ON_FAIL`; with the setting off, the step is skipped entirely. Both the delivery `CALL` and any validation `CALL` must be **HTTP project tools** (configured in Project Tools, not the agent's own `TOOLS:` section) that send a JSON body.</Warning>
 
 ```yaml
 FLOW:
@@ -635,44 +688,69 @@ FLOW:
       MAX_ATTEMPTS: 3
       CANCEL: { dtmf_key: "*" }
       CALL charge_card WITH: { pan: "{{secure.card_number}}", cvv: "{{secure.cvv}}" }
+        AS: payment_result
+        RESULT_FIELDS: [Status, TransactionIdentifier]
+        SUCCESS_WHEN: { Status: "Success" }
       ON_SUCCESS: confirm
       ON_TIMEOUT: retry_by_agent
       ON_CANCEL: retry_by_agent
       ON_FAIL: human_agent
     THEN: confirm
+
+  confirm:
+    REASONING: false
+    RESPOND: "Your payment is complete. Reference: {{payment_result.TransactionIdentifier}}."
 ```
 
 | Property | Type | Description |
 | -------- | ---- | ----------- |
 | `MODE` | `("dtmf" \| "speech")[]` | Which collection channel(s) are accepted. Required; at least one. |
 | `FIELDS` | list | One or more fields to collect, in order. Each is a `- <name>:` entry with `PROMPT`, `COLLECT`, and optional `VALIDATE`. |
-| `MAX_ATTEMPTS` | `number` | Failed collection attempts allowed before `ON_FAIL`. |
-| `CANCEL` | `object` | Cancellation trigger: `dtmf_key` and/or `keywords`. |
-| `CALL <tool> WITH: {...}` | — | The **deliver** spec — the single tool invoked with the collected values. Only the inline-object `WITH:` form is supported. Reference a collected field as a whole-value placeholder `{{secure.<name>}}`. |
+| `MAX_ATTEMPTS` | `number` | Failed collection attempts allowed before `ON_FAIL` (default 3). |
+| `CANCEL` | `object` | Cancellation trigger: `dtmf_key` and/or `keywords` (a keyword must be spoken as its own word). |
+| `CALL <tool> WITH: {...}` | — | The **delivery** call — the single tool invoked with the collected values. Only the inline-object `WITH:` form is supported. Reference a collected field as a whole-value placeholder `{{secure.<name>}}`. |
+| `AS` | `string` | Session variable that receives the delivery response. Requires `RESULT_FIELDS`. |
+| `RESULT_FIELDS` | `string[]` (with `AS`) | Top-level response fields that may be bound to `AS`; nothing else in the response is ever read. Exact top-level keys only — nested paths aren't supported. |
+| `SUCCESS_WHEN` | `object` | `{ Field: "value" }` or `{ Field: [value1, value2] }` — which delivery responses count as success. See below. |
 | `ON_SUCCESS` | `string` | Step to transition to after successful collection and delivery. |
 | `ON_TIMEOUT` | `string` | Step to transition to if collection times out. |
 | `ON_CANCEL` | `string` | Step to transition to if the caller cancels. |
-| `ON_FAIL` | `string` | Step to transition to if delivery or validation ultimately fails. |
+| `ON_FAIL` | `string` | Step to transition to if validation runs out of attempts, delivery fails, or `SUCCESS_WHEN` doesn't match. |
+
+`AS`, `RESULT_FIELDS`, and `SUCCESS_WHEN` may be written indented under the `CALL` line or beside it; `AS: <name>` may also end the `CALL` line itself.
+
+<Warning>Every outcome route (`ON_SUCCESS`, `ON_TIMEOUT`, `ON_CANCEL`, `ON_FAIL`) takes a **step name only** — a `RESPOND` or any other block indented under a route isn't part of `SECURE_INPUT`; the parser reports the ignored line (`W208`) and an empty route is a compile error (`SECURE_INPUT_EMPTY_OUTCOME_ROUTE`). Put the response in the step the route names, as in the `confirm` step above.</Warning>
+
+**Success.** Without `SUCCESS_WHEN`, any 2xx delivery response takes `ON_SUCCESS`; a non-2xx status, a network failure, a timeout, or an unreadable body takes `ON_FAIL`. With `SUCCESS_WHEN`, a 2xx response must also match every listed field (compared as text, no case folding) or the step takes `ON_FAIL` — use this when an API can report a decline inside an HTTP 200. A delivery that timed out after the request was sent also takes `ON_FAIL`, even though the charge may have gone through — don't retry payment from that step.
+
+**Reading the response.** `AS` binds only the `RESULT_FIELDS` the response contains, as top-level scalar values. A field is dropped (never bound) when its value contains any collected value's digits, contains a valid card number, or is an object or list — the step's trace names the bound/dropped fields, never their values. The bound fields are then ordinary session values for later steps, as `{{payment_result.Status}}` above.
 
 #### Field properties
 
 | Property | Type | Description |
 | -------- | ---- | ----------- |
-| `PROMPT` | `{ <locale>: string }` or `{ template: string }` | Locale-keyed prompt text, or a reference to a named template. At least one non-empty entry is required. |
+| `PROMPT` | `{ <locale>: string }` or `{ template: string }` | Locale-keyed prompt text, or a reference to a named template. At least one non-empty entry is required. A locale reference such as `"{{locale.KEY}}"` also works. |
 | `COLLECT` | `object` | `digits: N..M` (min/max digit count), `finishOnKey`, `interDigitTimeoutMs`, `asrTimeoutMs` (spoken-path silence window). |
 | `VALIDATE` | list | Validation rules: a bare rule name (`luhn`), an inline object (`{ length: 4..4 }`, `{ date_mmYY: "not_past" }`), or a delegated `CALL <tool> WITH: {...}` rule. |
 
-References inside `deliver`'s `WITH:` block must be a **whole-value** placeholder — `pan: "{{secure.card_number}}"` is valid; embedding it in a larger string (`pan: "card:{{secure.card_number}}"`) or referencing an undeclared field is a compile error.
+A failed check asks for the field again, up to `MAX_ATTEMPTS`. A `CALL` validation rule passes only when the tool returns `valid: true`, and may reference the field being checked plus any fields collected before it. A field accepts only `PROMPT`, `COLLECT`, and `VALIDATE` — anything else is ignored with a warning (`W210`).
 
-<Warning>Every collected value lives only in a local secure buffer for the duration of the gate and is **zeroized on every exit path** (success, timeout, cancel, or failure) — it is never written to session state, so it cannot be referenced by `{{ }}` outside the `deliver` block, and it never appears in a trace, span, or log.</Warning>
+References inside the delivery `WITH:` block must be a **whole-value** placeholder — `pan: "{{secure.card_number}}"` is valid; embedding it in a larger string (`pan: "card:{{secure.card_number}}"`) or referencing an undeclared field is a compile error.
+
+<Warning>Every collected value lives only in a local secure buffer for the duration of the gate and is **zeroized on every exit path** (success, timeout, cancel, or failure) — it is never written to session state, so it cannot be referenced by `{{ }}` outside the delivery/validation calls, and it never appears in a trace, span, or log.</Warning>
 
 | Diagnostic | Fires when |
 | ---------- | ---------- |
 | `SECURE_INPUT_INVALID_MODE` | `MODE` is missing, empty, or contains a value other than `dtmf`/`speech`. |
-| `SECURE_INPUT_MISSING_DELIVER_TOOL` | The `CALL ... WITH:` deliver spec has no tool name. |
+| `SECURE_INPUT_MISSING_DELIVER_TOOL` | No delivery `CALL`. |
 | `SECURE_INPUT_MISSING_PROMPT` | No `FIELDS` are declared, or a field's `PROMPT` has neither a locale entry nor a `template` reference. |
-| `SECURE_UNKNOWN_FIELD` | A `deliver` `WITH:` value references `{{secure.<name>}}` for a field that isn't declared in `FIELDS`. |
-| `SECURE_EMBEDDED_PLACEHOLDER` | A `deliver` `WITH:` value embeds `{{secure.*}}` inside a larger string instead of using it as the whole value. |
+| `SECURE_EMBEDDED_PLACEHOLDER` | A `{{secure.*}}` reference is part of a longer argument string instead of the whole value. |
+| `SECURE_UNKNOWN_FIELD` | A `{{secure.*}}` reference names a field the step doesn't collect. |
+| `SECURE_INPUT_EMPTY_OUTCOME_ROUTE` | An outcome route (`ON_SUCCESS`/`ON_FAIL`/`ON_TIMEOUT`/`ON_CANCEL`) is written without a step name. |
+| `SECURE_INPUT_INVALID_RESULT_CONTRACT` | `AS` that isn't a plain variable name, `AS` without `RESULT_FIELDS` (or the reverse), a nested or repeated field name, an empty `SUCCESS_WHEN`, or a `SUCCESS_WHEN` field with no value. |
+| `RESERVED_VARIABLE_NAME` / `IMMUTABLE_SYSTEM_IDENTIFIER` | `AS` names a reserved or system-owned variable such as `session_id`. |
+| `W208` / `W210` | A line inside the block, or a field property, that `SECURE_INPUT` doesn't read — it's ignored. |
+| `W211` | `RESULT_FIELDS` or `SUCCESS_WHEN` written across several lines; write them inline. |
 
 ### MESSAGE_KEY and BEHAVIOR
 

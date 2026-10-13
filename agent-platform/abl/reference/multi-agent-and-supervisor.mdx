@@ -428,6 +428,7 @@ HANDOFF:
 | ---------------- | ----------------------- | -------- | -------- | -------------------------------------------------------------------------------------------- |
 | `TO`             | `string`                | Yes      | --       | Target agent name.                                                                           |
 | `WHEN`           | `string`                | Yes      | --       | Condition that triggers the handoff.                                                         |
+| `ENABLED_WHEN`   | `string`                | No       | --       | Condition deciding whether this route exists for the session at all, evaluated once before any turn. See [Availability (ENABLED_WHEN)](#availability-enabled_when). |
 | `PRIORITY`       | `number`                | No       | --       | Evaluation priority. Lower values are evaluated first when multiple handoff rules match.     |
 | `CONTEXT`        | `object`                | Yes      | --       | Context to pass to the target agent. See [Context](#handoff-context).                        |
 | `EXPECT_RETURN`  | `boolean`               | Yes      | `false`  | Whether control should return to this agent after the target completes. `RETURN` is accepted as a backward-compatible alias. |
@@ -653,6 +654,7 @@ DELEGATE:
 |-------------------|-------------------------|----------|---------|---------------------------------------------------------------------------------------------------------|
 | `AGENT`           | `string`                | Yes      | --      | Name of the sub-agent to invoke. `TO` is accepted as an alias.                                          |
 | `WHEN`            | `string`                | Yes      | --      | Condition that must be true for delegation to occur.                                                    |
+| `ENABLED_WHEN`    | `string`                | No       | --      | Condition deciding whether this route exists for the session at all, evaluated once before any turn. See [Availability (ENABLED_WHEN)](#availability-enabled_when). |
 | `PURPOSE`         | `string`                | Yes      | --      | Description of why this delegation exists. Included in trace events. `SUMMARY` is accepted as an alias. |
 | `INPUT`           | `Record<string,string>` | Yes      | --      | Input mapping. Keys are sub-agent parameter names; values are expressions from the parent's context. `PASS` is accepted as an alias. |
 | `RETURNS`         | `Record<string,string>` | Yes      | --      | Output mapping. Keys are sub-agent result fields; values are parent context variable names to write to. |
@@ -736,6 +738,57 @@ DELEGATE:
 | `timeout`  | `string`          | No       | --      | Override timeout for the remote call.                                  |
 
 <Note>`LOCATION: remote` is explicit and recommended, but the compiler also treats an `ENDPOINT` without `LOCATION` as remote. The remote block can be authored either nested under `REMOTE:` or as top-level `LOCATION`/`ENDPOINT`/`PROTOCOL` keys on the entry.</Note>
+
+### Availability (`ENABLED_WHEN`)
+
+`ENABLED_WHEN` turns a `HANDOFF` or `DELEGATE` route on or off for the whole session, decided once before any turn is understood. `WHEN` still decides which available route a given turn takes — `ENABLED_WHEN` decides which routes exist at all:
+
+```yaml
+INTENTS:
+  vehicles: "The customer is looking for automotive options."
+  products: "The customer is looking for product options."
+
+HANDOFF:
+  - TO: Automotive_Search
+    WHEN: intent.category == "vehicles"
+    ENABLED_WHEN: _metadata.country != "SGP"
+    ON_FAILURE: RESPOND "Vehicle search is not offered in your region."
+  - TO: Product_Search
+    WHEN: intent.category == "products"
+```
+
+**Writing the condition.** Put `ENABLED_WHEN:` on the entry, after `WHEN:` (YAML key: `enabled_when`). Read only session data known before the turn: `_metadata.*`, `env.*`, `caller.*`, `session.*`, `user.*`, and memory fields. Don't read what the current turn means (`intent`, `routing.*`, `input`) or write natural language — both are compile errors (`ENABLED_WHEN_SEMANTIC_REFERENCE`). A long condition can continue on deeper-indented lines, after an inline value, an empty value, or a block indicator (`|`, `>`, `>-`); a line that looks like a key or starts a new entry ends it, and `#` lines are comments. The compiler warns (`ROUTE_WHEN_MULTILINE_JOINED`) when it joins lines written after an inline or empty value; a condition opened with a block indicator is joined without the warning.
+
+**How availability is decided.** Each target is judged by its own entries: a `HANDOFF` to X by the `HANDOFF` entries for X, a `DELEGATE` to X by the `DELEGATE` entries for X. The target is available when *any* of its entries is enabled — an entry without `ENABLED_WHEN` is always enabled, so one unconditional entry keeps the target permanently available (the compiler warns, `ENABLED_WHEN_SHADOWED_BY_UNCONDITIONAL_ENTRY`).
+
+The decision **fails closed**: a condition that can't be evaluated disables the entry, and so does one that reads a value the session doesn't have (unset, `null`, or an empty string) — even inside `OR` — *unless* the condition explicitly allows that value to be missing. A value compared with `== null`, `!= true`, or `IS NOT SET` anywhere in the condition counts as known, and an unset value then reads as `null`:
+
+```yaml
+ENABLED_WHEN: _metadata.restricted != true   # enabled when the caller sends nothing
+ENABLED_WHEN: _metadata.country != "SGP"     # disabled when country is missing
+ENABLED_WHEN: _metadata.region IS NOT SET OR _metadata.region != "EU"   # guard explicitly
+```
+
+`_metadata` changes made during the session apply to every agent in the conversation, including agents waiting for a child to return.
+
+**When a target isn't available.** The route is withheld from the model entirely — left out of prompt route lists in both text and voice. A model that calls it anyway is refused and told which routes are available. A route the *author* wrote (a FLOW step `HANDOFF`, `ON_ACTION`, a digression, a tool hook, `ON_ERROR`, an `ON_START` handoff) is refused and runs its own failure policy: the entry's `ON_FAILURE` for a handoff, the delegate's `ON_FAILURE` for a delegate. `RESPOND` shows its message, `ESCALATE` escalates the same turn, `CONTINUE` skips the route and runs the rest of the step. A handoff with no `ON_FAILURE` tells the user the option isn't available and the agent stays on its current step; a delegate with no `ON_FAILURE` is simply skipped — a refused route never leaves a turn without an answer. A constraint's `ON_FAIL`/`ON_EXHAUSTED` handoff is a safety route that must always be reachable, so its target can't be fully conditional: the compiler rejects one whose every `HANDOFF` entry has `ENABLED_WHEN` (`ENABLED_WHEN_SAFETY_ROUTE_CONDITIONAL`). When every route of an agent is unavailable, the agent answers the user directly.
+
+**Diagnostics**
+
+| Code | Severity | Meaning |
+| ---- | -------- | ------- |
+| `ENABLED_WHEN_EMPTY` | error | `ENABLED_WHEN` has no condition. |
+| `ENABLED_WHEN_LINE_COMMENT` | error | A YAML `enabled_when` read as one line carries a `//` comment (use `#`, or a literal block). |
+| `ROUTE_WHEN_MULTILINE_JOINED` | warning | A condition without a block indicator was read from several lines. |
+| `ENABLED_WHEN_SEMANTIC_REFERENCE` | error | The condition reads turn meaning, or is natural language. |
+| `INVALID_CEL_SYNTAX` | error | The condition isn't a valid expression. |
+| `ENABLED_WHEN_ALL_DISABLED_RISK` | warning | Every route of a routing agent is conditional. |
+| `ENABLED_WHEN_SHADOWED_BY_UNCONDITIONAL_ENTRY` | warning | A target has entries both with and without `ENABLED_WHEN`. |
+| `ENABLED_WHEN_AUTHORED_ROUTE_NO_FALLBACK` | warning | An authored route targets a conditional handoff with no `ON_FAILURE`. |
+| `ENABLED_WHEN_SAFETY_ROUTE_CONDITIONAL` | error | A constraint `ON_FAIL`/`ON_EXHAUSTED` handoff targets a fully conditional handoff. |
+| `ENABLED_WHEN_ON_START_UNSTABLE_DATA` | warning | An `ON_START` delegate's condition reads data that may not exist yet at session start. |
+
+<Warning>`_metadata` is supplied by the caller. Use `ENABLED_WHEN` to shape the experience, not as an authorization boundary. Availability is always enforced — there's no runtime setting that turns it off, and an entry without `ENABLED_WHEN` behaves exactly as before this feature existed. The trace records which routes were offered and withheld on each model turn, and every refusal, with the condition text — never the session values it evaluated.</Warning>
 
 ---
 
