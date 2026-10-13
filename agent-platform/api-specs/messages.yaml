@@ -17,20 +17,104 @@ info:
 
     Authenticate with the `x-api-key` header. The key must be bound to the project you
     are querying and have `analytics:read` permission.
-  x-source-release: release_Artemis_1.5.0
-  x-source-commit: 267794d75528a9ecb5ed70822451e43f91c15212
+
+    ## Sending parameters in a POST body
+
+    Every GET on this API has a POST form on the same path. Send the same parameters
+    as a flat JSON object instead of a query string. Use POST when the parameters
+    themselves must be encrypted: a GET query string is never encrypted. GET stays
+    available and unchanged.
+
+    - Body keys are exactly the GET query parameter names. Numbers and booleans are
+      converted to the strings the GET parser expects. List parameters accept a
+      JSON array or a comma-separated string.
+      `traceDimensions` is an object of dimension name to value, for example
+      `{"traceDimensions": {"accountTier": "gold"}}`, instead of the
+      `traceDimensions[key]` query form.
+    - An unknown key, a `null`, or a nested value is rejected with
+      `400 INVALID_QUERY_PARAMETER`. A body that is not a JSON object is rejected
+      with `400 INVALID_REQUEST_BODY`.
+    - Do not add a query string to a POST (`400 INVALID_QUERY_PARAMETER`), and do
+      not split parameters between the query string and the body.
+    - `Content-Type` must be `application/json` or `application/jose+json`,
+      otherwise `415 UNSUPPORTED_MEDIA_TYPE`.
+    - Permissions, validation, pagination and the response shape are identical to
+      the GET form.
+
+    ## Payload encryption
+
+    Payload encryption is an opt-in setting on a Platform Key, configured in Studio
+    under Settings → API Keys → Platform Keys. It has two independent toggles.
+    Neither changes what the key may access, and both are available only to keys
+    bound to exactly one project.
+
+    **Request encryption** applies to POST bodies (a GET has no body). The body must
+    be a JWE (RFC 7516) in flattened JSON serialization, `{protected, iv,
+    ciphertext, tag}`, whose protected header is `{"alg":"dir","enc":"A256GCM"}`,
+    optionally with `kid`, `typ` and `cty`. The key is the 32-byte AES-256 request
+    key Studio shows when request encryption is enabled. `kid` is optional; if sent
+    it must equal the key's Key ID shown in Studio.
+
+    **Response encryption** applies to every response sent after the key is
+    authenticated, successes and errors alike (400, 403, 404, 413, 415, 429, 500,
+    503). The body is a flattened JWE `{protected, encrypted_key, iv, ciphertext,
+    tag}` with protected header
+    `{"alg":"RSA-OAEP-256","enc":"A256GCM","kid":"<Key ID>","pkf":"<fingerprint>"}`,
+    sealed with a fresh AES-256 key per response that is wrapped with the RSA public
+    key (≥ 2048 bits) configured on the Platform Key. `pkf` is the SHA-256 hex
+    digest of that public key's SubjectPublicKeyInfo DER. The response keeps
+    `Content-Type: application/json` and adds `X-ABL-Encrypted: true`. Decrypting
+    it yields exactly the JSON documented in this spec. A `401` is never encrypted
+    (the key is not known yet), and a `304` has no body.
+
+    | Key setting | Plain JSON body | JWE body |
+    |---|---|---|
+    | Request encryption off | accepted | `400 ENCRYPTED_PAYLOAD_INVALID` |
+    | Request encryption on | `400 ENCRYPTED_PAYLOAD_INVALID` | decrypted, then handled as plain JSON |
+
+    Encryption fails closed: a configured key never receives plaintext by accident.
+
+    - `400 ENCRYPTED_PAYLOAD_INVALID` is returned for every envelope problem: any
+      other `alg`/`enc`, `zip` or `crit`, unknown header parameters, `unprotected`,
+      `header`, `aad` or `recipients` members, a `kid` that is not this key's,
+      padded or standard base64, a wrong IV (12 bytes) or tag (16 bytes) length, a
+      failed authentication tag, or a plaintext that is not JSON.
+    - `503 ENCRYPTION_CONFIG_UNAVAILABLE` (with `Retry-After: 30`) means the key's
+      encryption configuration could not be read. Retry later; there is no
+      plaintext fallback.
+    - `500 INTERNAL_ERROR` with a content-free body is returned if a response cannot
+      be encrypted.
+
+    All JWE members are unpadded base64url. The AAD is the ASCII of the `protected`
+    member, as in standard JWE, so JOSE libraries (for example `jose` for Node.js)
+    can produce and open these envelopes directly. Pin the algorithms when
+    decrypting: key management `RSA-OAEP-256`, content encryption `A256GCM`.
+  x-source-release: develop
+  x-source-commit: b6a1a328b3e089e03ca2494a7091d72a6a481d4b
+  x-payload-encryption:
+    jira: ABLP-5317
+    source: develop, PR #4293 (POST twins + encryption) and PR #4314 (JWE envelope)
+    source-commit: 6de86f59eb
+    runtime-capability: 'GET /health -> capabilities.payloadEncryption: 2'
 servers:
   - url: https://{host}
-    description: Base URL of your platform.
     variables: { host: { default: runtime.example.com } }
 security: [{ ApiKeyAuth: [] }]
+tags: [{ name: Messages }]
 paths:
   /api/public/analytics/projects/{projectId}/conversation-history:
     get:
+      tags: [Messages]
       operationId: listPublicAnalyticsMessages
       summary: List conversation messages
       description: |
-        List conversation messages.
+        Messages are ordered by time, then by message ID to keep the order stable.
+        Different filters combine with AND, and multiple values in the same filter
+        combine with OR.
+
+        A date-range query with no other filter that would span more than 10,000
+        sessions is rejected with `400`, so narrow the range or add `sessionIds` for
+        busy projects.
       parameters:
         - $ref: '#/components/parameters/ProjectId'
         - $ref: '#/components/parameters/FromDate'
@@ -44,7 +128,66 @@ paths:
             the parameter.
           style: form
           explode: false
-          schema: { type: array, maxItems: 100, uniqueItems: true, items: { type: string, minLength: 1 } }
+          schema:
+            { type: array, maxItems: 100, uniqueItems: true, items: { type: string, minLength: 1 } }
+        - name: callerNumber
+          in: query
+          description: |
+            Filter to sessions from specific callers (ANI or provider caller id). Pass up
+            to 100 values, comma-separated (spaces after commas are allowed) or by
+            repeating the parameter; the filter is ANDed with every other filter. The
+            100-value limit counts entries before duplicates are merged; more returns
+            `400 TOO_MANY_FILTER_VALUES`. A value that itself contains a comma cannot be
+            queried, because commas always separate values.
+
+            Paste the value in any format the provider, a transcript, a CDR or a
+            spreadsheet shows. Each value is turned into the same match key the platform
+            stored at call time: invisible characters, fullwidth digits and Unicode
+            dashes are cleaned up, a national trunk `(0)` after the country code is
+            removed (`+44 (0)20 7946 0958` matches `+442079460958`), and phone-like
+            values (including `sip:` and
+            `tel:` URIs, spaces, dashes, dots, slashes and parentheses) become E.164.
+            7 to 15 bare digits are treated as an international number (`919876543210`
+            matches `+919876543210`). Digits written in a national format keep their
+            digits (`098765 43210` matches `09876543210`). Other values, such as softphone
+            usernames, SDK ids or `Anonymous`, are matched as cleaned text. Matching is
+            exact and case-sensitive: `anonymous` does not match `Anonymous`, and
+            `+14155550100 ext 12` does not match `+14155550100`. Non-ASCII digits such as
+            Arabic-Indic digits are not converted to ASCII. Keys longer than 128
+            characters are truncated, the same way they were when stored.
+
+            There is no country inference: a national number without its country code
+            (`9876543210`) does not match a stored `+919876543210`, and `00` or `011`
+            dial prefixes are not converted. Send the full international form where
+            possible. Send `+` as `%2B` or use the POST twin; an unencoded `+` decodes to
+            a space, which is also accepted and gives the same match. `Anonymous` matches
+            every withheld-number call in the window.
+
+            An entry that is empty or has no letter or digit (for example
+            `callerNumber=`, a trailing comma, or only `+`), or an entry longer than 512
+            characters, returns `400 INVALID_CALLER_NUMBER`. The value is
+            never returned in the response. When the project's reporting exposure config
+            disables the `identity` field group, a request with this parameter returns
+            `403 CALLER_NUMBER_LOOKUP_DISABLED`.
+
+            Coverage: this endpoint compares the caller value the provider stored on the
+            session record, as received, with the match key, the match key without `+`,
+            and the cleaned value as you sent it. It covers sessions recorded before this
+            filter shipped. Pasting the provider value exactly as stored matches,
+            unless the stored value itself contains invisible characters, fullwidth
+            digits, Unicode dashes or surrounding whitespace (those are cleaned from
+            what you send, so only its E.164 or bare-digit form can match). A
+            re-formatted copy matches here only when it shares the E.164 or bare-digit
+            form of the stored value: for example `+44 20 7946 0958` does not match a
+            stored `+44 (0)20 7946 0958`, and `09876543210` does not match a stored
+            `098765 43210`, although `/sessions` matches both. Playground and Studio
+            debug sessions are never matched.
+          style: form
+          explode: false
+          schema:
+            type: array
+            maxItems: 100
+            items: { type: string, minLength: 1, maxLength: 512 }
         - name: channel
           in: query
           description: |
@@ -65,7 +208,40 @@ paths:
             uniqueItems: true
             items:
               type: string
-              enum: [http_async, slack, line, msteams, whatsapp, messenger, instagram, twilio_sms, zendesk, telegram, genesys, genesys_open_messaging, ai4w, kore_agent_assist, email, voice_vxml, korevg, audiocodes, genesys_audio_connector, voice_pipeline, voice_realtime, voice, voice_twilio, voice_livekit, ag_ui, a2a, sdk_websocket, web_debug, web_chat, api, http]
+              enum:
+                [
+                  http_async,
+                  slack,
+                  line,
+                  msteams,
+                  whatsapp,
+                  messenger,
+                  instagram,
+                  twilio_sms,
+                  zendesk,
+                  telegram,
+                  genesys,
+                  genesys_open_messaging,
+                  ai4w,
+                  kore_agent_assist,
+                  email,
+                  voice_vxml,
+                  korevg,
+                  audiocodes,
+                  genesys_audio_connector,
+                  voice_pipeline,
+                  voice_realtime,
+                  voice,
+                  voice_twilio,
+                  voice_livekit,
+                  ag_ui,
+                  a2a,
+                  sdk_websocket,
+                  web_debug,
+                  web_chat,
+                  api,
+                  http,
+                ]
         - name: environment
           in: query
           description: |
@@ -119,9 +295,13 @@ paths:
           description: Message page returned successfully.
           headers:
             Cache-Control: { schema: { type: string }, example: 'private, no-store, max-age=0' }
+            X-ABL-Encrypted: { $ref: '#/components/headers/XAblEncrypted' }
           content:
             application/json:
-              schema: { $ref: '#/components/schemas/MessageListResponse' }
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/MessageListResponse'
+                  - $ref: '#/components/schemas/EncryptedResponse'
               example:
                 success: true
                 totalRecords: 2
@@ -183,6 +363,97 @@ paths:
         '429': { $ref: '#/components/responses/RateLimited' }
         '500': { $ref: '#/components/responses/InternalError' }
         '503': { $ref: '#/components/responses/Unavailable' }
+    post:
+      tags:
+        - Messages
+      operationId: queryPublicAnalyticsMessages
+      summary: List conversation messages (parameters in the body)
+      description: |
+        POST form of `GET` on this path. It accepts the same parameters as a flat JSON
+        body (`ConversationHistoryQueryBody`) instead of a query string, and returns the same response.
+        Use it when the request parameters must be encrypted. See "Sending parameters
+        in a POST body" and "Payload encryption" in the API description.
+
+        - Request encryption off: send `ConversationHistoryQueryBody` as `application/json`.
+        - Request encryption on: send the same object encrypted as an
+          `EncryptedRequest`, preferably as `application/jose+json`.
+        - Response encryption on: every response except `401` is an
+          `EncryptedResponse` with `X-ABL-Encrypted: true`.
+      parameters:
+        - $ref: '#/components/parameters/ProjectId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              oneOf:
+                - $ref: '#/components/schemas/ConversationHistoryQueryBody'
+                - $ref: '#/components/schemas/EncryptedRequest'
+            examples:
+              plain:
+                summary: Request encryption off
+                value:
+                  fromDate: '2026-08-01T00:00:00.000Z'
+                  toDate: '2026-08-02T00:00:00.000Z'
+                  sessionIds:
+                    - sess-01J4S8Y1
+                  direction: asc
+                  limit: 50
+              encrypted:
+                summary: Request encryption on (JWE of the plain example)
+                value: &id001
+                  protected: eyJhbGciOiJkaXIiLCJlbmMiOiJBMjU2R0NNIiwia2lkIjoiNjZmN2ExYzJlNGIwYTFkMmMzZTRmNWE2In0
+                  iv: cWTRqrpaghnMMupa
+                  ciphertext: XS6t52iwj0dyyLSO8MSNNs5adCSkQwoThj41rgB411aaXCcsFHbxTX90CJVVKv0e-zhbZB6Nu-yfLdPuOCgmLGqyz7fRWygIlmykQxOtZe8U3mlAwMeLOZjvVoxhxlwCkvfFVrwQK9VcD0ulkrl7S7n8uw8sPYH7av6c-SYgzyCayFdVkg3T8vAPqB4meMDj
+                  tag: fB3zJcDCZngejDbljVlrFw
+          application/jose+json:
+            schema:
+              $ref: '#/components/schemas/EncryptedRequest'
+            example: *id001
+      responses:
+        '200':
+          description: Message page returned successfully (same body as the GET form).
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+              example: private, no-store, max-age=0
+            X-ABL-Encrypted:
+              $ref: '#/components/headers/XAblEncrypted'
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/MessageListResponse'
+                  - $ref: '#/components/schemas/EncryptedResponse'
+              examples:
+                encrypted:
+                  summary: Response for a key with response encryption on (decrypt to get the
+                    plain body)
+                  value:
+                    protected: eyJhbGciOiJSU0EtT0FFUC0yNTYiLCJlbmMiOiJBMjU2R0NNIiwia2lkIjoiNjZmN2ExYzJlNGIwYTFkMmMzZTRmNWE2IiwicGtmIjoiOGE0ZDEzYjAzOGY5ZmNiYWU4N2E1ZGE1MzAxYzJjYmU1MTdmOTgxNGE4MmU1MzRiNmU1MTAwYzMzYzM1ZmI4MyJ9
+                    encrypted_key: cxwYB_RTEFVDJx8aTcMp8TLQH6o01QMHAzNA7mYjuER1qs_JASJffXFTH5mPPRxzf603WuTjZ2vQg0pO5r9NwoylzJHxikpc1eogSaIPRFZiIPVqWIWe5BruacS7vxmmMngq5VZotnr3HYril7nmOghHz-BHtbZnDwHnJqqsOp4beEj-53Ix5gW_Dw2wZMFCR9UGU2qKAfNQxHjz_D7LobQMVLh52PpBmgJDMvWhmFnVsDZcOQnF2TdD9rD0siewsm0u8tvFTP4VGNdRhS1mX_IbkHzWK_iE_36Kb6YVpIl8wjQO9J9JCjZRwo8mirXdUBpXpbwLELLEkEb3IpQMAA
+                    iv: hYMp9LBIqja7h4Da
+                    ciphertext: cc6swtjMe1Gt4NLVChIqmw
+                    tag: LGS-Aivh61DvyK6k1MHsCg
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '413':
+          $ref: '#/components/responses/ResponseTooLarge'
+        '415':
+          $ref: '#/components/responses/UnsupportedMediaType'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '500':
+          $ref: '#/components/responses/InternalError'
+        '503':
+          $ref: '#/components/responses/Unavailable'
 components:
   securitySchemes:
     ApiKeyAuth:
@@ -214,7 +485,8 @@ components:
         by repeating the parameter. Can be used instead of a date range.
       style: form
       explode: false
-      schema: { type: array, maxItems: 10000, uniqueItems: true, items: { type: string, minLength: 1 } }
+      schema:
+        { type: array, maxItems: 10000, uniqueItems: true, items: { type: string, minLength: 1 } }
     TraceDimension:
       name: traceDimensions[key]
       in: query
@@ -225,6 +497,14 @@ components:
       allowReserved: true
       schema: { type: string }
       x-dynamic-parameter: true
+  headers:
+    XAblEncrypted:
+      description: Present with value `true` when the body is an `EncryptedResponse`. Absent
+        otherwise.
+      schema:
+        type: string
+        enum:
+          - 'true'
   schemas:
     MessageListResponse:
       type: object
@@ -265,7 +545,30 @@ components:
     Message:
       type: object
       additionalProperties: false
-      required: [id, sessionId, type, role, content, channel, sourceChannel, environment, channelUId, traceDimensions, traceId, attachmentIds, hasPII, metadata, sequence, agentName, timestamp, createdAt, updatedAt]
+      required:
+        [
+          id,
+          sessionId,
+          type,
+          role,
+          content,
+          channel,
+          sourceChannel,
+          environment,
+          channelUId,
+          traceDimensions,
+          traceId,
+          attachmentIds,
+          hasPII,
+          metadata,
+          sequence,
+          messageOrder,
+          orderingVersion,
+          agentName,
+          timestamp,
+          createdAt,
+          updatedAt,
+        ]
       properties:
         id:
           type: string
@@ -293,20 +596,92 @@ components:
         channel:
           type: string
           description: Stored session channel, matched exactly by the `channel` filter.
-          enum: ['', http_async, slack, line, msteams, whatsapp, messenger, instagram, twilio_sms, zendesk, telegram, genesys, genesys_open_messaging, ai4w, kore_agent_assist, email, voice_vxml, korevg, audiocodes, genesys_audio_connector, voice_pipeline, voice_realtime, voice, voice_twilio, voice_livekit, ag_ui, a2a, sdk_websocket, web_debug, web_chat, api, http]
+          enum:
+            [
+              '',
+              http_async,
+              slack,
+              line,
+              msteams,
+              whatsapp,
+              messenger,
+              instagram,
+              twilio_sms,
+              zendesk,
+              telegram,
+              genesys,
+              genesys_open_messaging,
+              ai4w,
+              kore_agent_assist,
+              email,
+              voice_vxml,
+              korevg,
+              audiocodes,
+              genesys_audio_connector,
+              voice_pipeline,
+              voice_realtime,
+              voice,
+              voice_twilio,
+              voice_livekit,
+              ag_ui,
+              a2a,
+              sdk_websocket,
+              web_debug,
+              web_chat,
+              api,
+              http,
+            ]
         sourceChannel:
           type: string
           description: |
             The channel this individual message came in on. This can differ from the
             session's `channel` if the conversation moved between channels part-way
             through.
-          enum: ['', http_async, slack, line, msteams, whatsapp, messenger, instagram, twilio_sms, zendesk, telegram, genesys, genesys_open_messaging, ai4w, kore_agent_assist, email, voice_vxml, korevg, audiocodes, genesys_audio_connector, voice_pipeline, voice_realtime, voice, voice_twilio, voice_livekit, ag_ui, a2a, sdk_websocket, web_debug, web_chat, api, http]
+          enum:
+            [
+              '',
+              http_async,
+              slack,
+              line,
+              msteams,
+              whatsapp,
+              messenger,
+              instagram,
+              twilio_sms,
+              zendesk,
+              telegram,
+              genesys,
+              genesys_open_messaging,
+              ai4w,
+              kore_agent_assist,
+              email,
+              voice_vxml,
+              korevg,
+              audiocodes,
+              genesys_audio_connector,
+              voice_pipeline,
+              voice_realtime,
+              voice,
+              voice_twilio,
+              voice_livekit,
+              ag_ui,
+              a2a,
+              sdk_websocket,
+              web_debug,
+              web_chat,
+              api,
+              http,
+            ]
         environment:
           description: |
             The environment the conversation ran in. Null when not recorded.
           type: [string, 'null']
           enum: [dev, staging, production, working-copy, null]
-        channelUId: { type: [string, 'null'], description: Resolved end-user identity for the channel session. }
+        channelUId:
+          {
+            type: [string, 'null'],
+            description: Resolved end-user identity for the channel session.,
+          }
         traceDimensions:
           type: [object, 'null']
           additionalProperties: { type: string }
@@ -341,6 +716,17 @@ components:
           minimum: 0
           description: |
             Position of the message within its session, starting at 1.
+        messageOrder:
+          type: [number, 'null']
+          description: |
+            Durable ordering position recorded when the message was written. Null for
+            messages stored before durable ordering was recorded.
+        orderingVersion:
+          type: number
+          minimum: 1
+          description: |
+            Version of the ordering scheme behind `messageOrder`. `1` when no version was
+            recorded.
         agentName:
           type: [string, 'null']
           description: |
@@ -365,13 +751,20 @@ components:
       additionalProperties: false
       required: [schemaVersion, kind, disclaimerRequired, usedLlmInternally]
       properties:
-        schemaVersion: { type: integer, const: 1, description: Version of this provenance metadata contract. }
+        schemaVersion:
+          { type: integer, const: 1, description: Version of this provenance metadata contract. }
         kind:
           type: string
           enum: [scripted, llm, mixed]
           description: '`scripted` for authored output, `llm` for model-generated output, or `mixed` when both contributed.'
-        disclaimerRequired: { type: boolean, description: True when the customer-visible response was LLM-generated. }
-        usedLlmInternally: { type: boolean, description: 'Whether an LLM contributed internally, including to scripted final output.' }
+        disclaimerRequired:
+          { type: boolean, description: True when the customer-visible response was LLM-generated. }
+        usedLlmInternally:
+          {
+            type: boolean,
+            description: Whether an LLM contributed internally,
+            including to scripted final output.,
+          }
     ErrorEnvelope:
       type: object
       required: [error]
@@ -397,6 +790,284 @@ components:
         required:
           description: Permission(s) the caller was missing. Present on authorization denials.
           oneOf: [{ type: string }, { type: array, items: { type: string } }]
+    ConversationHistoryQueryBody:
+      type: object
+      additionalProperties: false
+      description: |
+        POST form of the GET query parameters: a flat JSON object whose keys are the
+        GET query parameter names. For a Platform Key with request encryption on, send
+        this object encrypted as an `EncryptedRequest` instead.
+      properties:
+        fromDate:
+          description: Same as the `fromDate` query parameter of the GET operation.
+          type: string
+          format: date-time
+        toDate:
+          description: Same as the `toDate` query parameter of the GET operation.
+          type: string
+          format: date-time
+        sessionIds:
+          description: Same as the `sessionIds` query parameter of the GET operation. Send a JSON
+            array, or a comma-separated string as in the query string.
+          anyOf:
+            - type: array
+              maxItems: 10000
+              uniqueItems: true
+              items:
+                type: string
+                minLength: 1
+            - type: string
+              minLength: 1
+        callerNumber:
+          description: |
+            Same as the `callerNumber` query parameter of the GET operation. Send a JSON
+            array of caller values in any provider format (no URL encoding needed), or a
+            comma-separated string. Every entry must be a string with at least one letter
+            or digit and at most 512 characters; an empty array returns 400.
+          example: ['+91 98765 43210', 'Anonymous']
+          anyOf:
+            - type: array
+              minItems: 1
+              maxItems: 100
+              items:
+                type: string
+                minLength: 1
+                maxLength: 512
+            - type: string
+              minLength: 1
+        channelUIds:
+          description: Same as the `channelUIds` query parameter of the GET operation. Send a
+            JSON array, or a comma-separated string as in the query string.
+          anyOf:
+            - type: array
+              maxItems: 100
+              uniqueItems: true
+              items:
+                type: string
+                minLength: 1
+            - type: string
+              minLength: 1
+        channel:
+          description: Same as the `channel` query parameter of the GET operation. Send a JSON
+            array, or a comma-separated string as in the query string.
+          anyOf:
+            - type: array
+              maxItems: 100
+              uniqueItems: true
+              items:
+                type: string
+                enum:
+                  - http_async
+                  - slack
+                  - line
+                  - msteams
+                  - whatsapp
+                  - messenger
+                  - instagram
+                  - twilio_sms
+                  - zendesk
+                  - telegram
+                  - genesys
+                  - genesys_open_messaging
+                  - ai4w
+                  - kore_agent_assist
+                  - email
+                  - voice_vxml
+                  - korevg
+                  - audiocodes
+                  - genesys_audio_connector
+                  - voice_pipeline
+                  - voice_realtime
+                  - voice
+                  - voice_twilio
+                  - voice_livekit
+                  - ag_ui
+                  - a2a
+                  - sdk_websocket
+                  - web_debug
+                  - web_chat
+                  - api
+                  - http
+            - type: string
+              minLength: 1
+        environment:
+          description: Same as the `environment` query parameter of the GET operation. Send a
+            JSON array, or a comma-separated string as in the query string.
+          anyOf:
+            - type: array
+              maxItems: 100
+              uniqueItems: true
+              items:
+                type: string
+                enum:
+                  - dev
+                  - staging
+                  - production
+                  - working-copy
+            - type: string
+              minLength: 1
+        traceDimensions:
+          type: object
+          description: |
+            Same filter as the `traceDimensions[key]` query parameter, as an object of
+            dimension name to value. Values may be strings, numbers, booleans, or an array
+            of those. Nested objects are rejected.
+          additionalProperties:
+            anyOf:
+              - type: string
+              - type: number
+              - type: boolean
+              - type: array
+                items:
+                  type:
+                    - string
+                    - number
+                    - boolean
+        cursor:
+          description: Same as the `cursor` query parameter of the GET operation.
+          type: string
+          minLength: 1
+        offset:
+          description: Same as the `offset` query parameter of the GET operation.
+          type: integer
+          minimum: 0
+          default: 0
+        skip:
+          description: Same as the `skip` query parameter of the GET operation.
+          type: integer
+          minimum: 0
+        limit:
+          description: Same as the `limit` query parameter of the GET operation.
+          type: integer
+          minimum: 1
+          maximum: 10000
+          default: 100
+        direction:
+          description: Same as the `direction` query parameter of the GET operation.
+          type: string
+          enum:
+            - asc
+            - desc
+          default: asc
+    EncryptedRequest:
+      type: object
+      additionalProperties: false
+      required:
+        - protected
+        - iv
+        - ciphertext
+        - tag
+      description: |
+        Request body for a Platform Key with request encryption on: a JWE in flattened
+        JSON serialization (RFC 7516 §7.2.2). The plaintext is the JSON body documented
+        for the plain POST form. Send with `Content-Type: application/jose+json` or
+        `application/json`.
+      properties:
+        protected:
+          type: string
+          pattern: ^[A-Za-z0-9_-]+$
+          description: |
+            base64url of the protected header JSON. Decodes to `RequestProtectedHeader`.
+            Its ASCII is also the AES-GCM additional authenticated data.
+        encrypted_key:
+          type: string
+          maxLength: 0
+          description: 'Empty or omitted: `dir` has no wrapped key.'
+        iv:
+          type: string
+          pattern: ^[A-Za-z0-9_-]+$
+          description: base64url of a fresh random 12-byte AES-GCM IV.
+        ciphertext:
+          type: string
+          pattern: ^[A-Za-z0-9_-]+$
+          description: base64url of the AES-256-GCM ciphertext.
+        tag:
+          type: string
+          pattern: ^[A-Za-z0-9_-]+$
+          description: base64url of the 16-byte AES-GCM authentication tag.
+    RequestProtectedHeader:
+      type: object
+      additionalProperties: false
+      required:
+        - alg
+        - enc
+      description: Decoded contents of `EncryptedRequest.protected`. Not sent as JSON on its own.
+      properties:
+        alg:
+          type: string
+          const: dir
+        enc:
+          type: string
+          const: A256GCM
+        kid:
+          type: string
+          description: Optional. If present, must equal the Platform Key's Key ID shown in Studio.
+        typ:
+          type: string
+        cty:
+          type: string
+    EncryptedResponse:
+      type: object
+      additionalProperties: false
+      required:
+        - protected
+        - encrypted_key
+        - iv
+        - ciphertext
+        - tag
+      description: |
+        Response body for a Platform Key with response encryption on (signalled by the
+        `X-ABL-Encrypted: true` header): a JWE in flattened JSON serialization. The
+        decrypted plaintext is the JSON body documented for that status code.
+      properties:
+        protected:
+          type: string
+          pattern: ^[A-Za-z0-9_-]+$
+          description: base64url of the protected header. Decodes to `ResponseProtectedHeader`.
+        encrypted_key:
+          type: string
+          pattern: ^[A-Za-z0-9_-]+$
+          description: The per-response AES-256 key, wrapped with the customer's RSA public key
+            using RSA-OAEP-256.
+        iv:
+          type: string
+          pattern: ^[A-Za-z0-9_-]+$
+          description: base64url of the 12-byte AES-GCM IV (fresh per response).
+        ciphertext:
+          type: string
+          pattern: ^[A-Za-z0-9_-]+$
+          description: base64url of the AES-256-GCM ciphertext.
+        tag:
+          type: string
+          pattern: ^[A-Za-z0-9_-]+$
+          description: base64url of the 16-byte AES-GCM authentication tag.
+    ResponseProtectedHeader:
+      type: object
+      additionalProperties: false
+      required:
+        - alg
+        - enc
+        - kid
+        - pkf
+      description: Decoded contents of `EncryptedResponse.protected`. Not sent as JSON on its
+        own.
+      properties:
+        alg:
+          type: string
+          const: RSA-OAEP-256
+        enc:
+          type: string
+          const: A256GCM
+        kid:
+          type: string
+          description: The Platform Key's Key ID.
+        pkf:
+          type: string
+          pattern: ^[0-9a-f]{64}$
+          description: |
+            Private header parameter: SHA-256 hex digest of the RSA public key's
+            SubjectPublicKeyInfo DER bytes (not an RFC 7638 thumbprint). Use it to pick the
+            matching private key during rotation.
   responses:
     BadRequest:
       description: |
@@ -405,25 +1076,151 @@ components:
         `cursor`, `offset`, and `skip` used together, too many filter values, or a
         date-range query that would span more than 10,000 sessions. The `error.code`
         says which.
-      content: { application/json: { schema: { $ref: '#/components/schemas/ErrorEnvelope' } } }
+
+        Encryption and POST-body errors also return 400: `ENCRYPTED_PAYLOAD_INVALID`
+        (malformed, unexpected or undecryptable JWE, or a plain body for a
+        request-encrypted key), `INVALID_REQUEST_BODY` (POST body is not a JSON object),
+        and `INVALID_QUERY_PARAMETER` (unknown, null or nested POST body key, or a query
+        string on a POST).
+
+        `INVALID_CALLER_NUMBER`: the `callerNumber` parameter is present but an entry is
+        empty or has no letter or digit after cleanup (an empty value, only separators,
+        a trailing or doubled comma, only whitespace, invisible characters or
+        punctuation such as `+`, or an empty POST array), is not a string, or is longer
+        than 512 characters. Any caller format, including bare
+        digits and national formats, is accepted. The message names the position of
+        the offending entry and never echoes it.
+      content:
+        {
+          application/json:
+            {
+              schema:
+                {
+                  oneOf:
+                    [
+                      { $ref: '#/components/schemas/ErrorEnvelope' },
+                      { $ref: '#/components/schemas/EncryptedResponse' },
+                    ],
+                },
+            },
+        }
     Unauthorized:
       description: Missing or invalid `x-api-key`, or Authorization was supplied.
       content: { application/json: { schema: { $ref: '#/components/schemas/ErrorEnvelope' } } }
     Forbidden:
-      description: The key lacks `analytics:read`.
-      content: { application/json: { schema: { $ref: '#/components/schemas/ErrorEnvelope' } } }
+      description: |
+        The key lacks `analytics:read` for its bound project, or (`CALLER_NUMBER_LOOKUP_DISABLED`)
+        the request used `callerNumber` while the project's reporting exposure config
+        disables the `identity` field group.
+      content:
+        {
+          application/json:
+            {
+              schema:
+                {
+                  oneOf:
+                    [
+                      { $ref: '#/components/schemas/ErrorEnvelope' },
+                      { $ref: '#/components/schemas/EncryptedResponse' },
+                    ],
+                },
+            },
+        }
     NotFound:
       description: Project not found or concealed because it is outside the key's scope.
-      content: { application/json: { schema: { $ref: '#/components/schemas/ErrorEnvelope' } } }
+      content:
+        {
+          application/json:
+            {
+              schema:
+                {
+                  oneOf:
+                    [
+                      { $ref: '#/components/schemas/ErrorEnvelope' },
+                      { $ref: '#/components/schemas/EncryptedResponse' },
+                    ],
+                },
+            },
+        }
     ResponseTooLarge:
       description: A single rendered message cannot fit within the 1 MiB response budget.
-      content: { application/json: { schema: { $ref: '#/components/schemas/ErrorEnvelope' } } }
+      content:
+        {
+          application/json:
+            {
+              schema:
+                {
+                  oneOf:
+                    [
+                      { $ref: '#/components/schemas/ErrorEnvelope' },
+                      { $ref: '#/components/schemas/EncryptedResponse' },
+                    ],
+                },
+            },
+        }
     RateLimited:
       description: Tenant request rate limit exceeded.
-      content: { application/json: { schema: { $ref: '#/components/schemas/ErrorEnvelope' } } }
+      content:
+        {
+          application/json:
+            {
+              schema:
+                {
+                  oneOf:
+                    [
+                      { $ref: '#/components/schemas/ErrorEnvelope' },
+                      { $ref: '#/components/schemas/EncryptedResponse' },
+                    ],
+                },
+            },
+        }
     InternalError:
-      description: Unexpected conversation-history failure.
-      content: { application/json: { schema: { $ref: '#/components/schemas/ErrorEnvelope' } } }
+      description: |
+        Unexpected conversation-history failure.
+
+        Also returned, with a content-free body, when a response cannot be encrypted for
+        a response-encrypted key.
+      content:
+        {
+          application/json:
+            {
+              schema:
+                {
+                  oneOf:
+                    [
+                      { $ref: '#/components/schemas/ErrorEnvelope' },
+                      { $ref: '#/components/schemas/EncryptedResponse' },
+                    ],
+                },
+            },
+        }
     Unavailable:
-      description: Conversation-history or trace-dimension backing store unavailable.
-      content: { application/json: { schema: { $ref: '#/components/schemas/ErrorEnvelope' } } }
+      description: |
+        Conversation-history or trace-dimension backing store unavailable.
+
+        `ENCRYPTION_CONFIG_UNAVAILABLE` (with `Retry-After: 30`) means the Platform
+        Key's payload-encryption configuration could not be read. There is no plaintext
+        fallback.
+      content:
+        {
+          application/json:
+            {
+              schema:
+                {
+                  oneOf:
+                    [
+                      { $ref: '#/components/schemas/ErrorEnvelope' },
+                      { $ref: '#/components/schemas/EncryptedResponse' },
+                    ],
+                },
+            },
+        }
+    UnsupportedMediaType:
+      description: A POST body was sent with a `Content-Type` other than `application/json` or
+        `application/jose+json` (`UNSUPPORTED_MEDIA_TYPE`).
+      content:
+        application/json:
+          schema:
+            oneOf:
+              - $ref: '#/components/schemas/ErrorEnvelope'
+              - $ref: '#/components/schemas/EncryptedResponse'
