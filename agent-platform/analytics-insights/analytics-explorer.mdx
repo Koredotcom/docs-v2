@@ -18,11 +18,11 @@ The page organizes its detail into six tabs.
 | Tab                   | What it shows                                                            |
 |-----------------------|--------------------------------------------------------------------------|
 | **Overview**          | Headline volume, error, token, and cost metrics for the selected period. |
-| **LLM Performance**   | Model-level latency, token, error, and throughput metrics.               |
+| **LLM Performance**   | Call volume, latency, token, and cost metrics, broken down by model.     |
 | **Sessions Explorer** | Session-level records with filters, columns, and export.                 |
 | **Traces Explorer**   | Individual trace events, with timeline and waterfall views.              |
-| **Generations**       | Every recorded model call, with latency, token, and cost detail.        |
-| **Query**             | Ad-hoc SQL against project event data.                                   |
+| **Generations**       | Every recorded model call, with latency, token, cost, and credential detail. |
+| **Query**             | Ad-hoc SQL queries on project event data.                                |
 
 ## Overview
 
@@ -35,13 +35,44 @@ Six metric cards summarize the selected period at a glance.
 | **LLM Calls** | Total LLM API calls agents made during the period. Includes calls to all configured models, for example routing, generation, and evaluation.             |
 | **Errors**    | Total errors during agent execution, including LLM failures, timeout errors, and tool invocation errors.                                                 |
 | **Tokens**    | Total LLM tokens, both input and output, across all calls.                                                                                               |
-| **Cost**      | Estimated cost based on token usage and per-model pricing. Use it to track spend against budgets or compare cost-efficiency across model configurations. |
+| **Cost**      | Estimated cost based on token usage and per-model pricing. Use it to track spend relative to budgets or compare cost-efficiency across model configurations. |
 
 ## LLM performance
 
-Model-level metrics, including per-call latency distributions, average tokens per call, error rates by model, and throughput. Use this view to benchmark model performance and identify candidates for optimization or replacement.
+**LLM Performance** reports call volume, latency, tokens, and cost for the model calls in the selected period, broken down by model. Use it to benchmark models and to find the ones that drive latency or spend.
 
-<Note>The LLM Performance tab isn't captured in the current screenshots. Confirm its metric cards and charts before publishing.</Note>
+Five metric cards summarize the period.
+
+| Metric          | Description                                                                                                                         |
+|-----------------|-------------------------------------------------------------------------------------------------------------------------------------|
+| **LLM Calls**   | Total model calls in the selected period.                                                                                           |
+| **Avg Latency** | Mean time a model call took to complete.                                                                                            |
+| **P95 Latency** | Latency that 95% of calls finished within. Read it alongside the average, because a few slow calls can raise it while the average stays flat. |
+| **Tokens**      | Total input and output tokens across all calls.                                                                                     |
+| **Cost**        | Estimated cost based on token usage and per-model pricing.                                                                          |
+
+### Charts
+
+Two charts show how latency and cost develop across the period.
+
+| Chart             | Description                                                                                  |
+|-------------------|----------------------------------------------------------------------------------------------|
+| **Latency Trend** | Plots call latency across the selected period, so you can spot when calls slowed down.       |
+| **Cost by Model** | Shows each model's share of total cost, with a legend that lists the models in the period.   |
+
+### Model performance
+
+The **Model Performance** table lists one row per model, sorted by **Cost** in descending order, so the models that cost the most appear first.
+
+| Column       | Description                                          |
+|--------------|------------------------------------------------------|
+| **Model**    | Model that served the calls, for example `gpt-realtime-1.5`. |
+| **Provider** | Provider of the model, for example `openai`.         |
+| **Calls**    | Number of calls the model served.                    |
+| **Tokens**   | Total tokens the model's calls consumed.             |
+| **Cost**     | Estimated cost of the model's calls.                 |
+
+<Note>**LLM Performance** groups calls by model, not by credential. To see which credential or auth profile supplied provider access for a call, use the **Credential Name** column on the [Generations](#generations) tab.</Note>
 
 ## Sessions explorer
 
@@ -68,7 +99,7 @@ Status chips filter the list to **All**, **Active**, **Completed**, **Escalated*
 
 Select **Columns** to choose which columns the table displays. Select **Export** to download the session list.
 
-<Note>Sessions started from a project's working copy — the pre-deployment draft — are recorded under the `working-copy` environment. Filter it out to keep pre-deployment testing from skewing your production metrics, or select it to review draft behavior on its own.</Note>
+<Note>Sessions started from a project's working copy, the pre-deployment draft, are recorded under the `working-copy` environment. Filter it out to keep pre-deployment testing from skewing your production metrics, or select it to review draft behavior on its own.</Note>
 
 ### Session list
 
@@ -108,7 +139,7 @@ The detail panel shows the selected session's events in one of two views. A coun
 | View         | Description                                                                           |
 |--------------|---------------------------------------------------------------------------------------|
 | **Timeline** | Lists events in sequence as expandable cards. Use it to read an event's full payload. |
-| **Waterfall** | Plots spans against a shared time axis, with each span's offset from the session start and its duration bar. Use it to find latency gaps and see where errors occurred. |
+| **Waterfall** | Plots spans on a shared time axis, with each span's offset from the session start and its duration bar. Use it to find latency gaps and see where errors occurred. |
 
 **Waterfall** opens with a summary bar reporting the trace mode (for example, **Historical**), **Spans**, **Duration**, **Tokens**, **Cost**, and **Errors**. Each span row shows a status icon for success or failure, the agent and model, the offset from session start, and the duration bar. Chips on the row repeat the span duration, token count, and cost.
 
@@ -132,7 +163,7 @@ A **Tool Call** event shows the **Tool** name, an expandable **Input**, and **Sh
 
 ## Generations
 
-The **Generations** tab lists every model call the platform recorded, drawn from a unified LLM call ledger. The ledger captures calls from across the platform in one place — agent turns, pipeline runs, and guardrail evaluations alike — so you can account for model spend and latency across the whole project instead of one surface at a time.
+The **Generations** tab lists every model call the platform recorded, drawn from a unified LLM call ledger. The ledger captures calls from across the platform in one place, including agent turns, pipeline runs, and guardrail evaluations, so you can account for model spend and latency across the whole project instead of one surface at a time. Each call also records the credential that supplied provider access, so you can attribute token consumption and cost to a specific credential or auth profile.
 
 Use **Search generations** to match calls by keyword, **Filters** for additional filter options, **Columns** to choose which columns the table displays, and **Export** to download the list.
 
@@ -141,11 +172,14 @@ Use **Search generations** to match calls by keyword, **Filters** for additional
 | Column           | Description                                                                                          |
 |------------------|------------------------------------------------------------------------------------------------------|
 | **Model**        | Model that served the call, for example `gpt-5.2`.                                                   |
-| **Name**         | Caller that issued the request — an agent name such as `MainSupervisor`, or an internal operation such as `pipeline_generate_text` or `guardrail_evaluation`. |
+| **Name**         | Caller that issued the request: an agent name such as `MainSupervisor`, or an internal operation such as `pipeline_generate_text` or `guardrail_evaluation`. |
 | **Status**       | Outcome of the call, for example `Success`.                                                          |
 | **Channel**      | Channel the call originated on, for example `web_debug`. Shows `--` for calls not tied to a channel, such as pipeline runs. |
 | **Source**       | Part of the platform that issued the call. See [Sources](#sources).                                  |
 | **Latency**      | Time the call took end to end.                                                                       |
+| **Credential Name** | Name of the credential or auth profile that supplied provider access for the call. See [Credential attribution](#credential-attribution). |
+| **Provider**     | Provider of the model that served the call, for example `openai`.                                    |
+| **Credential Type** | Kind of source that supplied provider access, for example `credential`. See [Credential attribution](#credential-attribution). |
 | **Total Tokens** | Input and output tokens combined.                                                                    |
 | **Cost**         | Estimated cost for the call. Values below the display threshold show as `<$0.001`.                   |
 | **Start Time**   | Date and time the call started.                                                                      |
@@ -160,13 +194,37 @@ The **Source** column shows a readable label rather than an internal identifier,
 | **Runtime**          | Model calls agents make while handling conversations.                      |
 | **Runtime Internal** | Supporting model calls the runtime makes outside the agent's own turn.     |
 | **Pipelines**        | Model calls made by analytics pipelines, such as LLM-as-judge evaluations. |
-| **Guardrails**       | Model calls made while evaluating content against guardrail policies.      |
+| **Guardrails**       | Model calls made while evaluating content with guardrail policies.          |
 
 <Note>Filter by **Source** to separate what your agents spend from what evaluation and safety checks spend. Pipeline and guardrail calls run on every qualifying conversation, so they can account for a large share of total calls without appearing in any single agent's numbers.</Note>
 
+### Credential attribution
+
+**Credential Name** and **Credential Type** identify the source that supplied provider access for each call. Use them to see which credential or auth profile consumed tokens and cost when a project and its workspace use several model configurations side by side.
+
+| Credential type   | What it identifies                                                                    | Credential name shown                                                                                                   |
+|-------------------|---------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------|
+| `credential`      | A named credential that a model connection uses.                                      | The credential name. Credential names can't change, so the name always matches the name at the time of the call.          |
+| `auth_profile`    | An auth profile that a model connection uses.                                         | The auth profile's current name. When you rename an auth profile, every call it supplied, past and future, shows the new name. |
+| `platform_credit` | Model access that the platform manages.                                               | `platform-credit`                                                                                                       |
+| `direct_key`      | A legacy model connection that stores a provider key directly, with no credential or auth profile. | `Direct-key`                                                                                              |
+
+Credentials and auth profiles that share a name stay separate. A project-level credential, a workspace-level credential, and a credential in another project never combine, even when their names match.
+
+The following rules decide which credential a call reports and how long it keeps it.
+
+| Situation                              | Behavior                                                                                                                         |
+|----------------------------------------|----------------------------------------------------------------------------------------------------------------------------------|
+| Calls recorded before attribution      | Don't carry a credential. The platform doesn't backfill earlier calls.                                                           |
+| Replacing a provider key               | Create a new credential for the new key. The new credential becomes a separate source, and its usage doesn't merge with the old credential's. |
+| Failed calls                           | Carry a credential on the same terms as successful calls.                                                                        |
+| Pipeline and guardrail calls           | Carry a credential when they write to the LLM call ledger.                                                                       |
+| Deleting a credential or auth profile  | Calls keep their credential name for as long as the platform retains the call.                                                   |
+| Secrets                                | Attribution stores only the credential identity and name. It never stores provider keys or secret values.                        |
+
 ## Query
 
-The **Query** tab runs SQL against project event data for investigations the pre-built views don't cover.
+The **Query** tab runs SQL on project event data for investigations the pre-built views don't cover.
 
 1. Select a table, for example `abl_platform.platform_events`.
 2. Write your SQL, or select **Example Queries** to start from a template. Templates include a starter query for the feedback table, which returns ratings, comments, and the custom dimensions captured on each session.

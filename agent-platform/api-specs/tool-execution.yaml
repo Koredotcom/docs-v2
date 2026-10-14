@@ -1,0 +1,632 @@
+openapi: 3.0.3
+
+info:
+  title: ABL Platform — Public Tool Execution API
+  version: 1.0.0
+  description: |
+    Discover and execute a project's tools with a platform API key, a user JWT,
+    or a JWT App assertion.
+
+    THE CANONICAL SURFACE CARRIES NO ENVIRONMENT SEGMENT. These paths always
+    serve the project's LIVE tool definition — the working copy. Nothing is
+    version-pinned, snapshotted or deployment-resolved on this API, for any
+    tool type. The `{env}` form of every path below still answers for existing
+    integrations, but it is DEPRECATED: it returns `Deprecation: true` and a
+    `Link: <canonical>; rel="successor-version"` header (RFC 8594 / RFC 9745).
+    Do not build new integrations against it.
+
+    EXECUTABLE TYPES. Agent Table tools alone are executable by default
+    (`TOOL_PUBLIC_EXECUTION_ALLOWED_TYPES=table`). `http`, `mcp`, `searchai`,
+    `workflow` and `integration` are shipped and working, but each is opt-in
+    per environment; while a type is off the allowlist its tools answer 404,
+    identically to an unknown tool name. `sandbox` is never executable here at
+    any setting. Discovery reflects the same allowlist, so `GET /tools` lists
+    only what this surface can actually run.
+
+    AUTHENTICATION. One of:
+      - `x-api-key: abl_…`                      platform API key
+      - `Authorization: Bearer <abl_… | JWT>`   platform key or Studio user JWT
+      - `auth: <assertion>`                     JWT App assertion (ABLP-5186)
+    Public SDK keys (`pk_…`) are rejected on every route. The JWT App assertion
+    travels in the `auth` header and nowhere else; `Authorization: Bearer` is
+    deliberately not an alias for it.
+
+    PERMISSIONS. `tool:read` for discovery, `tool:execute` for invoke, both
+    granted by the `tools.read` / `tools.execute` platform-key scopes. There is
+    no separate draft permission: this surface has only one lane.
+  contact:
+    name: Runtime / Tools
+  license:
+    name: Proprietary
+
+servers:
+  - url: https://{host}/api/v1
+    variables:
+      host:
+        default: example.com
+        description: Platform host.
+
+security:
+  - apiKeyAuth: []
+  - bearerAuth: []
+  - jwtAppAuth: []
+
+tags:
+  - name: Discovery
+    description: List and describe the tools this surface can run.
+  - name: Execution
+    description: Invoke a tool synchronously.
+
+paths:
+  /project/{projectSlug}/tools:
+    get:
+      tags: [Discovery]
+      operationId: listProjectTools
+      summary: List executable tools
+      description: |
+        List executable tools in a project, with optional filtering by tool type and cursor-based pagination.
+      parameters:
+        - $ref: '#/components/parameters/ProjectSlug'
+        - name: limit
+          in: query
+          required: false
+          description: Page size. Defaults to 50, clamped to the configured maximum (200).
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 200
+            default: 50
+        - name: cursor
+          in: query
+          required: false
+          description: Opaque cursor from a previous page's `nextCursor`.
+          schema:
+            type: string
+        - name: type
+          in: query
+          required: false
+          description: |
+            Restrict the page to these tool types. Repeatable. A type this
+            surface never serves is rejected as a caller mistake rather than
+            silently returning an empty page.
+          schema:
+            type: array
+            items:
+              $ref: '#/components/schemas/ToolType'
+          style: form
+          explode: true
+      responses:
+        '200':
+          description: One page of tool summaries.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [success, data]
+                additionalProperties: false
+                properties:
+                  success:
+                    type: boolean
+                    enum: [true]
+                  data:
+                    type: object
+                    required: [environment, tools, nextCursor]
+                    additionalProperties: false
+                    properties:
+                      environment:
+                        type: string
+                        description: The environment these definitions resolved against. Always `draft` on this surface.
+                        example: draft
+                      tools:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/ToolSummary'
+                      nextCursor:
+                        type: string
+                        nullable: true
+                        description: Pass as `cursor` for the next page. `null` on the last page.
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '429': { $ref: '#/components/responses/RateLimited' }
+
+  /project/{projectSlug}/tools/{toolName}:
+    get:
+      tags: [Discovery]
+      operationId: describeProjectTool
+      summary: Describe a tool and its input schema
+      description: |
+        Retrieve a specific tool's description, metadata, and caller-suppliable input schema.
+      parameters:
+        - $ref: '#/components/parameters/ProjectSlug'
+        - $ref: '#/components/parameters/ToolName'
+      responses:
+        '200':
+          description: The tool's summary and input contract.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [success, data]
+                additionalProperties: false
+                properties:
+                  success:
+                    type: boolean
+                    enum: [true]
+                  data:
+                    $ref: '#/components/schemas/ToolDescription'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '429': { $ref: '#/components/responses/RateLimited' }
+
+  /project/{projectSlug}/tools/{toolName}/invoke:
+    post:
+      tags: [Execution]
+      operationId: invokeProjectTool
+      summary: Execute a tool
+      description: |
+        Execute a tool synchronously by submitting its input parameters in a JSON request body..
+      parameters:
+        - $ref: '#/components/parameters/ProjectSlug'
+        - $ref: '#/components/parameters/ToolName'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InvokeRequest'
+            examples:
+              tableCount:
+                summary: Count rows matching a predicate
+                value:
+                  params:
+                    op: count
+                    filters:
+                      - column: tier
+                        op: eq
+                        value: gold
+              tableQuery:
+                summary: First page of a filtered, sorted query
+                value:
+                  params:
+                    op: query
+                    filters:
+                      - column: balance
+                        op: gte
+                        value: 100
+                    sort:
+                      column: created_at
+                      direction: desc
+                    limit: 25
+              tableUpdate:
+                summary: Optimistic-concurrency update
+                value:
+                  params:
+                    op: update
+                    uniqueKey:
+                      cust_ref: A-104
+                    values:
+                      balance: 42
+                    rowVersion: 7
+      responses:
+        '200':
+          description: |
+            The tool ran. `status` reports the executor's own outcome.
+          headers:
+            X-ABL-Tool-Type: { $ref: '#/components/headers/ToolType' }
+            X-ABL-Environment: { $ref: '#/components/headers/Environment' }
+            X-ABL-Config-Source: { $ref: '#/components/headers/ConfigSource' }
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [success, data]
+                additionalProperties: false
+                properties:
+                  success:
+                    type: boolean
+                    enum: [true]
+                  data:
+                    $ref: '#/components/schemas/InvokeResult'
+        '400':
+          description: |
+            Malformed or unparseable body (`VALIDATION_ERROR`,
+            `INVALID_JSON`), an unknown key, a reserved platform field
+            (`UNSUPPORTED_FIELD`), `mode` other than `sync`
+            (`ASYNC_NOT_SUPPORTED`), or an operation the tool does not allow
+            (`FORBIDDEN_OPERATION`).
+
+            A non-project table scope does NOT appear here: it is refused
+            before execution by the executability check, which answers 404.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403':
+          description: |
+            The credential lacks `tool:execute`, or a sensitive-column lookup
+            was attempted without `table:sensitive:reveal`
+            (`SENSITIVE_LOOKUP_FORBIDDEN`).
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409':
+          description: |
+            A conflict the caller must resolve: `UNIQUE_VIOLATION`,
+            `ROW_VERSION_CONFLICT`, or an auth-profile mode this surface does
+            not support.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '413':
+          description: |
+            `PAYLOAD_TOO_LARGE`. Two independent bounds produce this: the
+            route's own caller-payload cap (512 KiB serialized, depth 32,
+            10 000 nodes) and the global 1 MiB body-parser limit. Either can
+            fire first depending on the shape of the body.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '415':
+          description: |
+            `UNSUPPORTED_MEDIA_TYPE` — the body's encoding or charset is not
+            supported. A JWT App that enforces payload encryption also receives
+            415 `ROUTE_NOT_ENCRYPTABLE` for a route the encryption layer does
+            not classify; the canonical tools paths ARE classified, so that
+            applies only if the path is changed.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '422':
+          description: |
+            The tool was reached but could not complete:
+            `TOOL_CONFIG_UNRESOLVED`, `TOOL_EXECUTION_ERROR`,
+            `TOOL_INVALID_RESPONSE`, `TOOL_SOAP_FAULT`.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '429': { $ref: '#/components/responses/RateLimited' }
+        '500':
+          description: |
+            Unexpected failure, message generic by design. Note this also
+            covers an undeclared parameter rejected by
+            `undeclaredParameterPolicy`, which the executor raises as a plain
+            Error and so surfaces as `TOOL_EXECUTION_FAILED` rather than a 4xx.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '502':
+          description: |
+            The tool was invoked but its upstream failed:
+            `TOOL_NETWORK_ERROR`, `TOOL_HTTP_ERROR`, `TOOL_AUTH_FAILED`,
+            `TOOL_SSRF_BLOCKED`, `TOOL_WORKFLOW_OUTCOME_UNKNOWN`. These are the
+            failures an integrator is most likely to meet in practice.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '503':
+          description: |
+            A dependency is unavailable: `TOOL_CIRCUIT_OPEN`,
+            `TOOL_MCP_SERVER_UNAVAILABLE`, `TABLE_UNAVAILABLE`,
+            `TOOL_DEPLOYMENT_SNAPSHOT_UNAVAILABLE`. Transient — retry with
+            backoff. This is NOT the kill-switch, which answers 404.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '504':
+          description: '`TOOL_TIMEOUT` — the tool did not answer within its timeout.'
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+
+components:
+  securitySchemes:
+    apiKeyAuth:
+      type: apiKey
+      in: header
+      name: x-api-key
+      description: Platform API key (`abl_…`). Public SDK keys (`pk_…`) are rejected.
+    bearerAuth:
+      type: http
+      scheme: bearer
+      description: A platform API key or a Studio user JWT.
+    jwtAppAuth:
+      type: apiKey
+      in: header
+      name: auth
+      description: |
+        A JWT App assertion (ABLP-5186), signed with the app's own key
+        material. This header is the sole carrier; `Authorization: Bearer` is
+        deliberately not an alias for it.
+
+        PAYLOAD ENCRYPTION. An app created with `enforcePayloadEncryption` does
+        NOT use the `application/json` bodies described below. It sends a JWE
+        compact serialization with `Content-Type: application/jose` and receives
+        `application/jose` back. These paths are classified encryptable
+        (ABLP-5930); a route that is not classified answers 415
+        `ROUTE_NOT_ENCRYPTABLE`.
+
+        Encryption-layer refusals come back UNENCRYPTED and deliberately so — a
+        caller whose envelope is malformed cannot decrypt an explanation of what
+        was wrong with its envelope:
+          400  PAYLOAD_ENCRYPTION_REQUIRED, PAYLOAD_MALFORMED,
+               PAYLOAD_COMPRESSION_REFUSED, PAYLOAD_ALGORITHM_REFUSED,
+               PAYLOAD_DECRYPT_FAILED
+          413  PAYLOAD_TOO_LARGE
+          415  ROUTE_NOT_ENCRYPTABLE
+          500  RESPONSE_KEY_MISSING
+        See `docs/guides/jwt-app-authentication-integration.md` for the full
+        envelope and key-derivation contract.
+
+  parameters:
+    ProjectSlug:
+      name: projectSlug
+      in: path
+      required: true
+      description: |
+        The project SLUG, not its id. A project UUID returns 404 — the
+        id-coordinate form of this API was never built.
+      schema:
+        type: string
+      example: qa-ablp5242-a
+    ToolName:
+      name: toolName
+      in: path
+      required: true
+      description: The tool's name as authored. MCP tools are addressed as `alias__toolName`.
+      schema:
+        type: string
+      example: t_crud
+
+  headers:
+    ToolType:
+      description: The type of tool that ran.
+      schema: { $ref: '#/components/schemas/ToolType' }
+    Environment:
+      description: The environment the definition resolved against. Always `draft` on this surface.
+      schema:
+        type: string
+        example: draft
+    ConfigSource:
+      description: Whether config came from a pinned version or the working copy.
+      schema:
+        type: string
+        enum: [config-version, working-copy]
+
+  schemas:
+    ToolType:
+      type: string
+      description: |
+        Tool type. Only types on the operator allowlist are reachable; `table`
+        alone is enabled by default.
+
+        `connector` is the legacy persisted spelling of `integration`. Describe
+        and the `X-ABL-Tool-Type` header normalise it; the LIST endpoint returns
+        the raw persisted value, so a client must treat `connector` and
+        `integration` as the same type. It is in the enum because the surface
+        can emit it, not because it is a distinct type.
+      enum: [http, mcp, searchai, workflow, table, integration, connector]
+
+    UnsupportedReason:
+      type: string
+      description: Why a tool cannot be executed through this surface.
+      enum:
+        - TOOL_TYPE_DISABLED
+        - TOOL_DEFINITION_INVALID
+        - WSDL_BINDING_DISABLED
+        - MCP_SERVER_NOT_CONFIGURED
+        - TABLE_SCOPE_UNSUPPORTED
+        - ASYNC_BINDING_UNSUPPORTED
+        - RESERVED_PARAMETER_NAME
+
+    ToolSummary:
+      type: object
+      required: [name, type, executable]
+      additionalProperties: false
+      properties:
+        name:
+          type: string
+        type:
+          $ref: '#/components/schemas/ToolType'
+        description:
+          type: string
+        effect:
+          type: string
+          description: The tool's declared effect, when authored.
+        requiresAuthProfile:
+          type: boolean
+          description: Present and true when the tool resolves an auth profile server-side.
+        operations:
+          type: array
+          description: For an Agent Table tool, the operations its binding allows.
+          items:
+            type: string
+        executable:
+          type: boolean
+        unsupportedReason:
+          $ref: '#/components/schemas/UnsupportedReason'
+
+    ToolDescription:
+      # NOT `allOf: [ToolSummary, {input}]`. `allOf` branches validate
+      # INDEPENDENTLY, so ToolSummary's `additionalProperties: false` sees
+      # `input` as an unknown key and every describe response fails its own
+      # schema. Proven with ajv before this was written out in full.
+      type: object
+      required: [name, type, executable, input]
+      additionalProperties: false
+      properties:
+        name:
+          type: string
+        type:
+          $ref: '#/components/schemas/ToolType'
+        description:
+          type: string
+        effect:
+          type: string
+          description: The tool's declared effect, when authored.
+        requiresAuthProfile:
+          type: boolean
+          description: Present and true when the tool resolves an auth profile server-side.
+        operations:
+          type: array
+          description: For an Agent Table tool, the operations its binding allows.
+          items:
+            type: string
+        executable:
+          type: boolean
+        unsupportedReason:
+          $ref: '#/components/schemas/UnsupportedReason'
+        input:
+          type: object
+          description: |
+            JSON Schema for `params`, built only from caller-suppliable
+            parameters. Server-resolved parameters are omitted entirely.
+          additionalProperties: true
+
+    InvokeRequest:
+      type: object
+      required: [params]
+      additionalProperties: false
+      description: |
+        Strict. An unrecognised key is a 400, and a platform-derived field is
+        rejected by name.
+      properties:
+        params:
+          type: object
+          description: |
+            The tool's own input, matching the `input` schema from describe.
+            For an Agent Table tool without a query template this is the
+            structured call: `op` plus the operands for that operation.
+          additionalProperties: true
+        timeout:
+          type: integer
+          minimum: 1000
+          maximum: 300000
+          description: Per-call timeout in milliseconds.
+        mode:
+          type: string
+          enum: [sync]
+          description: |
+            Execution is synchronous. Omit this, or send `sync`. Any other
+            value returns 400 `ASYNC_NOT_SUPPORTED`.
+
+    InvokeResult:
+      type: object
+      required: [status]
+      additionalProperties: true
+      description: |
+        The executor's result. There is exactly one success flag — the
+        envelope's — so the executor's duplicate `success` is not present here.
+      properties:
+        status:
+          type: string
+          description: The executor's own outcome for this call.
+          example: completed
+        output:
+          description: |
+            The tool's output. For an Agent Table tool this is the JSON object
+            itself, not a serialized string a caller must parse; unwrapping is
+            table-only, because a string from another type can be genuine text
+            that merely looks like JSON.
+        trace:
+          type: object
+          description: Present only when the caller is entitled to it.
+          additionalProperties: true
+
+    Error:
+      type: object
+      required: [success, error]
+      additionalProperties: false
+      properties:
+        success:
+          type: boolean
+          enum: [false]
+        error:
+          type: object
+          required: [code, message]
+          additionalProperties: false
+          properties:
+            code:
+              type: string
+              description: Stable, machine-readable failure code.
+            message:
+              type: string
+              description: |
+                Human-readable. Disclosure is deny-by-default: an executor's own
+                message reaches the caller only for codes on the pass-through
+                list, because executor messages routinely embed the tool
+                author's upstream origin and response body.
+
+  responses:
+    BadRequest:
+      description: Malformed request. `VALIDATION_ERROR` unless a more specific code applies.
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    Unauthorized:
+      description: |
+        Missing or invalid credential, or a `pk_` public SDK key, which this
+        surface rejects.
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    Forbidden:
+      description: The credential authenticated but lacks the required permission or project scope.
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    NotFound:
+      description: |
+        A non-disclosing miss. The ROUTER answers `{"code":"NOT_FOUND",
+        "message":"Not found"}` for an unknown tool, a tool of a type that is
+        off the allowlist, a tool refused by the executability check (including
+        a non-project table scope), and when the global kill-switch
+        `TOOL_PUBLIC_EXECUTION_ENABLED` is off — the kill-switch is concealed as
+        404 rather than advertised, matching the Agent Tables and Outbound Dial
+        gates. Those cases are deliberately indistinguishable from each other.
+
+        A project miss is NOT indistinguishable from them: the project gate runs
+        earlier and answers `"message":"Project not found"`. Do not rely on that
+        difference — it is an artefact of which layer refused, not a contract.
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    RateLimited:
+      description: |
+        Per-tenant request or tool-call budget exhausted.
+
+        NOTE: this response does NOT use the `Error` envelope. The rate limiter
+        sits above the route and emits its own shape, so a client must handle
+        both. This is a known inconsistency on the surface, documented rather
+        than hidden.
+      headers:
+        Retry-After:
+          description: Seconds to wait before retrying.
+          schema: { type: integer }
+        X-RateLimit-Limit:
+          description: The budget for the window.
+          schema: { type: integer }
+        X-RateLimit-Remaining:
+          description: Requests left in the window.
+          schema: { type: integer }
+        X-RateLimit-Reset:
+          description: Epoch seconds at which the window resets.
+          schema: { type: integer }
+      content:
+        application/json:
+          schema:
+            type: object
+            required: [error]
+            properties:
+              error:
+                type: string
+                example: Rate limit exceeded
+              operation:
+                type: string
+              limit:
+                type: integer
+              retryAfterMs:
+                type: integer

@@ -75,10 +75,9 @@ You can declare a session variable with a bare name (minimal form) or with addit
 | `DESCRIPTION` | `string`                                                      | No       | --            | Human-readable description of the variable's purpose.                              |
 | `INITIAL`     | any                                                           | No       | `null`        | Initial value assigned when the session starts. (`initial_value` is accepted as a legacy alias.) |
 | `RESET`       | `per_session`, `per_activation`, `per_step`, `never`          | No       | `per_session` | When to reset the variable. See [Reset behavior](#reset-behavior).                 |
-| `SOURCE`      | `user`, `tool`                                                | No       | --            | Restricts who may write the variable. See [Write authority, format and derived values](#write-authority-format-and-derived-values). |
-| `FORMAT`      | `email`, `phone`, `digits`, `address`, `person_name`           | No       | --            | How a caller's words are read when grounding the value, and the `kind` used by `MATCH_SCORE`/`MATCHES`/`MATCH_RESULT`. Never changes `TYPE`. |
-| `DERIVED`     | expression (string)                                            | No       | --            | Expression the platform recomputes on every session write. The model cannot set a derived field. |
-| `READONLY`    | `boolean`                                                      | No       | `false`       | When `true`, the model's `__set_context__` cannot write the variable; `SET`, `on_result`, and hooks still can. |
+| `READONLY`    | `boolean`                                                      | No       | `false`       | When `true`, the model's `__set_context__` cannot write the variable; `SET`, `on_result`, and hooks still can. See [Write authority](#write-authority). |
+| `MODEL_WRITERS` | `string[]`                                                   | No       | --            | Restricts which agents' models may write a shared variable. See [Model writers](#model-writers). |
+| `MODEL_VISIBLE` | `boolean`                                                    | No       | `true`        | When `false`, excludes the variable from automatic model context. See [Model-visible session and persistent values](#model-visible-session-and-persistent-values). |
 
 #### Reset behavior
 
@@ -105,34 +104,96 @@ MEMORY:
       RESET: per_step
 ```
 
-#### Write authority, format and derived values
+#### Write authority
 
-A session variable can also declare who may write it, what kind of caller-supplied value it holds, and an expression the platform computes for it — together these are the building blocks for identity-verification flows (confirming a caller against a stored profile).
+<Warning>**Removed:** `SOURCE`, `FORMAT`, and `DERIVED` on a session variable. A `SOURCE:`/`FORMAT:`/`DERIVED:` line (or the YAML `source:`/`format:`/`derived:` key) is now a compile error — `E493`, `E492`, and `E498` respectively. `DERIVED` was removed because its every-write recompute cost grew unbounded; `SOURCE`/`FORMAT` were removed alongside it. **Migration:** declare the field `READONLY: true` and compute/write it with an authored `SET`, `on_result` mapping, or hook `SET` (see below). Where you relied on `FORMAT` for kind inference, pass the kind as `MATCH_SCORE`/`MATCHES`/`MATCH_RESULT`'s explicit third argument instead — for example `MATCH_SCORE(said, stored, "email")`.</Warning>
+
+A session variable can declare `READONLY: true` so the model cannot write it, leaving an authored hook `SET` (or `on_result`, or a FLOW `SET`) to compute its value:
 
 ```yaml
+AGENT: Identity_Check
+GOAL: "Confirm the caller before sharing account details"
+
 MEMORY:
-  session:
-    - supplied_email
+  SESSION:
+    - NAME: supplied_email
       TYPE: string
-      SOURCE: user
-      FORMAT: email
-    - profile_email
+    - NAME: profile_email
       TYPE: string
-      SOURCE: tool
-    - email_verified
+    - NAME: email_verified
       TYPE: boolean
-      DERIVED: MATCHES(supplied_email, profile_email)
+      READONLY: true
+
+HOOKS:
+  before_turn:
+    SET: email_verified = MATCHES(supplied_email, profile_email, "email")
 ```
 
-(Legacy `.agent.abl` format: `SOURCE: user`, `FORMAT: email`, `DERIVED: MATCHES(supplied_email, profile_email)` are written the same way, uppercase, directly under the variable.)
+| Property   | Values | Meaning                                                                                                                                   |
+| ---------- | ------ | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| `READONLY` | `true` | Opt-in. The model's `__set_context__` cannot write the variable; `SET`, `on_result` and hooks still can. Only an explicit `true` opts in. |
 
-- **`SOURCE: user`** — the variable is stored only when the value is something the caller actually said; a model write of a value the caller never said is silently refused (the value is not stored) and traced by field name only, never by value. A close spelling is stored as the caller said it — for example the caller spells "Riviera" but the model writes "Rivera"; the stored value is the caller's own spelling.
-- **`SOURCE: tool`** — only a tool binding (via `on_result`/`on_error` mappings) can set the variable; a model write is refused the same way. `SET` and other FLOW-authored writes still follow the active agent's own declarations.
-- **`FORMAT`** — one of `email`, `phone`, `digits`, `address`, `person_name`. It governs how the caller's spoken/typed words are read when grounding a `SOURCE: user` value (for example, "at the rate" → `@`, spelled-out digits, spoken addresses), and supplies the default `kind` for a two-argument `MATCH_SCORE`/`MATCHES`/`MATCH_RESULT` call whose operands are both `FORMAT`-declared fields — but **only inside a `DERIVED` expression**. Elsewhere (`CONSTRAINTS`, `WHEN`, hooks, and other expressions), a two-argument call is scored as `kind: text` unless you pass the kind explicitly: `MATCHES(a, b, "email")`.
-- **`DERIVED`** — an expression (typically built from `MATCH_SCORE`/`MATCHES`/`MATCH_RESULT`, or a boolean combination of other fields) that the platform recomputes after every session write. The model can never set a `DERIVED` field directly. A derived field may reference another derived field in any declaration order. If two or more derived fields depend on each other in a cycle, **all of them are left unset** — so a rule like `verified == true` fails closed rather than evaluating against a stale or undefined value (compiler warning `DERIVED_CYCLE`). A computed value that doesn't match the field's declared `TYPE` is also left unset. A `DERIVED` expression must be valid CEL with no trailing `//` comment (CEL has no comments) and no call to a function the evaluator has no overload for — any of those is a compiler warning (`DERIVED_EXPRESSION_INVALID`); the agent still compiles, but the field never computes correctly.
-- **`READONLY: true`** — a lighter-weight opt-in than `SOURCE`/`DERIVED`: it only blocks the model's own `__set_context__` writes. `SET`, `on_result`, and hooks can still write it. Only the literal value `true` opts in.
+In YAML the same key is lowercase: `readonly: true`.
 
-<Note>`MATCH_SCORE(said, stored, kind?)` returns 0-100 (or `-1` when there's nothing to judge — a missing value, a PII vault token, or an input over 1,024 characters; `-1` is below every threshold, so a rule written as `MATCH_SCORE(...) >= 70` fails closed). `MATCHES(said, stored, kind?)` is the pass/fail form on the platform's own match bands, and `MATCH_RESULT(said, stored, kind?)` returns `"match"`, `"retry"`, `"mismatch"`, or `"missing"`. These are a **said-versus-stored identity comparison**, not a regex test — the infix `a MATCHES "pattern"` operator is the regex form. See [Built-in function reference](/agent-platform/abl-reference/expressions-and-functions#built-in-function-reference) for the full signatures and match bands.</Note>
+<Note>`MATCH_SCORE(said, stored, kind?)` returns 0-100 (or `-1` when there's nothing to judge — a missing value, a PII vault token, or an input over 1,024 characters; `-1` is below every threshold, so a rule written as `MATCH_SCORE(...) >= 70` fails closed). `MATCHES(said, stored, kind?)` is the pass/fail form on the platform's own match bands, and `MATCH_RESULT(said, stored, kind?)` returns `"match"`, `"retry"`, `"mismatch"`, or `"missing"`. These are a **said-versus-stored identity comparison**, not a regex test — the infix `a MATCHES "pattern"` operator is the regex form. `kind` is optional (default `text`); pass `"auto"` to detect the kind from the stored value's shape, or `"exact"` to turn off every voice allowance and require equality after normalization. See [Built-in function reference](/agent-platform/abl-reference/expressions-and-functions#built-in-function-reference) for the full signatures, `kind` values, and match bands.</Note>
+
+#### Model writers
+
+In a multi-agent project, several agents can share one session field — routing state, a verification result — and by default any agent's model can write it. `MODEL_WRITERS` names exactly which agents' models may:
+
+```yaml
+AGENT: Coordinator
+GOAL: "Collect and route the caller's request"
+
+MEMORY:
+  SESSION:
+    - NAME: route_choice
+      TYPE: string
+      MODEL_WRITERS: [Coordinator]
+    - NAME: verified_result
+      MODEL_WRITERS: []
+    - ordinary_state
+```
+
+| Declaration | Model-write behavior |
+| ----------- | --------------------- |
+| Omitted (project-wide) | No change — existing inferred protections (authentication, consent, gate ownership, tool-outcome fields) still apply; this is not a blanket exemption for everything else. |
+| `MODEL_WRITERS: [Coordinator, Worker]` | Only the listed agents' models may write the field. |
+| `MODEL_WRITERS: []` | Every model is denied; authored writes (`SET`, `on_result`, hooks) still work. |
+
+The YAML key is `model_writers`. Names are case-sensitive agent names; every explicit declaration of the same shared field across the project must agree, and a conflicting pair fails closed (denied for everyone) rather than picking one. A full-project compile rejects a name that isn't a real agent in the project (`SESSION_MODEL_WRITER_UNKNOWN`); compiling a single agent in isolation defers that specific check. An invalid list (not an array of plain agent-name strings) is rejected at parse/compile time (`MEMORY_MODEL_WRITERS_INVALID`, `SESSION_MODEL_WRITERS_INVALID`) — the field is **not** left silently unprotected on invalid input.
+
+<Warning>A listed writer can clear an *inferred* return/gate ownership refusal, but it can never override an explicit `READONLY: true`, a private-identity refusal, already-captured consent, or a protected tool-call outcome.</Warning>
+
+<Note>**Authored proof, in brief.** Once a project declares any `MODEL_WRITERS`, a value arriving at a protected field through a `HANDOFF`/`DELEGATE` return `MAP`/`SET` must be traceable to something the platform itself produced — an executed tool result, or a value a hook/`on_result`/`ON_START`/`ESCALATE` action set directly. A value that is merely *model-written* (even copied through an ordinary `SET`), or sourced from raw caller input, secure-input collection, or a confirmation/inference step, does **not** count as proof — even if it's byte-identical to a previously proven value. A return assignment that can't establish this is skipped (the field keeps its prior value) and the runtime traces `RETURN_MODEL_WRITER_UNTRUSTED_SOURCE`. Prefer a static return `MAP`/`SET` path (a literal tool-result field) over a dynamic/computed expression when the source needs to flow into a writer-protected field — an expression the runtime can't statically resolve is treated conservatively and may be refused even when the underlying value is genuinely trustworthy.</Note>
+
+<Warning>An agent that declares any `MODEL_WRITERS` (including an empty `[]`) compiles to IR version `1.2`; an agent with none keeps its existing `1.0`/`1.1` version, and a project's compilation envelope carries the highest version among its agents. A Runtime that doesn't support `1.2` rejects that artifact outright — upgrade the compiler and the Runtime together before authoring or publishing `MODEL_WRITERS`.</Warning>
+
+#### Model-visible session and persistent values
+
+A session or persistent entry can opt out of **automatic model context** with `MODEL_VISIBLE: false` (YAML: `model_visible: false`). Omitted or `true` preserves the existing automatic projection. The value stays fully available to deterministic expressions, conditions, tools, mappings, persistence, and recall — this is a placement control over what the model sees automatically, not a write-authority or access-scope change:
+
+```yaml
+AGENT: Catalog_Assistant
+GOAL: "Help the customer select an item"
+
+MEMORY:
+  SESSION:
+    - NAME: catalog_mapping
+      TYPE: object
+      MODEL_VISIBLE: false
+    - NAME: selected_category
+      TYPE: string
+  PERSISTENT:
+    - PATH: user.internal_reference
+      SCOPE: user
+      ACCESS: read
+      MODEL_VISIBLE: false
+```
+
+An opted-out entry is left out of automatically serialized model context — including supported voice memory updates and LLM extraction grounding context. An explicit authored reference such as `{{catalog_mapping}}` can still place the value at the intended prompt location, subject to the usual access and sensitive-value rules — `MODEL_VISIBLE: false` is not a guarantee the value can never reach a model, only that it isn't included automatically. Deterministic rule evaluation and ML extraction always see the real value regardless of this setting. An excluded ancestor path excludes its descendants, even one marked `true`. The excluded path must be a literal, dot-separated path — numeric array positions are supported, but a wildcard, a bracket selector, an empty segment, or a `__proto__`/`prototype`/`constructor` segment is rejected (`MEMORY_MODEL_VISIBLE_PATH_UNSUPPORTED`) rather than silently left visible.
+
+<Note>Each consuming agent's own memory declaration governs its automatic context. `MODEL_VISIBLE` requires matching authoring, parser/compiler, and Runtime versions deployed together — an older Runtime does not enforce it.</Note>
 
 ### Persistent variables
 
