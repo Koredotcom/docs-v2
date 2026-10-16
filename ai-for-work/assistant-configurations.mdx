@@ -327,7 +327,7 @@ Validate guardrail configurations in an isolated environment before deploying th
 
 ## MCP Server
 
-The MCP Server feature lets administrators create and manage Model Context Protocol (MCP) servers that expose agents, prebuilt tools, and enterprise knowledge sources as tools. Administrators control which tools each server provides, how clients authenticate, and which users can access the server. MCP-compatible clients connect to a server through its unique URL to run tasks and orchestrate workflows.
+The MCP Server feature lets administrators create and manage Model Context Protocol (MCP) servers that expose agents, prebuilt tools, and enterprise knowledge sources as tools. Administrators control which tools each server provides, how clients authenticate through OAuth 2.1, and which users can access the server. MCP-compatible clients connect to a server through its unique URL to run tasks and orchestrate workflows.
 
 **Navigation**: Admin Console > Assistant Configurations > MCP Server
 
@@ -343,7 +343,7 @@ The page includes a pre-provisioned **Default MCP Server** that the platform mar
 
 Every account includes a **Default MCP Server** that requires no setup and is ready on first access. The Default MCP Server exposes the account's prebuilt agents and enterprise knowledge sources as MCP tools.
 
-The platform provides the server name, "Default MCP Server", and the description, "Access your organization's tools, agents, and knowledge sources directly from your AI assistant." You cannot edit either field or delete the Default MCP Server.
+The platform provides the server name, "Default MCP Server", and the description, "Access your organization's tools, agents, and knowledge sources directly from your AI assistant." You cannot edit the name or description, and you cannot delete the Default MCP Server. You can edit its tools, authentication, and access limits. For details, see [Manage a server](#manage-a-server).
 
 ### Create a Server
 
@@ -407,29 +407,104 @@ The Tools section groups prebuilt tools by system.
 
 #### Auth settings
 
-Configure how MCP clients register and authenticate with the server through OAuth. The **Auth settings** step offers two registration methods, **Dynamic OAuth** and **Static OAuth**. The method you configure also controls whether end users see the server in their MCP server listing.
+Configure how MCP clients register with the server and authenticate users. AI for Work MCP servers support OAuth 2.1 authorization, as defined in the [MCP authorization specification](https://modelcontextprotocol.io/specification/2025-11-25/basic/authorization). Every MCP client must authenticate through OAuth before it can list or run the server's tools.
 
-MCP clients differ in how they register with an OAuth server. Some clients register themselves automatically through dynamic client registration. Others accept only a static client, which you create in AI for Work and then register in the MCP client. Choose the method that your MCP client supports:
+**How OAuth works with the MCP server**
 
-| If the MCP client | Use |
-|--------------------|-----|
-| Supports dynamic client registration | **Dynamic OAuth** |
-| Requires a pre-registered client ID and secret, such as Google Gemini | **Static OAuth** |
+1. The MCP client sends a request to the server's **Remote MCP URL**. The server responds that authorization is required and points the client to the AI for Work authorization server.
+2. The client identifies itself through one of the registration methods that you configure on this step: **Client ID Metadata Document (CIMD)** or **Static OAuth**.
+3. The client opens a browser window, and the user signs in to AI for Work and approves access for the client.
+4. AI for Work issues an access token to the client. The client sends this token in the `Authorization: Bearer` header with every request to the server.
+5. The server runs tools on behalf of the signed-in user, within that user's existing permissions and the server's [Access limits](#access-limits).
 
-<Note>Dynamic OAuth does not work for clients that require a static client. For these clients, create a static client under **Static OAuth** and register its credentials in the MCP client. To confirm which method a client supports, see the client's documentation.</Note>
+The flow follows the OAuth 2.1 authorization code flow with PKCE. For protocol details, see [Authorization](https://modelcontextprotocol.io/specification/2025-11-25/basic/authorization) in the MCP specification.
 
-**Dynamic OAuth**
+**Registration methods**
 
-Dynamic OAuth lets supported AI clients register with the server without a pre-created client.
+MCP clients differ in how they register with an OAuth server. Choose the method that your MCP client supports:
 
-To configure Dynamic OAuth:
+| Method | How the client registers | Use when |
+|--------|--------------------------|----------|
+| **Client ID Metadata Document (CIMD)** | The client identifies itself with an HTTPS URL that hosts its metadata document. You don't create a client in AI for Work. | The MCP client supports CIMD and connects without pre-registered credentials. |
+| **Static OAuth** | You create a client in AI for Work, and then enter its **Client ID** and **Client Secret** in the MCP client. | The MCP client requires a pre-registered client ID and secret, such as Google Gemini. |
 
-1. Turn on the **Dynamic OAuth** toggle. The **Allowed Domains** button appears.
-2. Select **Allowed Domains** to view the supported frontier domains, such as ChatGPT, Anthropic, and Cursor. All frontier domains are enabled by default.
+<Note>The MCP authorization specification deprecates Dynamic Client Registration (DCR) and recommends CIMD for new implementations. AI for Work uses CIMD for clients that connect without a pre-created client. For details, see [Client Registration](https://modelcontextprotocol.io/specification/2026-07-28/basic/authorization/client-registration) in the MCP specification. To confirm which method a client supports, see the client's documentation.</Note>
+
+**Client ID Metadata Document (CIMD)**
+
+With CIMD, the MCP client uses an HTTPS URL as its client ID. The URL points to a JSON metadata document that the client publishes, which lists the client name and its redirect URLs. When the client connects, AI for Work fetches the document, verifies that the client's redirect URL matches an allowed domain, and shows the client name on the consent screen. For the document format, see [OAuth Client ID Metadata Document](https://datatracker.ietf.org/doc/html/draft-ietf-oauth-client-id-metadata-document-00).
+
+To configure CIMD:
+
+1. Turn on the **CIMD** toggle. The **Allowed Domains** button appears.
+2. Select **Allowed Domains** to view the pre-configured domains. All pre-configured domains are enabled by default.
 3. Enable or disable each domain.
-4. Optional: add a custom domain to allow a client that the list does not include.
+4. Optional: add a custom domain to allow a client that the list does not include. For the format, see **Domain pattern format** in this section.
 
-You can delete custom domains only. To block a frontier domain, disable it.
+You can delete custom domains only. To block a pre-configured domain, disable it.
+
+**Pre-configured allowed domains**
+
+The platform allows the following domain patterns by default. Each pattern matches the redirect URLs of a supported MCP client.
+
+| Type | Domain pattern | MCP client |
+|------|----------------|------------|
+| Local | `http://127.0.0.1:*/**` | Desktop apps and CLI tools that receive the OAuth callback on the user's device |
+| Local | `http://localhost:*/**` | Desktop apps and CLI tools that receive the OAuth callback on the user's device |
+| Local | `http://[::1]:*/**` | Desktop apps and CLI tools that receive the OAuth callback on the user's device (IPv6) |
+| HTTPS | `https://chatgpt.com/**` | ChatGPT |
+| HTTPS | `https://claude.ai/**` | Claude |
+| HTTPS | `https://claude.com/**` | Claude |
+| HTTPS | `https://vscode.dev/**` | Visual Studio Code |
+| HTTPS | `https://vertexaisearch.cloud.google.com/**` | Google Vertex AI Search |
+| HTTPS | `https://*.perplexity.ai/**` | Perplexity |
+| HTTPS | `https://*.perplexity.com/**` | Perplexity |
+| HTTPS | `https://callback.mistral.ai/**` | Mistral AI |
+| HTTPS | `https://api.devin.ai/**` | Devin |
+| HTTPS | `https://app.kiro.dev/agent/mcp/callback` | Kiro |
+| HTTPS | `https://lovable.dev/**` | Lovable |
+| HTTPS | `https://manus.im/api/webhook/mcp/callback` | Manus |
+| HTTPS | `https://app.writer.com/**` | Writer |
+| HTTPS | `https://api.stilla.ai/**` | Stilla |
+| HTTPS | `https://global.consent.azure-apim.net/**` | Microsoft Power Platform and Copilot Studio |
+| HTTPS | `https://token.botframework.com/**` | Microsoft Bot Framework |
+| HTTPS | `https://us-east-1.quicksight.aws.amazon.com/**` | Amazon QuickSight |
+| HTTPS | `https://*.azuredatabricks.net/**` | Azure Databricks |
+| HTTPS | `https://*.databricks.com/**` | Databricks |
+| HTTPS | `https://*.snowflake.app/**` | Snowflake |
+| HTTPS | `https://*.apps.dynatrace.com/**` | Dynatrace |
+| HTTPS | `https://*.resolve.ai/**` | Resolve AI |
+| HTTPS | `https://*.natoma.app/**` | Natoma |
+| HTTPS | `https://b.app.lumosidentity.com/b/oauth/authorize` | Lumos |
+| HTTPS | `https://b.app.lumosidentity.com/b/oauth/token` | Lumos |
+| HTTPS | `https://mcp.docker.com/**` | Docker |
+| HTTPS | `https://oauth.pstmn.io/**` | Postman |
+| HTTPS | `https://integrations.zoom.us/**` | Zoom |
+| HTTPS | `https://oauth2.slack.com/external/auth/**` | Slack |
+| HTTPS | `https://app.asana.com/-/integrations/oauth/callback` | Asana |
+| HTTPS | `https://www.canva.com/**` | Canva |
+| HTTPS | `https://figma-gov.com/**` | Figma for Government |
+| HTTPS | `https://api.gamma.app/mcp/atlassian_mcp/callback` | Gamma |
+| HTTPS | `https://coda.io/**` | Coda |
+| HTTPS | `https://docs.superhuman.com/**` | Superhuman |
+| HTTPS | `https://*.kore.ai/**` | Kore.ai |
+| Custom scheme | `cursor://cursor.mcp` | Cursor |
+
+<Note>The local patterns let MCP clients that run on the user's device, such as CLI tools and desktop apps, complete the OAuth flow. Keep them enabled to support these clients, or disable them to restrict access to hosted clients only.</Note>
+
+**Domain pattern format**
+
+Add a custom domain as an exact URL or as a pattern that covers several subdomains, ports, or paths.
+
+| Element | Meaning | Example |
+|---------|---------|---------|
+| Protocol | Required in every entry. Use `https://`, `http://` for local addresses, or the client's custom scheme. | `https://`, `cursor://` |
+| `*` in the host | Matches any single subdomain. | `https://*.example.com/**` |
+| `:*` after the host | Matches any port. | `http://localhost:*/**` |
+| `/**` after the host | Matches any path under the domain. | `https://app.example.com/**` |
+| Exact path | Matches only that path. | `https://app.example.com/oauth/callback` |
+
+For a comparable reference on domain allowlists for MCP OAuth clients, see [Available Atlassian MCP server domains](https://support.atlassian.com/security-and-access-policies/docs/available-atlassian-mcp-server-domains/).
 
 **Static OAuth**
 
@@ -448,7 +523,7 @@ To connect an MCP client that requires a static client, such as Google Gemini:
 1. In the MCP client's documentation or settings, find the OAuth redirect (callback) URL that the client uses.
 2. In AI for Work, add a static client and enter that URL in **Redirect URL(s)**. For steps, see the previous procedure.
 3. Copy the **Client ID** and **Client Secret**, and the **Remote MCP URL** from the wizard.
-4. In the MCP client, add the server: enter the **Remote MCP URL**, and then enter the **Client ID** and **Client Secret** in the client's OAuth configuration.
+4. In the MCP client, add the server: enter the **Remote MCP URL**, and then enter the **Client ID** and **Client Secret** in the client's OAuth configuration. For client-specific steps, see [Connect an MCP client](#connect-an-mcp-client).
 5. Connect to the server from the MCP client and sign in when the client prompts you.
 
 To manage an existing static client:
@@ -458,14 +533,6 @@ To manage an existing static client:
 | **Edit** | Update the client name or redirect URLs. |
 | **Regenerate** | Generate a new **Client Secret** for the client. |
 | **Delete** | Remove the client from the server. |
-
-**End-user visibility**
-
-| Auth configuration | End-user MCP server listing |
-|--------------------|-----------------------------|
-| **Dynamic OAuth** on | Shows the server with its MCP server URL. |
-| **Dynamic OAuth** off | Hides the server. |
-| **Static OAuth** | Hides the server until the end user grants access through the AI assistant that connects to the server. After that, the listing shows the server without an MCP server URL, and the end user can revoke the connected app access. |
 
 #### Access limits
 
@@ -477,9 +544,161 @@ Set which users in the account can access the server:
 | **Limited users** | Only the selected users or user groups can access the server. Use the directory picker to search for and select users and groups. |
 | **None** | No users can access the server, which makes the server inaccessible. |
 
-**Manage a server**
+### Connect an MCP client
 
-You can edit or delete any server after you create it. Open a server to modify its details, tools, authentication method, or access limits. The edit and delete actions are not available for the **Default MCP Server**.
+After you create the server, add it to an MCP client so that users can run its tools from that client.
+
+**Before you begin**
+
+- Copy the server's **Remote MCP URL** from the wizard.
+- Confirm that the user has access to the server under [Access limits](#access-limits).
+- For a client that uses CIMD, confirm that the client's domain is enabled under **Allowed Domains**.
+- For a client that uses Static OAuth, create a static client and copy its **Client ID** and **Client Secret**. Register the client's redirect URL listed in the following sections.
+
+In the following examples, replace `<Remote MCP URL>` with your server's URL and `ai-for-work` with a name of your choice. Client menus and commands change over time; for the latest steps, see each client's documentation.
+
+<Tabs>
+  <Tab title="Claude">
+    Custom connectors are available on the Claude web and desktop apps for Pro, Max, Team, and Enterprise plans.
+
+    1. In Claude, go to **Settings** > **Connectors**.
+    2. Select **Add custom connector**.
+    3. Enter a name and the **Remote MCP URL**.
+    4. For Static OAuth only: select **Advanced settings**, and then enter the **Client ID** and **Client Secret**.
+    5. Select **Add**.
+    6. Select **Connect**, and then sign in to AI for Work when prompted.
+
+    On Team and Enterprise plans, only an Owner can add the connector. Members select **Connect** on the custom connector to authenticate.
+
+    For details, see [Get started with custom connectors using remote MCP](https://support.claude.com/en/articles/11175166-getting-started-with-custom-connectors-using-remote-mcp).
+  </Tab>
+  <Tab title="Claude Code">
+    1. Add the server:
+
+       ```bash
+       claude mcp add --transport http ai-for-work <Remote MCP URL>
+       ```
+
+    2. Start Claude Code, run `/mcp`, select the server, and complete the sign-in in the browser.
+
+    For Static OAuth, register `http://localhost:8080/callback` as the redirect URL of the static client, and then add the server with the client credentials. The command prompts for the secret.
+
+    ```bash
+    claude mcp add --transport http \
+      --client-id <Client ID> --client-secret --callback-port 8080 \
+      ai-for-work <Remote MCP URL>
+    ```
+
+    For details, see [Connect Claude Code to tools via MCP](https://code.claude.com/docs/en/mcp).
+  </Tab>
+  <Tab title="ChatGPT">
+    Custom MCP apps are available on ChatGPT web for Business, Enterprise, and Edu plans, with limited support on Pro. An admin must enable developer mode first.
+
+    1. Turn on developer mode under **Settings** > **Apps** > **Advanced settings**.
+    2. Go to **Settings** > **Apps**, and then select **Create**.
+    3. Enter a name and the **Remote MCP URL**.
+    4. Select **OAuth** as the authentication method.
+    5. Select **Scan Tools**, and then sign in to AI for Work when prompted.
+    6. Select **Create**.
+
+    For details, see [Developer mode and MCP apps in ChatGPT](https://help.openai.com/en/articles/12584461-developer-mode-apps-and-full-mcp-connectors-in-chatgpt-beta).
+  </Tab>
+  <Tab title="Cursor">
+    Add the server to `.cursor/mcp.json` in the project root, or to `~/.cursor/mcp.json` to make it available in all projects:
+
+    ```json
+    {
+      "mcpServers": {
+        "ai-for-work": {
+          "url": "<Remote MCP URL>"
+        }
+      }
+    }
+    ```
+
+    Cursor prompts you to sign in to AI for Work when you first use the server.
+
+    For Static OAuth, set the `AIW_CLIENT_ID` and `AIW_CLIENT_SECRET` environment variables to the client credentials, and add an `auth` block. Register `http://localhost:8787/callback` (desktop app) and `https://www.cursor.com/agents/mcp/oauth/callback` (web and Cursor Agents) as redirect URLs of the static client.
+
+    ```json
+    {
+      "mcpServers": {
+        "ai-for-work": {
+          "url": "<Remote MCP URL>",
+          "auth": {
+            "CLIENT_ID": "${env:AIW_CLIENT_ID}",
+            "CLIENT_SECRET": "${env:AIW_CLIENT_SECRET}"
+          }
+        }
+      }
+    }
+    ```
+
+    For details, see [Model Context Protocol (MCP)](https://cursor.com/docs/context/mcp) in the Cursor documentation.
+  </Tab>
+  <Tab title="VS Code">
+    1. Open the Command Palette and run **MCP: Add Server**, or add the server to `.vscode/mcp.json`:
+
+       ```json
+       {
+         "servers": {
+           "ai-for-work": {
+             "type": "http",
+             "url": "<Remote MCP URL>"
+           }
+         }
+       }
+       ```
+
+    2. Start the server and sign in to AI for Work when VS Code prompts you.
+
+    For details, see [Add and manage MCP servers in VS Code](https://code.visualstudio.com/docs/copilot/customization/mcp-servers).
+  </Tab>
+  <Tab title="Codex">
+    1. Add the server:
+
+       ```bash
+       codex mcp add ai-for-work --url <Remote MCP URL>
+       ```
+
+    2. Sign in:
+
+       ```bash
+       codex mcp login ai-for-work
+       ```
+
+    For details, see [Model Context Protocol](https://developers.openai.com/codex/mcp) in the Codex documentation.
+  </Tab>
+  <Tab title="Gemini CLI">
+    Gemini CLI uses Static OAuth. Register `http://localhost:7777/oauth/callback` as the redirect URL of the static client, and then add the server to `~/.gemini/settings.json`:
+
+    ```json
+    {
+      "mcpServers": {
+        "ai-for-work": {
+          "httpUrl": "<Remote MCP URL>",
+          "oauth": {
+            "enabled": true,
+            "clientId": "<Client ID>",
+            "clientSecret": "<Client Secret>",
+            "redirectUri": "http://localhost:7777/oauth/callback"
+          }
+        }
+      }
+    }
+    ```
+
+    Run `/mcp auth ai-for-work` in Gemini CLI, and then sign in to AI for Work in the browser.
+
+    For details, see [MCP servers with the Gemini CLI](https://geminicli.com/docs/tools/mcp-server/).
+  </Tab>
+</Tabs>
+
+<Tip>For other MCP clients, enter the **Remote MCP URL** in the client's remote MCP server settings, and use OAuth as the authentication method. If the client requires a client ID and secret, create a static client first.</Tip>
+
+### Manage a server
+
+You can edit any server after you create it, including the **Default MCP Server**. Open a server to modify its tools, authentication method, or access limits, and the details of servers that you create. You can delete any server except the **Default MCP Server**.
 
 ---
 
