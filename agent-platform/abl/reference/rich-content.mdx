@@ -815,6 +815,31 @@ Only **wording** fields accept rules: `prompt`, `submit_label`, `pending_message
 
 <Note>Copy rules are evaluated **before the customer answers**, so a `when` expression may reference `max`, `language`, `channel`, and `session` (as `session.<name>`) but **not** `rating`. An invalid condition is a compile error (`INVALID_SURVEY_CONDITION`).</Note>
 
+#### Post-transfer surveys (ESCALATE to a human agent)
+
+When a human agent closes a conversation the bot [escalated](/agent-platform/abl-reference/multi-agent-and-supervisor#escalate), the survey card shown on close is resolved from a `FEEDBACK` block — but that card renders with no bot turn running, so it can't come from "whichever step the conversation happened to be on." The platform instead picks **one** `FEEDBACK` block to stand for the whole agent:
+
+1. **The agent-level block**, if the agent declares one directly under its top-level `RICH_CONTENT:` (outside any `FLOW:` step) — this always wins when present.
+2. **Otherwise, a FLOW step's own `FEEDBACK` block.** Both placements compile to the same thing: `FEEDBACK` nested under a step's own `RICH_CONTENT:`, or under that step's `RESPOND:`. The platform scans steps in `FLOW:` order:
+   - **Exactly one step** has a `FEEDBACK` block → that one is used.
+   - **Several steps** have a `FEEDBACK` block, naming the **same** `FEEDBACK_TEMPLATE` → treated as the same survey; the first step's copy/wording wins.
+   - **Several steps** have `FEEDBACK` blocks naming **different** templates, or any of them is an inline (template-less) block → ambiguous. No post-transfer survey is shown at all, rather than guessing which one you meant.
+
+```yaml
+FLOW:
+  collect_card:
+    REASONING: false
+    RESPOND: "Let me get that taken care of for you."
+    RICH_CONTENT:
+      FEEDBACK:
+        FEEDBACK_TEMPLATE: Post_Transfer_CSAT
+    THEN: transfer_to_agent
+```
+
+<Note>A `FEEDBACK` block's `when` guard is **not** evaluated for this purpose — closing the conversation isn't a turn, and `when` conditions over turn-scoped values (like `input`) would never hold outside one. A block nested deeper than the step itself — inside an `ON_ACTION` handler, a `GATHER` field, a digression, or a reasoning zone — is never a candidate; only the step's own `RICH_CONTENT:`/`RESPOND:`-level block counts.</Note>
+
+The transfer record stays pending after the human agent finishes and only closes once the survey is answered or its answer window ([`expires_after`](#referencing-a-survey-template)) runs out — whichever happens first. The resulting rating is stored with the survey template, the escalating agent's name, and its version, so it appears correctly scoped in that survey's Feedback Insights.
+
 ### Templates
 
 Templates are named, reusable response definitions declared in the `TEMPLATES:` block. They support `{{}}` interpolation and multi-format variants.
