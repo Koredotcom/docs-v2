@@ -856,8 +856,73 @@ TOOLS:
 | `kb_name`             | `string` | No       | --      | Display name for the knowledge base.                               |
 | `search_instructions` | `string` | No       | --      | Extra instructions injected into the search/classification prompt. |
 | `retrieval_profile`   | `string` | No       | --      | Set to `object-aware` to use object-aware retrieval against the KB index. |
+| `kb_fast_path`        | `"on"` \| `"off"` | No | --  | `on` runs this search before the model is called (pre-search); `off` or omitted leaves it to the model to call the tool itself. |
 
 <Note>SearchAI tools are tenant-scoped; the tenant binding is applied by the platform. Do not hardcode a `tenant_id` in shared/exported definitions.</Note>
+
+### Per-agent overrides and business rules
+
+`search_instructions`, `kb_fast_path`, and `business_rules` are **per-agent** properties: when several agents share one underlying KB tool (defined once as a project tool), each agent can declare its own values for these three directly on its own `TOOLS:` entry, and that agent's declaration is what applies to its searches — it doesn't change the tool for any other agent sharing the same KB.
+
+`business_rules` governs what a search returns — restricting results to certain sources, boosting or lowering ranked values, or hiding content entirely — without changing the agent's prompt or the underlying index. Author it as a `business_rules: |` block holding a JSON array, parallel to `search_instructions`:
+
+```yaml
+TOOLS:
+  search_policies(query: string) -> {results: object[]}
+    description: "Search the HR policy knowledge base"
+    type: searchai
+    index_id: "hr-policies-v2"
+    search_instructions: "Prefer the most recent policy version when duplicates exist."
+    business_rules: |
+      [
+        {
+          "id": "hide_drafts",
+          "when": { "kind": "always" },
+          "then": {
+            "hide": [{ "field": "status", "operator": "eq", "value": "draft" }]
+          }
+        },
+        {
+          "id": "boost_official_pricing",
+          "when": { "kind": "intent", "anyOf": ["pricing_question"] },
+          "then": {
+            "boost": [{ "field": "source", "value": "official_pricing_guide", "weight": 2.5 }]
+          }
+        }
+      ]
+```
+
+**Rule shape.** Each entry in the array is an object:
+
+| Field | Type | Required | Description |
+| ----- | ---- | -------- | ------------ |
+| `id` | `string` | Yes | Unique within the array — appears in traces so you can tell which rule fired. |
+| `when` | `object` | Yes | The condition that must hold for the rule to apply. See below. |
+| `then` | `object` | Yes | The effect(s) to apply when `when` holds. See below. |
+| `label` | `string` | No | A human-readable name, for your own reference. |
+| `enabled` | `boolean` | No | Set `false` to author a rule without it taking effect yet. |
+| `priority` | `number` | No | Evaluation order hint among rules that could both fire. |
+| `relaxable` | `boolean` | No | Whether this rule's filters may be relaxed if they leave zero results. |
+
+**`when` (one condition kind):**
+
+| `kind` | Shape | Matches when |
+| ------ | ----- | ------------- |
+| `always` | `{ "kind": "always" }` | Every search. |
+| `intent` | `{ "kind": "intent", "anyOf": [...ids], "minConfidence"?: 0-1 }` | The classified caller intent is one of `anyOf`. |
+| `query` | `{ "kind": "query", "operator": "contains"\|"not_contains", "value"?: string, "anyOf"?: [...phrases] }` | The search query text contains (or doesn't contain) the phrase, or any phrase in `anyOf` — declare exactly one of `value`/`anyOf`. |
+| `value` | `{ "kind": "value", "name": string, "operator": "eq"\|"neq"\|"gt"\|"gte"\|"lt"\|"lte"\|"in"\|"not_in"\|"exists"\|"not_exists", "value"?: ... }` | A named caller/session value compares as specified. |
+
+**`then` (one or more effects):**
+
+| Key | Shape | Effect |
+| --- | ----- | ------ |
+| `filters` | `[{ "field", "operator", "value" }, ...]` (or a `{ "mode": "all"\|"any", "filters": [...] }` group) | Restrict results to matching documents. `operator` is one of `eq`, `neq`, `gt`, `gte`, `lt`, `lte`, `in`, `not_in`, `contains`, `not_contains`, `exists`, `not_exists`. |
+| `hide` | Same filter shape as `filters` | Exclude matching documents from the results entirely. |
+| `boost` | `[{ "field", "value", "weight" }, ...]` | Increase the ranking of documents where `field` equals `value`, by `weight`. |
+| `lower` | Same shape as `boost` | Decrease ranking instead of increasing it. |
+
+<Warning>Validation differs by where the rules are declared. On the **project tool's own** `business_rules`, an invalid rule set (bad JSON, or any rule failing the grammar above) fails that tool to load entirely — loud, by design, so ungoverned results are never served silently. On an **agent's own override** of `business_rules`, an invalid rule set is instead dropped with a logged warning, and the agent falls back to whatever the shared project tool already declares — a mistake in one agent's override can't take down every agent sharing that KB tool. Either way, a rule that fails validation is never partially applied.</Warning>
 
 ---
 
