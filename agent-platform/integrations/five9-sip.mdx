@@ -1,0 +1,351 @@
+---
+title: Five9 integration with Artemis - voice automation via SIP
+sidebarTitle: Five9
+hidden: true
+---
+
+This guide explains how to integrate Five9 with Kore Voice Automation using SIP trunking in the Artemis platform. With this integration, Five9 routes inbound voice calls to an Artemis agent automation flow for self-service. Based on the conversation outcome, the agent can end the call, transfer the caller to a Five9 skill queue, or transfer the caller directly to a Five9 agent.
+
+## Prerequisites
+
+Confirm that you meet the following prerequisites before configuring the Five9 Voice Automation integration:
+
+### Five9 Requirements
+
+- A Five9 Virtual Contact Centre (VCC) Administrator account with privileges to configure:
+  - SIP trunks and DID numbers
+  - Interactive Voice Response (IVR) scripts
+  - Campaigns, skills, and agents
+  - VoiceStream subscription
+
+### Artemis Requirements
+
+- Artemis Platform account with administrator access
+- Familiarity with Artemis Agent building
+
+### Network Requirements
+
+- A SIP trunk between Five9 and Kore. Five9 pre-configures this trunk. 
+- DID numbers. The Five9 team provides these after your Five9 instance is set up.
+
+## Artemis Configuration
+
+### Build the agent
+
+1. Sign in to [Agent Platform - Artemis](https://agents.kore.ai).
+2. Open the required project.
+3. Create or edit an Agent for Voice Automation from Agents > Your Relevant Agent > Designer / Editor:
+4. Use the `ESCALATE` block to send routing headers. Learn more about routing headers.
+5. Update the Agent definition as per your business use case.
+
+**Sample Agent**:
+
+```yaml
+
+AGENT: Five_Sip_bye
+
+GOAL: "Verify Five9 inbound SIP headers and return routing instructions on the outbound SIP BYE"
+
+IDENTITY:
+  role: "Five9 SIP BYE Header Test Assistant"
+  persona: "Brief, professional, and exact when confirming SIP metadata tests"
+
+MEMORY:
+  session:
+    - name: five9_sip_headers
+      type: object
+    - name: five9_call_id
+      type: string
+    - name: five9_session_id
+      type: string
+    - name: five9_call_session_id
+      type: string
+    - name: five9_ani
+      type: string
+    - name: five9_dnis
+      type: string
+    - name: five9_campaign
+      type: string
+    - name: five9_campaign_id
+      type: string
+    - name: five9_domain_id
+      type: string
+    - name: five9_call_start_timestamp
+      type: string
+    - name: five9_region
+      type: string
+
+FLOW:
+  entry_point: capture_five9_headers
+  steps:
+    - capture_five9_headers
+    - announce_test
+    - wait_for_summary_test
+    - release_to_five9
+
+capture_five9_headers:
+  REASONING: false
+  SET:
+    five9_sip_headers = _metadata.sip.headers
+    five9_call_id = _metadata.sip.headers["x-callid"]
+    five9_session_id = _metadata.sip.headers["x-five9sessionid"]
+    five9_call_session_id = _metadata.sip.headers["x-callsessionid"]
+    five9_ani = _metadata.sip.headers["x-callani"]
+    five9_dnis = _metadata.sip.headers["x-calldnis"]
+    five9_campaign = _metadata.sip.headers["x-callcampaign"]
+    five9_campaign_id = _metadata.sip.headers["x-callcampaignid"]
+    five9_domain_id = _metadata.sip.headers["x-calldomainid"]
+    five9_call_start_timestamp = _metadata.sip.headers["x-callstarttimestamp"]
+    five9_region = _metadata.sip.headers["x-five9-region"]
+  THEN: announce_test
+
+announce_test:
+  REASONING: false
+  RESPOND: |
+    The inbound Five9 SIP header test succeeded.
+    Please say transfer to five9. I will then return the call to Five9.
+  THEN: wait_for_summary_test
+
+wait_for_summary_test:
+  REASONING: false
+  GATHER:
+    - summary_test_input: required
+      prompt: "Please say transfer to five9 now."
+      type: string
+  THEN: release_to_five9
+
+release_to_five9:
+  REASONING: false
+  THEN: ESCALATE with REASON: "Five9 outbound SIP BYE routing-header validation"
+
+ESCALATE:
+  routing:
+    voice:
+      call_transfer_type: sip
+      transfer_method: bye
+      sip_headers:
+        "X-RouteType": "skill"
+        "X-RouteValue": "Kore_Skill"
+        "X-RouteReason": "TransferToQueue"
+
+EXECUTION:
+  model: "qwen35-a3b-35b"
+
+```
+
+
+Sample routing headers(SIP BY) for common use cases. Use as required in your use case.
+
+**For Skill Transfer:**
+
+```yaml
+ESCALATE:
+  routing:
+    voice:
+      call_transfer_type: sip
+      transfer_method: bye
+      sip_headers:
+        "X-RouteType": "skill"
+        "X-RouteValue": "Kore_Skill"
+        "X-RouteReason": "TransferToQueue"
+```
+
+**For Agent Transfer:**
+
+```yaml
+ESCALATE:
+  routing:
+    voice:
+      call_transfer_type: sip
+      transfer_method: bye
+      sip_headers:
+        "X-RouteType": "agent"
+        "X-RouteValue": "agentmail@domain.com"
+        "X-RouteReason": "TransferToAgent"
+```
+
+**For Hangup:**
+
+```yaml
+ESCALATE:
+  routing:
+    voice:
+      call_transfer_type: sip
+      transfer_method: bye
+      sip_headers:
+        "X-RouteType": "hangup"
+        "X-RouteValue": "hangup"
+        "X-RouteReason": "hangup"
+```
+
+The Automation flow supports the following call outcomes:
+- End the conversation and disconnect the call.
+- Transfer the caller to a Five9 skill.
+- Transfer the caller directly to a Five9 agent.
+
+### Configure Agent Transfer
+
+Configure Agent Transfer to send the headers back to Five9 during `SIP BYE`.
+
+<Note>The system transfers Custom SIP headers back to Five9 only when the SIP Headers are whitelisted in Agent Transfer.</Note>
+
+- Go to **Settings** > **Agent Transfer** > **Voice Gateway**.
+- Select Gateway Type as **Kore Voice Gateway**.
+- Select Transfer Method as **SIP BYE (release-link).**
+- Enable **Header Passthrough**.
+- Under the **Allowed Transfer Headers** section add all the Five9 custom headers as shown below.
+
+[Agent Transfer](/agent-platform/images/integrations/agent-transfer.png)
+
+### Configure SIP Trunk
+
+For inbound calls to Artemis using SIP INVITE, the system uses **Bring Your Own SIP** as the **Voice Provider**.
+
+1. Navigate to **Deployments** > **Channels** > **Pipeline Voice**.
+2. Click **Create New**.
+3. Fill in the details as per your use case, as shown below, and click **Create**. [Create pipeline connection](/agent-platform/images/integrations/new-pipeline.png)
+4. Select **Voice Provider** > **Bring Your Own SIP** and use the following Five9 IPs as **SIP Gateway IPs / CIDRs**:
+
+   ```text
+   3.224.189.218,35.174.41.205,208.69.29.60,208.69.29.43,208.69.29.44,208.69.29.45,208.69.29.46,162.213.153.62,208.69.29.54,162.213.153.52
+   ```
+5. For DID / Phone Number, enter a number from the range provided by the Five9 team after the SIP Trunk Route setup.
+6. Click Save Changes. [Pipeline Settings](/agent-platform/images/integrations/pipeline-settings1.png) [Pipeline Settings](/agent-platform/images/integrations/pipeline-settings2.png) 
+
+## Five9 Configuration
+
+Upon acquiring the Five9 instance for Kore Voice Automation, the Five9 team will automatically  configure the Five9 - Kore Voice Automation IVR Script Template in your instance. You will need to update a few details like the `DID number`, `Authorization Header`, `Kore.abl_tenant_id`, `Kore.abl_project_id`. Below steps will help to validate the IVR Script details.
+
+### Create the IVR Flow
+
+1. Sign in to Five9 VCC Administrator.
+2. Create a list of required Kore variables in **VCC Admin Panel** > **Call Variables** > **Kore** as shown below. [Variables](/agent-platform/images/integrations/variables.png) 
+3. Under IVR Scripts, right-click and select Add IVR Script. [Add IVR script](/agent-platform/images/integrations/ivr_script.png)
+4. In the IVR Flow, soon after the Incoming Call Module, use Set Variable Module to set the DID number (refer to SIP Trunk Provisioning). [Set variable module](/agent-platform/images/integrations/module-properties.png)
+5. Use 3rd-Party Transfer Module to transfer the call to Kore Voice Automation. [Third party transfer module](/agent-platform/images/integrations/third-party-transfer-module.png)
+6. Use Case Module to transfer the call back to a Skill, to an agent, or to hang up. [case module](/agent-platform/images/integrations/case-module.png) 
+7. In Query Module, use the Session Summary API to retrieve data from the Artemis platform when users hang up during interaction with the AI Agent. [Query module](/agent-platform/images/integrations/query-module.png)
+8. Update the Bearer token in the Request tab of the Query Module with the **Artemis API Key** > **Platform Key** and other headers as shown below.[Query module](/agent-platform/images/integrations/query-module-request.png)
+
+
+### SIP Trunk Provisioning
+
+The Five9 team has preconfigured the SIP trunk to enable Kore to identify the dialed DID in SIP INVITEs from Five9. As an accredited Five9 ISV partner, Kore has documented this setup with Five9 in its onboarding materials to help new customers get onboarded more quickly.
+
+Kore SBC details used for configuring SIP Trunk at Five9 end:
+
+| Serial Number | Domain | IP Address |
+| ------------- | ----------------------------------------------------------- | ------------- |
+| 1 | [savg-cusprd-sbc1.kore.ai](http://savg-cusprd-sbc1.kore.ai) | 20.236.241.21 |
+| 2 | [savg-cusprd-sbc2.kore.ai](http://savg-cusprd-sbc2.kore.ai) | 20.37.130.192 |
+
+
+#### Verify the SIP Trunk configuration
+
+Follow these steps to verify the SIP Trunk configuration:
+
+1. Attach a Five9 number to the [Campaign](https://admin.us.five9.net/campaigns) using the IVR Script configured in [this section](#create-the-ivr-flow).
+2. Make a call to the Five9 number from Google Meet or Zoom, which transfers the call to Kore Voice Automation Flow using the DID number for SIP INVITE.
+
+### Call Routing Logic
+
+Configure the routing logic after the SIP session ends, as in [this section](/agent-platform/integrations/five9-sip.mdx#build-the-agent).
+
+Route the call based on the SIP headers Kore sends.
+
+The system supports the following routing scenarios:
+
+**Bot Hangup**
+
+If the bot completes the conversation successfully:
+
+- Kore ends the SIP session.
+- Five9 receives the configured route type as `hangup`.
+- Five9 disconnects or hangs up the call.
+
+**Skill Transfer**
+
+If the bot determines that the caller needs transfer to a queue:
+
+- Kore sends the required SIP headers.
+- Five9 reads the routing information.
+- Five9 transfers the caller to the configured skill queue.
+
+**Agent Transfer**
+
+If the bot determines that the caller needs transfer directly to an agent:
+
+- Kore sends the required SIP headers.
+- Five9 reads the destination agent.
+- Five9 transfers the caller directly to the specified agent.
+
+<Note> The Five9 agent username must use the email-format username you configure in VCC Administrator.</Note>
+
+## Kore Integration
+
+### Integrate Voice Gateway with Five9
+
+Associate the Voice Gateway SIP endpoint with the Five9 Voice Automation flow.
+
+Configuration notes:
+
+- Verify the SIP trunk is active before publishing the flow.
+- Verify that the SBC IP addresses are in the allowlist.
+- Verify that the DID maps to the correct SIP destination.
+- Verify the Agent Transfer whitelists the SIP headers to be sent back to Five9 during SIP BYE.
+
+## Test the Integration
+
+Perform the following steps to validate the integration.
+
+1. Call the Five9 phone number.
+2. Verify that Five9 routes the call to Kore.
+3. Complete one of the supported conversation outcomes.
+
+Validate each supported scenario:
+
+### Bot Hangup
+
+**Expected result**:
+
+- Conversation completes.
+- Call disconnects successfully.
+
+### Skill Transfer
+
+**Expected result**: Call is transferred to the configured Five9 skill.
+
+### Agent Transfer
+
+**Expected result**: Call is transferred directly to the configured Five9 agent.
+
+## Best Practices
+
+- Configure Agent Transfer to allow SIP headers that must return to Five9.
+- Validate SIP connectivity before publishing the flow.
+- Use dedicated DIDs for production and non-production environments.
+- Verify SIP routing after every Voice Automation flow update.
+- Test all supported routing scenarios before deploying to production.
+
+## Troubleshooting
+
+| **Issue** | **Resolution** |
+| --- | --- |
+| SIP connection fails | Verify SIP trunk connectivity and confirm the SBC IP addresses are in the allowlist. |
+| Call doesn't reach Kore | Verify DID mapping and SIP URI configuration. |
+| Skill transfer fails | Verify the **routeType** and **routeValue** SIP headers. |
+| Agent transfer fails | Verify the destination agent username matches the Five9 username format. |
+| SIP headers are missing | Confirm the Agent Transfer allows the intended SIP Headers. |
+
+## View Interaction Details in Kore
+
+You can refer to **Operate > Sessions** for detailed user-bot interactions.
+
+![Sessions Details in Artemis](/agent-platform/images/integrations/five9_sessions.png)
+
+
+## Additional Notes
+
+- The system uses SIP BYE to return control from Kore to Five9.
+- The system stores conversation context in Kore after the transfer.
+- Five9 uses SIP headers to determine the routing action after the SIP session ends.
