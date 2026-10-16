@@ -11,10 +11,16 @@ if (!root || !outFile) {
 
 const MAX_SECTION_CHARS = 2000;
 
+// Folders with these names (at any depth) are left out of the index.
+const EXCLUDE_DIRS = ['draft', 'drafts'];
+
 function walk(dir) {
   return fs.readdirSync(dir, { withFileTypes: true }).flatMap((e) => {
     const p = path.join(dir, e.name);
-    if (e.isDirectory()) return e.name.startsWith('.') ? [] : walk(p);
+    if (e.isDirectory()) {
+      if (e.name.startsWith('.') || EXCLUDE_DIRS.includes(e.name.toLowerCase())) return [];
+      return walk(p);
+    }
     return /\.mdx?$/.test(e.name) ? [p] : [];
   });
 }
