@@ -33,15 +33,138 @@ The **API Keys** page issues and revokes the credentials that carry programmatic
 **Navigation**: **Project** -> **Settings** -> **API Keys**
 
 | Tab | Description |
-|---|---|
-| **SDK Keys** | Credentials that client-side SDKs and web widgets present to the project runtime. These travel to browsers and devices, so treat them as public and scope them accordingly. |
-| **Platform Keys** | Credentials for server-to-server integrations and administrative API access. These stay on infrastructure you control and carry broader authority than SDK keys. |
+| - | - |
+| **SDK Keys** | Credentials that client-side SDKs and web widgets present to the project runtime. These travel to browsers and devices, so treat them as public and restrict them to the origins that need them. |
+| **Platform Keys** | Credentials for server-to-server integrations and administrative API access. These stay on infrastructure you control and carry broader authority than SDK keys, so each key holds only the scopes you grant it. |
+| **JWT Apps** | Client applications that authenticate to the platform with signed JSON Web Tokens (JWTs) instead of a static key. Each app fixes how its tokens are signed and what they must carry, and limits the scopes and environments they can reach. |
 
-Select **Create Key**, name it descriptively, and optionally set an expiration date. Each entry shows the key name, a masked prefix, and the date something last used it. The last-used date is the field that matters during an audit, because it identifies keys you can revoke without breaking anything.
+### SDK keys
+
+The **SDK Keys** tab lists every SDK key in the project, with a count at the top. Each entry shows the key name, a masked prefix (for example, `pk_c79197cb...`), the origins the key accepts, and the date something last used it. The last-used date is the field that matters during an audit, because it identifies keys you can revoke without breaking anything.
+
+To create a key, select **+ New Key**, then complete the fields and select **New Key** again to confirm.
+
+| Field | Description |
+| - | - |
+| **Key name** | Names the key so a later reader knows which application uses it, for example `Production SDK`. |
+| **Allowed origins** | Optional. Restricts the key to the origins you list, one per line, for example `https://app.example.com`. Wildcards are supported, for example `https://*.example.com`. Leave it empty to accept requests from any origin, shown on the key as **All origins**. SDK keys travel to browsers, so restrict origins wherever you know where the SDK runs. |
+
+Select the pencil icon on a key to edit it, or the trash icon to delete it.
+
+### Platform keys
+
+The **Platform Keys** tab lists every platform key in the project, with a count at the top. Each entry shows the following:
+
+| Detail | Description |
+| - | - |
+| **Key name and status** | The name you gave the key. A badge such as **Revoked** appears when the key is no longer valid. |
+| **Masked key** | A masked prefix (for example, `abl_d778...`) that identifies the key without exposing it. |
+| **Created by** | The user who created the key. |
+| **Created at** | The date and time the key was created. |
+| **Lifecycle** | When the key expires or, for a revoked key, when it was revoked. |
+| **Scopes** | The scopes granted to the key. Select **Show scopes** to see each scope with its description, and **Hide scopes** to collapse the list. |
+
+A revoked key stays in the list for reference, and you can't edit it.
+
+To create a key, select **+ New Key**, then complete the fields and select **New Key** again to confirm.
+
+| Field | Description |
+| - | - |
+| **Key name** | Names the key after the integration that uses it, for example `Workflow Trigger Key`. A key per integration lets you revoke one without disturbing the others. |
+| **Scopes** | Selects what the key is allowed to do. See [Platform key scopes](#platform-key-scopes). |
+| **Payload encryption** | Protects public API traffic across sessions, conversations, LLM logs, traces, and dashboard responses. **Encrypt requests** encrypts request parameters when you send them as a JSON body with POST. GET query strings are never encrypted. **Encrypt responses** returns encrypted response envelopes for supported public API reads. For how encryption works end to end, see [Payload encryption](#payload-encryption) under JWT apps. |
+| **Environments** | Grants the key authority to deploy, promote, or roll back in the selected environments (**dev**, **staging**, **production**) through the CI/CD API. Leave all environments cleared for a key that only reads or builds releases. Grant **production** only to keys that need it. |
+| **Expiration** | Sets when the key stops working: **No expiration**, **30 days**, **90 days**, or **Custom date**. A key that expires on a schedule limits the damage of a leak you never notice. |
+
+#### Platform key scopes
+
+Scopes limit what a platform key can do. Grant the narrowest set that lets the integration work, because a key with broad scopes is a broad risk if it leaks.
+
+Scopes are grouped into the following categories:
+
+| Category | Description |
+| - | - |
+| **Execution** | Run the project's agents and workflows and work with their sessions. |
+| **Management** | Manage project resources through the API. |
+| **Knowledge Base** | Work with knowledge base content through the API. |
+| **Analytics** | Read analytics and reporting data. |
+| **Admin** | Perform administrative operations on the project. Grant these rarely. |
 
 Deleting a key revokes it permanently and immediately. Anything still presenting that key stops working, so confirm the last-used date before you delete.
 
 <Note>Issue a separate key for each environment and rotate them on a schedule. A single shared key means one compromise forces you to rotate everywhere at once.</Note>
+
+### JWT apps
+
+A JWT app lets a client application authenticate with tokens it signs itself, so the platform never holds a long-lived key that the client has to send with every request. Use a JWT app when you need short-lived, verifiable credentials, one-time-use tokens, or encrypted payloads.
+
+The **JWT Apps** tab lists every JWT app in the project, with a count at the top. Each entry shows the following:
+
+| Detail | Description |
+| - | - |
+| **App name and status** | The name you gave the app, with a badge such as **Active** that shows whether the app can authenticate. |
+| **Client ID** | The identifier the platform assigns to the app (for example, `cid_4fa3…e5df`). Your client uses it to identify the app when it presents a token. |
+| **Algorithm** | The signing algorithm the app verifies tokens with. |
+| **Created by** | The user who created the app. |
+| **Lifecycle** | When the app expires, or **No expiration**. |
+| **Enforcement and access badges** | The enforcement options that apply to the app (for example, **JTI enforced**), the scopes granted to it, and the environments it can reach. |
+
+Select **Show scopes** to see each scope with its key (for example, `workflows.execute`) and description, and **Hide scopes** to collapse the list. Use the icons on an entry to rotate, edit, or delete the app.
+
+#### Create a JWT app
+
+Select **+ New App** to open the **Create JWT App** wizard. It has three steps: **Signing**, **Scopes**, and **Access**. Select **Back** to return to a previous step, and **Create app** on the last step to finish.
+
+<Warning>The signing algorithm and the enforcement options are fixed once you create the app, because every token issued against the app is bound by them. To change either, create a new app.</Warning>
+
+**Step 1: Signing**
+
+| Field | Description |
+| - | - |
+| **App name** | Required. Names the app after the application that uses it, for example `Claims Intake`. |
+| **Signing algorithm** | Required. Sets how the platform verifies your tokens: **RS256**, **RS512**, **HS256**, or **HS512**. Every key you register is bound to the algorithm, so changing it means creating a new app. |
+| **JWKS URL** | For RS256 and RS512, the URL of your JSON Web Key Set, for example `https://example.com/.well-known/jwks.json`. The platform fetches it to verify tokens. |
+| **Public key (PEM)** | For RS256 and RS512, the public key itself. Paste the full PEM block, beginning with `-----BEGIN PUBLIC KEY-----`. |
+
+RS256 and RS512 verify tokens against your own key, so you must provide either a JWKS URL or a public key, but not both. Use a JWKS URL when you rotate keys, since the platform picks up new keys without a change to the app. Never send your private key.
+
+Under **Enforcement**, select the rules every token must meet:
+
+| Option | Description |
+| - | - |
+| **Require a JTI claim** | Each token must carry a unique `jti` and can be presented only once. A retry needs a freshly signed token. Use it to stop a captured token from being replayed. |
+| **Require an encrypted token** | The signed token must arrive wrapped in a JWE envelope encrypted to the platform key. The platform rejects a bare signed token. see [Introduction to JWT tokens](https://jwt.io/introduction/)|
+| **Require encrypted request and response bodies** | Request bodies must arrive as a JOSE envelope encrypted to the platform key, and the platform returns response bodies encrypted. This is separate from token encryption: it protects the data, not the credential. See [Payload encryption](#payload-encryption). |
+
+When you select **Require encrypted request and response bodies**, the following field appears:
+
+| Field | Description |
+| - | - |
+| **Response encryption public key** | Required. Paste the public key (PEM) that the platform encrypts responses to, beginning with `-----BEGIN PUBLIC KEY-----`. Only you hold the matching private key, so only your client can read the responses. Use a different key pair from your signing key, because reusing one key for both signing and encryption weakens both. |
+
+<Warning>Streaming, attachment, and recording endpoints can't carry an encrypted body, so the platform refuses requests to them from an app that requires encrypted bodies. You can't change this enforcement after you create the app.</Warning>
+
+**Step 2: Scopes**
+
+Select the scopes the app can use. Scopes are grouped into the same categories as platform keys: **Execution**, **Management**, **Knowledge Base**, **Analytics**, and **Admin**. For the scopes in each category, see [Platform key scopes](#platform-key-scopes). Grant the narrowest set that lets the application work.
+
+**Step 3: Access**
+
+| Field | Description |
+| - | - |
+| **Project** | Shows the ID of the project the app belongs to. |
+| **Environments** | Grants the app authority in the selected environments (**dev**, **staging**, **production**). Leave all environments cleared to allow every environment the project exposes. Because an empty selection allows all environments, select environments explicitly for any app that shouldn't reach **production**. |
+| **Expiration** | Sets when the app stops working: **No expiration**, **30 days**, **90 days**, or **Custom date**. Select **Pick a date** to choose the date for a custom expiration. |
+
+#### Payload encryption
+
+When you select **Require encrypted request and response bodies**, the platform accepts only encrypted request bodies from the app and returns encrypted response bodies. A request or response captured in transit or in a log is then unreadable without the matching key. It covers public API traffic for sessions, conversations, LLM logs, traces, and dashboard responses.
+
+Request bodies must arrive as a JOSE envelope encrypted to the platform key. The platform encrypts response bodies to the **Response encryption public key** you registered on the app, so only you can decrypt them with your private key. Encryption applies to the JSON body of POST requests. GET query strings are never encrypted, so don't put sensitive values in them.
+
+Payload encryption protects the data rather than the credential, so it works alongside **Require an encrypted token**, not instead of it. Streaming, attachment, and recording endpoints can't carry an encrypted body, so an app with this enforcement can't use them. If your integration needs those endpoints, use a separate app without this enforcement.
+
+<Note>Use a separate JWT app for each client application and environment, so you can revoke one without disturbing the others.</Note>
 
 ---
 
