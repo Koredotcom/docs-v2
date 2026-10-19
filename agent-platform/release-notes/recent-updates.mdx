@@ -26,43 +26,82 @@ Feature or enh. description.
 
 <p className="rn-subtitle">Bitbucket Data Center for Git integration</p>
 
-Projects can now sync with repositories hosted on Bitbucket Data Center, not just Bitbucket Cloud. You connect with an HTTPS repository URL and a Basic auth profile that holds a personal HTTP access token. You then allow the Data Center host to receive that profile's credentials, and Studio registers the push webhook for you or shows the URL and secret so a repository admin can add it. For production branches, you can require a project-owned auth profile so tenant-wide profiles can't be used.
+Projects can now sync with repositories hosted on Bitbucket Data Center, not just Bitbucket Cloud. Connect with an HTTPS repository URL and a Basic auth profile that holds a personal HTTP access token. Then allow the Data Center host to receive that profile’s credentials. Studio either registers the push webhook for you or shows the URL and secret, so a repository admin can add it. For production branches, you can require a project-owned auth profile, so tenant-wide profiles can’t be used.
 
-<p className="rn-subtitle">Behavior profiles that react to session data</p>
+<p className="rn-subtitle">Session-aware behavior profiles</p>
 
-Behavior profile `WHEN` conditions can now access approved runtime and session variables, including declared session variables, GATHER fields, tool results, input, and intent. This allows profiles to activate based on business state—for example, once the customer's tier is known.
+Behavior profile `WHEN` conditions can now access approved runtime and session variables, including declared session variables, GATHER fields, tool results, input, and intent. This lets profiles activate based on business state, such as once the customer’s tier is known. 
+<br />[Learn more →](/agent-platform/abl/reference/behavior-profiles#when-evaluation-context-and-timing)
+
+```yaml
+GATHER:
+  customer_tier:
+    prompt: "What is your membership tier?"
+    type: enum
+    options: [standard, gold, platinum]
+
+BEHAVIOR_PROFILE: vip-handling
+PRIORITY: 10
+WHEN: customer_tier == "gold" OR customer_tier == "platinum"
+INSTRUCTIONS: "Greet the customer by name. Offer the priority support line before closing."
+
+# Once customer_tier is collected (by GATHER, a tool result, or SET), the profile activates on the next turn, no context.* prefix needed for an ordinary session value.
+```
 
 <p className="rn-subtitle">Clearer handoff timing and failures in session traces</p>
 
-For handoff and delegate steps, session traces now show the target agent's run time separately from the routing overhead. A handoff no longer looks slow just because the next agent took time to answer. Refused handoffs now also appear in the trace and in the session's error list, with the target agent and the reason.
-
+For handoff and delegate steps, session traces now show the target agent’s run time separately from the routing overhead. A handoff no longer looks slow just because the next agent took time to respond. Refused handoffs now also appear in the trace and in the session’s error list, along with the target agent and the reason.
 
 <p className="rn-heading">Knowledge base</p>
 
 <p className="rn-subtitle">Save all field mappings at once</p>
 
-The connector field-mapping review now has a **Save all mappings** action that saves the mappings for every object type in one step. Mappings also stay more consistent across syncs, and SharePoint sources migrated to the packaged connector handle their sync lifecycle correctly.
+The connector field-mapping review now has a Save all mappings action that saves the mappings for every object type in one step. Mappings also stay more consistent across syncs, and SharePoint sources migrated to the packaged connector now handle their sync lifecycle correctly.
 
 
 <p className="rn-heading">Voice experience</p>
 
 <p className="rn-subtitle">Turn fillers for OpenAI Realtime channels</p>
 
-OpenAI Realtime voice channels can now play short hold phrases while the agent works on a turn. Turn on **Realtime turn filler** on the channel and, if you like, override the filler prompt. The model words each filler, and the agent's answer waits until the filler finishes, so they never talk over each other.
+OpenAI Realtime voice channels can now play short hold phrases while the agent works on a turn. You can turn on the ‘Realtime turn filler’ on the channel and, optionally, override the filler prompt. The model words each filler, and the agent’s answer waits until the filler finishes, so they never talk over each other.
 
 <p className="rn-subtitle">Dedicated speech recognition for caller transcripts</p>
 
-Realtime LLM voice channels can run a dedicated speech-to-text provider alongside the speech-to-speech model. Session transcripts, saved messages, and traces then record what the caller said more accurately, while the realtime model still runs the conversation. A platform administrator enables this per workspace. In the channel's **Caller transcription** card, you choose the provider and language. **Gemini (STT)** is available as a provider, with end-of-speech tuning, and the session's voice metrics show which source each caller transcript came from.
+Realtime LLM voice channels can now run a dedicated speech-to-text provider alongside the speech-to-speech model. Session transcripts, saved messages, and traces then record what the caller said more accurately, while the realtime model still runs the conversation. A platform administrator enables this per workspace. In the channel’s Caller transcription card, you can choose the provider and language. Also, Gemini (STT) is now available as a provider, with end-of-speech tuning, and the session’s voice metrics show which source each caller transcript came from.
 
 <p className="rn-subtitle">Keypad input settings for GATHER fields</p>
 
-A voice flow `GATHER` field can now include a `DTMF:` block that sets the digit count, finish key and pause between key presses for that field. On Kore Voice Gateway calls, these settings apply while the field is being asked, and the call's normal keypad settings return afterward. The compiler also warns when a GATHER field setting won't be read, such as an unknown key or a multi-line `VALIDATE`.
+A voice flow `GATHER` field can now include a `DTMF:` block that sets the digit count, finish key, and pause between key presses for that field. On Kore Voice Gateway calls, these settings apply while the field is being asked, and the call's normal keypad settings return afterward. The compiler also warns when a GATHER field setting won't be read, such as an unknown key or a multi-line `VALIDATE`.
+<br />[Learn more →](/agent-platform/abl/reference/flow#field-level-keypad-settings-dtmf)
+
+```yaml
+FLOW:
+  get_mobile:
+    REASONING: false
+    GATHER:
+      - mobile_number: required
+        type: string
+        prompt: "Please say or enter your 10-digit registered mobile number."
+        DTMF: { digits: 1..10, finishOnKey: "#", interDigitTimeoutMs: 5000 }
+        VALIDATE: "^[0-9]{10}$"
+        RETRY_PROMPT: "That didn't look like a 10-digit number. Please say it or enter it on the keypad again."
+        MAX_RETRIES: 3
+    THEN: verify_customer
+
+  # The caller can type up to 10 digits, press # to finish early, or pause 5 seconds to end entry. Can still just say the number instead. 
+```
 
 <p className="rn-heading">Governance</p>
 
 <p className="rn-subtitle">Guardrail coverage modes</p>
 
-Guardrail policies have a new **Coverage** setting. **All model I/O** (the default) checks every model exchange, including tool inputs and results and sub-agent handoffs. **User boundary** checks only the customer's input and the responses the customer sees, which reduces checks per turn. When you choose User boundary, Studio shows which rules will no longer run. Agent-defined guardrails and untrusted-text scanning always run.
+Project guardrail policies have a new Coverage setting. It controls which text a policy checks.
+
+* **All model I/O (default):** Checks every model exchange, including tool inputs, tool results, and sub-agent handoffs. Behavior is unchanged.
+* **User boundary:** Checks only what the customer writes and the responses the customer sees. Use it when internal exchanges don’t need policy checks, and you want fewer checks per turn.
+
+Studio shows a banner and a save warning that list the rules that stop running. Agent-defined guardrails and untrusted-text scanning always run.
+
 
 </Update>
 
