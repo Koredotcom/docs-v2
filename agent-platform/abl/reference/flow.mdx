@@ -264,6 +264,25 @@ FLOW:
     THEN: next_step
 ```
 
+#### Map form (alternate syntax)
+
+Fields can also be written as a map, without the leading `-`. Each lower-case name one level under `GATHER:` starts a field, with the same properties, inline `required`/`optional`/`default=` values, and field-level `VOICE:`/`ASR:`/`DTMF:` blocks as the list form:
+
+```yaml
+FLOW:
+  collect_dates:
+    REASONING: false
+    GATHER:
+      checkin:
+        TYPE: date
+        REQUIRED: true
+        PROMPT: "When do you want to check in?"
+      guests: default=2
+    THEN: next_step
+```
+
+Upper-case keys at that level (`PROMPT`, `STRATEGY`, and other recognized GATHER-block keywords) stay GATHER block properties, not fields. Only a lower-case (or mixed-case) name that is not a recognized GATHER-block keyword is read as a new field header.
+
 #### Multi-field collection
 
 
@@ -373,6 +392,100 @@ Rules:
 - **Deploy checks.** A `provider` that no voice channel bound to the target environment supports blocks create/promote (`GATHER_ASR_PROVIDER_UNRESOLVED`); restore/rollback warn instead. An unsupported channel (non-KoreVG voice, realtime speech-to-speech), an unsupported language, too many words for the engine, a no-input wait with no-input off, or an uncovered language list are deploy warnings.
 - At runtime, anything that can't be applied (an unknown engine, a rejected setting, a gateway that doesn't confirm the change) falls back silently to the call's normal listening settings — the call continues.
 - There's no platform switch for this feature; to stop using it, remove the `ASR:` block and redeploy.
+
+##### Session-value vocabulary (`vocabulary.terms` binding)
+
+`vocabulary.terms` can read its words from a session value set earlier in the call, so the recognizer hears the specific names, streets, or codes a tool returned for this caller. Write one language's list (or the whole list) as a single quoted `"{{path}}"` reference:
+
+```yaml expandable=true
+FLOW:
+  lookup_streets:
+    REASONING: false
+    CALL: list_streets
+      WITH:
+        county: county
+      AS: streetResult
+    ON_RESULT:
+      - IF: has(streetResult.streets)
+        SET:
+          street_keyterms = streetResult.streets
+        THEN: get_street
+      - ELSE:
+        THEN: get_street
+  get_street:
+    REASONING: false
+    GATHER:
+      - street_name: required
+        prompt: "What is the street name?"
+        ASR:
+          vocabulary:
+            mode: replace
+            terms:
+              en-US: "{{street_keyterms}}"
+              default: [Main Street]
+    THEN: COMPLETE
+```
+
+Rules:
+
+- The value is read each time the field is asked (first prompt, retries, rechecks). A list that changes between turns is used as it is at that moment. It applies only while that field is asked.
+- The reference must be exactly one quoted `"{{path}}"`: dotted names with optional `[n]` indexes, at most 8 parts and 128 characters. Surrounding text, two references, filters, an unquoted `{{...}}`, or a reference inside a list are all compile errors (`GATHER_ASR_TERMS_BINDING_INVALID`).
+- Some values can never be bound (`GATHER_ASR_TERMS_BINDING_FORBIDDEN`): session identity and runtime values (`session`, `config`, `env`, `history`, `messages`, `tenant_id`, `project_id`, `user_id`, `session_id`, `session_principal_id`), the protected email aliases, any root starting with `_`, and any path through `__proto__`, `prototype`, `constructor`, `_secret`, or `_secrets`. A `user.*` value is personal data and needs `restore_pii: true` (see below).
+- The value can be a string (one word) or a list of strings and `{ phrase, boost }` entries. On the Deepgram keyterm path a boost has no effect.
+- Each word is checked when read. A word that is missing, empty, longer than 100 characters, contains a comma/semicolon/line break, duplicates an earlier word, holds a redaction placeholder or a held secret value, or holds protected personal data is left out. The question is still asked. A field never fails because of its word list.
+- Words already present for a language come first. A language whose reference resolves to nothing stays empty for that question. It does NOT fall back to `default`.
+- Limits per field per question: 2,000 entries read, 64 KiB of text read, 500 words total including literal ones. On Deepgram, a list that includes session words is held to 400 estimated tokens (literal-only lists keep 500), and the gateway accepts at most 100 keyterms.
+- Only the KoreVG voice pipeline uses these words. Other channels and realtime speech-to-speech calls ignore the reference without reading the value.
+
+<Tip>Keep the list short and spoken-form (20 to 50 words is the range Deepgram recommends). Rank or cut the list in the tool, expand abbreviations, and use the form a caller says ("North Main Street", not "N MAIN ST"). Never put session data in `deepgramOptions.tag`.</Tip>
+
+##### Personal data in bound words (`restore_pii`)
+
+Values the platform has tokenized as personal data (names, phone numbers, emails) are left out by default. To send the original value to the speech engine, BOTH of these are required:
+
+1. The field sets `vocabulary.restore_pii: true`.
+2. The project's PII pattern for that kind of data has an explicit `speech_provider` rule set to Original (PII Protection in Studio). A pattern whose default mode is Original does not count; without the rule the word is left out.
+
+A restored word is sent only to the recognizer, never written to traces or logs, and each restore is recorded in the PII audit log without the value. On Deepgram, a call that sends a restored word also opts the request out of Deepgram's model-improvement program. `restore_pii` on a field with no session-value reference is ignored with a warning.
+
+#### Field-level keypad settings (`DTMF:`)
+
+A `DTMF:` block, a sibling of `ASR:` under a single `GATHER` field in a FLOW step, sets how the bot collects a number the caller types on the phone keypad while that field is being asked on a KoreVG voice call. When the field is no longer being asked, the call's normal keypad settings come back automatically (2 seconds between key presses, finish key `#`, up to 12 digits). A field without `DTMF:` behaves exactly as before. The caller can still answer by speaking; `DTMF:` changes only how typed digits are grouped into one answer:
+
+```yaml
+FLOW:
+  get_mobile:
+    REASONING: false
+    GATHER:
+      - mobile_number: required
+        type: string
+        prompt: "Please say or enter your 10-digit registered mobile number."
+        DTMF: { digits: 1..10, finishOnKey: "#", interDigitTimeoutMs: 5000 }
+        VALIDATE: "^[0-9]{10}$"
+        RETRY_PROMPT: "That didn't look like a 10-digit number. Please say it or enter it on the keypad again."
+        MAX_RETRIES: 3
+    THEN: verify_customer
+```
+
+The block can also be written over several lines (`DTMF:` followed by indented `digits:`, `finishOnKey:`, `interDigitTimeoutMs:` lines).
+
+| Key | Meaning |
+| --- | ------- |
+| `digits` | `min..max`, both whole numbers 1-32. The answer finishes as soon as the caller types `max` digits. A pause finishes it only after at least `min` digits. Keep `min` at 1 unless a short entry should end only by the finish key. |
+| `finishOnKey` | `"#"`, `"*"`, or `"none"`. Pressing the key finishes the answer at once; the key itself is not part of the answer. `"none"` means no finish key. |
+| `interDigitTimeoutMs` | Longest pause between two key presses, 500-30000 ms. A longer pause finishes the answer. |
+
+Rules:
+
+- Keys are strict: an unknown key, a malformed value, or an out-of-range value is a compile error. `min` above `max` is a compile error. A `DTMF:` block with no settings is a compile error.
+- `min` above 1 is a compile warning: a caller who stops early is not finished by the pause.
+- **One keypad-settings field per step.** A field with `DTMF:` must be the only field in its step. Split other fields into their own steps.
+- **FLOW steps only.** `DTMF:` on a top-level (reasoning) GATHER field is reported as an unknown key (`W170`) and has no effect.
+- `VALIDATE` checks the stored value. A `type: phone` field is stored in international format (e.g. `+919876543210`), so `^[0-9]{10}$` never matches it. Use `type: string` to check digits exactly as typed, or write the pattern for the international format.
+- `DTMF:` does not change validation or retries: use `VALIDATE`, `RETRY_PROMPT`, `MAX_RETRIES` on the same field, plus the agent's `ON_ERROR` handler for `validation_error` with `SUBTYPE: max_retries_exceeded`.
+- `DTMF:` collects ordinary data. The typed number reaches the agent, its memory, and the transcript like any GATHER value. For secrets (card numbers, security codes, PINs), use [`SECURE_INPUT`](#secure_input) instead.
+- Explicit keypad collections (`SECURE_INPUT`, the `ivr_digit_input` tool, voice surveys) keep their own settings and are unaffected.
+- At runtime, settings apply with the field's listening settings (same mechanism as `ASR:`). If they can't be applied (e.g. a realtime speech-to-speech channel, or a gateway that doesn't confirm the change), the call keeps its normal keypad settings and continues.
 
 #### GATHER block properties
 
@@ -1300,6 +1413,7 @@ FLOW:
 | `STREAMING`    | `boolean` | TTS delivery mode for this spoken output. Omitted defaults to `true` (streaming). |
 | `END_OF_SPEECH_TURN_TYPE` | `string` | Expected shape of the caller's next answer, used to pick an end-of-speech (pause) timeout. See [Per-turn endpointing](#per-turn-endpointing). |
 | `END_OF_SPEECH_TIMEOUT_MS` | `number` | Explicit end-of-speech timeout in milliseconds, overriding the preset. |
+| `TURN_DETECTION` | `object` | Gateway turn detection: `enabled` and an optional `eou_threshold` (0.3-0.9). See [Gateway turn detection](#gateway-turn-detection). |
 
 #### Per-turn endpointing
 
@@ -1403,6 +1517,41 @@ FLOW:
 - **Variables.** `{{var}}` placeholders render in agent messages, step messages, and `exhausted_message`. A step message with a missing variable is skipped; an agent or exhausted message with a missing variable falls back to the platform default text.
 
 <Warning>`ON_NO_INPUT` is only legal directly in a FLOW step's own `VOICE:` block. Placed under a GATHER field, `RESPOND`, a branch, a handler, or a response format, it's a compile error (`VOICE_NO_INPUT_ILLEGAL_PLACEMENT`). The YAML format uses a step-level `on_no_input:` key.</Warning>
+
+#### Gateway turn detection
+
+`TURN_DETECTION` turns KoreVG gateway turn detection on or off for a level and sets its patience. With it on, the voice gateway decides when the caller finished speaking (voice activity, acoustic/text end-of-turn models, speech-provider finals) instead of the speech provider's silence timer.
+
+It can be set at any VOICE scope: a concrete `RESPOND`'s `VOICE` block, a flow-step `VOICE` block, a GATHER field `VOICE` block, a behavior-profile `VOICE` block, or `EXECUTION.voice`:
+
+```yaml
+EXECUTION:
+  voice:
+    turn_detection:
+      enabled: true
+      eou_threshold: 0.6
+
+FLOW:
+  ask_account:
+    REASONING: false
+    VOICE:
+      turn_detection: { enabled: false }
+    GATHER:
+      - account_number:
+          TYPE: string
+          PROMPT: "What is your account number?"
+```
+
+| Key | Type | Values | Description |
+| --- | --- | --- | --- |
+| `enabled` | `boolean` | `true`, `false` | Required. `false` turns it off at this level, even when the channel has it on. |
+| `eou_threshold` | `number` | `0.3`-`0.9` in steps of 0.1 | Patience: `0.3` answers fastest; `0.8` (Dictation) waits through long pauses like card numbers; `0.9` (Slow dictation) waits longest, for letter-by-letter spelling and long reference numbers. Omitted: falls through to the next level's value, else `0.5`. |
+
+Precedence, most specific first: the response (or step, or field) that asks the caller something, the active behavior profile, `EXECUTION.voice`, the voice channel's own turn-detection setting, off. A response/step value applies to the caller's answer to it and holds while the step re-asks (retries); the next answered response with no key falls back up the chain. On a `REASONING: true` step (model writes the replies), the step's own `turn_detection` applies to every caller turn while the conversation stays in that step (only `turn_detection` is taken from that step's VOICE, nothing else).
+
+An invalid value is a compile error (`VOICE_INVALID_TURN_DETECTION`) and is never applied. A KoreVG gateway without the Dictation/Slow dictation profile uses its most patient profile instead (`0.9` falls to `0.8`, or `0.7` if `0.8` is also missing).
+
+<Note>Gateway turn detection applies to KoreVG pipeline calls only, never realtime (speech-to-speech), other voice transports, or the PCI `SECURE_INPUT` gather. While turn detection is on, the gateway ignores the end-of-speech timeout, so a block that turns it on AND also sets `END_OF_SPEECH_TURN_TYPE` or `END_OF_SPEECH_TIMEOUT_MS` gets a compile warning `VOICE_TURN_DETECTION_WITH_END_OF_SPEECH`.</Note>
 
 ---
 
