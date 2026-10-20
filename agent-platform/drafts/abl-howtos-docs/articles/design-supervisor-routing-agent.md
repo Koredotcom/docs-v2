@@ -193,14 +193,14 @@ Use `ENABLED_WHEN` when a route must exist only under a known condition, such as
 HANDOFF:
   - TO: Account_Support_Agent
     WHEN: intent.category == "account"
-    ENABLED_WHEN: channel.name == "voice"
+    ENABLED_WHEN: session.channel == "voice"
     ON_FAILURE: RESPOND "Account help is not available in this channel."
     PASS: [customer_id]
     SUMMARY: "Customer needs account or password support"
     RETURN: true
 ```
 
-Write `ENABLED_WHEN` as an expression over data the platform knows. A plain-language `ENABLED_WHEN` fails to compile with `ENABLED_WHEN_SEMANTIC_REFERENCE`. A condition that reads a missing value counts as false. If every route has `ENABLED_WHEN`, the compiler warns with `ENABLED_WHEN_ALL_DISABLED_RISK` because all routes can switch off. Read the channel through `channel.name`. Use the channel name your project reports in traces. Voice variants can have their own names, such as `voice_twilio`.
+Write `ENABLED_WHEN` as an expression over data the platform knows. A plain-language `ENABLED_WHEN` fails to compile with `ENABLED_WHEN_SEMANTIC_REFERENCE`. A condition that reads a missing value counts as false. If every route has `ENABLED_WHEN`, the compiler warns with `ENABLED_WHEN_ALL_DISABLED_RISK` because all routes can switch off. Read the channel through `session.channel`. `channel.name` is for behavior profiles. It has no value in `ENABLED_WHEN`, so a condition on it disables the route. The value must match exactly. Voice variants have their own names, such as `voice_twilio`, so use `session.channel IN ["voice", "voice_twilio"]` to match more than one. Use the channel name your project reports in traces.
 
 ### Multiple requests variation
 
@@ -243,7 +243,7 @@ For production supervisors:
 2. Send: "I forgot my password." Expect `Account_Support_Agent`.
 3. Send: "Where is my order?" Expect `Order_Status_Agent`.
 4. Send: "I need to talk to someone." Expect `Live_Agent` and an escalation.
-5. Check `handoff_context_pass_resolved` in the trace. Confirm `customer_id` appears when the customer stated it, and that the specialist asks for it when the customer did not.
+5. Check the `handoff` trace event. Confirm `customer_id` appears in its `context` when the customer stated it. In `handoff_context_seed`, check `seededFields`, and check that `remainingWaitingFields` lists `customer_id` when the customer did not state it.
 6. Inspect every `handoff_condition_check` entry for the turn. Confirm the matched route and the skipped routes.
 7. Inspect trace output for return behavior and the history strategy.
 
@@ -277,7 +277,7 @@ For production supervisors:
 | --------------------------------------------- | ------------------------------------------------------------------ | ------------------------------------------------------------------------------ |
 | No transfer happens                           | No handoff route was selected.                                     | Check `HANDOFF`, `WHEN`, intent category, and fallback coverage.               |
 | Wrong target receives the user                | Route conditions overlap.                                          | Rewrite conditions and add route-specific test utterances.                     |
-| Target asks for information already collected | Context was not passed or field names differ.                      | Check `PASS`, target `GATHER`, and `handoff_context_pass_resolved`.            |
+| Target asks for information already collected | Context was not passed or field names differ.                      | Check `PASS`, target `GATHER`, and `seededFields` in `handoff_context_seed`.   |
 | A plain-language route never matches          | The quoted text contains `AND`, `OR`, `NOT`, or a comparison.      | Rewrite the phrase in lowercase words.                                         |
 | Warning `UNDECLARED_INTENT_CATEGORY`          | A `WHEN` uses a category that `INTENTS:` does not list.            | Fix the spelling or add the category to `INTENTS:`.                            |
 | Error `E728`                                  | The project has more than one `SUPERVISOR`.                        | Keep one supervisor and move the other routes into it.                         |
