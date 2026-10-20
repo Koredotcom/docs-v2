@@ -1,24 +1,41 @@
 # How to route by tool result, profile lookup, or remembered state
 
-Use this when routing depends on customer profile, case status, fraud risk, policy coverage, entitlement, remembered preference, or any state loaded before the handoff — not just the user's utterance.
+Use this pattern when the route depends on data your project already holds about the customer, such as account tier, open case, fraud risk, entitlement, or a remembered preference. The customer's words do not decide the route.
 
 ## Concept
 
-Some routes cannot be decided from what the user typed. The supervisor first calls a read-only lookup tool, binds the result with `AS`, then routes with deterministic conditions over that result's fields. This is the pattern for premium routing, existing-case routing, risk routing, entitlement routing, and remembered-preference routing.
+A supervisor can route on data it loads before the first routing decision. Two sources work.
 
-One behavior is worth knowing before you move past the happy path: **you don't have to copy tool-result fields into separate session variables before routing on them.** You can reference the `AS`-bound object's fields directly in `WHEN`; a flat copy (`SET profile_tier = profile.tier`) is only useful if you also want to pass a shorter, flatter set of fields through `CONTEXT.pass`.
+| Source | How the data arrives | How a route reads it |
+| ------ | -------------------- | -------------------- |
+| A lookup tool | `ON_START` calls a read-only tool and binds the result with `AS`. | `profile.tier` |
+| Persistent memory | A `RECALL` at `session:start` loads stored facts. | `user.loyalty_tier` |
+
+Each `HANDOFF` has a `WHEN` condition. The platform evaluates a `WHEN` written as an expression before the model reasons. It checks the routes in the order you write them. The first route that matches takes the conversation. A `PRIORITY` value changes the order, and the lowest number runs first.
+
+A route with a quoted plain-language `WHEN` stays with the model. Use one as the last route for every customer that no expression matched.
+
+A comparison on a missing value is false. If the lookup fails, no expression route matches and the model chooses the plain-language route.
+
+You do not need to copy the tool result into session variables first. A route reads `profile.tier` directly.
 
 ## Minimal working example
+
+This example routes on a profile lookup. It sends high-risk customers to fraud review first, then customers with an open case, then premium customers. For everyone else, including customers the lookup could not find, the model chooses the standard route.
+
+The supervisor needs the specialist agents in the same project. The lookup tool needs an execution binding in your project, such as an HTTP endpoint. `session.customerId` is the customer identifier that the channel resolved when it authenticated the user.
 
 ```abl
 SUPERVISOR: Tool_Result_Routing_Supervisor
 GOAL: "Look up customer state before selecting a specialist"
 
 TOOLS:
-  lookup_customer_profile(customer_id: string) -> object
-    description: "Return customer tier, risk, and open-case status for routing."
+  lookup_customer_profile(customer_id: string) -> {tier: string, has_open_case: boolean, fraud_risk: string}
+    description: "Return customer tier, open-case status, and fraud risk for routing."
     side_effects: false
     confirm: never
+    hints:
+      timeout: 5000
     params:
       customer_id:
         description: "Customer identifier to look up."
@@ -26,111 +43,171 @@ TOOLS:
 ON_START:
   CALL: lookup_customer_profile
     WITH:
-      customer_id: customer_id
+      customer_id: session.customerId
     AS: profile
-  SET:
-    profile_tier = profile.tier
-    has_open_case = profile.has_open_case
-    fraud_risk = profile.fraud_risk
+    WHEN: session.customerId IS SET
 
 HANDOFF:
   - TO: Fraud_Review_Agent
     WHEN: profile.fraud_risk == "high"
-    EXPECT_RETURN: false
-    CONTEXT:
-      pass: [customer_id, profile_tier, fraud_risk]
-      summary: "Customer profile indicates high fraud risk."
+    RETURN: false
+    SUMMARY: "Customer profile indicates high fraud risk."
 
   - TO: Existing_Case_Agent
     WHEN: profile.has_open_case == true
-    EXPECT_RETURN: false
-    CONTEXT:
-      pass: [customer_id, profile_tier, has_open_case]
-      summary: "Customer already has an open case."
+    RETURN: false
+    SUMMARY: "Customer already has an open case."
 
   - TO: Premium_Service_Agent
     WHEN: profile.tier == "premium"
-    EXPECT_RETURN: false
-    CONTEXT:
-      pass: [customer_id, profile_tier]
-      summary: "Premium customer needs support."
+    RETURN: false
+    SUMMARY: "Premium customer needs support."
 
   - TO: Standard_Service_Agent
-    WHEN: "no fraud, open-case, or premium routing condition is matched"
-    EXPECT_RETURN: false
-    CONTEXT:
-      pass: [customer_id]
-      summary: "Standard customer support route."
+    WHEN: "the customer has no fraud flag, no open case, and no premium plan, or the profile is unavailable"
+    RETURN: false
+    SUMMARY: "Standard customer support route."
+```
 
+These four stand-in agents let the project compile. Save each one in its own file and replace them with your real specialists.
+
+```abl
 AGENT: Fraud_Review_Agent
-GOAL: "Review fraud-risk requests"
+GOAL: "Review requests from customers with a high fraud risk"
+```
 
+```abl
 AGENT: Existing_Case_Agent
-GOAL: "Continue existing cases"
+GOAL: "Continue work on the customer's open case"
+```
 
+```abl
 AGENT: Premium_Service_Agent
 GOAL: "Serve premium customers"
+```
 
+```abl
 AGENT: Standard_Service_Agent
 GOAL: "Serve standard customers"
 ```
 
-`customer_id` is referenced as both a tool parameter and a `CONTEXT.pass` field with no declared source in this example — treat it as a project-local assumption (typically populated earlier from authentication or a prior turn) and declare it via `MEMORY` in your actual project.
-
 ## How it works
 
-- `ON_START` calls the read-only lookup tool once, before any `HANDOFF` is evaluated, and binds the result to `profile` with `AS`.
-- Each `HANDOFF`'s `WHEN` is evaluated in authored order. Every condition here is a plain equality comparison (`profile.fraud_risk == "high"`, `profile.has_open_case == true`, `profile.tier == "premium"`) — if the field hasn't resolved yet, the comparison simply evaluates `false` rather than erroring, so you don't need to write `profile.fraud_risk IS SET AND profile.fraud_risk == "high"` yourself.
-- The `SET` step that copies `profile.tier`/`profile.has_open_case`/`profile.fraud_risk` into flat variables is not required for the `WHEN` conditions to work — they reference `profile.*` directly. The copies exist here only so the flatter names can be listed in `CONTEXT.pass`; you can pass `profile` itself (or a subset via a shorthand) instead if you prefer not to duplicate fields.
-- The fallback route uses a quoted natural-language condition. Keep this kind of fallback text in lowercase, ordinary sentence form — a quoted condition containing an uppercase `AND`/`OR`/`NOT` can be misclassified by the runtime as a structured deterministic expression rather than natural language, which will not evaluate the way you intend. Lowercase words like "or"/"and" inside ordinary sentences (as in this example) are handled correctly.
-- Since none of the `HANDOFF` entries declare `HISTORY`, each child now receives the full conversation history by default (the current platform default when `HISTORY` is omitted). Set `HISTORY: auto` (or another explicit strategy) if you specifically want bounded/summary history instead.
-- `lookup_customer_profile` is declared with `side_effects: false` and `confirm: never` because it's a read-only enrichment call used purely to decide a route — it should never require user confirmation and should never be confused with a state-changing action.
+- `ON_START` runs the `CALL` before the first routing check. Indent `WHEN` under `CALL`. `WHEN: session.customerId IS SET` skips the lookup for anonymous sessions.
+- `AS: profile` stores the tool result. If the call fails or does not run, `profile` stays unset and all three expression routes are false.
+- On each customer message, the platform checks the expression routes in order before the model reasons. The fraud route comes first, so risk wins over tier.
+- `profile.has_open_case == true` matches only a boolean `true`. A tool that returns the string `"true"` does not match.
+- The last route has a quoted plain-language `WHEN`. The model chooses it when no expression route matched.
+- Write quoted text in plain lowercase words. The platform evaluates quoted text as an expression, not as guidance, when it contains uppercase `AND`, `OR`, or `NOT`. It does the same for a symbol such as `==` or `>`, and for the words `contains`, `matches`, `startsWith`, or `endsWith`.
+- The specialists use `RETURN: false`, so each one keeps the conversation after the transfer.
+- A `HANDOFF` entry without `HISTORY` gives the specialist the full conversation history. A project-level coordination default can change this value.
+- The tool is read-only. `side_effects: false` and `confirm: never` mark it as a lookup that never asks the customer for confirmation. `hints.timeout` is a number of milliseconds. The welcome and the first routing check wait for the tool, so keep it fast.
 
 ## Common variations
 
-### Routing on remembered/persistent state instead of a live lookup
+### Pass the lookup result to the specialist
 
-Replace the `ON_START CALL ... AS: profile` step with a read from persistent memory (see the memory HowTos for declaring and recalling scoped memory), then route on the recalled fields the same way — the `WHEN` conditions don't change shape.
+Add `PASS` to a route when the specialist needs the profile. The specialist receives the `profile` object.
 
-### Passing the bound object instead of flat copies
+```abl
+HANDOFF:
+  - TO: Premium_Service_Agent
+    WHEN: profile.tier == "premium"
+    RETURN: false
+    PASS: [profile]
+    SUMMARY: "Premium customer needs support."
+```
 
-If you don't need a smaller/renamed field set in `CONTEXT.pass`, skip the flat `SET` copies entirely and pass `profile` (or specific `profile.*` paths) directly.
+A dotted name such as `profile.tier` compiles to its root field `profile`. List the root field.
+
+### Route on remembered state
+
+Use this variation when an earlier session or an integration stored the value. This example assumes that a `REMEMBER` rule or the memory API saved `user.loyalty_tier` for the customer.
+
+```abl
+SUPERVISOR: Remembered_Tier_Supervisor
+GOAL: "Route returning customers by the loyalty tier stored from earlier sessions"
+
+MEMORY:
+  PERSISTENT:
+    - PATH: user.loyalty_tier
+      SCOPE: user
+      ACCESS: read
+      TYPE: string
+  RECALL:
+    - ON: session:start
+      ACTION: inject_context
+      PATHS: [user.loyalty_tier]
+
+HANDOFF:
+  - TO: Premium_Service_Agent
+    WHEN: user.loyalty_tier == "gold"
+    RETURN: false
+    SUMMARY: "Returning gold-tier customer needs support."
+
+  - TO: Standard_Service_Agent
+    WHEN: "the customer has no stored loyalty tier or a tier other than gold"
+    RETURN: false
+    SUMMARY: "Standard customer support route."
+```
+
+The route conditions have the same shape as in the lookup example. A session with no stored value, such as an anonymous or first-time customer, leaves `user.loyalty_tier` empty. The gold route is then false and the model chooses the standard route. Declare the path with `ACCESS: read` and a `RECALL` entry. Without the `RECALL`, the compiler warns with `INERT_PERSISTENT_MEMORY_DECLARATION`.
 
 ## Verification
 
-- Parse and compile the ABL and confirm there are no parser or compiler errors/warnings.
-- Test at least one utterance that resolves to each of the four routes, including the fallback path (no fraud, no open case, non-premium tier).
-- Inspect the trace for the selected target and the evaluated condition — you'll see your literal authored condition text, since HANDOFF conditions are not rewritten by the compiler.
-- Confirm the fallback route's semantic condition resolves as intended by testing an utterance where all three deterministic conditions are false.
+Run one session for each outcome and inspect the trace.
+
+1. Start as a customer with a high fraud risk. Expect `Fraud_Review_Agent`.
+2. Start as a customer with an open case and a low fraud risk. Expect `Existing_Case_Agent`.
+3. Start as a premium customer with no open case. Expect `Premium_Service_Agent`.
+4. Start as any other customer. Expect `Standard_Service_Agent`.
+5. Start anonymously, with no `session.customerId`. Expect `Standard_Service_Agent` and no lookup call.
+6. Make the tool fail. Expect `Standard_Service_Agent`.
+
+In the trace, check these events.
+
+- `dsl_lifecycle_call_condition` shows whether the lookup ran. `tool_result` shows what the tool returned.
+- `deterministic_routing` shows the matched expression route, with its `condition`, `target`, and `priority`.
+- `handoff_condition_check` shows a route the model chose. Read `result`, `whenOutcome`, and `evaluatedContext` to see why the platform allowed or refused it.
+- For the memory variation, `memory_init` shows that the session loaded the persistent value.
 
 ## Production readiness checklist
 
-- The lookup tool is declared read-only (`side_effects: false`) and never requires confirmation for a routing-only call.
-- Every specialist route has a clear owner and a concise context summary.
-- Deterministic conditions reference fields that are actually present on the tool's declared return shape.
-- Quoted natural-language fallback text avoids uppercase `AND`/`OR`/`NOT`.
-- `customer_id` (or any other assumed pre-existing variable) has a real declared source in your project, not just an assumption carried over from this example.
-- Fallback behavior is explicit and does not hide missing routing coverage.
+- The lookup tool is read-only, has a typed return that lists every field a route reads, and has a numeric `hints.timeout`.
+- Each field type matches its comparison. Booleans are booleans, not strings.
+- `session.customerId` comes from an authenticated channel. Use `session.identityTier` when a route must depend on a verified identity.
+- Every specialist route has an owner and a short `SUMMARY`.
+- A plain-language route handles every customer that no expression matched, including a failed or skipped lookup.
+- If every customer must reach a specialist, set `BEHAVIOR` with `ROLE: router`. Without a `BEHAVIOR` block, the supervisor can answer directly instead of choosing a route.
+- The highest-risk route is first.
+- Tests cover each route, an anonymous session, and a tool failure.
+- Stored memory values have a producer, such as a `REMEMBER` rule, that you can name.
 
 ## Common mistakes
 
-| Mistake                                                                               | Why it happens                                                                    | How to avoid it                                                                                                     |
-| ---------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
-| Calling a side-effecting tool just to decide a route                                  | Reusing an existing action tool instead of declaring a dedicated read-only lookup | Declare a separate tool with `side_effects: false` and `confirm: never` for routing-only enrichment                 |
-| Assuming a flat `SET` copy is required before routing on a tool result                | Copying feels like the "safe" pattern                                             | Reference the `AS`-bound object's fields directly in `WHEN`; only copy when you need a flatter `CONTEXT.pass` shape |
-| Writing uppercase `AND`/`OR`/`NOT` inside a quoted natural-language fallback `WHEN`   | It reads naturally to a human author                                              | Keep quoted fallback conditions in ordinary lowercase sentence form                                                 |
-| Passing the entire profile object when the child only needs tier, risk, or case state | Convenience                                                                       | Pass only the specific fields each specialist needs                                                                 |
+| Mistake | Why it happens | How to avoid it |
+| ------- | -------------- | --------------- |
+| Copying tool fields with `SET` after the `CALL` in `ON_START` | The `SET` reads as if it runs after the `CALL`. | `SET` runs before the `CALL`, so the copy is empty. Read `profile.*` in `WHEN`, or pass `profile`. |
+| Using `IS SET` on a dotted field such as `profile.tier IS SET` | `IS SET` reads as a safe presence test. | A missing dotted field still passes `IS SET` in a route condition. Compare to a value, such as `profile.tier == "premium"`. |
+| Comparing a boolean field to a string | The tool returns `"true"` as text. | Declare the return field as `boolean` and return a real boolean. |
+| Calling a tool that changes data to decide a route | An existing action tool is reused. | Declare a separate lookup tool with `side_effects: false` and `confirm: never`. |
+| Writing uppercase `AND` or `OR` in quoted route text | It reads naturally to a person. | Use lowercase words in quoted text. |
+| Passing the whole profile when the specialist needs one field | It is convenient. | Pass only what each specialist needs. |
 
 ## Troubleshooting
 
-| Symptom                                                                          | Likely cause                                                                                   | What to check                                                                                              |
-| ------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
-| The fallback route fires even when a deterministic condition should have matched | The tool result field wasn't populated by the time `HANDOFF` conditions were evaluated         | Confirm `ON_START CALL ... AS` completed before `HANDOFF` evaluation; check the tool's actual return shape |
-| A quoted fallback condition behaves unpredictably                                | Uppercase `AND`/`OR`/`NOT` inside the quoted text was misclassified as a structured expression | Rewrite the fallback text in ordinary lowercase sentence form                                              |
-| A child agent has more/less conversation context than expected                   | `HISTORY` was omitted and the current platform default (`full`) applied                        | Set an explicit `HISTORY` strategy if you need bounded/summary history                                     |
+| Symptom | Likely cause | What to check |
+| ------- | ------------ | ------------- |
+| A premium customer reaches the standard route | The lookup failed or was skipped, or the field has the wrong type. | `dsl_lifecycle_call_condition`, `tool_result`, and `evaluatedContext` in `handoff_condition_check`. |
+| The specialist receives an empty tier | A flat copy was made with `SET` before the `CALL` ran. | Remove the `SET`. Read `profile.tier` or pass `profile`. |
+| The wrong specialist receives the customer | Route order or `PRIORITY` puts another route first. | The `priority` in `deterministic_routing`. |
+| Every anonymous session takes the standard route | `session.customerId` is missing, so the lookup is skipped. | The channel authentication and `session.identityTier`. |
+| A quoted route never matches | The quoted text contains `AND`, `OR`, `NOT`, or a comparison symbol, so the platform evaluates it as an expression. | Rewrite the text in plain lowercase words. |
+| The remembered tier never matches | No stored value, no user identity, or the path is not declared with `ACCESS: read`. | `memory_init`, and the `MEMORY` declaration. |
 
 ## Related HowTos
 
 - How to design a supervisor that routes users to specialist agents
-- How to route conversations based on user intent
-- How to pass specific fields between agents
+- How to design supervisor routing with priority gates
+- How to run an authentication or profile lookup during welcome
+- How to debug routing decisions in traces
