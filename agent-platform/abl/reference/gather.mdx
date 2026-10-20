@@ -21,7 +21,7 @@ GATHER:
     prompt: "How much would you like to transfer?"
     type: number
     required: true
-    validate: min(1)
+    validate: "^[1-9][0-9]*$"
 
   currency:
     prompt: "What currency?"
@@ -158,21 +158,17 @@ GATHER:
 ## Validation
 
 
-The `validate` property defines a validation expression that the collected value must satisfy:
+`validate` is always a single-line string. What it's read as depends on `validation_process` (default `REGEX`):
 
 ```yaml expandable=true
 GATHER:
-  amount:
-    prompt: "How much?"
-    type: number
-    required: true
-    validate: min(1)
-
-  email:
-    prompt: "Your email address?"
+  routing_number:
+    prompt: "What is the ABA routing number?"
     type: string
     required: true
-    validate: email()
+    validate: "^\\d{9}$"
+    retry_prompt: "That doesn't look like a valid 9-digit routing number. Please re-enter."
+    max_retries: 3
 
   transfer_type:
     prompt: "Domestic or international?"
@@ -181,39 +177,32 @@ GATHER:
     validate: enum(domestic, international)
 ```
 
-### Validation expressions
-
-
-| Expression       | Description                      | Example                                   |
-| ---------------- | -------------------------------- | ----------------------------------------- |
-| `min(n)`         | Minimum numeric value            | `validate: min(1)`                        |
-| `max(n)`         | Maximum numeric value            | `validate: max(10000)`                    |
-| `enum(a, b, c)`  | Must be one of the listed values | `validate: enum(domestic, international)` |
-| `email()`        | Must be a valid email format     | `validate: email()`                       |
-| `pattern(regex)` | Must match a regex pattern       | `validate: pattern(^\d{9}$)`              |
-
 ### Validation process
 
 
-The `validation_process` property controls how validation is executed:
-
-| Value   | Description                                 |
-| ------- | ------------------------------------------- |
-| `REGEX` | Validate using a regular expression pattern |
-| `CODE`  | Validate using a code expression            |
-| `LLM`   | Validate using LLM judgment                 |
+| Value   | Default | `validate` is read as                                                          |
+| ------- | ------- | -------------------------------------------------------------------------------- |
+| `REGEX` | Yes     | A regular expression the collected value must match.                             |
+| `LLM`   | No      | A natural-language instruction the model judges the value against.               |
+| `CODE`  | No      | Reserved for an expression check. It compiles and is carried in the IR, but no runtime check currently evaluates it — don't rely on it to reject a value yet. |
 
 ```yaml
 GATHER:
-  routing_number:
-    prompt: "What is the ABA routing number?"
+  city:
+    prompt: "Which city?"
     type: string
     required: true
-    validate: pattern(^\d{9}$)
-    validation_process: REGEX
-    retry_prompt: "That doesn't look like a valid 9-digit routing number. Please re-enter."
-    max_retries: 3
+    validate: "Must be a valid, well-known city name"
+    validation_process: LLM
 ```
+
+`enum(a, b, c)` is the one special-cased `validate` expression: the compiler lowers it into the same allowed-values metadata as [`options`](#enum-options) — use whichever reads better for the field. Any other non-regex text (`min(1)`, `pattern(...)`, `email()`, and similar function-call-looking strings) is read literally as a regular expression, not evaluated as a function — it almost never matches what was intended, so don't write `validate` that way.
+
+`retry_prompt` replaces the field's `prompt` after a failed check; `max_retries` bounds the number of attempts. Once `max_retries` is exhausted, the agent's `ON_ERROR` handler for `validation_error` with `SUBTYPE: max_retries_exceeded` runs.
+
+<Note>
+  `validate` must be one line. A multi-line `validate:` block, or an object/list value such as `{ pattern: "..." }`, is not read as a rule: the top-level parser warns `W170`, and a FLOW step `GATHER` warns `W174` (empty) or `W175` (object/list shape) — the field is left unvalidated rather than failing the compile.
+</Note>
 
 ## LLM inference
 
