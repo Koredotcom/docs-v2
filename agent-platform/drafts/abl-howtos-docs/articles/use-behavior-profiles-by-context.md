@@ -1,16 +1,25 @@
 # How to use behavior profiles to change agent behavior by context
 
-Use behavior profiles when the same agent should keep its core responsibility but change style, constraints, tools, gathering behavior, or channel handling for a specific context.
+Use behavior profiles when the same agent keeps its core responsibility but changes style, constraints, tools, gathering behavior, or channel handling for a specific context.
 
 ## Concept
 
-A behavior profile is conditional behavior layered onto an agent. It has a name, a `PRIORITY`, a `WHEN` condition, and one or more behavior changes such as `INSTRUCTIONS`, `CONVERSATION`, `RESPONSE`, `VOICE`, `TOOLS`, `GATHER`, or `FLOW`.
+A behavior profile is conditional behavior layered onto an agent. Each profile has a name, a `PRIORITY`, a `WHEN` condition, and one or more behavior changes.
 
-Use behavior profiles for context-sensitive adaptation, not for changing the agent's core job. If the responsibility changes, create another agent. If only the delivery mode or handling style changes, use a behavior profile.
+Use a profile for context-sensitive adaptation, not to change the agent's core job. If the responsibility changes, create another agent. If only the delivery mode or handling style changes, use a profile.
 
-The compiler attaches profiles to the agent IR and execution contract. When profiles contain guidance, that guidance is represented as behavior-profile instructions for execution. Profiles can be inline in an agent or standalone and attached with `USE BEHAVIOR_PROFILE`.
+Profiles come in two forms:
+
+| Form       | Where you write it                                              | Sections allowed                                                                                                |
+| ---------- | --------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
+| Inline     | Inside the agent file                                           | `PRIORITY`, `WHEN`, `INSTRUCTIONS`, `CONVERSATION`                                                              |
+| Standalone | In its own profile file, attached with `USE BEHAVIOR_PROFILE:` | `PRIORITY`, `WHEN`, `INSTRUCTIONS`, `CONVERSATION`, `CONSTRAINTS`, `RESPONSE`, `VOICE`, `TOOLS`, `GATHER`, `FLOW` |
+
+Use inline profiles when the behavior belongs to one agent and only changes instructions. Use standalone profiles when several agents share a rule, or when the profile changes voice, response limits, tools, gathering, or flow.
 
 ## Minimal working example
+
+This agent has two inline profiles. `recovery_mode` uses two project values, `sentiment` and `repeat_contact`. Your project must set both before the first turn, for example with a tool result or a `SET` action. `concise_mode` uses the built-in channel value.
 
 ```abl
 AGENT: Support_Assistant
@@ -26,16 +35,50 @@ INSTRUCTIONS: |
 
 BEHAVIOR_PROFILE: concise_mode
 PRIORITY: 3
-WHEN: channel == "sms"
+WHEN: channel.name == "twilio_sms"
 INSTRUCTIONS: "Use short plain-text responses suitable for SMS."
 ```
 
+## How it works
+
+The runtime checks the `WHEN` condition of every attached profile at session start and again on each turn. A profile applies while its condition is true. Several profiles can apply at the same time.
+
+The runtime applies active profiles from the lowest to the highest `PRIORITY`. When two profiles set the same field, the higher number wins. The merge rules depend on the section:
+
+| Section                    | When several profiles are active                                      |
+| -------------------------- | --------------------------------------------------------------------- |
+| `INSTRUCTIONS`, `CONSTRAINTS` | The runtime adds the text from every active profile.               |
+| `TOOLS`                    | Hidden tools and added tools accumulate.                              |
+| `RESPONSE`, `VOICE`        | The higher priority profile wins for each field.                      |
+| `GATHER`                   | Field overrides stack. The higher priority wins on the same property. |
+| `FLOW`                     | Skipped steps accumulate. The higher priority wins on step overrides. |
+| `CONVERSATION`             | The runtime merges it with the agent's conversation behavior and drops settings that the channel does not support. |
+
+`PRIORITY` must be a whole number of 0 or more. Two profiles attached to the same agent with `USE BEHAVIOR_PROFILE:` cannot share a priority. Give inline profiles unique priorities too.
+
+### What a `WHEN` condition can read
+
+| Value                                                                     | Example                                    | Notes                                                                                         |
+| ------------------------------------------------------------------------- | ------------------------------------------ | --------------------------------------------------------------------------------------------- |
+| `channel.name`                                                            | `channel.name == "voice"`                  | Channel type of the session, such as `web_chat`, `voice`, `twilio_sms`, `whatsapp`, `slack`, `email`. Voice variants use their own names, such as `voice_twilio`. |
+| `channel.capabilities.streaming`, `.media`, `.threading`, `.interactive` | `channel.capabilities.interactive == true` | Boolean values derived from the channel type.                                                 |
+| `caller.identity_tier`, `caller.is_authenticated`, `caller.customer_id`, `caller.verification_method` | `caller.is_authenticated == true` | Caller identity from the session. |
+| `session.is_new`, `session.language`, `session.turn_count`                | `session.turn_count > 5`                   | Session metadata.                                                                             |
+| `interaction.sentiment_label`, `.sentiment_score`, `.emotion_label`, `.turn_topic` | `interaction.sentiment_label == "frustrated"` | Your project supplies these values. They are an empty string or 0 when not supplied. |
+| Session variables                                                         | `repeat_contact == true`                   | Any variable your agent or project has set, such as a `MEMORY` field, `SET` value, or tool result. |
+
+Use `AND`, `OR`, and `NOT`, or `&&`, `||`, and `!`. Use `==` and `!=`. `===` and `!==` fail compilation.
+
+A variable that has no value makes the condition fail. If no other part of the expression is true, the platform skips the profile for that turn and logs a warning. The agent keeps its base behavior. Set every variable that a `WHEN` condition reads before the first turn.
+
 ## Standalone profile example
+
+A standalone profile lives in its own file. Attach it to each agent that needs it with `USE BEHAVIOR_PROFILE:`.
 
 ```abl
 BEHAVIOR_PROFILE: voice_support_mode
 PRIORITY: 8
-WHEN: channel == "voice"
+WHEN: channel.name == "voice"
 INSTRUCTIONS: |
   Speak in short sentences and confirm important identifiers one digit group at a time.
 
@@ -52,58 +95,88 @@ PERSONA: "Clear phone support assistant"
 USE BEHAVIOR_PROFILE: voice_support_mode
 ```
 
-## How it works
-
-`PRIORITY` decides which profile should win when multiple profiles match. `WHEN` decides whether a profile applies. Keep conditions based on values your project actually provides, such as channel, sentiment, customer tier, locale, or repeat-contact state.
-
-Inline profiles are useful when the behavior belongs only to one agent. Standalone profiles are useful when several agents share the same channel or customer-context rule.
+`VOICE` accepts `provider`, `voice_id`, `speed`, `pace`, `temperature`, `ssml`, `instructions`, `plain_text`, and turn detection settings. `channel.name == "voice"` matches only the `voice` channel. Use another condition, such as `channel.name == "voice_twilio"`, for the voice channel variants your project uses.
 
 ## Common variations
 
 ### Recovery mode
 
-Use a high-priority recovery profile for frustrated users, repeated failures, or repeat contacts.
+Use a high-priority recovery profile for frustrated users, repeated failures, or repeat contacts. Read the signal from `interaction.sentiment_label` or from a session variable your project sets.
 
 ### Channel mode
 
-Use channel profiles for SMS, voice, WhatsApp, or web when response length, formatting, or speech pacing changes.
+Use channel profiles for SMS, voice, WhatsApp, or web when response length, formatting, or speech pacing changes. Match on `channel.name`.
 
 ### Enterprise customer mode
 
-Use customer-tier profiles when premium or enterprise users require a different tone, faster escalation, or more formal explanations.
+Use customer-tier profiles when premium or enterprise users need a different tone, faster escalation, or more formal explanations. Set the tier variable, for example `customer_tier`, before the first turn.
+
+### Response limits and hidden tools
+
+A standalone profile can add constraints, limit response size, and hide tools. The agent must declare every hidden tool. An unknown tool name fails compilation with `PROFILE_UNKNOWN_TOOL`.
+
+```abl
+BEHAVIOR_PROFILE: whatsapp_compact
+PRIORITY: 15
+WHEN: channel.name == "whatsapp"
+INSTRUCTIONS: "Keep replies short and avoid markdown tables."
+
+CONSTRAINTS:
+  - "Never send more than three options in one reply."
+
+RESPONSE:
+  max_buttons: 3
+  max_response_length: 500
+
+TOOLS:
+  HIDE: [show_carousel]
+```
+
+This profile assumes that the agent declares a `show_carousel` tool and runs `USE BEHAVIOR_PROFILE: whatsapp_compact`.
 
 ## Verification
 
-- Test each `WHEN` condition with a context value that should match and one that should not.
-- Confirm higher-priority profiles override lower-priority profiles when both are true.
-- Inspect the compiled agent behavior profiles and execution contract for the expected profile count.
-- Test channel-specific outputs, especially voice and SMS, in the target channel rather than only in text chat.
+- Validate the project. Confirm that no `PROFILE_*`, `E105`, `E131`, or `E132` errors appear.
+- Start one session that matches each `WHEN` condition and one that does not. Test on the real channel, especially voice and SMS.
+- Inspect the `profile_resolution` trace event on each turn. `evaluatedProfiles` lists every attached profile and `matchedProfiles` lists the ones that applied.
+- Look for the `behavior_profile_applied` trace event when the set of active profiles changes. It shows added tools, hidden tools, and voice overrides.
+- Make two profiles match at once. Confirm that instructions from both apply and that the higher priority wins on `RESPONSE` and `VOICE` fields.
+- Leave a `WHEN` variable unset. Confirm that the profile does not apply and the agent keeps its base behavior.
 
 ## Production readiness checklist
 
-- Every profile has a non-negative integer `PRIORITY`.
+- Every profile has a `PRIORITY` that is a whole number of 0 or more.
 - Every profile has a `WHEN` condition.
-- Conditions reference context values that are reliably populated.
-- Shared standalone profiles are versioned and reviewed because changing one can affect multiple agents.
-- Tests cover overlapping profiles, no-match behavior, and channel-specific response constraints.
+- Priorities are unique on each agent.
+- Every context variable in a `WHEN` condition has a documented source and is set before the first turn.
+- Every tool a profile hides is declared by the agent.
+- Shared standalone profiles are versioned and reviewed, because changing one can affect many agents.
+- Tests cover overlapping profiles, no-match behavior, unset variables, and channel-specific response constraints.
 
 ## Common mistakes
 
-| Mistake                               | Why it happens                                        | How to avoid it                                      |
-| ------------------------------------- | ----------------------------------------------------- | ---------------------------------------------------- |
-| Using profiles as hidden agents       | The profile starts changing the job, not the behavior | Split into another agent when responsibility changes |
-| Missing `PRIORITY` or `WHEN`          | The profile looks like a simple instruction block     | Add both fields to every behavior profile            |
-| Referencing unavailable context       | Conditions never match                                | Document where each condition value is set           |
-| Overlapping profiles fight each other | Multiple profiles match the same turn                 | Use clear priorities and test overlap                |
+| Mistake                                       | Why it happens                                             | How to avoid it                                                            |
+| --------------------------------------------- | ---------------------------------------------------------- | -------------------------------------------------------------------------- |
+| Using profiles as hidden agents               | The profile starts changing the job, not the behavior      | Split into another agent when responsibility changes                       |
+| Writing `channel == "sms"`                    | `channel` looks like a string                              | Use `channel.name == "twilio_sms"`                                         |
+| Putting `VOICE` or `TOOLS` in an inline profile | Inline profiles look like standalone profiles            | Move the profile to a standalone file                                      |
+| Missing `PRIORITY` or `WHEN`                  | The profile looks like a simple instruction block          | Add both fields to every behavior profile                                  |
+| Two attached profiles with the same priority  | Priorities are copied between profiles                     | Give each profile a unique number                                          |
+| Referencing unavailable context               | The variable is never set                                  | Document where each condition value is set and set it before the first turn |
+| Expecting only one profile to apply           | Priority looks like a winner-takes-all rule                | Plan for every matching profile to apply and merge                         |
 
 ## Troubleshooting
 
-| Symptom                              | Likely cause                                         | What to check                                    |
-| ------------------------------------ | ---------------------------------------------------- | ------------------------------------------------ |
-| Profile never applies                | `WHEN` references an unset value                     | Confirm the context value exists at runtime      |
-| Wrong profile wins                   | Priority order is wrong                              | Compare all matching profile priorities          |
-| Shared behavior changed unexpectedly | A standalone profile is reused                       | Find all agents using the profile before editing |
-| Voice behavior is inconsistent       | Text profile does not define voice-specific settings | Add `VOICE` or channel-specific instructions     |
+| Symptom                                      | Likely cause                                              | What to check                                                       |
+| -------------------------------------------- | --------------------------------------------------------- | ------------------------------------------------------------------- |
+| Profile never applies                        | `WHEN` reads an unset variable or uses `channel` as a string | Check the trace for `profile_resolution`. Use `channel.name`.    |
+| Profile never applies on one voice channel   | `channel.name` is a voice variant                         | Compare the session channel name with the `WHEN` value              |
+| Wrong value wins for a response or voice field | Priority order is wrong                                 | Compare the priorities of all matching profiles                     |
+| `PROFILE_PRIORITY_CONFLICT`                  | Two attached profiles share a priority                    | Change one priority                                                 |
+| `PROFILE_UNKNOWN_TOOL`                       | The profile hides a tool the agent does not declare       | Add the tool to the agent or fix the name                           |
+| `E105` unknown section `VOICE:` in an agent file | An inline profile contains a standalone-only section  | Move the profile to a standalone file                               |
+| `E131` or `E132`                             | The profile has no `PRIORITY` or no `WHEN`                | Add the missing line                                                |
+| Shared behavior changed unexpectedly         | A standalone profile is reused                            | Find all agents that use the profile before editing                 |
 
 ## Related HowTos
 

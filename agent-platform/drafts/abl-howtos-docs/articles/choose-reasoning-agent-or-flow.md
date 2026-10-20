@@ -1,16 +1,16 @@
 # How to choose between a reasoning agent and a FLOW-based agent
 
-Use this guide when you are deciding whether an agent should be goal-driven and flexible, step-driven and predictable, or a mix of both.
+Use this guide when you decide whether an agent should be goal-driven and flexible, step-driven and predictable, or a mix of both.
 
 ## Concept
 
-An ABL agent can run without a `FLOW:` block or with one.
+An ABL agent runs without a `FLOW:` block or with one.
 
-A reasoning agent has an `AGENT`, a `GOAL`, optional persona or limitations, optional tools, optional gathered fields, and completion rules. Because there is no `FLOW:`, the reasoning layer chooses the next best action inside the boundaries you define.
+A reasoning agent has an `AGENT`, a `GOAL`, optional persona or limitations, optional tools, optional gathered fields, and completion rules. There is no `FLOW:`, so the reasoning layer chooses the next best action inside the boundaries you define.
 
-A FLOW-based agent adds a `FLOW:` block and named steps. The flow owns the conversation path. Each step declares whether it is deterministic with `REASONING: false` or allows a bounded reasoning area with `REASONING: true`.
+A FLOW-based agent adds a `FLOW:` block and named steps. The flow owns the conversation path. Every step must declare `REASONING: false` for a deterministic step or `REASONING: true` for a bounded reasoning area. A step with neither fails to parse.
 
-Use a reasoning agent when the work can be expressed as a business goal and the conversation can adapt. Use a flow when the order of operations, checkpoints, or troubleshooting path must be explicit. Use a workflow tool, not an agent flow, for long waits, polling, scheduled work, or multi-hour orchestration.
+Use a reasoning agent when the work fits a business goal and the conversation can adapt. Use a flow when the order of operations, checkpoints, or troubleshooting path must be explicit. Use a workflow tool, not an agent flow, for long waits, polling, scheduled work, or multi-hour orchestration.
 
 ## Decision guide
 
@@ -23,7 +23,7 @@ Use a reasoning agent when the work can be expressed as a business goal and the 
 
 ## Minimal working example: reasoning agent
 
-This example is a single agent file. It leaves the conversation flexible but gives the agent a required topic and a safe completion condition.
+This example is a single agent file. It shows the shape of a reasoning agent: a goal, limits, one required field, and a completion rule. It is intentionally partial. The agent finishes as soon as it knows the policy topic. For a real outcome, add the tools or knowledge sources that answer the question, and tie the completion rule to their result.
 
 ```abl
 AGENT: Policy_QA_Agent
@@ -48,7 +48,7 @@ COMPLETE:
     RESPOND: "I can explain the {{policy_topic}} policy and tell you when HR must review the request."
 ```
 
-Use this shape when there is no required path beyond collecting the information needed to answer safely. Avoid using `WHEN: true` as a normal completion rule because it can make the example look complete even when the customer outcome has not been reached.
+Use this shape when there is no required path beyond collecting the information needed to answer safely. Avoid `WHEN: true` as a normal completion rule. It completes the agent before the customer outcome exists.
 
 ## Working example: deterministic FLOW for required intake
 
@@ -93,15 +93,17 @@ COMPLETE:
     RESPOND: "Warranty intake is ready for {{serial_number}}: {{issue_description}}."
 ```
 
-Use this shape when the customer should not skip required fields or when operations teams need to inspect the exact path a conversation followed.
+A step with required `GATHER` fields stays active until those fields have values. Use this shape when the customer must not skip required fields or when operations teams need to inspect the exact path a conversation followed.
+
+Step definitions can sit at the top level, as above, or indented under `FLOW:`. Both layouts compile to the same flow.
 
 ## Working example: bounded reasoning inside a FLOW
 
-This example is a single agent file. The reasoning step is limited to understanding the support path; the rest of the process remains explicit.
+This example is a single agent file. The reasoning step decides whether the request is a billing or a technical issue. The rest of the process stays explicit.
 
 ```abl
 AGENT: Support_Intake_Agent
-GOAL: "Understand a support request, collect account context, and prepare the next action"
+GOAL: "Identify the support path, collect the account, and prepare the next action"
 
 FLOW:
   entry_point: understand_request
@@ -109,12 +111,21 @@ FLOW:
     - understand_request
     - collect_account
     - finish_intake
+    - handle_unclear
 
 understand_request:
   REASONING: true
-  GOAL: "Clarify whether the customer needs billing, technical support, or human escalation"
-  EXIT_WHEN: "the support path and issue summary are clear enough to continue"
+  GOAL: "Work out whether the request is a billing issue or a technical issue"
+  GATHER:
+    - support_path:
+        prompt: "Is this a billing issue or a technical issue?"
+        type: string
+        options: ["billing", "technical"]
+        required: true
+  EXIT_WHEN: support_path IS SET
   MAX_TURNS: 3
+  MAX_ATTEMPTS: 3
+  ON_EXHAUSTED: handle_unclear
   THEN: collect_account
 
 collect_account:
@@ -128,45 +139,78 @@ collect_account:
 
 finish_intake:
   REASONING: false
-  RESPOND: "I have the account context and the support path. I can continue with the next step."
+  RESPOND: "I have account {{account_id}} on the {{support_path}} path."
+  THEN: complete
+
+handle_unclear:
+  REASONING: false
+  RESPOND: "I could not tell which path fits. A support agent will follow up."
   THEN: complete
 
 COMPLETE:
-  - WHEN: account_id IS SET
-    RESPOND: "Support intake is ready for account {{account_id}}."
+  - WHEN: account_id IS SET AND support_path IS SET
+    RESPOND: "Support intake is ready for account {{account_id}} on the {{support_path}} path."
 ```
 
-Use this shape when only one part of the process needs interpretation. Keep the reasoning zone narrow, give it an exit condition, and add a max-turn limit.
+Use this shape when only one part of the process needs interpretation. Keep the reasoning step narrow. Give it an exit expression and an attempt limit. The `handle_unclear` step is the failure path. Replace its text with your own escalation or follow-up step.
+
+## How a reasoning step exits
+
+A `REASONING: true` step runs until one of these events happens.
+
+| Event                                             | Setting                       | Result                                                                                          |
+| ------------------------------------------------- | ----------------------------- | ----------------------------------------------------------------------------------------------- |
+| The exit expression becomes true                  | `EXIT_WHEN`                   | The flow moves to the `THEN` step.                                                              |
+| The step has `THEN` and no `EXIT_WHEN`            | `THEN`                        | The step runs one reasoning pass per entry, then moves on.                                      |
+| The customer replies too many times without exit  | `MAX_ATTEMPTS` + `ON_EXHAUSTED` | The flow moves to the `ON_EXHAUSTED` step. Set both settings together or the compile fails.   |
+| The model uses its iteration budget in one message | `MAX_TURNS`                   | The model stops its tool loop for that message. The default is 10. The limit does not count customer replies. |
+
+Write `EXIT_WHEN` as an expression over session values, such as `support_path IS SET` or `response_presented == true`. The reasoning model writes the values the expression reads, or a `GATHER` field in the same step collects them. Do not write a plain-language phrase. The runtime does not judge phrases, and a quoted phrase counts as true, so the step exits after its first pass.
+
+Give each reasoning step its own `GOAL`. The step uses that goal, not the agent goal.
 
 ## Verification
 
 1. Validate the agent file.
 2. Run a sample utterance for the reasoning-agent example: "Can you explain the parental leave policy?"
 3. Run the warranty flow with a serial number and issue description. Confirm the prompts happen in order and completion waits until both fields are present.
-4. Run the bounded-reasoning flow with a broad request such as "I need help with a billing issue and my account." Confirm the reasoning step clarifies the path before collecting `account_id`.
-5. Inspect trace/debug output for the active step name, gathered fields, and final completion response.
+4. Run the bounded-reasoning flow with "I need help with a billing issue." Confirm the step sets `support_path` and the flow asks for `account_id`.
+5. Run the same flow with three replies that never state a path, such as "hello". Confirm the flow reaches `handle_unclear`.
+6. Inspect the trace for the active step name, `reasoning_zone_enter`, `reasoning_zone_exit`, `flow_step_attempts_exhausted`, gathered fields, and the final completion response.
 
 ## Production readiness checklist
 
 - Use a reasoning agent only when goal, limitations, tools, and completion rules are enough to bound behavior.
 - Use flow steps for required collection, compliance prompts, or processes support teams must inspect.
-- Keep `REASONING: true` steps bounded with a clear goal, exit condition, and max-turn limit.
+- Give every `REASONING: true` step a `GOAL`, an `EXIT_WHEN` expression on a value the step sets, and a `MAX_ATTEMPTS` plus `ON_EXHAUSTED` failure path.
+- Point `ON_EXHAUSTED` at a step that escalates or hands the customer to a person.
 - Make every required gathered field feed completion, memory, a tool call, handoff, delegate, or another known consumer.
 - Move long waits, polling, scheduled callbacks, and multi-hour orchestration into a workflow tool.
 
 ## Common mistakes
 
-| Mistake                                                | Why it happens                                                  | How to avoid it                                                             |
-| ------------------------------------------------------ | --------------------------------------------------------------- | --------------------------------------------------------------------------- |
-| Using `FLOW` for every conversation                    | Builders want control even when a goal is enough.               | Start with a reasoning agent when the outcome is flexible and low-risk.     |
-| Using `WHEN: true` as the main completion rule         | It makes examples pass before the customer outcome is complete. | Complete on meaningful fields, tool results, or final state.                |
-| Adding a reasoning step that never affects the outcome | The flow has a reasoning block but no clear purpose.            | Give the step a narrow goal and explain what it prepares for the next step. |
-| Using agent flow for durable work                      | Flow is visible and convenient, but not meant for long waits.   | Use workflow-as-tool for durable orchestration.                             |
+| Mistake                                                | Why it happens                                                  | How to avoid it                                                                    |
+| ------------------------------------------------------ | --------------------------------------------------------------- | ---------------------------------------------------------------------------------- |
+| Using `FLOW` for every conversation                    | Builders want control even when a goal is enough.               | Start with a reasoning agent when the outcome is flexible and low-risk.            |
+| Using `WHEN: true` as the main completion rule         | It completes the agent before the customer outcome exists.      | Complete on meaningful fields, tool results, or final state.                       |
+| Writing `EXIT_WHEN` as a plain-language phrase         | It reads like guidance for the model.                           | Write an expression such as `support_path IS SET` and have the step set that value. |
+| Treating `MAX_TURNS` as a customer-turn limit          | The name suggests conversation turns.                           | Use `MAX_ATTEMPTS` with `ON_EXHAUSTED` to limit customer replies.                  |
+| Leaving out `REASONING` on a step                      | Builders expect a default.                                      | Declare `REASONING: true` or `REASONING: false` on every step.                     |
+| Using agent flow for durable work                      | Flow is visible and convenient, but not meant for long waits.   | Use workflow-as-tool for durable orchestration.                                    |
 
 ## Troubleshooting
 
-| Symptom                                     | Likely cause                                                      | What to check                                                                            |
-| ------------------------------------------- | ----------------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
-| A required gathered field triggers warnings | The field is never consumed.                                      | Reference it in completion, memory, a tool input, handoff, delegate, or next-step logic. |
-| A reasoning step keeps asking questions     | The exit condition is too broad or the max-turn limit is missing. | Tighten `GOAL`, `EXIT_WHEN`, and `MAX_TURNS`.                                            |
-| The flow is hard to maintain                | Too many business paths are in one agent.                         | Split into specialists or move durable work to a workflow.                               |
+| Symptom                                           | Likely cause                                                                          | What to check                                                                                         |
+| ------------------------------------------------- | ------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------- |
+| Warning `UNUSED_REQUIRED_GATHER_FIELD`            | The required field is never consumed.                                                 | Reference it in completion, memory, a tool input, handoff, delegate, or next-step logic.              |
+| A reasoning step keeps asking questions           | `EXIT_WHEN` never becomes true, or no attempt limit exists.                           | Check that the step sets the value `EXIT_WHEN` reads. Add `MAX_ATTEMPTS` and `ON_EXHAUSTED`.           |
+| A reasoning step exits after one answer           | `EXIT_WHEN` is missing, or it is a plain-language phrase that counts as true.         | Replace the phrase with an expression over a session value.                                           |
+| Compile error `INVALID_FLOW_STEP_ATTEMPT_CONTRACT` | The step sets only one of `MAX_ATTEMPTS` and `ON_EXHAUSTED`.                          | Set both.                                                                                             |
+| Parse error "must declare REASONING"              | A step has no `REASONING` line.                                                       | Add `REASONING: true` or `REASONING: false`.                                                          |
+| The flow is hard to maintain                      | Too many business paths are in one agent.                                             | Split into specialists or move durable work to a workflow.                                            |
+
+## Related HowTos
+
+- How to combine reasoning steps with deterministic FLOW steps
+- How to decide whether to build one agent or multiple specialist agents
+- How to define clear responsibilities for each enterprise agent
