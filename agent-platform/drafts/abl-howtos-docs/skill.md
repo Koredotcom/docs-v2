@@ -212,6 +212,7 @@ For each requested article:
 - Include customer-facing verification steps that describe how to validate behavior in a project.
 - Include a production-readiness checklist when the topic affects routing, tools, external systems, memory, knowledge, auth, or enterprise deployment.
 - Link to related HowTos only when those files exist or are in the same planned update.
+- Edit the text for language, clarity, and readability.  
 
 11. Include as many verified examples as the source evidence supports:
 

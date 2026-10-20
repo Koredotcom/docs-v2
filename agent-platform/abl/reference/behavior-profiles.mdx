@@ -70,6 +70,80 @@ Required declarations:
 | `PRIORITY:`         | yes      | Non-negative integer. Higher priority wins when profiles conflict. |
 | `WHEN:`             | yes      | CEL expression evaluated against context (`WHEN: true` for a default profile). |
 
+## WHEN evaluation context and timing
+
+Session creation and pre-session policy checks evaluate metadata only: `channel`, `caller`, `session`, `interaction`, and `env`.
+
+At runtime, the platform reevaluates profiles at each reasoning turn, agent activation, parent restoration, and cold session restoration boundary. These later evaluations also read the active session's accepted expression values.
+
+A declared memory `INITIAL` value can select a profile at the first runtime reevaluation. It does not select a business-state-dependent profile during the metadata-only creation check.
+
+A `SET`, GATHER answer, or tool result becomes visible when the next existing evaluation boundary runs. It does not trigger an immediate profile reevaluation by itself.
+
+`session.is_new` belongs to the creation check, while `session.turn_count` retains its reasoning-invocation count.
+
+The runtime expression values include:
+
+- Declared session memory
+- Accepted GATHER fields
+- Values saved by authored tool-result mappings
+- The stamped current `input`
+- The structured `intent` object, when present
+
+### Reference resolution at runtime reevaluation
+
+| Reference | Meaning at runtime reevaluation |
+| --- | --- |
+| `customer_tier` or `context.customer_tier` | The same accepted session value |
+| `channel.name`, `caller.identity_tier`, `interaction.sentiment_label` | Profile metadata; session values cannot replace these namespaces |
+| `session.customer_tier`, `env.business_region` | Accepted fields already stored inside the corresponding session/env object |
+| `session.is_new`, `session.language`, `session.turn_count` | Profile metadata wins over colliding stored fields |
+| `env.deployment_region`, `env.timestamp` | Profile metadata wins over colliding stored fields |
+| `context.channel`, `context.caller`, `context.interaction`, `context.session`, `context.env` | The expression namespace's original values, before profile metadata is overlaid |
+| `context.session_id`, `context.project_id`, `context.tenant_id`, `context.user_id` | Existing stored identifier values, with runtime fallback when absent |
+| `input`, `intent.category` | The stamped accepted input and existing structured intent, when present |
+
+Every ordinary accepted expression value is available directly and through `context`. For example, `customer_tier` and `context.customer_tier` resolve to the same value, as do `input` and `context.input`.
+
+Top-level `channel`, `caller`, and `interaction` retain profile metadata. Use `context.channel`, `context.caller`, and `context.interaction` for colliding business values.
+
+Nested keys, including a business object's own `context` property, remain ordinary accepted state.
+
+Identifier references `session_id`, `project_id`, `tenant_id`, and `user_id` follow the existing expression projection: an accepted stored value wins, and the corresponding runtime identifier supplies a fallback when that value is absent. Adding an alias does not grant access to another session, project, or agent's private state.
+
+Conditions read session-visible config/env values. Secret values held exclusively for tool execution remain unavailable to conditions and their `context` aliases.
+
+Tokenized PII comparisons use the active session's comparator.
+
+The evaluation map is not persisted or published as profile trace data, model instructions, or responses.
+
+Missing references and invalid conditions skip the affected profile. They do not crash the session or become implicit string literals.
+
+These expression values are comparison data, not authorization grants or proof of tenant/project ownership. Conditions use the accepted values; they do not classify text, synthesize intent, or fall back to older conversation history when `input` is absent.
+
+### Worked example
+
+After an authored GATHER or tool mapping saves `customer_tier` as `"gold"`, `WHEN: context.customer_tier == "gold"` matches at the next runtime reevaluation. When the accepted value is `"standard"`, the profile does not match. A channel predicate such as `WHEN: channel.name == "voice"` continues to read channel metadata even if a business field is named `channel`.
+
+```yaml
+BEHAVIOR_PROFILE: voice-optimized
+PRIORITY: 10
+WHEN: channel.name == "voice"
+INSTRUCTIONS: "Keep responses under 3 sentences. Use natural speech patterns."
+```
+
+```yaml
+BEHAVIOR_PROFILE: sdk-rich
+PRIORITY: 5
+WHEN: channel.name == "sdk_websocket" OR channel.name == "web_chat"
+```
+
+<Note>
+  After a profile matches, its instruction overlay applies to the main reasoning prompt and reasoning
+  inside a FLOW step. The step keeps its own goal and constraints. This instruction projection does
+  not introduce another profile evaluation boundary.
+</Note>
+
 ## Profile blocks
 
 
