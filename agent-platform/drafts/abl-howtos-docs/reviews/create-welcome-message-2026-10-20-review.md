@@ -1,0 +1,236 @@
+# HowTo Review: create-welcome-message
+
+**Date:** 2026-10-20
+**Article:** `agent-platform/drafts/abl-howtos-docs/articles/create-welcome-message.md`
+**Topic:** 2.1 - How to create a welcome message for a new conversation
+**Verdict:** update-needed
+
+## Proposed changes
+
+- Fix both examples. The entry step used `RESPOND` then `THEN: COMPLETE`, which ends the session during startup. The new entry step uses `GATHER` and waits for the user.
+- Name the channels that allow and suppress the welcome, from the channel behavior contract. Adds `a365` and `workflow` (new in 1.8).
+- Explain eager and lazy starts. A lazy start runs `SET` and `CALL` and drops the welcome text.
+- Explain that a branch welcome owns the startup turn and a top-level welcome runs as a prelude before the entry step.
+- Add `ACTION_HANDLERS` so the buttons do something. Note that `RICH_CONTENT` is an accepted alias of `FORMATS`.
+- Add a no-flow variation (reasoning agent).
+- Add trace checks for `dsl_on_start_skipped` and `responseSource: on_start_branch`.
+- Add Related HowTos. All five files exist in `articles/`.
+
+## Evidence
+
+| Claim | Current evidence | Impact |
+| ----- | ---------------- | ------ |
+| Entry step with `THEN: COMPLETE` ends the session | `handleTerminalFlowTarget` sets `session.isComplete` and returns `sessionEnded: true` | Both published examples were wrong in practice |
+| Channel suppression list | `channel-behavior-contract.ts` `proactiveDelivery` per channel; `a365` and `workflow` added since 1.4.4 | Concept table |
+| Lazy start drops the welcome | `lifecycle-dispatcher.ts` 439; `runtime-executor.ts` 22738-22760 | New table row and troubleshooting |
+| Branch welcome returns before the entry step | `runtime-executor.ts` 9654-9658 | New concept bullet |
+| `RICH_CONTENT` alias works | Harness `ex/v1.abl` IR shows `on_start.rich_content` | One sentence |
+
+## Risk level
+
+LOW to MEDIUM. Examples and channel guidance change. Syntax is unchanged.
+
+## Full evidence file
+
+See `agent-platform/drafts/abl-howtos-docs/evidence/create-welcome-message-2026-10-20-evidence.md`.
+
+## Files to update after approval
+
+- `agent-platform/drafts/abl-howtos-docs/articles/create-welcome-message.md`
+- `agent-platform/drafts/abl-howtos-docs/evidence/create-welcome-message-2026-10-20-evidence.md`
+
+## Proposed full article
+
+````markdown
+# How to create a welcome message for a new conversation
+
+Use this pattern when a conversation should open with a clear first message before the user asks for help.
+
+## Concept
+
+A welcome message is the first assistant message in a session. In ABL, write it in `ON_START`. The runtime runs `ON_START` once, when it initializes the session.
+
+The user sees the welcome only when both the start type and the channel allow it.
+
+| Start type  | How the session starts                                                                                    | What the user sees                                                                                  |
+| ----------- | --------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------- |
+| Eager start | The session starts before the user types. Web SDK and web debug sessions start when the client connects.  | The welcome.                                                                                        |
+| Lazy start  | The user's first message creates the session. HTTP chat works this way.                                   | No welcome. `ON_START` still runs `SET` and `CALL`, and the agent answers the first message.        |
+
+| Channel contract                      | Channel types                                                                                                                                                                                                  |
+| ------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Allows the welcome                    | `web_chat`, `web_debug`, `sdk_websocket`, `voice`, `voice_pipeline`, `voice_realtime`, `voice_twilio`, `voice_livekit`, `voice_vxml`, `korevg`, `audiocodes`, `genesys_audio_connector`                          |
+| Suppresses the welcome                | `api`, `http`, `http_async`, `workflow`, `ai4w`, `a2a`, `slack`, `whatsapp`, `msteams`, `telegram`, `email`, `twilio_sms`, `messenger`, `instagram`, `line`, `zendesk`, `genesys`, `genesys_open_messaging`, `a365`, `ag_ui` |
+| Sends the welcome in its own envelope | `kore_agent_assist`                                                                                                                                                                                            |
+
+A channel that suppresses the welcome still runs the `SET` and `CALL` actions in `ON_START`. The trace shows a `dsl_on_start_skipped` event.
+
+If the agent has a `FLOW`, the kind of welcome decides what runs next:
+
+- A top-level `RESPOND` is a prelude. The runtime sends it, then runs the entry step in the same start.
+- A welcome chosen by `BRANCHES` owns the startup turn. The entry step does not run during startup.
+
+Keep the entry step waiting for the user. A step that only responds and then moves to `COMPLETE` ends the session at startup. Use a `GATHER` step to ask the first question.
+
+Keep the welcome short. Name the service and make the first action obvious.
+
+## Minimal working example
+
+This agent sends a welcome, then asks for a support topic and waits for the answer.
+
+```abl
+AGENT: Welcome_Message_Agent
+GOAL: "Welcome the user and then collect the support topic"
+
+ON_START:
+  RESPOND: "Welcome to Acme Support. I can help with orders, returns, billing, or account questions."
+
+FLOW:
+  entry_point: ask_topic
+  steps:
+    - ask_topic
+    - confirm_topic
+
+ask_topic:
+  REASONING: false
+  GATHER:
+    - topic: required
+      prompt: "What would you like help with today?"
+  THEN: confirm_topic
+
+confirm_topic:
+  REASONING: false
+  RESPOND: "Thanks. I will help you with {{topic}}."
+  THEN: COMPLETE
+```
+
+## How it works
+
+The runtime does these steps when it starts the session:
+
+1. Loads memory and resolves the interaction language.
+2. Runs the `SET` and `CALL` actions in `ON_START`.
+3. Renders the welcome and sends it when the start type and channel allow it.
+4. Writes the welcome to the assistant history, so later turns can see what the user already read.
+5. Runs the entry step.
+
+The entry step asks the first question. Do not repeat the welcome in it.
+
+`ON_START` runs once per session. A second message in the same session does not run it again.
+
+## Common variations
+
+### Add buttons or rich content
+
+Use `FORMATS` for rich content and `ACTIONS` for buttons. `RICH_CONTENT` is an accepted alias for `FORMATS`.
+
+Each button needs a handler. An `ACTION_HANDLERS` entry uses the button ID, which is the name after `->`. In this example, each handler sets `topic` and moves to `confirm_topic`.
+
+```abl
+AGENT: Rich_Welcome_Agent
+GOAL: "Welcome users with a card and a clear first action"
+
+ON_START:
+  RESPOND: "Welcome to Acme Support."
+    FORMATS:
+      markdown: |
+        ## Welcome to Acme Support
+        Choose a topic to begin.
+    ACTIONS:
+      - BUTTON: "Track an order" -> track_order
+        VALUE: "track_order"
+      - BUTTON: "Start a return" -> start_return
+        VALUE: "start_return"
+
+ACTION_HANDLERS:
+  track_order:
+    DO:
+      - SET: topic = "order tracking"
+      - TRANSITION: confirm_topic
+  start_return:
+    DO:
+      - SET: topic = "a return"
+      - TRANSITION: confirm_topic
+
+FLOW:
+  entry_point: ask_topic
+  steps:
+    - ask_topic
+    - confirm_topic
+
+ask_topic:
+  REASONING: false
+  GATHER:
+    - topic: required
+      prompt: "Select an option or describe your question."
+  THEN: confirm_topic
+
+confirm_topic:
+  REASONING: false
+  RESPOND: "Thanks. I will help you with {{topic}}."
+  THEN: COMPLETE
+```
+
+Use rich content only when the target channel can render it. For voice output and channel-specific copy, see the channel-specific welcome HowTo.
+
+### Send a welcome from an agent with no flow
+
+An agent with no `FLOW` sends the welcome and then answers each message with reasoning. Use this form when the agent has no fixed first step.
+
+```abl
+AGENT: Reasoning_Welcome_Agent
+GOAL: "Answer questions about orders, returns, billing, and account access"
+
+ON_START:
+  RESPOND: "Welcome to Acme Support. I can help with orders, returns, billing, or account questions."
+```
+
+## Verification
+
+1. Open a web debug or Web SDK session. Confirm the welcome appears before you type.
+2. Open the trace. Confirm a `dsl_on_start` event, then a `dsl_respond` event with `source: on_start`.
+3. For a branch welcome, confirm `responseSource: on_start_branch` on the `dsl_respond` event.
+4. Send a message through HTTP chat. Confirm the agent answers the message and does not send the welcome.
+5. On a suppressing channel, confirm the trace shows `dsl_on_start_skipped` with the reason `channel_contract_no_on_start_proactive_delivery`.
+6. In the buttons example, select each button. Confirm the agent replies with the matching topic.
+7. Send a second message. Confirm the welcome does not repeat.
+
+## Production readiness checklist
+
+- Test the welcome on every channel you deploy. Use the channel table to know which channels suppress it.
+- Keep the welcome short enough for the smallest channel.
+- Include a next step, not only a greeting.
+- Keep the entry step waiting for input with `GATHER`, or use an agent with no flow.
+- Add an `ACTION_HANDLERS` entry for every button ID.
+- Keep required setup in `SET` and `CALL`, not in the visible text. Suppressing channels and lazy starts drop the text.
+- Confirm the first flow step does not repeat the welcome.
+
+## Common mistakes
+
+| Mistake                                                              | Why it happens                                                 | How to avoid it                                                                      |
+| -------------------------------------------------------------------- | -------------------------------------------------------------- | ------------------------------------------------------------------------------------ |
+| Ending the entry step with `RESPOND` and `THEN: COMPLETE`            | The step looks like a normal question.                         | Use `GATHER` so the step waits for the user.                                         |
+| Repeating the welcome in the first flow step                         | Both messages reach the user at startup.                       | Make `ON_START` orient the user. Make the flow step ask the next question.           |
+| Expecting the welcome on every channel                               | Some channel types suppress it, and lazy starts drop it.       | Check the channel table and test each channel.                                       |
+| Adding buttons without handlers                                      | The button IDs have no matching `ACTION_HANDLERS` entry.       | Add one handler for each button ID.                                                  |
+| Putting long policy text in the welcome                              | The welcome becomes a wall of text before the user asks.       | Keep the welcome short. Move details into the next guided step.                      |
+
+## Troubleshooting
+
+| Symptom                                         | Likely cause                                                  | What to check                                                                                  |
+| ----------------------------------------------- | ------------------------------------------------------------- | ---------------------------------------------------------------------------------------------- |
+| The welcome does not appear                     | The channel suppresses it, or the session started lazily.     | Look for `dsl_on_start_skipped` in the trace. Check the channel type against the channel table. |
+| The session ends right after the welcome        | The entry step moves straight to `COMPLETE`.                  | Replace the entry step with a `GATHER` step.                                                   |
+| The user sees the greeting twice                | The entry step repeats the welcome.                           | Change the entry step to ask a question.                                                       |
+| The entry step does not run at startup          | A branch welcome owns the startup turn.                       | Check whether a `BRANCHES` entry selected the welcome. Look for `dsl_on_start_branch` in the trace. |
+| A button does nothing                           | No `ACTION_HANDLERS` entry matches the button ID.             | Compare the ID after `->` with the handler name.                                               |
+| The welcome text is missing but `SET` ran       | The start was lazy or the channel suppresses the text.        | Check `dsl_on_start` and `dsl_set` events in the trace.                                        |
+
+## Related HowTos
+
+- [How to use ON_START to greet users before the first message](use-on-start-welcome.md)
+- [How to personalize a welcome message for returning users](personalize-returning-user-welcome.md)
+- [How to design channel-specific welcome experiences](design-channel-specific-welcome.md)
+- [How to initialize session variables before the first user turn](initialize-session-before-first-turn.md)
+- [How to handle empty-state and fallback greetings](handle-fallback-greetings.md)
+````

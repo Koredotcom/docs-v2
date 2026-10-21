@@ -12,13 +12,15 @@ The design question is ownership. If one team, policy set, permission model, and
 
 ## Decision guide
 
-| Question       | Prefer one agent when                            | Prefer specialists when                                             |
-| -------------- | ------------------------------------------------ | ------------------------------------------------------------------- |
-| Scope          | Requests are tightly related.                    | The entry point receives unrelated business requests.               |
-| Tools and data | The same tools and permissions apply.            | Different topics need different tools or data access.               |
-| Risk           | One policy set is enough.                        | Each topic has different compliance, escalation, or approval rules. |
-| Ownership      | One team updates and tests the whole experience. | Different teams own different business outcomes.                    |
-| Routing        | No transfer is needed.                           | The user needs to be routed to the right owner.                     |
+| Question                  | Prefer one agent when                            | Prefer specialists when                                             |
+| ------------------------- | ------------------------------------------------ | ------------------------------------------------------------------- |
+| Scope                     | Requests are tightly related.                    | The entry point receives unrelated business requests.               |
+| Tools and data            | The same tools and permissions apply.            | Different topics need different tools or data access.               |
+| Risk                      | One policy set is enough.                        | Each topic has different compliance, escalation, or approval rules. |
+| Ownership                 | One team updates and tests the whole experience. | Different teams own different business outcomes.                    |
+| Routing                   | No transfer is needed.                           | The user needs to be routed to the right owner.                     |
+| Customer talks to the sub-task | No sub-task exists.                         | Use a `HANDOFF` when the specialist must ask the customer questions. Use a `DELEGATE` only for a one-shot result. |
+| Human takeover            | A single `ESCALATE` rule is enough.              | Route to a small agent that owns the human transfer.                |
 
 Do not split agents just because a domain is large. Splitting adds routing, context-passing, target-agent readiness, testing, monitoring, and fallback design.
 
@@ -49,7 +51,7 @@ Use this shape when the same agent can safely handle the full request. If refund
 
 ## Working example: supervisor with specialist agents
 
-This example is a project-level set. The supervisor and all referenced specialists must exist in the same project.
+This example is a project-level set. The supervisor and all referenced specialists must exist in the same project. The specialists are short stand-ins. Replace their `COMPLETE` rules with your real business logic.
 
 `agents/support-supervisor.agent.abl`
 
@@ -129,28 +131,35 @@ COMPLETE:
 
 ```abl
 AGENT: Live_Agent
-GOAL: "Transfer the customer to a human support queue"
+GOAL: "Tell the customer that a human specialist will take over, then escalate to the human support queue"
 
-COMPLETE:
-  - WHEN: true
-    RESPOND: "I will connect you with a human support specialist."
+ESCALATE:
+  context_for_human:
+    - customer_id
 ```
 
-`AGENTS:` is a readable roster. `HANDOFF` is the executable routing surface. `customer_id` is gathered before handoff and passed to the specialists with `PASS`.
+`HANDOFF` is the executable routing surface. The platform ignores `AGENTS:`. It does not route and does not check the names, so keep it only as a readable roster. Each `HANDOFF` entry becomes a routing action the supervisor model can choose. The `WHEN` rule is checked before the transfer.
 
-Since none of the `HANDOFF` entries above declare `HISTORY`, each specialist now receives the full conversation history by default (the current platform default when `HISTORY` is omitted). Also, because each `WHEN` here is a single-field comparison (`intent.category == "account"`), an unset field simply makes the comparison evaluate `false` — no error, and the trace shows your literal source text.
+Each `PASS` field becomes a typed input on that routing action. The model fills it from what the customer already said. Each specialist also gathers `customer_id`, so a missing value is requested again. `Live_Agent` is a machine agent. It reaches a person through `ESCALATE`. Escalation reaches a person only when the project has a human-agent connection and the `ESCALATE` block has a `routing` block with `connection`, `queue`, or `skills`. See the [ESCALATE reference](/agent-platform/abl/reference/multi-agent-and-supervisor#escalate).
+
+If a `HANDOFF` entry omits `HISTORY`, the specialist receives the full conversation history. A project-level coordination default can change this value. Set `HISTORY` on the entry when one route needs `summary_only`, `none`, `auto`, or the last few messages.
 
 ## When to use handoff
 
-Use `HANDOFF` when the target agent should own the next part of the conversation.
+Use `HANDOFF` when the target agent should own the next part of the conversation, including when it must ask the customer questions.
 
-Use `RETURN: true` when the specialist should do bounded work and return control to the supervisor. Use `RETURN: false` when the target agent or human channel should keep ownership.
+Use `RETURN: true` when the specialist should do bounded work and return control to the supervisor. The specialist returns when its `COMPLETE` rule matches, or when it uses the built-in return action for a request outside its scope. Use `RETURN: false` when the target agent or human channel should keep ownership.
 
 ## When to use delegate
 
-Use `DELEGATE` when the parent agent keeps the conversation but asks another agent for a result.
+Use `DELEGATE` when the parent agent keeps the conversation but asks another agent for a one-shot result.
 
-This example is a two-agent project set. The child produces `total_fee`, and the parent maps that result into `quoted_fee`.
+A delegate runs to completion and cannot wait for customer replies. Two rules follow from this:
+
+- Map every required field of the child agent in `PASS`. Otherwise the compiler reports `DELEGATE_CHILD_GATHER_INPUT_UNMAPPED`. If the child must ask the customer, use a `RETURN: true` handoff instead.
+- A supervisor with `ROLE: router` cannot use `DELEGATE`. The compiler reports `AGENT_RETURNED_WORK_REQUIRES_ORCHESTRATOR`.
+
+This example is a two-agent project set. The child produces `total_fee`, and the parent maps that result into `quoted_fee`. The parent completes only after the fee returns. The fixed `$25` fee is a stand-in. Replace it with a call to your fee tool.
 
 `agents/booking-manager.agent.abl`
 
@@ -171,13 +180,12 @@ DELEGATE:
     PASS: { booking_id: booking_id }
     RETURNS:
       total_fee: quoted_fee
-    USE_RESULT: "Explain the fee before asking the user to confirm"
-    TIMEOUT: "10s"
+    TIMEOUT: 10s
     ON_FAILURE: RESPOND "I could not calculate the fee right now."
 
 COMPLETE:
-  - WHEN: booking_id IS SET
-    RESPOND: "I can manage booking changes for {{booking_id}}."
+  - WHEN: booking_id IS SET AND quoted_fee IS SET
+    RESPOND: "The change fee for booking {{booking_id}} is {{quoted_fee}}."
 ```
 
 `agents/fee-calculator.agent.abl`
@@ -185,6 +193,12 @@ COMPLETE:
 ```abl
 AGENT: Fee_Calculator
 GOAL: "Calculate booking change fees for the booking manager"
+
+GATHER:
+  booking_id:
+    prompt: "What booking should I use?"
+    type: string
+    required: true
 
 FLOW:
   entry_point: calculate_fee
@@ -194,44 +208,67 @@ FLOW:
 calculate_fee:
   REASONING: false
   SET: total_fee = "$25"
-  RESPOND: "The estimated change fee is $25."
+  RESPOND: "The estimated change fee for booking {{booking_id}} is {{total_fee}}."
   THEN: complete
 
 COMPLETE:
   - WHEN: total_fee IS SET
-    RESPOND: "The estimated change fee is {{total_fee}}."
+    RESPOND: "The estimated change fee for booking {{booking_id}} is {{total_fee}}."
 ```
+
+Delegate settings to know:
+
+- `RETURNS` maps a child value to a parent variable. If the child returns none of the declared values, the delegate fails and `ON_FAILURE` runs.
+- `USE_RESULT` names a parent variable that stores the whole delegate result. Write a variable name, not an instruction. The platform ignores text with spaces.
+- Write `TIMEOUT` without quotes, for example `10s`, `500ms`, or `2m`. A quoted value is ignored and the default of 30 seconds applies.
+- `ON_FAILURE` accepts `continue`, `escalate`, or `RESPOND "text"`. The default is `continue`.
 
 ## Verification
 
 1. Validate all files in the project together, not only the supervisor.
-2. Send an account access utterance and confirm the selected tool or trace shows `handoff_to_Account_Support_Agent`.
+2. Send an account access utterance and confirm the trace shows `handoff_to_Account_Support_Agent` and that ownership moves to `Account_Support_Agent`.
 3. Send an order-status utterance and confirm ownership moves to `Order_Status_Agent`.
-4. Send "I need a person" or an unclear request and confirm the fallback route reaches `Live_Agent`.
-5. For the delegate example, send "What would it cost to change this booking?" and confirm the parent stays active while `Fee_Calculator` returns `total_fee`.
+4. Send "I need a person" and confirm the route reaches `Live_Agent` and that the model escalates.
+5. Check the `handoff` trace event. Confirm `customer_id` appears in its `context` when the customer stated it. Check `seededFields` in `handoff_context_seed` to see which `PASS` fields reached the specialist.
+6. For the delegate example, send "What would it cost to change this booking?" and confirm the trace shows `delegate_start` and `delegate_complete`, the parent stays active, and the reply includes the fee.
+7. Force a delegate failure in a test project, for example with `TIMEOUT: 1ms`. Confirm the customer sees the `ON_FAILURE` text.
 
 ## Production readiness checklist
 
-- Every `HANDOFF TO` and `DELEGATE TO` target exists in the project or is configured as an external/remote agent.
+- Every `HANDOFF TO` and `DELEGATE TO` target exists in the project or is configured as an external or remote agent.
 - Every `PASS` field is gathered, read from memory, produced by a tool, or supplied by the channel before it is needed.
+- Every delegate child maps all its required fields in `PASS`.
 - Each route has a distinct business owner and success criteria.
-- A fallback or human route exists for unclear, unsupported, or high-risk requests.
-- Test utterances cover every route, delegate failure, and human escalation.
-- Trace/debug review confirms selected route, target agent, return behavior, and context passed.
+- A human route exists for unclear, unsupported, or high-risk requests, and a human-agent transfer is configured for your channels.
+- Test utterances cover every route, delegate failure, delegate timeout, and human escalation.
+- Trace review confirms selected route, target agent, return behavior, history strategy, and context passed.
 
 ## Common mistakes
 
-| Mistake                            | Why it happens                                                   | How to avoid it                                              |
-| ---------------------------------- | ---------------------------------------------------------------- | ------------------------------------------------------------ |
-| Splitting too early                | A broad domain looks complex, but one owner can still handle it. | Split only when ownership, tools, policy, or risk differs.   |
-| Listing agents without routing     | `AGENTS:` looks like it connects agents.                         | Add `HANDOFF` rules for executable transfer.                 |
-| Passing fields with no source      | The route needs context that was never gathered or produced.     | Gather, remember, or tool-populate every passed field.       |
-| Using handoff for a subtask result | The parent only needed a calculation or answer.                  | Use `DELEGATE` when the parent should keep the conversation. |
+| Mistake                                | Why it happens                                                   | How to avoid it                                                            |
+| -------------------------------------- | ---------------------------------------------------------------- | -------------------------------------------------------------------------- |
+| Splitting too early                    | A broad domain looks complex, but one owner can still handle it. | Split only when ownership, tools, policy, or risk differs.                 |
+| Listing agents without routing         | `AGENTS:` looks like it connects agents.                         | Add `HANDOFF` rules. The platform ignores `AGENTS:`.                       |
+| Passing fields with no source          | The route needs context that was never gathered or produced.     | Gather, remember, or tool-populate every passed field.                     |
+| Using handoff for a subtask result     | The parent only needed a calculation or answer.                  | Use `DELEGATE` when the parent should keep the conversation.               |
+| Using delegate for a customer dialogue | The child needs answers from the customer.                       | Use a `RETURN: true` handoff. A delegate cannot wait for customer replies. |
+| Writing an instruction in `USE_RESULT` | The name suggests guidance for the parent.                       | Write a variable name, or omit `USE_RESULT` and use `RETURNS`.             |
+| Quoting `TIMEOUT`                      | Other values in the file use quotes.                             | Write `TIMEOUT: 10s` without quotes.                                       |
 
 ## Troubleshooting
 
-| Symptom                              | Likely cause                                             | What to check                                                            |
-| ------------------------------------ | -------------------------------------------------------- | ------------------------------------------------------------------------ |
-| The supervisor stays active          | No handoff rule was selected.                            | Check `HANDOFF`, route conditions, intent categories, and fallback path. |
-| A target cannot use passed context   | The field is missing or named differently.               | Check `PASS` field names and target-agent gathered fields.               |
-| A delegate return is empty or warned | The child does not obviously produce the returned field. | Declare, gather, set, or tool-produce the child return field.            |
+| Symptom                                   | Likely cause                                              | What to check                                                                   |
+| ----------------------------------------- | --------------------------------------------------------- | ------------------------------------------------------------------------------- |
+| The supervisor stays active               | No handoff rule was selected.                             | Check `HANDOFF`, route conditions, intent categories, and the human route.      |
+| A target cannot use passed context        | The field is missing or named differently.                | Check `PASS` field names and target-agent gathered fields.                      |
+| Compile error `DELEGATE_CHILD_GATHER_INPUT_UNMAPPED` | The delegate child has a required field that `PASS` does not map. | Map the field, make it optional, or switch to a `RETURN: true` handoff. |
+| A delegate return is empty or warned      | The child does not produce the returned field.            | Declare, gather, set, or tool-produce the child return field. Check `RETURNS`.  |
+| The delegate waits too long               | `TIMEOUT` is quoted and the default applies.              | Remove the quotes from `TIMEOUT`.                                               |
+| The customer asked for a person and nothing happened | `Live_Agent` has no `ESCALATE` block, no `routing` block, or no human-agent connection. | Check the `ESCALATE` block, its `routing` entries, and the human-agent connection.            |
+
+## Related HowTos
+
+- How to design a supervisor that routes users to specialist agents
+- How to define clear responsibilities for each enterprise agent
+- How to route unclear or unsupported requests to a fallback agent
+- How to choose between a reasoning agent and a FLOW-based agent

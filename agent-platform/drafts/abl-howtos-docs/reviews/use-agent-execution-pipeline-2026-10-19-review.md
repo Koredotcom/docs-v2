@@ -1,0 +1,265 @@
+# HowTo Review: use-agent-execution-pipeline
+
+**Date:** 2026-10-19
+**Article:** `agent-platform/drafts/abl-howtos-docs/articles/use-agent-execution-pipeline.md`
+**Topic:** 1.10 - How to use EXECUTION.pipeline for agent routing, classification, and short-circuiting
+**Verdict:** update-needed
+
+## Proposed changes
+
+- Fix the examples. The supervisor used quoted plain-language `WHEN` text. The pipeline resolves routes with `intent.category` conditions, so the quoted text cannot select a route. The examples now declare `INTENTS` and route with `intent.category == "..."`.
+- Remove `model:` from the examples and explain that the classifier model is a project setting. The runtime ignores `model` in `EXECUTION.pipeline`.
+- Add `LIMITATIONS` to the example. `outOfScopeDecline` only fires when the agent declares limitations.
+- Correct the short-circuit rules. Add the default threshold (`0.85`), the automatic veto words taken from tool names, and the multi-intent path.
+- Correct the `intentBridge` table. `programmaticThreshold` only controls out-of-scope decline. Route short-circuiting uses `shortCircuit.confidenceThreshold`.
+- Add the project setting location, the circuit breaker, the classifier-skipped cases, and the trace event names.
+- Keep the `HANDOFF` history note.
+
+## Evidence
+
+| Claim | Current evidence | Impact |
+| ----- | ---------------- | ------ |
+| `model` is ignored in `EXECUTION.pipeline` | `apps/runtime/src/services/pipeline/config.ts`, `model-resolver.ts`, `packages/compiler/src/platform/ir/schema.ts` (`@deprecated`) | Examples fixed |
+| Routes resolve through `intent.category` conditions | `routing-resolver.ts`, `supervisor-route-catalog.ts`; harness: a quoted sentence evaluates to true | Examples rewritten |
+| Decline needs `LIMITATIONS` | `tiered-resolver.ts` `hasLimitations` | Example and text updated |
+| Short-circuit rules | `classifier.ts` `shouldShortCircuit`, `checkKeywordVeto` | Text corrected |
+| Examples validate | `validateABL` harness, 0 errors, 0 warnings | Kept |
+
+## Proposed article
+
+````markdown
+# How to use EXECUTION.pipeline for agent routing, classification, and short-circuiting
+
+Use `EXECUTION.pipeline` when a supervisor or routing agent needs a fast classification pass that can route obvious single-intent requests before the normal reasoning path runs.
+
+## Concept
+
+`EXECUTION.pipeline` is the agent execution pipeline. It is not a Knowledge Base ingestion pipeline, a custom operational pipeline, or a workflow. It runs before the reasoning loop. A classifier model reads the user message and assigns one or more intent categories. The runtime then resolves each category to a route with your `HANDOFF` or `DELEGATE` conditions.
+
+The pipeline has four parts:
+
+| Part | What it does |
+| ---- | ------------ |
+| Classifier | Assigns an intent category and a confidence score to the message. |
+| Short-circuit | Routes a confident single-intent request without a reasoning turn. |
+| Keyword veto | Blocks short-circuiting when the message contains a sensitive word. |
+| Intent bridge | Guides reasoning when the classifier is not confident enough to route. |
+
+Use the pipeline when routing quality or latency depends on a fast classification pass. Do not use it for durable waits, approvals, schedules, or long-running work. Use workflows for those.
+
+### Requirements
+
+The pipeline runs only when all of these are true:
+
+- The project enables it. In Studio, open the project Runtime Config and turn on **Enable Pipeline** in the Reasoning Pipeline section. Studio labels this feature experimental.
+- The agent does not opt out. `enabled: false` in the agent `EXECUTION.pipeline` block turns it off for that agent even when the project enables it.
+- The agent has route conditions that use `intent.category`, or the agent declares `INTENTS`. Without categories, the classifier does not run.
+- A pipeline model is available. The default model source uses the `tool_selection` model of the project. Without a model, the pipeline skips the classifier.
+
+`enabled: true` in ABL does not enable the pipeline when the project setting is off.
+
+## Minimal working example
+
+The supervisor declares its categories in `INTENTS` and routes each category with `intent.category`. The classifier chooses from the `INTENTS` list.
+
+```abl
+SUPERVISOR: Support_Router
+GOAL: "Route support requests using classifier-assisted pipeline decisions"
+PERSONA: "Concise support routing supervisor"
+
+LIMITATIONS:
+  - "Cannot answer questions unrelated to billing or technical support"
+
+INTENTS:
+  billing: "Questions about invoices, balances, billing errors, refunds, or payments."
+  technical_support: "Problems with device setup, errors, troubleshooting, or service outage."
+  general: "Requests that are unclear or do not fit billing or technical support."
+
+EXECUTION:
+  pipeline:
+    enabled: true
+    mode: sequential
+    shortCircuit:
+      enabled: true
+      confidenceThreshold: 0.9
+    keywordVeto:
+      enabled: true
+      keywords: ["refund", "cancel", "fraud"]
+    intentBridge:
+      enabled: true
+      programmaticThreshold: 0.85
+      guidedThreshold: 0.5
+      outOfScopeDecline: true
+      multiIntentSignal: true
+
+HANDOFF:
+  - TO: Billing_Agent
+    WHEN: intent.category == "billing"
+    SUMMARY: "User needs billing support"
+  - TO: Technical_Support_Agent
+    WHEN: intent.category == "technical_support"
+    SUMMARY: "User needs technical support"
+  - TO: General_Fallback_Agent
+    WHEN: intent.category == "general"
+    SUMMARY: "User needs clarification or general support"
+```
+
+```abl
+AGENT: Billing_Agent
+GOAL: "Resolve billing, invoice, refund, and payment questions"
+PERSONA: "Billing specialist"
+```
+
+```abl
+AGENT: Technical_Support_Agent
+GOAL: "Troubleshoot device, software, and service issues"
+PERSONA: "Technical support specialist"
+```
+
+```abl
+AGENT: General_Fallback_Agent
+GOAL: "Clarify unclear support requests and route users to the right next step"
+PERSONA: "General support specialist"
+```
+
+The pipeline resolves routes with the `intent.category` condition. A quoted plain-language `WHEN` sentence does not select a route in the pipeline. Use `intent.category` conditions for any route you want the pipeline to choose.
+
+The classifier model is not set in ABL. Select it in the project Runtime Config under **Pipeline Model**. The `model` field in `EXECUTION.pipeline` has no effect.
+
+## How it works
+
+For each user message, the runtime follows this order:
+
+1. The classifier assigns each intent a category and a confidence score. The classifier sees the current message and the last four conversation messages. The runtime redacts PII before it sends them.
+2. The runtime resolves each category to a route. The first matching `WHEN` condition, in priority order, selects the target.
+3. The runtime checks whether to short-circuit.
+4. If the runtime does not short-circuit, the intent bridge picks a tier.
+
+### Short-circuit
+
+A single-route short-circuit happens only when all of these are true:
+
+- `shortCircuit.enabled` is `true`. This is the default.
+- The classifier returns one intent with a category.
+- The confidence is at or above `shortCircuit.confidenceThreshold`. The default is `0.85`.
+- The category resolves to exactly one route target.
+- No veto word appears in the message.
+
+When these conditions hold, the runtime hands off to the target (or runs the delegate) without a reasoning turn.
+
+### Keyword veto
+
+Keyword veto matches whole words, ignoring case. The veto list has two sources:
+
+- The words in `keywordVeto.keywords`.
+- The words in the names of the agent tools, split on underscores. Parts shorter than three characters are ignored. A tool named `process_refund` vetoes the words `process` and `refund`.
+
+Handoff and delegate tools do not add veto words. Review tool names when short-circuiting stops working for common words.
+
+### Intent bridge tiers
+
+The intent bridge acts when the runtime does not short-circuit.
+
+| Tier | Condition | Behavior |
+| ---- | --------- | -------- |
+| Programmatic | Every intent is out of scope, confidence is at or above `programmaticThreshold`, `outOfScopeDecline` is `true`, and the agent declares `LIMITATIONS`. | The agent declines with the `out_of_scope` message. Agents reached by a handoff skip the decline. |
+| Guided | Confidence is at or above `guidedThreshold`. | Reasoning runs with hints. The runtime hides handoff tools for unmatched targets and adds a routing hint. Escalation targets are never hidden. |
+| Autonomous | No result, no intents, or confidence below `guidedThreshold`. | Normal reasoning decides. |
+
+`programmaticThreshold` controls only the out-of-scope decline. Route short-circuiting uses `shortCircuit.confidenceThreshold`.
+
+### Multiple intents
+
+When the classifier finds two or more requests, no single-route short-circuit happens. With `multiIntentSignal` on, the guided tier adds a multi-intent hint. When `MULTI_INTENT` and `intentBridge` are enabled, every request resolves to a target, and every confidence is at or above the short-circuit threshold, the runtime runs a multi-intent plan. Independent requests run in parallel. Dependent requests run in sequence. See How to handle multiple intents in one user message.
+
+### Failure behavior
+
+- If the classifier call fails or returns no usable result, the turn continues in autonomous reasoning. The runtime records a `pipeline_classifier_unavailable` trace event.
+- After three consecutive pipeline failures for a tenant, a circuit breaker bypasses the pipeline for 60 seconds.
+- If no category resolves to a route, the supervisor reasons normally.
+
+Since none of the `HANDOFF` entries above declare `HISTORY`, each specialist receives the full conversation history by default (the current platform default when `HISTORY` is omitted).
+
+## Common variations
+
+### Fast single-intent routing
+
+Enable `shortCircuit` for high-volume routers where users usually ask one clear thing, such as "What is my balance?" or "My device will not start."
+
+### Sensitive keyword veto
+
+Add words to `keywordVeto.keywords` when they must never short-circuit. A vetoed message goes to the guided tier, where the supervisor reasons about the route.
+
+### Multi-intent detection
+
+Enable `multiIntentSignal` when users often ask for more than one thing, such as "Cancel my subscription and refund my last payment."
+
+### Out-of-scope decline
+
+Set `outOfScopeDecline: true` and declare `LIMITATIONS` when the agent must decline requests outside its scope without a reasoning turn.
+
+### Classifier without short-circuit
+
+Set `shortCircuit.enabled: false` to keep the classifier and intent bridge but let the model make every routing decision.
+
+## Verification
+
+- Send a clear single-intent message, such as "Where is my invoice?". Confirm a `pipeline_classify` event with the `billing` category and a handoff to `Billing_Agent` without a reasoning turn.
+- Send a vague message. Confirm a `pipeline_tiered_action` event with the guided or autonomous tier and no short-circuit.
+- Send a message with two requests. Confirm two intents in `pipeline_classify` and no single-route short-circuit.
+- Send a message with a veto word, such as "I want a refund". Confirm a confident `pipeline_classify` result and no short-circuit.
+- Send an unrelated message. Confirm a `pipeline_tiered_action` event with the `decline_out_of_scope` action.
+- Check `pipeline_routing_resolve` to confirm each category resolved to the expected target.
+- Confirm the specialist receives the expected summary and conversation history.
+
+See How to debug routing with traces for how to read routing traces.
+
+## Production readiness checklist
+
+- Enable the pipeline in the project Runtime Config and select a pipeline model.
+- Categories are distinct, and every category maps to one route.
+- A fallback category and target exist for unclear and unsupported requests.
+- The agent declares `LIMITATIONS` if you rely on out-of-scope decline.
+- Thresholds are tested against real utterances.
+- Product, support, and compliance owners review the veto words.
+- Tool names do not contain common words that veto short-circuiting.
+- Dashboards track classifier confidence, short-circuit rate, veto rate, fallback rate, and misroutes.
+
+## Common mistakes
+
+| Mistake | Why it happens | How to avoid it |
+| ------- | -------------- | --------------- |
+| Treating `EXECUTION.pipeline` as a workflow | Both use the word pipeline | Use workflows for durable orchestration. Use `EXECUTION.pipeline` for agent routing. |
+| Routing with quoted plain-language `WHEN` text | The text reads like a rule | Use `INTENTS` and `intent.category` conditions for pipeline routes. |
+| Setting `model` in `EXECUTION.pipeline` | The field parses without error | Select the pipeline model in the project Runtime Config. |
+| Expecting `enabled: true` to turn the pipeline on | Agent config looks complete | Enable the pipeline in the project Runtime Config. |
+| Setting `programmaticThreshold` to tune routing | The name suggests direct routing | Tune `shortCircuit.confidenceThreshold` for routing. |
+| Expecting a decline without `LIMITATIONS` | `outOfScopeDecline` is on | Declare `LIMITATIONS` on the agent. |
+| Missing fallback route | The classifier cannot always match | Add a fallback category and target. Test no-match requests. |
+
+## Troubleshooting
+
+| Symptom | Likely cause | What to check |
+| ------- | ------------ | ------------- |
+| Pipeline config compiles but nothing runs | The project setting is off, the agent opts out, or no pipeline model exists | Check the project Runtime Config and the agent `enabled` value. |
+| No `pipeline_classify` event | The agent has no categories or routes, or the circuit breaker is open | Check `INTENTS`, route conditions, and recent classifier failures. |
+| Obvious request does not short-circuit | Confidence is below the threshold, there are several intents, the category is null, a veto word matched, or the category matches no route | Inspect the `pipeline_classify` and `pipeline_routing_resolve` events. |
+| Common word blocks short-circuiting | A tool name contains the word | Rename the tool or accept the veto. |
+| Every request goes to the first route | The route `WHEN` uses plain-language text | Switch to `intent.category` conditions. |
+| Sensitive request routes too fast | Keyword veto is off or the word is missing | Add the word to `keywordVeto.keywords`. |
+| Classifier returns a category you did not define | The classifier drifts | The runtime drops unknown categories. Confirm `INTENTS` and the fallback route. |
+| Decline never happens | The agent has no `LIMITATIONS`, confidence is below `programmaticThreshold`, or a handoff reached the agent | Check `LIMITATIONS` and the `pipeline_tiered_action` event. |
+
+## Related HowTos
+
+- How to configure EXECUTION.pipeline models, modes, thresholds, and fallbacks
+- How to design a supervisor that routes users to specialist agents
+- How to route users by intent
+- How to handle multiple intents in one user message
+- How to debug routing with traces
+````
+
+## Files to update after approval
+
+- `agent-platform/drafts/abl-howtos-docs/articles/use-agent-execution-pipeline.md`
+- `agent-platform/drafts/abl-howtos-docs/evidence/use-agent-execution-pipeline-2026-10-19-evidence.md`

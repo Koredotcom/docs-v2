@@ -1,12 +1,27 @@
 # How to handle empty-state and fallback greetings
 
-Use this pattern when startup context may be missing, a branch may not match, or a channel may not deliver proactive welcome content.
+Use this pattern when startup data can be missing, no `ON_START` branch can match, or a channel does not deliver a proactive welcome.
 
 ## Concept
 
-A fallback greeting is the safe default that prevents the first turn from feeling broken. Fallbacks are needed because startup conditions can fail, channel metadata can be absent, and some delivery contracts suppress proactive startup messages.
+A fallback greeting is the safe default that keeps the first turn from feeling broken. You need one in three cases:
 
-In ABL, a top-level `ON_START RESPOND` can act as the fallback when branches do not match. If there is no `ON_START`, the first flow step can be the greeting.
+- No branch condition matches.
+- A value that a branch or template reads is empty.
+- The channel does not send the `ON_START` welcome.
+
+ABL gives you four ways to write a fallback. Choose by what the greeting must do next.
+
+| Goal                                                               | Use                                                      |
+| ------------------------------------------------------------------ | -------------------------------------------------------- |
+| Send a generic welcome, then run the first flow step in the same turn | A top-level `RESPOND` next to `BRANCHES`, with no `ELSE`  |
+| Send a generic welcome as the whole startup turn                   | An `ELSE` branch                                         |
+| Greet by name when the name exists, and generically when it does not | One `RESPOND` with a `{{#if}}` section                   |
+| Send no proactive greeting                                         | No `ON_START`. In a flow agent, the first flow step speaks first. |
+
+The difference between the first two rows matters when the agent has a `FLOW`. A branch-selected welcome, including `ELSE`, is the whole startup turn. The first flow step waits for the first customer message. A top-level `RESPOND` that no branch replaced is a prelude. The first flow step runs right after it, in the same turn.
+
+Branch conditions must be expressions. A plain-language condition such as `"the customer is returning"` never matches. It also produces missing-variable warnings at compile time.
 
 ## Minimal working example
 
@@ -31,9 +46,24 @@ ready:
   THEN: COMPLETE
 ```
 
+`session.interaction.current.language` holds the language code the runtime resolved for the session. It comes from the session request, the contact profile, the channel, or the agent default language. It is empty when none of them supplies a language. An empty value never equals `"fr"`, so the fallback runs.
+
+The `ready` step stands in for your own flow.
+
 ## How it works
 
-The runtime evaluates the branch. If the language is French, the branch response is selected. If it is not French, the top-level response is used. Because the top-level response is a fallback prelude, the flow can continue into `ready`.
+The runtime runs `ON_START` in this order:
+
+1. Top-level `SET` and `CALL` run first.
+2. Branches are checked in order. The first matching branch wins.
+3. If no branch matches, the runtime uses the top-level `RESPOND` and records a `dsl_on_start_branch` trace with `matched: false`.
+4. If no branch matches and there is no top-level `RESPOND`, the runtime sends no welcome.
+
+In the example, a French session gets only the French welcome. The `ready` step waits for the first customer message. Any other session gets the generic welcome followed by "How can I help?" in the same turn.
+
+A condition that fails at run time is skipped. The runtime records a `dsl_on_start_branch_error` trace and checks the next branch. A condition with invalid syntax in authored ABL fails compilation with `INVALID_CEL_SYNTAX`, so it does not reach a customer.
+
+In customer-visible text, a `{{name}}` that has no value renders as an empty string. "Welcome back, {{name}}." becomes "Welcome back, .". Use a `{{#if}}` section when the value can be missing.
 
 ## Common variations
 
@@ -56,26 +86,119 @@ first_prompt:
   THEN: COMPLETE
 ```
 
+### Use an ELSE branch
+
+Use `ELSE` when the generic welcome must replace the other branches and own the startup turn.
+
+```abl
+AGENT: Else_Greeting_Agent
+GOAL: "Greet by language and keep a generic branch"
+
+ON_START:
+  BRANCHES:
+    - IF: session.interaction.current.language == "fr"
+      RESPOND: "Bonjour. Je peux vous aider avec le service, la facturation ou les retours."
+    - ELSE:
+      RESPOND: "Welcome. I can help with service, billing, or returns."
+
+FLOW:
+  entry_point: ready
+  steps:
+    - ready
+
+ready:
+  REASONING: false
+  RESPOND: "How can I help?"
+  THEN: COMPLETE
+```
+
+Both welcomes own the startup turn here. The `ready` step runs when the customer sends the first message. Put `ELSE` last. A top-level `HANDOFF` in `ON_START` never runs when an `ELSE` branch exists, and the compiler warns with `ON_START_HANDOFF_UNREACHABLE`.
+
+### Greet by name only when the name exists
+
+Use one `RESPOND` with a `{{#if}}` section when the personal part is optional. The `lookup_customer` tool is a project-local assumption. It needs an execution binding in your project and returns a `first_name` field when the profile has one.
+
+```abl
+AGENT: Optional_Name_Greeting_Agent
+GOAL: "Greet by name only when the profile lookup returns a name"
+
+TOOLS:
+  lookup_customer() -> object
+    description: "Return the customer profile for this session"
+    confirm: never
+
+ON_START:
+  CALL: lookup_customer
+    AS: profile
+  RESPOND: "{{#if profile.first_name}}Welcome back, {{profile.first_name}}. {{/if}}How can I help?"
+
+FLOW:
+  entry_point: ready
+  steps:
+    - ready
+
+ready:
+  REASONING: false
+  RESPOND: "Tell me what you need."
+  THEN: COMPLETE
+```
+
+If the lookup fails or returns no name, the customer sees "How can I help?". If `ON_START` has no `RESPOND` and the tool returns a text `content` field, the runtime sends that text as the welcome. A `RESPOND` always takes priority over `content`.
+
+### Know the channel fallbacks
+
+Some channels apply their own fallback when `ON_START` provides no usable text.
+
+| Channel                    | Fallback order                                                                                                                                  |
+| -------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
+| Pipeline voice (KoreVG)    | The channel Welcome Message, then the `ON_START` response, then the streamed startup text, then "Hello! How can I help you today?".            |
+| Realtime voice (KoreVG)    | `VOICE` `PLAIN_TEXT`, `RESPOND`, `MESSAGE_KEY`, a flow step named `greet_*`, a `welcome` or `greeting` template or message, then the channel Welcome Message. If none exists, the voice provider opens with its own prompt-driven greeting. |
+| Agent Assist               | The top-level `ON_START` `RESPOND`, then the `greeting` message, then "How can I help you?". Branch responses are not used unless the welcome is rendered through a session. |
+
+Realtime voice never speaks a greeting that still contains an unresolved `{{placeholder}}`. Agent Assist skips it the same way.
+
 ## Verification
 
-Test a matching branch, a non-matching branch, and a session without `ON_START`. Confirm every path produces a clear first customer-facing response. In traces, branch misses should not cause an error when a top-level fallback exists.
-
-## Common mistakes
-
-| Mistake                                          | Why it happens                                | How to avoid it                                                               |
-| ------------------------------------------------ | --------------------------------------------- | ----------------------------------------------------------------------------- |
-| Omitting the generic fallback                    | Branch examples focus on the happy path.      | Add top-level `ON_START RESPOND` or make the first flow step a safe greeting. |
-| Personalizing fallback copy with unverified data | Startup metadata may be missing or untrusted. | Keep fallback copy generic until identity and context are known.              |
-| Treating a branch miss as an error               | Branches are conditional by design.           | Test branch misses and verify the fallback response.                          |
-
-## Troubleshooting
-
-If no greeting appears, confirm whether the channel suppresses startup payloads. If a malformed branch condition is present, the runtime falls back instead of selecting the broken branch; inspect traces for branch diagnostics.
+1. Start a session that matches a branch. Confirm the branch response and a `dsl_on_start_branch` trace with `matched: true`.
+2. Start a session that matches no branch, for example with no language set. Confirm the fallback response and a `dsl_on_start_branch` trace with `matched: false`.
+3. Start a session where the optional value is missing. Confirm the greeting has no empty gap such as "Welcome back, .".
+4. Start a session without `ON_START`. Confirm the first flow step produces a clear first response.
+5. On a channel that does not send the welcome, confirm a `dsl_on_start_skipped` trace. Confirm the first customer message still gets a response.
 
 ## Production readiness checklist
 
-- Always define a generic startup or first-flow fallback.
+- Define a generic fallback with a top-level `RESPOND` or an `ELSE` branch.
 - Keep fallback copy broad enough for unknown users.
-- Avoid sensitive personalization in fallback messages.
-- Test branch miss and missing-context cases.
-- Confirm the no-`ON_START` path still has a useful first flow step.
+- Do not put sensitive personalization in fallback text.
+- Check that every value a condition reads has a source: a `SET`, a `CALL`, memory, or caller context.
+- Test the branch match, the branch miss, and the missing-value cases.
+- Test every deployed channel, including voice channels with a Welcome Message set.
+
+## Common mistakes
+
+| Mistake                                           | Why it happens                                             | How to avoid it                                                                      |
+| ------------------------------------------------- | ---------------------------------------------------------- | ------------------------------------------------------------------------------------ |
+| Omitting the generic fallback                     | Branch examples focus on the happy path.                   | Add a top-level `RESPOND`, an `ELSE` branch, or a safe first flow step.              |
+| Expecting the first flow step after a branch      | A branch-selected welcome owns the startup turn.           | Use a top-level `RESPOND` if the flow must continue in the same turn.                |
+| Writing a plain-language `IF:` condition          | The text reads like routing guidance.                      | Write an expression. Plain text never matches.                                       |
+| Personalizing fallback text with unverified data  | Startup data can be missing or client-asserted.            | Keep fallback copy generic until identity and context are known.                     |
+| Treating a branch miss as an error                | Branches are conditional by design.                        | Test the miss path and confirm the fallback response.                                |
+| Using `{{name}}` without a guard                  | A missing value renders as an empty string.                | Wrap the personal part in a `{{#if}}` section.                                       |
+
+## Troubleshooting
+
+| Symptom                                       | Likely cause                                                                       | What to check                                                                    |
+| --------------------------------------------- | ---------------------------------------------------------------------------------- | -------------------------------------------------------------------------------- |
+| No greeting appears                           | The channel does not send the `ON_START` welcome, or there is no top-level `RESPOND`. | Look for `dsl_on_start_skipped` and `dsl_on_start_branch` in the trace.          |
+| The fallback shows when a branch should match | The condition reads a value that is empty at session start.                        | Check that a `SET`, `CALL`, or caller field produces the value before branches run. |
+| A branch is skipped with an error trace       | The condition failed to evaluate at run time.                                      | Read the `dsl_on_start_branch_error` event for the condition and error.          |
+| The first flow step did not run after the greeting | A branch-selected welcome owns the startup turn.                              | Send a customer message, or move the greeting to a top-level `RESPOND`.          |
+| Greeting has a gap such as "Welcome back, ."  | A template value was empty.                                                        | Use a `{{#if}}` section.                                                         |
+| Voice callers hear a different greeting       | A channel Welcome Message overrides it on pipeline voice.                          | Clear the Welcome Message in the channel configuration.                          |
+
+## Related HowTos
+
+- How to use ON_START to greet users before the first message
+- How to personalize a welcome message for returning users
+- How to design channel-specific welcome experiences
+- How to route users from the welcome experience to the right agent
