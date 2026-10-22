@@ -34,14 +34,137 @@ The **API Keys** page issues and revokes the credentials that carry programmatic
 
 | Tab | Description |
 |---|---|
-| **SDK Keys** | Credentials that client-side SDKs and web widgets present to the project runtime. These travel to browsers and devices, so treat them as public and scope them accordingly. |
-| **Platform Keys** | Credentials for server-to-server integrations and administrative API access. These stay on infrastructure you control and carry broader authority than SDK keys. |
+| **SDK Keys** | Credentials that client-side SDKs and web widgets present to the project runtime. These travel to browsers and devices, so treat them as public and restrict them to the origins that need them. |
+| **Platform Keys** | Credentials for server-to-server integrations and administrative API access. These stay on infrastructure you control and carry broader authority than SDK keys, so each key holds only the scopes you grant it. |
+| **JWT Apps** | Client applications that authenticate to the platform with signed JSON Web Tokens (JWTs) instead of a static key. Each app fixes how its tokens are signed and what they must carry, and limits the scopes and environments they can reach. |
 
-Select **Create Key**, name it descriptively, and optionally set an expiration date. Each entry shows the key name, a masked prefix, and the date something last used it. The last-used date is the field that matters during an audit, because it identifies keys you can revoke without breaking anything.
+### SDK keys
+
+The **SDK Keys** tab lists every SDK key in the project, with a count at the top. Each entry shows the key name, a masked prefix (for example, `pk_c79197cb...`), the origins the key accepts, and the date something last used it. The last-used date is the field that matters during an audit, because it identifies keys you can revoke without breaking anything.
+
+To create a key, select **+ New Key**, then complete the fields and select **New Key** again to confirm.
+
+| Field | Description |
+|---|---|
+| **Key name** | Names the key so a later reader knows which application uses it, for example `Production SDK`. |
+| **Allowed origins** | Optional. Restricts the key to the origins you list, one per line, for example `https://app.example.com`. Wildcards are supported, for example `https://*.example.com`. Leave it empty to accept requests from any origin, shown on the key as **All origins**. SDK keys travel to browsers, so restrict origins wherever you know where the SDK runs. |
+
+Select the pencil icon on a key to edit it, or the trash icon to delete it.
+
+### Platform keys
+
+The **Platform Keys** tab lists every platform key in the project, with a count at the top. Each entry shows the following:
+
+| Detail | Description |
+|---|---|
+| **Key name and status** | The name you gave the key. A badge such as **Revoked** appears when the key is no longer valid. |
+| **Masked key** | A masked prefix (for example, `abl_d778...`) that identifies the key without exposing it. |
+| **Created by** | The user who created the key. |
+| **Created at** | The date and time the key was created. |
+| **Lifecycle** | When the key expires or, for a revoked key, when it was revoked. |
+| **Scopes** | The scopes granted to the key. Select **Show scopes** to see each scope with its description, and **Hide scopes** to collapse the list. |
+
+A revoked key stays in the list for reference, and you can't edit it.
+
+To create a key, select **+ New Key**, then complete the fields and select **New Key** again to confirm.
+
+| Field | Description |
+|---|---|
+| **Key name** | Names the key after the integration that uses it, for example `Workflow Trigger Key`. A key per integration lets you revoke one without disturbing the others. |
+| **Scopes** | Selects what the key is allowed to do. See [Platform key scopes](#platform-key-scopes). |
+| **Payload encryption** | Protects public API traffic across sessions, conversations, LLM logs, traces, and dashboard responses. **Encrypt requests** encrypts request parameters when you send them as a JSON body with POST. GET query strings are never encrypted. **Encrypt responses** returns encrypted response envelopes for supported public API reads. For how encryption works end to end, see [Payload encryption](#payload-encryption) under JWT apps. |
+| **Environments** | Grants the key authority to deploy, promote, or roll back in the selected environments (**dev**, **staging**, **production**) through the CI/CD API. Leave all environments cleared for a key that only reads or builds releases. Grant **production** only to keys that need it. |
+| **Expiration** | Sets when the key stops working: **No expiration**, **30 days**, **90 days**, or **Custom date**. A key that expires on a schedule limits the damage of a leak you never notice. |
+
+#### Platform key scopes
+
+Scopes limit what a platform key can do. Grant the narrowest set that lets the integration work, because a key with broad scopes is a broad risk if it leaks.
+
+Scopes are grouped into the following categories:
+
+| Category | Description |
+|---|---|
+| **Execution** | Run the project's agents and workflows and work with their sessions. |
+| **Management** | Manage project resources through the API. |
+| **Knowledge Base** | Work with knowledge base content through the API. |
+| **Analytics** | Read analytics and reporting data. |
+| **Admin** | Perform administrative operations on the project. Grant these rarely. |
 
 Deleting a key revokes it permanently and immediately. Anything still presenting that key stops working, so confirm the last-used date before you delete.
 
 <Note>Issue a separate key for each environment and rotate them on a schedule. A single shared key means one compromise forces you to rotate everywhere at once.</Note>
+
+### JWT apps
+
+A JWT app lets a client application authenticate with tokens it signs itself, so the platform never holds a long-lived key that the client has to send with every request. Use a JWT app when you need short-lived, verifiable credentials, one-time-use tokens, or encrypted payloads.
+
+The **JWT Apps** tab lists every JWT app in the project, with a count at the top. Each entry shows the following:
+
+| Detail | Description |
+|---|---|
+| **App name and status** | The name you gave the app, with a badge such as **Active** that shows whether the app can authenticate. |
+| **Client ID** | The identifier the platform assigns to the app (for example, `cid_4fa3…e5df`). Your client uses it to identify the app when it presents a token. |
+| **Algorithm** | The signing algorithm the app verifies tokens with. |
+| **Created by** | The user who created the app. |
+| **Lifecycle** | When the app expires, or **No expiration**. |
+| **Enforcement and access badges** | The enforcement options that apply to the app (for example, **JTI enforced**), the scopes granted to it, and the environments it can reach. |
+
+Select **Show scopes** to see each scope with its key (for example, `workflows.execute`) and description, and **Hide scopes** to collapse the list. Use the icons on an entry to rotate, edit, or delete the app.
+
+#### Create a JWT app
+
+Select **+ New App** to open the **Create JWT App** wizard. It has three steps: **Signing**, **Scopes**, and **Access**. Select **Back** to return to a previous step, and **Create app** on the last step to finish.
+
+<Warning>The signing algorithm and the enforcement options are fixed once you create the app, because every token issued against the app is bound by them. To change either, create a new app.</Warning>
+
+**Step 1: Signing**
+
+| Field | Description |
+|---|---|
+| **App name** | Required. Names the app after the application that uses it, for example `Claims Intake`. |
+| **Signing algorithm** | Required. Sets how the platform verifies your tokens: **RS256**, **RS512**, **HS256**, or **HS512**. Every key you register is bound to the algorithm, so changing it means creating a new app. |
+| **JWKS URL** | For RS256 and RS512, the URL of your JSON Web Key Set, for example `https://example.com/.well-known/jwks.json`. The platform fetches it to verify tokens. |
+| **Public key (PEM)** | For RS256 and RS512, the public key itself. Paste the full PEM block, beginning with `-----BEGIN PUBLIC KEY-----`. |
+
+RS256 and RS512 verify tokens against your own key, so you must provide either a JWKS URL or a public key, but not both. Use a JWKS URL when you rotate keys, since the platform picks up new keys without a change to the app. Never send your private key.
+
+Under **Enforcement**, select the rules every token must meet:
+
+| Option | Description |
+|---|---|
+| **Require a JTI claim** | Each token must carry a unique `jti` and can be presented only once. A retry needs a freshly signed token. Use it to stop a captured token from being replayed. |
+| **Require an encrypted token** | The signed token must arrive wrapped in a JWE envelope encrypted to the platform key. The platform rejects a bare signed token. see [Introduction to JWT tokens](https://jwt.io/introduction/)|
+| **Require encrypted request and response bodies** | Request bodies must arrive as a JOSE envelope encrypted to the platform key, and the platform returns response bodies encrypted. This is separate from token encryption: it protects the data, not the credential. See [Payload encryption](#payload-encryption). |
+
+When you select **Require encrypted request and response bodies**, the following field appears:
+
+| Field | Description |
+|---|---|
+| **Response encryption public key** | Required. Paste the public key (PEM) that the platform encrypts responses to, beginning with `-----BEGIN PUBLIC KEY-----`. Only you hold the matching private key, so only your client can read the responses. Use a different key pair from your signing key, because reusing one key for both signing and encryption weakens both. |
+
+<Warning>Streaming, attachment, and recording endpoints can't carry an encrypted body, so the platform refuses requests to them from an app that requires encrypted bodies. You can't change this enforcement after you create the app.</Warning>
+
+**Step 2: Scopes**
+
+Select the scopes the app can use. Scopes are grouped into the same categories as platform keys: **Execution**, **Management**, **Knowledge Base**, **Analytics**, and **Admin**. For the scopes in each category, see [Platform key scopes](#platform-key-scopes). Grant the narrowest set that lets the application work.
+
+**Step 3: Access**
+
+| Field | Description |
+|---|---|
+| **Project** | Shows the ID of the project the app belongs to. |
+| **Environments** | Grants the app authority in the selected environments (**dev**, **staging**, **production**). Leave all environments cleared to allow every environment the project exposes. Because an empty selection allows all environments, select environments explicitly for any app that shouldn't reach **production**. |
+| **Expiration** | Sets when the app stops working: **No expiration**, **30 days**, **90 days**, or **Custom date**. Select **Pick a date** to choose the date for a custom expiration. |
+
+#### Payload encryption
+
+When you select **Require encrypted request and response bodies**, the platform accepts only encrypted request bodies from the app and returns encrypted response bodies. A request or response captured in transit or in a log is then unreadable without the matching key. It covers public API traffic for sessions, conversations, LLM logs, traces, and dashboard responses.
+
+Request bodies must arrive as a JOSE envelope encrypted to the platform key. The platform encrypts response bodies to the **Response encryption public key** you registered on the app, so only you can decrypt them with your private key. Encryption applies to the JSON body of POST requests. GET query strings are never encrypted, so don't put sensitive values in them.
+
+Payload encryption protects the data rather than the credential, so it works alongside **Require an encrypted token**, not instead of it. Streaming, attachment, and recording endpoints can't carry an encrypted body, so an app with this enforcement can't use them. If your integration needs those endpoints, use a separate app without this enforcement.
+
+<Note>Use a separate JWT app for each client application and environment, so you can revoke one without disturbing the others.</Note>
 
 ---
 
@@ -49,34 +172,57 @@ Deleting a key revokes it permanently and immediately. Anything still presenting
 
 Use the **Models** page to choose which models your project can use and which model handles each platform feature. It has two tabs:
 
-- **Model Configs**: choose the models available to the project.
-- **Feature config**: assign models to individual features.
+* **Model Configs**: choose the models available to the project.
+* **Feature config**: assign models to individual features.
 
-**Navigation**: **Project** -> **Settings** -> **Models**
+**Navigation**: **Project** > **Settings** > **Models**
 
 ### Model Configs
 
-Use this tab to select the models your project can use. Only selected models appear in the project's model pickers and feature settings.
+Use this tab to select the models your project can use. Only selected models appear in the project's model pickers and feature routing.
 
-The tab shows how many models you've selected out of the models your workspace makes available to the project. Each selected model shows its provider, whether it's **Workspace-shared** or **Project-restricted**, and its status: **Ready**, **Not tested**, **Connection failed**, or **Inactive**.
+The **Model access rollout** banner at the top of the tab shows whether the project is limited to its selected models. See [Model access rollout](#model-access-rollout). Below the banner, two counters summarize the selection:
 
-To change the selection, select **Add models**, choose from the eligible models, and then select **Save selection**. Only project administrators can change the selection. Other roles see the tab as read-only.
+| Counter | Description |
+|---|---|
+| **Selected models** | The number of models you've selected for the project. |
+| **Eligible models** | The number of models your workspace makes available to the project. |
+
+The **Selected models** list shows every model you've selected. Each entry shows the following:
+
+| Detail | Description |
+|---|---|
+| **Model name and connection** | The model's name and the connection it uses, for example `Claude Sonnet 4.5 · Connection 3`. |
+| **Provider and scope** | The model's provider (for example, `anthropic` or `openai`), and whether the model is **Workspace-shared** or **Project-restricted**. |
+| **Status** | Whether the model's connection works: **Ready**, **Not tested**, **Connection failed**, or **Inactive**. |
+| **Project default** | A badge that marks the model the project uses as its default. See [Project default](#project-default). |
+
+Select the pencil icon on a model to edit its settings, or the **X** icon to remove it from the selection.
+
+The settings you can edit depend on the model. They can include:
+
+* **Enable thinking**
+* **Compaction threshold**
+* **Verbosity**
+* **Max completion tokens**
+
+To change the selection, select **Add models**, choose from the eligible models, and then select **Save selection**. At the bottom of the tab, a counter shows how many eligible models you've selected, for example **2 of 43 eligible models selected**. Only project administrators can change the selection. Other roles see the tab as read-only.
 
 If a selected model is no longer available to the project, the tab shows a warning. Select **Remove unavailable models** to clear them, and then replace them as needed.
 
 #### Project default
-
+ 
 The project default is the model the project uses when no more specific setting applies. It applies to this project only and doesn't change the workspace.
-
-- **Choose a default.** Use the **Project default (this project only)** field. The default must be one of the selected models. In a project that uses selected models only (see [Model access rollout](#model-access-rollout)), you must choose a default before you can save more than one selected model.
-- **New projects.** A new project starts with the workspace's default models selected, and one of them is set as the project default. If the workspace has no default model, the tab shows **No model configured** until you select a model.
-- **If the default becomes unavailable.** Features that use the project default switch to the next available selected model. Features assigned directly to a specific model don't switch, and they stop working until you fix or replace that model.
-
+ 
+* **Choose a default.** Use the **Project default (this project only)** field next to **Save selection**. Select the field to open a list that contains **No project default** and each of the project's selected models. A check mark shows the current default. The default must be one of the selected models. In a project that uses selected models only (see [Model access rollout](#model-access-rollout)), you must choose a default before you can save more than one selected model.
+* **If the default becomes unavailable.** Features that use the project default switch to the next available selected model. Features assigned directly to a specific model don't switch, and they stop working until you fix or replace that model.
 Once a project uses selected models only, the platform never uses a model that isn't selected. The platform doesn't retry a failed request with another model.
 
 #### Model access rollout
 
 The **Model access rollout** banner shows whether your project is limited to its selected models. New projects are limited from the start. Existing projects move over in stages, and the banner shows the current stage.
+
+When a project is limited to its selected models and has nothing left to resolve, the banner reads **This project uses selected model bindings only. No unresolved references are recorded.**
 
 The banner also shows the number of unresolved references. A warning banner means the project needs repair before it can be limited to selected models. The count isn't an error in your current setup.
 
@@ -137,7 +283,7 @@ Changes here apply to every agent deployment in the project, so treat this page 
 This section decides how the runtime turns a raw user message into structured field values.
 
 | Field | Description |
-| - | - |
+|---|---|
 | **Extraction Strategy** | Chooses which extraction stages run and in what order. Language detection and resolution always run, whatever you choose. The default, **Auto**, runs the stages in sequence: pattern matching runs first, the ML model extracts fields the patterns didn't match, and the LLM extracts anything still missing. Auto gives the best overall accuracy. Change it when your fields sit at one extreme or the other, either structured enough that a model call is waste, or conversational enough that patterns alone leave fields unfilled. The ML stage supports English, French, Spanish, Italian, and Portuguese. For other languages, extraction falls back to the LLM stage. |
 | **Confidence Threshold** | Sets the minimum confidence an extracted entity needs before the runtime accepts it. Accepts values from 0.0 to 1.0 inclusive. Default: 0.50. Raise it when the agent accepts values the user didn't give, and lower it when the agent keeps asking for values the user already supplied. |
 | **Include Confidence** | Attaches confidence scores to extracted entity values. On by default. Turn it on when downstream logic or analytics needs to see how certain an extraction was. |
@@ -147,11 +293,16 @@ This section decides how the runtime turns a raw user message into structured fi
 Multi-Intent allows an agent to handle multiple customer requests instead of treating the conversation as having only one active request. The multi-intent configuration controls how these requests are identified, queued, offered, and completed.
 
 | Field | Description |
-| - | - |
+|---|---|
 | **Enable Multi-Intent** | Turns on detection of several intents in one message. On by default. Turn it off for narrow transactional flows, where a second detected intent is more often a misread than a real request. |
+| **Multi-Intent engine** | Determines how multi-intent requests are managed. **Legacy** uses the existing multi-intent behavior. **Governed** adds controls for managing pending requests, offers, and specialist interactions. **Legacy** is the default. |
+| **Pending request offers** | Controls how pending requests are offered to the user while another request is being handled. For Governed mode. |
+| **Interpret replies to offers** | Controls whether the runtime interprets the user's response to a pending-request offer. Required in Governed mode. |
+| **Request view for specialists** | Controls the level of access specialists have to the customer's request: **Off**, **Inspect**, or **Manage**. |
+| **Offer reply model** | Specifies the model used to generate responses when the runtime offers a pending request to the user. |
 | **Strategy** | Sets the order in which the runtime works through detected intents. The choice decides whether the user gets a fast answer to their first request or waits while the agent works the whole message. Default: `primary_queue`. |
 | **Unknown Relationship Strategy** | Chooses the fallback for same-turn supervisor routing when relationship data isn't available. Relationship data normally decides ordering, so without it the runtime needs a standing instruction rather than a judgment. Default: `parallel`. |
-| **When is a request finished?** | Determines when the runtime considers one customer request complete before moving to the next queued request. Applies only to the `primary_queue` strategy. FLOW agents and agents with **COMPLETE** conditions always finish based on their completion conditions. Default: **When the agent replies**. Recommended: **When the agent confirms it is done**.|
+| **When's a request finished?** | Determines when the runtime considers one customer request complete before moving to the next queued request. Applies only to the `primary_queue` strategy. FLOW agents and agents with **COMPLETE** conditions always finish based on their completion conditions. Default: **When the agent replies**. Recommended: **When the agent confirms it is done**.|
 | **Capture every request in one routing decision** | When enabled, the supervisor identifies all user requests during the initial routing decision so additional requests in the same message are not missed. Recommended when using two or more specialist agents. |
 | **Max Intents** | Caps how many intents the runtime acts on in one turn. Default: 3. Each additional intent comes from a less certain reading of the message, so raising this raises the chance of acting on something the user didn't ask for. |
 | **Confidence Threshold** | Sets the minimum classifier confidence needed to act on a detected intent. Default: 0.6. Raise it when the agent answers requests the user didn't make, and lower it when the agent ignores genuine second requests. |
@@ -160,7 +311,7 @@ Multi-Intent allows an agent to handle multiple customer requests instead of tre
 **Multi-intent strategies**
 
 | Value | Behavior |
-| - | - |
+|---|---|
 | `primary_queue` | Handles the first intent immediately and queues the rest, addressing them in sequence once the primary completes. |
 | `sequential` | Addresses intents one at a time in detection order, finishing each before starting the next. |
 | `parallel` | Dispatches all intents at once and resolves them concurrently. |
@@ -170,7 +321,7 @@ Multi-Intent allows an agent to handle multiple customer requests instead of tre
 **Unknown relationship strategies**
 
 | Value | Behavior |
-| - | - |
+|---|---|
 | `sequential` | Addresses the intents one at a time in detection order. |
 | `parallel` | Handles the intents concurrently. |
 | `disambiguate` | Asks the user which intent to prioritize. |
@@ -182,7 +333,7 @@ Multi-Intent allows an agent to handle multiple customer requests instead of tre
 This section lets the runtime use an LLM to infer values the user hasn't stated, which shortens conversations at the cost of occasionally guessing wrong.
 
 | Field | Description |
-| - | - |
+|---|---|
 | **Confidence Threshold** | Sets the minimum confidence needed to accept an inferred value. Default: 0.8. Inference trades accuracy for fewer questions, and this field is where you set that trade. |
 | **Require User Confirmation** | Presents inferred values to the user before the agent applies them. On by default. Keep it on wherever a wrong inference costs money or changes a record, since confirmation is far cheaper than reversal. |
 | **Model Tier** | Selects the tier that serves inference calls. Default: `fast`. Inference runs often and on small decisions, so this choice affects per-turn latency more than most model settings. |
@@ -193,7 +344,7 @@ This section lets the runtime use an LLM to infer values the user hasn't stated,
 This section decides where exchange rates come from when an agent quotes or converts an amount. Agents that never handle money can leave it alone.
 
 | Field | Description |
-| - | - |
+|---|---|
 | **Currency Mode** | Selects whether the runtime converts currency using **static** rates held in the platform or **live** rates fetched from an API. Default: `static`. Static rates keep results reproducible across a conversation and across environments. Live rates keep them current. Choose on whether your users compare quotes over time. |
 
 ### Reasoning pipeline
@@ -209,7 +360,7 @@ The reasoning pipeline runs a lightweight classifier ahead of each reasoning tur
 </Warning>
 
 | Field | Description |
-| - | - |
+|---|---|
 | **Enable Pipeline** | Runs the classifier ahead of reasoning to enable short-circuit routing and tool filtering. Everything else in this section depends on it. |
 | **Execution Mode** | Decides whether the classifier and tool filter run together or one after the other. **Parallel** runs them simultaneously, which costs less time. **Sequential** waits for the classifier result before deciding whether to run the tool filter at all. Default: `parallel`. |
 | **Pipeline Model** | Selects the model that performs intent classification. **Default** uses the project's `tool_selection` model. The pipeline runs on every turn, so this choice sets a recurring latency and cost floor for the whole project. |
@@ -230,7 +381,7 @@ The reasoning pipeline runs a lightweight classifier ahead of each reasoning tur
 This section bounds the deterministic CALL actions that tool lifecycle hooks invoke. The limits apply only to those hook-driven calls. Side-effecting target tools still run through the normal confirmation flow, so this section doesn't weaken confirmation.
 
 | Field | Description |
-| - | - |
+|---|---|
 | **Boundary CALLs Enabled** | Allows tool lifecycle hooks to invoke another tool deterministically. On by default. Turning it off removes an entire class of chained behavior, so confirm nothing depends on it before you do. |
 | **Max CALL Depth** | Caps nested boundary CALL depth in a single turn. Default: 3. The runtime clamps this value to 5 even if you save a higher one, so use this field to set a stricter limit than the platform's own, not a looser one. |
 | **Max CALLs Per Turn** | Caps boundary CALL fan-out across one runtime turn. Default: 8. The runtime clamps this value to 20 even if you save a higher one. Fan-out limits matter more than depth limits, because a single wide hook can issue far more calls than a deep chain. |
@@ -242,13 +393,13 @@ This section sets project-level controls for how the runtime behaves when a safe
 <Note>Existing projects stay on **Legacy passthrough** until you change this setting.</Note>
 
 | Field | Description |
-| - | - |
+|---|---|
 | **Safety Mode** | Decides how the runtime handles final-output safety interventions for streaming responses. The difficulty is timing: by the time an intervention fires, part of the response may have reached the user. Review the value explicitly rather than assuming the project runs current behavior. |
 
 **Safety modes**
 
 | Value | Behavior |
-| - | - |
+|---|---|
 | **Legacy passthrough** | Keeps the behavior that existed before this setting. Default for projects created before the setting was introduced. |
 | **Buffered** | Holds streamed output back until the safety check completes, so nothing unchecked reaches the user. Adds delay before the first words appear. |
 | **Gated** | Releases streamed output in stages as each portion passes the safety check. |
@@ -264,7 +415,7 @@ Runtime responses often carry repeated structures such as a list of results. Thi
 A counter at the top shows how many mappings you've configured out of the 25 allowed. Select **Add mapping** to create one. Mappings only take effect for responses produced after you add them, so declare a dimension before you need it. You can't recover a field retrospectively.
 
 | Field | Description |
-| - | - |
+|---|---|
 | **Mapping key** | Names the stable analytics category for this item family. Queries group on this key, so keep it stable once collection starts. Renaming it splits your history into two unrelated series. |
 | **Item array path** | Absolute response path to the repeated array, such as `$.items[*]`. |
 | **Item key path** | Optional relative path, such as `id`, that gives each item a stable identity across responses. Set it when you need to follow the same item over time rather than count occurrences. |
@@ -287,7 +438,7 @@ The **Voice setting differences** table compares each voice setting's current va
 The recommended profile changes these groups of settings:
 
 | Group | What the profile sets |
-| - | - |
+|---|---|
 | Profile | Selects the `customer_service_voice_low_latency_v1` profile. |
 | Model routing | Moves `response_gen`, `reasoning`, `coordination`, and `summarization` to the `fast` tier. |
 | Reasoning | Turns extended reasoning off (`reasoning.enabled` = `false`) and sets effort to `none`. |
@@ -299,7 +450,7 @@ The recommended profile changes these groups of settings:
 Each row carries a tag that tells you what kind of change it makes:
 
 | Tag | Meaning |
-| - | - |
+|---|---|
 | `latency` | Changes speed or cost only. |
 | `semantic_risk` | Can change how the agent reasons, so review these rows individually before you apply them. The reasoning settings carry this tag. |
 | `operational` | Changes how the runtime operates rather than how fast it responds or how the agent reasons. |
@@ -311,7 +462,7 @@ Each row carries a tag that tells you what kind of change it makes:
 #### Profile settings
 
 | Field | Description |
-| - | - |
+|---|---|
 | **Profile** | Shows the applied profile name and version, for example `customer_service_voice_low_latency_v1 · v1`. Versioned profile metadata is preserved in project export and import. |
 | **Voice model routing** | Sets the model tier for each semantic operation on voice: `response_gen`, `reasoning`, `coordination`, `summarization`, `tool_selection`, `extraction`, and `validation`. Fast is the voice default for semantic operations. `realtime_voice` stays on the voice-capable tier (`voice`). |
 | **Reasoning/thinking** | Toggle plus a level dropdown (`none`, `minimal`, `low`, `medium`, `high`, `xhigh`, `max`). The profile disables extended reasoning by default for latency. Explicit agent and project settings still win. |
@@ -327,7 +478,7 @@ Each row carries a tag that tells you what kind of change it makes:
 Native speech-to-speech (S2S) fillers are preferred when the provider advertises the capability. Pipeline generation and static speech remain bounded fallbacks.
 
 | Field | Description |
-| - | - |
+|---|---|
 | **Generation source** | Chooses where fillers come from. Default: `s2s_preferred_then_pipeline_llm`, which uses the provider's native filler when available and falls back to a pipeline-generated one. |
 | **Earliest voice delay (ms)** | Sets the earliest point at which a voice filler can play. Default: 300. |
 | **Follow-up gap (ms)** | Sets the pause between a filler and the next follow-up line. Default: 1200. |
@@ -353,7 +504,7 @@ The Channel Recovery and Graceful Failure policy defines how Runtime responds wh
 Recovery policies are versioned. Publishing a policy doesn't apply it to any channel until you turn on that channel's opt-in.
 
 | Setting | Description |
-| - | - |
+|---|---|
 | **Policy Status** | Sets whether the policy is in **Draft** or **Published** state, shown alongside the policy version (for example, v1). Runtime reads only published policies. Drafts are stored for review and don't change live sessions. |
 | **Default Locale** | Sets the fallback locale for a published recovery message when the caller's locale isn't available. Default: `en-US`. |
 | **Channel Opt-in** | Turns recovery on for individual channels: **Voice**, **Web chat**, **SDK/WebSocket**, and **Messaging**. All channels are off by default, and only the channels you turn on apply this policy. |
@@ -381,7 +532,7 @@ Fillers are transient chat and voice status messages the runtime emits while wor
 When the agent is processing a request, Runtime waits for the configured delay before playing a filler message. Depending on the configuration and channel capabilities, it can play a static filler, generate a contextual filler, or use provider-native realtime fillers until the final response is ready.
 
 | Field | Description |
-| - | - |
+|---|---|
 | **Fillers Enabled** | Master switch for the filler system. With it off, nothing else in this section emits anything. |
 | **Chat Fillers** | Shows `status_update` messages in chat clients. |
 | **Voice Fillers** | Speaks status updates on voice channels. Voice needs fillers more than chat does, because a chat user can see that something is in progress and a caller can't. |
@@ -462,7 +613,7 @@ This section sets what happens when a voice caller goes silent. Silence is ambig
 This section sets the project default for caller backchannel acknowledgements. These are language-neutral sounds, such as "uh-huh", that the runtime treats as acknowledgements rather than interruptions, so the agent keeps speaking. Every agent that doesn't set its own backchannel inherits these defaults.
 
 | Field | Description |
-| - | - |
+|---|---|
 | **Enabled** | Turns on backchannel handling for the project. |
 | **Phrases** | Holds the acknowledgement phrases. This is one set for all callers, regardless of language, and the runtime sends it to the voice gateway. Type a phrase and press Enter to add it. |
 
@@ -473,7 +624,7 @@ This section sets the project default for caller backchannel acknowledgements. T
 This section sets the project default for phrases a caller says to make the agent pause, such as asking it to wait a moment. Phrases are locale-aware. Every agent that doesn't set its own on-hold behavior inherits these defaults. On hold runs entirely in the runtime and needs no gateway change.
 
 | Field | Description |
-| - | - |
+|---|---|
 | **Enabled** | Turns on on-hold detection for the project. |
 | **All locales (base)** | Holds phrases that apply in every language. Use it for phrases that work regardless of locale. |
 | **Add language** | Adds a language-specific phrase list. Select a language, then add the phrases callers use to ask for a pause in that language. |
@@ -488,7 +639,7 @@ This section sets the project default for phrases a caller says to make the agen
 When a caller interrupts (barges in) and speech recognition splits their sentence into separate phrase-finals, this section makes the runtime hold each one briefly and merge any follow-on phrase into a single turn. Without it, the agent would treat each fragment as its own turn and may answer a half-finished sentence. This is a project-wide default, and an agent can override it.
 
 | Field | Description |
-| - | - |
+|---|---|
 | **Enabled** | Merges segmented barge-in speech into one turn. On by default. Turn it off to commit each phrase immediately, which is the legacy behavior. |
 | **Continuation window (ms)** | Sets how long the runtime holds a barge-in final while waiting for a continuation before it commits. Range: 300-2000 ms. Default: 700. A longer window catches slower speakers but delays the agent's response. |
 | **Maximum hold (ms)** | Sets the absolute ceiling on how long one turn can be held, regardless of merges. Range: 500-8000 ms. Default: 2500. |
