@@ -1,0 +1,148 @@
+---
+title: Context size, compaction, and budgets
+sidebarTitle: Compaction and budgets
+---
+
+As a conversation runs, the model's context keeps growing: more customer turns, more agent replies, more tool calls and results. The runtime automatically manages that context so it stays within model limits -- compressing large tool results, replacing older tool results with placeholders, and shortening earlier turns -- according to a set of compaction policies you can tune per agent, per project, or per tool. This page lists the default budgets, shows where to set them, and walks through diagnosing a prompt that's grown too large.
+
+For what actually determines *which* values reach the model in the first place -- visibility modes and `## Current Context` -- see [How a turn is built](/agent-platform/context-and-prompts).
+
+## Size limits and compaction
+
+Three policies set how much the model reads on a given turn:
+
+- `tool_results` -- how tool output is shaped, both this turn and on later turns.
+- `prior_turns` -- how earlier turns in the conversation history are compacted.
+- `prompt_context` -- how `## Current Context` values are sized and projected.
+
+They merge in this order: platform defaults, then the voice low-latency profile (voice channels only), then project settings, then the agent's `EXECUTION.compaction`, then per-tool hints. Nothing trims the conversation to a token budget automatically, so a long-running conversation keeps growing unless you set bounds.
+
+### Default values
+
+| Policy | Setting | Default | Voice latency profile |
+|--------|---------|---------|------------------------|
+| `tool_results` | `strategy` | `summarize` | `structured` |
+| | `max_chars` | 102,400 | 16,000 |
+| | `structured_threshold` | 10,000 | 4,000 |
+| | `keep_recent` | 2 | 1 |
+| | `max_description_length` | 200 | 80 |
+| | `summary_timeout_ms` | 5,000 (1,000 to 30,000) | 1,500 |
+| `prior_turns` | `strategy` | `compact` | `compact` |
+| | `assistant_preview_chars` | 200 | 120 |
+| `prompt_context` | `value_max_chars` | 8,000 (40,000 max) | 6,000 |
+| | `total_max_chars` | 24,000 (100,000 max) | 16,000 |
+| | `auto_tool_result_value_max_chars` | 4,000 | 2,000 |
+| | `projection_strategy` | `preview` | `preview` |
+
+### Prior-turn strategies
+
+| Strategy | Effect on earlier turns |
+|----------|---------------------------|
+| `none` | Earlier replies are kept as written. Tool results in history are still placeholders. |
+| `placeholder` | Each earlier tool result is replaced by `[Prior turn result — summarized]`. |
+| `compact` (default) | As `placeholder`, and each reply that followed a tool result is shortened to `assistant_preview_chars`. The agent's latest reply is kept whole if it is 2,000 characters or less. |
+| `summarize` | Behaves the same as `compact`. No model call is made for this strategy. |
+
+### Projection strategies for Current Context
+
+A `## Current Context` value over its limit is replaced by a marker object (`_contextLimited: true`) carrying its original type and size, plus one of three levels of detail:
+
+- `preview` (the default) -- the first part of the value, as text.
+- `summary` -- the value's shape: types, lengths, key names, and up to three sample items.
+- `metadata` -- type and size only.
+
+### Where to set compaction policies
+
+- **Per agent, in ABL** -- the `EXECUTION.compaction` block. See [Compaction policy overrides](/agent-platform/abl-reference/agent-declaration#compaction-policy-overrides) for the full property reference.
+- **Per project** -- the project runtime configuration, set by API or project import. Studio's Runtime Config tab exposes these controls only for the voice latency profile overrides; the project-wide section is not editable from Studio.
+- **Per tool** -- `compaction: essential_fields`, `summary_timeout_ms`, and, for knowledge bases, `max_search_tokens`. See [Result compaction](/agent-platform/abl-reference/tools#result-compaction).
+
+```yaml
+EXECUTION:
+  models:
+    summarization: gpt-4.1-mini
+  compaction:
+    tool_results:
+      strategy: summarize
+      max_chars: 32000
+      structured_threshold: 8000
+      keep_recent: 2
+      essential_fields:
+        search_orders: [id, status, total, createdAt]
+      summarize_prompt: "Keep order IDs, totals and statuses."
+    prior_turns:
+      strategy: compact
+      assistant_preview_chars: 300
+    prompt_context:
+      value_max_chars: 8000
+      total_max_chars: 24000
+      auto_tool_result_value_max_chars: 4000
+      projection_strategy: preview
+```
+
+<Note>The compaction policy is resolved once per conversation. In a multi-agent project, set compaction at the project level, or set it the same way on every agent in a handoff chain -- it is not re-resolved on handoff.</Note>
+
+<Note>Memory sections (`## Session Memory`, `## Granted Memory`, `## Gather Progress`) are not covered by these limits. Keep declared memory small -- see [Memory and state](/agent-platform/memory-and-state). For a single large tool result, a `MODEL_CONTEXT` view is a better tool than raising a size limit: it's exact, and it costs no extra model call.</Note>
+
+## Controlling context size
+
+You control three things: which values may enter the prompt, how large each piece may be, and how long tool output stays around. Most parts of the prompt have a default size limit you can change. Two parts have none -- the conversation history and declared session memory -- so uncontrolled growth usually starts there. Most cuts leave a marker you can find in a trace; knowledge-base chunk drops and the structural shortening of long lists before a summary do not.
+
+### Where context grows
+
+| Source | Grows with | Default limit | Your lever |
+|--------|------------|----------------|-------------|
+| Conversation history | Every turn | None: no token cap, and auto-summarization is off | `prior_turns` (previews of earlier replies), a response `MODEL_CONTEXT` on rich responses, `history: last_n` or `summary_only` on handoffs |
+| Declared session memory (`## Session Memory`, `## Granted Memory`, `## Gather Progress`) | The size of the values you store | None | Declare only what the model needs. Keep large objects in tool results or persistent memory, and use `RESET: per_activation` for scratch values. |
+| `## Current Context` | The number of values visible | 8,000 per value, 24,000 in total | Explicit visibility mode, named references instead of `{{context}}`, `prompt_context` budgets |
+| Tool results, this turn | The size of the API payload | Summarized above 10,000 characters; 102,400 at most | `MODEL_CONTEXT` first, then the `tool_results` strategy and `essential_fields`. Avoid `strategy: none` on unbounded APIs. |
+| Tool calls in history | Tool use per turn | Arguments kept for 6 rounds; results become a marker | Hide bulky arguments with `default_source: runtime` |
+| Knowledge-base results | Chunk count and size | 40,000 tokens when more than 10 chunks come back | `max_search_tokens`, Top K, Similarity threshold -- see [Tool-level search settings](/agent-platform/knowledge#tool-level-search-settings) |
+| Explicit mode | Each declared value | A value can appear in both `## Session Memory` and `## Current Context` | Keep declared memory small |
+| Recall and notes | Cross-channel recall, resolved-intent ledgers, recall instructions | 30 messages of 500 characters each; 8 ledger entries | Recall settings; keep `INSTRUCTION` text short |
+
+### Where context gets cut
+
+| Cut point | Default | Marker in the trace | Lever |
+|-----------|---------|----------------------|-------|
+| One `## Current Context` value | 8,000 characters | `_contextLimited: true` with a preview, summary, or size | `value_max_chars` (up to 40,000), `projection_strategy` |
+| The whole `## Current Context` block | 24,000 characters | Values left out are listed by name | `total_max_chars` (up to 100,000) |
+| An earlier tool result in Current Context | 4,000 characters | `_contextLimited`, plus a `## Prior Tool Result Context` note | `auto_tool_result_value_max_chars` |
+| A tool result this turn | Summarized above 10,000 characters; cut at 102,400 | `"_summarized": true` or `...[truncated: N chars, showing first M]` | `MODEL_CONTEXT`, `structured_threshold`, `max_chars`, `strategy` |
+| An older result within a long turn | Only the last 2 rounds stay whole | `[Result available — see earlier in conversation]` | `keep_recent` |
+| Tool results on later turns | Always replaced | `**COMPACTED FOR CHAT HISTORY**`, `[Prior turn result — summarized]` | Save what you need with `on_result: SET` |
+| Earlier tool-backed replies | 200-character preview | `[Prior response: "…"]` | `assistant_preview_chars`, or `prior_turns: placeholder` |
+| A `MODEL_CONTEXT` view | 16,000 characters or 1,000 items | An "unavailable" marker -- the view fails rather than being cut | Select fewer fields |
+| Knowledge-base results | The token budget | Whole chunks dropped from the end | `max_search_tokens` |
+| Handoff history | Full by default | The receiver's history starts later | `history:` -- see [History strategies](/agent-platform/abl-reference/multi-agent-and-supervisor#history-strategies) |
+
+### A budget recipe for a production agent
+
+1. Declare `BEHAVIOR: role:` so only declared and granted values reach `## Current Context`.
+2. Give every tool with a large or nested result a `MODEL_CONTEXT`, and save the fields later turns need with `on_result: SET`.
+3. Keep declared session memory to small scalars. Use `RESET:` for scratch values.
+4. Use `history: last_n` or `summary_only` with a summary on handoffs in long conversations. Pass state with `pass`, not history.
+5. Set `max_search_tokens` on every knowledge base, lower for voice.
+6. Set compaction once at the project level so every agent in a handoff chain uses the same budgets, then tune each agent only where needed.
+7. Run a 20-turn test conversation, then check the trace's Request view and the session Overview's Token Breakdown for growth from turn to turn.
+
+### Debugging a bloated or truncated prompt
+
+Open a session's Traces tab, pick an LLM step, and open its Request view (see [LLM step request and response](/agent-platform/sessions#llm-step-request-and-response)). Search `systemPrompt` and `messages` for `_contextLimited`, `truncated`, `_summarized`, `COMPACTED FOR CHAT HISTORY`, and `Prior response`. Also look for `Prior turn result`, `Result available`, and an "unavailable" marker.
+
+Knowledge-base results leave no marker in the trace, so compare their size against `max_search_tokens` directly. If the prompt is large and none of these markers explain it, the size is coming from conversation history or a memory section, and the levers in [Where context grows](#where-context-grows) apply.
+
+## Common mistakes
+
+- There is no per-entry switch to hide one declared memory value from the model. Either don't declare it, or supply it through a runtime-supplied tool parameter instead.
+- There is no automatic token cap on conversation history. A long-running conversation needs `prior_turns`, `MODEL_CONTEXT`, and handoff history settings to stay bounded.
+- Compaction settings are resolved once per conversation, the first time they're needed -- usually by the agent that starts it -- and are not refreshed on handoff. Set them consistently across a handoff chain instead of relying on the receiving agent's own settings.
+- The automatic first knowledge-base search for a single-KB agent can't be turned off. Control its size with `max_search_tokens` instead.
+- Studio's Runtime Config tab edits project compaction only inside the voice profile. Set the project-wide section by API or project import.
+
+## See also
+
+- [How a turn is built](/agent-platform/context-and-prompts) -- visibility modes and what reaches `## Current Context` in the first place.
+- [Compaction policy overrides](/agent-platform/abl-reference/agent-declaration#compaction-policy-overrides) -- the full `EXECUTION.compaction` property reference.
+- [Result compaction](/agent-platform/abl-reference/tools#result-compaction) and [Store result](/agent-platform/abl-reference/tools#store-result) -- per-tool compaction and `last_<tool>_result`.
+- [Tuning for latency](/agent-platform/latency-and-speed) -- smaller, stable prompts as a speed lever.
