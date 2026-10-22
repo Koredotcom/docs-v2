@@ -562,3 +562,36 @@ Open a channel from **Deployments** > **Channels** > **Voice** > **Pipeline Voic
     Click **Save Changes** after switching the environment or the version.
   </Tab>
 </Tabs>
+## Pipeline vs. realtime voice
+
+Pipeline voice (speech-to-text, agent, text-to-speech) and Realtime LLM Voice (speech-to-speech) build the agent's turn differently underneath the same ABL. Knowing which one a channel uses matters when authoring instructions, reasoning about history after a handoff, or sizing tool results.
+
+| | Pipeline voice | Realtime speech-to-speech |
+|---|---|---|
+| **System prompt** | The same chat prompt, plus `## Response Format (Voice Channel)`, `## Voice Delivery Instructions`, and the voice language policy | The same agent prompt and tools, plus a realtime operating section |
+| **History** | The same history and compaction rules as chat | The provider holds the call's history itself. No history is sent on first connect. |
+| **After a handoff** | The receiving agent sees history the same way chat does | Depends on the provider -- see below |
+| **Tool results** | The same shaping and compaction as chat | Capped at 102,400 bytes, 8 levels deep, 64 keys per object, 128 array items, and 32,768 characters per string |
+
+Handoff replay on realtime channels varies by provider. OpenAI Realtime and Azure OpenAI Realtime resend the new agent's prompt with a replay of up to 8 recent messages (4,000 characters total, 700 per message). Amazon Nova Sonic opens a new stream with recent turns in a short block (also up to 4,000 characters, 700 per message). Grok Realtime replays every earlier caller utterance. Gemini Live starts a fresh session and replays history.
+
+### Authoring voice behavior in ABL
+
+The Studio settings on this page configure a channel. The agent's own spoken behavior is authored in ABL:
+
+- **Spoken-style rules and grounding guards** -- `EXECUTION.voice.instructions` and `EXECUTION.voice.grounding_guards`, which replace the platform's default voice formatting rules and can refuse ungrounded tool arguments or figures. See [Voice instructions and grounding guards](/agent-platform/abl-reference/agent-declaration#voice-instructions-and-grounding-guards).
+- **Realtime delivery tone** -- `EXECUTION.voice.coordinator_policy` (tone, pace, brevity, interruption handling, accessibility read-backs). See [Voice coordinator policy](/agent-platform/abl-reference/agent-declaration#voice-coordinator-policy).
+- **Per-response voice overrides** -- the `VOICE:` block on a `RESPOND` (SSML, plain text, provider, voice, speed) plus the step- and response-scoped `BARGE_IN`, `STREAMING`, and `END_OF_SPEECH_TURN_TYPE` overrides. See [Voice configuration](/agent-platform/abl-reference/rich-content#voice-configuration) and [Scoped barge-in](/agent-platform/abl-reference/flow#scoped-barge-in).
+- **Listening and turn-taking** -- `CONVERSATION: listening:` (barge-in, no-input retries, caller backchannel, on-hold phrases, barge-in continuation merging). See [Voice turn-taking](/agent-platform/abl-reference/behavior-profiles#voice-turn-taking).
+- **Low-latency defaults** -- new projects and voice channels get the `customer_service_voice_low_latency_v1` profile automatically: tighter compaction, the fast model tier for every operation, reasoning off, and inline gather on. The Studio side of this profile -- model routing, compaction budgets, and filler tuning -- is covered in [Voice low-latency profile](/agent-platform/administration/general-settings#voice-low-latency-profile).
+
+<Warning>The low-latency profile does not fall back to the project's default model. If the workspace has no model assigned to the fast tier, voice turns have no model to call.</Warning>
+
+```yaml
+EXECUTION:
+  voice:
+    instructions: "Speak warmly in plain sentences. No lists. One or two short sentences per answer."
+    grounding_guards:
+      tool_arguments: true
+      reply_figures: true
+```
