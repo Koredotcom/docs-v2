@@ -5,183 +5,287 @@ sidebarTitle: Slack
 
 <Badge icon="arrow-left" color="gray">[Back to messaging or digital channels](/agent-platform/channels#messaging-or-digital-channels)</Badge>
 
-Deploy your agent as a Slack bot for team collaboration. Connect your Slack app to Artemis by entering its credentials manually.
+Deploy your agent as a Slack bot so your team reaches it through direct messages and channel mentions. You connect your own Slack app to Artemis, either by entering its credentials manually or through **Add to Slack**.
 
-<Note>
-  **Redirect URL and Request URL are different.** Slack uses two URLs at different stages:  
+The setup requires:
 
-  * **OAuth Redirect URL** — used only during the **Add to Slack** authorization flow, registered under **OAuth & Permissions** so Slack can return authorization back to Studio.  
-  * **Events Request URL** — generated for this connection and pasted under **Event Subscriptions → Request URL** in Slack, allowing Slack to deliver messages and events to Studio.  
-</Note>
+1. [Choose a setup method](#choose-a-setup-method).
+2. [Prepare your Slack app](#prepare-your-slack-app) with the scopes the agent needs.
+3. [Artemis channel configuration](#artemis-channel-configuration): create the connection, then copy its Webhook URL.
+4. [Event subscriptions in Slack](#event-subscriptions-in-slack): register the Webhook URL so Slack delivers messages.
+5. [Verify the connection](#verify-the-connection) in a direct message and in a channel.
 
-## Create an app in Slack
+After you complete the configuration, Slack posts each direct message and @mention to Artemis, and the agent replies in the same conversation.
+
+**Important considerations**
+
+- **Manual credentials are the recommended setup**: They connect your own Slack app without depending on platform-managed OAuth. **Add to Slack** works only when your platform administrator enables it.
+- **Slack uses two different URLs**: The OAuth Redirect URL serves only **Add to Slack**. The Events Request URL delivers messages. Pasting one in place of the other breaks the setup.
+- **Create the connection before you register events**: Slack verifies the Request URL the moment you paste it, so Artemis must already hold the matching Team ID:App ID and Signing Secret.
+- **Treat the Bot Token and Signing Secret as production secrets**: Paste them only into Artemis. Keep them out of tickets, chat messages, screenshots, and source control.
+
+## Prerequisites
+
+Confirm these before you start, because Slack app changes need workspace permissions.
+
+- Permission to create or manage Slack apps in the target workspace, or a Workspace Owner or App Manager who approves the app.
+- Artemis project access with permission to open **Deployments** -> **Channels**, and a deployed agent in the environment you intend to bind.
+
+---
+
+## Choose a setup method
+
+Both methods produce the same connection. They differ in how Artemis gets the Slack credentials.
+
+<CardGroup cols={2}>
+  <Card title="Enter credentials manually" icon="key" href="#artemis-channel-configuration">
+    Recommended. You copy the Team ID, App ID, Bot Token, and Signing Secret from your Slack app.
+  </Card>
+  <Card title="Add to Slack" icon="slack" href="#artemis-channel-configuration">
+    Slack authorizes the workspace and fills in the identifiers. Requires administrator enablement.
+  </Card>
+</CardGroup>
+
+### Slack URLs at a glance
+
+Slack asks for URLs on several screens. Each URL has one job.
+
+| URL | Purpose | Where it goes in Slack |
+|---|---|---|
+| **OAuth Redirect URL** | Returns **Add to Slack** authorization to Artemis. Manual setup doesn't use it. | **OAuth & Permissions** -> **Redirect URLs** |
+| **Webhook URL** (Events Request URL) | Delivers messages and events for this connection | **Event Subscriptions** -> **Request URL**, and **Interactivity & Shortcuts** -> **Request URL** |
+| **Slash Command URL** | Delivers slash commands for this connection | The command's **Request URL** |
+
+---
+
+## Prepare your Slack app
+
+Set up the app in Slack before you open Artemis. Select **Open Slack app settings** in the setup guide to jump straight to your apps.
 
 <Steps>
   <Step title="Create or select your Slack app">
-    At [api.slack.com/apps](https://api.slack.com/apps), select **Create New App**, choose **From scratch**, name the app, and choose a development workspace.
+    1. Go to [Your Apps](https://api.slack.com/apps) and select **Create New App**.
+    2. Choose **From scratch**, name the app, and choose a development workspace.
   </Step>
 
-  <Step title="Copy the Team ID, App ID, and Signing Secret">
-    You need three values from Slack before you can create the connection in Artemis:
+  <Step title="Register the OAuth Redirect URL (Add to Slack only)">
+    Skip this step for manual setup.
 
-    | Value | Where to find it |
-    | --- | --- |
-    | **Team ID** | Open your workspace in a browser. In `https://app.slack.com/client/T.../...` the segment beginning with `T` is your Team ID. |
-    | **App ID** | Go to **Basic Information** -> **App Credentials** and copy **App ID**. |
-    | **Signing Secret** | On the same **App Credentials** panel, select **Show** next to **Signing Secret** and copy it. |
+    1. Go to **OAuth & Permissions** -> **Redirect URLs**.
+    2. Add the OAuth Redirect URL that the Artemis setup guide shows, and save.
+
+    Slack requires an exact match on scheme, host, port, path, and trailing slash.
   </Step>
 
   <Step title="Add bot token scopes">
-    Go to **OAuth & Permissions** and, under **Bot Token Scopes**, add:
+    Go to **OAuth & Permissions** -> **Bot Token Scopes** and add the core scopes. Add optional scopes only for the feature that needs them.
 
-    | Scope | Purpose |
-    | --- | --- |
-    | `chat:write` | Send messages as the bot. |
-    | `im:history` | Read direct message history with the bot. |
-    | `commands` | Required for slash commands. |    
-    | `app_mentions:read` (optional)| Read @mentions of the bot in channels. |
-    | `files:read` (optional)| Required for file attachments. |
-    | `chat:write.public` (optional)| Required to post to public channels the bot hasn't joined. |
-    | `users:read` (optional)| Required for tools that look up the message sender. See [Sessions and sender identity](#sessions-and-sender-identity). |
+    | Scope | Required for |
+    |---|---|
+    | `chat:write`, `app_mentions:read`, `im:history`, `im:read`, `im:write` | Core messaging. Always add these. |
+    | `files:read` | File attachments |
+    | `commands` | Slash commands |
+    | `chat:write.public` | Posting to public channels the bot hasn't joined |
+    | `users:read` | Tools that look up the sender's profile |
+    | `users:read`, `users:read.email` | **Require verified Slack identity** |
   </Step>
 
-  <Step title="Bot User OAuth Token">
-    On the same **OAuth & Permissions** page, select **Install to Workspace** (or **Reinstall to Workspace** if the app is already installed). Once installed, copy the **Bot User OAuth Token** from **OAuth Tokens** — it begins with `xoxb-`.
-
-    <Note>Reinstall the app whenever you add or change scopes so the bot token receives the new grants.</Note>
+  <Step title="Install the app">
+    1. Select **Install to Workspace** and approve the permissions.
+    2. Reinstall the app whenever you change scopes, so the bot token receives the new grants.
   </Step>
 </Steps>
 
-## Integrate the Slack app in Artemis
+---
 
-<Steps>
-  <Step title="Open the New Slack Connection dialog">
-    Open Artemis, select the required project, and go to **Deployments** -> **Channels** -> **MESSAGING** -> **Slack** -> **+ New**.
-  </Step>
+## Artemis channel configuration
 
-  <Step title="Enter credentials manually">
-    Select **Enter credentials manually instead**, then fill in the following fields.
+Create the connection before you register event subscriptions. Slack sends its verification challenge immediately, and only a saved connection can answer it.
 
-    | Field | Description |
-    | --- | --- |
-    | **Display Name** | A label for the connection, for example `Slack Production`. Up to 255 characters. |
-    | **Slack Team ID:App ID** | The Team ID and App ID from Slack, joined by one colon with no spaces, for example `T0xxxxxxxxx:A0xxxxxxxxx`. |
-    | **Bot Token** | The Bot User OAuth Token from **OAuth & Permissions** -> **OAuth Tokens**. Must begin with `xoxb-`. |
-    | **Signing Secret** | The signing secret from **Basic Information** -> **App Credentials**. |
-    | **Environment** | Select an environment to follow its active deployment. |
-    | **Provider Verification Strength** | **Weak (default)** is set by default. Choose **Strong** only for channels/providers whose identity assertions you trust for stronger continuity and linking decisions. |
-    | **Initial Status** | **Active** connections can be used immediately. **Inactive** connections stay saved but disabled until you activate them. |
+1. Open Artemis and select the project.
+2. Go to **Deployments** -> **Channels** -> **Slack** -> **+ New**. The **New Slack Connection** dialog opens, with the setup guide on the left and the connection fields on the right.
+3. Complete the steps for your setup method:
 
-    Select **Create**.
-  </Step>
+    <Tabs>
+      <Tab title="Enter credentials manually">
+        1. Select **Enter credentials manually instead**.
+        2. Collect the values below from Slack and enter them.
 
-  <Step title="Webhook URL and Event Subscriptions">
-    Open the connection you created and copy the **Webhook URL** from the **Overview** tab. Go back to your Slack app's **Event Subscriptions** page, turn **Enable Events** on, and paste the Webhook URL into **Request URL**. Wait for Slack to show **Verified**, then, under **Subscribe to bot events**, add:
+        | Artemis field | Where to find it in Slack | Notes |
+        |---|---|---|
+        | **Slack Team ID:App ID** | Team ID: open the workspace in a browser and read the segment beginning with `T` in the `app.slack.com/client/` URL. App ID: **Basic Information** -> **App Credentials**. | Join the two values with one colon and no spaces. The Team ID doesn't appear in the Slack app settings URL. |
+        | **Bot Token** | **OAuth & Permissions** -> **OAuth Tokens** -> **Bot User OAuth Token** | Begins with `xoxb-`. Authorizes every reply the agent sends. |
+        | **Signing Secret** | **Basic Information** -> **App Credentials** -> **Signing Secret** | Verifies that each inbound request comes from Slack. |
+      </Tab>
 
-    | Event | Description |
-    | --- | --- |
-    | `message.im` | Direct messages sent to the bot. |
-    | `app_mention` | @mentions in channels where the app is invited. |
+      <Tab title="Add to Slack">
+        1. Enter a **Display Name** that identifies the workspace and environment.
+        2. Select **Add to Slack**, choose the intended workspace, review the requested permissions, and select **Allow**.
+        3. Confirm the connected workspace. Slack fills in the **Slack Team ID:App ID** for you.
 
-    Save your changes.
-  </Step>
+        If Slack reports that the app needs approval, ask a Workspace Owner or App Manager to approve it, then select **Add to Slack** again.
+      </Tab>
+    </Tabs>
 
-  <Step title="Test both conversation paths">
-    Send the app a direct message, then invite it to a channel and @mention it. Confirm the agent replies in both places.
-  </Step>
-</Steps>
+4. Configure the remaining fields:
 
-## Manage the channel connection
+    | Artemis field | What it controls |
+    |---|---|
+    | **Display Name** | The label operators see in the connections list. Routing ignores it. |
+    | **Environment** | The environment whose active deployment answers messages. If no environment has an active deployment, leave the default to use the working copy, and bind it later from the **Deployment** tab. |
+    | **Provider Verification Strength** | How far the runtime trusts Slack's identity assertion when it links a sender to an existing session. Keep **Weak** unless you base continuity and account-linking decisions on Slack identity. |
+    | **Initial Status** | **Active** takes traffic immediately. **Inactive** saves the connection disabled until you activate it. |
 
-Opening a channel from **Deployments** -> **Channels** -> **MESSAGING** -> **Slack** shows four tabs: **Overview**, **Credentials**, **Configuration**, and **Deployment**.
+5. Select **Create**.
+6. Open the connection and copy the **Webhook URL** from the summary panel on the right. The URL ends with this connection's encoded Team ID:App ID, so copy it rather than building it.
 
-<Tabs>
-  <Tab title="Overview">
-    The **Connection Summary** shows these fields.
+---
 
-    | Field           | Description                       |
-    | --------------- | --------------------------------- |
-    | **Status**      | For example: *Active*             |
-    | **Created**     | Timestamp the channel was created |
-    | **Updated**     | Timestamp of the last change      |
-    | **Environment** | For example: `staging`            |
-    | **Source Type** | `Channel Connection`              |
-    | **Source ID**   | Unique channel identifier (UUID)  |
+## Event subscriptions in Slack
 
-    Under **Setup Instructions**:
+Event subscriptions turn the app into a conversation. Until Slack has the Request URL, the agent never receives a message.
 
-    * **Require verified Slack identity** - Toggle on to require Slack workspace user identity with a resolvable email before this connection starts or resumes a session. Guests, external Slack Connect users, and users without email remain blocked.
+1. Confirm the Artemis connection exists and is **Active**.
+2. In your Slack app, go to **Event Subscriptions** and turn on **Enable Events**.
+3. Paste the connection's **Webhook URL** into **Request URL**, and wait for Slack to show **Verified**.
+4. Under **Subscribe to bot events**, add `message.im` and `app_mention`.
+5. Select **Save Changes**, then reinstall the app if Slack prompts you.
 
-      Before enabling this policy, complete the **Verified Slack identity setup**. Runtime uses Slack's `users.info` to resolve the sender's workspace email.
+<Warning>If Slack reports that the challenge value wasn't returned, check that the URL ends with the encoded Team ID:App ID, that the connection exists and is **Active**, and that its Signing Secret matches this Slack app. Don't use the generic `/slack/webhook` URL for verification.</Warning>
 
-      1. In the Slack app's **OAuth & Permissions**, add these Bot Token Scopes: `users:read` and `users:read.email`.
-      2. Reinstall or re-authorize the Slack app after adding scopes so the bot token receives the new permissions.
+### Validation checklist
 
-    * The tab also shows the **Webhook URL** to paste into Slack's Event Subscriptions **Request URL**, and the **Slack Team ID:App ID** for reference. Select the copy icon next to either value to copy it.
-  </Tab>
+Work down this list once per connection.
 
-  <Tab title="Credentials">
-    Credentials are saved and encrypted after creation; the fields show placeholder text and accept new values only if you want to update them.
+| Validation item | Expected result |
+|:---|:---|
+| Prepare the Slack app | Core scopes added and the app installed in the workspace. |
+| Create the Artemis connection | Saved as **Active** with the right Team ID:App ID and environment. |
+| Register events | **Request URL** shows **Verified**, and `message.im` and `app_mention` appear under bot events. |
+| Test both paths | The agent replies once in a direct message and once to an @mention. |
 
-    | Field | Description |
-    | --- | --- |
-    | **Use Auth Profile** | Toggle on to authenticate through a saved Auth Profile instead of entering credentials manually. When enabled, select the profile from the dropdown in place of the fields below. |
-    | **Bot Token** | The Bot User OAuth Token from Slack's **OAuth & Permissions** -> **OAuth Tokens**. Shown as *(saved — enter to update)*; leave blank to keep the current value. |
-    | **Signing Secret** | The signing secret from Slack's **Basic Information** -> **App Credentials**. Shown as *(saved — enter to update)*; leave blank to keep the current value. |
+## Verify the connection
 
-    Select **Save Credentials** to apply any changes.
-  </Tab>
+Slack has two conversation paths, and each needs its own test.
 
-  <Tab title="Configuration">
-    Under **General**, update the **Display Name** and **Provider Verification Strength**.
+1. Send the app a direct message and confirm the agent replies.
+2. Invite the app to a channel, @mention it, and confirm the agent replies in the thread.
+3. If no reply arrives, open **Sessions** and search for your message. A session means Slack reached Artemis and the reply failed. No session means the event never arrived.
 
-    Under **Slack Settings**, the following fields apply.
-
-    | Field | Description |
-    | --- | --- |
-    | **Slack Team ID:App ID** | The Team ID and App ID entered at creation, shown for reference. You can't change it after creation. |
-
-    Under **Response Streaming**, configure the following.
-
-    | Field | Description |
-    | --- | --- |
-    | **Enable Streaming** | Stream LLM responses to Slack in real time instead of waiting for the full response. |
-    | **Chunk Size (characters)** | Minimum characters to buffer before sending to Slack. Lower values feel faster but make more API calls. |
-
-    Under **Authorization Message**, configure the message shown when a tool needs the user to authorize.
-
-    | Field | Description |
-    | --- | --- |
-    | **Message template** | The message text, with insertable variables: `{{#authorizations}}`, `{{profileName}}`, `{{authLink}}`, and `{{remaining}}`. Select **See all variables** for the full list, or **Show preview** to preview the rendered message. |
-
-    Select **Save Changes** to apply any changes.
-  </Tab>
-
-  <Tab title="Deployment">
-    The **Deployment** tab shows these fields.
-
-    | Field | Description |
-    | --- | --- |
-    | **Agent Version** | An **Environment** dropdown (for example: `Staging`) that selects which deployed version handles incoming messages. |
-    | **Active Deployment** | Shows the bound deployment version and when it was deployed. |
-
-    Select **Save Changes** after switching the environment or version.
-  </Tab>
-</Tabs>
-
-## Sessions and sender identity
-
-The Slack channel scopes each conversation to a thread and tells your agent who sent each message. Both behaviors matter when you design agents for busy channels or build tools that act on behalf of a specific user.
-
-| Behavior | Description |
-| --- | --- |
-| One session per thread | Each thread in a Slack channel runs as its own session. Separate requests posted in the same channel don't share conversation state, so context from one request never leaks into another. |
-| Sender user ID | The runtime adds the sender's Slack user ID to the session as `slackUserId` in `session._metadata`. Agent tools can read it to identify the person who sent the message. |
-
-To look up the sender's profile, pass `slackUserId` to Slack's [users.info](https://api.slack.com/methods/users.info) method from a tool. The method needs the `users:read` bot token scope, so add it under **OAuth & Permissions** and reinstall the app before you rely on the lookup.
+---
 
 ## Optional Slack features
 
-| Feature | Setup |
-| --- | --- |
-| **Buttons, menus, and shortcuts** | Enable **Interactivity & Shortcuts** and use the same connection-specific Events Request URL as the **Interactivity Request URL**. |
+Turn these on only when your agent uses them. Each one reuses a connection-specific URL.
+
+| Feature | Setup in Slack |
+|---|---|
+| **Buttons, menus, and shortcuts** | Turn on **Interactivity & Shortcuts** and paste the same Webhook URL into its **Request URL**. |
+| **Slash commands** | Add the `commands` scope, reinstall the app, create the command, and paste the connection's Slash Command URL into its **Request URL**. |
+| **Verified Slack identity** | Add `users:read` and `users:read.email`, reinstall the app, then turn on **Require verified Slack identity** in the **Configuration** tab. |
+
+---
+
+## Sessions and sender identity
+
+The Slack channel scopes each conversation to a thread and tells the agent who sent each message.
+
+| Behavior | Description |
+|---|---|
+| One session per thread | Each Slack thread runs as its own session, so separate requests in the same channel never share context. |
+| Sender user ID | The runtime adds the sender's Slack user ID to `session._metadata` as `slackUserId`. A tool can pass it to Slack's [users.info](https://api.slack.com/methods/users.info) method, which needs the `users:read` scope. |
+
+---
+
+## Manage the channel connection
+
+Open a Slack connection from **Deployments** -> **Channels** -> **Slack** to manage it. The page has a header, three tabs, and a summary panel on the right.
+
+**Header.** Shows the connection name, its environment badge, its status, and when it last changed. The **...** overflow menu holds the connection-level actions.
+
+**Summary panel.** Stays visible on every tab and carries the values Slack needs.
+
+| Field | Description |
+|---|---|
+| **Channel** and **Connection Type** | Read **Slack** and **Channel Connection**. |
+| **Identifier** | The Slack Team ID:App ID this connection routes on. |
+| **Credentials** | Reads **Configured** once credentials save. |
+| **Webhook URL** | The Request URL for **Event Subscriptions** and **Interactivity & Shortcuts**, with a copy control. |
+| **Created** and **Updated** | Date and time of creation and of the last change. |
+
+<Tabs>
+  <Tab title="Credentials">
+    Artemis encrypts credentials after you save them. Leave a field blank to keep its current value, or enter a new value to replace it.
+
+    | Field | Description |
+    |---|---|
+    | **Use Auth Profile** | Authenticates through a saved auth profile in place of the fields below. |
+    | **Bot Token** | Authorizes outbound replies. Replace it here after you reinstall or rotate the app. |
+    | **Signing Secret** | Verifies inbound requests. A mismatch fails Slack's verification challenge. |
+
+    Select **Save Credentials** to apply your changes.
+  </Tab>
+
+  <Tab title="Configuration">
+    Update the connection's behavior in Slack.
+
+    | Setting | Description |
+    |---|---|
+    | **Display Name** | The label operators see in the connections list. |
+    | **Provider Verification Strength** | How far the runtime trusts Slack's identity assertion. |
+    | **Slack Team ID:App ID** | Read-only. A connection pointed at the wrong app needs replacing rather than editing. |
+    | **Require verified Slack identity** | Requires a workspace user with a resolvable email before the connection starts or resumes a session. Guests, external Slack Connect users, and users without email stay blocked. The runtime resolves the email through `users.info`, so add `users:read` and `users:read.email` and reinstall the app first. |
+    | **Enable Streaming** | Streams responses to Slack as the agent generates them. |
+    | **Chunk Size (characters)** | The minimum characters Artemis buffers before each update. Lower values feel faster and make more Slack API calls. |
+    | **Message template** | The authorization message the connection sends when a tool needs the user to authorize. Insert variables from the chips, select **See all variables** for the full list, and select **Show preview** to check it. |
+
+    Select **Save Changes** to apply your changes.
+  </Tab>
+
+  <Tab title="Deployment">
+    Choose which deployed version answers the channel.
+
+    | Setting | Description |
+    |---|---|
+    | **Environment** | Under **Environment Binding**. Selects which deployed version handles incoming messages. |
+    | **Active Deployment** | Shows the bound version and when someone deployed it. Check it when the agent behaves like an older build. |
+
+    Select **Save Changes** after you switch the environment.
+  </Tab>
+</Tabs>
+
+---
+
+## Troubleshoot connection issues
+
+Start with the **Sessions** check from [Verify the connection](#verify-the-connection), then match the symptom here.
+
+| Symptom | Likely cause | Recommended action |
+|---|---|---|
+| Slack's challenge verification fails | The connection doesn't exist yet, the URL is wrong, or the Signing Secret doesn't match | Create the connection first, copy the Webhook URL from the connection's summary panel, and confirm the Signing Secret comes from the same Slack app. |
+| **Add to Slack** fails before the Slack window opens | Artemis can't start the OAuth flow | Ask your platform administrator to confirm Artemis allows the request origin and the Slack app holds the exact OAuth Redirect URL. |
+| Slack reports that the app needs approval | Your workspace restricts app installs | Ask a Workspace Owner or App Manager to approve the app, then run **Add to Slack** again. |
+| You can't find the Team ID | You looked in the Slack app settings URL | Read the `T` segment from the workspace's `app.slack.com/client/` browser URL. The `api.slack.com/apps/` URL shows only the App ID. |
+| The bot receives events but doesn't reply | Missing scope, inactive connection, or the bot isn't in the channel | Confirm the installed app has `chat:write`, the connection is **Active**, and someone invited the app to the channel. |
+| Behavior doesn't change after you edit scopes or events | Slack hasn't applied the change | Save the Slack configuration and reinstall the app before you test again. |
+| Users get blocked from starting a session | **Require verified Slack identity** is on | Confirm the user is a workspace member with an email, and that the app holds `users:read` and `users:read.email`. |
+
+---
+
+## Slack reference
+
+Use these pages when you need detail beyond what this article covers.
+
+| Resource | Use it for |
+|---|---|
+| [Your Apps](https://api.slack.com/apps) | Creating an app or returning to its settings. |
+| [Using HTTP Request URLs](https://docs.slack.dev/apis/events-api/using-http-request-urls/) | How Slack delivers events to a Request URL. |
+| [URL verification](https://docs.slack.dev/reference/events/url_verification) | The challenge Slack sends when you register a Request URL. |
+| [Verifying requests from Slack](https://api.slack.com/authentication/verifying-requests-from-slack) | How the Signing Secret proves a request came from Slack. |
+| [Scopes](https://api.slack.com/scopes) | What each bot token scope grants. |
+
+{{related}}
+
+- [Channels](/agent-platform/channels)
+- [Set up Microsoft Teams](/agent-platform/channels/ms-teams-copilot)
+- [Set up WhatsApp](/agent-platform/channels/whatsapp)

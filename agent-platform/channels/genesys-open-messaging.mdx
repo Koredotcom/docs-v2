@@ -1,216 +1,246 @@
 ---
-title: Genesys Open Messaging
+title: Set up Genesys Open Messaging
 sidebarTitle: Genesys Open Messaging
 ---
 
 <Badge icon="arrow-left" color="gray">[Back to messaging or digital channels](/agent-platform/channels#messaging-or-digital-channels)</Badge>
 
-Deploy your agent through Genesys Cloud Open Messaging. Connect your Genesys Open Messaging integration to the platform by configuring the required provider details, authentication, and signed webhook.
+Connect your agent to Genesys Cloud Open Messaging through a project-scoped, signed webhook. You bind a Genesys Open Messaging integration and an Auth Profile to the connection, validate the path in diagnostics mode, then enable live conversations.
 
-<Note>
-  **Webhook Connection Token and Webhook Signature Secret are different.** The connection token identifies the connection through the webhook URL, while the signature secret verifies the authenticity of incoming requests.
-</Note>
+The setup requires:
 
-## Create or select an Open Messaging integration in Genesys Cloud
+1. [Prepare Genesys Cloud](#prepare-genesys-cloud) and its authentication.
+2. [Artemis channel configuration](#artemis-channel-configuration): create the connection and copy its reveal-once values.
+3. [Webhook configuration in Genesys](#webhook-configuration-in-genesys): set the signed webhook, or provision it from Artemis.
+4. [Validate and enable](#validate-and-enable) the connection.
+
+After setup, Genesys posts each customer message to Artemis. Artemis verifies the signature, queues the message, and sends the agent's reply back through the Genesys Platform API.
+
+**Important considerations**
+
+- **The connection token selects the connection**: Artemis hashes the final `/webhooks/{connectionToken}` path segment and matches it to the project connection. The generic webhook path can't select a connection.
+- **Three values, three jobs**: The connection token routes inbound requests. The signature secret proves the request body came from the integration. The Integration ID identifies the integration for outbound calls.
+- **The full endpoint is reveal-on-create**: Artemis stores the token only as a SHA-256 hash and redacts credentials after creation. If you lose the plaintext token, create a new connection.
+- **Start in diagnostics mode**: **Diagnostics only** permits setup checks without running live conversations. Switch to **Enabled** only after every check passes.
+
+## Prerequisites
+
+Confirm these before you start.
+
+- Genesys Cloud admin access in the organization that owns the Open Messaging integration.
+- A Genesys OAuth client that can send Open Messaging inbound messages, structured responses, and receipts.
+- Artemis project access with permission to open **Deployments** -> **Channels**, and a deployed agent in the environment you intend to bind.
+
+---
+
+## Prepare Genesys Cloud
+
+Do this before you open the Artemis dialog. Select **Open Genesys Cloud** in the setup guide to jump straight there.
 
 <Steps>
-  <Step title="Select the Genesys Cloud organization">
-    Sign in to the Genesys Cloud organization that owns the Open Messaging integration. Select the correct Genesys region because the platform uses it to connect to the corresponding Genesys Platform API host.
+  <Step title="Select the owning region and organization">
+    Sign in to the regional Genesys Cloud organization that owns the Open Messaging integration. Artemis uses the region to select the matching Genesys Platform API host.
   </Step>
 
-  <Step title="Create or select an Open Messaging integration">
-    In Genesys Cloud, create or select the required Open Messaging integration and copy its **Integration ID**.
+  <Step title="Create or identify the Open Messaging integration">
+    In Genesys Cloud Admin, create or select the Open Messaging integration and copy its **Integration ID**.
 
-    <Warning>Do not use a Bot Connector Stream ID, Audio Connector integration ID, organization ID, or OAuth client ID.</Warning>
+    Don't substitute a Bot Connector Stream ID, an Audio Connector integration, an organization ID, or an OAuth client ID.
   </Step>
 
   <Step title="Create a Genesys Auth Profile">
-    Create an active Auth Profile for the Genesys connector using OAuth 2.0 Client Credentials or Bearer authentication. The platform uses this profile for outbound Genesys Platform API calls.
+    In Artemis, create a project integration Auth Profile for connector `genesys`, using OAuth 2.0 Client Credentials or Bearer authentication. Artemis uses it only for outbound Genesys Platform API calls.
   </Step>
 
-  <Step title="Configure the required permissions">
-    Ensure that the Genesys OAuth client has the permissions required to send Open Messaging inbound messages, structured responses, and receipts.
-
-    Use separate clients, integrations, and Auth Profiles for development and production environments.
+  <Step title="Grant only the permissions the integration needs">
+    The OAuth client must send Open Messaging inbound messages, structured responses, and receipts for this integration. Keep development and production clients, integrations, and profiles separate.
   </Step>
 </Steps>
 
-## Integrate the Genesys Open Messaging connection
+---
 
-<Steps>
-  <Step title="Open the New Genesys Open Messaging Connection dialog">
-    Open Artemis, select the required project, and go to **Deployments** -> **Channels** -> **MESSAGING** -> **Genesys Open Messaging** -> **+ New**.
-  </Step>
+## Artemis channel configuration
 
-  <Step title="Enter the connection details">
-    Enter the required provider and authentication details.
+Create the connection with the Genesys values. Artemis generates the webhook token and signature secret in the dialog.
 
-    | Field | Description |
-    | --- | --- |
-    | **Display Name** | A label for the connection, for example `Genesys Open Messaging Production`. Up to 255 characters. |
-    | **Genesys Region** | The region that hosts your Genesys Cloud organization. |
-    | **Organization ID** | The identifier for your Genesys Cloud organization. |
-    | **Integration ID** | The Open Messaging Integration ID. |
-    | **Activation Mode** | Select **Diagnostics only** initially to validate the connection before processing live traffic. |
-    | **Delivery Mode** | Keep **External bridge** unless a different delivery mode is explicitly required. External bridge is the standard bot-facing channel — it's what makes the connection available to the Genesys Open Messaging agent-transfer handoff. |
-    | **Genesys Auth Profile** | An active Auth Profile configured for the Genesys integration. |
+1. Open Artemis and select the project.
+2. Go to **Deployments** -> **Channels** -> **Genesys Open Messaging** -> **+ New**. The **New Genesys Open Messaging Connection** dialog opens, with the setup guide on the left and the fields on the right.
+3. Under **Open Messaging setup**, configure the provider fields:
 
-    The Integration ID is used as the external identifier for outbound provider calls. The selected Auth Profile must be active and configured for the Genesys integration.
-  </Step>
+    | Artemis field | What it controls |
+    |---|---|
+    | **Genesys Region** | The Genesys Platform API host. A wrong region can authenticate yet fail organization or integration lookups. |
+    | **Genesys Organization ID** | The organization that owns the integration. Required. |
+    | **Integration ID** | The Open Messaging integration. Artemis uses it as the external identifier for outbound calls. Required. |
+    | **Activation Mode** | **Diagnostics only** runs setup checks but doesn't execute live inbound conversations. **Enabled** processes live traffic. **Disabled** turns the adapter off. Start with **Diagnostics only**. |
+    | **Delivery Mode** | **External bridge** is the standard bot-facing channel. **Agent workflow** makes the connection available to the Genesys Open Messaging agent-transfer handoff. |
+    | **Genesys Auth Profile** | The active Auth Profile for this organization and environment. Artemis accepts only active Genesys profiles using OAuth client credentials or Bearer authentication. Required. |
+    | **Webhook Connection Token** | Generated. Routes inbound requests through the webhook URL. Keep the generated value unless an approved migration needs a replacement. |
+    | **Webhook Signature Secret** | Generated. Verifies the HMAC signature on each inbound request. Keep the generated value unless an approved migration needs a replacement. |
 
+4. Configure the common fields:
 
-  <Step title="Complete common connection settings">
-    | Field | Description |
-    | --- | --- |
-    | **Environment** | Select an environment to follow its active deployment, or leave the default to use the working copy. |
-    | **Provider Verification Strength** | **Weak** is the default. Choose **Strong** only for channels or providers whose identity assertions you trust for stronger continuity and linking decisions. |
-    | **Initial Status** | **Active** connections can be used immediately. **Inactive** connections stay saved but disabled until you activate them. |
-  </Step>
+    | Artemis field | What it controls |
+    |---|---|
+    | **Display Name** | The label operators see. Routing ignores it. |
+    | **Environment** | The environment whose active deployment answers messages. Leave the working copy default only while you develop. |
+    | **Provider Verification Strength** | How far the runtime trusts Genesys's identity assertion when it links a user to an existing session. Choose **Strong** only when you base continuity and account-linking decisions on it. |
+    | **Initial Status** | **Active** takes traffic immediately. **Inactive** saves the connection disabled until you activate it. |
 
-  <Step title="Create the connection">
-    When you create the connection, the platform generates the following values.
+5. Select **Create**.
+6. Copy the full webhook endpoint and the signature secret from the confirmation screen before you close it.
 
-    | Value | Description |
-    | --- | --- |
-    | **Webhook Connection Token** | Identifies the connection and is included in the connection-specific webhook URL. |
-    | **Webhook Signature Secret** | Verifies incoming webhook requests using HMAC-SHA256. |
+---
 
-    Copy the generated webhook endpoint and signature secret before closing the confirmation screen. These values are required when configuring the Genesys Open Messaging integration.
-  </Step>
-</Steps>
+## Webhook configuration in Genesys
 
-## Configure the webhook in Genesys Cloud
+Configure the signed webhook in the Open Messaging integration, or let Artemis provision it.
 
-<Steps>
-  <Step title="Add the connection-specific webhook URL">
-    In your Genesys Open Messaging integration, enter the complete public HTTPS webhook URL generated for the connection.
+<Tabs>
+  <Tab title="Configure manually">
+    1. Paste the full connection-specific HTTPS URL into the Genesys Open Messaging integration. Keep the final connection token.
+    2. Enter the Artemis **Webhook Signature Secret** as the integration's outbound webhook signature secret. Don't use the Genesys OAuth client secret or the connection token.
+    3. Confirm Genesys signs the exact raw request body with HMAC-SHA256, in a supported header and format.
+  </Tab>
 
-    The URL must include the connection token. The generic webhook path cannot identify the required connection.
-  </Step>
+  <Tab title="Provision from Artemis">
+    Use this path when the Genesys integration doesn't exist yet.
 
-  <Step title="Configure the webhook signature secret">
-    Enter the Webhook Signature Secret generated by the Artemis as the signature secret for the Genesys integration.
+    1. Verify the region, organization, Auth Profile, connection token, and signature secret on the connection.
+    2. On the **Testing** tab, run the provisioning action. Artemis creates the Genesys Open Messaging integration with the current webhook URL and signature secret.
+  </Tab>
+</Tabs>
 
-    <Warning>Do not use the Genesys OAuth client secret or the Webhook Connection Token as the signature secret.</Warning>
-  </Step>
+Artemis accepts these signature headers and formats. The digest must cover the original request bytes before any JSON parsing or normalization.
 
-  <Step title="Configure request signing">
-    Incoming requests must be signed using **HMAC-SHA256** over the exact raw request body. Runtime validates the signature before processing the request.
+| Accepted headers | Accepted formats |
+|---|---|
+| `X-Hub-Signature-256`, `X-Genesys-Signature-256`, `X-Genesys-Signature`, `X-Signature-256`, `X-Signature` | `sha256=<hex>`, raw lowercase `<hex>`, or `base64` |
 
-    Do not parse and reserialize the request body before signature validation because changing the request bytes can cause a valid signature to fail.
-  </Step>
-</Steps>
+---
 
-## Test the connection
+## Validate and enable
 
-Once the channel is created, select it, then go to the **Testing** tab.
+Run every check in diagnostics mode, then switch to live traffic.
 
-<Steps>
-  <Step title="Validate the webhook signature">
-    Open the connection's testing or diagnostics area and run the signature validation. This confirms that the configured signature secret and supported signature format are correct.
-  </Step>
+1. Open the connection's **Testing** tab and run the signature check on a signed fixture. This confirms the stored secret and signature format without sending provider traffic.
+2. Run the inbound diagnostic. Confirm the adapter resolves the connection through the project runtime, normalizes the sender and conversation, and returns redacted provider metadata.
+3. Run the receipt diagnostic. Confirm the Auth Profile obtains a token and calls the Genesys receipt endpoint for the configured Integration ID.
+4. Change **Activation Mode** to **Enabled**, and confirm the connection status is **Active**.
+5. Send a unique live text, a quick reply, and a follow-up in the same Genesys conversation.
 
-  <Step title="Test an inbound message">
-    Run the inbound message diagnostic and confirm that Runtime resolves the connection and processes the incoming message correctly.
-  </Step>
+---
 
-  <Step title="Test delivery or read receipts">
-    Run the receipt diagnostic to confirm that the Auth Profile can authenticate and communicate with the configured Genesys receipt endpoint.
-  </Step>
+## Messaging and delivery behavior
 
-  <Step title="Enable live conversations">
-    After all diagnostics pass, change **Activation Mode** to **Enabled**. Test a live message, a quick reply, and a follow-up message in the same Genesys conversation.
-  </Step>
-</Steps>
+Artemis applies these rules to every Open Messaging conversation.
+
+| Area | Behavior |
+|---|---|
+| Delivery | Asynchronous. Artemis authenticates and accepts each event, then sends the agent's reply through the Genesys Platform API. |
+| Continuity | The Genesys conversation ID is the preferred key. Without it, Artemis falls back to the sender identity and hashes the session components. |
+| Quick replies | Artemis sends authored quick replies through the Genesys structured-response endpoint. Return the selected payload unchanged. |
+| Receipts | The adapter can send `DELIVERED` and `READ` receipts when the event and integration support them. |
+| Media | The default mode is `metadata_only`. Artemis validates and summarizes media references, and downloads binary media only with an explicitly supported mode and allowlist. |
+| Payload size | 65,536 bytes per inbound request by default. |
+
+---
+
+## Security and operational boundaries
+
+The connection depends on a hashed token, an encrypted secret, and an Auth Profile.
+
+- **Preserve raw bytes**: Pass the raw HTTP request through your ingress proxy unchanged. Re-serialized JSON changes the HMAC input and fails valid signatures.
+- **Unique values per environment**: Use separate connection tokens and signature secrets for each environment. Never put OAuth client secrets in the webhook URL, or reuse the signature secret as an OAuth credential.
+- **Credentials stay in the Auth Profile**: Keep Genesys OAuth credentials in the bound Auth Profile. Diagnostic and runtime responses redact provider metadata and never expose tokens or secrets.
+- **Narrow media allowlists**: Reject oversized bodies before execution, and keep media host allowlists narrow when you enable downloads.
+
+---
 
 ## Manage the channel connection
 
-Opening a connection from **Deployments** -> **Channels** -> **MESSAGING** -> **Genesys Open Messaging** shows six tabs: **Overview**, **Credentials**, **Configuration**, **Deployment**, **Testing**, and **Activity**.
+Open a connection from **Deployments** -> **Channels** -> **Genesys Open Messaging** to manage it. The page has a header, its tabs, and a summary panel on the right.
+
+**Header.** Shows the connection name, its environment badge, its status, and when it last changed. The **...** overflow menu holds the connection-level actions.
+
+**Summary panel.** Stays visible on every tab and shows the channel, connection type, identifier, credential status, webhook endpoint, and creation and update times.
 
 <Tabs>
-  <Tab title="Overview">
-    The **Connection Summary** shows these fields.
-
-    | Field | Description |
-    | --- | --- |
-    | **Status** | For example: *Active* |
-    | **Created** | Timestamp the channel was created |
-    | **Updated** | Timestamp of the last change |
-    | **Environment** | For example: `staging` |
-    | **Source Type** | `Channel Connection` |
-    | **Source ID** | Unique channel identifier (UUID) |
-    | **Integration ID** | The bound Open Messaging Integration ID, shown for reference. |
-
-    Under **Setup Instructions**, the tab shows the connection-specific webhook endpoint to paste into the Genesys Open Messaging integration.
-  </Tab>
-
   <Tab title="Credentials">
-    Credentials are saved and encrypted after creation; fields show placeholder text and accept new values only if you want to update them.
+    Artemis encrypts credentials after you save them. Leave a field blank to keep its current value.
 
     | Field | Description |
-    | --- | --- |
-    | **Use Auth Profile** | Toggle on to authenticate through a saved Auth Profile. |
-    | **Genesys Auth Profile** | Picker to select or change the bound Auth Profile. |
-    | **Webhook Signature Secret** | Shown as *(saved — enter to update)*; leave blank to keep the current value. |
+    |---|---|
+    | **Use Auth Profile** | Authenticates outbound calls through a saved Auth Profile. |
+    | **Genesys Auth Profile** | Selects or changes the bound Auth Profile. |
+    | **Webhook Signature Secret** | Replace it here and in the Genesys integration together. |
 
-    <Note>The **Webhook Connection Token** isn't editable here — it's embedded in the webhook URL and can't be changed after creation. To rotate it, create a new connection.</Note>
-
-    Select **Save** to apply any changes.
+    You can't edit the **Webhook Connection Token**, because the webhook URL embeds it. To replace it, create a new connection. Select **Save Credentials** to apply your changes.
   </Tab>
 
   <Tab title="Configuration">
-    | Field | Description |
-    | --- | --- |
-    | **Display Name** | The connection's label. |
-    | **Provider Verification Strength** | **Weak** or **Strong** — see [Complete common connection settings](#integrate-the-genesys-open-messaging-connection). |
-    | **Integration ID** | The bound Open Messaging Integration ID. |
+    Update the connection's behavior.
 
-    Select **Save Changes** to apply any changes.
+    | Setting | Description |
+    |---|---|
+    | **Display Name** | The label operators see. |
+    | **Provider Verification Strength** | How far the runtime trusts Genesys's identity assertion. |
+    | **Integration ID** | The bound Open Messaging integration. |
+    | **Activation Mode** | Switch from **Diagnostics only** to **Enabled** after validation. |
+
+    Select **Save Changes** to apply your changes.
   </Tab>
 
   <Tab title="Deployment">
-    | Field | Description |
-    | --- | --- |
-    | **Environment** | Selects which deployed version handles incoming messages. |
-    | **Active Deployment** | Shows the bound deployment version and date, or a **Working Copy** warning if nothing has been deployed to this environment yet. |
+    Choose which deployed version answers messages.
 
-    Select **Save Changes** after switching the environment or version.
+    | Setting | Description |
+    |---|---|
+    | **Environment** | Under **Environment Binding**. Selects which deployed version handles incoming messages. |
+    | **Active Deployment** | Shows the bound version and when someone deployed it, or a **Working Copy (draft)** warning. |
+
+    Select **Save Changes** after you switch the environment.
   </Tab>
 
   <Tab title="Testing">
-    The **Diagnostics** panel runs the checks described in [Test the connection](#test-the-connection).
+    The **Diagnostics** panel runs the checks in [Validate and enable](#validate-and-enable).
 
-    | Field | Description |
-    | --- | --- |
-    | **Last Success** / **Last Failure** | Timestamps of the most recent diagnostic outcomes. |
-    | **Endpoint** | The webhook endpoint under test. |
-    | **Signature Secret** | The secret used to sign the test request. |
-    | **Customer ID** | The test conversation's customer identifier. |
-    | **Message** | The test message body. |
-    | **Originating Message ID** | The test message's originating ID. |
-    | **Run Signature** | Runs the webhook signature validation. |
-    | **Run Inbound** | Runs the inbound message diagnostic. |
-    | **Run Receipt** | Runs the delivery or read receipt diagnostic. |
+    | Control | Description |
+    |---|---|
+    | **Endpoint**, **Signature Secret** | The webhook under test and the secret that signs the test request. |
+    | **Customer ID**, **Message**, **Originating Message ID** | The test conversation inputs. |
+    | **Run Signature**, **Run Inbound**, **Run Receipt** | Run each diagnostic. |
+    | **Last Success**, **Last Failure** | The most recent diagnostic outcomes. |
 
-    The **Validation Evidence** panel records the results and supporting evidence from those runs.
+    The **Validation Evidence** panel records the results of those runs.
 
-    | Field | Description |
-    | --- | --- |
-    | **Validated At** | Timestamp of the last passing validation. |
-    | **Trace Count** | Number of Runtime traces captured during validation. |
-    | **Status** | Overall validation status. |
-    | **Operator Runbook Reference** | Link or ID for the operator runbook used during validation. |
-    | **Operator Dashboard Reference** | Link or ID for the operator's monitoring dashboard. |
-    | **Operator Alert Reference** | Link or ID for the operator's alert configuration. |
-    | **Runtime Trace IDs** | Trace IDs captured during validation runs. |
-    | **Sandbox Evidence References** | Links or IDs for sandbox test evidence. |
-    | **Summary** | Free-text summary of the validation outcome. |
-    | **Max Concurrent Sessions** | Peak concurrent sessions observed during validation. |
-    | **Packet Loss Percent** | Observed packet loss during validation, if applicable. |
-    | **Delivery Mode** | The delivery mode validated (for example, External bridge). |
-    | **Provider Conversation ID** | The Genesys conversation ID used during validation. |
-    | **Signature Diagnostic ID** / **Inbound Diagnostic ID** / **Receipt Diagnostic ID** | IDs referencing each diagnostic run. |
-    | **Automated Provisioning Verified** | Whether automated provisioning was confirmed during validation. |
-    | **Chat Round Trip P95 ms** | The 95th-percentile round-trip latency observed during validation. |
+    | Group | Fields |
+    |---|---|
+    | Status | **Validated At**, **Status**, **Summary**, **Automated Provisioning Verified** |
+    | Diagnostics | **Signature Diagnostic ID**, **Inbound Diagnostic ID**, **Receipt Diagnostic ID**, **Trace Count**, **Runtime Trace IDs** |
+    | Conversation | **Delivery Mode**, **Provider Conversation ID**, **Sandbox Evidence References** |
+    | Performance | **Max Concurrent Sessions**, **Chat Round Trip P95 ms**, **Packet Loss Percent** |
+    | Operations | **Operator Runbook Reference**, **Operator Dashboard Reference**, **Operator Alert Reference** |
   </Tab>
 </Tabs>
+
+---
+
+## Troubleshoot connection issues
+
+Most failures trace to the signature, the activation mode, or the Auth Profile.
+
+| Symptom | Likely cause | Recommended action |
+|---|---|---|
+| Connection not found | Generic path, lost token, or deleted connection | Use the full connection-specific URL through the correct project runtime, and confirm the connection still exists. |
+| Webhook returns `401` | Signature mismatch | Confirm Genesys signs the exact raw body with the matching secret, in a supported header and format, and that the ingress proxy doesn't rewrite the body. |
+| Diagnostics pass but Artemis ignores live messages | The adapter is still in diagnostics mode | Change **Activation Mode** to **Enabled**, and confirm the connection status is **Active**. |
+| Inbound succeeds but replies fail | The Auth Profile can't reach the integration | Confirm the Auth Profile is active, uses connector `genesys`, targets the same region and organization, and can call the configured Integration ID. |
+| Conversation context resets | The conversation ID changes | Make sure Genesys sends a stable conversation ID for follow-up turns, not a per-message identifier. |
+| Text works but attachments don't | Default `metadata_only` media mode | Check media rejection reasons, allowed host suffixes, reference count, and payload size limits before you enable downloads. |
+
+{{related}}
+
+- [Channels](/agent-platform/channels)
+- [Set up Genesys](/agent-platform/channels/genesys)
+- [Set up Zendesk](/agent-platform/channels/zendesk)

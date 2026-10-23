@@ -118,9 +118,22 @@ Connect nodes visually on the canvas to define execution order.
 
 Workflows support:
 
-* Sequential execution
-* Conditional branching
-* Parallel execution patterns
+* Sequential execution: one node runs after another.
+* Conditional branching: a [Condition node](#condition-node) routes to different next nodes.
+* Concurrent execution: nodes connected from the same parent node run at the same time.
+
+Nodes connected from the same parent node run concurrently. For example, two Tool nodes that both connect directly from the Start node start at the same time. A node with several incoming connections waits for all of them to finish before it runs.
+
+```yaml
+Start ─┬─► Get_Profile ─────────────────-─────┐
+       └─► Get_Orders ─► Get_Delivery_Status ─┴─► End
+```
+
+In this example, `Get_Profile` and `Get_Orders` both run as soon as the workflow starts. `Get_Delivery_Status` needs the order ID that `Get_Orders` returns, so it waits for `Get_Orders` and runs only after it finishes. `End` has two incoming connections (`Get_Profile` and `Get_Delivery_Status`), so it waits for both to finish before it runs.
+
+Model independent calls as separate branches from the same parent node to run them concurrently. Model a dependent call as a node downstream of the call it needs. Use each node's Test Action to confirm the exact output path before wiring the next node to it.
+
+A workflow's branches always run in the connections you draw, every run. This is different from a reasoning agent's own tool calls, where the model chooses what to request at each step. See [Concurrent tool execution](/agent-platform/abl/reference/tools#concurrent-tool-execution) for how that works and when to use it instead of a workflow.
 
 ### Use workflow variables
 
@@ -171,7 +184,7 @@ Use the Start node to define the workflow input parameters. These parameters def
 
 Example
 
-```text
+```yaml
 {{context.steps.start.input.email_text}}
 ```
 
@@ -459,6 +472,7 @@ You can export an individual workflow and import it into another project as an e
 3. The workflow is downloaded as a `.workflow.json` file.
 
 The workflow export includes the workflow definition and references to dependent components, such as agents, tools, and auth profiles. These dependent components are not exported with the workflow.
+Configuration variable references, including references to secret variables, are included as dependencies in the exported workflow. Configuration variable values are not exported. Hard-coded secret values in node configurations are not exported and can prevent the workflow from being exported.
 
 <Note>Workflow trigger definitions are not included in workflow exports. You must configure triggers manually after importing the workflow.</Note>
 
@@ -468,10 +482,12 @@ The workflow export includes the workflow definition and references to dependent
 2. Click **Choose file** and select the workflow export file.
 3. In the Import Workflow dialog, enter a name for the workflow, and click **Preview**.
 4. Review the workflow details and dependencies. Missing dependencies are identified in the preview.
-5. If dependencies are missing, resolve them or select **Import with unresolved dependencies unselected** to continue without them.
+5. If dependencies are missing, resolve them or select **Import with unresolved dependencies unselected** to continue without resolving them.
 6. Click **Import**.
 
 The imported workflow is created as an editable draft. Unresolved dependencies must be manually relinked before you run or publish the workflow.
+
+If a referenced configuration variable is missing from the target project, the import can still proceed. The missing configuration variable is flagged as an unresolved dependency and must be configured before you run or publish the workflow.
 
 ---
 
@@ -704,6 +720,8 @@ Attached workflows allow agents to execute workflow logic during conversations a
 4. Select the workflow and workflow version.
 5. Select the trigger and execution mode (sync or async).
 6. Click **Register Workflow**.
+
+<Note>In `sync` mode, the agent waits for the workflow run to finish and gets the End node's output back as the tool result. In `async` mode, the tool call returns a handle right away and the workflow keeps running. See [Workflow binding properties](/agent-platform/abl/reference/tools#workflow-binding-properties) for the underlying `mode` and `timeout_ms` settings.</Note>
 
 ### Workflow tool definition
 

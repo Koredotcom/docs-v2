@@ -1,0 +1,212 @@
+---
+title: Set up Email
+sidebarTitle: Email
+---
+
+<Badge icon="arrow-left" color="gray">[Back to messaging or digital channels](/agent-platform/channels#messaging-or-digital-channels)</Badge>
+
+Connect your agent to email so it answers customer messages and keeps each mail thread as one conversation. Artemis generates an inbound address for the connection, receives mail through SMTP, and sends replies through SMTP or Microsoft Graph.
+
+The setup requires:
+
+1. [Create the connection in Artemis](#create-the-connection-in-artemis) and copy its generated inbound address.
+2. [Route inbound email](#route-inbound-email) to that address.
+3. [Configure outbound replies](#configure-outbound-replies) through SMTP or Microsoft Graph.
+4. [Verify the connection](#verify-the-connection) with a complete email conversation.
+
+After setup, Artemis matches each message to the connection by its recipient address, finds the conversation from the thread headers, and replies to the sender in the same thread.
+
+**Important considerations**
+
+- **The generated recipient selects the connection**: Artemis resolves the connection during SMTP `RCPT TO` from its generated inbound address. There's no credential or routing field to fill in.
+- **Email doesn't use a Request URL**: Don't look for an Events Request URL or configure an HTTP webhook. Inbound mail enters through SMTP.
+- **The inbound domain belongs to your platform administrator**: Artemis builds the address under the administrator-owned `EMAIL_INBOUND_DOMAIN`. If that domain isn't publicly routable or approved for your environment, ask the administrator to complete SMTP and DNS setup.
+- **Thread headers keep conversations together**: `Message-ID`, `In-Reply-To`, and `References` identify the thread. A mail client or rule that strips them breaks continuity.
+
+## Prerequisites
+
+Confirm these before you start.
+
+- Artemis project access with permission to open **Deployments** -> **Channels**, and a deployed agent in the environment you intend to bind.
+- A platform administrator who manages SMTP ingress, the inbound domain, and the outbound SMTP relay.
+- For Microsoft Graph replies, an Azure app registration with admin-consented permission to send mail as the sender mailbox.
+
+---
+
+## Create the connection in Artemis
+
+Create the connection first. Artemis generates the inbound address when you create it.
+
+1. Open Artemis and select the project.
+2. Go to **Deployments** -> **Channels** -> **Email** -> **+ New**. The **New Email Connection** dialog opens, with the setup guide on the left and the fields on the right.
+3. Configure the fields:
+
+    | Artemis field | What it controls |
+    |---|---|
+    | **Display Name** | The label operators see. Name it for the business mailbox and environment. It isn't the inbound address. |
+    | **Provider** | The outbound transport. Keep the default, and switch to Microsoft Graph from the **Settings** tab after creation. |
+    | **Environment** | The environment whose active deployment processes incoming email. Leave the working copy default only while you develop. |
+    | **Provider Verification Strength** | How far the runtime trusts the provider's identity assertion when it links a sender to an existing session. Choose **Strong** only when you base continuity and account-linking decisions on it. |
+    | **Initial Status** | **Active** accepts mail immediately. SMTP rejects mail for an **Inactive** connection as an unknown recipient. |
+
+4. Select **Create**. Artemis generates a random local part under the platform's inbound domain.
+5. Open the connection and copy the full inbound address from **Identifier** in the summary panel. Keep both the local part and the domain, and don't substitute your public support mailbox.
+
+---
+
+## Route inbound email
+
+Get customer mail to the generated address. Each step depends on the one before it.
+
+1. Send customer mail straight to the generated address, or forward a dedicated mailbox such as your support address to it. Confirm forwarding keeps the original sender and the thread headers.
+2. Ask your platform administrator to validate SMTP ingress. Production needs the inbound domain's mail routing to reach the runtime SMTP service. Port 2525 is the default internal and development listener. Public MX delivery normally reaches an approved edge on port 25, which forwards internally.
+3. Preserve the RFC 5322 thread headers. Artemis records `Message-ID` for each inbound message and uses `In-Reply-To` and `References` to find the active conversation. When a client strips them, Artemis falls back to normalized `Re:` and `Fwd:` subject matching.
+4. Address one generated channel recipient per SMTP transaction. Artemis rejects unknown addresses with `550`, and rejects a transaction whose recipients belong to different connections, so one message never crosses a project or connection boundary.
+
+---
+
+## Configure outbound replies
+
+Choose the outbound transport on the saved connection's **Settings** tab.
+
+<Tabs>
+  <Tab title="SMTP (Default)">
+    SMTP uses the administrator-owned `SMTP_RELAY` settings, so Artemis shows no per-connection SMTP credentials.
+
+    1. Keep **Provider** under **Outbound Transport** set to **SMTP (Default)**.
+    2. Confirm the relay, sender policy, SPF, DKIM, DMARC, and deliverability with your platform administrator.
+  </Tab>
+
+  <Tab title="Microsoft Graph API">
+    Use Microsoft Graph to send replies from a dedicated Microsoft 365 mailbox. Artemis uses the client-credentials flow with the Graph `.default` scope to create and send a draft as that mailbox.
+
+    1. Set **Provider** under **Outbound Transport** to **Microsoft Graph API**.
+    2. Enter the fields below from your Azure app registration.
+    3. Select **Save Changes**.
+
+    | Artemis field | Source |
+    |---|---|
+    | **Azure AD Tenant ID** | The app registration's **Directory (tenant) ID** |
+    | **Application (Client) ID** | The app registration's **Application (client) ID** |
+    | **Sender Mailbox Address** | The Microsoft 365 mailbox that sends replies |
+    | **Client Secret** | A client secret from the app registration. Artemis encrypts it. On later edits, leave the field blank to keep the stored value. |
+
+    Grant the Microsoft Graph application permission to create and send mail, and complete admin consent. Where your Microsoft 365 policy supports it, restrict the app to the sender mailbox.
+  </Tab>
+</Tabs>
+
+To brand replies, add **Header HTML** and **Footer HTML** on the **Templates** tab, and optionally include the five-point CSAT rating block. Review the result in common mail clients before production.
+
+---
+
+## Verify the connection
+
+Each check exercises a different part of the email path.
+
+1. From a real external address, send plain text with a unique subject to the business mailbox or generated address. Confirm the agent sends one `Re:` reply to your **From** address.
+2. Reply to the agent without changing the thread. Confirm Artemis resumes the same session instead of starting a new conversation.
+3. Add CC and BCC recipients. Confirm replies copy the CC recipients, except the channel's own address, and leave BCC recipients off.
+4. Send an allowed attachment, and one over the limit. Confirm the allowed file reaches the agent and SMTP rejects messages over 25 MB.
+5. Send a message marked `Auto-Submitted` with any value other than `no`, and confirm Artemis ignores it.
+
+### Email behavior and limits
+
+Artemis applies these rules to every message.
+
+| Area | Behavior |
+|---|---|
+| Inbound text | Artemis passes the newest visible reply to the agent and removes quoted history, signatures, and forwarded-message headers. |
+| Threading | RFC 5322 identifiers come first. `Re:` and `Fwd:` subject matching is a fallback only. |
+| Subject | Replies reuse the inbound subject and add `Re:` only when it's missing. |
+| Recipients | Replies keep original CC recipients, except the channel address. Artemis never forwards BCC. |
+| Attachments | 25 MB total per message. Individual files follow the project attachment policy, with a 20 MB fallback. A failed upload doesn't block the text. |
+| Output | Non-streaming and text-oriented. Artemis renders agent markdown as sanitized email HTML, without action widgets or other channel-native controls. |
+| Loop prevention | Artemis ignores automatic replies and drops its own replies, marked with `X-ABL-Source`, if they return. |
+
+---
+
+## Security and environment boundaries
+
+The embedded SMTP receiver doesn't require SMTP AUTH, so protect the email path deliberately.
+
+- **Edge controls**: Manage the production edge, DNS, network policy, recipient validation, rate controls, and abuse protection with your platform administrator.
+- **Graph secret**: Store the Client Secret only in the encrypted connection field, and rotate it immediately if someone exposes it.
+- **Template HTML**: Treat Header and Footer HTML as trusted administrator configuration. Keep scripts, forms, remote resources, and sensitive data out of them.
+- **Agent output**: Artemis renders markdown images as text links rather than image tags, so replies carry no remote tracking pixels. It neutralizes `javascript`, `vbscript`, and `data` link schemes.
+- **Environments**: Use separate inbound addresses, routing rules, outbound senders, Azure apps, and connections for development, staging, and production.
+
+---
+
+## Manage the channel connection
+
+Open a connection from **Deployments** -> **Channels** -> **Email** to manage it. The page has a header, three tabs, and a summary panel on the right.
+
+**Header.** Shows the connection name, its status, and when it last changed. The **...** overflow menu holds the connection-level actions.
+
+**Summary panel.** Stays visible on every tab.
+
+| Field | Description |
+|---|---|
+| **Channel** and **Connection Type** | Read **Email** and **Channel Connection**. |
+| **Identifier** | The generated inbound address this connection receives mail on. |
+| **Created** and **Updated** | Date and time of creation and of the last change. |
+
+<Tabs>
+  <Tab title="Settings">
+    Update the connection and its outbound transport.
+
+    | Setting | Description |
+    |---|---|
+    | **Display Name** | The label operators see. |
+    | **Provider Verification Strength** | Under **Email Settings**. How far the runtime trusts the provider's identity assertion. |
+    | **Provider** | Under **Outbound Transport**. **SMTP (Default)** or **Microsoft Graph API**, which adds the Graph fields. |
+    | **Message template** | The authorization message the connection sends when a tool needs the user to authorize. Insert variables from the chips, select **Show more** for the full list, and select **Show preview** to check it. |
+
+    Select **Save Changes** to apply your changes.
+  </Tab>
+
+  <Tab title="Templates">
+    Brand outbound replies under **Email Template**.
+
+    | Setting | Description |
+    |---|---|
+    | **Header HTML** | HTML that Artemis adds above every reply. |
+    | **Footer HTML** | HTML that Artemis adds below every reply. |
+    | **Include CSAT feedback rating in outbound emails** | Adds a signed five-point rating block to replies. |
+
+    Select **Save Changes** to apply your changes.
+  </Tab>
+
+  <Tab title="Deployment">
+    Choose which deployed version answers email.
+
+    | Setting | Description |
+    |---|---|
+    | **Environment** | Under **Environment Binding**. Selects which deployed version handles incoming messages. |
+    | **Active Deployment** | Shows the bound version and when someone deployed it. |
+
+    A connection on **Working Copy (draft)** shows a warning, because the working copy changes as you edit the agent. Bind it to a published environment before production. Select **Save Changes** after you switch the environment.
+  </Tab>
+</Tabs>
+
+---
+
+## Troubleshoot connection issues
+
+Most failures trace to mail routing, thread headers, or the outbound transport.
+
+| Symptom | Likely cause | Recommended action |
+|---|---|---|
+| Mail bounces with `550` | Unknown or inactive recipient | Copy the exact address from **Identifier**, confirm the connection is **Active**, and send one channel recipient per transaction. |
+| Mail never reaches Artemis | The inbound domain doesn't route to the runtime | Ask your platform administrator to confirm DNS, MX, and SMTP ingress for the inbound domain. |
+| Replies don't send | Outbound transport misconfigured | For SMTP, confirm the relay with your administrator. For Graph, check every Graph field, then inspect the connection's delivery diagnostic. |
+| Graph returns authorization or configuration errors | Azure app or mailbox setup | Confirm the Tenant ID, Client ID, Sender Mailbox Address, Client Secret, application permission, admin consent, and mailbox access policy. |
+| A reply starts a new conversation | Thread headers lost | Inspect `In-Reply-To` and `References` after forwarding, and avoid providers or rules that rebuild messages and drop RFC 5322 headers. |
+| Text arrives but the attachment doesn't | A file breaks a limit or policy | Compare it with the 25 MB total limit and the project attachment count, size, MIME, and extension policy, then inspect upload logs. |
+| Artemis silently ignores expected mail | Loop prevention dropped it | Confirm the message doesn't carry an `Auto-Submitted` value other than `no`, or an `X-ABL-Source` header. |
+
+{{related}}
+
+- [Channels](/agent-platform/channels)
+- [Set up Slack](/agent-platform/channels/slack)
+- [Set up WhatsApp](/agent-platform/channels/whatsapp)

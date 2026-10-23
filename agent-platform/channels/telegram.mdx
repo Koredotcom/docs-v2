@@ -3,226 +3,268 @@ title: Set up Telegram
 sidebarTitle: Telegram
 ---
 
-<Badge icon="arrow-left" color="gray">[Back to messaging channels](/agent-platform/channels#messaging-or-digital-channels)</Badge>
+<Badge icon="arrow-left" color="gray">[Back to messaging or digital channels](/agent-platform/channels#messaging-or-digital-channels)</Badge>
 
-Connect a Telegram bot to your agent so users reach it in private chats, groups, and supergroups. Artemis registers the Telegram webhook for you and protects it with a generated secret, so you never call `setWebhook` yourself.
+Connect a Telegram bot to your agent so users reach it in private chats, groups, and supergroups. You create the bot in Telegram and give Artemis its username and token. Artemis then registers a protected webhook with Telegram for you.
 
-You create the bot in Telegram, then hand Artemis two values from it. Everything after that happens automatically when you create the connection.
+The setup requires:
+
+1. [Create the Telegram bot](#create-the-telegram-bot) with BotFather.
+2. [Artemis channel configuration](#artemis-channel-configuration): enter the bot's username and token, then create the connection.
+3. [Verify the connection](#verify-the-connection) in a private chat, a group, and with buttons and media.
+
+After you create the connection, Telegram posts each update to Artemis, and the agent replies in the same chat.
+
+**Important considerations**
+
+- **The bot username selects the connection**: Artemis builds the webhook path from it and routes each update by it. You can't change it after creation.
+- **Artemis registers the webhook for you**: Don't call `setWebhook` yourself. Telegram keeps one webhook per bot, so a manual call replaces the one Artemis registered and stops the connection.
+- **One active connection per bot token**: Artemis rejects a second active connection that uses the same token, so it can't silently replace the first one's webhook.
+- **Treat BotFather messages as secrets**: Anyone with the bot token can call the Bot API. Keep it out of tickets, screenshots, browser code, logs, and client-side configuration.
+
+## Prerequisites
+
+Confirm these before you start.
+
+- A Telegram account to talk to BotFather.
+- An Artemis runtime reachable over public HTTPS, with outbound access to `api.telegram.org`.
+- Artemis project access with permission to open **Deployments** -> **Channels**, and a deployed agent in the environment you intend to bind.
+
+---
 
 ## How Artemis routes Telegram messages
 
-Four pieces carry the integration, and each one does a different job. Confusing them causes most setup failures.
+Four pieces carry the integration. You supply the first two, and Artemis manages the rest.
 
-| Piece | Who owns it | What it does |
-| ----- | ----------- | ------------ |
-| **Bot Username** | BotFather | Routes incoming updates. Artemis puts the normalized username in the webhook path, then matches the last path segment to this connection. |
-| **Bot Token** | BotFather | Authorizes every outbound call Artemis makes to the Telegram Bot API, including `setWebhook`, `sendMessage`, typing indicators, callback answers, and media downloads. |
-| Secret token | Artemis | Verifies that an incoming update really came from Telegram. Artemis generates it, stores it encrypted, and never asks you for it. |
-| Webhook URL | Artemis | Receives updates from Telegram. Artemis builds it from your bot username and registers it during creation. |
+| Piece | Owner | What it does |
+|---|---|---|
+| **Bot Username** | BotFather | Routes incoming updates. Artemis puts the normalized username at the end of the webhook path and matches each update to this connection by it. |
+| **Bot Token** | BotFather | Authorizes every outbound Bot API call: `setWebhook`, `sendMessage`, typing indicators, callback answers, and media downloads. |
+| Secret token | Artemis | Proves each update came from Telegram. Artemis generates it, encrypts it, and never asks you for it. |
+| **Webhook URL** | Artemis | Receives updates. Artemis builds it from the bot username and registers it during creation. |
 
-Because the username sits in the URL path, you can't change it after creation. Create a new connection if you need to point at a different bot.
+---
 
 ## Create the Telegram bot
 
-Do this work in Telegram before you open Artemis. BotFather is a bot itself, so you create your bot by holding a chat with it rather than by filling in a web form. See Telegram's [introduction for developers](https://core.telegram.org/bots) if you've never built a bot before.
+Do this in Telegram before you open Artemis. Select **Open BotFather** or **Open Bot API documentation** in the setup guide to jump straight there.
 
 <Steps>
   <Step title="Open BotFather">
-    Search Telegram for `@BotFather`, or open [t.me/botfather](https://t.me/botfather) from any device signed in to your account. Several accounts imitate BotFather, so confirm the blue verification badge beside the name before you send anything. A fake BotFather exists to harvest tokens.
-
-    Select **Start** if you've never used it. BotFather replies with its command list.
+    1. Search Telegram for `@BotFather`, or open [t.me/botfather](https://t.me/botfather).
+    2. Confirm the blue verification badge beside the name. Fake BotFather accounts exist to harvest tokens.
+    3. Select **Start**.
   </Step>
 
   <Step title="Create the bot with /newbot">
-    Send `/newbot`. BotFather asks two questions in turn.
+    1. Send `/newbot`.
+    2. Enter a display name. Users see it at the top of the chat, and you can change it later.
+    3. Enter a username. It must be 5 to 32 Latin letters, numbers, or underscores, and end in `bot`.
 
-    First it asks for a name, which is the title users see at the top of the chat. Spaces and most characters work here, and you can change it later.
-
-    Then it asks for a username, which is permanent and must be unique across Telegram. Usernames run 5 to 32 characters, accept Latin letters, numbers, and underscores, ignore case, and must end in `bot`. BotFather rejects a taken username and asks again, so have a second choice ready.
-
-    Choose carefully. Telegram never lets you change a bot username, and Artemis builds the webhook path from it, so a rename means a new bot and a new connection in both systems.
-
-    BotFather confirms with a message containing the bot link and the token. The token is the long string after the numeric bot ID and a colon.
+    Choose the username carefully. Telegram never lets you change it, and Artemis builds the webhook path from it. BotFather replies with the bot link and the token.
   </Step>
 
-  <Step title="Copy the username and token correctly">
-    Copy the username from the confirmation message without the `t.me/` prefix that surrounds it in the link. Artemis strips a leading `@` and stores the normalized value, so either form works. Nothing else routes: a display name, a numeric bot user ID, a chat ID, a token fragment, or a full URL all fail.
+  <Step title="Copy the username and token">
+    1. Copy the username without the `t.me/` prefix. Artemis strips a leading `@`, so either form works.
+    2. Copy the full token, including the numeric bot ID and the colon before the secret part.
 
-    Copy the token separately. Telegram formats it as a tappable code block, so tapping or clicking it copies the whole value.
-
-    To retrieve either value later, send `/mybots`, select the bot, and select **API Token**. BotFather shows the username and token again without creating anything new.
+    To retrieve either value later, send `/mybots`, select the bot, and select **API Token**.
   </Step>
 
-  <Step title="Set up discovery, if your users need it">
-    Return to BotFather and use these commands to control what users see before and during a chat. Each one prompts you to pick the bot first.
+  <Step title="Configure discovery (optional)">
+    Use these BotFather commands to shape what users see. They don't affect message delivery or replace the webhook.
 
     | Command | What it sets |
-    | ------- | ------------ |
-    | `/setname` | The title users see at the top of the chat. This one you can change whenever you like. |
-    | `/setdescription` | The text on the empty chat screen, shown before a user selects **Start**, up to 512 characters. |
-    | `/setabouttext` | The short line on the bot's profile page, which travels with the link when someone shares the bot, up to 120 characters. |
-    | `/setuserpic` | The bot's profile photo. |
-    | `/setcommands` | The command menu Telegram suggests as a user types `/`. |
-
-    These shape discovery only. They don't affect message delivery, and they don't replace the webhook Artemis registers. Changes can take a few minutes to appear. Telegram documents the full command list under [BotFather](https://core.telegram.org/bots/features#botfather), and offers the same settings through the BotFather Mini App if you prefer a visual interface to chat commands.
+    |---|---|
+    | `/setdescription` | The text on the empty chat screen, before a user selects **Start** |
+    | `/setabouttext` | The short line on the bot's profile page |
+    | `/setuserpic` | The bot's profile photo |
+    | `/setcommands` | The command menu Telegram suggests when a user types `/` |
   </Step>
 
-  <Step title="Understand how the bot behaves in groups">
-    Artemis processes a group or supergroup message only when the message mentions the bot, replies to one of its messages, or uses `/start` or `/help`. Ordinary group chatter never reaches your agent.
-
-    This holds whatever you set in BotFather. Telegram's own [privacy mode](https://core.telegram.org/bots/features#privacy-mode), which you toggle with `/setprivacy`, widens what Telegram sends when you disable it, and a bot added to a group as an admin receives everything regardless. Artemis still applies the mention and reply rule on top, so neither change alters what your agent sees, and the bot stays quiet in busy groups by design.
-
-    One Telegram behavior does matter here: a privacy mode change takes effect only after you remove the bot from the group and add it back.
+  <Step title="Decide group behavior">
+    Artemis processes a group or supergroup message only when it mentions the bot, replies to one of the bot's messages, or uses `/start` or `/help`. Ordinary group chatter never reaches the agent, even if you turn off [privacy mode](https://core.telegram.org/bots/features#privacy-mode) in BotFather.
   </Step>
 
-  <Step title="Use separate bots for each environment">
-    Create one bot for development and another for production, each with its own token and its own Artemis connection. Telegram allows a single webhook per bot, so sharing one bot across environments means the two registrations overwrite each other.
+  <Step title="Use a separate bot for each environment">
+    Create one bot for development and another for production, each with its own token and its own Artemis connection.
   </Step>
 </Steps>
 
-<Warning>The bot token authorizes every Bot API call for that bot, and it travels in the request URL. Treat it like a password: keep it out of tickets, screenshots, logs, browser code, and client-side configuration. If it leaks, send `/token` to BotFather to generate a replacement, then update the credential in Artemis. The old token stops working as soon as the new one issues.</Warning>
+---
 
-## Connect the bot in Artemis
+## Artemis channel configuration
 
-The connection stores your bot identity, binds the agent version that answers, and registers the webhook. Go to **Deployments** -> **Channels** -> **Telegram** -> **+ New** and complete the following.
+Create the connection with the bot's values. Artemis registers the webhook as part of creation.
 
-| Field | What it controls |
-| ----- | ---------------- |
-| **Display Name** | The label operators see in the connections list. Name it for the bot and the environment it serves, because a project can hold several Telegram connections. Routing ignores this value. |
-| **Bot Username** | The routing key. Enter the BotFather username exactly, with or without a leading `@`. Artemis writes the normalized value into the webhook path and can't change it later. |
-| **Bot Token** | The credential for every outbound Bot API call. Paste the complete token, including the numeric bot ID and the colon that precedes the secret portion. Artemis encrypts it on save. |
-| **Environment** | The published environment whose active deployment answers incoming messages. Selecting one keeps the connection current as you promote new versions. Leave the working copy default only while you develop. |
-| **Provider Verification Strength** | How far Artemis trusts Telegram's identity assertion when it links a user to an existing session. **Weak** suits most deployments. Choose **Strong** only when you trust the provider's assertions enough to base continuity and account-linking decisions on them. |
-| **Initial Status** | Whether the connection starts handling messages. **Active** takes traffic immediately. **Inactive** saves the configuration in a disabled state, which suits a connection you're staging ahead of a launch. |
+1. Open Artemis and select the project.
+2. Go to **Deployments** -> **Channels** -> **Telegram** -> **+ New**. The **New Telegram Connection** dialog opens, with the setup guide on the left and the connection fields on the right.
+3. Configure the fields:
 
-### What happens when you select Create
+    | Artemis field | Source / Notes | What it controls |
+    |---|---|---|
+    | **Display Name** | You choose it | The label operators see in the connections list. Routing ignores it. |
+    | **Bot Username** | BotFather's confirmation message | The routing key. Enter the exact BotFather username, preferably without `@`. Don't enter the display name, a numeric bot or chat ID, a token fragment, or a `t.me` URL. |
+    | **Bot Token** | BotFather's confirmation message | Authorizes every outbound Bot API call. Artemis encrypts it on save. |
+    | **Environment** | Your published environments | The environment whose active deployment answers messages. Leave the working copy default only while you develop. |
+    | **Provider Verification Strength** | Defaults to **Weak** | How far the runtime trusts Telegram's identity assertion when it links a user to an existing session. Choose **Strong** only when you base continuity and account-linking decisions on it. |
+    | **Initial Status** | Defaults to **Active** | **Active** takes traffic immediately. **Inactive** saves the connection disabled until you activate it. |
 
-Artemis completes the Telegram-side registration in one step, so you don't touch the Bot API yourself.
+4. Select **Create**.
 
-Artemis generates a high-entropy secret token, calls `setWebhook` with the URL built from your bot username, and subscribes to `message` and `callback_query` updates only. It also drops any updates left pending from an earlier webhook on that bot, so stale traffic can't enter the new connection. Messages users sent before you created the connection won't appear, by design.
+When you select **Create**, Artemis completes the Telegram side in one step:
 
-If registration fails, Artemis rolls the whole creation back rather than leaving a connection that can't receive anything. A conflict at this point means the token already belongs to another active Telegram connection in the project. Telegram permits one webhook per bot, so Artemis refuses the second connection instead of silently replacing the first one's webhook.
+- Generates a high-entropy secret token and stores it encrypted.
+- Calls `setWebhook` with the connection-specific URL, which ends with the normalized bot username.
+- Subscribes to `message` and `callback_query` updates only. Telegram channel posts and other update types stay outside the connection.
+- Drops updates still pending from an earlier webhook, so stale events never reach the new connection.
+
+If registration fails, Artemis rolls back the creation rather than leaving a connection that can't receive anything.
+
+---
 
 ## Verify the connection
 
-Run these checks before you hand the bot to users. Each one exercises a different path, and a bot that answers private messages can still fail in groups or on buttons.
+Each check exercises a different path. A bot that answers private messages can still fail in groups or on buttons.
 
-<Steps>
-  <Step title="Send a private message">
-    Open the bot by its exact username, select **Start**, and send a short message you can search for later. Confirm you get one reply and that Artemis opens a single session.
-  </Step>
+1. Open the bot by its exact username, select **Start**, and send a short, distinctive message. Confirm one session and one reply.
+2. Send `/start`, or open a [deep link](https://core.telegram.org/bots/features#deep-linking) with a start payload. Artemis passes it to the agent as a welcome action, with the payload as its value.
+3. Add the bot to a group, then mention it with `@BotUsername`, reply to one of its messages, and send `/start` or `/help`. Confirm each reaches the agent and an unrelated message doesn't.
+4. Select a button on an inline keyboard. Confirm the loading spinner clears and the action returns to the same chat session.
+5. Send each media type your agent accepts, including a caption at least once.
 
-  <Step title="Test the start command and any deep link">
-    Send `/start`, then open a deep link carrying a start payload if your agent uses one. Artemis treats the command as a welcome action and passes the payload through as its value, so your agent can branch on where the user came from. Telegram documents the link format under [deep linking](https://core.telegram.org/bots/features#deep-linking).
-  </Step>
+Artemis downloads the largest photo size or the attached file through `getFile` before the agent processes it.
 
-  <Step title="Test group behavior">
-    Add the bot to a group or supergroup, then address it by username, reply to one of its messages, and send `/start` or `/help`. Each should reach the agent. Send an unrelated message too, and confirm the bot ignores it.
-  </Step>
+| Media type | What to confirm |
+|---|---|
+| `text` | The agent receives and answers it. |
+| `photo`, `document`, `audio`, `video`, `voice` | The download succeeds and the agent processes the file and its caption. |
+| `inline buttons` | The selection returns to the same session with the right action. |
 
-  <Step title="Press an inline button">
-    Trigger a response that carries an inline keyboard and select a button. Confirm the loading spinner clears and the resulting action lands in the same chat session.
-  </Step>
-
-  <Step title="Send each media type you support">
-    Send a photo, document, audio file, video, and voice note, depending on what your agent accepts. Artemis downloads the largest photo size or the attached file before the agent processes it. Include a caption in at least one test, since captions travel separately from the file.
-  </Step>
-</Steps>
-
-## Manage the connection
-
-Opening a connection shows four tabs. The delete control sits beside the connection name.
-
-<Tabs>
-  <Tab title="Overview">
-    **Connection Summary** reports the connection's state and identity.
-
-    | Field | Description |
-    | ----- | ----------- |
-    | **Status** | Whether the connection currently handles messages. |
-    | **Created** | Date and time of creation. |
-    | **Updated** | Date and time of the last change. |
-    | **Environment** | The environment whose deployment answers messages. |
-    | **Source Type** | `Channel Connection`. |
-    | **Source ID** | The connection's internal identifier, useful when you raise a support request. |
-
-    **Setup Instructions** shows the **Webhook URL** Artemis registered with Telegram and the normalized **Bot Username**, each with a copy control. The URL follows the form `https://{host}/api/v1/channels/telegram/webhook/{bot-username}` and ends with the username minus any leading `@`.
-
-    Use the **Webhook URL** to confirm what Telegram should be calling. If `getWebhookInfo` reports a different URL, something outside Artemis re-registered the bot.
-  </Tab>
-
-  <Tab title="Credentials">
-    Update the bot token here when BotFather issues a new one.
-
-    Artemis encrypts the stored token and never displays it again, so the field stays empty until you enter a replacement. Entering a new value and selecting **Save Credentials** overwrites the old one.
-
-    Turn on **Use Auth Profile** to draw the credential from a stored authentication profile instead of holding a token on this connection.
-
-    Rotate the credential whenever BotFather revokes or regenerates the token. Until you do, Artemis can neither re-register the webhook nor send messages, because both calls carry the old token.
-  </Tab>
-
-  <Tab title="Configuration">
-    Adjust how the connection presents itself and how it handles responses.
-
-    Under **General**, rename the connection with **Display Name**, and revisit **Provider Verification Strength** if your trust posture for this bot changes.
-
-    Under **Telegram Settings**, **Bot Username** appears read-only. Artemis built the webhook path from it at creation, so changing it would break routing. Create a new connection to target a different bot.
-
-    Turn on **Enable Streaming** to send the agent's response to Telegram as the model produces it, rather than holding the message until the response completes. Streaming shortens perceived latency on long answers.
-
-    **Authorization Message** controls what the user sees when a tool needs them to authorize something before the conversation continues. Write the template with these variables.
-
-    | Scope | Variables | Use |
-    | ----- | --------- | --- |
-    | Message | `{{total}}`, `{{completed}}`, `{{remaining}}` | Summarize progress across every pending authorization, for example in a lead-in line before the list. |
-    | Repeat block | `{{#authorizations}}` and `{{/authorizations}}` | Wrap the section Artemis repeats once per pending authorization. |
-    | Item | `{{profileName}}`, `{{authLink}}`, `{{authUrl}}`, `{{index}}`, `{{count}}` | Identify and link each authorization inside the repeat block. |
-
-    Item variables resolve only inside the repeat block. Use the preview to check the wording, and remember it fills from live pending authorizations at runtime.
-  </Tab>
-
-  <Tab title="Deployment">
-    Choose which deployed version of the agent answers messages on this connection.
-
-    Under **Agent Version**, set **Environment** to the environment you want the connection to follow. **Active Deployment** then shows the version currently serving traffic. Select **Save Changes** to apply the binding.
-
-    A connection left on the working copy shows a warning, because the working copy is a development target that changes as you edit the agent. Bind the connection to a published environment before you put the bot in front of users.
-  </Tab>
-</Tabs>
+---
 
 ## Telegram limits
 
-Telegram enforces these boundaries, and Artemis applies them before it calls the Bot API. Design your agent's responses to fit them.
+Artemis applies these limits before it calls the Bot API. Design agent responses to fit them.
 
 | Area | Limit |
-| ---- | ----- |
-| Text | Outbound messages run 1 to 4096 characters. Artemis substitutes a single ellipsis when a response would otherwise be empty. |
-| Inline keyboards | Up to 10 rows, with button text capped at 64 characters. |
-| Callback data | 64 bytes. Keep authored action IDs and values short enough to survive encoding. |
-| Media | Files up to 20 MB download, which is the Bot API's own ceiling rather than an Artemis one. Artemis rejects anything larger before upload. |
-| Channel posts | Not supported. The connection serves private chats, groups, and supergroups under the mention and reply rule. |
+|---|---|
+| Text | 1 to 4096 characters per message. Artemis sends a single ellipsis for an otherwise empty response. |
+| Inline keyboards | Up to 10 rows. Button text up to 64 characters. |
+| Callback data | 64 bytes. Keep authored action IDs and values short. |
+| Media | 20 MB per file download. Artemis rejects larger files before upload. |
+| Chats | Private chats, groups, and supergroups under the mention and reply rule. Artemis ignores channel posts. |
 
-## Operate the connection safely
+---
 
-A Telegram connection depends on two secrets and one webhook registration. Protect all three.
+## Security and lifecycle
 
-The secret token is separate from the bot token. Telegram returns it in the `X-Telegram-Bot-Api-Secret-Token` header on every update, and Artemis compares it with the encrypted stored value using a constant-time check before processing anything. A proxy that strips unrecognized headers breaks this check, so preserve the header end to end.
+A Telegram connection depends on two secrets and one webhook registration.
 
-Never call `setWebhook` yourself for a connected bot. Telegram keeps one webhook per bot, so registering another URL or deleting the webhook outside Artemis stops the connection until you re-save or recreate it. Use `getWebhookInfo` for diagnosis only, run it through a secure operator tool, and keep the real token out of any transcript you share.
+- **Secret header**: Telegram returns the generated secret in the `X-Telegram-Bot-Api-Secret-Token` header on every update. Artemis compares it with the stored value before processing, so any proxy in front of Artemis must preserve the header.
+- **Bot token**: It authorizes every Bot API call and appears in request URLs. Store it only in Artemis, and redact it from logs and diagnostics.
+- **Token rotation**: If BotFather revokes or regenerates the token, update it in the **Credentials** tab so Artemis can send messages and re-register the webhook.
+- **Diagnosis**: Use `getWebhookInfo` only through a secure operator tool to confirm the URL and last error. Never call `setWebhook` or delete the webhook outside Artemis.
+- **Duplicates**: Artemis deduplicates on Telegram's `update_id`, so a Telegram retry never creates a second agent turn.
 
-Artemis deduplicates on Telegram's `update_id`, so a Telegram retry doesn't produce a duplicate agent turn.
+---
 
-## Troubleshooting
+## Manage the channel connection
 
-Match the symptom to the check. Most failures trace to the token, the webhook registration, or the group mention rule.
+Open a Telegram connection from **Deployments** -> **Channels** -> **Telegram** to manage it. The page has a header, three tabs, and a summary panel on the right.
 
-| Symptom | What to check |
-| ------- | ------------- |
-| Creation fails with a webhook registration error | Verify the bot token, confirm the Artemis host is reachable over public HTTPS, confirm outbound access to `api.telegram.org`, and confirm BotFather permits `setWebhook` for the bot. |
-| Creation returns a conflict | The token already belongs to another active Telegram connection in this project. Reuse that connection or deactivate it rather than replacing its webhook. |
-| Updates return 401 | An external `setWebhook` call may have replaced the secret, or a proxy dropped the `X-Telegram-Bot-Api-Secret-Token` header. Re-save or recreate the connection and preserve the header. |
-| Private messages don't arrive | Confirm the user selected **Start**, check that `getWebhookInfo` points at this connection's URL, and confirm the connection is active. |
-| Private chats work but groups don't | Mention the exact bot username or reply to one of its messages, test `/start` and `/help`, and confirm the bot is a member of the group. Disabling privacy mode in BotFather doesn't make Artemis process unmentioned chatter. |
-| Text works but buttons don't | Confirm the callback payload fits within 64 bytes and that the authored action still exists. |
-| Text works but files fail | Confirm your agent accepts the media type, that the file is 20 MB or smaller, and that your attachment policy allows it. A failure here often means the token changed, since Artemis downloads through the Bot API. |
-| Messages sent before creation never arrive | Expected. The initial registration drops pending updates so stale events can't enter the new connection. |
+**Header.** Shows the connection name, its status, and when it last changed. The **...** overflow menu holds the connection-level actions.
+
+**Summary panel.** Stays visible on every tab.
+
+| Field | Description |
+|---|---|
+| **Channel** and **Connection Type** | Read **Telegram** and **Channel Connection**. |
+| **Identifier** | The normalized bot username this connection routes on. |
+| **Credentials** | Reads **Configured** once credentials save. |
+| **Webhook URL** | The URL Artemis registered with Telegram, with a copy control. If `getWebhookInfo` reports a different URL, something outside Artemis re-registered the bot. |
+| **Created** and **Updated** | Date and time of creation and of the last change. |
+
+<Tabs>
+  <Tab title="Credentials">
+    Artemis encrypts the token after you save it. Leave the field blank to keep the current value, or enter a new token to replace it.
+
+    | Field | Description |
+    |---|---|
+    | **Use Auth Profile** | Turn it on, then select a saved auth profile from the list in place of the token field. |
+    | **Bot Token** | Replace it here whenever BotFather issues a new token. |
+
+    Select **Save Credentials** to apply your changes.
+  </Tab>
+
+  <Tab title="Configuration">
+    Update how the connection behaves. **Telegram Settings** holds the provider-specific fields.
+
+    | Setting | Description |
+    |---|---|
+    | **Display Name** | The label operators see in the connections list. |
+    | **Provider Verification Strength** | How far the runtime trusts Telegram's identity assertion. |
+    | **Bot Username** | Read-only, with a copy control. To target a different bot, create a new connection. |
+    | **Enable Streaming** | Sends the response to Telegram as the agent generates it. |
+    | **Chunk Size (characters)** | The minimum characters Artemis buffers before each update. Lower values feel faster and make more API calls. |
+    | **Message template** | The authorization message the connection sends when a tool needs the user to authorize. |
+    | **Webhook URL** | The registered URL, with a copy control. |
+
+    Insert variables into the **Message template** from the chips below the editor, select **Show more** for the full list, and select **Show preview** to check the result.
+
+    | Scope | Variables |
+    |---|---|
+    | Whole message | `{{total}}`, `{{completed}}`, `{{remaining}}` |
+    | Repeat block | `{{#authorizations}}` ... `{{/authorizations}}`, which repeats once per pending authorization |
+    | Inside the block | `{{profileName}}`, `{{authLink}}`, `{{authUrl}}`, `{{index}}`, `{{count}}` |
+
+    Select **Save Changes** to apply your changes.
+  </Tab>
+
+  <Tab title="Deployment">
+    Choose which deployed version answers the bot.
+
+    | Setting | Description |
+    |---|---|
+    | **Environment** | Under **Environment Binding**. Selects which deployed version handles incoming messages. |
+    | **Active Deployment** | Shows the bound version and when someone deployed it. |
+
+    A connection on **Working Copy (draft)** shows a warning, because the working copy changes as you edit the agent. Bind the connection to a published environment before you open the bot to users. Select **Save Changes** after you switch the environment.
+  </Tab>
+</Tabs>
+
+---
+
+## Troubleshoot connection issues
+
+Most failures trace to the token, the webhook registration, or the group mention rule.
+
+| Symptom | Likely cause | Recommended action |
+|---|---|---|
+| Creation fails with a webhook registration error | Artemis can't reach Telegram or the token is wrong | Verify the Bot Token, the public HTTPS runtime URL, outbound access to `api.telegram.org`, and that BotFather allows `setWebhook` for the bot. |
+| Creation returns a conflict | The token already belongs to another active Telegram connection in the project | Reuse or deactivate that connection instead of replacing its webhook. |
+| Updates return 401 | An external `setWebhook` call replaced the secret, or a proxy dropped the secret header | Re-save or recreate the connection in Artemis, and preserve `X-Telegram-Bot-Api-Secret-Token`. |
+| Private messages don't arrive | The user hasn't started the bot, or the webhook points elsewhere | Confirm the user selected **Start**, `getWebhookInfo` shows this connection's URL, `allowed_updates` includes `message`, and the connection is **Active**. |
+| Private chats work but groups don't | The message doesn't meet the mention and reply rule | Mention the exact bot username or reply to its message, test `/start` or `/help`, and confirm the bot is a group member. |
+| Text works but buttons don't | Callback updates fail or the action is gone | Confirm `allowed_updates` includes `callback_query`, the callback payload fits 64 bytes, and the authored action still exists. |
+| Text works but files fail | Unsupported type, oversized file, or a changed token | Confirm your agent accepts the media type, `getFile` succeeds with the current token, the file is 20 MB or smaller, and your attachment policy accepts it. |
+| Messages sent before creation never arrive | Expected behavior | The initial `setWebhook` call drops pending updates so stale events can't enter the new connection. |
+
+---
+
+## Telegram reference
+
+Use these pages when you need detail beyond what this article covers.
+
+| Resource | Use it for |
+|---|---|
+| [Bots: an introduction](https://core.telegram.org/bots) | How Telegram bots work. |
+| [BotFather](https://core.telegram.org/bots/features#botfather) | Every BotFather command. |
+| [Privacy mode](https://core.telegram.org/bots/features#privacy-mode) | What Telegram sends a bot in groups. |
+| [Bot API](https://core.telegram.org/bots/api) | `setWebhook`, `getWebhookInfo`, and message limits. |
+
+{{related}}
+
+- [Channels](/agent-platform/channels)
+- [Set up WhatsApp](/agent-platform/channels/whatsapp)
+- [Set up Slack](/agent-platform/channels/slack)

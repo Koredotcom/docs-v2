@@ -149,3 +149,9 @@ Command: `node --import ./reg.mjs val.mjs <review file>` for the sets, and a wra
 - Does a supervisor `GATHER` with `required: true` ever stop routing? The runtime skips a separate extraction pass while routing actions exist (`planned_with_routing_tool`, `fused_with_routing_tool`). The article tells readers not to rely on it.
 - Resolved from the public reference (2026-10-19). Public reference `agent-platform/abl/reference/multi-agent-and-supervisor.mdx` (ESCALATE section, lines 825-1110): delivery needs a `routing` block (`connection`, `queue`, `skills`, `priority`, `post_agent`). A conditional `routing` list with no matching entry fails closed. The article now states this prerequisite and links to the ESCALATE reference.
 - Should the article document the new multi-intent fields (`advance_on_primary_response`, `completion_signal`, `list_other_requests`)? The handle-multiple-intents article is the better home.
+
+
+## Post-publication correction (2026-10-20)
+
+- `ENABLED_WHEN: channel.name == "voice"` disables the route. Availability reads the thread's `data.values` (`routing-availability-snapshot.ts`), where only `session.channel` exists (`runtime-executor.ts` initialData). Tested with the real `resolveRoutingAvailability`: `channel.name` gives `enabled_when_missing_data` unless a `channel` object is present; `session.channel == "voice"` enables only on exactly `voice`; `session.channel IN ["voice","voice_twilio"]` enables both. Article and `.mdx` page now use `session.channel`.
+- `handoff_context_pass_resolved` fires only when a `PASS` field is a current-turn input name (`request`, `message`, `utterance`, and similar) in `routing-executor.ts`. It never fires for `customer_id`. Article and `.mdx` verification steps now use the `handoff` event `context` and `handoff_context_seed` `seededFields` and `remainingWaitingFields`.

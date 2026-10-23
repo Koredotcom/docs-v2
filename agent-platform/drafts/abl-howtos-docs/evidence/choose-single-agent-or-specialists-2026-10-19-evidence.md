@@ -135,3 +135,9 @@ Command: `node --import ./reg.mjs val.mjs <review file> all`. Result: all sets z
 
 - Resolved from the public reference (2026-10-19). Public reference `agent-platform/abl/reference/multi-agent-and-supervisor.mdx` (ESCALATE section, lines 825-1110): delivery needs a `routing` block (`connection`, `queue`, `skills`, `priority`, `post_agent`). A conditional `routing` list with no matching entry fails closed. The article now states the human-agent connection and `routing` block prerequisite and links to the ESCALATE reference. Per-channel connector setup remains a project assumption.
 - Does a supervisor `GATHER` with `required: true` ever block routing? The runtime skips a separate extraction pass while routing actions exist (`planned_with_routing_tool` in `reasoning-executor.ts`). The article avoids relying on it.
+
+
+## Post-publication correction (2026-10-20)
+
+- `ENABLED_WHEN: channel.name == "voice"` disables the route. Availability reads the thread's `data.values` (`routing-availability-snapshot.ts`), where only `session.channel` exists (`runtime-executor.ts` initialData). Tested with the real `resolveRoutingAvailability`: `channel.name` gives `enabled_when_missing_data` unless a `channel` object is present; `session.channel == "voice"` enables only on exactly `voice`; `session.channel IN ["voice","voice_twilio"]` enables both. Article and `.mdx` page now use `session.channel`.
+- `handoff_context_pass_resolved` fires only when a `PASS` field is a current-turn input name (`request`, `message`, `utterance`, and similar) in `routing-executor.ts`. It never fires for `customer_id`. Article and `.mdx` verification steps now use the `handoff` event `context` and `handoff_context_seed` `seededFields` and `remainingWaitingFields`.
