@@ -1,0 +1,97 @@
+---
+title: Benefit Management
+sidebarTitle: Benefit Management
+---
+
+The Benefit Management agent guides employees through benefits. It shows the plans available to them, shows the plans they already hold, collects and adds dependent details, and submits an enrollment.
+
+Its scope covers coverage, enrollment, eligibility, and dependents only. Anything outside that scope goes to the specialist that owns it.
+
+## Flows
+
+The agent supports four flows, and each one maps to a question employees ask during enrollment season and after life events.
+
+| Flow | What the agent does |
+|------|---------------------|
+| **View available plans** | Fetches the plans the employee qualifies for and lists them. |
+| **View enrolled plans** | Retrieves the current enrollments and shows each plan name with its key details. |
+| **Add a dependent** | Collects the dependent details and adds the dependent to the employee's record. |
+| **Enroll in a plan** | Submits the enrollment with the selected plan and coverage targets after confirmation. |
+
+When an employee asks for more detail about a plan the agent just displayed, the agent answers from the same response instead of calling the tool again. That keeps follow-up replies fast and consistent.
+
+## Tools
+
+Five tools cover the four flows. Four read from or write to Workday, and one wraps the available-plans lookup.
+
+| Tool | Type | Description |
+|------|------|-------------|
+| `fetch_dependents` | HTTP | Fetches the dependents already on the employee's record. |
+| `add_dependents` | HTTP | Adds a dependent for use on a selected benefit. |
+| `submit_benefit` | HTTP | Enrolls the employee in a benefit plan. |
+| `search_enrolled_benefits` | HTTP | Fetches the plans the employee currently holds. |
+| `benefitsemployee` | Workflow | Fetches the plans available to the employee. It calls `get_user` and `benefits_for_employees` internally. |
+
+### Request bodies
+
+Configure each tool with the body below. The identity values resolve from config variables at run time.
+
+`fetch_dependents`:
+
+```json
+{
+  "employee_id": "{{config.DEPENDENTS_EMPLOYEE_ID}}"
+}
+```
+
+`add_dependents`:
+
+```json
+{
+  "employee_id": "{{config.EMPLOYEE_ID}}",
+  "first_name": "{{input.first_name}}",
+  "last_name": "{{input.last_name}}",
+  "gender": "{{input.gender}}",
+  "dob": "{{input.dob}}",
+  "relationship": "{{input.relationship}}",
+  "address": "{{input.address}}",
+  "country": "{{input.country}}"
+}
+```
+
+`submit_benefit`:
+
+```json
+{
+  "userid": "{{input.userid}}",
+  "Benefit_Plan_ID": "{{input.Benefit_Plan_ID}}",
+  "Benefit_Provider_Descriptor": "{{input.Benefit_Provider_Descriptor}}",
+  "Coverage_Targets_Table": "{{input.Coverage_Targets_Table}}"
+}
+```
+
+`search_enrolled_benefits`:
+
+```json
+{
+  "userid": "{{config.EMPLOYEE_ID}}"
+}
+```
+
+`get_user`, called inside the `benefitsemployee` workflow:
+
+```json
+{
+  "id": "{{config.USERID}}"
+}
+```
+
+<Warning>The `benefits_for_employees` tool ships with a fixed `employee_id` in its request body. Replace it with a config variable before you test, or every employee sees the same available plans.</Warning>
+
+## Guardrails
+
+Three rules keep enrollments accurate. They also keep the agent inside its domain.
+
+- The agent enrolls only after the employee confirms the plan and the coverage targets.
+- The agent stays within coverage, enrollment, eligibility, and dependents.
+- The agent answers follow-up questions from the response it already fetched rather than re-calling the tool.

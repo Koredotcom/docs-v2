@@ -1,0 +1,166 @@
+---
+title: Troubleshoot AI for HR
+sidebarTitle: Troubleshooting
+---
+
+Most AI for HR issues trace back to one of four areas: setup, routing, knowledge, or data. Find your symptom below, apply the fix, and rerun the scenario to confirm that it works.
+
+Some behaviors look like errors but follow the design on purpose. Check the last section before you change any configuration.
+
+## Diagnose in three steps
+
+Follow the same three steps for every issue. The trace almost always points you straight to the cause.
+
+1. **Reproduce.** Rerun the prompt in AI for Work.
+2. **Open the trace.** Find the agent and the step that failed.
+3. **Match the symptom.** Apply the fix from the sections below.
+
+While you read the trace, check two session memory values. `current_intent` shows the intent the supervisor detected, and `target_agent` shows the specialist it picked. A wrong value in either one tells you the issue sits in routing, not in the specialist.
+
+## Setup and configuration
+
+Setup issues stop agents before they reach your systems. Fix these first, because they affect every domain at once.
+
+### An agent can't find a workflow tool
+
+Agents see a workflow only after you register it. An unregistered workflow never appears in the agent's tool list.
+
+1. In Agent Platform, go to **Tools** > **Workflows** and click **+ Register Workflow**.
+2. Enter the tool name and description, and select the workflow.
+3. Set the execution mode to Synchronous and click **Register Workflow**.
+
+### An HTTP tool fails
+
+The endpoint, headers, or inputs don't match the target system. Test the tool on its own to find the failing value.
+
+1. Open the tool and go to **Testing**.
+2. Click **Run test** and enter the required inputs.
+3. Correct the endpoint, method, headers, or parameters, and run the test again.
+
+### A tool sends an unresolved config value
+
+The config variable doesn't exist, or its key differs from the one in the tool. Keys must match exactly, including case.
+
+1. Open **Project Settings** and select **Config Variables** under **General**.
+2. Confirm that the key exists and matches the tool's reference:
+
+```text
+{{config.KEY}}
+```
+
+### Agents use an unexpected model
+
+The project default model differs from the workspace default. Align the two so every agent uses the model you chose.
+
+1. Go to **Workspace Settings** > **AI Configuration** > **LLM Providers** > **Model Catalog** and note the starred default.
+2. Go to **Project Settings** > **General** > **Models** and select the same model.
+
+### AI for Work can't reach the agentic app
+
+The Autonomous Agent connection isn't complete. Employees see no response until you fix it.
+
+1. In AI for Work, open your workspace and select **Autonomous Agents**.
+2. Open the agent and confirm that it points to the Agent Platform workspace that holds AI for HR.
+3. Set the mode to Async and test the connection until you see "Async connection success."
+4. Publish the agent.
+
+### Agents don't know who is asking
+
+The metadata path doesn't match the context that reads it. Each context uses its own path for the same value.
+
+```text
+Agent:         {{_metadata.email}}
+Workflow tool: {{vars._session._metadata.email}}
+HTTP tool:     {{session._metadata.email}}
+```
+
+## Routing and handoffs
+
+Routing issues send a request to the wrong agent or stop it midway. The trace shows exactly where the conversation went.
+
+### The request reaches the wrong specialist
+
+The supervisor matched the message to a different intent category. Check `current_intent` in the trace to confirm.
+
+- Refine the lexical cues for that category in the supervisor's instructions.
+- Rerun the same prompt and confirm the new `target_agent`.
+
+### A specialist answers outside its domain
+
+The specialist lacks a HANDOFF block for the peer that owns the topic. Every specialist needs one HANDOFF block for each of the other six specialists.
+
+- Add the missing HANDOFF block with `RETURN: true` and `ON_RETURN: continue`.
+
+### A handoff fails and the first agent continues
+
+The receiving agent failed its turn, and `ON_FAILURE: continue` returned control to the sender. The sender keeps the conversation alive while you investigate.
+
+- Open the receiving agent's steps in the trace and fix the failing tool or instruction.
+
+## Knowledge answers
+
+Knowledge issues show up as missing or wrong policy answers. Nearly all of them come from the Search AI setup or the indexed content.
+
+### The agent offers a case instead of an answer
+
+Search AI found no matching content, so the agent refuses to guess. Fix the content, not the agent.
+
+- Confirm that your repository contains the policy and that the connector indexes it.
+- Check the connector under **Search AI** > **Connectors**.
+
+### Search AI rejects the request
+
+The auth token is invalid or expired. Generate a new one from the Search AI app credentials.
+
+1. Copy the client ID and client secret from the Search AI app.
+2. Generate a JWT with the HS256 algorithm, signed with the client secret.
+3. Update the token in the tool's auth header.
+
+### Search returns content from the wrong source
+
+The `sourceType` filter value is wrong. Copy the exact value from an indexed chunk.
+
+1. In the Search AI app, go to **Browse** > **Filter**, select your source under **Source Title**, and click **Apply**.
+2. Open the JSON of any chunk, scroll to the end, and copy `sourceType`.
+
+### The answer covers the wrong region
+
+The agent infers the region from the message and searches policies for India or the US only. A message without a location clue can land on the wrong region.
+
+- Ask employees to mention their location in policy questions.
+- Index policy content for both regions.
+
+## Transactions and data
+
+Data issues show wrong values or missing submissions. Start with the config variables, because the tools read identity from them.
+
+### Data belongs to the wrong employee
+
+A config variable holds the wrong identity value. Four variables carry identity in AI for HR.
+
+- Check `EMPLOYEE_ID`, `DEPENDENTS_EMPLOYEE_ID`, `USERID`, and `USER_ID` in **Config Variables**.
+
+### Every user sees the same available benefits
+
+The `benefits_for_employees` tool carries a fixed `employee_id` in its request body. Every call returns that employee's plans.
+
+- Replace the fixed value with your own value or a config variable.
+
+### A request never reaches Workday or ServiceNow
+
+The employee didn't confirm the change, so the agent never ran the write tool. Agents act only after a clear yes.
+
+- Confirm when the agent asks. If the employee confirmed, open the tool step in the trace and check its status.
+
+## Behaviors that look like errors
+
+AI for HR enforces several limits on purpose. Share this list with pilot users so they recognize expected behavior.
+
+| What You See | Why It Happens |
+|--------------|----------------|
+| Control returns to the previous agent after a handoff. | Every HANDOFF uses `RETURN: true` and `ON_RETURN: continue`. |
+| Compensation won't show a colleague's payslip. | It serves the logged-in employee only. |
+| Offboarding won't process a termination for someone else. | It handles voluntary resignation only. |
+| Timesheet Management won't edit an entry. | It stays view-only and covers direct reports only. |
+| Case Management won't approve a request. | It never approves HR requests. |
+| A value looks different from what the employee expected. | Agents show values exactly as the source system returns them. |
