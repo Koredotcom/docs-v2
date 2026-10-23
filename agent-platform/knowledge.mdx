@@ -707,16 +707,16 @@ There are two paths into a turn:
 
 | Path | When it applies | What happens |
 |------|------------------|--------------|
-| **Automatic first search** | The agent's only business tool is a single knowledge base, the agent is not a coordinator (router or orchestrator), it does not collect `GATHER` fields with inline gather, it has no handoff or delegation tools, and the turn was not forwarded by a handoff or delegation. On by default; there is nothing to switch on. | The platform searches the customer's message before the model runs, adds the results to the conversation, and tells the model to answer only from those results. If nothing is found, the model gets a normal turn and is told to search again with a more specific query. |
+| **Automatic first search** | Off by default. It runs only when the knowledge tool sets `kb_fast_path: on`, in the project tool or in the agent's own `TOOLS:` entry (the agent's value wins). The agent's only visible business tool must also be a single knowledge base. The agent is not a coordinator (router or orchestrator), does not collect `GATHER` fields with inline gather, has no handoff or delegation tools, and the turn was not forwarded by a handoff or delegation. The tool must not declare a `confirmation`, or an `ON_RESULT` / `ON_ERROR` handler with actions other than `set`. | The platform searches the customer's message before the model runs, adds the results to the conversation, and tells the model to answer only from those results. If the search finds nothing, the model is told that nothing was found and not to search again, and the answer says so. If the search could not run, the model gets a normal turn and calls the knowledge tool itself. |
 | **Model-driven search** | Every other agent, and any follow-up search after an automatic first search. | The model calls `search_kb_<name>(query)` with its own query, and the results come back as that tool's result like any other tool call. |
 
-<Note>The automatic first search runs outside the normal tool-call path, so a knowledge tool's `on_result` / `on_error` hooks and `MODEL_CONTEXT` only apply to searches the model makes itself. To shape what the model reads on every path, including the automatic one, use `search_instructions` and `compaction.max_search_tokens` -- see [Tool-level search settings](#tool-level-search-settings) below.</Note>
+<Note>The automatic first search runs as a tool call, so `set`-only `on_result` / `on_error` hooks apply to it. A `confirmation`, or a hook with any other action, sends the turn to the normal model-driven path. To shape what the model reads on every path, use `search_instructions` and `compaction.max_search_tokens` -- see [Tool-level search settings](#tool-level-search-settings) below.</Note>
 
 On later turns, the history keeps a placeholder for the search call, the same as for any tool result. Search results are never kept for display beyond the turn that returned them; if the conversation needs a fact again, the model searches again.
 
 ### Tool-level search settings
 
-Beyond the Studio configuration in [Configure AI](#configure-ai) and [Search and test](#search-and-test), the generated `search_kb_<name>` tool itself takes a few settings. Set them on the project tool definition -- a tool library file, or the Studio tool editor. An agent's own `TOOLS:` entry for the same tool can add only `search_instructions` and a `compaction:` block.
+Beyond the Studio configuration in [Configure AI](#configure-ai) and [Search and test](#search-and-test), the generated `search_kb_<name>` tool itself takes a few settings. Set them on the project tool definition -- a tool library file, or the Studio tool editor. An agent's own `TOOLS:` entry for the same tool can set `search_instructions`, `kb_fast_path` and `business_rules`.
 
 ```yaml
 TOOLS:
@@ -734,10 +734,11 @@ TOOLS:
 
 | Setting | Values | Default | What it does |
 |---------|--------|---------|---------------|
-| `search_instructions` | free text | none | Added to the tool description, and turns on query planning for the automatic first search. An agent-file value is used only when the project tool has none of its own. |
+| `kb_fast_path` | `on`, `off` | off | `on` turns on the automatic first search for this tool, if the agent meets the conditions in [How the platform searches](#how-the-platform-searches). An agent's own value overrides the project tool's. |
+| `search_instructions` | free text | none | Added to the tool description, and turns on query planning for the automatic first search. Query planning also runs when the knowledge base has vocabulary fields. An agent-file value is used only when the project tool has none of its own. |
 | `retrieval_profile` | `object-aware` | standard retrieval | Splits a question into up to 10 document categories, searches each in parallel with reranking, and merges the results. Useful for a knowledge base that mixes document types where one question needs several of them. |
 | `compaction.max_search_tokens` | 1 to 40,000 | none when 10 or fewer chunks return; 40,000 above that | Token budget for the results the model reads. Whole chunks are dropped from the end, never cut mid-text. Lower it for voice agents and short answers -- a large budget slows the reply and dilutes grounding. |
-| `queryType`, `topK`, `filters`, `similarityThreshold` (optional parameters) | `queryType`: `vector`, `hybrid`, `structured`, `semantic`, `aggregation`; `topK` up to 100 | not exposed; the tool takes only `query` | Declare these as optional parameters to let the model choose the search mode, result count, or filters on each call. Use only when the model must steer the search itself -- otherwise leave it to the planner. |
+| `queryType`, `topK`, `filters`, `similarityThreshold` (optional parameters) | `queryType`: `vector`, `hybrid`, `structured`, `semantic`, `keyword`, `aggregation`; `topK` up to 100 | not exposed; the tool takes only `query` | Declare these as optional parameters to let the model set the result count or filters on each call. The platform runs `hybrid` search unless the customer's message or the search instructions explicitly ask for another mode, so a `queryType` the model writes on its own becomes `hybrid`. An `aggregation` search keeps its type. Use only when the model must steer the search itself -- otherwise leave it to the planner. |
 
 <Note>Other tool-result [compaction](/agent-platform/abl-reference/tools#result-compaction) settings don't apply to knowledge base results -- `max_search_tokens` is the lever to use. The only other limit is the shared budget when several tools run in parallel in the same turn (100,000 characters divided across them).</Note>
 
