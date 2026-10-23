@@ -12,7 +12,7 @@ A turn's time is roughly the number of sequential model calls multiplied by the 
 
 | Step | Runs when | Typical cost | Lever |
 |------|-----------|---------------|-------|
-| Input checks | Every turn with input guardrails, before the model | 100 ms per rule; up to 5 s for a provider, 15 s for a model judge | Prefer `check` rules, and use `llm_check` only where meaning matters |
+| Input checks | Every turn with input guardrails, before the model | Up to 100 ms for `check` rules, 5 s for providers, 15 s for model judges (rules in the same tier run in parallel) | Prefer `check` rules, and use `llm_check` only where meaning matters |
 | Routing call | Every turn that starts at a router or orchestrator | One full model call | Deterministic `WHEN` on handoffs; a faster tier for coordination |
 | Main model calls | 1, plus 1 per tool round | Prompt size × model tier | Fewer tool rounds; smaller prompts; fast or balanced tiers |
 | Tool calls | Each round | Your API's latency (30 s default timeout) | Fast APIs, parallel calls, `MODEL_CONTEXT` |
@@ -39,7 +39,7 @@ A turn's time is roughly the number of sequential model calls multiplied by the 
 - **Answer straight from a tool.** `on_result: do: - RESPOND: "…"` sends the reply and ends the tool loop, saving the model call that would otherwise phrase it. Add a response `MODEL_CONTEXT` so later turns know what was said.
 - **Use `FLOW` steps with `REASONING: false`** for fixed steps such as collecting details, calling a tool, or confirming. They run without a model call.
 - **Make one tool do one job end to end.** Three sequential lookups cost three model rounds; one tool that does all three costs one. The model can also call independent tools in parallel in a single round.
-- **Turn on `EXECUTION.inline_gather: true`** so field extraction happens in the same call as the reply. On a single-KB agent with `GATHER` fields, this also turns off the automatic knowledge-base search -- measure both before committing.
+- **Turn on `EXECUTION.inline_gather: true`** so field extraction happens in the same call as the reply. If the agent's single knowledge tool also sets `kb_fast_path: on`, inline gather turns off the automatic knowledge-base search for that agent -- measure both before committing.
 - **Validate inputs before calling.** `process: before: require:` rejects bad inputs without a failing API call and a retry round.
 - **Use `confirm` only on irreversible actions.** Each confirmation costs a full extra turn with the customer.
 - **Multi-intent completion.** With the default `completion_signal: delivered_response`, a small check runs after each queued request's reply. `task_signal` lets the agent signal completion itself instead.
@@ -88,14 +88,14 @@ Prompt size drives time to first token on every call in the turn, and that cost 
 - **Fewer tools per agent.** Every tool's description and schema is sent on every call, and the model chooses faster and better from a short list. Split large tool sets across specialists.
 - **Short descriptions and parameters.** One or two sentences per tool. Hide parameters the model doesn't fill with `default_source: runtime` and `visibility_model: false`.
 - **Small results.** `MODEL_CONTEXT: FIELDS` on every tool that returns more than a few fields. That avoids the summarization call and keeps each tool round small. Better still, return compact payloads from the API itself: filter, paginate, and drop fields the agent never uses.
-- **Structured, not summarized.** On chat agents where speed matters, prefer `tool_results.strategy: structured` with flat `essential_fields`; summarizing costs an extra call. Voice never summarizes.
+- **Structured, not summarized.** On chat agents where speed matters, prefer `tool_results.strategy: structured` with flat `essential_fields`; summarizing costs an extra call.
 - **Tight timeouts.** Set `timeout` on the Project Tool to what the API really needs, rather than the 30-second default. Use transport retry only on idempotent reads.
 
 ### Knowledge base
 
 - **Token budget.** Set `max_search_tokens` on every KB tool (2,000-4,000 for voice, more for long-form chat).
 - **Fewer, better chunks.** Lower Top K and raise Similarity threshold so fewer, better chunks come back.
-- **Automatic-search eligibility.** A single-KB agent gets the automatic first search, which saves a model round. Adding other business tools, handoff or delegation tools, or `GATHER` fields collected with inline gather gives that up -- see [How the platform searches](/agent-platform/knowledge#how-the-platform-searches).
+- **Automatic first search.** Set `kb_fast_path: on` on a single-KB agent's knowledge tool to search before the model runs, which saves a model round. It is off by default. Other business tools, handoff or delegation tools, or `GATHER` fields collected with inline gather make the agent ineligible -- see [How the platform searches](/agent-platform/knowledge#how-the-platform-searches).
 - **Selective extras.** Use `search_instructions` and `retrieval_profile: object-aware` only where they improve answers. Each adds planning time or extra parallel searches with reranking.
 
 ```yaml
@@ -116,9 +116,13 @@ EXECUTION:
       auto_tool_result_value_max_chars: 2000
 TOOLS:
   search_kb_hr_policies(query: string) -> object
+    type: searchai
+    kb_name: "HR Policies"
     compaction:
       max_search_tokens: 3000
 ```
+
+{/* UNVERIFIED (hotfix_Artemis_1.8.1 review): The example above now declares the knowledge tool in full (`type: searchai`, `kb_name`), like the project tool example in knowledge.mdx. The runtime reads `compaction.max_search_tokens` from the tool definition (apps/runtime/src/services/execution/llm-wiring.ts, registerBinding). The agent overlay (apps/runtime/src/services/searchai-instructions-overlay.ts) copies only search_instructions, kb_fast_path and business_rules from an agent's TOOLS entry, so `compaction:` on an agent entry that only references a project tool may be ignored. Confirm with engineering. */}
 
 ## Checks, side calls, models, and voice
 
@@ -144,7 +148,7 @@ TOOLS:
 ### Voice
 
 - **Keep the low-latency profile on.** It sets fast tiers, reasoning off, inline gather, and tight compaction. Make sure the workspace has a fast-tier model configured.
-- **Fillers hide waiting; they don't remove it.** `voiceDelayMs` (300 ms in the profile) and status tags (`piggybackEnabled`, at no extra model cost) keep the caller informed while tools run.
+- **Fillers hide waiting; they don't remove it.** `voiceDelayMs` (300 ms in the profile) and status tags (`piggybackEnabled`) keep the caller informed while tools run.
 - **Short spoken replies.** Use `CONVERSATION: speaking: max_sentences` and short instructions.
 - **Realtime voice.** On Gemini Live, a long tool call blocks the voice model unless the channel's pending-tool fillers are on; Amazon Nova Sonic has its own pending-tool filler setting. Keep tool results small for realtime voice with `compaction: provider_fields`.
 - **Buffered stream safety on voice.** Buffered or Gated delays the first audio until checks finish.
@@ -155,6 +159,16 @@ TOOLS:
 - **The Traces tab → an LLM step → Summary** shows input tokens. Compare turn 1 with turn 20 to see growth.
 - **Insights → Analytics Explorer → Generations** shows time to first token and latency across sessions.
 - Change one thing at a time -- topology, tool payloads, tiers -- and re-run the same test conversation in a new session.
+
+{/* UNVERIFIED (hotfix_Artemis_1.8.1 review): Claims removed from the text above.
+1. "Voice never summarizes" (Structured, not summarized bullet). The voice latency profile defaults to `tool_results.strategy: structured` (apps/runtime/src/services/config/voice-latency-profile.ts), but no code was found that blocks a project from setting `summarize` on voice.
+2. "at no extra model cost" for `piggybackEnabled` status tags (Voice, Fillers bullet). The setting exists (apps/runtime/src/services/filler/config.ts). The cost claim was not traced.
+Claims left published that were NOT traced to code, only partly or not checked:
+- Navigation labels: "Operate -> Sessions", "Insights" as the parent of Analytics Explorer, and "Traces tab -> an LLM step -> Summary". The Performance tab, "LLM & Tools", Analytics Explorer and Generations labels exist in apps/studio/src.
+- "The system prompt has no current date or time; only GATHER date fields get today's date." Today's date is added for GATHER extraction (flow-step-executor.ts) and the NER stage (ner-stages/stage-llm.ts). Absence from the main system prompt was not proven.
+- Routing details: deterministic handoff WHEN and ESCALATE expressions skipping the model; `on_result: do: RESPOND` ending the tool loop; `REASONING: false` FLOW steps; parallel tool calls in one round. The `on_result do`, `process.before` and completion_signal constructs exist, but the runtime behavior was not traced.
+- Guardrail `reask` costing a full extra call, and the model-tier table for guardrail judges (the validation operation defaults to fast, with a fallback to the balanced tier).
+- Gemini Live and Amazon Nova Sonic pending-tool filler settings: both exist in the voice code, but "a long tool call blocks the voice model" was not traced. */}
 
 ## Speed checklist
 
@@ -178,7 +192,7 @@ The most reliable agents keep the prompt small and explicit: declare only what t
 - **Give the agent the date.** The system prompt has no current date or time -- only `GATHER` date fields get today's date, during extraction -- so supply one explicitly when an agent reasons about relative dates.
 - **Keep secrets out of prompt text.** Credentials go in auth profiles, personal fields are marked `SENSITIVE`, and card data uses `SECURE_INPUT`.
 - **Put stable text first.** `GOAL`, `PERSONA`, `LIMITATIONS`, and the tool list form the stable start of the prompt; values that change each turn come later, in `## Current Context`. Keeping the stable part stable helps provider-side prompt caching, which shows as Cache Read tokens on the session Overview.
-- **Write guardrails for one message at a time.** A check never sees the conversation history. Choose the fail mode deliberately.
+- **Write guardrails for one message at a time.** A `check` rule sees only the current message. Provider and judge checks also receive up to five recent messages as context, so don't write rules that depend on earlier turns. Choose the fail mode deliberately.
 
 ## Pre-ship checklist
 
