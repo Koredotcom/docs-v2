@@ -1,0 +1,263 @@
+# HowTo Review: debug-routing-traces
+
+**Date:** 2026-10-20
+**Article:** `agent-platform/drafts/abl-howtos-docs/articles/debug-routing-traces.md`
+**Topic:** 3.9 - How to debug routing decisions with traces and metadata
+**Verdict:** update-needed
+
+## Proposed changes
+
+- Replace the "every condition emits one event" model with a four-layer model and a need-to-event table.
+- Correct `whenOutcome` values. `deterministic_no_match` does not exist.
+- Correct the verbosity guidance. Routing events appear at `standard`.
+- Correct `handoff_context_pass_resolved`. Point to the `handoff` event `context`.
+- Add `routing_surface`, `availability_refused`, and `skipped: availability`.
+- Add `_meta` dimension rules, including the PII default.
+- Explain that multi-intent events are `decision` events with a `type` field.
+- Replace the example: remove undeclared passed fields and the `ON_RETURN` on a stub child.
+
+### Deleted or replaced content
+
+- Removed `whenOutcome: deterministic_no_match` from the JSON sample. Reason: not a real value.
+- Removed the advice to raise trace verbosity. Reason: routing events are `standard` and no setting exists.
+- Removed the claim that `handoff_context_pass_resolved` records the resolved `PASS` values. Reason: it fires for request-text field names only.
+- Removed the claim that the trace shows history fields. Reason: no such field is emitted.
+- Removed the `Fallback_Triage_Agent` `ON_RETURN` block and `EXPECT_RETURN: true`. Reason: the stub child never returns. Return events are explained in the table and in the switching HowTo.
+- Removed the "Debugging trace visibility" variation. Reason: replaced by the layers section.
+
+## Evidence
+
+Full evidence: `agent-platform/drafts/abl-howtos-docs/evidence/debug-routing-traces-2026-10-20-evidence.md`. Code branch: `hotfix_Artemis_1.8.1`. Previous refresh: `hotfix_Artemis_1.4.4`.
+
+| Claim | Current evidence | Impact |
+| ----- | ---------------- | ------ |
+| `whenOutcome` has four values | `routing-primitive-executor.ts` 12-18. Harness `cond.mjs` | Corrected |
+| Routing events are standard level | `trace-helpers.ts` 245-352, `runtime-executor.ts` 8410 | Verbosity advice removed |
+| `handoff_context_pass_resolved` is narrow | `routing-executor.ts` 4700-4800, 11585-11610 | Corrected |
+| `routing_surface` and `availability_refused` exist | `routing-surface-trace.ts`, `routing-availability-trace.ts` (new) | New variation |
+| `_meta` rules and PII default | `custom-dimensions.ts`, `session-assignment-executor.ts` 494-520 | New table |
+## Quality scorecard summary
+
+Minimum score 4 on every criterion. Gate result: pass. Red-team verdict: pass. Persona verdicts: architect ready, writer ready, product ready. Details are in the evidence file.
+
+## Files to update after approval
+
+- `agent-platform/drafts/abl-howtos-docs/articles/debug-routing-traces.md`
+- `agent-platform/drafts/abl-howtos-docs/evidence/debug-routing-traces-2026-10-20-evidence.md`
+- `agent-platform/abl/how-to/debug-routing-traces.mdx` (published page)
+
+## Proposed full article
+
+````markdown
+# How to debug routing decisions in traces
+
+Use this when support, QA, or partners must learn why a customer reached one specialist, or why a route did not fire.
+
+## Concept
+
+A supervisor routes in layers. Each layer leaves its own trace events.
+
+| Layer | When it runs | What it uses | Events |
+| ----- | ------------ | ------------ | ------ |
+| Before the model | At the start of a turn | Conditions the runtime can decide from data, such as `customer_id IS SET`. | `deterministic_routing`, `deterministic_handoff` |
+| Model choice | The model calls `handoff_to_<Target>` | The route text, `INTENTS:`, and the conversation. The runtime then checks the route `WHEN`. | `tool_call`, `handoff_condition_check`, `decision` |
+| After a turn or flow step | The runtime checks each `HANDOFF` in authored order | The same `WHEN` conditions, without the model. | `handoff_condition_check` for every route |
+| Return | A child agent finishes | `ON_RETURN` | `handoff_return_handler`, `resume_intent` |
+
+A quoted plain-language `WHEN` matches only in the model choice layer, when the model picks that route. The pre-model layer skips it. The authored-order check shows `whenOutcome: semantic_deferred` and `result: false`. That result does not mean the route is broken.
+
+Routing events do not need a higher trace level. The runtime sets the level when it creates a session. Studio debug sessions use `verbose`. All other sessions use `standard`. If an event is missing, check the layer first.
+
+## Minimal working example
+
+This supervisor sets two trace dimensions at session start and routes three ways. The specialists are short stand-ins for your real agents.
+
+```abl
+SUPERVISOR: Traceable_Routing_Supervisor
+GOAL: "Make routing decisions easy to inspect in traces"
+
+ON_START:
+  SET:
+    _meta.entry_channel = session.channel
+    _meta.routing_version = "support-router-v3"
+
+INTENTS:
+  billing: "Billing and payment requests."
+  technical_support: "Product troubleshooting requests."
+
+HANDOFF:
+  - TO: Billing_Agent
+    WHEN: intent.category == "billing"
+    RETURN: false
+    SUMMARY: "Traceable billing route."
+
+  - TO: Technical_Support_Agent
+    WHEN: intent.category == "technical_support"
+    RETURN: false
+    SUMMARY: "Traceable technical support route."
+
+  - TO: Fallback_Triage_Agent
+    WHEN: "the request does not clearly match billing or technical support"
+    RETURN: false
+    SUMMARY: "Traceable fallback route."
+
+AGENT: Billing_Agent
+GOAL: "Resolve billing requests"
+
+AGENT: Technical_Support_Agent
+GOAL: "Resolve technical support requests"
+
+AGENT: Fallback_Triage_Agent
+GOAL: "Clarify unclear requests"
+```
+
+## Read a routing decision
+
+Start with the events for one turn. Match each need to an event.
+
+| Need | Event | What to read |
+| -------- | ----- | ------------ |
+| Route the model chose | `tool_call` with `toolName: handoff_to_Billing_Agent` | The tool name is the target. |
+| Route accepted by the runtime | `handoff_condition_check` | `result`, `whenOutcome`, `reasonCode`, `evaluatedContext`. |
+| Route refused by the runtime | `decision` with `outcome: blocked:<Target>` | The tool result says `Handoff to <Target> blocked: WHEN condition not met`. |
+| Variable that was missing | `route_condition_unresolved` | `unresolvedVariables`. |
+| Route taken before the model ran | `deterministic_routing` or `deterministic_handoff` | `target` and `condition`. |
+| Category the runtime picked | `pipeline_intent_bridge` | `intentState.category`. |
+| Temporary or permanent route | `handoff` | `returnExpected` and `reasonCode`: `handoff_return_expected` or `handoff_permanent`. |
+| Context the target received | `handoff` | `context`. |
+| Values written by `CONTEXT.set` | `handoff_context_set_applied` | `fields`. |
+| Values that came back from a child | `handoff_return_handler` | `mappedFields`, `setFields`, `clearedFields`. |
+| Replay of the original request | `resume_intent` | `resumeMessage` and `resumeMessageSource`. |
+| Route hidden by a flow return | `handoff_condition_suppressed` | `reasonCode: flow_return_handoff_suppressed`. |
+| Target refused at admission | `handoff_failure`, `handoff_authority_denied` | `reasonCode` or `reason`, and `error`. |
+
+A model-selected check looks like this. Fields are trimmed.
+
+```json
+{
+  "type": "handoff_condition_check",
+  "data": {
+    "sourceAgent": "Traceable_Routing_Supervisor",
+    "target": "Billing_Agent",
+    "condition": "intent.category == \"billing\"",
+    "result": true,
+    "whenOutcome": "deterministic_pass",
+    "reasonCode": "handoff_condition_matched",
+    "evaluatedContext": { "intent": { "category": "billing" } }
+  }
+}
+```
+
+`evaluatedContext` holds only the variables the condition names, plus `intent` when it is set. It does not hold the whole session.
+
+### The `whenOutcome` values
+
+| Value | Meaning |
+| ----- | ------- |
+| `deterministic_pass` | The condition is true. |
+| `deterministic_fail` | The condition is false. A variable that is not set also gives this value. |
+| `semantic_deferred` | The condition is plain language, or it reads `intent.category` before a category exists. |
+| `missing_data` | The condition is incomplete, such as `a ==`, or the runtime cannot evaluate it. |
+
+The `reasonCode` is `handoff_condition_matched` or `handoff_condition_blocked` for a model-selected route. For the authored-order check it is `handoff_condition_matched`, `handoff_condition_skipped`, or `flow_return_handoff_suppressed`.
+
+`handoff_context_pass_resolved` is narrow. It fires only when a `PASS` field named `request`, `user_request`, `customer_request`, `query`, `message`, `utterance`, or `latest_user_utterance` takes the customer's current message. It does not list other passed fields. Read the `handoff` event `context` for those.
+
+## Common variations
+
+### Debug a route that is hidden by `ENABLED_WHEN`
+
+A route with `ENABLED_WHEN` can be missing from the model's choices. Three events explain it.
+
+| Event | What it tells you |
+| ----- | ----------------- |
+| `routing_surface` | The routes offered and withheld on this model turn, with the reason. It appears only when the agent declares `ENABLED_WHEN`. |
+| `handoff_condition_check` with `skipped: availability` | An authored-order check skipped the route. `reason` and `missing` name the cause. |
+| `availability_refused` | The model or an authored step called a route that was switched off. `failurePolicy` shows what ran next. |
+
+The events carry the condition text and the missing paths. They never carry values.
+
+### Debug a plain-language condition
+
+The fallback route above shows `whenOutcome: semantic_deferred` in the authored-order check. It matches only when the model calls `handoff_to_Fallback_Triage_Agent`. To see why the model did not choose it, read the route `SUMMARY` and `WHEN` text. Then read the other route calls in the same turn.
+
+### Debug a router that asked a question
+
+A `router` supervisor asks through the clarification action. The trace shows a `tool_call` named `__clarify_routing__` and no handoff.
+
+### Debug multiple requests in one message
+
+Multi-intent plan events arrive as `decision` events. Read the `type` field inside `data`.
+
+| `type` | Meaning |
+| ------ | ------- |
+| `multi_intent_target_resolved` | A request resolved to a target agent. |
+| `multi_intent_plan_built` | The runtime built the plan. `strategy` and `declaredStrategy` show the choice. |
+| `multi_intent_queued` | The `primary_queue` strategy queued the other requests. |
+| `multi_intent_sequential`, `multi_intent_parallel` | The plan runs in sequence or in parallel. |
+| `multi_intent_disambiguate`, `multi_intent_disambiguation_requested` | The runtime asked which request to handle first. |
+| `multi_intent_sequential_task_start`, `multi_intent_sequential_task_complete`, `multi_intent_sequential_executed` | Progress through a sequential plan. |
+
+When multi-intent handling is on, routes that read `intent.category` can defer to the model. The `decision` event then shows `decision: deterministic_intent_routing_deferred_to_reasoning` or `decision: deterministic_intent_handoff_deferred_to_reasoning`.
+
+### Add `_meta` trace dimensions
+
+`SET _meta.<name>` writes a custom trace dimension. It is for filtering and grouping in analytics. It does not affect routing. You can set it in `ON_START`, flow steps, lifecycle hooks, and `ON_ERROR` and `ESCALATE` triggers.
+
+| Rule | Detail |
+| ---- | ------ |
+| Name | Starts with a letter. Letters, digits, and underscores only. Up to 256 characters. |
+| Value | A text, number, or true or false value. Objects, lists, and null are rejected. The limit is 1024 bytes. |
+| Count | A session holds at most 50 dimensions. |
+| Personal data | A value that holds personal data is rejected by default. A project policy can allow it or switch the key off. |
+
+A rejected value does not stop the session. The `SET` has no effect and the runtime logs a warning. A successful write emits `session_updated` with `target: custom_dimension`. Use stable, low-cardinality values. Do not write the customer's words.
+
+## Verification
+
+1. Validate the supervisor and all target agents together.
+2. Send "I was charged twice". Expect a `tool_call` for `handoff_to_Billing_Agent`, then `handoff_condition_check` with `result: true` and `whenOutcome: deterministic_pass`.
+3. Check the `handoff` event. Expect `returnExpected: false` and `reasonCode: handoff_permanent`.
+4. Send "My router keeps dropping the connection". Expect `Technical_Support_Agent`.
+5. Send "Tell me about your company". Expect the fallback route if the model picks it. The authored-order check shows `semantic_deferred` for that route.
+6. Check that the session record carries `entry_channel` and `routing_version` as trace dimensions.
+
+## Production readiness checklist
+
+- Every route has a distinct `SUMMARY` and condition.
+- Test sessions cover a match, a non-match, a missing variable, and a fallback.
+- Each deterministic condition reads a variable with a known source.
+- The team knows which layer owns each route: before the model, model choice, or authored-order check.
+- `_meta` values are stable and low in cardinality, and they never hold customer text.
+- Support staff can read `handoff_condition_check`, `route_condition_unresolved`, and `handoff` in your trace viewer.
+
+## Common mistakes
+
+| Mistake | Why it happens | How to avoid it |
+| ------- | -------------- | --------------- |
+| Reading only the matched route | The matched check is the first one you find. | Read every `handoff_condition_check` in the turn. |
+| Treating `semantic_deferred` as a failure | The result is `false`. | Check whether the model chose the route. |
+| Looking for a trace setting | Other products offer one. | Routing events appear at `standard`. Check the layer instead. |
+| Expecting `handoff_context_pass_resolved` for every `PASS` field | The name suggests it. | Read the `handoff` event `context`. |
+| Writing the customer's words to `_meta` | It helps one debug session. | Write stable codes. |
+| Expecting a `_meta` value to persist after a rejection | The `SET` fails with a log warning only. | Check the value rules, then read `session_updated`. |
+
+## Troubleshooting
+
+| Symptom | Likely cause | What to check |
+| ------- | ------------ | ------------- |
+| A route never fires and no `handoff_condition_check` names it | The route is hidden, or the model never called it. | `routing_surface`, `handoff_condition_check` with `skipped: availability`, and the `tool_call` list. |
+| A condition shows `deterministic_fail` though the variable looks set | The variable is unset at that moment, or the path differs. | `route_condition_unresolved` and `evaluatedContext`. |
+| The tool result says `blocked: WHEN condition not met` | The route `WHEN` is false when the model calls it. | `handoff_condition_check` `evaluatedContext` and the condition text. |
+| A plain-language route shows `result: false` | The check ran outside the model choice layer. | Whether a `tool_call` for the route exists in the turn. |
+| A child's fields never reach the supervisor | `MAP` names a field the child does not set. | `handoff_return_handler` `mappedFields`. |
+| The supervisor does not replay after a return | `ON_RETURN` has no `resume_intent`, or the depth limit was reached. | `resume_intent` and its `reasonCode`. |
+| `_meta` dimensions are missing from analytics | The value was rejected, or the session holds 50 dimensions. | `session_updated` with `target: custom_dimension` and the runtime warning. |
+
+## Related HowTos
+
+- How to design a supervisor that routes users to specialist agents
+- How to route users by detected intent
+- How to handle messages that contain multiple user intents
+- How to switch the active agent during a conversation
+````

@@ -1,116 +1,166 @@
 # How to switch the active agent during a conversation
 
-Use this when a supervisor should stop answering directly and let a specialist own the next turn, or when a temporary gate must run before the final specialist takes over.
+Use this when a supervisor should stop answering and let a specialist own the next turn, or when a temporary gate must run first.
 
 ## Concept
 
-Switching the active agent is done through `HANDOFF`. `EXPECT_RETURN: false` transfers ownership permanently to the child specialist — it becomes the active agent for the rest of the conversation. `EXPECT_RETURN: true` creates a temporary child thread that returns to the parent (via `ON_RETURN`), often for authentication or qualification — the supervisor stays the active agent in the long run, just pausing to delegate one sub-task.
+The active agent is the agent that answers the customer. Only `HANDOFF` changes it. Each route sets how long the change lasts.
 
-The authentication-gate pattern below relies on one subtle but important behavior: on the very first turn, `is_authenticated` doesn't exist yet. The condition `is_authenticated != true` still correctly evaluates to `true` in that case — the runtime treats an undefined variable as not equal to `true` — so the gate fires and routes to `Authentication_Agent` before the variable is ever set. You don't need to special-case "unset" separately from "false."
+| Setting | What happens | Use when |
+| ------- | ------------ | -------- |
+| `RETURN: false` | The specialist becomes the active agent. The supervisor thread ends. No return path exists. | The specialist owns the rest of the conversation. |
+| `RETURN: true` | The specialist runs as a child. The supervisor waits. Control comes back when the child completes or returns. | The child does one bounded job, such as collecting a value. |
 
-## Minimal working example
+`DELEGATE` does not switch the active agent. It runs a sub-task and the calling agent stays active. A delegate child cannot wait for customer input, so a gate that asks the customer a question needs `RETURN: true`.
+
+A permanent specialist keeps the conversation until it completes, escalates, or hands off. Give it its own `HANDOFF` entries when it must switch again.
+
+## Minimal working example: a gate, then a permanent switch
+
+The supervisor sends every request to `Customer_Lookup_Agent` until `customer_id` is set. The gate returns the ID and replays the original request. The supervisor then hands off for good.
+
+This example is a project-level set. `Account_Service_Agent` and `Billing_Agent` are short stand-ins for your real specialists.
 
 ```abl
-SUPERVISOR: Active_Agent_Switch_Supervisor
-GOAL: "Switch the active conversation owner to the right child agent"
+SUPERVISOR: Account_Supervisor
+GOAL: "Identify the customer first, then pass the conversation to the specialist who owns the request"
 
+MEMORY:
+  session:
+    - customer_id
+      TYPE: string
+      DESCRIPTION: "Customer identifier collected by the lookup agent."
+
+INTENTS:
+  account_service: "Profile, address, or password changes."
+  billing: "Charges, invoices, refunds, or payment methods."
+
+HANDOFF:
+  - TO: Customer_Lookup_Agent
+    WHEN: customer_id IS NOT SET
+    SUMMARY: "Collect the customer ID before any account work."
+    RETURN: true
+    ON_RETURN:
+      action: resume_intent
+      MAP:
+        customer_id: customer_id
+
+  - TO: Account_Service_Agent
+    WHEN: intent.category == "account_service" AND customer_id IS SET
+    PASS: [customer_id]
+    SUMMARY: "Account service agent now owns the conversation."
+    RETURN: false
+
+  - TO: Billing_Agent
+    WHEN: intent.category == "billing" AND customer_id IS SET
+    PASS: [customer_id]
+    SUMMARY: "Billing agent now owns the conversation."
+    RETURN: false
+
+AGENT: Customer_Lookup_Agent
+GOAL: "Collect the customer ID and return it to the supervisor"
+
+GATHER:
+  customer_id:
+    PROMPT: "What is your customer ID?"
+    TYPE: string
+    REQUIRED: true
+
+COMPLETE:
+  - WHEN: customer_id IS SET
+    RESPOND: "Thanks. I have your customer ID."
+
+AGENT: Account_Service_Agent
+GOAL: "Resolve profile, address, and password requests"
+
+AGENT: Billing_Agent
+GOAL: "Resolve billing requests"
+```
+
+## How it works
+
+1. `customer_id IS NOT SET` is true until the ID exists. The runtime checks this condition before the model runs, so the first message goes to the gate.
+2. The gate is a child (`RETURN: true`). The supervisor waits and the child talks to the customer.
+3. When `customer_id IS SET`, the child completes and returns. `MAP` copies the child field on the left into the supervisor variable on the right.
+4. `ON_RETURN` with `action: resume_intent` replays the message that caused the handoff. The supervisor routes it again. The replay depth limit is one.
+5. `customer_id IS SET` is now true. The supervisor model picks the account or billing route. `RETURN: false` ends the supervisor thread, and the specialist answers from then on.
+
+`IS SET` and `IS NOT SET` handle an empty variable. Do not compare an empty variable with `!= ""`. That comparison is true when the value is missing.
+
+A route without `HISTORY` passes the full conversation history. A project default can change this value.
+
+## Common variations
+
+### Gate on a verified flag
+
+An authentication gate follows the same shape. Gate on a flag and map the flag back. Replace the first `HANDOFF` entry with this entry.
+
+```abl
 HANDOFF:
   - TO: Authentication_Agent
     WHEN: is_authenticated != true
-    EXPECT_RETURN: true
-    CONTEXT:
-      pass: [customer_id]
-      summary: "Authenticate before account work."
+    SUMMARY: "Verify the customer before account work."
+    RETURN: true
     ON_RETURN:
       action: resume_intent
       MAP:
         is_authenticated: is_authenticated
-
-  - TO: Account_Service_Agent
-    WHEN: intent.category == "account_service" AND is_authenticated == true
-    EXPECT_RETURN: false
-    CONTEXT:
-      pass: [customer_id, account_id, conversation_summary]
-      summary: "Account service agent now owns the conversation."
-
-  - TO: Billing_Agent
-    WHEN: intent.category == "billing" AND is_authenticated == true
-    EXPECT_RETURN: false
-    CONTEXT:
-      pass: [customer_id, account_id, conversation_summary]
-      summary: "Billing agent now owns the conversation."
-
-AGENT: Authentication_Agent
-GOAL: "Authenticate customers and return to the supervisor"
-
-GATHER:
-  is_authenticated:
-    TYPE: boolean
-    PROMPT: "Is the customer authenticated?"
-    REQUIRED: true
-
-COMPLETE:
-  - WHEN: is_authenticated IS SET
-    RESPOND: "Authentication result captured."
-
-AGENT: Account_Service_Agent
-GOAL: "Own account service after routing"
-
-AGENT: Billing_Agent
-GOAL: "Own billing service after routing"
 ```
 
-`customer_id`, `account_id`, and `conversation_summary` are shown as passed context with no declared source in this example — treat them as project-local assumptions and declare them via `MEMORY` in your actual project. This example also has no fallback route if neither `account_service` nor `billing` matches after authentication — see the fallback-routing HowTo before shipping this pattern as-is.
+`is_authenticated != true` is true when the variable is empty or false. Declare `is_authenticated` as a `boolean` in `MEMORY`. Change the other two routes to read `is_authenticated == true`.
 
-## How it works
+`Authentication_Agent` must declare or set `is_authenticated`. Otherwise the compiler reports `UNKNOWN_HANDOFF_RETURN_FIELD` for the `MAP` line. Set the flag from a verification tool result. Never set it from what the customer says about themselves.
 
-- Before `is_authenticated` is ever set, `is_authenticated != true` evaluates to `true` (undefined is treated as not-equal-to-true), so the very first turn always routes to `Authentication_Agent`.
-- `Authentication_Agent` is a temporary child (`EXPECT_RETURN: true`): it gathers `is_authenticated`, completes once that field `IS SET`, and `ON_RETURN` maps its result back into the supervisor's own `is_authenticated` variable and resumes intent routing.
-- On the next pass through `HANDOFF`, `is_authenticated == true` now holds, so the compound conditions on `Account_Service_Agent`/`Billing_Agent` can match and transfer ownership permanently (`EXPECT_RETURN: false`).
-- None of these conditions are rewritten by the compiler — equality comparisons like `is_authenticated == true` and `intent.category == "account_service"` handle an unset variable correctly on their own (they simply evaluate `false`), so the trace shows your literal authored condition text.
-- Since `HISTORY` is omitted from every `HANDOFF`, each child (temporary or permanent) receives the full conversation history by default (the current platform default).
-- If you'd rather run the authentication step as a sub-agent call than a full route/return cycle, `DELEGATE` is an alternative to `HANDOFF` + `EXPECT_RETURN: true` for this kind of temporary gate — see the delegate-vs-handoff decision HowTo for the tradeoffs.
+### Choose which message the supervisor replays
 
-## Common variations
+`ON_RETURN` takes `resume_with`. Add it under `action`. The default is `original_handoff_utterance`, the message that started the handoff. The other values are `latest_child_user_utterance`, `latest_session_user_utterance`, and `forwarded_return_message`.
 
-- Temporary authentication child returns to supervisor (shown above).
-- Final billing or account specialist owns the conversation permanently after the gate passes.
-- A return handler maps child output into parent routing state (`MAP` above) so the next routing pass can use it.
+### Temporary child that does not replay
+
+Use `action: continue` when the supervisor should carry on without routing again. The child still returns its mapped fields.
 
 ## Verification
 
-- Parse and compile the ABL and confirm there are no parser or compiler errors/warnings.
-- Test an utterance on a fresh session (no `is_authenticated` set) and confirm it routes to `Authentication_Agent` first.
-- After authentication completes, test an account-service and a billing utterance and confirm permanent ownership transfer in each case.
-- Inspect the trace for the selected target, the evaluated condition (matches your literal authored text), and the `ON_RETURN`/`MAP` application after the authentication child returns.
+1. Start a new session and send "I want to change my address". Expect `Customer_Lookup_Agent` to ask for the ID. The `handoff` event shows `returnExpected: true` and `reasonCode: handoff_return_expected`.
+2. Send an ID. Expect `handoff_return_handler` with `mappedFields: ["customer_id"]`, then a `resume_intent` event.
+3. Expect a second `handoff` event to `Account_Service_Agent` with `returnExpected: false` and `reasonCode: handoff_permanent`.
+4. Send a billing request in a new session and give an ID. Expect `Billing_Agent`.
+5. Send another message. Expect the specialist to answer. The supervisor does not see it.
 
 ## Production readiness checklist
 
-- The auth gate correctly handles the unset case on turn one (no special-casing needed, but verify it in a real trace).
-- `MAP` targets a variable the parent actually declares and routes on.
-- A fallback route exists for intents that don't match `account_service` or `billing` after authentication — this example doesn't include one.
-- Any variable assumed to already exist (like `customer_id` above) has a real declared source in your project.
-- Temporary vs. permanent switching is chosen deliberately per route, not by accident.
+- Every `TO` target exists. Replace the stand-in specialists with real agents.
+- `MAP` names a child field that the child sets, and a supervisor variable that the routes read.
+- A route or a direct answer covers requests that match neither category.
+- Flags that gate access come from a tool result or an identity service.
+- Each route sets `RETURN` on purpose.
+- Each `PASS` list holds only what the target needs.
+- Tests cover a new session, a returning customer with the ID set, an unknown request, and a customer who leaves the gate unanswered.
 
 ## Common mistakes
 
-| Mistake                                                                            | Why it happens                                          | How to avoid it                                                              |
-| ---------------------------------------------------------------------------------------- | -------------------------------------------------------------- | ---------------------------------------------------------------------------------- |
-| Trying to switch the active agent by setting a variable                            | Confusing session state with conversation ownership     | Ownership only changes through `HANDOFF`/`DELEGATE`, never by setting a flag |
-| Using `EXPECT_RETURN: true` when the child should own the rest of the conversation | Copy-pasting the auth-gate pattern for a different case | Use `EXPECT_RETURN: false` for permanent ownership transfer                  |
-| Passing sensitive or irrelevant context to every child                             | Reusing one `CONTEXT.pass` list everywhere              | Pass only what each specific child needs                                     |
+| Mistake | Why it happens | How to avoid it |
+| ------- | -------------- | --------------- |
+| Switching the active agent by setting a variable | Session state and ownership look alike. | Change the active agent with `HANDOFF`. |
+| Using `RETURN: true` for a specialist that should own the conversation | The gate pattern is copied. | Use `RETURN: false` for permanent ownership. |
+| Using `DELEGATE` for a gate that asks the customer | A delegate looks like a temporary call. | Use `RETURN: true`. The compiler reports `DELEGATE_CHILD_GATHER_INPUT_UNMAPPED`. |
+| Mapping to a name the supervisor never reads | The `MAP` sides are reversed or misspelled. | Write `child_field: supervisor_variable`. |
+| Setting a gate flag from the customer's own words | A gather field is the easy source. | Set the flag from a verification result. |
+| Passing every field to every specialist | One `PASS` list is reused. | Pass only what each target needs. |
 
 ## Troubleshooting
 
-| Symptom                                                                  | Likely cause                                                                                                  | What to check                                                                                |
-| -------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------- |
-| The conversation never leaves `Authentication_Agent`                     | `ON_RETURN`/`MAP` isn't correctly writing `is_authenticated` back to the parent, or the child never completes | Inspect the `handoff_return_handler` trace for the actual returned value                     |
-| Every turn re-routes to `Authentication_Agent` even after authenticating | The mapped parent variable name doesn't match what the compound conditions check                              | Confirm `MAP`'s parent-side key exactly matches the variable used in later `WHEN` conditions |
-| A route unexpectedly falls through with no match                         | No fallback route exists in this example for unmatched intents post-authentication                            | Add a fallback route (see the fallback-routing HowTo)                                        |
-| Child agent has more/less conversation context than expected             | `HISTORY` omitted; current default (`full`) applied                                                           | Set an explicit `HISTORY` strategy if bounded/summary history is intended                    |
+| Symptom | Likely cause | What to check |
+| ------- | ------------ | ------------- |
+| The conversation never leaves `Customer_Lookup_Agent` | The child never completes, or `MAP` writes the wrong variable. | The child `COMPLETE` condition and `handoff_return_handler` `mappedFields`. |
+| Every turn returns to the gate | The supervisor variable stays empty. | The right side of `MAP` and the `WHEN` variable. |
+| No second route after the gate returns | The replay found no matching category, or a route is switched off. | `resume_intent`, `handoff_condition_check`, and `ENABLED_WHEN` on the routes. |
+| The replay does not happen | `action` is `continue`, or the replay depth limit of one was reached. | `ON_RETURN` and the `resume_intent` event `reasonCode`. |
+| The compile fails with `DELEGATE_CHILD_GATHER_INPUT_UNMAPPED` | A `DELEGATE` child has a required `GATHER` field. | Change the route to `HANDOFF` with `RETURN: true`. |
+| The specialist asks for what the customer already said | The route passes no field, or the history is limited. | `PASS`, `HISTORY`, and the specialist `GATHER`. |
 
 ## Related HowTos
 
 - How to design a supervisor that routes users to specialist agents
-- How to route unclear requests to a fallback agent
-- How to pass specific fields between agents
+- How to route unclear or unsupported requests to a fallback agent
+- How to debug routing decisions in traces

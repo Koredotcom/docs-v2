@@ -10,7 +10,7 @@ The platform uses three enforcement layers to control agent behavior and protect
 | Enforcement layer | Description | Example |
 |-------------------|-------------|---------|
 | [Guardrails](#input-guardrails) | Safety and quality checks applied to agent input and output content. | Blocking abusive language or redacting sensitive information from responses. |
-| [Limitations](/agent-platform/create-agents#define-identity-and-persona) | Reasoning-based guidance enforced through the model. Defines how the agent should behave, what it should avoid, and the scope it should operate within. | Instructing an agent to avoid financial advice or remain within a support domain. |
+| [Limitations](/agent-platform/create-agents#define-identity-and-persona) | Reasoning-based guidance enforced through the model. Defines how the agent behaves, what it avoid, and the scope it operates within. | Instructing an agent to avoid financial advice or remain within a support domain. |
 | [Constraints](/agent-platform/concepts#constraints-and-guardrails) | Runtime business-rule validations that prevent execution when required conditions aren't met. | Requiring a customer ID before allowing an order lookup or payment action. |
 
 ## Constraints vs. guardrails
@@ -41,6 +41,22 @@ flowchart TD
     C --> D[Output Guardrails]
     D --> |Toxicity checks\nPII redaction\nContent filtering| E[Final Response Returned to User]
 ```
+
+### Guardrail checkpoints
+
+A guardrail rule's `kind` sets which single item it checks. A check sees only that one item -- never the conversation history or the system prompt -- so write each rule to judge one message on its own.
+
+| Checkpoint | `kind` | What the check sees | When it runs |
+|---|---|---|---|
+| Input | `input` | The customer's message. Model-based tiers see it with PII already tokenized. | Before the model is called. |
+| Output | `output` | The final reply, plus up to 20 of this turn's tool results (4,096 characters each) when built-ins are enabled. | Before the reply is delivered. |
+| Tool call | `tool_input` | The tool's arguments, as JSON. | Before the tool runs. |
+| Tool result | `tool_output` | The result as the model would see it. | After the tool runs, before the model reads it. |
+| Handoff | `handoff` | The context being passed, and the source and target agents. | Before the context is transferred, using the source agent's rules. |
+
+`kind: both` is shorthand for `input` plus `output`. See [Tool and handoff guardrails](#tool-and-handoff-guardrails) below for `tool_input`, `tool_output`, and `handoff`.
+
+<Note>A check that reads `content`, `session_state`, or `tool_results` needs `EXECUTION: guardrail_builtins: true`. Without it, the check errors and -- under the default Open fail mode -- the message it would have checked is let through.</Note>
 
 ---
 
@@ -102,8 +118,8 @@ Go to **Govern > Guardrails > Policies**.
 1. Go to **Govern > Guardrails**.
 2. On the **Policies** tab, click **Create policy**.
 3. Enter a policy name and description.
-4. Select whether the policy applies to all agents in the project or only to a specific agent.
-5. Configure the required rules and runtime settings.
+4. Select the policy scope to specify whether the policy applies to all agents in the project or only to a specific agent.
+5. Configure the required rules, coverage, and runtime settings.
 6. Click **Save**.
 
 #### Rules
@@ -121,7 +137,8 @@ Go to **Govern > Guardrails > Policies**.
 
 | Setting | Description |
 |---------|-------------|
-| Fail Mode | Controls whether execution continues or is blocked if guardrail evaluation fails. **Fail-open** allows execution to continue if evaluation fails or times out. **Fail-closed** blocks execution when evaluation can't complete. Use fail-closed for high-security or compliance-sensitive applications. |
+| Fail Mode | Controls whether execution continues or is blocked if guardrail evaluation fails. **Open** allows execution to continue if evaluation fails or times out. **Closed** blocks execution if guardrail evaluation fails or cannot complete, making it suitable for high-security or compliance-sensitive applications. |
+| Coverage | Determines which parts of the agent's execution are evaluated. **All model I/O** checks model-to-model messages, tool arguments, tool results, sub-agent handoffs, and customer-facing input and output. **User boundary** checks only the customer's input and the responses the agent sends to the customer. |
 | Local Timeout | How long the platform waits for local guardrail evaluation. |
 | Model Timeout | How long the platform waits for model-based provider evaluation. |
 | LLM Timeout | How long the platform waits for LLM-based evaluation. |
@@ -204,6 +221,46 @@ Output guardrails support:
 - Streaming response evaluation.
 - Bidirectional guardrails.
 - Automatic response cleanup and fix strategies.
+
+---
+
+## Tool and handoff guardrails
+
+Beyond `input`, `output`, and `both`, a rule's `kind` can target a tool call, a tool's result, or a handoff to another agent.
+
+Use `kind: tool_input` to check a tool's arguments before the call runs:
+
+```yaml
+GUARDRAILS:
+  block_large_transfers:
+    kind: tool_input
+    check: abl.matches_pattern(tool_input.amount, "^[0-9]{6,}$")
+    action: block
+    message: "That transfer amount needs manual review."
+```
+
+Use `kind: tool_output` to check a tool's result before the model reads it:
+
+```yaml
+GUARDRAILS:
+  scrub_tool_pii:
+    kind: tool_output
+    check: abl.contains_pii(tool_output)
+    action: redact
+```
+
+Use `kind: handoff` to check the context passed to another agent. It is evaluated with the source agent's rules before the transfer happens:
+
+```yaml
+GUARDRAILS:
+  handoff_review:
+    kind: handoff
+    llm_check: "Does this handoff include unredacted financial account numbers?"
+    action: block
+    message: "This conversation needs a different routing path."
+```
+
+A `block` at any of these checkpoints withholds the call, result, or handoff and returns an error to the model instead of ending the conversation. Pair `escalate` with your own routing setup -- see [Agent transfer](/agent-platform/administration/agent-behavior-settings#agent-transfer) -- since a guardrail `escalate` action only sends the escalation message and doesn't transfer the conversation by itself.
 
 ---
 

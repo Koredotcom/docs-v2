@@ -1,0 +1,323 @@
+# HowTo Review: route-with-supervisor-priority
+
+**Date:** 2026-10-20
+**Article:** `agent-platform/drafts/abl-howtos-docs/articles/route-with-supervisor-priority.md`
+**Topic:** 3.2 - How to route conversations using supervisor priority rules
+**Verdict:** update-needed
+
+## Proposed changes
+
+- Replace 'gates are always checked first' with three rules: position is priority, an expression is a guard, and the model path does not force the gate first. Repeat the gate fact in every protected route.
+- Add a table of where order applies: pipeline, model call, return path.
+- Replace the authentication gate that asked the customer 'Is the customer authenticated?' with a consent gate whose child collects and returns the fact, plus a `session.identityTier` variation.
+- Replace the quoted VIP gate with an expression on `session.customer_tier`. The pipeline treats a quoted phrase as true.
+- Correct the `map` direction in all examples.
+- Delete the `PRIORITY` variation. The compiler ignores the field.
+- Add the missing-value table for `!= true`, `== true`, and `IS SET`.
+- Add an `ENABLED_WHEN` variation and the `ENABLED_WHEN_SEMANTIC_REFERENCE` error.
+- Split the single block into seven labeled files. Use a different target for the fallback because the prompt builder keeps one action per target.
+- Deleted content: the History default sub-section (one sentence now sits in the variations), the CONTEXT shorthand variation (covered in 3.1), the Compliance gate with `PRIORITY`, the `MEMORY:SESSION` list with five fields, the 'No fallback route' troubleshooting wording about silence, and the Related HowTos title 'How to route conversations based on user intent' (renamed to the current H1).
+
+## Evidence
+
+| Claim | Current evidence | Impact |
+| ----- | ---------------- | ------ |
+| Model path has no pre-model gate check | No `checkHandoffConditions` call in `reasoning-executor.ts`. Guard at tool call only. | Gate fact repeated in protected routes. |
+| Pipeline first true `WHEN` by position | `resolveRouting`. Sequence tests A to E. | Documented. |
+| `PRIORITY:` ignored | IR rules identical with and without it (harness). | Variation deleted. |
+| Quoted gate is true in the pipeline | `nullSafeEvaluateCondition` returns true. | Gate rule added. |
+| Missing-value operators | `evaluateRoutingPrimitiveWhen` results. | Table added. |
+| `ENABLED_WHEN` semantic reference is an error | `n1` harness test. | Documented. |
+
+## Files to update after approval
+
+- `agent-platform/drafts/abl-howtos-docs/articles/route-with-supervisor-priority.md`
+- `agent-platform/drafts/abl-howtos-docs/evidence/route-with-supervisor-priority-2026-10-20-evidence.md`
+- `agent-platform/abl/how-to/route-with-supervisor-priority.mdx` (published page)
+
+## Proposed full article
+
+````markdown
+# How to design supervisor routing with priority gates
+
+Use this pattern when a supervisor must enforce a mandatory check, such as consent, identity, or VIP handling, before it routes to a business specialist.
+
+## Concept
+
+A gate is a `HANDOFF` route that must win before any business route. ABL has no separate gate construct. You build a gate from route order and from guard conditions.
+
+Three rules shape every gate.
+
+1. **Position is priority.** The first entry in `HANDOFF:` has the highest priority. The `PRIORITY:` field is read and then ignored. Reorder the entries instead.
+2. **An expression is a guard.** When the model calls a route, the platform tests that route's `WHEN`. A false expression refuses the route. When exactly one other route has a true expression, the refusal message names it to the model.
+3. **The model path does not force the gate first.** The model can call a business route directly. Only that route's own `WHEN` can stop it. Repeat the gate fact in the `WHEN` of every protected route.
+
+### Where the order applies
+
+| Path | What happens |
+| ---- | ------------ |
+| The `EXECUTION.pipeline` classifier is confident. | The platform tests the routes in authored order and takes the first `WHEN` that is true. A gate with no `intent` test matches every message while the gate fact is missing. |
+| The supervisor model chooses a route. | The route description shows `[Priority N]` from the position. The platform enforces the `WHEN` of the route that the model calls. |
+| A returning child finishes. | The platform tests the conditions again in authored order and takes the first match. |
+
+The pipeline runs only when the project enables it. See How to use EXECUTION.pipeline for agent routing, classification, and short-circuiting.
+
+### Gate facts
+
+A gate is only as strong as its fact. Use a fact that the platform sets, such as `session.identityTier`. Or use a fact that a child agent collects, such as consent. Do not use a value that the customer or the model can state without a check.
+
+A missing value behaves differently by operator.
+
+| Condition | Value missing |
+| --------- | ------------- |
+| `consent_recorded != true` | True. The gate fires. |
+| `consent_recorded == true` | False. The protected route is refused. |
+| `consent_recorded IS SET` | False. |
+
+Write gates with `!= true` and protected routes with `== true`. A missing value then closes the protected routes and opens the gate.
+
+### Plain-language gates
+
+Do not write a gate as a quoted phrase. The pipeline treats a quoted phrase as always true. A quoted gate captures every message the pipeline classifies. Use an expression for the gate.
+
+## Minimal working example
+
+This example puts a consent gate and a platinum priority route ahead of three business routes. Put the supervisor and all agents in the same project. The business agents are short stand-ins for your real agents.
+
+`agents/priority-routing-supervisor.agent.abl`
+
+```abl
+SUPERVISOR: Priority_Routing_Supervisor
+GOAL: "Apply the consent gate before any business route"
+
+INTENTS:
+  billing: "Billing, invoice, or payment requests."
+  account_help: "Account access, profile, or settings requests."
+  support: "Product support requests."
+  escalation: "The customer asks for a manager, an escalation, or priority handling."
+
+MEMORY:
+  session:
+    - consent_recorded
+      TYPE: boolean
+      DESCRIPTION: "True after the customer accepts the recording and data terms"
+
+HANDOFF:
+  # Gate: runs first for every message until consent is recorded.
+  - TO: Consent_Agent
+    WHEN: consent_recorded != true
+    EXPECT_RETURN: true
+    CONTEXT:
+      pass: [customer_id]
+      summary: "Collect consent before any account or billing work."
+      history: summary_only
+    ON_RETURN:
+      action: resume_intent
+      map:
+        consent_recorded: consent_recorded
+    ON_FAILURE: RESPOND "I could not start the consent step. Please try again."
+
+  # Priority route: platinum customers who ask for escalation.
+  - TO: Priority_Care_Agent
+    WHEN: consent_recorded == true AND session.customer_tier == "platinum" AND intent.category == "escalation"
+    CONTEXT:
+      pass: [customer_id]
+      summary: "Platinum customer asked for escalation."
+
+  # Business routes carry the gate fact too, so the model cannot bypass the gate.
+  - TO: Billing_Agent
+    WHEN: consent_recorded == true AND intent.category == "billing"
+    CONTEXT:
+      pass: [customer_id, account_id]
+      summary: "Customer needs billing help."
+
+  - TO: Account_Agent
+    WHEN: consent_recorded == true AND intent.category == "account_help"
+    CONTEXT:
+      pass: [customer_id]
+      summary: "Customer needs account help."
+
+  - TO: Support_Agent
+    WHEN: consent_recorded == true AND intent.category == "support"
+    CONTEXT:
+      pass: [customer_id]
+      summary: "Customer needs product support."
+
+  # Fallback: handles anything the routes above do not match.
+  - TO: Triage_Agent
+    WHEN: true
+    CONTEXT:
+      pass: [customer_id]
+      summary: "No route matched. Triage the request."
+```
+
+`agents/consent-agent.agent.abl`
+
+```abl
+AGENT: Consent_Agent
+GOAL: "Ask the customer to accept the recording and data terms before any account work"
+
+GATHER:
+  consent_recorded:
+    prompt: "Do you agree to the recording and data terms for this conversation?"
+    type: boolean
+    required: true
+
+COMPLETE:
+  - WHEN: consent_recorded == true
+    RESPOND: "Thank you. Your consent is recorded."
+```
+
+`agents/priority-care-agent.agent.abl`
+
+```abl
+AGENT: Priority_Care_Agent
+GOAL: "Handle escalations from platinum customers"
+```
+
+`agents/billing-agent.agent.abl`
+
+```abl
+AGENT: Billing_Agent
+GOAL: "Resolve billing requests"
+```
+
+`agents/account-agent.agent.abl`
+
+```abl
+AGENT: Account_Agent
+GOAL: "Resolve account requests"
+```
+
+`agents/support-agent.agent.abl`
+
+```abl
+AGENT: Support_Agent
+GOAL: "Resolve product support requests"
+```
+
+`agents/triage-agent.agent.abl`
+
+```abl
+AGENT: Triage_Agent
+GOAL: "Clarify requests that no other route owns"
+```
+
+Project-local assumptions:
+
+- `session.customer_tier` comes from caller data that your channel or SDK sends. Treat caller data from a browser as unverified.
+- `customer_id` and `account_id` follow the same rules as in How to route users by detected intent. The platform passes the supervisor's value when it has one. Otherwise the model fills the field from the conversation.
+
+The table shows the route for each case.
+
+| Session state | Message | Route |
+| ------------- | ------- | ----- |
+| Consent not recorded. | Any message. | `Consent_Agent` |
+| Consent recorded. | A billing question. | `Billing_Agent` |
+| Consent recorded, platinum tier. | A request for a manager. | `Priority_Care_Agent` |
+| Consent recorded, standard tier. | A request for a manager. | `Triage_Agent` |
+
+## How it works
+
+1. The supervisor keeps the conversation until a route fires.
+2. While `consent_recorded` has no value, `consent_recorded != true` is true. The gate route fires.
+3. `EXPECT_RETURN: true` pauses the supervisor. `Consent_Agent` asks the question and completes when `consent_recorded` is true.
+4. `map` copies the child's `consent_recorded` into the supervisor's `consent_recorded`. Write the child field first, then the parent field.
+5. `action: resume_intent` runs routing again against the customer's original request, with the returned value.
+6. The gate is now false. The protected routes pass their `consent_recorded == true` test. The intent decides the route.
+7. A message that matches no earlier route falls to `Triage_Agent`.
+
+## Common variations
+
+### Gate on a platform identity value
+
+Use `session.identityTier` when the channel verifies identity. The value is `2` after HMAC, OAuth, email link, or OTP verification. The sign-in agent in this example keeps the conversation and explains how to verify.
+
+```abl
+  - TO: Sign_In_Agent
+    WHEN: session.identityTier != 2
+    CONTEXT:
+      summary: "The customer must verify identity before account or billing work."
+
+  - TO: Billing_Agent
+    WHEN: session.identityTier == 2 AND intent.category == "billing"
+    CONTEXT:
+      pass: [customer_id, account_id]
+      summary: "Verified customer needs billing help."
+```
+
+### Hide a route with ENABLED_WHEN
+
+`WHEN` refuses a route after the model calls it. `ENABLED_WHEN` removes the route from the model's choices while the condition is false. Use it for routes that only some customers may see.
+
+```abl
+  - TO: Priority_Care_Agent
+    WHEN: intent.category == "escalation"
+    ENABLED_WHEN: session.customer_tier == "platinum"
+    CONTEXT:
+      pass: [customer_id]
+      summary: "Platinum customer asked for escalation."
+```
+
+Write `ENABLED_WHEN` as an expression over data that exists before the turn. A condition that reads `intent` or plain language fails to compile with `ENABLED_WHEN_SEMANTIC_REFERENCE`. A condition that reads a missing value counts as false. `ENABLED_WHEN` shapes the experience. It does not replace the `WHEN` guard on a protected route.
+
+### Choose how the supervisor resumes
+
+`action: resume_intent` replays the customer's original request through routing. Use it when the customer asked for something before the gate ran. `action: continue` resumes the supervisor's current flow. Use it when the gate is a step in a flow.
+
+Set `history: none` or `history: summary_only` on a gate agent that does not need the transcript. The default `full` passes the whole conversation.
+
+## Verification
+
+1. Start a session with no consent. Send "I need help with my invoice." Confirm the trace shows `Consent_Agent` as the target.
+2. Answer yes. Confirm the trace shows the original billing request routed to `Billing_Agent`.
+3. Inspect the `handoff_condition_check` events. For each route, confirm `result`, `whenOutcome`, and the `condition`. A refused route shows `reasonCode: handoff_condition_blocked`.
+4. When the pipeline is on, inspect `pipeline_routing_resolve`. Confirm the matched route and its priority number.
+5. Send a message with caller data `customer_tier` set to `platinum`. Ask for a manager. Confirm `Priority_Care_Agent`. Repeat with another tier. Confirm `Triage_Agent`.
+6. Check the supervisor's session data. Confirm `consent_recorded` is true after the return.
+7. Answer no to the consent question. Confirm that your policy for a decline applies.
+
+## Production readiness checklist
+
+- The gate fact has a source that the customer cannot set by statement.
+- The gate is the first entry.
+- Every protected route repeats the gate fact in its `WHEN`.
+- Every field in an `ON_RETURN` `map` exists in the child, and the child sets it before it completes.
+- The gate agent has a decline path. The example agent keeps asking until the customer agrees.
+- The fallback route is safe for a customer who has not passed the gate.
+- Critical gates have an `ON_FAILURE` policy.
+- Tests cover consent given, consent declined, no match, and a protected route called before the gate.
+
+## Common mistakes
+
+| Mistake | Why it happens | How to avoid it |
+| ------- | -------------- | --------------- |
+| Setting `PRIORITY: 0` on the gate. | The field looks like it orders routes. | The platform ignores it. Place the gate first. |
+| Leaving the gate fact out of a business route. | The gate looks like it covers every route. | Add `AND <fact> == true` to each protected `WHEN`. |
+| Writing the gate as a quoted phrase. | The phrase reads well. | Use an expression. The pipeline treats a quoted phrase as true. |
+| Writing `map` as `parent: child`. | The parent field seems to come first. | Write `child: parent`. The compiler reports `UNKNOWN_HANDOFF_RETURN_FIELD`. |
+| Gating on a value the customer can state. | A boolean question is easy to write. | Use `session.identityTier` or a value that a tool returns. |
+| Using one target twice. | A second entry looks like a fallback. | The model sees one action per target. Use a different target for the fallback. |
+| Writing `ON_FAILURE: "message"`. | The message looks complete. | Write `ON_FAILURE: RESPOND "message"`. The bare form fails with `INVALID_HANDOFF_FAILURE_ACTION`. |
+
+## Troubleshooting
+
+| Symptom | Likely cause | What to check |
+| ------- | ------------ | ------------- |
+| The gate fires on every message after the customer agrees. | The `map` is missing, reversed, or the child never completed. | `consent_recorded` in the supervisor's session data, and the child's `COMPLETE` condition. |
+| A business route runs before the gate. | The route's `WHEN` does not test the gate fact. | The `condition` in `handoff_condition_check`. |
+| A reordered route still loses. | You used `PRIORITY:`. | Move the entry. The position decides. |
+| Every message goes to one specialist. | A quoted route sits above the `intent.category` routes. | The entry order. Move quoted routes last. |
+| The model cannot see a route. | `ENABLED_WHEN` is false or reads a missing value. | The `ENABLED_WHEN` expression and its data. |
+| The priority route never fires. | `session.customer_tier` has no value. | The caller data your channel sends. |
+| An escalation request reaches the fallback. | The customer is not platinum, so the priority route is false. | Add a route for other tiers, or accept the fallback. |
+| The compile fails with `ENABLED_WHEN_SEMANTIC_REFERENCE`. | `ENABLED_WHEN` reads `intent` or uses plain language. | Use an expression over session data. |
+
+## Related HowTos
+
+- How to design a supervisor that routes users to specialist agents
+- How to route users by detected intent
+- How to use EXECUTION.pipeline for agent routing, classification, and short-circuiting
+- How to route unclear or unsupported requests to a fallback agent
+- How to debug routing decisions in traces
+````
