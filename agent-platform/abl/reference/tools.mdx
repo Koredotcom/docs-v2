@@ -1148,6 +1148,40 @@ TOOLS:
 
 <Note>When neither `effect` nor `hints.side_effects` is declared, the runtime infers one: for an HTTP tool, `GET`, `HEAD`, and `OPTIONS` default to read-only and every other method defaults to side-effecting; SearchAI and read-only table bindings default to read-only; any other non-HTTP tool defaults conservatively to side-effecting. An explicit `effect`/`side_effects` always wins over the inferred default.</Note>
 
+### Concurrent tool execution
+
+
+A reasoning agent works in steps. At each step, the model chooses which tools to call. When it requests more than one tool in the same step, the platform runs them at the same time. A tool whose arguments depend on another tool's result can't be requested until that result exists, so it is naturally called in a later step.
+
+```yaml
+TOOLS:
+  get_profile(customer_id: string) -> {name: string, tier: string}
+    description: "Fetch the customer profile"
+    effect: read_only
+
+  get_orders(customer_id: string) -> {last_order_id: string, orders: array}
+    description: "Fetch recent orders"
+    effect: read_only
+
+  get_delivery_status(order_id: string) -> {status: string, eta: string}
+    description: "Get delivery status for one order"
+    effect: read_only
+
+INSTRUCTIONS: |
+  For an account and order update:
+  1. Call get_profile and get_orders together in the same step.
+  2. When get_orders returns, call get_delivery_status with its last_order_id.
+  3. Then answer using all three results.
+```
+
+`effect: read_only` marks a tool as a pure lookup. A read-only tool executes immediately: it is never held back while a separate call is waiting on customer [confirmation](#confirmation).
+
+The model decides which tools to request together, so `INSTRUCTIONS` is what makes the grouping consistent: tell it which calls are independent and can run together, and which call needs another call's result first. Instructions guide this grouping; they don't enforce it, since the model still chooses what to call at each step. For a fixed, guaranteed execution order, attach the calls as a [workflow tool](#workflow-tools) instead and define the order on the workflow canvas. See [Build workflow logic](/agent-platform/workflows#build-workflow-logic) for how nodes on the same branch run concurrently.
+
+<Note>This concurrency is automatic and needs no extra configuration. It's unrelated to a workflow tool's `mode` property (`sync` or `async`), which controls whether the calling agent waits for a long-running workflow run to finish, not whether multiple tool calls run together.</Note>
+
+To confirm which calls ran together, open the session trace: tool calls that ran at the same time show overlapping start and end times.
+
 ### Result compaction
 
 
@@ -1312,6 +1346,12 @@ TOOLS:
     method: POST
     store_result: false
 ```
+
+When `store_result` is `true` (the default), the raw result is kept as a session value named `last_<tool>_result`. It surfaces in `## Current Context` on later turns, but only for the agent that called the tool, and cut to 4,000 characters. This is separate from the within-turn shaping in [Result compaction](#result-compaction) and [MODEL_CONTEXT on a tool result](#model_context-on-a-tool-result) above, which apply only while the call is in progress -- `last_<tool>_result` is what carries the result forward once the turn ends.
+
+<Warning>Declaring an `on_result: SET:` block on the tool changes the default: `store_result` becomes `false` and `last_<tool>_result` is no longer written, unless `store_result: true` is set explicitly alongside it. If a later turn needs a field from the result, either keep `store_result: true` or capture that field into a session value with `on_result: SET:`.</Warning>
+
+For the agent-wide limits on how many compacted tool rounds survive in history, and how tool results are compacted across turns, see [Compaction policy overrides](/agent-platform/abl-reference/agent-declaration#compaction-policy-overrides).
 
 ### Reuse secrets across tools (SecretRef)
 

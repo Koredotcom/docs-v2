@@ -1,0 +1,72 @@
+---
+title: How a turn is built
+sidebarTitle: Context and prompts
+---
+
+Every agent turn ends in a single model request: one system prompt, the conversation history, and the tool list. This page explains which values the model can see each turn, where they come from, and how to keep a value out of the prompt entirely. For how that request is kept small -- the size budgets and compaction policies -- see [Context size, compaction, and budgets](/agent-platform/context-compaction).
+
+## At a glance
+
+Before the model reads it, every source of context is shaped: memory and `## Current Context` by visibility rules and size limits, conversation history and tool results by compaction, and knowledge-base results by a token budget. Guardrails check what goes into and comes out of each call, but they never see the assembled prompt itself.
+
+## What the model sees each turn
+
+Session values reach the system prompt in two ways: through the memory sections an agent declares (`## Session Memory`, `## Granted Memory`, and similar), and through a `## Current Context` block. Which values land in `## Current Context` depends on the agent's visibility mode.
+
+| Mode | When it applies | What goes into `## Current Context` |
+|------|------------------|---------------------------------------|
+| Allow-list (default) | The agent does not declare `BEHAVIOR:` with `role:` | Values the agent's own `GOAL`, `PERSONA`, `LIMITATIONS`, or `SYSTEM_PROMPT` reference; values passed in on handoff; results of the agent's own tools; values granted by `FLOW` steps. If any of those texts uses `{{context}}`, every session value is admitted. |
+| Explicit | The agent declares `BEHAVIOR:` with `role: router`, `orchestrator`, or `assistant` | Only declared session memory, execution-tree memory, memory granted on handoff, and interaction details such as language, locale, and timezone. Undeclared and persistent values never appear. |
+
+These values are never shown in `## Current Context`, in either mode:
+
+- Platform identifiers -- session, tenant, project, and user IDs -- plus raw input and message metadata.
+- The `config` and `env` namespaces.
+- Keys that start with an underscore, except the handoff summary.
+- Knowledge-base search results. They reach the model through the search tool call instead -- see [Knowledge base retrieval](/agent-platform/knowledge#how-the-platform-searches).
+- In allow-list mode, values already shown in a memory section. In explicit mode, a declared session value can appear in both a memory section and `## Current Context`, so budget for that when sizing prompts.
+
+Tool results are visible only to the agent that produced them. A `last_<tool>_result` value appears in the prompt of the agent that called the tool -- see [Store result](/agent-platform/abl-reference/tools#store-result). After a handoff, the receiving agent does not see it unless it's listed in `pass` or referenced directly.
+
+### Size limits
+
+Each `## Current Context` value is limited to 8,000 characters by default, and the whole block to 24,000. Automatic tool-result values are limited to 4,000 characters. A value over its limit is replaced by a marker object holding a preview of its start. Declared memory sections (`## Session Memory` and similar) are not size-limited, so keep declared memory small. The full set of default budgets, the voice-profile overrides, and how to diagnose a bloated or truncated prompt in a trace live in [Context size, compaction, and budgets](/agent-platform/context-compaction).
+
+### Keeping a value out of the prompt
+
+To keep a value out of what the model reads:
+
+- Don't declare it in `MEMORY:` and don't reference it. An allow-list agent never sees an undeclared value it doesn't reference.
+- If a tool needs the value, declare it as a runtime-supplied parameter the model can't see.
+- For tool results, use the tool's `MODEL_CONTEXT` to pass the model only the fields it needs -- see [MODEL_CONTEXT on a tool result](/agent-platform/abl-reference/tools#model_context-on-a-tool-result).
+
+```yaml
+TOOLS:
+  use_runtime_state(runtime_state: string, operation: string) -> object
+    params:
+      runtime_state:
+        default_source: runtime
+        visibility_model: false
+        visibility_trace: false
+    context_access:
+      read: [runtime_state]
+```
+
+### Referencing values in prompt text
+
+Use `{{customer_tier}}` in `GOAL`, not `{{context.customer_tier}}`. In `GOAL`, `PERSONA`, and `LIMITATIONS`, the `context.` form makes the value visible in `## Current Context`, but the placeholder itself is not filled in -- only the plain `{{var}}` form interpolates.
+
+If a referenced value is unset, the literal `{{customer_tier}}` text stays in the prompt. Word the sentence so an empty value still reads sensibly, or set a default with `INITIAL:`.
+
+<Note>There is no per-entry setting to hide one declared memory value from the model while leaving the rest of a `MEMORY: SESSION:` block visible. Use the options in [Keeping a value out of the prompt](#keeping-a-value-out-of-the-prompt) above instead.</Note>
+
+<Warning>`{{config.*}}` and `{{env.*}}` values are left out of `## Current Context` automatically, but that protection doesn't extend to a `{{env.KEY}}` reference written directly into `GOAL`, `PERSONA`, `LIMITATIONS`, `SYSTEM_PROMPT:`, or `RESPOND` -- the resolved value is sent as plain prompt text, same as any other reference. [Referencing environment variables](/agent-platform/administration/workspace-and-team#reference-environment-variables) in those fields is supported and often useful, but only for a variable that isn't marked **Secret**. A secret variable referenced in a model-visible or customer-visible field defeats the point of marking it secret -- the Secret flag only masks its value in the Studio UI.</Warning>
+
+---
+
+{{related}}
+
+- [Context size, compaction, and budgets](/agent-platform/context-compaction) -- default size budgets, where context grows, and how to debug a bloated prompt from a trace.
+- [Agent declaration](/agent-platform/abl-reference/agent-declaration) -- `GOAL`, `PERSONA`, `LIMITATIONS`, and `SYSTEM_PROMPT:` syntax.
+- [Memory and state](/agent-platform/memory-and-state) -- declaring session and persistent memory.
+- [Tools](/agent-platform/abl-reference/tools) -- shaping and storing tool results.

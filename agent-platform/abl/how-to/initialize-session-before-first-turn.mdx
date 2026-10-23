@@ -9,9 +9,39 @@ Use this pattern when flow steps, routing, templates, or tools need known sessio
 
 ## Concept
 
-Startup initialization belongs in `ON_START`. Values set there are written into session data before the welcome response and before the entry flow runs. This is useful for counters, channel labels, selected locale, feature flags, campaign markers, and any value that should be stable for the rest of the conversation.
+ABL gives you several places to seed session values. Pick the one that matches where the value comes from.
 
-Keep initialization deterministic. `ON_START SET` is for values already available at startup, not values that require asking the user.
+| Need | Use | When it runs |
+| ---- | --- | ------------ |
+| A fixed default | `MEMORY` `SESSION` with `INITIAL` | When the session is created, before `ON_START`. |
+| A value copied or computed from session context | `ON_START` `SET` | At start, before the welcome. |
+| A value from a tool | `ON_START` `CALL` with `AS` | At start, after `SET`, before the welcome. |
+| A value for one branch only | `SET` in a branch `DO:` list | After the welcome. |
+| The reply language on a voice channel | `SET_INTERACTION_LANGUAGE` | After `SET` and `CALL`, before the branches. |
+
+`ON_START` runs these steps in order:
+
+1. `SET` assignments.
+2. The top-level `CALL`.
+3. Interaction language directives.
+4. `BRANCHES` conditions and the welcome `RESPOND`.
+5. The matched branch `DO:` list.
+
+`ON_START` runs once per session, for the entry agent only. A specialist reached by handoff never runs its own `ON_START`. `ON_START` also runs when the first user message starts the session, before the runtime processes that message. A reconnect to an initialized session does not run it again.
+
+Keep initialization deterministic. Use it for values that exist at start. Collect values from the user with `GATHER`.
+
+### Values you can read at start
+
+| Path | Value |
+| ---- | ----- |
+| `session.channel` | The channel type, such as `web_chat` or `voice`. `digital` when the channel sets none. |
+| `session.sessionId`, `session.userId`, `session.tenantId`, `session.projectId` | Platform identifiers. |
+| `session.customerId`, `session.identityTier` | Identity values, when the channel supplies them. |
+| `session.<name>` | A value the channel passes as caller data. Also readable as `<name>`. |
+| `session.interaction.current.language` | The resolved language. Also `locale` and `timezone`. |
+
+A path with no value resolves to nothing. A template then renders it as empty text.
 
 ## Minimal working example
 
@@ -23,69 +53,190 @@ ON_START:
   SET: retry_count = 0
   SET: channel_name = session.channel
   SET: preferred_language = session.interaction.current.language
-  RESPOND: "Session is ready."
+  RESPOND: "Welcome."
 
 FLOW:
-  entry_point: show_context
+  entry_point: ask_order
   steps:
+    - ask_order
     - show_context
+
+ask_order:
+  REASONING: false
+  GATHER:
+    order_id:
+      PROMPT: "What is your order number?"
+      TYPE: string
+      REQUIRED: true
+  THEN: show_context
 
 show_context:
   REASONING: false
-  RESPOND: "Channel {{channel_name}}, language {{preferred_language}}, retries {{retry_count}}."
+  RESPOND: "Order {{order_id}} on channel {{channel_name}}, language {{preferred_language}}, retries {{retry_count}}."
   THEN: COMPLETE
 ```
 
 ## How it works
 
-`SET` assignments run before `RESPOND`. Assignment values are resolved against runtime session values. The flow can use the initialized variables immediately.
+- `SET` assignments run before `RESPOND`, in the order you write them.
+- A numeric or boolean constant keeps its type. `0` stays a number.
+- A top-level `RESPOND` is a prelude. The entry flow step still runs at start and asks for the order number.
+- The flow reads the initialized values from the first step on.
+- `SET` runs on every channel. Some channels, such as Slack, WhatsApp, and API, do not deliver the welcome. The values are still set.
+- You can write several assignments under one `SET:` line, one per line.
+- An unresolved path leaves the variable empty.
 
 ## Common variations
 
-### Initialize project or campaign values
+### Initialize constants
 
-Use constants or channel-supplied values for campaign and entry-state variables. This example uses constants; in a real channel integration, those values are usually copied from trusted session metadata.
+Quote text constants. An unquoted word that matches a session variable name reads that variable. An unquoted word with no match is stored as text.
 
 ```yaml expandable=true
 AGENT: Metadata_Init_Agent
-GOAL: "Copy startup metadata into session variables"
+GOAL: "Copy startup metadata into session variables and use them in the flow"
 
 ON_START:
   SET: campaign_id = "summer-renewal"
   SET: landing_page = "member portal"
-  RESPOND: "Welcome from {{landing_page}}."
+  RESPOND: "Welcome from the {{landing_page}}."
 
 FLOW:
-  entry_point: ready
+  entry_point: ask_topic
   steps:
-    - ready
+    - ask_topic
+    - confirm
 
-ready:
+ask_topic:
   REASONING: false
-  RESPOND: "Campaign {{campaign_id}} is active for this session."
+  GATHER:
+    topic:
+      PROMPT: "What do you need help with?"
+      TYPE: string
+      REQUIRED: true
+  THEN: confirm
+
+confirm:
+  REASONING: false
+  RESPOND: "Campaign {{campaign_id}} is active. I will help with {{topic}}."
   THEN: COMPLETE
+```
+
+In a real project, copy values such as a campaign marker from trusted caller data, for example `SET: campaign_id = session.campaign_id`.
+
+### Declare a default with INITIAL
+
+Use `INITIAL` for a fixed default. The runtime writes it when it creates the session. It also fills the variable when an agent activates and the variable is still missing.
+
+```yaml expandable=true
+AGENT: Session_Defaults_Agent
+GOAL: "Seed a retry counter with a declared default and count attempts in the flow"
+
+MEMORY:
+  SESSION:
+    - retry_count
+      TYPE: number
+      INITIAL: 0
+
+ON_START:
+  SET: channel_name = session.channel
+  RESPOND: "Welcome."
+
+FLOW:
+  entry_point: ask_order
+  steps:
+    - ask_order
+    - show_attempt
+
+ask_order:
+  REASONING: false
+  GATHER:
+    order_id:
+      PROMPT: "What is your order number?"
+      TYPE: string
+      REQUIRED: true
+  THEN: show_attempt
+
+show_attempt:
+  REASONING: false
+  SET: retry_count = retry_count + 1
+  RESPOND: "Order {{order_id}} on channel {{channel_name}}. Attempt {{retry_count}}."
+  THEN: COMPLETE
+```
+
+A variable that has only an `INITIAL` value and no other writer triggers the `W801` warning. Write the variable somewhere, as the `SET` in `show_attempt` does.
+
+### Set a value for one branch
+
+`SET` in a branch `DO:` list runs after the welcome, so the welcome cannot read it. The compiler reports `ON_START_BRANCH_DO_ACTIVATED` as an informational warning.
+
+```yaml
+AGENT: Branch_Init_Agent
+GOAL: "Set a reply mode at session start based on the channel"
+PERSONA: "Concise assistant"
+
+ON_START:
+  BRANCHES:
+    - IF: session.channel == "voice"
+      RESPOND: "Thanks for calling. How can I help?"
+      DO:
+        - SET: reply_mode = "voice"
+    - ELSE:
+      RESPOND: "Welcome. How can I help?"
+      DO:
+        - SET: reply_mode = "text"
+```
+
+### Pin the reply language on a voice channel
+
+`SET_INTERACTION_LANGUAGE` applies only on a voice channel that has a supported-language list. On other channels the override is not applied, and the trace shows the reason.
+
+```yaml
+AGENT: Language_Init_Agent
+GOAL: "Pin the reply language at session start"
+PERSONA: "Concise assistant"
+
+ON_START:
+  SET_INTERACTION_LANGUAGE: "fr-FR"
+  RESPOND: "Bonjour. Comment puis-je vous aider ?"
 ```
 
 ## Verification
 
-Start a session and inspect session values after initialization. Confirm `retry_count`, `channel_name`, and `preferred_language` are present before the first flow response. In traces, check `dsl_set` events with `source: on_start`.
-
-## Common mistakes
-
-| Mistake                                   | Why it happens                                         | How to avoid it                                                         |
-| ----------------------------------------- | ------------------------------------------------------ | ----------------------------------------------------------------------- |
-| Setting values that are not available yet | Startup runs before the first user turn.               | Use `ON_START SET` only for constants and pre-existing runtime context. |
-| Using different names later in the flow   | Startup values are easy to rename while drafting.      | Reuse the exact variable names in templates, `WHEN`, `PASS`, and tools. |
-| Collecting user input with startup `SET`  | Initialization and data collection get mixed together. | Use `GATHER` for user-provided values.                                  |
-
-## Troubleshooting
-
-If a variable renders as empty, verify the runtime path exists. For channel-specific fields, confirm the channel actually supplies the value before the session starts. If the value should come from the user, collect it with `GATHER` instead of startup `SET`.
+1. Start a session. In the trace, find one `dsl_set` event for each top-level `SET`, with `source: on_start`.
+2. Answer the first question. Confirm the final reply shows the initialized values.
+3. Start a session on a second channel. Confirm `channel_name` changes.
+4. For `SET_INTERACTION_LANGUAGE`, look for the `interaction_language_override_changed` event.
+5. Reconnect to the same session. Confirm `ON_START` does not run again.
 
 ## Production readiness checklist
 
 - Initialize only values available before the first user turn.
+- Quote text constants.
 - Keep names consistent with later `WHEN`, `PASS`, and template references.
-- Avoid writing sensitive values unless they are needed.
+- Set shared values in the entry agent. Pass them to specialists with `PASS`.
+- Avoid writing sensitive values unless the flow needs them.
 - Trace every startup assignment during validation.
-- Reset counters intentionally when a new session starts.
+- Test each target channel, including channels that do not deliver the welcome.
+
+## Common mistakes
+
+| Mistake | Why it happens | How to avoid it |
+| ------- | -------------- | --------------- |
+| Setting a value the runtime does not have yet | Startup runs before the first user turn. | Use `SET` only for constants and existing context. |
+| Leaving a text constant unquoted | A word that matches a variable name reads that variable. | Quote text constants. |
+| Putting initialization in a specialist's `ON_START` | `ON_START` runs for the entry agent only. | Initialize in the entry agent, or use `INITIAL`. |
+| Reading a branch `DO:` value in the welcome | The `DO:` list runs after the welcome. | Use top-level `SET` for values the welcome needs. |
+| Using different names later in the flow | Startup names are easy to rename. | Reuse the exact names in templates, `WHEN`, `PASS`, and tools. |
+| Collecting user input with startup `SET` | Initialization and data collection get mixed. | Use `GATHER` for user-provided values. |
+
+## Troubleshooting
+
+| Symptom | Likely cause | What to check |
+| ------- | ------------ | ------------- |
+| A variable renders as empty text | The path has no value at start. | The path in the table above. Whether the channel sends the caller data. |
+| `preferred_language` is empty | No source set a language. | The agent language, the contact preference, the channel setting, and the project default. |
+| `W801` on a `MEMORY` variable | Only `INITIAL` writes it. | Add a writer, or drop the declaration. |
+| The value is correct in the trace but missing in a specialist | The specialist did not receive it. | The `PASS` list on the `HANDOFF` entry. |
+| The language override is not applied | The channel is not voice, or the language is not in the supported list. | The `interaction_language_override_changed` event. |
+| No welcome appears but `SET` ran | The channel does not deliver the `ON_START` response. | The `dsl_on_start_skipped` event. |

@@ -5,177 +5,274 @@ sidebarTitle: Microsoft Teams
 
 <Badge icon="arrow-left" color="gray">[Back to messaging or digital channels](/agent-platform/channels#messaging-or-digital-channels)</Badge>
 
-Integrate your agent into Microsoft Teams channels, chats, and Microsoft 365 Copilot through an Azure Bot registration and a Teams application.
+Connect your agent to Microsoft Teams chats and channels through a single-tenant Azure Bot and a Teams app. You register the bot in Azure, create the Artemis connection, point the bot's messaging endpoint at Artemis, then package and install the Teams app.
 
-## Before you begin
+The setup requires:
 
-Complete the following tasks in Microsoft before you create the channel connection in Artemis. You need administrator access to the [Azure Portal](https://portal.azure.com/), the [Microsoft Teams Developer Portal](https://dev.teams.microsoft.com/), and the [Teams Admin Center](https://admin.teams.microsoft.com/).
+1. [Prepare the Azure Bot](#prepare-the-azure-bot) and collect its credentials.
+2. [Artemis channel configuration](#artemis-channel-configuration): create the connection, then copy its messaging endpoint.
+3. [Configure the messaging endpoint](#configure-the-messaging-endpoint) and the Teams channel in Azure.
+4. [Create and install the Teams app](#create-and-install-the-teams-app).
+5. [Verify the connection](#verify-the-connection) in a real Teams conversation.
+
+After setup, Teams sends each activity to Artemis. Artemis validates the Bot Framework token, runs the agent, and replies in the same conversation.
+
+**Important considerations**
+
+- **Use the same Microsoft App ID everywhere**: The **Bot App ID**, the **App ID** credential, the Azure Bot Microsoft App ID, and the Teams manifest `botId` must all be the same GUID. Artemis selects the connection by that ID and checks that the Bot Framework JWT audience matches it.
+- **Use a single-tenant bot**: Microsoft ended support for creating new multi-tenant Azure Bot registrations after July 31, 2025. Existing multi-tenant bots keep running, but this setup uses a single-tenant identity and the exact App Tenant ID.
+- **The client secret Value appears once**: Copy the **Value**, not the **Secret ID**. The Secret ID can't authenticate.
+- **Manifest changes need a reinstall**: Endpoint and runtime changes apply immediately. Scope, `supportsFiles`, icon, and command changes need an updated package and a reinstall.
+
+## Prerequisites
+
+Confirm these before you start.
+
+- Access to the Microsoft Entra tenant where you'll install the Teams app, with permission to manage app registrations and Azure Bot resources.
+- A Teams policy that permits custom app upload, or an administrator who can publish the app.
+- Artemis project access with permission to open **Deployments** -> **Channels**, and a deployed agent in the environment you intend to bind.
+
+---
+
+## Prepare the Azure Bot
+
+Do this in Azure before you open Artemis. Select **Open Azure portal** in the setup guide to jump straight there.
 
 <Steps>
-  <Step title="Create an Azure Bot">
-    1. Sign in to the [Azure Portal](https://portal.azure.com/) and search for **Azure Bot** in Marketplace.
-    2. Select **Create** and complete the bot registration.
-    3. When the deployment completes, select **Go to resource** under **Next steps**.
+  <Step title="Create or select an Azure Bot resource">
+    In the [Azure portal](https://portal.azure.com/), create an Azure Bot or open the existing one dedicated to this agent. Keep development and production on separate bot registrations.
   </Step>
 
-  <Step title="Create a client secret and copy the IDs">
-    1. In the Azure Bot resource, go to **Settings** -> **Configuration**.
-    2. Select the **Manage password** link beside the **Microsoft App ID**. This opens the app registration's **Certificates & secrets** page.
-    3. Select **+ New client secret** and create the secret.
-    4. Copy the secret value immediately and store it securely.
-    5. Go to the app registration's **Overview** page and copy the **Application (client) ID**. This is your Microsoft App ID, also called the Enterprise App ID later in this article.
-    6. Copy the **Directory (tenant) ID** from the same page.
-
-    <Warning>When you copy the client secret, use the **Value**, not the **Secret ID**. The Secret ID won't authenticate. The Value appears only once. If you navigate away before copying it, create a new client secret.</Warning>
+  <Step title="Use a single-tenant identity">
+    For a new bot, choose **Single Tenant**, and create or select the Microsoft Entra app registration that represents the bot. Artemis uses an App ID, client secret, and tenant ID, so don't select a managed-identity-only setup.
   </Step>
 
-  <Step title="Configure supported account types">
-    1. In the app registration, go to **Authentication (Preview)** -> **Supported accounts**.
-    2. Select **Multiple Entra ID tenants**, choose **Allow all tenants**, and save.
+  <Step title="Copy the Microsoft App ID and App Tenant ID">
+    1. Go to **Azure Bot** -> **Configuration**.
+    2. Copy the **Microsoft App ID**, a GUID.
+    3. Copy the **App Tenant ID**, the Microsoft Entra Directory (tenant) ID.
+
+    Don't copy the Teams app package ID, the Azure resource ID, an object ID, or a value beginning with `28:`.
   </Step>
 
-  <Step title="Enable the Microsoft Teams and Microsoft 365 channels">
-    1. Return to the Azure Bot resource and go to **Settings** -> **Channels**.
-    2. Enable **Microsoft Teams** and **Microsoft 365**.
-  </Step>
-
-  <Step title="Create or import the Teams application">
-    1. Sign in to the [Microsoft Teams Developer Portal](https://dev.teams.microsoft.com/).
-    2. Create a new application or import an existing manifest.
-    3. Go to **Configure** -> **Basic information**, enter the **Short name** and **Long name**, and set the **Application (client) ID** to the Microsoft App ID you copied in step 2.
-  </Step>
-
-  <Step title="Configure the bot, commands, and scopes">
-    1. Go to **Configure** -> **App features** and select **Bot**.
-    2. Enter the Enterprise App ID as the bot ID.
-    3. Add the project commands, utterances, and descriptions.
-    4. Select the **Personal**, **Team**, and **Group Chat** scopes.
-  </Step>
-
-  <Step title="Update the app package">
-    1. Go to **App package editor** -> **Actions** -> **Edit** to open `manifest.json`.
-    2. Update the Web App ID (`webApplicationInfo.id`) and the Copilot/Agents ID (`copilotAgents.customEngineAgents.id`) to the Enterprise App ID in both locations.
-    3. To support file attachments, set `bots[0].supportsFiles` to `true`.
-    4. Select **Update** and confirm.
-
-    <Note>Attachment ingestion currently supports personal chat scope only.</Note>
-  </Step>
-
-  <Step title="Publish the application">
-    1. In the Teams Developer Portal, go to **Publish** -> **Publish to org**, select **Get started**, and publish the application.
-    2. Open the [Teams Admin Center](https://admin.teams.microsoft.com/) and go to **Teams apps** -> **Manage apps**.
-    3. Search for the application, open it, and publish it.
+  <Step title="Create a client secret">
+    1. Select **Manage** beside **Microsoft App ID** to open the linked app registration.
+    2. Go to **Certificates & secrets** and create a client secret with an approved expiration.
+    3. Copy the **Value** immediately and store it in your secret manager.
   </Step>
 </Steps>
 
-## Create the channel connection in Artemis
+---
+
+## Artemis channel configuration
+
+Create the connection before Teams sends an activity. Artemis needs the saved App ID and credentials to resolve the URL, validate inbound JWTs, get Bot Framework tokens, and send replies.
+
+1. Open Artemis and select the project.
+2. Go to **Deployments** -> **Channels** -> **Microsoft Teams** -> **+ New**. The **New Microsoft Teams Connection** dialog opens, with the setup guide on the left and the fields on the right.
+3. Configure the fields:
+
+    | Artemis field | Source / Notes | What it controls |
+    |---|---|---|
+    | **Display Name** | You choose it | The label operators see. Name it for the Teams app and environment. |
+    | **Bot App ID** | **Azure Bot** -> **Configuration** -> **Microsoft App ID** | The routing identifier in the messaging endpoint URL. |
+    | **App ID** | The same Microsoft App ID | The encrypted credential for Bot Framework calls. |
+    | **Client Secret** | The client secret **Value** | Authorizes outbound Bot Framework calls and member lookup. |
+    | **Azure Tenant ID** | **Azure Bot** -> **Configuration** -> **App Tenant ID** | The tenant for the client-credentials token request. |
+    | **Environment** | Your published environments | The environment whose active deployment answers Teams. Leave the working copy default only while you develop. |
+    | **Initial Status** | Defaults to **Active** | Keep it **Active**. |
+
+    <Tip>Artemis asks for the Microsoft App ID twice, once as the routing identifier and once as an encrypted credential. Paste the same GUID into both fields.</Tip>
+
+4. Select **Create**.
+5. Copy the **Webhook URL** from the connection's summary panel. It ends with the encoded Microsoft App ID.
+
+---
+
+## Configure the messaging endpoint
+
+Point the Azure Bot at Artemis and turn on the Teams channel.
+
+1. Confirm the Artemis connection is **Active**, and that **Bot App ID** and **App ID** match.
+2. In **Azure Bot** -> **Configuration**, paste the full Artemis URL into **Messaging endpoint**. Turn on **Enable Streaming Endpoint**, and select **Apply**.
+3. Reopen **Configuration** and confirm Azure kept the complete endpoint.
+4. In the Azure Bot resource, open **Channels**, add **Microsoft Teams**, accept the terms, and save. The bot receives no Teams activity until you configure this channel.
+
+<Warning>Use the full URL that ends with the Microsoft App ID. Don't replace it with the generic endpoint, the Teams app package ID, a tenant ID, an object ID, or the Azure resource name.</Warning>
+
+A successful save doesn't prove authentication. Continue through installation and a real message test.
+
+---
+
+## Create and install the Teams app
+
+Package the bot as a Teams app. Select **Open Teams Developer Portal** in the setup guide to jump straight there.
 
 <Steps>
-  <Step title="Enter the connection details">
-    Open Artemis, select the required project, and go to **Deployments** -> **Channels** -> **MESSAGING** -> **Microsoft Teams** -> **+ New**. On the **New Microsoft Teams Connection** dialog, provide the following fields.
-
-    | Field | Description |
-    | ----- | ----------- |
-    | **Display Name** | A label for the connection, for example `Microsoft Teams Production`. Up to 255 characters. |
-    | **Bot App ID** | The Microsoft App ID of the bot configured in your Teams application. Up to 255 characters. |
-    | **App ID** | The Microsoft App ID from the Azure Bot registration, also called the Enterprise App ID. |
-    | **Client Secret** | The client secret value you created in the Azure app registration. |
-    | **Azure Tenant ID** | The Directory (tenant) ID from the app registration's Overview page in the Azure Portal. |
-    | **Environment** | Select an environment to follow its active deployment. If no environment has an active deployment yet, leave the default to use the working copy and bind the connection later from the **Deployment** tab. |
-    | **Initial Status** | **Active** connections can be used immediately. **Inactive** connections stay saved but disabled until you activate them. Set this to **Active**. |
-
-    <Tip>**Bot App ID** and **App ID** both take a Microsoft App ID. The app ID of your Teams app must match the app ID in the Azure Bot registration and the values you enter here. A mismatch is the most common cause of a Teams integration that won't connect.</Tip>
-
-    Select **Create**.
+  <Step title="Create or import the app">
+    In the [Teams Developer Portal](https://dev.teams.microsoft.com/), create an app for this bot, and add the name, descriptions, icons, developer details, and privacy and terms URLs your organization requires.
   </Step>
 
-  <Step title="Configure the messaging endpoint">
-    1. Open the connection you created and copy the **Webhook URL** from the **Overview** tab.
-    2. In the [Azure Portal](https://portal.azure.com/), open the Azure Bot resource and go to **Configuration**.
-    3. Paste the Webhook URL into the **Messaging endpoint** field.
-    4. Enable the **Streaming Endpoint** and select **Apply**.
+  <Step title="Add the bot capability and scopes">
+    1. Under **App features**, add **Bot**, select **Enter a bot ID**, and paste the Microsoft App ID.
+    2. Enable only the scopes you'll test and support: `personal`, `team`, and `groupChat`. Each is a separate install context.
   </Step>
 
-  <Step title="Test the agent in Teams and Copilot">
-    1. Open [Teams](https://teams.cloud.microsoft/) and go to **Apps**.
-    2. Search for the published application, open it, and select **Add**. To test in Copilot, select **Open with Copilot**.
-    3. Trigger the configured queries and verify the Artemis response.
+  <Step title="Enable files only when needed">
+    Set `supportsFiles` to `true` when users send attachments. Artemis ingests file and inline-image attachments only from personal chats, and skips file-only activities in teams and group chats.
+
+    ```json
+    {
+      "bots": [
+        {
+          "botId": "<Microsoft App ID>",
+          "scopes": ["personal", "team", "groupChat"],
+          "supportsFiles": true,
+          "isNotificationOnly": false
+        }
+      ]
+    }
+    ```
+
+    For Microsoft 365 Copilot, also set `webApplicationInfo.id` and `copilotAgents.customEngineAgents.id` to the Microsoft App ID.
+  </Step>
+
+  <Step title="Validate and download the package">
+    Resolve every Developer Portal validation error, then download the app package. If you edit the manifest directly, keep `botId` equal to the Microsoft App ID and include valid color and outline icons.
+  </Step>
+
+  <Step title="Upload or publish the app">
+    For development, go to **Apps** -> **Manage your apps** -> **Upload a custom app**, if tenant policy allows it. For a controlled rollout, have a Teams administrator publish the app and assign app permission and setup policies.
   </Step>
 </Steps>
 
-## Key values reference
+---
 
-| Value | Where it comes from | Where it's used |
-| ----- | ------------------- | --------------- |
-| **Microsoft App ID (Enterprise App ID)** | The Azure Bot registration's Application (client) ID | The **Bot App ID** and **App ID** fields in Artemis, the bot ID in the Teams application, and the app package IDs in the Teams Developer Portal |
-| **Client Secret** | Created under **Certificates & secrets**; copy the value immediately after creation | The **Client Secret** field in Artemis |
-| **Azure Tenant ID** | The Directory (tenant) ID in the Azure Portal (admin account) | The **Azure Tenant ID** field in Artemis |
-| **Webhook URL** | The Artemis Microsoft Teams connection's **Overview** tab | The Azure Bot **Messaging endpoint** |
+## Verify the connection
+
+Artemis doesn't synthesize Teams activities, so a real conversation is the only end-to-end proof.
+
+1. Install the app for yourself, open its personal chat, and send a unique message.
+2. Confirm a typing indicator where applicable, and one reply from this bot rather than an older installation or another environment.
+3. If the agent renders actions or forms, submit an Adaptive Card `Action.Execute`, and confirm the values reach the same session.
+4. Install the bot in a test team and group chat only if the manifest includes those scopes. Confirm @mentions and routing in each context, because a personal-chat pass doesn't prove team or group behavior.
+5. With `supportsFiles` on, send an approved file and an inline image in personal chat, and confirm the agent processes them.
+6. To test in Copilot, open the app in Teams and select **Open with Copilot**.
+
+| Capability | Where it works |
+|---|---|
+| `text`, typing, streaming | Every enabled scope |
+| Adaptive Cards with `Action.Execute` | Every enabled scope |
+| File and inline-image attachments | Personal chat only |
+
+---
+
+## Security and identity boundaries
+
+Inbound traffic and outbound replies each have their own protection.
+
+- **Inbound JWT**: Every activity must carry a Microsoft Bot Framework bearer JWT. Artemis validates the signing key, issuer, App ID audience, and the service URL claim when present.
+- **Client secret**: It authorizes outbound Bot Framework calls and member lookup. Store it only in Artemis, never in the manifest, browser code, screenshots, or tickets.
+- **Secret rotation**: Client secrets expire. Create a replacement before expiration, update Artemis, verify a reply, and only then remove the old secret.
+- **Reply targets**: Artemis replies only to the `serviceUrl` from the authenticated activity, and checks allowed attachment hosts before it forwards a bot token.
+- **Environments**: Use separate App IDs, secrets, Azure Bot resources, Teams app packages, and connections for development and production.
+
+---
 
 ## Manage the channel connection
 
-Opening a channel from **Deployments** -> **Channels** -> **MESSAGING** -> **Microsoft Teams** shows four tabs: **Overview**, **Credentials**, **Configuration**, and **Deployment**.
+Open a connection from **Deployments** -> **Channels** -> **Microsoft Teams** to manage it. The page has a header, three tabs, and a summary panel on the right.
+
+**Header.** Shows the connection name, its environment badge, its status, and when it last changed. The **...** overflow menu holds the connection-level actions.
+
+**Summary panel.** Stays visible on every tab.
+
+| Field | Description |
+|---|---|
+| **Channel** and **Connection Type** | Read **Microsoft Teams** and **Channel Connection**. |
+| **Identifier** | The Microsoft App ID this connection routes on. |
+| **Credentials** | Reads **Configured** once credentials save. |
+| **Webhook URL** | The messaging endpoint for Azure, with a copy control. |
+| **Created** and **Updated** | Date and time of creation and of the last change. |
 
 <Tabs>
-  <Tab title="Overview">
-    The **Connection Summary** shows these fields.
-
-    | Field           | Description                       |
-    |-----------------|-----------------------------------|
-    | **Status**      | For example: *Active*             |
-    | **Created**     | Timestamp the channel was created |
-    | **Updated**     | Timestamp of the last change      |
-    | **Environment** | For example: `staging`            |
-    | **Source Type** | `Channel Connection`              |
-    | **Source ID**   | Unique channel identifier (UUID)  |
-
-    Under **Setup Instructions**, the tab shows the **Webhook URL** to set as the bot's messaging endpoint in Azure, the **Bot App ID** for reference, and the **Require verified Teams identity** toggle.
-
-    #### Require verified Teams identity
-
-    Turn this on to require Microsoft-resolved Teams profile identity before the connection starts or resumes a session. Leave it off for baseline Teams conversations.
-
-    When the toggle is on, Runtime resolves the sender's Microsoft profile email or UPN through the Bot Connector member endpoint before it allows the turn. If the identity can't be resolved, the turn doesn't proceed. This confirms that the person on the other end is the Teams user their profile claims they are, which matters for agents that act on a user's behalf or return information scoped to that user.
-
-    The toggle relies on the credentials already configured for this connection or its selected auth profile, and on the bot staying installed and reachable in Teams. It doesn't use Microsoft Graph consent, OBO settings, or Graph scopes.
-
-    The **Stronger identity verification setup** panel below the toggle lists the specific requirements to complete when you enable it.
-  </Tab>
-
   <Tab title="Credentials">
-    Credentials are saved and encrypted after creation; the fields show placeholder text and accept new values only if you want to update them.
+    Artemis encrypts credentials after you save them. Leave a field blank to keep its current value, or enter a new value to replace it.
 
-    | Field                | Description                                                                                                                                                                       |
-    |----------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-    | **Use Auth Profile** | Toggle on to authenticate through a saved Auth Profile instead of entering credentials manually. When enabled, select the profile from the dropdown in place of the fields below. |
-    | **App ID**           | Your Microsoft App ID. Shown as *(saved — enter to update)*; leave blank to keep the current value.                                                                               |
-    | **Client Secret**    | The client secret from your Azure Bot registration. Shown as *(saved — enter to update)*; leave blank to keep the current value.                                                  |
-    | **Azure Tenant ID**  | The Directory (tenant) ID from the Azure Overview page. Shown as *(saved — enter to update)*; leave blank to keep the current value.                                              |
+    | Field | Description |
+    |---|---|
+    | **Use Auth Profile** | Turn it on, then select a saved auth profile in place of the fields below. |
+    | **App ID** | The Microsoft App ID credential. |
+    | **Client Secret** | Replace it here when you rotate the secret in Azure. |
+    | **Azure Tenant ID** | The App Tenant ID. |
 
-    Select **Save Credentials** to apply any changes.
+    Select **Save Credentials** to apply your changes.
   </Tab>
 
   <Tab title="Configuration">
-    Under **General**, update the **Display Name**.
+    Update how the connection behaves. **Microsoft Teams Settings** holds the provider-specific fields.
 
-    Under **Microsoft Teams Settings**, configure the following.
+    | Setting | Description |
+    |---|---|
+    | **Bot App ID** | Read-only, with a copy control. To serve another bot, create a new connection. |
+    | **Enable Streaming** | Under **Response Streaming**. Streams responses to Teams as the agent generates them. |
+    | **Message template** | The authorization message the connection sends when a tool needs the user to authorize. Insert variables from the chips, select **Show more** for the full list, and select **Show preview** to check it. |
+    | **Require verified Teams identity** | Under **Stronger identity verification**. Requires a Microsoft-resolved Teams profile identity before the connection starts or resumes a session. Leave it off for baseline Teams conversations. |
+    | **Webhook URL** | The messaging endpoint, with a copy control. |
 
-    | Field                | Description                                                                                                                                                                                                 |
-    |----------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-    | **Bot App ID**       | The Microsoft App ID of the bot, shown for reference. You can't change it after creation.                                                                                                                    |
-    | **Enable Streaming** | Under **Response Streaming**, turn this on to stream LLM responses to Teams as the agent generates them, instead of waiting for the full response. Turn it off to deliver each response as a single message. |
+    When you turn on **Require verified Teams identity**:
 
-    Select **Save Changes** to apply any changes.
+    - Artemis calls the Bot Connector member endpoint, `/v3/conversations/{conversationId}/members/{userId}`, to resolve the sender's profile email or UPN before it allows the turn.
+    - It uses the `app_id`, `client_secret`, and `tenant_id` on this connection or its auth profile.
+    - The bot must stay installed and reachable, with the Azure Bot **Messaging endpoint** pointing at this connection.
+    - It doesn't use Microsoft Graph consent, OBO settings, or `https://graph.microsoft.com/.default` scopes.
+
+    Select **Save Changes** to apply your changes.
   </Tab>
 
   <Tab title="Deployment">
-    The **Deployment** tab shows these fields.
+    Choose which deployed version answers Teams.
 
-    | Field                 | Description                                                                                                         |
-    |-----------------------|---------------------------------------------------------------------------------------------------------------------|
-    | **Agent Version**     | An **Environment** dropdown (for example: `Staging`) that selects which deployed version handles incoming messages. |
-    | **Active Deployment** | Shows the bound deployment version and when it was deployed.                                                        |
+    | Setting | Description |
+    |---|---|
+    | **Environment** | Under **Environment Binding**. Selects which deployed version handles incoming messages. |
+    | **Active Deployment** | Shows the bound version and when someone deployed it. |
 
-    Select **Save Changes** after switching the environment or version.
+    Select **Save Changes** after you switch the environment.
   </Tab>
 </Tabs>
+
+---
+
+## Troubleshoot connection issues
+
+Most failures trace to a mismatched App ID or a stale manifest.
+
+| Symptom | Likely cause | Recommended action |
+|---|---|---|
+| Connection not found or `404` | Wrong endpoint or identifier | Confirm the endpoint ends with the exact Microsoft App ID, and that the **Bot App ID** has no `28:` prefix. |
+| `401` or JWT validation failure | App ID mismatch | Confirm the App ID matches the token audience, the Azure Bot and Teams app reference the same registration, and requests reach Artemis unchanged over HTTPS. |
+| Inbound message arrives but no reply | Outbound credential or deployment issue | Confirm the client secret Value is current, the **Azure Tenant ID** is correct, the environment has a runnable deployment, and your network allows outbound token requests. |
+| Teams won't install the app | Validation or policy block | Resolve Developer Portal validation errors, confirm tenant policy allows custom app upload, or ask a Teams administrator to publish and permit the app. |
+| Personal chat works but team or group chat doesn't | Scope missing or not reinstalled | Add the scope to the manifest, reinstall the updated package, add the app to the target context, and test the required @mention behavior. |
+| Text works but files don't | Files not enabled or outside policy | Set `supportsFiles` to `true`, reinstall, test in personal chat, stay within the size limit, and confirm Artemis trusts the download host. |
+| Adaptive Card buttons don't submit | Unsupported card or stale app | Use a supported Adaptive Card with `Action.Execute`, confirm the app is current, and check whether the invoke activity reaches the same connection. |
+
+---
+
+## Microsoft reference
+
+Use these pages when you need detail beyond what this article covers. Artemis field names and the runtime endpoint shown in the connection stay the source of truth for this integration.
+
+| Resource | Use it for |
+|---|---|
+| [Connect a bot to Teams](https://learn.microsoft.com/azure/bot-service/channel-connect-teams) | Adding the Microsoft Teams channel to an Azure Bot. |
+| [Upload a custom Teams app](https://learn.microsoft.com/microsoftteams/platform/concepts/deploy-and-publish/apps-upload) | Sideloading the app package for testing. |
+| [Teams Developer Portal](https://dev.teams.microsoft.com/) | Creating, validating, and downloading the app package. |
+| [Teams Admin Center](https://admin.teams.microsoft.com/) | Publishing the app and assigning policies. |
+
+{{related}}
+
+- [Channels](/agent-platform/channels)
+- [Set up Slack](/agent-platform/channels/slack)
+- [Set up AI for Work](/agent-platform/channels/ai-for-work)

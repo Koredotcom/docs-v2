@@ -616,7 +616,7 @@ Enter a query in the Query field and configure the following settings before run
  - Semantic - finds conceptually relevant content based on meaning, even when the exact words don't appear in the source.
  - Keyword - finds exact or near-exact matches. Best for structured content where precise term matching is important.
 
-**Top K** defines the maximum number of chunks returned per query. Set this based on how much context the agent needs to compose an accurate response. A higher value returns more context but increases token consumption when the agent processes the results.
+**Top K** defines the maximum number of chunks returned per query. Set this based on how much context the agent needs to compose an accurate response. A higher value returns more context but increases token consumption when the agent processes the results. Defaults to 10, and can be set from 1 to 100 in the index's Top K setting (see [Additional settings](#additional-settings)); an explicit request from a tool call is capped at 100 regardless.
 
 {/* Removed in 1.5.0
 **Resolve Mode** controls how results are resolved and ranked when multiple chunks from the same or different sources are returned. Three modes are available:
@@ -654,6 +654,14 @@ Manage knowledge base configuration, view indexing details, configure citation b
 
 - General - Basic information about the knowledge base.
 - Index Configuration - Displays the retrieval and indexing settings used by the knowledge base.
+
+    | Setting | Range | Default | What it does |
+    |---------|-------|---------|--------------|
+    | Top K | 1 to 100 | 10 | Chunks returned when a search call doesn't specify a count. |
+    | Similarity threshold | 0 to 1 | 0.2 | Minimum match score; 0 means no threshold. Raise it if weak matches are causing off-topic answers. |
+    | Keyword Weight (Hybrid) | 0 to 1 | 0.5 | The balance between exact-term and semantic matching for a Hybrid query. Raise it toward 0.7 for FAQ or product-code content. |
+    | Chunk Size / Overlap | 100 to 5,000 tokens | 1,000 / 200 | Size of indexed passages, set in the content processing pipeline's chunking stage. Larger chunks carry more context per hit but fit fewer hits in the token budget. Re-ingest after changing. |
+
 - Citations - Controls how source references appear in search results and AI-generated responses. When enabled, response includes references to the content used to generate the answer.
 
     | Option                  | Description                                                                                                                                                            |
@@ -690,3 +698,52 @@ To attach a knowledge tool using the DSL editor, follow these steps:
 4. Open the agent's DSL editor by clicking **DSL** at the top of the agent page.
 5. Paste the copied DSL into the **Tools** section of the agent definition.
 6. Compile and save the changes.
+
+### How the platform searches
+
+Knowledge base results reach the model as the output of a tool call. They are never added directly to the model's current-turn context; the model, or the platform on the model's behalf, has to call the knowledge tool to see them.
+
+There are two paths into a turn:
+
+| Path | When it applies | What happens |
+|------|------------------|--------------|
+| **Automatic first search** | The agent's only business tool is a single knowledge base, the agent is not a coordinator (router or orchestrator), it does not collect `GATHER` fields with inline gather, it has no handoff or delegation tools, and the turn was not forwarded by a handoff or delegation. On by default; there is nothing to switch on. | The platform searches the customer's message before the model runs, adds the results to the conversation, and tells the model to answer only from those results. If nothing is found, the model gets a normal turn and is told to search again with a more specific query. |
+| **Model-driven search** | Every other agent, and any follow-up search after an automatic first search. | The model calls `search_kb_<name>(query)` with its own query, and the results come back as that tool's result like any other tool call. |
+
+<Note>The automatic first search runs outside the normal tool-call path, so a knowledge tool's `on_result` / `on_error` hooks and `MODEL_CONTEXT` only apply to searches the model makes itself. To shape what the model reads on every path, including the automatic one, use `search_instructions` and `compaction.max_search_tokens` -- see [Tool-level search settings](#tool-level-search-settings) below.</Note>
+
+On later turns, the history keeps a placeholder for the search call, the same as for any tool result. Search results are never kept for display beyond the turn that returned them; if the conversation needs a fact again, the model searches again.
+
+### Tool-level search settings
+
+Beyond the Studio configuration in [Configure AI](#configure-ai) and [Search and test](#search-and-test), the generated `search_kb_<name>` tool itself takes a few settings. Set them on the project tool definition -- a tool library file, or the Studio tool editor. An agent's own `TOOLS:` entry for the same tool can add only `search_instructions` and a `compaction:` block.
+
+```yaml
+TOOLS:
+  search_kb_hr_policies(query: string) -> object
+    description: "Search the HR policy handbook. Use for leave, benefits and conduct questions."
+    type: searchai
+    kb_name: "HR Policies"
+    retrieval_profile: object-aware
+    compaction:
+      max_search_tokens: 6000
+    search_instructions: |
+      Prefer the current policy year.
+      Always filter by the employee's country when it is known.
+```
+
+| Setting | Values | Default | What it does |
+|---------|--------|---------|---------------|
+| `search_instructions` | free text | none | Added to the tool description, and turns on query planning for the automatic first search. An agent-file value is used only when the project tool has none of its own. |
+| `retrieval_profile` | `object-aware` | standard retrieval | Splits a question into up to 10 document categories, searches each in parallel with reranking, and merges the results. Useful for a knowledge base that mixes document types where one question needs several of them. |
+| `compaction.max_search_tokens` | 1 to 40,000 | none when 10 or fewer chunks return; 40,000 above that | Token budget for the results the model reads. Whole chunks are dropped from the end, never cut mid-text. Lower it for voice agents and short answers -- a large budget slows the reply and dilutes grounding. |
+| `queryType`, `topK`, `filters`, `similarityThreshold` (optional parameters) | `queryType`: `vector`, `hybrid`, `structured`, `semantic`, `aggregation`; `topK` up to 100 | not exposed; the tool takes only `query` | Declare these as optional parameters to let the model choose the search mode, result count, or filters on each call. Use only when the model must steer the search itself -- otherwise leave it to the planner. |
+
+<Note>Other tool-result [compaction](/agent-platform/abl-reference/tools#result-compaction) settings don't apply to knowledge base results -- `max_search_tokens` is the lever to use. The only other limit is the shared budget when several tools run in parallel in the same turn (100,000 characters divided across them).</Note>
+
+Silent traps:
+
+- `retrieval_profile` accepts only the exact value `object-aware`. Any other value, including different casing, is ignored.
+- An agent-file `search_instructions` is ignored once the project tool already has instructions of its own.
+- If citations are turned off on any one knowledge base attached to an agent, they are turned off for all of that agent's knowledge bases.
+- Test retrieval with a real customer identity where possible. Studio test chats search with public permissions, so permission-restricted content may not show up there.
