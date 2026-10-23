@@ -5,34 +5,57 @@ sidebarTitle: Route by user intent
 
 <Badge icon="arrow-left" color="gray">[Back to how-to guides](/agent-platform/abl/how-to/overview#routing-and-multi-agent-orchestration)</Badge>
 
-Use this pattern when a supervisor agent classifies what the user is trying to do, then hands the conversation to the specialist that owns that work.
+Use this pattern when a supervisor must work out what the customer wants and hand the conversation to the specialist that owns that work.
 
 ## Concept
 
-Intent routing uses three ABL surfaces working together:
+Intent routing uses two ABL sections.
 
-- **INTENTS** declares the classifier categories. Each category has a description that tells the model what kinds of requests belong to it.
-- **HANDOFF** is the executable routing surface. Each entry names a target agent, the condition that triggers the handoff, and the context the child receives.
-- **WHEN** conditions on each handoff entry can be deterministic expressions (`intent.category == "billing"`) or semantic natural-language text (`"the user request is unclear"`). The platform detects the form automatically: multi-word quoted text without structured operators routes through model reasoning; expressions with operators like `==` route through deterministic evaluation.
+- `INTENTS:` lists the categories and describes each one. The descriptions guide the classifier and the supervisor model. The section is optional. Without it, the compiler takes the categories from the `intent.category` comparisons in your `WHEN` rules.
+- `HANDOFF:` holds the routes. Each entry names a target agent, a `WHEN` condition, and the context the target receives.
 
-Two decisions shape every intent-routing supervisor:
+A route reads the category through `intent.category`, for example `WHEN: intent.category == "billing"`.
 
-1. **History strategy** — By default, the child agent receives the full parent conversation history (`history: full`). This is the platform default when `history` is omitted. Choose `summary_only`, `none`, `auto`, or `last_n` when the child should see less. See [Common variations](#common-variations) for the options.
-2. **Return behavior** — `EXPECT_RETURN: false` (the default) transfers ownership permanently. `EXPECT_RETURN: true` pauses the parent and resumes it when the child returns. Use `ON_RETURN` to map child results back to parent variables.
+### How the platform picks a route
+
+| Situation | What decides the route |
+| --------- | ---------------------- |
+| The `EXECUTION.pipeline` classifier runs and is confident. | The platform tests the `HANDOFF` entries in authored order. The first `WHEN` that is true selects the target. The handoff happens without a reasoning turn. |
+| The supervisor model chooses a route. | The model calls the route action and states the intent category. The platform checks the `WHEN` of that entry before it transfers the conversation. |
+| A child that was expected to return finishes. | The platform tests the `HANDOFF` conditions again in authored order. The first match wins. |
+
+The pipeline is optional. It runs only when the project enables it, the agent does not opt out, and a pipeline model is available. Without it, the model path decides. See How to use EXECUTION.pipeline for agent routing, classification, and short-circuiting.
+
+### Condition styles
+
+| Style | Example | Behavior |
+| ----- | ------- | -------- |
+| Expression | `intent.category == "billing"` | The platform enforces it. A route whose expression is false is refused. |
+| Quoted plain-language phrase | `"the customer asks about a refund"` | Guidance for the model. The platform accepts the model's choice. |
+| Always true | `true` | The route is always available. Use it for the fallback. |
+
+Quote plain-language text. Unquoted text is read as variable names and produces undefined-variable warnings.
+
+The pipeline evaluates a quoted phrase as a string that is always true. A quoted route placed above an `intent.category` route captures every message the pipeline classifies. Put quoted routes after the `intent.category` routes.
+
+### Order is priority
+
+The position of an entry in `HANDOFF:` sets its priority. The first entry has the highest priority. The model sees the position as `[Priority N]` in the route description. The `PRIORITY:` field is read and then ignored. Move the entry instead.
+
+### Decisions for every route
+
+- **History.** The target receives the full conversation history unless you set `history`. A project default can change that value. See [Control conversation history](#control-conversation-history-with-history).
+- **Return.** `EXPECT_RETURN: false` is the default. The target keeps the conversation. `EXPECT_RETURN: true` pauses the supervisor until the target returns. See [Return to the supervisor with ON_RETURN](#return-to-the-supervisor-with-on_return).
 
 ## Minimal working example
+
+This example is a project-level set. Put the supervisor and the four target agents in the same project. The targets are short stand-ins for your real agents.
+
+`agents/intent-routing-supervisor.agent.abl`
 
 ```yaml expandable=true
 SUPERVISOR: Intent_Routing_Supervisor
 GOAL: "Route customer requests to the specialist that owns the detected intent"
-
-MEMORY:
-  customer_id:
-    type: string
-    source: session
-  account_id:
-    type: string
-    source: session
 
 INTENTS:
   billing: "Questions about invoices, payment status, unpaid balances, or payment methods."
@@ -59,43 +82,62 @@ HANDOFF:
       summary: "Customer is asking to cancel or downgrade."
 
   - TO: General_Service_Agent
-    WHEN: "the user request is unclear or does not match billing, technical support, or cancellation"
+    WHEN: true
     CONTEXT:
       pass: [customer_id]
-      summary: "Customer needs general service triage."
-
-AGENT: Billing_Agent
-GOAL: "Resolve billing requests"
-
-AGENT: Technical_Support_Agent
-GOAL: "Resolve technical support requests"
-
-AGENT: Retention_Agent
-GOAL: "Handle cancellation and downgrade conversations"
-
-AGENT: General_Service_Agent
-GOAL: "Clarify and route unsupported requests"
+      summary: "The request did not match a specialist. Customer needs general service triage."
 ```
 
-The `MEMORY` section declares `customer_id` and `account_id` as session variables so the `pass` fields have a defined source. Any variable you pass must come from MEMORY, GATHER, a tool result, or runtime context.
+`agents/billing-agent.agent.abl`
+
+```yaml
+AGENT: Billing_Agent
+GOAL: "Resolve billing requests"
+```
+
+`agents/technical-support-agent.agent.abl`
+
+```yaml
+AGENT: Technical_Support_Agent
+GOAL: "Resolve technical support requests"
+```
+
+`agents/retention-agent.agent.abl`
+
+```yaml
+AGENT: Retention_Agent
+GOAL: "Handle cancellation and downgrade conversations"
+```
+
+`agents/general-service-agent.agent.abl`
+
+```yaml
+AGENT: General_Service_Agent
+GOAL: "Clarify and route requests that no specialist owns"
+```
+
+The platform fills each `PASS` field from the parent's data when the parent holds a value, for example from caller data or a gathered field. Otherwise the supervisor model fills it from what the customer said. When neither has a value, the target must collect it.
+
+The `summary` text also supports `{{field}}` interpolation from the supervisor's data.
 
 ## How it works
 
-1. The supervisor receives the user message and retains ownership until a handoff condition matches.
-2. The platform evaluates the INTENTS classifier against the user message, producing `intent.category`.
-3. HANDOFF entries are evaluated in authored order (override with `PRIORITY` when needed). The first matching condition wins.
-4. The matched child receives: the `pass` variables, the `summary` text, and conversation history controlled by the `history` strategy. When `history` is omitted, the child receives the **full parent conversation** — this is the platform default (`full`).
-5. If `EXPECT_RETURN: false` (the default), the child owns the conversation permanently. If `EXPECT_RETURN: true`, the child runs and returns control to the parent, optionally mapping result variables through `ON_RETURN`.
-6. If no HANDOFF condition matches, the supervisor continues with its own GOAL. A semantic fallback entry (like the `General_Service_Agent` above) prevents unmatched requests from going unhandled.
+1. The supervisor receives the message and keeps the conversation until a route fires.
+2. The platform assigns an intent category. With the pipeline, the classifier assigns it. Without the pipeline, the model states it when it calls a route.
+3. The platform checks the `WHEN` of the selected route. An expression must be true. A refused route returns a message to the model, which then tries another route or asks the customer.
+4. The target receives the `PASS` values, the `summary`, and the history that the `history` setting allows.
+5. With `EXPECT_RETURN: false`, the target keeps the conversation. With `EXPECT_RETURN: true`, the supervisor pauses and resumes when the target returns.
+6. When no route fires, the supervisor stays active. The `WHEN: true` entry in the example is the fallback.
+
+A chain of nested handoffs can reach a depth of 10 before the platform refuses the next one.
 
 ## Common variations
 
 ### Control conversation history with `history`
 
-When the child should not receive the full parent transcript, set `history` explicitly:
+When the target does not need the full transcript, set `history` on the entry. Add it inside `CONTEXT:`.
 
 ```yaml
-HANDOFF:
   - TO: Billing_Agent
     WHEN: intent.category == "billing"
     CONTEXT:
@@ -104,140 +146,160 @@ HANDOFF:
       history: summary_only
 ```
 
-| Value                        | Behavior                                                                                  |
-| ----------------------------- | ------------------------------------------------------------------------------------------ |
-| `full`                        | Platform default. The complete parent conversation history is passed.                     |
-| `auto`                        | Uses the summary when available; falls back to the last 5 messages.                       |
-| `none`                        | No conversation history. The child starts fresh with only `pass` variables and `summary`. |
-| `summary_only`                | Only the `summary` text is passed — no raw messages.                                      |
-| `{ mode: last_n, count: N }` | The last N messages from the parent are passed.                                           |
+| Value | Behavior |
+| ----- | -------- |
+| `full` | Default. The target receives the complete parent history. |
+| `auto` | The target receives the summary when one exists. Otherwise it receives the last 5 messages. |
+| `none` | The target receives no history. It starts with the `PASS` values and the summary. |
+| `summary_only` | The target receives only the summary text. |
+| `last_n` | The target receives the last N messages. Write it as a block: `history:`, then `mode: last_n` and `count: 6` on indented lines. |
 
-Choose `summary_only` or `none` when the child is a focused specialist that should not be influenced by earlier conversation turns. Choose `full` (or omit) when the child needs the complete conversation record.
+Write `last_n` as a block. The inline form `history: { mode: last_n, count: 6 }` compiles without a warning and has no effect, so the target receives the full history.
 
-### Shorthand context syntax
+Use `summary_only` or `none` for a focused specialist. Use `full` when the target needs the whole record.
 
-`pass`, `summary`, and `history` can appear as direct siblings of the handoff entry instead of nested under `CONTEXT:`:
+### Write context as sibling keys
+
+`PASS`, `SUMMARY`, and `HISTORY` can sit directly under the entry instead of inside `CONTEXT:`. Both forms compile to the same route.
 
 ```yaml
-HANDOFF:
   - TO: Billing_Agent
     WHEN: intent.category == "billing"
-    pass: [customer_id, account_id]
-    summary: "Customer needs billing help."
-    history: summary_only
+    PASS: [customer_id, account_id]
+    SUMMARY: "Customer needs billing help."
+    HISTORY: summary_only
 ```
 
-Both forms compile identically. The nested `CONTEXT:` form is preferred when you also need `set` or `memory_grants`.
+Use `CONTEXT:` when you also need `set` or `memory_grants`.
 
-### Return to the parent with ON_RETURN
+### Return to the supervisor with ON_RETURN
 
-When a specialist should report back to the supervisor after completing its task:
+Use `EXPECT_RETURN: true` when a specialist does bounded work and the supervisor continues afterward. In this example, a verification agent returns before billing help starts.
 
-```yaml expandable=true
-HANDOFF:
+```yaml
   - TO: Verification_Agent
-    WHEN: intent.category == "verification_needed"
+    WHEN: intent.category == "billing" AND verification_result != true
     EXPECT_RETURN: true
     CONTEXT:
       pass: [customer_id]
-      summary: "Customer needs identity verification."
+      summary: "Customer needs identity verification before billing help."
       history: summary_only
     ON_RETURN:
-      action: continue
+      action: resume_intent
       map:
         verified: verification_result
+
+  - TO: Billing_Agent
+    WHEN: intent.category == "billing" AND verification_result == true
+    CONTEXT:
+      pass: [customer_id, account_id]
+      summary: "Verified customer needs billing help."
 ```
 
-`EXPECT_RETURN: true` pauses the parent. When the child returns, `ON_RETURN.map` copies child variables into the parent scope. `action: continue` resumes the parent's flow; `action: resume_intent` re-runs routing with the original user intent and the returned context.
+`map` copies a child field into a parent field. Write the child field first, then the parent field: `verified: verification_result` copies the child's `verified` into the parent's `verification_result`. The child must gather or produce `verified`. Without a `map`, the platform copies all gathered child data back.
 
-The legacy keyword `RETURN` is accepted as an alias for `EXPECT_RETURN`.
+`action: resume_intent` runs routing again against the original request with the returned context. `action: continue` resumes the supervisor's current flow.
 
-### Set evaluation order with PRIORITY
+`RETURN` is accepted as an older name for `EXPECT_RETURN`. `ON_RETURN` without `EXPECT_RETURN: true` produces the warning `HANDOFF_ON_RETURN_WITHOUT_RETURN`.
 
-When multiple handoff conditions could match the same utterance, use `PRIORITY` to control evaluation order. Lower values are evaluated first:
+### Put specific routes before general routes
 
-```yaml expandable=true
-HANDOFF:
-  - TO: Urgent_Support_Agent
-    WHEN: intent.category == "technical_support" and priority_level == "urgent"
-    PRIORITY: 0
+When two routes can match the same message, place the specific route first. The first entry has the highest priority.
+
+```yaml
+  - TO: Account_Billing_Agent
+    WHEN: intent.category == "billing" AND session.identityTier == 2
+    CONTEXT:
+      pass: [customer_id, account_id]
+      summary: "Verified customer needs billing help."
+
+  - TO: Billing_Agent
+    WHEN: intent.category == "billing"
     CONTEXT:
       pass: [customer_id]
-      summary: "Urgent technical support request."
-
-  - TO: Technical_Support_Agent
-    WHEN: intent.category == "technical_support"
-    PRIORITY: 1
-    CONTEXT:
-      pass: [customer_id]
-      summary: "Technical support request."
+      summary: "Unverified customer needs general billing information."
 ```
 
-Without `PRIORITY`, entries are evaluated in authored order.
+`session.identityTier` is `2` after the channel verifies the identity. The route is false for an anonymous customer, so that customer reaches `Billing_Agent`.
+
+### Add a plain-language route
+
+Use a quoted phrase for a request type that has no category. Place it after the `intent.category` routes.
+
+```yaml
+  - TO: Refund_Specialist
+    WHEN: "the customer asks about a refund, a returned payment, or a refund timeline"
+    CONTEXT:
+      pass: [customer_id, account_id]
+      summary: "Customer needs refund help."
+```
+
+Keep the phrase in lowercase words. A quoted phrase that contains uppercase `AND`, `OR`, or `NOT`, a comparison symbol, or a word such as `contains` is read as an expression.
 
 ### Handle dispatch failures with ON_FAILURE
 
-`ON_FAILURE` defines what happens when the handoff dispatch itself fails — for example, the target agent is not found or pre-transfer validation fails. It does not handle child-agent runtime errors.
+`ON_FAILURE` runs when the handoff fails before the target accepts it, for example when validation fails. It does not handle errors that the target raises later.
 
 ```yaml
-HANDOFF:
   - TO: Billing_Agent
     WHEN: intent.category == "billing"
     CONTEXT:
       pass: [customer_id, account_id]
       summary: "Customer needs billing help."
-    ON_FAILURE: ESCALATE
+    ON_FAILURE: RESPOND "I could not reach billing. Please try again in a moment."
 ```
 
-| Value                | Behavior                                          |
-| -------------------- | -------------------------------------------------- |
-| `CONTINUE`           | Silently continue in the current agent.           |
-| `ESCALATE`           | Trigger human escalation.                         |
-| `RESPOND "message"` | Send a message and continue in the current agent. |
+| Value | Behavior |
+| ----- | -------- |
+| `CONTINUE` | The supervisor continues. This is the default. |
+| `ESCALATE` | The session is marked as escalated. A person receives the conversation only when the project has a human-agent connection and an `ESCALATE` block with a `routing` block. See the [ESCALATE reference](/agent-platform/abl/reference/multi-agent-and-supervisor#escalate). |
+| `RESPOND "message"` | The supervisor sends the message and continues. |
+
+A bare quoted string such as `ON_FAILURE: "message"` fails to compile with `INVALID_HANDOFF_FAILURE_ACTION`.
 
 ## Verification
 
-- Send a test utterance for each intent category and confirm the correct child agent is selected. Check the trace for the matched HANDOFF entry and the condition result.
-- Send an ambiguous utterance and confirm the fallback entry handles it. Verify the trace shows the semantic WHEN evaluation.
-- Inspect the trace for passed context: confirm `pass` variables are present in the child's session and the `summary` appears in the child's context.
-- If `EXPECT_RETURN: true` is used, verify the parent resumes and `ON_RETURN.map` variables appear in the parent's session after the child returns.
-- Verify the `history` strategy by checking what conversation messages the child receives. With `full` (or omitted), the child should see the complete parent transcript. With `summary_only`, the child should see only the summary text.
+1. Send one test message for each category. Open the trace. Find the `handoff_condition_check` events for the turn. Confirm that the expected route has `result: true`.
+2. Send a message that matches no category. Confirm that the `WHEN: true` route receives it.
+3. When the pipeline is on, find the `pipeline_classify` and `pipeline_routing_resolve` events. Confirm the category and the matched route.
+4. Check the `handoff` trace event. Confirm the `PASS` values and the summary in its `context`. Check `seededFields` in `handoff_context_seed` to see which fields reached the target. Check `handoff_context_pass_resolved` only for values taken from the customer's message.
+5. Check the history. With `full`, the target sees the full parent transcript. With `summary_only`, the target sees the summary only.
+6. For `EXPECT_RETURN: true`, confirm the supervisor resumes and the mapped fields appear in the supervisor's session data.
 
 ## Production readiness checklist
 
-- Every specialist route has a clear owner and a concise context summary.
-- Every `pass` variable has a declared source (MEMORY, GATHER, tool result, or runtime context).
-- Deterministic conditions use declared fields; semantic conditions are quoted as natural-language `WHEN` text.
-- Choose a `history` strategy appropriate for each child. The default `full` passes the entire parent transcript, which may include irrelevant turns and increase token usage.
-- Add `ON_FAILURE` to critical handoff entries so dispatch failures have a defined recovery path.
-- Fallback behavior is explicit and does not hide missing intent coverage.
-- Test at least one utterance per intent category, one ambiguous utterance, and one utterance outside all categories.
-- Temporary child agents (`EXPECT_RETURN: true`) produce every field mapped in `ON_RETURN`.
-- Verify handoff depth does not exceed the platform limit of 10 nested handoffs.
+- Every `TO` target exists in the project.
+- Every `PASS` field has a source: parent data, caller data, a gathered field, or a value the customer states.
+- Every `intent.category` value in a `WHEN` appears in `INTENTS:`. The compile shows no `UNDECLARED_INTENT_CATEGORY` warning.
+- Specific routes come before general routes. Quoted routes come after `intent.category` routes.
+- Each route sets `history` on purpose. The default `full` passes the whole transcript and uses more tokens.
+- A `WHEN: true` fallback exists, or the supervisor can answer on its own.
+- Critical routes have an `ON_FAILURE` policy.
+- Every field in an `ON_RETURN` `map` exists in the child.
+- Tests cover one message per category, one ambiguous message, and one message outside every category.
 
 ## Common mistakes
 
-| Mistake                                                   | Why it happens                                                       | How to avoid it                                                                                                                    |
-| ----------------------------------------------------------- | ----------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
-| Authoring a `ROUTING:` section                              | Confusion between conceptual routing and the ABL surface             | The parser rejects `ROUTING:` and points to `HANDOFF:`. Use `HANDOFF:` for all routing entries.                                    |
-| Leaving semantic prose unquoted                              | The WHEN condition looks like an expression with undefined variables | Quote multi-word natural-language conditions so the platform routes them through model reasoning instead of expression evaluation. |
-| Assuming the child starts with a blank slate                | The default history strategy is `full`, not `none`                   | Set `history: none` or `history: summary_only` explicitly when you want the child to start fresh.                                  |
-| Passing variables without a declared source                 | The variables compile but have no value at runtime                   | Declare every `pass` variable in MEMORY, GATHER, or as a tool/runtime output before referencing it.                                |
-| Routing every unmatched request to the nearest specialist | No explicit fallback; the closest label absorbs unrelated requests   | Add a dedicated fallback agent with a semantic WHEN condition for unclear or unmatched requests.                                   |
+| Mistake | Why it happens | How to avoid it |
+| ------- | -------------- | --------------- |
+| Writing a `ROUTING:` section. | Routing sounds like its own section. | The parser rejects `ROUTING:` with error `E104`. Use `HANDOFF:`. |
+| Setting `PRIORITY:` to reorder routes. | The field looks like it controls order. | The platform ignores it. Reorder the entries. |
+| Leaving a plain-language `WHEN` unquoted. | The text looks like a condition. | Quote the text. |
+| Placing a quoted route above `intent.category` routes. | The pipeline treats a quoted phrase as true. | Put quoted routes last. |
+| Expecting the child to start fresh. | The default history is `full`. | Set `history: none` or `summary_only`. |
+| Writing `history: { mode: last_n, count: 6 }` on one line. | The inline form looks valid. | Write `mode` and `count` on indented lines. |
+| Writing the `map` in the wrong direction. | The parent field seems to come first. | Write `child_field: parent_field`. The compiler reports `UNKNOWN_HANDOFF_RETURN_FIELD`. |
+| Routing every unmatched request to the nearest specialist. | The route has no explicit fallback. | Add a `WHEN: true` fallback agent. |
 
 ## Troubleshooting
 
-| Symptom                                                                                | Likely cause                                                          | What to check                                                                                                                           |
-| ----------------------------------------------------------------------------------------- | ------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
-| Child agent sees the full conversation even though only `pass` variables were declared | `history` defaults to `full` when omitted                             | Set `history: summary_only` or `history: none` in the CONTEXT block.                                                                    |
-| Handoff never fires for a valid utterance                                              | WHEN condition uses an undefined variable or has a syntax error       | Check that the WHEN expression references a valid field (for example, `intent.category`) and the INTENTS section defines the expected category. |
-| Compiler warning about ungrounded pass fields                                          | `pass` variables are not declared in MEMORY, GATHER, or a tool output | Declare each variable source or mark it as a project-local runtime value.                                                               |
-| Fallback agent handles requests that should match a specific intent                    | Intent categories overlap or the classifier description is ambiguous  | Refine INTENTS descriptions to be mutually exclusive; use `PRIORITY` to control evaluation order for overlapping conditions.            |
-| Parent does not resume after child completes                                           | `EXPECT_RETURN` is set to `false` or omitted (default)                | Set `EXPECT_RETURN: true` on the handoff entry. Confirm the child agent completes and returns control.                                  |
-| `ON_RETURN.map` variables are missing in parent scope                                  | Child agent does not produce the expected output variables            | Verify the child agent sets the mapped variables before returning.                                                                      |
-
----
-
-{{related}}
-
-- [How to design a supervisor that routes users to specialist agents](/agent-platform/abl/how-to/design-supervisor-routing-agent).
+| Symptom | Likely cause | What to check |
+| ------- | ------------ | ------------- |
+| A valid message reaches the wrong agent. | Two routes can match, and the earlier entry wins. | The entry order. Move the specific route up. |
+| A route never fires. | The category is missing from `INTENTS:`, or the expression is false. | `UNDECLARED_INTENT_CATEGORY`, and `result` in `handoff_condition_check`. |
+| The model reports that a handoff is blocked. | The route's expression is false for the current data. | The `condition` and `evaluatedContext` in `handoff_condition_check`. |
+| The target sees the whole conversation. | `history` is omitted, so the default `full` applies. | `history` on the entry. |
+| The target asks for a value that you passed. | The `PASS` field has no value in the parent. | Where the parent gets the value. Gather it or read it from caller data. |
+| The supervisor does not resume after the child. | `EXPECT_RETURN` is `false` or omitted. | `EXPECT_RETURN: true` on the entry. |
+| Mapped fields are missing after the return. | The `map` direction is reversed, or the child never sets the field. | `UNKNOWN_HANDOFF_RETURN_FIELD`, and the child's `GATHER` section. |
+| A refund question reaches the fallback, not the refund route. | The quoted route is below a route that already matched, or the phrase reads as an expression. | The entry order and the phrase wording. |

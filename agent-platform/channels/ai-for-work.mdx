@@ -3,152 +3,251 @@ title: Set up AI for Work
 sidebarTitle: AI for Work
 ---
 
-<Badge icon="arrow-left" color="gray">[Back to channels](/agent-platform/channels)</Badge>
+<Badge icon="arrow-left" color="gray">[Back to messaging or digital channels](/agent-platform/channels#messaging-or-digital-channels)</Badge>
 
-Connect your agent to Kore.ai AI for Work, the Employee Experience (EX) platform, as a bidirectional messaging integration. Employees reach the agent through a published Autonomous Agent in AI for Work, and AI for Work reaches the agent through an endpoint URL and connection secret that you generate in Artemis.
+Connect your agent to Kore.ai AI for Work, the Employee Experience (EX) platform, as a bidirectional messaging integration. Employees reach the agent through a published Autonomous Agent in AI for Work. AI for Work calls Artemis through a generated endpoint and signs every request with a connection secret and a user identity token.
 
-<Note>Artemis labels this channel **AIforWork**. The product it connects to is documented as AI for Work. This article uses **AIforWork** for the on-screen label and AI for Work for the product.</Note>
+The setup requires:
 
-## Before you begin
+1. [Create the connection in Artemis](#create-the-connection-in-artemis) and copy its two generated values.
+2. [Link the connection in AI for Work](#link-the-connection-in-ai-for-work) and publish the agent.
+3. [Validate the integration](#validate-the-integration) with signed requests.
 
-You need administrator access to the AI for Work Admin Console and permission to create and publish Autonomous Agents in the target workspace. You also need a project in Artemis with at least one deployed version in the environment you plan to bind the connection to.
+After setup, Artemis verifies each AI for Work request, scopes the session to the connection, the verified email, and the conversation context, and answers with the agent deployed in the bound environment.
 
-Create the connection in Artemis first. The endpoint URL and connection secret it generates are the inputs to the AI for Work side of the setup.
+**Important considerations**
 
-## Create the channel connection in Artemis
+- **The Connection ID selects the connection**: AI for Work sends each message to `/api/v1/channels/ai4w/{connectionId}/message`. Artemis generates the ID, so you never choose a routing value.
+- **The Connection Secret is reveal-once**: Artemis shows it only at creation. If you lose it or suspect exposure, replace the connection or rotate the secret before you send more traffic.
+- **Every request needs two authentication layers**: An HMAC signature made with the Connection Secret, and a trusted AI for Work identity JWT. Artemis validates each one independently.
+- **Pause and Resume control traffic**: Select **Pause** in the connection header to stop all AI for Work traffic.
 
-<Steps>
-  <Step title="Enter the connection details">
-    Open Artemis, select the required project, and go to **Deployments** -> **Channels** -> **AIforWork** -> **+ New**. On the **New AIforWork Connection** dialog, provide the following fields.
+<Note>Artemis labels this channel **AIforWork**. This article uses **AIforWork** for on-screen labels and AI for Work for the product.</Note>
 
-    | Field | Description |
-    | ----- | ----------- |
-    | **Display Name** | A label for the connection, for example `AIforWork Production`. Up to 255 characters. |
-    | **Environment** | Select an environment to follow its active deployment. If no environment has an active deployment yet, leave the default and bind the connection later from the **Deployment** tab. |
-    | **Provider Verification Strength** | **Weak (default)** or **Strong**. Choose **Strong** only for channels or providers whose identity assertions you trust for stronger continuity and linking decisions. |
-    | **Initial Status** | **Active** connections can be used immediately. **Inactive** connections stay saved but disabled until you activate them. Set this to **Active**. |
+## Prerequisites
 
-    Select **Create**.
-  </Step>
+Confirm these before you start.
 
-  <Step title="Copy the endpoint URL and connection secret">
-    The **AIforWork Connection Created** dialog shows the **Endpoint URL** and the **Connection Secret**. Copy both values and store the secret securely, then select **Done**.
+- Administrator access to the AI for Work Admin Console, with permission to create and publish Autonomous Agents in the target workspace.
+- Artemis project access with permission to open **Deployments** -> **Channels**, and a deployed agent in the environment you intend to bind.
+- A server-side secret store in AI for Work for the Connection Secret.
 
-    <Warning>The connection secret appears only once and can't be retrieved afterward. If you lose it, open the connection and select **Rotate** on the **Overview** tab to issue a new one. Rotating the secret invalidates the previous value, so update the AI for Work configuration with the new secret.</Warning>
+---
 
-    AI for Work uses the endpoint URL and secret to sign its requests with HMAC.
-  </Step>
-</Steps>
+## Create the connection in Artemis
+
+Create the connection first. Artemis generates the endpoint and secret that AI for Work needs.
+
+1. Open Artemis and select the project.
+2. Go to **Deployments** -> **Channels** -> **AIforWork** -> **+ New**. The **New AIforWork Connection** dialog opens, with the setup guide on the left and the fields on the right.
+3. Configure the fields:
+
+    | Artemis field | What it controls |
+    |---|---|
+    | **Display Name** | The label operators see. Name it for the AI for Work tenant and environment. Routing ignores it. |
+    | **Environment** | The environment whose active deployment answers AI for Work traffic. Leave the working copy default only while you build and test. |
+    | **Provider Verification Strength** | How far the runtime trusts the provider's identity assertion when it links a user to an existing session. Choose **Strong** only when you base continuity and account-linking decisions on it. |
+    | **Initial Status** | **Active** accepts authenticated traffic immediately. **Inactive** saves the connection without letting AI for Work start sessions. |
+
+4. Select **Create**.
+5. Copy both generated values before you close the reveal dialog.
+
+| Value | Format | Where it goes |
+|---|---|---|
+| **Endpoint URL** | `https://{host}/api/v1/channels/ai4w/ai4w_c_{id}/message` | The **Endpoint URL** field in AI for Work. Paste it whole, including the `/message` suffix. |
+| **Connection Secret** | Begins with `abl_cs_` | AI for Work's server-side secret store. Never send it to a browser, put it in a URL, log it, or use it as the JWT signing key. |
+
+---
 
 ## Link the connection in AI for Work
+
+Register the Artemis connection as the backend of an Autonomous Agent. Use the AI for Work environment that matches the Artemis connection, and keep development, staging, and production on separate connections and secrets.
 
 <Steps>
   <Step title="Create the Autonomous Agent">
     1. Open the AI for Work Admin Console, switch to the target workspace, and go to **AI Agents** -> **Autonomous Agents**.
     2. Select **Create agent**, then create the agent from scratch.
-    3. Enter the agent name and the purpose of the app. AI for Work uses the purpose for query routing and training.
+    3. Enter the agent name and its purpose. AI for Work uses the purpose for query routing.
   </Step>
 
   <Step title="Add the Artemis credentials">
     1. In **Configure agentic app**, select **Add using credentials**.
-    2. On the **Link using credentials** dialog, enter the **Endpoint URL** and the **Connection Secret** you copied from Artemis.
+    2. On the **Link using credentials** dialog, paste the **Endpoint URL** and the **Connection Secret**.
     3. Select **Run and Save**.
 
-    <Tip>Select **Browse and Link Projects** on the same dialog to pick the app directly from an Agent Platform workspace instead of entering credentials. Use the credentials method when the agent is in a workspace you can't browse from AI for Work, or when you want the connection pinned to a specific Artemis channel connection.</Tip>
+    Don't trim the `/message` suffix, swap in another Connection ID, or use a generic AI for Work webhook path.
   </Step>
 
   <Step title="Set the execution mode">
-    Select **Async** as the mode and test the connection. A successful test reports that the async connection succeeded.
+    1. Select a mode and test the connection.
+    2. If you select **Async**, set the **Callback Base URL** on the Artemis connection's **Configuration** tab, so Artemis can deliver responses and proactive notifications back to AI for Work.
 
-    Async mode suits agents that take longer than the 60-second sync timeout. When you use async mode, set the **Callback Base URL** on the Artemis connection's **Configuration** tab so the agent can return responses and proactive notifications to AI for Work.
+    Async suits agents that run longer than the 60-second sync timeout.
   </Step>
 
   <Step title="Publish the agent">
-    Select **Continue**, then select **Publish**. Choose whether to publish to everyone in the account or to limited users. For the full set of publishing options, see the [AI for Work custom agents documentation](https://docs.kore.ai/ai-for-work/custom-agents#publishing-your-agent).
+    Select **Continue**, then **Publish**, and choose everyone in the account or limited users. See [publishing your agent](https://docs.kore.ai/ai-for-work/custom-agents#publishing-your-agent).
   </Step>
 </Steps>
 
-## Key values reference
+---
 
-| Value | Where it comes from | Where it's used |
-| ----- | ------------------- | --------------- |
-| **Endpoint URL** | The **AIforWork Connection Created** dialog in Artemis, or the connection's **Overview** tab | The **Endpoint URL** field on the AI for Work **Link using credentials** dialog |
-| **Connection Secret** | The **AIforWork Connection Created** dialog in Artemis; shown only at creation time | The **Connection Secret** field on the AI for Work **Link using credentials** dialog |
-| **Callback Base URL** | Your AI for Work instance | The **Callback Base URL** field on the Artemis connection's **Configuration** tab |
+## Authentication
 
-## Pass custom metadata
+AI for Work must send both authentication layers on every request. Artemis rejects a request that fails either one.
 
-AI for Work can pass custom metadata to the connected Artemis app. In **Configure agentic app**, open **\</> Meta Data** and add the metadata you want to send.
+| Header | Value |
+|---|---|
+| `Authorization` | `Bearer <JWT>`, a trusted AI for Work identity token |
+| `X-Signature-Nonce` | A unique value per attempt |
+| `X-Timestamp` | The current timestamp |
+| `X-Signature` | `sha256=<hex>`. The `sha256=` prefix is optional. |
 
-Inside Artemis, the expression that reads the metadata differs by surface. The following examples read an `email` key.
+<Steps>
+  <Step title="Preserve the raw request body">
+    Compute the signature over the exact UTF-8 bytes you send. A gateway or client that parses and re-serializes JSON changes the bytes and breaks the signature.
+  </Step>
+
+  <Step title="Sign with the Connection Secret">
+    Compute HMAC-SHA256 with the `abl_cs_` secret over `inbound:{nonce}.{timestamp}.{rawBody}`, and encode the digest as lowercase hex. Send the same nonce and timestamp in their headers.
+  </Step>
+
+  <Step title="Send a trusted identity JWT">
+    Use a platform-approved issuer and audience, and include the `sub`, `email`, `accountId`, and `authLevel` claims.
+  </Step>
+
+  <Step title="Keep the account stable">
+    On the first valid request, Artemis can bind the connection to the JWT `accountId`. It then rejects requests from another account unless an administrator changes that policy.
+  </Step>
+</Steps>
+
+---
+
+## Message request
+
+Send each message as an HTTPS POST with a JSON body.
+
+| Field | Required | Rule |
+|---|---|---|
+| `text` | Yes | Up to 10,000 characters. |
+| `agentContextId` | Yes | Identifies the AI for Work conversation. Reuse it for follow-up turns, and don't replace it with a per-message UUID. |
+| `conversationHistory` | No | Up to 100 prior items. Send only context AI for Work owns, and don't repeat the current text. |
+| `files` | No | Up to 10 file references. See [Files](#files). |
+| `metadata`, `sessionMetadata` | No | Structured objects. Keep secrets and authorization decisions out of them. |
+
+Artemis keeps conversation continuity from three values together: the connection, the verified email, and `agentContextId`.
+
+### Response modes
+
+Select a default mode in AI for Work. Send the `X-Response-Mode` header to override it for one request. Artemis reports the mode it used in `X-Response-Mode-Used`.
+
+| Mode | Behavior |
+|---|---|
+| `auto` | Streams when the `Accept` header includes `text/event-stream`. Otherwise returns a completed JSON result, or `202` with a working envelope while Artemis continues. |
+| `sync` | Waits for the turn and returns the response, `sessionId`, outcome status, response metadata, and any error details. Keep client and gateway timeouts above the runtime's sync budget. |
+| `stream` | Send `X-Response-Mode: stream` and accept `text/event-stream`. Handle `chunk`, `done`, and `error` events, and tolerate heartbeat comments. |
+| `async` | Returns `202` with `requestId` and `sessionId`, then delivers the result to the **Callback Base URL**. Artemis treats a repeated external message ID as the same request. |
+
+For async delivery, the callback must be an approved HTTPS destination, and it must verify Artemis's outbound HMAC signature before it accepts the payload.
+
+### Files
+
+AI for Work sends file references, and Artemis downloads them server-side.
+
+- Send each file as a name, a MIME type, and a short-lived signed HTTPS URL. Never embed file bytes or reusable storage credentials.
+- File names allow up to 255 characters, and signed URLs up to 2,048 characters.
+- Every download passes SSRF checks and the tenant and project attachment policy for host, MIME type, size, and per-session limits.
+
+### Custom metadata
+
+AI for Work can pass custom metadata to the agent. In **Configure agentic app**, open **Meta Data** and add the keys you want to send. Read them in Artemis with the expression for each surface, shown here for an `email` key.
 
 | Surface | Expression |
-| ------- | ---------- |
+|---|---|
 | Agent | `{{_metadata.email}}` |
 | Workflow tool | `{{vars._session._metadata.email}}` |
 | HTTP tool | `{{session._metadata.email}}` |
 
+---
+
+## Validate the integration
+
+Run these checks from AI for Work, or from any client that signs requests the same way.
+
+1. If your integration supports a preflight, call the connection's `/info` endpoint with the same HMAC and JWT chain. Confirm it returns connection metadata without the secret.
+2. Send one signed text message with a fresh nonce, a current timestamp, and a trusted JWT. Confirm the expected `X-Response-Mode-Used` and an agent response.
+3. Send a second message with the same verified email and `agentContextId`. Confirm the agent resumes the same session and uses the earlier context.
+4. Confirm each of these fails without starting an agent turn: a changed raw body, a stale timestamp, a replayed nonce, an invalid JWT issuer or account, an unapproved callback, and a rejected file.
+
+---
+
 ## Manage the channel connection
 
-Opening a connection from **Deployments** -> **Channels** -> **AIforWork** shows three tabs: **Overview**, **Configuration**, and **Deployment**. The header shows the connection name, the bound environment, the status, and the channel type, along with **Pause** and delete actions.
+Open a connection from **Deployments** -> **Channels** -> **AIforWork** to manage it. The page has a header, two tabs, and a summary panel on the right.
+
+**Header.** Shows the connection name, its environment badge, its status, and when it last changed. **Pause** and **Resume** control traffic, and the **...** overflow menu holds the other connection-level actions.
+
+**Summary panel.** Stays visible on every tab.
+
+| Field | Description |
+|---|---|
+| **Channel** and **Connection Type** | Read **AIforWork** and **Channel Connection**. |
+| **Identifier** | The generated `ai4w_c_` Connection ID this connection routes on. |
+| **Webhook URL** | The endpoint AI for Work calls, with a copy control. |
+| **Created** and **Updated** | Date and time of creation and of the last change. |
 
 <Tabs>
-  <Tab title="Overview">
-    The **Connection Summary** shows these fields.
-
-    | Field           | Description                       |
-    |-----------------|-----------------------------------|
-    | **Status**      | For example: *Active*             |
-    | **Created**     | Timestamp the connection was created |
-    | **Updated**     | Timestamp of the last change      |
-    | **Environment** | For example: `dev`                |
-    | **Source Type** | `Channel Connection`              |
-    | **Source ID**   | Unique connection identifier (UUID) |
-
-    Under **Setup Instructions**, the tab shows the **Endpoint URL** to enter in AI for Work and the masked **Connection Secret**. Select **Rotate** to issue a new secret. The full secret is shown only at creation time and can't be retrieved.
-  </Tab>
-
   <Tab title="Configuration">
-    Under **General**, configure the following.
+    Update the connection's behavior. **AIforWork Settings** holds the provider-specific fields.
 
-    | Field | Description |
-    | ----- | ----------- |
-    | **Display Name** | The label for the connection. |
-    | **Provider Verification Strength** | **Weak (default)** or **Strong**. Choose **Strong** only for channels or providers whose identity assertions you trust for stronger continuity and linking decisions. |
+    | Setting | Description |
+    |---|---|
+    | **Display Name** | The label operators see. |
+    | **Provider Verification Strength** | How far the runtime trusts the provider's identity assertion. |
+    | **Callback Base URL** | Where Artemis sends async responses and proactive notifications. Required when AI for Work uses async mode. |
+    | **Message template** | The authorization message the connection sends when a tool needs the user to authorize. |
 
-    Under **AIforWork Settings**, configure the following.
+    Insert variables into the **Message template** from the chips below the editor, select **Show more** for the full list, and select **Show preview** to check the result.
 
-    | Field | Description |
-    | ----- | ----------- |
-    | **Callback Base URL** | The base URL where ABL sends async responses and proactive notifications. Required when AI for Work uses the async response mode. |
+    | Scope | Variables |
+    |---|---|
+    | Whole message | `{{total}}`, `{{completed}}`, `{{remaining}}` |
+    | Repeat block | `{{#authorizations}}` ... `{{/authorizations}}`, which repeats once per pending authorization |
+    | Inside the block | `{{profileName}}`, `{{authLink}}`, `{{authUrl}}`, `{{index}}`, `{{count}}` |
 
-    #### Authorization message
-
-    The **Authorization Message** panel controls the message shown when a tool needs the user to authorize. Edit the **Message template** directly, or use the **Insert** buttons to add the most common variables at the cursor.
-
-    The default template asks the user to authorize the pending verifications and then lists each one as a numbered profile name with its authorization link.
-
-    Expand **Show variables** to see the full set of supported variables.
-
-    | Scope | Variables | Notes |
-    | ----- | --------- | ----- |
-    | Message scope | `{{total}}`, `{{completed}}`, `{{remaining}}` | Counts for the session's pending authorizations. Use these anywhere in the template. |
-    | Item scope | `{{profileName}}`, `{{authLink}}`, `{{authUrl}}`, `{{index}}`, `{{count}}` | Valid only inside the repeat block. |
-    | Repeat block | `{{#authorizations}}`, `{{/authorizations}}` | Wraps the item scope variables and repeats the enclosed text once per pending authorization. |
-
-    Expand **Show preview** to see the template rendered with sample values. At runtime the platform fills these from the live session's pending authorizations.
-
-    Select **Save Changes** to apply any changes.
+    Select **Save Changes** to apply your changes.
   </Tab>
 
   <Tab title="Deployment">
-    The **Deployment** tab shows these fields.
+    Choose which deployed version answers AI for Work.
 
-    | Field                 | Description                                                                                                         |
-    |-----------------------|---------------------------------------------------------------------------------------------------------------------|
-    | **Agent Version**     | An **Environment** dropdown (for example: `Development`) that selects which deployed version handles incoming messages. |
-    | **Active Deployment** | Shows the bound deployment version and when it was deployed.                                                        |
+    | Setting | Description |
+    |---|---|
+    | **Environment** | Under **Environment Binding**. Selects which deployed version handles incoming messages. |
+    | **Active Deployment** | Shows the bound version and when someone deployed it. |
 
-    Select **Save Changes** after switching the environment.
+    Select **Save Changes** after you switch the environment.
   </Tab>
 </Tabs>
+
+---
+
+## Troubleshoot connection issues
+
+Most failures trace to the signature, the JWT, or a reused nonce.
+
+| Symptom | Likely cause | Recommended action |
+|---|---|---|
+| Connection not found | Wrong or edited endpoint, or an inactive connection | Paste the full generated **Webhook URL** from the summary panel, and confirm the connection is **Active**. |
+| Signature fails | The signed bytes or secret don't match | Sign `inbound:{nonce}.{timestamp}.{rawBody}` with the matching `abl_cs_` secret, keep the exact raw JSON bytes, and send the digest as hex. |
+| JWT rejected | The token doesn't meet the trust rules | Verify the issuer, audience, signature algorithm, token time window, and the `email`, `accountId`, and `authLevel` claims. |
+| A valid request becomes unauthorized | Replayed nonce or stale timestamp | Use a unique nonce and a current timestamp on every attempt. Don't retry by replaying the same signed request. |
+| Async accepts the request but no callback arrives | Missing or unreachable callback | Save an approved **Callback Base URL**, check its network reachability, and validate the outbound signature before processing the body. |
+| Text works but files don't | A file fails the download or policy checks | Check the signed URL lifetime, approved host, MIME type, size, file count, and project attachment policy. |
+| AI for Work requests stop after you lose the secret | The secret is gone and AI for Work holds an old value | Replace the connection or rotate the secret, then update the **Connection Secret** in AI for Work. |
+
+{{related}}
+
+- [Channels](/agent-platform/channels)
+- [Set up Kore Agent Assist](/agent-platform/channels/kore-agent-assist)
+- [AI for Work custom agents](https://docs.kore.ai/ai-for-work/custom-agents)

@@ -8,7 +8,9 @@ A session represents a conversation between an agent in an Artemis project and a
 It stores the conversation context, maintains state across interactions, and remains active until it is closed.
 
 
-{/* AG: items to be documented when available or in the next round of updates
+{/*
+
+AG: items to be documented when available or in the next round of updates
 
 - How to search sessions. How to filter and/or sort to zero-in on a few specific sessions.
 - To filter using phone number, see feature request ABLP-4425.
@@ -21,7 +23,7 @@ A session moves through the following set of states from creation to eventual ar
 
 | Status      | Meaning                                                |
 |:------------|:-------------------------------------------------------|
-| `active`    | Session in progress; agent is currently processing.    |
+| `active`    | Session in progress; agent is processing right now.    |
 | `idle`      | Session in progress; waiting for user input.           |
 | `ended`     | Session completed by user action, or an idle timeout fired after COMPLETE in the DSL (timeout is configurable per project per channel). |
 | `completed` | Agent finished by calling COMPLETE.                    |
@@ -125,6 +127,29 @@ Each turn reports where its time went, so you can find the step that slowed a re
 #### Hook tool calls
 
 When a lifecycle hook invokes a tool through a `CALL` action, the call appears in the trace as its own tool call, tagged with the hook type. Each one shows the URL, request, response, duration, and whether the call succeeded or failed. Use these entries to confirm that a hook ran and to see what it sent and received.
+
+#### LLM step request and response
+
+Each LLM step in the timeline expands to show the exact call made to the model for that step.
+
+| Sub-tab | What you get |
+|---------|----------------|
+| Request | The full request sent to the model: `systemPrompt` (the complete system prompt text), the `messages` array (conversation history, with tool calls and results exactly as the model saw them), and `tools` (the tool list with schemas). This is the source of truth for what the model actually received -- when a reply is surprising, read this before changing the agent's ABL. |
+| Response | The model's raw reply. |
+| Summary | Tokens in and out, cost, and provider options for the call. |
+
+What to check in the Request view:
+
+- `systemPrompt` -- look for unfilled `{{placeholders}}`, missing memory values, and `_contextLimited` markers.
+- `messages` -- check how earlier turns were compacted, whether tool results show as `**COMPACTED FOR CHAT HISTORY**`, and what a handoff or delegation passed through.
+- Tool results for the current turn -- check whether a `MODEL_CONTEXT` view or the compaction strategy's output appears, and look for truncation markers.
+- `tools` -- confirm each tool's description and parameters read the way you intend the model to use them.
+
+<Note>Secret-looking values are always masked in stored traces, and personal data appears as redacted tokens when the project's PII policy scrubs traces. Stored request payloads are capped at 256 KiB and responses at 128 KiB; use **Export entire trace** on the session page to download every event for offline review.</Note>
+
+#### Execution tree view
+
+Selecting a node in the session page's left-hand execution tree shows the same payload scoped to that one node: **Request** / **Response** for an LLM step, or **Input** / **Output** for a tool step. Use it to jump straight to one agent's call or one tool's exact input and output inside a longer trace, instead of scrolling the full timeline.
 
 ### Errors
 
@@ -272,8 +297,10 @@ Use call recordings to investigate issues with a voice call.
 - **Tell the caller yourself.** The platform doesn't play a "this call is recorded" announcement or show the caller a recording indicator. If your region requires consent or a notice, add it to your agent's opening prompt.
 - **Storage location.** Recordings are stored in the storage configured for your workspace. Use your own storage account if the audio must stay in a specific region. 
 
-{/* Not available yet
-The session panel shows whether storage is Kore-managed or customer-managed.
+{/*
+
+Not available yet. The session panel shows whether storage is Kore-managed or customer-managed.
+
 */}
 
 #### Troubleshoot if recording doesn't start
@@ -287,7 +314,7 @@ Check these in order - the first "no" is usually the cause.
 5. Was the call started after you saved the setting? Recording only applies to new calls.
 6. Did you wait about 15 minutes and click **Refresh**?
 
-If you've verified all six checks and the recording is still unavailable, contact the support team and provide the environment details, project name, session ID, and the approximate call date and time.
+If you've verified all six checks and the recording is unavailable, contact the support team and provide the environment details, project name, session ID, and the approximate call date and time.
 
 #### Turn recording off
 
