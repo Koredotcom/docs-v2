@@ -119,6 +119,7 @@ After creation, open the connection and go to its **Configuration** tab to set u
         | **STT Model** | The recognition model, for example `Nova 3 (latest, most accurate)`. |
         | **Minimum STT confidence** | Reject transcripts below this confidence (0–1) and treat them as no-input. `0` disables the gate. Provider-relative - calibrate per channel. |
         | **Custom vocabulary** | Domain-specific terms to bias recognition toward. Select **Add phrase** and set a **Phrase** (for example `ACME, policy number`) and optional **Boost**. Deepgram Nova-3 and Flux use keyterm prompting and ignore boost; older Deepgram models use keyword intensifiers. |
+        | **Multilingual speech recognition** | Chooses the recognizer that listens for each configured language. Enable **A different recognizer per language** to select the configured speech recognizer that should listen after an explicit language change. |
       </Step>
 
       <Step title="Configure Speech Synthesis">
@@ -137,10 +138,16 @@ After creation, open the connection and go to its **Configuration** tab to set u
       <Step title="Configure Conversation Controls">
         | Field | Description |
         | --- | --- |
-        | **Barge-in** | Allow the caller to interrupt the agent while it is speaking. |
+        | **Barge-in** | Allow the caller to interrupt the agent while it's speaking. |
         | **Speech Timeout (ms)** | The time the agent waits for caller speech before it times out, for example `3000`. |
+        | **Transcript Grouping Timeout (ms)** | After the speech provider returns a final result, waits this long for another final result and combines the parts into one user input. Leave blank to process each final result immediately. For example, `1500`. |
         | **Welcome Message** | The opening prompt the agent speaks, such as `Hello! How can I help you today?`. |
-        | **Noise isolation** | Apply server-side noise reduction to inbound call audio to filter out background voices and ambient noise. |
+        | **Allow caller to interrupt the welcome** | When off, the welcome plays to completion even if barge-in is on. It applies only while barge-in is active for the call, through the channel's **Barge-in** setting or the agent's listening settings. |
+        | **Connect greeting** (Audio) | Plays a clip as soon as the call connects, before the agent's first turn. If the project's greeting-audio library has no clips yet, the panel shows a note and an **Open Greeting Audio** link to add one. See [Greeting audio](/agent-platform/administration/general-settings#greeting-audio). |
+        | **Keypad tone** | Plays an audible keypad tone to the caller on each DTMF keypress. Off by default. |
+        | **Voice gateway turn detection** | Lets the voice gateway decide when the caller has finished speaking, using voice and wording signals instead of the speech provider's silence timer. Off by default. Requires a voice gateway that supports turn detection. |
+        | **Noise isolation** | Applies server-side noise reduction to inbound call audio to filter out background voices and ambient noise. |
+        | **Trust inbound SIP headers** | Off by default. Turn it on only if your SBC sets or overwrites these headers. If the headers can arrive from the caller, the value isn't trustworthy. When on, transfer headers configured to pass through from the inbound call (for example, `User-to-User`) are sent on the transfer. When off, they are dropped. |
       </Step>
 
       <Step title="Configure the Transfer Queue">
@@ -385,10 +392,29 @@ After creation, open the connection and go to its **Configuration** tab to set u
     | **Trust inbound SIP headers** | The same setting as on the **Settings** tab. Off by default. Turn it on only if your SBC sets or overwrites these headers. |
     | **Transfer Queue Header Key** | SIP transfer header name that carries the queue, for example `X-Queue`. Must match what Genesys expects. Required for escalate-to-human. |
     | **Transfer Queue Name** | The Genesys queue used when the agent transfers a caller to a human, for example `Kore Inbound`. Must match a queue configured in Genesys. |
-
     Select **Save Changes**.
   </Tab>
-</Tabs>  
+</Tabs>
+
+**Voice transfer and survey capabilities**
+
+A read-only panel that shows how many of the transfer and survey capabilities Runtime evaluates as available for the concrete voice execution boundary (the execution surface is **KoreVG realtime S2S**), for example **11 of 11 capabilities available**. It lists the following capabilities, each marked **Available** or not.
+
+| Capability | Description |
+| --- | --- |
+| **Human transfer** | Transfer the caller to a human agent. |
+| **Pre-transfer announcement** | Speak an announcement before a transfer. |
+| **Transfer outcome recovery** | Recover when a transfer doesn't complete. |
+| **SIP transfer** | Transfer the call over SIP. |
+| **PSTN transfer** | Transfer the call to a phone number on the public telephone network. |
+| **Bridged agent transcript** | Carry the transcript to the agent the call is bridged to. |
+| **Transfer CSAT** | Collect a satisfaction rating after a transfer (`csat`, `nps`, `likeDislike`). |
+| **Template survey** | Run a template survey with a rating type of `star`, `thumbs`, or `scale`. |
+| **Survey comments** | Collect free-text comments in a survey. |
+| **Survey follow-ups** | Ask follow-up questions in a survey. |
+| **Return-leg survey** | Run a survey on the return leg of a transferred call. |
+
+The **Genesys Organization ID** and the **SIP URI** are displayed for reference. Select the copy icon next to a value to copy it.
 
 ## Wire the Genesys Architect flow
 
@@ -447,25 +473,10 @@ Before switching a connection from **Diagnostics only** to **Enabled**, confirm 
 
 ## Manage the channel connection
 
-Opening a connection from **Deployments** -> **Channels** -> **VOICE** -> **Genesys Audio Connector** shows six tabs: **Overview**, **Credentials**, **Configuration**, **Deployment**, **Testing**, and **Activity**.
+Opening a connection from **Deployments** -> **Channels** -> **VOICE** -> **Genesys Audio Connector** shows four tabs: **Credentials**, **Configuration**, **Testing**, and **Activity**.
 
 <Tabs>
-  <Tab title="Overview">
-    The **Connection Summary** shows these fields.
-
-    | Field | Description |
-    | --- | --- |
-    | **Status** | For example: *Active* |
-    | **Created** | Timestamp the channel was created |
-    | **Updated** | Timestamp of the last change |
-    | **Environment** | For example: `Working Copy (draft)` |
-    | **Source Type** | `Channel Connection` |
-    | **Source ID** | Unique channel identifier (UUID) |
-
-    Under **Setup Instructions**, the tab shows the **Genesys Organization ID** and the **SIP URI** for reference. Select the copy icon next to either value to copy it.
-  </Tab>
-
-  <Tab title="Credentials">
+    <Tab title="Credentials">
     Credentials are saved and encrypted after creation; fields show placeholder text and accept new values only if you want to update them.
 
     | Field | Description |
@@ -479,17 +490,6 @@ Opening a connection from **Deployments** -> **Channels** -> **VOICE** -> **Gene
 
   <Tab title="Configuration">
     Shows **General** (Display Name, Provider Verification Strength) plus the Pipeline or Realtime speech settings described in [Configure the connection](#configure-the-connection) above, editable at any time. Select **Save Changes** to apply.
-  </Tab>
-
-  <Tab title="Deployment">
-    | Field | Description |
-    | --- | --- |
-    | **Agent Version** | An **Environment** dropdown that selects which deployed version handles incoming messages. |
-    | **Active Deployment** | Shows the bound deployment version and date, or `Working Copy (draft)` if nothing has been deployed to an environment yet. |
-
-    <Note>If the connection is running on the working copy, a banner reads: *"This channel is running on the Working Copy (draft). Working copy is intended for testing. For a stable production setup, deploy your agent to an environment and bind this channel to that environment."*</Note>
-
-    Select **Save Changes** after switching the environment or version.
   </Tab>
 
   <Tab title="Testing">
