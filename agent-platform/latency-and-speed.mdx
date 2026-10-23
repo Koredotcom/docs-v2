@@ -1,0 +1,205 @@
+---
+title: Tuning for latency
+sidebarTitle: Latency and speed
+---
+
+A turn's time is roughly the number of sequential model calls multiplied by the time each one takes, plus tool time, plus whatever checks run before and after. The time for each call grows with prompt size and with the model tier it uses. The three biggest wins are fewer sequential model calls per turn, smaller and more stable prompts, and fast tools that return only what the model needs. This page works through all three, plus the checks and voice settings that add their own latency.
+
+<Note>This page is about response latency. For Arch AI's reinforcement-learning optimization loop, see [Optimize](/agent-platform/optimize) -- a different feature with a different goal.</Note>
+
+## Where a turn's time goes
+
+| Step | Runs when | Typical cost | Lever |
+|------|-----------|---------------|-------|
+| Input checks | Every turn with input guardrails, before the model | 100 ms per rule; up to 5 s for a provider, 15 s for a model judge | Prefer `check` rules, and use `llm_check` only where meaning matters |
+| Routing call | Every turn that starts at a router or orchestrator | One full model call | Deterministic `WHEN` on handoffs; a faster tier for coordination |
+| Main model calls | 1, plus 1 per tool round | Prompt size × model tier | Fewer tool rounds; smaller prompts; fast or balanced tiers |
+| Tool calls | Each round | Your API's latency (30 s default timeout) | Fast APIs, parallel calls, `MODEL_CONTEXT` |
+| Tool-result summaries | A result over 10,000 characters, under `summarize` | An extra call of up to 5 s on the balanced tier | `MODEL_CONTEXT` or `structured`; a fast summarization model |
+| Knowledge-base planning | KBs with `search_instructions` or filters | An extra small call (up to 5 s) | Keep instructions only where needed |
+| Extraction | `GATHER` fields outside inline gather | An extra small call per turn | `EXECUTION.inline_gather: true` |
+| Output checks | Every reply with output guardrails | The reply is held until checks pass; a judge adds a call | Fewer output judges; a stream-safety mode that streams |
+| Reask | An output rule with `reask` fires | A full extra model call | Use `block` with a good message on latency-critical agents |
+| Handoff hops | Each handoff | The receiving agent's full turn | Flatter topologies; let orchestrators answer simple asks |
+
+## Fewer model calls per turn
+
+### Topology
+
+- **Keep routing shallow.** Each hop -- router to specialist to sub-specialist -- adds at least one full model call. Two levels is usually enough.
+- **Route deterministically where you can.** A handoff `WHEN` the runtime can evaluate against stored state -- a flag your tools or flow have already set -- fires without asking the model. `ESCALATE` triggers written as expressions work the same way.
+- **Let coordinators answer simple turns.** `role: orchestrator` can answer greetings and trivial questions directly; `role: router` always spends a call routing.
+- **Delegate only for real sub-tasks.** A delegate runs its own full turn while the parent waits, up to 30 seconds by default. Use a tool instead when a single API call would do.
+- **Hand back only when it pays off.** `ON_RETURN: action: resume_intent` makes the parent handle a message again straight away. Use it only where the customer would otherwise have to repeat themselves.
+- **Send each receiver less.** A handoff with `history: summary_only` or `last_n`, and a short summary, gives the receiver a smaller first prompt.
+
+### Inside an agent
+
+- **Answer straight from a tool.** `on_result: do: - RESPOND: "…"` sends the reply and ends the tool loop, saving the model call that would otherwise phrase it. Add a response `MODEL_CONTEXT` so later turns know what was said.
+- **Use `FLOW` steps with `REASONING: false`** for fixed steps such as collecting details, calling a tool, or confirming. They run without a model call.
+- **Make one tool do one job end to end.** Three sequential lookups cost three model rounds; one tool that does all three costs one. The model can also call independent tools in parallel in a single round.
+- **Turn on `EXECUTION.inline_gather: true`** so field extraction happens in the same call as the reply. On a single-KB agent with `GATHER` fields, this also turns off the automatic knowledge-base search -- measure both before committing.
+- **Validate inputs before calling.** `process: before: require:` rejects bad inputs without a failing API call and a retry round.
+- **Use `confirm` only on irreversible actions.** Each confirmation costs a full extra turn with the customer.
+- **Multi-intent completion.** With the default `completion_signal: delivered_response`, a small check runs after each queued request's reply. `task_signal` lets the agent signal completion itself instead.
+
+```yaml
+AGENT: Order_Status
+GOAL: "Tell customers where their order is"
+BEHAVIOR:
+  role: assistant
+EXECUTION:
+  inline_gather: true
+GATHER:
+  order_id:
+    prompt: "The order number, for example A-1031"
+    type: string
+    required: true
+TOOLS:
+  get_order_status(order_id: string) -> {status: string, eta: string, carrier: string}
+    description: "Current status and delivery estimate for one order"
+    effect: read_only
+    MODEL_CONTEXT:
+      FIELDS: [status, eta, carrier]
+    on_result:
+      do:
+        - RESPOND: "Order {{order_id}} is {{result.status}} with {{result.carrier}}, arriving {{result.eta}}."
+          MODEL_CONTEXT: "Told the customer order {{order_id}} is {{result.status}}, ETA {{result.eta}}."
+```
+
+This agent answers a status question in one model call (extraction plus the tool call) and one API call -- no second call is needed to phrase the answer.
+
+## Smaller, stable prompts and payloads
+
+Prompt size drives time to first token on every call in the turn, and that cost is paid again on each tool round. A prompt that starts the same way every turn also lets providers that cache automatically reuse that start.
+
+### Prompt and context
+
+- **Explicit visibility.** Declare `BEHAVIOR: role:` so `## Current Context` holds only declared and granted values. Avoid `{{context}}` in production prompts.
+- **Small memory.** Session memory is sent in full on every call. Store IDs and short strings, not objects or lists.
+- **Tight context budgets.** On latency-sensitive agents, lower `prompt_context.total_max_chars` (16,000 is the voice default) and `auto_tool_result_value_max_chars` (2,000 on voice) -- see [Context size, compaction, and budgets](/agent-platform/context-compaction).
+- **Short history.** Keep `prior_turns: compact`, put a response `MODEL_CONTEXT` on every rich reply, and use `history: last_n` on handoffs in long conversations.
+- **Short instructions.** `GOAL`, `PERSONA`, `LIMITATIONS`, and `search_instructions` are sent on every call. Move rarely needed guidance into a tool description or a `RECALL INSTRUCTION` that loads only when relevant.
+- **A stable start to the prompt.** Identity, rules, and the tool list come first; values that change each turn come later, in memory and `## Current Context`. A `{{variable}}` in `GOAL` or `PERSONA` changes the very start of the prompt every time its value changes. For values that change each turn, an explicit-mode agent that declares them in memory keeps them in the memory sections and `## Current Context` instead, leaving the stable start untouched.
+
+### Tools
+
+- **Fewer tools per agent.** Every tool's description and schema is sent on every call, and the model chooses faster and better from a short list. Split large tool sets across specialists.
+- **Short descriptions and parameters.** One or two sentences per tool. Hide parameters the model doesn't fill with `default_source: runtime` and `visibility_model: false`.
+- **Small results.** `MODEL_CONTEXT: FIELDS` on every tool that returns more than a few fields. That avoids the summarization call and keeps each tool round small. Better still, return compact payloads from the API itself: filter, paginate, and drop fields the agent never uses.
+- **Structured, not summarized.** On chat agents where speed matters, prefer `tool_results.strategy: structured` with flat `essential_fields`; summarizing costs an extra call. Voice never summarizes.
+- **Tight timeouts.** Set `timeout` on the Project Tool to what the API really needs, rather than the 30-second default. Use transport retry only on idempotent reads.
+
+### Knowledge base
+
+- **Token budget.** Set `max_search_tokens` on every KB tool (2,000-4,000 for voice, more for long-form chat).
+- **Fewer, better chunks.** Lower Top K and raise Similarity threshold so fewer, better chunks come back.
+- **Automatic-search eligibility.** A single-KB agent gets the automatic first search, which saves a model round. Adding other business tools, handoff or delegation tools, or `GATHER` fields collected with inline gather gives that up -- see [How the platform searches](/agent-platform/knowledge#how-the-platform-searches).
+- **Selective extras.** Use `search_instructions` and `retrieval_profile: object-aware` only where they improve answers. Each adds planning time or extra parallel searches with reranking.
+
+```yaml
+AGENT: Policy_Answers
+GOAL: "Answer HR policy questions from the handbook"
+BEHAVIOR:
+  role: assistant
+EXECUTION:
+  compaction:
+    tool_results:
+      strategy: structured
+      keep_recent: 1
+    prior_turns:
+      strategy: compact
+      assistant_preview_chars: 160
+    prompt_context:
+      total_max_chars: 12000
+      auto_tool_result_value_max_chars: 2000
+TOOLS:
+  search_kb_hr_policies(query: string) -> object
+    compaction:
+      max_search_tokens: 3000
+```
+
+## Checks, side calls, models, and voice
+
+### Guardrails and checks
+
+- **Order rules by cost.** Put `check` (CEL) rules first. Use provider rules for moderation and `llm_check` only for meaning patterns can't catch -- each judge is an extra model call at its checkpoint.
+- **Streaming and output rules.** An agent with output guardrails or response constraints holds a streamed reply until the checks pass, in every stream-safety mode except Terminate forward and Retract capable. Nothing is shown until the full reply has been generated and checked. If both output rules and fast streaming are needed, set the project's stream-safety mode to Terminate forward: text then flows and is stopped on a violation.
+- **Reask costs a full regeneration.** On latency-critical agents, prefer `block` with a good message instead.
+- **Timeouts.** Lower the policy's Model and LLM timeouts for voice, and pick the fail mode deliberately.
+- **PII.** Model-based detection waits up to its time budget (200 ms by default) on each scan. A pattern-only rule skips that wait, if pattern detectors cover the data.
+
+### Model tiers
+
+| Operation | Default tier | Speed lever |
+|-----------|---------------|-------------|
+| Coordination and routing | Most capable | Routing is a classification task -- test a balanced or fast model for routers. |
+| Agent replies | Balanced | Keep balanced for quality-sensitive agents; fast for FAQ and status agents. |
+| Extraction, validation, tool selection, guardrail judges | Fast | Already fast. |
+| Tool-result summarization | Balanced | Set to fast, or avoid summaries entirely with `MODEL_CONTEXT`. |
+
+<Tip>Turn off extended reasoning and thinking for conversational agents unless their answers genuinely need it. The voice low-latency profile does this by default.</Tip>
+
+### Voice
+
+- **Keep the low-latency profile on.** It sets fast tiers, reasoning off, inline gather, and tight compaction. Make sure the workspace has a fast-tier model configured.
+- **Fillers hide waiting; they don't remove it.** `voiceDelayMs` (300 ms in the profile) and status tags (`piggybackEnabled`, at no extra model cost) keep the caller informed while tools run.
+- **Short spoken replies.** Use `CONVERSATION: speaking: max_sentences` and short instructions.
+- **Realtime voice.** On Gemini Live, a long tool call blocks the voice model unless the channel's pending-tool fillers are on; Amazon Nova Sonic has its own pending-tool filler setting. Keep tool results small for realtime voice with `compaction: provider_fields`.
+- **Buffered stream safety on voice.** Buffered or Gated delays the first audio until checks finish.
+
+## Measuring before and after
+
+- **Operate → Sessions → a session → Performance → LLM & Tools** lists every model and tool call in a turn with its latency, tokens, and cost. Count the sequential model calls.
+- **The Traces tab → an LLM step → Summary** shows input tokens. Compare turn 1 with turn 20 to see growth.
+- **Insights → Analytics Explorer → Generations** shows time to first token and latency across sessions.
+- Change one thing at a time -- topology, tool payloads, tiers -- and re-run the same test conversation in a new session.
+
+## Speed checklist
+
+- [ ] At most two routing hops, with deterministic `WHEN` where state allows it.
+- [ ] Status-style answers come straight from the tool (`on_result: do: RESPOND`).
+- [ ] Every tool with more than a few fields has `MODEL_CONTEXT`; no tool-result summaries on hot paths.
+- [ ] Fewer than about 10 tools per agent, with one- or two-sentence descriptions.
+- [ ] `max_search_tokens` set on every knowledge base.
+- [ ] Session memory holds IDs and short strings only.
+- [ ] Routing and summarization use the cheapest tier that passes your evaluations.
+- [ ] Output rules use `check` or providers, or the stream-safety mode keeps the reply streaming.
+
+## Design guidance
+
+The most reliable agents keep the prompt small and explicit: declare only what the model needs, shape every tool result, and pass state between agents on purpose rather than relying on history.
+
+- **Make visibility explicit.** Production agents should declare `BEHAVIOR: role:` so `## Current Context` holds only declared and granted values. Allow-list mode with `{{context}}` admits everything in the session.
+- **Shape tool results at the source.** Give every tool that returns more than a few fields a `MODEL_CONTEXT`. Save anything needed on later turns to session values with `on_result`, because history keeps only a placeholder.
+- **Keep memory lean.** Session memory is shown in full on every turn and is not size-limited. Hold large objects in tool results or persistent memory, not in declared session memory.
+- **Hand off on purpose.** Prefer `pass` plus a templated summary, with `history: last_n` or `summary_only`, over the full default for long conversations. Give delegates everything they need in `INPUT` and `PURPOSE`.
+- **Give the agent the date.** The system prompt has no current date or time -- only `GATHER` date fields get today's date, during extraction -- so supply one explicitly when an agent reasons about relative dates.
+- **Keep secrets out of prompt text.** Credentials go in auth profiles, personal fields are marked `SENSITIVE`, and card data uses `SECURE_INPUT`.
+- **Put stable text first.** `GOAL`, `PERSONA`, `LIMITATIONS`, and the tool list form the stable start of the prompt; values that change each turn come later, in `## Current Context`. Keeping the stable part stable helps provider-side prompt caching, which shows as Cache Read tokens on the session Overview.
+- **Write guardrails for one message at a time.** A check never sees the conversation history. Choose the fail mode deliberately.
+
+## Pre-ship checklist
+
+- [ ] Each agent declares `BEHAVIOR: role:`, or its `## Current Context` has been checked in a trace.
+- [ ] No `{{placeholder}}` shows unfilled in the system prompt of a test trace.
+- [ ] No `{{config.*}}` or `{{env.*}}` appears in `GOAL`, `PERSONA`, `LIMITATIONS`, `SYSTEM_PROMPT`, or `RESPOND`.
+- [ ] Every tool with a large or nested result has `MODEL_CONTEXT`, tested against a real response.
+- [ ] Rich responses carry a response `MODEL_CONTEXT`.
+- [ ] Handoff `CONTEXT:` keys are lowercase, and `history` uses a supported form.
+- [ ] Delegates receive everything they need through `INPUT` or `PURPOSE`.
+- [ ] Sensitive `GATHER` fields are marked `SENSITIVE` with a `PII_TYPE`.
+- [ ] Guardrail rules set `kind` and `action`, use `abl.`-prefixed functions, and the policy fail mode is chosen on purpose.
+- [ ] Memory is tested with an identified user; knowledge-base retrieval is tested with a real customer identity.
+- [ ] Voice agents: the fast model tier has a model assigned, and custom-prompt voice agents state their own spoken-style rules.
+- [ ] A long test conversation (20+ turns) has been checked for prompt size in the trace.
+- [ ] Final tests ran in a new conversation, on the version that will be deployed.
+
+---
+
+{{related}}
+
+- [Context size, compaction, and budgets](/agent-platform/context-compaction) -- the size budgets referenced throughout this page.
+- [How a turn is built](/agent-platform/context-and-prompts) -- visibility modes and what reaches the model each turn.
+- [Test agents](/agent-platform/testing) -- running and reading a test conversation.
+- [Sessions](/agent-platform/sessions) -- reading a trace's Performance and Traces tabs.

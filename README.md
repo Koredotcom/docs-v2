@@ -14,20 +14,11 @@ Other business solutions of Kore.ai:
 
 ## Contribute to this Documentation
 
-Prerequisites to author and contribute are:
+This repo is public. To contribute edits, clone it or fork it and submit a PR. Request a review of your PR and wait for it to be merged to `main`. To report bugs or share suggestions, create an issue.
 
-- [Node.js](https://nodejs.org) v20.17.0 or later (LTS version recommended).
-- Get write access to this repo.
-- Install Mintlify CLI `npm i -g mintlify`.
+When editing .mdx files, follow GitHub Flavored Markdown syntax.
 
-To author and preview, follow these steps:
-
-1. Clone the repo. Use GitHub Desktop client.
-1. Work only in your [product-specific branch](https://github.com/Koredotcom/docs-v2/branches) and your product-specific folder.
-1. Create or update the .mdx files or other assets.
-1. To preview locally, create a local build using `mint dev` or `mint dev --port xxxx` in the cloned repo's root folder.
-1. To preview on stage, create [a pull requests](https://github.com/Koredotcom/docs-v2/pulls) targeting `main` branch and view the preview or deployment link in it.
-1. To publish your doc updates, request a review of your PR and wait for it to be merged. Do NOT merge on your own.
+To preview your edits locally, use the npm package of [Mintlify](https://www.mintlify.com/docs/cli/index).
 
 ## Folder structure and common files
 
@@ -45,12 +36,17 @@ assets/						    # Common assets for all docs, say favicon, logo, etc. Used in d
 ├── koreailogo-white.svg
 custom-css			    # custom stylesheets. Don't edit.
 ├── style.css
+drafts             # Drafted content or assets that are to be used later.
 snippets			     # Reusable content for single sourcing
 .cspell.json		   # Spell check config file that's NOT available in the repo but added in everyone's local clone manually. Works when extension is installed in VSCode editor.
 .gitignore			   # Exclusions from repo uploads
+.lycheeignore      # Configuration for Lychee linkchecker. It is configured to run as an on-demand Action on this repo.
 .markdownlint.jsonc	# Markdown linting rules. Works when extension is installed in VSCode editor
 .mintignore			# Exclusions from the Mintlify build
 docs.json			# Config, TOC, home page design theme, analytics integration, etc.
 home.mdx			# Docs home page
 License				# MIT license for docs
+linkinator.config.json  # Config for Linkinator link checker. It is used separately from the CLI.
+README.md     # This file.
+search.js     # JavaScript that powers search of AI for Service and AI for Work help articles.
 ```
