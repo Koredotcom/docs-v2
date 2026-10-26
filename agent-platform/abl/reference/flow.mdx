@@ -133,12 +133,61 @@ When `REASONING: true`, the following additional properties are available:
 | `EXIT_WHEN`        | `string`   | No       | _none_              | Condition that ends the reasoning loop                        |
 | `MAX_TURNS`        | `number`   | No       | `10`                | Maximum reasoning turns before forced exit                    |
 | `STEP_CONSTRAINTS` | `string[]` | No       | _none_              | Constraints specific to this reasoning zone                   |
+| `CONTEXT_UPDATES`  | `boolean` or `string[]` | No | Omitted (`true`) | Controls whether/which fields the step's model may write via the Runtime's `__set_context__` tool. See [Controlling direct context writes](#controlling-direct-context-writes-context_updates). |
 
 **Validation rules:**
 
 - A step with `REASONING: true` must have either a step-level `GOAL` or an agent-level `GOAL:` defined.
 - A step with `REASONING: false` should not have a `GOAL` (it has no effect on deterministic steps).
 - A step with `REASONING: false` should not have `AVAILABLE_TOOLS` (use `CALL` to invoke tools deterministically).
+
+#### Controlling direct context writes (`CONTEXT_UPDATES`)
+
+`CONTEXT_UPDATES` controls direct model writes in a `REASONING: true` step: whether (and which) fields the model may write through the Runtime-owned `__set_context__` tool. It does not control what the model can read, which business tools it can call, or what trusted FLOW actions (`SET`, `on_result` mappings), authored `GATHER` extraction, and hooks can change. Those are separate, unaffected contracts.
+
+| Declaration | Provider-visible result |
+| --- | --- |
+| Omitted or `true` | Runtime may add `__set_context__`; existing context-writing and `EXIT_WHEN` flows keep their previous behavior. |
+| `CONTEXT_UPDATES: false` | Runtime removes `__set_context__` and its writable-field schema entirely; other authorized business and interaction-language tools remain usable. |
+| `CONTEXT_UPDATES: [qr_text, qr_done]` (new in 1.8.2) | Only the listed fields appear in `__set_context__`'s writable schema; model-supplied context updates through the direct tool and through completion fields (including completion metadata) are restricted to that list. |
+| `CONTEXT_UPDATES: []` (new in 1.8.2) | No direct write tool is offered, and no model-supplied context update through the direct or completion paths is accepted. |
+
+```yaml
+FLOW:
+  collect_qr_wording:
+    REASONING: true
+    GOAL: "Draft the QR code wording with the customer"
+    CONTEXT_UPDATES: [qr_text, qr_done]
+    THEN: review_wording
+```
+
+In YAML, use `context_updates: [qr_text, qr_done]` directly on the reasoning step (lowercase, same list syntax).
+
+**List-form rules:**
+
+- Lists are supported only on `REASONING: true` FLOW steps (not the agent-level default).
+- Every list member must be a field already declared in `MEMORY.session`. Even if a `GATHER` or `EXIT_WHEN` reference would otherwise make an implicit field writable, it still needs its own `MEMORY.session` declaration to be listed. Declaring it there also makes it eligible in other, unscoped steps.
+- A list that excludes a field a `GATHER` or `EXIT_WHEN` needs written can still work, but only if that field gets its value from another source (prefilled state, or a trusted authored write like `SET`/`on_result`). Otherwise the step can never progress, because the model cannot write it directly.
+- A list narrows; it never grants new authority. `READONLY` and `MODEL_WRITERS` (and other Runtime-owned protections) still apply on top of it. Listing a field in `CONTEXT_UPDATES` does not bypass those.
+- An `EXIT_WHEN` reference does not implicitly add its field to the list. Include a model-written exit field explicitly, or supply it through a trusted authored action instead.
+- Names are case-sensitive and are normalized by trimming, deduplicating, and sorting; execution-tree paths and granted-memory keys cannot be list members.
+- `CONTEXT_UPDATES: []` is different from omitting the field: omission keeps legacy full-write access; `[]` is a declared "no direct writes at all." `[]` also restricts the separate completion-fields context-update path, which plain `false` does not. This is the one sharp edge between the two opt-out forms.
+
+A reasoning step whose only job is to present already-selected state can declare `CONTEXT_UPDATES: false` so the model is never offered a write tool it has no reason to use:
+
+```dsl
+AGENT: ResultPresenter
+GOAL: "Present the selected result"
+
+MEMORY:
+  session:
+    - scratch_result
+    - selected_result
+```
+
+<Note>
+Any list declaration, including `CONTEXT_UPDATES: []`, requires compiler and Runtime support for IR version 1.3. An older Runtime rejects an artifact built with one. Existing projects get no automatic change: a project must opt in by adding a list to a step and publishing only after every Runtime pod serving that project has been upgraded (the compiler does not block publishing out of order; that ordering is a deployment-operations responsibility). Rolling back to an older Runtime requires an artifact with no list declarations.
+</Note>
 
 ### Entry guards
 
