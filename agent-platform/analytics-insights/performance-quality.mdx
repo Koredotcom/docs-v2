@@ -18,6 +18,13 @@ Both pages populate only after evaluation pipelines process conversations. A mea
 
 **Navigation**: **Project** -> **Insights** -> **Quality Monitor**
 
+| Item | Detail |
+|---|---|
+| **Answers** | Where is quality breaking down, and in which conversations? |
+| **Counts** | All evaluated sessions, including eval and synthetic sessions. |
+| **Scale** | Every score shows from 0 to 1, as a percentage. Above 0.7 is healthy, above 0.5 is warning, and anything lower is critical. |
+| **Tabs** | None. The page is one long view. |
+
 ### Page filters
 
 Environment, channel, and date range controls at the top of the page scope everything below them.
@@ -26,13 +33,18 @@ Filter by environment before you read the scores. Evaluations of test traffic an
 
 ![Quality Monitor](/agent-platform/images/quality-monitor.png)
 
+{/* SCREENSHOT (update): Replace quality-monitor.png with the current Quality Health banner, status counts, and the five dimension cards. Use a neutral project with no customer data. */}
+
+
 ### Quality health
 
 A banner across the top gives three figures: the number of conversations the pipelines evaluated, a weighted overall score that combines the dimensions, and a count of dimensions in each status.
 
+The evaluated count is the largest count across the five pipelines. The issue flag count adds up the flagged sessions across all dimensions.
+
 The three statuses are **Critical** (red), **Warning** (amber), and **Healthy** (green).
 
-Read the status counts first. They tell you how many dimensions need attention without your having to interpret each card. A dimension with no data also counts toward the total, so a warning count can reflect missing coverage as readily as poor performance.
+Read the status counts first. They tell you how many dimensions need attention without your having to interpret each card. The banner turns amber or red as soon as any one dimension does. A dimension with no data also counts toward the total, so a warning count can reflect missing coverage as readily as poor performance.
 
 ### Dimension cards
 
@@ -40,17 +52,21 @@ Each card reports one evaluation dimension for the period. Higher values are bet
 
 | Dimension | Description |
 |---|---|
-| **Overall Quality** | Combines the scores of the dimensions that hold data. Track it for direction over time. It runs too coarse to act on directly, which is the job of the remaining cards. |
-| **Faithfulness Score** | Measures how well responses stay grounded in the sources the agent has available. A low score means the agent produces claims it can't support, the failure mode that costs the most trust when customers notice it. |
-| **Knowledge Coverage** | Measures how often the knowledge base supports the query the agent receives. This dimension scores your content rather than your agent, so a low score tells you to write documentation instead of changing prompts. |
-| **Safety Score** | Measures the rate at which responses pass the configured guardrails. It moves only when guardrails exist, so a persistent dash usually means you have no guardrails in place rather than that the platform checked nothing. |
-| **Context Preservation** | Measures how well the agent carries context across turns in one conversation. It degrades first as conversations grow longer, and it usually explains complaints about customers repeating information. |
+| **Overall Quality** | Combines the scores of the dimensions that hold data, as a weighted average: quality 30%, hallucination 25%, guardrails 20%, knowledge gaps 15%, and context 10%. When a dimension has no data, the weights rebalance over the rest. Track it for direction over time. It runs too coarse to act on directly, which is the job of the remaining cards. |
+| **Faithfulness Score** | Measures how well responses stay grounded in the sources the agent has available. The card averages the hallucination pipeline's score. A session with a score below 0.5 is flagged. A low score means the agent produces claims it can't support, the failure mode that costs the most trust when customers notice it. |
+| **Knowledge Coverage** | Measures how well the knowledge the agent retrieves supports its answers. Each session scores half retrieval precision plus half citation rate. The gaps figure counts sessions where the judge detected missing knowledge. This dimension scores your content rather than your agent, so a low score tells you to write documentation instead of changing prompts. |
+| **Safety Score** | Measures how accurately guardrails let good content through and stop bad content. Each session scores 1 minus the larger of its false-positive and false-negative scores. A violation is either score above 0.5, or a detected bypass. It moves only when guardrails exist, so a persistent dash usually means you have no guardrails in place rather than that the platform checked nothing. |
+| **Context Preservation** | Measures how well the agent carries context across turns and handoffs. The card averages the context score. A session is flagged when its score is below 0.6 or when the agent repeated a response. It degrades first as conversations grow longer, and it usually explains complaints about customers repeating information. |
+
+<Note>The **Safety Score** on this page differs from the **Safety Score** on [Agent performance](#agent-performance). This page averages the guardrail score. Agent Performance reports the guardrail pass rate. The two values won't match.</Note>
+
+{/* REVIEW: Two metrics share the name Safety Score. Confirm whether product plans to rename one. */}
 
 A dash means the pipeline behind that dimension produced no value for the period. It doesn't mean the dimension scored zero.
 
 ### Quality trend
 
-The trend chart plots each dimension as its own series over the period.
+The trend chart plots each of the five dimensions as its own daily series, on a 0 to 1 axis. The quality series divides the 1 to 5 judge score by 5 to fit the axis.
 
 Use it for correlation. Dimensions rarely move alone, and a fall in one alongside a rise in another usually points to a single underlying change, such as new traffic the knowledge base doesn't yet cover.
 
@@ -62,23 +78,68 @@ Expand a dimension to see the component measures that produced its score. The ex
 
 Dimensions with no evaluations in the period carry a no-data badge in place of a status, so you can tell an unmeasured dimension from a failing one.
 
+Each card shows the dimension score from 0 to 1, the number of flagged sessions, and a status: **Healthy** above 0.7, **Warning** above 0.5, otherwise **Critical**.
+
+| Dimension | Sub-scores |
+|---|---|
+| **Quality Evaluation** | One bar per rubric dimension the judge scored, each on a 1 to 5 scale divided by 5. The four defaults come first: helpfulness, accuracy, professionalism, and instruction following. Custom rubric dimensions follow. The lowest bar is the first thing to improve. |
+| **Hallucination Detection** | **faithfulness score** (0 to 1, below 0.5 flags the session), **consistency index** (how consistent the agent's statements were within a conversation, 0 to 1), and **contradiction detected** (sessions where the agent contradicted itself or its sources). Read contradictions first. |
+| **Knowledge Gap** | **retrieval precision** (share of retrieved knowledge relevant to the question), **citation rate** (share of answers backed by a cited source), and **gap detected** (sessions where the agent lacked the knowledge to answer). Low precision points at search. Low citation rate points at how answers use sources. |
+| **Guardrail Analysis** | **false positive score** (how often guardrails blocked content that was fine), **false negative score** (how often guardrails let through content they should have stopped), and **bypass detected** (sessions with a guardrail bypass, each one a violation). Lower is better for both scores. |
+| **Context Preservation** | **context score** (0 to 1, below 0.6 flags the session), **duplication detected** (sessions where the agent repeated a response), and **handoff count** (handoffs between agents in evaluated sessions). Many duplicates mean the agent is looping. |
+
+{/* SCREENSHOT (new): Dimension Details with one card expanded (Quality Evaluation rubric bars), and one with Hallucination, Knowledge Gap, or Guardrail sub-scores. Use a neutral project with no customer data. */}
+
+### Flagged conversations
+
+The **Flagged Conversations** list shows every conversation that any dimension flagged, worst first. A red stripe marks a critical session.
+
+| Column | Description |
+|---|---|
+| **Health Score** | The session's worst score among the dimensions that flagged it, from 0 to 1. |
+| **Flag Reasons** | The dimensions that flagged the session, plus any written reasons from the judge. Several reasons on one conversation usually point to one root cause. |
+| **Rubric Scores** | The judge's raw rubric scores, 1 to 5, when quality evaluation ran for the session. |
+
+Two filters narrow the list.
+
+| Filter | Options |
+|---|---|
+| **Reason** | Show only one flag reason, such as hallucination. |
+| **Score** | **Critical** (below 0.5), **Warning** (0.5 to 0.7), or **Healthy** (above 0.7). |
+
+A Health Score of exactly 0.50 shows in red but falls outside the **Critical** filter.
+
+{/* SCREENSHOT (new): Flagged Conversations list with the Reason and Score filters, Health Score, Flag Reasons, and Rubric Scores columns. Use a neutral project with no customer data. */}
+
 ## Agent performance
 
 **Agent Performance** reports the evaluation measures per agent. Open it once Quality Monitor tells you a dimension slipped. It earns its place in multi-agent projects, where one weak agent can pull down a project average that otherwise looks acceptable.
 
 **Navigation**: **Project** -> **Insights** -> **Agent Performance**
 
+| Item | Detail |
+|---|---|
+| **Answers** | Which agent pulls quality down? |
+| **Counts** | All evaluated sessions, including eval and synthetic sessions. |
+| **Compare** | **Compare previous period** adds arrows and changes against the previous period of the same length. |
+| **Tabs** | None. |
+
 ### Page filters
 
 Environment, channel, and date range controls scope the page.
 
-Select **Compare previous period** to add a comparison with the period immediately before the one you selected. The comparison turns the scores from absolute values into a direction of travel. Use it before you draw conclusions from a single period, because evaluation scores move considerably on low volume.
+Select **Compare previous period** to add a comparison with the period immediately before the one you selected. KPI cards gain trend arrows, table cells gain plus or minus change values, and the trend chart adds the previous period's line. The comparison turns the scores from absolute values into a direction of travel. Use it before you draw conclusions from a single period, because evaluation scores move considerably on low volume.
 
 ![Agent Performance](/agent-platform/images/agent-performance.png)
 
+{/* SCREENSHOT (update): Replace agent-performance.png with the current Agent Health banner (Critical, Warning, Healthy counts) and KPI cards with Compare previous period on. Use a neutral project with no customer data. */}
+
+
 ### Agent health
 
-A banner reports how many agents the pipelines evaluated, how many conversations that covered, and how many agents fall into each status: **Critical** (red) and **Healthy** (green).
+A banner reports how many agents the pipelines evaluated, how many conversations that covered, and how many agents fall into each status: **Critical** (red), **Warning** (amber), and **Healthy** (green). Each agent takes the worst status among its metrics.
+
+The conversation total adds up each agent's count, so a session that the pipelines evaluated under two agents counts twice. That is why this total can differ from other pages.
 
 It tells you whether you face a broad problem or a single agent, before you read any individual score.
 
@@ -88,15 +149,17 @@ Five cards aggregate the measures across all agents in scope.
 
 | Metric | Description |
 |---|---|
-| **Quality** | Averages the quality score across evaluated conversations on a five point scale. The table below reports the same measure per agent, so compare the two to see whether the average describes your agents evenly or conceals a spread. |
-| **Hallucination Rate** | Reports the rate at which the pipeline flags responses for unsupported claims. Lower is better here, unlike the other cards, so read this card separately rather than scanning the row for low numbers. |
-| **Knowledge Gaps** | Counts the conversations where the knowledge base couldn't support the query. It reports a count rather than a rate, so weigh it alongside conversation volume before you treat a rise as a regression. |
-| **Safety Score** | Reports the rate at which responses pass the configured guardrails. |
-| **Context Score** | Averages how well agents carry context across turns, on a five point scale. |
+| **Quality** | Averages the quality score across evaluated conversations on a 1 to 5 scale. Critical at or below the quality pipeline's flag threshold (2.5 by default), and warning up to 20% above it. The table below reports the same measure per agent, so compare the two to see whether the average describes your agents evenly or conceals a spread. |
+| **Hallucination Rate** | Divides the conversations flagged for hallucination by evaluated conversations, × 100. Warning from 5%, critical from 10%. Lower is better here, unlike the other cards, so read this card separately rather than scanning the row for low numbers. |
+| **Knowledge Gaps** | Counts the conversations where the agent lacked the knowledge to answer, with the rate below. Warning above 3 conversations, critical above 7. It reports a count rather than a rate, so weigh it alongside conversation volume before you treat a rise as a regression. Fix gaps with knowledge content, not prompts. |
+| **Safety Score** | Reports the guardrail pass rate: 100% minus the share of conversations that guardrails flagged. Warning below 90%, critical below 75%. This calculation differs from the Safety Score on [Quality monitor](#quality-monitor). |
+| **Context Score** | Multiplies the 0 to 1 context score by 5, so it shows on a 0 to 5 scale. Quality Monitor shows the same score on a 0 to 1 scale. |
+
+{/* REVIEW: Knowledge Gaps thresholds are fixed conversation counts (3 and 7). Confirm they don't scale with volume. The Quality tooltip says 0 to 5; the judge scores 1 to 5. */}
 
 ### Agent table
 
-The table repeats these measures for each agent, alongside the agent's conversation count and an overall status that derives from its scores. The status appears as a **Critical** (red) or **Healthy** (green) badge.
+The table repeats these measures for each agent, alongside the agent's conversation count and an overall status. The status is the worst of the agent's individual metric statuses, and appears as a **Critical**, **Warning**, or **Healthy** badge. The conversation count covers sessions that any of the five quality pipelines evaluated for the agent, by session start date. It shows evaluated volume, not all traffic. With **Compare previous period** on, each cell shows its change against the previous period.
 
 Read the table with the conversation count in view. An agent that the pipeline evaluated on a handful of conversations can show the worst scores on the page without being the problem worth fixing.
 
@@ -104,10 +167,14 @@ To work through the table:
 
 * Search by name to find a specific agent.
 * Sort on status to bring the agents that need attention to the top.
-* Switch between **Critical** and **All** using the filter pills to handle the failing agents first.
+* Switch between **Critical**, **Warning**, and **All** using the status chips to handle the failing agents first.
+
+{/* SCREENSHOT (new): Agent table with search, status chips (Critical, Warning, All), and change values from Compare previous period. Use a neutral project with no customer data. */}
 
 ### Quality trend
 
-The trend chart plots quality score and flagged conversation count on separate axes.
+The trend chart plots daily average quality on the left axis and flagged conversations per day on the right axis. With **Compare previous period** on, a third line shows the previous period's quality, matched day by day.
 
 Read the two series together. Quality that falls while flags stay flat indicates a gradual drift in scoring. Quality that falls as flags rise points to specific conversations going wrong, which you can open and read.
+
+{/* SCREENSHOT (new): Agent Performance Quality Trend chart with the previous period line. Use a neutral project with no customer data. */}

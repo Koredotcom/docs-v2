@@ -16,15 +16,30 @@ Both pages report on conversations that evaluation pipelines have already proces
 
 **Navigation**: **Project** -> **Insights** -> **At a Glance**
 
+| Item | Detail |
+|---|---|
+| **Answers** | Is the program healthy, and does it pay for itself? |
+| **Counts** | Production conversations only. |
+| **Colour bands** | Healthy, watch, and critical bands come from **Settings** -> **Insights Config**. You can change them per project. |
+| **Comparison** | The page shows no comparison with the previous period. |
+| **Tabs** | Overview, Trends, ROI, Conversations |
+
+{/* REVIEW: Settings -> Insights Config has no public page yet. Confirm the location and whether it needs its own page. */}
+
 ### Page filters
 
 Three controls at the top of the page scope everything below them: an environment filter, a channel filter, and a date range.
+
+The date range offers 7, 30, or 90 days, or a custom range of up to 90 days. The filters are shared across the Insights pages, so a range you set here carries over to the next page.
 
 Narrow the environment filter when production and non-production traffic would otherwise mix. Test conversations distort containment and cost figures more than any other input.
 
 When you change a filter, a **Reset filter** control appears with the number of filters you applied. Check it before you conclude that a period was quiet, since a narrowed view looks much the same as a slow week.
 
 ![Dashboard](/agent-platform/images/dashboard.png)
+
+{/* SCREENSHOT (update): Replace dashboard.png with the current At a Glance header: filters, Reset filter, the six KPI cards with the evaluated count, and the four tabs. Use a neutral project with no customer data. */}
+
 
 ### Metric cards
 
@@ -41,41 +56,70 @@ Six cards summarize the selected period. Each card shows a headline value and a 
 
 A card shows a dash when the pipeline behind it produces no value for the period. A dash means the measure has no data, not that it scored zero, and it usually indicates that the relevant pipeline isn't running.
 
+The following table shows how the platform calculates each card and the default colour bands.
+
+| Metric | How it's calculated | Default colour bands |
+|---|---|---|
+| **Conversations** | Counts finished production sessions whose end time falls in the period. A supervisor's handoffs to child agents count as one conversation. Live sessions don't count. The evaluated figure counts the conversations that have a result from at least one pipeline. | None |
+| **Containment Rate** | Divides the conversations with the outcome **contained resolved** by all conversations with an outcome. Platform rules set the outcome **escalated** when the session raises an escalation event, and **abandoned** when the customer times out or leaves. An LLM judge labels the rest resolved, partial, or unresolved. | Healthy at 70% or more. Watch from 50%. Critical below 50%. |
+| **Quality Score** | Averages the latest overall quality score of each conversation, on a 1 to 5 scale. The overall score weights helpfulness and accuracy at 1.0, and professionalism and instruction following at 0.8. Needs the Quality Evaluation pipeline. | Healthy at 3.5 or more. Critical below 2.5. |
+| **Avg Sentiment** | An LLM scores every message from -1 to +1. Each conversation takes the mean of its messages, and the card averages the conversations. Agent messages are included, not only customer messages. | Healthy at 0.50 or more. Watch from 0. Critical below 0. |
+| **Period Savings** | Multiplies contained conversations by the human cost per conversation, then subtracts the actual LLM cost of those conversations. | Green above $0. Red below $0. You can't change this rule. |
+| **Escalation Rate** | Divides the conversations that raised an escalation event by all conversations with an outcome. Needs the Quality Evaluation pipeline to assign outcomes. | Healthy up to 15%. Watch up to 25%. Critical above 25%. |
+
+<Note>Containment Rate isn't the same as the Resolution Rate on [Customer Insights](/agent-platform/analytics-insights/customer-voice#customer-insights). Containment asks whether the AI resolved the conversation without a person. Resolution asks whether the customer's main intent was resolved, whatever happened along the way.</Note>
+
 ### Overview tab
 
 The **Overview** tab explains the headline numbers.
 
 **Conversation Volume & Containment Rate** plots volume and containment on one timeline. The chart separates the two ways a containment figure moves: the agent resolves a different share of conversations, or the volume changes underneath a stable share.
 
-**Outcome Distribution** divides the same conversations into three categories. Each category appears as a segment with its count, its share of the total, and a caption that describes the outcome. A footer states how many conversations the distribution covers.
+The chart counts volume by the date each session ended, and containment by the date each session started. Days with no data plot as zero, so the current partial day falls near zero.
+
+**Outcome Distribution** divides the evaluated conversations by how they ended. Each category appears as a segment with its count, its share of the total, and a caption that describes the outcome. A footer states how many conversations have an outcome. That total is the denominator of both Containment Rate and Escalation Rate.
 
 | Outcome | Description |
 |---|---|
-| **Resolved** (green) | The agent completed the conversation without involving a person. |
-| **Contained partial** (amber) | The agent handled the conversation but didn't carry it to a full resolution. These conversations count toward neither the containment rate nor the escalation rate, so both rates can read low over the same period. |
-| **Escalated** (red) | The agent handed the conversation to a person. |
+| **Contained resolved** | The agent resolved the request with no human help. This count is the numerator of Containment Rate. |
+| **Contained partial** | The agent handled the conversation but didn't carry it to a full resolution. These conversations count toward neither the containment rate nor the escalation rate, so both rates can read low over the same period. |
+| **Escalated to human** | The agent handed the conversation to a person. The platform sets this outcome when the session raises an escalation event. |
+| **Contained unresolved** | The agent kept the conversation, but the judge couldn't confirm that it resolved the request. |
 
-The middle category is the reason to read this section rather than the cards alone. Containment and escalation together imply a binary outcome, and the partial category holds the conversations that fit neither.
+{/* REVIEW: On agents-dev the caption under Escalated to human reads "Other outcome". The code says "Transferred to a human agent". Confirm the label that ships. */}
+
+The partial and unresolved categories are the reason to read this section rather than the cards alone. Containment and escalation together imply a binary outcome, and these categories hold the conversations that fit neither.
+
+{/* SCREENSHOT (new): Overview tab, Outcome Distribution panel with the four outcome categories and the total evaluated footer. Use a neutral project with no customer data. */}
 
 **What's Driving the Metrics** attributes the period to individual agents, so you can locate the cause of a project-level movement.
 
 | Column | Description |
 |---|---|
-| **Volume** | Counts the evaluated conversations that belong to this agent. Sort on this column to find the agents that carry enough weight to move the project figures, since a poor score across a handful of conversations rarely explains an aggregate shift. |
-| **Confidence** | Shows the confidence that accompanies this agent's evaluation results. The column stays blank until the pipeline produces a confidence value. |
-| **Quality** | Shows this agent's own quality score, so you can see whether the project average describes your agents evenly or conceals a spread. |
-| **Sentiment** | Averages customer sentiment across this agent's conversations. |
-| **Trend** | Shows the direction of change from the preceding period. The column stays blank until the project accumulates enough history to compare. |
+| **Volume** | Counts the evaluated conversations that belong to this agent. When several pipelines ran, the column takes the largest single-pipeline count, so no conversation counts twice. This is evaluated volume, not total traffic. Sort on this column to find the agents that carry enough weight to move the project figures, since a poor score across a handful of conversations rarely explains an aggregate shift. |
+| **Confidence** | Shows the average intent classification confidence for this agent's conversations, from 0 to 100%. Green above 85%, plain from 50%, amber from 25%, red below 25%. Low confidence points to unclear requests or a weak intent list. |
+| **Quality** | Shows this agent's own quality score on a 1 to 5 scale, so you can see whether the project average describes your agents evenly or conceals a spread. |
+| **Sentiment** | Averages sentiment across this agent's conversations, from -1 to +1. |
+| **Trend** | Shows the agent's daily quality as a sparkline. It appears once the project has at least two days of data. Green at 3.5 or more, amber from 2.0, red below 2.0. |
+
+{/* REVIEW: The Quality tooltip says 0 to 5. The judge scores 1 to 5. Confirm the scale to state. */}
+
+{/* SCREENSHOT (new): Overview tab, What's Driving the Metrics table with Volume, Confidence, Quality, Sentiment, and the Trend sparkline. Use a neutral project with no customer data. */}
 
 ### Trends tab
 
 The **Trends** tab answers questions about direction rather than current state. Three charts cover the period.
 
 **Multi-Metric Trends** plots containment, escalation, and quality on one timeline. Reading the three together is what makes the tab useful, because a containment rise that coincides with a quality fall is a different event from one that doesn't.
+Quality uses a 1 to 5 scale but shares the 0 to 100 axis with the two rates, so its line looks flat near the bottom. Point to the line to read its real value.
 
-**Sentiment & Quality Over Time** plots average quality and average sentiment. Point to any date to read its values.
+**Sentiment & Quality Over Time** plots average quality and average sentiment. Point to any date to read its values. Both series share one axis, so small sentiment changes look smaller than they are.
 
 **Daily Outcome Distribution** shows the outcome mix day by day. Use it to tell whether a change in the period totals comes from a shift in how conversations end or simply from more of them.
+
+The chart shows three series: **Resolved**, **Escalated**, and **Other**. **Other** groups partial, unresolved, abandoned, and unclassified outcomes. A growing **Other** band means more conversations end without a clean resolution.
+
+{/* SCREENSHOT (new): Trends tab with Multi-Metric Trends, Sentiment & Quality Over Time, and Daily Outcome Distribution. Use a neutral project with no customer data. */}
 
 ### ROI tab
 
@@ -83,16 +127,49 @@ The **ROI** tab converts contained volume into money and staffing. Every figure 
 
 | Metric | Description |
 |---|---|
-| **Period Savings** | Shows the modeled human cost you avoided, net of what the AI spent. |
-| **Period ROI** | Expresses that saving as a return on your AI spend. The card takes a warning treatment when the period produces no positive return, which is normal early in a deployment while volume stays low and the assumptions stay fixed. |
-| **FTE Equivalent** | Restates contained volume as human staffing capacity and shows the equivalent monetary capacity underneath. Use it in headcount discussions, where an FTE figure lands better than a savings total. |
-| **Cost / Conversation** | Divides actual AI cost by conversations. This card reports real spend rather than your assumptions, so quote it when someone disputes the assumptions. |
+| **Period Savings** | Shows the modeled human cost you avoided, net of what the AI spent. The platform multiplies contained conversations by the human cost per conversation, then subtracts the LLM cost of those conversations. Green at $0 or more. |
+| **Period ROI** | Expresses that saving as a return on your AI spend: period savings divided by the LLM cost of contained conversations, × 100. The card shows 0 when contained conversations have no cost. Green above 100%, amber above 0%. For example, 5,000% means savings are about 50 times that AI spend. The card takes a warning treatment when the period produces no positive return, which is normal early in a deployment while volume stays low and the assumptions stay fixed. |
+| **FTE Equivalent** | Restates contained volume as human staffing capacity: contained conversations × average handle time, divided by 9,600 minutes (160 hours, one working month). The capacity value underneath is that FTE × the monthly cost of one person. The divisor is always one month, so a 7-day range understates the figure and a 90-day range overstates it. Use it in headcount discussions, where an FTE figure lands better than a savings total. |
+| **Cost / Conversation** | Divides total LLM cost in the period by Conversations. When the platform records no real cost, it uses the estimated AI cost from cost settings. Green while it stays below the human cost per conversation. The cost total includes non-production traffic, but the conversation count doesn't. This card reports real spend rather than your assumptions, so quote it when someone disputes the assumptions. |
 
 **AI Cost vs Estimated Human Cost** plots both costs across the period and states the per-conversation human cost it applies, so anyone who reads the chart can see the assumption behind the comparison. The platform attributes actual model costs to contained conversations.
 
+| Series | How it's calculated |
+|---|---|
+| **Est. Human Cost** | Resolved conversations that day × human cost per conversation. |
+| **AI Cost** | Cost per conversation × that day's conversations. |
+
+The gap between the two series is the daily saving.
+
+{/* SCREENSHOT (new): ROI tab with the four ROI cards, the Cost Settings button, and the AI Cost vs Estimated Human Cost chart. Use a neutral project with no customer data. */}
+
 ### Conversations tab
 
-The **Conversations** tab lists the individual conversations behind the metrics. Select a conversation to open its session record, which holds the full trace, cost, and message history. Use this tab when a metric looks wrong and you need to read the conversations that produced it.
+The **Conversations** tab lists the individual conversations behind the metrics, 25 per page. Select a conversation to open its session record, which holds the full trace, cost, and message history. Use this tab when a metric looks wrong and you need to read the conversations that produced it.
+
+Use the quick filter to narrow the list.
+
+| Filter | Shows |
+|---|---|
+| **All** | Every conversation. |
+| **Flagged** | Conversations with a quality score below 2.5. |
+| **Low Quality** | Conversations with a quality score below 3.0. |
+| **High Quality** | Conversations with a quality score above 4.0. |
+
+| Column | Description |
+|---|---|
+| **Date** | When the conversation took place. |
+| **Agent** | The agent that handled it. |
+| **Status** | **OK** or **Flagged**, from the quality evaluation. A conversation is flagged when its quality score falls below the flag threshold, 2.5 by default. |
+| **Quality Score** | Overall quality, 1 to 5. Green at 3.5 or more, plain from 2.5, red below 2.5. |
+| **Helpfulness** | The judge's helpfulness score, 1 to 5. One input to the quality score. |
+| **Accuracy** | The judge's accuracy score, 1 to 5. One input to the quality score. |
+
+Open flagged conversations first. They show what the agent got wrong.
+
+{/* REVIEW: Under the All filter, every row reads "Unevaluated" with dashes, even for scored conversations. Confirm whether a fix is planned or this needs a note. */}
+
+{/* SCREENSHOT (new): Conversations tab with the quick filter (All, Flagged, Low Quality, High Quality) set to a filter that shows scores, not All. Use a neutral project with no customer data. */}
 
 ### ROI cost settings
 
@@ -105,6 +182,11 @@ Select **Cost Settings** on the **ROI** tab to set the assumptions that produce 
 | **Avg Human Handle Time (minutes)** | Sets the staffed time that one conversation consumes. With the FTE cost, it determines how much contained volume adds up to one person's capacity. |
 | **Estimated AI Cost per Conversation ($)** | Sets the fallback cost the platform applies when it can't attribute actual model cost to a conversation. Without this value, unattributed conversations appear to cost nothing and overstate your savings. |
 
+The default values are $12 human cost per conversation, $4,500 monthly FTE cost, 6 minutes average handle time, and $0.05 estimated AI cost per conversation.
+
+{/* SCREENSHOT (new): Cost Settings dialog with the four fields. Use a neutral project with no customer data. */}
+
+
 ---
 
 ## Billing and usage
@@ -113,30 +195,51 @@ Select **Cost Settings** on the **ROI** tab to set the assumptions that produce 
 
 **Navigation**: **Project** -> **Insights** -> **Billing & Usage**
 
+| Item | Detail |
+|---|---|
+| **Answers** | What will this project be billed for? |
+| **Counts** | Billable sessions only. Test, eval, synthetic, and excluded-channel sessions are left out, so totals sit below the Insights totals by design. |
+| **Source** | Published billing report rows when they exist. Otherwise, a current estimate. |
+| **Date range** | Its own picker: 7, 30, or 90 days. It doesn't follow the Insights filters. |
+
+{/* SCREENSHOT (new): Billing & Usage page header: own date range picker, published report rows note, and the four billing KPI cards with the daily units chart. This page has no screenshot today. Use a neutral project with no customer data. */}
+
 ### Data currency
 
-The page reads published billing report rows rather than live traffic, and it states when the platform last published those rows. Check that timestamp before you reconcile a period, because recent activity appears only after the next materialization. A date range control scopes the page.
+The page reads published billing report rows rather than live traffic, and it states when the platform last published those rows. Published rows are the billing record. When no published rows exist for the period, the page shows a current estimate. Check the timestamp before you reconcile a period, because recent activity appears only after the next materialization. A date range control scopes the page.
 
 ### Usage and billing units
 
 | Metric | Description |
 |---|---|
 | **Included Sessions** | Counts the sessions that meet the billing policy and therefore contribute to charges. This number falls below your total session count whenever exclusions apply, and the page itemizes the difference further down. |
-| **Billing Units** | Counts the chargeable units the platform derives from included sessions using the billing interval and the duration basis. This number maps to your invoice. |
+| **Billing Units** | Counts the chargeable units the platform derives from included sessions using the billing interval and the duration basis. Each session earns ceil(duration ÷ billing interval) base units. LLM, tool, and voice-minute add-ons are added on top. This number maps to your invoice. |
 | **LLM Calls** | Counts model invocations in the period. This card can show substantial activity while billing units sit at zero, because calls inside excluded sessions still run. Treat a wide gap between the two as a prompt to check your exclusions. |
-| **Interactive Turns** | Counts user turns across the period. The interaction threshold in the billing policy uses turn count to decide whether a session carries enough interaction to bill. |
+| **Interactive Turns** | Counts user turns across the period, after billing exclusions. The interaction threshold in the billing policy uses turn count to decide whether a session carries enough interaction to bill. |
 
 **Daily Billing Units** plots billing units and included sessions across the period, so you can trace a spike in charges to either more sessions or longer ones.
 
 **Channel Breakdown** reports sessions, units, and model calls per channel. It shows which channel drives your spend, and it exposes an excluded channel as activity that produced no units.
+For example, `web_debug` is the Studio test chat. Its LLM calls are counted, but its sessions are excluded from billing.
 
 **Voice minutes** reports voice consumption separately, because voice meters in minutes rather than in the unit model that governs the rest of the page.
+
+{/* REVIEW: On agents-dev, voice minutes read 0 while Voice Analytics shows calls in the same window. Confirm the expected behavior with the billing owners. */}
 
 ### Excluded sessions
 
 This section lists the sessions the latest materialization didn't bill, grouped by the reason that excluded each one.
 
 Start here when session volume and billed volume disagree. The reason names the policy rule that removed the sessions, which turns an unexplained gap into a policy question.
+
+| Reason | Meaning |
+|---|---|
+| `excluded_channel` | The channel is on the excluded channels list in the billing policy. |
+| `below_interaction_threshold` | The customer sent fewer messages than the interaction threshold. |
+
+Test, eval, and synthetic sessions are also left out of billing.
+
+{/* SCREENSHOT (new): Channel Breakdown table, Voice minutes, and Excluded sessions with reasons. Use a neutral project with no customer data. */}
 
 ### Usage by billing scope
 
@@ -151,7 +254,10 @@ This section shows the billing policy in effect for the tenant and the level tha
 | Setting | Description |
 |---|---|
 | **Billing interval (minutes)** | Sets the block of session time that one billing unit covers. It determines how session duration rounds into units, so a long interval and short sessions together decide how much of what you pay for goes unused. |
-| **Duration basis** | Selects which measure of session duration the platform meters. It decides whether idle time inside a session becomes chargeable. |
-| **Scope consolidation** | Controls whether the roll-up of delegated agent sessions applies to billing or only to reporting. It determines whether multi-agent fan-out costs more than a single-agent conversation. |
+| **Duration basis** | Selects which measure of session duration the platform meters: engaged time (while the conversation is active) or wall-clock time. It decides whether idle time inside a session becomes chargeable. |
+| **Scope consolidation** | Controls whether the roll-up of delegated agent sessions applies to billing or only to reporting. **Report only** shows the grouping without changing the bill. It determines whether multi-agent fan-out costs more than a single-agent conversation. |
 | **Excluded channels** | Lists the channels whose sessions never bill. Debug and test channels usually sit here, which explains how development traffic generates model calls without generating charges. |
 | **Interaction threshold (min user messages)** | Sets the minimum number of user messages a session needs before it bills. It keeps abandoned and no-touch sessions out of your charges. |
+| **Source** | Shows where each value comes from, such as the plan or a tenant override. |
+
+{/* SCREENSHOT (new): Usage by billing scope table and Resolved billing policy table with the Source column. Use a neutral project with no customer data. */}
