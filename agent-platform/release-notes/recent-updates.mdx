@@ -20,9 +20,142 @@ Feature or enh. description.
 
 <Update label="October 23, 2026" description="v1.8.2">
 
-This release gives you finer control over reasoning steps, including limits on which session fields the model can write, and lets you reuse MCP connections within a conversation. Voice updates include gateway turn detection, softphone links, and ElevenLabs v3/v4 models. Digital channels add Amazon Connect live-agent transfer and password fields in action sets. Governance brings mutual TLS for MCP servers, and the CI/CD release API can now build releases.
+This release gives you finer control over reasoning steps, including limits on which session fields the model can write, and lets you reuse MCP connections within a conversation. Voice updates include gateway turn detection, softphone links, and ElevenLabs v3/v4 models. Digital channels add Amazon Connect live-agent transfer and password fields in action sets, while Governance brings mutual TLS for MCP servers.
+
+<p className="rn-heading">Agent builder experience</p>
+
+<p className="rn-subtitle">Reuse MCP connections within a conversation</p>
+
+MCP servers have a new **Reuse connections** setting. When it's on, the agent keeps one connection to the server open for the whole conversation instead of reconnecting for every tool call, which makes tool calls faster, especially on voice. Workflows that an agent starts share the agent's connection, so stateful MCP servers keep their state across those calls. The setting is on by default for new servers and off for existing ones.
+
+<p className="rn-subtitle">Choose how much specialists see of other requests</p>
+
+When governed multi-intent handling is on, the new ‘Request view for specialists’ setting in Runtime Config controls what the specialist serving a request can do with the customer’s other requests.
+
+- Off: Shows only the specialist’s own conversation.
+- Inspect: Shows the other waiting requests and lets the specialist suggest a new one.
+- Manage: Also lets the specialist cancel or change a waiting request, but only when the customer asks for that change in their own words in the same turn.
+
+<p className="rn-subtitle">Limit which session fields a reasoning step can write</p>
+
+A reasoning step’s `CONTEXT_UPDATES` setting can now list the exact session fields the model is allowed to write, instead of only turning writes on or off. The model can update only the listed fields, and an empty list (`[]`) blocks all model-supplied updates in that step. Authored actions such as `SET`, `GATHER` extraction, hooks, and tool result mappings work as before. To use lists, every Runtime instance must run v1.8.2 before you publish the agent. Existing agents keep their current behavior until you change the step. 
+<br />[Learn more →](/agent-platform/abl/reference/flow#controlling-direct-context-writes-context_updates)
+
+```yaml wrap
+FLOW:
+  write_qr_message:
+    REASONING: true
+    GOAL: "Draft the QR code message and mark it done."
+    CONTEXT_UPDATES: [qr_text, qr_done]
+    EXIT_WHEN: qr_done == true
+
+# The model can write only qr_text and qr_done in this step. Every listed field must be declared in MEMORY.session.
+```
+
+<p className="rn-subtitle">Hand back to the parent agent after a one-way handoff</p>
+
+A handoff with `EXPECT_RETURN: false` still doesn’t return automatically. However, the receiving agent can now choose an authorized `HANDOFF` route back to the agent that called it during the same conversation, such as after the customer changes topic.
+
+
+<p className="rn-heading">Voice experience</p>
+
+<p className="rn-subtitle">Voice gateway turn detection</p>
+
+Pipeline voice channels can now let the Kore.ai Voice Gateway decide when the caller has finished speaking, using voice and wording signals instead of a fixed silence timer. On the channel’s speech settings, turn on ‘Voice gateway turn detection’ and choose a Patience level, from Fastest (0.3) to Slow dictation (0.9). Faster levels reply sooner, while the Dictation and Slow dictation levels wait through long pauses when callers spell names or read out card and reference numbers. You can also set turn detection for an agent, a behavior profile, a response, a flow step, or a single `GATHER` field, so only the questions that need more patience wait longer.
+[Learn more →](/agent-platform/abl/reference/flow#gateway-turn-detection)
+
+```yaml wrap
+FLOW:
+  get_card_number:
+    REASONING: false
+    VOICE:
+      turn_detection: { enabled: true, eou_threshold: 0.8 }
+    GATHER:
+      - card_number:
+          TYPE: string
+          PROMPT: "Please read out your 16-digit card number."
+
+# Dictation patience (0.8) applies only while this step asks for the card number. Other steps keep the channel setting.
+```
+
+<p className="rn-subtitle">Listen for words found earlier in the call</p>
+
+A `GATHER` field's speech vocabulary can now come from a session value set earlier in the call, not just from fixed words in the agent. For example, after a lookup tool returns the streets in the caller's county, the street question listens for those street names only while that question is asked. Values that hold personal data are sent to the speech recognizer only when the field allows it, and each use is recorded in the PII audit log.
+
+<p className="rn-subtitle">Interruption, silence and transcript controls for OpenAI Realtime</p>
+
+OpenAI Realtime voice channels have new controls under Advanced voice behavior.
+
+- Caller interruption: Decides whether callers can cut off the agent and protects messages that shouldn’t be interrupted, such as the welcome.
+- Silent caller reprompt: Applies the project’s no-input settings, including timeout, reprompts, and final action, to realtime calls.
+- Caller transcript cross-check: Gives the agent the caller’s transcript alongside what the model heard, catching dropped digits and misspellings.
+
+<p className="rn-subtitle">Shareable softphone links</p>
+
+You can now share a voice channel with anyone through a link. On the channel’s Testing tab, generate a link and send it to a tester or stakeholder. They can call the agent from a phone browser through the real voice gateway and follow a live, read-only transcript. Each link is shown only once and expires after 7 days. You can view and revoke active links on the same tab.
+
+<p className="rn-subtitle">ElevenLabs v3 and v4 dialogue models</p>
+
+The ElevenLabs TTS Model list for voice channels now includes Eleven v3, Eleven v4, and Eleven v4 Turbo, at both the channel level and per language. Calls now use the model you select instead of switching to Flash v2.5.
+
+<p className="rn-subtitle">Pause between a filler and the answer</p>
+
+Pipeline voice channels have a new Filler to answer pause setting in Runtime Config. It adds a short pause (0 to 5,000 ms) after a filler phrase finishes and before the agent speaks the answer, so the two don’t run together. Voice latency profiles inherit the value, and you can override it per profile. The default is 0, so current calls aren’t affected.
+
+<p className="rn-subtitle">Save spoken fillers in the conversation history</p>
+
+A new ‘Include spoken fillers in conversation history’ setting in Runtime Config saves each spoken filler, such as “One moment while I check that,” as an agent message. Fillers are saved only after they finish playing, so transcripts match what the caller heard. The setting is off by default.
+
+<p className="rn-subtitle">More reliable Bring Your Own SIP setup</p>
+
+Saving a Bring Your Own SIP voice channel now keeps your configuration, even if the voice gateway can’t be updated right away. Studio shows a message, and you can select Save again once the gateway recovers. Entering a phone number (DID) now enables call routing, and clearing a number removes its mapping. The SIP gateway field accepts up to ten IP addresses or CIDR ranges.
+
+
+<p className="rn-heading">Digital experience</p>
+
+<p className="rn-subtitle">Password fields in action sets</p>
+
+Action set input fields can now use `INPUT_TYPE: password` for PINs, passcodes, and passwords. Web chat masks the value as the customer types. When PII protection is on, a protected token replaces the submitted value before it reaches traces, history, or session variables, while tools still receive the original value. Action set elements also now appear in the order you declare them, so a button placed after the input fields stays after them.
+[Learn more →](/agent-platform/abl/reference/rich-content#password-inputs)
+
+```yaml wrap
+ACTIONS:
+  - id: phone_pin
+    type: input
+    label: "PIN"
+    inputType: password
+    required: true
+  submitLabel: "Sign in"
+  submitId: "submit_login"
+
+# The PIN is masked as the customer types it, and protected in traces and history when PII protection is on.
+```
+
+<p className="rn-subtitle">Transfer chats to Amazon Connect agents</p>
+
+Amazon Connect is now available as an Agent Desktop provider for live-agent transfer. Create an Amazon Connect connection with your AWS Region, Connect instance, and contact flow, then route an `ESCALATE` to it. The platform starts the Connect chat for the customer, who stays in the same chat window while the agent replies from the Amazon Connect Contact Control Panel (CCP). AWS credentials stay on the server, and no customer-hosted code is needed.
+
+<p className="rn-subtitle">Same-channel conversation recall is now opt-in</p>
+
+Cross-channel recall no longer brings earlier conversations from the channel in use into a new session. For example, a new phone call no longer recalls the customer’s earlier phone calls. To include them, turn on ‘Include earlier conversations on the same channel’ under Settings > Omnichannel > Conversation Recall. The agent now sees recalled conversations in the background only and always asks again for identity and verification details.
+
+<p className="rn-subtitle">Simpler Microsoft Agent 365 channel setup</p>
+
+Microsoft Agent 365 connections are now managed entirely from the channel’s Configuration tab, which shows the tenant ID and blueprint ID and lets you rotate the blueprint secret. The separate Credentials tab, including the Use Auth Profile option that could break replies, no longer appears for this channel. The tenant ID and blueprint ID can’t be changed after creation. To use different values, create a new connection. The Agent 365 tile now appears only once on the Channels page.
+
+
+<p className="rn-heading">Governance</p>
+
+<p className="rn-subtitle">Mutual TLS for MCP servers</p>
+
+MCP servers can now present a client certificate when they connect. In Project Tools > MCP Servers, open Advanced Settings and select an mTLS profile. It works separately from the server’s authentication profile, and both apply to every tool on the server. If a selected profile is disabled or can’t be used, the connection is refused with a clear error, instead of attempting the connection without it.
+
+<p className="rn-subtitle">View the SIP Ladder with session access</p>
+
+Anyone who can open a session can now view its SIP Ladder on the Voice tab, with call endpoints redacted. This view no longer needs the separate SIP Ladder reveal permission. Revealing personal data and raw provider payloads still requires its own permissions.
 
 </Update>
+
 
 <Update label="October 15, 2026" description="v1.8.1">
 
