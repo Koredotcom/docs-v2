@@ -386,6 +386,10 @@ HANDOFF:
 | `intentBridge.guidedThreshold`       | Number  | `0.5`      | Confidence at/above which intent is offered to the model as guidance.                                                             |
 | `intentBridge.outOfScopeDecline`     | Boolean | `true`     | Decline out-of-scope requests detected by the classifier.                                                                         |
 | `intentBridge.multiIntentSignal`     | Boolean | `true`     | Signal when the message contains multiple distinct intents.                                                                       |
+| `parentReturn.minConfidence`         | Number  | _unset_    | While a specialist is active under this supervisor, the confidence the classifier needs to return the caller here for another specialist's intent. Unset uses the supervisor's compiled intent `min_confidence`. Overrides the project-level `pipeline.parentReturn.minConfidence` default. |
+| `parentReturn.ignoreAmbiguous`       | Boolean | `false`    | Keep the caller with the active specialist instead of returning here when the classifier marks its result `ambiguous`.            |
+
+<Note>`parentReturn.minConfidence` must be between `0` and `1`; a value outside that range is a compile error (`EXECUTION_PIPELINE_PARENT_RETURN_CONFIDENCE_RANGE`).</Note>
 
 For pure routing supervisors, `sequential` mode with `shortCircuit.enabled: true` gives the best cost savings. In `parallel` mode the classifier adds latency protection but no cost savings, since both calls run regardless.
 
@@ -1123,6 +1127,9 @@ ESCALATE:
         metadata:
           tier: "gold"
           region: "us-east"
+        additional_headers:                # arbitrary extra headers, template-resolved
+          X-Interaction-Id: "{{interactionID}}"
+          X-Brand: "{{brand}}"
 
   routing:
     connection: livechat
@@ -1142,11 +1149,14 @@ Each field is optional. The `*_header_key` fields name a SIP header; the paired 
 | `reason`              | `string`             | Value placed in the reason header.                                             |
 | `metadata_header_key` | `string`             | SIP header **name** that carries the metadata.                                 |
 | `metadata`            | `string` or `object` | A string is sent verbatim; a map is serialized to a compact JSON string.       |
+| `additional_headers`  | `object`             | Map of header name → value. Arbitrary extra headers alongside the queue/reason/metadata trio — see below. |
+
+Unlike the fields above, `additional_headers` values are **template-resolved against session values at runtime** (a `{{...}}` reference is substituted on the wire; a key that resolves empty is dropped). Header *names* are still validated as RFC 3261 tokens at compile time. Values aren't byte-bounded the way the other fields are (they ride the HTTP callevents body, not a SIP header), but reject CR/LF/NUL. A name colliding (case-insensitively) with the resolved queue/reason/metadata header, or with a reserved platform header, fails the transfer. The same per-field trigger-overrides-routing-default precedence applies.
 
 The compiler validates the block against the same limits the runtime transfer enforces:
 
 - Header-name fields (`*_header_key`) must be RFC 3261 tokens, at most 64 characters.
-- Header values (`queue_name`, `reason`, and the serialized `metadata`) must contain no CR/LF/NUL characters and stay within 1024 UTF-8 bytes.
+- Header values must contain no CR/LF/NUL characters. `queue_name` and `reason` emit as real SIP headers and stay within 1024 UTF-8 bytes; the serialized `metadata` and `additional_headers` values ride the HTTP callevents body instead of a SIP header, so they are **not** byte-bounded.
 - `metadata` must be a string or a non-empty map — arrays and scalar values are rejected; an empty `{}` is ignored.
 - Two header-name fields must not resolve to the same SIP header key (compared case-insensitively). A collision (`GENESYS_SIP_HEADER_KEY_COLLISION`) is a compile error, because the transfer rejects colliding header keys at runtime.
 - Unrecognized fields are ignored with a warning. Keys may be written in `snake_case` or `camelCase` (for example `queue_header_key` or `queueHeaderKey`).
