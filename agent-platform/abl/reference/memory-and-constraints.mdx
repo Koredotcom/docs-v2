@@ -157,9 +157,12 @@ MEMORY:
 
 | Declaration | Model-write behavior |
 | ----------- | --------------------- |
-| Omitted (project-wide) | No change — existing inferred protections (authentication, consent, gate ownership, tool-outcome fields) still apply; this is not a blanket exemption for everything else. |
+| Omitted everywhere in the project | Ordinary model edits remain allowed (legacy behavior), including correcting or invalidating a previously-written value. Explicit `READONLY` and memory/assignment permissions still apply independently; a tool binding or return mapping does not, by itself, restrict a model write. |
+| Omitted on one field, in a project that declares `MODEL_WRITERS` somewhere else | Inferred restrictions apply to that field too — a captured-consent value, a private/gate-owned field, or a protected tool outcome stays protected even without its own explicit declaration; restrictions can follow aliases connected to an explicit declaration elsewhere. |
 | `MODEL_WRITERS: [Coordinator, Worker]` | Only the listed agents' models may write the field. |
 | `MODEL_WRITERS: []` | Every model is denied; authored writes (`SET`, `on_result`, hooks) still work. |
+
+<Note>The two "omitted" rows are easy to conflate, but they're opposite in a project that has adopted `MODEL_WRITERS` anywhere: once the project opts in, unrelated fields pick up inferred protection; a project that has never declared `MODEL_WRITERS` at all stays on the older, ordinary-edit behavior throughout.</Note>
 
 The YAML key is `model_writers`. Names are case-sensitive agent names; every explicit declaration of the same shared field across the project must agree, and a conflicting pair fails closed (denied for everyone) rather than picking one. A full-project compile rejects a name that isn't a real agent in the project (`SESSION_MODEL_WRITER_UNKNOWN`); compiling a single agent in isolation defers that specific check. An invalid list (not an array of plain agent-name strings) is rejected at parse/compile time (`MEMORY_MODEL_WRITERS_INVALID`, `SESSION_MODEL_WRITERS_INVALID`) — the field is **not** left silently unprotected on invalid input.
 
@@ -358,7 +361,7 @@ MEMORY:
 | `step:enter:<name>`          | On entering a specific flow step.                                |
 | `step:exit:<name>`           | On exiting a specific flow step.                                 |
 
-<Warning>Legacy event names such as `search:before`, `ON_START`, or `ON_SEARCH` are no longer supported and are rejected during compilation — use the canonical patterns above. Note that `tool:<name>:before` is not a valid recall event (only `tool:<name>:after`).</Warning>
+<Warning>Legacy event names such as `search:before`, `ON_START`, or `ON_SEARCH` are no longer supported and are rejected during compilation — use the canonical patterns above. The `tool:<name>:before` isn't a valid recall event (only `tool:<name>:after`).</Warning>
 
 #### Recall actions
 
@@ -392,7 +395,7 @@ Constraints are deterministic business rules that the runtime evaluates against 
 
 ### Overview
 
-Constraints enforce guardrails on agent behavior that are separate from LLM instructions. They are deterministic checks evaluated by the runtime, not suggestions to the model. A constraint that fails blocks the current operation and triggers an `ON_FAIL` action.
+Constraints enforce guardrails on agent behavior that are separate from LLM instructions. they're deterministic checks evaluated by the runtime, not suggestions to the model. A constraint that fails blocks the current operation and triggers an `ON_FAIL` action.
 
 ```yaml
 CONSTRAINTS:
@@ -529,6 +532,12 @@ Non-structural `BEFORE` targets are retained for compatibility, but they are war
 | `ON_EXHAUSTED` | string or action | Inline action run once `MAX_REPEATS` is used up, for example `ESCALATE "identity_not_confirmed"`. |
 
 <Note>The `CLEAR` key lets an `ON_FAIL` block reset dependent state directly — you no longer need a separate `CLEAR`-only step solely to clear variables before a retry.</Note>
+
+<Warning>
+  `GOTO` (and, on `MAX_REPEATS` exhaustion, `ON_EXHAUSTED`'s own `GOTO`) only moves the flow from two checkpoints: a FLOW step's entry/post-extraction checks, and its main `CALL` checkpoint (`BEFORE calling <tool_name>`). `ON_EXHAUSTED: GOTO` specifically only moves the flow from the `CALL` checkpoint — at step-entry and post-extraction, an exhausted constraint still answers with the platform message without transitioning anywhere.
+
+  At every other structural checkpoint — `BEFORE returning results`, and a `CALL` inside `ON_INPUT`, `ON_RESULT`, a success/failure branch, a sub-intent, or a step action — `GOTO`, `RETRY`, and `COLLECT` all answer with the platform message and do not move the flow. Write those checkpoints' `ON_FAIL` as a plain `RESPOND`/message, `HANDOFF`, or `ESCALATE` instead of relying on `GOTO` to route you elsewhere.
+</Warning>
 
 <Note>
   An `ON_FAIL` `RESPOND` message may use `{{_abl_constraint_fail_count}}` — this failure's 1-based ordinal for the constraint within the current conversation. Pair it with `MAX_REPEATS`/`ON_EXHAUSTED` to vary the message as attempts run out, then hand off once the cap is reached:
@@ -673,6 +682,6 @@ CONSTRAINTS:
 
 - [Guardrails](/agent-platform/abl-reference/guardrails) -- input/output safety checks (distinct from business rule constraints)
 - [Expressions and functions](/agent-platform/abl-reference/expressions-and-functions) -- condition expression syntax
-- [Multi-Agent and Supervisor](/agent-platform/abl-reference/multi-agent-and-supervisor) -- HANDOFF and ESCALATE actions referenced in ON_FAIL
+- [Multi-agent and supervisor](/agent-platform/abl-reference/multi-agent-and-supervisor) -- HANDOFF and ESCALATE actions referenced in ON_FAIL
 - [Lifecycle and hooks](/agent-platform/abl-reference/lifecycle-and-hooks) -- `ON_START` handler where initial memory setup occurs
 - [Data types](/agent-platform/abl-reference/data-types-and-utilities) -- type definitions used in `TYPE` declarations
