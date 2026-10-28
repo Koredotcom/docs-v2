@@ -3,7 +3,7 @@ title: General settings
 sidebarTitle: General
 ---
 
-General settings govern project membership, authentication keys, model availability, runtime behavior, data lifecycle, compile-time variables, and localization assets.
+General settings govern project membership, authentication keys, model availability, runtime behavior, data lifecycle, Insights thresholds and cost inputs, compile-time variables, and localization assets.
 
 ## Members
 
@@ -377,6 +377,19 @@ The reasoning pipeline runs a lightweight classifier ahead of each reasoning tur
 | **Guided Threshold** | Sets the confidence needed for Tier 2 guided reasoning, where the runtime keeps the reasoning loop but shapes it by hiding tools and adding routing hints. Default: 0.5. Set it below the programmatic threshold, since guided actions leave the model room to recover and programmatic ones don't. |
 | **Out-of-Scope Decline** | Declines out-of-scope queries programmatically, without an LLM call. It removes a model call from every off-topic turn, which pays off most on public channels where off-topic volume runs high. |
 | **Multi-Intent Signal** | Injects multi-intent hints into the reasoning turn when the classifier detects two or more intents. |
+| **Routing provider** | Configures a decision provider to handle routing decisions. This section appears when **Decision Models** is enabled at the platform level. For configuration details, see [Configure decision models for a project](/agent-platform/administration/decision-models). |
+
+### Conversation handling
+
+This section configures decision providers for specific conversation tasks and appears only when **Decision Models** is enabled in the Admin Console. For configuration details, see [Configure decision models for a project](/agent-platform/administration/decision-models).
+
+| **Field** | **Description** |
+|---|---|
+| **Confirmations** | Resolves yes/no answers to confirmation prompts using a decision provider. |
+| **Gather responses** | Resolves answers to gather and choice prompts using a decision provider. |
+| **Flow escape** | Detects when a user wants to leave the current flow using a decision provider.. |
+| **Provider dispatch** | Configures how decision providers are called and the minimum confidence required when a decision step does not specify its own threshold. |
+
 
 ### Tool call policy
 
@@ -543,6 +556,7 @@ When the agent is processing a request, Runtime waits for the configured delay b
 | **Chat Delay** | Sets the delay before static chat fillers are emitted. Default: 1200 ms. Set it above the time a normal turn takes, so fillers mark genuinely slow turns rather than interrupting fast ones. |
 | **Voice Delay** | Sets the delay before static voice fillers are emitted. Default: 500 ms. Callers tolerate silence for less time than chat users, so this typically sits below the chat delay. |
 | **Follow-up Gap** | Voice only. Sets the pause after a filler finishes playing before the next generated follow-up line (800-3000 ms). Default: 1200 ms. Follow-ups continue until the answer starts or the per-turn limit is reached. |
+| **Filler to answer pause (ms)** | Pipeline voice only. Minimum time (0–5000 ms) after confirmed filler playback completes before Runtime sends the answer for TTS. Default: `0`, which adds no pause. Time already spent waiting for the answer counts toward this pause. TTS startup adds further audible silence. This setting doesn't change follow-up filler timing or realtime audio. |
 | **Native realtime turn delay** | Sets the delay before the native Gemini realtime hold phrase. Default: 500 ms. It's independent from normal voice fillers. |
 | **Cooldown** | Sets the minimum interval between fillers across turns. Default: 3000 ms. Generated voice follow-ups within one turn are paced by the follow-up gap instead. |
 | **Max Per Turn** | Caps fillers emitted during one turn. Default: 5. |
@@ -558,6 +572,7 @@ When the agent is processing a request, Runtime waits for the configured delay b
 | **Output Tokens** | Caps the response length for built-in contextual filler generation. Fillers should be short, and a low cap enforces that more reliably than the prompt does. |
 | **Prompt Override Tokens** | Caps the response length when a filler prompt override is in use. Overrides usually ask for more than the built-in prompt does, which is why they carry a separate limit. |
 | **Conversation History** | Sets how many recent messages the filler prompt includes. More history makes fillers more specific and each generation call more expensive. |
+| **Include spoken fillers in conversation history** | Saves spoken voice fillers as assistant messages in the conversation history. Off by default. Fillers are saved only after playback completes. |
 | **Previous Fillers** | Sets how many already-emitted fillers the prompt includes. Its purpose is avoiding repetition within a turn, so it matters most when the max per turn runs high. |
 | **Filler Prompt** | Selects a prompt-library version that replaces the built-in filler prompt. Select **Clone built-in** to start from the platform's prompt rather than an empty one. The prompt accepts placeholders for the user message, the conversation history, and previously emitted fillers. |
 
@@ -714,6 +729,49 @@ The **Retention Windows** section below the summary sets the time-to-live in day
 
 ---
 
+## Insights config
+
+The **Insights Config** page sets the KPI boundaries that color the project's analytics, and the cost inputs that turn conversation volume into savings estimates.
+
+**Navigation**: **Project** -> **Settings** -> **Insights Config**
+
+Both sections change how Insights reports results, not how agents behave. Set them to match your own service targets and labor costs, because the defaults describe a generic contact center rather than yours.
+
+### KPI status thresholds
+
+This section decides where each KPI turns from green to amber to red on **At a Glance** and the **Insights Dashboard**. The colors are fixed, and you choose the numbers.
+
+Each metric has two boundaries. A value on the healthy side of **Healthy** shows green, a value between the two boundaries shows amber, and a value beyond **Warning** shows red. The **Direction** column tells you which side is healthy.
+
+| Metric | Direction | Default bands |
+|---|---|---|
+| **Containment Rate** | Higher is better | Healthy at 70% or above, Watch from 50% to 70%, Critical below 50%. |
+| **Escalation Rate** | Lower is better | Healthy at 15% or below, Watch from 15% to 25%, Critical above 25%. |
+| **Quality Score** | Higher is better | Healthy at 3.5 or above, Watch from 2.5 to 3.5, Critical below 2.5. |
+| **Avg Sentiment** | Higher is better | Healthy at 0.50 or above, Watch from 0.00 to 0.50, Critical below 0.00. |
+
+To change a threshold:
+
+1. Enter the boundary values in the metric's **Healthy** and **Warning** fields. For a higher-is-better metric, keep **Healthy** above **Warning**. For a lower-is-better metric, keep **Healthy** below **Warning**.
+2. Select **Save thresholds** to apply the changes, or **Cancel** to discard them.
+
+The **Source** column shows **Default** while a metric uses the platform's built-in boundaries. Each metric row also restates its current bands below the metric name, so you can check the effect of an edit before you save it.
+
+### ROI cost inputs
+
+**At a Glance** uses these values to estimate savings, full-time equivalent (FTE) staffing, and cost per conversation. The estimates are only as accurate as these inputs, so take them from your own finance or workforce data.
+
+| Field | Description |
+|---|---|
+| **Human Cost per Conversation ($)** | What one conversation costs when a human agent handles it. Savings estimates scale directly with this value, so use your fully loaded cost, not salary alone. |
+| **Human FTE Monthly Cost ($)** | What one full-time human agent costs per month. At a Glance uses it to express contained volume as FTE equivalents. |
+| **Avg Human Handle Time (minutes)** | How long a human agent typically spends on one conversation. It converts conversation volume into staff hours. |
+| **Estimated AI Cost per Conversation ($)** | What one agent-handled conversation costs. A fallback that applies only when actual LLM cost tracking data is unavailable. |
+
+Select **Save cost settings** to apply the changes.
+
+---
+
 ## Config variables
 
 The **Config Variables** page defines key-value pairs that the platform resolves at compile time through `{{config.KEY}}` syntax.
@@ -731,6 +789,7 @@ Select **Add Variable**, then complete the fields.
 | Field | Description |
 |---|---|
 | **Key** | Uniquely identifies the variable and forms the reference used in code. Changing a key later breaks every reference to it, so settle naming before the value spreads. |
+| **Type** | Specifies whether the variable is stored as `plaintext` or `secret`. Secret values are not exposed in traces and are not copied into the session state. Instead, they are stored only in the runtime secret context.|
 | **Value** | Holds what the platform substitutes at compile time. You can override it per deployment environment, which is the mechanism that lets one project target different endpoints. |
 | **Namespaces** | Groups related variables so a large set stays navigable. |
 | **Description** | Explains what the variable is for. It's the only context a later reader gets when deciding whether a variable is safe to change. |
