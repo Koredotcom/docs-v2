@@ -310,6 +310,92 @@ HOOKS:
 
 <Warning>A hook's `WHEN` must be valid CEL. An invalid `WHEN` (including old plain-English text left over from before this feature) is demoted to an unconditional `RESPOND` for backward compatibility, and the compiler warns `HOOK_WHEN_BRANCH_INVALID_CEL`. Fix the condition, or remove `WHEN:` if the response really is meant to run unconditionally.</Warning>
 
+### Conditional interaction-language actions (before_turn)
+
+A `before_turn` hook can switch the session's interaction language for the turn's reply, its filler, and (on KoreVG voice without a voice language profile) the TTS voice, conditionally based on a `WHEN:` guard. A `WHEN:` whose indented body is `SET_INTERACTION_LANGUAGE:` or `CLEAR_INTERACTION_LANGUAGE` is a **language branch**. This is the same `WHEN:` mechanism as a [respond branch](#when--respond-branches), but with a language action instead of `RESPOND:`. A language directive written at hook level with no `WHEN:` is a catch-all.
+
+```yaml
+HOOKS:
+  before_turn:
+    WHEN: session.languageDetection.status == "detected" AND session.languageDetection.confidence >= 0.85
+      SET_INTERACTION_LANGUAGE: session.languageDetection.language
+    WHEN: session.languageDetection.language == "en"
+      CLEAR_INTERACTION_LANGUAGE
+    WHEN: session.languageDetection.status == "low_confidence" AND session.languageDetection.textLength >= 12
+      RESPOND: "Shall we continue in {{session.languageDetection.candidate}}?"
+    SET_INTERACTION_LANGUAGE: "hi-IN"
+```
+
+**Rules:**
+
+- A value that is a BCP 47 tag (quoted or not) is a compile-time literal, canonicalized (`"es-mx"` becomes `es-MX`). A value path or `{{template}}` is resolved at runtime, like a hook `SET` value; a result that is not a language the channel supports is refused (with a trace) and the language stays as it was. Any other value is a compile error (`E394` in `.abl`, `E396` in YAML).
+- `CLEAR_INTERACTION_LANGUAGE` takes no value (`E395`). A trailing colon is fine.
+- One `WHEN:` body holds exactly one action: a `RESPOND:` (a reply branch) or one language action. Both in one body, or two language actions, drop the whole branch with `HOOK_WHEN_BODY_MULTIPLE_ACTIONS`. Write two separate `WHEN:` branches instead.
+- Language branches are tried in order. The first whose `WHEN:` holds wins, so the catch-all (no `WHEN:`) belongs last. One placed earlier warns with `HOOK_LANGUAGE_CATCH_ALL_NOT_LAST`.
+- This grammar is **`before_turn` only**. The same directives under a `WHEN:` in any other hook are a compile error (`HOOK_LANGUAGE_ACTION_NOT_BEFORE_TURN` from the parser; `HOOK_LANGUAGE_ACTION_UNSUPPORTED_HOOK` if a language action reaches compilation attached to a different hook by another path).
+- A `WHEN:` that is not valid CEL drops that action with the compiler warning `HOOK_LANGUAGE_WHEN_INVALID_CEL`. Unlike a respond branch, it never becomes unconditional.
+- YAML form: the hook carries `interaction_language_actions`, a list of entries with an optional `when` and exactly one of `set_interaction_language`, `set_interaction_language_expression`, or `clear_interaction_language: true`. Anything else is `HOOK_LANGUAGE_ENTRY_INVALID`.
+
+**Timing.** The runtime evaluates language actions in an early pass, before the filler and before the model call, against the session as it stood at the start of the turn (including `session.languageDetection`). The hook's own `CALL` and `SET` run later in the turn, so a language guard never sees values the hook itself just set. It sees what the previous turn left. The chosen language becomes the session's interaction language and holds until another action changes or clears it.
+
+**Gating.** Language actions take effect only when the project's language-detection setting is on (a project-level Studio setting, not declared in ABL), and only on chat and on voice without a voice language profile. Omitting the project setting while authoring this grammar produces a compiler reminder (`HOOK_LANGUAGE_ACTIONS_REQUIRE_SETTING`). Realtime speech-to-speech sessions never run them: their language is fixed by the provider session.
+
+#### session.languageDetection shape
+
+The `session.languageDetection` object holds the latest detection result.
+
+| Field        | Type     | Description |
+| ------------ | -------- | ----------- |
+| `status`     | `string` | One of `detected`, `low_confidence`, `no_language`, `failed`, `unavailable`, `skipped`. |
+| `language`   | `string` | BCP 47 tag. Present only when `status` is `detected`. |
+| `confidence` | `number` | 0 to 1. |
+| `candidate`  | `string` | The best guess. Present when `status` is `low_confidence`. |
+| `script`     | `string` | The detected script. |
+| `textLength` | `number` | Characters sent for detection, after redaction. |
+| `reason`     | `string \| null` | Why the status is what it is, or `null`. |
+
+The project's language-detection setting can configure an allowed-languages list and a minimum message length (default 12 characters). A message in a language outside the allowed list comes back `no_language` with `reason: "not_allowed"`, so an unsupported language is never offered as `candidate`. A message shorter than the minimum comes back `low_confidence` with `reason: "too_short"` and its guess as `candidate`, whatever the confidence: a single short word like "Ciao" can still score 1.0. Scripts used by only one supported language (Korean, Japanese, Thai, Greek, Hebrew, and most Indic scripts) are exempt from the minimum-length rule. The session's current interaction language is sent as a hint to the detection service, improving accuracy on short or romanized input.
+
+#### Recipe: avoid language flapping
+
+Short or code-mixed turns (Hinglish, for example) can flip between two detected languages turn to turn. Applying every `detected` result makes the reply, filler, and voice change each turn. Switch only on two consecutive matching detections of useful length. The hook `SET` records this turn's detection for the next turn's guard:
+
+```yaml
+HOOKS:
+  before_turn:
+    WHEN: session.languageDetection.status == "detected" AND session.languageDetection.confidence >= 0.85 AND session.languageDetection.textLength >= 12 AND session.languageDetection.language == last_detected_language
+      SET_INTERACTION_LANGUAGE: session.languageDetection.language
+    WHEN: session.languageDetection.status == "low_confidence" AND session.languageDetection.textLength >= 12
+      RESPOND: "Shall we continue in {{session.languageDetection.candidate}}?"
+    SET:
+      last_detected_language: "{{session.languageDetection.language}}"
+```
+
+#### Recipe: FLOW agent with language switching
+
+A FLOW agent takes the same `before_turn` actions. They run before the turn's step. A model-written reply (a `REASONING: true` step) and fillers follow the chosen language. A fixed `RESPOND:` in a `REASONING: false` step is delivered as written and is never auto-translated. Localize it with `{{locale.KEY}}` from the project's locale files: the language setters refresh the locale catalog in the same turn, so the step renders the text for the new language.
+
+In this example the English branch comes first (the first matching `WHEN:` wins), so a confident English message clears back to the default language while any other confident detection switches:
+
+```yaml
+HOOKS:
+  before_turn:
+    WHEN: session.languageDetection.status == "detected" AND session.languageDetection.confidence >= 0.85 AND session.languageDetection.language == "en"
+      CLEAR_INTERACTION_LANGUAGE
+    WHEN: session.languageDetection.status == "detected" AND session.languageDetection.confidence >= 0.85 AND session.languageDetection.textLength >= 12
+      SET_INTERACTION_LANGUAGE: session.languageDetection.language
+
+FLOW:
+  ask_order:
+    REASONING: false
+    RESPOND: "{{locale.ASK_ORDER_NUMBER}}"
+    THEN: answer
+
+  answer:
+    REASONING: true
+    GOAL: "Tell the customer the status of their order in one or two sentences."
+```
+
 ### Example: audit logging hook
 
 
@@ -497,6 +583,8 @@ MESSAGES:
 | `self_handoff`          | "Cannot hand off to self."                      | An agent hands off to itself.                       |
 | `tool_fallback_desc`    | "Execute the requested operation."              | A tool has no `description`.                        |
 | `tool_confirmation_request` | "Please confirm before I go ahead{{action_suffix}}.{{details}} Shall I proceed?" | A tool needs the customer's approval. Supports `{{action_suffix}}` and `{{details}}`. See [Confirmation](/agent-platform/abl/reference/tools#what-the-customer-is-asked). |
+
+<Note>On the **Genesys Bot Connector** specifically, setting `escalation_format: ""` (an explicit empty string, not omitting the key) suppresses the whole reply — text, buttons, and citations — on a *successful* terminal escalation; the configured escalation intent is still sent, so the customer's session still escalates, it just gets no message. Omitting the key keeps the normal message behavior, and any nonempty value behaves as before. This only changes what the Bot Connector sends outward — it doesn't affect the internal execution transcript, ongoing (non-terminal) replies, an unsuccessful escalation, or any other channel.</Note>
 | `tool_confirmation_duplicate_effect` | "I already completed this earlier in our conversation{{action_suffix}}. Would you like me to do it again?" | A tool that already ran is about to run again. Supports `{{action_suffix}}`. |
 
 <Note>
