@@ -119,6 +119,7 @@ After creation, open the connection and go to its **Configuration** tab to set u
         | **STT Model** | The recognition model, for example `Nova 3 (latest, most accurate)`. |
         | **Minimum STT confidence** | Reject transcripts below this confidence (0–1) and treat them as no-input. `0` disables the gate. Provider-relative - calibrate per channel. |
         | **Custom vocabulary** | Domain-specific terms to bias recognition toward. Select **Add phrase** and set a **Phrase** (for example `ACME, policy number`) and optional **Boost**. Deepgram Nova-3 and Flux use keyterm prompting and ignore boost; older Deepgram models use keyword intensifiers. |
+        | **Multilingual speech recognition** | Chooses the recognizer that listens for each configured language. Enable **A different recognizer per language** to select the configured speech recognizer that should listen after an explicit language change. |
       </Step>
 
       <Step title="Configure Speech Synthesis">
@@ -137,10 +138,16 @@ After creation, open the connection and go to its **Configuration** tab to set u
       <Step title="Configure Conversation Controls">
         | Field | Description |
         | --- | --- |
-        | **Barge-in** | Allow the caller to interrupt the agent while it is speaking. |
+        | **Barge-in** | Allow the caller to interrupt the agent while it's speaking. |
         | **Speech Timeout (ms)** | The time the agent waits for caller speech before it times out, for example `3000`. |
+        | **Transcript Grouping Timeout (ms)** | After the speech provider returns a final result, waits this long for another final result and combines the parts into one user input. Leave blank to process each final result immediately. For example, `1500`. |
         | **Welcome Message** | The opening prompt the agent speaks, such as `Hello! How can I help you today?`. |
-        | **Noise isolation** | Apply server-side noise reduction to inbound call audio to filter out background voices and ambient noise. |
+        | **Allow caller to interrupt the welcome** | When off, the welcome plays to completion even if barge-in is on. It applies only while barge-in is active for the call, through the channel's **Barge-in** setting or the agent's listening settings. |
+        | **Connect greeting** (Audio) | Plays a clip as soon as the call connects, before the agent's first turn. If the project's greeting-audio library has no clips yet, the panel shows a note and an **Open Greeting Audio** link to add one. See [Greeting audio](/agent-platform/administration/general-settings#greeting-audio). |
+        | **Keypad tone** | Plays an audible keypad tone to the caller on each DTMF keypress. Off by default. |
+        | **Voice gateway turn detection** | Lets the voice gateway decide when the caller has finished speaking, using voice and wording signals instead of the speech provider's silence timer. Off by default. Requires a voice gateway that supports turn detection. |
+        | **Noise isolation** | Applies server-side noise reduction to inbound call audio to filter out background voices and ambient noise. |
+        | **Trust inbound SIP headers** | Off by default. Turn it on only if your SBC sets or overwrites these headers. If the headers can arrive from the caller, the value isn't trustworthy. When on, transfer headers configured to pass through from the inbound call (for example, `User-to-User`) are sent on the transfer. When off, they are dropped. |
       </Step>
 
       <Step title="Configure the Transfer Queue">
@@ -156,11 +163,11 @@ After creation, open the connection and go to its **Configuration** tab to set u
     </Steps>
   </Tab>
 
-<Tab title="Realtime mode">
+  <Tab title="Realtime mode">
     Under **Realtime LLM Voice Settings**, select an **S2S Provider**. Only the panel for the selected provider applies to this connection.
 
     <Note>
-      **Azure OpenAI Realtime, Grok Realtime, Google Gemini Live, and OpenAI Realtime** each require a **Realtime model connection** - a project-level model pinned to this channel. Amazon Nova Sonic does not use this field; it authenticates via Voice Service credentials instead.
+      **Azure OpenAI Realtime, Grok Realtime, Google Gemini Live, and OpenAI Realtime** each require a **Realtime model connection**: a project-level model pinned to this channel. Amazon Nova Sonic does not use this field; it authenticates via Voice Service credentials instead.
 
       To make a model available here:
 
@@ -181,94 +188,233 @@ After creation, open the connection and go to its **Configuration** tab to set u
     | **Realtime model connection** | The project-pinned realtime model this provider uses. Shows `No project model selected` until a workspace admin adds one following the steps above; once selected, shows the model name and provider (for example `GPT Realtime 2 · openai`). |
 
     <AccordionGroup>
-      <Accordion title="Amazon Nova Sonic (S2S)">
+      <Accordion title="Amazon Nova Sonic">
+        Under **Amazon Nova Sonic Configuration**, set the following fields.
+
         | Field | Description |
         | --- | --- |
-        | **Voice** | The synthesized voice, for example `Tiffany (default)`. |
+        | **Voice** | The voice Nova Sonic uses to speak to callers. Default: **Tiffany**. |
         | **Model** | The Amazon Bedrock model ARN, for example `arn:aws:bedrock:us-east-1::foundation-model/amazon.nova-2-sonic-v1:0`. |
-        | **Maximum tokens** | The maximum response length, in tokens. Default: `1024`. |
-        | **Temperature** | Response creativity. Default: `0.70`. |
-        | **Top P** | Nucleus sampling threshold. Default: `0.90`. |
-        | **Endpointing sensitivity** | How quickly the model treats the caller as finished speaking - `Low`, `Medium`, or `High`. `Medium` is the general-conversation default; `High` responds sooner but may interrupt callers; `Low` allows more pause before responding. |
-      </Accordion>
+        | **Maximum tokens** | The maximum number of tokens in a model response. Default: `1024`. |
+        | **Temperature** | Controls response randomness. Lower values give more predictable responses; higher values give more varied responses. Default: `0.70`. |
+        | **Top P** | Limits the model to the smallest set of likely tokens whose combined probability reaches this value. Default: `0.90`. |
+        | **Endpointing sensitivity** | How quickly Nova decides the caller has finished speaking. **Medium** (default) suits general conversation. **High** responds sooner but may interrupt callers. **Low** allows more pause before responding. |
 
-      <Accordion title="Azure OpenAI Realtime (S2S)">
-        | Field | Description |
-        | --- | --- |
-        | **Voice** | The synthesized voice, for example `Marin (recommended)`. |
-        | **Temperature** | Response creativity, from `0.6` (Focused) to `1.2` (Creative). Default: `0.8`. |
+        **Pending tool fillers**
 
-        Under **Turn Detection** - tunes how Azure OpenAI detects speech starts and decides when the caller has finished speaking:
+        Turn on **Pending tool fillers** to let Nova speak a brief hold phrase when a project tool is still running. Fast tools finish without a filler.
 
         | Field | Description |
         | --- | --- |
-        | **Speech detection sensitivity** | Lower values pick up quieter speech; higher values reduce background-noise triggers. Default: `0.5`. |
-        | **Silence Duration (ms)** | Quiet time before Azure OpenAI treats the caller turn as complete. Default: `700`. |
-        | **Prefix Padding (ms)** | Audio kept before detected speech so the beginning of the caller utterance is preserved. Default: `300`. |
+        | **Filler delay (milliseconds)** | Nova speaks only if the tool is still pending after this delay. Leave empty to use the default of `900` ms. |
+        | **Tool filler instruction** | The instruction Nova follows to generate the hold phrase. Use `{{toolName}}` to insert the name of the running tool. Default: `The tool {{toolName}} is still in progress. Briefly tell the caller that you are working on it.` |
+
+        **Coordinator turn filler**
+
+        Turn on **Coordinator turn filler** to let Nova speak a short hold phrase during convergence-enabled coordinator turns while Runtime decides and executes the turn.
+
+        | Field | Description |
+        | --- | --- |
+        | **Coordinator filler instruction** | The instruction Nova follows to generate the hold phrase. Default: `Briefly tell the caller that you are still working on their request.` Runtime sends this as native cross-modal input and keeps its transcript out of the canonical conversation history. |
+
+        **Advanced voice behaviour (Nova-specific)**
+
+        | Field | Description |
+        | --- | --- |
+        | **Failed tool call fallback** > **Tell the caller and end the call** | When a Nova tool call fails, Nova says a short apology and ends the call. Off by default. |
+
+        Also configure the **Advanced voice behaviour** settings that apply to all providers, described after the provider list.
       </Accordion>
 
-      <Accordion title="Grok Realtime (S2S)">
-        | Field                     | Description                                                                                            |
-        | ------------------------- | ------------------------------------------------------------------------------------------------------ |
-        | **Model**                 | The Grok Realtime model, for example `grok-voice-latest (recommended)`.                                |
-        | **Voice**                 | The synthesized voice, for example `Ara (default)`.                                                    |
-        | **Temperature**           | Response creativity, from `0.0` (Focused) to `2.0` (Creative). Default: `1`.                           |
-        | **Threshold**             | Turn-detection sensitivity, from `0.0` (Sensitive) to `1.0` (Conservative). Default: `0.5`.            |
-        | **Silence Duration (ms)** | Quiet time before the caller turn is treated as complete. Default: `500`.                              |
-        | **Prefix Padding (ms)**   | Audio kept before detected speech so the start of the caller's utterance is preserved. Default: `300`. |
+      <Accordion title="Azure OpenAI Realtime">
+        Under **Azure OpenAI Realtime Configuration**, set the following fields.
 
-        The xAI Grok Realtime API provides low-latency voice conversations with function calling support.
+        | Field | Description |
+        | --- | --- |
+        | **Voice** | The voice used to speak to callers. Default: **Marin (recommended)**. |
+        | **Temperature** | Controls response randomness. Range: **Focused** (`0.6`) to **Creative** (`1.2`). Default: `0.8`. |
+
+        **Turn detection**
+
+        | Field | Description |
+        | --- | --- |
+        | **Speech detection sensitivity** | Adjusts how readily the model detects speech. Default: `0.5`. |
+        | **Silence Duration (ms)** | How long the caller must be silent before the turn is treated as complete. Default: `700`. |
+        | **Prefix Padding (ms)** | Audio kept before detected speech so the start of the caller's utterance is preserved. Default: `300`. |
+
+        Also configure the **Advanced voice behaviour** settings that apply to all providers, described after the provider list.
       </Accordion>
 
-      <Accordion title="Google Gemini Live (S2S)">
-        | Field                    | Description                                                                                               |
-        | ------------------------ | --------------------------------------------------------------------------------------------------------- |
-        | **Model**                | The Gemini Live model, for example `Gemini 3.1 Flash Live (Latest)`.                                      |
-        | **Voice**                | The synthesized voice, for example `Puck - Upbeat`.                                                       |
-        | **Pending tool fillers** | Allow Gemini Live to acknowledge long-running project tools while the original tool call remains pending. |
-        | **Temperature**          | Response creativity, from `0.0` (Deterministic) to `2.0` (Creative). Default: `1`.                        |
+      <Accordion title="Grok Realtime">
+        Under **Grok Realtime Configuration**, set the following fields.
 
-        Under **Voice Activity Detection** - controls when Gemini starts listening to a caller turn and how long it waits before closing that turn:
+        | Field | Description |
+        | --- | --- |
+        | **Voice** | The voice used to speak to callers. Default: **Ara**. |
+        | **Temperature** | Controls response randomness. Range: **Focused** (`0.0`) to **Creative** (`2.0`). Default: `0.8`. |
+        | **Threshold** | Controls speech detection. Range: **Sensitive** (`0.0`) to **Conservative** (`1.0`). Default: `0.5`. |
+        | **Silence Duration (ms)** | How long the caller must be silent before the turn is treated as complete. Default: `500`. |
+        | **Prefix Padding (ms)** | Audio kept before detected speech so the start of the caller's utterance is preserved. Default: `300`. |
 
-        | Field                     | Description                                                                                                                                                        |
-        | ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-        | **Start Sensitivity**     | Higher detects speech sooner but may trigger on noise; lower waits for a stronger speech signal. Default: `Default`.                                               |
-        | **End Sensitivity**       | Higher ends turns sooner for lower latency; lower allows longer pauses before Gemini responds. Default: `Default`.                                                 |
-        | **Silence Duration (ms)** | Milliseconds of non-speech before Gemini closes the caller turn. Increase to allow pauses; decrease for faster responses. Default: `100`.                          |
-        | **Prefix Padding (ms)**   | Milliseconds of detected speech required before Gemini commits a speech start. Lower values catch shorter utterances but can increase false starts. Default: `20`. |
-
-        Google Gemini Live provides multimodal voice conversations with low latency.
+        Also configure the **Advanced voice behaviour** settings that apply to all providers, described after the provider list.
       </Accordion>
 
-      <Accordion title="OpenAI Realtime (S2S)">
-        | Field     | Description                                                              |
-        | --------- | ------------------------------------------------------------------------ |
-        | **Model** | The OpenAI Realtime model, for example `gpt-realtime-1.5 (recommended)`. |
-        | **Voice** | The synthesized voice, for example `Marin (recommended)`.                |
+      <Accordion title="Google Gemini Live">
+        Under **Gemini Live Configuration**, set the following fields.
 
-        Under **Turn Detection** - tunes how OpenAI detects speech starts and decides when the caller has finished speaking:
+        | Field | Description |
+        | --- | --- |
+        | **Voice** | The voice used to speak to callers, for example **Puck — Upbeat**. |
+        | **Enable context window compression** | Lets Gemini compress older session context so long-running Live conversations can continue beyond the model's context window. Off by default. |
+        | **Temperature** | Controls response randomness. Range: **Deterministic** (`0.0`) to **Creative** (`2.0`). Default: `0.8`. |
 
-        | Field                            | Description                                                                                              |
-        | --------------------------------- | ----------------------------------------------------------------------------------------------------------- |
-        | **Speech detection sensitivity** | Lower values pick up quieter speech; higher values reduce background-noise triggers. Default: `0.5`.     |
-        | **Silence Duration (ms)**        | Quiet time before OpenAI treats the caller turn as complete. Default: `700`.                             |
-        | **Prefix Padding (ms)**          | Audio kept before detected speech so the beginning of the caller utterance is preserved. Default: `300`. |
+        **Tool response scheduling**
 
-        The OpenAI Realtime API provides low-latency voice conversations with function calling support.
+        | Field | Description |
+        | --- | --- |
+        | **Tool response scheduling** | Controls how Gemini resumes after a final tool result. **Interrupt** responds immediately to the final result. **When idle — finish the current response first** (default) waits for the current response to finish. **Silent** retains the final result without speaking right away. Progress and filler updates always wait until Gemini is idle. |
+        | **Pending tool fillers** | Lets Gemini Live acknowledge long-running project tools while the original tool call remains pending. Off by default. |
+
+        **Realtime turn filler**
+
+        Separate from project Voice Fillers. Applies only to Google or Vertex realtime S2S calls while semantic convergence is set to **Enforce**.
+
+        | Field | Description |
+        | --- | --- |
+        | **Native turn filler** | Lets Gemini speak a short hold phrase while Runtime settles an enforced turn. It never applies to transfers, handoffs, or protected playback. |
+        | **Generative native filler** | Lets Gemini choose a short, contextual hold phrase in the current language instead of using the deterministic phrase pool. |
+        | **Generative filler prompt override** | Overrides the prompt Gemini uses to generate the hold phrase. Default: `Reply with a short, natural hold phrase in the current language.` |
+
+        **Filler delivery safeguards**
+
+        Shared by pending-tool and realtime turn fillers.
+
+        | Field | Description |
+        | --- | --- |
+        | **Settlement watchdog** | Time allowed for filler generation or a held final response to settle before Runtime releases the safe fallback. Accepted range: `1000`–`60000` ms. Leave empty to use the platform default of `10000` ms. |
+
+        **Voice activity detection**
+
+        Controls when Gemini starts listening to a caller turn and how long it waits before closing that turn.
+
+        | Field | Description |
+        | --- | --- |
+        | **Start Sensitivity** | Higher detects speech sooner but may trigger on noise. Lower waits for a stronger speech signal. Default: **Default**. |
+        | **End Sensitivity** | Higher ends turns sooner for lower latency. Lower allows longer pauses before Gemini responds. Default: **Default**. |
+        | **Silence Duration (ms)** | Milliseconds of non-speech before Gemini closes the caller turn. Increase to allow pauses; decrease for faster responses. Default: `100`. |
+        | **Prefix Padding (ms)** | Milliseconds of detected speech required before Gemini commits a speech start. Lower values catch shorter utterances but can increase false starts. Default: `20`. |
+
+        **Caller transcription**
+
+        | Field | Description |
+        | --- | --- |
+        | **Caller language** (Optional) | The language callers speak, such as `en-US`. If left empty, Gemini guesses the language on every turn, which can turn English into another script. The call's language setting, when there is one, takes precedence. |
+
+        **Silent-turn recovery**
+
+        | Field | Description |
+        | --- | --- |
+        | **Recover silent turns** | Re-prompts, then restarts, a Gemini session that stays silent when it owes the caller an answer. |
+        | **Recover unanswered caller turns only** | Limits recovery to caller turns that received no answer. Included automatically when **Recover silent turns** is on. If Gemini hears the caller but does not respond within 8 seconds, the Gemini session restarts with the caller's words, without re-prompting tool results. |
+
+        **Advanced voice behaviour (Gemini-specific)**
+
+        | Field | Description |
+        | --- | --- |
+        | **Silent resume recovery** > **Recover a silent resumed session** | Starts a fresh Gemini session when a resumed one connects but never speaks. Off by default. |
+
+        Also configure the **Advanced voice behaviour** settings that apply to all providers, described after the provider list.
+      </Accordion>
+
+      <Accordion title="OpenAI Realtime">
+        Under **OpenAI Realtime Configuration**, set the following fields.
+
+        | Field | Description |
+        | --- | --- |
+        | **Voice** | The voice used to speak to callers. Default: **Marin (recommended)**. |
+
+        **Turn detection**
+
+        Tune how OpenAI detects when speech starts and when the caller has finished speaking.
+
+        | Field | Description |
+        | --- | --- |
+        | **Turn detection mode** | How OpenAI detects turns, for example **Server VAD — audio activity**. |
+        | **Speech detection sensitivity** | Range: **More sensitive** (`0.0`) to **More conservative** (`1.0`). Lower values pick up quieter speech; higher values reduce background-noise triggers. Default: `0.5`. |
+        | **Silence Duration (ms)** | Quiet time before OpenAI treats the caller turn as complete. Default: `700`. |
+        | **Prefix Padding (ms)** | Audio kept before detected speech so the beginning of the caller's utterance is preserved. Default: `300`. |
+
+        **Caller transcription**
+
+        How the caller's speech is written down. This text is stored as the caller's turn and is what the agent checks answers against.
+
+        | Field | Description |
+        | --- | --- |
+        | **Caller transcriber** | The transcription model, for example **Whisper (default)**. |
+        | **Caller language** (Optional) | The language callers speak, such as `en-US`. If left empty, the transcriber guesses the language on every turn, which can turn English into another script. |
+        | **Words to expect** | Brand names and terms callers use, for example `Acme, Rewards, email addresses spelled out letter by letter`. Used by Whisper and GPT-4o Transcribe. |
+
+        <Note>Never put a caller's own details in **Words to expect**. The transcriber would then hear them from anyone.</Note>
+
+        **Realtime turn filler**
+
+        Applies only to OpenAI Realtime calls while semantic convergence is set to **Enforce**. Off by default.
+
+        | Field | Description |
+        | --- | --- |
+        | **Native turn filler** | While Runtime works on a caller turn, OpenAI says a short hold phrase in the caller's language. Hold phrases stop when the answer is ready, never play during a transfer or handoff, and aren't added to the conversation. |
+        | **Filler prompt override** (Optional) | Replaces the default instruction OpenAI words each hold phrase from. Default: `Reply with a short, natural hold phrase in the current language.` Runtime appends fixed safety rules that prevent claims about results, actions, promises, questions, or tool calls. |
+
+        **Advanced voice behaviour (OpenAI-specific)**
+
+        | Field | Description |
+        | --- | --- |
+        | **Caller interruption** > **Let callers interrupt the agent** | When off, the caller speaking doesn't cut off what the agent is saying. |
+        | **Caller interruption** > **Protect non-interruptible outputs** | Uses model playback for protected outputs and protects the welcome unless interruption is allowed. Off by default. With server VAD, turning this on lets the model play protected outputs and protects the welcome unless `ON_START` allows interruption. An `ON_START` greeting authored with barge-in disallowed is protected automatically with server or semantic VAD, regardless of this switch. Input that repeats a protected output word for word is treated as echo. Menu answers, numbers, spelled names, and other caller input still run. |
+        | **Silent caller reprompt** > **Reprompt a silent caller** | Uses the project's voice no-input settings (timeout, reprompt messages, retries, and final action) on this realtime channel. Turn it off to keep the channel silent. |
+        | **Caller transcript cross-check** > **Check the model's wording against the transcript** | Waits briefly for the caller's transcript and gives it to the agent beside what the model reported. |
+        | **Longest wait for the transcript (ms)** (Optional) | Sets how long the turn waits for the caller's transcript, up to 5000 ms. Leave empty to size the wait to the caller transcription model of the selected realtime model: 1500 ms for `whisper-1` and 400 ms for `gpt-4o` transcription. The turn runs without the transcript once the wait ends. |
+
+        Also configure the **Advanced voice behaviour** settings that apply to all providers, described after the provider list.
       </Accordion>
     </AccordionGroup>
 
-    The following fields apply regardless of which S2S provider you select:
+    **Advanced voice behaviour (all providers)**
 
-    | Field                         | Description                                                                                                                                |
-    | ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
-    | **Noise isolation**           | Apply server-side noise reduction to inbound call audio to filter out background voices and ambient noise.                                 |
-    | **Transfer Queue Header Key** | SIP transfer header name that carries the queue, for example `X-Queue`. Must match what Genesys expects. Required for escalate-to-human.   |
-    | **Transfer Queue Name**       | The Genesys queue used when the agent transfers a caller to a human, for example `Kore Inbound`. Must match a queue configured in Genesys. |
+    Optional behaviours for this channel. Each one is off, empty, or set to the earlier platform behaviour until you change it.
 
+    | Field | Description |
+    | --- | --- |
+    | **Caller wording** > **Wording a caller turn runs on** | Select the wording the agent runs a caller turn on: **Model's wording** (default), **Auto: prefer the caller's transcript**, or **Caller transcript**. |
+    | **Default transfer announcement** > **Line spoken before a transfer** (Optional) | The line the agent speaks before a transfer, for example `One moment while I connect you.` |
+    | **Runtime-owned speech** > **Speak Runtime answers exactly** | Runtime makes the voice model say its answers word for word, once per caller turn, and records what was said. |
+    | **Noise isolation** | Applies server-side noise reduction to inbound call audio to filter out background voices and ambient noise. |
+    | **Trust inbound SIP headers** | The same setting as on the **Settings** tab. Off by default. Turn it on only if your SBC sets or overwrites these headers. |
+    | **Transfer Queue Header Key** | SIP transfer header name that carries the queue, for example `X-Queue`. Must match what Genesys expects. Required for escalate-to-human. |
+    | **Transfer Queue Name** | The Genesys queue used when the agent transfers a caller to a human, for example `Kore Inbound`. Must match a queue configured in Genesys. |
     Select **Save Changes**.
   </Tab>
-</Tabs>  
+</Tabs>
+
+**Voice transfer and survey capabilities**
+
+A read-only panel that shows how many of the transfer and survey capabilities Runtime evaluates as available for the concrete voice execution boundary (the execution surface is **KoreVG realtime S2S**), for example **11 of 11 capabilities available**. It lists the following capabilities, each marked **Available** or not.
+
+| Capability | Description |
+| --- | --- |
+| **Human transfer** | Transfer the caller to a human agent. |
+| **Pre-transfer announcement** | Speak an announcement before a transfer. |
+| **Transfer outcome recovery** | Recover when a transfer doesn't complete. |
+| **SIP transfer** | Transfer the call over SIP. |
+| **PSTN transfer** | Transfer the call to a phone number on the public telephone network. |
+| **Bridged agent transcript** | Carry the transcript to the agent the call is bridged to. |
+| **Transfer CSAT** | Collect a satisfaction rating after a transfer (`csat`, `nps`, `likeDislike`). |
+| **Template survey** | Run a template survey with a rating type of `star`, `thumbs`, or `scale`. |
+| **Survey comments** | Collect free-text comments in a survey. |
+| **Survey follow-ups** | Ask follow-up questions in a survey. |
+| **Return-leg survey** | Run a survey on the return leg of a transferred call. |
+
+The **Genesys Organization ID** and the **SIP URI** are displayed for reference. Select the copy icon next to a value to copy it.
 
 ## Wire the Genesys Architect flow
 
@@ -327,25 +473,10 @@ Before switching a connection from **Diagnostics only** to **Enabled**, confirm 
 
 ## Manage the channel connection
 
-Opening a connection from **Deployments** -> **Channels** -> **VOICE** -> **Genesys Audio Connector** shows six tabs: **Overview**, **Credentials**, **Configuration**, **Deployment**, **Testing**, and **Activity**.
+Opening a connection from **Deployments** -> **Channels** -> **VOICE** -> **Genesys Audio Connector** shows four tabs: **Credentials**, **Configuration**, **Testing**, and **Activity**.
 
 <Tabs>
-  <Tab title="Overview">
-    The **Connection Summary** shows these fields.
-
-    | Field | Description |
-    | --- | --- |
-    | **Status** | For example: *Active* |
-    | **Created** | Timestamp the channel was created |
-    | **Updated** | Timestamp of the last change |
-    | **Environment** | For example: `Working Copy (draft)` |
-    | **Source Type** | `Channel Connection` |
-    | **Source ID** | Unique channel identifier (UUID) |
-
-    Under **Setup Instructions**, the tab shows the **Genesys Organization ID** and the **SIP URI** for reference. Select the copy icon next to either value to copy it.
-  </Tab>
-
-  <Tab title="Credentials">
+    <Tab title="Credentials">
     Credentials are saved and encrypted after creation; fields show placeholder text and accept new values only if you want to update them.
 
     | Field | Description |
@@ -359,17 +490,6 @@ Opening a connection from **Deployments** -> **Channels** -> **VOICE** -> **Gene
 
   <Tab title="Configuration">
     Shows **General** (Display Name, Provider Verification Strength) plus the Pipeline or Realtime speech settings described in [Configure the connection](#configure-the-connection) above, editable at any time. Select **Save Changes** to apply.
-  </Tab>
-
-  <Tab title="Deployment">
-    | Field | Description |
-    | --- | --- |
-    | **Agent Version** | An **Environment** dropdown that selects which deployed version handles incoming messages. |
-    | **Active Deployment** | Shows the bound deployment version and date, or `Working Copy (draft)` if nothing has been deployed to an environment yet. |
-
-    <Note>If the connection is running on the working copy, a banner reads: *"This channel is running on the Working Copy (draft). Working copy is intended for testing. For a stable production setup, deploy your agent to an environment and bind this channel to that environment."*</Note>
-
-    Select **Save Changes** after switching the environment or version.
   </Tab>
 
   <Tab title="Testing">
