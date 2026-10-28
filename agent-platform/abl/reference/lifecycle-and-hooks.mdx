@@ -140,7 +140,7 @@ A `BRANCHES:` entry (or a bare top-level `HANDOFF:`) can hand the session to ano
 | `SET:` | Assigns session values. |
 | `SET_INTERACTION_LANGUAGE:` / `CLEAR_INTERACTION_LANGUAGE:` | Sets or clears the voice language, same as elsewhere. |
 | `CALL:` | Calls a tool (`WITH:`/`AS:`, as in a FLOW step `DO:`). A failed call stops the list. |
-| `HANDOFF: <Agent>` | Hands off through the normal handoff lifecycle — the target's declared `WHEN`, `RETURN`, `CONTEXT`, `EXPERIENCE_MODE`, `ON_RETURN`, and `ON_FAILURE` all apply as usual. At most one handoff per list. |
+| `HANDOFF: <Agent>` | Names a target already declared in the agent's top-level `HANDOFF:` block — it carries no inline options of its own. The named target's declared `WHEN`, `EXPECT_RETURN` (the primary keyword; the older `RETURN` is still accepted as a back-compat alias — see [Return expectations](/agent-platform/abl-reference/multi-agent-and-supervisor#return-expectations)), `CONTEXT`, `EXPERIENCE_MODE`, `ON_RETURN`, and `ON_FAILURE` all apply through the normal handoff lifecycle. At most one handoff per list. |
 
 If the list sets the interaction language, the prefix through the last language directive (before any `HANDOFF`) runs *before* the welcome renders instead, and the rest after:
 
@@ -199,13 +199,19 @@ ON_START:
 | `ON_START_HANDOFF_UNREACHABLE` | warning | A top-level `HANDOFF:` is dead code because an `ELSE` branch always matches first, so the fallback handoff can never run. |
 | `ON_START_DELEGATE_WITH_HANDOFF` | warning | `ON_START` configures both a top-level `DELEGATE:` and a handoff — when the handoff runs, the child owns the session and the delegate is never returned. Keep one or the other. |
 
-**How it runs, by start type:**
+**How it runs, by channel and start type:**
+
+| Channels | Start type | What the customer experiences |
+| -------- | ---------- | ------------------------------ |
+| Pipeline Voice; Web SDK / Web Debug (without an `initialMessage`); an identified agent-assist session with a welcome | Eager | The welcome plays, then the child is handed the session and waits — it does not speak its own opener. |
+| HTTP Chat; LiveKit; Web SDK with `initialMessage` | Lazy | No welcome. The customer's first message is forwarded straight to the child. |
+| Realtime speech-to-speech | Realtime | `SET`/`CALL` in the list still run, but the handoff itself never does — the entry agent keeps the session. |
 
 - **Eager start** (no user message yet — Web SDK/web-debug connect, pipeline voice answer, an identified agent-assist welcome): the welcome is delivered and the child is activated **without running** — its `before_agent` hook runs, but neither a FLOW child's entry step nor a reasoning child's model runs before the user says anything. The user's first message is then forwarded to the child exactly as on a lazy start: a FLOW entry step with an extraction contract (`extraction_hints`, `options`, or a non-string `type`) takes its value from that message, a plain field asks its own question instead, and an `ON_INPUT` on the entry step takes the message as its input; a reasoning child answers it as its first request. Output order: the entry agent's `before_agent` output, the welcome, the handoff announcement (when `EXPERIENCE_MODE` speaks one), the child's `before_agent` output — the child's own opener is no longer part of this list, because the child hasn't run yet. A child that has answered no request yet stays active even if it returns (`RETURN: true`); ordinary return rules apply from the user's first message on. A child that hands the very first message straight back (for example an off-topic question) ends there instead of parking, so a later route to it starts the child fresh. A start with no welcome and no child `before_agent` output sends nothing — on pipeline voice the caller hears only the welcome (if any) and the child stays silent until the caller speaks.
 - **Lazy start** (the first user message starts the session — HTTP chat, LiveKit, SDK `initialMessage`): the welcome is **not** delivered, and that first message is forwarded to the child once — after the entry agent's input guardrails/constraints (and, for a FLOW entry, its `before_turn` hook) — taking precedence over the entry agent's own first-turn routing.
 - **Realtime speech-to-speech** sessions run the list's `SET`/`CALL` but never the handoff itself; the entry agent keeps the session.
 
-Every outcome is recorded in the `dsl_on_start_handoff` trace (`executed`, `blocked`, `failed`, `call_failed`, `superseded_by_tool_hook`, `skipped_mode`) with a reason and identifiers only — never customer data. When the handoff doesn't run: a route `WHEN` simply not met shows nothing, not even `ON_FAILURE` text; a refused or failed handoff (a handoff guardrail, an unloaded target) shows only what the route's `ON_FAILURE` authors (`RESPOND` shows its text; `CONTINUE`, or no `ON_FAILURE`, shows nothing — never a generic failure message) — except `ESCALATE`, which escalates the session instead of keeping it with the entry agent; a target an `ENABLED_WHEN` switched off follows the normal authored-route rule (use `ON_FAILURE: CONTINUE` to keep the start silent).
+Every outcome is recorded internally as a `dsl_on_start_handoff` trace event (`executed`, `blocked`, `failed`, `call_failed`, `superseded_by_tool_hook`, `skipped_mode`) with a reason and identifiers only — never customer data. This event isn't one of Studio's labeled Traces Explorer cards (unlike, say, a mid-conversation "Agent Handoff" or "Handoff Check" card) — look for it through a session trace export or the debug API if you need to confirm why a start-time handoff did or didn't run. When the handoff doesn't run: a route `WHEN` simply not met shows nothing, not even `ON_FAILURE` text; a refused or failed handoff (a handoff guardrail, an unloaded target) shows only what the route's `ON_FAILURE` authors (`RESPOND` shows its text; `CONTINUE`, or no `ON_FAILURE`, shows nothing — never a generic failure message) — except `ESCALATE`, which escalates the session instead of keeping it with the entry agent; a target an `ENABLED_WHEN` switched off follows the normal authored-route rule (use `ON_FAILURE: CONTINUE` to keep the start silent).
 
 After the start, the route behaves as an ordinary handoff — `RETURN`, `CONTEXT`, and `ON_RETURN` apply as usual — and the child never runs its own `ON_START` (which fires once per session, for the entry agent only). A route `WHEN` that reads start data stays true for the rest of the session, so a later turn can still route back to that agent after it returns. If the handoff should really happen only at start, put the condition on a branch `IF:` and leave the route's own `WHEN` unset, or clear the triggering value on return. Pairing with `ENABLED_WHEN` cleared on return (`ENABLED_WHEN: promo_open == true` with `ON_RETURN: set: promo_open = false`) also stops the model from choosing that agent on later turns.
 
@@ -309,6 +315,92 @@ HOOKS:
 - A branch can sit next to an unconditional `RESPOND:` in the same hook; the branches are the conditional alternative, evaluated independently.
 
 <Warning>A hook's `WHEN` must be valid CEL. An invalid `WHEN` (including old plain-English text left over from before this feature) is demoted to an unconditional `RESPOND` for backward compatibility, and the compiler warns `HOOK_WHEN_BRANCH_INVALID_CEL`. Fix the condition, or remove `WHEN:` if the response really is meant to run unconditionally.</Warning>
+
+### Conditional interaction-language actions (before_turn)
+
+A `before_turn` hook can switch the session's interaction language for the turn's reply, its filler, and (on KoreVG voice without a voice language profile) the TTS voice, conditionally based on a `WHEN:` guard. A `WHEN:` whose indented body is `SET_INTERACTION_LANGUAGE:` or `CLEAR_INTERACTION_LANGUAGE` is a **language branch**. This is the same `WHEN:` mechanism as a [respond branch](#when--respond-branches), but with a language action instead of `RESPOND:`. A language directive written at hook level with no `WHEN:` is a catch-all.
+
+```yaml
+HOOKS:
+  before_turn:
+    WHEN: session.languageDetection.status == "detected" AND session.languageDetection.confidence >= 0.85
+      SET_INTERACTION_LANGUAGE: session.languageDetection.language
+    WHEN: session.languageDetection.language == "en"
+      CLEAR_INTERACTION_LANGUAGE
+    WHEN: session.languageDetection.status == "low_confidence" AND session.languageDetection.textLength >= 12
+      RESPOND: "Shall we continue in {{session.languageDetection.candidate}}?"
+    SET_INTERACTION_LANGUAGE: "hi-IN"
+```
+
+**Rules:**
+
+- A value that is a BCP 47 tag (quoted or not) is a compile-time literal, canonicalized (`"es-mx"` becomes `es-MX`). A value path or `{{template}}` is resolved at runtime, like a hook `SET` value; a result that is not a language the channel supports is refused (with a trace) and the language stays as it was. Any other value is a compile error (`E394` in `.abl`, `E396` in YAML).
+- `CLEAR_INTERACTION_LANGUAGE` takes no value (`E395`). A trailing colon is fine.
+- One `WHEN:` body holds exactly one action: a `RESPOND:` (a reply branch) or one language action. Both in one body, or two language actions, drop the whole branch with `HOOK_WHEN_BODY_MULTIPLE_ACTIONS`. Write two separate `WHEN:` branches instead.
+- Language branches are tried in order. The first whose `WHEN:` holds wins, so the catch-all (no `WHEN:`) belongs last. One placed earlier warns with `HOOK_LANGUAGE_CATCH_ALL_NOT_LAST`.
+- This grammar is **`before_turn` only**. The same directives under a `WHEN:` in any other hook are a compile error (`HOOK_LANGUAGE_ACTION_NOT_BEFORE_TURN` from the parser; `HOOK_LANGUAGE_ACTION_UNSUPPORTED_HOOK` if a language action reaches compilation attached to a different hook by another path).
+- A `WHEN:` that is not valid CEL drops that action with the compiler warning `HOOK_LANGUAGE_WHEN_INVALID_CEL`. Unlike a respond branch, it never becomes unconditional.
+- YAML form: the hook carries `interaction_language_actions`, a list of entries with an optional `when` and exactly one of `set_interaction_language`, `set_interaction_language_expression`, or `clear_interaction_language: true`. Anything else is `HOOK_LANGUAGE_ENTRY_INVALID`.
+
+**Timing.** The runtime evaluates language actions in an early pass, before the filler and before the model call, against the session as it stood at the start of the turn (including `session.languageDetection`). The hook's own `CALL` and `SET` run later in the turn, so a language guard never sees values the hook itself just set. It sees what the previous turn left. The chosen language becomes the session's interaction language and holds until another action changes or clears it.
+
+**Gating.** Language actions take effect only when the project's language-detection setting is on (a project-level Studio setting, not declared in ABL), and only on chat and on voice without a voice language profile. Omitting the project setting while authoring this grammar produces a compiler reminder (`HOOK_LANGUAGE_ACTIONS_REQUIRE_SETTING`). Realtime speech-to-speech sessions never run them: their language is fixed by the provider session.
+
+#### session.languageDetection shape
+
+The `session.languageDetection` object holds the latest detection result.
+
+| Field        | Type     | Description |
+| ------------ | -------- | ----------- |
+| `status`     | `string` | One of `detected`, `low_confidence`, `no_language`, `failed`, `unavailable`, `skipped`. |
+| `language`   | `string` | BCP 47 tag. Present only when `status` is `detected`. |
+| `confidence` | `number` | 0 to 1. |
+| `candidate`  | `string` | The best guess. Present when `status` is `low_confidence`. |
+| `script`     | `string` | The detected script. |
+| `textLength` | `number` | Characters sent for detection, after redaction. |
+| `reason`     | `string \| null` | Why the status is what it is, or `null`. |
+
+The project's language-detection setting can configure an allowed-languages list and a minimum message length (default 12 characters). A message in a language outside the allowed list comes back `no_language` with `reason: "not_allowed"`, so an unsupported language is never offered as `candidate`. A message shorter than the minimum comes back `low_confidence` with `reason: "too_short"` and its guess as `candidate`, whatever the confidence: a single short word like "Ciao" can still score 1.0. Scripts used by only one supported language (Korean, Japanese, Thai, Greek, Hebrew, and most Indic scripts) are exempt from the minimum-length rule. The session's current interaction language is sent as a hint to the detection service, improving accuracy on short or romanized input.
+
+#### Recipe: avoid language flapping
+
+Short or code-mixed turns (Hinglish, for example) can flip between two detected languages turn to turn. Applying every `detected` result makes the reply, filler, and voice change each turn. Switch only on two consecutive matching detections of useful length. The hook `SET` records this turn's detection for the next turn's guard:
+
+```yaml
+HOOKS:
+  before_turn:
+    WHEN: session.languageDetection.status == "detected" AND session.languageDetection.confidence >= 0.85 AND session.languageDetection.textLength >= 12 AND session.languageDetection.language == last_detected_language
+      SET_INTERACTION_LANGUAGE: session.languageDetection.language
+    WHEN: session.languageDetection.status == "low_confidence" AND session.languageDetection.textLength >= 12
+      RESPOND: "Shall we continue in {{session.languageDetection.candidate}}?"
+    SET:
+      last_detected_language: "{{session.languageDetection.language}}"
+```
+
+#### Recipe: FLOW agent with language switching
+
+A FLOW agent takes the same `before_turn` actions. They run before the turn's step. A model-written reply (a `REASONING: true` step) and fillers follow the chosen language. A fixed `RESPOND:` in a `REASONING: false` step is delivered as written and is never auto-translated. Localize it with `{{locale.KEY}}` from the project's locale files: the language setters refresh the locale catalog in the same turn, so the step renders the text for the new language.
+
+In this example the English branch comes first (the first matching `WHEN:` wins), so a confident English message clears back to the default language while any other confident detection switches:
+
+```yaml
+HOOKS:
+  before_turn:
+    WHEN: session.languageDetection.status == "detected" AND session.languageDetection.confidence >= 0.85 AND session.languageDetection.language == "en"
+      CLEAR_INTERACTION_LANGUAGE
+    WHEN: session.languageDetection.status == "detected" AND session.languageDetection.confidence >= 0.85 AND session.languageDetection.textLength >= 12
+      SET_INTERACTION_LANGUAGE: session.languageDetection.language
+
+FLOW:
+  ask_order:
+    REASONING: false
+    RESPOND: "{{locale.ASK_ORDER_NUMBER}}"
+    THEN: answer
+
+  answer:
+    REASONING: true
+    GOAL: "Tell the customer the status of their order in one or two sentences."
+```
 
 ### Example: audit logging hook
 
@@ -497,6 +589,8 @@ MESSAGES:
 | `self_handoff`          | "Cannot hand off to self."                      | An agent hands off to itself.                       |
 | `tool_fallback_desc`    | "Execute the requested operation."              | A tool has no `description`.                        |
 | `tool_confirmation_request` | "Please confirm before I go ahead{{action_suffix}}.{{details}} Shall I proceed?" | A tool needs the customer's approval. Supports `{{action_suffix}}` and `{{details}}`. See [Confirmation](/agent-platform/abl/reference/tools#what-the-customer-is-asked). |
+
+<Note>On the **Genesys Bot Connector** specifically, setting `escalation_format: ""` (an explicit empty string, not omitting the key) suppresses the whole reply — text, buttons, and citations — on a *successful* terminal escalation; the configured escalation intent is still sent, so the customer's session still escalates, it just gets no message. Omitting the key keeps the normal message behavior, and any nonempty value behaves as before. This only changes what the Bot Connector sends outward — it doesn't affect the internal execution transcript, ongoing (non-terminal) replies, an unsuccessful escalation, or any other channel.</Note>
 | `tool_confirmation_duplicate_effect` | "I already completed this earlier in our conversation{{action_suffix}}. Would you like me to do it again?" | A tool that already ran is about to run again. Supports `{{action_suffix}}`. |
 
 <Note>
