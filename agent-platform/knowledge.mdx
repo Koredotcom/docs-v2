@@ -265,6 +265,31 @@ A permission synchronization is triggered only in the following scenarios:
 
 <Note>Until a permission synchronization completes after enabling permission aware ACL, content indexed while ACL was disabled remains accessible to all users.</Note>
 
+**Field Mapping**
+
+When Artemis ingests content, it automatically maps each field in the source (the raw field) to an internal field, which determines how the value is stored and indexed. **After the dry run** and before you **approve and start** indexing, **Review field mapping** lets you check these mappings and change them. This step appears for every connector.
+
+Mappings matter most when you search across several connectors. Different sources name the same information differently, such as `LastModifiedDate` in one and `updated_at` in another. If both map to `Modified Date`, filters, sorting, and search work the same across all sources. Other common cases are:
+
+A source's `Owner` and another's `Assignee`, both may be mapped to `Assignee`.
+A source's `PublishStatus` and another's `state`, both may be mapped to `Status`.
+A source's `Url` and another's `link`, both may be mapped to `Source URL`.
+
+**To review and update field mappings during initial setup**
+
+After the **dry run completes**, click **Review field mapping**. 
+
+- Mappings are scoped per source and object type, so you review each type separately. Each type shows its raw field count and number of suggestions.
+- Review each row. To change a mapping, select a different field in `Map to available field`. 
+- To skip a field, uncheck it.
+- (Optional) Click Suggest mappings to have Artemis suggest mappings for fields that aren't mapped.
+- Status indicates whether the mapping is accepted or only suggested by the platform. 
+- Select `Embed` to use the field for embedding generation. 
+
+Click Save mappings, followed by **Approve & start** to begin indexing.
+
+**Post configuration**, you can update the settings under the **Field Mapping** tab. 
+
 **Available Connectors**
 
 | Connector | Description |
@@ -379,13 +404,13 @@ To view the ingested content, follow these steps:
 
   - Extraction Report - Shows the extraction configuration used for the document. Use Re-extract to rerun document extraction if extraction settings have changed, metadata needs to be regenerated or extraction quality needs improvement.
   - Content Analysis - Displays attributes identified during content processing like detected language.
-  - Processing Pipeline - Series of steps through which the document is processed. Also indicates the current status of each step. A document is fully available for retrieval only after all processing stages are successfully completed.
+  - Processing Pipeline - Series of steps through which the document is processed. Also indicates the current status of each step. A document is available for retrieval only after all processing stages are successfully completed.
   - Source Info - Details of the source of the document.
   - Raw Metadata - Document metadata in JSON format.
 
 3. You can reprocess a given document to ingest, extract and index it again. By default, it uses the **Extraction quality** configuration for the source. Use the **Extraction Preset** option to change the config for a given document.
 
-4. Use the Delete button to delete a single page from the source. Note that if the source is synchronized again, the deleted document will be ingested again unless added to the exclude list explicitly. 
+4. Use the Delete button to delete a single page from the source. If you synchronize the source again, the deleted document is ingested again. To prevent repeat ingestion, explicitly add the deleted document to the exclude list.
 
 ### View extracted chunks
 
@@ -699,6 +724,167 @@ To attach a knowledge tool using the DSL editor, follow these steps:
 5. Paste the copied DSL into the **Tools** section of the agent definition.
 6. Compile and save the changes.
 
+## Add business rules
+
+Use business rules to control which search results are returned and the order in which they appear. Business rules are declarative. Define a condition and the action to apply when the condition is met. The search engine evaluates the rules for each query.
+
+Business rules can:
+
+- **Filter** results to a specific subset of content.
+- **Hide** content that should not appear in search results.
+- **Boost** specific results so they appear higher in the results.
+- **Lower** specific results so they appear lower in the results.
+
+<Note>
+ - This feature is available only via DSL.
+ - Business rules are not an access-control mechanism. Business rules are used to further filter or narrow down results that a user is authorized to access.
+</Note>
+
+### Configuring business rules for an agent
+
+Rules declared on an agent apply only to its searches. Different agents can govern the same knowledge base differently.
+
+Author the rules as a JSON array in the `business_rules` block of the knowledge-base tool definition, alongside other tool fields.
+
+**Example**
+
+```yaml
+search_kb_policies(query: string) -> object
+  description: "Search the policy knowledge base"
+  type: searchai
+  business_rules: |
+    [{"id":"hide_archived","when":{"kind":"always"},
+      "then":{"hide":[{"field":"status","operator":"eq","value":"archived"}]}}]
+```
+**Rule structure**
+
+Each business rule has an `id`, a `when` condition, and a `then` effect. Other properties are optional.
+
+| Field | Description |
+|---|---|
+| `id` | Stable identifier for the rule. Must be unique within the rule set. |
+| `label` | Human-readable name shown in traces and UI. Defaults to the `id`. |
+| `enabled` | Determines whether the rule is evaluated. |
+| `priority` | Determines the order in which rules are evaluated. Lower numbers are evaluated first. |
+| `enforced` | Applies only to knowledge-base rules and changes rule precedence. |
+| `relaxable` | Determines whether an empty-result fallback can drop the rule's filters. |
+
+
+**Conditions**
+
+The `when` condition determines when a rule is applied. A rule can have exactly one condition.
+
+| Condition | Description |
+|---|---|
+| `always` | Applies the rule to every search. |
+| `query` | Applies the rule based on the question text. |
+| `value` | Applies the rule based on a named value supplied by the caller. |
+| `intent` | Applies the rule based on a category supplied by the caller. |
+
+**Examples:**
+
+```yaml
+"when": { "kind": "always" } # `always` - Fires on every search. Use for standing policy.
+```
+
+```yaml
+
+# `query` - Fires when the question text contains a phrase. Case-insensitive substring match. Supply exactly one of `value` or `anyOf`.
+
+// one phrase
+"when": { "kind": "query", "operator": "contains", "value": "refund" }
+
+// several phrasings, OR-ed
+"when": { "kind": "query", "operator": "contains",
+          "anyOf": ["401k", "401 (k)", "retirement", "pension"] }
+```
+
+**`not_contains` means none of them.** Negating a list is “the question mentions *none* of these”, not “it is missing at least one” — which would fire on almost every query.
+
+
+```yaml
+# `value` - Fires when a named value the conversation already established matches. The caller must send it with the request as `callerValues`.
+
+"when": { "kind": "value", "name": "customer_tier",
+          "operator": "eq", "value": "enterprise" }
+```
+
+- Operators: `eq` `neq` `in` `not_in` `exists` `not_exists` `gt` `gte` `lt` `lte`
+- `eq` and `in` compare as text, so a caller sending `"5"` matches a rule written as `5`.
+- `gt` `gte` `lt` `lte` coerce to a number or date and report `value_not_comparable` rather than guessing.
+- A value the caller never sent makes the rule **inert, not broken** — reported as `condition_not_met`.
+
+```yaml
+# `intent` - Fires when the turn was classified into one of the listed categories. The search engine never computes this; the caller supplies it as `callerIntent`.
+
+"when": { "kind": "intent",
+          "anyOf": ["refund_request", "return_request"],
+          "minConfidence": 0.7 }
+```
+
+- Matching is case-insensitive, up to 50 ids.
+- `minConfidence` is optional. A caller that sends no confidence is treated as certain.
+- If no intent arrives at all, the trace says `intent_absent` — see [Observability](#trace).
+
+**Effects**
+
+The `then` property defines what happens to the search results. A rule can use multiple effects.
+
+| Effect | Description |
+|---|---|
+| `filters` | Keeps only results that match the specified filters. |
+| `hide` | Removes matching results. |
+| `boost` | Increases the ranking of matching results. |
+| `lower` | Decreases the ranking of matching results. |
+
+**Examples:**
+
+```yaml
+"then": {
+  "filters": [ { "field": "source_type", "operator": "eq", "value": "hr_portal" } ],
+  "hide":    [ { "field": "status", "operator": "eq", "value": "archived" } ],
+  "boost":   [ { "field": "category", "value": "official", "weight": 30 } ],
+  "lower":   [ { "field": "source_type", "value": "forum", "weight": 10 } ]
+}
+```
+
+- `weight` ranges 0-100. A weight of 1 is effectively a no-op.
+- When there are multiple `filters` entries, a logical AND is performed between them.
+
+```yaml
+{ "field": "source_type", "operator": "eq", "value": "sharepoint" }
+```
+
+| Operator | Meaning |
+| --- | --- |
+| `eq` · `neq` | Equals / does not equal |
+| `in` · `not_in` | Is one of / is none of an array |
+| `contains` · `not_contains` | Substring match on text |
+| `gt` · `gte` · `lt` · `lte` | Numeric or date comparison |
+| `exists` · `not_exists` | Field is present. Omit `value`. |
+
+**Nested groups**
+
+A `filter` entry may be a group as shown below. Groups can be nested up to five levels.
+
+```yaml
+// manual uploads, OR ServiceNow articles for India and the UK
+"filters": [ {
+  "mode": "any",
+  "filters": [
+    { "field": "source_type", "operator": "eq", "value": "manual" },
+    { "mode": "all", "filters": [
+        { "field": "source_type", "operator": "eq", "value": "servicenow" },
+        { "field": "custom_string_1", "operator": "in", "value": ["IND", "ENG"] } ] }
+  ] } ]
+```
+
+**Fields**
+
+Business rules can target all canonical fields(normalized fields that every source can access) such as `content`, `origin`, `classification`, etc.
+
+
+{/*
 ### How the platform searches
 
 Knowledge base results reach the model as the output of a tool call. They are never added directly to the model's current-turn context; the model, or the platform on the model's behalf, has to call the knowledge tool to see them.
@@ -707,16 +893,18 @@ There are two paths into a turn:
 
 | Path | When it applies | What happens |
 |------|------------------|--------------|
-| **Automatic first search** | The agent's only business tool is a single knowledge base, the agent is not a coordinator (router or orchestrator), it does not collect `GATHER` fields with inline gather, it has no handoff or delegation tools, and the turn was not forwarded by a handoff or delegation. On by default; there is nothing to switch on. | The platform searches the customer's message before the model runs, adds the results to the conversation, and tells the model to answer only from those results. If nothing is found, the model gets a normal turn and is told to search again with a more specific query. |
+| **Automatic first search** | Off by default. It runs only when the knowledge tool sets `kb_fast_path: on`, in the project tool or in the agent's own `TOOLS:` entry (the agent's value wins). The agent's only visible business tool must also be a single knowledge base. The agent is not a coordinator (router or orchestrator), does not collect `GATHER` fields with inline gather, has no handoff or delegation tools, and the turn was not forwarded by a handoff or delegation. The tool must not declare a `confirmation`, or an `ON_RESULT` / `ON_ERROR` handler with actions other than `set`. | The platform searches the customer's message before the model runs, adds the results to the conversation, and tells the model to answer only from those results. If the search finds nothing, the model is told that nothing was found and not to search again, and the answer says so. If the search could not run, the model gets a normal turn and calls the knowledge tool itself. |
 | **Model-driven search** | Every other agent, and any follow-up search after an automatic first search. | The model calls `search_kb_<name>(query)` with its own query, and the results come back as that tool's result like any other tool call. |
 
-<Note>The automatic first search runs outside the normal tool-call path, so a knowledge tool's `on_result` / `on_error` hooks and `MODEL_CONTEXT` only apply to searches the model makes itself. To shape what the model reads on every path, including the automatic one, use `search_instructions` and `compaction.max_search_tokens` -- see [Tool-level search settings](#tool-level-search-settings) below.</Note>
+<Note>The automatic first search runs as a tool call, so `set`-only `on_result` / `on_error` hooks apply to it. A `confirmation`, or a hook with any other action, sends the turn to the normal model-driven path. To shape what the model reads on every path, use `search_instructions` and `compaction.max_search_tokens` -- see [Tool-level search settings](#tool-level-search-settings) below.</Note>
 
 On later turns, the history keeps a placeholder for the search call, the same as for any tool result. Search results are never kept for display beyond the turn that returned them; if the conversation needs a fact again, the model searches again.
 
+*/}
+
 ### Tool-level search settings
 
-Beyond the Studio configuration in [Configure AI](#configure-ai) and [Search and test](#search-and-test), the generated `search_kb_<name>` tool itself takes a few settings. Set them on the project tool definition -- a tool library file, or the Studio tool editor. An agent's own `TOOLS:` entry for the same tool can add only `search_instructions` and a `compaction:` block.
+Beyond the Studio configuration in [Configure AI](#configure-ai) and [Search and test](#search-and-test), the generated `search_kb_<name>` tool itself takes a few settings. Set them on the project tool definition -- a tool library file, or the Studio tool editor. An agent's own `TOOLS:` entry for the same tool can set `search_instructions`, `kb_fast_path` and `business_rules`.
 
 ```yaml
 TOOLS:
@@ -734,10 +922,11 @@ TOOLS:
 
 | Setting | Values | Default | What it does |
 |---------|--------|---------|---------------|
-| `search_instructions` | free text | none | Added to the tool description, and turns on query planning for the automatic first search. An agent-file value is used only when the project tool has none of its own. |
+| `kb_fast_path` | `on`, `off` | off | `on` turns on the automatic first search for this tool, if the agent meets the conditions in [How the platform searches](#how-the-platform-searches). An agent's own value overrides the project tool's. |
+| `search_instructions` | free text | none | Added to the tool description, and turns on query planning for the automatic first search. Query planning also runs when the knowledge base has vocabulary fields. An agent-file value is used only when the project tool has none of its own. |
 | `retrieval_profile` | `object-aware` | standard retrieval | Splits a question into up to 10 document categories, searches each in parallel with reranking, and merges the results. Useful for a knowledge base that mixes document types where one question needs several of them. |
 | `compaction.max_search_tokens` | 1 to 40,000 | none when 10 or fewer chunks return; 40,000 above that | Token budget for the results the model reads. Whole chunks are dropped from the end, never cut mid-text. Lower it for voice agents and short answers -- a large budget slows the reply and dilutes grounding. |
-| `queryType`, `topK`, `filters`, `similarityThreshold` (optional parameters) | `queryType`: `vector`, `hybrid`, `structured`, `semantic`, `aggregation`; `topK` up to 100 | not exposed; the tool takes only `query` | Declare these as optional parameters to let the model choose the search mode, result count, or filters on each call. Use only when the model must steer the search itself -- otherwise leave it to the planner. |
+| `queryType`, `topK`, `filters`, `similarityThreshold` (optional parameters) | `queryType`: `vector`, `hybrid`, `structured`, `semantic`, `keyword`, `aggregation`; `topK` up to 100 | not exposed; the tool takes only `query` | Declare these as optional parameters to let the model set the result count or filters on each call. The platform runs `hybrid` search unless the customer's message or the search instructions explicitly ask for another mode, so a `queryType` the model writes on its own becomes `hybrid`. An `aggregation` search keeps its type. Use only when the model must steer the search itself -- otherwise leave it to the planner. |
 
 <Note>Other tool-result [compaction](/agent-platform/abl-reference/tools#result-compaction) settings don't apply to knowledge base results -- `max_search_tokens` is the lever to use. The only other limit is the shared budget when several tools run in parallel in the same turn (100,000 characters divided across them).</Note>
 
@@ -747,3 +936,4 @@ Silent traps:
 - An agent-file `search_instructions` is ignored once the project tool already has instructions of its own.
 - If citations are turned off on any one knowledge base attached to an agent, they are turned off for all of that agent's knowledge bases.
 - Test retrieval with a real customer identity where possible. Studio test chats search with public permissions, so permission-restricted content may not show up there.
+
