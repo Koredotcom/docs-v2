@@ -386,10 +386,6 @@ HANDOFF:
 | `intentBridge.guidedThreshold`       | Number  | `0.5`      | Confidence at/above which intent is offered to the model as guidance.                                                             |
 | `intentBridge.outOfScopeDecline`     | Boolean | `true`     | Decline out-of-scope requests detected by the classifier.                                                                         |
 | `intentBridge.multiIntentSignal`     | Boolean | `true`     | Signal when the message contains multiple distinct intents.                                                                       |
-| `parentReturn.minConfidence`         | Number  | _unset_    | While a specialist is active under this supervisor, the confidence the classifier needs to return the caller here for another specialist's intent. Unset uses the supervisor's compiled intent `min_confidence`. Overrides the project-level `pipeline.parentReturn.minConfidence` default. |
-| `parentReturn.ignoreAmbiguous`       | Boolean | `false`    | Keep the caller with the active specialist instead of returning here when the classifier marks its result `ambiguous`.            |
-
-<Note>`parentReturn.minConfidence` must be between `0` and `1`; a value outside that range is a compile error (`EXECUTION_PIPELINE_PARENT_RETURN_CONFIDENCE_RANGE`).</Note>
 
 For pure routing supervisors, `sequential` mode with `shortCircuit.enabled: true` gives the best cost savings. In `parallel` mode the classifier adds latency protection but no cost savings, since both calls run regardless.
 
@@ -875,22 +871,21 @@ ESCALATE:
 
 ### Trigger properties
 
-| Property   | Type                    | Required | Default  | Description                                                                     |
-|------------|-------------------------|----------|----------|---------------------------------------------------------------------------------|
-| `WHEN`     | `string`                | Yes      | --       | Condition that triggers escalation.                                             |
-| `REASON`   | `string`                | Yes      | --       | Human-readable reason for the escalation.                                       |
-| `PRIORITY` | `string` / `number`     | No       | `medium` | Priority level: `low`, `medium`, `high`, `critical`, or a non-negative integer. |
-| `TAGS`     | `string[]`              | No       | --       | Tags for routing and categorization in the human agent queue.                   |
-| `SET`      | `Record<string,string>` | No       | --       | Session variable assignments applied when this trigger fires (`key = value`).   |
+
+| Property   | Type                    | Required | Default    | Description                                                   |
+| ---------- | ----------------------- | -------- | ---------- | ------------------------------------------------------------- |
+| `WHEN`     | `string`                | Yes      | --         | Condition that triggers escalation.                           |
+| `REASON`   | `string`                | Yes      | --         | Human-readable reason for the escalation.                     |
+| `PRIORITY` | `string` / `number`     | No       | `medium`   | Priority level: `low`, `medium`, `high`, `critical`, or a non-negative integer. |
+| `TAGS`     | `string[]`              | No       | --         | Tags for routing and categorization in the human agent queue. |
+| `SET`      | `Record<string,string>` | No       | --         | Session variable assignments applied when this trigger fires (`key = value`). |
 | `GENESYS_SIP_HEADERS` | `object` | No | -- | Per-trigger override of the Genesys SIP transfer headers attached when this escalation transfers a voice call. See [Genesys SIP transfer headers](#genesys-sip-transfer-headers). |
 
-
-
-<Note>`PRIORITY` is optional and defaults to `medium`. `ESCALATE` inside an `ON_ERROR` handler isn't parsed — to escalate from an error handler use `THEN: ESCALATE with REASON: "..."` instead of an inline `ESCALATE:` block.</Note>
+<Note>`PRIORITY` is optional and defaults to `medium`. Note that `ESCALATE` inside an `ON_ERROR` handler is **not** parsed — to escalate from an error handler use `THEN: ESCALATE with REASON: "..."` instead of an inline `ESCALATE:` block.</Note>
 
 ### Connector action
 
-`CONNECTOR_ACTION` names a connector action to invoke for ITSM integration when the escalation fires (for example, opening an incident in an external ticketing system). It's declared at the top level of the `ESCALATE` block, alongside `triggers`, `context_for_human`, `routing`, and `on_human_complete`.
+`CONNECTOR_ACTION` names a connector action to invoke for ITSM integration when the escalation fires (for example, opening an incident in an external ticketing system). It is declared at the top level of the `ESCALATE` block, alongside `triggers`, `context_for_human`, `routing`, and `on_human_complete`.
 
 ### Priority levels
 
@@ -1082,7 +1077,7 @@ ESCALATE:
 | `sip_transfer_id`    | `string`                         | Explicit SIP transfer destination URI (literal or `{{ }}`-templated). Requires `call_transfer_type: sip`. See [Conditional routing entries](#sip_transfer_id) above. |
 | `custom_tools`       | `string[]`                       | Required when `call_transfer_type: custom` — an ordered list of existing project tool names run as the transfer sequence. See [Custom voice transfer](#custom-voice-transfer).           |
 
-<Note>Without `sip_transfer_id`, `call_transfer_type` selects a **transport, not a destination** — the transfer target is project-owned (Agent Transfer settings), and authored DSL cannot name a phone number or SIP URI, the same boundary the built-in `call_transfer` tool enforces by default. `sip_transfer_id` is the one explicit exception to that rule (see above). For Genesys Audio Connector transfers, use the dedicated `genesys_sip_headers` block below rather than `sip_headers`.</Note>
+<Note>Without `sip_transfer_id`, `call_transfer_type` selects a **transport, not a destination** — the transfer target is project-owned (Agent Transfer settings), and authored DSL cannot name a phone number or SIP URI, the same boundary the built-in `call_transfer` tool enforces by default. `sip_transfer_id` is the one explicit exception to that rule (see above). For a Genesys Audio Connector transfer specifically, use the dedicated `genesys_sip_headers` block below to reach the Genesys `TRANSFER_TO_AGENT` callevents call — `sip_headers` here also reaches that transfer, but only on the call-ending SIP BYE (see the note under [Genesys SIP transfer headers](#genesys-sip-transfer-headers)), which is a separate wire from the callevents POST.</Note>
 
 #### Custom voice transfer
 
@@ -1127,8 +1122,8 @@ ESCALATE:
         metadata:
           tier: "gold"
           region: "us-east"
-        additional_headers:                # arbitrary extra headers, template-resolved
-          X-Interaction-Id: "{{interactionID}}"
+        additional_headers:                 # arbitrary extra headers, template-resolved
+          X-Interaction-Id: "{{interaction_id}}"
           X-Brand: "{{brand}}"
 
   routing:
@@ -1151,8 +1146,6 @@ Each field is optional. The `*_header_key` fields name a SIP header; the paired 
 | `metadata`            | `string` or `object` | A string is sent verbatim; a map is serialized to a compact JSON string.       |
 | `additional_headers`  | `object`             | Map of header name → value. Arbitrary extra headers alongside the queue/reason/metadata trio — see below. |
 
-Unlike the fields above, `additional_headers` values are **template-resolved against session values at runtime** (a `{{...}}` reference is substituted on the wire; a key that resolves empty is dropped). Header *names* are still validated as RFC 3261 tokens at compile time. Values aren't byte-bounded the way the other fields are (they ride the HTTP callevents body, not a SIP header), but reject CR/LF/NUL. A name colliding (case-insensitively) with the resolved queue/reason/metadata header, or with a reserved platform header, fails the transfer. The same per-field trigger-overrides-routing-default precedence applies.
-
 The compiler validates the block against the same limits the runtime transfer enforces:
 
 - Header-name fields (`*_header_key`) must be RFC 3261 tokens, at most 64 characters.
@@ -1160,6 +1153,10 @@ The compiler validates the block against the same limits the runtime transfer en
 - `metadata` must be a string or a non-empty map — arrays and scalar values are rejected; an empty `{}` is ignored.
 - Two header-name fields must not resolve to the same SIP header key (compared case-insensitively). A collision (`GENESYS_SIP_HEADER_KEY_COLLISION`) is a compile error, because the transfer rejects colliding header keys at runtime.
 - Unrecognized fields are ignored with a warning. Keys may be written in `snake_case` or `camelCase` (for example `queue_header_key` or `queueHeaderKey`).
+
+<Note>`genesys_sip_headers` and the plain `sip_headers` (under [Voice transfer settings](#voice-transfer-settings)) are two different wires on the same Genesys Audio Connector transfer, and both can be authored together: `genesys_sip_headers` (plus `additional_headers`, below) populates the `TRANSFER_TO_AGENT` callevents call; `sip_headers` is carried separately on the SIP `BYE` that ends the call leg once the transfer succeeds. A conversation-summary `User-to-User` (UUI) header on that same BYE is planned but not yet wired for an `ESCALATE`-triggered transfer as of this release — it's currently only populated on the `call_transfer` tool path.</Note>
+
+**`additional_headers`** (map of header name → value) adds arbitrary extra headers to the callevents `TRANSFER_TO_AGENT` payload, each as its own header alongside the queue/reason/metadata trio — the equivalent of a contact-center "additional context" bag. UNLIKE the verbatim fields above, its values are **template-resolved against session values at runtime**, so a `{{...}}` reference is substituted on the wire (a key that resolves empty is dropped); header names are still validated as RFC 3261 tokens at compile time. A name that collides (case-insensitively) with the resolved queue/reason/metadata key, or a reserved platform header, fails the transfer.
 
 #### Transfer flow policies
 
@@ -1357,7 +1354,7 @@ COMPLETE:
 {{related}}
 
 - [NLU](/agent-platform/abl-reference/nlu) -- intent classification that drives routing decisions
-- [Memory and constraints](/agent-platform/abl-reference/memory-and-constraints) -- session and persistent state used in routing conditions
+- [Memory and Constraints](/agent-platform/abl-reference/memory-and-constraints) -- session and persistent state used in routing conditions
 - [Expressions and functions](/agent-platform/abl-reference/expressions-and-functions) -- condition syntax for WHEN clauses
 - [Lifecycle and hooks](/agent-platform/abl-reference/lifecycle-and-hooks) -- ON_START and hooks that interact with multi-agent flows
 - [Rich content](/agent-platform/abl-reference/rich-content) -- formatting for RESPOND and COMPLETE messages
