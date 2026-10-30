@@ -7,32 +7,99 @@ This document covers voice channel monitoring in Analytics and Insights: call qu
 
 Navigation: **Project** → **Insights** → **Voice Analytics**
 
+| Item | Detail |
+|---|---|
+| **Answers** | Do calls sound good, and does the agent hear and answer quickly? |
+| **Counts** | Every ended voice call, test calls included. Only the environment filter applies. |
+| **Coverage** | Each average uses only the calls where the metric was measured. The line under each card shows how many calls that was. |
+| **vs prev** | The relative change against the previous period of the same length. For example, a barge-in rate that moves from 1.0% to 0.5% shows as down 50%, not down 0.5 points. It's greyed out when either period has fewer than 30 measured calls. |
+| **Tabs** | Dashboard, Outbound Calls |
+
+The cards have no status colours.
+
 **Date range selector**: Use the toggle to select **Today**, **7d**, or **30d**.
 
 **Filters**: Select **All environments** at the top of the page to narrow the data by deployment environment. Filter selections are reflected in the page URL, so you can bookmark a filtered view or share it with a colleague.
 
 <Note>Channel filtering isn't available on this page. The underlying voice data source doesn't carry a channel dimension, so the channel selector is hidden here even though it appears on other analytics pages.</Note>
 
-![Voice Analytics](/agent-platform/images/voice-analytics.png)
+![Voice Analytics](/agent-platform/images/analytics-insights/voice-analytics.png)
 
 ## KPI metric cards
 
-| Metric          | Description                                                                                                                                   |
-|-----------------|-----------------------------------------------------------------------------------------------------------------------------------------------|
-| **Total Calls** | Number of voice calls in the selected period.                                                                                                 |
-| **Avg MOS**     | Average Mean Opinion Score for call quality on a scale of 1–5. Scores below 3.5 typically indicate noticeable quality issues.                 |
-| **ASR Quality** | Automatic Speech Recognition quality score (0–100, higher is better). Measures how accurately the ASR engine transcribes the caller's speech. |
-| **E2E Latency**       | End-to-end latency in milliseconds for the voice processing pipeline. Covers the full round-trip from user speech input through ASR transcription, LLM processing, and TTS output back to the caller. For streamed responses, the measurement ends when the first audio reaches the caller, not when the stream finishes. |
-| **Barge-In Rate**     | Percentage of calls where the caller interrupted the agent mid-response. A rising barge-in rate may indicate that responses are too long or latency is too high, prompting callers to cut in. |
-| **DTMF Fallback**     | Percentage of calls falling back to touch-tone (keypad) input, typically when ASR fails to understand the caller. A rising rate may indicate ASR quality issues or unsupported accents/languages. |
+| Metric | Description | How it's calculated |
+|---|---|---|
+| **Total Calls** | Voice calls that ended in the selected period. | Counts ended calls, test calls included. |
+| **Avg MOS** | Network audio quality, on a scale of 1 to 5. Higher is better. Around 4 and above sounds good. Scores below 3.5 typically indicate noticeable quality issues, such as choppy or delayed audio. | Mean Opinion Score from the inbound RTCP network reports of each call, averaged over the calls where it was measured. |
+| **ASR Quality** | An estimate of how well speech recognition worked, from 0 to 100. 80 or more is excellent, 60 to 79 is good, and below 60 needs attention. It's a heuristic, not a word accuracy measurement. | 100 × (1 - a weighted problem score). Repetitions and corrections weigh 25% each, clarity 20%, and hesitation and low confidence 15% each. Speech-to-speech calls are excluded. |
+| **E2E Latency** | How long callers wait for the agent to start replying, in milliseconds. Lower is better. The target is under 2,000 ms. | Per turn: from the moment the runtime receives the caller's final transcript to the first audio from text-to-speech. Averaged per call, then across calls. It doesn't include the time the speech provider takes to detect that the caller stopped talking. |
+| **Barge-In Rate** | How often callers interrupted the agent. Lower is better. A rising rate may indicate that responses are too long or latency is too high. | Per call: interruptions ÷ turns, then averaged across calls. |
+| **DTMF Fallback** | How often callers used the keypad instead of speaking. Lower is better, unless the flow asks for keypad input on purpose. A rising rate may indicate ASR quality issues or unsupported accents or languages. | Per call: keypad turns ÷ turns, then averaged across calls. Speech-to-speech calls always report 0. |
+| **TTS Quality** | Estimated quality of the agent's synthesized voice. Higher is better. | Each turn starts at 4.5 and loses points for a slow first byte, a slow connection, few audio chunks, errors, or barge-in. The score can't go above 4.5. |
+| **Silence** | Share of the call where no one was speaking. Lower is better. High silence with normal latency points to long pauses elsewhere in the flow. | Per call: silence ÷ call length. Includes the agent's response waits and any gap longer than 500 ms. |
 
 ## Trend charts
 
 | Chart                                  | Description                                                                                                   |
 |----------------------------------------|---------------------------------------------------------------------------------------------------------------|
-| **Network Quality and Call Volume**        | Dual-axis chart plotting MOS scores and call count trends over the selected period. Use this to correlate call quality dips with volume spikes — quality often degrades during peak traffic if capacity-constrained infrastructure cannot keep up. |
-| **Speech Recognition Quality (ASR)**       | ASR quality scores plotted over time. Monitor for sustained degradation, which may indicate noisy caller environments, model drift, or the introduction of new vocabulary that the ASR model does not yet recognize. |
+| **Network Quality and Call Volume**        | Plots hourly average MOS on the right axis (0 to 5) and calls per hour on the left axis. Use this to correlate call quality dips with volume spikes. Quality often degrades during peak traffic if capacity-constrained infrastructure can't keep up. |
+| **Speech Recognition Quality (ASR)**       | Plots hourly average ASR quality, with reference lines at 80 (excellent) and 60 (good). Monitor for sustained degradation, which may indicate noisy caller environments, model drift, or new vocabulary that the ASR model doesn't yet recognize. |
+| **Response Performance** | Plots hourly average E2E latency against the 2,000 ms target. Before you act on a spike, point to it to see how many calls it covers. |
+| **User Experience Metrics** | Plots the hourly barge-in rate and DTMF fallback rate. A single spike often comes from one hour with very few calls. |
 
-<Note>Track **E2E Latency** trends after model or pipeline changes. Even small latency increases (50–100ms) can affect caller experience and drive up barge-in rates.</Note>
+<Note>Track **E2E Latency** trends after model or pipeline changes. Even small latency increases (50 to 100 ms) can affect caller experience and drive up barge-in rates.</Note>
 
 <Note>Streamed responses used to be measured to the end of the stream. Now that the measurement ends at the first audio the caller hears, **E2E Latency** can drop at the point this change took effect. Account for that step before you read it as a latency improvement when you compare periods on either side of it.</Note>
+
+![Response Performance and User Experience Metrics](/agent-platform/images/analytics-insights/voice-analytics-latency-ux.png)
+
+## Hourly breakdown
+
+The **Hourly Breakdown** table shows one row per hour that had calls, newest first.
+
+| Column | Description |
+|---|---|
+| **Hour** | The hour the calls ended in. |
+| **Calls** | Calls that ended in that hour. |
+| **Avg MOS** | Average MOS for the hour. |
+| **Latency** | Average E2E latency for the hour. |
+| **Barge-In** | Barge-in rate for the hour. |
+| **ASR Score** | Average ASR quality for the hour. |
+| **Coverage (measured / total)** | Calls where the metric was measured ÷ calls in the hour. Check coverage before you trust an hour's average. |
+
+![Hourly Breakdown](/agent-platform/images/analytics-insights/voice-analytics-hourly.png)
+
+## Outbound calls
+
+The **Outbound Calls** tab reports calls the platform dialed out. If the project has no outbound calls, the cards read 0.
+
+### Filters
+
+| Filter | Description |
+|---|---|
+| **Destination search** | Finds calls by phone number. The platform sends the number in the request body, not the URL. |
+| **Environment** | Dev, Staging, or Production. Defaults to **Dev**. |
+| **Phase**, **Outcome**, **Channel** | Filter the call list by call phase, final outcome, or channel. **Phase** and **Outcome** filter the list only. The cards ignore them. |
+| **Client Reference ID** | Finds calls by the ID your system attached when it requested the dial. |
+| **From** / **To** | Sets the date and time range for the list and the cards. |
+
+![Outbound Calls](/agent-platform/images/analytics-insights/voice-analytics-outbound.png)
+
+### Outbound metric cards
+
+| Metric | Description |
+|---|---|
+| **Total dials** | Every outbound call attempt. |
+| **Answered** | Calls that connected to a session or completed. Answer rate = Answered ÷ Total dials. |
+| **In progress** | Calls that haven't reached a final state. |
+| **No answer** | Calls nobody picked up. |
+| **Busy** | Calls that reached a busy line. |
+| **Failed** | Calls that failed to connect. A rise usually means a number or provider problem. |
+| **Machine** | Calls where answering-machine detection decided a machine or voicemail answered. High values mean calls reach voicemail, so consider the call timing or a voicemail message. |
+| **Canceled** | Calls canceled before they connected. |
+
+The telephony provider reports all outbound figures.
+
+### Call list
+
+The call list shows one row per call: created time, masked destination, channel, phase, outcome, provider call ID, session, and client reference. Select a row to see its status history and answering-machine details.

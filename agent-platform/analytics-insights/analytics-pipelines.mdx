@@ -3,13 +3,20 @@ title: Analytics pipelines
 sidebarTitle: Analytics pipelines
 ---
 
-This document covers the pipeline framework in Analytics and Insights: the built-in pipelines that power Agent Performance, Quality Monitor, and Customer Insights, and the visual node-based editor for building custom evaluation logic.
+This document covers the pipeline framework in Analytics and Insights: the built-in pipelines that power Agent Performance, Quality Monitor, Customer Insights, and parts of At a Glance, and the visual node-based editor for building custom evaluation logic. Use the **Pipelines** page to check that the data behind the dashboards is being produced.
 
 Navigation: **Project** → **Insights** → **Pipelines**
 
-Each pipeline card displays its name, description, enabled/disabled status (green "Enabled" badge or gray "Disabled" badge), trigger count, and last processed timestamp (or "Never processed" if the pipeline hasn't run yet). Use the search bar at the top to find pipelines by name.
+Each pipeline card displays its name, description, enabled or disabled status (green **Enabled** badge or gray **Disabled** badge), trigger count, health dot, and last processed timestamp. Use the search bar at the top to find pipelines by name. Select a card to configure the pipeline.
 
-![Pipelines](/agent-platform/images/pipelines.png)
+| Card element | Description |
+|---|---|
+| **Enabled** | Whether the pipeline is on for this project. |
+| **Triggers** | How many triggers start the pipeline, such as a session ending. |
+| **Health dot** | The success rate of runs in the last 24 hours: completed runs ÷ all runs, running ones included. Green above 95%, amber from 50% to 95%, red below 50%, grey when there are no runs. |
+| **Last processed** | When the pipeline last ran. **Never processed** means the pipeline has no recorded runs. On an enabled pipeline, it means the dashboards it feeds get no new data. |
+
+![Pipelines](/agent-platform/images/analytics-insights/pipelines.png)
 
 ## Sections
 
@@ -17,12 +24,12 @@ Each pipeline card displays its name, description, enabled/disabled status (gree
 |-----------------|------------------------------------------------------------------------------------------------------------|
 | **Built-in**    | Pre-configured pipelines that ship with the platform, ready to enable with a single toggle.                |
 | **Custom**      | User-defined processing workflows created using the visual pipeline editor.                                |
-| **Recent Runs** | Pipeline execution history with timestamps, durations, status (success/failure), and links to output data. |
+| **Recent Runs** | Pipeline execution history with timestamps, durations, status (success or failure), and links to output data. See [Recent runs](#recent-runs). |
 | **Data**        | Pipeline output data available for dashboard integration, export, and downstream consumption.              |
 
 ## Built-in pipelines
 
-The platform ships with eleven pre-built pipelines covering evaluation, classification, detection, and monitoring needs. Enable each pipeline with a single toggle — no configuration required for the defaults.
+The platform ships with eleven pre-built pipelines covering evaluation, classification, detection, and monitoring needs. Enable each pipeline with a single toggle. The defaults need no configuration.
 
 | Pipeline                    | Description                                                                |
 |-----------------------------|----------------------------------------------------------------------------|
@@ -31,29 +38,46 @@ The platform ships with eleven pre-built pipelines covering evaluation, classifi
 | **Quality Evaluation**          | LLM-as-judge quality evaluation with configurable rubric dimensions. Feeds the Quality Score in Agent Performance and Quality Monitor. |
 | **Hallucination Detection**     | Detects unsupported claims, self-contradictions, and factual accuracy issues in agent responses. |
 | **Knowledge Gap Analysis**      | Identifies gaps in knowledge base coverage by analyzing retrieval precision and uncovered topics. |
-| **Guardrail Analysis**          | Evaluates guardrail effectiveness — detects false positives, false negatives, and bypass attempts. |
+| **Guardrail Analysis**          | Evaluates guardrail effectiveness. Detects false positives, false negatives, and bypass attempts. |
 | **Context Preservation**        | Evaluates whether agents preserve relevant user and workflow context through the conversation. |
-| **Friction Detection**          | Detects user frustration signals — rephrased questions, message escalation, caps, and exclamation patterns. |
+| **Friction Detection**          | Detects user frustration signals: rephrased questions, message escalation, caps, and exclamation patterns. |
 | **Anomaly Detection**           | Monitors analytics metrics for statistical anomalies using z-score and SPC (Statistical Process Control) charts. |
 | **Drift Detection**             | Monitors analytics metrics for gradual performance drift by comparing baseline and current windows. |
-| **Evaluation Run**              | Executes persona × scenario × evaluator matrix evaluation with bias mitigation and trajectory scoring. |
+| **Evaluation Run**              | Executes persona × scenario × evaluator matrix evaluation with bias mitigation and trajectory scoring. Powers eval matrices. |
 
 ## Custom pipelines
 
-Custom pipelines let you define your own analytics logic using a visual, drag-and-drop node-based editor. Use custom pipelines to build organization-specific evaluation criteria that go beyond the built-in set — for example, regulatory compliance checks, brand voice adherence, or domain-specific accuracy scoring.
+Custom pipelines let you define your own analytics logic using a visual, drag-and-drop node-based editor. Use custom pipelines to build organization-specific evaluation criteria that go beyond the built-in set, for example regulatory compliance checks, brand voice adherence, or questions such as "was the customer's goal met?" or "what is the retention risk?".
+
+A typical custom pipeline is a small flow: a trigger, a step that reads the conversation, an analysis step (for example an LLM prompt that returns the fields you ask for), and a step that stores the results.
+
+| Option | Description |
+|---|---|
+| **When it runs** | When a conversation ends, on each user or agent message, on a schedule, or by hand. |
+| **Ready-made steps** | Get data, prepare data, analyze (LLM evaluate, intent, quality, goal completion, and more), add logic, call out to email, Slack, HTTP, or Kafka, and store results. |
+| **Results** | Every field the pipeline stores becomes a column you can use in [Custom dashboards](/agent-platform/analytics-insights/custom-dashboards). |
+
+You can also tune a built-in pipeline instead of building a new one. For example, give Intent Classification your own intent list, or give Quality Evaluation your own dimensions and weights.
+
+On the **Custom** tab, select **Create Pipeline** to open the editor. Each custom pipeline card shows its description, node count, owner, last change, and status.
+
+![Custom pipelines](/agent-platform/images/analytics-insights/pipelines-custom.png)
 
 ### How the editor works
 
 The editor presents a visual canvas where you construct a pipeline as a directed graph of connected nodes. A **Node Palette** on the left side provides draggable node types organized into categories:
 
-| Category  | Node types                                                                                                      |
-|-----------|-----------------------------------------------------------------------------------------------------------------|
-| **Data**  | Read Conversation, Read Message Window, Aggregate, Database Query, Filter, Transform Data, Inspect Output       |
+| Category | Node types |
+|---|---|
+| **Get Data** | Read Conversation, Read Message Window, Database Query, Inspect Output |
+| **Prepare Data** | Aggregate, Filter, Transform Data |
+| **Analyze** | LLM evaluate, intent, quality, goal completion, and more |
 | **Logic** | Sub-Pipeline (reuse an existing pipeline as a step), Wait for Event (pause execution until a named event fires) |
+| **Act & Store** | Call out to email, Slack, HTTP, or Kafka, and store results |
 
 The core pattern: define a trigger, connect one or more processing nodes, then wire the output to a storage or metrics node.
 
-![Pipelines-2](/agent-platform/images/pipeline-2.png)
+![Pipelines-2](/agent-platform/images/analytics-insights/pipeline-2.png)
 
 ### Pipeline structure
 
@@ -65,7 +89,14 @@ The core pattern: define a trigger, connect one or more processing nodes, then w
 
 ### Pipeline lifecycle
 
-Pipelines follow a Draft → Validate → Test → Activate lifecycle. The editor toolbar shows the current state (Draft badge, "Validation passed" indicator) and provides buttons for Test, Validate, Save, and Activate. You can iterate on draft pipelines without disrupting live ones, save drafts as you go, validate to catch configuration errors before deployment, and run test executions to verify output before activating.
+Pipelines follow a Draft, Validate, Test, Activate lifecycle. The editor toolbar shows the current state (Draft badge, "Validation passed" indicator) and provides buttons for Test, Validate, Save, and Activate. You can iterate on draft pipelines without disrupting live ones, save drafts as you go, validate to catch configuration errors before deployment, and run test executions to verify output before activating.
+
+Keep these rules in mind:
+
+* Test a pipeline on one conversation before you activate it.
+* Drafts don't run.
+* Pipelines don't backfill older conversations. They process only conversations that end after activation.
+* Pipelines skip eval and synthetic sessions.
 
 ### Sub-pipelines
 
@@ -73,6 +104,22 @@ You can reference one pipeline as a step inside another, enabling reuse and comp
 
 ### Attach to dashboards
 
-Once a custom pipeline produces data, its metrics appear alongside built-in metrics in **Agent Performance**, **Quality Monitor**, and **Customer Insights**, giving teams a single pane of glass across both standard and organization-specific evaluation.
+Once a custom pipeline produces data, every field it stores becomes available to [Custom dashboards](/agent-platform/analytics-insights/custom-dashboards), where you can chart it next to built-in metrics.
 
 <Note>Start with the built-in pipelines to establish baselines, then create custom pipelines for organization-specific quality dimensions. The validate-before-activate workflow catches configuration errors before pipelines go live.</Note>
+
+## Recent runs
+
+The **Recent Runs** tab shows the run history for the selected window.
+
+| Element | Description |
+|---|---|
+| **Runs by trigger** | Runs started by a session ending, by an event, or by hand. |
+| **Run outcomes** | Completed, failed, and still running. Failed runs mean gaps in the quality and sentiment dashboards. |
+| **Average duration** | Mean run time. |
+| **Run filters** | Filter by pipeline type, status, trigger, and window. |
+| **Run list** | Each run's status (a tick for completed, a cross for failed), trigger, start time, and duration. |
+
+![Recent Runs](/agent-platform/images/analytics-insights/pipelines-recent-runs.png)
+
+<Note>Run history is in early access and may be incomplete. It covers runs on this platform only, from when the feature was turned on.</Note>
