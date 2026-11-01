@@ -1,0 +1,338 @@
+# HowTo Review: configure-agent-execution-pipeline
+
+**Date:** 2026-11-01
+**Article:** `agent-platform/drafts/abl-howtos-docs/articles/configure-agent-execution-pipeline.md`
+**Topic:** 1.11 - How to configure EXECUTION.pipeline models, modes, thresholds, and fallbacks
+**Verdict:** update-needed
+
+## Proposed changes
+
+- Add `parentReturn.minConfidence` and `parentReturn.ignoreAmbiguous` to the defaults table, the resolution order note, and the full configuration example.
+- Add the section "Return threshold" with the Studio labels.
+- Add the tool filter fallback for an empty or no-domain-tool selection (ABLP-6030) and the `reason` value in `pipeline_filter`.
+- Note that the Studio Max Tools field accepts up to 50.
+- Add a variation row, a checklist row, a verification bullet, a mistake row, and two troubleshooting rows.
+- Keep all other text unchanged. All existing claims re-verified at 1.9.0.
+
+## Deletions
+
+None.
+
+## Evidence
+
+| Claim | Current evidence | Impact |
+| ----- | ---------------- | ------ |
+| `EXECUTION.pipeline.parentReturn` exists at agent and project level, read from the supervisor | `agent-based-parser.ts` ~11061, `abl-schema.json`, shared project schema 678, `flow-step-executor.ts` 5756 | New settings and section |
+| Return threshold order: supervisor block, project, supervisor intent threshold (0.5) | `config.ts` `resolveParentReturnConfig`, `constants.ts` | Defaults table and section |
+| Trace shows `classifierThreshold` and `classifierThresholdSource` in `digression` | `runtime-executor.ts` 16640, `toGatherInterruptTrace` | Verification bullet |
+| Tool filter keeps the full domain set when the selection is empty or pinned-only | `tool-filter.ts` 410 to 470 | Fallback bullet and troubleshooting row |
+| Defaults, ranges, model rules, tiers, veto, breaker unchanged | `types.ts`, shared schema, `model-resolver.ts`, `tiered-resolver.ts`, `circuit-breaker.ts` | No change |
+| Studio Max Tools input caps at 50, schema at 100 | `RuntimeConfigTab.tsx` 5890, shared schema | Note added, reported for review |
+
+## Quality scores (final)
+
+Grounding 5, Depth 5, Readability 4, Examples 4, Search 5, Workflow and failures 5, Self-service 4, Scenario comprehensiveness 4, Completeness 5. Gate: pass. Persona review: all ready.
+
+## Example validation
+
+All `abl` blocks pass in `validate.mjs`: 0 errors, 0 warnings. Details are in the evidence file.
+
+## Proposed article text
+
+````markdown
+# How to configure EXECUTION.pipeline models, modes, thresholds, and fallbacks
+
+Use this guide to tune the agent execution pipeline: the classifier model, the execution mode, confidence thresholds, tool filtering, keyword veto, intent bridging, and fallback behavior.
+
+## Concept
+
+`EXECUTION.pipeline` settings are routing controls. They do not replace the handoff rules of the supervisor. They decide how much the runtime relies on a classification pass before the normal reasoning path.
+
+The runtime resolves the effective configuration in this order:
+
+1. The project enables the pipeline. If the project does not enable it, the agent settings have no effect.
+2. The agent can opt out with `enabled: false`. An agent opt-out wins over a project that enables the pipeline.
+3. For each field, the agent value wins, then the project value, then the default.
+
+The `parentReturn` settings follow the same order. The runtime reads the agent value from the supervisor, not from the specialist.
+
+Two settings exist only at the project level: the pipeline model and the master switch. Set them in Studio under the project Runtime Config, in the Reasoning Pipeline section.
+
+### Defaults
+
+| Setting | Default |
+| ------- | ------- |
+| `enabled` | `false` (project master switch) |
+| `mode` | `parallel` |
+| `shortCircuit.enabled` | `true` |
+| `shortCircuit.confidenceThreshold` | `0.85` |
+| `toolFilter.enabled` | `true` |
+| `toolFilter.maxTools` | `6` |
+| `keywordVeto.enabled` | `true` |
+| `keywordVeto.keywords` | empty list |
+| `intentBridge.enabled` | `true` |
+| `intentBridge.programmaticThreshold` | `0.85` |
+| `intentBridge.guidedThreshold` | `0.5` |
+| `intentBridge.outOfScopeDecline` | `true` |
+| `intentBridge.multiIntentSignal` | `true` |
+| `parentReturn.minConfidence` | Not set. The runtime uses the intent threshold of the supervisor, `0.5` by default. |
+| `parentReturn.ignoreAmbiguous` | `false` |
+
+The project Runtime Config accepts thresholds from `0` to `1`, `maxTools` from `1` to `100`, and up to 500 veto keywords of 200 characters each. The Studio **Max Tools** field accepts values up to `50`.
+
+### Pipeline model
+
+The classifier and the tool filter use the pipeline model. Set it in the project Runtime Config under **Pipeline Model**:
+
+- **Default** uses the `tool_selection` model of the project.
+- A workspace model uses that model, and its connection when the model has several.
+
+The `model` field in `EXECUTION.pipeline` has no effect. Remove it from existing agents. If a selected workspace model fails, the runtime falls back to the default model. When model access is enforced for the project, there is no fallback and the pipeline step is skipped for that turn.
+
+## Minimal working example
+
+Use this example to enable the pipeline and keep the first deployment conservative. The supervisor needs categories and routes. Without them the classifier does not run.
+
+```abl
+SUPERVISOR: Order_Router
+GOAL: "Route order questions with a conservative execution pipeline"
+PERSONA: "Concise order routing supervisor"
+
+INTENTS:
+  order_status: "Questions about where an order is or when it arrives."
+  returns: "Requests to return or exchange an item."
+
+EXECUTION:
+  pipeline:
+    enabled: true
+    mode: sequential
+    shortCircuit:
+      enabled: true
+      confidenceThreshold: 0.9
+
+HANDOFF:
+  - TO: Order_Status_Agent
+    WHEN: intent.category == "order_status"
+    SUMMARY: "User needs order status"
+  - TO: Order_Returns_Agent
+    WHEN: intent.category == "returns"
+    SUMMARY: "User needs a return or exchange"
+```
+
+```abl
+AGENT: Order_Status_Agent
+GOAL: "Answer order status and delivery date questions"
+PERSONA: "Order status specialist"
+```
+
+```abl
+AGENT: Order_Returns_Agent
+GOAL: "Guide customers through returns and exchanges"
+PERSONA: "Returns specialist"
+```
+
+This example uses `sequential` mode and allows short-circuiting only at confidence `0.9` or higher. The project must also enable the pipeline.
+
+## Full configuration example
+
+This separate supervisor tunes every setting.
+
+```abl
+SUPERVISOR: Insurance_Router
+GOAL: "Route insurance requests with tuned classifier thresholds and fallbacks"
+PERSONA: "Careful insurance routing supervisor"
+
+INTENTS:
+  claims: "Requests to file, check, or update a claim."
+  benefits: "Questions about coverage, eligibility, benefits, or plan rules."
+  escalation: "Appeals, fraud, legal risk, or complaints."
+
+EXECUTION:
+  pipeline:
+    enabled: true
+    mode: parallel
+    shortCircuit:
+      enabled: true
+      confidenceThreshold: 0.92
+    toolFilter:
+      enabled: true
+      maxTools: 3
+    keywordVeto:
+      enabled: true
+      keywords: ["appeal", "fraud", "legal"]
+    intentBridge:
+      enabled: true
+      programmaticThreshold: 0.88
+      guidedThreshold: 0.6
+      outOfScopeDecline: false
+      multiIntentSignal: true
+    parentReturn:
+      minConfidence: 0.9
+      ignoreAmbiguous: true
+
+HANDOFF:
+  - TO: Claims_Agent
+    WHEN: intent.category == "claims"
+    SUMMARY: "User needs claims support"
+  - TO: Benefits_Agent
+    WHEN: intent.category == "benefits"
+    SUMMARY: "User needs benefits support"
+  - TO: Escalation_Agent
+    WHEN: intent.category == "escalation"
+    SUMMARY: "User may need escalation review"
+```
+
+```abl
+AGENT: Claims_Agent
+GOAL: "Help members with claim filing and claim status"
+PERSONA: "Claims support specialist"
+```
+
+```abl
+AGENT: Benefits_Agent
+GOAL: "Explain plan benefits, coverage, and eligibility"
+PERSONA: "Benefits specialist"
+```
+
+```abl
+AGENT: Escalation_Agent
+GOAL: "Handle escalations, complaints, appeals, and risk-sensitive requests"
+PERSONA: "Escalation specialist"
+```
+
+The `parentReturn` block makes the supervisor return the caller from an active specialist only at confidence `0.9` or higher. It also keeps ambiguous replies with the specialist.
+
+The veto words `appeal`, `fraud`, and `legal` stop short-circuiting to `Escalation_Agent`. Those messages go to guided reasoning. The runtime never hides escalation handoff tools in guided mode, so the supervisor can still choose the escalation route.
+
+## How it works
+
+### Mode
+
+- `parallel` runs the classifier and the tool filter at the same time. It is faster, but the tool filter call runs even when the classifier short-circuits.
+- `sequential` runs the classifier first. If the turn short-circuits, the tool filter does not run. This costs less and adds latency when the turn does not short-circuit.
+
+### Short-circuit threshold
+
+`shortCircuit.confidenceThreshold` is the only threshold that controls direct routing. A single intent with a category, a confidence at or above the threshold, one resolved target, and no veto match routes without a reasoning turn. Higher values reduce misroutes and send more traffic to guided reasoning.
+
+### Intent bridge thresholds
+
+- `programmaticThreshold` applies only to out-of-scope decline. The agent declines when every intent is out of scope, confidence is at or above this value, `outOfScopeDecline` is `true`, and the agent declares `LIMITATIONS`.
+- `guidedThreshold` is the floor for guided reasoning. At or above it, reasoning runs with routing hints and hidden handoff tools. Below it, the turn is autonomous.
+- Set `guidedThreshold` below `programmaticThreshold` and below `shortCircuit.confidenceThreshold`.
+
+### Keyword veto
+
+`keywordVeto.keywords` stops short-circuiting when a word appears in the message. The match is by whole word and ignores case. The runtime also adds the words from the names of the agent tools, split on underscores. Words shorter than three characters are ignored. Handoff and delegate tools add no words.
+
+### Return threshold
+
+The `parentReturn` block applies while a specialist is active. The classifier of the supervisor checks each reply. The runtime returns the caller to the supervisor when the reply matches another route at or above the return threshold.
+
+- `parentReturn.minConfidence` sets that threshold. The order is the `parentReturn` value in the `EXECUTION.pipeline` block of the supervisor, then the project value, then the intent threshold of the supervisor.
+- `parentReturn.ignoreAmbiguous: true` keeps the specialist in charge when the classifier marks the result as ambiguous.
+- The pipeline must be enabled for the supervisor. Without it, this threshold does not apply.
+
+Set the project values in Studio under the project Runtime Config, in the Reasoning Pipeline section. Select **Custom Return Threshold** to set the confidence. Select **Keep Ambiguous Replies With Specialist** for `ignoreAmbiguous`. A lower threshold returns callers more often. A higher threshold keeps them with the specialist longer.
+
+### Tool filter
+
+The tool filter asks the pipeline model for the two to `maxTools` most relevant tools for the message.
+
+- It filters only the domain tools of the agent. System, handoff, and delegate tools always stay available.
+- It skips the model call when the agent has no domain tools.
+- It keeps the full tool set when the model call fails, times out after 10 seconds, returns an unreadable answer, selects fewer than two tools, or the prompt exceeds its size budget.
+- It also keeps the full domain tool set when the selection is empty or holds no domain tool. A message such as "yes" can read as needing no tools, so the runtime does not remove the data tools of the agent. The `pipeline_filter` event shows `fellBack` as `true` and the reason `no_domain_tool_selected`.
+
+### Fallbacks
+
+- A failed classifier call or an empty result leads to autonomous reasoning. The runtime records a `pipeline_classifier_unavailable` trace event.
+- After three consecutive pipeline failures for a tenant, a circuit breaker bypasses the pipeline for 60 seconds. One probe then runs.
+- Classified categories that match no route leave the decision to the supervisor.
+
+Since none of the `HANDOFF` entries in the full configuration example declare `HISTORY`, each specialist receives the full conversation history by default (the current platform default when `HISTORY` is omitted).
+
+## Common variations
+
+| Variation | Use when | Configuration focus |
+| --------- | -------- | ------------------- |
+| Conservative launch | Misroutes are expensive or the category set is new. | `mode: sequential`, high `confidenceThreshold`, keyword veto enabled. |
+| Low-latency routing | You have a measured latency budget and strong monitoring. | `mode: parallel`, small `maxTools`, tuned thresholds. |
+| Classifier-assisted but not autonomous | The classifier should guide reasoning but not route alone. | `shortCircuit.enabled: false`, tuned `guidedThreshold`. |
+| Sensitive-topic routing | Legal, fraud, cancellation, refund, or complaint paths need extra review. | `keywordVeto.keywords` and an escalation route. |
+| Out-of-scope decline | The agent must refuse unrelated requests without a reasoning turn. | `outOfScopeDecline: true`, `LIMITATIONS`, tuned `programmaticThreshold`. |
+| Agent opt-out | The project enables the pipeline but one agent is not ready. | `enabled: false` in the agent `pipeline` block. |
+| Control digressions from a specialist | Callers leave specialists too often or too rarely. | `parentReturn.minConfidence` and `parentReturn.ignoreAmbiguous` on the supervisor. |
+| Tool filter only | The agent has many tools and no routes. | `toolFilter.enabled: true`, tuned `maxTools`. The classifier does not run without categories. |
+
+## Configuration checklist
+
+| Setting | Start with | Tighten when |
+| ------- | ---------- | ------------ |
+| `mode` | `sequential` | You have latency evidence and monitoring for `parallel`. |
+| `shortCircuit.confidenceThreshold` | `0.9` or higher | Misroutes cost more than slower routing. |
+| `programmaticThreshold` | `0.85` or higher | Declines must be conservative. |
+| `guidedThreshold` | Middle confidence range | You want classifier help without full automation. |
+| `keywordVeto.keywords` | Sensitive and side-effect terms | Compliance, refund, legal, fraud, or cancellation risk grows. |
+| `toolFilter.maxTools` | Small enough to reduce noise | Tool lists become large or overlapping. |
+| `parentReturn.minConfidence` | The default of the supervisor | Callers leave specialists on weak matches, or stay when they ask for another topic. |
+
+## Verification
+
+- Validate the ABL and confirm the project Runtime Config enables the pipeline.
+- Compare behavior with the project enabled and the agent opted out.
+- Send a message just below and just above `shortCircuit.confidenceThreshold`. Confirm the handoff happens only above it.
+- Send a message that scores between `guidedThreshold` and the short-circuit threshold. Confirm a guided `pipeline_tiered_action` event.
+- Send a message with each veto word. Confirm there is no short-circuit.
+- Send an unrelated message with `outOfScopeDecline` on. Confirm the `decline_out_of_scope` action.
+- While a specialist is active, send a reply for another route. Confirm that a `digression` event with the `return_to_parent` action appears only at or above the return threshold. Check `classifierThreshold` and `classifierThresholdSource` in the event.
+- Check `pipeline_classify` for the model, categories, and confidence. Check `pipeline_filter` for the filtered tools and the `fellBack` value.
+
+## Production readiness checklist
+
+- The project enables the pipeline and selects a pipeline model.
+- Project-level and agent-level pipeline settings are documented together.
+- Thresholds come from real utterance samples and are reviewed after launch.
+- Escalation or fallback routes exist for sensitive and ambiguous categories.
+- Veto words are reviewed for false positives and false negatives.
+- Tool names do not contain common words that veto short-circuiting.
+- Tool filtering does not hide tools needed for safe recovery.
+- Dashboards track tier distribution, short-circuit rate, guided rate, autonomous rate, and fallback rate.
+
+## Common mistakes
+
+| Mistake | Why it happens | How to avoid it |
+| ------- | -------------- | --------------- |
+| Setting `model` in `EXECUTION.pipeline` | The field parses without error | Select the pipeline model in the project Runtime Config. |
+| Tuning `programmaticThreshold` to change routing | The name suggests direct routing | Tune `shortCircuit.confidenceThreshold`. `programmaticThreshold` only controls decline. |
+| Using keyword veto as a routing rule | Veto only blocks short-circuiting | Keep routing logic in `HANDOFF` conditions and categories. |
+| Assuming agent opt-in is enough | The project gate decides | Verify that the project enables the pipeline. |
+| Routing with quoted plain-language `WHEN` text | The text reads like a rule | Use `INTENTS` and `intent.category` conditions for pipeline routes. |
+| Setting `parentReturn` on a specialist | The block looks like a specialist setting | Set `parentReturn` on the supervisor. The runtime reads the supervisor block. |
+| Filtering tools too aggressively | Smaller tool lists look cleaner | Test recovery paths and edge cases. |
+
+## Troubleshooting
+
+| Symptom | Likely cause | What to check |
+| ------- | ------------ | ------------- |
+| Agent config is ignored | The project pipeline is off | Check the project Runtime Config and the agent `enabled` value. |
+| Classifier never runs | The agent has no categories or routes, or the circuit breaker is open | Check `INTENTS`, route conditions, and recent failures. |
+| Guided behavior happens too often | `shortCircuit.confidenceThreshold` is high or categories overlap | Review confidence values and category descriptions. |
+| Direct routing happens too often | The short-circuit threshold is low or veto words are missing | Raise `shortCircuit.confidenceThreshold` and add sensitive veto words. |
+| Common word blocks short-circuiting | A tool name contains the word | Rename the tool or accept the veto. |
+| Tool choice gets worse | `maxTools` is too small | Increase `maxTools` or improve tool descriptions. |
+| Tool filter keeps every tool | The filter fell back to the full set, or it selected no domain tool | Check the `fellBack` value and the `reason` in `pipeline_filter`. |
+| Callers return to the supervisor too often or too rarely | The return threshold does not fit the route mix | Check `parentReturn.minConfidence` and the `digression` event. |
+| Pipeline model does not apply | The project selects a model that is not available to it | Check the project Runtime Config and model access. |
+
+## Related HowTos
+
+- How to use EXECUTION.pipeline for agent routing, classification, and short-circuiting
+- How to design a supervisor that routes users to specialist agents
+- How to debug routing with traces
+````
+
+## Files to update after approval
+
+- `agent-platform/drafts/abl-howtos-docs/articles/configure-agent-execution-pipeline.md`
+- `agent-platform/drafts/abl-howtos-docs/evidence/configure-agent-execution-pipeline-2026-11-01-evidence.md`
