@@ -119,7 +119,7 @@ The platform handles the first request now and queues the rest. After the primar
 
 ### sequential
 
-The platform runs the requests one at a time, in order. Each request gets the earlier results as context. Use it when a later request depends on an earlier one, such as confirming identity before paying a bill.
+The platform runs the requests one at a time, in order. Each request gets the earlier results as context. Use it when a later request depends on an earlier one, such as confirming identity before paying a bill. The supervisor leads each request with one line of its own, so the customer knows which request runs now.
 
 ```abl
 SUPERVISOR: Sequential_Service_Supervisor
@@ -156,6 +156,10 @@ AGENT: Bill_Payment_Agent
 GOAL: "Handle bill payments"
 ```
 
+- The first request starts with the words the supervisor wrote beside its routing calls, when it wrote some that the customer has not already seen. Otherwise it starts with the `multi_intent_sequential_start` message. The default is "Let's take your requests one at a time, starting with: " followed by the request.
+- Each later request starts with the `multi_intent_sequential_transition` message. The default is "Next, your other request: " followed by the request. The line never says that the previous request is finished.
+- The platform tells each line once, just before the first visible output of that request. A request that pauses for the customer gets its line with its question.
+- A reply that the execution pipeline composes with a model carries no lead lines. The platform operator can also turn the lines off for the whole deployment.
 - A specialist that needs an answer from the customer pauses the plan. The customer's reply goes to that specialist, and the plan resumes after it.
 - A failed request does not stop the plan. The reply reports the failure.
 - If every request fails, the customer sees a fixed message asking to try again or to ask for one request at a time.
@@ -316,11 +320,20 @@ MESSAGES:
   multi_intent_queue_declined_ack: "Understood. What else can I help with?"
 ```
 
+A supervisor that uses `sequential` can set two more keys. Add them to its own `MESSAGES:` block.
+
+```abl
+MESSAGES:
+  multi_intent_sequential_start: "I will take your requests one at a time. First: {{request}}"
+  multi_intent_sequential_transition: "Now: {{request}}"
+```
+
 | Key | Variables |
 | --- | --------- |
 | `multi_intent_disambiguate_option` | `index`, `choice` (the customer's own words for the request), `label`, `intent`, `target`, `category`, `summary`, `confidence` (a whole-number percentage). |
 | `multi_intent_queued_follow_up` | `next_intent`. |
 | `multi_intent_queued_notice` | `next_intent`. If the notice uses the variable, it replaces the follow-up text. |
+| `multi_intent_sequential_start`, `multi_intent_sequential_transition` | `request` (the request in the plan's words). |
 
 The platform default for `multi_intent_disambiguate_option` is `{{index}}. {{choice}}`. The text `{{index}}. {{intent}} (confidence: {{confidence}})` was the earlier default. The platform treats that exact text as unset and uses the current default. Write a different option text to override the default.
 
@@ -331,7 +344,7 @@ The platform default for `multi_intent_disambiguate_option` is `{{index}}. {{cho
 3. Accept the offer. Expect the second specialist to answer.
 4. Send one request. Expect normal routing with no offer.
 5. For `disambiguate`, expect a numbered list. Reply with a number and expect that request to run.
-6. For `sequential`, expect both answers, in order, in one reply.
+6. For `sequential`, expect both answers, in order, in one reply. Expect a lead line before each answer, unless a model composes the reply.
 
 In the trace, check these events.
 
@@ -341,6 +354,7 @@ In the trace, check these events.
 - `multi_intent_queue_retired` with `reasonCode` `queued_intent_expired` shows a dropped request.
 - `multi_intent_disambiguate_choice` shows the option the customer chose.
 - `multi_intent_sequential_executed` and `multi_intent_parallel_executed` are `decision` events for those strategies.
+- `multi_intent_sequential_task_failed` shows a failed request in a `sequential` plan. It carries `failedCount`.
 
 ## Production readiness checklist
 
@@ -379,6 +393,7 @@ In the trace, check these events.
 | Compile error `MULTI_INTENT_INVALID_STRATEGY` | The strategy is not one of the five values. | The spelling of `strategy`. |
 | Error `E465` | A project-only key is in the agent section. | Move the key to the project runtime configuration. |
 | A supervisor never batches requests | `ROLE: router`, or `enabled: false`. | The `BEHAVIOR` block and `enabled`. |
+| A `sequential` reply has no line before each answer | A model composed the reply, the supervisor already streamed its own words, or the platform operator turned the lines off. | The `MESSAGES:` block and the deployment setting. |
 
 ## Related HowTos
 
