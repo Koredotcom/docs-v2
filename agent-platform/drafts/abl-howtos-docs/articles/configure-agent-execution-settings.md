@@ -48,7 +48,7 @@ The compiler lowers `EXECUTION` into the compiled agent. The runtime reads the c
 | `reasoning_effort` | Reasoning depth for models that support it | One of `none`, `minimal`, `low`, `medium`, `high`, `xhigh`, `max`. Other values are ignored. |
 | `enable_thinking`, `thinking_budget` | Extended thinking for models that support it | Off when unset. |
 | `tool_timeout` | Maximum wait for a tool call | 30000. A timeout set on the tool itself wins. The maximum is 120000. |
-| `llm_timeout` | Maximum wait for a model call | 120000 when unset. Allowed range is 1 to 120000. A value outside the range raises a compile warning and the runtime uses 120000. |
+| `llm_timeout` | Maximum wait for a model call | 120000 when unset. Allowed range is 1 to 120000. A value outside the range raises a compile warning and the runtime uses 120000. The runtime also applies the server cap and the time left in the turn, so the effective wait can be shorter. |
 | `session_idle_timeout` | Idle session boundary | 1800000 (30 minutes). |
 | `max_reasoning_iterations` | Preventing reasoning and tool loops in one turn | 10. |
 | `max_flow_iterations` | Preventing flow loops | 1500. Counts flow step transitions across all turns of the session. |
@@ -72,7 +72,7 @@ The compiler lowers `EXECUTION` into the compiled agent. The runtime reads the c
 
 In a project without model restrictions, the runtime picks the model in this order: a deployment model override, then `models` and `model` from `EXECUTION`, then the agent's Model Config tab, then the project and workspace defaults.
 
-When a project restricts models to a selected set, the runtime uses `EXECUTION.model` only if it matches exactly one selected project model. If it matches none or more than one, the runtime runs the project's selected model instead. The platform records a `model_access:dsl_model_fallback` event with the reason `DSL_MODEL_NOT_SELECTED`, `DSL_MODEL_AMBIGUOUS`, or `DSL_MODEL_BINDING_UNAVAILABLE`. A model chosen for the agent in the Model Config tab takes priority over `EXECUTION.model`. Sampling values that you author in `EXECUTION` still apply to the selected model.
+When a project restricts models to a selected set, the runtime uses `EXECUTION.model` only if it identifies exactly one selected project model. If the project selected that model on several connections, the runtime uses the model's default binding, or the first connection in the saved priority order that is ready to use. If the name matches no selected model, or matches more than one distinct selected model, the runtime runs the project's selected model instead. The platform records a `model_access:dsl_model_fallback` event with the reason `DSL_MODEL_NOT_SELECTED`, `DSL_MODEL_AMBIGUOUS`, or `DSL_MODEL_BINDING_UNAVAILABLE`. A model chosen for the agent in the Model Config tab takes priority over `EXECUTION.model`. Sampling values that you author in `EXECUTION` still apply to the selected model. If the Model Config tab sets the same value, such as temperature or maximum tokens, the Model Config value wins.
 
 ## Common variations
 
@@ -131,6 +131,7 @@ Use nested `EXECUTION.pipeline` only when you need agent routing, classification
 - Test a normal model response and a slow model response against `llm_timeout`.
 - Test a normal tool call and a slow tool call against `tool_timeout`. If the tool sets its own timeout, test that value.
 - Confirm in the trace which model ran. In a restricted project, check for a `model_access:dsl_model_fallback` event.
+- In a project where the agent also has Model Config values, compare the temperature and token limit in the trace with your `EXECUTION` values.
 - Send more messages than `max_queue_depth` while the agent is busy. Confirm that the extra message fails with `QUEUE_FULL` in `serial` mode.
 - Load test concurrency settings before you use `parallel` or high queue depths in production.
 - For an agent with a flow, run the longest journey end to end. Confirm that `FLOW_ITERATION_LIMIT_EXHAUSTED` does not appear.
@@ -167,11 +168,12 @@ Use nested `EXECUTION.pipeline` only when you need agent routing, classification
 | `E560` `MODE` is no longer supported | `MODE:` is removed | Delete the line and use `REASONING` on flow steps |
 | `E564` invalid `EXECUTION` value | A sampling value is out of range | Check `top_p`, `top_k`, and `seed` |
 | Compile warning about `llm_timeout` | The value is 0, negative, or above 120000 | Set a value from 1 to 120000 |
-| Agent runs a different model than `EXECUTION.model` | The project restricts models and the model is not one selected project model | Look for `model_access:dsl_model_fallback` and check the project model selection and the Model Config tab |
+| Agent runs a different model than `EXECUTION.model` | The project restricts models and the model name matches no selected project model or more than one | Look for `model_access:dsl_model_fallback` and check the project model selection and the Model Config tab |
 | Agent is slow under load | Timeout or concurrency settings are too loose | Check traces, queue depth, and downstream service latency |
 | New messages fail with `QUEUE_FULL` | The queue reached `max_queue_depth` | Raise the limit or change `concurrency` |
 | Agent stops mid-flow with a generic failure message | `max_flow_iterations` reached | Check for `FLOW_ITERATION_LIMIT_EXHAUSTED` and raise or remove the limit |
 | Agent stops after a few tool calls | `max_reasoning_iterations` is too low | Inspect the iteration count in the trace |
+| Temperature or token limit differs from `EXECUTION` | The agent's Model Config tab sets the same value in a restricted project | Compare both sources and remove one |
 | Costs are higher than expected | Model, token, or thinking settings are too large | Review `model`, `models`, `max_tokens`, and `thinking_budget` |
 
 ## Related HowTos

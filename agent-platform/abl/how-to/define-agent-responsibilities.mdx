@@ -25,7 +25,7 @@ Clear responsibilities make routing safer. A supervisor routes well only when ev
 | `DELEGATE`    | When another agent should provide a result while this agent stays active. |
 | `COMPLETE`    | When the agent can finish the interaction.                                |
 
-`LIMITATIONS` text goes into the prompt of specialist and standalone agents as boundaries the model should respect. The prompt of a supervisor with the router or orchestrator role does not include it. The platform does not enforce `LIMITATIONS`. For hard enforcement, add tools, constraints, guardrails, permissions, and handoff boundaries.
+`LIMITATIONS` text goes into the prompt of specialist and standalone agents as boundaries the model should respect. The generated prompt of a supervisor with the router or orchestrator role does not include it. Three other prompts also carry it: a custom `SYSTEM_PROMPT`, a FLOW step that uses reasoning, and a direct answer that Knowledge Base search planning produces. A custom `SYSTEM_PROMPT` places the text where it writes `{{limitations}}`. Without that placeholder, the platform appends the limitations after the prompt. The platform does not enforce `LIMITATIONS`. For hard enforcement, add tools, constraints, guardrails, permissions, and handoff boundaries.
 
 A validation error `E124` means the agent has no `GOAL`.
 
@@ -127,14 +127,16 @@ COMPLETE:
 
 ```yaml
 AGENT: Live_Agent
-GOAL: "Transfer customers to a human support specialist"
+GOAL: "Tell the customer that a human specialist will take over, then escalate to the human support queue"
 
-COMPLETE:
-  - WHEN: true
-    RESPOND: "I will connect you with a human support specialist."
+ESCALATE:
+  context_for_human:
+    - account_id
 ```
 
 The account-security agent owns identity verification and recovery. Billing and human assistance are outside that responsibility, so they are handoff boundaries.
+
+`HANDOFF` targets are machine agents. `Live_Agent` reaches a person through `ESCALATE`. Escalation reaches a person only when the project has a human-agent connection and the `ESCALATE` block has a `routing` block with `connection`, `queue`, or `skills`. See the [ESCALATE reference](/agent-platform/abl/reference/multi-agent-and-supervisor#escalate).
 
 ## How the handoff boundaries work
 
@@ -179,7 +181,7 @@ Use `DELEGATE` instead of splitting when the active agent needs only a subtask r
 1. Validate the three agents together. Validating the account-security agent alone fails with `INVALID_HANDOFF_TARGET` because the targets are missing.
 2. Send: "I need to recover my account." Confirm the agent gathers `account_id` and `verification_method`.
 3. Send: "I have a billing question." Confirm the route goes to `Billing_Support_Agent` and passes `account_id`.
-4. Send: "I want to talk to someone." Confirm the route goes to `Live_Agent`.
+4. Send: "I want to talk to someone." Confirm the route goes to `Live_Agent` and an escalation starts.
 5. Inspect the trace or debug output for the selected handoff target, the passed context, and the final active agent.
 
 ## Production readiness checklist
@@ -189,6 +191,7 @@ Use `DELEGATE` instead of splitting when the active agent needs only a subtask r
 - Required fields are gathered or otherwise populated before tools, handoffs, or completion need them.
 - Sensitive or regulated actions are enforced with tools, constraints, guardrails, permissions, or human handoff.
 - Out-of-scope intents have handoff routes.
+- A human-agent connection and an `ESCALATE` routing target exist for each channel.
 - Success, out-of-scope, human escalation, and failure paths have test utterances.
 - Trace or debug output shows clear ownership transitions.
 
@@ -211,4 +214,5 @@ Use `DELEGATE` instead of splitting when the active agent needs only a subtask r
 | `INVALID_HANDOFF_TARGET` error             | The handoff target agent is not in the validation set.            | Validate the full project, or define the target agent.                                        |
 | `UNDECLARED_INTENT_CATEGORY` warning       | A `WHEN` condition names a category missing from `INTENTS`.       | Add the category to `INTENTS` or correct the name.                                            |
 | A handoff never fires                      | The condition reads a field with no value, or the message matches no category. | Check the `INTENTS` descriptions and the fields the `WHEN` condition reads. |
+| The customer asked for a person and nothing happened | The target has no `ESCALATE` block, no `routing` block, or no human-agent connection. | Check the `ESCALATE` block, its `routing` entries, and the human-agent connection. |
 | Supervisor routing is inconsistent         | Specialist responsibilities overlap.                              | Revisit each specialist's owner, outcome, and out-of-scope routes.                            |
