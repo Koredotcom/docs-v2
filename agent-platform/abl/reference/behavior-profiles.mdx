@@ -27,7 +27,7 @@ The manifest entry is a pointer, not the profile definition. Import preview comp
       "name": "voice_vip",
       "path": "behavior_profiles/voice_vip.behavior_profile.abl",
       "priority": 100,
-      "when_summary": "channel == voice",
+      "when_summary": "channel.name == voice",
       "used_by": ["Support_Agent"]
     }
   }
@@ -40,7 +40,7 @@ The manifest entry is a pointer, not the profile definition. Import preview comp
 ```yaml expandable=true
 BEHAVIOR_PROFILE: voice_vip
 PRIORITY: 100
-WHEN: channel == "voice"
+WHEN: channel.name == "voice"
 
 INSTRUCTIONS: |
   Speak concisely and confirm one thing at a time.
@@ -237,17 +237,65 @@ For voice/telephony channels, four `listening` sub-blocks control turn-taking be
 | `mode` | `"static"` , `"dynamic"` | Static prompts vs. LLM-generated re-prompts. |
 | `timeout_ms` | `number` | Silence duration before triggering. |
 | `relaxed_interval_ms` | `number` | Extended interval between retries. |
-| `max_retries` | `number` | Maximum no-input retries. |
+| `max_retries` | `number` | Maximum no-input prompts before exhaustion. Integer from 0 to 20. Default `3`. |
 | `on_exhausted` | `"hangup"` , `"transfer"` , `"custom"` | Action when retries run out. |
 | `exhausted_message` | `string` | Message when retries are exhausted. |
 | `order` | `"sequence"` , `"random"` | Prompt play order. |
 | `play_style` | `"looped"` , `"once"` , `"non_looped"` | Whether prompts repeat. |
-| `messages` | `object[]` | Static re-prompt texts. |
+| `messages` | `object[]` | Static re-prompt texts. Each message has `text` and can also have `ssml`. The compiler requires at least one message when the block declares `enabled: true` and `mode: static`. |
 | `generation` | `object` | Dynamic prompt generation (`mode: dynamic`): `enabled`, `model_source`, `model_id`, `prompt_ref`, `max_output_tokens`. |
+
+A no-input message can author `ssml` as a string or a locale-to-string map, next to `text`:
+
+```yaml
+messages:
+  - text: "Are you still there?"
+    ssml: '<speak><prosody rate="slow">Are you still there?</prosody></speak>'
+```
+
+- The compiler requires a well-formed XML `<speak>` document. It rejects document declarations, processing instructions, and nested speech documents.
+- The speech provider checks voice and style availability.
+- Values substituted into the markup are XML-escaped after output protection.
+- When `text` is absent, the runtime derives readable text from the rendered SSML for transcripts and for vendors without SSML delivery.
+- Azure pipeline voice plays the markup through buffered speech. Other vendors and realtime voice use the plain text.
+- `exhausted_message` stays plain text.
+
+Silence and keypad input interact as follows:
+
+- Caller speech or speech barge-in resets the retry sequence. Accepted non-empty DTMF input also resets it.
+- DTMF barge-in stops the silence timer without resetting the retry sequence.
+- A gather that receives no digits and no speech restarts the timer with the existing retry count. This includes a press of the finish key alone.
+
+Realtime voice for Gemini, Nova, and OpenAI uses the same effective configuration for static prompts. Dynamic no-input generation is available on pipeline voice only. Provider activity, transfer, and channel-capability gates still apply. OpenAI also honors the channel's `realtimeNoInputEnabled: false` setting. A resolved configuration with an invalid value, such as a retry count outside 0 to 20, disables no-input handling for the session. Pipeline voice emits `voice_no_input_config_dropped`. Realtime voice reports a `status_update` with `operation: no_input` and `source: invalid`, or `source: dynamic_unsupported` when it rejects dynamic mode.
+
+**`dtmf`**: set the default grouping of keypad digits for every KoreVG/Jambonz pipeline voice turn of the agent or profile. It takes the same keys as a FLOW field `DTMF:` block.
+
+| Key | Values | Description |
+| --- | ------ | ----------- |
+| `digits` | `min..max`, 1 to 32 | Number of digits in one answer. |
+| `finishOnKey` | `"#"`, `"*"`, `"none"` | Key that ends the entry. |
+| `interDigitTimeoutMs` | 500 to 30000 | Pause between key presses that ends the entry. |
+
+```yaml
+CONVERSATION:
+  listening:
+    barge_in: allow
+    dtmf:
+      digits: 1..12
+      finishOnKey: "#"
+      interDigitTimeoutMs: 5000
+```
+
+- Each key resolves on its own, in this order: `SECURE_INPUT` `COLLECT`, field `DTMF:`, active behavior profile, agent, project, platform default. The platform default is 2 seconds between key presses, `#` as the finish key, and 1 to 12 digits. `digits` counts as one unit.
+- A project sets the same defaults in Studio (**Settings > Runtime Config > Listening**) or as Runtime Config `voiceListening.dtmf` (`minDigits`, `maxDigits`, `finishOnKey`, `interDigitTimeoutMs`). Set `minDigits` and `maxDigits` together. `voiceListening: null` clears the setting.
+- A minimum above 1 produces a warning at agent, profile, and project level. It applies to every keypad answer, including one-key menu choices. A pause does not end an entry shorter than the minimum, so the short entry is lost after the no-input timeout. Keep the minimum at 1 here and set a longer one on the fields that need it.
+- `finishOnKey: "*"` produces a warning at these levels, because `*` then ends every keypad answer, menus included.
+- A profile that turns on or off, a handoff, a return, or a language switch applies from the next caller turn. A profile that changes keypad settings on every turn restarts the listener every turn, so keep profile settings stable.
+- An agent that uses these keys is published with the IR marker `voice_listening`. A runtime without the marker refuses to publish, deploy, or run the agent, so upgrade every runtime first. Speech settings above field level (`listening.asr`) add the marker `voice_listening_asr`. A Studio import into a project whose runtime does not report this marker drops the speech block and reports [`LISTENING_KEY_NEEDS_NEWER_RUNTIME`](/agent-platform/abl/reference/errors-and-warnings#listening_key_needs_newer_runtime).
 
 **`on_caller_backchannel`** — recognize caller acknowledgements ("uh-huh", "okay") without treating them as a turn: `enabled`, `phrases`, `max_words`.
 
-<Warning>`max_duration_ms` on `on_caller_backchannel` is accepted but has **no effect** — the voice gateway cannot enforce a back-channel duration cap, so back-channels are matched on the phrase list alone. Authoring it now emits a compile warning (`CONVERSATION_BACKCHANNEL_DURATION_CAP_IGNORED`); remove it.</Warning>
+<Warning>`max_duration_ms` on `on_caller_backchannel` is accepted but has **no effect** — the voice gateway cannot enforce a back-channel duration cap, so back-channels are matched on the phrase list alone. Authoring it now emits a compile warning ([`CONVERSATION_BACKCHANNEL_DURATION_CAP_IGNORED`](/agent-platform/abl/reference/errors-and-warnings#conversation_backchannel_duration_cap_ignored)); remove it.</Warning>
 
 **`on_hold`** — handle caller hold requests ("hold on a sec"): `enabled`, `phrases`, `phrases_by_locale`, `grace_ms`, `max_holds`, `suppress_response`. `phrases_by_locale` is a `{ <BCP-47 tag>: string[] }` map of additional hold phrases selected by the caller's detected locale; its phrases are unioned with the language-neutral `phrases` list rather than replacing them. Locale keys are canonicalized at parse time (`en_us` → `en-US`).
 
@@ -362,6 +410,21 @@ USE BEHAVIOR_PROFILE: voice_vip
 The attached profile name must match the `BEHAVIOR_PROFILE:` header, not just the filename. Both
 `USE BEHAVIOR_PROFILE:` (space) and `USE_BEHAVIOR_PROFILE:` (underscore) forms are accepted.
 
+## Where profiles apply
+
+A profile attached at agent level applies to every model call the agent makes. That includes each turn of a reasoning agent and each `REASONING: true` step of a FLOW agent.
+
+In a FLOW reasoning step, the matched profiles' `INSTRUCTIONS`, `CONSTRAINTS`, `VOICE` instructions (voice channels), and `CONVERSATION` (when a matched profile sets it) are added to the step prompt. They come before the step's own `GOAL`, `BEHAVIOR`, and `STEP_CONSTRAINTS`, which take precedence for that step. A FLOW agent with no matching profile gets no profile text in its steps. Literal `RESPOND` text in a `REASONING: false` step is sent as written.
+
+A flow step has no profile or persona setting of its own. The compiler ignores these and reports warning [`W498`](/agent-platform/abl/reference/errors-and-warnings#w498):
+
+- A `USE BEHAVIOR_PROFILE:` or `PERSONA:` line inside a step, in `FLOW:` or in legacy `STEPS:`.
+- A `persona` or `use_behavior_profile` key on a YAML flow step.
+
+Use the profile `WHEN` to target channels, callers, or languages. Use the step `GOAL`, `BEHAVIOR`, `STEP_CONSTRAINTS`, `AVAILABLE_TOOLS`, and step `VOICE` block for step-specific behavior.
+
+<Warning>Profile response rules, `GATHER` overrides, and flow modifications (`FLOW` skip, override, and replace) compile but the runtime does not apply them yet. Do not rely on them to change agent behavior.</Warning>
+
 ## Compile and import behavior
 
 
@@ -384,3 +447,4 @@ Common fixes:
 | `BEHAVIOR_PROFILE requires a PRIORITY declaration`     | Add `PRIORITY: <number>`.                                                    |
 | `BEHAVIOR_PROFILE requires a WHEN declaration`         | Add `WHEN: <condition>`, or `WHEN: true` for a default profile.              |
 | Agent references a missing `profile_use` target        | Add the standalone profile file or remove the `USE` reference.               |
+| `W498` on a `PERSONA:` or `USE BEHAVIOR_PROFILE:` line in a flow step | Move `USE BEHAVIOR_PROFILE:` to agent level and target it with `WHEN`. Put step wording in the step `GOAL` or `BEHAVIOR`. |
