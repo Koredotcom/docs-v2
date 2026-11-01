@@ -1,0 +1,850 @@
+---
+title: ABL diagnostics reference
+sidebarTitle: Diagnostics
+---
+
+Look up a code that the ABL compiler, the parser, or Studio reports. Each entry gives the meaning and the fix.
+
+Codes that start with `E` or `W` and a number come from the parser. Named codes come from the compiler. An error blocks compile or publish. A warning does not.
+
+This page lists the codes that authors meet most often. It is not the full set.
+
+## E394
+
+Severity: error
+
+**Meaning.** SET_INTERACTION_LANGUAGE switches the conversation language when the action fires, and its value must be a valid BCP-47 tag. The authored value did not canonicalize to one, so the language switch is dropped while the rest of the action still runs.
+
+**Fix.** Use a valid BCP-47 tag, a language code, optionally with a region suffix, such as "en", "en-US" or "pt-BR".
+
+## E395
+
+Severity: error
+
+**Meaning.** CLEAR_INTERACTION_LANGUAGE resets the conversation back to the default language and is a bare directive: naming it is the whole instruction. A value after the colon has no meaning, so the parser rejects the line instead of silently discarding what was authored there.
+
+**Fix.** Write the directive as "- CLEAR_INTERACTION_LANGUAGE:" with nothing after the colon.
+
+## E396
+
+Severity: error
+
+**Meaning.** set_interaction_language switches the conversation language when the action fires, and its value must be a string carrying a valid BCP-47 tag. A non-string value or a string that does not canonicalize to a tag drops the language switch while the rest of the action still applies.
+
+**Fix.** Set the key to a valid BCP-47 tag string, a language code, optionally with a region suffix, such as "en", "en-US" or "pt-BR".
+
+## E492
+
+Severity: error
+
+**Meaning.** FORMAT declared the kind of value a session field holds, and drove kind inference for MATCH_SCORE, MATCHES and MATCH_RESULT. Nothing applied it once DERIVED was removed, so it changed no behaviour. The key is rejected rather than ignored so a file cannot look as if it configures matching when it does not.
+
+**Fix.** Delete the FORMAT line and pass the kind as the third argument of MATCH_SCORE, MATCHES or MATCH_RESULT where the comparison is written.
+
+## E493
+
+Severity: error
+
+**Meaning.** SOURCE: tool made a session field writable only by tool bindings and refused a model write. It was removed. The key is rejected rather than ignored so a field that looks write-protected is not silently left writable by the model.
+
+**Fix.** Replace SOURCE: tool with READONLY: true on the field. Authored writes (SET, on_result, hooks) still write a READONLY field.
+
+## E498
+
+Severity: error
+
+**Meaning.** DERIVED declared a session field the runtime recomputed after every session write. It was removed because the recompute cost grew with every write. The protection it gave, that the model can never set the field, is what READONLY: true provides, and the value itself is computed by an authored hook SET. The key is rejected rather than ignored so a field that nothing computes cannot compile.
+
+**Fix.** Replace DERIVED: `<expression>` with READONLY: true on the field, and compute the value with a SET (SET: field = `<expression>`) in a hook that runs when its inputs change.
+
+## W170
+
+Severity: warning
+
+**Meaning.** The key is indented under a GATHER field but is not one the field parser reads, so its value is discarded. This used to happen silently, it is how authored EXTRACTION_HINTS vanished, and the warning exists so a misspelt property surfaces at compile time instead of as a field that never extracts. A near-match suggestion is appended when the key looks like a known one.
+
+**Fix.** Correct the key to the property you meant, the suggestion in the message when there is one, or delete the line if it was left over from an earlier shape of the field.
+
+## W174
+
+Severity: warning
+
+**Meaning.** A FLOW GATHER field reads VALIDATE as a single regular expression on the same line. A VALIDATE block (type, rule and error lines, or a "|" / ">" block scalar) is not read: it is skipped whole, so its lines never become field properties, and it adds no validation. VALIDATION_PROCESS, RETRY_PROMPT and MAX_RETRIES only mean something next to a rule, so the compiler ignores them for a field that, merged with the agent-level GATHER field of the same name, has no rule (no non-blank VALIDATE, and no enum values on a type: enum field). That includes retry settings inherited from the agent-level field.
+
+**Fix.** Put the regular expression on the VALIDATE line itself, and keep RETRY_PROMPT and MAX_RETRIES as field properties: VALIDATE: "^[0-9]\{10}$", RETRY_PROMPT: "...", MAX_RETRIES: 3.
+
+## W175
+
+Severity: warning
+
+**Meaning.** A FLOW GATHER field reads VALIDATE as a single regular expression. An inline object such as \{ pattern: "..." } or a list is not parsed: the whole text, braces included, becomes the regex, so valid input is rejected or invalid input passes.
+
+**Fix.** Replace the object or list with the regular expression itself: VALIDATE: "^[0-9]\{10}$".
+
+## W208
+
+Severity: warning
+
+**Meaning.** A SECURE_INPUT block accepts MODE, FIELDS, MAX_ATTEMPTS, CANCEL, SAFE_DETAILS_AS, the delivery CALL with its AS, RESULT_FIELDS and SUCCESS_WHEN, and the four outcome routes. Any other line had no field to land in and was silently discarded. The common case is a RESPOND written under ON_SUCCESS: the route was left empty, so after the payment went through the flow had nowhere to go and the caller heard the empty-response fallback.
+
+**Fix.** Name a FLOW step in the outcome route (ON_SUCCESS: payment_done) and write the RESPOND in that step.
+
+## W210
+
+Severity: warning
+
+**Meaning.** A SECURE_INPUT field is read as PROMPT, RETRY_PROMPT, NO_INPUT_PROMPT, COLLECT, VALIDATE and READ_ONCE only. Any other line had nowhere to land and was silently discarded. The common case is a MESSAGE_KEY written under a field: it was dropped, so the caller heard the PROMPT text (often a placeholder) instead of the localized message the author pointed at.
+
+**Fix.** Reference the locale entry from the prompt itself: PROMPT: "\{\{locale.PAYMENT_ENTER_CARD_NUMBER}}", or a language map such as PROMPT: \{ en: "...", es: "..." }.
+
+## W211
+
+Severity: warning
+
+**Meaning.** RESULT_FIELDS and SUCCESS_WHEN are read from the same line only. A list or map written on the following lines left the value empty, so the compiler then reported a missing allowlist or an empty condition instead of pointing at the layout.
+
+**Fix.** Write the list or map on one line: RESULT_FIELDS: [Status, TransactionIdentifier] and SUCCESS_WHEN: \{ Status: "Success" }.
+
+## W217
+
+Severity: warning
+
+**Meaning.** A FLOW step header is recognised only as a bare name: line with nothing after the colon, written at column 0 or at two spaces under FLOW:. A header written at another indentation, for example after a comment block, or with a comment after the colon (or trailing spaces at two spaces), was read as an unknown property of the step above it and dropped. The step never existed; its REASONING, ON_RESULT, THEN and other properties were applied to the step above, replacing the properties that step already had, and routes to the missing step could no longer resolve. Nothing reported it at parse, validate or import preview.
+
+**Fix.** Write the header as a bare name: line at the same level as the other FLOW step headers (column 0 or two spaces under FLOW:), with no comment or trailing spaces after the colon.
+
+## W218
+
+Severity: warning
+
+**Meaning.** A step has one slot for each of REASONING, GOAL, THEN, ON_INPUT, ON_RESULT, CALL, RESPOND and the other single-value properties. Writing one a second time silently kept only one of the two values, normally the later, so authored logic, including a whole ON_RESULT branch list, could disappear with no message. This often follows a mis-indented step header (W217), whose properties land on the step above.
+
+**Fix.** Keep one value per property in each step, or move the second one into its own step and route to it with THEN.
+
+## W380
+
+Severity: warning
+
+**Meaning.** A DO: list under an ON_START BRANCHES entry uses the same grammar as a FLOW step DO:. An entry that grammar cannot read is reported here as a warning instead of an error, because an ON_START branch DO: was ignored before, and the rest of the list still runs.
+
+**Fix.** Write each entry as a "- SET:", "- CALL:" or "- HANDOFF:" line, as in a FLOW step DO: list.
+
+## W388
+
+Severity: warning
+
+**Meaning.** The top-level on_start do list hands off at most once, to a named agent. An empty handoff, or a second one, is ignored.
+
+**Fix.** Keep one handoff entry that names the target agent.
+
+## W408
+
+Severity: warning
+
+**Meaning.** A ROW groups the action items that share one line. A ROW with no BUTTON, SELECT, INPUT, SUBMIT or TEXT item under it places nothing, so it is dropped from the layout.
+
+**Fix.** Indent the items that belong on this line under the ROW, or remove the empty ROW.
+
+## W409
+
+Severity: warning
+
+**Meaning.** A layout is a list of lines, and a ROW is one line. A ROW inside a ROW has no meaning, so the nested ROW is skipped together with every item under it.
+
+**Fix.** Move the nested items into the outer ROW, or make them a separate ROW at the ACTIONS level.
+
+## W410
+
+Severity: warning
+
+**Meaning.** WIDTH is an item's share of its ROW relative to the other items on that line: an item with WIDTH 2 takes twice the space of an item with WIDTH 1. Any other value is ignored and the item uses the default share of 1.
+
+**Fix.** Set WIDTH to a whole number from 1 to 12, for example WIDTH: 2.
+
+## W411
+
+Severity: warning
+
+**Meaning.** A form has one submit button, so the SUBMIT marker can place it only once. Every SUBMIT after the first is ignored.
+
+**Fix.** Keep one SUBMIT marker where the submit button should appear.
+
+## W412
+
+Severity: warning
+
+**Meaning.** The SUBMIT marker only places the submit button. The button itself is declared by SUBMIT_LABEL (its text) and SUBMIT_ID (the action id ON_ACTION handles). Without both there is no button to place, so the marker is removed.
+
+**Fix.** Add SUBMIT_LABEL and SUBMIT_ID to the ACTIONS block, or remove the SUBMIT marker.
+
+## W413
+
+Severity: warning
+
+**Meaning.** A TEXT item shows a line of static text inside the form. An empty TEXT shows nothing, so it is dropped from the layout.
+
+**Fix.** Write the text after TEXT:, for example - TEXT: "Need help? Call support."
+
+## W414
+
+Severity: warning
+
+**Meaning.** The SUBMIT marker only decides where the submit button sits. Its text always comes from SUBMIT_LABEL and its action id from SUBMIT_ID, so a value written after SUBMIT: is ignored. The marker itself still places the button.
+
+**Fix.** Write - SUBMIT on its own and put the text in SUBMIT_LABEL, for example SUBMIT_LABEL: "Sign in".
+
+## W496
+
+Severity: warning
+
+**Meaning.** On ON_START and HOOKS calls, WHEN: guards whether the tool call runs only when it is indented under the CALL: it belongs to. Written as a sibling of CALL: nothing reads it, so the call runs unconditionally, exactly as it did before the nested guard existed.
+
+**Fix.** Indent WHEN: one level under the CALL: it should guard, or remove it.
+
+## W498
+
+Severity: warning
+
+**Meaning.** A flow step has no persona or behavior-profile setting. Profiles attached with USE BEHAVIOR_PROFILE at agent level apply to every reasoning step of that agent, switched on by their WHEN condition (channel, caller, session), and the agent PERSONA is the persona for every step. A PERSONA or USE BEHAVIOR_PROFILE line inside a step is ignored, so it changes nothing at runtime.
+
+**Fix.** Move USE BEHAVIOR_PROFILE to the agent and target channels or callers with the profile WHEN. Put step-specific wording in the step GOAL or BEHAVIOR, step rules in STEP_CONSTRAINTS, the step tool list in AVAILABLE_TOOLS, and step voice handling in the step VOICE block.
+
+## AGENT_EXECUTION_ROLE_CONFLICT
+
+Severity: error
+
+**Meaning.** The declared BEHAVIOR role contradicts another declaration on the same agent, either the deprecated canRespondDirectly flag or the fact that the document is a SUPERVISOR.
+
+**Fix.** Keep one source of truth: delete the deprecated canRespondDirectly field, or change role to the value it implies. Supervisors must use role "router" or "orchestrator".
+
+## AGENT_RETURNED_WORK_REQUIRES_ORCHESTRATOR
+
+Severity: error
+
+**Meaning.** The agent declares DELEGATE targets but its BEHAVIOR role is not "orchestrator". Only an orchestrator is allowed to receive delegated work back and synthesize a response from it.
+
+**Fix.** Set BEHAVIOR role to "orchestrator", or replace DELEGATE with HANDOFF if the other agent should own the conversation from that point on.
+
+## CEL_CONDITION_UNRESOLVED_CALL
+
+Severity: warning
+
+**Meaning.** A condition parses as CEL but calls a function or method the evaluator has no overload for, such as CONTAINS(x, "y") written as a bare function call or x[0].has(field). At runtime the call cannot be evaluated, the evaluator falls back and the condition always evaluates false, so the branch, guard, or trigger it controls never fires. It is a warning, not an error, so agents already deployed keep compiling. (MATCHES(...) and MATCH_RESULT(...) are now registered functions, field-format design, and no longer land here.)
+
+**Fix.** Use a supported form. Regex: x.matches("re") or x MATCHES "re". Field presence on a map or list element: "field" in x[0], or has(x.field) on a plain member path. The message names the call the evaluator could not resolve.
+
+## CEL_EXPRESSION_LIMIT
+
+Severity: warning
+
+**Meaning.** An expression exceeds the supported CEL budget after preparation. Ordinary boolean conditions allow up to 65536 UTF-16 units, 4096 syntax nodes and 64 nesting levels, with each indivisible expression at most 4096 units. Scalar expressions remain limited to 4096 units. Unsupported expressions retain their existing fallback or refusal policy, and routing may evaluate alternatives separately. This warning does not block compilation or import.
+
+**Fix.** Simplify the named expression or split it into shorter rules. Keep individual comparisons, function calls and scalar SET expressions within 4096 prepared source units. Do not rely on legacy fallback to make an unsupported condition agree across escalation, flow and routing surfaces.
+
+## CEL_MATCH_PATTERN_REJECTED
+
+Severity: warning
+
+**Meaning.** A condition or guardrail check passes a literal pattern to abl.matches_pattern or abl.not_matches_pattern (or uses x MATCHES "pattern", which runs as abl.matches_pattern) that the runtime regex engine cannot run: it is longer than 500 characters, uses a construct RE2 does not support (backreferences, lookahead or lookbehind), or is not a valid regex. At runtime the call does not fail: abl.matches_pattern returns false and abl.not_matches_pattern returns true for every input, so a guardrail built on it never fires (or always fires) and the trace shows an ordinary result. It is a warning, not an error, and evaluation is unchanged.
+
+**Fix.** Keep each pattern to 500 characters or fewer and to RE2 syntax. Split a long alternation into several calls of at most 500 characters each, joined with || for abl.matches_pattern or with && for abl.not_matches_pattern. Replace lookarounds and backreferences with plain alternatives or an additional condition.
+
+## CONVERSATION_BACKCHANNEL_DURATION_CAP_IGNORED
+
+Severity: warning
+
+**Meaning.** on_caller_backchannel.max_duration_ms has no effect. The voice gateway cannot enforce a duration cap and reports no utterance duration, so the value is ignored and back-channels are matched on the phrase list alone.
+
+**Fix.** Remove max_duration_ms from on_caller_backchannel.
+
+## DELEGATE_CHILD_GATHER_INPUT_UNMAPPED
+
+Severity: error
+
+**Meaning.** A DELEGATE target requires GATHER fields (required, no default) that the delegate INPUT mapping does not supply. Delegation is a one-shot internal call with no customer turn, so the child would block asking for input nobody can give.
+
+**Fix.** Map every required child gather field in DELEGATE INPUT, give those fields defaults or mark them optional on the child, or model a genuinely interactive child as a HANDOFF with RETURN true so it can converse with the customer before control comes back.
+
+## DEPRECATED_INLINE_FEEDBACK
+
+Severity: warning
+
+**Meaning.** An inline FEEDBACK block declares its question and control directly on the agent, with no survey template behind it. It compiles and renders as authored and the customer is still asked. Feedback Insights groups responses by template ID and selects a compatible scoring method at read time; an inline response has no template ID and does not appear in template-scoped score, trend, distribution or segment views. Inline declarations remain supported for compatibility. A project survey template gives agents one reusable, exact-name definition of the question and control without configuring a scoring method on the template.
+
+**Fix.** Create a survey in the project Feedback Templates area and attach it here with FEEDBACK_TEMPLATE, moving the inline prompt, type and labels onto it. The referencing block then keeps only per-string overrides and its render guard, and the responses start appearing in Feedback Insights.
+
+## ENABLED_WHEN_ALL_DISABLED_RISK
+
+Severity: warning
+
+**Meaning.** This agent routes with HANDOFF, and every one of its HANDOFF and DELEGATE entries has an ENABLED_WHEN condition, so when all of those conditions are false at once the agent has no route left and must answer every request itself. It is a warning, not an error, so the agent still compiles.
+
+**Fix.** Keep at least one entry without ENABLED_WHEN as an always-available route, or make sure the agent itself can serve the requests that the switched-off routes would have taken.
+
+## ENABLED_WHEN_AUTHORED_ROUTE_NO_FALLBACK
+
+Severity: warning
+
+**Meaning.** An authored HANDOFF (in a FLOW step, an action handler, a digression, a tool result or error hook, or an error handler) goes to a target whose every HANDOFF entry has ENABLED_WHEN, and none of those entries has ON_FAILURE. When the condition is false the handoff is refused, and without ON_FAILURE nothing says what the agent does next. It is a warning, not an error, so the agent still compiles.
+
+**Fix.** Add ON_FAILURE (continue, respond or escalate) to the HANDOFF entry for the target, or declare an entry for the target without ENABLED_WHEN if the authored route must always be able to run.
+
+## ENABLED_WHEN_EMPTY
+
+Severity: error
+
+**Meaning.** ENABLED_WHEN decides whether a HANDOFF or DELEGATE target is available at all. An empty availability condition is ambiguous: it could mean always available or never available, so the platform refuses to guess and the target is left without one.
+
+**Fix.** Write a deterministic condition such as \_metadata.country != "SGP", or remove ENABLED_WHEN to keep the target always available.
+
+## ENABLED_WHEN_LINE_COMMENT
+
+Severity: error
+
+**Meaning.** CEL treats // as a comment to the end of the line. A folded YAML block joins its lines before the condition is read, so a // comment there hides every clause after it and the target could be available when the author meant it not to be.
+
+**Fix.** Use a YAML # comment, or write the condition as a literal block (|) with the comment on its own line.
+
+## ENABLED_WHEN_ON_START_UNSTABLE_DATA
+
+Severity: warning
+
+**Meaning.** ON_START delegates to a target whose every DELEGATE entry has ENABLED_WHEN, and a condition reads data that may not exist yet when the session starts, such as conversation memory or tool results. Evaluated at start, such a condition sees empty values, so the delegate may be switched off for reasons the author did not intend. It is a warning, not an error, so the agent still compiles.
+
+**Fix.** Write the ENABLED_WHEN condition over data that is known when the session starts: \_metadata, env, caller, session or user. Otherwise, run the delegate later in the conversation instead of in ON_START.
+
+## ENABLED_WHEN_SAFETY_ROUTE_CONDITIONAL
+
+Severity: error
+
+**Meaning.** A constraint ON_FAIL hands off to a target whose every HANDOFF entry has ENABLED_WHEN. A constraint handoff is a safety route that must always be able to run, but ENABLED_WHEN can switch the target off, which would leave the failed constraint with nowhere to go.
+
+**Fix.** Declare a HANDOFF entry for the target without ENABLED_WHEN, or send the constraint ON_FAIL to a target that is always available, such as ESCALATE or another unconditional HANDOFF target.
+
+## ENABLED_WHEN_SEMANTIC_REFERENCE
+
+Severity: error
+
+**Meaning.** An ENABLED_WHEN condition reads what the current turn means: the intent classification (intent or a field under it), the routing decision (routing.\*, routing_intent, source_route_intent), the current user input, or previous_system_message_was_offer, or is natural language that only a model can judge. ENABLED_WHEN decides whether a HANDOFF or DELEGATE target is available at all, before any turn is understood, so it must depend only on data that is known up front. Turn meaning is already expressed by WHEN.
+
+**Fix.** Move the turn-dependent part of the condition into WHEN, and keep ENABLED_WHEN for deterministic availability facts such as \_metadata.country != "SGP", env, caller, session or user data.
+
+## ENABLED_WHEN_SHADOWED_BY_UNCONDITIONAL_ENTRY
+
+Severity: warning
+
+**Meaning.** The same target is declared more than once in one HANDOFF or DELEGATE section, and only some of those entries have ENABLED_WHEN. The entry without ENABLED_WHEN keeps the target available whatever the condition says, so the condition does not switch the target off. It is a warning, not an error, so the agent still compiles.
+
+**Fix.** Give every entry for the target the same ENABLED_WHEN condition if the target should be switched off, or remove ENABLED_WHEN from the entry that has it if the target should stay available.
+
+## FLOW_PROMPTLESS_ON_INPUT_UNMATCHED_TRAP
+
+Severity: warning
+
+**Meaning.** A promptless ON_INPUT-only FLOW step has conditional branches but no ELSE/default branch. Input that matches no condition leaves the session waiting on the same step without an authored prompt.
+
+**Fix.** Add an ELSE branch for unmatched input, add a RESPOND prompt that explains the accepted choices, or keep the gate only when silent waiting is explicitly intended.
+
+## FLOW_STEP_WHEN_IGNORED
+
+Severity: warning
+
+**Meaning.** A FLOW step declares a step-level WHEN. The condition is not compiled and has no effect: the step, including its CALL, runs whenever the flow reaches it.
+
+**Fix.** Guard the step from the step before it with ON_RESULT branches, or use CHECK with ON_FAIL to skip it, and remove the WHEN.
+
+## GATHER_ASR_REASONING_UNSUPPORTED
+
+Severity: warning
+
+**Meaning.** Listening settings (ASR:) are on a top-level GATHER field of a reasoning agent that is not marked armable: true. The reasoning agent applies a field's settings only to an armable field, so these are kept for round trips but have no effect on calls. In an agent with a FLOW, a field that sets asr_timeout_ms does not warn: a FLOW tool call missing that input asks for it through this field and applies its settings.
+
+**Fix.** Add armable: true to the field so the agent can apply its listening settings when it asks for it, or remove the ASR: block.
+
+## GATHER_ASR_SHARED_STEP
+
+Severity: warning
+
+**Meaning.** A GATHER field with listening settings is asked together with other required fields in the same step. Listening settings apply only when a field is asked on its own, so they never take effect here.
+
+**Fix.** Move the field with ASR: to its own FLOW step.
+
+## GATHER_ASR_TERMS_BINDING_FORBIDDEN
+
+Severity: error
+
+**Meaning.** A GATHER field ASR: block takes its special words from a session value the platform never sends to a speech engine: session identity or runtime-internal roots, conversation history, protected email aliases, prototype or secret path parts, or a user.\* value without restore_pii: true.
+
+**Fix.** Bind to a value your flow or tools set (for example a list a tool returned). For user.\* values, add restore_pii: true only if sending the caller personal data to the speech engine is intended.
+
+## GATHER_ASR_TERMS_BINDING_INVALID
+
+Severity: error
+
+**Meaning.** A GATHER field ASR: block takes its special words from a session value, but the value is not exactly one quoted \{\{path}} reference (surrounding text, several references, filters, an unquoted reference, a reference inside a list, or a path longer than 8 parts or 128 characters).
+
+**Fix.** Write the whole list, or one language list, as a single quoted reference such as terms: "\{\{caller.streets}}", where the path is plain dotted names with optional [n] indexes.
+
+## GATHER_ASR_UNKNOWN_KEY
+
+Severity: error
+
+**Meaning.** A GATHER field ASR: block names a listening setting the platform does not know. Credential-like keys (service instance ids, API keys, labels) are rejected this way, because listening settings never carry credentials.
+
+**Fix.** Use only provider, model, language, vocabulary (mode, terms) and no_input_timeout_ms, and pick the speech engine by provider name; credentials stay on the voice channel.
+
+## GENESYS_SIP_HEADER_KEY_COLLISION
+
+Severity: error
+
+**Meaning.** Two or more of the Genesys SIP transfer headers, reason, queue, metadata, resolve to the same header key once a trigger-level GENESYS_SIP_HEADERS override is merged over the ESCALATE routing defaults (the comparison is case-insensitive, as SIP header names are). The runtime payload builder rejects a transfer whose header keys collide, so the escalation would fail during a live call; the compiler reports the collision at authoring time instead.
+
+**Fix.** Give each emitted header a distinct key via reason_header_key, queue_header_key and metadata_header_key. Remember the defaults count as taken, the reason header defaults to X-Transfer-Reason and the metadata header (sent only when a metadata value exists) to X-Transfer-Metadata, and check both the routing block and every trigger override, since the effective set is their merge.
+
+## GUARDRAIL_BUILTIN_NOT_BOUND
+
+Severity: warning
+
+**Meaning.** A guardrail check reads one of the identifiers content, session_state or tool_results, or a BEFORE tool-call constraint (REQUIRE or WHEN) reads tool_args, but the agent does not set EXECUTION guardrail_builtins: true and declares no session variable of that name. The name is then not bound, so the check errors when it runs: a guardrail check lets every message through, while a BEFORE tool-call constraint that cannot be evaluated fails closed and blocks the call. It is a warning, not an error, and evaluation is unchanged.
+
+**Fix.** Set guardrail_builtins: true under EXECUTION to bind content (the checked text), session_state, tool_results and tool_args, or write text instead of content. Setting the key changes behaviour: a check that failed open starts to apply and can block.
+
+## GUARDRAIL_CONTENT_SHADOWS_SESSION_VAR
+
+Severity: warning
+
+**Meaning.** The agent sets EXECUTION guardrail_builtins: true and also declares a session variable named content, and a guardrail check reads the identifier content. With the alias on, content is the text being checked (an alias of text), so the check tests that text and never the session variable, whatever the author intended. It is a warning, not an error, and evaluation is unchanged.
+
+**Fix.** Rename the session variable so the two no longer share a name, or, if the checked text was meant, write text instead of content to make that explicit.
+
+## HOOK_LANGUAGE_ACTIONS_REQUIRE_SETTING
+
+Severity: warning
+
+**Meaning.** HOOKS before_turn interaction-language actions are authored. They take effect only when the project's language detection setting is on, and only on chat and on voice calls without a voice language profile; elsewhere runtime skips them. The compiler cannot see project settings, so it reports this on every compile of such an agent.
+
+**Fix.** Turn on language detection in the project settings, or remove the actions if the agent should keep one language.
+
+## HOOK_LANGUAGE_ACTION_NOT_BEFORE_TURN
+
+Severity: error
+
+**Meaning.** Runtime evaluates hook interaction-language actions once per turn, before the filler and the model call, so the reply, the filler and the voice all use the language the hook chose. Only before_turn runs at that point; in any other hook the action would have nothing to steer, so it is rejected instead of being silently ignored.
+
+**Fix.** Move the SET_INTERACTION_LANGUAGE or CLEAR_INTERACTION_LANGUAGE action, with its WHEN:, under HOOKS before_turn.
+
+## HOOK_LANGUAGE_ACTION_UNSUPPORTED_HOOK
+
+Severity: error
+
+**Meaning.** The IR carries interaction_language_actions on a hook other than before_turn. Runtime runs these actions only in the before_turn early pass, so on any other hook they would be silently ignored.
+
+**Fix.** Move the interaction-language actions to HOOKS before_turn.
+
+## HOOK_LANGUAGE_CATCH_ALL_NOT_LAST
+
+Severity: warning
+
+**Meaning.** before_turn interaction-language actions are tried in order and the first whose WHEN: holds wins. An action with no WHEN: always matches, so every action written after it is unreachable.
+
+**Fix.** Move the action without WHEN: to the end of the before_turn language actions, or give it a WHEN: condition.
+
+## HOOK_LANGUAGE_ENTRY_INVALID
+
+Severity: error
+
+**Meaning.** Each interaction_language_actions entry is one guarded action: it either sets the session language (from a tag or an expression) or clears it. An entry with none of the keys does nothing, and an entry with several is ambiguous, so the entry is dropped and the agent does not compile.
+
+**Fix.** Keep exactly one of set_interaction_language, set_interaction_language_expression or clear_interaction_language in the entry, next to its optional when.
+
+## HOOK_LANGUAGE_WHEN_INVALID_CEL
+
+Severity: warning
+
+**Meaning.** A WHEN: that guards a HOOKS before_turn SET_INTERACTION_LANGUAGE or CLEAR_INTERACTION_LANGUAGE is not a valid CEL expression. The action is dropped rather than run unconditionally, because an always-on language switch would change the language of every reply, filler and voice prompt.
+
+**Fix.** Rewrite the WHEN: as one valid CEL expression, for example session.languageDetection.status == "detected", or delete the action.
+
+## HOOK_WHEN_BODY_MULTIPLE_ACTIONS
+
+Severity: error
+
+**Meaning.** A hook WHEN: branch is either a reply branch (RESPOND) or a language branch (SET_INTERACTION_LANGUAGE or CLEAR_INTERACTION_LANGUAGE). The two run at different points of the turn, so one body cannot hold both, and two language actions under one WHEN: would leave it unclear which one applies. The whole branch is dropped.
+
+**Fix.** Split the body into separate WHEN: branches with the same condition: one with the RESPOND and one with the language action.
+
+## HOOK_WHEN_BRANCH_INVALID_CEL
+
+Severity: warning
+
+**Meaning.** A hook WHEN: line that precedes an indented RESPOND: is not a valid CEL expression. The branch is not compiled as a conditional branch: the WHEN: is ignored and the RESPOND: runs unconditionally on every run of the hook, exactly as it did before hook branches existed. It is a warning, not an error, so the agent still compiles.
+
+**Fix.** Rewrite the WHEN: as one valid CEL expression so the RESPOND: applies only when it is true, or delete the WHEN: line if the RESPOND: is meant to run every time.
+
+## HTTP_TOOL_INVALID_IDEMPOTENCY_HEADER
+
+Severity: warning
+
+**Meaning.** An HTTP tool declares idempotency_header with an empty, malformed, overlong, or reserved header name (a credential, cookie, transport, SOAP or request-signing header). The runtime therefore does not send its idempotency key to the provider for that tool.
+
+**Fix.** Set idempotency_header to the header your provider documents for idempotency keys, for example Idempotency-Key, or remove it if the provider does not support idempotency keys.
+
+## IMMUTABLE_SYSTEM_IDENTIFIER
+
+Severity: error
+
+**Meaning.** A SET, CLEAR, or return mapping writes to a system-owned identifier, user_id, session_id, tenant_id, or project_id, including any nested path under one of them. Those values carry the identity and isolation context the platform itself owns, so authored writes to them are refused rather than allowed to corrupt who or where the session is.
+
+**Fix.** Write the value under a domain-specific name instead, customer_user_id, order_session_ref, and map it explicitly wherever it is consumed. Identity itself only moves through the supported channels: handoff pass-through, memory grants, or runtime bootstrap; remove the SET, CLEAR, or map entry that targets the reserved name.
+
+## INVALID_APPROVED_SIP_AUTHORITY
+
+Severity: error
+
+**Meaning.** A call_transfer tool declares an approved_authorities allow-list entry that is not a valid literal SIP authority, malformed scheme, missing/non-literal host or port, a query/header section, or another structural defect the shared compileApprovedAuthority parser rejects.
+
+**Fix.** Author the entry as a literal 'sip:' or 'sips:' URI with an explicit VDN (userinfo), host, and port and no query/header section, e.g. 'sip:421001@172.0.41.7:5060'.
+
+## INVALID_CEL_SYNTAX
+
+Severity: error
+
+**Meaning.** A condition that reads as a CEL expression fails to parse, even after legacy-operator migration and presence-check normalization. The runtime evaluator never throws, an unparseable condition silently evaluates false, so the branch, constraint, trigger, or completion it guards would simply never fire, with no error at runtime to say why.
+
+**Fix.** Rewrite the condition as a valid CEL expression: use == and != for equality (never the JavaScript triple forms), && / || / ! or AND / OR / NOT for logic, and keep every parenthesis, bracket, and quote balanced. String values go in double quotes. Test membership with in, strings with contains, matches, startsWith, or endsWith, and presence with has() on a member path or the IS SET / IS NOT SET sugar. Platform helpers live under the abl namespace, for example abl.upper(name) or abl.round(price, 2). For a condition that should always hold, write true. The message carries the parser description of exactly what it could not read.
+
+## INVALID_SIP_TRANSFER_DESTINATION
+
+Severity: error
+
+**Meaning.** A call_transfer tool declares a static sipTransferId default that is empty, templated, or not a valid sip: or sips: URI, so the transfer destination cannot be used reliably.
+
+**Fix.** Set default_source to config or system and provide a literal sip: or sips: URI such as 'sip:desk@sbc.example.com'. Remove the default to use the project-configured transfer target, or configure a dynamic target in Agent Transfer settings instead of templating the value.
+
+## INVALID_SURVEY_CONDITION
+
+Severity: error
+
+**Meaning.** A survey template's follow-up or comment-box condition cannot be evaluated as written: it does not parse, it references a name the platform does not supply, or a matching condition would select a question that does not exist. An invalid condition never matches, so left unresolved the survey ships looking configured and behaves as though it had no conditions at all, a follow-up nobody is ever asked, or a comment box nobody is ever offered.
+
+**Fix.** Fix the condition on the survey template in the project Surveys area, the message names the editor (comment box or follow-up) and the position of the condition at fault. A condition may reference only rating, max, language, channel and session, with session values addressed as session.name. If the condition was meant to select a per-condition question, give it one, or give the follow-up a default question for it to fall back to.
+
+## LISTENING_KEY_NEEDS_NEWER_RUNTIME
+
+Severity: warning
+
+**Meaning.** A listening setting this runtime knows but does not apply yet (for example asr_timeout_ms) was written. It is checked for range and then ignored, so the agent keeps working on older and newer runtimes.
+
+**Fix.** Keep it if the agent will run on a runtime that supports it; otherwise remove it. Nothing changes on this runtime either way.
+
+## MATCHES_FUNCTION_REGEX_LITERAL
+
+Severity: warning
+
+**Meaning.** MATCHES(subject, "pattern") is the fuzzy spoken-answer function that compares what a caller said with a stored value, but its second argument is a string literal that looks like a regex (an anchor, character class or quantifier). The function does not run a regex, so the comparison cannot behave the way the pattern suggests and the condition is almost certainly wrong. It is a warning, not an error, and evaluation is unchanged.
+
+**Fix.** If a regex was meant, write the infix form subject MATCHES "pattern" or the method form subject.matches("pattern"). If a fuzzy comparison was meant, pass the stored value as the second argument, MATCHES(said, stored, "kind"), or use a literal without regex syntax.
+
+## MATCHES_INFIX_LITERAL_AMBIGUOUS
+
+Severity: warning
+
+**Meaning.** A condition uses the regex infix form x MATCHES "literal" with a pattern that has no regex metacharacter, so it reads like the fuzzy spoken-answer function MATCHES(a, b). The infix form is the one that applies: it is true when that exact, case-sensitive text appears anywhere in x. It is a warning, not an error, and evaluation is unchanged.
+
+**Fix.** If a fuzzy comparison of what the caller said was meant, write the function form MATCHES(x, "literal") (or compare two fields: MATCHES(supplied, stored)). If a regex was meant, keep the infix form; anchoring it (^literal$) or using x == "literal" for an exact comparison also clears the warning.
+
+## MEMORY_MODEL_VISIBLE_PATH_UNSUPPORTED
+
+Severity: error
+
+**Meaning.** Automatic memory projection must be able to remove the exact declared path. Unsupported selectors cannot safely enforce an authored opt-out.
+
+**Fix.** Use numeric dot segments for array positions, or opt out the supported parent path instead. Existing entries without a false opt-out are unaffected.
+
+## MEMORY_MODEL_WRITERS_INVALID
+
+Severity: error
+
+**Meaning.** Explicit model ownership must be a consistent list of agent names. Silently dropping malformed ownership could reopen a protected model write.
+
+**Fix.** Use MODEL_WRITERS: [agent_name, ...], or MODEL_WRITERS: [] to deny all model writers. Repeated declarations must agree.
+
+## MODEL_CONTEXT_INVALID
+
+Severity: error
+
+**Meaning.** Tool result MODEL_CONTEXT selects either FIELDS or TEMPLATE. Response MODEL_CONTEXT must be a text scalar beside RESPOND. Invalid input cannot safely define a model view.
+
+**Fix.** Use exactly one non-empty FIELDS: [path, ...] or TEMPLATE: "text" for tools; use a text scalar beside FLOW, COMPLETE, or tool-hook RESPOND.
+
+## ON_ERROR_HANDLER_TYPE_DRIFT
+
+Severity: warning
+
+**Meaning.** The ON_ERROR handler type is not one of the canonical runtime error types (default, llm_error, tool_error, routing_error, validation_error, timeout_error, unknown_error). Runtime dispatches on the canonical names, so a handler declared under any other name may never match. Names with a known replacement get a targeted hint; the rest get a generic one.
+
+**Fix.** Rename the handler to a canonical error type, and express the narrower distinction with SUBTYPE, for example tool_error with SUBTYPE: tool_timeout.
+
+## ON_START_BRANCH_DO_ACTIVATED
+
+Severity: warning
+
+**Meaning.** Notice: this ON_START branch runs its DO: list (SET, CALL and HANDOFF) at session start when it matches. Before ON_START DO: lists were supported, a branch DO: was silently ignored, so a project that already contained one now runs it.
+
+**Fix.** No action is needed if the actions are intended. Otherwise remove the DO: list from the branch.
+
+## ON_START_DELEGATE_WITH_HANDOFF
+
+Severity: warning
+
+**Meaning.** ON_START both delegates and hands off. When a handoff runs at session start, the child owns the session and the ON_START DELEGATE is not returned.
+
+**Fix.** Choose one start-time route: keep the handoff and remove DELEGATE, or remove the handoff and keep the delegation.
+
+## ON_START_HANDOFF_ACTIVATED
+
+Severity: warning
+
+**Meaning.** Notice: this agent hands off at session start when no ON_START branch matches. Before ON_START handoffs were supported, this HANDOFF line was silently dropped, so a project that already contained it now behaves differently.
+
+**Fix.** No action is needed if the start-time handoff is intended. Otherwise remove the HANDOFF line from ON_START.
+
+## ON_START_HANDOFF_TARGET_INVALID
+
+Severity: warning
+
+**Meaning.** An ON_START handoff names a target this agent cannot start at session start: the agent itself, an agent not in this compilation, an agent with no top-level HANDOFF entry, or a remote (A2A) entry. The entry stays in the compiled agent; at runtime the existing route authority refuses it, the entry agent keeps the session and the refusal is traced.
+
+**Fix.** Name a local agent of this project that is declared in this agent top-level HANDOFF section, and set RETURN, CONTEXT and WHEN on that HANDOFF entry.
+
+## ON_START_HANDOFF_UNREACHABLE
+
+Severity: warning
+
+**Meaning.** The top-level ON_START HANDOFF runs only when no ON_START branch matches, and an ELSE branch always matches, so the top-level handoff can never run.
+
+**Fix.** Move the HANDOFF into the DO: list of the branches that should hand off (including ELSE), or remove the ELSE branch.
+
+## PLAINTEXT_HTTP_HEADER_SECRET
+
+Severity: warning
+
+**Meaning.** An HTTP tool header contains a high-confidence credential-like literal. The compiler preserves the authored request for compatibility, but the value can cross export, logging or runtime boundaries without secret-management controls.
+
+**Fix.** Replace the literal with a secret-backed config reference such as \{\{config.API_TOKEN}}, or attach the tool to an auth profile. Keep credentials out of authored HTTP header values.
+
+## PLAIN_ENGLISH_COMPLETE_WHEN
+
+Severity: error
+
+**Meaning.** The WHEN of a COMPLETE condition is prose, multi-word text with none of the structured comparison, logic, or function forms, but COMPLETE WHEN is evaluated deterministically, not read by the model. The sentence would never be true, so the agent could never complete through this condition.
+
+**Fix.** Restate the condition as a boolean expression over session state, for example task_done == true or refund_status == "issued". If the judgment the sentence describes genuinely belongs to the model, have a reasoning step or instruction set a variable recording the outcome, then complete on that variable, or classify into intent state first and complete on the classified value.
+
+## REALTIME_TOOL_EFFECT_REQUIRED
+
+Severity: error
+
+**Meaning.** Strict realtime effect metadata mode found a business tool without an explicit effect, so the compiler cannot safely select its guarded scheduler lane.
+
+**Fix.** Add effect: read_only, state_write, or side_effect. Keep compatibility mode only while migrating legacy tools; missing metadata there retains the legacy queue/idempotency path.
+
+## RESERVED_VARIABLE_NAME
+
+Severity: warning
+
+**Meaning.** A SET assignment writes to a system-reserved variable name. The runtime uses those names for its own values, regex capture groups among them, and may overwrite the assignment mid-turn.
+
+**Fix.** Rename the variable to one outside the reserved set; a short agent-specific prefix is enough to keep it clear of runtime names.
+
+## ROUTE_WHEN_MULTILINE_JOINED
+
+Severity: warning
+
+**Meaning.** A HANDOFF or DELEGATE condition written on indented lines below an empty WHEN: or ENABLED_WHEN:, or continued below an inline ENABLED_WHEN: value, is joined with single spaces into one condition. A line that looks like a key or starts a new entry ends the condition, and # lines are skipped. A condition opened with an explicit block indicator (| or >) is joined the same way without this warning.
+
+**Fix.** Check that the joined condition is the one you meant. Write it on one line, or open it with a block indicator (ENABLED_WHEN: |), to silence this warning.
+
+## SECRET_REF_UNSUPPORTED_CONSUMER_TYPE
+
+Severity: error
+
+**Meaning.** A tool declares SECRET_ACCESS read of a key, but its type cannot consume secrets. Only http tools resolve \{\{\_secret.`<key>`}}; every other type routes to an executor with no secret-substitution step, and a tool with no type at all falls through to the contract-only fallback. The declaration is not merely inert: the runtime takes the value from the single-use vault on the way in, so the entry is spent without ever being delivered, and the next legitimately authorized consumer fails with "already used", a failure that points at the wrong tool. RESULT_SECRETS capture is unaffected and still works on any tool type.
+
+**Fix.** Move the call that needs the secret into an http tool, or remove the SECRET_ACCESS block from this one. If a workflow was chosen because a fixed body template could not build a variable-length batch payload, an http tool can now build one directly with \{\{#each input.`<parameter>`}}, keeping the secret inside the only sink that resolves it.
+
+## SECURE_EMBEDDED_PLACEHOLDER
+
+Severity: error
+
+**Meaning.** A SECURE_INPUT deliver.args value embeds a \{\{secure.`<field>`}} placeholder inside a larger string (e.g. "pan-\{\{secure.card_number}}") instead of using it as the whole argument value. Secure field values never pass through the LLM or session state, concatenating them into other text would force the runtime to materialize the raw PCI-scoped value outside the secure delivery path.
+
+**Fix.** Deliver each secure field as its own whole-value placeholder, e.g. \{ pan: "\{\{secure.card_number}}" }, never interpolated into a longer string. Non-secure context can still use \{\{ctx.\*}} placeholders freely.
+
+## SECURE_INPUT_EMPTY_OUTCOME_ROUTE
+
+Severity: error
+
+**Meaning.** A SECURE_INPUT outcome route (ON_SUCCESS, ON_TIMEOUT, ON_CANCEL or ON_FAIL) is written but names no step. These routes take a FLOW step name only; a RESPOND or other block indented under one is not part of SECURE_INPUT and is ignored. With the route empty, the flow has nowhere to go after that outcome, so after a real payment the caller hears the empty-response fallback instead of a confirmation.
+
+**Fix.** Name a FLOW step in the route, e.g. ON_SUCCESS: payment_done, and write the RESPOND (and any other work) in that step.
+
+## SECURE_INPUT_INVALID_MODE
+
+Severity: error
+
+**Meaning.** A SECURE_INPUT step declares a MODE that is empty or includes a collection channel other than dtmf or speech. The DSL parser silently drops any unrecognized mode token, so an author who mistypes a mode ends up with an empty array and a gate the runtime cannot open.
+
+**Fix.** Set MODE to a non-empty list drawn only from dtmf and speech, e.g. MODE: [dtmf] or MODE: [dtmf, speech].
+
+## SECURE_INPUT_INVALID_RESULT_CONTRACT
+
+Severity: error
+
+**Meaning.** The SECURE_INPUT delivery CALL result contract cannot be honoured exactly: AS is not a variable name or has no RESULT_FIELDS allowlist, RESULT_FIELDS has no AS to bind to or lists an invalid path, a duplicate or a top-level path named failure (reserved: on ON_FAIL the step writes failure.reason and failure.http_status under AS), or SUCCESS_WHEN is empty, names an invalid path, or lists no accepted value. A path is a response field name or a dotted path of at most five names (result.status). Nothing from a secure response leaves the secure boundary except the scalar fields RESULT_FIELDS names, and SUCCESS_WHEN is exact equality on the named fields.
+
+**Fix.** Write the contract as AS: `<variable>`, RESULT_FIELDS: [Field, result.status, ...] with response field names or dotted paths of at most five names, and optionally SUCCESS_WHEN: \{ Field: "value" } or \{ result.status: [value1, value2] }.
+
+## SECURE_INPUT_MISSING_DELIVER_TOOL
+
+Severity: error
+
+**Meaning.** A SECURE_INPUT step has no deliver tool. The parser defaults deliver to an empty tool name when the step has no CALL line, which leaves the collected secure fields with nowhere to go, the gate would collect PCI-scoped values and then have no tool invocation to deliver them to.
+
+**Fix.** Add a CALL `<tool>` WITH: \{ ... } line inside the SECURE_INPUT block naming the tool that should receive the collected fields.
+
+## SECURE_INPUT_MISSING_PROMPT
+
+Severity: error
+
+**Meaning.** A SECURE_INPUT step either declares no FIELDS at all, or declares a field with no usable PROMPT, neither a language map with at least one entry nor a template reference. A field the runtime cannot prompt for can never be collected.
+
+**Fix.** Declare at least one field under FIELDS, and give each field a PROMPT, either a language-keyed map such as \{ en: "Enter card number" } or a \{ template: `<name>` } reference to a resolved survey template.
+
+## SECURE_UNKNOWN_FIELD
+
+Severity: error
+
+**Meaning.** A SECURE_INPUT deliver.args value references \{\{secure.`<name>`}} for a field name that is not declared under this step's FIELDS. The runtime has no collected value to substitute, so delivery cannot succeed.
+
+**Fix.** Either add a field with that name under FIELDS, or fix the \{\{secure.\*}} reference in deliver.args to name a field that is actually declared.
+
+## SESSION_MODEL_WRITERS_INVALID
+
+Severity: error
+
+**Meaning.** A session MODEL_WRITERS declaration is not a list of non-empty agent names.
+
+**Fix.** Use MODEL_WRITERS: [agent_name, ...], or [] to deny all model writers. Omit the declaration to preserve inferred ownership.
+
+## SESSION_MODEL_WRITER_UNKNOWN
+
+Severity: error
+
+**Meaning.** A session MODEL_WRITERS declaration names an agent outside the compiled project.
+
+**Fix.** Name a project agent exactly as declared, including case, or remove it from the writer list.
+
+## SESSION_READONLY_DECLARATION_MISMATCH
+
+Severity: warning
+
+**Meaning.** Agents disagree on READONLY for the same shared session field. READONLY applies to every agent of the project, so the model of an agent that declares the field writable is refused too.
+
+**Fix.** Declare the field READONLY in every agent that declares it, or remove READONLY where another agent's model must write it. Authored writes such as SET, on_result, hooks and CONTEXT.pass are not affected.
+
+## SYSTEM_PROMPT_LIMITATIONS_APPENDED
+
+Severity: warning
+
+**Meaning.** The agent declares LIMITATIONS and its own SYSTEM_PROMPT, but the prompt has no \{\{limitations}} placeholder. The runtime adds the limitations after the prompt text under a "Limitations:" heading, so the model still receives every rule; this warning tells you where they end up.
+
+**Fix.** Put \{\{limitations}} in SYSTEM_PROMPT where the rules should appear (it renders as one "- rule" line per limitation), or keep the default placement after the prompt and ignore this warning.
+
+## TOOL_CONFIRMATION_PHRASE_NOT_ACTION
+
+Severity: warning
+
+**Meaning.** The tool requires confirmation and has no consent_action, so the confirmation question is built from the first sentence of its description ("Shall I `<description>` …?"). That sentence is a noun phrase or opens with a third-person verb, so the customer reads a broken question such as "Shall I synthetic transfer service for 25, Alex?".
+
+**Fix.** Start the description with the action as a verb, for example "Transfer the amount to the beneficiary.", or set consent_action on the confirmation.
+
+## TOOL_CONTEXT_ACCESS_READ_BEFORE_WRITE
+
+Severity: warning
+
+**Meaning.** A tool's CONTEXT_ACCESS.read names a key that only that same tool's own ON_RESULT or ON_ERROR SET ever writes. That key cannot exist yet on the tool's first call in a session, so the runtime's context-injection guard fails the call closed every time (by design, an authorized-but-missing declared read never runs silently degraded). The declaration compiles clean today with no signal that the tool can never succeed on its first invocation.
+
+**Fix.** Either drop the key from CONTEXT_ACCESS.read if the tool does not actually need it as an input, or arrange for another tool or step earlier in the flow to populate it before this tool first runs. If the value truly can only come from this tool itself, read it from the tool result directly instead of declaring it as a CONTEXT_ACCESS dependency.
+
+## TOOL_OUTPUT_SCHEMA_INVALID
+
+Severity: error
+
+**Meaning.** An MCP tool OUTPUT_SCHEMA is the JSON Schema of the tool result. A value that is not valid JSON cannot describe the result, so it is dropped.
+
+**Fix.** Write OUTPUT_SCHEMA as a single JSON object, for example \{"type": "object", "properties": \{...}}.
+
+## UNKNOWN_SURVEY_TEMPLATE
+
+Severity: error
+
+**Meaning.** A FEEDBACK block names a survey template that does not exist in the project being compiled. A contextual project build reports this as an error and cannot publish the unresolved reference. The template supplies the question and rating control; Feedback Insights selects a compatible scoring method when results are read.
+
+**Fix.** Correct the FEEDBACK_TEMPLATE name to one the project defines, the message lists every available template, or create the template in the project Surveys area. Names are compared exactly. If the survey was meant to be authored inline, remove FEEDBACK_TEMPLATE and give the block its own prompt and type instead.
+
+## UNSAFE_SIP_AUTHORITY_PATTERN
+
+Severity: error
+
+**Meaning.** A call_transfer tool declares an approved_authorities entry whose VDN (userinfo) uses a pattern outside the constrained digit-class DSL, a general regex metacharacter, group, alternation, anchor, or an unbounded length, that compileApprovedAuthority rejects as unsafe rather than silently narrowing it.
+
+**Fix.** Express the VDN as an exact digit string or the digit-class DSL only ('[0-9]' single-digit ranges, e.g. 'sip:5210[0-9][0-9]@172.0.41.7:5060'). Regex syntax such as '.\*', '+', '|', '(...)', or anchors is not supported.
+
+## UNTRUSTED_SIP_TRANSFER_DESTINATION
+
+Severity: warning
+
+**Meaning.** A call_transfer tool declares a sipTransferId default without default_source: config or system, so the value is treated as model-supplied and ignored at transfer time.
+
+**Fix.** Add default_source: config and use a literal SIP URI when the agent should own the transfer destination. Otherwise remove the default and configure the target at the project level.
+
+## VOICE_BARGE_IN_ILLEGAL_PLACEMENT
+
+Severity: error
+
+**Meaning.** Scoped barge-in changes a single playback lifecycle and is not a behavior-profile or execution-level voice setting.
+
+**Fix.** Move BARGE_IN to a template, FLOW step, or the VOICE block under RESPOND.
+
+## VOICE_INVALID_BARGE_IN
+
+Severity: error
+
+**Meaning.** Per-output barge-in controls are a closed policy enum. An invalid value must not silently inherit or change playback behaviour.
+
+**Fix.** Set VOICE.BARGE_IN to allow or disallow, in lowercase.
+
+## VOICE_INVALID_TURN_DETECTION
+
+Severity: error
+
+**Meaning.** turn_detection takes `enabled` (true or false) and an optional `eou_threshold` of 0.3, 0.4, 0.5, 0.6, 0.7, 0.8 or 0.9. An invalid value is dropped so the call keeps the next level's setting.
+
+**Fix.** Write turn_detection with enabled: true or false, and eou_threshold set to 0.3, 0.4, 0.5, 0.6, 0.7, 0.8 or 0.9 (0.3 answers fastest, 0.9 Slow dictation waits longest).
+
+## VOICE_NO_INPUT_ILLEGAL_PLACEMENT
+
+Severity: error
+
+**Meaning.** A caller-silence policy belongs to the step that waits for the caller. Under a GATHER field, RESPOND, branch, handler or response format it would never be applied, so it is rejected instead of being dropped.
+
+**Fix.** Move ON_NO_INPUT to the VOICE block directly under the FLOW step, or to CONVERSATION.listening.on_no_input for the whole agent.
+
+## VOICE_TURN_DETECTION_WITH_END_OF_SPEECH
+
+Severity: warning
+
+**Meaning.** While gateway turn detection is on, the gateway decides when the caller has finished, so the end-of-speech hint in the same block has no effect on that turn.
+
+**Fix.** Remove end_of_speech_turn_type / end_of_speech_timeout_ms from this block, or turn turn detection off here.

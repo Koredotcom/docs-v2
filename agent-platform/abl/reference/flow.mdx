@@ -95,6 +95,29 @@ FLOW:
     THEN: collect_account
 ```
 
+#### Step headers and repeated properties
+
+A step header is a bare `name:` line with nothing after the colon. Write it at the same indentation as the other steps: two spaces under `FLOW:`. The parser also reads a header at column 0, even with trailing spaces.
+
+The parser does not read these lines as a step header:
+
+- A header at any other indentation.
+- A header at either accepted column that is followed by a comment.
+- A two-space header that is followed by trailing spaces.
+
+When step properties follow such a line, the parser reports warning [`W217`](/agent-platform/abl/reference/diagnostics-reference#w217) for the common shapes. The lines under it are read as part of the step above, where they can replace properties that step already has.
+
+Each single-value step property holds one value. These include `REASONING`, `GOAL`, `THEN`, `ON_INPUT`, `ON_RESULT`, `CALL`, and `RESPOND`. Writing one a second time at the step's own property level reports warning [`W218`](/agent-platform/abl/reference/diagnostics-reference#w218).
+
+These properties do not trigger `W218`:
+
+- `SET`, `DO`, `LOG`, `STEP_CONSTRAINTS`, and `BEHAVIOR` accumulate.
+- `ON_SUCCESS` and `ON_FAILURE` blocks merge.
+- `ON_FAIL` fills a different slot for a `CHECK` and a `CALL`.
+- `VOICE`, `RICH_CONTENT`, and `FORMATS` merge their members.
+
+Both warnings are advisory. The agent compiles and runs as parsed.
+
 ### Per-step REASONING toggle
 
 
@@ -189,25 +212,29 @@ MEMORY:
 Any list declaration, including `CONTEXT_UPDATES: []`, requires compiler and Runtime support for IR version 1.3. An older Runtime rejects an artifact built with one. Existing projects get no automatic change: a project must opt in by adding a list to a step and publishing only after every Runtime pod serving that project has been upgraded (the compiler does not block publishing out of order; that ordering is a deployment-operations responsibility). Rolling back to an older Runtime requires an artifact with no list declarations.
 </Note>
 
-### Entry guards
+### Choosing the next step
 
-
-The `WHEN:` property on a step defines a condition that must be true for the step to execute. If the condition is false, the step is skipped:
+A step runs whenever the flow reaches it. To take one path or another based on a value collected or computed earlier, route from a decision step with `ON_RESULT`. It works on a step without a `CALL`. The first matching branch wins:
 
 ```yaml
 FLOW:
+  route_transfer_details:
+    REASONING: false
+    ON_RESULT:
+      - IF: transfer_type == "international"
+        THEN: international_details
+      - ELSE:
+        THEN: domestic_details
+
   international_details:
     REASONING: false
-    WHEN: "transfer_type == 'international'"
     GATHER:
       - swift_code: required
         prompt: "What is the SWIFT/BIC code?"
     THEN: validate_details
 ```
 
-| Property | Type     | Required | Default | Description                                                    |
-| -------- | -------- | -------- | ------- | -------------------------------------------------------------- |
-| `WHEN`   | `string` | No       | _none_  | Condition expression that must be true for the step to execute |
+<Warning>A step-level `WHEN:` does not skip the step. It has no effect, and the compiler reports the warning [`FLOW_STEP_WHEN_IGNORED`](/agent-platform/abl/reference/diagnostics-reference#flow_step_when_ignored). Remove it and route with `ON_RESULT`, or use `CHECK` with `ON_FAIL`.</Warning>
 
 ### Attempt limiting
 
@@ -276,7 +303,7 @@ FLOW:
     THEN: next_step
 ```
 
-This is useful when the delivered response carries a large presentation payload (a widget, a card, a big table) that would otherwise bloat every later model call for no benefit — `MODEL_CONTEXT` lets the model keep a short textual summary of what the customer saw instead. `MODEL_CONTEXT` is a text scalar; a non-text value fails validation (`MODEL_CONTEXT_INVALID`). An explicitly empty value omits the response from later model requests entirely. Omit the property to keep the historical full-response behavior. See also [MODEL_CONTEXT on a tool result](/agent-platform/abl-reference/tools#model_context-on-a-tool-result) for the equivalent policy on a tool's own result.
+This is useful when the delivered response carries a large presentation payload (a widget, a card, a big table) that would otherwise bloat every later model call for no benefit — `MODEL_CONTEXT` lets the model keep a short textual summary of what the customer saw instead. `MODEL_CONTEXT` is a text scalar; a non-text value fails validation ([`MODEL_CONTEXT_INVALID`](/agent-platform/abl/reference/diagnostics-reference#model_context_invalid)). An explicitly empty value omits the response from later model requests entirely. Omit the property to keep the historical full-response behavior. See also [MODEL_CONTEXT on a tool result](/agent-platform/abl-reference/tools#model_context-on-a-tool-result) for the equivalent policy on a tool's own result.
 
 <Note>A successfully rendered, non-empty `MODEL_CONTEXT` view is **preserved exactly** through later history compaction, summarization, and automatic conversation windowing — it's never auto-shortened, replaced with a summary, or dropped for being old. It's evaluated once, when the response is produced; later turns reuse that same rendered text rather than re-evaluating the template against newer data. This doesn't raise the model's context window or bypass the usual budget: an authored view may exceed the ordinary per-value/aggregate *soft* budget, but must still fit the aggregate *hard* capacity, or the runtime reports `AUTHORED_MODEL_CONTEXT_CAPACITY_EXCEEDED` rather than silently shrinking it. Keep `MODEL_CONTEXT` to the identifiers, status, and decision facts a later turn actually needs, and fetch further detail through a read tool — a large preserved view repeats in every later prompt, which adds up in prompt size, model cost, and latency. (This guarantee needs a matching Runtime version on every process handling the session; a rollback or a mixed-version deployment can silently lose it.)</Note>
 
@@ -426,10 +453,10 @@ FLOW:
 
 Rules:
 
-- Keys are strict — an unknown key is a compile error (`GATHER_ASR_UNKNOWN_KEY`). Credentials and service IDs never go in ABL.
+- Keys are strict — an unknown key is a compile error ([`GATHER_ASR_UNKNOWN_KEY`](/agent-platform/abl/reference/diagnostics-reference#gather_asr_unknown_key)). Credentials and service IDs never go in ABL.
 - At most 500 vocabulary entries per field across every language, each at most 100 characters.
-- **One listening-settings field per step.** `ASR:` applies only when its field is asked on its own; a field sharing its step with other required fields gets warning `GATHER_ASR_SHARED_STEP` and uses the normal settings when asked together.
-- **FLOW steps only.** `ASR:` on a top-level (reasoning) `GATHER` field is preserved but has no effect, with compile warning `GATHER_ASR_REASONING_UNSUPPORTED`.
+- **One listening-settings field per step.** `ASR:` applies only when its field is asked on its own; a field sharing its step with other required fields gets warning [`GATHER_ASR_SHARED_STEP`](/agent-platform/abl/reference/diagnostics-reference#gather_asr_shared_step) and uses the normal settings when asked together.
+- **FLOW steps only.** `ASR:` on a top-level (reasoning) `GATHER` field is preserved but has no effect, with compile warning [`GATHER_ASR_REASONING_UNSUPPORTED`](/agent-platform/abl/reference/diagnostics-reference#gather_asr_reasoning_unsupported).
 - **Deploy checks.** A `provider` that no voice channel bound to the target environment supports blocks create/promote (`GATHER_ASR_PROVIDER_UNRESOLVED`); restore/rollback warn instead. An unsupported channel (non-KoreVG voice, realtime speech-to-speech), an unsupported language, too many words for the engine, a no-input wait with no-input off, or an uncovered language list are deploy warnings.
 - At runtime, anything that can't be applied (an unknown engine, a rejected setting, a gateway that doesn't confirm the change) falls back silently to the call's normal listening settings — the call continues.
 - There's no platform switch for this feature; to stop using it, remove the `ASR:` block and redeploy.
@@ -470,8 +497,8 @@ FLOW:
 Rules:
 
 - The value is read each time the field is asked (first prompt, retries, rechecks). A list that changes between turns is used as it is at that moment. It applies only while that field is asked.
-- The reference must be exactly one quoted `"{{path}}"`: dotted names with optional `[n]` indexes, at most 8 parts and 128 characters. Surrounding text, two references, filters, an unquoted `{{...}}`, or a reference inside a list are all compile errors (`GATHER_ASR_TERMS_BINDING_INVALID`).
-- Some values can never be bound (`GATHER_ASR_TERMS_BINDING_FORBIDDEN`): session identity and runtime values (`session`, `config`, `env`, `history`, `messages`, `tenant_id`, `project_id`, `user_id`, `session_id`, `session_principal_id`), the protected email aliases, any root starting with `_`, and any path through `__proto__`, `prototype`, `constructor`, `_secret`, or `_secrets`. A `user.*` value is personal data and needs `restore_pii: true` (see below).
+- The reference must be exactly one quoted `"{{path}}"`: dotted names with optional `[n]` indexes, at most 8 parts and 128 characters. Surrounding text, two references, filters, an unquoted `{{...}}`, or a reference inside a list are all compile errors ([`GATHER_ASR_TERMS_BINDING_INVALID`](/agent-platform/abl/reference/diagnostics-reference#gather_asr_terms_binding_invalid)).
+- Some values can never be bound ([`GATHER_ASR_TERMS_BINDING_FORBIDDEN`](/agent-platform/abl/reference/diagnostics-reference#gather_asr_terms_binding_forbidden)): session identity and runtime values (`session`, `config`, `env`, `history`, `messages`, `tenant_id`, `project_id`, `user_id`, `session_id`, `session_principal_id`), the protected email aliases, any root starting with `_`, and any path through `__proto__`, `prototype`, `constructor`, `_secret`, or `_secrets`. A `user.*` value is personal data and needs `restore_pii: true` (see below).
 - The value can be a string (one word) or a list of strings and `{ phrase, boost }` entries. On the Deepgram keyterm path a boost has no effect.
 - Each word is checked when read. A word that is missing, empty, longer than 100 characters, contains a comma/semicolon/line break, duplicates an earlier word, holds a redaction placeholder or a held secret value, or holds protected personal data is left out. The question is still asked. A field never fails because of its word list.
 - Words already present for a language come first. A language whose reference resolves to nothing stays empty for that question. It does NOT fall back to `default`.
@@ -521,7 +548,7 @@ Rules:
 - Keys are strict: an unknown key, a malformed value, or an out-of-range value is a compile error. `min` above `max` is a compile error. A `DTMF:` block with no settings is a compile error.
 - `min` above 1 is a compile warning: a caller who stops early is not finished by the pause.
 - **One keypad-settings field per step.** A field with `DTMF:` must be the only field in its step. Split other fields into their own steps.
-- **FLOW steps only.** `DTMF:` on a top-level (reasoning) GATHER field is reported as an unknown key (`W170`) and has no effect.
+- **FLOW steps only.** `DTMF:` on a top-level (reasoning) GATHER field is reported as an unknown key ([`W170`](/agent-platform/abl/reference/diagnostics-reference#w170)) and has no effect.
 - `VALIDATE` checks the stored value. A `type: phone` field is stored in international format (e.g. `+919876543210`), so `^[0-9]{10}$` never matches it. Use `type: string` to check digits exactly as typed, or write the pattern for the international format.
 - `DTMF:` does not change validation or retries: use `VALIDATE`, `RETRY_PROMPT`, `MAX_RETRIES` on the same field, plus the agent's `ON_ERROR` handler for `validation_error` with `SUBTYPE: max_retries_exceeded`.
 - `DTMF:` collects ordinary data. The typed number reaches the agent, its memory, and the transcript like any GATHER value. For secrets (card numbers, security codes, PINs), use [`SECURE_INPUT`](#secure_input) instead.
@@ -728,6 +755,11 @@ FLOW:
 | `CHECK`   | `string` | --       | --      | Condition expression to evaluate        |
 | `ON_FAIL` | `string` | No       | _none_  | Step to go to if the condition is false |
 
+The runtime evaluates `CHECK` when the step is entered. It runs after the step's `CLEAR`, `SET`, `LOG`, and `DO`, and before its `GATHER` and `CALL`. `CHECK` tests values that already exist when the step starts.
+
+- A step `SET` applies before `CHECK`, so it also applies when `CHECK` fails. An attempt counter that `CHECK` reads relies on this. To assign a value only on success, put the `SET` inside an `ON_RESULT` branch.
+- `CHECK` cannot read the step's own `GATHER` answer or `CALL` result. To decide on them in the same step, use `ON_RESULT`, which runs after `GATHER` and `CALL`.
+
 ### CLEAR
 
 
@@ -873,7 +905,7 @@ FLOW:
 
 `AS`, `RESULT_FIELDS`, and `SUCCESS_WHEN` may be written indented under the `CALL` line or beside it; `AS: <name>` may also end the `CALL` line itself.
 
-<Warning>Every outcome route (`ON_SUCCESS`, `ON_TIMEOUT`, `ON_CANCEL`, `ON_FAIL`) takes a **step name only** — a `RESPOND` or any other block indented under a route isn't part of `SECURE_INPUT`; the parser reports the ignored line (`W208`) and an empty route is a compile error (`SECURE_INPUT_EMPTY_OUTCOME_ROUTE`). Put the response in the step the route names, as in the `confirm` step above.</Warning>
+<Warning>Every outcome route (`ON_SUCCESS`, `ON_TIMEOUT`, `ON_CANCEL`, `ON_FAIL`) takes a **step name only** — a `RESPOND` or any other block indented under a route isn't part of `SECURE_INPUT`; the parser reports the ignored line ([`W208`](/agent-platform/abl/reference/diagnostics-reference#w208)) and an empty route is a compile error ([`SECURE_INPUT_EMPTY_OUTCOME_ROUTE`](/agent-platform/abl/reference/diagnostics-reference#secure_input_empty_outcome_route)). Put the response in the step the route names, as in the `confirm` step above.</Warning>
 
 **Success.** Without `SUCCESS_WHEN`, any 2xx delivery response takes `ON_SUCCESS`; a non-2xx status, a network failure, a timeout, or an unreadable body takes `ON_FAIL`. With `SUCCESS_WHEN`, a 2xx response must also match every listed field (compared as text, no case folding) or the step takes `ON_FAIL` — use this when an API can report a decline inside an HTTP 200. A delivery that timed out after the request was sent also takes `ON_FAIL`, even though the charge may have gone through — don't retry payment from that step.
 
@@ -887,7 +919,7 @@ FLOW:
 | `COLLECT` | `object` | `digits: N..M` (min/max digit count), `finishOnKey`, `interDigitTimeoutMs`, `asrTimeoutMs` (spoken-path silence window). |
 | `VALIDATE` | list | Validation rules: a bare rule name (`luhn`), an inline object (`{ length: 4..4 }`, `{ date_mmYY: "not_past" }`), or a delegated `CALL <tool> WITH: {...}` rule. |
 
-A failed check asks for the field again, up to `MAX_ATTEMPTS`. A `CALL` validation rule passes only when the tool returns `valid: true`, and may reference the field being checked plus any fields collected before it. A field accepts only `PROMPT`, `COLLECT`, and `VALIDATE` — anything else is ignored with a warning (`W210`).
+A failed check asks for the field again, up to `MAX_ATTEMPTS`. A `CALL` validation rule passes only when the tool returns `valid: true`, and may reference the field being checked plus any fields collected before it. A field accepts only `PROMPT`, `COLLECT`, and `VALIDATE` — anything else is ignored with a warning ([`W210`](/agent-platform/abl/reference/diagnostics-reference#w210)).
 
 References inside the delivery `WITH:` block must be a **whole-value** placeholder — `pan: "{{secure.card_number}}"` is valid; embedding it in a larger string (`pan: "card:{{secure.card_number}}"`) or referencing an undeclared field is a compile error.
 
@@ -895,16 +927,16 @@ References inside the delivery `WITH:` block must be a **whole-value** placehold
 
 | Diagnostic | Fires when |
 | ---------- | ---------- |
-| `SECURE_INPUT_INVALID_MODE` | `MODE` is missing, empty, or contains a value other than `dtmf`/`speech`. |
-| `SECURE_INPUT_MISSING_DELIVER_TOOL` | No delivery `CALL`. |
-| `SECURE_INPUT_MISSING_PROMPT` | No `FIELDS` are declared, or a field's `PROMPT` has neither a locale entry nor a `template` reference. |
-| `SECURE_EMBEDDED_PLACEHOLDER` | A `{{secure.*}}` reference is part of a longer argument string instead of the whole value. |
-| `SECURE_UNKNOWN_FIELD` | A `{{secure.*}}` reference names a field the step doesn't collect. |
+| [`SECURE_INPUT_INVALID_MODE`](/agent-platform/abl/reference/diagnostics-reference#secure_input_invalid_mode) | `MODE` is missing, empty, or contains a value other than `dtmf`/`speech`. |
+| [`SECURE_INPUT_MISSING_DELIVER_TOOL`](/agent-platform/abl/reference/diagnostics-reference#secure_input_missing_deliver_tool) | No delivery `CALL`. |
+| [`SECURE_INPUT_MISSING_PROMPT`](/agent-platform/abl/reference/diagnostics-reference#secure_input_missing_prompt) | No `FIELDS` are declared, or a field's `PROMPT` has neither a locale entry nor a `template` reference. |
+| [`SECURE_EMBEDDED_PLACEHOLDER`](/agent-platform/abl/reference/diagnostics-reference#secure_embedded_placeholder) | A `{{secure.*}}` reference is part of a longer argument string instead of the whole value. |
+| [`SECURE_UNKNOWN_FIELD`](/agent-platform/abl/reference/diagnostics-reference#secure_unknown_field) | A `{{secure.*}}` reference names a field the step doesn't collect. |
 | `SECURE_INPUT_EMPTY_OUTCOME_ROUTE` | An outcome route (`ON_SUCCESS`/`ON_FAIL`/`ON_TIMEOUT`/`ON_CANCEL`) is written without a step name. |
-| `SECURE_INPUT_INVALID_RESULT_CONTRACT` | `AS` that isn't a plain variable name, `AS` without `RESULT_FIELDS` (or the reverse), a nested or repeated field name, an empty `SUCCESS_WHEN`, or a `SUCCESS_WHEN` field with no value. |
-| `RESERVED_VARIABLE_NAME` / `IMMUTABLE_SYSTEM_IDENTIFIER` | `AS` names a reserved or system-owned variable such as `session_id`. |
+| [`SECURE_INPUT_INVALID_RESULT_CONTRACT`](/agent-platform/abl/reference/diagnostics-reference#secure_input_invalid_result_contract) | `AS` that isn't a plain variable name, `AS` without `RESULT_FIELDS` (or the reverse), a nested or repeated field name, an empty `SUCCESS_WHEN`, or a `SUCCESS_WHEN` field with no value. |
+| [`RESERVED_VARIABLE_NAME`](/agent-platform/abl/reference/diagnostics-reference#reserved_variable_name) / [`IMMUTABLE_SYSTEM_IDENTIFIER`](/agent-platform/abl/reference/diagnostics-reference#immutable_system_identifier) | `AS` names a reserved or system-owned variable such as `session_id`. |
 | `W208` / `W210` | A line inside the block, or a field property, that `SECURE_INPUT` doesn't read — it's ignored. |
-| `W211` | `RESULT_FIELDS` or `SUCCESS_WHEN` written across several lines; write them inline. |
+| [`W211`](/agent-platform/abl/reference/diagnostics-reference#w211) | `RESULT_FIELDS` or `SUCCESS_WHEN` written across several lines; write them inline. |
 
 ### MESSAGE_KEY and BEHAVIOR
 
@@ -1015,6 +1047,15 @@ FLOW:
 
 The `ELSE` branch (a branch with no `IF` condition) matches when no other condition is true.
 
+Write an explicit `THEN` target on every authored branch. A branch without one does not survive the compiler round trip. For older compiled artifacts that have no branch target, the runtime keeps compatibility: a matched branch applies its actions and waits at the current step. It does not fall through to the enclosing step's response or continuation. Do not author branches without `THEN`.
+
+An `ON_RESULT` response is an authored assistant message.
+
+- If the `THEN` target asks another question, the branch response comes before that question in the turn's output. Each response keeps its own presentation and history entry, so advancing to a `GATHER` does not replace the earlier answer.
+- A matched branch keeps its own continuation. It does not run the enclosing step's default response or continuation.
+- Branch response text uses the configured output guardrails and PII protection. Structured display text is protected before delivery and history, including values found by asynchronous PII recognizers. Action values remain reversible vault tokens. Without a vault they keep their existing round-trip value.
+- For payload blocks nested directly under an inline branch `RESPOND`, write `VOICE` first, then `FORMATS` (or `RICH_CONTENT`), then `ACTIONS`. The voice configuration belongs to that response, including when it comes before another step's prompt.
+
 ### ON_SUCCESS / ON_FAIL
 
 
@@ -1082,7 +1123,9 @@ FLOW:
         THEN: confirm
 ```
 
-<Warning>A step that has only `ON_INPUT` branches — no `RESPOND`/prompt and no default (`ELSE`) branch — traps any unmatched input on the same step forever. The compiler warns (`FLOW_PROMPTLESS_ON_INPUT_UNMATCHED_TRAP`): add a default `ELSE` route or an authored prompt unless the wait is intentional.</Warning>
+<Warning>A step that has only `ON_INPUT` branches — no `RESPOND`/prompt and no default (`ELSE`) branch — traps any unmatched input on the same step forever. The compiler warns ([`FLOW_PROMPTLESS_ON_INPUT_UNMATCHED_TRAP`](/agent-platform/abl/reference/diagnostics-reference#flow_promptless_on_input_unmatched_trap)): add a default `ELSE` route or an authored prompt unless the wait is intentional.</Warning>
+
+`ON_INPUT` and `ON_RESULT` conditions also bind `turn_input`. It holds the caller message of the current turn, the same value `RESPOND` renders as `{{input}}`. `input` holds the message the step owns. When a transition in the same turn enters the step, `input` is empty and `turn_input` keeps the caller message.
 
 ### Digressions
 
@@ -1336,6 +1379,8 @@ ACTIONS:
 The `ACTIONS:` block also accepts an optional `RENDER_ID:` to give the whole action set a stable
 identifier for rendering/telemetry.
 
+To place inputs, buttons, and text side by side, use `ROW`, `SUBMIT`, and `TEXT` items. See [Form layout](/agent-platform/abl-reference/rich-content#form-layout).
+
 ### ON_ACTION callbacks
 
 
@@ -1501,7 +1546,7 @@ FLOW:
         BARGE_IN: allow           # per-RESPOND override for this output
 ```
 
-It can also be set on a named template's `VOICE:` block. Placing `barge_in` on the agent-wide `EXECUTION.voice` block, or on branch/handler voice blocks, is rejected (`VOICE_BARGE_IN_ILLEGAL_PLACEMENT`); an invalid value is `VOICE_INVALID_BARGE_IN`.
+It can also be set on a named template's `VOICE:` block. Placing `barge_in` on the agent-wide `EXECUTION.voice` block, or on branch/handler voice blocks, is rejected ([`VOICE_BARGE_IN_ILLEGAL_PLACEMENT`](/agent-platform/abl/reference/diagnostics-reference#voice_barge_in_illegal_placement)); an invalid value is [`VOICE_INVALID_BARGE_IN`](/agent-platform/abl/reference/diagnostics-reference#voice_invalid_barge_in).
 
 <Note>This scoped, per-output policy is distinct from the agent-wide barge-in behavior authored under `CONVERSATION` → `listening`. Use scoped `barge_in` to protect (or open up) individual utterances.</Note>
 
@@ -1557,7 +1602,7 @@ FLOW:
 - **Retry count.** Restarts when the caller speaks, and when a different step (or the same step entered again) takes ownership of the window.
 - **Variables.** `{{var}}` placeholders render in agent messages, step messages, and `exhausted_message`. A step message with a missing variable is skipped; an agent or exhausted message with a missing variable falls back to the platform default text.
 
-<Warning>`ON_NO_INPUT` is only legal directly in a FLOW step's own `VOICE:` block. Placed under a GATHER field, `RESPOND`, a branch, a handler, or a response format, it's a compile error (`VOICE_NO_INPUT_ILLEGAL_PLACEMENT`). The YAML format uses a step-level `on_no_input:` key.</Warning>
+<Warning>`ON_NO_INPUT` is only legal directly in a FLOW step's own `VOICE:` block. Placed under a GATHER field, `RESPOND`, a branch, a handler, or a response format, it's a compile error ([`VOICE_NO_INPUT_ILLEGAL_PLACEMENT`](/agent-platform/abl/reference/diagnostics-reference#voice_no_input_illegal_placement)). The YAML format uses a step-level `on_no_input:` key.</Warning>
 
 #### Gateway turn detection
 
@@ -1590,9 +1635,9 @@ FLOW:
 
 Precedence, most specific first: the response (or step, or field) that asks the caller something, the active behavior profile, `EXECUTION.voice`, the voice channel's own turn-detection setting, off. A response/step value applies to the caller's answer to it and holds while the step re-asks (retries); the next answered response with no key falls back up the chain. On a `REASONING: true` step (model writes the replies), the step's own `turn_detection` applies to every caller turn while the conversation stays in that step (only `turn_detection` is taken from that step's VOICE, nothing else).
 
-An invalid value is a compile error (`VOICE_INVALID_TURN_DETECTION`) and is never applied. A KoreVG gateway without the Dictation/Slow dictation profile uses its most patient profile instead (`0.9` falls to `0.8`, or `0.7` if `0.8` is also missing).
+An invalid value is a compile error ([`VOICE_INVALID_TURN_DETECTION`](/agent-platform/abl/reference/diagnostics-reference#voice_invalid_turn_detection)) and is never applied. A KoreVG gateway without the Dictation/Slow dictation profile uses its most patient profile instead (`0.9` falls to `0.8`, or `0.7` if `0.8` is also missing).
 
-<Note>Gateway turn detection applies to KoreVG pipeline calls only, never realtime (speech-to-speech), other voice transports, or the PCI `SECURE_INPUT` gather. While turn detection is on, the gateway ignores the end-of-speech timeout, so a block that turns it on AND also sets `END_OF_SPEECH_TURN_TYPE` or `END_OF_SPEECH_TIMEOUT_MS` gets a compile warning `VOICE_TURN_DETECTION_WITH_END_OF_SPEECH`.</Note>
+<Note>Gateway turn detection applies to KoreVG pipeline calls only, never realtime (speech-to-speech), other voice transports, or the PCI `SECURE_INPUT` gather. While turn detection is on, the gateway ignores the end-of-speech timeout, so a block that turns it on AND also sets `END_OF_SPEECH_TURN_TYPE` or `END_OF_SPEECH_TIMEOUT_MS` gets a compile warning [`VOICE_TURN_DETECTION_WITH_END_OF_SPEECH`](/agent-platform/abl/reference/diagnostics-reference#voice_turn_detection_with_end_of_speech).</Note>
 
 ---
 
@@ -1626,7 +1671,7 @@ FLOW:
 The error type (the handler's key) is matched against a **fixed, canonical set** —
 `default`, `llm_error`, `tool_error`, `routing_error`, `validation_error`, `timeout_error`, and
 `unknown_error`. A key outside this set (for example the older `tool_timeout`, `invalid_input`, or
-`api_error`) is flagged at compile time (`ON_ERROR_HANDLER_TYPE_DRIFT`) and never matches at
+`api_error`) is flagged at compile time ([`ON_ERROR_HANDLER_TYPE_DRIFT`](/agent-platform/abl/reference/diagnostics-reference#on_error_handler_type_drift)) and never matches at
 runtime — see [Error types](/agent-platform/abl-reference/lifecycle-and-hooks#error-types) for the
 full table and the deprecated-name mapping. Narrow `tool_error` with `SUBTYPE`/`SUBTYPES` (known
 values: `rate_limit`, `auth_failure`, `network_error`, `tool_timeout`).
