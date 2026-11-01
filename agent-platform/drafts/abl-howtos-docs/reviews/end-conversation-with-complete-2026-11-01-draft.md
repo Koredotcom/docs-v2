@@ -1,0 +1,338 @@
+# How to end a conversation with COMPLETE
+
+Use this pattern when an agent finishes its work: it closes the session, or it finishes a bounded task and returns control to a supervisor.
+
+## Concept
+
+`COMPLETE` means this agent is finished. What happens next depends on how the agent started.
+
+| Agent role | What COMPLETE does |
+| ---------- | ------------------ |
+| Root agent, or a specialist entered with `RETURN: false` | The session ends. Later messages in the same session get the conversation-complete message. No agent runs. |
+| Child entered with `RETURN: true` | The child returns to the supervisor. The session continues. The supervisor becomes active again. |
+| Any agent, when the completion has `TERMINAL: false` | The response shows and the session stays open. The next message starts a fresh intent. |
+
+A specialist entered with `RETURN: false` cannot return with `COMPLETE`. To give control back to its supervisor, it needs a `HANDOFF` to that supervisor. See [How to switch the active agent during a conversation](/agent-platform/abl/how-to/switch-active-agent).
+
+### Ways to complete
+
+| Way | Where you write it | When the runtime checks it |
+| --- | ------------------ | -------------------------- |
+| `COMPLETE:` conditions | The `COMPLETE:` section with `- WHEN:` items | After each reasoning turn, after a state change from `__set_context__`, after a delegate returns, and at flow checkpoints. |
+| Flow `THEN: COMPLETE` | A flow step, an `ON_INPUT` branch, or `ON_EXHAUSTED: COMPLETE` | When the flow takes that transition. |
+| Terminal flow step | A flow step with no `THEN` | When the step finishes. The runtime checks `COMPLETE:` conditions only. If none match, the step waits. |
+| The model's finish action | Nothing to write | A `RETURN: true` child that has tools can call it to finish its task. |
+| `ON_ERROR` with `THEN: COMPLETE` | An `ON_ERROR` handler | When retries on a `GATHER` field in a flow step run out, the handler text shows and the agent ends. |
+
+Use the `COMPLETE:` section when the end depends on state. Use `THEN: COMPLETE` when a flow step knows it is the last step. Use both when the flow ends the agent and a condition ends it earlier.
+
+### Completion conditions
+
+- The runtime evaluates the `WHEN` text of each condition in the order you list them. The first match wins.
+- `WHEN` must be deterministic. A condition such as `the customer is done` is a compile error (`PLAIN_ENGLISH_COMPLETE_WHEN`). Use `order_id IS SET` or `task_done == true`.
+- The condition must read state that something writes: a `GATHER` field, a tool result mapping, a `SET`, or a returned field.
+- In a flow, the runtime checks conditions before an automatic advance only when the next step already ran in this turn. Forward steps run first, so a trivially true condition does not end the flow early.
+- A matching condition does not complete the agent while a `CONSTRAINTS` rule fails on the current state. The constraint `ON_FAIL` runs instead. The runtime withholds a completion three times, then releases it.
+- At a flow `THEN: COMPLETE`, the runtime checks `HANDOFF` conditions first. A matching route takes over instead of completing. A child that returns to a supervisor skips this check.
+
+### What the runtime does on COMPLETE
+
+1. Applies the `SET` assignments of the matching condition.
+2. Stores a snapshot of the session values when `STORE` is set.
+3. Builds the message: the `RESPOND` text, or the default message, or nothing for a returning child.
+4. Marks the agent complete. A root agent ends the session.
+5. For a `RETURN: true` child, copies the `ON_RETURN` `MAP` values to the supervisor and makes the supervisor active.
+
+Message rules:
+
+- A `COMPLETE` condition with no `RESPOND` shows the default message `This conversation has been completed.` Set `conversation_complete` in `MESSAGES` to change it.
+- A returning child with no `RESPOND` returns silently. The supervisor continues the conversation.
+- In a reasoning agent, a matching completion replaces the model text for that turn. Put the whole closing message in `RESPOND`.
+- `MODEL_CONTEXT` keeps different text for later model calls than the customer saw.
+
+## Minimal working example
+
+The agent collects a payment amount and ends the session with a confirmation. `payment_amount` comes from the `GATHER` field.
+
+```abl
+AGENT: Payment_Agent
+GOAL: "Take a payment amount and confirm it"
+
+GATHER:
+  payment_amount:
+    PROMPT: "How much do you want to pay in dollars?"
+    TYPE: number
+    REQUIRED: true
+
+COMPLETE:
+  - WHEN: payment_amount IS SET
+    RESPOND: "Your payment of {{payment_amount}} dollars is scheduled."
+```
+
+## How it works
+
+1. The customer answers the prompt. The runtime stores `payment_amount`.
+2. After the turn, the runtime evaluates `payment_amount IS SET`. The result is true.
+3. The runtime checks `CONSTRAINTS`. The agent has none.
+4. The runtime marks the agent complete and shows the `RESPOND` text with the amount filled in.
+5. This agent is the root agent. The session ends.
+6. A later message in the same session gets `This conversation has been completed.` The customer must start a new session.
+
+## Common variations
+
+### End from a flow step
+
+A flow step with `THEN: COMPLETE` shows its `RESPOND` text and ends the agent in the same turn. The agent does not wait for the customer.
+
+```abl
+AGENT: Order_Lookup_Agent
+GOAL: "Collect an order ID, confirm it, and end the conversation"
+
+FLOW:
+  entry_point: ask_order
+  steps:
+    - ask_order
+    - confirm_order
+
+ask_order:
+  REASONING: false
+  GATHER:
+    order_id:
+      PROMPT: "What is your order ID?"
+      TYPE: string
+      REQUIRED: true
+  THEN: confirm_order
+
+confirm_order:
+  REASONING: false
+  RESPOND: "Order {{order_id}} is confirmed. Goodbye."
+  THEN: COMPLETE
+```
+
+Do not end an entry step with `RESPOND` and `THEN: COMPLETE` when the customer must answer. The agent completes before the customer replies. Use `GATHER` so the step waits.
+
+If the agent also has a `COMPLETE:` section, a matching condition runs at `THEN: COMPLETE`. Keep the closing text in one place.
+
+### Return a child to its supervisor
+
+A child entered with `RETURN: true` completes with a condition. The supervisor keeps the session and routes the next request.
+
+`Customer_Lookup_Agent` has no `RESPOND`, so it returns silently. `customer_id` comes from its `GATHER` field and returns through `MAP`. `Account_Service_Agent` is a stand-in for your specialist.
+
+```abl
+SUPERVISOR: Account_Supervisor
+GOAL: "Identify the customer first, then route account requests"
+
+MEMORY:
+  session:
+    - customer_id
+      TYPE: string
+      DESCRIPTION: "Customer identifier collected by the lookup agent."
+
+INTENTS:
+  account_service: "Profile, address, or password changes."
+
+HANDOFF:
+  - TO: Customer_Lookup_Agent
+    WHEN: customer_id IS NOT SET
+    SUMMARY: "Collect the customer ID before any account work."
+    RETURN: true
+    ON_RETURN:
+      action: continue
+      MAP:
+        customer_id: customer_id
+
+  - TO: Account_Service_Agent
+    WHEN: intent.category == "account_service" AND customer_id IS SET
+    PASS: [customer_id]
+    SUMMARY: "Account service agent now owns the conversation."
+    RETURN: false
+```
+
+```abl
+AGENT: Customer_Lookup_Agent
+GOAL: "Collect the customer ID and return it to the supervisor"
+
+GATHER:
+  customer_id:
+    PROMPT: "What is your customer ID?"
+    TYPE: string
+    REQUIRED: true
+
+COMPLETE:
+  - WHEN: customer_id IS SET
+```
+
+```abl
+AGENT: Account_Service_Agent
+GOAL: "Record an address change request"
+
+GATHER:
+  new_address:
+    PROMPT: "What is the new address?"
+    TYPE: string
+    REQUIRED: true
+
+COMPLETE:
+  - WHEN: new_address IS SET
+    RESPOND: "I recorded your new address: {{new_address}}."
+```
+
+When `Customer_Lookup_Agent` completes, the session does not end. The supervisor becomes active and continues. When `Account_Service_Agent` completes, the session ends, because it was entered with `RETURN: false`.
+
+For the return mechanics, `ON_RETURN` options, and replay of the original request, see [How to switch the active agent during a conversation](/agent-platform/abl/how-to/switch-active-agent) and [How to transfer control to another agent and return later](/agent-platform/abl/how-to/returnable-agent-handoff).
+
+### Show a closing message without ending the session
+
+Set `TERMINAL: false` to render a closing message or widget and keep the session open. Clear the condition with `SET` in the same completion. Otherwise it fires again on the next turn.
+
+```abl
+AGENT: Order_Status_Agent
+GOAL: "Show the order summary once without ending the conversation"
+
+ON_START:
+  SET: summary_shown = false
+
+GATHER:
+  order_id:
+    PROMPT: "What is your order ID?"
+    TYPE: string
+    REQUIRED: true
+
+MEMORY:
+  session:
+    - summary_shown
+      TYPE: boolean
+      DESCRIPTION: "True after the order summary was shown."
+
+COMPLETE:
+  - WHEN: order_id IS SET AND summary_shown != true
+    RESPOND: "Order {{order_id}} shipped. Is there anything else?"
+    SET: summary_shown = true
+    TERMINAL: false
+```
+
+Write `SET` on one line: `SET: summary_shown = true`. A `SET:` followed by indented lines is ignored with warning W360.
+
+After this completion, the next message reopens the agent as a fresh intent. If the same condition fires again on the first turn after reopening, the runtime ends the session and logs `NON_TERMINAL_COMPLETION_NO_PROGRESS`.
+
+### Hold a completion until a rule passes
+
+A completion does not fire while a blocking `CONSTRAINTS` rule fails on the current state. The rule `ON_FAIL` runs instead.
+
+```abl
+AGENT: Refund_Agent
+GOAL: "Record a refund only after the customer gives consent"
+
+GATHER:
+  consent_given:
+    PROMPT: "Do you agree to the refund terms? Answer yes or no."
+    TYPE: boolean
+    REQUIRED: true
+  refund_amount:
+    PROMPT: "How much is the refund in dollars?"
+    TYPE: number
+    REQUIRED: true
+
+CONSTRAINTS:
+  - REQUIRE consent_given != false
+    ON_FAIL: "I cannot continue without your consent to the refund terms."
+
+COMPLETE:
+  - WHEN: refund_amount IS SET
+    RESPOND: "Your refund of {{refund_amount}} dollars is recorded."
+```
+
+If the customer answers `no`, the completion is withheld and the rule message shows. The runtime releases a withheld completion after three withholds in a row. Give the customer a way to pass the rule.
+
+### Store a snapshot, keep model context, and set the default message
+
+`STORE` saves a snapshot of the session values under a name. `MODEL_CONTEXT` keeps text for the model that differs from the customer text. A condition with no `RESPOND` shows the `conversation_complete` message.
+
+```abl
+AGENT: Payment_Agent
+GOAL: "Take a payment amount and confirm it"
+
+MESSAGES:
+  conversation_complete: "This session is closed. Start a new chat for more help."
+
+GATHER:
+  payment_amount:
+    PROMPT: "How much do you want to pay in dollars?"
+    TYPE: number
+    REQUIRED: true
+
+COMPLETE:
+  - WHEN: payment_amount IS SET AND payment_amount > 1000
+    RESPOND: "Your payment of {{payment_amount}} dollars needs review."
+    MODEL_CONTEXT: "The customer was told the payment needs review."
+    STORE: reviewed_payments
+  - WHEN: payment_amount IS SET
+```
+
+An amount of 1500 matches the first condition. An amount of 200 matches the second. The second shows the `MESSAGES` text.
+
+Order the conditions from most specific to least specific. The first match wins.
+
+## Verification
+
+- Compile the project. Fix every error and warning on the `COMPLETE:` section.
+- Test the end. Send a valid answer to the minimal example, for example `120`. The trace shows `completion_check` with the condition and a true result, then a `complete` decision.
+- Check the source. `completion_check` carries `source`, such as `post_turn_eval`, `flow_transition`, or `terminal_step`. It tells you which checkpoint ended the agent.
+- Check the session end. Send a second message. The reply is the conversation-complete message and no agent runs.
+- Test a child. Complete `Customer_Lookup_Agent`. The trace shows `handoff_return_handler` with `mappedFields`. The next reply comes from the supervisor.
+- Test a withheld completion. Fail the constraint. The trace shows a decision `completion_withheld_by_constraint`.
+- Test a non-terminal completion. The reply shows and the next message routes as a new request.
+- Read traces with [How to debug routing decisions in traces](/agent-platform/abl/how-to/debug-routing-traces).
+
+## Production readiness checklist
+
+- Every `WHEN` reads state that something writes. Name the writer for each variable.
+- Every `WHEN` is deterministic. The compiler rejects plain-English text.
+- The closing text lives in one place: the step `RESPOND` or the completion `RESPOND`.
+- Every `RETURN: true` child has a `COMPLETE` condition or a flow `THEN: COMPLETE`. Otherwise the supervisor waits.
+- Every `RETURN: false` specialist has a planned end: `COMPLETE`, a `HANDOFF` back, or an escalation.
+- Every `TERMINAL: false` completion clears its own condition with `SET`.
+- The `MESSAGES` `conversation_complete` text tells the customer how to start again.
+- Test a customer who sends a message after the session ends.
+- Test the first match when two conditions are both true.
+- Monitor sessions that never complete and children that never return.
+
+## Common mistakes
+
+| Mistake | Why it happens | How to avoid it |
+| ------- | -------------- | --------------- |
+| Writing a plain-English `WHEN` | The text reads like a goal. | Write a boolean expression over session state. |
+| Ending an entry step with `RESPOND` and `THEN: COMPLETE` | The step looks like a question. | Use `GATHER` so the step waits for the customer. |
+| Leaving a `COMPLETE` condition with no `RESPOND` on a root agent | The author expects silence. | Write the closing text. Without it, the default message shows. |
+| Expecting `COMPLETE` in a `RETURN: false` specialist to return to the supervisor | The name suggests a return. | Use a `HANDOFF` to the supervisor. `COMPLETE` ends the session. |
+| Putting a closing message in the step and a different one in `COMPLETE` | Both are valid. | Choose one place. |
+| Writing `SET:` as a block under a completion | The block looks like YAML. | Write `SET: name = value` on one line. |
+| Using `TERMINAL: false` without clearing the condition | The condition stays true. | Add `SET` that changes it. |
+| Expecting a trivially true condition to end a flow before the next step runs | The condition looks like a gate. | Know that forward steps run first. End the flow with `THEN: COMPLETE`. |
+| Expecting completion while a constraint fails | The condition is true. | Fix the constraint state. The runtime holds the completion. |
+
+## Troubleshooting
+
+| Symptom | Likely cause | What to check |
+| ------- | ------------ | ------------- |
+| The agent never completes | The `WHEN` is false, or nothing writes the variable. | `completion_check` results and the source of each variable. |
+| The agent completes on the first turn | The condition is true at start, for example `x IS NOT SET`. | The condition and the starting state. |
+| The customer sees `This conversation has been completed.` | A condition has no `RESPOND`, or the session already ended. | The `RESPOND` line and the session state. |
+| The model text vanished from the reply | A completion matched after the turn and replaced it. | Move the full text into `RESPOND`. |
+| The supervisor never resumes after a child | The child has no completion, or `ON_RETURN` maps a missing field. | The child `COMPLETE` and the `handoff_return_handler` `mappedFields`. |
+| Compile error `PLAIN_ENGLISH_COMPLETE_WHEN` | The `WHEN` is free text. | Replace it with a boolean expression. |
+| Warning W360 on a completion | The `SET:` block or another property is ignored. | Use one-line `SET`, and only `RESPOND`, `SET`, `STORE`, `TERMINAL`, `MODEL_CONTEXT`, and response payload blocks. |
+| A closing widget repeats on every turn | `TERMINAL: false` with a condition that stays true. | Add a `SET` that clears the condition. |
+| The agent does not end although the condition is true | A constraint fails on the same state. | Decision `completion_withheld_by_constraint` and the constraint `ON_FAIL`. |
+| A route takes over at the end of the flow | A `HANDOFF` condition matched at `THEN: COMPLETE`. | `HANDOFF` `WHEN` conditions and the trace source `flow_transition`. |
+
+## Related HowTos
+
+- [How to switch the active agent during a conversation](/agent-platform/abl/how-to/switch-active-agent)
+- [How to transfer control to another agent and return later](/agent-platform/abl/how-to/returnable-agent-handoff)
+- [How to transfer control permanently to another agent](/agent-platform/abl/how-to/terminal-agent-handoff)
+- [When to escalate a conversation to a human](/agent-platform/abl/how-to/escalate-to-human)
+- [How to resume after a child agent or human agent completes](/agent-platform/abl/how-to/resume-after-child-or-human-agent)
+- [How to combine reasoning and flow steps](/agent-platform/abl/how-to/combine-reasoning-and-flow-steps)
+- [How to debug routing decisions in traces](/agent-platform/abl/how-to/debug-routing-traces)
