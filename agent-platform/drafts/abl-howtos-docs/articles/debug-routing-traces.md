@@ -11,7 +11,7 @@ A supervisor routes in layers. Each layer leaves its own trace events.
 | Before the model | At the start of a turn | Conditions the runtime can decide from data, such as `customer_id IS SET`. | `deterministic_routing`, `deterministic_handoff` |
 | Model choice | The model calls `handoff_to_<Target>` | The route text, `INTENTS:`, and the conversation. The runtime then checks the route `WHEN`. | `tool_call`, `handoff_condition_check`, `decision` |
 | After a turn or flow step | The runtime checks each `HANDOFF` in authored order | The same `WHEN` conditions, without the model. | `handoff_condition_check` for every route |
-| Return | A child agent finishes | `ON_RETURN` | `handoff_return_handler`, `resume_intent` |
+| Return | A child agent finishes, or the user changes topic | `ON_RETURN`, or the supervisor route for the new topic | `handoff_return_handler`, `resume_intent`, `digression` |
 
 A quoted plain-language `WHEN` matches only in the model choice layer, when the model picks that route. The pre-model layer skips it. The authored-order check shows `whenOutcome: semantic_deferred` and `result: false`. That result does not mean the route is broken.
 
@@ -74,9 +74,12 @@ Start with the events for one turn. Match each need to an event.
 | Category the runtime picked | `pipeline_intent_bridge` | `intentState.category`. |
 | Temporary or permanent route | `handoff` | `returnExpected` and `reasonCode`: `handoff_return_expected` or `handoff_permanent`. |
 | Context the target received | `handoff` | `context`. |
+| Passed fields the target treats as already collected | `handoff_context_seed` | `seededFields` and `remainingWaitingFields`. |
+| Result and duration of a handoff attempt | `handoff_completed` | `outcome`, `durationMs`, `cause`, `code`. |
 | Values written by `CONTEXT.set` | `handoff_context_set_applied` | `fields`. |
 | Values that came back from a child | `handoff_return_handler` | `mappedFields`, `setFields`, `clearedFields`. |
 | Replay of the original request | `resume_intent` | `resumeMessage` and `resumeMessageSource`. |
+| Specialist handed the user back to the supervisor | `digression` | `action: return_to_parent`, `intent`, `target`. |
 | Route hidden by a flow return | `handoff_condition_suppressed` | `reasonCode: flow_return_handoff_suppressed`. |
 | Target refused at admission | `handoff_failure`, `handoff_authority_denied` | `reasonCode` or `reason`, and `error`. |
 
@@ -110,9 +113,31 @@ A model-selected check looks like this. Fields are trimmed.
 
 The `reasonCode` is `handoff_condition_matched` or `handoff_condition_blocked` for a model-selected route. For the authored-order check it is `handoff_condition_matched`, `handoff_condition_skipped`, or `flow_return_handoff_suppressed`.
 
+A `//` comment at the end of an expression `WHEN` is ignored when the runtime evaluates the route. The trace `condition` keeps the authored text, including the comment. A `WHEN` that holds only a comment gives `missing_data`.
+
 `handoff_context_pass_resolved` is narrow. It fires only when a `PASS` field named `request`, `user_request`, `customer_request`, `query`, `message`, `utterance`, or `latest_user_utterance` takes the customer's current message. It does not list other passed fields. Read the `handoff` event `context` for those.
 
 ## Common variations
+
+### Read the result of a handoff attempt
+
+Every handoff attempt ends with one `handoff_completed` event, whatever the result. It sits at the `standard` level. It carries identifiers and a short `detail` text. It never carries the user message or the handoff context.
+
+| Field | What it tells you |
+| ----- | ----------------- |
+| `outcome` | `success`, `rejected`, `blocked`, `error`, or `timeout`. |
+| `durationMs` | Time spent on this attempt. It excludes time spent on queued sibling requests, which `siblingIntentMs` reports. |
+| `cause` and `code` | The reason behind a result that is not `success`. |
+| `sourceAgent`, `targetAgent` | The caller and the target. |
+| `handoffId`, `parentHandoffId`, `decisionId` | Link nested attempts and match the attempt to the `handoff` event. |
+
+| `outcome` | Typical `cause` | Where to look next |
+| --------- | --------------- | ------------------ |
+| `success` | None | `handoff` and the target's own events. |
+| `blocked` | `when_blocked`, `availability_refused`, `auth_required` | `handoff_condition_check`, `availability_refused`. |
+| `rejected` | `rejected`, `authority_denied` | `handoff_failure`, `handoff_authority_denied`. |
+| `error` | `setup_failed`, `dispatch_failed`, `thrown`, `unsuccessful` | `handoff_failure` and the `detail` text. |
+| `timeout` | `handoff_timeout` | `handoff_timeout`. |
 
 ### Debug a route that is hidden by `ENABLED_WHEN`
 
@@ -133,6 +158,10 @@ The fallback route above shows `whenOutcome: semantic_deferred` in the authored-
 ### Debug a router that asked a question
 
 A `router` supervisor asks through the clarification action. The trace shows a `tool_call` named `__clarify_routing__` and no handoff.
+
+### Debug a specialist that returned the user to the supervisor
+
+When the user asks for another specialist's topic, the runtime can return the user to the supervisor before the specialist answers. The `digression` event shows `action: return_to_parent`, the detected `intent`, and the `target` route. A `rerouteError` field appears when the route was blocked. The supervisor `EXECUTION.pipeline.parentReturn` block sets the confidence level and whether an ambiguous result keeps the user with the specialist.
 
 ### Debug multiple requests in one message
 
@@ -166,7 +195,7 @@ A rejected value does not stop the session. The `SET` has no effect and the runt
 
 1. Validate the supervisor and all target agents together.
 2. Send "I was charged twice". Expect a `tool_call` for `handoff_to_Billing_Agent`, then `handoff_condition_check` with `result: true` and `whenOutcome: deterministic_pass`.
-3. Check the `handoff` event. Expect `returnExpected: false` and `reasonCode: handoff_permanent`.
+3. Check the `handoff` event. Expect `returnExpected: false` and `reasonCode: handoff_permanent`. Then check `handoff_completed`. Expect `outcome: success` and a `durationMs` value.
 4. Send "My router keeps dropping the connection". Expect `Technical_Support_Agent`.
 5. Send "Tell me about your company". Expect the fallback route if the model picks it. The authored-order check shows `semantic_deferred` for that route.
 6. Check that the session record carries `entry_channel` and `routing_version` as trace dimensions.
@@ -178,7 +207,7 @@ A rejected value does not stop the session. The `SET` has no effect and the runt
 - Each deterministic condition reads a variable with a known source.
 - The team knows which layer owns each route: before the model, model choice, or authored-order check.
 - `_meta` values are stable and low in cardinality, and they never hold customer text.
-- Support staff can read `handoff_condition_check`, `route_condition_unresolved`, and `handoff` in your trace viewer.
+- Support staff can read `handoff_condition_check`, `route_condition_unresolved`, `handoff`, and `handoff_completed` in your trace viewer.
 
 ## Common mistakes
 
@@ -188,6 +217,7 @@ A rejected value does not stop the session. The `SET` has no effect and the runt
 | Treating `semantic_deferred` as a failure | The result is `false`. | Check whether the model chose the route. |
 | Looking for a trace setting | Other products offer one. | Routing events appear at `standard`. Check the layer instead. |
 | Expecting `handoff_context_pass_resolved` for every `PASS` field | The name suggests it. | Read the `handoff` event `context`. |
+| Putting a `//` comment inside a plain-language `WHEN` | A comment seems safe in any condition. | Keep the note outside the condition. Only expression conditions drop the comment. |
 | Writing the customer's words to `_meta` | It helps one debug session. | Write stable codes. |
 | Expecting a `_meta` value to persist after a rejection | The `SET` fails with a log warning only. | Check the value rules, then read `session_updated`. |
 
@@ -199,6 +229,9 @@ A rejected value does not stop the session. The `SET` has no effect and the runt
 | A condition shows `deterministic_fail` though the variable looks set | The variable is unset at that moment, or the path differs. | `route_condition_unresolved` and `evaluatedContext`. |
 | The tool result says `blocked: WHEN condition not met` | The route `WHEN` is false when the model calls it. | `handoff_condition_check` `evaluatedContext` and the condition text. |
 | A plain-language route shows `result: false` | The check ran outside the model choice layer. | Whether a `tool_call` for the route exists in the turn. |
+| The handoff did not complete, or took too long | The target refused, timed out, or failed. | `handoff_completed` `outcome`, `cause`, and `durationMs`. |
+| The target asks again for a field you passed | The field is not a declared `GATHER` field of the target, or its source is not allowed. | `handoff_context_seed` `seededFields` and `remainingWaitingFields`. |
+| The user left a specialist without a handoff from it | The runtime returned the user to the supervisor. | `digression` with `action: return_to_parent`. |
 | A child's fields never reach the supervisor | `MAP` names a field the child does not set. | `handoff_return_handler` `mappedFields`. |
 | The supervisor does not replay after a return | `ON_RETURN` has no `resume_intent`, or the depth limit was reached. | `resume_intent` and its `reasonCode`. |
 | `_meta` dimensions are missing from analytics | The value was rejected, or the session holds 50 dimensions. | `session_updated` with `target: custom_dimension` and the runtime warning. |

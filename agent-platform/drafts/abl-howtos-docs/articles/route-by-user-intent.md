@@ -31,6 +31,8 @@ The pipeline is optional. It runs only when the project enables it, the agent do
 
 Quote plain-language text. Unquoted text is read as variable names and produces undefined-variable warnings.
 
+A `//` outside quotes starts a comment in a `WHEN`. A `WHEN` that holds only a comment fails to compile with the message `WHEN is required`.
+
 The pipeline evaluates a quoted phrase as a string that is always true. A quoted route placed above an `intent.category` route captures every message the pipeline classifies. Put quoted routes after the `intent.category` routes.
 
 ### Order is priority
@@ -124,7 +126,7 @@ The `summary` text also supports `{{field}}` interpolation from the supervisor's
 5. With `EXPECT_RETURN: false`, the target keeps the conversation. With `EXPECT_RETURN: true`, the supervisor pauses and resumes when the target returns.
 6. When no route fires, the supervisor stays active. The `WHEN: true` entry in the example is the fallback.
 
-A chain of nested handoffs can reach a depth of 10 before the platform refuses the next one.
+A chain of nested handoffs can reach a depth of 10 before the platform refuses the next one. The platform also refuses a handoff to an agent that is already in the active chain. A child that returns to the supervisor waiting for it is not a loop.
 
 ## Common variations
 
@@ -191,9 +193,11 @@ Use `EXPECT_RETURN: true` when a specialist does bounded work and the supervisor
       summary: "Verified customer needs billing help."
 ```
 
-`map` copies a child field into a parent field. Write the child field first, then the parent field: `verified: verification_result` copies the child's `verified` into the parent's `verification_result`. The child must gather or produce `verified`. Without a `map`, the platform copies all gathered child data back.
+`map` copies a child field into a parent field. Write the child field first, then the parent field: `verified: verification_result` copies the child's `verified` into the parent's `verification_result`. The child must gather or produce `verified`. With a `map`, only the mapped fields return. Without a `map`, the platform copies all gathered child data back.
 
-`action: resume_intent` runs routing again against the original request with the returned context. `action: continue` resumes the supervisor's current flow.
+`action: resume_intent` runs routing again against the original request with the returned context. The replay runs one level deep. A second return inside the replay does not replay again, and the trace shows `resume_intent` with `reasonCode: resume_intent_depth_limit`. `action: continue` resumes the supervisor's current flow.
+
+While a returning child is active, the platform can also send the customer back to the supervisor. With the pipeline on, the classifier checks each reply against the supervisor routes in authored order. When another agent's route matches with enough confidence, the conversation returns to the supervisor. The trace shows a `digression` event with `action: return_to_parent`. The supervisor `EXECUTION.pipeline` block sets the threshold in `parentReturn`. See How to configure EXECUTION.pipeline models, modes, thresholds, and fallbacks.
 
 `RETURN` is accepted as an older name for `EXPECT_RETURN`. `ON_RETURN` without `EXPECT_RETURN: true` produces the warning `HANDOFF_ON_RETURN_WITHOUT_RETURN`.
 
@@ -229,11 +233,11 @@ Use a quoted phrase for a request type that has no category. Place it after the 
       summary: "Customer needs refund help."
 ```
 
-Keep the phrase in lowercase words. A quoted phrase that contains uppercase `AND`, `OR`, or `NOT`, a comparison symbol, or a word such as `contains` is read as an expression.
+Keep the phrase in lowercase words. A quoted phrase is read as an expression when it contains uppercase `AND`, `OR`, or `NOT`, a comparison symbol, `IS SET`, a word such as `contains`, or a word directly followed by `(`.
 
 ### Handle dispatch failures with ON_FAILURE
 
-`ON_FAILURE` runs when the handoff fails before the target accepts it, for example when validation fails. It does not handle errors that the target raises later.
+`ON_FAILURE` runs when the handoff fails before the target accepts it, for example when validation fails. It does not handle errors that the target raises later. A route that the `WHEN` guard refuses does not run `ON_FAILURE`. The model receives the refusal instead.
 
 ```abl
   - TO: Billing_Agent
@@ -260,6 +264,7 @@ A bare quoted string such as `ON_FAILURE: "message"` fails to compile with `INVA
 4. Check the `handoff` trace event. Confirm the `PASS` values and the summary in its `context`. Check `seededFields` in `handoff_context_seed` to see which fields reached the target. Check `handoff_context_pass_resolved` only for values taken from the customer's message.
 5. Check the history. With `full`, the target sees the full parent transcript. With `summary_only`, the target sees the summary only.
 6. For `EXPECT_RETURN: true`, confirm the supervisor resumes and the mapped fields appear in the supervisor's session data.
+7. Find the `handoff_completed` event for each attempt. Check `outcome` (`success`, `rejected`, `blocked`, `error`, or `timeout`) and `durationMs`. A route that the `WHEN` guard refuses shows `blocked`. When `ON_FAILURE` runs, find the `handoff_failure` event for the `phase` and the `action`.
 
 ## Production readiness checklist
 
@@ -272,6 +277,7 @@ A bare quoted string such as `ON_FAILURE: "message"` fails to compile with `INVA
 - Critical routes have an `ON_FAILURE` policy.
 - Every field in an `ON_RETURN` `map` exists in the child.
 - Tests cover one message per category, one ambiguous message, and one message outside every category.
+- Monitoring covers `handoff_completed` events with the outcomes `error` and `timeout`.
 
 ## Common mistakes
 
@@ -298,11 +304,14 @@ A bare quoted string such as `ON_FAILURE: "message"` fails to compile with `INVA
 | The supervisor does not resume after the child. | `EXPECT_RETURN` is `false` or omitted. | `EXPECT_RETURN: true` on the entry. |
 | Mapped fields are missing after the return. | The `map` direction is reversed, or the child never sets the field. | `UNKNOWN_HANDOFF_RETURN_FIELD`, and the child's `GATHER` section. |
 | A refund question reaches the fallback, not the refund route. | The quoted route is below a route that already matched, or the phrase reads as an expression. | The entry order and the phrase wording. |
+| The compile fails with `WHEN is required`. | The `WHEN` holds only a `//` comment. | Write the condition before the comment. |
+| The customer leaves a returning child after one reply. | The classifier matched another supervisor route above the return threshold. | The `digression` event and `parentReturn` on the supervisor. |
 
 ## Related HowTos
 
 - How to design a supervisor that routes users to specialist agents
 - How to use EXECUTION.pipeline for agent routing, classification, and short-circuiting
+- How to configure EXECUTION.pipeline models, modes, thresholds, and fallbacks
 - How to handle messages that contain multiple user intents
 - How to route unclear or unsupported requests to a fallback agent
 - How to debug routing decisions in traces

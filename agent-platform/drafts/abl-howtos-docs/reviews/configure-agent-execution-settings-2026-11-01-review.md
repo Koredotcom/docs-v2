@@ -1,0 +1,239 @@
+# HowTo Review: configure-agent-execution-settings
+
+**Date:** 2026-11-01
+**Article:** `agent-platform/drafts/abl-howtos-docs/articles/configure-agent-execution-settings.md`
+**Topic:** 1.8 - How to configure model, timeout, and execution settings for an agent
+**Verdict:** update-needed
+
+## Proposed changes
+
+- Update "Model selection" for restricted projects. A model name that identifies one selected project model on several connections now resolves. The runtime uses the model's default binding or the saved connection priority. `DSL_MODEL_AMBIGUOUS` applies only when the name matches more than one distinct selected model.
+- Correct one claim. In a restricted project, a temperature or token limit set in the agent's Model Config tab overrides the same `EXECUTION` value. The published text said `EXECUTION` sampling values always apply.
+- Add one sentence to the `llm_timeout` row. The runtime also applies the server cap and the time left in the turn.
+- Add one verification step, one troubleshooting row, and a changed troubleshooting cause for the Model Config precedence and the model name match.
+- Keep every other section, setting, default, and example. All three `abl` blocks pass on 1.9.0.
+
+### Deletions
+
+| Deleted text | Reason |
+| ------------ | ------ |
+| "matches exactly one selected project model" | Replaced. 1.9.0 resolves one model across several connections. |
+| "Sampling values that you author in `EXECUTION` still apply to the selected model." | Kept and qualified. Model Config values win when both are set. |
+| "the model is not one selected project model" in a troubleshooting cell | Replaced with "matches no selected project model or more than one". |
+
+## Evidence
+
+| Claim | Current evidence | Impact |
+| ----- | ---------------- | ------ |
+| Parser keys and defaults unchanged | `parseExecutionConfig` body diff: only `pipeline.parentReturn` added. Helpers identical. `execution-coordinator.ts` no diff. | No settings table change. |
+| Timeouts, queue, concurrency, flow, reasoning limits unchanged | Constants and runtime policy files re-read on HEAD | No change. |
+| `conversation_history_window` has no effect | Harness: AST 12, IR absent | Mistake row stays. |
+| `fallback_model` has no runtime failover | Only `llm-wiring.ts` (declared context check) reads it | Statement stays. |
+| Multi-connection DSL model mapping | `findDslSelectedProjectBinding` in `model-resolution.ts` | Model selection paragraph updated. |
+| Model Config values applied after `EXECUTION` values in enforced projects | `model-resolution.ts` near line 3283 | Correction. |
+| Example validation | Evidence file, Example validation section | Blocks 1 to 3 pass, no warnings. |
+
+## Scores and gates
+
+Minimum final score 4. Gate result pass. Red-team verdict pass. All three personas ready. Details are in the evidence file.
+
+## Items for human review
+
+- Confirm that Model Config precedence over `EXECUTION` temperature and max tokens in enforced projects is intended.
+- Carried over: `fallback_model` has no runtime failover. `conversation_history_window` has no effect.
+- Decide whether to document `{{config.KEY}}` model templates and `EXECUTION.pipeline.parentReturn`.
+
+## Files to update after approval
+
+- `agent-platform/drafts/abl-howtos-docs/articles/configure-agent-execution-settings.md`
+- `agent-platform/drafts/abl-howtos-docs/evidence/configure-agent-execution-settings-2026-11-01-evidence.md`
+
+## Proposed article text
+
+The text below replaces the article in full.
+
+---
+
+# How to configure model, timeout, and execution settings for an agent
+
+Use `EXECUTION` when an agent needs an explicit model, response limits, timeout boundaries, concurrency behavior, thinking settings, voice settings, or execution pipeline configuration.
+
+## Concept
+
+`EXECUTION` is the agent-level configuration surface for runtime behavior. It does not decide whether a flow step is reasoning or deterministic. Step-level `REASONING` decides that. `EXECUTION` controls the environment the agent runs in: which model to use, how long model and tool calls can wait, how many iterations are allowed, and how concurrent messages are handled.
+
+Use explicit settings when the default behavior is not enough for cost, latency, safety, or operational predictability. Keep settings minimal for simple agents. Add a setting only when you can explain why the value exists and how you will test it.
+
+The parser reads top-level keys without regard to case or underscores. `maxQueueDepth` and `max_queue_depth` are the same key. `max_iterations` is an alias of `max_reasoning_iterations`.
+
+## Minimal working example
+
+```abl
+AGENT: Enterprise_Support_Agent
+GOAL: "Answer customer support questions with bounded model and execution behavior"
+PERSONA: "Concise support assistant"
+
+EXECUTION:
+  model: gpt-4.1-mini
+  temperature: 0.2
+  max_tokens: 1200
+  tool_timeout: 8000
+  llm_timeout: 15000
+  session_idle_timeout: 1800000
+  max_reasoning_iterations: 4
+  max_flow_iterations: 12
+  concurrency: preemptive
+  maxQueueDepth: 20
+  maxConcurrentMessages: 3
+  enable_thinking: true
+  thinking_budget: 1024
+  fallback_model: gpt-4.1-mini
+```
+
+Replace the model names with models that your project can use. This agent has no `FLOW`, so `max_flow_iterations` has no effect here. Read the note on that setting before you copy the value to an agent with a flow.
+
+## How it works
+
+The compiler lowers `EXECUTION` into the compiled agent. The runtime reads the compiled values to bound model calls, tool calls, loops, and message handling. Time values use milliseconds.
+
+| Setting | Use it for | Default and limits |
+| ------- | ---------- | ------------------ |
+| `model` | Primary model for the agent | Project model selection when unset. See [Model selection](#model-selection). |
+| `temperature`, `top_p`, `top_k`, `frequency_penalty`, `presence_penalty`, `seed`, `stop_sequences`, `verbosity` | Sampling and output style | Model default when unset. `top_p` must be 0 to 1. `top_k` and `seed` must be whole numbers. `top_k` must be 0 or more. A bad value is a parse error (`E564`). |
+| `max_tokens` | Output budget | Model default when unset. |
+| `reasoning_effort` | Reasoning depth for models that support it | One of `none`, `minimal`, `low`, `medium`, `high`, `xhigh`, `max`. Other values are ignored. |
+| `enable_thinking`, `thinking_budget` | Extended thinking for models that support it | Off when unset. |
+| `tool_timeout` | Maximum wait for a tool call | 30000. A timeout set on the tool itself wins. The maximum is 120000. |
+| `llm_timeout` | Maximum wait for a model call | 120000 when unset. Allowed range is 1 to 120000. A value outside the range raises a compile warning and the runtime uses 120000. The runtime also applies the server cap and the time left in the turn, so the effective wait can be shorter. |
+| `session_idle_timeout` | Idle session boundary | 1800000 (30 minutes). |
+| `max_reasoning_iterations` | Preventing reasoning and tool loops in one turn | 10. |
+| `max_flow_iterations` | Preventing flow loops | 1500. Counts flow step transitions across all turns of the session. |
+| `concurrency` | How the agent handles a new message while it is busy | `serial` when unset. Other values are `preemptive` and `parallel`. An unknown value is dropped without a message. |
+| `max_queue_depth` | Queue size when messages wait | 10. A full queue fails the new message with `QUEUE_FULL`. |
+| `max_concurrent_messages` | Parallel executions per session | 5 in the runtime. The public reference example uses 3, so set a value explicitly. Applies to `parallel` only. |
+| `fallback_model` | Backup model name | Compiled into the agent. See the note below. |
+| `models` | Different models for different operations | See [Per-operation models](#per-operation-models). |
+| `compaction_threshold` | Context usage ratio (0 to 1) that triggers compaction | Platform default when unset. |
+| `token_budget` | Cumulative model token budget for one debug session | Optional. |
+| `voice`, `voice_latency_target` | Voice settings and latency target | See [Voice agent](#voice-agent). |
+| `pipeline` | Routing, classification, and short-circuiting | Covered in a separate article. |
+
+`escalation_recheck_after_tools`, `guardrail_builtins`, and `set_expression_failure` are opt-in switches for escalation timing, guardrail expression variables, and failed `SET` expressions. The first two accept `true` or `false`. `set_expression_failure` accepts `keep_text` or `unset`. Any other value raises a warning.
+
+`max_flow_iterations` counts every flow step transition in the session, and the count carries over between customer turns. When the count reaches the limit, the next transition ends the flow with `FLOW_ITERATION_LIMIT_EXHAUSTED` and the customer sees a generic failure message. A low value such as 12 ends a long conversation early. Leave this setting unset unless you need a hard ceiling, and set it well above the longest expected journey.
+
+`fallback_model` compiles into the agent, but no runtime code in this release switches to it after a model error. Do not rely on it for failover. Plan model failover at the project level and test it.
+
+### Model selection
+
+In a project without model restrictions, the runtime picks the model in this order: a deployment model override, then `models` and `model` from `EXECUTION`, then the agent's Model Config tab, then the project and workspace defaults.
+
+When a project restricts models to a selected set, the runtime uses `EXECUTION.model` only if it identifies exactly one selected project model. If the project selected that model on several connections, the runtime uses the model's default binding, or the first connection in the saved priority order that is ready to use. If the name matches no selected model, or matches more than one distinct selected model, the runtime runs the project's selected model instead. The platform records a `model_access:dsl_model_fallback` event with the reason `DSL_MODEL_NOT_SELECTED`, `DSL_MODEL_AMBIGUOUS`, or `DSL_MODEL_BINDING_UNAVAILABLE`. A model chosen for the agent in the Model Config tab takes priority over `EXECUTION.model`. Sampling values that you author in `EXECUTION` still apply to the selected model. If the Model Config tab sets the same value, such as temperature or maximum tokens, the Model Config value wins.
+
+## Common variations
+
+### Low-latency support agent
+
+Use a smaller model, a low token budget, a short `llm_timeout`, and a short `tool_timeout` when the agent handles high-volume support questions.
+
+### Careful enterprise agent
+
+Use lower temperature, bounded reasoning iterations, and explicit timeout values when the agent answers regulated, contractual, or account-related questions.
+
+### Per-operation models
+
+Use the `models` block to send cheap operations to a smaller model. Supported operation names are `extraction`, `validation`, `tool_selection`, `response_gen`, `summarization`, `reasoning`, `coordination`, and `realtime_voice`. An operation without an entry uses `model`.
+
+```abl
+AGENT: Claims_Review_Agent
+GOAL: "Answer insurance claim questions with predictable model behavior"
+PERSONA: "Precise claims assistant"
+
+EXECUTION:
+  model: gpt-4.1
+  temperature: 0
+  reasoning_effort: low
+  max_reasoning_iterations: 6
+  models:
+    extraction: gpt-4.1-mini
+    summarization: gpt-4.1-mini
+  compaction_threshold: 0.8
+```
+
+### Voice agent
+
+Use a stricter `llm_timeout`, a `voice_latency_target`, and a `voice` block for voice or realtime agents. Test the experience in the voice channel, because a setting that works in chat can feel slow on a call.
+
+```abl
+AGENT: Voice_Billing_Agent
+GOAL: "Answer billing questions on phone calls"
+PERSONA: "Calm phone billing assistant"
+
+EXECUTION:
+  llm_timeout: 8000
+  voice_latency_target: 800
+  voice:
+    provider: elevenlabs
+    speed: 0.95
+```
+
+### Agent execution pipeline
+
+Use nested `EXECUTION.pipeline` only when you need agent routing, classification, short-circuiting, tool filtering, keyword veto, or intent bridging. That is a separate decision from choosing a base model or timeout.
+
+## Verification
+
+- Validate the agent. Confirm that no `E564`, `E103`, `E560`, or `AGENT_LLM_TIMEOUT_*` messages appear.
+- Test a normal model response and a slow model response against `llm_timeout`.
+- Test a normal tool call and a slow tool call against `tool_timeout`. If the tool sets its own timeout, test that value.
+- Confirm in the trace which model ran. In a restricted project, check for a `model_access:dsl_model_fallback` event.
+- In a project where the agent also has Model Config values, compare the temperature and token limit in the trace with your `EXECUTION` values.
+- Send more messages than `max_queue_depth` while the agent is busy. Confirm that the extra message fails with `QUEUE_FULL` in `serial` mode.
+- Load test concurrency settings before you use `parallel` or high queue depths in production.
+- For an agent with a flow, run the longest journey end to end. Confirm that `FLOW_ITERATION_LIMIT_EXHAUSTED` does not appear.
+
+## Production readiness checklist
+
+- Every non-default setting has an owner and a reason.
+- Timeout values match the channel experience and downstream service limits.
+- `llm_timeout` is within 1 to 120000.
+- Token limits are high enough for expected answers and low enough for cost control.
+- Iteration limits prevent loops without cutting off valid flows. `max_flow_iterations` is above the longest journey across all turns.
+- Model names exist in the project, or the project selection is acceptable as the actual model.
+- Failover is planned and tested outside `fallback_model`.
+- Voice settings are tested with real turn-taking and latency expectations.
+
+## Common mistakes
+
+| Mistake | Why it happens | How to avoid it |
+| ------- | -------------- | --------------- |
+| Using top-level `MODEL:` | It looks natural as a section | Put `model` under `EXECUTION` |
+| Using `MODE:` for reasoning or scripted behavior | Older patterns used agent-level mode | Use step-level `REASONING` in `FLOW` |
+| Setting `conversation_history_window` | Older examples show it | Remove it. The compiler does not carry it into the compiled agent, so it has no effect. |
+| Setting a low `max_flow_iterations` | It looks like a per-turn limit | Remember that it counts transitions across the whole session |
+| Relying on `fallback_model` for failover | The name suggests automatic failover | Plan and test failover outside this setting |
+| Setting timeouts too high | It avoids visible failures in testing | Match timeouts to user experience and service limits |
+| Misspelling a `concurrency` value | The parser drops unknown values without a message | Use `serial`, `preemptive`, or `parallel` |
+| Copying settings across agents | It is faster during setup | Tune by agent role, channel, and risk |
+
+## Troubleshooting
+
+| Symptom | Likely cause | What to check |
+| ------- | ------------ | ------------- |
+| `E103` unknown section `MODEL:` | Model is not a top-level section | Move it to `EXECUTION.model` |
+| `E560` `MODE` is no longer supported | `MODE:` is removed | Delete the line and use `REASONING` on flow steps |
+| `E564` invalid `EXECUTION` value | A sampling value is out of range | Check `top_p`, `top_k`, and `seed` |
+| Compile warning about `llm_timeout` | The value is 0, negative, or above 120000 | Set a value from 1 to 120000 |
+| Agent runs a different model than `EXECUTION.model` | The project restricts models and the model name matches no selected project model or more than one | Look for `model_access:dsl_model_fallback` and check the project model selection and the Model Config tab |
+| Agent is slow under load | Timeout or concurrency settings are too loose | Check traces, queue depth, and downstream service latency |
+| New messages fail with `QUEUE_FULL` | The queue reached `max_queue_depth` | Raise the limit or change `concurrency` |
+| Agent stops mid-flow with a generic failure message | `max_flow_iterations` reached | Check for `FLOW_ITERATION_LIMIT_EXHAUSTED` and raise or remove the limit |
+| Agent stops after a few tool calls | `max_reasoning_iterations` is too low | Inspect the iteration count in the trace |
+| Temperature or token limit differs from `EXECUTION` | The agent's Model Config tab sets the same value in a restricted project | Compare both sources and remove one |
+| Costs are higher than expected | Model, token, or thinking settings are too large | Review `model`, `models`, `max_tokens`, and `thinking_budget` |
+
+## Related HowTos
+
+- How to use EXECUTION.pipeline for agent routing, classification, and short-circuiting
+- How to configure EXECUTION.pipeline models, modes, thresholds, and fallbacks
+- How to combine reasoning steps with deterministic FLOW steps

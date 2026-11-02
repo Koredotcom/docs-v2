@@ -17,6 +17,8 @@ The runtime resolves the effective configuration in this order:
 2. The agent can opt out with `enabled: false`. An agent opt-out wins over a project that enables the pipeline.
 3. For each field, the agent value wins, then the project value, then the default.
 
+The `parentReturn` settings follow the same order. The runtime reads the agent value from the supervisor, not from the specialist.
+
 Two settings exist only at the project level: the pipeline model and the master switch. Set them in Studio under the project Runtime Config, in the Reasoning Pipeline section.
 
 ### Defaults
@@ -36,8 +38,10 @@ Two settings exist only at the project level: the pipeline model and the master 
 | `intentBridge.guidedThreshold` | `0.5` |
 | `intentBridge.outOfScopeDecline` | `true` |
 | `intentBridge.multiIntentSignal` | `true` |
+| `parentReturn.minConfidence` | Not set. The runtime uses the intent threshold of the supervisor, `0.5` by default. |
+| `parentReturn.ignoreAmbiguous` | `false` |
 
-The project Runtime Config accepts thresholds from `0` to `1`, `maxTools` from `1` to `100`, and up to 500 veto keywords of 200 characters each.
+The project Runtime Config accepts thresholds from `0` to `1`, `maxTools` from `1` to `100`, and up to 500 veto keywords of 200 characters each. The Studio **Max Tools** field accepts values up to `50`.
 
 ### Pipeline model
 
@@ -125,6 +129,9 @@ EXECUTION:
       guidedThreshold: 0.6
       outOfScopeDecline: false
       multiIntentSignal: true
+    parentReturn:
+      minConfidence: 0.9
+      ignoreAmbiguous: true
 
 HANDOFF:
   - TO: Claims_Agent
@@ -156,6 +163,8 @@ GOAL: "Handle escalations, complaints, appeals, and risk-sensitive requests"
 PERSONA: "Escalation specialist"
 ```
 
+The `parentReturn` block makes the supervisor return the caller from an active specialist only at confidence `0.9` or higher. It also keeps ambiguous replies with the specialist.
+
 The veto words `appeal`, `fraud`, and `legal` stop short-circuiting to `Escalation_Agent`. Those messages go to guided reasoning. The runtime never hides escalation handoff tools in guided mode, so the supervisor can still choose the escalation route.
 
 ## How it works
@@ -179,6 +188,16 @@ The veto words `appeal`, `fraud`, and `legal` stop short-circuiting to `Escalati
 
 `keywordVeto.keywords` stops short-circuiting when a word appears in the message. The match is by whole word and ignores case. The runtime also adds the words from the names of the agent tools, split on underscores. Words shorter than three characters are ignored. Handoff and delegate tools add no words.
 
+### Return threshold
+
+The `parentReturn` block applies while a specialist is active. The classifier of the supervisor checks each reply. The runtime returns the caller to the supervisor when the reply matches another route at or above the return threshold.
+
+- `parentReturn.minConfidence` sets that threshold. The order is the `parentReturn` value in the `EXECUTION.pipeline` block of the supervisor, then the project value, then the intent threshold of the supervisor.
+- `parentReturn.ignoreAmbiguous: true` keeps the specialist in charge when the classifier marks the result as ambiguous.
+- The pipeline must be enabled for the supervisor. Without it, this threshold does not apply.
+
+Set the project values in Studio under the project Runtime Config, in the Reasoning Pipeline section. Select **Custom Return Threshold** to set the confidence. Select **Keep Ambiguous Replies With Specialist** for `ignoreAmbiguous`. A lower threshold returns callers more often. A higher threshold keeps them with the specialist longer.
+
 ### Tool filter
 
 The tool filter asks the pipeline model for the two to `maxTools` most relevant tools for the message.
@@ -186,6 +205,7 @@ The tool filter asks the pipeline model for the two to `maxTools` most relevant 
 - It filters only the domain tools of the agent. System, handoff, and delegate tools always stay available.
 - It skips the model call when the agent has no domain tools.
 - It keeps the full tool set when the model call fails, times out after 10 seconds, returns an unreadable answer, selects fewer than two tools, or the prompt exceeds its size budget.
+- It also keeps the full domain tool set when the selection is empty or holds no domain tool. A message such as "yes" can read as needing no tools, so the runtime does not remove the data tools of the agent. The `pipeline_filter` event shows `fellBack` as `true` and the reason `no_domain_tool_selected`.
 
 ### Fallbacks
 
@@ -205,6 +225,7 @@ Since none of the `HANDOFF` entries in the full configuration example declare `H
 | Sensitive-topic routing | Legal, fraud, cancellation, refund, or complaint paths need extra review. | `keywordVeto.keywords` and an escalation route. |
 | Out-of-scope decline | The agent must refuse unrelated requests without a reasoning turn. | `outOfScopeDecline: true`, `LIMITATIONS`, tuned `programmaticThreshold`. |
 | Agent opt-out | The project enables the pipeline but one agent is not ready. | `enabled: false` in the agent `pipeline` block. |
+| Control digressions from a specialist | Callers leave specialists too often or too rarely. | `parentReturn.minConfidence` and `parentReturn.ignoreAmbiguous` on the supervisor. |
 | Tool filter only | The agent has many tools and no routes. | `toolFilter.enabled: true`, tuned `maxTools`. The classifier does not run without categories. |
 
 ## Configuration checklist
@@ -217,6 +238,7 @@ Since none of the `HANDOFF` entries in the full configuration example declare `H
 | `guidedThreshold` | Middle confidence range | You want classifier help without full automation. |
 | `keywordVeto.keywords` | Sensitive and side-effect terms | Compliance, refund, legal, fraud, or cancellation risk grows. |
 | `toolFilter.maxTools` | Small enough to reduce noise | Tool lists become large or overlapping. |
+| `parentReturn.minConfidence` | The default of the supervisor | Callers leave specialists on weak matches, or stay when they ask for another topic. |
 
 ## Verification
 
@@ -226,6 +248,7 @@ Since none of the `HANDOFF` entries in the full configuration example declare `H
 - Send a message that scores between `guidedThreshold` and the short-circuit threshold. Confirm a guided `pipeline_tiered_action` event.
 - Send a message with each veto word. Confirm there is no short-circuit.
 - Send an unrelated message with `outOfScopeDecline` on. Confirm the `decline_out_of_scope` action.
+- While a specialist is active, send a reply for another route. Confirm that a `digression` event with the `return_to_parent` action appears only at or above the return threshold. Check `classifierThreshold` and `classifierThresholdSource` in the event.
 - Check `pipeline_classify` for the model, categories, and confidence. Check `pipeline_filter` for the filtered tools and the `fellBack` value.
 
 ## Production readiness checklist
@@ -248,6 +271,7 @@ Since none of the `HANDOFF` entries in the full configuration example declare `H
 | Using keyword veto as a routing rule | Veto only blocks short-circuiting | Keep routing logic in `HANDOFF` conditions and categories. |
 | Assuming agent opt-in is enough | The project gate decides | Verify that the project enables the pipeline. |
 | Routing with quoted plain-language `WHEN` text | The text reads like a rule | Use `INTENTS` and `intent.category` conditions for pipeline routes. |
+| Setting `parentReturn` on a specialist | The block looks like a specialist setting | Set `parentReturn` on the supervisor. The runtime reads the supervisor block. |
 | Filtering tools too aggressively | Smaller tool lists look cleaner | Test recovery paths and edge cases. |
 
 ## Troubleshooting
@@ -260,5 +284,6 @@ Since none of the `HANDOFF` entries in the full configuration example declare `H
 | Direct routing happens too often | The short-circuit threshold is low or veto words are missing | Raise `shortCircuit.confidenceThreshold` and add sensitive veto words. |
 | Common word blocks short-circuiting | A tool name contains the word | Rename the tool or accept the veto. |
 | Tool choice gets worse | `maxTools` is too small | Increase `maxTools` or improve tool descriptions. |
-| Tool filter keeps every tool | The filter fell back to the full set | Check the `fellBack` value in `pipeline_filter`. |
+| Tool filter keeps every tool | The filter fell back to the full set, or it selected no domain tool | Check the `fellBack` value and the `reason` in `pipeline_filter`. |
+| Callers return to the supervisor too often or too rarely | The return threshold does not fit the route mix | Check `parentReturn.minConfidence` and the `digression` event. |
 | Pipeline model does not apply | The project selects a model that is not available to it | Check the project Runtime Config and model access. |

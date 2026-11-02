@@ -15,8 +15,8 @@ The user sees the welcome only when both the start type and the channel allow it
 
 | Start type  | How the session starts                                                                                    | What the user sees                                                                                  |
 | ----------- | --------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------- |
-| Eager start | The session starts before the user types. Web SDK and web debug sessions start when the client connects.  | The welcome.                                                                                        |
-| Lazy start  | The user's first message creates the session. HTTP chat works this way.                                   | No welcome. `ON_START` still runs `SET` and `CALL`, and the agent answers the first message.        |
+| Eager start | The session starts before the user types. Web debug sessions start when the client connects. Web SDK sessions start the same way unless the SDK supplies an initial message. | The welcome. |
+| Lazy start  | The user's first message creates the session. HTTP chat and LiveKit voice work this way. A Web SDK session with an initial message also starts lazily. | No welcome. `ON_START` still runs `SET` and `CALL`, and the agent answers the first message. |
 
 | Channel contract                      | Channel types                                                                                                                                                                                                  |
 | ------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -26,9 +26,11 @@ The user sees the welcome only when both the start type and the channel allow it
 
 A channel that suppresses the welcome still runs the `SET` and `CALL` actions in `ON_START`. The trace shows a `dsl_on_start_skipped` event.
 
+On the Web SDK, an active blocking authorization gate delays `ON_START` until the user authorizes.
+
 If the agent has a `FLOW`, the kind of welcome decides what runs next:
 
-- A top-level `RESPOND` is a prelude. The runtime sends it, then runs the entry step in the same start.
+- A top-level `RESPOND` is a prelude. The runtime sends it, then runs the entry step in the same start. This also applies when `BRANCHES` has no match and the top-level `RESPOND` runs.
 - A welcome chosen by `BRANCHES` owns the startup turn. The entry step does not run during startup.
 
 Keep the entry step waiting for the user. A step that only responds and then moves to `COMPLETE` ends the session at startup. Use a `GATHER` step to ask the first question.
@@ -70,10 +72,11 @@ confirm_topic:
 The runtime does these steps when it starts the session:
 
 1. Loads memory and resolves the interaction language.
-2. Runs the `SET` and `CALL` actions in `ON_START`.
-3. Renders the welcome and sends it when the start type and channel allow it.
-4. Writes the welcome to the assistant history, so later turns can see what the user already read.
-5. Runs the entry step.
+2. Runs the `before_agent` hook, if the agent defines one.
+3. Runs the `SET` and `CALL` actions in `ON_START`.
+4. Renders the welcome and sends it when the start type and channel allow it.
+5. Writes the welcome to the assistant history, so later turns can see what the user already read.
+6. Runs the entry step, unless a branch welcome owns the startup turn.
 
 The entry step asks the first question. Do not repeat the welcome in it.
 
@@ -159,6 +162,7 @@ ON_START:
 ## Production readiness checklist
 
 - Test the welcome on every channel you deploy. Use the channel table to know which channels suppress it.
+- For the Web SDK, test one session with an initial message and one without. Only the session without it shows the welcome.
 - Keep the welcome short enough for the smallest channel.
 - Include a next step, not only a greeting.
 - Keep the entry step waiting for input with `GATHER`, or use an agent with no flow.
@@ -180,7 +184,7 @@ ON_START:
 
 | Symptom                                         | Likely cause                                                  | What to check                                                                                  |
 | ----------------------------------------------- | ------------------------------------------------------------- | ---------------------------------------------------------------------------------------------- |
-| The welcome does not appear                     | The channel suppresses it, or the session started lazily.     | Look for `dsl_on_start_skipped` in the trace. Check the channel type against the channel table. |
+| The welcome does not appear                     | The channel suppresses it, or the session started lazily (HTTP chat, LiveKit, or a Web SDK initial message). | Look for `dsl_on_start_skipped` in the trace. Check the channel type against the channel table. |
 | The session ends right after the welcome        | The entry step moves straight to `COMPLETE`.                  | Replace the entry step with a `GATHER` step.                                                   |
 | The user sees the greeting twice                | The entry step repeats the welcome.                           | Change the entry step to ask a question.                                                       |
 | The entry step does not run at startup          | A branch welcome owns the startup turn.                       | Check whether a `BRANCHES` entry selected the welcome. Look for `dsl_on_start_branch` in the trace. |
