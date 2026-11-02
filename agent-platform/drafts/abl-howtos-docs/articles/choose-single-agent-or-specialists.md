@@ -140,7 +140,7 @@ ESCALATE:
 
 `HANDOFF` is the executable routing surface. The platform ignores `AGENTS:`. It does not route and does not check the names, so keep it only as a readable roster. Each `HANDOFF` entry becomes a routing action the supervisor model can choose. The `WHEN` rule is checked before the transfer.
 
-Each `PASS` field becomes a typed input on that routing action. The model fills it from what the customer already said. Each specialist also gathers `customer_id`, so a missing value is requested again. `Live_Agent` is a machine agent. It reaches a person through `ESCALATE`. Escalation reaches a person only when the project has a human-agent connection and the `ESCALATE` block has a `routing` block with `connection`, `queue`, or `skills`. See the [ESCALATE reference](/agent-platform/abl/reference/multi-agent-and-supervisor#escalate).
+Each `PASS` field becomes an input on that routing action. The type comes from a `MEMORY.session` declaration of the same name and defaults to `string`. The model fills the input from what the customer already said. A `WHEN` rule that reads `intent.category` also adds an `intent` input. The model sets its `category` to the intent that justifies the route. Each specialist also gathers `customer_id`, so a missing value is requested again. `Live_Agent` is a machine agent. It reaches a person through `ESCALATE`. Escalation reaches a person only when the project has a human-agent connection and the `ESCALATE` block has a `routing` block with `connection`, `queue`, or `skills`. See the [ESCALATE reference](/agent-platform/abl/reference/multi-agent-and-supervisor#escalate).
 
 If a `HANDOFF` entry omits `HISTORY`, the specialist receives the full conversation history. A project-level coordination default can change this value. Set `HISTORY` on the entry when one route needs `summary_only`, `none`, `auto`, or the last few messages.
 
@@ -148,7 +148,7 @@ If a `HANDOFF` entry omits `HISTORY`, the specialist receives the full conversat
 
 Use `HANDOFF` when the target agent should own the next part of the conversation, including when it must ask the customer questions.
 
-Use `RETURN: true` when the specialist should do bounded work and return control to the supervisor. The specialist returns when its `COMPLETE` rule matches, or when it uses the built-in return action for a request outside its scope. Use `RETURN: false` when the target agent or human channel should keep ownership.
+Use `RETURN: true` when the specialist should do bounded work and return control to the supervisor. The specialist returns when its `COMPLETE` rule matches, or when it uses the built-in return action for a request outside its scope. Use `RETURN: false` when the target agent or human channel should keep ownership. Add an `ON_RETURN` block with `action: continue` or `action: resume_intent` to a `RETURN: true` route to choose what the supervisor does after the return. An unknown action runs `continue`.
 
 ## When to use delegate
 
@@ -229,7 +229,7 @@ Delegate settings to know:
 2. Send an account access utterance and confirm the trace shows `handoff_to_Account_Support_Agent` and that ownership moves to `Account_Support_Agent`.
 3. Send an order-status utterance and confirm ownership moves to `Order_Status_Agent`.
 4. Send "I need a person" and confirm the route reaches `Live_Agent` and that the model escalates.
-5. Check the `handoff` trace event. Confirm `customer_id` appears in its `context` when the customer stated it. Check `seededFields` in `handoff_context_seed` to see which `PASS` fields reached the specialist.
+5. Check the `handoff` trace event. Confirm `customer_id` appears in its `context` when the customer stated it. Check `seededFields` in `handoff_context_seed` to see which `PASS` fields reached the specialist. Check the `handoff_completed` event for the `outcome` (`success`, `rejected`, `blocked`, `error`, or `timeout`) and `durationMs`.
 6. For the delegate example, send "What would it cost to change this booking?" and confirm the trace shows `delegate_start` and `delegate_complete`, the parent stays active, and the reply includes the fee.
 7. Force a delegate failure in a test project, for example with `TIMEOUT: 1ms`. Confirm the customer sees the `ON_FAILURE` text.
 

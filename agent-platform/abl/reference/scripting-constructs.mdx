@@ -97,18 +97,19 @@ Learn more: [Per-step REASONING toggle](/agent-platform/abl-reference/flow#per-s
 
 ### WHEN
 
-`WHEN` is an entry guard. The step runs only when its condition is true.
+A step-level `WHEN:` is not supported. It has no effect, the step runs whenever the flow reaches it, and the compiler reports a warning. To choose a path, route from a decision step with `ON_RESULT`:
 
 ```yaml
-international_details:
+route_transfer_details:
   REASONING: false
-  WHEN: transfer_type == "international"
-  GATHER:
-    - swift_code: required
-  THEN: validate_transfer
+  ON_RESULT:
+    - IF: transfer_type == "international"
+      THEN: international_details
+    - ELSE:
+      THEN: domestic_details
 ```
 
-Learn more: [Entry guards](/agent-platform/abl-reference/flow#entry-guards).
+Learn more: [Choosing the next step](/agent-platform/abl-reference/flow#choosing-the-next-step).
 
 ### MAX_ATTEMPTS and ON_EXHAUSTED
 
@@ -350,7 +351,7 @@ Learn more: [ON_RESULT](/agent-platform/abl-reference/flow#on_result).
 
 ### CHECK
 
-`CHECK` evaluates a deterministic boolean guard after state has been gathered or a tool has returned.
+`CHECK` evaluates a deterministic boolean guard when the step is entered. It runs after the step's `CLEAR`, `SET`, `LOG`, and `DO`, and before its `GATHER` and `CALL`, so it checks values that already exist when the step starts. To decide on the step's own answer or tool result, use `ON_RESULT`.
 
 ```yaml
 check_limits:
@@ -523,7 +524,6 @@ Use `WHEN`, `CHECK`, `ON_INPUT`, and `ON_RESULT` as the equivalent of guarded st
 ```yaml
 approve:
   REASONING: false
-  WHEN: request_status == "ready"
   CHECK: reviewer_id != null AND amount <= approval_limit
   ON_FAIL: approval_required
   THEN: submit
@@ -700,11 +700,12 @@ FLOW:
       - raw_amount:
           TYPE: string
           REQUIRED: true
-    SET:
-      amount = TO_NUMBER(REPLACE(TRIM(raw_amount), "$", ""))
-    CHECK: amount > 0
-    ON_FAIL: invalid_amount
-    THEN: load_balance
+    ON_RESULT:
+      - IF: TO_NUMBER(REPLACE(TRIM(raw_amount), "$", "")) > 0
+        SET: amount = TO_NUMBER(REPLACE(TRIM(raw_amount), "$", ""))
+        THEN: load_balance
+      - ELSE:
+        THEN: invalid_amount
 
   load_balance:
     REASONING: false
@@ -712,9 +713,11 @@ FLOW:
       WITH:
         account_id: account_id
       AS: balanceResult
-    CHECK: amount <= balanceResult.available
-    ON_FAIL: insufficient_funds
-    THEN: confirm
+    ON_RESULT:
+      - IF: amount <= balanceResult.available
+        THEN: confirm
+      - ELSE:
+        THEN: insufficient_funds
 
   confirm:
     REASONING: false

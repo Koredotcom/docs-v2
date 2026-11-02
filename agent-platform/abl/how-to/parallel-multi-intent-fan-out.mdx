@@ -1,0 +1,273 @@
+---
+title: How to run multiple agents in parallel with multi-intent fan-out
+sidebarTitle: Run agents in parallel
+---
+
+<Badge icon="arrow-left" color="gray">[Back to how-to guides](/agent-platform/abl/how-to/overview#handoff-delegate-escalate-and-complete)</Badge>
+
+Use this pattern when one customer message needs answers from two or more independent specialists, and you want them to run at the same time.
+
+## Concept
+
+ABL has no `PARALLEL` setting on `DELEGATE`. A `DELEGATE:` entry always runs one sub-agent to completion before the caller continues. See [Call a sub-agent and map its result back](/agent-platform/abl/how-to/delegate-and-map-result).
+
+Parallel work comes from multi-intent fan-out. When a supervisor receives several independent requests in one turn, the platform can start one branch per request, run the branches at the same time, and merge the answers into one reply. The `DELEGATE:` entries are the targets and the guards. The `MULTI_INTENT:` section decides how the platform runs them.
+
+Choose parallel only when all of these are true:
+
+- The requests are independent. One answer does not need another.
+- Each specialist answers without asking the customer a question.
+- You accept one merged reply and not per-specialist control of the result.
+
+If a later request depends on an earlier one, use the `sequential` strategy. The [Handle multiple intents](/agent-platform/abl/how-to/handle-multiple-intents) article covers every strategy. This article covers what is specific to delegate targets.
+
+Know three differences from a single delegate:
+
+| Behavior | Single `DELEGATE` call | Parallel fan-out branch |
+| -------- | ---------------------- | ----------------------- |
+| Result into caller variables | `RETURNS` and `USE_RESULT` apply | Not applied. The model reads the merged summary. |
+| Failure policy | `ON_FAILURE` runs | The branch is marked failed. The other branches continue. |
+| Timeout | `TIMEOUT` on the entry | One runtime timeout for every branch |
+
+## Minimal working example
+
+A supervisor checks refund eligibility and shipping status for one order at the same time. The `check_refund_policy` and `get_shipping_status` tools are project-local assumptions: bind them in Project Tools. `Refund_Checker` is defined in [Call a sub-agent and map its result back](/agent-platform/abl/how-to/delegate-and-map-result). Both specialists are listed here for completeness.
+
+```yaml expandable=true
+SUPERVISOR: Care_Supervisor
+GOAL: "Answer account questions that need a refund check and a shipping check"
+PERSONA: "Concise care supervisor"
+
+MULTI_INTENT:
+  enabled: true
+  strategy: parallel
+  unknown_relationship_strategy: parallel
+
+MEMORY:
+  session:
+    - order_id
+    - refund_eligible
+    - shipping_status
+
+GATHER:
+  order_id:
+    prompt: "What is your order number?"
+    type: string
+    required: false
+
+DELEGATE:
+  - TO: Refund_Checker
+    WHEN: order_id IS SET
+    PURPOSE: "Check refund eligibility for the order"
+    INPUT:
+      order_id: order_id
+    RETURNS:
+      eligible: refund_eligible
+    TIMEOUT: 20s
+    ON_FAILURE: CONTINUE
+  - TO: Shipping_Checker
+    WHEN: order_id IS SET
+    PURPOSE: "Check shipping status for the order"
+    INPUT:
+      order_id: order_id
+    RETURNS:
+      status: shipping_status
+    TIMEOUT: 20s
+    ON_FAILURE: CONTINUE
+```
+
+```yaml expandable=true
+AGENT: Refund_Checker
+GOAL: "Decide refund eligibility for one order and return the decision"
+PERSONA: "Precise refund policy checker"
+
+TOOLS:
+  check_refund_policy(order_id: string) -> {eligible: boolean, reason: string}
+    description: "Look up the refund policy decision for an order"
+    parameters:
+      order_id:
+        type: string
+        description: "Order number to check"
+        required: true
+    confirm: never
+
+GATHER:
+  order_id:
+    prompt: "Order number"
+    type: string
+    required: true
+
+MEMORY:
+  session:
+    - eligible
+    - reason
+
+FLOW:
+  entry_point: check_policy
+
+  check_policy:
+    REASONING: false
+    CALL: check_refund_policy
+      WITH:
+        order_id: "{{order_id}}"
+      AS: policy
+    ON_SUCCESS:
+      - ELSE:
+        SET:
+          eligible = policy.eligible
+          reason = policy.reason
+        THEN: COMPLETE
+    ON_FAIL:
+      RESPOND: "The refund policy service is unavailable."
+      THEN: COMPLETE
+```
+
+```yaml expandable=true
+AGENT: Shipping_Checker
+GOAL: "Return the shipping status of one order"
+PERSONA: "Precise shipping status checker"
+
+TOOLS:
+  get_shipping_status(order_id: string) -> {status: string}
+    description: "Look up the shipping status of an order"
+    parameters:
+      order_id:
+        type: string
+        description: "Order number to check"
+        required: true
+    confirm: never
+
+GATHER:
+  order_id:
+    prompt: "Order number"
+    type: string
+    required: true
+
+MEMORY:
+  session:
+    - status
+
+FLOW:
+  entry_point: look_up
+
+  look_up:
+    REASONING: false
+    CALL: get_shipping_status
+      WITH:
+        order_id: "{{order_id}}"
+      AS: ship
+    ON_SUCCESS:
+      - ELSE:
+        SET:
+          status = ship.status
+        THEN: COMPLETE
+    ON_FAIL:
+      RESPOND: "Shipping data is unavailable."
+      THEN: COMPLETE
+```
+
+Variable sources: `order_id` comes from the supervisor `GATHER`. `INPUT` copies it to each specialist. Each specialist sets its own result in its flow. Validate the three files together.
+
+Send "Is order 1042 refundable, and where is it?" after the customer gives the order number. The supervisor model calls both delegate tools in one turn. The platform runs both specialists at the same time and the supervisor writes one answer from both results.
+
+## How it works
+
+1. The supervisor model makes two or more routing calls in one turn. Each call is a `delegate_to_<Agent>` or `handoff_to_<Agent>` tool. Each call must pass its own `WHEN` and `ENABLED_WHEN`.
+2. The platform rates how the requests relate: independent, dependent, or ambiguous. With `strategy: parallel`, independent requests fan out. Dependent requests run in order. Ambiguous requests ask the customer to choose. `unknown_relationship_strategy` sets the assumption for several routing calls in one turn. Its default is `parallel`.
+3. The platform starts one isolated branch for each target and sends the request text, the target context, and session metadata.
+4. The branches run at the same time. A runtime limit caps concurrent model calls across all branches. The platform default is 10.
+5. The platform waits for all branches. It returns one summary to the supervisor model with a success or failure line for each target. The model writes one reply.
+6. The platform removes the branch threads and returns to the supervisor.
+
+A supervisor with `BEHAVIOR` role `router` makes one routing call per turn and does not fan out. Remove the role, or use `orchestrator`.
+
+### Concurrency, size, and timeouts
+
+- Each branch has the general runtime timeout, 30 seconds by default. `TIMEOUT` on a `DELEGATE:` entry does not apply to a fan-out branch.
+- The whole fan-out has twice that limit. A branch that runs out of time is marked failed.
+- Duplicate targets in one fan-out merge into one branch.
+- A fan-out cannot start inside another fan-out branch. A second fan-out in the same session while one runs fails with "Fan-out already in progress for this session".
+- The classifier path keeps at most `max_intents` requests (default 3, range 1 to 10) and drops those below `confidence_threshold` (default 0.6). Several routing calls from the supervisor model do not pass through this filter.
+
+### Merge and order
+
+The platform does not merge fields. It returns the text of each branch to the model. The model leads with the most relevant result, states conflicts, and explains failures in plain language. It does not name the specialists. Result order in the summary is not a documented contract. Do not depend on it.
+
+The raw branch results stay in session data under `_last_fan_out` and `_fan_out_result_<Agent>`. Use them for diagnosis, not for flow logic.
+
+### Partial failure
+
+One failed branch does not stop the others. The summary reports "N of M tasks succeeded". The reply explains what could not be done. If every target is invalid or refused, the fan-out fails and the supervisor gets the errors. If a branch escalates to a human, the whole conversation is escalated and the reply shows the branch answers.
+
+A branch that is refused by `WHEN` or `ENABLED_WHEN` is not started. It appears as a failed target with the reason.
+
+## Common variations
+
+### Sequential delegates in one turn
+
+When the requests depend on each other, use the sequential strategy. The platform runs one request at a time and passes earlier results forward. Each `DELEGATE:` entry then applies in full, including `RETURNS` and `ON_FAILURE`, because each call is an ordinary delegate.
+
+```yaml
+MULTI_INTENT:
+  strategy: sequential
+  max_intents: 4
+  confidence_threshold: 0.7
+```
+
+### Mix of delegate and handoff targets
+
+A fan-out can include `handoff_to_` targets that return control. Parallel branches cannot wait for customer input. Use a returning handoff in `sequential` or `primary_queue` for a specialist that must ask questions.
+
+### Flow-driven fan-out
+
+A flow step cannot start parallel delegates. Flow mode is single-threaded, and a `DO:` list runs one `DELEGATE` at a time. Use two flow steps for two calls, or move the parallel work to a supervisor.
+
+### Remote targets
+
+Remote targets in a fan-out need the platform asynchronous infrastructure. Without it, the remote task fails with "Async infrastructure unavailable for remote fan-out target". With it, the fan-out runs through a barrier and the parent waits for the remote branches. Remote delegation is configured with a `HANDOFF` entry. See [Handle multiple intents](/agent-platform/abl/how-to/handle-multiple-intents).
+
+## Verification
+
+- Validate the supervisor and every specialist together.
+- Send a message with two independent requests after the customer gives the order number. Confirm one reply that covers both.
+- In the trace, find the decision event `parallel_handoffs_to_fan_out` and its target list.
+- Find `fan_out_start`. It lists the task count and targets.
+- Find `fan_out_child_created`, `fan_out_task_complete`, and `fan_out_complete` for each branch. `fan_out_complete` shows `completedCount`, `failedCount`, and `totalDurationMs`.
+- Check that the branches overlap in time. The total duration is close to the slowest branch, not the sum.
+- Make one specialist fail. Confirm the reply covers the other result and explains the gap.
+- Send two requests that depend on each other. Confirm they do not fan out.
+- For trace reading, see [Debug routing traces](/agent-platform/abl/how-to/debug-routing-traces).
+
+## Production readiness checklist
+
+- Each target is independent and never asks the customer a question.
+- Each specialist tool answers inside the runtime timeout.
+- Each target has a `WHEN` guard that passes when its input exists.
+- The supervisor has no `router` role.
+- Tests cover all branches succeed, one branch fails, one branch times out, a guard refuses a branch, and dependent requests.
+- The platform operator knows the concurrent model call limit and sizes it for peak load.
+- Monitoring watches `fan_out_complete` events with `failedCount` above zero.
+- No flow logic reads `RETURNS` values from a parallel branch.
+
+## Common mistakes
+
+| Mistake | Why it happens | How to avoid it |
+| ------- | -------------- | --------------- |
+| Looking for a `PARALLEL` key | Other tools have one | Set `strategy: parallel` in `MULTI_INTENT:`. |
+| Expecting `RETURNS` in a parallel branch | `RETURNS` works for a single delegate | Read the merged reply, or use `sequential`. |
+| Setting a long `TIMEOUT` on the entry | It works for one delegate | Branch time is set by the runtime timeout. |
+| Using parallel for dependent requests | Both requests look separate | Use `sequential`. |
+| Using a specialist that asks questions | It works as a handoff | The branch cannot wait for the customer. Use a returning handoff. |
+| Setting `strategy: auto` and expecting fan-out | The name suggests it | `auto` never fans out. Use `parallel`. |
+
+## Troubleshooting
+
+| Symptom | Likely cause | What to check |
+| ------- | ------------ | ------------- |
+| Requests run one after another | Strategy is `primary_queue` (default) or `sequential` | Set `strategy: parallel`. |
+| No fan-out event appears | The model made one routing call, or the role is `router` | Check the supervisor role and the tool calls in the trace. |
+| A target is missing from the reply | `WHEN` or `ENABLED_WHEN` refused it | Check the refusal events and the target list. |
+| One part of the reply says it could not finish | A branch failed or timed out | Check `fan_out_task_complete` status and error. |
+| "Fan-out already in progress for this session" | A second fan-out started during one | Reduce overlapping turns for the session. |
+| Remote branch fails | Asynchronous infrastructure is off | Ask the platform operator to enable it. |
+| Parent variable is empty after a parallel call | `RETURNS` does not apply to branches | Use `sequential`, or read the reply. |
