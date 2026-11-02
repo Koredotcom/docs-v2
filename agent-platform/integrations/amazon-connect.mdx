@@ -1,0 +1,151 @@
+---
+title: Set up Amazon Connect
+sidebarTitle: Amazon Connect
+---
+
+<Badge icon="arrow-left" color="gray">[Back to list of integrations](/agent-platform/integrations#agent-desktop-integrations)</Badge>
+
+Connect Amazon Connect as an agent desktop, so a conversation that your agent escalates reaches a live agent in Amazon Connect. When the agent escalates, Artemis starts an Amazon Connect chat contact through your contact flow. The live agent works in the Amazon Connect Contact Control Panel (CCP), and the customer stays in the same chat window.
+
+The setup requires:
+
+1. [Prepare Amazon Connect](#prepare-amazon-connect): an instance with chat, a contact flow, and an IAM access key.
+2. [Artemis connection configuration](#artemis-connection-configuration): create the Amazon Connect connection.
+3. [Route escalations to Amazon Connect](#route-escalations-to-amazon-connect) in the Agent Transfer settings.
+4. [Verify the connection](#verify-the-connection) with a test transfer.
+
+After setup, Artemis sends each escalated conversation to your contact flow, and the flow queues it for a live agent.
+
+**Important considerations**
+
+- **Chat transfers only**: The connection starts chat contacts. It doesn't transfer voice calls.
+- **The contact flow decides where the chat goes**: Artemis starts the contact with the contact flow you enter. The flow sets the queue and any routing logic, so build it in Amazon Connect before you test.
+- **AWS credentials stay server-side**: Artemis uses the AWS access key only on the server to start the chat contact. The customer's browser never receives it.
+- **No actions or triggers**: Amazon Connect is an agent desktop connection only. It adds no tool actions or workflow triggers to the project.
+
+## Prerequisites
+
+Confirm these before you start.
+
+- An Amazon Connect instance with chat enabled, and at least one queue with agents who can sign in to the CCP.
+- Permission in AWS to create or edit contact flows and IAM users or policies.
+- Artemis project access with permission to open **Integrations** and **Settings** -> **Agent Transfer**.
+
+---
+
+## How Artemis routes a transfer to Amazon Connect
+
+| Piece | Owner | What it does |
+|---|---|---|
+| **AWS Region** and **Connect Instance ID or ARN** | Amazon Connect | Identify the instance that receives the chat contact. |
+| **Contact Flow ID** | Amazon Connect | Selects the inbound flow that queues the chat for a live agent. |
+| **AWS access key** | AWS IAM | Authorizes Artemis to start the chat contact on the instance. |
+| **Agent Transfer connection** | Artemis | Sends escalated conversations to this Amazon Connect connection. |
+
+---
+
+## Prepare Amazon Connect
+
+Collect these values in AWS before you open Artemis.
+
+<Steps>
+  <Step title="Find the instance">
+    In the Amazon Connect console, open your instance. Copy the instance ARN from the instance overview, and note the AWS Region it runs in. Artemis accepts the full ARN or only the instance ID, the last part of the ARN.
+  </Step>
+
+  <Step title="Prepare the contact flow">
+    Use an inbound contact flow that sets a working queue and transfers the contact to that queue. Publish the flow, then copy its contact flow ID: the last part of the flow's ARN, which the flow designer shows under the flow's details.
+  </Step>
+
+  <Step title="Create the access key">
+    Create an IAM user for Artemis, or use an existing one, with a policy that allows `connect:StartChatContact` on the instance. Then create an access key for the user, and copy the access key ID and secret access key.
+
+    ```json
+    {
+      "Version": "2012-10-17",
+      "Statement": [
+        {
+          "Effect": "Allow",
+          "Action": "connect:StartChatContact",
+          "Resource": "arn:aws:connect:<region>:<account-id>:instance/<instance-id>/*"
+        }
+      ]
+    }
+    ```
+  </Step>
+</Steps>
+
+<Warning>The secret access key shows only once in AWS. Store it in Artemis and your secret manager, and grant the IAM user no permissions beyond what the transfer needs.</Warning>
+
+---
+
+## Artemis connection configuration
+
+1. Go to **Integrations** -> **Agent Desktop** -> **Amazon Connect**.
+2. Select **Connect** in the Amazon Connect panel.
+3. In the **Connect Amazon Connect** dialog, configure the fields:
+
+    | Artemis field | Source / Notes | What it controls |
+    |---|---|---|
+    | **Connection Name** | You choose it | A friendly name to identify this connection, such as `My Amazon Connect`. |
+    | **AWS Region** | The Region your instance runs in | Where Artemis sends the request to start the chat. |
+    | **Connect Instance ID or ARN** | Instance overview in the Amazon Connect console | The instance that receives the chat contact. Enter the full ARN or only the instance ID. |
+    | **Contact Flow ID** | The flow you prepared | The inbound flow that queues the chat for a live agent. |
+    | **Default Customer Name** (optional) | You choose it | The name the live agent sees for the customer. Defaults to **Customer** when left empty. |
+    | **Chat Duration (minutes)** (optional) | You choose it | How long the chat contact can stay open. Defaults to 1500 minutes (25 hours). The allowed range is 60 to 10080. |
+    | **AWS Access Key ID** | The IAM access key | Identifies the IAM user that starts the chat. |
+    | **AWS Secret Access Key** | The IAM access key | Authenticates the IAM user. |
+4. Select **Create Connection**.
+
+---
+
+## Route escalations to Amazon Connect
+
+Go to **Settings** -> **Agent Transfer** -> **Default Routing** -> **Connection**, and select the Amazon Connect connection.
+
+When an agent escalates a conversation, Artemis starts an Amazon Connect chat contact with the conversation's context. To route only some escalations to Amazon Connect, set the connection in the agent's `ESCALATE` routing instead. See [Escalate to a human agent](/agent-platform/escalate).
+
+---
+
+## Verify the connection
+
+1. Sign in to the Amazon Connect CCP as an agent who works the contact flow's queue, and set the status to **Available**.
+2. In a test conversation in your Artemis project, trigger an agent transfer.
+3. Accept the incoming chat in the CCP. The test conversation shows a message when the agent joins.
+4. Send a message from each side, and confirm it appears on the other side.
+5. End the chat in the CCP, and confirm the test conversation shows that the agent left.
+
+---
+
+## Security and lifecycle
+
+- **Access key**: Store it only in Artemis. Rotate it in AWS IAM on your normal schedule, then update the connection with the new key.
+- **Least privilege**: Limit the IAM policy to `connect:StartChatContact` on the instance you use.
+- **Environments**: Use separate instances, or at least separate contact flows and access keys, for development and production.
+
+---
+
+## Troubleshoot connection issues
+
+| Symptom | Likely cause | Recommended action |
+|---|---|---|
+| The transfer fails as soon as the agent escalates | The IAM policy doesn't allow `connect:StartChatContact` on the instance, or the access key is wrong | Check the policy's action and resource, and enter the access key ID and secret access key again. |
+| The transfer fails with an instance or flow error | Wrong Region, instance ID, or contact flow ID | Confirm the Region matches the instance, and copy the instance ID and contact flow ID again from the console. |
+| The chat starts, but no agent receives it | The contact flow doesn't queue the chat, or no agent is available on the queue | Confirm the flow is published, sets a working queue, and transfers to it, and that an agent on that queue is **Available** in the CCP. |
+| The chat closes before the agent finishes | The chat duration is too short | Increase **Chat Duration (minutes)**, up to 10080. |
+| Escalations don't reach Amazon Connect | Agent Transfer routes to another connection | Select the Amazon Connect connection in **Settings** -> **Agent Transfer** -> **Default Routing**, or in the agent's `ESCALATE` routing. |
+
+---
+
+## Amazon Connect reference
+
+| Resource | Use it for |
+|---|---|
+| [Enable chat in Amazon Connect](https://docs.aws.amazon.com/connect/latest/adminguide/chat.html) | Chat setup and the CCP experience. |
+| [Create a contact flow](https://docs.aws.amazon.com/connect/latest/adminguide/create-contact-flow.html) | Building and publishing the inbound flow. |
+| [StartChatContact](https://docs.aws.amazon.com/connect/latest/APIReference/API_StartChatContact.html) | The API action the IAM policy must allow. |
+
+{{related}}
+
+- [Transfer sessions](/agent-platform/transfer-sessions)
+- [Escalate to a human agent](/agent-platform/escalate)

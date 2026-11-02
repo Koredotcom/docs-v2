@@ -14,6 +14,12 @@ This page documents two related ABL constructs:
 
 Memory in ABL defines how an agent stores, retrieves, and persists information across conversation turns, sessions, and users. The `MEMORY:` block declares four categories: session variables, persistent variables, remember triggers, and recall instructions.
 
+`MEMORY.session` and `MEMORY.persistent` properties stay indented deeper than the field entry.
+
+- Blank lines can separate properties. They do not end the current field or merge adjacent entries.
+- Text ABL also accepts `#` and `//` comment-only lines there. YAML accepts `#` comments.
+- The next field entry, memory subsection, or top-level block keeps its own boundary.
+
 ### Overview
 
 Every agent has access to a memory configuration that controls data lifecycle:
@@ -106,7 +112,7 @@ MEMORY:
 
 #### Write authority
 
-<Warning>**Removed:** `SOURCE`, `FORMAT`, and `DERIVED` on a session variable. A `SOURCE:`/`FORMAT:`/`DERIVED:` line (or the YAML `source:`/`format:`/`derived:` key) is now a compile error — `E493`, `E492`, and `E498` respectively. `DERIVED` was removed because its every-write recompute cost grew unbounded; `SOURCE`/`FORMAT` were removed alongside it. **Migration:** declare the field `READONLY: true` and compute/write it with an authored `SET`, `on_result` mapping, or hook `SET` (see below). Where you relied on `FORMAT` for kind inference, pass the kind as `MATCH_SCORE`/`MATCHES`/`MATCH_RESULT`'s explicit third argument instead — for example `MATCH_SCORE(said, stored, "email")`.</Warning>
+<Warning>**Removed:** `SOURCE`, `FORMAT`, and `DERIVED` on a session variable. A `SOURCE:`/`FORMAT:`/`DERIVED:` line (or the YAML `source:`/`format:`/`derived:` key) is now a compile error — [`E493`](/agent-platform/abl/reference/errors-and-warnings#e493), [`E492`](/agent-platform/abl/reference/errors-and-warnings#e492), and [`E498`](/agent-platform/abl/reference/errors-and-warnings#e498) respectively. `DERIVED` was removed because its every-write recompute cost grew unbounded; `SOURCE`/`FORMAT` were removed alongside it. **Migration:** declare the field `READONLY: true` and compute/write it with an authored `SET`, `on_result` mapping, or hook `SET` (see below). Where you relied on `FORMAT` for kind inference, pass the kind as `MATCH_SCORE`/`MATCHES`/`MATCH_RESULT`'s explicit third argument instead — for example `MATCH_SCORE(said, stored, "email")`.</Warning>
 
 A session variable can declare `READONLY: true` so the model cannot write it, leaving an authored hook `SET` (or `on_result`, or a FLOW `SET`) to compute its value:
 
@@ -134,6 +140,19 @@ HOOKS:
 | `READONLY` | `true` | Opt-in. The model's `__set_context__` cannot write the variable; `SET`, `on_result` and hooks still can. Only an explicit `true` opts in. |
 
 In YAML the same key is lowercase: `readonly: true`.
+
+##### READONLY scope
+
+`READONLY` applies to the whole project. When any agent declares a variable `READONLY`, the model of every agent is refused, including an agent that declares the same name without `READONLY`. The refusal applies even before the declaring agent has run.
+
+- A parent object and its child paths overlap. `account.verified` as `READONLY` also refuses a model write of `account`.
+- `execution_tree.x` is the same variable as `x` under either spelling.
+- A scoped alias of a `READONLY` path is the same variable and is refused too. Examples are a writable `granted_memory` grant, or an unambiguous `execution_tree` leaf mapped to it. In handoff, delegate, and fan-out context, the runtime resolves a leaf through the receiving agent's mapping, not the sender's.
+- Remote (A2A) agents are not included.
+- The compiler warns with [`SESSION_READONLY_DECLARATION_MISMATCH`](/agent-platform/abl/reference/errors-and-warnings#session_readonly_declaration_mismatch) when agents compiled in the project disagree on `READONLY`. Imported module agents compile as stubs and are not checked.
+- The runtime trace decision `set_context_readonly_refused` names the declaring agents in `readonlyDeclarations`.
+- The refused model writes are `__set_context__`, `__complete__` outcome fields, and model-supplied handoff, delegate, or fan-out context.
+- `MODEL_WRITERS` cannot override `READONLY`. To let one agent's model write a variable that another agent must not write, leave the variable without `READONLY` and list the writer in `MODEL_WRITERS`.
 
 <Note>`MATCH_SCORE(said, stored, kind?)` returns 0-100 (or `-1` when there's nothing to judge — a missing value, a PII vault token, or an input over 1,024 characters; `-1` is below every threshold, so a rule written as `MATCH_SCORE(...) >= 70` fails closed). `MATCHES(said, stored, kind?)` is the pass/fail form on the platform's own match bands, and `MATCH_RESULT(said, stored, kind?)` returns `"match"`, `"retry"`, `"mismatch"`, or `"missing"`. These are a **said-versus-stored identity comparison**, not a regex test — the infix `a MATCHES "pattern"` operator is the regex form. `kind` is optional (default `text`); pass `"auto"` to detect the kind from the stored value's shape, or `"exact"` to turn off every voice allowance and require equality after normalization. See [Built-in function reference](/agent-platform/abl-reference/expressions-and-functions#built-in-function-reference) for the full signatures, `kind` values, and match bands.</Note>
 
@@ -164,7 +183,7 @@ MEMORY:
 
 <Note>The two "omitted" rows are easy to conflate, but they're opposite in a project that has adopted `MODEL_WRITERS` anywhere: once the project opts in, unrelated fields pick up inferred protection; a project that has never declared `MODEL_WRITERS` at all stays on the older, ordinary-edit behavior throughout.</Note>
 
-The YAML key is `model_writers`. Names are case-sensitive agent names; every explicit declaration of the same shared field across the project must agree, and a conflicting pair fails closed (denied for everyone) rather than picking one. A full-project compile rejects a name that isn't a real agent in the project (`SESSION_MODEL_WRITER_UNKNOWN`); compiling a single agent in isolation defers that specific check. An invalid list (not an array of plain agent-name strings) is rejected at parse/compile time (`MEMORY_MODEL_WRITERS_INVALID`, `SESSION_MODEL_WRITERS_INVALID`) — the field is **not** left silently unprotected on invalid input.
+The YAML key is `model_writers`. Names are case-sensitive agent names; every explicit declaration of the same shared field across the project must agree, and a conflicting pair fails closed (denied for everyone) rather than picking one. A full-project compile rejects a name that isn't a real agent in the project ([`SESSION_MODEL_WRITER_UNKNOWN`](/agent-platform/abl/reference/errors-and-warnings#session_model_writer_unknown)); compiling a single agent in isolation defers that specific check. An invalid list (not an array of plain agent-name strings) is rejected at parse/compile time ([`MEMORY_MODEL_WRITERS_INVALID`](/agent-platform/abl/reference/errors-and-warnings#memory_model_writers_invalid), [`SESSION_MODEL_WRITERS_INVALID`](/agent-platform/abl/reference/errors-and-warnings#session_model_writers_invalid)) — the field is **not** left silently unprotected on invalid input.
 
 <Warning>A listed writer can clear an *inferred* return/gate ownership refusal, but it can never override an explicit `READONLY: true`, a private-identity refusal, already-captured consent, or a protected tool-call outcome.</Warning>
 
@@ -194,7 +213,7 @@ MEMORY:
       MODEL_VISIBLE: false
 ```
 
-An opted-out entry is left out of automatically serialized model context — including supported voice memory updates and LLM extraction grounding context. An explicit authored reference such as `{{catalog_mapping}}` can still place the value at the intended prompt location, subject to the usual access and sensitive-value rules — `MODEL_VISIBLE: false` is not a guarantee the value can never reach a model, only that it isn't included automatically. Deterministic rule evaluation and ML extraction always see the real value regardless of this setting. An excluded ancestor path excludes its descendants, even one marked `true`. The excluded path must be a literal, dot-separated path — numeric array positions are supported, but a wildcard, a bracket selector, an empty segment, or a `__proto__`/`prototype`/`constructor` segment is rejected (`MEMORY_MODEL_VISIBLE_PATH_UNSUPPORTED`) rather than silently left visible.
+An opted-out entry is left out of automatically serialized model context — including supported voice memory updates and LLM extraction grounding context. An explicit authored reference such as `{{catalog_mapping}}` can still place the value at the intended prompt location, subject to the usual access and sensitive-value rules — `MODEL_VISIBLE: false` is not a guarantee the value can never reach a model, only that it isn't included automatically. Deterministic rule evaluation and ML extraction always see the real value regardless of this setting. An excluded ancestor path excludes its descendants, even one marked `true`. The excluded path must be a literal, dot-separated path — numeric array positions are supported, but a wildcard, a bracket selector, an empty segment, or a `__proto__`/`prototype`/`constructor` segment is rejected ([`MEMORY_MODEL_VISIBLE_PATH_UNSUPPORTED`](/agent-platform/abl/reference/errors-and-warnings#memory_model_visible_path_unsupported)) rather than silently left visible.
 
 <Note>Each consuming agent's own memory declaration governs its automatic context. `MODEL_VISIBLE` requires matching authoring, parser/compiler, and Runtime versions deployed together — an older Runtime does not enforce it.</Note>
 
@@ -361,7 +380,7 @@ MEMORY:
 | `step:enter:<name>`          | On entering a specific flow step.                                |
 | `step:exit:<name>`           | On exiting a specific flow step.                                 |
 
-<Warning>Legacy event names such as `search:before`, `ON_START`, or `ON_SEARCH` are no longer supported and are rejected during compilation — use the canonical patterns above. Note that `tool:<name>:before` is not a valid recall event (only `tool:<name>:after`).</Warning>
+<Warning>Legacy event names such as `search:before`, `ON_START`, or `ON_SEARCH` are no longer supported and are rejected during compilation — use the canonical patterns above. The `tool:<name>:before` isn't a valid recall event (only `tool:<name>:after`).</Warning>
 
 #### Recall actions
 
@@ -395,7 +414,7 @@ Constraints are deterministic business rules that the runtime evaluates against 
 
 ### Overview
 
-Constraints enforce guardrails on agent behavior that are separate from LLM instructions. They are deterministic checks evaluated by the runtime, not suggestions to the model. A constraint that fails blocks the current operation and triggers an `ON_FAIL` action.
+Constraints enforce guardrails on agent behavior that are separate from LLM instructions. they're deterministic checks evaluated by the runtime, not suggestions to the model. A constraint that fails blocks the current operation and triggers an `ON_FAIL` action.
 
 ```yaml
 CONSTRAINTS:
@@ -486,8 +505,16 @@ Supported structural targets today:
 
 Non-structural `BEFORE` targets are retained for compatibility, but they are warning-only and have no runtime effect. Prefer `IMPLIES` or `WHEN` for that form.
 
+##### A `BEFORE` rule that cannot be evaluated
+
+At its own checkpoint, CEL alone decides a `BEFORE` rule. The rule blocks when CEL cannot evaluate it. Examples are a field of an unset or empty object, an operator on an unset value or a value of the wrong type, a non-string regex or text-check operand, a rejected pattern, and input over 100,000 characters. In these cases the rule is not satisfied, `ON_FAIL` runs, and the trace carries `evaluationError: { code }`.
+
+Convert or guard explicitly, for example `double(amount) > 0` or `has(consent.status) && ...`.
+
+A `WHEN` gate that cannot be decided means the rule does not apply, unless the gate reads `tool_args`, `response`, or `input`. Rules without `BEFORE` are unchanged.
+
 <Note>
-  A `BEFORE calling <tool_name>` rule's `condition` (`REQUIRE`/`LIMIT`/`RESTRICT`) or `WHEN` can read the about-to-be-sent arguments via `tool_args`, but only when the agent sets `EXECUTION: guardrail_builtins: true`. Without it, `tool_args` is unbound: the rule cannot read the arguments, so it never holds, and the tool call is refused. The compiler warns `GUARDRAIL_BUILTIN_NOT_BOUND` for this case.
+  A `BEFORE calling <tool_name>` rule's `condition` (`REQUIRE`/`LIMIT`/`RESTRICT`) or `WHEN` can read the about-to-be-sent arguments via `tool_args`, but only when the agent sets `EXECUTION: guardrail_builtins: true`. Without it, `tool_args` is unbound: the rule cannot read the arguments, so it never holds, and the tool call is refused. The compiler warns [`GUARDRAIL_BUILTIN_NOT_BOUND`](/agent-platform/abl/reference/errors-and-warnings#guardrail_builtin_not_bound) for this case.
 
   ```yaml
   EXECUTION:
@@ -528,10 +555,10 @@ Non-structural `BEFORE` targets are retained for compatibility, but they are war
 | `COLLECT`      | `string[]` | Fields to re-collect before retrying.                                                    |
 | `GOTO`         | `string`   | Step to route to. A single identifier naming a declared FLOW step; anything else is spoken literally. |
 | `RETRY`        | `boolean`  | Whether to retry the failed operation.                                                   |
-| `MAX_REPEATS`  | `number`   | Failures of this constraint (per conversation) this block answers before `ON_EXHAUSTED` takes over. Omit for no cap. |
+| `MAX_REPEATS`  | `number`   | Positive integer. This constraint's own `ON_FAIL` answers this many failures for each agent, condition, and conversation. The next failure uses `ON_EXHAUSTED` (default `ESCALATE`). A passing check between failures does not reset the count. Omit for no cap. |
 | `ON_EXHAUSTED` | string or action | Inline action run once `MAX_REPEATS` is used up, for example `ESCALATE "identity_not_confirmed"`. |
 
-<Note>The `CLEAR` key lets an `ON_FAIL` block reset dependent state directly — you no longer need a separate `CLEAR`-only step solely to clear variables before a retry.</Note>
+<Note>The `CLEAR` key lets an `ON_FAIL` block reset dependent state directly — you no longer need a separate `CLEAR`-only step solely to clear variables before a retry. `CLEAR` takes a list (`[field_a, field_b]`) or comma-separated names. It deletes the variables before the runtime handles the failure, and the same list applies on exhaustion. In YAML, write `on_fail` as a lowercase object with lowercase directives and no `action` key.</Note>
 
 <Warning>
   `GOTO` (and, on `MAX_REPEATS` exhaustion, `ON_EXHAUSTED`'s own `GOTO`) only moves the flow from two checkpoints: a FLOW step's entry/post-extraction checks, and its main `CALL` checkpoint (`BEFORE calling <tool_name>`). `ON_EXHAUSTED: GOTO` specifically only moves the flow from the `CALL` checkpoint — at step-entry and post-extraction, an exhausted constraint still answers with the platform message without transitioning anywhere.
@@ -682,6 +709,6 @@ CONSTRAINTS:
 
 - [Guardrails](/agent-platform/abl-reference/guardrails) -- input/output safety checks (distinct from business rule constraints)
 - [Expressions and functions](/agent-platform/abl-reference/expressions-and-functions) -- condition expression syntax
-- [Multi-Agent and Supervisor](/agent-platform/abl-reference/multi-agent-and-supervisor) -- HANDOFF and ESCALATE actions referenced in ON_FAIL
+- [Multi-agent and supervisor](/agent-platform/abl-reference/multi-agent-and-supervisor) -- HANDOFF and ESCALATE actions referenced in ON_FAIL
 - [Lifecycle and hooks](/agent-platform/abl-reference/lifecycle-and-hooks) -- `ON_START` handler where initial memory setup occurs
 - [Data types](/agent-platform/abl-reference/data-types-and-utilities) -- type definitions used in `TYPE` declarations

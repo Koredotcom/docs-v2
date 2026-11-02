@@ -1,6 +1,6 @@
 ---
 title: Multi-agent and supervisor
-sidebarTitle: Multi-Agent and supervisor
+sidebarTitle: Multi-agent and supervisor
 ---
 
 This page documents multi-agent orchestration constructs (`DELEGATE`, `HANDOFF`, `ESCALATE`, `COMPLETE`) and the `SUPERVISOR:` declaration for top-level routing.
@@ -318,11 +318,11 @@ BEHAVIOR:
   **Breaking changes in this release - Artemis 1.4.0:**
   - `canRespondDirectly` is deprecated in favor of `role`. If both are present and **conflict**
     (`canRespondDirectly: true` ↔ `orchestrator`, `false` ↔ `router`), compilation fails
-    (`AGENT_EXECUTION_ROLE_CONFLICT`). Remove the deprecated field or pick the matching role.
+    ([`AGENT_EXECUTION_ROLE_CONFLICT`](/agent-platform/abl/reference/errors-and-warnings#agent_execution_role_conflict)). Remove the deprecated field or pick the matching role.
   - A `SUPERVISOR` must be `router` or `orchestrator` — `role: assistant` fails compilation.
   - `role: router` requires at least one `HANDOFF` ownership target.
   - Only an `orchestrator` may declare `DELEGATE:` — a `router` (or `assistant`) that uses
-    `DELEGATE` fails compilation (`AGENT_RETURNED_WORK_REQUIRES_ORCHESTRATOR`). Routers hand off;
+    `DELEGATE` fails compilation ([`AGENT_RETURNED_WORK_REQUIRES_ORCHESTRATOR`](/agent-platform/abl/reference/errors-and-warnings#agent_returned_work_requires_orchestrator)). Routers hand off;
     orchestrators own returned work.
 </Warning>
 
@@ -543,6 +543,16 @@ RETURN_HANDLERS:
 | `CONTINUE`      | `boolean`  | Leave the parent waiting for the next user turn.                   |
 | `RESUME_INTENT` | `boolean`  | Replay the parent's last user message through routing.             |
 
+A handler runs `CLEAR` before `map`, and `RESPOND` after `set`. If any `CLEAR`, `map`, or `set` target is one the parent cannot write, the runtime applies none of that return's effects, including `RESPOND`.
+
+For a reasoning parent without a FLOW, a non-blank forwarded customer request belongs to bounded `continue`. This includes a named handler with `CONTINUE: true`.
+
+- The handler runs once. Completion and deterministic routing come before model-based routing.
+- Within the forwarded continuation's own deterministic coordination chain, the runtime dispatches each authored `DELEGATE` entry automatically by `WHEN` at most once, even if `WHEN` stays true. Nested ordinary continuations keep their earlier dispatch policy. Explicit model-selected delegation stays eligible. Distinct same-target entries keep their own input and result mappings.
+- The parent can synthesize successful typed results. Later customer turns can select the entries again.
+- The returned child keeps its waiting state and cannot block its own forwarded request. Other pending children keep their waiting-work protection.
+- A return without an authoritative forwarded request keeps the existing continuation policy.
+
 ### Handoff failure strategies
 
 `ON_FAILURE` defines a parent-side fallback for failures that occur **before** the target accepts the handoff — for example target lookup, pre-transfer validation, or dispatch failures. It does not replace the timeout path after an accepted returnable handoff, and it does not fire when a downstream child later reports its own failure.
@@ -629,7 +639,7 @@ DELEGATE invokes a sub-agent synchronously, waits for it to complete, and maps t
   - `DELEGATE` is a one-shot internal call — it cannot wait for multi-turn user input. If the target
     agent has **required** `GATHER` fields, you must supply them in `INPUT:` (or make them
     optional/defaulted). An unmapped required field fails compilation
-    (`DELEGATE_CHILD_GATHER_INPUT_UNMAPPED`); model a user-interactive child as an
+    ([`DELEGATE_CHILD_GATHER_INPUT_UNMAPPED`](/agent-platform/abl/reference/errors-and-warnings#delegate_child_gather_input_unmapped)); model a user-interactive child as an
     `EXPECT_RETURN: true` `HANDOFF` instead.
 </Warning>
 
@@ -741,6 +751,14 @@ DELEGATE:
 | `auth`     | `object`          | No       | --      | Authentication configuration. `type` is `bearer` or `api_key`; an optional `header` names the header to carry the credential. Credential values are resolved from runtime config / auth-profile resolution — never inlined in ABL. |
 | `timeout`  | `string`          | No       | --      | Override timeout for the remote call.                                  |
 
+A remote agent's credentials never live in the ABL file. The project's external agent registry record holds them. The record either references an Auth Profile through `authProfileId`, or stores inline `authType` (`bearer`, `api_key`, or `none`) plus an `authConfig` reference to the project secret. When `authProfileId` is set, it takes precedence and the runtime ignores inline auth.
+
+- Header-rendering profiles add headers to the outgoing request. These are bearer, header API key, basic, custom header, OAuth client credentials, OAuth app and token grants, and Azure AD.
+- An `aws_iam` profile in IAM role mode (`credentialMode: assume_role`) makes the runtime assume the customer's IAM role and SigV4-sign every request to the agent.
+- Static-key AWS IAM, AWS credential-pair, mTLS, query-parameter API key, and personal profiles are rejected.
+
+Rotating a credential is a registry or profile update, not an agent edit.
+
 <Note>`LOCATION: remote` is explicit and recommended, but the compiler also treats an `ENDPOINT` without `LOCATION` as remote. The remote block can be authored either nested under `REMOTE:` or as top-level `LOCATION`/`ENDPOINT`/`PROTOCOL` keys on the entry.</Note>
 
 ### Availability (`ENABLED_WHEN`)
@@ -761,9 +779,9 @@ HANDOFF:
     WHEN: intent.category == "products"
 ```
 
-**Writing the condition.** Put `ENABLED_WHEN:` on the entry, after `WHEN:` (YAML key: `enabled_when`). Read only session data known before the turn: `_metadata.*`, `env.*`, `caller.*`, `session.*`, `user.*`, and memory fields. Don't read what the current turn means (`intent`, `routing.*`, `input`) or write natural language — both are compile errors (`ENABLED_WHEN_SEMANTIC_REFERENCE`). A long condition can continue on deeper-indented lines, after an inline value, an empty value, or a block indicator (`|`, `>`, `>-`); a line that looks like a key or starts a new entry ends it, and `#` lines are comments. The compiler warns (`ROUTE_WHEN_MULTILINE_JOINED`) when it joins lines written after an inline or empty value; a condition opened with a block indicator is joined without the warning.
+**Writing the condition.** Put `ENABLED_WHEN:` on the entry, after `WHEN:` (YAML key: `enabled_when`). Read only session data known before the turn: `_metadata.*`, `env.*`, `caller.*`, `session.*`, `user.*`, and memory fields. Don't read what the current turn means (`intent`, `routing.*`, `input`) or write natural language — both are compile errors ([`ENABLED_WHEN_SEMANTIC_REFERENCE`](/agent-platform/abl/reference/errors-and-warnings#enabled_when_semantic_reference)). A long condition can continue on deeper-indented lines, after an inline value, an empty value, or a block indicator (`|`, `>`, `>-`); a line that looks like a key or starts a new entry ends it, and `#` lines are comments. The compiler warns ([`ROUTE_WHEN_MULTILINE_JOINED`](/agent-platform/abl/reference/errors-and-warnings#route_when_multiline_joined)) when it joins lines written after an inline or empty value; a condition opened with a block indicator is joined without the warning.
 
-**How availability is decided.** Each target is judged by its own entries: a `HANDOFF` to X by the `HANDOFF` entries for X, a `DELEGATE` to X by the `DELEGATE` entries for X. The target is available when *any* of its entries is enabled — an entry without `ENABLED_WHEN` is always enabled, so one unconditional entry keeps the target permanently available (the compiler warns, `ENABLED_WHEN_SHADOWED_BY_UNCONDITIONAL_ENTRY`).
+**How availability is decided.** Each target is judged by its own entries: a `HANDOFF` to X by the `HANDOFF` entries for X, a `DELEGATE` to X by the `DELEGATE` entries for X. The target is available when *any* of its entries is enabled — an entry without `ENABLED_WHEN` is always enabled, so one unconditional entry keeps the target permanently available (the compiler warns, [`ENABLED_WHEN_SHADOWED_BY_UNCONDITIONAL_ENTRY`](/agent-platform/abl/reference/errors-and-warnings#enabled_when_shadowed_by_unconditional_entry)).
 
 The decision **fails closed**: a condition that can't be evaluated disables the entry, and so does one that reads a value the session doesn't have (unset, `null`, or an empty string) — even inside `OR` — *unless* the condition explicitly allows that value to be missing. A value compared with `== null`, `!= true`, or `IS NOT SET` anywhere in the condition counts as known, and an unset value then reads as `null`:
 
@@ -775,22 +793,22 @@ ENABLED_WHEN: _metadata.region IS NOT SET OR _metadata.region != "EU"   # guard 
 
 `_metadata` changes made during the session apply to every agent in the conversation, including agents waiting for a child to return.
 
-**When a target isn't available.** The route is withheld from the model entirely — left out of prompt route lists in both text and voice. A model that calls it anyway is refused and told which routes are available. A route the *author* wrote (a FLOW step `HANDOFF`, `ON_ACTION`, a digression, a tool hook, `ON_ERROR`, an `ON_START` handoff) is refused and runs its own failure policy: the entry's `ON_FAILURE` for a handoff, the delegate's `ON_FAILURE` for a delegate. `RESPOND` shows its message, `ESCALATE` escalates the same turn, `CONTINUE` skips the route and runs the rest of the step. A handoff with no `ON_FAILURE` tells the user the option isn't available and the agent stays on its current step; a delegate with no `ON_FAILURE` is simply skipped — a refused route never leaves a turn without an answer. A constraint's `ON_FAIL`/`ON_EXHAUSTED` handoff is a safety route that must always be reachable, so its target can't be fully conditional: the compiler rejects one whose every `HANDOFF` entry has `ENABLED_WHEN` (`ENABLED_WHEN_SAFETY_ROUTE_CONDITIONAL`). When every route of an agent is unavailable, the agent answers the user directly.
+**When a target isn't available.** The route is withheld from the model entirely — left out of prompt route lists in both text and voice. A model that calls it anyway is refused and told which routes are available. A route the *author* wrote (a FLOW step `HANDOFF`, `ON_ACTION`, a digression, a tool hook, `ON_ERROR`, an `ON_START` handoff) is refused and runs its own failure policy: the entry's `ON_FAILURE` for a handoff, the delegate's `ON_FAILURE` for a delegate. `RESPOND` shows its message, `ESCALATE` escalates the same turn, `CONTINUE` skips the route and runs the rest of the step. A handoff with no `ON_FAILURE` tells the user the option isn't available and the agent stays on its current step; a delegate with no `ON_FAILURE` is simply skipped — a refused route never leaves a turn without an answer. A constraint's `ON_FAIL`/`ON_EXHAUSTED` handoff is a safety route that must always be reachable, so its target can't be fully conditional: the compiler rejects one whose every `HANDOFF` entry has `ENABLED_WHEN` ([`ENABLED_WHEN_SAFETY_ROUTE_CONDITIONAL`](/agent-platform/abl/reference/errors-and-warnings#enabled_when_safety_route_conditional)). When every route of an agent is unavailable, the agent answers the user directly.
 
 **Diagnostics**
 
 | Code | Severity | Meaning |
 | ---- | -------- | ------- |
-| `ENABLED_WHEN_EMPTY` | error | `ENABLED_WHEN` has no condition. |
-| `ENABLED_WHEN_LINE_COMMENT` | error | A YAML `enabled_when` read as one line carries a `//` comment (use `#`, or a literal block). |
+| [`ENABLED_WHEN_EMPTY`](/agent-platform/abl/reference/errors-and-warnings#enabled_when_empty) | error | `ENABLED_WHEN` has no condition. |
+| [`ENABLED_WHEN_LINE_COMMENT`](/agent-platform/abl/reference/errors-and-warnings#enabled_when_line_comment) | error | A YAML `enabled_when` read as one line carries a `//` comment (use `#`, or a literal block). |
 | `ROUTE_WHEN_MULTILINE_JOINED` | warning | A condition without a block indicator was read from several lines. |
 | `ENABLED_WHEN_SEMANTIC_REFERENCE` | error | The condition reads turn meaning, or is natural language. |
-| `INVALID_CEL_SYNTAX` | error | The condition isn't a valid expression. |
-| `ENABLED_WHEN_ALL_DISABLED_RISK` | warning | Every route of a routing agent is conditional. |
+| [`INVALID_CEL_SYNTAX`](/agent-platform/abl/reference/errors-and-warnings#invalid_cel_syntax) | error | The condition isn't a valid expression. |
+| [`ENABLED_WHEN_ALL_DISABLED_RISK`](/agent-platform/abl/reference/errors-and-warnings#enabled_when_all_disabled_risk) | warning | Every route of a routing agent is conditional. |
 | `ENABLED_WHEN_SHADOWED_BY_UNCONDITIONAL_ENTRY` | warning | A target has entries both with and without `ENABLED_WHEN`. |
-| `ENABLED_WHEN_AUTHORED_ROUTE_NO_FALLBACK` | warning | An authored route targets a conditional handoff with no `ON_FAILURE`. |
+| [`ENABLED_WHEN_AUTHORED_ROUTE_NO_FALLBACK`](/agent-platform/abl/reference/errors-and-warnings#enabled_when_authored_route_no_fallback) | warning | An authored route targets a conditional handoff with no `ON_FAILURE`. |
 | `ENABLED_WHEN_SAFETY_ROUTE_CONDITIONAL` | error | A constraint `ON_FAIL`/`ON_EXHAUSTED` handoff targets a fully conditional handoff. |
-| `ENABLED_WHEN_ON_START_UNSTABLE_DATA` | warning | An `ON_START` delegate's condition reads data that may not exist yet at session start. |
+| [`ENABLED_WHEN_ON_START_UNSTABLE_DATA`](/agent-platform/abl/reference/errors-and-warnings#enabled_when_on_start_unstable_data) | warning | An `ON_START` delegate's condition reads data that may not exist yet at session start. |
 
 <Warning>`_metadata` is supplied by the caller. Use `ENABLED_WHEN` to shape the experience, not as an authorization boundary. Availability is always enforced — there's no runtime setting that turns it off, and an entry without `ENABLED_WHEN` behaves exactly as before this feature existed. The trace records which routes were offered and withheld on each model turn, and every refusal, with the condition text — never the session values it evaluated.</Warning>
 
@@ -1048,9 +1066,72 @@ ESCALATE:
 | `flow_policy_ref` / `transfer_flow_policy_ref` | `string` | Name of a policy declared in a `TRANSFER_FLOW_POLICIES:` block that governs wait / no-agent behavior. See [Transfer flow policies](#transfer-flow-policies). |
 | `flow_policy` / `transfer_flow_policy` | `object` | The same policy authored **inline** instead of by reference. Free-form; shape defined by the integration. |
 | `provider_config` | `object` | Opaque provider-specific adapter configuration. Shape defined by the human-agent integration, not the ABL parser. |
-| `metadata` | `object` | Opaque key-value pairs delivered with the escalation on the transfer payload's metadata. Supports `{{ }}` interpolation. Reserved keys (`reason`, `priority`, flow policy) are always set by the runtime and cannot be overridden here. |
+| `metadata` | `object` | Opaque key-value pairs delivered with the escalation on the transfer payload's metadata. Supports `{{ }}` interpolation. Reserved keys (`reason`, `priority`, flow policy) are always set by the runtime and cannot be overridden here. For SmartAssist, the values travel in `customData` for XO flow routing. |
+| `user_info` | `map<label, scalar or template>` | Display context for the human agent. Use it with SmartAssist `webhook_channel` connections only. See [Handoff context for SmartAssist](#handoff-context-for-smartassist). |
+| `user_info_in_custom_data` | `boolean` | Default `false`. When `true`, also copies the surviving `user_info` values to `customData.userInfo`. |
 
 <Note>These keys are hints for the receiving human-agent system — the valid `sub_type` values, `provider_config` shape, and inline `flow_policy` structure are defined by that integration, not the ABL compiler. Voice-channel transfer settings live under `routing.voice` (see [Voice transfer settings](#voice-transfer-settings)).</Note>
+
+#### Handoff context for SmartAssist
+
+A routing object, or each conditional routing entry, can declare `user_info` as a map of display labels to scalar literals or `{{...}}` templates. Use it only for SmartAssist `webhook_channel` connections. Select the connection by its connector name or connection ID, not its display name. The camelCase aliases `userInfo` and `userInfoInCustomData` are also accepted.
+
+- A `null` member is valid. The runtime drops it.
+- An object or array member is a compile error (`ESCALATE_ROUTING_USER_INFO_NON_SCALAR`). A `user_info` value that is not a map is also a compile error (`ESCALATE_ROUTING_USER_INFO_NOT_MAP`).
+- An empty map (`user_info: {}`) is still an explicit opt-in.
+- By default the values are display context only. Set `user_info_in_custom_data: true` to copy the surviving values into `customData.userInfo`. The flag applies per entry. A flag without a `user_info` map produces the warning `ESCALATE_ROUTING_USER_INFO_COPY_WITHOUT_USER_INFO`.
+- A transfer with handoff context replaces the XO user's `UserContext.customData`. Do not rely on existing custom data being merged.
+- The values are a snapshot taken when the transfer starts. XO flows that route on time-sensitive values should compare `customData.artemis.updatedAt` with the queue time. Gate priority or other sensitive routing on `customData.artemis.identityVerified`.
+- When a template directly references a `SENSITIVE: true` field or entity, the compiler warns. Mask the value at the source, for example by having the CRM tool return the masked value.
+- With PII redaction on (the default in staging and production), a `user_info` value that contains a vault token is sent as `[protected]`. `metadata` values, including vault tokens, are forwarded as stored.
+- XO stores `customData` unencrypted for up to 24 hours. Send only the values its flows need. For metadata keys that XO flows address by path, use letters, digits, `_`, and `-`.
+
+Republish agents after you upgrade so the compiled IR includes `user_info`. Agents compiled before the release do not contain it.
+
+```yaml
+ESCALATE:
+  triggers:
+    - WHEN: caller.requests_human == true
+      REASON: "Caller requested an agent"
+      PRIORITY: high
+  routing:
+    connection: smartassist # connector name or connection ID, not display name
+    user_info:
+      firstName: "{{masked_first_name}}"
+      segment: "{{crm.segment}}"
+      optional_value: null
+    user_info_in_custom_data: true
+```
+
+#### Handoff language
+
+The first SmartAssist call carries the session's current interaction language in `InteractiveLanguage`, `metaInfo.agentTransferConfig.language`, and, with handoff context, `customData.artemis.language`. Follow-up messages keep the language the transfer started with.
+
+To transfer in the language the customer writes in:
+
+1. Turn on the project's language detection setting. The runtime also needs a Language Detection service.
+2. Apply the detection with `SET_INTERACTION_LANGUAGE` in a `before_turn` hook. See [Hook action properties](/agent-platform/abl-reference/lifecycle-and-hooks#hook-action-properties). The language is set before the escalating turn's reply, so the first call carries it.
+
+`{{session.languageDetection.language}}` and `{{session.languageDetection.status}}` are ordinary session values. You can send them in `user_info` or `metadata`. The language value keeps the region (`zh-CN`) that the language fields drop.
+
+```yaml
+HOOKS:
+  before_turn:
+    WHEN: session.languageDetection.status == "detected" AND session.languageDetection.confidence >= 0.85
+      SET_INTERACTION_LANGUAGE: session.languageDetection.language
+
+ESCALATE:
+  routing:
+    connection: smartassist
+    user_info:
+      Language: "{{session.languageDetection.language}}"
+    user_info_in_custom_data: true
+    metadata:
+      detected_language: "{{session.languageDetection.language}}"
+      detection_status: "{{session.languageDetection.status}}"
+```
+
+The escalation confirmation the customer sees follows the same interaction language. The runtime looks for a Localization asset for that language first: `<locale>/<agent>.json`, then `<locale>/_shared.json`, using the channel key (for example `escalation.digital`) and then `escalation_format`. It falls back to the project's Escalation Templates and then the built-in English text. Add one asset for each supported language in **Settings > Localization**, for example `hi/_shared.json`.
 
 #### Voice transfer settings
 
@@ -1077,7 +1158,7 @@ ESCALATE:
 | `sip_transfer_id`    | `string`                         | Explicit SIP transfer destination URI (literal or `{{ }}`-templated). Requires `call_transfer_type: sip`. See [Conditional routing entries](#sip_transfer_id) above. |
 | `custom_tools`       | `string[]`                       | Required when `call_transfer_type: custom` — an ordered list of existing project tool names run as the transfer sequence. See [Custom voice transfer](#custom-voice-transfer).           |
 
-<Note>Without `sip_transfer_id`, `call_transfer_type` selects a **transport, not a destination** — the transfer target is project-owned (Agent Transfer settings), and authored DSL cannot name a phone number or SIP URI, the same boundary the built-in `call_transfer` tool enforces by default. `sip_transfer_id` is the one explicit exception to that rule (see above). For Genesys Audio Connector transfers, use the dedicated `genesys_sip_headers` block below rather than `sip_headers`.</Note>
+<Note>Without `sip_transfer_id`, `call_transfer_type` selects a **transport, not a destination** — the transfer target is project-owned (Agent Transfer settings), and authored DSL cannot name a phone number or SIP URI, the same boundary the built-in `call_transfer` tool enforces by default. `sip_transfer_id` is the one explicit exception to that rule (see above). For a Genesys Audio Connector transfer specifically, use the dedicated `genesys_sip_headers` block below to reach the Genesys `TRANSFER_TO_AGENT` callevents call — `sip_headers` here also reaches that transfer, but only on the call-ending SIP BYE (see the note under [Genesys SIP transfer headers](#genesys-sip-transfer-headers)), which is a separate wire from the callevents POST.</Note>
 
 #### Custom voice transfer
 
@@ -1122,6 +1203,9 @@ ESCALATE:
         metadata:
           tier: "gold"
           region: "us-east"
+        additional_headers:                 # arbitrary extra headers, template-resolved
+          X-Interaction-Id: "{{interaction_id}}"
+          X-Brand: "{{brand}}"
 
   routing:
     connection: livechat
@@ -1141,14 +1225,19 @@ Each field is optional. The `*_header_key` fields name a SIP header; the paired 
 | `reason`              | `string`             | Value placed in the reason header.                                             |
 | `metadata_header_key` | `string`             | SIP header **name** that carries the metadata.                                 |
 | `metadata`            | `string` or `object` | A string is sent verbatim; a map is serialized to a compact JSON string.       |
+| `additional_headers`  | `object`             | Map of header name → value. Arbitrary extra headers alongside the queue/reason/metadata trio — see below. |
 
 The compiler validates the block against the same limits the runtime transfer enforces:
 
 - Header-name fields (`*_header_key`) must be RFC 3261 tokens, at most 64 characters.
-- Header values (`queue_name`, `reason`, and the serialized `metadata`) must contain no CR/LF/NUL characters and stay within 1024 UTF-8 bytes.
+- Header values must contain no CR/LF/NUL characters. `queue_name` and `reason` emit as real SIP headers and stay within 1024 UTF-8 bytes; the serialized `metadata` and `additional_headers` values ride the HTTP callevents body instead of a SIP header, so they are **not** byte-bounded.
 - `metadata` must be a string or a non-empty map — arrays and scalar values are rejected; an empty `{}` is ignored.
-- Two header-name fields must not resolve to the same SIP header key (compared case-insensitively). A collision (`GENESYS_SIP_HEADER_KEY_COLLISION`) is a compile error, because the transfer rejects colliding header keys at runtime.
+- Two header-name fields must not resolve to the same SIP header key (compared case-insensitively). A collision ([`GENESYS_SIP_HEADER_KEY_COLLISION`](/agent-platform/abl/reference/errors-and-warnings#genesys_sip_header_key_collision)) is a compile error, because the transfer rejects colliding header keys at runtime.
 - Unrecognized fields are ignored with a warning. Keys may be written in `snake_case` or `camelCase` (for example `queue_header_key` or `queueHeaderKey`).
+
+<Note>`genesys_sip_headers` and the plain `sip_headers` (under [Voice transfer settings](#voice-transfer-settings)) are two different wires on the same Genesys Audio Connector transfer, and both can be authored together: `genesys_sip_headers` (plus `additional_headers`, below) populates the `TRANSFER_TO_AGENT` callevents call; `sip_headers` is carried separately on the SIP `BYE` that ends the call leg once the transfer succeeds. A conversation-summary `User-to-User` (UUI) header on that same BYE is planned but not yet wired for an `ESCALATE`-triggered transfer as of this release — it's currently only populated on the `call_transfer` tool path.</Note>
+
+**`additional_headers`** (map of header name → value) adds arbitrary extra headers to the callevents `TRANSFER_TO_AGENT` payload, each as its own header alongside the queue/reason/metadata trio — the equivalent of a contact-center "additional context" bag. UNLIKE the verbatim fields above, its values are **template-resolved against session values at runtime**, so a `{{...}}` reference is substituted on the wire (a key that resolves empty is dropped); header names are still validated as RFC 3261 tokens at compile time. A name that collides (case-insensitively) with the resolved queue/reason/metadata key, or a reserved platform header, fails the transfer.
 
 #### Transfer flow policies
 
@@ -1227,7 +1316,7 @@ COMPLETE:
 | `STORE`    | `string`                | No       | --      | Collection or path name to store the completion result for analytics.  |
 | `MODEL_CONTEXT` | `string`           | No       | --      | Text retained for the model instead of the delivered `RESPOND` in future model calls. See [MODEL_CONTEXT on a response](/agent-platform/abl-reference/flow#model_context-on-a-response). |
 
-<Warning> `COMPLETE`'s `WHEN` is **deterministic** — it must be a boolean expression over session state. Plain-English / intent-style text is rejected at compile time (`PLAIN_ENGLISH_COMPLETE_WHEN`). Use `NLU`/routing for intent matching, not `COMPLETE WHEN`. A fully-quoted `WHEN` (`WHEN: "status == \"done\""`) is unwrapped and evaluated the same as an unquoted one when it contains an operator — see [Quoting a condition](/agent-platform/abl-reference/expressions-and-functions#quoting-a-condition). </Warning>
+<Warning> `COMPLETE`'s `WHEN` is **deterministic** — it must be a boolean expression over session state. Plain-English / intent-style text is rejected at compile time ([`PLAIN_ENGLISH_COMPLETE_WHEN`](/agent-platform/abl/reference/errors-and-warnings#plain_english_complete_when)). Use `NLU`/routing for intent matching, not `COMPLETE WHEN`. A fully-quoted `WHEN` (`WHEN: "status == \"done\""`) is unwrapped and evaluated the same as an unquoted one when it contains an operator — see [Quoting a condition](/agent-platform/abl-reference/expressions-and-functions#quoting-a-condition). </Warning>
 
 <Note>A `COMPLETE` condition that matches does **not** complete the agent if the agent's own `CONSTRAINTS` fail on the state it would complete with — the failing constraint's `ON_FAIL` runs instead, so a completion can never bypass a constraint that would otherwise block the same state.</Note>
 

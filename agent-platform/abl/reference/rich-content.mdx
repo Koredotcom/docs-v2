@@ -637,7 +637,55 @@ CONDITION: abl.pii_equal(_action.formData.phone_pin, stored_pin)
 
 #### Declared order
 
-The web chat renders action elements, including a form's `input` elements, in the order they're declared. Consecutive `button` elements share one row.
+The web chat renders action elements, including a form's `input` elements, in the order they're declared. Consecutive `button` elements share one row, and the submit button comes last.
+
+#### Form layout
+
+To decide where each item sits, group items under `- ROW:`. A row holds any mix of `INPUT`, `SELECT`, `BUTTON`, `SUBMIT`, and `TEXT` items. It shows them side by side in the order written. An item outside a `ROW` takes a full line of its own.
+
+| Item | Meaning |
+| ---- | ------- |
+| `- ROW:` | Puts the items indented under it on one line. A `ROW` cannot contain another `ROW`. |
+| `- SUBMIT` | Places the submit button. Its text and action ID still come from `SUBMIT_LABEL` and `SUBMIT_ID`. The marker is ignored unless both are set. Write it once. |
+| `- TEXT: "..."` | Shows a line of static text inside the form. It supports `{{variable}}` interpolation and is never sent with the form. |
+| `WIDTH:` | Under an item inside a `ROW`: the item's share of the line, a whole number from 1 to 12 (default 1). An item with `WIDTH: 2` takes twice the space of an item with `WIDTH: 1`. Ignored outside a `ROW`. |
+
+```yaml
+ACTIONS:
+  - INPUT: "Phone ID"
+    ID: phone_id
+    INPUT_TYPE: number
+    REQUIRED: true
+  - INPUT: "PIN"
+    ID: phone_pin
+    INPUT_TYPE: password
+    REQUIRED: true
+  - ROW:
+      - SUBMIT
+        WIDTH: 2
+      - BUTTON: "Forgot Phone ID?" -> forgot_phone_id
+  - TEXT: "Need help? Call support."
+  SUBMIT_LABEL: "Sign in"
+  SUBMIT_ID: submit_login
+```
+
+This form shows the Phone ID and the PIN on their own lines. The submit button and the **Forgot Phone ID?** button follow side by side, then the help text. A layout does not change element IDs, `ON_ACTION` handlers, or `_action.form`. The form still sends `phone_id` and `phone_pin`.
+
+On a narrow screen, a row wraps its items onto the next line in the same order. Password masking and PII protection apply to an `INPUT` wherever you place it. A form with no `ROW`, `SUBMIT`, or `TEXT` item renders as before.
+
+The web chat, the Web SDK, and the Studio preview render the layout. Channels that cannot lay out a form show its elements stacked in declared order and do not show `TEXT` items. Web SDK versions released before form layout support behave the same way. A site that pins an older SDK version shows the stacked form without `TEXT` items until it upgrades. Keep essential instructions in the `RESPOND` text.
+
+A layout mistake produces a warning, and the compiler ignores the affected item:
+
+| Code | Cause |
+| ---- | ----- |
+| [`W408`](/agent-platform/abl/reference/errors-and-warnings#w408) | Empty `ROW`. |
+| [`W409`](/agent-platform/abl/reference/errors-and-warnings#w409) | `ROW` inside a `ROW`. |
+| [`W410`](/agent-platform/abl/reference/errors-and-warnings#w410) | `WIDTH` that is not a whole number from 1 to 12. |
+| [`W411`](/agent-platform/abl/reference/errors-and-warnings#w411) | Second `SUBMIT`. |
+| [`W412`](/agent-platform/abl/reference/errors-and-warnings#w412) | `SUBMIT` without both `SUBMIT_LABEL` and `SUBMIT_ID`. |
+| [`W413`](/agent-platform/abl/reference/errors-and-warnings#w413) | Empty `TEXT`. |
+| [`W414`](/agent-platform/abl/reference/errors-and-warnings#w414) | Value written after `SUBMIT:`. The marker still places the button, and its text comes from `SUBMIT_LABEL`. |
 
 #### Form submission
 
@@ -780,7 +828,7 @@ FORMATS:
 
 A `FEEDBACK` block renders a rating/feedback card. Author it inside a `RICH_CONTENT:` (or `FORMATS:`) block.
 
-<Warning>**Inline feedback is deprecated** (`DEPRECATED_INLINE_FEEDBACK`). A `FEEDBACK` block without a `FEEDBACK_TEMPLATE` still compiles, but the compiler warns: *"Inline feedback is deprecated and will be removed in a future version. Define a survey in the project Surveys area and reference it with `FEEDBACK_TEMPLATE`."* Prefer referencing a project survey template.</Warning>
+<Warning>**Inline feedback is deprecated** ([`DEPRECATED_INLINE_FEEDBACK`](/agent-platform/abl/reference/errors-and-warnings#deprecated_inline_feedback)). A `FEEDBACK` block without a `FEEDBACK_TEMPLATE` still compiles, but the compiler warns: *"Inline feedback is deprecated and will be removed in a future version. Define a survey in the project Surveys area and reference it with `FEEDBACK_TEMPLATE`."* Prefer referencing a project survey template.</Warning>
 
 #### Referencing a survey template
 
@@ -793,7 +841,7 @@ RICH_CONTENT:
     prompt: "How likely are you to recommend us?"   # optional copy override
 ```
 
-When a template is named you may **not** override the measure — `type`, `max`, `scoring`, `range`, and `comment_threshold` are owned by the template, and setting them alongside a template is a compile error. Naming a template that doesn't exist in the project is an error (`UNKNOWN_SURVEY_TEMPLATE`).
+When a template is named you may **not** override the measure — `type`, `max`, `scoring`, `range`, and `comment_threshold` are owned by the template, and setting them alongside a template is a compile error. Naming a template that doesn't exist in the project is an error ([`UNKNOWN_SURVEY_TEMPLATE`](/agent-platform/abl/reference/errors-and-warnings#unknown_survey_template)).
 
 `expires_after` is the one exception to that rule — a numeric answer-window TTL (in seconds) that **is** overridable per-agent even when a template is referenced:
 
@@ -840,7 +888,7 @@ FEEDBACK:
 
 Only **wording** fields accept rules: `prompt`, `submit_label`, `pending_message`, `success_message`, `error_message`, `comment_prompt`, `comment_placeholder`. There is no `type_rules`/`max_rules` — the measure is never rule-selectable.
 
-<Note>Copy rules are evaluated **before the customer answers**, so a `when` expression may reference `max`, `language`, `channel`, and `session` (as `session.<name>`) but **not** `rating`. An invalid condition is a compile error (`INVALID_SURVEY_CONDITION`).</Note>
+<Note>Copy rules are evaluated **before the customer answers**, so a `when` expression may reference `max`, `language`, `channel`, and `session` (as `session.<name>`) but **not** `rating`. An invalid condition is a compile error ([`INVALID_SURVEY_CONDITION`](/agent-platform/abl/reference/errors-and-warnings#invalid_survey_condition)).</Note>
 
 #### Post-transfer surveys (ESCALATE to a human agent)
 
@@ -948,5 +996,5 @@ If the preferred format isn't available, the runtime falls back through the prio
 
 - [Expressions and functions](/agent-platform/abl-reference/expressions-and-functions) -- operators, built-in functions, `{{}}` template-string syntax, and type coercion rules
 - [Lifecycle and hooks](/agent-platform/abl-reference/lifecycle-and-hooks) -- ON_START and hooks that support rich content
-- [Multi-Agent and supervisor](/agent-platform/abl-reference/multi-agent-and-supervisor) -- COMPLETE conditions with rich responses
-- [Data Types and utilities](/agent-platform/abl-reference/data-types-and-utilities) -- types used in rich content and template fields
+- [Multi-agent and supervisor](/agent-platform/abl-reference/multi-agent-and-supervisor) -- COMPLETE conditions with rich responses
+- [Data types and utilities](/agent-platform/abl-reference/data-types-and-utilities) -- types used in rich content and template fields

@@ -1,0 +1,485 @@
+# When to escalate a conversation to a human
+
+Use this pattern when an agent must stop and pass the conversation to a person.
+
+## Concept
+
+Escalation moves a conversation from an agent to a human agent. Escalate when the agent cannot or must not continue. Typical reasons are a request above the agent limit, a customer who asks for a person, repeated failure to collect data, and a policy that requires review.
+
+Pick the route that fits the situation.
+
+| Situation | Use |
+| --------- | --- |
+| Another agent owns the topic and can finish it | `HANDOFF`. See [How to switch the active agent during a conversation](/agent-platform/abl/how-to/switch-active-agent) and [When to use HANDOFF instead of DELEGATE](/agent-platform/abl/how-to/use-handoff-instead-of-delegate). |
+| The agent needs an internal result and keeps the conversation | `DELEGATE`. See [When to use DELEGATE instead of HANDOFF](/agent-platform/abl/how-to/use-delegate-instead-of-handoff). |
+| A person must decide, approve, or speak with the customer | `ESCALATE`. |
+| The customer asks for a person once and a self-service answer exists | Answer first. The built-in escalation instruction tells the model to try to help once before it escalates. |
+
+### Which ESCALATE constructs reach a person
+
+ABL offers several ways to write `ESCALATE`. They do not behave the same. Only some of them start a transfer.
+
+| Construct | When it fires | What the runtime does |
+| --------- | ------------- | --------------------- |
+| `ESCALATE:` trigger with a deterministic `WHEN` | The condition is true at the start of a turn. | Full escalation. |
+| `ESCALATE:` trigger with a prompt-only `WHEN` | The model calls its escalate action. | Full escalation. |
+| Flow terminal `THEN: ESCALATE` or `THEN: ESCALATE WITH REASON "..." PRIORITY level` | A flow step transition, an `ON_INPUT` branch, or `ON_EXHAUSTED`. | Full escalation when the agent has an `ESCALATE:` block. |
+| `CONSTRAINTS` with `ON_FAIL: ESCALATE` or `ON_EXHAUSTED: ESCALATE` | A constraint fails. | Marks the session escalated and shows the confirmation. No transfer and no task. |
+| `ON_ERROR` with `THEN: ESCALATE`, or `HANDOFF` and `DELEGATE` with `ON_FAILURE: escalate` | An error or a failed route. | Reports an escalation to the conversation. No transfer and no task. |
+
+A full escalation runs these steps. Voice channels differ in the transfer details.
+
+1. Checks the reason (5 to 500 characters) and the priority (`low`, `medium`, `high`, or `critical`).
+2. Selects a routing entry from the `routing` block.
+3. Creates a task in the human-agent queue when the platform database is available.
+4. Starts the transfer through the connection, or the voice leg transfer on a voice channel.
+5. Shows the confirmation message to the customer.
+6. Pauses the session when the block has `on_human_complete` rules.
+
+A marking-only construct stops the agent but does not call a person. Use it as a stop signal. Pair it with a trigger or a flow terminal when a person must receive the conversation.
+
+### Choose a trigger type
+
+A trigger names a condition and a reason. The `WHEN` text decides who evaluates it.
+
+| Trigger type | `WHEN` looks like | Who decides | Behavior |
+| ------------ | ----------------- | ----------- | -------- |
+| Deterministic | `dispute_amount > 500`, `customer_id IS NOT SET`, `failed_lookups >= 2` | The runtime | Checked in order before each model turn. The first match fires. |
+| Prompt-only | `"The customer is upset or asks for a person twice"` | The model | The model sees the `REASON` and `PRIORITY` of each trigger, not the `WHEN` text. |
+
+A condition counts as deterministic when it has a comparison or boolean operator, `IS SET` or `IS NOT SET`, the literal `true`, `false`, or `*`, or a `has(` or `abl.` function call. Free text that contains the lowercase word `in` also counts as deterministic. Keep prompt-only text free of operators and the word `in`.
+
+Write the `REASON` of a prompt-only trigger as the instruction the model follows. Write every `REASON` so a customer can read it. The built-in confirmation message includes the reason and the priority.
+
+If an agent has a deterministic trigger and none matches, the runtime refuses the model's escalate action. Do not mix a deterministic trigger with a prompt-only trigger when you rely on the model to escalate.
+
+### Route the escalation
+
+The `routing` block says where the conversation goes.
+
+| Field | Meaning |
+| ----- | ------- |
+| `connection` | The human-agent connection in your project. Omit it in a single `routing` mapping to use the project default connection. |
+| `queue` | The queue in the human-agent platform. It accepts `{{variable}}` templates. |
+| `skills` | Skills the human agent needs. |
+| `priority` | A number for the queue entry. It is separate from the trigger `PRIORITY` label. |
+| `post_agent` | What happens after the human agent finishes: `end` (default) or `return`. |
+| `voice` | Voice transfer settings such as `call_transfer_type` and `sip_transfer_id`. |
+
+`routing` takes a single mapping or an ordered list of entries. An entry can have an `id` and a deterministic `when`. The first matching entry wins. One entry without a `when` is the default and must come last.
+
+Condition values for a routing `when` include `system.channel`, `system.channelType`, `system.isVoice`, `system.locale`, `system.language`, and `system.triggerPriority`.
+
+### What happens when no human agent is reachable
+
+| Situation | What happens |
+| --------- | ------------ |
+| The agent has no `ESCALATE:` block | A flow `THEN: ESCALATE` marks the session escalated and shows the confirmation. Nobody receives the conversation. |
+| The block has no routing and the project has no default connection | The runtime skips the transfer. It still creates the task, marks the session escalated, and shows the confirmation. No live person connects. |
+| A routing list has no matching entry | The runtime attempts no transfer. The task and the confirmation still happen. |
+| The transfer fails | The runtime clears the escalated state, cancels the task, and returns the provider message. The agent keeps the conversation. The same trigger does not refire while its condition stays true. |
+| The agent-transfer service is not running | The runtime falls back to the task queue only. |
+
+A machine-only agent that prints text and has no working connection does not reach a person.
+
+## Minimal working example
+
+`Billing_Agent` collects the disputed amount. A dispute above 500 dollars goes to a human agent. A smaller dispute completes in the agent.
+
+`genesys` is a project-local assumption. It names a human-agent connection in your project. The queue `billing_disputes` and the skill `billing` must exist in that platform. `dispute_amount` comes from the `GATHER` field.
+
+```abl
+AGENT: Billing_Agent
+GOAL: "Resolve billing questions and hand large disputes to a billing specialist"
+
+GATHER:
+  dispute_amount:
+    PROMPT: "What amount in dollars is the disputed charge?"
+    TYPE: number
+    REQUIRED: true
+
+ESCALATE:
+  triggers:
+    - WHEN: dispute_amount > 500
+      REASON: "Dispute above the agent limit"
+      PRIORITY: high
+  context_for_human:
+    - dispute_amount
+  routing:
+    connection: genesys
+    queue: billing_disputes
+    skills: [billing]
+
+COMPLETE:
+  - WHEN: dispute_amount <= 500
+    RESPOND: "I logged your dispute for {{dispute_amount}} dollars."
+```
+
+## How it works
+
+1. The customer answers the `GATHER` prompt. The runtime stores `dispute_amount`.
+2. Before the next model turn, the runtime evaluates `dispute_amount > 500`. A true result matches the trigger.
+3. The runtime calls the escalation with the trigger `REASON` and `PRIORITY`. It applies any `SET` on the trigger first.
+4. It copies the `context_for_human` values for the human agent. The full payload is covered in [How to package context for human escalation](/agent-platform/abl/how-to/package-human-escalation-context).
+5. It creates a task and starts the transfer through `genesys` with the queue and skills.
+6. The customer sees a confirmation with the reason and priority. On a voice channel it reads `Escalated to human agent. Reason: Dispute above the agent limit. Priority: high.`
+7. After a successful transfer, the platform forwards the customer messages to the human agent.
+
+The runtime evaluates deterministic triggers before the model runs. A value that a tool writes during the turn does not fire a trigger until the next turn. The `EXECUTION` setting in [Re-check triggers after tool calls](#re-check-triggers-after-tool-calls) changes this.
+
+When the block has `on_human_complete` rules, the runtime pauses the session. The customer receives a waiting message until a human resolves the task. See [How to resume after a child agent or human agent completes](/agent-platform/abl/how-to/resume-after-child-or-human-agent).
+
+## Common variations
+
+### Escalate from a flow step
+
+Use a flow terminal when the escalation belongs to a step. `THEN: ESCALATE WITH REASON "..." PRIORITY level` sets the reason and priority. The priority must be `low`, `medium`, `high`, or `critical`.
+
+```abl
+AGENT: Account_Help_Agent
+GOAL: "Answer account questions and connect the customer to a person on request"
+
+ESCALATE:
+  routing:
+    connection: genesys
+    queue: account_support
+
+FLOW:
+  entry_point: ask_help
+  steps:
+    - ask_help
+    - self_service
+
+ask_help:
+  REASONING: false
+  RESPOND: "How can I help? Type agent to reach a person."
+  ON_INPUT:
+    - IF: input contains "agent"
+      RESPOND: "Connecting you to a person."
+      THEN: ESCALATE WITH REASON: "Customer asked for a person" PRIORITY: medium
+    - ELSE:
+      THEN: self_service
+
+self_service:
+  REASONING: false
+  RESPOND: "I can help with that in self service."
+  THEN: COMPLETE
+```
+
+This block has no `triggers`. The flow terminal needs only the `ESCALATE:` block with `routing`. Without the block, the terminal marks the session escalated and nobody receives it.
+
+### Escalate after repeated failed attempts
+
+Set `MAX_ATTEMPTS` and `ON_EXHAUSTED` on a flow step. After the last failed attempt, the step takes the `ON_EXHAUSTED` target.
+
+```abl
+AGENT: Service_Picker_Agent
+GOAL: "Collect the service the customer needs and hand off after three invalid answers"
+
+ESCALATE:
+  routing:
+    connection: genesys
+    queue: general_support
+
+FLOW:
+  entry_point: pick_service
+  steps:
+    - pick_service
+    - confirm_service
+
+pick_service:
+  REASONING: false
+  GATHER:
+    service_choice:
+      PROMPT: "Which service do you need: billing or returns?"
+      TYPE: enum
+      OPTIONS: [billing, returns]
+      REQUIRED: true
+  MAX_ATTEMPTS: 3
+  ON_EXHAUSTED: ESCALATE WITH REASON: "Customer could not pick a service" PRIORITY: low
+  THEN: confirm_service
+
+confirm_service:
+  REASONING: false
+  RESPOND: "Starting {{service_choice}}."
+  THEN: COMPLETE
+```
+
+### Let the model decide
+
+Use a prompt-only trigger for judgment calls such as frustration. The model decides. The runtime never evaluates the `WHEN` text.
+
+```abl
+AGENT: Returns_Agent
+GOAL: "Help customers return an item and hand off upset customers to a person"
+
+ESCALATE:
+  triggers:
+    - WHEN: "The customer is upset or asks for a person twice"
+      REASON: "Customer is upset or repeatedly asks for a person"
+      PRIORITY: high
+  routing:
+    connection: genesys
+    queue: returns_support
+```
+
+The model sees `Customer is upset or repeatedly asks for a person (priority: high)` and a rule to help the customer at least once first. A model that escalates passes its own reason, which must be 5 to 500 characters.
+
+### Route by channel and priority
+
+Use a routing list when voice and chat need different destinations. Order the entries from most specific to the default. The default entry comes last.
+
+`claims_sip` is a project-local SIP transfer destination. `claim_amount` comes from the `GATHER` field.
+
+```abl
+AGENT: Claims_Agent
+GOAL: "Take claim details and hand large claims to a claims specialist"
+
+GATHER:
+  claim_amount:
+    PROMPT: "What is the claim amount in dollars?"
+    TYPE: number
+    REQUIRED: true
+
+ESCALATE:
+  triggers:
+    - WHEN: claim_amount > 10000
+      REASON: "Claim above the agent limit"
+      PRIORITY: critical
+  context_for_human:
+    - claim_amount
+  routing:
+    - id: voice_callers
+      when: system.isVoice == true
+      connection: genesys
+      voice:
+        call_transfer_type: sip
+        sip_transfer_id: claims_sip
+    - id: chat_priority
+      when: system.triggerPriority == "critical"
+      connection: genesys
+      queue: claims_priority
+      skills: [claims, senior]
+    - id: default
+      connection: genesys
+      queue: claims_general
+
+COMPLETE:
+  - WHEN: claim_amount <= 10000
+    RESPOND: "I filed your claim for {{claim_amount}} dollars."
+```
+
+The compiler rejects a list with two default entries, a default that is not last, and a prompt-only `when`.
+
+### Escalate from a supervisor
+
+A supervisor can own an `ESCALATE:` block. The supervisor model sees the same escalation rule. A specialist reads its own block, so give each specialist that needs a person its own `ESCALATE:`.
+
+```abl
+SUPERVISOR: Support_Supervisor
+GOAL: "Route customers to the right specialist and hand repeat human requests to a person"
+
+INTENTS:
+  billing: "Charges, invoices, refunds, or payment methods."
+
+HANDOFF:
+  - TO: Billing_Agent
+    WHEN: intent.category == "billing"
+    SUMMARY: "Billing agent owns the conversation."
+    RETURN: false
+
+ESCALATE:
+  triggers:
+    - WHEN: "The customer explicitly and repeatedly asks for a person"
+      REASON: "Customer repeatedly asks for a person"
+      PRIORITY: high
+  routing:
+    connection: genesys
+    queue: support_general
+```
+
+`Billing_Agent` is a stand-in for your specialist.
+
+```abl
+AGENT: Billing_Agent
+GOAL: "Resolve billing questions"
+```
+
+### Stop on a constraint
+
+A constraint can stop an agent with `ESCALATE`. This marks the session escalated and shows the confirmation. It does not start a transfer. Use it for a hard stop, and add a trigger when a person must take over.
+
+```abl
+AGENT: Refund_Agent
+GOAL: "Process refunds within the approval limit"
+
+GATHER:
+  refund_amount:
+    PROMPT: "How much is the refund in dollars?"
+    TYPE: number
+    REQUIRED: true
+
+CONSTRAINTS:
+  - REQUIRE refund_amount <= 1000
+    ON_FAIL: ESCALATE "Refund above the approval limit"
+
+COMPLETE:
+  - WHEN: refund_amount <= 1000
+    RESPOND: "Your refund of {{refund_amount}} dollars is approved."
+```
+
+Cap the repeats of a constraint with `MAX_REPEATS`. After the cap, `ON_EXHAUSTED` runs. Without an `ON_EXHAUSTED`, the default is `ESCALATE`, which is also marking-only.
+
+```abl
+AGENT: Identity_Agent
+GOAL: "Confirm the account name before account work"
+
+GATHER:
+  name_matches:
+    PROMPT: "Does the name on the account match yours? Answer yes or no."
+    TYPE: boolean
+    REQUIRED: true
+
+CONSTRAINTS:
+  - REQUIRE name_matches != false
+    ON_FAIL:
+      CLEAR: [name_matches]
+      RESPOND: "That name does not match. Please check and answer again."
+      MAX_REPEATS: 2
+      ON_EXHAUSTED: ESCALATE "identity_not_confirmed"
+
+COMPLETE:
+  - WHEN: name_matches == true
+    RESPOND: "Thanks. Your name is confirmed."
+```
+
+### Re-check triggers after tool calls
+
+Set `escalation_recheck_after_tools` when a tool result can make a trigger true in the middle of a turn. The runtime then evaluates the triggers again after each tool result. A tool `ON_RESULT` mapping must write the field that the trigger reads.
+
+```abl
+AGENT: Lookup_Agent
+GOAL: "Look up an order and hand off after the lookup fails twice"
+
+EXECUTION:
+  escalation_recheck_after_tools: true
+
+GATHER:
+  failed_lookups:
+    PROMPT: "How many lookups failed?"
+    TYPE: number
+    REQUIRED: true
+
+ESCALATE:
+  triggers:
+    - WHEN: failed_lookups >= 2
+      REASON: "Order lookup failed twice"
+      PRIORITY: medium
+  routing:
+    connection: genesys
+    queue: order_support
+
+COMPLETE:
+  - WHEN: failed_lookups < 2
+    RESPOND: "The lookup worked."
+```
+
+This block is a syntax harness. In a project, a tool result writes `failed_lookups`, not a `GATHER` prompt.
+
+### Change the confirmation message
+
+The built-in confirmation depends on the channel and includes the reason and priority. Set `escalation_format` in `MESSAGES` to replace it. The template accepts `{{reason}}`, `{{priority}}`, `{{agent.name}}`, `{{channel}}`, and `{{escalated_at}}`. A Localization asset or a project Escalation Template for the channel takes precedence over `escalation_format`.
+
+```abl
+AGENT: Billing_Agent
+GOAL: "Resolve billing questions and hand large disputes to a billing specialist"
+
+MESSAGES:
+  escalation_format: "I am connecting you to a billing specialist now."
+  conversation_complete: "Thanks for contacting us. Goodbye."
+
+GATHER:
+  dispute_amount:
+    PROMPT: "What amount in dollars is the disputed charge?"
+    TYPE: number
+    REQUIRED: true
+
+ESCALATE:
+  triggers:
+    - WHEN: dispute_amount > 500
+      REASON: "Dispute above the agent limit"
+      PRIORITY: high
+  routing:
+    connection: genesys
+    queue: billing_disputes
+
+COMPLETE:
+  - WHEN: dispute_amount <= 500
+```
+
+On voice channels, the behavior setting `speaking.handoffs.human: silent` removes the spoken confirmation for trigger and flow escalations.
+
+## Verification
+
+- Compile the project and fix every error and warning on the `ESCALATE:` block.
+- Test the match. Send `My disputed charge is 750 dollars` to the minimal example. The trace shows a decision event `escalation_trigger_check` with outcome `match`, then `escalation` with priority `high`.
+- Test the miss. Send `200 dollars`. The trace shows `escalation_trigger_check` with outcome `skip`. The agent completes with its own message.
+- Check the transfer. Look for `agent_transfer_initiated` with your provider name and queue. `escalation_triggered` shows `hasAgentTransfer` as `true` when the routing entry names a connection.
+- Check a routing list. `escalation_routing_check` lists each entry with `match` or `skip`. `escalation_routing_no_match` means no entry matched.
+- Read refusals. `escalation_rejected` carries a `reasonCode` such as `ESCALATION_TRIGGER_NOT_MATCHED` or `ESCALATION_ALREADY_IN_PROGRESS`.
+- Test a prompt-only trigger with a short, calm message. The agent must answer first. Then repeat the request and confirm the escalation.
+- Read traces with [How to debug routing decisions in traces](/agent-platform/abl/how-to/debug-routing-traces).
+
+## Production readiness checklist
+
+- The connection exists, is active, and is the one in `routing.connection` or the project default.
+- The queue and skills exist in the human-agent platform, and agents are staffed for them.
+- Every field in `context_for_human` exists in the session. A missing field appears as `escalation_context_missing` in the trace.
+- Every `REASON` is safe for the customer to read, or a custom confirmation template hides it.
+- Every flow `PRIORITY` is `low`, `medium`, `high`, or `critical`.
+- Every `REASON` is at least 5 characters.
+- A fallback exists for a failed transfer. The agent keeps the conversation, so its next turn must help.
+- Test a transfer outside staffed hours, a failed connection, and a routing list with no match.
+- Test voice and chat separately. Confirm the `voice` block on each voice entry.
+- Alert on `escalation_rejected`, `agent_transfer.transfer_failed`, and `escalation_routing_no_match`.
+
+## Common mistakes
+
+| Mistake | Why it happens | How to avoid it |
+| ------- | -------------- | --------------- |
+| Using `CONSTRAINTS` `ON_FAIL: ESCALATE` to reach a person | The word `ESCALATE` looks the same in every construct. | Use a trigger or a flow terminal for a transfer. Treat the constraint form as a stop. |
+| Writing `ESCALATE:` with no `routing` and no project default connection | The block compiles without routing. | Add `routing` with `connection`, or configure a project default connection. |
+| Mixing a deterministic trigger with a prompt-only trigger | Both are valid in one list. | Use one type. Otherwise the model escalate action is refused while no deterministic trigger matches. |
+| Writing prompt-only text with the word `in` | The runtime treats the word as an operator. | Rephrase the text. Check it against the deterministic rules. |
+| Writing `PRIORITY: urgent` in a flow terminal | The compiler accepts any letters. | Use `low`, `medium`, `high`, or `critical`. The runtime rejects other values. |
+| Writing a short reason such as `ok` | The compiler does not check length. | Write at least 5 characters. |
+| Using `- when:` in lowercase under `triggers` | Routing entries use lowercase `when`. | Use uppercase `WHEN:` for triggers. The parser ignores the lowercase item with warning W355. |
+| Listing `type: conversation_summary` under `context_for_human` | The item looks like a setting. | List session variable names only. The compiler warns with W357. |
+| Putting a default routing entry before other entries | The order looks harmless. | Put the entry with no `when` last. The compiler reports an error. |
+| Expecting a tool result to fire a trigger in the same turn | Triggers run before the model. | Enable `escalation_recheck_after_tools`, or expect the escalation on the next turn. |
+
+## Troubleshooting
+
+| Symptom | Likely cause | What to check |
+| ------- | ------------ | ------------- |
+| The customer sees the confirmation but no person joins | No connection resolved, or the transfer service is down. | Whether `agent_transfer_initiated` appears, the connection status, and the project default connection. |
+| The trigger never fires | The condition is false, or the trigger is prompt-only. | `escalation_trigger_check` outcome: `skip`, `prompt_only`, or `error`. |
+| The model never escalates | A deterministic trigger exists and none matches. | `escalation_rejected` with `ESCALATION_TRIGGER_NOT_MATCHED`. |
+| The flow terminal shows an error instead of the escalation | The `PRIORITY` or the reason is invalid. | `INVALID_ESCALATION_PRIORITY` or `INVALID_ESCALATION_REASON` in the trace. |
+| The same failed transfer does not retry | The trigger is quiet after a failed transfer. | `escalation_trigger_check` outcome `suppressed_after_failed_transfer`. Clear the condition to reset it. |
+| A routing list sends nobody anywhere | No entry matched. | `escalation_routing_no_match` and each `escalation_routing_check` result. Add a default entry. |
+| Warning `ESCALATE_ROUTING_DIGITAL_ENTRY_NEEDS_CONNECTION` | An entry guarded on a non-voice channel has no `connection`. | Add `connection` to the entry. |
+| Warning `ESCALATE_ROUTING_VOICE_ENTRY_NEEDS_VOICE` | An entry guarded on voice has no `voice` block. | Add `voice` with `call_transfer_type`. |
+| The customer gets the waiting message | The block has `on_human_complete` and the task is open. | The human task status in the human-agent queue. |
+| A second escalation is refused | One is already in progress. | `ESCALATION_ALREADY_IN_PROGRESS` in `escalation_rejected`. |
+
+## Related HowTos
+
+- [How to switch the active agent during a conversation](/agent-platform/abl/how-to/switch-active-agent)
+- [How to route unclear or unsupported requests to a fallback agent](/agent-platform/abl/how-to/route-to-fallback-agent)
+- [When to use HANDOFF instead of DELEGATE](/agent-platform/abl/how-to/use-handoff-instead-of-delegate)
+- [When to use DELEGATE instead of HANDOFF](/agent-platform/abl/how-to/use-delegate-instead-of-handoff)
+- [How to end a conversation with COMPLETE](/agent-platform/abl/how-to/end-conversation-with-complete)
+- [How to package context for human escalation](/agent-platform/abl/how-to/package-human-escalation-context)
+- [How to resume after a child agent or human agent completes](/agent-platform/abl/how-to/resume-after-child-or-human-agent)
+- [How to debug routing decisions in traces](/agent-platform/abl/how-to/debug-routing-traces)

@@ -36,7 +36,7 @@ This page documents ABL's expression language: operators, variable paths, `{{}}`
 
 Write logical operators in uppercase (`AND`, `OR`, `NOT`). `!` is also accepted as a prefix negation.
 
-<Warning>`contains`, `matches`, `startsWith`, and `endsWith` are infix **operators** (`a contains b`), not callable functions — a condition that calls one as a bare function (`CONTAINS(ani_national, "1234567890")`) parses but has no matching overload, so it can never evaluate true; the compiler warns `CEL_CONDITION_UNRESOLVED_CALL`. Use the infix form, or the `abl.*` CEL method form (`x.contains("y")`).</Warning>
+<Warning>`contains`, `matches`, `startsWith`, and `endsWith` are infix **operators** (`a contains b`), not callable functions — a condition that calls one as a bare function (`CONTAINS(ani_national, "1234567890")`) parses but has no matching overload, so it can never evaluate true; the compiler warns [`CEL_CONDITION_UNRESOLVED_CALL`](/agent-platform/abl/reference/errors-and-warnings#cel_condition_unresolved_call). Use the infix form, or the `abl.*` CEL method form (`x.contains("y")`).</Warning>
 
 ### Unary operators
 
@@ -191,7 +191,7 @@ A `-1` score (nothing to judge) always reports `"missing"`.
 
 <Warning>`said` must be the extracted field (for example `supplied_email`), not the raw caller utterance. An extracted field is written by the model and may already hold the stored value (for example, after a lookup tool returned the profile) — a match on the field alone does not prove the caller actually said it. A rule that grants access on a match should also confirm the caller's own words contained the value.</Warning>
 
-<Warning>The **function** `MATCHES(said, stored[, kind])` and the **infix operator** `a MATCHES "pattern"` are unrelated — do not mix up their second argument. Writing `MATCHES(supplied, "^gold$")` (the function form with a regex-shaped literal) is almost certainly meant to be the infix form `supplied MATCHES "^gold$"`, and the compiler warns `MATCHES_FUNCTION_REGEX_LITERAL`. Conversely, writing `tier MATCHES "gold"` (the infix form with a plain literal) is true whenever `"gold"` appears anywhere in `tier` as a substring — not a fuzzy spoken-answer comparison — and the compiler warns `MATCHES_INFIX_LITERAL_AMBIGUOUS` since this is easy to mean the other way.</Warning>
+<Warning>The **function** `MATCHES(said, stored[, kind])` and the **infix operator** `a MATCHES "pattern"` are unrelated — do not mix up their second argument. Writing `MATCHES(supplied, "^gold$")` (the function form with a regex-shaped literal) is almost certainly meant to be the infix form `supplied MATCHES "^gold$"`, and the compiler warns [`MATCHES_FUNCTION_REGEX_LITERAL`](/agent-platform/abl/reference/errors-and-warnings#matches_function_regex_literal). Conversely, writing `tier MATCHES "gold"` (the infix form with a plain literal) is true whenever `"gold"` appears anywhere in `tier` as a substring — not a fuzzy spoken-answer comparison — and the compiler warns [`MATCHES_INFIX_LITERAL_AMBIGUOUS`](/agent-platform/abl/reference/errors-and-warnings#matches_infix_literal_ambiguous) since this is easy to mean the other way.</Warning>
 
 ### Formatting functions
 
@@ -291,7 +291,7 @@ CEL-based [guardrail](/agent-platform/abl-reference/guardrails) checks have acce
 | `abl.contains_pii(text)`                | True if the text contains PII.                     |
 | `abl.detect_pii(text)`                  | Structured PII detection result.                   |
 | `abl.redact_pii(text)`                  | Returns the text with PII redacted.                |
-| `abl.matches_pattern(text, pattern)`    | Regex match (RE2-backed).                          |
+| `abl.matches_pattern(text, pattern)`    | Regex match (RE2-backed). Patterns are limited to 500 characters. See [Pattern limits](#pattern-limits). |
 | `abl.not_matches_pattern(text, pattern)`| Negation of `matches_pattern`.                     |
 | `abl.word_count(text)`                  | Word count.                                        |
 | `abl.sentence_count(text)`              | Sentence count.                                    |
@@ -299,6 +299,15 @@ CEL-based [guardrail](/agent-platform/abl-reference/guardrails) checks have acce
 | `abl.contains_email(text)`              | True if the text contains an email address.        |
 | `abl.contains_code(text)`               | True if the text contains a fenced code block.     |
 | `abl.pii_equal(left, right)`            | True if two **PII-vault tokens** hold the same underlying value. See below. |
+
+#### Pattern limits
+
+`abl.matches_pattern` and `abl.not_matches_pattern` run on the RE2 engine.
+
+- Each pattern can be at most 500 characters and must use RE2 syntax. RE2 has no backreferences or lookarounds.
+- A pattern outside these limits never matches. `abl.not_matches_pattern` is then true for every input. Validation warns with [`CEL_MATCH_PATTERN_REJECTED`](/agent-platform/abl/reference/errors-and-warnings#cel_match_pattern_rejected).
+- To use a longer pattern, split it into several calls joined with `||`, or with `&&` for `abl.not_matches_pattern`.
+- The checked text is scanned up to 100,000 characters. Text past that length is not scanned.
 
 <Note>In CEL expressions the core functions above are also available under the `abl.` namespace with lowercase names (for example, `abl.upper(x)`), and CEL-native operators (`&&`, `||`, `!`, `%`, `in`, ternary `? :`) and macros (`size()`, `has()`) can be used.</Note>
 
@@ -335,6 +344,24 @@ WHEN: user.age >= 18 AND user.verified == true
 CHECK: amount <= available_balance
 - REQUIRE sanctions_clear == true
 ```
+
+#### Long boolean conditions
+
+Ordinary boolean conditions can combine `AND`, `OR`, and `NOT` beyond the original 4,096-unit CEL limit. The extended path accepts up to 65,536 prepared UTF-16 source units, 4,096 syntax nodes, and 64 nesting levels. Each indivisible comparison, call, or ternary stays limited to 4,096 units. CEL evaluates the complete parsed expression and keeps precedence and short-circuit order.
+
+Short conditions, strict checkpoint conditions, PII comparisons, and scalar `SET` evaluation keep their existing protections. A supported long rule can now match where the old fallback disagreed. No migration is required. An unsupported expression produces the non-blocking warning [`CEL_EXPRESSION_LIMIT`](/agent-platform/abl/reference/errors-and-warnings#cel_expression_limit), with its agent, path, and prepared length.
+
+#### Comments in conditions
+
+On condition surfaces that accept line comments, `//` outside a complete string starts a comment through the end of the line. Comment text does not add variables, operators, or `WHEN`, `BEFORE`, or `IMPLIES` clauses. A quoted URL, or `//` inside an escaped, raw, bytes, or triple-quoted string, stays literal. YAML `enabled_when` keeps its separate single-line scalar restriction.
+
+A condition that contains only comments is invalid for these constructs:
+
+- A constraint requirement or applicability gate.
+- A `HANDOFF` or `DELEGATE` `WHEN` or `ENABLED_WHEN`.
+- A conditional GATHER activation.
+
+An omitted condition and an ordinary blank value keep the policy of the construct that owns them. Malformed expressions receive compiler diagnostics.
 
 ### In SET assignments
 
@@ -391,5 +418,5 @@ The evaluator applies these coercion rules during expression evaluation:
 
 - [Rich content](/agent-platform/abl-reference/rich-content) -- voice configuration, format-specific output, carousels, interactive actions, and templates
 - [Memory and constraints](/agent-platform/abl-reference/memory-and-constraints) -- condition expressions in constraint rules, variable paths and session context
-- [Multi-Agent and supervisor](/agent-platform/abl-reference/multi-agent-and-supervisor) -- condition syntax for WHEN clauses in routing/escalation
-- [Data Types and utilities](/agent-platform/abl-reference/data-types-and-utilities) -- types used in function signatures, lookup validation functions
+- [Multi-agent and supervisor](/agent-platform/abl-reference/multi-agent-and-supervisor) -- condition syntax for WHEN clauses in routing/escalation
+- [Data types and utilities](/agent-platform/abl-reference/data-types-and-utilities) -- types used in function signatures, lookup validation functions

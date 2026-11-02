@@ -5,26 +5,261 @@ rss: true
 mode: center
 ---
 
-{/* AG: Can copy-paste this template entry for new releases.
+{/* vale off */}
 
-<p className="rn-heading">\{ Artemis x.y.z \} Month DD, 2026 </p>
+{/*
 
-<p className="rn-heading">Category - top-level product areas to be decided after a few releases.</p>
+AG: Can copy-paste this template entry for new releases.
 
+<Update label="month dd, yyyy" description="v1.x.y">
+<p className="rn-heading">Top-level product areas/category.</p>
 <p className="rn-subtitle">Feature heading</p>
 
 Feature or enh. description.
-<br />[Learn more →](/agent-platform/article)
-
-*/}
-
-<Update label="October 23, 2026" description="v1.8.2">
-
-This release gives you finer control over reasoning steps, including limits on which session fields the model can write, and lets you reuse MCP connections within a conversation. Voice updates include gateway turn detection, softphone links, and ElevenLabs v3/v4 models. Digital channels add Amazon Connect live-agent transfer and password fields in action sets. Governance brings mutual TLS for MCP servers, and the CI/CD release API can now build releases.
+<br />[Learn more →](/agent-platform/article-path-and-url)
 
 </Update>
 
+and NOT <p className="rn-heading">\{ Artemis x.y.z \} Month DD, 2026 </p>
+
+*/}
+
+<Update label="October 28, 2026" description="v1.8.3">
+
+This release expands the platform’s capabilities in agent building, voice, digital channels, and governance. Key features include language detection for customer messages, WhatsApp invitations during voice calls, configurable supervisor return thresholds, extra Genesys transfer headers, and Bitbucket Data Center support on private networks.
+
+<p className="rn-heading">Agent builder experience</p>
+
+<p className="rn-subtitle">Detect the language of each customer message</p>
+
+Projects can now detect the language of every customer message and share the result with agents as `session.languageDetection`, including the language, confidence, and status. Turn it on in Runtime Config under the new Language detection section, where you can also set a confidence threshold, a minimum message length, and the allowed languages. Detection doesn’t change the conversation language on its own. An agent’s `before_turn` hook decides, using `WHEN` conditions with `SET_INTERACTION_LANGUAGE` or `CLEAR_INTERACTION_LANGUAGE`. The reply, the filler, and, on calls without a voice language profile, the voice then switch together. Session traces show the detection result under each customer message. The setting is off by default and can be turned on once the language detection service is available in your environment.
+[Learn more →](/agent-platform/abl/reference/lifecycle-and-hooks#hooks)
+
+```yaml wrap
+HOOKS:
+  before_turn:
+    WHEN: session.languageDetection.status == "detected" AND session.languageDetection.confidence >= 0.85
+      SET_INTERACTION_LANGUAGE: session.languageDetection.language
+
+# Switches the reply language only when detection is confident. A low-confidence result leaves the language unchanged.
+```
+
+<p className="rn-subtitle">Control when callers return to the supervisor</p>
+
+While a specialist is handling a conversation, the supervisor’s classifier checks whether the caller’s reply belongs to a different specialist. You can now set how confident it must be before the caller goes back to the supervisor. In ‘Runtime Config > Reasoning pipeline’, turn on ‘Custom Return Threshold’ and set the threshold. To leave unclear replies with the current specialist, turn on ‘Keep Ambiguous Replies With Specialist’. A supervisor can override both settings in its `EXECUTION` pipeline with `parentReturn`. The classifier also now judges the reply against the specialist’s own conversation, so callers are returned by mistake less often. 
+[Learn more →](/agent-platform/abl/reference/multi-agent-and-supervisor#pipeline-options)
+
+```yaml wrap
+EXECUTION:
+  pipeline:
+    enabled: true
+    parentReturn:
+      minConfidence: 0.9
+      ignoreAmbiguous: true
+
+# The caller returns to this supervisor only when the classifier is at least 90% sure, and never on an ambiguous result.
+```
+
+<p className="rn-subtitle">Run session-end workflows for several agents</p>
+
+The After Session Ends workflow trigger can now target more than one agent. Select the agents in the trigger’s Agents list. The workflow runs when a session owned by any of them ends, but not for sessions handled only by internal helper agents. Leave the list empty to run the workflow for any agent. Existing triggers keep their selected agent.
+[Learn more →](/agent-platform/workflows#after-session-ends-trigger)
+
+
+<p className="rn-heading">Voice experience</p>
+
+<p className="rn-subtitle">Send continuity invitations over WhatsApp during a call</p>
+
+During a voice call, an agent can now send the caller a WhatsApp message with tappable options, such as appointment slots, using the `offer_continuity` tool with `delivery: 'whatsapp'`. The message uses a WhatsApp template and goes through the project’s WhatsApp connection on Meta Cloud or Infobip. The caller’s tap or typed reply reaches the live call as input, on both pipeline and realtime voice. Replies that arrive after the invitation expires don’t reach the call, and the caller gets a message saying the request expired. Text typed on a web page that has joined a live pipeline voice call is also answered on the call.
+
+<p className="rn-subtitle">More transfer headers for Genesys Audio Connector</p>
+
+Escalations to Genesys through the Genesys Audio Connector can now send any extra headers your Genesys flow needs. Add them under `additional_headers` in `genesys_sip_headers`, and each one is sent as its own header with the transfer. Values can use `{{...}}` templates that are filled in from the session at transfer time, and a trigger’s headers override the routing defaults one by one. On `korevg_savg` transfers, the SIP BYE now also carries User-to-User Information (UUI), and transfer metadata is no longer limited in size.
+[Learn more →](/agent-platform/abl/reference/multi-agent-and-supervisor#genesys-sip-transfer-headers)
+
+```yaml wrap
+ESCALATE:
+  routing:
+    connection: "genesys_prod"
+    genesys_sip_headers:
+      additional_headers:
+        X-Interaction-Id: "{{interactionID}}"
+        X-Brand: "{{brand}}"
+
+# Each additional header is sent separately with the transfer, with its template filled in at transfer time.
+```
+
+<p className="rn-heading">Digital experience</p>
+
+<p className="rn-subtitle">Let Genesys Architect announce escalations</p>
+
+For Genesys Cloud Bot Connector, you can now leave the escalation message to Genesys Architect, such as to check business hours before telling the customer about the transfer. Set `escalation_format` to an empty string in the agent’s `MESSAGES`. A successful escalation then returns no reply messages, while still sending the escalation intent. The same applies when the response is replayed. If you leave the key out or set a message, escalations work as before.
+[Learn more →](/agent-platform/abl/reference/lifecycle-and-hooks#messages)
+
+```yaml wrap
+MESSAGES:
+  escalation_format: ""
+
+# Genesys Architect plays its own transfer announcement. The escalation intent is still returned.
+```
+
+<p className="rn-subtitle">Connect Infobip through an API gateway</p>
+
+Infobip WhatsApp connections can now authenticate with a custom header, for setups that route Infobip traffic through an API gateway such as Azure API Management. Choose Custom Header (API Gateway) as the Auth Type and enter the header name and value. The connection dialog now shows only the fields for the selected auth type. You can also add an optional inbound webhook secret, which lets the connection accept typed replies to WhatsApp continuity invitations.
+[Learn more →](/agent-platform/channels/whatsapp#infobip-setup)
+
+
+<p className="rn-heading">Governance</p>
+
+<p className="rn-subtitle">Bitbucket Data Center on private networks and through your proxy</p>
+
+Projects can now sync with a Bitbucket Data Center server on a private network, such as one you reach over VPN or a private link. Allow the host on the Basic auth profile used for the repository, and it can resolve to a private address for that profile’s repositories. If the server is behind a corporate proxy, add a Global rule for it in Settings > Account > Secrets > Proxy Configs. Git and API calls to the server then go through that proxy. When Studio can’t resolve the host, the error now says so, instead of reporting that the host isn’t allowed.
+
+</Update>
+
+<Update label="October 23, 2026" description="v1.8.2">
+
+This release gives you finer control over reasoning steps, including limits on which session fields the model can write, and lets you reuse MCP connections within a conversation. Voice updates include gateway turn detection, softphone links, and ElevenLabs v3/v4 models. Digital channels add Amazon Connect live-agent transfer and password fields in action sets, while Governance brings mutual TLS for MCP servers.
+
+<p className="rn-heading">Agent builder experience</p>
+
+<p className="rn-subtitle">Reuse MCP connections within a conversation</p>
+
+MCP servers have a new **Reuse connections** setting. When it's on, the agent keeps one connection to the server open for the whole conversation instead of reconnecting for every tool call, which makes tool calls faster, especially on voice. Workflows that an agent starts share the agent's connection, so stateful MCP servers keep their state across those calls. The setting is on by default for new servers and off for existing ones.
+
+<p className="rn-subtitle">Choose how much specialists see of other requests</p>
+
+When governed multi-intent handling is on, the new ‘Request view for specialists’ setting in Runtime Config controls what the specialist serving a request can do with the customer’s other requests.
+
+- Off: Shows only the specialist’s own conversation.
+- Inspect: Shows the other waiting requests and lets the specialist suggest a new one.
+- Manage: Also lets the specialist cancel or change a waiting request, but only when the customer asks for that change in their own words in the same turn.
+
+<p className="rn-subtitle">Limit which session fields a reasoning step can write</p>
+
+A reasoning step’s `CONTEXT_UPDATES` setting can now list the exact session fields the model is allowed to write, instead of only turning writes on or off. The model can update only the listed fields, and an empty list (`[]`) blocks all model-supplied updates in that step. Authored actions such as `SET`, `GATHER` extraction, hooks, and tool result mappings work as before. To use lists, every Runtime instance must run v1.8.2 before you publish the agent. Existing agents keep their current behavior until you change the step. 
+<br />[Learn more →](/agent-platform/abl/reference/flow#controlling-direct-context-writes-context_updates)
+
+```yaml wrap
+FLOW:
+  write_qr_message:
+    REASONING: true
+    GOAL: "Draft the QR code message and mark it done."
+    CONTEXT_UPDATES: [qr_text, qr_done]
+    EXIT_WHEN: qr_done == true
+
+# The model can write only qr_text and qr_done in this step. Every listed field must be declared in MEMORY.session.
+```
+
+<p className="rn-subtitle">Hand back to the parent agent after a one-way handoff</p>
+
+A handoff with `EXPECT_RETURN: false` still doesn’t return automatically. However, the receiving agent can now choose an authorized `HANDOFF` route back to the agent that called it during the same conversation, such as after the customer changes topic.
+
+
+<p className="rn-heading">Voice experience</p>
+
+<p className="rn-subtitle">Voice gateway turn detection</p>
+
+Pipeline voice channels can now let the Kore.ai Voice Gateway decide when the caller has finished speaking, using voice and wording signals instead of a fixed silence timer. On the channel’s speech settings, turn on ‘Voice gateway turn detection’ and choose a Patience level, from Fastest (0.3) to Slow dictation (0.9). Faster levels reply sooner, while the Dictation and Slow dictation levels wait through long pauses when callers spell names or read out card and reference numbers. You can also set turn detection for an agent, a behavior profile, a response, a flow step, or a single `GATHER` field, so only the questions that need more patience wait longer.
+[Learn more →](/agent-platform/abl/reference/flow#gateway-turn-detection)
+
+```yaml wrap
+FLOW:
+  get_card_number:
+    REASONING: false
+    VOICE:
+      turn_detection: { enabled: true, eou_threshold: 0.8 }
+    GATHER:
+      - card_number:
+          TYPE: string
+          PROMPT: "Please read out your 16-digit card number."
+
+# Dictation patience (0.8) applies only while this step asks for the card number. Other steps keep the channel setting.
+```
+
+<p className="rn-subtitle">Listen for words found earlier in the call</p>
+
+A `GATHER` field's speech vocabulary can now come from a session value set earlier in the call, not just from fixed words in the agent. For example, after a lookup tool returns the streets in the caller's county, the street question listens for those street names only while that question is asked. Values that hold personal data are sent to the speech recognizer only when the field allows it, and each use is recorded in the PII audit log.
+
+<p className="rn-subtitle">Interruption, silence and transcript controls for OpenAI Realtime</p>
+
+OpenAI Realtime voice channels have new controls under Advanced voice behavior.
+
+- Caller interruption: Decides whether callers can cut off the agent and protects messages that shouldn’t be interrupted, such as the welcome.
+- Silent caller reprompt: Applies the project’s no-input settings, including timeout, reprompts, and final action, to realtime calls.
+- Caller transcript cross-check: Gives the agent the caller’s transcript alongside what the model heard, catching dropped digits and misspellings.
+<br />[Learn more →](/agent-platform/channels/voice#openai-realtime)
+
+<p className="rn-subtitle">Shareable softphone links</p>
+
+You can now share a voice channel with anyone through a link. On the channel’s Testing tab, generate a link and send it to a tester or stakeholder. They can call the agent from a phone browser through the real voice gateway and follow a live, read-only transcript. Each link is shown only once and expires after 7 days. You can view and revoke active links on the same tab.
+
+<p className="rn-subtitle">ElevenLabs v3 and v4 dialogue models</p>
+
+The ElevenLabs TTS Model list for voice channels now includes Eleven v3, Eleven v4, and Eleven v4 Turbo, at both the channel level and per language. Calls now use the model you select instead of switching to Flash v2.5.
+
+<p className="rn-subtitle">Pause between a filler and the answer</p>
+
+Pipeline voice channels have a new Filler to answer pause setting in Runtime Config. It adds a short pause (0 to 5,000 ms) after a filler phrase finishes and before the agent speaks the answer, so the two don’t run together. Voice latency profiles inherit the value, and you can override it per profile. The default is 0, so current calls aren’t affected.
+
+<p className="rn-subtitle">Save spoken fillers in the conversation history</p>
+
+A new ‘Include spoken fillers in conversation history’ setting in Runtime Config saves each spoken filler, such as “One moment while I check that,” as an agent message. Fillers are saved only after they finish playing, so transcripts match what the caller heard. The setting is off by default.
+
+<p className="rn-subtitle">More reliable Bring Your Own SIP setup</p>
+
+Saving a Bring Your Own SIP voice channel now keeps your configuration, even if the voice gateway can’t be updated right away. Studio shows a message, and you can select Save again once the gateway recovers. Entering a phone number (DID) now enables call routing, and clearing a number removes its mapping. The SIP gateway field accepts up to ten IP addresses or CIDR ranges.
+
+
+<p className="rn-heading">Digital experience</p>
+
+<p className="rn-subtitle">Password fields in action sets</p>
+
+Action set input fields can now use `INPUT_TYPE: password` for PINs, passcodes, and passwords. Web chat masks the value as the customer types. When PII protection is on, a protected token replaces the submitted value before it reaches traces, history, or session variables, while tools still receive the original value. Action set elements also now appear in the order you declare them, so a button placed after the input fields stays after them.
+[Learn more →](/agent-platform/abl/reference/rich-content#password-inputs)
+
+```yaml wrap
+ACTIONS:
+  - id: phone_pin
+    type: input
+    label: "PIN"
+    inputType: password
+    required: true
+  submitLabel: "Sign in"
+  submitId: "submit_login"
+
+# The PIN is masked as the customer types it, and protected in traces and history when PII protection is on.
+```
+
+<p className="rn-subtitle">Transfer chats to Amazon Connect agents</p>
+
+Amazon Connect is now available as an Agent Desktop provider for live-agent transfer. Create an Amazon Connect connection with your AWS Region, Connect instance, and contact flow, then route an `ESCALATE` to it. The platform starts the Connect chat for the customer, who stays in the same chat window while the agent replies from the Amazon Connect Contact Control Panel (CCP). AWS credentials stay on the server, and no customer-hosted code is needed.
+
+<p className="rn-subtitle">Same-channel conversation recall is now opt-in</p>
+
+Cross-channel recall no longer brings earlier conversations from the channel in use into a new session. For example, a new phone call no longer recalls the customer’s earlier phone calls. To include them, turn on ‘Include earlier conversations on the same channel’ under Settings > Omnichannel > Conversation Recall. The agent now sees recalled conversations in the background only and always asks again for identity and verification details.
+
+<p className="rn-subtitle">Simpler Microsoft Agent 365 channel setup</p>
+
+Microsoft Agent 365 connections are now managed entirely from the channel’s Configuration tab, which shows the tenant ID and blueprint ID and lets you rotate the blueprint secret. The separate Credentials tab, including the Use Auth Profile option that could break replies, no longer appears for this channel. The tenant ID and blueprint ID can’t be changed after creation. To use different values, create a new connection. The Agent 365 tile now appears only once on the Channels page.
+
+
+<p className="rn-heading">Governance</p>
+
+<p className="rn-subtitle">Mutual TLS for MCP servers</p>
+
+MCP servers can now present a client certificate when they connect. In Project Tools > MCP Servers, open Advanced Settings and select an mTLS profile. It works separately from the server’s authentication profile, and both apply to every tool on the server. If a selected profile is disabled or can’t be used, the connection is refused with a clear error, instead of attempting the connection without it.
+
+<p className="rn-subtitle">View the SIP Ladder with session access</p>
+
+Anyone who can open a session can now view its SIP Ladder on the Voice tab, with call endpoints redacted. This view no longer needs the separate SIP Ladder reveal permission. Revealing personal data and raw provider payloads still requires its own permissions.
+
+</Update>
+
+
 <Update label="October 15, 2026" description="v1.8.1">
+
+This release introduces Bitbucket Data Center support for Git integration and session-aware behavior profiles that activate based on runtime context, such as customer tier. Voice enhancements include turn fillers for OpenAI Realtime, dedicated speech recognition for caller transcripts, and per-field keypad settings. Governance now supports configurable guardrail coverage modes that limit compliance checks to customer-facing interactions.
 
 <p className="rn-heading">Agent builder experience</p>
 
@@ -105,6 +340,8 @@ Studio shows a banner and a save warning that list the rules that stop running. 
 
 
 <Update label="October 12, 2026" description="v1.8.0">
+
+This release expands the platform’s capabilities in agent building, voice, knowledge base, LLM models, and governance. Key features include Decision Models for intelligent request routing, new model support across Claude 5, GPT-6, and Gemini 3.x, business rules for knowledge base search, Grok and Microsoft Speech voice provider options, PostgreSQL, Oracle DB, and Microsoft Exchange on-premises connectors, and JWT App credentials with expanded PII redaction coverage.
 
 <p className="rn-heading">Agent builder experience</p>
 
@@ -352,14 +589,17 @@ Voice interactions now capture the time from a text-to-speech request to the fir
 <p className="rn-subtitle">JWT App credentials for API authentication</p>
 
 You can now authenticate to platform APIs using JWT App assertions, a new credential type alongside API keys and SDK tokens. Create a JWT App in Studio, configure key rotation, and optionally enable payload encryption. The platform verifies each assertion against your JWKS endpoint and protects against replay attacks.
+<br />[Learn more →](/agent-platform/administration/general-settings#jwt-apps)
 
 <p className="rn-subtitle">Monitor and trace PII redaction enforced</p>
 
 PII fields configured for redaction are now consistently scrubbed from the Monitor live stream, workflow execution traces, and observability logs. Previously, certain paths didn’t apply the configured redaction rules, so sensitive values could appear in real-time monitoring views.
+<br />[Learn more →](/agent-platform/administration/general-settings#pii-redaction)
 
 <p className="rn-subtitle">SSO just-in-time provisioning with role mapping</p>
 
 SSO configurations now support just-in-time (JIT) provisioning with automatic role assignment. When a user signs in through your identity provider for the first time, the platform creates their workspace membership and assigns a role based on rules you define from SSO claims. Existing members keep their current role, and the JIT policy always includes the owner domain.
+<br />[Learn more →](/agent-platform/administration/workspace-and-team#single-sign-on)
 
 <p className="rn-subtitle">Centralized voice gateway credentials</p>
 
@@ -948,7 +1188,7 @@ Voice channel configuration now lets you select which OpenAI speech-to-text mode
 <p className="rn-subtitle">Bring your own custom speech provider</p>
 
 Tenants can now register and use their own custom speech provider for voice channels, alongside the platform's built-in speech provider options.
-<br />[Learn more →](/agent-platform/administration/ai-configuration#byo-custom-speech-providers)
+<br />[Learn more →](/agent-platform/administration/ai-configuration#bring-your-own-custom-speech-providers)
 
 <p className="rn-subtitle">On-premises Deepgram support for voice channels</p>
 

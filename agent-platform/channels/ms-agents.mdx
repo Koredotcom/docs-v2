@@ -1,0 +1,265 @@
+---
+title: Set up Microsoft Agent 365
+sidebarTitle: Microsoft Agent 365
+---
+
+<Badge icon="arrow-left" color="gray">[Back to messaging or digital channels](/agent-platform/channels#messaging-or-digital-channels)</Badge>
+
+Connect your agent to Microsoft 365 as an Agent 365 agent, so people in your tenant hire it from Microsoft 365 and work with it in Teams. You register the agent as an Agent 365 blueprint in Microsoft Entra Agent ID, enter the blueprint's identity and secret in Artemis, then point the blueprint's messaging endpoint at the Artemis webhook URL.
+
+The setup requires:
+
+1. [Register the agent blueprint](#register-the-agent-blueprint) with the Agent 365 CLI.
+2. [Artemis channel configuration](#artemis-channel-configuration): create the connection, then copy its Webhook URL.
+3. [Set the blueprint messaging endpoint](#set-the-blueprint-messaging-endpoint) to the Artemis Webhook URL.
+4. [Publish and hire the agent](#publish-and-hire-the-agent) in Microsoft 365.
+5. [Verify the connection](#verify-the-connection) with a real conversation.
+
+After setup, Microsoft 365 sends the hired agent's activity to Artemis, and the agent deployed in the bound environment replies in the same conversation.
+
+**Important considerations**
+
+- **The tenant ID and blueprint ID select the connection**: Artemis builds the webhook endpoint from both values, and the summary panel shows them as `tenantId:blueprintId`. You can't change either one after creation, so recreate the connection to use a different blueprint.
+- **Overwrite the messaging endpoint, don't append to it**: When you register the blueprint with the Agent 365 CLI, the endpoint field already holds an `azurewebsites.net` URL. Replace that whole value with the Artemis Webhook URL.
+- **Microsoft approves every hire**: A user requests an instance in Teams, and a tenant administrator approves it in the Microsoft 365 admin center. Artemis shows the connection as configured but awaiting first activity until Microsoft reports an installation.
+- **Agent 365 needs tenant enrollment**: Enroll your tenant in the Microsoft Agent 365 Frontier program, or users can't request an instance.
+- **Manage the secret from the Configuration tab**: An Agent 365 connection has no **Credentials** tab. You enter and rotate the blueprint client secret in the **Configuration** tab.
+- **One tile for all connections**: The channel list shows a single **Microsoft Agent 365** tile. Create every Agent 365 connection from it.
+
+## Prerequisites
+
+Confirm these before you start, because several steps need tenant-level roles.
+
+- A Microsoft 365 tenant enrolled in the Agent 365 Frontier program.
+- A Global Administrator, or an Agent ID Developer with a Global Administrator available to grant consent and approve the agent.
+- An Azure subscription with permission to create resources, plus the [Agent 365 CLI](https://learn.microsoft.com/en-us/microsoft-agent-365/developer/agent-365-cli) and the Azure CLI installed.
+- Artemis project access with permission to open **Deployments** -> **Channels**, and a deployed agent in the environment you intend to bind.
+
+---
+
+## How Artemis routes Agent 365 activity
+
+Microsoft 365 delivers each hired agent's activity to the blueprint's messaging endpoint, and that endpoint identifies the Artemis connection.
+
+| Piece | Owner | What it does |
+|---|---|---|
+| **Agent (Entra) Tenant ID** | Microsoft Entra | Identifies the directory tenant that owns the blueprint. Part of the connection identifier and webhook endpoint. |
+| **Blueprint (Agent) ID** | Microsoft Entra Agent ID | Identifies the agent blueprint. Part of the connection identifier and webhook endpoint. |
+| **Blueprint Client Secret** | Microsoft Entra Agent ID | Authenticates Artemis as the blueprint when it replies. |
+| **Webhook URL** | Artemis | Receives activity from Microsoft 365. You set it as the blueprint's messaging endpoint. |
+
+---
+
+## Register the agent blueprint
+
+Do this before you open Artemis. The Agent 365 CLI creates the blueprint in Microsoft Entra Agent ID and writes its values to a local file. Microsoft covers the same steps in [Register an agent blueprint](https://learn.microsoft.com/microsoft-agent-365/developer/registration).
+
+<Steps>
+  <Step title="Sign in to Azure">
+    Sign in with an account that has the Global Administrator or Agent ID Developer role, and confirm the subscription.
+
+    ```powershell
+    az login
+    az account show
+    ```
+  </Step>
+
+  <Step title="Create the blueprint">
+    Run setup from your project folder. Artemis hosts the agent, so you only need the blueprint, not a hosted app.
+
+    ```powershell
+    a365 setup all
+    ```
+
+    Setup takes three to five minutes. A Global Administrator completes the consent prompt in the browser. An Agent ID Developer gets consent URLs to pass to a Global Administrator, and setup stays incomplete until those grants finish.
+  </Step>
+
+  <Step title="Collect the blueprint values">
+    Setup writes the values Artemis needs to two files in your project folder.
+
+    | Artemis field | Source file | Source field |
+    |---|---|---|
+    | **Agent (Entra) Tenant ID** | `a365.config.json` | `tenantId` |
+    | **Blueprint (Agent) ID** | `a365.generated.config.json` | `agentBlueprintId` |
+    | **Blueprint Client Secret** | `a365.generated.config.json` | `agentBlueprintClientSecret` |
+
+    Confirm `completed` reads `true` in `a365.generated.config.json` before you continue. If the CLI stored the secret in protected form, create a new client secret for the blueprint in the [Microsoft Entra admin center](https://entra.microsoft.com) and use its **Value**.
+  </Step>
+</Steps>
+
+<Warning>The blueprint client secret authorizes Artemis to act as the agent. Store it only in Artemis and your secret manager, and keep both CLI config files out of source control.</Warning>
+
+---
+
+## Artemis channel configuration
+
+Create the connection before you set the messaging endpoint. Artemis generates the Webhook URL from the tenant ID and blueprint ID you enter.
+
+1. Open Artemis and select the project.
+2. Go to **Deployments** -> **Channels** -> **Microsoft Agent 365** -> **+ New**. The **New Microsoft Agent 365 Connection** dialog opens. Select **Setup instructions** first if you want the in-product summary.
+3. Configure the fields:
+
+    | Artemis field | Source / Notes | What it controls |
+    |---|---|---|
+    | **Display Name** | You choose it | The label operators see. Name it for the agent and environment. |
+    | **Agent (Entra) Tenant ID** | `tenantId` in `a365.config.json` | The directory tenant GUID. Part of the webhook endpoint, so you can't change it later. |
+    | **Blueprint (Agent) ID** | `agentBlueprintId` | The blueprint GUID. Part of the webhook endpoint, so you can't change it later. |
+    | **Blueprint Client Secret** | `agentBlueprintClientSecret` | Authenticates Artemis as the blueprint. Artemis encrypts it on save. |
+    | **Environment** | Your published environments | The environment whose active deployment answers Microsoft 365. |
+    | **Provider Verification Strength** | Defaults to **Weak** | How far the runtime trusts Microsoft's identity assertion when it links a user to an existing session. Choose **Strong** only when you base continuity and account-linking decisions on it. |
+    | **Initial Status** | Defaults to **Active** | Keep it **Active**. |
+
+4. Select **Create**.
+5. Copy the **Webhook URL** from the connection's summary panel.
+
+---
+
+## Set the blueprint messaging endpoint
+
+Point the blueprint at Artemis. Use either the Teams Developer Portal or the CLI.
+
+<Tabs>
+  <Tab title="Teams Developer Portal">
+    1. Open the blueprint configuration page, replacing the placeholder with your blueprint ID: `https://dev.teams.microsoft.com/tools/agent-blueprint/<blueprint-id>/configuration`
+    2. Set **Agent Type** to **API Based**.
+    3. Replace the whole **Notification URL** value with the Artemis **Webhook URL**.
+    4. Select **Save**. Changes take five to ten minutes to propagate.
+  </Tab>
+
+  <Tab title="Agent 365 CLI">
+    Replace the registered endpoint with the Artemis **Webhook URL**.
+
+    ```powershell
+    a365 setup blueprint --update-endpoint <artemis-webhook-url>
+    ```
+
+    See [Agent messaging endpoint](https://learn.microsoft.com/microsoft-agent-365/developer/agent-messaging-endpoint).
+  </Tab>
+</Tabs>
+
+<Warning>Don't append the Artemis URL to the `azurewebsites.net` value the CLI registered. Overwrite it, or Microsoft 365 keeps sending activity to the old endpoint.</Warning>
+
+---
+
+## Publish and hire the agent
+
+Publishing makes the agent available in your tenant. Hiring creates the instance that people talk to. See [Publish your agent](https://learn.microsoft.com/microsoft-agent-365/developer/publish-deploy-agent) and [Create an agent instance](https://learn.microsoft.com/microsoft-agent-365/developer/create-instance).
+
+<Steps>
+  <Step title="Package the agent">
+    Run `a365 publish`. It writes your blueprint ID into `manifest.json` and packages it as `manifest.zip`.
+  </Step>
+
+  <Step title="Upload it to the Microsoft 365 admin center">
+    As a Global Administrator, go to **Agents** -> **All agents** -> **Upload custom agent** in the [Microsoft 365 admin center](https://admin.microsoft.com), and upload `manifest.zip`. The agent can take five to ten minutes to appear.
+  </Step>
+
+  <Step title="Request an instance in Teams">
+    In Teams, go to **Apps**, find the agent, and select **Request Instance**. Teams sends the request to your tenant administrator.
+  </Step>
+
+  <Step title="Approve the request">
+    In the Microsoft 365 admin center, open **Agents** -> **All agents** -> **Requested agents** and approve the request. Teams then creates the instance.
+  </Step>
+</Steps>
+
+---
+
+## Verify the connection
+
+The connection's status banner tells you whether Microsoft 365 has reached Artemis.
+
+1. Open the connection. Before the first installation, the banner reads **Configured, awaiting first activity**.
+2. Hire the agent in Teams. If you set a **Greeting message**, confirm it arrives, and that the banner no longer shows awaiting first activity.
+3. Send a unique message to the agent, and confirm one reply from the intended environment.
+4. If you set a **Closing message**, remove the agent and confirm it arrives.
+
+---
+
+## Security and lifecycle
+
+The blueprint secret is the credential that matters, and each blueprint maps to one connection.
+
+- **Client secret**: Store it only in Artemis. Rotate it in Microsoft Entra before it expires, then enter the new value in the **Configuration** tab.
+- **Blueprint identity**: To move a connection to another tenant or blueprint, create a new connection. The identity values are part of the webhook endpoint.
+- **Consent**: Grants for Microsoft Graph and the Messaging Bot API need a Global Administrator.
+- **Environments**: Use separate blueprints, secrets, and connections for development and production.
+
+---
+
+## Manage the channel connection
+
+Open a connection from **Deployments** -> **Channels** -> **Microsoft Agent 365** to manage it. The page has a header, two tabs, and a summary panel on the right.
+
+The connection has no **Credentials** tab. Manage the client secret in the **Configuration** tab.
+
+**Header.** Shows the connection name, its environment badge, its status, and when it last changed. **Pause** stops traffic, and the **...** overflow menu holds the other connection-level actions.
+
+**Summary panel.** Stays visible on every tab.
+
+| Field | Description |
+|---|---|
+| **Channel** and **Connection Type** | Read **Microsoft Agent 365** and **Channel Connection**. |
+| **Identifier** | The tenant ID and blueprint ID this connection routes on, as `tenantId:blueprintId`. |
+| **Credentials** | Reads **Configured** once the secret saves. |
+| **Webhook URL** | The messaging endpoint for the blueprint, with a copy control. |
+| **Created** and **Updated** | Date and time of creation and of the last change. |
+
+<Tabs>
+  <Tab title="Configuration">
+    The status banner at the top shows whether Microsoft has reported an installation, and lists any outstanding steps.
+
+    | Setting | Description |
+    |---|---|
+    | **Agent (Entra) Tenant ID**, **Blueprint (Agent) ID** | Under **Blueprint identity**. Read-only, because they compose the webhook endpoint. |
+    | **Blueprint client secret** | Under **Client secret**. The only place to manage the secret. Leave it blank to keep the saved secret, or enter a new value to rotate it. |
+    | **Greeting message** | Optional. Sent when someone hires (installs) the agent. |
+    | **Closing message** | Optional. Sent when someone removes (uninstalls) the agent. |
+
+    Select **Save** to apply your changes.
+  </Tab>
+
+  <Tab title="Deployment">
+    Choose which deployed version answers Microsoft 365.
+
+    | Setting | Description |
+    |---|---|
+    | **Environment** | Under **Environment Binding**. Selects which deployed version handles incoming messages. |
+    | **Active Deployment** | Shows the bound version and when someone deployed it. |
+
+    Select **Save Changes** after you switch the environment.
+  </Tab>
+</Tabs>
+
+---
+
+## Troubleshoot connection issues
+
+Most failures trace to the messaging endpoint or a missing approval.
+
+| Symptom | Likely cause | Recommended action |
+|---|---|---|
+| The banner stays on **Configured, awaiting first activity** | Microsoft hasn't reported an installation | Confirm the blueprint's messaging endpoint holds the full Artemis Webhook URL, then hire the agent and approve the request. |
+| The agent appears in the admin center but not in Teams | Developer Portal configuration missing | Set **Agent Type** to **API Based** and the **Notification URL** to the Artemis Webhook URL, save, and wait five to ten minutes. |
+| **Request Instance** doesn't work | Frontier not enabled | Ask your administrator to confirm the tenant's enrollment in the Agent 365 Frontier program. |
+| Activity goes to the old endpoint | Endpoint appended, not replaced | Overwrite the whole messaging endpoint with the Artemis Webhook URL. |
+| Messages arrive but no reply goes out | Secret, consent, or deployment | Confirm the client secret is current, Global Administrator consent is complete, and the bound environment has a runnable deployment. |
+| `a365 setup all` doesn't complete | Consent pending | Have a Global Administrator complete the consent URLs, then confirm `completed` reads `true`. |
+
+---
+
+## Microsoft reference
+
+Use these pages when you need detail beyond what this article covers.
+
+| Resource | Use it for |
+|---|---|
+| [Register an agent blueprint](https://learn.microsoft.com/microsoft-agent-365/developer/registration) | CLI setup, roles, and generated values. |
+| [Agent messaging endpoint](https://learn.microsoft.com/microsoft-agent-365/developer/agent-messaging-endpoint) | Registering and updating the endpoint. |
+| [Publish your agent](https://learn.microsoft.com/microsoft-agent-365/developer/publish-deploy-agent) | Packaging and uploading the manifest. |
+| [Create an agent instance](https://learn.microsoft.com/microsoft-agent-365/developer/create-instance) | Requesting, approving, and hiring. |
+
+{{related}}
+
+- [Channels](/agent-platform/channels)
+- [Set up Microsoft Teams and Copilot](/agent-platform/channels/ms-teams-copilot)

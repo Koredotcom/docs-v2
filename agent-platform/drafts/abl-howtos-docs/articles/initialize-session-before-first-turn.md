@@ -11,16 +11,18 @@ ABL gives you several places to seed session values. Pick the one that matches w
 | A fixed default | `MEMORY` `SESSION` with `INITIAL` | When the session is created, before `ON_START`. |
 | A value copied or computed from session context | `ON_START` `SET` | At start, before the welcome. |
 | A value from a tool | `ON_START` `CALL` with `AS` | At start, after `SET`, before the welcome. |
-| A value for one branch only | `SET` in a branch `DO:` list | After the welcome. |
-| The reply language on a voice channel | `SET_INTERACTION_LANGUAGE` | After `SET` and `CALL`, before the branches. |
+| A value for one branch only | `SET` in a branch `DO:` list | After the welcome, unless a language directive follows it in the same list. |
+| The reply language | `SET_INTERACTION_LANGUAGE` | After `SET` and `CALL`, before the branches. |
 
 `ON_START` runs these steps in order:
 
 1. `SET` assignments.
 2. The top-level `CALL`.
 3. Interaction language directives.
-4. `BRANCHES` conditions and the welcome `RESPOND`.
-5. The matched branch `DO:` list.
+4. `BRANCHES` conditions, which select the welcome.
+5. The matched branch `DO:` entries up to its last language directive.
+6. The welcome `RESPOND`.
+7. The remaining branch `DO:` entries.
 
 `ON_START` runs once per session, for the entry agent only. A specialist reached by handoff never runs its own `ON_START`. `ON_START` also runs when the first user message starts the session, before the runtime processes that message. A reconnect to an initialized session does not run it again.
 
@@ -32,11 +34,13 @@ Keep initialization deterministic. Use it for values that exist at start. Collec
 | ---- | ----- |
 | `session.channel` | The channel type, such as `web_chat` or `voice`. `digital` when the channel sets none. |
 | `session.sessionId`, `session.userId`, `session.tenantId`, `session.projectId` | Platform identifiers. |
+| `session.sessionPrincipalId` | The caller principal, when the channel supplies one. |
 | `session.customerId`, `session.identityTier` | Identity values, when the channel supplies them. |
 | `session.<name>` | A value the channel passes as caller data. Also readable as `<name>`. |
+| `_metadata.<name>` | Integration metadata that the channel sends at session start. |
 | `session.interaction.current.language` | The resolved language. Also `locale` and `timezone`. |
 
-A path with no value resolves to nothing. A template then renders it as empty text.
+A path with no value resolves to nothing. A template then renders it as empty text. The runtime owns `session.languageDetection` and sets it after a user message, so it is empty at start.
 
 ## Minimal working example
 
@@ -163,7 +167,7 @@ A variable that has only an `INITIAL` value and no other writer triggers the `W8
 
 ### Set a value for one branch
 
-`SET` in a branch `DO:` list runs after the welcome, so the welcome cannot read it. The compiler reports `ON_START_BRANCH_DO_ACTIVATED` as an informational warning.
+`SET` in a branch `DO:` list runs after the welcome, so the welcome cannot read it. The compiler reports `ON_START_BRANCH_DO_ACTIVATED` as an informational warning. A branch `DO:` list accepts only `SET`, `CALL`, `HANDOFF`, and the two language directives. The parser drops other entries with a warning.
 
 ```abl
 AGENT: Branch_Init_Agent
@@ -182,9 +186,14 @@ ON_START:
         - SET: reply_mode = "text"
 ```
 
-### Pin the reply language on a voice channel
+### Set the reply language at start
 
-`SET_INTERACTION_LANGUAGE` applies only on a voice channel that has a supported-language list. On other channels the override is not applied, and the trace shows the reason.
+`SET_INTERACTION_LANGUAGE` accepts a language tag, a value path such as `profile.language`, or a template such as `"{{profile.language}}"`. It applies in two cases:
+
+- The channel has a supported-language list, and the language is on that list.
+- The project turns on language detection in the Runtime Config settings. The runtime then accepts any valid tag, with no list.
+
+In all other cases, the override is not applied, and the trace shows the reason.
 
 ```abl
 AGENT: Language_Init_Agent
@@ -196,12 +205,30 @@ ON_START:
   RESPOND: "Bonjour. Comment puis-je vous aider ?"
 ```
 
+A language directive in a branch `DO:` list moves the entries before it ahead of the welcome. This lets the welcome use a value that the list sets. `CLEAR_INTERACTION_LANGUAGE:` restores the configured default language.
+
+```abl
+AGENT: Language_Branch_Agent
+GOAL: "Set the reply language before the welcome renders"
+PERSONA: "Concise assistant"
+
+ON_START:
+  BRANCHES:
+    - ELSE:
+      DO:
+        - SET: spoken_language = "fr-CA"
+        - SET_INTERACTION_LANGUAGE: "{{spoken_language}}"
+      RESPOND: "Bienvenue {{session.interaction.current.locale}}"
+```
+
+The language must be on the channel's supported-language list, or the project must turn on language detection. A value that does not resolve to a valid language leaves the language unchanged.
+
 ## Verification
 
 1. Start a session. In the trace, find one `dsl_set` event for each top-level `SET`, with `source: on_start`.
 2. Answer the first question. Confirm the final reply shows the initialized values.
 3. Start a session on a second channel. Confirm `channel_name` changes.
-4. For `SET_INTERACTION_LANGUAGE`, look for the `interaction_language_override_changed` event.
+4. For `SET_INTERACTION_LANGUAGE`, look for the `interaction_language_override_changed` event. Check `applied` and, when it is false, `reason`.
 5. Reconnect to the same session. Confirm `ON_START` does not run again.
 
 ## Production readiness checklist
@@ -221,7 +248,8 @@ ON_START:
 | Setting a value the runtime does not have yet | Startup runs before the first user turn. | Use `SET` only for constants and existing context. |
 | Leaving a text constant unquoted | A word that matches a variable name reads that variable. | Quote text constants. |
 | Putting initialization in a specialist's `ON_START` | `ON_START` runs for the entry agent only. | Initialize in the entry agent, or use `INITIAL`. |
-| Reading a branch `DO:` value in the welcome | The `DO:` list runs after the welcome. | Use top-level `SET` for values the welcome needs. |
+| Reading a branch `DO:` value in the welcome | The `DO:` list runs after the welcome, unless a language directive follows the `SET`. | Use top-level `SET` for values the welcome needs. |
+| Putting `RESPOND` in a branch `DO:` list | The `DO:` list does not run `RESPOND`. | Put the welcome in the branch `RESPOND`. |
 | Using different names later in the flow | Startup names are easy to rename. | Reuse the exact names in templates, `WHEN`, `PASS`, and tools. |
 | Collecting user input with startup `SET` | Initialization and data collection get mixed. | Use `GATHER` for user-provided values. |
 
@@ -233,7 +261,8 @@ ON_START:
 | `preferred_language` is empty | No source set a language. | The agent language, the contact preference, the channel setting, and the project default. |
 | `W801` on a `MEMORY` variable | Only `INITIAL` writes it. | Add a writer, or drop the declaration. |
 | The value is correct in the trace but missing in a specialist | The specialist did not receive it. | The `PASS` list on the `HANDOFF` entry. |
-| The language override is not applied | The channel is not voice, or the language is not in the supported list. | The `interaction_language_override_changed` event. |
+| The language override is not applied | The `reason` is `VOICE_LANGUAGE_OVERRIDE_UNAVAILABLE` (no supported-language list and no language detection), `VOICE_LANGUAGE_NOT_CONFIGURED` (language not on the list), or `INVALID_INTERACTION_LANGUAGE` (value does not resolve to a tag). | The `interaction_language_override_changed` event and the Runtime Config language settings. |
+| A branch `DO:` entry does nothing | The parser dropped it with `W380` or `W381`, for example a `CALL` with no `AS` or a `RESPOND`. | The compile warnings. |
 | No welcome appears but `SET` ran | The channel does not deliver the `ON_START` response. | The `dsl_on_start_skipped` event. |
 
 ## Related HowTos
