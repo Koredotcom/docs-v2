@@ -1,0 +1,595 @@
+# How to resume after a child agent or human agent completes
+
+Use this pattern when another agent or a person finishes part of a conversation and the original agent must pick up the work.
+
+## Concept
+
+Four things can finish work for an agent. Each one returns control in a different way.
+
+| Path | Who finishes | How control returns | What you configure |
+| ---- | ------------ | ------------------- | ------------------ |
+| Returnable handoff | A child agent | The child completes or hands back. The parent becomes the active agent. | `EXPECT_RETURN: true` and `ON_RETURN` on the `HANDOFF` entry. |
+| Delegate | A child agent | The child runs inside one turn. The parent keeps ownership and receives the result. | `RETURNS`, `TIMEOUT`, and `ON_FAILURE` on the `DELEGATE` entry. |
+| Human agent desk | A person at the desk | The person disconnects. The platform resumes or ends the session. | `post_agent` in the `ESCALATE` routing block. |
+| Human task | A person in the inbox or through the resolve API | The platform records the answer. The conversation accepts the next customer message. | `on_human_complete` in the `ESCALATE` block. |
+
+A handoff with `EXPECT_RETURN: false` does not return. The parent finishes and the target owns the conversation. [Hand off to a terminal agent](/agent-platform/abl/how-to/terminal-agent-handoff) covers that pattern.
+
+To choose between a handoff and a delegate, see [Use a handoff instead of a delegate](/agent-platform/abl/how-to/use-handoff-instead-of-delegate) and [Use a delegate instead of a handoff](/agent-platform/abl/how-to/use-delegate-instead-of-handoff). To start a returnable handoff, see [Hand off to a returnable agent](/agent-platform/abl/how-to/returnable-agent-handoff).
+
+Two settings decide what the parent does after a child returns:
+
+| Setting | Meaning |
+| ------- | ------- |
+| `action: continue` | The parent continues its own work. |
+| `action: resume_intent` | The parent replays the customer request through routing, with the returned values in place. |
+
+## Minimal working example
+
+A supervisor sends an unverified customer to a verification agent. The child returns. The supervisor replays the original question and routes it to the order agent.
+
+```abl
+SUPERVISOR: Order_Support_Supervisor
+GOAL: "Verify the customer, then answer the original order question"
+
+INTENTS:
+  order_status: "The customer asks where an order is or when it arrives."
+
+MEMORY:
+  session:
+    - verified_customer_id
+      TYPE: string
+      DESCRIPTION: "Customer ID confirmed by the verification agent."
+
+HANDOFF:
+  - TO: Identity_Verification_Agent
+    WHEN: verified_customer_id IS NOT SET
+    SUMMARY: "Verify the customer, then return."
+    EXPECT_RETURN: true
+    ON_RETURN:
+      action: resume_intent
+      resume_with: original_handoff_utterance
+      map:
+        customer_id: verified_customer_id
+
+  - TO: Order_Status_Agent
+    WHEN: intent.category == "order_status" AND verified_customer_id IS SET
+    SUMMARY: "The customer is verified and asks about an order."
+    EXPECT_RETURN: false
+```
+
+```abl
+AGENT: Identity_Verification_Agent
+GOAL: "Collect and confirm the customer ID, then return it to the supervisor"
+
+MEMORY:
+  session:
+    - customer_id
+      TYPE: string
+      DESCRIPTION: "Customer ID gathered by this agent."
+
+GATHER:
+  customer_id:
+    prompt: "What is your customer ID?"
+    type: string
+    required: true
+
+COMPLETE:
+  - WHEN: customer_id IS SET
+    RESPOND: "Thanks. I confirmed customer {{customer_id}}."
+```
+
+```abl
+AGENT: Order_Status_Agent
+GOAL: "Tell a verified customer the status of an order"
+
+MEMORY:
+  session:
+    - order_id
+      TYPE: string
+      DESCRIPTION: "Order number gathered by this agent."
+
+GATHER:
+  order_id:
+    prompt: "What is your order number?"
+    type: string
+    required: true
+
+COMPLETE:
+  - WHEN: order_id IS SET
+    RESPOND: "Order {{order_id}} is on its way."
+```
+
+Walk through a conversation:
+
+1. The customer says "Where is my order?". `verified_customer_id` is not set, so the supervisor hands off to the verification agent.
+2. The child asks for the customer ID and completes. The platform copies `customer_id` from the child into `verified_customer_id` on the supervisor.
+3. The supervisor replays "Where is my order?". Now `verified_customer_id` is set and the intent is `order_status`, so the supervisor hands off to the order agent.
+
+## How it works
+
+### How control returns
+
+A child agent returns in one of two ways:
+
+- The child reaches `COMPLETE`. Its thread ends.
+- The child's model hands the conversation back before it completes. Its thread pauses and stays resumable.
+
+In both cases the parent becomes the active agent. The platform adds the child's customer-visible replies to the parent conversation history.
+
+### State and memory after the return
+
+The `map` block decides which child values reach the parent.
+
+| `ON_RETURN` form | What returns |
+| ---------------- | ------------ |
+| `map` set | Only the mapped values. The key is the child value. The value is the parent variable. |
+| No `map` | Every value the child gathered, under the same name. |
+
+Keep these rules in mind:
+
+- A mapped child key must hold a value. A `GATHER` field or a `SET` assignment in the child gives it one. A key with no value is skipped without an error.
+- An empty returned value does not overwrite a parent value that is already set.
+- `set` assigns parent values after the map runs.
+- A map target that is a reserved or system variable is rejected. When any `map`, `set`, or `clear` target is not writable, the platform applies none of the return effects. This includes `RESPOND`.
+- Memory with the `execution_tree` scope returns automatically.
+- Other child values stay with the child unless you map them.
+
+### What the parent does next
+
+Without `ON_RETURN`, the parent resumes. If the child returned a customer message, the parent routes that message as if the action were `resume_intent`.
+
+With `resume_intent`, the platform picks the message to replay with `resume_with`:
+
+| `resume_with` value | Message replayed |
+| ------------------- | ---------------- |
+| `original_handoff_utterance` (default) | The customer message that started the handoff. |
+| `latest_child_user_utterance` | The last customer message the child received. |
+| `latest_session_user_utterance` | The last customer message in the session. |
+| `forwarded_return_message` | The message the child passed back. |
+
+If you omit `resume_with` and the child passed a message back, the platform replays the passed message. The platform does not forward a message that answers a sensitive question, such as a PIN.
+
+The platform replays once for each return. A reasoning parent allows one replay level. A parent that returns from a flow child can pass a replay up through four nested returns. When the limit is reached, the trace shows `resume_intent_depth_limit`.
+
+With `continue`, the parent continues its own flow or turn without a replay.
+
+### Delegate results
+
+A delegate runs in a separate scope inside one turn. It cannot wait for customer input. If the child needs input, the delegate fails. Give the child everything it needs through `INPUT`.
+
+The `RETURNS` block copies named child values into parent variables. If you declare `RETURNS` and the child returns none of those values, the delegate fails. The platform blocks unsafe key names and scrubs secrets from returned values.
+
+A delegate stops waiting when `TIMEOUT` expires. Without `TIMEOUT`, the platform uses the runtime default. The default is 30 seconds unless your operator changes it. A failure follows `ON_FAILURE`:
+
+| `ON_FAILURE` value | Result |
+| ------------------ | ------ |
+| `CONTINUE` (default) | The parent continues without the result. |
+| `RESPOND "message"` | The customer sees the message and the parent continues. |
+| `ESCALATE` | The platform flags the session as escalated. It does not start a human transfer. |
+
+### A one-way child that hands back
+
+In 1.9.0, a child that the parent left with `EXPECT_RETURN: false` can still hand the conversation back to its direct parent. The child needs its own `HANDOFF` entry that targets that parent. This works only while the first handoff call is still in progress. The platform blocks routes to any other earlier agent as cycles.
+
+### When a human agent finishes
+
+Where the person works decides how the session resumes.
+
+| Where the person works | What happens when the person finishes |
+| ---------------------- | ------------------------------------- |
+| Human-agent desk | The `post_agent` setting decides. `return` clears the escalated state and keeps the session open. `end` completes the session. |
+| Inbox task response | The platform clears the escalated state and adds the answer to the history as `[Human Agent <name>]: <answer>`. The agent answers the next customer message. |
+| Resolve API | The platform completes the task and the pause. It returns the matching `on_human_complete` action in the response. It does not run the action. |
+
+`post_agent` is `end` unless you set `return` in the routing block or in the project default for agent transfer.
+
+With `post_agent: return`, the agent that escalated resumes. A customer message such as `thanks`, `bye`, or `done` within 5 minutes of the transfer end completes the session. Any other message goes to the agent.
+
+With a SmartAssist survey, the platform keeps the session open until the customer answers the survey or the answer window ends.
+
+The person's wrap-up form arrives after the disconnect and finishes the transfer record. The resume decision is already made at that point.
+
+While the person is working, customer messages go to the person. The agent does not answer them.
+
+#### Conditions for `on_human_complete`
+
+When `on_human_complete` has entries, the platform pauses the session at escalation. The customer receives the waiting message for every message until the task resolves. The pause record expires after 7 days.
+
+The resolve call carries a `decision` value. The platform checks the entries in order and returns the action of the first match. These are the only supported conditions:
+
+| Condition | Matches |
+| --------- | ------- |
+| `decision == "value"` | The decision equals the value. |
+| `decision != "value"` | The decision differs from the value. |
+| `always` or `*` | Every decision. |
+
+An entry with any other condition never matches. If no entry matches, the action is `continue`.
+
+### Timeouts and abandoned handoffs
+
+| Situation | Behavior |
+| --------- | -------- |
+| A child agent never completes | The child keeps the conversation. A returnable handoff has no timeout setting in ABL. |
+| `TIMEOUT` on a `HANDOFF` entry | It sets the wait limit of an async remote handoff. It does not limit a local child. |
+| A delegate runs too long | `TIMEOUT` stops the wait. `ON_FAILURE` applies. |
+| The customer stops answering | The session idle timeout of the agent applies to the whole session. |
+| An escalation task has no answer | The task is due after 24 hours. The service level check then raises it to the next level and expires it when no level remains. |
+| You resolve an expired or cancelled task | The resolve call returns `ESCALATION_NOT_RESOLVABLE`. |
+
+## Common variations
+
+### Continue with the parent's own flow
+
+Use `continue` when the parent keeps working and only needs the returned values. This example copies the income and records a note.
+
+```abl
+AGENT: Loan_Desk_Agent
+GOAL: "Answer loan questions after the income agent collects the applicant income"
+
+MEMORY:
+  session:
+    - annual_income
+      TYPE: number
+      DESCRIPTION: "Annual income collected by the income agent."
+    - income_note
+      TYPE: string
+      DESCRIPTION: "Note recorded after the income agent returns."
+
+HANDOFF:
+  - TO: Income_Capture_Agent
+    WHEN: annual_income IS NOT SET
+    SUMMARY: "Collect the applicant income, then return."
+    EXPECT_RETURN: true
+    ON_RETURN:
+      action: continue
+      map:
+        annual_income: annual_income
+      set:
+        income_note: "Income collected by the income agent."
+```
+
+```abl
+AGENT: Income_Capture_Agent
+GOAL: "Collect the annual income and return it to the loan desk"
+
+MEMORY:
+  session:
+    - annual_income
+      TYPE: number
+      DESCRIPTION: "Annual income gathered by this agent."
+
+GATHER:
+  annual_income:
+    prompt: "What is your annual income?"
+    type: number
+    required: true
+
+COMPLETE:
+  - WHEN: annual_income IS SET
+    RESPOND: "Thanks. I have your income."
+```
+
+### Delegate a check and map the result
+
+The order desk asks the refund checker for a decision. The checker never talks to the customer. Project-local assumption: the project defines the `check_refund_policy` tool.
+
+```abl
+AGENT: Order_Desk_Agent
+GOAL: "Answer order questions after the refund checker confirms eligibility"
+
+MEMORY:
+  session:
+    - order_id
+      TYPE: string
+      DESCRIPTION: "Order number gathered by this agent."
+    - refund_eligible
+      TYPE: boolean
+      DESCRIPTION: "Eligibility returned by the refund checker."
+    - refund_reason
+      TYPE: string
+      DESCRIPTION: "Reason returned by the refund checker."
+
+GATHER:
+  order_id:
+    prompt: "What is your order number?"
+    type: string
+    required: true
+
+DELEGATE:
+  - TO: Refund_Checker_Agent
+    WHEN: order_id IS SET
+    PURPOSE: "Check whether the order qualifies for a refund"
+    INPUT:
+      order_id: order_id
+    RETURNS:
+      eligible: refund_eligible
+      reason: refund_reason
+    TIMEOUT: 20s
+    ON_FAILURE: RESPOND "I cannot check refund eligibility right now. Please try again shortly."
+```
+
+```abl
+AGENT: Refund_Checker_Agent
+GOAL: "Decide refund eligibility for one order and return the decision. This agent never talks to the customer."
+
+TOOLS:
+  check_refund_policy(order_id: string) -> {eligible: boolean, reason: string}
+    description: "Look up the refund policy decision for an order."
+    side_effects: false
+    confirm: never
+    params:
+      order_id:
+        description: "Order number."
+
+GATHER:
+  order_id:
+    prompt: "Order number"
+    type: string
+    required: true
+
+MEMORY:
+  session:
+    - eligible
+      TYPE: boolean
+      DESCRIPTION: "Eligibility decision."
+    - reason
+      TYPE: string
+      DESCRIPTION: "Reason for the decision."
+
+FLOW:
+  entry_point: check
+
+  steps:
+    - check
+
+  check:
+    REASONING: false
+    CALL: check_refund_policy
+      WITH:
+        order_id: order_id
+      AS: decision
+    SET:
+      eligible = decision.eligible
+      reason = decision.reason
+    THEN: COMPLETE
+```
+
+Write `ON_FAILURE` in a `DELEGATE` entry. A `DELEGATE` entry that uses `ON_FAIL` compiles without an error, and the platform ignores the line.
+
+### Resume the agent after the person finishes
+
+Set `post_agent: return` so the agent that escalated resumes when the person disconnects.
+
+```abl
+AGENT: Refund_Approval_Agent
+GOAL: "Process refunds and send refunds above the limit to a person for approval"
+
+MEMORY:
+  session:
+    - refund_amount
+      TYPE: number
+      DESCRIPTION: "Refund amount in dollars. Collected by this agent."
+    - order_id
+      TYPE: string
+      DESCRIPTION: "Order number. Collected by this agent."
+
+GATHER:
+  order_id:
+    prompt: "What is your order number?"
+    type: string
+    required: true
+  refund_amount:
+    prompt: "How much would you like refunded?"
+    type: number
+    required: true
+
+ESCALATE:
+  triggers:
+    - WHEN: refund_amount > 1000
+      REASON: "Refund above the agent limit needs approval"
+      PRIORITY: medium
+
+  context_for_human:
+    - order_id
+    - refund_amount
+
+  routing:
+    connection: support_desk
+    queue: "refund_approvals"
+    skills: [refunds]
+    post_agent: return
+    metadata:
+      order_id: "{{order_id}}"
+
+COMPLETE:
+  - WHEN: order_id IS SET AND refund_amount <= 1000
+    RESPOND: "I processed the refund for order {{order_id}}."
+```
+
+### End the session when the person finishes
+
+Set `post_agent: end`, or leave it out, when the person closes the conversation.
+
+```abl
+AGENT: Fraud_Desk_Agent
+GOAL: "Collect fraud details and hand the case to a person, who closes the conversation"
+
+MEMORY:
+  session:
+    - fraud_case_id
+      TYPE: string
+      DESCRIPTION: "Fraud case reference. Collected by this agent."
+
+GATHER:
+  fraud_case_id:
+    prompt: "What is your fraud case reference?"
+    type: string
+    required: true
+
+ESCALATE:
+  triggers:
+    - WHEN: fraud_case_id IS SET
+      REASON: "Fraud case needs a specialist"
+      PRIORITY: high
+
+  context_for_human:
+    - fraud_case_id
+
+  routing:
+    connection: support_desk
+    queue: "fraud"
+    post_agent: end
+```
+
+### Pause for a reviewer decision
+
+Use `on_human_complete` when a reviewer answers through the inbox or the resolve API. The decision string drives the returned action.
+
+```abl
+AGENT: Claims_Review_Agent
+GOAL: "Collect claim details and wait for a reviewer decision before continuing"
+
+MEMORY:
+  session:
+    - claim_id
+      TYPE: string
+      DESCRIPTION: "Claim reference. Collected by this agent."
+
+GATHER:
+  claim_id:
+    prompt: "What is your claim reference?"
+    type: string
+    required: true
+
+ESCALATE:
+  triggers:
+    - WHEN: claim_id IS SET
+      REASON: "Claim needs a reviewer decision"
+      PRIORITY: medium
+
+  context_for_human:
+    - claim_id
+
+  on_human_complete:
+    - IF decision == "approved": CONTINUE
+    - IF decision == "rejected": COMPLETE
+```
+
+Reviewers answer with a `POST` to the project session path `/sessions/<session ID>/escalation/resolve`. The caller needs the `session:execute` permission. The body holds `resolution` with `decision`, `respondedBy`, and optional `notes` and `fields`. The response returns `data.action`. Your integration reads the action and acts on it.
+
+Conditions such as `human.resolved == true` never match. The resolve call returns `continue` for them.
+
+### Hand a one-way child back to the parent
+
+A child that the parent left for good can hand the conversation back to the parent while the first handoff call is still in progress.
+
+```abl
+SUPERVISOR: Account_Hub
+GOAL: "Send account requests to the Settings agent"
+
+INTENTS:
+  settings: "The customer wants to change account settings."
+
+HANDOFF:
+  - TO: Settings_Agent
+    WHEN: intent.category == "settings"
+    SUMMARY: "The customer wants to change a setting."
+    EXPECT_RETURN: false
+```
+
+```abl
+AGENT: Settings_Agent
+GOAL: "Change one account setting, or hand back to the hub when the request is outside settings"
+
+MEMORY:
+  session:
+    - setting_name
+      TYPE: string
+      DESCRIPTION: "Setting the customer wants to change. Collected by this agent."
+
+GATHER:
+  setting_name:
+    prompt: "Which setting do you want to change?"
+    type: string
+    required: true
+
+HANDOFF:
+  - TO: Account_Hub
+    WHEN: "the customer asks about something other than account settings"
+    SUMMARY: "The request is outside settings."
+    EXPECT_RETURN: false
+
+COMPLETE:
+  - WHEN: setting_name IS SET
+    RESPOND: "I changed {{setting_name}} for you."
+```
+
+## Verification
+
+1. Validate the project. Fix every warning about unset variables or unknown conditions.
+2. Run a conversation that triggers the handoff. Confirm that the child owns the next turns.
+3. Complete the child task. Open the session trace and find `return_to_parent` or `thread_return`.
+4. Check the parent variables. Each mapped variable holds the child value. A mapped variable with no value means the child did not hold the key.
+5. For `resume_intent`, find the `resume_intent` event. Check `resumeMessage` and `resumeMessageSource`. Confirm that the parent routed to the expected agent.
+6. Find the `handoff_completed` event. Check `outcome` and `durationMs`. This event records the handoff attempt. It does not record the return.
+7. For a delegate, find `delegate_complete`. Check `success`. Find `delegate_return_mapping` to see which keys were set or blocked.
+8. Force a delegate failure in a test project. Confirm that `ON_FAILURE` runs and the customer sees the message.
+9. For a desk escalation, end the conversation at the desk. With `post_agent: return`, send a message and check that the agent answers. With `end`, check that the session reports the conversation as complete.
+10. For `on_human_complete`, call the resolve endpoint once for each decision. Check `data.action`. Find the `escalation_resolved` event.
+
+## Production readiness checklist
+
+- Every `map` key exists in the child as a `GATHER` field or a `SET` target.
+- Every map target has a `MEMORY` declaration in the parent and is not a reserved name.
+- Each `resume_intent` parent has a route that can handle the replayed message.
+- Each child has a `COMPLETE` rule or a way to hand back. A child without one keeps the conversation.
+- Each `DELEGATE` has a `TIMEOUT` and an `ON_FAILURE`.
+- You set `post_agent` on every desk route. You do not rely on the default `end`.
+- Every `on_human_complete` condition uses `decision`. Your integration reads `data.action`.
+- You set a service level for the escalation inbox. Someone watches tasks that are due.
+- You tested the success path, a returned message, a delegate timeout, a delegate failure, and each `post_agent` value.
+- Monitoring watches `handoff_completed`, `delegate_complete`, `memory_error`, and `escalation_resolved` events.
+
+## Common mistakes
+
+| Mistake | Why it happens | How to avoid it |
+| ------- | -------------- | --------------- |
+| Expecting a one-way child to return. | `EXPECT_RETURN: false` ends the parent. | Set `EXPECT_RETURN: true` on the parent entry. |
+| Mapping a key the child never sets. | The key name differs from the `GATHER` field. | Use the exact child field name. Check `delegate_return_mapping` or the parent value. |
+| Omitting `map` and receiving extra values. | Without `map`, every gathered child value returns. | Add `map` to limit the values. |
+| Mapping to a reserved name. | The target looks like an ordinary variable. | Choose a project variable name. The compiler reports reserved names. |
+| Using `resume_intent` when the parent only needs the values. | The replay routes the old message again. | Use `continue`. |
+| Using `ON_FAIL` in a `DELEGATE` entry. | Some references show `ON_FAIL`. | Write `ON_FAILURE`. |
+| Writing `ON_FAILURE: ESCALATE` and expecting a person. | The setting only flags the session. | Trigger an `ESCALATE` block. See [Package context for human escalation](/agent-platform/abl/how-to/package-human-escalation-context). |
+| Writing `on_human_complete` conditions on `human.*` fields. | Examples in other places use them. | Write conditions on `decision`. |
+| Leaving `post_agent` unset. | The default is `end`. | Set `return` when the agent must resume. |
+
+## Troubleshooting
+
+| Symptom | Likely cause | What to check |
+| ------- | ------------ | ------------- |
+| The parent never runs after the child completes. | The handoff has `EXPECT_RETURN: false`, or the child never completed. | Check the entry and the child `COMPLETE` rule. |
+| Parent variable stays empty. | The child key has no value, or the target is not writable. | Check for a `memory_error` event. Check the child `GATHER` field name. |
+| A mapped value did not replace a parent value. | The child returned an empty value. | Check the child value. An empty value never overwrites a set value. |
+| Return effects and the `RESPOND` text are missing. | A `map`, `set`, or `clear` target is not writable. | Check for a `memory_error` event. |
+| Replay does not happen. | The depth limit was reached, or the replay message was a sensitive answer. | Find `resume_intent_depth_limit` in the trace. |
+| The parent replays the wrong message. | `resume_with` is unset or points to another message. | Check `resumeMessageSource` in the `resume_intent` event. |
+| The delegate fails with a wait error. | The child asks the customer for input. | Move the input into `INPUT`, or use a returnable handoff. |
+| The delegate fails with a missing values error. | The child returned none of the `RETURNS` keys. | Check the child `SET` assignments and the key names. |
+| Customer receives the waiting message again and again. | An `on_human_complete` pause is active. | Resolve the task. Check `GET` on the session escalation path. |
+| Resolve returns `ESCALATION_ALREADY_RESOLVED` or `ESCALATION_NOT_RESOLVABLE`. | The task is completed, cancelled, or expired. | Check the task status. |
+| The agent does not resume after the person disconnects. | `post_agent` is `end`, or unset. | Set `post_agent: return`. |
+| The session ended after the person finished. | `post_agent` is `end`. | Check the routing block and the project default. |
+| Replies start with `[HUMAN AGENT] Message received`. | The session is flagged as escalated with no live transfer. | Check the connection. See [Package context for human escalation](/agent-platform/abl/how-to/package-human-escalation-context). |
+
+## Related HowTos
+
+- [Hand off to a returnable agent](/agent-platform/abl/how-to/returnable-agent-handoff)
+- [Hand off to a terminal agent](/agent-platform/abl/how-to/terminal-agent-handoff)
+- [Use a handoff instead of a delegate](/agent-platform/abl/how-to/use-handoff-instead-of-delegate)
+- [Use a delegate instead of a handoff](/agent-platform/abl/how-to/use-delegate-instead-of-handoff)
+- [Delegate and map the result](/agent-platform/abl/how-to/delegate-and-map-result)
+- [Escalate to a human agent](/agent-platform/abl/how-to/escalate-to-human)
+- [Package context for human escalation](/agent-platform/abl/how-to/package-human-escalation-context)
+- [Debug routing traces](/agent-platform/abl/how-to/debug-routing-traces)

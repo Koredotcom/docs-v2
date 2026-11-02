@@ -13,6 +13,8 @@ Use reasoning steps for judgment: interpreting messy user language, choosing a t
 
 The agent-level `MODE:` line is removed. A `MODE:` line causes error `E560`. Declare `REASONING` on each step instead.
 
+`PERSONA` and behavior profiles apply to the whole agent. A step has no persona setting. A `PERSONA` line inside a step causes warning `W498` and the runtime ignores it.
+
 ### Validation rules for step modes
 
 | Code   | Severity | Trigger                                                                   |
@@ -21,6 +23,11 @@ The agent-level `MODE:` line is removed. A `MODE:` line causes error `E560`. Dec
 | `E201` | error    | A `REASONING: true` step has no step `GOAL` and the agent has no `GOAL`.  |
 | `W200` | warning  | A `REASONING: false` step has a `GOAL`. The goal has no effect.           |
 | `W201` | warning  | A `REASONING: false` step has `AVAILABLE_TOOLS`. The list has no effect.  |
+| `W498` | warning  | A step has a `PERSONA` or `USE BEHAVIOR_PROFILE` line. The runtime ignores it. |
+| `W217` | warning  | A step header is indented wrongly or has text after the colon. The parser reads its lines as part of the step above. |
+| `W218` | warning  | A step sets a single-value property, such as `REASONING`, `GOAL`, or `THEN`, twice. Only one value takes effect. |
+| `REASONING_CONTEXT_UPDATES_INVALID` | error | `CONTEXT_UPDATES` is a list on a `REASONING: false` step, or the list names a field that `MEMORY.session` does not declare. |
+| `FLOW_CONTEXT_UPDATES_INVALID` | error | `CONTEXT_UPDATES` is not `true`, `false`, or a list of field names. |
 
 ## Minimal working example
 
@@ -84,15 +91,29 @@ A reasoning step runs as soon as the flow reaches it, when the step has a `GOAL`
 
 In the minimal example, `assess_urgency` has `THEN` only. The model asks its clarification question, if it asks one, and the flow moves on without waiting for the answer. Use `EXIT_WHEN` when the step must wait. See [Hold a reasoning step until a decision is recorded](#hold-a-reasoning-step-until-a-decision-is-recorded).
 
+### What the model receives in a reasoning step
+
+The runtime builds the step prompt from these parts, in this order:
+
+1. The agent `PERSONA`.
+2. The agent `LIMITATIONS`, under a "Limitations:" heading.
+3. Text from the agent behavior profiles whose `WHEN` condition matches.
+4. The step `GOAL`. The agent `GOAL` is the fallback.
+5. The `STEP_CONSTRAINTS`, if any.
+6. The step `RESPOND` text, if any. A reasoning step treats it as a turn instruction, not as literal output.
+
+`GOAL`, `PERSONA`, and `LIMITATIONS` accept `{{variable}}` placeholders. The runtime fills them from session values.
+
 ### Reasoning step settings
 
 | Setting             | Effect                                                                                                      |
 | ------------------- | ----------------------------------------------------------------------------------------------------------- |
 | `GOAL`              | The model objective for the step. It overrides the agent `GOAL` for this step.                              |
+| `STEP_CONSTRAINTS`  | Rules that apply only to this step. The runtime adds them to the step prompt under "Constraints:".          |
 | `AVAILABLE_TOOLS`   | The tools the model may call in this step. Use `[]` to offer none.                                          |
-| `EXIT_WHEN`         | A condition checked after each reasoning turn. When true, the flow follows `THEN`.                          |
+| `EXIT_WHEN`         | A condition checked after each reasoning turn. When true, the flow follows `THEN`. The step needs a `THEN` to advance. |
 | `MAX_TURNS`         | The most model and tool iterations in one reasoning execution. The default is 10.                           |
-| `CONTEXT_UPDATES`   | Whether the model may write session values. The default is true. Set `false` to block model writes.         |
+| `CONTEXT_UPDATES`   | Which session values the model may write. The default is `true`. Use `false` or `[]` to block model writes. Use a list of field names to allow only those fields. |
 | `MAX_ATTEMPTS`      | The most user turns the step takes without meeting `EXIT_WHEN`. It counts only when `ON_EXHAUSTED` is also set. |
 | `ON_EXHAUSTED`      | The step to run when `MAX_ATTEMPTS` is reached.                                                             |
 
@@ -151,6 +172,24 @@ FLOW:
 Here, `urgency` is a session variable that the model writes. The `default_urgency` step sets it when the model cannot decide in three turns. The fallback keeps the flow from stalling.
 
 The runtime refuses model writes to fields declared `READONLY: true`. Do not use a `READONLY` field as an `EXIT_WHEN` fact that the model must write.
+
+### Limit which session values the model can write
+
+Use a `CONTEXT_UPDATES` list when the model must write one value and nothing else. List only fields that `MEMORY.session` declares. Add the line to the `assess_urgency` step above.
+
+```abl
+  assess_urgency:
+    REASONING: true
+    GOAL: "Decide whether the claim is urgent, routine, or unclear. Ask one brief clarification question if you cannot decide. Record the result in urgency."
+    CONTEXT_UPDATES: [urgency]
+    EXIT_WHEN: urgency IS SET
+    MAX_TURNS: 3
+    MAX_ATTEMPTS: 3
+    ON_EXHAUSTED: default_urgency
+    THEN: explain_next_steps
+```
+
+The list must include every field that the `EXIT_WHEN` condition reads and that the model writes. A field outside the list is not writable by the model in this step. The step can then never meet its exit condition through the model.
 
 ### Reason first, then collect
 
@@ -216,7 +255,7 @@ FLOW:
 
 ## Verification
 
-1. Validate the project. Confirm every `FLOW` step declares `REASONING: true` or `REASONING: false`, and no `E200`, `E201`, `W200`, or `W201` appears.
+1. Validate the project. Confirm every `FLOW` step declares `REASONING: true` or `REASONING: false`, and no `E200`, `E201`, `W200`, `W201`, `W217`, `W218`, or `W498` appears.
 2. Test a routine claim, an urgent claim, and an unclear claim.
 3. Confirm `collect_claim` gathers both fields before `assess_urgency`.
 4. Confirm `prepare_summary` sets `claim_summary` before `explain_next_steps`.
@@ -229,6 +268,8 @@ FLOW:
 - Keep each reasoning goal narrow, so the model knows the decision or explanation it owns.
 - Set `EXIT_WHEN` on every reasoning step that must wait for the user.
 - Add `MAX_ATTEMPTS` and `ON_EXHAUSTED` to every `EXIT_WHEN` step.
+- Add `THEN` to every `EXIT_WHEN` step.
+- Use a `CONTEXT_UPDATES` list on steps where the model must not write other session values.
 - Add fallback paths for unclear input, failed tool calls, and exhausted attempts.
 - Use deterministic steps for required data, compliance checks, and actions with side effects.
 - Monitor traces for loops, skipped steps, and repeated clarification turns.
@@ -240,6 +281,7 @@ FLOW:
 | Using `MODE:` for the whole agent                    | Older examples show agent-level execution mode.      | Delete `MODE:` and declare `REASONING` on each flow step.               |
 | Putting a `GOAL` on a deterministic step             | The step looks like it needs an explanation.         | Move the goal to a reasoning step or remove it.                         |
 | Expecting a reasoning step to wait for an answer     | The step has `THEN` but no `EXIT_WHEN`.              | Add `EXIT_WHEN`, `MAX_ATTEMPTS`, and `ON_EXHAUSTED`.                    |
+| Putting `PERSONA` inside a step                      | A step looks like it can have its own voice.         | Set `PERSONA` once at agent level. Use the step `GOAL` or `STEP_CONSTRAINTS` for step wording. |
 | Making every step reasoning-enabled                  | Flexible behavior is attractive during design.       | Use deterministic steps for control, data movement, tools, and branches. |
 | Making every step deterministic                      | The flow becomes brittle for messy language.         | Add reasoning steps where interpretation or explanation is required.    |
 
@@ -252,10 +294,15 @@ FLOW:
 | Error `E560`: `MODE` is no longer supported      | The agent has a `MODE:` line.                                 | Delete the line and use `REASONING` per step.                          |
 | Warning `W200` or `W201`                         | A deterministic step has a `GOAL` or `AVAILABLE_TOOLS`.       | Remove the setting or set `REASONING: true`.                           |
 | The flow skips the user's answer to a question   | The reasoning step has `THEN` and no `EXIT_WHEN`.             | Add `EXIT_WHEN` so the step stays active until the condition is true.  |
-| The step never exits                             | The model does not write the `EXIT_WHEN` variable.            | Check the goal text, `CONTEXT_UPDATES`, and `READONLY` on the variable. |
+| The step never exits                             | The model does not write the `EXIT_WHEN` variable.            | Check the goal text, `CONTEXT_UPDATES` (a list must include the variable), and `READONLY` on the variable. |
 | Warning `W801` on an `EXIT_WHEN` variable        | No step, tool, or `GATHER` field populates the variable.      | Add a fallback `SET`, as in `default_urgency`. The model can also write it. |
+| Warning `W498`                                   | A step has a `PERSONA` or `USE BEHAVIOR_PROFILE` line.        | Move it to agent level. Use the step `GOAL` or `STEP_CONSTRAINTS` for step wording. |
+| Warning `W217` or `W218`                         | A step header is misplaced, or a step repeats a property.     | Write each step header as a bare `name:` line at the same indent. Keep one value for each property. |
+| Error `REASONING_CONTEXT_UPDATES_INVALID`        | `CONTEXT_UPDATES` has a list on a deterministic step, or names an undeclared field. | Use `REASONING: true`. List only fields declared in `MEMORY.session`. |
+| The step has `EXIT_WHEN` but never advances      | The step has no `THEN`.                                       | Add `THEN` with the next step.                                         |
 | The agent loops in explanation                   | The reasoning goal is too broad or the step has no exit.      | Narrow the goal and transition to `COMPLETE`.                          |
 
 ## Related HowTos
 
 - How to choose between a reasoning agent and a FLOW-based agent
+````

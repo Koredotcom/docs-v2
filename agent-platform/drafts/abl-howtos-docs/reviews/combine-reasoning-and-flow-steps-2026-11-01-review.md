@@ -1,0 +1,354 @@
+# HowTo Review: combine-reasoning-and-flow-steps
+
+**Date:** 2026-11-01
+**Article:** `agent-platform/drafts/abl-howtos-docs/articles/combine-reasoning-and-flow-steps.md`
+**Topic:** 1.5 - How to combine reasoning steps with deterministic FLOW steps
+**Verdict:** update-needed
+**Code branch:** `release_Artemis_1.9.0` (previous scan: `hotfix_Artemis_1.8.1`)
+
+## Proposed changes
+
+- Add the list form of `CONTEXT_UPDATES`, with a validated snippet. Update the settings table, production checklist, and troubleshooting.
+- Add errors `REASONING_CONTEXT_UPDATES_INVALID` and `FLOW_CONTEXT_UPDATES_INVALID` to the validation rules table.
+- Add `W498` (step `PERSONA` ignored), `W217` (misplaced step header), and `W218` (repeated step property) to the table, mistakes, troubleshooting, and verification step 1.
+- Add "What the model receives in a reasoning step": persona, limitations, behavior profile text, goal, constraints, turn instruction.
+- Add `STEP_CONSTRAINTS` to the settings table. State that `EXIT_WHEN` needs `THEN` to advance.
+- Code blocks 1, 2, and the tool example stay byte for byte. They pass validation at 1.9.0 with zero errors and warnings.
+
+## Deletions
+
+- None. One sentence in the settings table and one troubleshooting cell are extended, not removed.
+
+## Evidence
+
+| Claim | Current evidence | Impact |
+| ----- | ---------------- | ------ |
+| `CONTEXT_UPDATES` accepts a list of declared session fields on a reasoning step | `agent-based-parser.ts` ~3994; `compiler.ts` ~1455; `reasoning-context-write-policy.ts`; `step-context-scope.test.ts`; harness | New variation and rows |
+| A list on a deterministic step or with an undeclared name is a compile error | Harness: `REASONING_CONTEXT_UPDATES_INVALID` | Table and troubleshooting rows |
+| `false` and `[]` disable the model write tool | `resolveReasoningContextWritePolicy` | Settings table |
+| A step `PERSONA` raises `W498` and is ignored | Registry; harness | Concept sentence, rows |
+| The reasoning step prompt carries limitations and behavior profiles | `flow-step-executor.ts` ~23737-23830 | New prompt list |
+| `EXIT_WHEN` advances only with `THEN` | `flow-step-executor.ts` ~24124 (`exitMet && verified && step.then`) | Settings table, checklist, troubleshooting |
+| THEN-only step advances after one execution; `MAX_ATTEMPTS` needs `ON_EXHAUSTED` | `flow-step-executor.ts` ~24318, 2055 | Re-verified, unchanged |
+| `E200`, `E201`, `W200`, `W201`, `E560` | Registry and harness | Re-verified, unchanged |
+
+## Files to update after approval
+
+- `agent-platform/drafts/abl-howtos-docs/articles/combine-reasoning-and-flow-steps.md`
+- `agent-platform/drafts/abl-howtos-docs/evidence/combine-reasoning-and-flow-steps-2026-11-01-evidence.md`
+
+## Full evidence file
+
+See `agent-platform/drafts/abl-howtos-docs/evidence/combine-reasoning-and-flow-steps-2026-11-01-evidence.md` for the drift analysis, scenario map, operational readiness map, example validation, red-team pass, persona review, and scorecard. Final scores are 5 on all criteria except scenario comprehensiveness (4).
+
+## Proposed full article
+
+````markdown
+# How to combine reasoning steps with deterministic FLOW steps
+
+Use this pattern when a conversation needs both flexible judgment and predictable execution. A good enterprise flow has one or two places where the agent reasons, such as judging urgency or explaining a result. Deterministic steps surround them: they collect data, set variables, call tools, branch, and finish.
+
+## Concept
+
+ABL sets the execution style per step inside `FLOW`. Every step declares `REASONING: true` or `REASONING: false`. There is no default.
+
+- `REASONING: true` hands the step to the model. The step `GOAL` is the model's objective for that step.
+- `REASONING: false` runs the step as scripted. The step runs the actions it declares: `GATHER`, `SET`, `CALL`, `RESPOND`, `ON_INPUT`, `ON_RESULT`, and `THEN`.
+
+Use reasoning steps for judgment: interpreting messy user language, choosing a tone, deciding whether a situation is urgent, or explaining a result. Use deterministic steps for control: collecting required fields, setting session values, invoking tools, branching on known outputs, and ending the flow.
+
+The agent-level `MODE:` line is removed. A `MODE:` line causes error `E560`. Declare `REASONING` on each step instead.
+
+`PERSONA` and behavior profiles apply to the whole agent. A step has no persona setting. A `PERSONA` line inside a step causes warning `W498` and the runtime ignores it.
+
+### Validation rules for step modes
+
+| Code   | Severity | Trigger                                                                   |
+| ------ | -------- | ------------------------------------------------------------------------- |
+| `E200` | error    | A `FLOW` step omits `REASONING`.                                          |
+| `E201` | error    | A `REASONING: true` step has no step `GOAL` and the agent has no `GOAL`.  |
+| `W200` | warning  | A `REASONING: false` step has a `GOAL`. The goal has no effect.           |
+| `W201` | warning  | A `REASONING: false` step has `AVAILABLE_TOOLS`. The list has no effect.  |
+| `W498` | warning  | A step has a `PERSONA` or `USE BEHAVIOR_PROFILE` line. The runtime ignores it. |
+| `W217` | warning  | A step header is indented wrongly or has text after the colon. The parser reads its lines as part of the step above. |
+| `W218` | warning  | A step sets a single-value property, such as `REASONING`, `GOAL`, or `THEN`, twice. Only one value takes effect. |
+| `REASONING_CONTEXT_UPDATES_INVALID` | error | `CONTEXT_UPDATES` is a list on a `REASONING: false` step, or the list names a field that `MEMORY.session` does not declare. |
+| `FLOW_CONTEXT_UPDATES_INVALID` | error | `CONTEXT_UPDATES` is not `true`, `false`, or a list of field names. |
+
+## Minimal working example
+
+```abl
+AGENT: Claim_Intake_Agent
+GOAL: "Collect claim details, reason about urgency, and route to the right next step"
+PERSONA: "Careful claims intake specialist"
+
+FLOW:
+  entry_point: collect_claim
+
+  collect_claim:
+    REASONING: false
+    GATHER:
+      - policy_id:
+          prompt: "What is your policy ID?"
+          type: string
+          required: true
+      - claim_type:
+          prompt: "What type of claim are you filing?"
+          type: string
+          required: true
+    THEN: assess_urgency
+
+  assess_urgency:
+    REASONING: true
+    GOAL: "Decide whether the claim sounds urgent, routine, or unclear. Ask one brief clarification question if needed."
+    THEN: prepare_summary
+
+  prepare_summary:
+    REASONING: false
+    SET:
+      claim_summary = "Policy " + policy_id + " reported a " + claim_type + " claim"
+    THEN: explain_next_steps
+
+  explain_next_steps:
+    REASONING: true
+    GOAL: "Explain the next steps in plain language using policy_id, claim_type, and claim_summary."
+    THEN: COMPLETE
+```
+
+## How it works
+
+The first step is deterministic. The platform collects `policy_id` and `claim_type` before it does anything else.
+
+The second step is a reasoning step because urgency is not a clean list of values. The user may describe an accident, water damage, loss, injury, or uncertainty in their own words.
+
+The third step is deterministic. It builds `claim_summary` from known values.
+
+The last step is a reasoning step. It turns the known state into a user-facing explanation.
+
+### When a reasoning step ends
+
+A reasoning step runs as soon as the flow reaches it, when the step has a `GOAL`. The model speaks first.
+
+| Step settings                | What happens                                                                                          |
+| ---------------------------- | ----------------------------------------------------------------------------------------------------- |
+| `THEN` only                  | The flow follows `THEN` after one reasoning execution. The step does not wait for an answer to a question the model asked. |
+| `THEN` and `EXIT_WHEN`       | The step stays active across user turns until the `EXIT_WHEN` condition is true. Then the flow follows `THEN`. |
+| `EXIT_WHEN` with `MAX_ATTEMPTS` and `ON_EXHAUSTED` | The flow goes to the `ON_EXHAUSTED` step after the attempt limit passes without the condition becoming true. |
+
+In the minimal example, `assess_urgency` has `THEN` only. The model asks its clarification question, if it asks one, and the flow moves on without waiting for the answer. Use `EXIT_WHEN` when the step must wait. See [Hold a reasoning step until a decision is recorded](#hold-a-reasoning-step-until-a-decision-is-recorded).
+
+### What the model receives in a reasoning step
+
+The runtime builds the step prompt from these parts, in this order:
+
+1. The agent `PERSONA`.
+2. The agent `LIMITATIONS`, under a "Limitations:" heading.
+3. Text from the agent behavior profiles whose `WHEN` condition matches.
+4. The step `GOAL`. The agent `GOAL` is the fallback.
+5. The `STEP_CONSTRAINTS`, if any.
+6. The step `RESPOND` text, if any. A reasoning step treats it as a turn instruction, not as literal output.
+
+`GOAL`, `PERSONA`, and `LIMITATIONS` accept `{{variable}}` placeholders. The runtime fills them from session values.
+
+### Reasoning step settings
+
+| Setting             | Effect                                                                                                      |
+| ------------------- | ----------------------------------------------------------------------------------------------------------- |
+| `GOAL`              | The model objective for the step. It overrides the agent `GOAL` for this step.                              |
+| `STEP_CONSTRAINTS`  | Rules that apply only to this step. The runtime adds them to the step prompt under "Constraints:".          |
+| `AVAILABLE_TOOLS`   | The tools the model may call in this step. Use `[]` to offer none.                                          |
+| `EXIT_WHEN`         | A condition checked after each reasoning turn. When true, the flow follows `THEN`. The step needs a `THEN` to advance. |
+| `MAX_TURNS`         | The most model and tool iterations in one reasoning execution. The default is 10.                           |
+| `CONTEXT_UPDATES`   | Which session values the model may write. The default is `true`. Use `false` or `[]` to block model writes. Use a list of field names to allow only those fields. |
+| `MAX_ATTEMPTS`      | The most user turns the step takes without meeting `EXIT_WHEN`. It counts only when `ON_EXHAUSTED` is also set. |
+| `ON_EXHAUSTED`      | The step to run when `MAX_ATTEMPTS` is reached.                                                             |
+
+The structure makes the flow easier to test. You can check that required fields exist before `assess_urgency`, that `claim_summary` exists before `explain_next_steps`, and that completion follows the explanation step.
+
+## Common variations
+
+### Hold a reasoning step until a decision is recorded
+
+Use `EXIT_WHEN` when the model must reach a result before the flow continues. The model records the result in a session variable. The `EXIT_WHEN` condition reads that variable.
+
+```abl
+AGENT: Claim_Triage_Agent
+GOAL: "Collect claim details, record how urgent the claim is, and explain the next step"
+PERSONA: "Careful claims intake specialist"
+
+MEMORY:
+  session:
+    - urgency
+      TYPE: string
+      DESCRIPTION: "Claim urgency: urgent, routine, or unclear"
+
+FLOW:
+  entry_point: collect_claim
+
+  collect_claim:
+    REASONING: false
+    GATHER:
+      - policy_id:
+          prompt: "What is your policy ID?"
+          type: string
+          required: true
+    THEN: assess_urgency
+
+  assess_urgency:
+    REASONING: true
+    GOAL: "Decide whether the claim is urgent, routine, or unclear. Ask one brief clarification question if you cannot decide. Record the result in urgency."
+    EXIT_WHEN: urgency IS SET
+    MAX_TURNS: 3
+    MAX_ATTEMPTS: 3
+    ON_EXHAUSTED: default_urgency
+    THEN: explain_next_steps
+
+  default_urgency:
+    REASONING: false
+    SET:
+      urgency = "unclear"
+    THEN: explain_next_steps
+
+  explain_next_steps:
+    REASONING: false
+    RESPOND: "I recorded policy {{policy_id}} as {{urgency}}. A claims specialist will review it."
+    THEN: COMPLETE
+```
+
+Here, `urgency` is a session variable that the model writes. The `default_urgency` step sets it when the model cannot decide in three turns. The fallback keeps the flow from stalling.
+
+The runtime refuses model writes to fields declared `READONLY: true`. Do not use a `READONLY` field as an `EXIT_WHEN` fact that the model must write.
+
+### Limit which session values the model can write
+
+Use a `CONTEXT_UPDATES` list when the model must write one value and nothing else. List only fields that `MEMORY.session` declares. Add the line to the `assess_urgency` step above.
+
+```abl
+  assess_urgency:
+    REASONING: true
+    GOAL: "Decide whether the claim is urgent, routine, or unclear. Ask one brief clarification question if you cannot decide. Record the result in urgency."
+    CONTEXT_UPDATES: [urgency]
+    EXIT_WHEN: urgency IS SET
+    MAX_TURNS: 3
+    MAX_ATTEMPTS: 3
+    ON_EXHAUSTED: default_urgency
+    THEN: explain_next_steps
+```
+
+The list must include every field that the `EXIT_WHEN` condition reads and that the model writes. A field outside the list is not writable by the model in this step. The step can then never meet its exit condition through the model.
+
+### Reason first, then collect
+
+Start with a reasoning step when users open with broad language, such as "I need help with something that happened yesterday." The reasoning step decides what to ask next. Then the flow moves to deterministic collection. Add `EXIT_WHEN` so the reasoning step waits for the user.
+
+### Collect first, then reason
+
+Start with deterministic collection when compliance, eligibility, identity, or required intake fields must exist before any judgment is useful.
+
+### Reason after a tool result
+
+Use a deterministic `CALL` with `ON_SUCCESS` and `ON_FAIL` to fetch known data. Then use a reasoning step to explain the result. This keeps tool execution predictable and lets the final response adapt to the user.
+
+The `get_claim_status` tool in this example is a project-local assumption. Bind it to your own claim system in the project.
+
+```abl
+AGENT: Claim_Status_Agent
+GOAL: "Look up a claim and explain its status in plain language"
+PERSONA: "Clear and calm claims specialist"
+
+TOOLS:
+  get_claim_status(claim_id: string) -> {success: boolean, status: string, next_action: string}
+    description: "Retrieve the current status of a claim"
+    effect: read_only
+    parameters:
+      claim_id:
+        description: "Claim ID entered by the customer"
+
+FLOW:
+  entry_point: collect_claim_id
+
+  collect_claim_id:
+    REASONING: false
+    GATHER:
+      - claim_id:
+          prompt: "What is your claim ID?"
+          type: string
+          required: true
+    THEN: fetch_status
+
+  fetch_status:
+    REASONING: false
+    CALL: get_claim_status
+      WITH:
+        claim_id: "{{claim_id}}"
+      AS: claim_result
+    ON_SUCCESS:
+      - IF: claim_result.success == true
+        THEN: explain_status
+      - ELSE:
+        RESPOND: "I could not find that claim. Check the claim ID and try again."
+        THEN: COMPLETE
+    ON_FAIL:
+      RESPOND: "The claim system is unavailable. Please try again later."
+      THEN: COMPLETE
+
+  explain_status:
+    REASONING: true
+    GOAL: "Explain claim_result.status and claim_result.next_action in plain language. Do not add details that are not in claim_result."
+    AVAILABLE_TOOLS: []
+    THEN: COMPLETE
+```
+
+## Verification
+
+1. Validate the project. Confirm every `FLOW` step declares `REASONING: true` or `REASONING: false`, and no `E200`, `E201`, `W200`, `W201`, `W217`, `W218`, or `W498` appears.
+2. Test a routine claim, an urgent claim, and an unclear claim.
+3. Confirm `collect_claim` gathers both fields before `assess_urgency`.
+4. Confirm `prepare_summary` sets `claim_summary` before `explain_next_steps`.
+5. For the `EXIT_WHEN` variation, answer the clarification question and confirm the flow moves to `explain_next_steps`. Then give no usable answer three times and confirm the flow goes to `default_urgency`.
+6. Inspect the trace. Look for `flow_step_enter`, `flow_step_exit`, and `flow_transition` events to see the step order. Look for `reasoning_zone_enter` and `reasoning_zone_exit` events to see where the model ran and why the step exited.
+
+## Production readiness checklist
+
+- Keep deterministic steps free of goals and available-tool lists.
+- Keep each reasoning goal narrow, so the model knows the decision or explanation it owns.
+- Set `EXIT_WHEN` on every reasoning step that must wait for the user.
+- Add `MAX_ATTEMPTS` and `ON_EXHAUSTED` to every `EXIT_WHEN` step.
+- Add `THEN` to every `EXIT_WHEN` step.
+- Use a `CONTEXT_UPDATES` list on steps where the model must not write other session values.
+- Add fallback paths for unclear input, failed tool calls, and exhausted attempts.
+- Use deterministic steps for required data, compliance checks, and actions with side effects.
+- Monitor traces for loops, skipped steps, and repeated clarification turns.
+
+## Common mistakes
+
+| Mistake                                              | Why it happens                                       | How to avoid it                                                         |
+| ---------------------------------------------------- | ---------------------------------------------------- | ----------------------------------------------------------------------- |
+| Using `MODE:` for the whole agent                    | Older examples show agent-level execution mode.      | Delete `MODE:` and declare `REASONING` on each flow step.               |
+| Putting a `GOAL` on a deterministic step             | The step looks like it needs an explanation.         | Move the goal to a reasoning step or remove it.                         |
+| Expecting a reasoning step to wait for an answer     | The step has `THEN` but no `EXIT_WHEN`.              | Add `EXIT_WHEN`, `MAX_ATTEMPTS`, and `ON_EXHAUSTED`.                    |
+| Putting `PERSONA` inside a step                      | A step looks like it can have its own voice.         | Set `PERSONA` once at agent level. Use the step `GOAL` or `STEP_CONSTRAINTS` for step wording. |
+| Making every step reasoning-enabled                  | Flexible behavior is attractive during design.       | Use deterministic steps for control, data movement, tools, and branches. |
+| Making every step deterministic                      | The flow becomes brittle for messy language.         | Add reasoning steps where interpretation or explanation is required.    |
+
+## Troubleshooting
+
+| Symptom                                          | Likely cause                                                  | What to check                                                          |
+| ------------------------------------------------ | ------------------------------------------------------------- | ---------------------------------------------------------------------- |
+| Error `E200`: step must declare `REASONING`      | A `FLOW` step is missing `REASONING`.                         | Add `REASONING: true` or `REASONING: false` to every step.             |
+| Error `E201`: reasoning step has no goal         | A `REASONING: true` step has no step or agent `GOAL`.         | Add a step `GOAL` or an agent `GOAL`.                                  |
+| Error `E560`: `MODE` is no longer supported      | The agent has a `MODE:` line.                                 | Delete the line and use `REASONING` per step.                          |
+| Warning `W200` or `W201`                         | A deterministic step has a `GOAL` or `AVAILABLE_TOOLS`.       | Remove the setting or set `REASONING: true`.                           |
+| The flow skips the user's answer to a question   | The reasoning step has `THEN` and no `EXIT_WHEN`.             | Add `EXIT_WHEN` so the step stays active until the condition is true.  |
+| The step never exits                             | The model does not write the `EXIT_WHEN` variable.            | Check the goal text, `CONTEXT_UPDATES` (a list must include the variable), and `READONLY` on the variable. |
+| Warning `W801` on an `EXIT_WHEN` variable        | No step, tool, or `GATHER` field populates the variable.      | Add a fallback `SET`, as in `default_urgency`. The model can also write it. |
+| Warning `W498`                                   | A step has a `PERSONA` or `USE BEHAVIOR_PROFILE` line.        | Move it to agent level. Use the step `GOAL` or `STEP_CONSTRAINTS` for step wording. |
+| Warning `W217` or `W218`                         | A step header is misplaced, or a step repeats a property.     | Write each step header as a bare `name:` line at the same indent. Keep one value for each property. |
+| Error `REASONING_CONTEXT_UPDATES_INVALID`        | `CONTEXT_UPDATES` has a list on a deterministic step, or names an undeclared field. | Use `REASONING: true`. List only fields declared in `MEMORY.session`. |
+| The step has `EXIT_WHEN` but never advances      | The step has no `THEN`.                                       | Add `THEN` with the next step.                                         |
+| The agent loops in explanation                   | The reasoning goal is too broad or the step has no exit.      | Narrow the goal and transition to `COMPLETE`.                          |
+
+## Related HowTos
+
+- How to choose between a reasoning agent and a FLOW-based agent
+````

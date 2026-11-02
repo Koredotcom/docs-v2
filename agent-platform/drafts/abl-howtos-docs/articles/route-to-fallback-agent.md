@@ -13,7 +13,7 @@ The fallback agent can end in one of two ways.
 | Clarify, then route again | `RETURN: true` with `ON_RETURN` set to `resume_intent` | A short question lets a specialist take the request. |
 | Explain and stop | `RETURN: false` | The request is out of scope and the fallback can finish the conversation or hand it to a person. |
 
-A plain-language `WHEN` is guidance for the model. The model chooses the fallback route when the request fits that text. A supervisor without a `BEHAVIOR` block can also answer directly instead of choosing any route. Set `BEHAVIOR` with `ROLE: router` when every message must reach a route. A router can also ask the customer one question when no route fits.
+A plain-language `WHEN` is guidance for the model. Quote it. The model chooses the fallback route when the request fits that text. Outside quotes, `//` starts a comment, and a `WHEN` that holds only a comment fails to compile. A supervisor without a `BEHAVIOR` block can also answer directly instead of choosing any route. Set `BEHAVIOR` with `ROLE: router` when every message must reach a route. A router can also ask the customer one question when no route fits.
 
 ## Minimal working example
 
@@ -78,9 +78,11 @@ GOAL: "Resolve technical support requests"
 
 - The two specialist routes use `intent.category`. `INTENTS:` declares the categories. The model chooses the fallback route when neither category fits.
 - The fallback agent asks its `GATHER` question. Its `COMPLETE` condition fires when `clarified_request` is set. Because the route has `RETURN: true`, control goes back to the supervisor.
-- `ON_RETURN` with `ACTION: resume_intent` makes the supervisor route again after the return. `RESUME_WITH: latest_child_user_utterance` replays the customer's answer to the triage question. Without `RESUME_WITH`, the supervisor replays the original message, which was the vague one.
-- During the replay, the supervisor does not offer the fallback route again, so the customer cannot loop back to it. The platform replays at most once for each return.
+- `ON_RETURN` with `ACTION: resume_intent` makes the supervisor route again after the return. `RESUME_WITH: latest_child_user_utterance` replays the customer's answer to the triage question. Without `RESUME_WITH`, the supervisor replays the original message, which was the vague one. If the fallback hands the customer back with `__return_to_parent__` and a message, the supervisor replays that message instead.
+- The platform replays at most once for each return. A second return in the same turn does not replay again.
 - The platform does not run deterministic routing during the replay. The model chooses among the routes still offered.
+- During the replay, the supervisor hides a fallback that returned without finishing, such as one that handed the customer back with `__return_to_parent__`. A fallback that finished with a `COMPLETE` condition stays offered, so a still-vague answer can reach it again.
+- During the replay, the supervisor also hides a route whose `WHEN` reads a plain session variable and is false. A route that reads `intent` stays offered.
 - If the triage question gets a sensitive reply, the platform replays the original message instead.
 - A `HANDOFF` entry without `HISTORY` gives the specialist the full conversation history. A project-level coordination default can change this value.
 - `ON_RETURN: "resume_intent"` is the short form. It uses the default replay of the original message.
@@ -176,7 +178,8 @@ Route to an agent that declares `ESCALATE`. Escalation reaches a person only whe
 In the trace, check these events.
 
 - `handoff_condition_check` for each route the model chose. Read `result` and `evaluatedContext`.
-- `resume_intent`. Check `resumeWith`, `resumeMessageSource`, and `resumeMessage` to see which text the supervisor replayed.
+- `handoff_completed` for each handoff attempt. Read `outcome` (`success`, `rejected`, `blocked`, `error`, or `timeout`), `cause`, and `durationMs`.
+- `resume_intent`. Check `resumeWith`, `resumeMessageSource`, and `resumeMessage` to see which text the supervisor replayed. A `reasonCode` of `resume_intent_depth_limit` means the platform skipped a second replay.
 - For the `MAP` variation, a `memory_error` event means the platform refused to write the mapped value.
 
 ## Production readiness checklist
@@ -207,6 +210,7 @@ In the trace, check these events.
 | ------- | ------------ | ------------- |
 | The supervisor answers instead of using the fallback | The supervisor has no `BEHAVIOR` block, so it can answer directly. | Set `ROLE: router`, or make the fallback text match the request more closely. |
 | After the triage question, the customer reaches the wrong specialist | The supervisor replayed the original vague message. | `resumeMessageSource` in the `resume_intent` event. Set `RESUME_WITH`. |
+| The customer reaches the triage agent twice in a row | The fallback finished with `COMPLETE`, so the replay offers it again and the model chose it. | The reply to the triage question. Add a route for that answer, or tighten the fallback `WHEN`. |
 | The parent variable never changes | The `MAP` key does not match, or the child returned an empty value. | The child field name, and `memory_error` events. |
 | Routing does not resume after the return | The route has `RETURN: false`, or `ON_RETURN` has no `ACTION: resume_intent`. | The route settings and the `resume_intent` event. |
 | A specialist route falls through to the fallback | The intent category is not set, or the condition is false. | `handoff_condition_check` and `evaluatedContext`. |

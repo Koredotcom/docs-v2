@@ -67,7 +67,9 @@ When a handoff omits `HISTORY`, the specialist receives the full conversation hi
 | `summary_only` | The handoff `SUMMARY` and no raw history. Use it only when the summary carries what the specialist needs. |
 | `last_N`, for example `last_5` | A bounded slice of the most recent history, sized by N. |
 | `none` | No history. |
-| `auto` | The summary when that is safe, and otherwise a bounded amount of raw history. |
+| `auto` | The handoff `SUMMARY` when the handoff declares one. Otherwise the last 5 messages. |
+
+You can also write `HISTORY` as a block with `MODE:` and `COUNT:`. Use `MODE: last_n` with `COUNT: 3` for the same result as `last_3`. A `HISTORY` value that the compiler does not recognize, such as `lastfive`, raises no message. The handoff then uses the default `full`. Check the value against the table.
 
 ## Common variations
 
@@ -75,13 +77,15 @@ When a handoff omits `HISTORY`, the specialist receives the full conversation hi
 
 Use one specialist from several supervisors when the business capability is truly the same. For example, `Order_Status_Agent` can serve commerce chat, WhatsApp, and voice entry points if the required context is consistent.
 
+A supervisor can set `RETURN: true` on the handoff so control comes back after the specialist finishes. `ON_RETURN` sets how the supervisor resumes. It accepts a built-in action or a named return handler, and it can map child fields to parent fields. Each supervisor that shares the specialist sets its own `ON_RETURN`.
+
 ### Channel-specific wrapper
 
 Use a thin channel-specific supervisor when routing or welcome behavior differs by channel, while the underlying specialists remain shared.
 
 ### Shared behavior profile
 
-Use a standalone behavior profile when several agents share the same channel or customer-context rule. Attach it with `USE BEHAVIOR_PROFILE:` in each agent. Changing the profile changes every agent that uses it. See the behavior profiles article for the details.
+Use a standalone behavior profile when several agents share the same channel or customer-context rule. Attach it with `USE BEHAVIOR_PROFILE:` in each agent, at the agent level and not inside a flow step. Changing the profile changes every agent that uses it. Project import validation reports a used profile that the archive does not contain. See the behavior profiles article for the details.
 
 ### Remote specialist
 
@@ -89,7 +93,7 @@ A handoff can target an agent that runs outside the project. Add `LOCATION: REMO
 
 ### Project manifest composition
 
-The project manifest (`project.json`) lists the agents, the entry agent, the tools, and the behavior profiles. For each agent it can record the file path, `owner`, `ownerTeam`, description, and version. It also records the handoff and delegate references between agents. Keep agent names stable, because handoff targets depend on them.
+The project manifest (`project.json`) lists the agents, the entry agent, the tools, and the behavior profiles. For each agent it can record the file path, `owner`, `ownerTeam`, description, and version. It also records the handoff and delegate references between agents. Keep agent names stable, because handoff targets depend on them. Project import validation reports a missing handoff or delegate target, a missing behavior profile, and a cycle of handoffs or delegates.
 
 ### Shared tool implementations
 
@@ -99,7 +103,7 @@ Manage reusable tool implementations in Project Tools. The agent declares only t
 
 Use a module when another project needs your agents or tools. One project publishes a module release. Other projects import a release under an alias.
 
-- What a release provides. The release contains agents and tools. Its contract lists them.
+- What a release provides. The release contains agents and tools, and it can carry workflows and knowledge assets. Its contract lists them. The workflow and knowledge articles cover those assets.
 - What a release requires. The contract lists every environment variable (`{{env.KEY}}`), auth profile, connector, MCP server, and config key (`{{config.KEY}}`) that the agents and tools use. The importing project must supply them.
 - Mounted names. The importing project refers to a module agent as `alias__AgentName`. Use a double underscore. For example, an import with the alias `orders` exposes `orders__Order_Status_Agent`.
 - Config values. The importing project sets non-secret config keys that the contract declares. A key that the contract does not declare cannot be set. Secret keys cannot be set as overrides.
@@ -126,6 +130,7 @@ This snippet assumes that the project imported a module under the alias `orders`
 - Confirm every handoff target exists in the same project or in an imported module.
 - Test each reusable specialist from every entry point that can route to it.
 - Confirm every `PASS` field has a source before handoff.
+- Check the history each specialist receives. Ask a question that depends on an earlier message and confirm the answer matches your `HISTORY` setting.
 - Inspect traces to prove the active agent changes to the intended specialist.
 - For a module import, confirm that every required environment variable, auth profile, connector, MCP server, config key, and peer module exists in the importing project.
 - Before you upgrade a module release, read the contract diff. Fix every breaking change first.
@@ -149,6 +154,7 @@ This snippet assumes that the project imported a module under the alias `orders`
 | ------- | -------------- | --------------- |
 | Reusing an agent with a vague goal | It feels flexible | Define a durable business capability |
 | Passing too much context | Teams want reuse to be easy | Pass only fields the specialist needs |
+| Misspelling a `HISTORY` value | The compiler ignores unknown values without a message | Use `full`, `summary_only`, `last_N`, `none`, or `auto` |
 | Depending on removed tool import syntax | Older examples may still show it | Use Project Tools and declare signatures in the agent |
 | Sharing specialists without shared tests | The first entry point works | Test every supervisor and channel that can call the specialist |
 | Removing a module agent in a new release | The agent looks unused | Check the contract diff. A removed agent is a breaking change. |
@@ -161,6 +167,7 @@ This snippet assumes that the project imported a module under the alias `orders`
 | ------- | ------------ | ------------- |
 | `INVALID_HANDOFF_TARGET`: target does not exist in this compilation | Agent name mismatch, missing project asset, or a file validated alone | Compare `TO:` targets with project agent names. Validate all agents together. |
 | Handoff to `alias__Agent` fails validation | The module is not imported, or the alias differs | Compare the alias with the import. The message lists the known agents. |
+| Specialist receives more or less history than expected | A `HISTORY` value is misspelled and the handoff uses `full` | Compare the value with the `HISTORY` table |
 | Specialist gives entry-point-specific answers | Its goal or persona includes one channel or journey | Rewrite it around the reusable capability |
 | A shared change breaks another flow | No owner or compatibility test for the module | Add cross-entry tests before changing shared specialists |
 | `E720` on a tool line | Removed import syntax or implementation properties in the agent | Move the implementation to Project Tools |
