@@ -1,0 +1,306 @@
+---
+title: When to use HANDOFF instead of DELEGATE
+sidebarTitle: Use HANDOFF instead of DELEGATE
+---
+
+<Badge icon="arrow-left" color="gray">[Back to how-to guides](/agent-platform/abl/how-to/overview#handoff-delegate-escalate-and-complete)</Badge>
+
+Use this pattern when a request needs another agent and you must choose between `HANDOFF` and `DELEGATE`. Choose `HANDOFF` when the other agent must talk to the customer.
+
+## Concept
+
+Both constructs call another agent. They differ in who speaks to the customer and who owns the next turn.
+
+A `HANDOFF` moves the conversation. The target agent talks to the customer, asks questions, and answers. A `DELEGATE` keeps the conversation with the calling agent. The target runs as a hidden sub-task and returns values.
+
+| Question | `HANDOFF` | `DELEGATE` |
+| -------- | --------- | ---------- |
+| Who speaks to the customer? | The target agent. | The calling agent only. The platform hides the target output. |
+| Who owns the next turn? | The target, or the caller after a returnable handoff ends. | The caller, always. |
+| Can the target ask the customer a question? | Yes. | No. The compiler or the runtime rejects it. |
+| What does the target receive? | `PASS` fields, `SUMMARY`, and history. History defaults to `full`. | The `INPUT` fields only. |
+| What comes back? | With `RETURN: true`, the fields in `ON_RETURN` `MAP`. | The fields in `RETURNS`. |
+| Which agents can declare it? | Any agent or supervisor. | An agent or supervisor with `role: orchestrator`, or with no explicit role. |
+| Which trace events show it? | `handoff`, `handoff_completed`. | `delegate_start`, `delegate_complete`. |
+
+Choose `HANDOFF` when one of these is true:
+
+- The target must ask the customer for information.
+- The target must own the rest of the conversation.
+- The target needs the conversation history.
+- The calling agent is a router. A router cannot declare `DELEGATE`.
+- A different team owns the outcome and its policies.
+
+Choose `DELEGATE` when the caller keeps the conversation and needs only a result. See [When to use DELEGATE instead of HANDOFF](/agent-platform/abl/how-to/use-delegate-instead-of-handoff).
+
+A `HANDOFF` has two modes. `RETURN: false` is permanent and is the default. `RETURN: true` makes the target a child that returns control. See [Transfer control to another agent and return later](/agent-platform/abl/how-to/returnable-agent-handoff) and [Transfer control permanently to another agent](/agent-platform/abl/how-to/terminal-agent-handoff).
+
+This article covers local agents. A handoff can also target a remote agent. That setup is out of scope here.
+
+## Minimal working example
+
+A router sends billing and account requests to specialists. Each specialist asks the customer questions, so each route is a `HANDOFF`.
+
+The specialists are short stand-ins in the same project. Replace them with your real agents.
+
+`agents/support-hub.agent.abl`
+
+```yaml expandable=true
+SUPERVISOR: Support_Hub
+GOAL: "Send each request to the specialist who owns it"
+
+BEHAVIOR:
+  role: router
+
+INTENTS:
+  billing: "Charges, invoices, refunds, or payment methods."
+  account: "Profile, address, or password changes."
+
+HANDOFF:
+  - TO: Billing_Agent
+    WHEN: intent.category == "billing"
+    SUMMARY: "Billing agent now owns the conversation."
+    RETURN: false
+
+  - TO: Account_Agent
+    WHEN: intent.category == "account"
+    SUMMARY: "Account agent now owns the conversation."
+    RETURN: false
+```
+
+`agents/billing-agent.agent.abl`
+
+```yaml
+AGENT: Billing_Agent
+GOAL: "Resolve billing requests"
+
+GATHER:
+  invoice_id:
+    PROMPT: "Which invoice is this about?"
+    TYPE: string
+    REQUIRED: true
+
+COMPLETE:
+  - WHEN: invoice_id IS SET
+    RESPOND: "I have noted invoice {{invoice_id}}."
+```
+
+`agents/account-agent.agent.abl`
+
+```yaml
+AGENT: Account_Agent
+GOAL: "Resolve profile, address, and password requests"
+
+GATHER:
+  change_request:
+    PROMPT: "What do you want to change on your account?"
+    TYPE: string
+    REQUIRED: true
+
+COMPLETE:
+  - WHEN: change_request IS SET
+    RESPOND: "I have logged your request: {{change_request}}."
+```
+
+## How it works
+
+1. The router classifies the customer message into an intent category.
+2. The route whose `WHEN` matches takes the turn.
+3. `RETURN: false` ends the router thread. The specialist becomes the active agent.
+4. The specialist asks its own questions. The router does not see later messages.
+5. The specialist keeps the conversation until it completes, escalates, or hands off.
+
+A router must declare at least one `HANDOFF`. The compiler reports `AGENT_ROUTER_REQUIRES_HANDOFF` otherwise.
+
+A permanent specialist can hand back to the supervisor that started it. Only the direct parent qualifies. See [Switch the active agent during a conversation](/agent-platform/abl/how-to/switch-active-agent).
+
+## Common variations
+
+### Return after a customer-facing sub-task
+
+Use `RETURN: true` when a child must talk to the customer for one bounded job and the caller must then continue. The child collects the date of birth. The parent records the request.
+
+`agents/refill-request-agent.agent.abl`
+
+```yaml expandable=true
+AGENT: Refill_Request_Agent
+GOAL: "Record a prescription refill request after the customer date of birth is collected"
+
+MEMORY:
+  session:
+    - date_of_birth
+      TYPE: string
+      DESCRIPTION: "Date of birth collected by Identity_Agent."
+
+HANDOFF:
+  - TO: Identity_Agent
+    WHEN: date_of_birth IS NOT SET
+    SUMMARY: "Collect the date of birth before the refill request."
+    RETURN: true
+    ON_RETURN:
+      action: continue
+      MAP:
+        date_of_birth: date_of_birth
+
+COMPLETE:
+  - WHEN: date_of_birth IS SET
+    RESPOND: "Thanks. Your refill request is recorded."
+```
+
+`agents/identity-agent.agent.abl`
+
+```yaml
+AGENT: Identity_Agent
+GOAL: "Collect the customer date of birth and hand control back"
+
+GATHER:
+  date_of_birth:
+    PROMPT: "What is your date of birth?"
+    TYPE: string
+    REQUIRED: true
+
+COMPLETE:
+  - WHEN: date_of_birth IS SET
+    RESPOND: "Thanks. I have your date of birth."
+```
+
+A `DELEGATE` cannot replace this route. The child asks the customer a question. See [Delegate: why an interactive child fails](#troubleshooting).
+
+### Control what the target sees
+
+`PASS` sends named fields. `SUMMARY` states why the handoff happens. `HISTORY` sets how much conversation the target receives.
+
+| `HISTORY` value | What the target receives |
+| --------------- | ------------------------ |
+| `full` | The whole conversation. This is the default. A project default can change it. |
+| `auto` | The summary when present, otherwise the last messages. |
+| `summary_only` | The summary text only. |
+| `none` | No history. |
+| `mode: last_n` with `count` | The last N messages. |
+
+The supervisor gathers `policy_number` before it routes. Each route passes it. The auto claim route sends the summary only. The home claim route sends the last six messages.
+
+`agents/claims-hub.agent.abl`
+
+```yaml expandable=true
+SUPERVISOR: Claims_Hub
+GOAL: "Send each claim request to the owner and pass only the fields the owner needs"
+
+BEHAVIOR:
+  role: router
+
+INTENTS:
+  auto_claim: "Vehicle damage, theft, or collision claims."
+  home_claim: "Property damage or loss claims."
+
+GATHER:
+  policy_number:
+    PROMPT: "What is your policy number?"
+    TYPE: string
+    REQUIRED: true
+
+HANDOFF:
+  - TO: Auto_Claims_Agent
+    WHEN: intent.category == "auto_claim" AND policy_number IS SET
+    PASS: [policy_number]
+    SUMMARY: "Customer reports an auto claim on policy {{policy_number}}."
+    HISTORY: summary_only
+    RETURN: false
+
+  - TO: Home_Claims_Agent
+    WHEN: intent.category == "home_claim" AND policy_number IS SET
+    PASS: [policy_number]
+    SUMMARY: "Customer reports a home claim on policy {{policy_number}}."
+    HISTORY:
+      mode: last_n
+      count: 6
+    RETURN: false
+```
+
+`agents/auto-claims-agent.agent.abl`
+
+```yaml
+AGENT: Auto_Claims_Agent
+GOAL: "Open an auto claim"
+
+GATHER:
+  policy_number:
+    PROMPT: "What is your policy number?"
+    TYPE: string
+    REQUIRED: true
+  incident_date:
+    PROMPT: "When did the incident happen?"
+    TYPE: string
+    REQUIRED: true
+
+COMPLETE:
+  - WHEN: incident_date IS SET
+    RESPOND: "I opened an auto claim on policy {{policy_number}} for {{incident_date}}."
+```
+
+`agents/home-claims-agent.agent.abl`
+
+```yaml
+AGENT: Home_Claims_Agent
+GOAL: "Open a home claim"
+
+GATHER:
+  policy_number:
+    PROMPT: "What is your policy number?"
+    TYPE: string
+    REQUIRED: true
+  loss_date:
+    PROMPT: "When did the loss happen?"
+    TYPE: string
+    REQUIRED: true
+
+COMPLETE:
+  - WHEN: loss_date IS SET
+    RESPOND: "I opened a home claim on policy {{policy_number}} for {{loss_date}}."
+```
+
+The target declares `policy_number` as a `GATHER` field. The `PASS` value fills it, so the target does not ask again.
+
+### Combine a hidden check with a handoff
+
+An orchestrator can delegate a hidden check, then hand off on the result. See [When to use DELEGATE instead of HANDOFF](/agent-platform/abl/how-to/use-delegate-instead-of-handoff) for the full example.
+
+## Verification
+
+1. Send "I have a question about my invoice" to the router. Expect a `handoff` event to `Billing_Agent` with `returnExpected: false`.
+2. Expect `Billing_Agent` to ask for the invoice. The customer talks to the specialist, not the router.
+3. Send a second message. Expect the specialist to answer. The router does not run.
+4. Check the `handoff_completed` event. Expect `outcome: success` and a `durationMs` value.
+5. For `RETURN: true`, start the refill example. Expect `Identity_Agent` to ask for the date of birth. Then expect a `handoff_return_handler` event with `mappedFields` that lists `date_of_birth`.
+6. Expect no `delegate_start` event in any of these runs.
+
+## Production readiness checklist
+
+- Every `TO` target exists in the project.
+- Each route sets `RETURN` on purpose.
+- Each `PASS` list holds only fields the target needs. The target declares each one.
+- A route or a direct answer covers requests that match no intent.
+- Each specialist has a way to finish or escalate. See [Escalate a conversation to a human](/agent-platform/abl/how-to/escalate-to-human).
+- Tests cover a matching request, an unmatched request, and a customer who stops answering the specialist.
+- Trace checks confirm `outcome: success` on `handoff_completed` events.
+
+## Common mistakes
+
+| Mistake | Why it happens | How to avoid it |
+| ------- | -------------- | --------------- |
+| Using `DELEGATE` for a child that asks the customer a question | A delegate looks like a temporary call. | Use `HANDOFF` with `RETURN: true`. |
+| Using `RETURN: true` for a specialist that owns the conversation | The gate pattern is copied. | Use `RETURN: false`. |
+| Declaring `DELEGATE` on a router | Routers and orchestrators look alike. | Hand off from a router. Set `role: orchestrator` to delegate. |
+| Passing a field the target never declares | One `PASS` list is reused. | Declare each passed field in the target `GATHER` or `MEMORY`. |
+| Writing `HISTORY` in uppercase inside a `CONTEXT` block | Entry keys are uppercase. | Write keys inside `CONTEXT` in lowercase. |
+
+## Troubleshooting
+
+| Symptom | Likely cause | What to check |
+| ------- | ------------ | ------------- |
+| The compile fails with `DELEGATE_CHILD_GATHER_INPUT_UNMAPPED` | A `DELEGATE` child has a required `GATHER` field and no `INPUT` for it. | Change the route to `HANDOFF` with `RETURN: true`. |
+| The compile fails with `DELEGATE_CHILD_HANDOFF_UNSUPPORTED` | A `DELEGATE` child declares a permanent `HANDOFF`. | Move the permanent transfer to the caller. |
+| The compile fails with `AGENT_RETURNED_WORK_REQUIRES_ORCHESTRATOR` | An agent with a non-orchestrator role declares `DELEGATE`. | Set `role: orchestrator` or use `HANDOFF`. |
+| The specialist asks for what the customer already said | The route passes no field, or the history is limited. | `PASS`, `HISTORY`, and the specialist `GATHER`. |
+| The conversation never leaves the child | The child never completes, or `MAP` writes the wrong variable. | The child `COMPLETE` condition and the `handoff_return_handler` event. |
+| No route runs | No `WHEN` matches. | The intent category and the `handoff_condition_check` events. |
