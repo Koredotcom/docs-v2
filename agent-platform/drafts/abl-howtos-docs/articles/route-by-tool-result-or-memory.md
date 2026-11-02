@@ -11,9 +11,9 @@ A supervisor can route on data it loads before the first routing decision. Two s
 | A lookup tool | `ON_START` calls a read-only tool and binds the result with `AS`. | `profile.tier` |
 | Persistent memory | A `RECALL` at `session:start` loads stored facts. | `user.loyalty_tier` |
 
-Each `HANDOFF` has a `WHEN` condition. The platform evaluates a `WHEN` written as an expression before the model reasons. It checks the routes in the order you write them. The first route that matches takes the conversation. A `PRIORITY` value changes the order, and the lowest number runs first.
+Each `HANDOFF` has a `WHEN` condition. The platform evaluates a `WHEN` written as an expression before the model reasons. It checks the routes in the order you write them. The first route that matches takes the conversation. The `PRIORITY:` field is read and then ignored, so the position of the entry sets the order.
 
-A route with a quoted plain-language `WHEN` stays with the model. Use one as the last route for every customer that no expression matched.
+A route with a quoted plain-language `WHEN` stays with the model. Use one as the last route for every customer that no expression matched. Set `ROLE: router` so the supervisor calls a route instead of answering in text.
 
 A comparison on a missing value is false. If the lookup fails, no expression route matches and the model chooses the plain-language route.
 
@@ -28,6 +28,9 @@ The supervisor needs the specialist agents in the same project. The lookup tool 
 ```abl
 SUPERVISOR: Tool_Result_Routing_Supervisor
 GOAL: "Look up customer state before selecting a specialist"
+
+BEHAVIOR:
+  ROLE: router
 
 TOOLS:
   lookup_customer_profile(customer_id: string) -> {tier: string, has_open_case: boolean, fraud_risk: string}
@@ -99,6 +102,7 @@ GOAL: "Serve standard customers"
 - `profile.has_open_case == true` matches only a boolean `true`. A tool that returns the string `"true"` does not match.
 - The last route has a quoted plain-language `WHEN`. The model chooses it when no expression route matched.
 - Write quoted text in plain lowercase words. The platform evaluates quoted text as an expression, not as guidance, when it contains uppercase `AND`, `OR`, or `NOT`. It does the same for a symbol such as `==` or `>`, and for the words `contains`, `matches`, `startsWith`, or `endsWith`.
+- `ROLE: router` makes the supervisor call a route or ask one question. Without a `BEHAVIOR` block, the supervisor can answer in text instead.
 - The specialists use `RETURN: false`, so each one keeps the conversation after the transfer.
 - A `HANDOFF` entry without `HISTORY` gives the specialist the full conversation history. A project-level coordination default can change this value.
 - The tool is read-only. `side_effects: false` and `confirm: never` mark it as a lookup that never asks the customer for confirmation. `hints.timeout` is a number of milliseconds. The welcome and the first routing check wait for the tool, so keep it fast.
@@ -178,8 +182,8 @@ In the trace, check these events.
 - `session.customerId` comes from an authenticated channel. Use `session.identityTier` when a route must depend on a verified identity.
 - Every specialist route has an owner and a short `SUMMARY`.
 - A plain-language route handles every customer that no expression matched, including a failed or skipped lookup.
-- If every customer must reach a specialist, set `BEHAVIOR` with `ROLE: router`. Without a `BEHAVIOR` block, the supervisor can answer directly instead of choosing a route.
-- The highest-risk route is first.
+- `BEHAVIOR` with `ROLE: router` is set. Remove it only when the supervisor may answer some messages itself.
+- The highest-risk route is first, because the entry order is the priority.
 - Tests cover each route, an anonymous session, and a tool failure.
 - Stored memory values have a producer, such as a `REMEMBER` rule, that you can name.
 
@@ -188,7 +192,9 @@ In the trace, check these events.
 | Mistake | Why it happens | How to avoid it |
 | ------- | -------------- | --------------- |
 | Copying tool fields with `SET` after the `CALL` in `ON_START` | The `SET` reads as if it runs after the `CALL`. | `SET` runs before the `CALL`, so the copy is empty. Read `profile.*` in `WHEN`, or pass `profile`. |
-| Using `IS SET` on a dotted field such as `profile.tier IS SET` | `IS SET` reads as a safe presence test. | A missing dotted field still passes `IS SET` in a route condition. Compare to a value, such as `profile.tier == "premium"`. |
+| Using `IS SET` or `!= ""` on a dotted field such as `profile.tier` in a route | Both read as a safe presence test. | A missing dotted field passes both in a route condition. Compare to a value, such as `profile.tier == "premium"`. |
+| Guarding the lookup with `session.customerId != ""` | The comparison reads as a presence test. | A missing value passes `!=`, so the call runs. Use `WHEN: session.customerId IS SET`. |
+| Setting `PRIORITY:` to reorder routes | The field looks like it orders routes. | The platform ignores it. Reorder the entries. |
 | Comparing a boolean field to a string | The tool returns `"true"` as text. | Declare the return field as `boolean` and return a real boolean. |
 | Calling a tool that changes data to decide a route | An existing action tool is reused. | Declare a separate lookup tool with `side_effects: false` and `confirm: never`. |
 | Writing uppercase `AND` or `OR` in quoted route text | It reads naturally to a person. | Use lowercase words in quoted text. |
@@ -200,7 +206,7 @@ In the trace, check these events.
 | ------- | ------------ | ------------- |
 | A premium customer reaches the standard route | The lookup failed or was skipped, or the field has the wrong type. | `dsl_lifecycle_call_condition`, `tool_result`, and `evaluatedContext` in `handoff_condition_check`. |
 | The specialist receives an empty tier | A flat copy was made with `SET` before the `CALL` ran. | Remove the `SET`. Read `profile.tier` or pass `profile`. |
-| The wrong specialist receives the customer | Route order or `PRIORITY` puts another route first. | The `priority` in `deterministic_routing`. |
+| The wrong specialist receives the customer | An earlier route is also true. | The `priority` in `deterministic_routing`. It equals the position of the entry. Reorder the entries. |
 | Every anonymous session takes the standard route | `session.customerId` is missing, so the lookup is skipped. | The channel authentication and `session.identityTier`. |
 | A quoted route never matches | The quoted text contains `AND`, `OR`, `NOT`, or a comparison symbol, so the platform evaluates it as an expression. | Rewrite the text in plain lowercase words. |
 | The remembered tier never matches | No stored value, no user identity, or the path is not declared with `ACCESS: read`. | `memory_init`, and the `MEMORY` declaration. |

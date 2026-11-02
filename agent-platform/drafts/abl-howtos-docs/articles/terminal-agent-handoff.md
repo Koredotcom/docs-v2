@@ -1,0 +1,238 @@
+# How to transfer control permanently to another agent
+
+Use this pattern when a specialist must own the rest of the conversation and the calling agent has no more work to do.
+
+## Concept
+
+A permanent handoff sets `RETURN: false` on a `HANDOFF` route. `RETURN: false` is the default. A route with no `RETURN` line is permanent. `EXPECT_RETURN: false` is the same setting.
+
+When the route fires, ownership moves in four steps.
+
+1. The calling agent thread ends.
+2. The target becomes the active agent.
+3. The target answers this turn and every later turn.
+4. No value returns to the caller, and `ON_RETURN` never runs.
+
+The calling agent does not see later messages. The target keeps the conversation until it completes, escalates, or hands off again. Give the target its own `HANDOFF` entries when it must switch again.
+
+| Question | Permanent (`RETURN: false`) | Returnable (`RETURN: true`) |
+| -------- | --------------------------- | --------------------------- |
+| Who owns the next turns? | The target, for good. | The child, until it returns. |
+| What happens to the caller? | Its thread ends. | It waits. |
+| Do values come back? | No. | Yes, through `ON_RETURN` `MAP`. |
+
+See [Switch the active agent](/agent-platform/abl/how-to/switch-active-agent) for how `HANDOFF` changes the active agent. See [Returnable handoff](/agent-platform/abl/how-to/returnable-agent-handoff) when the caller must continue. See [Use handoff instead of delegate](/agent-platform/abl/how-to/use-handoff-instead-of-delegate) to choose between `HANDOFF` and `DELEGATE`.
+
+### Route settings
+
+| Setting | Default | Effect |
+| ------- | ------- | ------ |
+| `TO` | None | The target agent. It must exist in the project. |
+| `WHEN` | None | The condition that selects the route. Use a deterministic expression or quoted natural language. |
+| `ENABLED_WHEN` | Always on | Switches the route on or off for the session. |
+| `PRIORITY` | None | Lower values run first when several routes match. |
+| `PASS` | Nothing | Parent variables the target receives. |
+| `SUMMARY` | Empty | The reason for the handoff. The target sees it. |
+| `HISTORY` | `full` | How much conversation the target receives. |
+| `ON_FAILURE` | `continue` | What happens when the handoff fails before the target accepts. |
+| `RETURN` | `false` | Whether control comes back. |
+
+`HISTORY` accepts `full`, `auto`, `none`, `summary_only`, and a `last_n` block. `auto` uses `summary_only` when `SUMMARY` has text. Otherwise it passes the last five messages. A project default can change the `full` default.
+
+`ON_FAILURE` accepts `continue`, `ESCALATE`, and `RESPOND "message"`. It runs when the runtime cannot start the handoff. It does not run when the target later fails on its own.
+
+### Hand-back to the supervisor
+
+A permanent specialist can hand the conversation back to the supervisor that started it. Add a `HANDOFF` to that supervisor in the specialist. These rules apply.
+
+- Only the direct parent qualifies. An older ancestor does not.
+- The specialist must have its own `HANDOFF` to the parent.
+- The `ENABLED_WHEN` of that route still applies.
+- A parent that already took part in the same call chain stays blocked. The runtime refuses it as a cycle.
+- For a specialist with a `FLOW`, the hand-back works only while the `FLOW` is live. After the `FLOW` reaches `COMPLETE`, the parent frame is closed.
+
+A refused hand-back ends with `handoff_completed` `outcome: rejected` and `code: recursion`. The trace can also show `handoff_authority_denied`.
+
+### Handoff to a human agent
+
+A `HANDOFF` target is always an agent in the project. It is never a person. To reach a human, use one of these paths.
+
+| Path | Use when |
+| ---- | -------- |
+| Hand off permanently to an agent that has an `ESCALATE` section | A route such as "customer asks for a person" owns the transfer. |
+| Set `ON_FAILURE: ESCALATE` on the route | A failed handoff must reach a person. |
+| Add `ESCALATE` to the permanent specialist | The specialist decides when to transfer. |
+
+See [Escalate a conversation to a human](/agent-platform/abl/how-to/escalate-to-human) for triggers and routing. See [Package context for human escalation](/agent-platform/abl/how-to/package-human-escalation-context) for what the human agent receives.
+
+## Minimal working example
+
+The supervisor sends disputes to `Disputes_Agent` and requests for a person to `Live_Agent`. Both routes are permanent. `Disputes_Agent` can hand back to the supervisor.
+
+`customer_id` is a project-local assumption. Your channel or an earlier gate sets it before the handoff. `Live_Agent` is a short stand-in. Its `ESCALATE` section sets what the human agent receives.
+
+```abl
+SUPERVISOR: Card_Supervisor
+GOAL: "Send each card request to the specialist who owns it"
+
+INTENTS:
+  dispute: "The customer disputes a card charge."
+  human_request: "The customer asks for a person."
+
+HANDOFF:
+  - TO: Disputes_Agent
+    WHEN: intent.category == "dispute"
+    ENABLED_WHEN: _metadata.disputes_enabled != false
+    CONTEXT:
+      pass: [customer_id]
+      summary: "The customer disputes a card charge."
+      history: full
+    RETURN: false
+    ON_FAILURE: RESPOND "Dispute handling is not available right now."
+    PRIORITY: 2
+
+  - TO: Live_Agent
+    WHEN: intent.category == "human_request"
+    SUMMARY: "The customer asks for a person."
+    HISTORY: summary_only
+    RETURN: false
+    ON_FAILURE: ESCALATE
+    PRIORITY: 1
+
+AGENT: Disputes_Agent
+GOAL: "Collect the disputed charge details and resolve the dispute"
+
+GATHER:
+  charge_id:
+    PROMPT: "Which charge do you dispute? Give the charge ID."
+    TYPE: string
+    REQUIRED: true
+
+HANDOFF:
+  - TO: Card_Supervisor
+    WHEN: "the request is not about a card dispute"
+    SUMMARY: "Customer needs a different specialist."
+    RETURN: false
+
+COMPLETE:
+  - WHEN: charge_id IS SET
+    RESPOND: "I have logged the dispute for charge {{charge_id}}."
+
+AGENT: Live_Agent
+GOAL: "Transfer the customer to a human agent with the conversation context"
+
+ESCALATE:
+  context_for_human:
+    - conversation_history
+```
+
+## How it works
+
+1. The customer reports a charge problem. The supervisor classifies the intent as `dispute`.
+2. `ENABLED_WHEN` is true unless the caller sets `_metadata.disputes_enabled` to false. The route is on.
+3. The route fires. The supervisor thread ends. `Disputes_Agent` receives `customer_id`, the summary, and the full history.
+4. `Disputes_Agent` asks for the charge ID. Later messages go to it and not to the supervisor.
+5. The `COMPLETE` condition is true when `charge_id` is set. The agent confirms the dispute.
+6. If the customer asks about something else, the model can use the route back to `Card_Supervisor`. The quoted `WHEN` is guidance. The model decides.
+
+The `WHEN` and `ENABLED_WHEN` rules apply to a permanent route like any other route. `ENABLED_WHEN` decides whether the route exists. `WHEN` decides which available route a turn takes. A `//` outside quotes in a `WHEN` starts a comment. Use `IS SET` and `IS NOT SET` for empty variables. The check `!= ""` is true when the value is missing.
+
+A route written without `WHEN` compiles without a warning. Write a `WHEN` on every route so the selection stays predictable.
+
+## Common variations
+
+### Write the context as shorthand
+
+`PASS`, `SUMMARY`, and `HISTORY` can sit directly on the route, as the `Live_Agent` route shows. The `CONTEXT:` block groups the same values. Keys inside `CONTEXT:` must be lowercase. Uppercase keys inside `CONTEXT:` are ignored.
+
+Write a `last_n` history as an indented block.
+
+```abl
+HANDOFF:
+  - TO: Disputes_Agent
+    WHEN: intent.category == "dispute"
+    PASS: [customer_id]
+    SUMMARY: "The customer disputes a card charge."
+    HISTORY:
+      mode: last_n
+      count: 6
+    RETURN: false
+```
+
+A one-line `{ mode: last_n, count: 6 }` and a misspelled value such as `recent` are ignored. The history falls back to `full`.
+
+### Turn a route off for some sessions
+
+`ENABLED_WHEN` reads only data known before the turn, such as `_metadata.*`. It cannot read `intent`. A condition that reads a missing value turns the route off, unless it uses `!= true`, `== null`, or `IS NOT SET`. When the route is off, the `ON_FAILURE` of the entry runs for an authored route. See the first route in the minimal example.
+
+Do not use `ENABLED_WHEN` as a security boundary. The caller supplies `_metadata`.
+
+### Hand back from the specialist
+
+The `Disputes_Agent` entry in the minimal example is the hand-back. It targets the direct parent, so it qualifies. Add `ENABLED_WHEN` to that route to switch it off for some sessions. If every route in the specialist has `ENABLED_WHEN`, the compiler warns `ENABLED_WHEN_ALL_DISABLED_RISK`. The specialist then answers directly when all conditions are false.
+
+## Verification
+
+1. Validate the project. Every `TO` target must exist.
+2. Start a new session and send "I want to dispute a charge". Expect a `handoff` event to `Disputes_Agent` with `returnExpected: false` and `reasonCode: handoff_permanent`.
+3. Expect a `handoff_completed` event with `outcome: success` and `durationMs`.
+4. Send another message. Expect `Disputes_Agent` to answer. The supervisor does not run.
+5. Send "I want to talk to a person" in a new session. Expect a handoff to `Live_Agent`.
+6. In `Disputes_Agent`, send an unrelated request. Expect a handoff to `Card_Supervisor` with `returnExpected: false`.
+7. Send `_metadata.disputes_enabled` as false. Expect the supervisor not to offer the route. A forced attempt shows `outcome: blocked`.
+
+| `outcome` | Meaning |
+| --------- | ------- |
+| `success` | The target accepted and ran. |
+| `rejected` | The runtime refused the route, for example a cycle. |
+| `blocked` | A `WHEN` was false, `ENABLED_WHEN` switched the target off, or authentication was required. |
+| `error` | Setup or dispatch failed, or an error was thrown. |
+| `timeout` | The runtime stopped waiting for the target. |
+
+The event also has `cause` and `code` on a failure, and `siblingIntentMs` when a queued sibling request ran inside the attempt.
+
+## Production readiness checklist
+
+- Every `TO` target exists. Replace the stand-in agents with real agents.
+- The target has its own exit: a `COMPLETE` condition, an `ESCALATE` section, or a `HANDOFF`. A permanent target without an exit keeps the conversation.
+- Variables in `PASS` have a source. `customer_id` here comes from your channel or an earlier gate.
+- Each route sets `ON_FAILURE` on purpose.
+- A human path exists, and the human agent receives the context it needs.
+- Tests cover each route, a route that is switched off, a hand-back, a refused hand-back, and a message that matches no route.
+- Trace checks cover `handoff` and `handoff_completed`.
+
+## Common mistakes
+
+| Mistake | Why it happens | How to avoid it |
+| ------- | -------------- | --------------- |
+| Expecting the supervisor to see later messages | The thread looks shared. | After `RETURN: false`, only the target answers. |
+| Relying on the default `RETURN: false` for a gate | `RETURN: true` is missing. | Write `RETURN: true` for gates. See [Returnable handoff](/agent-platform/abl/how-to/returnable-agent-handoff). |
+| Writing `RETURN: True` or `RETURN: "true"` | Only lowercase `true` reads as true. | Write `RETURN: true`. |
+| Adding `ON_RETURN` to a permanent route | The returnable pattern is copied. | Remove it. The compiler warns `HANDOFF_ON_RETURN_WITHOUT_RETURN`. |
+| Using a hand-back to an older ancestor | Only the direct parent qualifies. | Hand back to the agent that handed off directly. |
+| Treating `ENABLED_WHEN` as access control | The caller supplies `_metadata`. | Enforce access in tools and data. |
+| Gating with `!= ""` | It reads like an empty check. | Use `IS NOT SET`. |
+| Handing off to a person by name | `TO` accepts agents only. | Hand off to an agent with `ESCALATE`. |
+
+## Troubleshooting
+
+| Symptom | Likely cause | What to check |
+| ------- | ------------ | ------------- |
+| The route never fires | The `WHEN` is false, or the route is off. | `handoff_condition_check` and the `ENABLED_WHEN` condition. |
+| The wrong specialist answers | Two routes match. | `PRIORITY` and the `WHEN` conditions. |
+| `handoff_completed` shows `blocked` | The `WHEN` is false, `ENABLED_WHEN` switched the target off, or authentication is required. | The trace `cause` and `code`, and the auth profile. |
+| The hand-back is refused | The target is not the direct parent, it is already unwound, or `ENABLED_WHEN` is false. | `handoff_authority_denied` and the route in the specialist. |
+| The specialist cannot hand back | The specialist has no `HANDOFF` to the supervisor. | The specialist `HANDOFF` section. |
+| The conversation never ends | The target has no exit. | `COMPLETE`, `ESCALATE`, and `HANDOFF` in the target. |
+| The target asks for what the customer already said | The route passes no field, or the history is limited. | `PASS`, `HISTORY`, and the target `GATHER`. |
+| The human agent gets no context | The `ESCALATE` section has no `context_for_human`. | The `ESCALATE` section of the agent that escalates. |
+
+## Related HowTos
+
+- [Switch the active agent during a conversation](/agent-platform/abl/how-to/switch-active-agent)
+- [Transfer control to another agent and return later](/agent-platform/abl/how-to/returnable-agent-handoff)
+- [Use handoff instead of delegate](/agent-platform/abl/how-to/use-handoff-instead-of-delegate)
+- [Escalate a conversation to a human](/agent-platform/abl/how-to/escalate-to-human)
+- [End a conversation with COMPLETE](/agent-platform/abl/how-to/end-conversation-with-complete)
+- [Design a supervisor routing agent](/agent-platform/abl/how-to/design-supervisor-routing-agent)
+- [Debug routing traces](/agent-platform/abl/how-to/debug-routing-traces)

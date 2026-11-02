@@ -1,0 +1,259 @@
+---
+title: How to transfer control to another agent and return later
+sidebarTitle: Transfer control and return later
+---
+
+<Badge icon="arrow-left" color="gray">[Back to how-to guides](/agent-platform/abl/how-to/overview#handoff-delegate-escalate-and-complete)</Badge>
+
+Use this pattern when a specialist must do one bounded job, such as collecting a value, and the calling agent must then continue.
+
+## Concept
+
+A returnable handoff sets `RETURN: true` on a `HANDOFF` route. The target agent becomes the child. The calling agent becomes the parent and waits. The child talks to the customer until it returns control.
+
+`RETURN: false` is the default. A route with no `RETURN` line is permanent. Write `RETURN: true` in lowercase. Values such as `True` or `"true"` read as false. `EXPECT_RETURN` is an alias for `RETURN`.
+
+| Question | Returnable (`RETURN: true`) | Permanent (`RETURN: false`) |
+| -------- | --------------------------- | --------------------------- |
+| Who owns the next turns? | The child, until it returns. | The target, for good. |
+| What happens to the caller? | It waits. | Its thread ends. |
+| Do values come back? | Yes, through `ON_RETURN` `MAP`. | No. |
+
+Use a returnable handoff for a gate or a short job. See [Switch the active agent](/agent-platform/abl/how-to/switch-active-agent) for how `HANDOFF` changes the active agent. See [Permanent handoff](/agent-platform/abl/how-to/terminal-agent-handoff) when the target keeps the conversation. See [Use handoff instead of delegate](/agent-platform/abl/how-to/use-handoff-instead-of-delegate) to choose between `HANDOFF` and `DELEGATE`.
+
+### How the child returns
+
+The child returns in one of three ways.
+
+| Return path | When it applies |
+| ----------- | --------------- |
+| The child completes | A `COMPLETE` condition is true. Control goes back to the parent. |
+| The child uses the built-in return action | A reasoning child decides the customer asks for something outside its scope. The action forwards the customer message to the parent. |
+| The child hands off to the waiting parent | The child has its own `HANDOFF` to the parent. The parent resumes. |
+
+### What the parent does after the return
+
+`ON_RETURN` sets the parent behavior. It has these keys.
+
+| Key | Meaning |
+| --- | ------- |
+| `action: continue` | The parent resumes and does not replay the request. |
+| `action: resume_intent` | The parent replays one message through its routes. |
+| `resume_with` | The message to replay. Default is `original_handoff_utterance`. Other values are `latest_child_user_utterance`, `latest_session_user_utterance`, and `forwarded_return_message`. |
+| `MAP` | Copies child fields into parent variables. Write `child_field: parent_variable`. |
+| `SET` | Sets parent variables after `MAP` runs. |
+| `handler` | Names an entry in `RETURN_HANDLERS`. |
+
+Without `ON_RETURN`, a return that forwards a customer message replays that message. Otherwise the parent resumes and does not replay.
+
+Only mapped fields come back. A child field with no value is skipped. The parent must be allowed to write each `MAP` and `SET` target. If one target is not writable, the runtime applies none of the return effects. See [Resume after a child or human agent completes](/agent-platform/abl/how-to/resume-after-child-or-human-agent) for resume detail.
+
+## Minimal working example
+
+The supervisor sends every request to `Income_Capture_Agent` until `annual_income` is set. The child gathers the value and completes. `MAP` copies the value to the supervisor. The supervisor then hands off for good.
+
+`annual_income` has one source: the `GATHER` field in the child. `Offer_Agent` is a short stand-in for your real specialist.
+
+```yaml expandable=true
+SUPERVISOR: Loan_Supervisor
+GOAL: "Collect the applicant's income before any loan offer discussion"
+
+MEMORY:
+  session:
+    - annual_income
+      TYPE: number
+      DESCRIPTION: "Annual income in whole currency units, collected by the income agent."
+
+HANDOFF:
+  - TO: Income_Capture_Agent
+    WHEN: annual_income IS NOT SET
+    SUMMARY: "Collect the applicant's annual income, then return."
+    HISTORY: summary_only
+    RETURN: true
+    ON_RETURN:
+      action: resume_intent
+      MAP:
+        annual_income: annual_income
+    ON_FAILURE: RESPOND "I cannot collect your income details right now. Please try again later."
+
+  - TO: Offer_Agent
+    WHEN: annual_income IS SET
+    PASS: [annual_income]
+    SUMMARY: "The offer agent now owns the conversation."
+    RETURN: false
+
+AGENT: Income_Capture_Agent
+GOAL: "Collect the annual income and return it to the supervisor"
+
+GATHER:
+  annual_income:
+    PROMPT: "What is your annual income?"
+    TYPE: number
+    REQUIRED: true
+
+COMPLETE:
+  - WHEN: annual_income IS SET
+    RESPOND: "Thanks. I have your income."
+
+AGENT: Offer_Agent
+GOAL: "Explain loan offers based on the applicant's annual income"
+```
+
+## How it works
+
+1. `annual_income IS NOT SET` is true. The runtime checks this condition before the model runs. The supervisor hands off to the child.
+2. The supervisor waits. The child asks for the income and the customer answers.
+3. `COMPLETE` fires. The child returns. `MAP` copies `annual_income` to the supervisor.
+4. `resume_intent` replays the original customer message. The depth limit is one level.
+5. `annual_income IS SET` is true. The second route sends the conversation to `Offer_Agent`, and that route is permanent.
+
+`ON_FAILURE` runs when the handoff fails before the child accepts it. The options are `continue`, `ESCALATE`, and `RESPOND "message"`. The default is `continue`. It does not run when the child later fails on its own.
+
+`HISTORY` sets how much conversation the child receives. The default is `full`. Other values are `auto`, `none`, `summary_only`, and a `last_n` block. `auto` uses `summary_only` when `SUMMARY` has text. Otherwise it passes the last five messages.
+
+`PASS` lists the parent variables the child receives. `SUMMARY` states the reason for the handoff.
+
+Use `IS SET` and `IS NOT SET` for empty variables. The check `!= ""` is true when the value is missing. A `//` in a `WHEN` outside quotes starts a comment.
+
+## Common variations
+
+### Continue without a replay
+
+Use `action: continue` when the parent must not route again. `SET` adds a parent assignment after `MAP`. `income_note` is a parent `MEMORY` variable. Replace the first `HANDOFF` entry with this entry.
+
+```yaml
+HANDOFF:
+  - TO: Income_Capture_Agent
+    WHEN: annual_income IS NOT SET
+    SUMMARY: "Collect the applicant income, then return."
+    EXPECT_RETURN: true
+    ON_RETURN:
+      action: continue
+      MAP:
+        annual_income: annual_income
+      SET:
+        income_note: "Income collected by the income agent."
+```
+
+Declare `income_note` in the supervisor `MEMORY`. Without the `SET` line, the compiler reports `W801` for `income_note`.
+
+### Choose the replay message and use the `CONTEXT` block
+
+`CONTEXT` groups `pass`, `summary`, and `history`. Keys inside `CONTEXT` must be lowercase. Uppercase keys inside `CONTEXT` are ignored. Write a `last_n` history as an indented block. A one-line `{ mode: last_n }` is ignored and falls back to `full`.
+
+```yaml
+HANDOFF:
+  - TO: Income_Capture_Agent
+    WHEN: annual_income IS NOT SET
+    CONTEXT:
+      pass: []
+      summary: "Collect the applicant income, then return."
+      history:
+        mode: last_n
+        count: 4
+    RETURN: true
+    ON_RETURN:
+      action: resume_intent
+      RESUME_WITH: latest_child_user_utterance
+      MAP: {annual_income: annual_income}
+```
+
+### Name a return handler
+
+A handler reuses return behavior across routes. A handler cannot combine `RESPOND` with `RESUME_INTENT`. The compiler reports `HANDOFF_ON_RETURN_ACTION_AND_HANDLER`. Add `MAP` on the route, or no value returns.
+
+```yaml
+HANDOFF:
+  - TO: Income_Capture_Agent
+    WHEN: annual_income IS NOT SET
+    SUMMARY: "Collect the applicant income, then return."
+    RETURN: true
+    ON_RETURN:
+      handler: income_done
+      MAP:
+        annual_income: annual_income
+
+RETURN_HANDLERS:
+  income_done:
+    RESUME_INTENT: true
+```
+
+### Let the child hand back to the waiting parent
+
+A child that cannot serve a request hands off to its waiting parent. Add a `HANDOFF` to the parent in the child. Add it to `Income_Capture_Agent` in the minimal example.
+
+```yaml
+HANDOFF:
+  - TO: Loan_Supervisor
+    WHEN: "the customer asks about something other than income"
+    SUMMARY: "Customer needs a different specialist."
+    RETURN: false
+```
+
+A route to an agent that is already active is a cycle. The runtime refuses it with the code `recursion`. A route to a waiting parent is allowed.
+
+### Return to the supervisor when the topic changes
+
+A reasoning child can return to the supervisor when the customer changes topic. `EXECUTION.pipeline.parentReturn` tunes this. `minConfidence` sets the match threshold, from 0 to 1. `ignoreAmbiguous` ignores ambiguous matches. The default for `ignoreAmbiguous` is `false`. A supervisor setting overrides the project setting. Add this block to the supervisor in the minimal example.
+
+```yaml
+EXECUTION:
+  pipeline:
+    parentReturn:
+      minConfidence: 0.8
+      ignoreAmbiguous: true
+```
+
+## Verification
+
+1. Validate the project. Every `TO` target must exist. A `MAP` source that the child does not declare gives `UNKNOWN_HANDOFF_RETURN_FIELD`.
+2. Start a new session and send "I want a loan offer". Expect `Income_Capture_Agent` to ask for the income. The `handoff` event shows `returnExpected: true` and `reasonCode: handoff_return_expected`.
+3. Send an income. Expect a `handoff_return_handler` event with `mappedFields: ["annual_income"]`. Expect a `resume_intent` event next.
+4. Expect a second `handoff` event to `Offer_Agent` with `returnExpected: false` and `reasonCode: handoff_permanent`.
+5. Read each `handoff_completed` event. It has `outcome`, `durationMs`, and, on a failure, `cause` and `code`. It can also have `siblingIntentMs`, the time a queued sibling request ran inside the attempt. That time is not in `durationMs`.
+
+| `outcome` | Meaning |
+| --------- | ------- |
+| `success` | The target accepted and ran. |
+| `rejected` | The runtime refused the route, for example a cycle or a target waiting for input. |
+| `blocked` | A `WHEN` was false, the target was disabled by `ENABLED_WHEN`, or authentication was required. |
+| `error` | Setup or dispatch failed, or an error was thrown. |
+| `timeout` | The runtime stopped waiting for the child. |
+
+## Production readiness checklist
+
+- Every `TO` target exists. Replace the stand-in agents with real agents.
+- Every `MAP` names a child field that the child sets and a parent variable the routes read.
+- The child has a `COMPLETE` condition or the built-in return action, so it cannot hold the conversation forever.
+- Each route sets `ON_FAILURE` on purpose.
+- Each `PASS` list holds only what the child needs.
+- Tests cover a new session, a returning customer with the value set, an unanswered gate, a child that hands back, and a refused route.
+- Trace checks cover `handoff`, `handoff_return_handler`, `resume_intent`, and `handoff_completed`.
+
+## Common mistakes
+
+| Mistake | Why it happens | How to avoid it |
+| ------- | -------------- | --------------- |
+| Omitting `RETURN: true` | The default is permanent. | Write `RETURN: true` on every gate. |
+| Writing `RETURN: True` or `RETURN: "true"` | Only lowercase `true` reads as true. | Write `RETURN: true`. The compiler warns `HANDOFF_ON_RETURN_WITHOUT_RETURN` when `ON_RETURN` is present. |
+| Using `ON_RETURN` on a `RETURN: false` route | The gate pattern is copied. | Remove `ON_RETURN`. It never runs. |
+| Expecting values to return without `MAP` | The child completes and the parent resumes. | Add a `MAP` entry for each value. |
+| Writing `child: parent` in the wrong order | The sides look alike. | Write `child_field: parent_variable`. |
+| Writing an unknown `action` | A name such as `restart` looks valid. | Use `continue` or `resume_intent`. An unknown action gives `UNSUPPORTED_HANDOFF_ON_RETURN_ACTION` and runs `continue`. |
+| Combining `RESPOND` with `RESUME_INTENT` in a handler | Both look useful. | Pick one. The compiler reports an error. |
+| Gating with `!= ""` | It reads like an empty check. | Use `IS NOT SET`. |
+| Expecting a replay to chain | The parent routes again, so it looks recursive. | Replay runs one level only. The trace shows `resume_intent_depth_limit`. |
+
+## Troubleshooting
+
+| Symptom | Likely cause | What to check |
+| ------- | ------------ | ------------- |
+| The conversation never leaves the child | The child never completes, or `MAP` writes the wrong variable. | The child `COMPLETE` condition and `mappedFields` in `handoff_return_handler`. |
+| The parent does not route after the return | `action` is `continue`, or the replay depth limit was reached. | `ON_RETURN` and the `resume_intent` `reasonCode`. |
+| `handoff_completed` shows `rejected` with `recursion` | The target is already active. | The route chain. Only a waiting parent can receive a hand-back. |
+| `handoff_completed` shows `rejected` with `target_waiting_for_input` | The target already waits for the customer. | Reply to the customer. Do not route again. |
+| `handoff_completed` shows `blocked` | The `WHEN` is false, `ENABLED_WHEN` switched the target off, or authentication is required. | `handoff_condition_check`, the `ENABLED_WHEN` condition, and the auth profile. |
+| `handoff_completed` shows `error` | Setup or dispatch failed. | `cause`, `code`, and the `ON_FAILURE` policy. |
+| No values appear in the parent | `MAP` is missing, or the child field has no value. | `ON_RETURN` and the child field. |
+| The return applies no effects | A `MAP`, `SET`, or `CLEAR` target is not writable by the parent. | `memory_error` events. |
+| The child asks for what the customer already said | The route passes no field, or the history is limited. | `PASS`, `HISTORY`, and the child `GATHER`. |

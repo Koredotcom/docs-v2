@@ -25,6 +25,7 @@ Every `HANDOFF` target must be a local agent that the entry agent declares in it
 - The specialist's own `ON_START` never runs. `ON_START` runs once per session, for the entry agent only.
 - The route options come from the declared `HANDOFF` entry, such as `RETURN`, `PASS`, `SUMMARY`, and `ON_FAILURE`. The `DO:` line names only the target.
 - A route without `HISTORY` passes the full conversation history by default.
+- A route `WHEN` that only a model can decide, such as `intent.*`, does not block a branch-selected handoff. A `WHEN` that the start data decides as false still blocks it.
 
 ## Minimal working example
 
@@ -213,7 +214,7 @@ start:
   THEN: COMPLETE
 ```
 
-The `WHEN` must be decidable from start data. A natural language condition or an `intent.*` value never matches at start. The same `WHEN` stays true for the whole session. A later turn can route to the specialist again. To make the route start-only, put the condition in a branch `IF:` and leave the route `WHEN` unset.
+The `WHEN` must be decidable from start data. On a lazy start, it can also read the first user message, for example `WHEN: input contains "sales"`. A natural language condition or an `intent.*` value never matches at start. The same `WHEN` stays true for the whole session. A later turn can route to the specialist again. To make the route start-only, put the condition in a branch `IF:` and leave the route `WHEN` unset.
 
 ## Verification
 
@@ -221,14 +222,16 @@ The `WHEN` must be decidable from start data. A natural language condition or an
 2. Send a first message. Expect `Claims_Agent` to answer it.
 3. Repeat with `billing`. Then repeat with no `entry_topic`. Expect `General_Service_Agent`.
 4. For the menu, click each button. Then type `billing`. Then type `other`. Expect the validation message for `other`.
-5. For a blocked route, make the route `WHEN` false. Expect the entry agent to keep the session, with `outcome: blocked` and `reason: condition_false`.
+5. For a blocked route, make the route `WHEN` false. Expect the entry agent to keep the session, with `outcome: blocked` and `reason: condition_false`. Expect no `ON_FAILURE` text.
+6. For a switched-off route, make the `ENABLED_WHEN` condition false. Expect `outcome: blocked` and `reason: target_disabled`. Expect the `ON_FAILURE` text, or the default line when the route has none.
 
 ## Production readiness checklist
 
 - Define every target agent and declare it in the entry agent's `HANDOFF:` section.
 - Send start data from your server when the route has business impact.
 - Keep an `ELSE` branch or a fallback agent for unknown values.
-- Set `ON_FAILURE` on each route so a refused handoff shows the message you intend.
+- Set `ON_FAILURE` on each route so a refused handoff shows the message you intend. Write the text, for example `ON_FAILURE: RESPOND "Sales is closed today."`. A bare `RESPOND` shows nothing at start.
+- Add `ON_FAILURE` to every route that `ENABLED_WHEN` can switch off. Without it, the customer sees "That option is not available right now."
 - Use `ESCALATE` in `ON_FAILURE` only when the project defines an `ESCALATE` block with a human-agent connection and routing. Without it, no person is reached.
 - Pass only the fields the specialist needs.
 - Test each start value, each button, an unknown value, and a blocked route.
@@ -249,7 +252,8 @@ The `WHEN` must be decidable from start data. A natural language condition or an
 
 | Symptom | Likely cause | What to check |
 | ------- | ------------ | ------------- |
-| The user stays with the entry agent | The route `WHEN` is false, or the target is switched off by `ENABLED_WHEN`. | `dsl_on_start_handoff` outcome and reason. |
+| The user stays with the entry agent | The route `WHEN` is false, or the target is switched off by `ENABLED_WHEN`. A false `WHEN` is silent and shows no `ON_FAILURE` text. | `dsl_on_start_handoff` outcome and reason. |
+| The customer sees "That option is not available right now." | `ENABLED_WHEN` switched the target off and the route has no `ON_FAILURE`. | The `availability_refused` trace. Add `ON_FAILURE: CONTINUE` for a silent start, or `RESPOND` with your own text. |
 | The compiler reports a missing target | The specialist is not in the project. | Define or import the agent. |
 | The welcome does not show but the handoff runs | The channel does not deliver `ON_START` responses. | `dsl_on_start_skipped` and the channel behavior. |
 | The welcome shows but the specialist is silent | Eager start. The specialist waits for the first message. | Send a message. |
