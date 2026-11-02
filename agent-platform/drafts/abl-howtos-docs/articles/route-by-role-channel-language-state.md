@@ -4,16 +4,20 @@ Use this pattern when the same request must reach a different agent by channel, 
 
 ## Concept
 
-A `HANDOFF` route can test any value in the session data. Write the test as an expression in `WHEN`. The platform evaluates it without the model, and it refuses the route when the expression is false.
+A `HANDOFF` route can test any value in the session data. Write the test as an expression in `WHEN`.
 
-Context routing differs from intent routing in one way. The classifier does not run when the supervisor has no `intent.category` condition and no `INTENTS:` section. The supervisor model then chooses among the routes, and the platform enforces each route's `WHEN` when the model calls it.
+On each customer message, the platform checks the routes in the order you write them. It does this before the model reasons. The first route with a true expression takes the conversation. The model does not run for that message.
 
-Two tools control which routes the model can reach.
+The check skips a `WHEN: true` route and a route with a plain-language `WHEN`. The model can still call them. When no expression route is true, the model runs. The platform evaluates the `WHEN` of any route the model calls, and it refuses the route when the expression is false.
+
+Context routing differs from intent routing in one way. The classifier does not run when the supervisor has no `intent.category` condition and no `INTENTS:` section.
+
+Two tools control which routes can fire.
 
 | Tool | What it does |
 | ---- | ------------ |
-| `WHEN` | Refuses a route after the model calls it. |
-| `ENABLED_WHEN` | Removes the route from the model's choices while the condition is false. |
+| `WHEN` | Takes the conversation when true. Refuses a route that the model calls when false. |
+| `ENABLED_WHEN` | Removes the route from the check and from the model's choices while the condition is false. |
 
 ### Values you can test
 
@@ -23,6 +27,7 @@ Two tools control which routes the model can reach.
 | Language | `session.interaction.current.language` | The primary language code, such as `es`. |
 | Locale | `session.interaction.current.locale` | The full tag, such as `es-MX`. |
 | Time zone | `session.interaction.current.timezone` | An IANA name, such as `America/Mexico_City`. |
+| Detected language | `session.languageDetection.language` | The language of the customer's message. Present only when the project turns on language detection. See [Route on detected language](#route-on-detected-language). |
 | Identity | `session.identityTier` | `0` anonymous, `1` asserted, `2` verified. |
 | Role, tier, entitlements | `session.<name>` | Caller data from your channel or SDK. Also readable as `<name>`. |
 | State | A session variable | A gathered field, a value mapped back from a child, or a value you set. |
@@ -37,7 +42,7 @@ Voice has several channel types: `voice`, `voice_twilio`, `voice_livekit`, `voic
 
 The position of an entry sets its priority. The first entry has the highest priority. The `PRIORITY:` field is read and then ignored.
 
-Several deterministic routes can be true at once, for example a Spanish speaker on a voice channel. The model then chooses, and the position shows as `[Priority N]` in each route description. To make the result certain, write exclusive conditions or put the combined route first. See [Combine conditions](#combine-conditions).
+Several expression routes can be true at once, for example a Spanish speaker on a voice channel. The first true route in the list wins. The model does not choose between them. Put the most specific route first. See [Combine conditions](#combine-conditions).
 
 ## Minimal working example
 
@@ -48,6 +53,9 @@ This supervisor routes verified administrators, Spanish speakers, and voice call
 ```abl
 SUPERVISOR: Context_Routing_Supervisor
 GOAL: "Route each customer by role, language, and channel, then fall back to standard service"
+
+BEHAVIOR:
+  ROLE: router
 
 HANDOFF:
   # Role: verified administrators only.
@@ -115,12 +123,13 @@ Project-local assumptions:
 ## How it works
 
 1. The supervisor keeps the conversation until a route fires.
-2. The model calls a route. The platform evaluates that route's `WHEN` against the session data.
-3. A true expression admits the route. A false expression refuses it, and the model tries another route.
-4. The target receives the `PASS` values, the `summary`, and the history that `history` allows. The default is `full`.
-5. With `EXPECT_RETURN: false`, the target keeps the conversation. With `EXPECT_RETURN: true`, the supervisor resumes when the target returns.
-6. A missing value makes a test false. `session.user_role == "admin"` is false when the role is absent.
-7. The `WHEN: true` route is always available. It receives any request that the other routes do not take.
+2. On each customer message, the platform checks the expression routes in the order you wrote them. It skips `WHEN: true` routes, plain-language routes, and routes that `ENABLED_WHEN` hides.
+3. The first true route takes the conversation. The model does not run.
+4. When no expression route is true, the model runs. The model can call any available route. The platform evaluates that route's `WHEN` at the call and refuses a false one.
+5. The target receives the `PASS` values, the `summary`, and the history that `history` allows. The default is `full`.
+6. With `EXPECT_RETURN: false`, the target keeps the conversation. With `EXPECT_RETURN: true`, the supervisor resumes when the target returns.
+7. A missing value makes a test false. `session.user_role == "admin"` is false when the role is absent.
+8. The model chooses the `WHEN: true` route. With `ROLE: router`, the supervisor must call a route or ask one question. Without `BEHAVIOR`, the supervisor can answer in text instead.
 
 A route without an `intent.category` test never reads the category.
 
@@ -158,6 +167,31 @@ Use the locale when the dialect matters.
       summary: "Mexican Spanish customer."
 ```
 
+### Route on detected language
+
+Use the detected language when the customer's words decide the language, not the channel or profile setting. This needs the project setting for language detection. With the setting off, the value is absent and every test on it is false.
+
+```abl
+  - TO: Spanish_Service_Agent
+    WHEN: session.languageDetection.status == "detected" AND session.languageDetection.language == "es"
+    CONTEXT:
+      pass: [customer_id]
+      summary: "Customer wrote in Spanish."
+```
+
+The platform detects the language of each customer message. It stores the result before it checks the routes, so the route reads the current message.
+
+| Field | Meaning |
+| ----- | ------- |
+| `status` | `detected`, `low_confidence`, `no_language`, `failed`, `unavailable`, or `skipped`. |
+| `language` | The language tag, only when `status` is `detected`. |
+| `confidence` | A number from 0 to 1. |
+| `candidate` | The best guess when `status` is `low_confidence`. |
+
+The project settings set the confidence threshold, the minimum text length, and the allowed languages. A message that is too short, a keypad entry, or secure input does not give a `detected` status.
+
+An agent hook can also set the language with `SET_INTERACTION_LANGUAGE`. That changes `session.interaction.current.language` only when the agent's `before_turn` hook runs. The check on the same message still reads the earlier value. Route on `session.languageDetection` for a decision on the current message.
+
 ### Route on state that a child returns
 
 Use `EXPECT_RETURN: true` when another agent collects the value first. This route asks for a language preference once. It then routes on the answer.
@@ -182,13 +216,15 @@ Use `EXPECT_RETURN: true` when another agent collects the value first. This rout
       summary: "Customer chose Spanish."
 ```
 
-`map` copies the child's `chosen_language` into the supervisor's `preferred_language`. Write the child field first. The child must gather or produce `chosen_language`.
+`map` copies the child's `chosen_language` into the supervisor's `preferred_language`. Write the child field first. The child must gather or produce `chosen_language`. Without a value, the first route fires again on the next message.
+
+After the child returns, `resume_intent` replays the customer's request. The replay skips the check, so the model picks the route, and the route's `WHEN` still applies. The next customer message goes through the check again.
 
 Use `IS NOT SET` on a plain variable such as `preferred_language`. Do not use it on a dotted path such as `session.interaction.current.language`. The path holds a null value when the language is unknown, and `IS NOT SET` is false for null.
 
 ### Hide a route on other channels
 
-Add `ENABLED_WHEN` when a channel must never see a route. The model does not see the route while the condition is false.
+Add `ENABLED_WHEN` when a channel must never see a route. The route is out of the check and out of the model's choices while the condition is false.
 
 ```abl
   - TO: Voice_Support_Agent
@@ -218,20 +254,22 @@ The values are `CONTINUE`, `ESCALATE`, and `RESPOND "message"`. A bare quoted st
 
 ## Verification
 
-1. Start a voice session and send a message. Open the trace. Find the `handoff_condition_check` event for the voice route. Confirm `result: true` and `whenOutcome: deterministic_pass`.
-2. In the same event, read `evaluatedContext`. Confirm the value of `session.channel` that your channel reports.
-3. Send a Spanish message on a web channel. Confirm `Spanish_Service_Agent`. Check `session.interaction.current.language` in the event.
-4. Start a session with caller data `user_role` set to `admin` and an identity tier of `2`. Confirm `Admin_Support_Agent`. Repeat with tier `0`. Confirm the route is refused.
-5. Send a message that matches no condition. Confirm `Standard_Service_Agent`.
-6. Check that each target receives the `pass` values and the summary.
+1. Start a voice session and send a message. Open the trace. Find the `deterministic_routing` event. Confirm `target` is `Voice_Support_Agent` and `condition` shows the voice test.
+2. If the route does not fire, the model path runs. Find the `handoff_condition_check` event for a route the model called. Read `evaluatedContext` to see the value of `session.channel` that your channel reports.
+3. Send a Spanish message on a web channel. Confirm `deterministic_routing` names `Spanish_Service_Agent`. For the detected-language route, find the `language_detection` event. Confirm `status` is `detected`.
+4. Start a session with caller data `user_role` set to `admin` and an identity tier of `2`. Confirm `Admin_Support_Agent`. Repeat with tier `0`. Confirm the route does not fire.
+5. Send a message that matches no condition. Confirm the model calls `Standard_Service_Agent`. Find its `handoff_condition_check` event.
+6. For a route with `EXPECT_RETURN: true`, find the `handoff_completed` event. Read `outcome` and `durationMs`.
+7. Check that each target receives the `pass` values and the summary.
 
 ## Production readiness checklist
 
 - Every value in a `WHEN` has a source: the platform, caller data, a lookup, or a child's return.
 - Role tests also require a verified identity, for example `session.identityTier == 2`.
 - Channel tests list every channel type in the family, or you confirm the exact value in a trace.
-- Overlapping routes are ordered, or their conditions exclude each other.
-- A `WHEN: true` route or an answering supervisor covers every other message.
+- Overlapping routes are ordered with the most specific route first.
+- A `WHEN: true` route covers every other message, and `BEHAVIOR` with `ROLE: router` stops the supervisor from answering in text.
+- Detected-language routes test `status`. A fallback route handles the case where detection is off.
 - Quoted phrases never appear inside an `AND` or `OR` test.
 - `ON_FAILURE` is set on routes where a missing target must produce a reply.
 - Tests cover each channel, each language, each role, and one message with no match.
@@ -246,7 +284,10 @@ The values are `CONTINUE`, `ESCALATE`, and `RESPOND "message"`. A bare quoted st
 | Trusting a role from the browser. | The role is easy to read from caller data. | Add `session.identityTier == 2`, or look the role up on the server. |
 | Joining a test with a quoted phrase. | The phrase seems to add a semantic check. | The phrase is always true. Test a field. |
 | Setting `PRIORITY:` to resolve overlaps. | The field looks like it orders routes. | The platform ignores it. Reorder the entries. |
+| Expecting the model to choose between two true routes. | The model reads the route descriptions. | The first true expression route wins. Order the entries. |
+| Putting the broad route first. | The order looks like a list of equals. | The broad route wins every time. Put the specific route first. |
 | Using `IS NOT SET` on `session.interaction.current.language`. | The language can be unknown. | Compare the value, or test a plain variable. |
+| Routing on `session.languageDetection` with detection off. | The path reads like a built-in value. | Turn on the project setting, and keep a fallback route. |
 | Writing `map` as `parent: child`. | The parent field seems to come first. | Write `child: parent`. The compiler reports `UNKNOWN_HANDOFF_RETURN_FIELD`. |
 
 ## Troubleshooting
@@ -255,12 +296,13 @@ The values are `CONTINUE`, `ESCALATE`, and `RESPOND "message"`. A bare quoted st
 | ------- | ------------ | ------------- |
 | The channel route never fires. | The channel type differs from your test. | `session.channel` in `evaluatedContext`. Compare it with your list. |
 | The language route never fires. | The language is unresolved or differs. | `session.interaction.current.language`. The value is the primary code, such as `es`, not `es-MX`. |
+| The detected-language route never fires. | Detection is off, or the status is not `detected`. | The `language_detection` event: `status`, `reason`, and `language`. |
 | The role route never fires. | The role or the identity tier is missing. | The caller data and `session.identityTier`. |
 | The role route fires for the wrong user. | The route tests only the caller's role. | Add `session.identityTier == 2`. |
 | A voice route fires for every caller. | A quoted phrase sits inside an `AND` test. | The `WHEN` text. Replace the phrase with a field test. |
-| Two routes could match, and the wrong one runs. | The model chose between true routes. | The entry order. Make the conditions exclusive. |
+| Two routes could match, and the wrong one runs. | An earlier route is also true. | The entry order. The first true route wins. Move the specific route up. |
 | A route is missing from the model's choices. | `ENABLED_WHEN` is false or reads a missing value. | The `ENABLED_WHEN` expression and its data. |
-| No route matches and the supervisor answers directly. | There is no `WHEN: true` route. | Add a fallback route. With the `router` role, the supervisor asks one question instead. |
+| No route matches and the supervisor answers directly. | The supervisor has no `ROLE: router`, or no `WHEN: true` route. | Add a fallback route and `BEHAVIOR` with `ROLE: router`. |
 
 ## Related HowTos
 

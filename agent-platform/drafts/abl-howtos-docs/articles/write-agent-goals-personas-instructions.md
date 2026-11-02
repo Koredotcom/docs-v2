@@ -15,7 +15,16 @@ An agent definition needs more than a name. Four sections shape how the agent be
 
 The runtime puts these sections into the agent prompt. They guide the model. They do not block actions. For hard enforcement, add tools, constraints, guardrails, permissions, or handoff.
 
-The standard prompt for a specialist or standalone agent includes `LIMITATIONS`. The standard prompt for a supervisor with the router or orchestrator role does not. Put routing boundaries for a supervisor in its `HANDOFF` and `DELEGATE` entries and its goal.
+`LIMITATIONS` reach the model on these paths:
+
+| Prompt path                                              | Includes `LIMITATIONS`                                              |
+| -------------------------------------------------------- | ------------------------------------------------------------------- |
+| Standard prompt of a specialist or standalone agent      | Yes.                                                                |
+| `REASONING: true` step in a `FLOW`                       | Yes. The step prompt lists them under "Limitations:".               |
+| Custom `SYSTEM_PROMPT`                                   | Yes. They appear at `{{limitations}}`, or after the prompt text if you omit the placeholder. |
+| Standard prompt of a supervisor with the router or orchestrator role | No. Put routing boundaries in its `HANDOFF` and `DELEGATE` entries and its goal. |
+
+`PERSONA` applies to the whole agent. A `FLOW` step has no persona setting. A `PERSONA` line inside a step causes warning `W498` and the runtime ignores it. Use the step `GOAL` for step-specific wording.
 
 Write the goal as an owned responsibility, not a slogan. Write the persona as observable behavior, not a list of brand adjectives. Write limitations as specific prohibited actions, and name the next action when you can.
 
@@ -125,7 +134,7 @@ Each key takes a single-line value. Do not mix `IDENTITY` with `GOAL` and `LIMIT
 
 ### Values from the session
 
-`GOAL`, `PERSONA`, and `LIMITATIONS` text accepts `{{variable}}` placeholders. The runtime fills them from session values when it builds the prompt.
+`GOAL`, `PERSONA`, and `LIMITATIONS` text accepts `{{variable}}` placeholders. The runtime fills them from session values when it builds the prompt. The same applies to the goal of a `FLOW` reasoning step.
 
 ```abl
 AGENT: Member_Support_Agent
@@ -149,7 +158,7 @@ Use only variables that have a source, such as a `GATHER` field, a memory field,
 
 ### Custom system prompt
 
-A `SYSTEM_PROMPT` section replaces the standard prompt. Your template must then reference `{{goal}}` and `{{persona}}` to use them. The limitations list is not a template variable in a custom prompt, so write the limits into the template text.
+A `SYSTEM_PROMPT` section replaces the standard prompt. Your template must reference `{{goal}}` and `{{persona}}` to use them. Use `{{limitations}}` to place the limitations list where you want it.
 
 ```abl
 AGENT: Policy_Assistant
@@ -157,12 +166,16 @@ GOAL: "Explain refund policy and next steps"
 PERSONA: "Calm policy specialist"
 LIMITATIONS:
   - "Does not approve refunds"
+  - "Sends refund approvals to the billing team"
 SYSTEM_PROMPT:
   You are {{name}}.
   Objective: {{goal}}
   Style: {{persona}}
-  Never approve refunds. Send refund approvals to the billing team.
+  Rules:
+  {{limitations}}
 ```
+
+If the template has no `{{limitations}}` placeholder, the runtime adds the rules after the prompt text under a "Limitations:" heading. The validator reports warning `SYSTEM_PROMPT_LIMITATIONS_APPENDED` so you can choose the position. The runtime also adds the rules when the placeholder sits in a condition that is false for the session. It does not repeat rules that your template already renders.
 
 Write `SYSTEM_PROMPT:` alone on its line, with the template indented below it. The form `SYSTEM_PROMPT: |` is not recognized.
 
@@ -174,6 +187,7 @@ Write `SYSTEM_PROMPT:` alone on its line, with the template indented below it. T
 4. Test a sensitive request, such as refund approval or payment reversal. Confirm the agent follows the limitation.
 5. Inspect the handoff target and the passed fields. Confirm the receiving agent has the context it needs.
 6. If you use `INSTRUCTIONS`, `IDENTITY`, or `{{variable}}` placeholders, test one request that depends on that text.
+7. If you use a custom `SYSTEM_PROMPT`, validate the agent. Confirm no `SYSTEM_PROMPT_LIMITATIONS_APPENDED` warning appears. Then test a request that a limitation forbids.
 
 ## Production readiness checklist
 
@@ -183,6 +197,7 @@ Write `SYSTEM_PROMPT:` alone on its line, with the template indented below it. T
 - Sensitive actions go to the right specialist, workflow, tool, or human escalation.
 - Every handoff target exists in the project.
 - Every `PASS` field and `{{variable}}` has a source.
+- Custom `SYSTEM_PROMPT` templates place `{{limitations}}` where you want the rules.
 - Test cases cover in-scope, adjacent, out-of-scope, and ambiguous requests.
 
 ## Common mistakes
@@ -193,6 +208,7 @@ Write `SYSTEM_PROMPT:` alone on its line, with the template indented below it. T
 | Persona is only branding                  | It does not guide behavior.                           | Describe response style, confirmation behavior, and tone.                     |
 | Limitations have no route                 | The agent knows what not to do but not what next.     | Pair important limits with handoff, delegate, escalation, or refusal behavior. |
 | Limitations conflict with tools           | A tool enables an action the agent says it cannot do. | Review tools and limitations together.                                        |
+| Putting `PERSONA` inside a `FLOW` step    | A step looks like it can have its own voice.          | Set `PERSONA` at agent level. Use the step `GOAL` for step wording.           |
 | Treating limitations as enforcement       | The text reads like a rule.                           | Add tools, constraints, guardrails, or permissions for hard boundaries.       |
 | `INSTRUCTIONS` placed before `GOAL`       | The later `GOAL` replaces the goal text.              | Put `INSTRUCTIONS` after `GOAL`.                                              |
 | Mixing `IDENTITY` with `GOAL` or `LIMITATIONS` | `IDENTITY` replaces the goal and limitations.    | Use one style per agent.                                                      |
@@ -206,11 +222,16 @@ Write `SYSTEM_PROMPT:` alone on its line, with the template indented below it. T
 | Agent refuses too much                        | Limitations are written as general warnings.              | Rewrite them as specific prohibited actions.                           |
 | Handoff happens without useful context        | `PASS` fields are missing or unset.                       | Confirm field sources and target-agent needs.                          |
 | Two agents claim the same request             | Responsibilities overlap.                                 | Rewrite goals around ownership, not departments.                       |
-| Persona or limits have no effect              | The agent uses a custom `SYSTEM_PROMPT` that omits them, or it is a routing supervisor. | Add `{{persona}}` and the limit text to the template. For a supervisor, use `HANDOFF` and the goal. |
+| Persona has no effect                         | The agent uses a custom `SYSTEM_PROMPT` that omits `{{persona}}`. | Add `{{persona}}` to the template.                                     |
+| Limits have no effect                         | The agent is a routing supervisor with the standard prompt.       | Use `HANDOFF`, `DELEGATE`, and the goal for supervisor boundaries.     |
+| Warning `SYSTEM_PROMPT_LIMITATIONS_APPENDED`  | The custom `SYSTEM_PROMPT` has `LIMITATIONS` but no `{{limitations}}`. | Add `{{limitations}}` where the rules should appear.              |
+| Warning `W498`                                | A `FLOW` step has a `PERSONA` line.                               | Move `PERSONA` to agent level. Use the step `GOAL` for step wording.   |
 | Instructions are missing from behavior        | `INSTRUCTIONS` appears before `GOAL`.                     | Move `INSTRUCTIONS` below `GOAL`.                                      |
 | An agent ignores a value in its goal or persona | A `{{variable}}` has no value in the session. The runtime logs "Template variable not found". | Check the variable source: `GATHER`, `MEMORY`, or context. |
 
 ## Related HowTos
 
+- How to combine reasoning steps with deterministic FLOW steps
 - How to define clear responsibilities for each enterprise agent
 - How to design a supervisor that routes users to specialist agents
+````

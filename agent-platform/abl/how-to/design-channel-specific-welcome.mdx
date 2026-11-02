@@ -14,7 +14,7 @@ Channels do not deliver startup content the same way. The runtime sends the `ON_
 A channel-specific welcome has two layers:
 
 - **Conversation welcome.** The `ON_START` response. You write it in ABL and vary it with `BRANCHES`.
-- **Channel configuration.** Launcher message, input placeholder, and the voice Welcome Message. You set these in the channel settings in Studio.
+- **Channel configuration.** Launcher message, input placeholder, voice Welcome Message, and voice Greeting Audio. You set these in the channel settings in Studio.
 
 Branch on `session.channel`. This value holds the channel type of the current session, for example `sdk_websocket` or `korevg`. Do not use `channel.name` or `system.channel` in an `ON_START` condition. Those names belong to behavior profiles and escalation routing entries. They do not resolve in `ON_START`, so the branch never matches.
 
@@ -62,9 +62,11 @@ The `ready` step stands in for your own flow. The `SET` line is optional. You ca
 At session start, the runtime runs `ON_START` in this order:
 
 1. Top-level `SET` and `CALL` run first. Branch conditions can read the values they set.
-2. Branches are checked in order. The first matching branch wins. An `ELSE` branch has no condition and always matches.
-3. The selected response is sent if the channel supports proactive delivery. Otherwise the runtime records a `dsl_on_start_skipped` trace.
-4. The `DO:` list of the selected branch runs after the welcome.
+2. A top-level `SET_INTERACTION_LANGUAGE` or `CLEAR_INTERACTION_LANGUAGE` runs next, before branch selection.
+3. Branches are checked in order. The first matching branch wins. An `ELSE` branch has no condition and always matches.
+4. The part of the selected branch `DO:` list up to its last language directive runs before the welcome renders.
+5. The selected response is sent if the channel supports proactive delivery. Otherwise the runtime records a `dsl_on_start_skipped` trace.
+6. The rest of the `DO:` list runs after the welcome.
 
 With a `FLOW`, a branch-selected welcome is the whole startup turn. The first flow step waits for the first customer message. A top-level `RESPOND` that no branch replaced is different. The first flow step runs in the same turn, right after the welcome.
 
@@ -102,7 +104,7 @@ ready:
 
 ### Record the channel choice for later steps
 
-Do not write `SET` or `CALL` beside `RESPOND` in a branch. That is a compile error (`E380`). Put the action in the branch `DO:` list. The list runs after the welcome and allows `SET`, `CALL`, and `HANDOFF`.
+Do not write `SET` or `CALL` beside `RESPOND` in a branch. That is a compile error (`E380`). Put the action in the branch `DO:` list. The list allows `SET`, `CALL`, `HANDOFF`, `SET_INTERACTION_LANGUAGE`, and `CLEAR_INTERACTION_LANGUAGE`.
 
 ```yaml expandable=true
 AGENT: Channel_Style_Agent
@@ -130,6 +132,8 @@ ready:
   THEN: COMPLETE
 ```
 
+The `DO:` list runs after the welcome, unless it sets the interaction language. Language directives and the actions before them run before the welcome, so the welcome can use the new language. A failed `CALL` stops the rest of the list. The welcome still plays.
+
 The compiler reports an `ON_START_BRANCH_DO_ACTIVATED` warning for each `DO:` list. The warning confirms that the list runs at session start. A branch `DO:` list cannot change which branch is selected, because the runtime selects the branch first. To hand off by channel at start, see "How to route users from the welcome experience to the right agent".
 
 ### Keep channel configuration separate
@@ -155,8 +159,10 @@ ready:
 These settings live in the channel configuration, not in ABL:
 
 - **Web SDK.** The theme settings hold the launcher message and the input placeholder.
-- **Voice.** The Welcome Message field holds a channel-level greeting. On pipeline voice channels, a non-empty value replaces the `ON_START` greeting. Clear it to use `ON_START`. On realtime voice channels, the `ON_START` greeting wins and the Welcome Message is the last fallback.
-- **Voice interruption.** Pipeline voice channels have an Allow caller to interrupt the welcome setting. A `BARGE_IN` value written under the `RESPOND` `VOICE` block takes priority over that setting.
+- **Voice Welcome Message.** The Welcome Message field holds a channel-level greeting. On pipeline voice channels, a non-empty value replaces the `ON_START` greeting. Clear it to use `ON_START`. On realtime voice channels, the `ON_START` greeting wins and the Welcome Message is the last fallback.
+- **Voice Greeting Audio.** On pipeline voice channels, the Connect greeting setting binds an audio clip to the channel. On inbound calls, the clip plays instead of the `ON_START` greeting. Studio shows a notice on the agent when a clip is bound. The runtime keeps the text greeting as a fallback if the clip cannot play.
+- **Pipeline voice interruption.** Pipeline voice channels have an Allow caller to interrupt the welcome setting. New channels protect the welcome by default. Channels created earlier stay interruptible until you change the setting. The setting applies only while barge-in is active for the call. A `BARGE_IN` value written under the `RESPOND` `VOICE` block takes priority over the setting.
+- **Realtime voice interruption.** OpenAI and Azure OpenAI realtime channels have the same setting in the Welcome interruption section. It is off by default, so the welcome plays to the end. Turn it on only when your voice gateway supports interruptible welcomes. A gateway that does not support them rejects the call. A greeting authored with `BARGE_IN: disallow` stays protected. Other realtime providers do not have this setting.
 
 ## Verification
 
@@ -166,6 +172,7 @@ These settings live in the channel configuration, not in ABL:
 4. Find the `dsl_on_start_branch` event. It shows the matched branch index.
 5. Find the `dsl_respond` event with source `on_start`. It shows the text sent.
 6. On a channel in the "not sent" row, confirm the `dsl_on_start_skipped` event and that `SET` and `DO:` side effects still ran.
+7. On a pipeline voice channel, find the `voice_welcome_policy_resolved` event. It shows whether the welcome was protected or interruptible, and why.
 
 ## Production readiness checklist
 
@@ -174,7 +181,7 @@ These settings live in the channel configuration, not in ABL:
 - Add an `ELSE` branch so every other channel gets a valid welcome.
 - Use `PLAIN_TEXT` for voice wording. Use short voice greetings.
 - Provide plain text with every rich content variant.
-- Check that no voice channel has a Welcome Message that hides your `ON_START` greeting.
+- Check that no voice channel has a Welcome Message or Greeting Audio clip that hides your `ON_START` greeting.
 - Confirm async and API channels do not depend on a proactive welcome.
 
 ## Common mistakes
@@ -194,7 +201,8 @@ These settings live in the channel configuration, not in ABL:
 | --------------------------------------------- | ------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------- |
 | Welcome appears twice in web chat             | The launcher message and the `ON_START` response say the same thing.                  | Compare the launcher message with the `ON_START` text.                                  |
 | No welcome on Slack, WhatsApp, email, or API  | The channel does not receive the `ON_START` response.                                 | Look for `dsl_on_start_skipped` in the trace.                                           |
-| Callers hear a different greeting             | A pipeline voice channel has a Welcome Message set.                                   | Clear the Welcome Message in the channel configuration.                                 |
+| Callers hear a different greeting             | A pipeline voice channel has a Welcome Message or a Greeting Audio clip.              | Clear the Welcome Message. Turn off or unbind the Connect greeting.                     |
+| Callers cannot interrupt the welcome          | The welcome is protected by the channel setting or by `BARGE_IN: disallow`.           | Check the Allow caller to interrupt the welcome setting and the `VOICE` block.          |
 | The `ELSE` branch always runs                 | The channel value does not match the condition.                                       | Check the `dsl_set` trace for the real `session.channel` value.                         |
 | Markdown or cards do not show on voice        | Voice channels keep only `PLAIN_TEXT`.                                                | Add a `VOICE` block with `PLAIN_TEXT`.                                                  |
 | Voice greeting is too long                    | The welcome carries details meant for the next turn.                                  | Shorten the greeting and move details into the first flow step.                         |

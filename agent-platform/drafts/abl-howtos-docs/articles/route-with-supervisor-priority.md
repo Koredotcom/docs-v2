@@ -36,6 +36,8 @@ A missing value behaves differently by operator.
 
 Write gates with `!= true` and protected routes with `== true`. A missing value then closes the protected routes and opens the gate.
 
+A `//` outside quotes starts a comment in a `WHEN`. A `WHEN` that holds only a comment fails to compile with the message `WHEN is required`.
+
 ### Plain-language gates
 
 Do not write a gate as a quoted phrase. The pipeline treats a quoted phrase as always true. A quoted gate captures every message the pipeline classifies. Use an expression for the gate.
@@ -182,10 +184,12 @@ The table shows the route for each case.
 1. The supervisor keeps the conversation until a route fires.
 2. While `consent_recorded` has no value, `consent_recorded != true` is true. The gate route fires.
 3. `EXPECT_RETURN: true` pauses the supervisor. `Consent_Agent` asks the question and completes when `consent_recorded` is true.
-4. `map` copies the child's `consent_recorded` into the supervisor's `consent_recorded`. Write the child field first, then the parent field.
+4. `map` copies the child's `consent_recorded` into the supervisor's `consent_recorded`. Write the child field first, then the parent field. Only mapped fields return.
 5. `action: resume_intent` runs routing again against the customer's original request, with the returned value.
 6. The gate is now false. The protected routes pass their `consent_recorded == true` test. The intent decides the route.
 7. A message that matches no earlier route falls to `Triage_Agent`.
+
+While `Consent_Agent` waits for the answer, the platform can check each reply against the supervisor routes. With the pipeline on, the classifier makes this check and tests the routes in authored order. The gate is first and still true, so it names `Consent_Agent`. The customer stays with the gate agent.
 
 ## Common variations
 
@@ -219,6 +223,8 @@ Use `session.identityTier` when the channel verifies identity. The value is `2` 
       summary: "Platinum customer asked for escalation."
 ```
 
+`ENABLED_WHEN` applies on every path. The model does not see the route. The pipeline and return checks skip it. A model call to it is refused. A skipped route shows `skipped: availability` and `reasonCode: handoff_availability_skipped` in `handoff_condition_check`. When two entries name the same target, the target stays available when any of its entries is enabled. An entry without `ENABLED_WHEN` is always enabled.
+
 Write `ENABLED_WHEN` as an expression over data that exists before the turn. A condition that reads `intent` or plain language fails to compile with `ENABLED_WHEN_SEMANTIC_REFERENCE`. A condition that reads a missing value counts as false. `ENABLED_WHEN` shapes the experience. It does not replace the `WHEN` guard on a protected route.
 
 ### Choose how the supervisor resumes
@@ -236,6 +242,8 @@ Set `history: none` or `history: summary_only` on a gate agent that does not nee
 5. Send a message with caller data `customer_tier` set to `platinum`. Ask for a manager. Confirm `Priority_Care_Agent`. Repeat with another tier. Confirm `Triage_Agent`.
 6. Check the supervisor's session data. Confirm `consent_recorded` is true after the return.
 7. Answer no to the consent question. Confirm that your policy for a decline applies.
+8. Find the `handoff_completed` event for each attempt. Check `outcome` and `durationMs`. A route that the `WHEN` guard refuses shows `blocked`.
+9. Send a billing question while the consent question is open. Confirm the customer stays with `Consent_Agent`.
 
 ## Production readiness checklist
 
@@ -247,6 +255,7 @@ Set `history: none` or `history: summary_only` on a gate agent that does not nee
 - The fallback route is safe for a customer who has not passed the gate.
 - Critical gates have an `ON_FAILURE` policy.
 - Tests cover consent given, consent declined, no match, and a protected route called before the gate.
+- Monitoring covers `handoff_completed` events with the outcomes `error` and `timeout`.
 
 ## Common mistakes
 
@@ -268,7 +277,8 @@ Set `history: none` or `history: summary_only` on a gate agent that does not nee
 | A business route runs before the gate. | The route's `WHEN` does not test the gate fact. | The `condition` in `handoff_condition_check`. |
 | A reordered route still loses. | You used `PRIORITY:`. | Move the entry. The position decides. |
 | Every message goes to one specialist. | A quoted route sits above the `intent.category` routes. | The entry order. Move quoted routes last. |
-| The model cannot see a route. | `ENABLED_WHEN` is false or reads a missing value. | The `ENABLED_WHEN` expression and its data. |
+| The model cannot see a route. | `ENABLED_WHEN` is false or reads a missing value. | The `ENABLED_WHEN` expression and its data. The `skipped: availability` field in `handoff_condition_check`. |
+| The compile fails with `WHEN is required` or `ENABLED_WHEN is required`. | The condition holds only a `//` comment. | Write the condition before the comment. |
 | The priority route never fires. | `session.customer_tier` has no value. | The caller data your channel sends. |
 | An escalation request reaches the fallback. | The customer is not platinum, so the priority route is false. | Add a route for other tiers, or accept the fallback. |
 | The compile fails with `ENABLED_WHEN_SEMANTIC_REFERENCE`. | `ENABLED_WHEN` reads `intent` or uses plain language. | Use an expression over session data. |
