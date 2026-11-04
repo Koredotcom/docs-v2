@@ -172,6 +172,19 @@ Set `outOfScopeDecline: true` and declare `LIMITATIONS` when the agent must decl
 
 Set `shortCircuit.enabled: false` to keep the classifier and intent bridge but let the model make every routing decision.
 
+### Return from a specialist to the supervisor
+
+The classifier also runs while a specialist is active. It checks each reply against the routes of the supervisor. The runtime returns the caller to the supervisor when the reply matches another route with enough confidence. The pipeline must be enabled for the supervisor.
+
+The `parentReturn` block in the `EXECUTION.pipeline` block of the supervisor sets two controls:
+
+| Setting | Effect |
+| ------- | ------ |
+| `minConfidence` | Sets the confidence the classifier needs to return the caller. When unset, the runtime uses the intent threshold of the supervisor, which is `0.5` by default. |
+| `ignoreAmbiguous` | When `true`, the specialist keeps a reply that the classifier marks as ambiguous. The default is `false`. |
+
+A reply below the threshold stays with the specialist, unless the lexical fallback policy of the supervisor allows a keyword match. See How to configure EXECUTION.pipeline models, modes, thresholds, and fallbacks for the project-level settings.
+
 ## Verification
 
 - Send a clear single-intent message, such as "Where is my invoice?". Confirm a `pipeline_classify` event with the `billing` category and a handoff to `Billing_Agent` without a reasoning turn.
@@ -180,6 +193,7 @@ Set `shortCircuit.enabled: false` to keep the classifier and intent bridge but l
 - Send a message with a veto word, such as "I want a refund". Confirm a confident `pipeline_classify` result and no short-circuit.
 - Send an unrelated message. Confirm a `pipeline_tiered_action` event with the `decline_out_of_scope` action.
 - Check `pipeline_routing_resolve` to confirm each category resolved to the expected target.
+- While a specialist is active, ask for another specialist's topic. Confirm a `digression` event with the `return_to_parent` action, `classifierConfidence`, and `classifierThreshold`.
 - Confirm the specialist receives the expected summary and conversation history.
 
 See How to debug routing with traces for how to read routing traces.
@@ -218,6 +232,7 @@ See How to debug routing with traces for how to read routing traces.
 | Every request goes to the first route | The route `WHEN` uses plain-language text | Switch to `intent.category` conditions. |
 | Sensitive request routes too fast | Keyword veto is off or the word is missing | Add the word to `keywordVeto.keywords`. |
 | Classifier returns a category you did not define | The classifier drifts | The runtime drops unknown categories. Confirm `INTENTS` and the fallback route. |
+| The caller stays with a specialist after asking for another topic | The reply scores below the return threshold, the classifier marks it ambiguous with `ignoreAmbiguous` on, or the pipeline is off for the supervisor | Check `classifierConfidence`, `classifierThreshold`, and `classifierThresholdSource` in the `digression` event. |
 | Decline never happens | The agent has no `LIMITATIONS`, confidence is below `programmaticThreshold`, or a handoff reached the agent | Check `LIMITATIONS` and the `pipeline_tiered_action` event. |
 
 ## Related HowTos
@@ -227,3 +242,4 @@ See How to debug routing with traces for how to read routing traces.
 - How to route users by intent
 - How to handle multiple intents in one user message
 - How to debug routing with traces
+````

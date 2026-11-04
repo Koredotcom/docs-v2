@@ -95,7 +95,7 @@ This snippet compiles with two informational warnings, `ON_START_BRANCH_DO_ACTIV
 
 ### Hand off or delegate at startup
 
-A top-level `HANDOFF: <Agent>`, or a `HANDOFF` entry in a branch `DO` list, starts a declared local agent at session start. A top-level `DELEGATE: <Agent>` delegates at startup. The agent must declare each handoff target in its own `HANDOFF` section. Otherwise the compiler warns `ON_START_HANDOFF_TARGET_INVALID`, and the runtime refuses the handoff. See the welcome routing HowTo for a complete example.
+A top-level `HANDOFF: <Agent>`, or a `HANDOFF` entry in a branch `DO` list, starts a declared local agent at session start. A top-level `DELEGATE: <Agent>` delegates at startup. A failed or refused delegate ends the startup turn after the welcome, and the entry step does not run. A delegate whose route condition is not met is skipped, and startup continues. The agent must declare each handoff target in its own `HANDOFF` section. Otherwise the compiler warns `ON_START_HANDOFF_TARGET_INVALID`, and the runtime refuses the handoff. See the welcome routing HowTo for a complete example.
 
 ## Verification
 
@@ -105,6 +105,7 @@ A top-level `HANDOFF: <Agent>`, or a `HANDOFF` entry in a branch `DO` list, star
 4. Confirm `dsl_respond` shows `source: on_start`. A branch welcome adds `responseSource: on_start_branch`.
 5. Send a second message in the same session. Confirm the trace shows no second `dsl_on_start`.
 6. Start a session over HTTP chat. Confirm `SET` runs and the welcome text does not appear.
+7. For a failing `DELEGATE`, confirm the welcome appears and the entry step does not run.
 
 ## Production readiness checklist
 
@@ -120,6 +121,7 @@ A top-level `HANDOFF: <Agent>`, or a `HANDOFF` entry in a branch `DO` list, star
 | Mistake                                                    | Why it happens                                    | How to avoid it                                                                          |
 | ---------------------------------------------------------- | ------------------------------------------------- | ---------------------------------------------------------------------------------------- |
 | Putting `SET` or `CALL` directly in a branch               | Branches look like small flow steps.              | Use the branch `DO` list.                                                                |
+| Leaving `SET` empty or writing a name with no value        | The block looks like a declaration.               | Write each line as `name = expression`. An empty `SET` is error `E393`.                  |
 | Putting `WITH` or `AS` beside `CALL`                       | The lines look like sibling fields.               | Indent `WITH`, `AS`, and `WHEN` under `CALL`. Beside `CALL`, `WITH` and `AS` are errors. |
 | Writing `WHEN` beside `CALL`                               | The guard looks like a sibling field.             | Indent `WHEN` under `CALL`. A sibling `WHEN` is ignored and the call always runs.        |
 | Writing a branch `IF` in plain English                     | The text reads like a rule.                       | Write an expression, for example `session.channel == "web_chat"`.                        |
@@ -132,10 +134,11 @@ A top-level `HANDOFF: <Agent>`, or a `HANDOFF` entry in a branch `DO` list, star
 | ------------------------------------------------- | -------------------------------------------------------------------- | ------------------------------------------------------------------------------------------- |
 | Compile error `E380`                              | A branch holds `SET` or `CALL` directly.                             | Move the action into the branch `DO` list.                                                  |
 | Compile error `E203`                              | `WITH` or `AS` is not under `CALL`.                                  | Indent both lines under `CALL`.                                                             |
+| Compile error `E393`                              | `SET` has no assignment.                                             | Add a line such as `name = expression`, or delete the empty `SET`.                          |
 | Warning `W381`                                    | A `DO` list holds `RESPOND`, `DELEGATE`, or another dropped action.  | Move the welcome text to the branch `RESPOND`.                                              |
 | Wrong welcome selected                            | A branch condition evaluates earlier than expected.                  | Compare the branch order. Check `dsl_on_start_branch` for the matched index.                |
 | Branch skipped                                    | The condition failed to evaluate.                                    | Look for `dsl_on_start_branch_error` in the trace.                                          |
-| No welcome, but `SET` values exist                | A lazy start or a suppressing channel dropped the text.              | Look for `dsl_on_start_skipped`, or check whether the first message created the session.    |
+| No welcome, but `SET` values exist                | A lazy start or a suppressing channel dropped the text. A Web SDK session with an initial message starts lazily. | Look for `dsl_on_start_skipped`, or check whether the first message created the session.    |
 | The flow entry step does not run at startup       | A branch welcome owns the startup turn.                              | Check `dsl_on_start_branch`.                                                                |
 
 ## Related HowTos
