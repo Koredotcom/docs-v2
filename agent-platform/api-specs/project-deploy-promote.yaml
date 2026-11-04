@@ -1,0 +1,469 @@
+openapi: 3.1.0
+info:
+  title: Public Project Deploy & Promote API
+  version: 1.0.0
+  description: >-
+    ABLP-6273 (AXIS): the public, platform-API-key-usable path to deploy a
+    project's CURRENT content to an environment and promote it through higher
+    environments, with no Studio/user login and no Git dependency. Canonical
+    source: docs/api/artemis-cicd-openapi.yaml (full CI/CD API — git, webhooks,
+    eval gates, rollback, audit packs). This file is a focused subset for the
+    AXIS "import -> release -> deploy -> promote" flow:
+      1. Move project content between workspaces with the Public Project
+         Import/Export API (docs/specs/public-project-import-export-api.openapi.yaml).
+      2. Build an immutable release from the imported project's CURRENT content
+         with source.kind="project_snapshot" (the ABLP-6273 addition — previously
+         POST /releases only accepted source.ref, a Git branch/tag/commit, so
+         imported content with no Git integration could never be released).
+      3. Deploy that release to an environment, then promote it to a higher one.
+    Auth differs from the Import/Export API: there is no raw x-api-key header.
+    A platform key (client_secret) is exchanged for a short-lived Bearer JWT via
+    the OAuth2 client-credentials grant below, and that JWT is sent as
+    `Authorization: Bearer <token>` on every other call.
+servers:
+  - url: /
+paths:
+  /api/cicd/v1/oauth/token:
+    post:
+      operationId: exchangePlatformKeyForToken
+      summary: Exchange a platform API key for a short-lived Bearer JWT.
+      description: >-
+        Client-credentials grant. Unauthenticated (credentials are in the
+        body). Rate-limited to 20 req/min. `scope`/`projectIds` only narrow the
+        key's own grants — they cannot widen them.
+      requestBody:
+        required: true
+        content:
+          application/json: { schema: { $ref: '#/components/schemas/OAuthTokenRequest' } }
+      responses:
+        '200':
+          {
+            description: Token issued,
+            content: { application/json: { schema: { $ref: '#/components/schemas/OAuthTokenResponse' } } },
+          }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '500': { $ref: '#/components/responses/InternalError' }
+  /api/cicd/v1/whoami:
+    get:
+      operationId: getCallerIdentity
+      summary: Describe the calling credential (key or token).
+      description: >-
+        Returns `environments` — the caller's deploy/promote authority per
+        environment — which is what actually gates step 3/4 below, independent
+        of `scopes`.
+      security: [{ BearerAuth: [] }]
+      responses:
+        '200':
+          {
+            description: Resolved principal,
+            content: { application/json: { schema: { $ref: '#/components/schemas/WhoamiResponse' } } },
+          }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '500': { $ref: '#/components/responses/InternalError' }
+  /api/cicd/v1/projects/{projectId}/releases:
+    post:
+      operationId: createRelease
+      summary: Build an immutable release from Git, a project snapshot, or a cross-tenant transfer.
+      description: >-
+        Starts an async build (compiled IR, pinned entity versions, integrity
+        hash, encrypted .ablenc bundle). `source.kind="project_snapshot"`
+        (ABLP-6273) captures the project's CURRENT content — no Git integration
+        required; `source.kind="git"` (or omitted) builds from a branch/tag/commit
+        — the legacy, pre-ABLP-6273 contract. The build is environment-agnostic:
+        it needs `cicd.release.create` plus project membership, NOT environment
+        authority (authority is enforced at deploy/promote, not here).
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - $ref: '#/components/parameters/ProjectId'
+      requestBody:
+        required: true
+        content:
+          application/json: { schema: { $ref: '#/components/schemas/CreateReleaseRequest' } }
+      responses:
+        '200':
+          description: An identical versioned release was reused (reused:true); a failed build may have been requeued.
+          content: { application/json: { schema: { $ref: '#/components/schemas/ReusedReleaseResponse' } } }
+        '202':
+          description: Build started
+          content: { application/json: { schema: { $ref: '#/components/schemas/CreateReleaseResponse' } } }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '409':
+          description: >-
+            RELEASE_VERSION_CONFLICT (same version, different content),
+            RELEASE_SOURCE_EXPIRED (a failed snapshot source expired), or
+            AGENTIC_DRAFT_NOT_ACKNOWLEDGED (project_snapshot requested while the
+            draft holds an unacknowledged agentic state).
+          content: { application/json: { schema: { $ref: '#/components/schemas/CicdErrorResponse' } } }
+        '500': { $ref: '#/components/responses/InternalError' }
+        '503':
+          description: >-
+            PROJECT_SNAPSHOT_UNAVAILABLE (snapshot source temporarily down),
+            AGENTIC_HOLD_UNAVAILABLE (retryable), or RELEASE_STORAGE_NOT_SHARED
+            (per-server release storage — a project_snapshot cannot be built on
+            this deployment; not retryable).
+          content: { application/json: { schema: { $ref: '#/components/schemas/CicdErrorResponse' } } }
+    get:
+      operationId: listReleases
+      summary: List releases for the project.
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - $ref: '#/components/parameters/ProjectId'
+        - { name: status, in: query, schema: { type: string } }
+        - { name: branch, in: query, schema: { type: string } }
+        - { name: version, in: query, schema: { type: string } }
+        - { name: limit, in: query, schema: { type: integer, minimum: 1 } }
+        - { name: offset, in: query, schema: { type: integer, minimum: 0 } }
+      responses:
+        '200':
+          {
+            description: Success,
+            content: { application/json: { schema: { $ref: '#/components/schemas/ReleaseListResponse' } } },
+          }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '500': { $ref: '#/components/responses/InternalError' }
+  /api/cicd/v1/projects/{projectId}/releases/{releaseId}:
+    get:
+      operationId: getRelease
+      summary: Poll a release until status is "ready" (or "failed").
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - $ref: '#/components/parameters/ProjectId'
+        - $ref: '#/components/parameters/ReleaseId'
+      responses:
+        '200':
+          {
+            description: Success,
+            content: { application/json: { schema: { $ref: '#/components/schemas/ReleaseGetResponse' } } },
+          }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '500': { $ref: '#/components/responses/InternalError' }
+  /api/cicd/v1/projects/{projectId}/deployments:
+    post:
+      operationId: createDeployment
+      summary: Deploy a "ready" release to an environment.
+      description: >-
+        Requires `cicd.deploy` PLUS authority on the target environment (see
+        whoami.environments) — the authority check this API's absence used to
+        force teams onto Artemis Git for. The qualification gate is enforced
+        asynchronously by the deploy worker; poll `statusUrl`/`jobStatusUrl`.
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - $ref: '#/components/parameters/ProjectId'
+      requestBody:
+        required: true
+        content:
+          application/json: { schema: { $ref: '#/components/schemas/CreateDeploymentRequest' } }
+      responses:
+        '202':
+          {
+            description: Deploy started,
+            content: { application/json: { schema: { $ref: '#/components/schemas/DeploymentJobResponse' } } },
+          }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403':
+          description: ENV_SCOPE_VIOLATION — the key/token lacks authority for the target environment.
+          content: { application/json: { schema: { $ref: '#/components/schemas/CicdErrorResponse' } } }
+        '409':
+          description: RELEASE_NOT_DEPLOYABLE (release isn't "ready") or QUALIFICATION_GATE_FAILED.
+          content: { application/json: { schema: { $ref: '#/components/schemas/CicdErrorResponse' } } }
+        '500': { $ref: '#/components/responses/InternalError' }
+    get:
+      operationId: listDeployments
+      summary: List deployments for the project.
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - $ref: '#/components/parameters/ProjectId'
+        - { name: environment, in: query, schema: { type: string, enum: [dev, staging, production] } }
+        - { name: releaseId, in: query, schema: { type: string } }
+        - { name: status, in: query, schema: { type: string } }
+        - { name: limit, in: query, schema: { type: integer, minimum: 1 } }
+        - { name: offset, in: query, schema: { type: integer, minimum: 0 } }
+      responses:
+        '200':
+          {
+            description: Success,
+            content: { application/json: { schema: { $ref: '#/components/schemas/DeploymentListResponse' } } },
+          }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '500': { $ref: '#/components/responses/InternalError' }
+  /api/cicd/v1/projects/{projectId}/deployments/{deploymentId}:
+    get:
+      operationId: getDeployment
+      summary: Get a deployment's status, environment, release and versions.
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - $ref: '#/components/parameters/ProjectId'
+        - $ref: '#/components/parameters/DeploymentId'
+      responses:
+        '200':
+          {
+            description: Success,
+            content: { application/json: { schema: { $ref: '#/components/schemas/DeploymentGetResponse' } } },
+          }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '500': { $ref: '#/components/responses/InternalError' }
+  /api/cicd/v1/projects/{projectId}/deployments/{deploymentId}/promote:
+    post:
+      operationId: promoteDeployment
+      summary: Promote an active deployment's release to a higher environment.
+      description: >-
+        Moves the SAME immutable, environment-agnostic release artifact into
+        `targetEnvironment`, re-checking that environment's qualification gate.
+        Requires `cicd.promote` plus authority on the target environment; the
+        source deployment must be "active". This is the step the ticket's
+        "Current Behavior" section says has no reachable public path once
+        content arrived via the Import API instead of Artemis Git — reachable
+        here because the release was built with source.kind="project_snapshot".
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - $ref: '#/components/parameters/ProjectId'
+        - $ref: '#/components/parameters/DeploymentId'
+      requestBody:
+        required: true
+        content:
+          application/json: { schema: { $ref: '#/components/schemas/PromoteRequest' } }
+      responses:
+        '202':
+          {
+            description: Promotion started,
+            content: { application/json: { schema: { $ref: '#/components/schemas/DeploymentJobResponse' } } },
+          }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403':
+          description: ENV_SCOPE_VIOLATION — the key/token lacks authority for targetEnvironment.
+          content: { application/json: { schema: { $ref: '#/components/schemas/CicdErrorResponse' } } }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409':
+          description: DEPLOYMENT_NOT_PROMOTABLE (source deployment isn't active) or a failed qualification gate.
+          content: { application/json: { schema: { $ref: '#/components/schemas/CicdErrorResponse' } } }
+        '500': { $ref: '#/components/responses/InternalError' }
+components:
+  securitySchemes:
+    BearerAuth: { type: http, scheme: bearer, bearerFormat: JWT }
+  parameters:
+    ProjectId:
+      {
+        name: projectId,
+        in: path,
+        required: true,
+        schema: { type: string },
+        description: UUID v7; must be in the key/token's projectIds.,
+      }
+    ReleaseId: { name: releaseId, in: path, required: true, schema: { type: string } }
+    DeploymentId: { name: deploymentId, in: path, required: true, schema: { type: string } }
+  schemas:
+    OAuthTokenRequest:
+      type: object
+      required: [grant_type, client_id, client_secret]
+      additionalProperties: false
+      properties:
+        grant_type: { type: string, enum: [client_credentials] }
+        client_id: { type: string, description: 'Public client id (`plt-…`).' }
+        client_secret: { type: string, description: 'The raw platform API key (`abl_…`).' }
+        scope: { type: array, items: { type: string } }
+        projectIds: { type: array, items: { type: string } }
+    OAuthTokenResponse:
+      type: object
+      required: [access_token, token_type, expires_in]
+      properties:
+        access_token: { type: string }
+        token_type: { type: string, enum: [Bearer] }
+        expires_in: { type: integer, description: Default 900s. }
+        scope: { type: string, description: Space-delimited granted scopes. }
+    WhoamiResponse:
+      type: object
+      required: [success, whoami]
+      properties:
+        success: { type: boolean, const: true }
+        whoami:
+          type: object
+          required: [keyId, tenantId, projectIds, scopes, environments, clientId, via]
+          properties:
+            keyId: { type: string }
+            tenantId: { type: string }
+            projectIds: { type: array, items: { type: string } }
+            scopes: { type: array, items: { type: string } }
+            environments:
+              {
+                type: array,
+                items: { type: string, enum: [dev, staging, production] },
+                description: Deploy/promote/rollback authority.,
+              }
+            clientId: { type: string }
+            via: { type: string, enum: [apiKey, token] }
+    ReleaseSource:
+      type: object
+      additionalProperties: false
+      description: Where the release content comes from. Omitted kind is the legacy Git contract.
+      properties:
+        kind: { type: string, enum: [git, project_snapshot] }
+        ref:
+          type: object
+          additionalProperties: false
+          description: A git ref to build from (kind=git only).
+          properties:
+            branch: { type: string }
+            tag: { type: string }
+        commitSha: { type: string, description: Optional exact commit; must resolve within the branch. }
+    CreateReleaseRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        source: { $ref: '#/components/schemas/ReleaseSource', default: {} }
+        lob: { type: string, description: Optional line-of-business tag. }
+        developer: { type: string, description: Optional free-text attribution. }
+        version: { type: string, description: 'Durable human release label (X.Y.Z), when versioning is enabled.' }
+    Release:
+      type: object
+      required: [_id, tenantId, projectId, status, source]
+      properties:
+        _id: { type: string }
+        tenantId: { type: string }
+        projectId: { type: string }
+        status:
+          {
+            type: string,
+            enum: [building, validated, compiled, materializing, materializing_versions, ready, materialization_failed, failed, superseded],
+          }
+        source: { $ref: '#/components/schemas/ReleaseSource' }
+        contentIntegrity: { type: [string, 'null'], description: Set when ready. }
+        version: { type: string }
+        entityManifestHash: { type: string }
+        deploymentSummaryByEnvironment: { type: object, additionalProperties: true }
+    ReleaseGetResponse:
+      type: object
+      required: [success, release]
+      properties:
+        success: { type: boolean, const: true }
+        release: { $ref: '#/components/schemas/Release' }
+    ReleaseListResponse:
+      type: object
+      required: [success, releases]
+      properties:
+        success: { type: boolean, const: true }
+        releases: { type: array, items: { $ref: '#/components/schemas/Release' } }
+    CreateReleaseResponse:
+      type: object
+      required: [success, releaseId, jobId, statusUrl]
+      properties:
+        success: { type: boolean }
+        releaseId: { type: string }
+        jobId: { type: string, description: '`release-build-<releaseId>`.' }
+        statusUrl: { type: string }
+    ReusedReleaseResponse:
+      type: object
+      required: [success, releaseId, statusUrl, reused]
+      properties:
+        success: { type: boolean, const: true }
+        releaseId: { type: string }
+        status: { type: string }
+        version: { type: string }
+        statusUrl: { type: string }
+        reused: { type: boolean, const: true }
+        requeued: { type: boolean }
+    CreateDeploymentRequest:
+      type: object
+      required: [releaseId, environment]
+      additionalProperties: false
+      properties:
+        releaseId: { type: string, minLength: 1, description: The ready release to deploy. }
+        environment: { type: string, enum: [dev, staging, production] }
+        bypassQualificationGate: { type: boolean, description: Requires scope cicd.gate.bypass. }
+        bypassReason: { type: string, description: Required audit reason when bypassing. }
+    Deployment:
+      type: object
+      required: [_id, releaseId, environment, status]
+      properties:
+        _id: { type: string }
+        releaseId: { type: string }
+        environment: { type: string, enum: [dev, staging, production] }
+        status: { type: string, enum: [building, active, failed, retired] }
+        previousDeploymentId: { type: [string, 'null'], description: Rollback target, when one exists. }
+    DeploymentGetResponse:
+      type: object
+      required: [success, deployment]
+      properties:
+        success: { type: boolean, const: true }
+        deployment: { $ref: '#/components/schemas/Deployment' }
+    DeploymentListResponse:
+      type: object
+      required: [success, deployments]
+      properties:
+        success: { type: boolean, const: true }
+        deployments: { type: array, items: { $ref: '#/components/schemas/Deployment' } }
+    DeploymentJobResponse:
+      type: object
+      required: [success, deploymentId, jobId]
+      properties:
+        success: { type: boolean }
+        deploymentId: { type: string, description: Id of the (new) deployment this action created. }
+        jobId: { type: string, description: '`cicd-deploy-<deploymentId>`.' }
+        statusUrl: { type: string }
+        jobStatusUrl: { type: string }
+    PromoteRequest:
+      type: object
+      required: [targetEnvironment]
+      additionalProperties: false
+      properties:
+        targetEnvironment: { type: string, enum: [dev, staging, production] }
+        bypassQualificationGate: { type: boolean, description: Requires scope cicd.gate.bypass. }
+        bypassReason: { type: string }
+    ErrorResponse:
+      type: object
+      required: [error]
+      properties:
+        error: { type: string }
+      description: Plain error envelope used for 401/500 across this API.
+    CicdErrorResponse:
+      type: object
+      required: [success, error]
+      description: Standard CI/CD error envelope, used for 400/403/404/409/503.
+      properties:
+        success: { type: boolean, const: false }
+        error:
+          type: object
+          required: [code, message]
+          properties:
+            code:
+              type: string
+              description: >-
+                Codes relevant to this flow: PROJECT_NOT_FOUND, VALIDATION_ERROR,
+                TRANSFER_SOURCE_INVALID, PROJECT_SNAPSHOT_UNAVAILABLE,
+                RELEASE_STORAGE_NOT_SHARED, RELEASE_ARTIFACT_UNAVAILABLE,
+                AGENTIC_DRAFT_NOT_ACKNOWLEDGED, AGENTIC_HOLD_UNAVAILABLE,
+                RELEASE_SOURCE_EXPIRED, RELEASE_NOT_FOUND, RELEASE_NOT_READY,
+                RELEASE_NOT_DEPLOYABLE, RELEASE_VERSION_CONFLICT,
+                CONTENT_INTEGRITY_MISMATCH, DEPLOYMENT_NOT_FOUND,
+                DEPLOYMENT_NOT_PROMOTABLE, QUALIFICATION_GATE_FAILED,
+                BYPASS_REASON_REQUIRED, ENV_SCOPE_VIOLATION, SCOPE_VIOLATION,
+                FORBIDDEN, NOT_FOUND, RATE_LIMITED, INTERNAL_ERROR. Full
+                enum in docs/api/artemis-cicd-openapi.yaml.
+            message: { type: string }
+            details: { nullable: true }
+            retryable: { type: boolean }
+            requestId: { type: string, description: 'Correlates with the `X-Request-ID` response header.' }
+  responses:
+    Unauthorized:
+      { description: Authentication failure, content: { application/json: { schema: { $ref: '#/components/schemas/ErrorResponse' } } } }
+    InternalError:
+      { description: Internal server error, content: { application/json: { schema: { $ref: '#/components/schemas/ErrorResponse' } } } }
+    BadRequest:
+      {
+        description: VALIDATION_ERROR,
+        content: { application/json: { schema: { $ref: '#/components/schemas/CicdErrorResponse' } } },
+      }
+    Forbidden:
+      {
+        description: Not authorized for the project or missing scope (FORBIDDEN).,
+        content: { application/json: { schema: { $ref: '#/components/schemas/CicdErrorResponse' } } },
+      }
+    NotFound:
+      {
+        description: Concealed not found,
+        content: { application/json: { schema: { $ref: '#/components/schemas/CicdErrorResponse' } } },
+      }
