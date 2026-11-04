@@ -87,8 +87,9 @@ You can create an evaluation suite in one of the following ways:
 
 | Option                             | Description                                                  |
 |:-----------------------------------|:-------------------------------------------------------------|
-| **Create with Arch** (Recommended) | Let Arch generate an evaluation suite based on your project. |
-| **Create Test Suite**              | Create and configure an evaluation suite manually.           |
+| [Create with Arch](#create-eval-suite-with-arch) (Recommended) | Let Arch generate an evaluation suite based on your project. |
+| [Create Agentic Testing Suite](#create-eval-suite-manually)   | Create and configure an agentic evaluation suite manually using scenarios, personas, and evaluators. |
+| [Create RAG Testing Suite](#create-a-rag-evaluation-suite)      | Create a RAG evaluation suite using a CSV dataset to evaluate an agent's retrieval and response quality. |
 
 ### Create eval suite with Arch
 
@@ -102,6 +103,12 @@ Use **Create with Arch** to automatically generate an evaluation suite based on 
 6. Select **Create & Run Suite** to create the suite and start the evaluation.
 
 <Note>Arch analyzes your project and automatically generates the evaluation suite components, including scenarios, personas, evaluators, and run settings. You can review and modify the generated configuration before running the evaluation.</Note>
+
+### Create a RAG evaluation suite
+
+Create a RAG evaluation suite to evaluate an agent's retrieval and response quality using a CSV dataset of test questions. Unlike conversation evaluation suites, RAG suites evaluate individual questions against a single agent without using personas or scenarios.
+
+For detailed instructions, see [RAG evaluation suites](#rag-evaluation-suites).
 
 ### Create eval suite manually
 
@@ -609,6 +616,84 @@ Use the evaluation results to prioritize improvements to your agent.
 | **Scores appear inconsistent** | Increase the number of **Variations per Scenario × Persona** and lower the judge model temperature for more consistent results. |
 | **Unexpectedly high scores**   | Review the evaluator prompt and scoring criteria to ensure they accurately reflect the expected behavior.                       |
 | **Higher execution costs**     | Reduce the number of variations or use smaller judge models during development.                                                 |
+
+
+---
+
+## RAG evaluation suites
+
+A RAG evaluation suite evaluates an agent's ability to retrieve relevant information and generate accurate answers. Unlike conversation evaluation suites, which use personas and scenarios to simulate conversations, RAG evaluation suites use a CSV dataset of test questions to evaluate a single agent's retrieval and response quality.
+
+### Create a RAG evaluation suite
+
+1. Go to **Evaluate > Evals** and select the option to create a RAG evaluation suite.
+2. Under **Basics**, enter a suite name and, optionally, a description. Select the target agent and version.
+3. Under **Evaluation data**, upload a CSV file containing your test questions.
+4. Under **Evaluators, weights & passing score**, add the evaluators you want to use. Configure their weights and passing scores, and set the suite target score.
+5. Configure the run settings and select **Create & run suite**.
+
+A RAG suite evaluates individual questions against the selected agent. It does not use personas, scenarios, or conversation simulations.
+
+### Prepare the evaluation dataset
+
+Prepare a CSV file with the following columns. Column names must match the sample field names.
+
+| Column | Description |
+|---|---|
+| `user_input` | The question sent to the agent. Required. |
+| `response` | The expected or supplied answer. Optional. If empty, the agent's answer is generated during the run. |
+| `ground_truth` | The correct answer. Optional. It cannot be generated; metrics that require it are skipped for samples without it. |
+| `actual_contexts` | Retrieved context passages in retrieval-rank order. Optional. |
+| `actual_context_ids` | IDs of retrieved context chunks in retrieval-rank order. Optional. |
+| `expected_context_ids` | IDs of the context chunks that should be retrieved. Optional. |
+
+The agent can generate the answer and retrieve context when these fields are not provided. Supplied answers and contexts are used during evaluation instead of being generated.
+
+**CSV format requirements:**
+
+- Enter list fields (`actual_contexts`, `actual_context_ids`, and `expected_context_ids`) as JSON arrays of strings. For example, `["chunk 1","chunk 2"]`.
+- The first element represents retrieval rank 1.
+- Values can contain commas, quotes, and line breaks.
+- Leave an optional field empty if it is not provided for that row.
+
+The uploaded CSV is checked against the specified format before it is used. The `user_input` column is required.
+
+The platform uses the uploaded CSV as provided. It does not maintain a dataset library or version uploaded datasets. To use different evaluation data, upload a new CSV.
+
+**Dataset limits:** A CSV can contain up to 10,000 rows and must not exceed 20 MB.
+
+### Configure evaluators and scoring
+
+RAG evaluation supports evaluators from the **LLM Judge** and **Code Check** families.
+
+- **LLM Judge:** Context Precision, Context Recall, Faithfulness, Factual Correctness, and Noise Sensitivity.
+- **Code Check:** Precision@K, Recall@K, and Mean Reciprocal Rank (MRR).
+
+Evaluator availability depends on the fields provided in the CSV and the fields the agent can generate. Evaluators that cannot be used with the available data are unavailable, with a reason.
+
+Configure a weight and passing score for each evaluator. The evaluator weights must total 100. You can distribute the weights equally.
+
+The **suite target score** defines the overall score the suite is expected to achieve. It is different from the passing score configured for each evaluator.
+
+**Evaluator limit:** You can add up to 12 evaluators to a suite.
+
+### Run a RAG evaluation suite
+
+A RAG evaluation run processes each CSV row as an individual sample. For each sample, the run uses the supplied answer and retrieved contexts when available. Otherwise, it runs the target agent to generate them.
+
+If a metric requires data that is unavailable for a sample, that metric is skipped for that sample, with a reason. The rest of the evaluation continues.
+
+You can run a suite manually or configure a recurring schedule. Run settings also include advanced execution options.
+
+### Understand evaluation scores
+
+Each evaluator produces a score for each sample. The evaluator's passing score determines whether a sample passes or fails that evaluator.
+
+Evaluator weights determine how much each evaluator contributes to the overall sample score. If an evaluator is skipped for a sample, the remaining weights are adjusted for that sample.
+
+The run's overall score is the average of the weighted sample scores. The suite target score determines whether the run meets the suite's target.
+
+Most RAG metrics use a higher-is-better scoring direction. Noise Sensitivity uses a lower-is-better direction. Scores are normalized before aggregation so that higher values always represent better performance.
 
 ---
 
