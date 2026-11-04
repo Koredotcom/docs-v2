@@ -545,6 +545,8 @@ RETURN_HANDLERS:
 
 A handler runs `CLEAR` before `map`, and `RESPOND` after `set`. If any `CLEAR`, `map`, or `set` target is one the parent cannot write, the runtime applies none of that return's effects, including `RESPOND`.
 
+The parent's `ON_RETURN` also runs when a child completes on a silence route turn, that is, after the caller's silence retries run out. From 1.9.1 the `map`, handler, and resume behavior apply the same way as when the child completes on a caller answer.
+
 For a reasoning parent without a FLOW, a non-blank forwarded customer request belongs to bounded `continue`. This includes a named handler with `CONTINUE: true`.
 
 - The handler runs once. Completion and deterministic routing come before model-based routing.
@@ -1366,6 +1368,27 @@ COMPLETE:
       FEEDBACK:
         FEEDBACK_TEMPLATE: Post_Chat_NPS
 ```
+
+### SIP headers on the closing BYE (voice)
+
+A condition's `VOICE` block can name the SIP headers sent on the BYE that ends a KoreVG voice call. A contact center that receives the call back can route on them, for example `X-RouteType: hangup`.
+
+```yaml
+COMPLETE:
+  - WHEN: issue_resolved
+    RESPOND: "Thanks for calling, goodbye."
+    VOICE:
+      sip_headers:
+        X-RouteType: hangup
+        X-Disposition: "{{disposition}}"
+```
+
+- Names must be RFC 3261 tokens of at most 64 characters. Values must be strings without control characters. Violations are compile errors: `COMPLETE_SIP_HEADERS_INVALID_NAME`, `COMPLETE_SIP_HEADERS_INVALID_VALUE`, and `COMPLETE_SIP_HEADERS_WRONG_TYPE`. Quote a value that starts with `{{`.
+- `{{variable}}` placeholders resolve from session values when the condition fires. A header whose value resolves empty is not sent.
+- The headers pass the project's outbound SIP header policy. Its block list and `headerPassthrough: false` apply. The runtime drops reserved platform names (`x-session-id`, `x-tenant-id`, and similar), and the count and size limits hold. These headers need no allow-list row, and the project's transfer allow rows are never added to a hangup.
+- The platform always sets `X-ArtemisReason: BotHangup` and you cannot override it.
+- The headers apply to pipeline and realtime voice calls that this condition ends.
+- `sip_headers` anywhere other than a COMPLETE condition's `VOICE` block is ignored with a warning ([`VOICE_SIP_HEADERS_ILLEGAL_PLACEMENT`](/agent-platform/abl/reference/errors-and-warnings#voice_sip_headers_illegal_placement)). Transfer headers belong in `ESCALATE.routing.voice.sip_headers`.
 
 ### Completion evaluation
 
