@@ -24,6 +24,135 @@ and NOT <p className="rn-heading">\{ Artemis x.y.z \} Month DD, 2026 </p>
 
 */}
 
+<Update label="November 4, 2026" description="v1.9.1">
+
+This release adds new ways to handle silent callers, including a hook, routing to a flow step, and one retry count for silence and wrong answers. Agents no longer see other agents’ tool results. It also adds SIP headers on the call-ending BYE, public APIs for managing workspace and project members and roles, and clearer tool-retry details in Traces.
+
+<p className="rn-heading">Agent builder experience</p>
+
+<p className="rn-subtitle">Choose which agent version to debug</p>
+
+The Debug context popover in the chat view now has a This agent section. Use its Version field to choose whether to debug the working draft, a published version, or an active deployment of the agent. You can also add session metadata as JSON, which the agent reads as `_metadata`. Studio remembers your choice when you close and reopen the popover.
+
+<p className="rn-subtitle">Each agent sees only its own tool results</p>
+
+A tool result kept in session state is no longer added to a later agent's prompt just because it is still there. This covers results from an earlier agent and results kept through a `FLOW AS` alias. If the next agent needs the data, pass it explicitly in the handoff `CONTEXT`. Memory grants and prompts you write to read broad context keep working, and tools, conditions, and assignments can still use the stored results. If an agent you built relied on inherited results, review its handoffs.
+
+<p className="rn-subtitle">Tool error handling: escalation and retry visibility</p>
+
+When a tool call in a `FLOW` step fails under an `ON_ERROR` handler set to `THEN: ESCALATE`, the customer is now escalated after the retries run out. Reasoning agents already behaved this way. Traces now show every retry: the tool call’s card lists how many requests were sent and one row per attempt, including the first failure and its error code, each retry and its outcome, and any skipped retry with the reason.
+
+```yaml wrap
+FLOW:
+  call_external:
+    CALL: external_api
+    ON_ERROR:
+      tool_error:
+        SUBTYPE: tool_timeout
+        RETRY: 2
+        THEN: ESCALATE
+
+# After two retries, the customer is escalated instead of continuing to the next step.
+```
+
+
+<p className="rn-heading">Knowledge base</p>
+
+<p className="rn-subtitle">Salesforce connectors support client credentials</p>
+
+Auth profiles for the Salesforce Knowledge and Salesforce Standard connectors can now use the OAuth client credentials flow, letting a source sync without a signed-in user. Studio’s auth profile panel and the Salesforce setup wizards offer the new option.
+
+<p className="rn-subtitle">All-content-type defaults and advanced filters for Confluence</p>
+
+The Content filters picker for Confluence Server and Confluence Cloud now opens on “All content types,” so dates, rules, and CQL you enter apply to pages, blog posts, and attachments together. A warning appears if the selected types already hold different values. Confluence Server sources also now support advanced filters, as SharePoint sources do: add rules on space and other fields, group them with AND and OR, set dates, or enter a CQL override. Removed rules, dates, and CQL overrides are now cleared when you save, and excluded spaces are listed as excluded in the sync scope and dry run.
+
+
+<p className="rn-heading">Voice experience</p>
+
+<p className="rn-subtitle">Silence and wrong answers counted toward one limit</p>
+
+A question step can now keep one retry count for both silence and wrong answers. Set the step’s `max_retries` to 0 and set `on_exhausted` to the step that counts misses. Each silence or wrong answer counts as one attempt, and the agent escalates when the shared count reaches its limit. Don’t set `exhausted_message` on the question step because it plays after every silence when `max_retries` is set to 0. This works on pipeline voice only.
+
+Routing a silent caller with `on_exhausted` also works better. Attempts are no longer counted twice. The caller hears the expected prompt before any transfer or escalation. When a child agent starts after a silence finishes, control returns to the parent agent, and the configured `ON_RETURN` action continues the flow.
+
+```yaml wrap
+FLOW:
+  account_retry:
+    RESPOND: "What is your account number?"
+    VOICE:
+      ON_NO_INPUT:
+        enabled: true
+        max_retries: 0
+        on_exhausted: account_failed
+
+# Silence goes straight to account_failed, which counts it with wrong answers and escalates on the third miss.
+```
+
+<p className="rn-subtitle">Run a hook when a caller stays silent</p>
+
+In addition to a step name or `ESCALATE`, `on_exhausted` now accepts a hook on pipeline voice. The hook works on agents with and without a `FLOW`. It can call a tool, set values, and hand off to another agent. The caller first hears your `exhausted_message`, if you set one. The hook can’t contain `RESPOND`, so put the final words in `exhausted_message`. On realtime voice and Twilio, the hook option acts as custom. Set it in ABL. Studio keeps the value when you save but has no form for it.
+
+```yaml wrap
+CONVERSATION:
+  listening:
+    on_no_input:
+      on_exhausted: hook
+      exhausted_message: "I still couldn't hear you."
+
+HOOKS:
+  on_no_input_exhausted:
+    CALL: record_silence
+      WITH:
+        reason: "caller_silent"
+    SET: transfer_reason = "Caller went silent"
+    HANDOFF: Transfer_Desk
+
+# When the retries run out, the agent records the silence and hands the call to Transfer_Desk.
+```
+
+<p className="rn-subtitle">Send SIP headers when your agent ends a call</p>
+
+On pipeline voice, a `COMPLETE` condition’s `VOICE` block now accepts `sip_headers`, which go out on the SIP BYE that ends the call so the receiving contact center can route on them. Header names must be valid SIP tokens; values can use `{{variable}}` placeholders, and headers with empty values are not sent. The headers follow the project’s outbound SIP header policy. Every call that ends this way also carries a fixed `X-ArtemisReason` header (`TransferToAgent`, `NoInputFromuser`, or `BotHangup`) that tells the receiver why the platform released the call.
+
+```yaml wrap
+COMPLETE:
+  - WHEN: issue_resolved
+    RESPOND: "Thanks for calling, goodbye."
+    VOICE:
+      sip_headers:
+        X-RouteType: hangup
+        X-Disposition: "{{disposition}}"
+
+# The BYE that ends the call carries both headers.
+```
+
+<p className="rn-heading">Insights</p>
+
+<p className="rn-subtitle">More accurate voice call outcomes</p>
+
+A call the platform ended because of its own failure is now reported as failed, not completed and contained. Failed calls appear in the session list, voice metrics, the outcome distribution, and the analytics API. A call transferred by releasing the SIP leg, such as a hand-back to Amazon Connect, is now recorded as escalated and transferred, not abandoned. Calls ended by the caller or the agent keep their outcomes.
+
+
+<p className="rn-heading">Governance</p>
+
+<p className="rn-subtitle">Manage members and roles with public APIs</p>
+
+You can now manage workspace and project membership from your own systems using public APIs. With a workspace platform key created in Studio, your automation can add, update, and remove workspace and project members, list roles and projects, and run lifecycle actions on a member, such as suspend, reactivate, and reset MFA. Access is controlled by scopes. In Studio, the Members page now shows each member’s status and marks members managed through the API, and the Custom roles page shows which roles the API can assign.
+
+```yaml wrap
+POST /api/public/v1/workspaces/{workspaceId}/members/{memberId}/actions
+{
+  "action": "suspend",
+  "reason": "Left the company"
+}
+
+# Suspends the member and revokes their sessions in this workspace.
+```
+
+
+</Update>
+
+
 <Update label="October 31, 2026" description="v1.9.0">
 
 This release expands the platform’s capabilities in agent building, knowledge retrieval, voice, digital channels, and governance. Key features include RAG eval suites, a Workbench for business users, a Freshservice connector, advanced relevance scoring for search, no-input call routing and keypad settings for voice, TLS for SIP trunks, and workspace-level multi-factor authentication.
@@ -36,11 +165,11 @@ When a customer asks for several things in one message, the supervisor now tells
 
 <p className="rn-subtitle">Test knowledge-grounded agents with RAG eval suites</p>
 
-You can now create evaluation suites that measure how well your agent's retrieval-augmented generation performs. In Eval Suites, select 'RAG Suite' to build a suite with evaluators for faithfulness, relevance, and completeness. Upload a test dataset, run the evaluation, and review per-sample results with full agent traces, retrieved contexts, and cost estimates. A score chart tracks how scores change across runs, and an auto-loop dashboard helps you iterate toward better results.
+You can now create evaluation suites that measure how well your agent's retrieval-augmented generation performs. In Eval Suites, select 'RAG Suite' to build a suite with evaluators for faithfulness, relevance, and completeness. Upload a test dataset, run the evaluation, and review per-sample results with full agent traces, retrieved contexts, and cost estimates. A score chart tracks how scores change across runs. [Learn more →](/agent-platform/evals#rag-evaluation-suites)
 
 <p className="rn-subtitle">Choose what agents receive from uploaded files</p>
 
-The project’s attachment settings now include a processing mode that controls what the agent gets for each uploaded file: Skip (file name only, nothing sent to the agent), Metadata Only (file details), or Read Attachment (file content). You can also turn off uploads for the whole project and set the maximum number of files per session. In the chat widget, an attachment badge shows the file count, and users can open the list, remove a file before sending, and view the upload limits in a tooltip.
+The project’s attachment settings now include a processing mode that controls what the agent gets for each uploaded file: Skip (file name only, nothing sent to the agent), Metadata Only (file details), or Read Attachment (file content). You can also turn off uploads for the whole project and set the maximum number of files per session. In the chat widget, an attachment badge shows the file count, and users can open the list, remove a file before sending, and view the upload limits in a tooltip. [Learn more →](/agent-platform/administration/agent-behavior-settings#attachments)
 
 <p className="rn-subtitle">Let business users manage content in the Workbench</p>
 
@@ -165,7 +294,7 @@ Workspace owners and admins can require two-factor verification for members unde
 
 <p className="rn-subtitle">More control over role permissions and feature visibility</p>
 
-Role Management now has a permission for every project module in the left navigation, including project settings and each knowledge base area, such as Sources, Pipeline, and Knowledge Graph. Knowledge base screens, actions, search, and Preview SDK access follow the user’s project role, and workspace owners and admins keep full access. Admins can also choose what members see for features their role doesn’t cover: under Restricted feature visibility, set Show as blocked or Hide completely for each role, separately for project and workspace features.
+Role Management now has a permission for every project module in the left navigation, including project settings and each knowledge base area, such as Sources, Pipeline, and Knowledge Graph. Knowledge base screens, actions, search, and Preview SDK access follow the user’s project role, and workspace owners and admins keep full access. Admins can also choose what members see for features their role doesn’t cover: under Restricted feature visibility, set *Show as blocked* or *Hide completely* for each role.
 
 <p className="rn-subtitle">Azure Managed HSM key versions and rotation</p>
 

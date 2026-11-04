@@ -7,7 +7,7 @@ Look up an error or warning code that the ABL compiler, the parser, or Studio re
 
 Codes that start with `E` or `W` and a number come from the parser. Named codes come from the compiler. An error blocks compile or publish. A warning does not.
 
-{/* This page lists the codes that authors meet most often. It is not the full set. */}
+This page lists the codes that authors meet most often. It is not the full set.
 
 ## E394
 
@@ -85,7 +85,7 @@ Severity: warning
 
 Severity: warning
 
-**Meaning.** A SECURE_INPUT block accepts MODE, FIELDS, MAX_ATTEMPTS, CANCEL, SAFE_DETAILS_AS, the delivery CALL with its AS, RESULT_FIELDS and SUCCESS_WHEN, and the four outcome routes. Any other line had no field to land in and was silently discarded. The common case is a RESPOND written under ON_SUCCESS: the route was left empty, so after the payment went through the flow had nowhere to go and the caller heard the empty-response fallback.
+**Meaning.** A SECURE_INPUT block accepts MODE, FIELDS, MAX_ATTEMPTS, CANCEL, SAFE_DETAILS_AS, PROGRESS_PROMPT, the delivery CALL with its AS, RESULT_FIELDS and SUCCESS_WHEN, and the four outcome routes. Any other line had no field to land in and was silently discarded. The common case is a RESPOND written under ON_SUCCESS: the route was left empty, so after the payment went through the flow had nowhere to go and the caller heard the empty-response fallback.
 
 **Fix.** Name a FLOW step in the outcome route (ON_SUCCESS: payment_done) and write the RESPOND in that step.
 
@@ -93,7 +93,7 @@ Severity: warning
 
 Severity: warning
 
-**Meaning.** A SECURE_INPUT field is read as PROMPT, RETRY_PROMPT, NO_INPUT_PROMPT, COLLECT, VALIDATE and READ_ONCE only. Any other line had nowhere to land and was silently discarded. The common case is a MESSAGE_KEY written under a field: it was dropped, so the caller heard the PROMPT text (often a placeholder) instead of the localized message the author pointed at.
+**Meaning.** A SECURE_INPUT field is read as PROMPT, RETRY_PROMPT, NO_INPUT_PROMPT, COLLECT, VALIDATE, READ_ONCE, PROGRESS_PROMPT, SAVE_AS and the readable-value marker (see the SECURE_INPUT reference) only. Any other line had nowhere to land and was silently discarded. The common case is a MESSAGE_KEY written under a field: it was dropped, so the caller heard the PROMPT text (often a placeholder) instead of the localized message the author pointed at.
 
 **Fix.** Reference the locale entry from the prompt itself: PROMPT: "\{\{locale.PAYMENT_ENTER_CARD_NUMBER}}", or a language map such as PROMPT: \{ en: "...", es: "..." }.
 
@@ -104,6 +104,22 @@ Severity: warning
 **Meaning.** RESULT_FIELDS and SUCCESS_WHEN are read from the same line only. A list or map written on the following lines left the value empty, so the compiler then reported a missing allowlist or an empty condition instead of pointing at the layout.
 
 **Fix.** Write the list or map on one line: RESULT_FIELDS: [Status, TransactionIdentifier] and SUCCESS_WHEN: \{ Status: "Success" }.
+
+## W212
+
+Severity: warning
+
+**Meaning.** A SECURE_INPUT PROGRESS_PROMPT block is read as TEXT (the line to speak), AFTER (the wait before it), REPEAT_EVERY (the repeat interval) and REPEAT_TEXT (the line for each repeat). Any other line had nowhere to land and was discarded, so the caller would not hear what the author wrote.
+
+**Fix.** Write the hold line as TEXT: "\{\{locale.PAYMENT_PROCESSING}}" or TEXT: \{ en: "Please hold." }, and the timing as AFTER: 2s and REPEAT_EVERY: 10s.
+
+## W213
+
+Severity: warning
+
+**Meaning.** PROGRESS_PROMPT AFTER and REPEAT_EVERY take a whole number followed by s or ms. A value without a unit or with another unit could not be read, so the default was used instead: AFTER waits 0 s on the block and 2 s on a field, and without REPEAT_EVERY the line is spoken once.
+
+**Fix.** Write AFTER: 2s or REPEAT_EVERY: 10s.
 
 ## W217
 
@@ -513,6 +529,14 @@ Severity: error
 
 **Fix.** Rewrite the condition as a valid CEL expression: use == and != for equality (never the JavaScript triple forms), && / || / ! or AND / OR / NOT for logic, and keep every parenthesis, bracket, and quote balanced. String values go in double quotes. Test membership with in, strings with contains, matches, startsWith, or endsWith, and presence with has() on a member path or the IS SET / IS NOT SET sugar. Platform helpers live under the abl namespace, for example abl.upper(name) or abl.round(price, 2). For a condition that should always hold, write true. The message carries the parser description of exactly what it could not read.
 
+## INVALID_HANDOFF_TARGET
+
+Severity: error
+
+**Meaning.** A handoff target does not resolve: the named agent does not exist in this compilation, or the reference, from ON_ACTION, a digression or an error handler, names an agent this agent holds no handoff authority for. The transfer would have nowhere to go at runtime.
+
+**Fix.** Correct the target to the exact name of an agent in the project, and declare it in this agent HANDOFF configuration (for error handlers, ROUTING or a constraint handoff also grants authority). Names match exactly; a target outside this project needs a declared remote handoff entry.
+
 ## INVALID_SIP_TRANSFER_DESTINATION
 
 Severity: error
@@ -576,6 +600,22 @@ Severity: error
 **Meaning.** Tool result MODEL_CONTEXT selects either FIELDS or TEMPLATE. Response MODEL_CONTEXT must be a text scalar beside RESPOND. Invalid input cannot safely define a model view.
 
 **Fix.** Use exactly one non-empty FIELDS: [path, ...] or TEMPLATE: "text" for tools; use a text scalar beside FLOW, COMPLETE, or tool-hook RESPOND.
+
+## NO_INPUT_HOOK_RESPOND_UNSUPPORTED
+
+Severity: error
+
+**Meaning.** An on_no_input_exhausted hook has a RESPOND. The call can end straight after the hook, which could cut the reply off.
+
+**Fix.** Remove RESPOND and put the final words in exhausted_message.
+
+## NO_INPUT_TARGET_NO_HOOK
+
+Severity: error
+
+**Meaning.** on_exhausted is hook, but the agent has no on_no_input_exhausted hook, so nothing would run when silence is exhausted.
+
+**Fix.** Add HOOKS on_no_input_exhausted to this agent, or set on_exhausted to hangup or custom.
 
 ## ON_ERROR_HANDLER_TYPE_DRIFT
 
@@ -697,6 +737,22 @@ Severity: error
 
 **Fix.** Set MODE to a non-empty list drawn only from dtmf and speech, e.g. MODE: [dtmf] or MODE: [dtmf, speech].
 
+## SECURE_INPUT_INVALID_NOT_SECRET
+
+Severity: error
+
+**Meaning.** A SECURE_INPUT field marked NOT_SECRET breaks a rule that keeps card data secret. NOT_SECRET takes an allow-listed kind (postal_code) together with SAVE_AS, never READ_ONCE, a luhn or date_mmYY check, or a field named like card data or a PIN, and 5 to 10 digits. Once accepted the value is a session variable, so later CALLs read that variable, not \{\{secure.`<field>`}}. The step must keep at least one secret field, and the delivery must send one.
+
+**Fix.** Write NOT_SECRET: postal_code with SAVE_AS: billing_zip and COLLECT: \{ digits: 5..5 }, and pass "\{\{billing_zip}}" to the CALL. Leave card numbers, expiry dates, security codes and PINs secret.
+
+## SECURE_INPUT_INVALID_PROGRESS_PROMPT
+
+Severity: error
+
+**Meaning.** A SECURE_INPUT PROGRESS_PROMPT has no TEXT, or its timing is out of range. The hold line needs words to speak; AFTER may be at most 60 seconds and REPEAT_EVERY must be 5 to 60 seconds, so a repeat does not cut off the line before it or leave the caller waiting too long.
+
+**Fix.** Write TEXT: "\{\{locale.PAYMENT_PROCESSING}}" (or a language map), AFTER: 0s to 60s and REPEAT_EVERY: 5s to 60s.
+
 ## SECURE_INPUT_INVALID_RESULT_CONTRACT
 
 Severity: error
@@ -704,6 +760,14 @@ Severity: error
 **Meaning.** The SECURE_INPUT delivery CALL result contract cannot be honoured exactly: AS is not a variable name or has no RESULT_FIELDS allowlist, RESULT_FIELDS has no AS to bind to or lists an invalid path, a duplicate or a top-level path named failure (reserved: on ON_FAIL the step writes failure.reason and failure.http_status under AS), or SUCCESS_WHEN is empty, names an invalid path, or lists no accepted value. A path is a response field name or a dotted path of at most five names (result.status). Nothing from a secure response leaves the secure boundary except the scalar fields RESULT_FIELDS names, and SUCCESS_WHEN is exact equality on the named fields.
 
 **Fix.** Write the contract as AS: `<variable>`, RESULT_FIELDS: [Field, result.status, ...] with response field names or dotted paths of at most five names, and optionally SUCCESS_WHEN: \{ Field: "value" } or \{ result.status: [value1, value2] }.
+
+## SECURE_INPUT_INVALID_SAVE_AS
+
+Severity: error
+
+**Meaning.** A SECURE_INPUT field SAVE_AS is not a variable name, or the step already writes that name as the delivery AS, SAFE_DETAILS_AS or another field's SAVE_AS. Each would replace the other.
+
+**Fix.** Give SAVE_AS its own variable name of letters, digits and underscores, e.g. SAVE_AS: billing_zip.
 
 ## SECURE_INPUT_MISSING_DELIVER_TOOL
 
@@ -720,6 +784,22 @@ Severity: error
 **Meaning.** A SECURE_INPUT step either declares no FIELDS at all, or declares a field with no usable PROMPT, neither a language map with at least one entry nor a template reference. A field the runtime cannot prompt for can never be collected.
 
 **Fix.** Declare at least one field under FIELDS, and give each field a PROMPT, either a language-keyed map such as \{ en: "Enter card number" } or a \{ template: `<name>` } reference to a resolved survey template.
+
+## SECURE_INPUT_PROGRESS_PROMPT_UNUSED
+
+Severity: warning
+
+**Meaning.** A SECURE_INPUT field sets PROGRESS_PROMPT, but the field has no VALIDATE CALL. A field hold line is spoken only while that field's VALIDATE CALL runs; built-in checks such as luhn or regex finish at once and never speak it.
+
+**Fix.** Remove the field PROGRESS_PROMPT, or move it to the SECURE_INPUT block to speak it during the delivery CALL.
+
+## SECURE_INPUT_PROMPT_SECURE_REFERENCE
+
+Severity: error
+
+**Meaning.** A SECURE_INPUT field RETRY_PROMPT or NO_INPUT_PROMPT contains a \{\{secure.`<field>`}} reference. Prompts are spoken to the caller and go through session state and traces, so a collected card value may never appear in one.
+
+**Fix.** Remove the \{\{secure.\*}} reference from the prompt. Session variables such as \{\{amount}} and locale entries such as \{\{locale.CARD_RETRY}} are allowed; for the card, use the safe details from SAFE_DETAILS_AS (e.g. \{\{card.card_number.last4}}) in a later step.
 
 ## SECURE_UNKNOWN_FIELD
 
@@ -813,9 +893,9 @@ Severity: warning
 
 Severity: error
 
-**Meaning.** Scoped barge-in changes a single playback lifecycle and is not a behavior-profile or execution-level voice setting.
+**Meaning.** Scoped barge-in changes a single playback lifecycle and is not a behavior-profile, channel-override, free-standing ON_START or YAML execution.voice setting. ABL EXECUTION.voice and MESSAGES never applied it, so they ignore it with the warning VOICE_DELIVERY_KEY_IGNORED_PLACEMENT instead.
 
-**Fix.** Move BARGE_IN to a template, FLOW step, or the VOICE block under RESPOND.
+**Fix.** Move BARGE_IN to a template, FLOW step, GATHER field, tool VOICE block, or the VOICE block under RESPOND.
 
 ## VOICE_INVALID_BARGE_IN
 
@@ -840,6 +920,14 @@ Severity: error
 **Meaning.** A caller-silence policy belongs to the step that waits for the caller. Under a GATHER field, RESPOND, branch, handler or response format it would never be applied, so it is rejected instead of being dropped.
 
 **Fix.** Move ON_NO_INPUT to the VOICE block directly under the FLOW step, or to CONVERSATION.listening.on_no_input for the whole agent.
+
+## VOICE_SIP_HEADERS_ILLEGAL_PLACEMENT
+
+Severity: warning
+
+**Meaning.** SIP headers authored under VOICE are sent on the SIP BYE that ends the voice call, and only a COMPLETE condition ends the call that way. Under a RESPOND, FLOW step, GATHER field, branch, handler or response format there is no BYE to carry them, so the block is ignored.
+
+**Fix.** Move SIP_HEADERS to the VOICE block of the COMPLETE condition that ends the call. Headers for a transfer belong in the ESCALATE routing (routing.voice.sip_headers).
 
 ## VOICE_TURN_DETECTION_WITH_END_OF_SPEECH
 

@@ -222,7 +222,7 @@ After the start, the route behaves as an ordinary handoff — `RETURN`, `CONTEXT
 ## HOOKS
 
 
-The `HOOKS:` block defines actions that run at four lifecycle points. Unlike `ON_START`, hooks fire repeatedly throughout the session.
+The `HOOKS:` block defines actions that run at four lifecycle points, plus `on_no_input_exhausted` when voice silence retries run out. Unlike `ON_START`, hooks fire repeatedly throughout the session.
 
 ### Syntax
 
@@ -256,6 +256,53 @@ HOOKS:
 | `after_agent`  | Once when the agent completes or is deactivated.                                |
 | `before_turn`  | Before each user message is processed.                                          |
 | `after_turn`   | After each turn completes (after the agent's response is sent).                 |
+| `on_no_input_exhausted` | When voice silence retries run out and `on_exhausted` is `hook`. See [on_no_input_exhausted](#on_no_input_exhausted). |
+
+### on_no_input_exhausted
+
+On pipeline voice, `on_exhausted: hook` runs the agent's `on_no_input_exhausted` hook when silence retries run out. Use it to act on exhausted silence from an agent with no FLOW. It also works on a FLOW agent.
+
+```yaml
+AGENT: Card_Support
+GOAL: "Help the caller with a card"
+
+CONVERSATION:
+  listening:
+    on_no_input:
+      on_exhausted: hook
+      exhausted_message: "I still couldn't hear you."
+
+TOOLS:
+  record_silence(reason: string) -> object
+    description: "Record a silent call"
+
+HANDOFF:
+  - TO: Transfer_Desk
+    CONTEXT:
+      pass: [transfer_reason]
+    RETURN: false
+
+HOOKS:
+  on_no_input_exhausted:
+    CALL: record_silence
+      WITH:
+        reason: "caller_silent"
+    SET: transfer_reason = "Caller went silent"
+    HANDOFF: Transfer_Desk
+```
+
+- **Order:** the authored `exhausted_message`, then `CALL`, then `SET`, then `HANDOFF`.
+- **Turn behavior:** the hook is the same route turn as a flow target, so it adds no caller row. Caller speech before the turn starts cancels it. Speech while it runs keeps the call open once it finishes, unless the hook handed off.
+- **After the hook:** with a `HANDOFF`, the target starts on its own with no caller message. With no `HANDOFF`, the call ends.
+- **Failed handoff:** a `HANDOFF` that fails follows its `ON_FAILURE`. When `ON_FAILURE` speaks or escalates, the call stays open and the next exhausted silence ends it. Otherwise the call ends. A transfer started by the hook's tool keeps the call.
+- **Failed `CALL`:** it does not stop the actions after it, unless the hook sets `CRITICAL: true`.
+- **What the hook can hold:** `CALL`, `SET`, `HANDOFF`, and `CRITICAL`. The runtime reads `HANDOFF` in this hook only, and ignores it elsewhere with a warning. Values set here reach the target through the entry's `CONTEXT.pass`.
+- **No `RESPOND`:** the call can end straight after the hook, so the compiler refuses `RESPOND`, `WHEN` replies, and rich content here. Put the words in `exhausted_message`.
+- **Slow tools:** the caller hears nothing while `CALL` runs, for up to the hook timeout of 10 seconds unless the tool sets its own.
+- **The word `hook`:** it runs the hook when the agent has one. A step named `hook` on an agent with no such hook stays a step target. An agent with neither fails to compile.
+- **Where to set it:** on a step or an agent, as for a flow target, and only in ABL. Studio keeps the value on save and has no form for the hook. A behavior profile takes action words only.
+- **Other channels:** on realtime voice and Twilio, `hook` acts as `custom`. The hook does not run, and a `voice_no_input_route_unsupported` trace records it.
+- **Compile errors:** [`NO_INPUT_TARGET_NO_HOOK`](/agent-platform/abl/reference/errors-and-warnings#no_input_target_no_hook) for `hook` on an agent with no hook and no step of that name, [`NO_INPUT_HOOK_RESPOND_UNSUPPORTED`](/agent-platform/abl/reference/errors-and-warnings#no_input_hook_respond_unsupported) for a reply in the hook, and [`INVALID_HANDOFF_TARGET`](/agent-platform/abl/reference/errors-and-warnings#invalid_handoff_target) for a `HANDOFF` to an agent with no `HANDOFF` entry.
 
 ### Hook action properties
 
@@ -516,7 +563,7 @@ ON_ERROR:
 | Action       | Behavior                                                                                    |
 |--------------|---------------------------------------------------------------------------------------------|
 | `CONTINUE`   | Continue the conversation, skipping the failed operation.                                   |
-| `ESCALATE`   | Trigger human escalation.                                                                   |
+| `ESCALATE`   | Trigger human escalation. On a FLOW step `CALL`, the step takes the flow's `ESCALATE` terminal after the handler's retries, so authored `ESCALATE` routing applies. |
 | `HANDOFF`    | Transfer to a specified agent (for example. `HANDOFF Live_Agent`, or via `HANDOFF_TARGET`). |
 | `COMPLETE`   | End the conversation.                                                                       |
 | `RETRY_STEP` | Re-run the current flow step from the beginning.                                            |
@@ -592,6 +639,8 @@ MESSAGES:
 | `invalid_handoff`       | "Unable to transfer to the requested agent."    | A `HANDOFF` target can't be resolved.               |
 | `self_handoff`          | "Cannot hand off to self."                      | An agent hands off to itself.                       |
 | `tool_fallback_desc`    | "Execute the requested operation."              | A tool has no `description`.                        |
+| `gather_correction_applied` | "Got it, I've updated the {{fields}}."      | A `CORRECTIONS: true` GATHER accepts a changed value. See [CORRECTIONS](/agent-platform/abl/reference/flow#corrections). |
+| `gather_correction_dependents_cleared` | "I may need to ask you again about the {{cleared_fields}}." | A correction cleared dependent fields that the step asks for again. |
 | `tool_confirmation_request` | "Please confirm before I go ahead{{action_suffix}}.{{details}} Shall I proceed?" | A tool needs the customer's approval. Supports `{{action_suffix}}` and `{{details}}`. See [Confirmation](/agent-platform/abl/reference/tools#what-the-customer-is-asked). |
 
 <Note>On the **Genesys Bot Connector** specifically, setting `escalation_format: ""` (an explicit empty string, not omitting the key) suppresses the whole reply — text, buttons, and citations — on a *successful* terminal escalation; the configured escalation intent is still sent, so the customer's session still escalates, it just gets no message. Omitting the key keeps the normal message behavior, and any nonempty value behaves as before. This only changes what the Bot Connector sends outward — it doesn't affect the internal execution transcript, ongoing (non-terminal) replies, an unsuccessful escalation, or any other channel.</Note>
