@@ -1,0 +1,1999 @@
+openapi: 3.0.3
+info:
+  title: Artemis User and Role Management API
+  version: 1.9.1
+  description: |-
+    Provision, update and remove workspace and project members from an identity provider, HR system or script.
+
+    **Authentication.** Send a platform key in `X-API-Key` or as `Authorization: Bearer <key>`. Workspace endpoints need a workspace platform key (`abl_ws_…`), created by a workspace Owner or Admin under **Settings > Secrets > Platform Keys**. Project endpoints also accept a project platform key bound to that project. User session and SDK tokens are rejected with `401`.
+
+    **Scopes.** `workspace.members.read`, `workspace.members.write`, `workspace.roles.read`, `project.members.read`, `project.members.write`. A missing scope returns `403 INSUFFICIENT_SCOPE`.
+
+    **Roles a key can assign.** Workspace: `builtin.workspace.restricted_member`, `builtin.workspace.workbench_manager`. Project: `builtin.project.developer`, `builtin.project.tester`, `builtin.project.viewer`, `builtin.project.workbench_manager`. Owner, Admin, Auditor, project Admin, the built-in Operator/Member/Viewer workspace roles and custom roles are never assignable by a key. The roles endpoints return `assignableByCaller` per role.
+
+    **Envelope.** Success: `{ "success": true, "data": … }`. Error: `{ "success": false, "error": { "code", "message", "details" } }`. Every response carries `X-Request-Id`.
+
+    **Limits.** Per key: 300 reads/min, 60 writes/min (1,000 items), 300 removals/min, 5 requests in flight. Per workspace: 1,000 reads/min, 200 writes/min (3,000 items), 600 removals/min. Batches: 100 items, 1 MiB. Invitation email: 500/hour per workspace, 3 per address per 24 hours. Exceeding a limit returns `429` with `Retry-After`.
+servers:
+  - url: https://{platformHost}
+    description: Your regional Artemis platform host
+    variables:
+      platformHost:
+        default: platform.example.com
+        description: Region-specific platform host.
+components:
+  securitySchemes:
+    platformApiKey:
+      type: apiKey
+      in: header
+      name: X-API-Key
+      description: Platform key, for example `abl_ws_…`.
+    bearerPlatformKey:
+      type: http
+      scheme: bearer
+      bearerFormat: Platform API Key
+      description: The same platform key as a bearer token.
+  schemas:
+    RoleAssignment:
+      type: object
+      description: "A role held at one scope. Custom-role assignments are redacted: `roleId` and `name` are null and `type` is `custom`."
+      required:
+        - roleId
+        - name
+        - type
+        - source
+      properties:
+        roleId:
+          type: string
+          nullable: true
+          example: builtin.workspace.restricted_member
+          description: Built-in role ID (`builtin.workspace.<role>` or `builtin.project.<role>`). Null for a custom role.
+        name:
+          type: string
+          nullable: true
+          example: RESTRICTED_MEMBER
+        type:
+          type: string
+          enum:
+            - system
+            - custom
+        source:
+          type: string
+          example: direct
+          description: Always `direct` in v1. Clients must accept unknown values; `group:<groupId>` is reserved.
+    MemberStatus:
+      type: string
+      enum:
+        - pending
+        - expired
+        - active
+        - suspended
+        - deactivated
+        - locked
+      description: "`pending` and `expired` are invitations and grant no access. `locked` is a system state (admin or sign-in lockout)."
+    MemberProjectMembership:
+      type: object
+      required:
+        - id
+        - role
+      properties:
+        id:
+          type: string
+          description: Project ID.
+        name:
+          type: string
+        role:
+          $ref: "#/components/schemas/RoleAssignment"
+    WorkspaceMember:
+      type: object
+      required:
+        - memberId
+        - role
+        - status
+        - createdAt
+        - updatedAt
+        - revision
+      properties:
+        memberId:
+          type: string
+          example: 0193f1c2-7a4e-7b10-9c3d-5e6f7a8b9c0d
+          description: Stable membership ID. Unchanged when an invitation is accepted.
+        userId:
+          type: string
+          description: Present once the person has signed in; absent while pending or expired.
+        email:
+          type: string
+          format: email
+        name:
+          type: string
+        expiresAt:
+          type: string
+          format: date-time
+          description: Invitation expiry. Present only while pending or expired.
+        role:
+          $ref: "#/components/schemas/RoleAssignment"
+        externalId:
+          type: string
+          minLength: 1
+          maxLength: 255
+          description: Your identity system's ID for the person. Unique within the workspace.
+        attributes:
+          type: object
+          additionalProperties:
+            type: string
+          description: Up to 50 string key–value pairs, 4 KB in total.
+        assignmentSource:
+          type: string
+          example: api
+          description: How the member was added, for example `api` or `invite`.
+        status:
+          $ref: "#/components/schemas/MemberStatus"
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        revision:
+          type: integer
+          minimum: 0
+          description: Increases on every change. Returned as the weak `ETag`; send it in `If-Match`.
+        projects:
+          type: array
+          items:
+            $ref: "#/components/schemas/MemberProjectMembership"
+          description: Present on get-member, or on list/search with `include=projects`.
+        projectsTruncated:
+          type: boolean
+          description: True when `projects` was cut short.
+    ProjectMember:
+      type: object
+      required:
+        - memberId
+        - userId
+        - role
+        - revision
+      properties:
+        memberId:
+          type: string
+          description: The workspace `memberId`.
+        userId:
+          type: string
+        email:
+          type: string
+          format: email
+        name:
+          type: string
+        role:
+          $ref: "#/components/schemas/RoleAssignment"
+        revision:
+          type: integer
+          minimum: 0
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+    WorkspaceRole:
+      type: object
+      required:
+        - roleId
+        - name
+        - assignableAt
+        - permissions
+        - effectivePermissions
+        - assignableByCaller
+      properties:
+        id:
+          type: string
+          description: Same as `roleId`.
+        roleId:
+          type: string
+          example: builtin.workspace.restricted_member
+        name:
+          type: string
+          example: RESTRICTED_MEMBER
+        description:
+          type: string
+          nullable: true
+        assignableAt:
+          type: array
+          items:
+            type: string
+            enum:
+              - workspace
+        permissions:
+          type: array
+          items:
+            type: string
+        effectivePermissions:
+          type: array
+          items:
+            type: string
+        parentRoleId:
+          type: string
+          nullable: true
+        apiAssignable:
+          type: boolean
+        assignableByCaller:
+          type: boolean
+          description: Whether a platform key may assign this role. Treat it as the source of truth.
+        reasons:
+          type: array
+          items:
+            type: string
+          description: Why the role is not assignable, for example `exposes_secret_values`.
+        revision:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+          nullable: true
+        updatedAt:
+          type: string
+          format: date-time
+          nullable: true
+    InviteItemResult:
+      type: object
+      required:
+        - email
+        - outcome
+      properties:
+        email:
+          type: string
+        outcome:
+          type: string
+          description: "Success: `created`, `reinvited`. Failure: `ALREADY_MEMBER`, `ALREADY_PENDING`, `INVALID_EMAIL`, `INVALID_EXTERNAL_ID`, `EXTERNAL_ID_CONFLICT`, `IDENTITY_CONFLICT`, `EMAIL_DOMAIN_NOT_ALLOWED`, `ROLE_NOT_FOUND`, `ROLE_NOT_ASSIGNABLE_AT_SCOPE`, `OWNER_NOT_GRANTABLE_BY_KEY`, `SENSITIVE_ROLE_NOT_GRANTABLE_BY_KEY`, `ROLE_ABOVE_CALLER_AUTHORITY`, `NOT_PROCESSED`."
+          example: created
+        memberId:
+          type: string
+        warning:
+          type: string
+          enum:
+            - INVITE_EMAIL_QUEUED
+          description: The member was created and the invitation email is queued for retry.
+        details:
+          type: object
+          properties:
+            reason:
+              type: string
+            memberId:
+              type: string
+    ProjectAddItemResult:
+      type: object
+      required:
+        - outcome
+      properties:
+        memberId:
+          type: string
+        externalId:
+          type: string
+        email:
+          type: string
+        userId:
+          type: string
+        role:
+          $ref: "#/components/schemas/RoleAssignment"
+        outcome:
+          type: string
+          description: "Success: `added`. Failure: `NOT_A_WORKSPACE_MEMBER`, `MEMBER_NOT_ACTIVE`, `ALREADY_PROJECT_MEMBER`, `AMBIGUOUS_IDENTIFIER`, `ROLE_NOT_FOUND`, `ROLE_NOT_ASSIGNABLE_AT_SCOPE`, `ROLE_ABOVE_CALLER_AUTHORITY`, `NOT_PROCESSED`."
+          example: added
+        code:
+          type: string
+          description: Same as `outcome` on a failed item.
+    Error:
+      type: object
+      required:
+        - success
+        - error
+      properties:
+        success:
+          type: boolean
+          enum:
+            - false
+        error:
+          type: object
+          required:
+            - code
+            - message
+          properties:
+            code:
+              type: string
+              example: INSUFFICIENT_SCOPE
+            message:
+              type: string
+            messages:
+              type: array
+              items:
+                type: string
+            retryable:
+              type: boolean
+            details:
+              type: object
+              additionalProperties: true
+              description: Code-specific context, for example `requiredScope`, `currentStatus`, `reason` or `requestId`.
+  parameters:
+    IdempotencyKey:
+      name: Idempotency-Key
+      in: header
+      required: false
+      schema:
+        type: string
+        minLength: 1
+        maxLength: 255
+      description: Recommended on every write. A retry with the same key and body replays the first result instead of repeating the change. A different body returns `422 IDEMPOTENCY_KEY_REUSED`; a retry while the first is still running returns `409 IDEMPOTENCY_IN_PROGRESS`.
+    IfMatch:
+      name: If-Match
+      in: header
+      required: false
+      schema:
+        type: string
+        example: W/"3"
+      description: The `ETag` from your last read. On a mismatch the request fails with `412 PRECONDITION_FAILED`.
+  headers:
+    RequestId:
+      description: Request ID. Quote it to Kore.ai Support.
+      schema:
+        type: string
+    ETag:
+      description: Weak ETag holding the resource `revision`.
+      schema:
+        type: string
+        example: W/"3"
+    RetryAfter:
+      description: Seconds to wait before retrying.
+      schema:
+        type: integer
+  responses:
+    BadRequest:
+      description: "Invalid request. Codes: `VALIDATION_ERROR`, `BATCH_EMPTY`, `BATCH_TOO_LARGE`, `DUPLICATE_IN_REQUEST`, `GROUPS_NOT_SUPPORTED`, `INVALID_CURSOR`, `INVALID_FILTER`, `INVALID_ACTION`, `NO_FIELDS_TO_UPDATE`, `INVALID_EXTERNAL_ID`, `ROLE_NOT_ASSIGNABLE_AT_SCOPE`."
+      headers:
+        X-Request-Id:
+          $ref: "#/components/headers/RequestId"
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    Unauthorized:
+      description: "`UNAUTHORIZED`: the key is missing, unknown, expired or revoked, or a user session or SDK token was sent. `KEY_DISABLED`: the key was suspended because its owner was not reassigned within 14 days."
+      headers:
+        X-Request-Id:
+          $ref: "#/components/headers/RequestId"
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    Forbidden:
+      description: "Codes: `INSUFFICIENT_SCOPE` (`details.requiredScope`), `KEY_TYPE_NOT_ALLOWED`, `OWNER_NOT_GRANTABLE_BY_KEY`, `SENSITIVE_ROLE_NOT_GRANTABLE_BY_KEY`, `ROLE_ABOVE_CALLER_AUTHORITY`, `CANNOT_MODIFY_OWNER`, `CANNOT_REMOVE_OWNER`, `CANNOT_MODIFY_KEY_CREATOR`, `TARGET_ABOVE_CALLER_AUTHORITY`, `PROJECT_OWNER_IMMUTABLE`, `AZURE_WORKSPACE_MANAGEMENT_RESTRICTED`."
+      headers:
+        X-Request-Id:
+          $ref: "#/components/headers/RequestId"
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    NotFound:
+      description: "Codes: `WORKSPACE_NOT_FOUND`, `PROJECT_NOT_FOUND`, `MEMBER_NOT_FOUND`, `PROJECT_MEMBER_NOT_FOUND`, `ROLE_NOT_FOUND`. Also returned for resources outside the key’s workspace."
+      headers:
+        X-Request-Id:
+          $ref: "#/components/headers/RequestId"
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    Conflict:
+      description: "Codes: `INVALID_STATE_TRANSITION` (`details.currentStatus`), `MFA_NOT_ENROLLED`, `LOCKED_BY_LOGIN_LOCKOUT`, `ACCOUNT_SHARED_ACROSS_WORKSPACES`, `MEMBER_STATE_CONFLICT`, `ROLE_UNCHANGED`, `EXTERNAL_ID_CONFLICT`, `MEMBER_OWNS_RESOURCES`, `MEMBER_OWNS_TOO_MANY_RESOURCES`, `TRANSFER_TARGET_NOT_ELIGIBLE`, `IDEMPOTENCY_IN_PROGRESS`, `WORKSPACE_NOT_ACTIVE`, `PROJECT_ARCHIVED`."
+      headers:
+        X-Request-Id:
+          $ref: "#/components/headers/RequestId"
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    PreconditionFailed:
+      description: "`PRECONDITION_FAILED`: `If-Match` does not match the current `ETag`. Read again and retry."
+      headers:
+        X-Request-Id:
+          $ref: "#/components/headers/RequestId"
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    UnprocessableEntity:
+      description: "`IDEMPOTENCY_KEY_REUSED`: the `Idempotency-Key` was already used with a different body."
+      headers:
+        X-Request-Id:
+          $ref: "#/components/headers/RequestId"
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    TooManyRequests:
+      description: "`RATE_LIMITED` or `CONCURRENCY_LIMIT_EXCEEDED`. Wait for `Retry-After` seconds."
+      headers:
+        X-Request-Id:
+          $ref: "#/components/headers/RequestId"
+        Retry-After:
+          $ref: "#/components/headers/RetryAfter"
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    InternalError:
+      description: "`INTERNAL_ERROR`. Retry after a short delay; `details.requestId` identifies the request."
+      headers:
+        X-Request-Id:
+          $ref: "#/components/headers/RequestId"
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    BadGateway:
+      description: "`INVITE_EMAIL_FAILED`: the invitation was renewed but the email could be neither sent nor queued."
+      headers:
+        X-Request-Id:
+          $ref: "#/components/headers/RequestId"
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    ServiceUnavailable:
+      description: "`AUTH_UNAVAILABLE` or `DEPENDENCY_UNAVAILABLE`. A platform dependency is down; retry later."
+      headers:
+        X-Request-Id:
+          $ref: "#/components/headers/RequestId"
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+paths:
+  /api/public/v1/workspaces/{workspaceId}/members:
+    get:
+      summary: List workspace members
+      description: |-
+        Cursor-paginated. A cursor is valid only with the filters it was issued for. With `include=projects` the maximum `limit` is 50. Prefer the search endpoint when filtering by email so addresses stay out of URLs.
+
+        **Required scope:** `workspace.members.read`
+      tags:
+        - Workspace members
+      security:
+        - platformApiKey: []
+        - bearerPlatformKey: []
+      parameters:
+        - schema:
+            type: string
+            minLength: 1
+          required: true
+          name: workspaceId
+          in: path
+        - schema:
+            type: array
+            items:
+              type: string
+              enum:
+                - active
+                - pending
+                - expired
+                - suspended
+                - deactivated
+                - locked
+            maxItems: 6
+          required: false
+          name: status
+          in: query
+        - schema:
+            type: string
+            minLength: 1
+            maxLength: 256
+          required: false
+          name: roleId
+          in: query
+        - schema:
+            type: array
+            items:
+              type: string
+              maxLength: 254
+              format: email
+            maxItems: 50
+          required: false
+          name: emails
+          in: query
+        - schema:
+            type: string
+            maxLength: 256
+          required: false
+          name: externalId
+          in: query
+        - schema:
+            type: string
+            format: date-time
+          required: false
+          name: updatedSince
+          in: query
+        - schema:
+            type: string
+            enum:
+              - projects
+          required: false
+          name: include
+          in: query
+        - schema:
+            type: integer
+            minimum: 1
+            maximum: 200
+            default: 50
+          required: false
+          name: limit
+          in: query
+        - schema:
+            type: string
+            maxLength: 2048
+          required: false
+          name: cursor
+          in: query
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - success
+                  - data
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                      - true
+                  data:
+                    type: object
+                    required:
+                      - data
+                      - nextCursor
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: "#/components/schemas/WorkspaceMember"
+                      nextCursor:
+                        type: string
+                        nullable: true
+                        description: Pass as `cursor` for the next page. Null on the last page.
+          headers:
+            X-Request-Id:
+              $ref: "#/components/headers/RequestId"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+        "500":
+          $ref: "#/components/responses/InternalError"
+        "503":
+          $ref: "#/components/responses/ServiceUnavailable"
+      operationId: listWorkspaceMembers
+      x-required-scope: workspace.members.read
+    post:
+      summary: Create workspace member invitations
+      description: |-
+        Each person is created at once with status `pending`; access starts when they accept and sign in. People are matched by `externalId` first, then email (case-insensitive). Returns `201` when every item succeeds and `207` when any item fails; each item carries its own `outcome`. Items not started within the 15-second request deadline return `NOT_PROCESSED`; retry with the same `Idempotency-Key`.
+
+        **Required scope:** `workspace.members.write`
+      tags:
+        - Workspace members
+      security:
+        - platformApiKey: []
+        - bearerPlatformKey: []
+      parameters:
+        - schema:
+            type: string
+            minLength: 1
+          required: true
+          name: workspaceId
+          in: path
+        - $ref: "#/components/parameters/IdempotencyKey"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                members:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      email:
+                        type: string
+                        minLength: 1
+                        maxLength: 254
+                      roleId:
+                        type: string
+                        minLength: 1
+                        maxLength: 256
+                      externalId:
+                        type: string
+                        maxLength: 1024
+                      name:
+                        type: string
+                        maxLength: 256
+                      attributes:
+                        type: object
+                        additionalProperties:
+                          type: string
+                          maxLength: 4096
+                    required:
+                      - email
+                      - roleId
+                    additionalProperties: false
+                  minItems: 1
+                  maxItems: 100
+                sendInviteEmail:
+                  type: boolean
+                  default: true
+              required:
+                - members
+              additionalProperties: false
+            example:
+              members:
+                - email: jane.doe@example.com
+                  roleId: builtin.workspace.restricted_member
+                  externalId: 00u1abcd2345
+                  name: Jane Doe
+                  attributes:
+                    department: Support
+              sendInviteEmail: true
+        required: true
+      responses:
+        "201":
+          description: All items succeeded.
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - success
+                  - data
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                      - true
+                  data: &a1
+                    type: object
+                    required:
+                      - items
+                    properties:
+                      items:
+                        type: array
+                        items:
+                          $ref: "#/components/schemas/InviteItemResult"
+          headers:
+            X-Request-Id:
+              $ref: "#/components/headers/RequestId"
+        "207":
+          description: Some items failed. Each item carries its own `outcome`.
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - success
+                  - data
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                      - true
+                  data: *a1
+          headers:
+            X-Request-Id:
+              $ref: "#/components/headers/RequestId"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "422":
+          $ref: "#/components/responses/UnprocessableEntity"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+        "500":
+          $ref: "#/components/responses/InternalError"
+        "503":
+          $ref: "#/components/responses/ServiceUnavailable"
+      operationId: inviteWorkspaceMembers
+      x-required-scope: workspace.members.write
+  /api/public/v1/workspaces/{workspaceId}/members/search:
+    post:
+      summary: Search workspace members
+      description: |-
+        Same as list, with the filters in the body so email addresses stay out of URLs and logs. Supply `status` or `statuses`, not both.
+
+        **Required scope:** `workspace.members.read`
+      tags:
+        - Workspace members
+      security:
+        - platformApiKey: []
+        - bearerPlatformKey: []
+      parameters:
+        - schema:
+            type: string
+            minLength: 1
+          required: true
+          name: workspaceId
+          in: path
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                status:
+                  type: array
+                  items:
+                    type: string
+                    enum:
+                      - active
+                      - pending
+                      - expired
+                      - suspended
+                      - deactivated
+                      - locked
+                  maxItems: 6
+                statuses:
+                  type: array
+                  items:
+                    type: string
+                    enum:
+                      - active
+                      - pending
+                      - expired
+                      - suspended
+                      - deactivated
+                      - locked
+                  maxItems: 6
+                roleId:
+                  type: string
+                  minLength: 1
+                  maxLength: 256
+                emails:
+                  type: array
+                  items:
+                    type: string
+                    maxLength: 254
+                    format: email
+                  maxItems: 50
+                externalId:
+                  type: string
+                  maxLength: 256
+                updatedSince:
+                  type: string
+                  format: date-time
+                include:
+                  type: string
+                  enum:
+                    - projects
+                limit:
+                  type: integer
+                  minimum: 1
+                  maximum: 200
+                  default: 50
+                cursor:
+                  type: string
+                  maxLength: 2048
+              additionalProperties: false
+        required: true
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - success
+                  - data
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                      - true
+                  data:
+                    type: object
+                    required:
+                      - data
+                      - nextCursor
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: "#/components/schemas/WorkspaceMember"
+                      nextCursor:
+                        type: string
+                        nullable: true
+                        description: Pass as `cursor` for the next page. Null on the last page.
+          headers:
+            X-Request-Id:
+              $ref: "#/components/headers/RequestId"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+        "500":
+          $ref: "#/components/responses/InternalError"
+        "503":
+          $ref: "#/components/responses/ServiceUnavailable"
+      operationId: searchWorkspaceMembers
+      x-required-scope: workspace.members.read
+  /api/public/v1/workspaces/{workspaceId}/members/{memberId}:
+    get:
+      summary: Get a workspace member
+      description: |-
+        Returns the member with their project memberships.
+
+        **Required scope:** `workspace.members.read`
+      tags:
+        - Workspace members
+      security:
+        - platformApiKey: []
+        - bearerPlatformKey: []
+      parameters:
+        - schema:
+            type: string
+            minLength: 1
+          required: true
+          name: workspaceId
+          in: path
+        - schema:
+            type: string
+            minLength: 1
+          required: true
+          name: memberId
+          in: path
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - success
+                  - data
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                      - true
+                  data:
+                    $ref: "#/components/schemas/WorkspaceMember"
+          headers:
+            X-Request-Id:
+              $ref: "#/components/headers/RequestId"
+            ETag:
+              $ref: "#/components/headers/ETag"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+        "500":
+          $ref: "#/components/responses/InternalError"
+        "503":
+          $ref: "#/components/responses/ServiceUnavailable"
+      operationId: getWorkspaceMember
+      x-required-scope: workspace.members.read
+    patch:
+      summary: Update a workspace member
+      description: |-
+        Changes the member’s single workspace role and/or sets or replaces `externalId`. Send at least one field (`400 NO_FIELDS_TO_UPDATE`). Returns `409 ROLE_UNCHANGED` when nothing would change.
+
+        **Required scope:** `workspace.members.write`
+      tags:
+        - Workspace members
+      security:
+        - platformApiKey: []
+        - bearerPlatformKey: []
+      parameters:
+        - schema:
+            type: string
+            minLength: 1
+          required: true
+          name: workspaceId
+          in: path
+        - schema:
+            type: string
+            minLength: 1
+          required: true
+          name: memberId
+          in: path
+        - $ref: "#/components/parameters/IdempotencyKey"
+        - $ref: "#/components/parameters/IfMatch"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                roleId:
+                  type: string
+                  minLength: 1
+                  maxLength: 256
+                externalId:
+                  type: string
+                  maxLength: 1024
+              additionalProperties: false
+            example:
+              roleId: builtin.workspace.workbench_manager
+              externalId: 00u1abcd2345
+        required: true
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - success
+                  - data
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                      - true
+                  data:
+                    $ref: "#/components/schemas/WorkspaceMember"
+          headers:
+            X-Request-Id:
+              $ref: "#/components/headers/RequestId"
+            ETag:
+              $ref: "#/components/headers/ETag"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "412":
+          $ref: "#/components/responses/PreconditionFailed"
+        "422":
+          $ref: "#/components/responses/UnprocessableEntity"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+        "500":
+          $ref: "#/components/responses/InternalError"
+        "503":
+          $ref: "#/components/responses/ServiceUnavailable"
+      operationId: updateWorkspaceMember
+      x-required-scope: workspace.members.write
+    delete:
+      summary: Remove a workspace member
+      description: |-
+        Revokes a pending or expired invitation, or removes an active member from the workspace and its projects. If the member owns projects or agents, pass `transferOwnershipTo`; otherwise the request fails with `409 MEMBER_OWNS_RESOURCES`.
+
+        **Required scope:** `workspace.members.write`
+      tags:
+        - Workspace members
+      security:
+        - platformApiKey: []
+        - bearerPlatformKey: []
+      parameters:
+        - schema:
+            type: string
+            minLength: 1
+          required: true
+          name: workspaceId
+          in: path
+        - schema:
+            type: string
+            minLength: 1
+          required: true
+          name: memberId
+          in: path
+        - name: transferOwnershipTo
+          in: query
+          required: false
+          schema:
+            type: string
+          description: The `memberId` of an eligible active member who receives the removed member’s projects and agents.
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - success
+                  - data
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                      - true
+                  data:
+                    type: object
+                    required:
+                      - memberId
+                      - removed
+                    properties:
+                      memberId:
+                        type: string
+                      removed:
+                        type: boolean
+                        enum:
+                          - true
+                      projectMembershipsRemoved:
+                        type: integer
+                      transferredProjects:
+                        type: integer
+                      transferredAgents:
+                        type: integer
+          headers:
+            X-Request-Id:
+              $ref: "#/components/headers/RequestId"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+        "500":
+          $ref: "#/components/responses/InternalError"
+        "503":
+          $ref: "#/components/responses/ServiceUnavailable"
+      operationId: removeWorkspaceMember
+      x-required-scope: workspace.members.write
+  /api/public/v1/workspaces/{workspaceId}/members/{memberId}/actions:
+    post:
+      summary: Apply a workspace member lifecycle action
+      description: |-
+        Runs a lifecycle action. Effects are limited to this workspace. At most 10 actions per member per hour.
+
+        | action | Allowed from | Result |
+        | --- | --- | --- |
+        | `deactivate` | active, suspended, locked | `deactivated`; workspace sessions end |
+        | `suspend` | active | `suspended`; workspace sessions end |
+        | `reactivate` | suspended, deactivated, locked | `active`; a sign-in lockout returns `409 LOCKED_BY_LOGIN_LOCKOUT` |
+        | `reset_mfa` | active, locked | MFA enrolment cleared |
+        | `revoke_sessions` | active, suspended, locked | workspace sessions end; status unchanged |
+        | `resend_invite` | pending, expired | new invitation, expiry restarted |
+
+        Any other combination returns `409 INVALID_STATE_TRANSITION`.
+
+        **Required scope:** `workspace.members.write`
+      tags:
+        - Workspace members
+      security:
+        - platformApiKey: []
+        - bearerPlatformKey: []
+      parameters:
+        - schema:
+            type: string
+            minLength: 1
+          required: true
+          name: workspaceId
+          in: path
+        - schema:
+            type: string
+            minLength: 1
+          required: true
+          name: memberId
+          in: path
+        - $ref: "#/components/parameters/IdempotencyKey"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                action:
+                  type: string
+                  enum:
+                    - deactivate
+                    - suspend
+                    - reactivate
+                    - reset_mfa
+                    - revoke_sessions
+                    - resend_invite
+                reason:
+                  type: string
+                  maxLength: 500
+              required:
+                - action
+              additionalProperties: false
+            example:
+              action: suspend
+              reason: Leave of absence
+        required: true
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                      - true
+                  data:
+                    type: object
+                    properties:
+                      member:
+                        $ref: "#/components/schemas/WorkspaceMember"
+                      action:
+                        type: string
+                        enum:
+                          - deactivate
+                          - suspend
+                          - reactivate
+                          - reset_mfa
+                          - revoke_sessions
+                          - resend_invite
+                      previousStatus:
+                        type: string
+                      warnings:
+                        type: array
+                        items:
+                          type: string
+                          enum:
+                            - INVITE_EMAIL_QUEUED
+                    required:
+                      - member
+                      - action
+                      - previousStatus
+                required:
+                  - success
+                  - data
+          headers:
+            X-Request-Id:
+              $ref: "#/components/headers/RequestId"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "422":
+          $ref: "#/components/responses/UnprocessableEntity"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+        "500":
+          $ref: "#/components/responses/InternalError"
+        "502":
+          $ref: "#/components/responses/BadGateway"
+        "503":
+          $ref: "#/components/responses/ServiceUnavailable"
+      operationId: runWorkspaceMemberAction
+      x-required-scope: workspace.members.write
+  /api/public/v1/workspaces/{workspaceId}/roles:
+    get:
+      summary: List workspace roles
+      description: |-
+        Lists the built-in workspace roles with their permissions and whether a key may assign each. Custom roles are not returned.
+
+        **Required scope:** `workspace.roles.read`
+      tags:
+        - Roles
+      security:
+        - platformApiKey: []
+        - bearerPlatformKey: []
+      parameters:
+        - schema:
+            type: string
+            minLength: 1
+          required: true
+          name: workspaceId
+          in: path
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - success
+                  - data
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                      - true
+                  data:
+                    type: object
+                    required:
+                      - roles
+                    properties:
+                      roles:
+                        type: array
+                        items:
+                          $ref: "#/components/schemas/WorkspaceRole"
+          headers:
+            X-Request-Id:
+              $ref: "#/components/headers/RequestId"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+        "500":
+          $ref: "#/components/responses/InternalError"
+        "503":
+          $ref: "#/components/responses/ServiceUnavailable"
+      operationId: listWorkspaceRoles
+      x-required-scope: workspace.roles.read
+  /api/public/v1/workspaces/{workspaceId}/roles/{roleId}:
+    get:
+      summary: Get a workspace role
+      description: |-
+        Gets a built-in workspace role. A custom role ID returns `404 ROLE_NOT_FOUND`.
+
+        **Required scope:** `workspace.roles.read`
+      tags:
+        - Roles
+      security:
+        - platformApiKey: []
+        - bearerPlatformKey: []
+      parameters:
+        - schema:
+            type: string
+            minLength: 1
+          required: true
+          name: workspaceId
+          in: path
+        - schema:
+            type: string
+            minLength: 1
+          required: true
+          name: roleId
+          in: path
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - success
+                  - data
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                      - true
+                  data:
+                    type: object
+                    required:
+                      - role
+                    properties:
+                      role:
+                        $ref: "#/components/schemas/WorkspaceRole"
+          headers:
+            X-Request-Id:
+              $ref: "#/components/headers/RequestId"
+            ETag:
+              $ref: "#/components/headers/ETag"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+        "500":
+          $ref: "#/components/responses/InternalError"
+        "503":
+          $ref: "#/components/responses/ServiceUnavailable"
+      operationId: getWorkspaceRole
+      x-required-scope: workspace.roles.read
+  /api/public/v1/workspaces/{workspaceId}/projects:
+    get:
+      summary: List workspace projects
+      description: |-
+        Lists the workspace’s projects with member counts, for project-membership administration. Requires a workspace key.
+
+        **Required scope:** `project.members.read`
+      tags:
+        - Projects
+      security:
+        - platformApiKey: []
+        - bearerPlatformKey: []
+      parameters:
+        - schema:
+            type: string
+            minLength: 1
+          required: true
+          name: workspaceId
+          in: path
+        - schema:
+            type: integer
+            minimum: 1
+            maximum: 200
+            default: 50
+          required: false
+          name: limit
+          in: query
+        - schema:
+            type: string
+            maxLength: 2048
+          required: false
+          name: cursor
+          in: query
+        - schema:
+            type: string
+            enum:
+              - active
+              - archived
+            default: active
+          required: false
+          name: status
+          in: query
+        - schema:
+            type: string
+            minLength: 1
+            maxLength: 100
+          required: false
+          name: name
+          in: query
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                      - true
+                  data:
+                    type: object
+                    properties:
+                      projects:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            projectId:
+                              type: string
+                            name:
+                              type: string
+                            slug:
+                              type: string
+                            status:
+                              type: string
+                              enum:
+                                - active
+                                - archived
+                            memberCount:
+                              type: integer
+                              minimum: 0
+                            createdAt:
+                              type: string
+                            updatedAt:
+                              type: string
+                          required:
+                            - projectId
+                            - name
+                            - slug
+                            - status
+                            - memberCount
+                            - createdAt
+                            - updatedAt
+                      nextCursor:
+                        type: string
+                        nullable: true
+                    required:
+                      - projects
+                      - nextCursor
+                  pagination:
+                    type: object
+                    properties:
+                      nextCursor:
+                        type: string
+                        nullable: true
+                    required:
+                      - nextCursor
+                required:
+                  - success
+                  - data
+                  - pagination
+          headers:
+            X-Request-Id:
+              $ref: "#/components/headers/RequestId"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+        "500":
+          $ref: "#/components/responses/InternalError"
+        "503":
+          $ref: "#/components/responses/ServiceUnavailable"
+      operationId: listWorkspaceProjects
+      x-required-scope: project.members.read
+  /api/public/v1/projects/{projectId}/members:
+    get:
+      summary: List project members
+      description: |-
+        Cursor-paginated list of project members.
+
+        **Required scope:** `project.members.read`
+      tags:
+        - Project members
+      security:
+        - platformApiKey: []
+        - bearerPlatformKey: []
+      parameters:
+        - schema:
+            type: string
+            minLength: 1
+          required: true
+          name: projectId
+          in: path
+        - schema:
+            type: integer
+            minimum: 1
+            maximum: 200
+            default: 50
+          required: false
+          name: limit
+          in: query
+        - schema:
+            type: string
+            maxLength: 2048
+          required: false
+          name: cursor
+          in: query
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - success
+                  - data
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                      - true
+                  data:
+                    type: object
+                    required:
+                      - data
+                      - nextCursor
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: "#/components/schemas/ProjectMember"
+                      nextCursor:
+                        type: string
+                        nullable: true
+                        description: Pass as `cursor` for the next page. Null on the last page.
+          headers:
+            X-Request-Id:
+              $ref: "#/components/headers/RequestId"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+        "500":
+          $ref: "#/components/responses/InternalError"
+        "503":
+          $ref: "#/components/responses/ServiceUnavailable"
+      operationId: listProjectMembers
+      x-required-scope: project.members.read
+    post:
+      summary: Add project members
+      description: |-
+        Adds 1–100 active workspace members to the project. Each item names exactly one of `memberId`, `externalId` or `email`. Returns `201` when every item succeeds and `207` when any item fails.
+
+        **Required scope:** `project.members.write`
+      tags:
+        - Project members
+      security:
+        - platformApiKey: []
+        - bearerPlatformKey: []
+      parameters:
+        - schema:
+            type: string
+            minLength: 1
+          required: true
+          name: projectId
+          in: path
+        - $ref: "#/components/parameters/IdempotencyKey"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                members:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      memberId:
+                        type: string
+                        minLength: 1
+                        maxLength: 256
+                      externalId:
+                        type: string
+                        maxLength: 1024
+                      email:
+                        type: string
+                        maxLength: 254
+                        format: email
+                      roleId:
+                        type: string
+                        minLength: 1
+                        maxLength: 256
+                    required:
+                      - roleId
+                    additionalProperties: false
+                  minItems: 1
+                  maxItems: 100
+              required:
+                - members
+              additionalProperties: false
+            example:
+              members:
+                - memberId: 0193f1c2-7a4e-7b10-9c3d-5e6f7a8b9c0d
+                  roleId: builtin.project.developer
+                - email: sam@example.com
+                  roleId: builtin.project.viewer
+        required: true
+      responses:
+        "201":
+          description: All items succeeded.
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - success
+                  - data
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                      - true
+                  data: &a2
+                    type: object
+                    required:
+                      - items
+                    properties:
+                      items:
+                        type: array
+                        items:
+                          $ref: "#/components/schemas/ProjectAddItemResult"
+          headers:
+            X-Request-Id:
+              $ref: "#/components/headers/RequestId"
+        "207":
+          description: Some items failed. Each item carries its own `outcome`.
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - success
+                  - data
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                      - true
+                  data: *a2
+          headers:
+            X-Request-Id:
+              $ref: "#/components/headers/RequestId"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "422":
+          $ref: "#/components/responses/UnprocessableEntity"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+        "500":
+          $ref: "#/components/responses/InternalError"
+        "503":
+          $ref: "#/components/responses/ServiceUnavailable"
+      operationId: addProjectMembers
+      x-required-scope: project.members.write
+  /api/public/v1/projects/{projectId}/members/{memberId}:
+    get:
+      summary: Get a project member
+      description: |-
+        Path `memberId` is the workspace member ID.
+
+        **Required scope:** `project.members.read`
+      tags:
+        - Project members
+      security:
+        - platformApiKey: []
+        - bearerPlatformKey: []
+      parameters:
+        - schema:
+            type: string
+            minLength: 1
+          required: true
+          name: projectId
+          in: path
+        - schema:
+            type: string
+            minLength: 1
+          required: true
+          name: memberId
+          in: path
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - success
+                  - data
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                      - true
+                  data:
+                    $ref: "#/components/schemas/ProjectMember"
+          headers:
+            X-Request-Id:
+              $ref: "#/components/headers/RequestId"
+            ETag:
+              $ref: "#/components/headers/ETag"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+        "500":
+          $ref: "#/components/responses/InternalError"
+        "503":
+          $ref: "#/components/responses/ServiceUnavailable"
+      operationId: getProjectMember
+      x-required-scope: project.members.read
+    patch:
+      summary: Update a project member role
+      description: |-
+        Changes the member’s project role. The project owner cannot be changed (`403 PROJECT_OWNER_IMMUTABLE`).
+
+        **Required scope:** `project.members.write`
+      tags:
+        - Project members
+      security:
+        - platformApiKey: []
+        - bearerPlatformKey: []
+      parameters:
+        - schema:
+            type: string
+            minLength: 1
+          required: true
+          name: projectId
+          in: path
+        - schema:
+            type: string
+            minLength: 1
+          required: true
+          name: memberId
+          in: path
+        - $ref: "#/components/parameters/IdempotencyKey"
+        - $ref: "#/components/parameters/IfMatch"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                roleId:
+                  type: string
+                  minLength: 1
+                  maxLength: 256
+              required:
+                - roleId
+              additionalProperties: false
+            example:
+              roleId: builtin.project.tester
+        required: true
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - success
+                  - data
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                      - true
+                  data:
+                    $ref: "#/components/schemas/ProjectMember"
+          headers:
+            X-Request-Id:
+              $ref: "#/components/headers/RequestId"
+            ETag:
+              $ref: "#/components/headers/ETag"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "412":
+          $ref: "#/components/responses/PreconditionFailed"
+        "422":
+          $ref: "#/components/responses/UnprocessableEntity"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+        "500":
+          $ref: "#/components/responses/InternalError"
+        "503":
+          $ref: "#/components/responses/ServiceUnavailable"
+      operationId: updateProjectMember
+      x-required-scope: project.members.write
+    delete:
+      summary: Remove a project member
+      description: |-
+        Removes the member from the project. The project owner cannot be removed (`403 PROJECT_OWNER_IMMUTABLE`).
+
+        **Required scope:** `project.members.write`
+      tags:
+        - Project members
+      security:
+        - platformApiKey: []
+        - bearerPlatformKey: []
+      parameters:
+        - schema:
+            type: string
+            minLength: 1
+          required: true
+          name: projectId
+          in: path
+        - schema:
+            type: string
+            minLength: 1
+          required: true
+          name: memberId
+          in: path
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                      - true
+                  data:
+                    type: object
+                    properties:
+                      memberId:
+                        type: string
+                      removed:
+                        type: boolean
+                        enum:
+                          - true
+                    required:
+                      - memberId
+                      - removed
+                required:
+                  - success
+                  - data
+          headers:
+            X-Request-Id:
+              $ref: "#/components/headers/RequestId"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+        "500":
+          $ref: "#/components/responses/InternalError"
+        "503":
+          $ref: "#/components/responses/ServiceUnavailable"
+      operationId: removeProjectMember
+      x-required-scope: project.members.write
+  /api/public/v1/projects/{projectId}/roles:
+    get:
+      summary: List assignable project roles
+      description: |-
+        Lists the built-in project roles and whether the key may assign each (`assignableByCaller`).
+
+        **Required scope:** `project.members.read`
+      tags:
+        - Roles
+      security:
+        - platformApiKey: []
+        - bearerPlatformKey: []
+      parameters:
+        - schema:
+            type: string
+            minLength: 1
+          required: true
+          name: projectId
+          in: path
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                      - true
+                  data:
+                    type: object
+                    properties:
+                      roles:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            roleId:
+                              type: string
+                            name:
+                              type: string
+                            description:
+                              type: string
+                              nullable: true
+                            permissions:
+                              type: array
+                              items:
+                                type: string
+                            effectivePermissions:
+                              type: array
+                              items:
+                                type: string
+                            parentRoleId:
+                              type: string
+                              nullable: true
+                            assignableByCaller:
+                              type: boolean
+                          required:
+                            - roleId
+                            - name
+                            - description
+                            - permissions
+                            - effectivePermissions
+                            - parentRoleId
+                            - assignableByCaller
+                    required:
+                      - roles
+                required:
+                  - success
+                  - data
+          headers:
+            X-Request-Id:
+              $ref: "#/components/headers/RequestId"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+        "500":
+          $ref: "#/components/responses/InternalError"
+        "503":
+          $ref: "#/components/responses/ServiceUnavailable"
+      operationId: listProjectRoles
+      x-required-scope: project.members.read
+tags:
+  - name: Workspace members
+    description: Invite, list, update, remove and run lifecycle actions on workspace members.
+  - name: Roles
+    description: Read built-in workspace and project roles.
+  - name: Projects
+    description: Discover the workspace’s projects.
+  - name: Project members
+    description: Add, list, update and remove project members.
+security:
+  - platformApiKey: []
+  - bearerPlatformKey: []

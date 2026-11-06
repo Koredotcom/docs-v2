@@ -258,6 +258,22 @@ FLOW:
 | `MAX_ATTEMPTS` | `number` | No       | _none_  | Maximum number of times this step can execute      |
 | `ON_EXHAUSTED` | `string` | No       | _none_  | Step to transition to after max attempts exhausted |
 
+The runtime counts an attempt in these cases:
+
+- A failed required-input collection.
+- An authored `ON_INPUT` retry that returns to the protected step, including a cycle through deterministic helper steps.
+- A reasoning customer turn that ends without satisfying `EXIT_WHEN`.
+
+How the count works:
+
+- When the same customer message triggers a same-step `ON_INPUT` retry and then reasoning, the two paths use one attempt in total.
+- A customer message routed through `ON_INPUT` and deterministic helper steps counts once when a different reasoning step evaluates it. Automatic reasoning without a customer message does not count.
+- The counter is durable across session serialization and belongs to the active agent thread. A successful exit clears the current step's failed-attempt counter.
+- `MAX_TURNS` is a separate limit on model and tool cycles inside one invocation.
+- For a non-terminal `ON_EXHAUSTED` recovery target, the runtime keeps the final count through the exhaustion transition. It clears the count when you re-enter the protected step to start a new cycle. A self-target starts a fresh cycle after its exhaustion event.
+- A terminal `ON_EXHAUSTED` outcome of `COMPLETE` or `ESCALATE` keeps the final count for diagnostics.
+- Restoring a parked step whose count is below its limit keeps the interrupted retry budget. Restoration alone does not start a new cycle.
+
 ---
 
 ## Step actions
@@ -592,6 +608,19 @@ FLOW:
     THEN: next_step
 ```
 
+When a `CORRECTIONS: true` GATHER accepts a changed value, the caller hears a short acknowledgement before the next prompt. It uses two message keys:
+
+- `gather_correction_applied`: default "Got it, I've updated the {{fields}}."
+- `gather_correction_dependents_cleared`: default "I may need to ask you again about the {{cleared_fields}}." The runtime sends it when the correction cleared dependent fields that the step asks for again.
+
+Each key resolves like the other [`MESSAGES`](/agent-platform/abl/reference/lifecycle-and-hooks#messages) keys: project locale assets, then agent `MESSAGES`, then the English platform default. When the interaction language is not English and no localized text exists, the runtime omits that sentence.
+
+- `{{fields}}` and `{{cleared_fields}}` are the only placeholders. They hold a list of field labels joined for the interaction language. Any other placeholder renders as empty text, so the message never contains a collected value.
+- A field label is the `gather_field_label_<field>` message when you author one, for example `gather_field_label_date_of_birth: "birthday"`. Otherwise it is the field name turned into lower-case words (`incident_location` becomes "incident location"), which is not translated.
+- A label in agent `MESSAGES` applies in every interaction language. Put per-language labels in the project locale assets.
+- Fields with `PROMPT_MODE: extract_only` are never named. The runtime sends each sentence only when its list of labels is not empty.
+- The acknowledgement is part of the turn's response and transcript, ahead of the next prompt or the step's closing reply.
+
 #### COMPLETE_WHEN
 
 
@@ -898,6 +927,7 @@ FLOW:
 | `AS` | `string` | Session variable that receives the delivery response. Requires `RESULT_FIELDS`. |
 | `RESULT_FIELDS` | `string[]` (with `AS`) | Top-level response fields that may be bound to `AS`; nothing else in the response is ever read. Exact top-level keys only — nested paths aren't supported. |
 | `SUCCESS_WHEN` | `object` | `{ Field: "value" }` or `{ Field: [value1, value2] }` — which delivery responses count as success. See below. |
+| `PROGRESS_PROMPT` | `string` or `object` | Hold line spoken while the delivery `CALL` runs. See [Hold line while a CALL runs](#hold-line-while-a-call-runs). |
 | `ON_SUCCESS` | `string` | Step to transition to after successful collection and delivery. |
 | `ON_TIMEOUT` | `string` | Step to transition to if collection times out. |
 | `ON_CANCEL` | `string` | Step to transition to if the caller cancels. |
@@ -918,12 +948,69 @@ FLOW:
 | `PROMPT` | `{ <locale>: string }` or `{ template: string }` | Locale-keyed prompt text, or a reference to a named template. At least one non-empty entry is required. A locale reference such as `"{{locale.KEY}}"` also works. |
 | `COLLECT` | `object` | `digits: N..M` (min/max digit count), `finishOnKey`, `interDigitTimeoutMs`, `asrTimeoutMs` (spoken-path silence window). |
 | `VALIDATE` | list | Validation rules: a bare rule name (`luhn`), an inline object (`{ length: 4..4 }`, `{ date_mmYY: "not_past" }`), or a delegated `CALL <tool> WITH: {...}` rule. |
+| `PROGRESS_PROMPT` | `string` or `object` | Hold line spoken while this field's `VALIDATE` `CALL` runs. |
+| `NOT_SECRET` | `postal_code` | Marks a value that is not card data. Requires `SAVE_AS`. See [Readable values](#readable-values-not_secret). |
+| `SAVE_AS` | `string` | Session variable that receives the `NOT_SECRET` value once the field is accepted. |
 
-A failed check asks for the field again, up to `MAX_ATTEMPTS`. A `CALL` validation rule passes only when the tool returns `valid: true`, and may reference the field being checked plus any fields collected before it. A field accepts only `PROMPT`, `COLLECT`, and `VALIDATE` — anything else is ignored with a warning ([`W210`](/agent-platform/abl/reference/errors-and-warnings#w210)).
+A failed check asks for the field again, up to `MAX_ATTEMPTS`. A `CALL` validation rule passes only when the tool returns `valid: true`, and may reference the field being checked plus any fields collected before it. A field accepts only `PROMPT`, `COLLECT`, `VALIDATE`, `PROGRESS_PROMPT`, `NOT_SECRET`, and `SAVE_AS`. Anything else is ignored with a warning ([`W210`](/agent-platform/abl/reference/errors-and-warnings#w210)).
 
 References inside the delivery `WITH:` block must be a **whole-value** placeholder — `pan: "{{secure.card_number}}"` is valid; embedding it in a larger string (`pan: "card:{{secure.card_number}}"`) or referencing an undeclared field is a compile error.
 
 <Warning>Every collected value lives only in a local secure buffer for the duration of the gate and is **zeroized on every exit path** (success, timeout, cancel, or failure) — it is never written to session state, so it cannot be referenced by `{{ }}` outside the delivery/validation calls, and it never appears in a trace, span, or log.</Warning>
+
+#### Hold line while a CALL runs
+
+`PROGRESS_PROMPT` gives the caller something to hear while a secure `CALL` waits for its answer. On the block, the runtime speaks it during the delivery `CALL`. On a field, it speaks it during that field's `VALIDATE` `CALL`s. Built-in checks such as `luhn` finish at once and never speak it. The line plays with barge-in off, nothing is collected while it plays, and recording stays paused.
+
+```yaml
+collect_card:
+  SECURE_INPUT:
+    # ...
+    PROGRESS_PROMPT:
+      TEXT: "{{locale.PAYMENT_PROCESSING}}"
+      AFTER: 0s
+      REPEAT_EVERY: 10s
+      REPEAT_TEXT: { en: "Still working on it, thank you for holding.", es: "Sigo trabajando, gracias por esperar." }
+```
+
+| Property | Description |
+| -------- | ----------- |
+| `TEXT` | Required. The line to speak, in the same forms as a field `PROMPT`: a language map or a template such as `"{{locale.KEY}}"`. |
+| `AFTER` | Wait before the first line, `0s` to `60s` (`2s` or `1500ms`). Default `0s` on the block and `2s` on a field, so a quick check stays silent. |
+| `REPEAT_EVERY` | Speak again while the `CALL` is still running, `5s` to `60s`. Without it, the line plays once. |
+| `REPEAT_TEXT` | Line for each repeat, in the same forms as `TEXT`. Default: `TEXT`. |
+
+`PROGRESS_PROMPT: "{{locale.PAYMENT_PROCESSING}}"` on one line is the text alone. The line is chosen for the caller's language the same way as a field `PROMPT`.
+
+- A repeat never starts before the previous line has finished. The runtime attempts at most 12 lines during one `CALL`.
+- A field with several `VALIDATE` `CALL`s speaks its line for each one that runs long enough.
+- With the block default `AFTER: 0s`, the line always plays and the reply waits for it to finish (up to about 4 seconds). For a fast payment API, use `AFTER: 2s`.
+- Hold lines resolve when the step starts, so a value saved during the step with `SAVE_AS` is not available to them.
+- When the `CALL` returns, the step lets the last line finish before it speaks the next prompt or reply.
+- A hold line that cannot be resolved does not fail the step. The runtime skips it and the trace records `secure_input_progress_unresolved`. On the block, the project's tool-call filler line plays instead.
+- `TEXT` and `REPEAT_TEXT` can use session values and locale entries, but never `{{secure.*}}`.
+
+#### Readable values (`NOT_SECRET`)
+
+A value that is not card data, such as the billing ZIP code, can be collected in the same step and saved for the agent. Mark the field `NOT_SECRET: postal_code` and name the session variable with `SAVE_AS`:
+
+```yaml
+- postal_code:
+    PROMPT: "{{locale.BILLING_ZIP_PROMPT}}"
+    COLLECT: { digits: 5..5, finishOnKey: "#" }
+    VALIDATE: [ { regex: "^[0-9]{5}$" } ]
+    NOT_SECRET: postal_code
+    SAVE_AS: billing_zip
+```
+
+The caller types the value with recording paused, like every other field. When it passes its checks, the runtime writes it to `billing_zip` as text and keeps a leading zero. From then on it is an ordinary session value. Later steps, reports, and tools read `{{billing_zip}}`. It is not part of the step's secure values, so a response field that echoes it is kept.
+
+- The runtime clears each `SAVE_AS` variable when the step starts, so a value from an earlier run is never used. If it cannot clear the variable, the step takes `ON_FAIL` before it asks anything.
+- The saved value must be digits only. Anything else, or a session write that is not applied, takes `ON_FAIL` before the delivery.
+- `postal_code` is the only readable kind. The compiler rejects `NOT_SECRET` with another kind, without `SAVE_AS`, with `READ_ONCE`, or with a `luhn` or `date_mmYY` check. It also rejects it when `COLLECT` allows fewer than 5 or more than 10 digits, or when the field is named like card data or a PIN (`card_number`, `pan`, `cvv`, `cvc`, `cvv2`, `csc`, `security_code`, `expiry`, `exp`, `pin`, `passcode`, and similar). A card number, expiry, security code, or PIN always stays secret.
+- The runtime applies the same rules again and takes `ON_FAIL` before it asks anything if they are broken.
+- Only the field's own `VALIDATE` `CALL` can read `{{secure.<field>}}` for a `NOT_SECRET` field. Every later `CALL` reads the `SAVE_AS` variable.
+- The step keeps at least one secret field, and the delivery sends at least one of them.
 
 | Diagnostic | Fires when |
 | ---------- | ---------- |
@@ -935,7 +1022,12 @@ References inside the delivery `WITH:` block must be a **whole-value** placehold
 | `SECURE_INPUT_EMPTY_OUTCOME_ROUTE` | An outcome route (`ON_SUCCESS`/`ON_FAIL`/`ON_TIMEOUT`/`ON_CANCEL`) is written without a step name. |
 | [`SECURE_INPUT_INVALID_RESULT_CONTRACT`](/agent-platform/abl/reference/errors-and-warnings#secure_input_invalid_result_contract) | `AS` that isn't a plain variable name, `AS` without `RESULT_FIELDS` (or the reverse), a nested or repeated field name, an empty `SUCCESS_WHEN`, or a `SUCCESS_WHEN` field with no value. |
 | [`RESERVED_VARIABLE_NAME`](/agent-platform/abl/reference/errors-and-warnings#reserved_variable_name) / [`IMMUTABLE_SYSTEM_IDENTIFIER`](/agent-platform/abl/reference/errors-and-warnings#immutable_system_identifier) | `AS` names a reserved or system-owned variable such as `session_id`. |
+| [`SECURE_INPUT_INVALID_PROGRESS_PROMPT`](/agent-platform/abl/reference/errors-and-warnings#secure_input_invalid_progress_prompt) | `PROGRESS_PROMPT` without `TEXT`, `AFTER` over 60 seconds, or `REPEAT_EVERY` outside 5 to 60 seconds. A `{{secure.*}}` in `TEXT` or `REPEAT_TEXT` reports [`SECURE_INPUT_PROMPT_SECURE_REFERENCE`](/agent-platform/abl/reference/errors-and-warnings#secure_input_prompt_secure_reference). |
+| [`SECURE_INPUT_PROGRESS_PROMPT_UNUSED`](/agent-platform/abl/reference/errors-and-warnings#secure_input_progress_prompt_unused) (warning) | A field `PROGRESS_PROMPT` on a field without a `VALIDATE` `CALL`. |
+| [`SECURE_INPUT_INVALID_NOT_SECRET`](/agent-platform/abl/reference/errors-and-warnings#secure_input_invalid_not_secret) | `NOT_SECRET` used outside the rules above, or `{{secure.<field>}}` of a `NOT_SECRET` field used outside its own `VALIDATE` `CALL`. |
+| [`SECURE_INPUT_INVALID_SAVE_AS`](/agent-platform/abl/reference/errors-and-warnings#secure_input_invalid_save_as) | `SAVE_AS` is not a variable name, or it has the same name as `AS`, `SAFE_DETAILS_AS`, or another field's `SAVE_AS`. |
 | `W208` / `W210` | A line inside the block, or a field property, that `SECURE_INPUT` doesn't read — it's ignored. |
+| [`W212`](/agent-platform/abl/reference/errors-and-warnings#w212) / [`W213`](/agent-platform/abl/reference/errors-and-warnings#w213) | A `PROGRESS_PROMPT` line other than `TEXT`, `AFTER`, `REPEAT_EVERY`, or `REPEAT_TEXT`, or a duration that is not `<n>s` or `<n>ms`. The runtime ignores it. |
 | [`W211`](/agent-platform/abl/reference/errors-and-warnings#w211) | `RESULT_FIELDS` or `SUCCESS_WHEN` written across several lines; write them inline. |
 
 ### MESSAGE_KEY and BEHAVIOR
