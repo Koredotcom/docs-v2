@@ -1,0 +1,94 @@
+---
+title: Case Management
+sidebarTitle: Case Management
+---
+
+The Case Management agent covers two related jobs: it answers HR policy and company questions from your HR knowledge index with grounded source links, and it manages HR support cases end to end.
+
+The agent classifies each request into one of six intents, then runs the matching flow. Knowledge questions always search first, and case intents go straight to their flow.
+
+## Intents
+
+Six intents cover every request the agent handles. The classification happens before any tool runs.
+
+| Intent | What the agent does |
+|--------|---------------------|
+| `hr_query` | Searches the HR knowledge index and answers with source links. |
+| `create_case` | Retrieves the HR services, collects the title, description, and priority, and creates the case. |
+| `add_comment` | Adds a comment to an existing case. |
+| `view_comments` | Shows the comments on a case. |
+| `view_incident` | Shows the details of a case. |
+| `resolve_case` | Resolves a case. |
+
+## How a policy question flows
+
+Policy questions reach the knowledge index before anything else. The agent offers a case only when the search finds nothing, so employees never receive an invented answer.
+
+1. Infer the region from the message and pass either India or the US downstream.
+2. Search the HR knowledge index through Search AI.
+3. Answer with source links when a match exists.
+4. Offer to raise a case when nothing matches, then collect the details and create it after confirmation.
+
+## Region scoping
+
+The agent infers the region silently from the message and never asks for it. Only India or the US passes downstream to the search.
+
+Index your policy content for both regions, so employees in either location get an answer rather than a case.
+
+## Tools
+
+Four tools support the agent. One reaches Search AI, and three reach ServiceNow.
+
+| Tool | Type | Description |
+|------|------|-------------|
+| `DataRetrieval` | Workflow | Fetches HR and company information from Search AI for the query and the inferred region. It calls `data_retrieval` internally. |
+| `get_hr_services` | HTTP | Retrieves the list of available HR services from ServiceNow. |
+| `create_ticket` | HTTP | Creates a new HR support case in ServiceNow. |
+| `ticket_actions` | HTTP | Performs actions on an existing case: `addcomment`, `viewcomment`, `viewincident`, and `resolve`. |
+
+### Request bodies
+
+`data_retrieval`:
+
+```json
+{
+  "query": "{{input.User_query}}",
+  "includeChunksInResponse": false,
+  "customData": {
+    "userContext": {
+      "userId": "{{input.email}}"
+    },
+    "region": "{{input.Region}}"
+  }
+}
+```
+
+`create_ticket`:
+
+```json
+{
+  "title": "{{input.title}}",
+  "description": "{{input.description}}",
+  "priority": "{{input.priority}}",
+  "hr_service": "{{input.hr_service_id}}"
+}
+```
+
+`ticket_actions`:
+
+```json
+{
+  "action": "{{input.action}}",
+  "incidentNumber": "{{input.incidentNumber}}",
+  "commentText": "{{input.commentText}}"
+}
+```
+
+## Guardrails
+
+Four rules keep answers grounded and case data reliable.
+
+- The agent answers policy questions only from indexed content, with source links.
+- The agent offers a case when the knowledge search returns nothing.
+- The agent cannot approve HR requests.
+- The agent changes a case only by running a tool.
