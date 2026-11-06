@@ -423,6 +423,34 @@ Each field in a flow `GATHER:` supports these properties:
 | `activation`                           | `string` , `{when: string}` | No       | _none_     | Activation mode                     |
 | `depends_on`                           | `string[]`                   | No       | _none_     | Field dependencies                  |
 | `prompt_mode`                          | `"ask"` , `"extract_only"`  | No       | `"ask"`    | Prompt usage mode                   |
+| `VOICE`                                | `object`                     | No       | _none_     | Per-field `BARGE_IN` and `STREAMING`. See [Voice delivery for a field](#voice-delivery-for-a-field). |
+
+#### Voice delivery for a field
+
+On KoreVG pipeline voice, a field can carry its own `VOICE` block with `BARGE_IN` and `STREAMING`. The block governs that field's prompt, reprompts and readback. Use it to protect a prompt the caller must hear in full while the rest of the step stays interruptible.
+
+```abl
+FLOW:
+  verify:
+    REASONING: false
+    RESPOND: "I will now verify you."
+    GATHER:
+      - otp_code: required
+        prompt: "Please say or enter the six digit code we sent you."
+        VOICE:
+          BARGE_IN: disallow
+          STREAMING: false
+      - account_number: required
+        prompt: "What is your account number?"
+        VOICE:
+          BARGE_IN: allow
+    THEN: COMPLETE
+```
+
+- **Precedence.** A field's policy is narrower than the step's `VOICE` block, the agent's `CONVERSATION.listening.barge_in` and the channel setting. An explicit `allow` on a field wins over a wider `disallow`, including a call-wide one.
+- **Where it applies.** Only fields of a FLOW step `GATHER:` read the block. A `VOICE` line on a field of a top-level `GATHER:` section gives warning [`W170`](/agent-platform/abl/reference/errors-and-warnings#w170).
+- **Errors.** An invalid `BARGE_IN` is [`VOICE_INVALID_BARGE_IN`](/agent-platform/abl/reference/errors-and-warnings#voice_invalid_barge_in). A non-boolean `STREAMING` warns with [`VOICE_INVALID_STREAMING`](/agent-platform/abl/reference/errors-and-warnings#voice_invalid_streaming). `LISTENING` is [`VOICE_LISTENING_CALL_LEVEL_ONLY`](/agent-platform/abl/reference/errors-and-warnings#voice_listening_call_level_only). Keypad settings belong in the field's `DTMF:` block.
+- **Runtime support.** A field's `BARGE_IN` is published with the IR marker `voice_output_policy`. A runtime without the marker refuses the agent at publish, deploy and activation.
 
 <Note> Flow gather fields also accept the same additional properties as top-level [GATHER](/agent-platform/abl-reference/gather) fields: `entity_ref`, `options`, `message_key`, `satisfied_by`, `validation_process`, `retry_prompt`, `max_retries`, `preferences`, `sensitive`, `sensitive_display`, `mask_config`, `pii_type`, `transient`, `extraction_pattern`, `extraction_group`, and `semantics`. In addition, a flow gather field may carry `rich_content` format variants for its prompt. Flow gather uses `validation:` where the top-level section uses `validate:`. </Note>
 
@@ -884,7 +912,7 @@ FLOW:
 
 The `SECURE_INPUT:` action pauses the step to collect one or more **sensitive** values — a card number, CVV, or similar — via DTMF and/or speech, and delivers them **directly to one tool**, without the raw values ever passing through the LLM, transcript, session state, logs, call recordings, or traces: speech recognition is suppressed and recording is paused while the caller enters them, and the values are wiped from memory once the delivery call returns. It's the PCI-safe alternative to `GATHER` for data that must never reach the model.
 
-<Warning>`SECURE_INPUT` is currently authored only in the legacy `.agent.abl` (line-based) format. The `.agent.yaml` parser does not yet accept this action. It also requires a **live voice call** and the `SECURE_INPUT_ENABLED` runtime setting (off by default): without a live voice session the step takes `ON_FAIL`; with the setting off, the step is skipped entirely. Both the delivery `CALL` and any validation `CALL` must be **HTTP project tools** (configured in Project Tools, not the agent's own `TOOLS:` section) that send a JSON body.</Warning>
+<Warning>`SECURE_INPUT` is currently authored only in the legacy `.agent.abl` (line-based) format. The `.agent.yaml` parser does not yet accept this action. It also requires a **live voice call** and the `SECURE_INPUT_ENABLED` runtime setting (on by default; only the value `false` turns it off): without a live voice session the step takes `ON_FAIL`; with the setting set to `false`, the step is skipped entirely and the trace records `secure_input_disabled`. Both the delivery `CALL` and any validation `CALL` must be **HTTP project tools** (configured in Project Tools, not the agent's own `TOOLS:` section) that send a JSON body.</Warning>
 
 ```yaml
 FLOW:
@@ -1638,7 +1666,11 @@ FLOW:
         BARGE_IN: allow           # per-RESPOND override for this output
 ```
 
-It can also be set on a named template's `VOICE:` block. Placing `barge_in` on the agent-wide `EXECUTION.voice` block, or on branch/handler voice blocks, is rejected ([`VOICE_BARGE_IN_ILLEGAL_PLACEMENT`](/agent-platform/abl/reference/errors-and-warnings#voice_barge_in_illegal_placement)); an invalid value is [`VOICE_INVALID_BARGE_IN`](/agent-platform/abl/reference/errors-and-warnings#voice_invalid_barge_in).
+The same keys are legal in a nested `VOICE:` block under every reply a step can produce: `ON_SUCCESS`, `ON_FAILURE`, `ON_RESULT` and `ON_INPUT` branches, `SUB_INTENTS`, `DIGRESSIONS` and `ON_ACTION` `DO` actions. They are also legal on a GATHER field ([Voice delivery for a field](#voice-delivery-for-a-field)) and in the step's `ON_NO_INPUT`.
+
+**Precedence.** From narrowest to widest: the output's own `VOICE`, its template, its GATHER field, the tool reply policy, the step, the agent's `CONVERSATION.listening.barge_in`, then the channel setting. An absent value inherits the next layer. An explicit `allow` wins over a wider `disallow`, including a call-wide one.
+
+It can also be set on a named template's `VOICE:` block. Placing `BARGE_IN` in a behavior-profile `VOICE` block, a channel-override `VOICE` block, a free-standing `ON_START` or branch `VOICE` block, or YAML `execution.voice` is rejected ([`VOICE_BARGE_IN_ILLEGAL_PLACEMENT`](/agent-platform/abl/reference/errors-and-warnings#voice_barge_in_illegal_placement)). In ABL `EXECUTION.voice` and `MESSAGES`, `BARGE_IN` and `STREAMING` are ignored with warning [`VOICE_DELIVERY_KEY_IGNORED_PLACEMENT`](/agent-platform/abl/reference/errors-and-warnings#voice_delivery_key_ignored_placement). `STREAMING` in the older placements compiles with [`VOICE_STREAMING_LEGACY_PLACEMENT`](/agent-platform/abl/reference/errors-and-warnings#voice_streaming_legacy_placement). In a constraint `ON_FAIL`, any voice line warns with [`CONSTRAINT_ON_FAIL_VOICE_ILLEGAL_PLACEMENT`](/agent-platform/abl/reference/errors-and-warnings#constraint_on_fail_voice_illegal_placement). An invalid value is [`VOICE_INVALID_BARGE_IN`](/agent-platform/abl/reference/errors-and-warnings#voice_invalid_barge_in).
 
 <Note>This scoped, per-output policy is distinct from the agent-wide barge-in behavior authored under `CONVERSATION` → `listening`. Use scoped `barge_in` to protect (or open up) individual utterances.</Note>
 
@@ -1656,7 +1688,12 @@ FLOW:
         STREAMING: false           # equivalent per-RESPOND override
 ```
 
-Omitting `streaming` defaults to `true` (streaming) at every scope.
+Omitting `streaming` inherits the next layer. At the end of the chain the default is the producing agent's model streaming setting, which streams unless the agent sets it to false.
+
+- **Derived turn-taking.** When the call's listening mode is derived as `turn_taking` (barge-in off and no explicit mode), output is buffered, and an authored `STREAMING: true` does not change that.
+- **Connection Streaming switch.** When the channel connection's Streaming switch is Off, ordinary output is buffered in every mode, including output that authors `STREAMING: true`. Bring-your-own streaming-only speech vendors ignore the switch.
+- **Vendor limits.** The effective value is the requested value limited by the speech vendor and delivery path. Regular speech providers play all `turn_taking` output buffered.
+- **Secure input.** Secure-input prompts and progress speech can stream even when the connection Streaming switch is Off.
 
 #### Step-level no-input (caller silence)
 
@@ -1693,6 +1730,7 @@ FLOW:
 - **Messages.** Step messages don't *replace* the agent-level list — each silence plays agent message N followed by step message N as one utterance ("Are you still there? Could you tell me your account number, Sam?"). Once the step's own list is used up, the agent message plays alone (or the platform default, if the agent has none), so a step block never ends the call sooner than the agent alone would.
 - **Retry count.** Restarts when the caller speaks, and when a different step (or the same step entered again) takes ownership of the window.
 - **Variables.** `{{var}}` placeholders render in agent messages, step messages, and `exhausted_message`. A step message with a missing variable is skipped; an agent or exhausted message with a missing variable falls back to the platform default text.
+- **Delivery.** `barge_in` (`allow` or `disallow`) and `streaming` (`true` or `false`) in `ON_NO_INPUT` apply to the step's reprompts and its exhausted message. A reprompt resolves the `ON_NO_INPUT` value, then the step's own `VOICE: BARGE_IN` or `STREAMING`, then the turn default. A step that authors either key is published with the IR marker `voice_no_input_policy`. A runtime without the marker refuses the agent.
 
 <Warning>`ON_NO_INPUT` is only legal directly in a FLOW step's own `VOICE:` block. Placed under a GATHER field, `RESPOND`, a branch, a handler, or a response format, it's a compile error ([`VOICE_NO_INPUT_ILLEGAL_PLACEMENT`](/agent-platform/abl/reference/errors-and-warnings#voice_no_input_illegal_placement)). The YAML format uses a step-level `on_no_input:` key.</Warning>
 
