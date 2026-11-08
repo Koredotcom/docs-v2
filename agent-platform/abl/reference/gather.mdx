@@ -42,15 +42,15 @@ Within a `FLOW:` step, gather uses a different syntax. See [GATHER within FLOW](
 
 | Property             | Type                                  | Required | Default      | Description                                                             |
 | -------------------- | ------------------------------------- | -------- | ------------ | ----------------------------------------------------------------------- |
-| `prompt`             | `string`                              | Yes      | --           | The question or instruction shown to the user to collect this field     |
+| `prompt`             | `string`                              | No       | field name   | The question shown to the user to collect this field. Without it, the runtime uses the field name. A silent `extract_only` field needs none. |
 | `message_key`        | `string`                              | No       | _none_       | Locale catalog key used to localize the `prompt`                        |
 | `description`        | `string`                              | No       | _none_       | Semantic, model-facing description of what the value represents (distinct from `prompt`). Overrides a referenced entity's description. |
 | `type`               | `string`                              | No       | `"string"`   | Data type for the field value (see [Field types](#field-types))         |
-| `required`           | `boolean`                             | No       | `true`       | Whether the field must be collected before proceeding                   |
-| `default`            | `any`                                 | No       | _none_       | Default value used if the user does not provide one                     |
+| `required`           | `boolean`                             | No       | `true`       | Whether the field must be collected before proceeding. Write lowercase `true` or `false`. Any other spelling, such as `yes` or `True`, reads as `false` without an error. |
+| `default`            | `any`                                 | No       | _none_       | A field with a default counts as filled when the runtime checks completeness. The runtime does not write the default into the field. |
 | `entity_ref`         | `string`                              | No       | _none_       | Bind to a named entity from the `ENTITIES:` section (see [Entity binding](#entity-binding)) |
 | `options`            | `string[]`                            | No       | _none_       | Allowed values for enum-style fields (see [Enum options](#enum-options)) |
-| `validate`           | `string`                              | No       | _none_       | Validation expression (see [Validation](#validation))                   |
+| `validate`           | `string`                              | No       | _none_       | Validation expression (see [Validation](#validation)). `validation` is also accepted. |
 | `validation_process` | `"REGEX"` , `"CODE"` , `"LLM"`      | No       | _none_       | How validation is performed                                             |
 | `retry_prompt`       | `string`                              | No       | _none_       | Custom prompt shown when validation fails                               |
 | `max_retries`        | `number`                              | No       | _none_       | Maximum validation retry attempts                                       |
@@ -60,14 +60,14 @@ Within a `FLOW:` step, gather uses a different syntax. See [GATHER within FLOW](
 | `prompt_mode`        | `"ask"` , `"extract_only"`           | No       | `"ask"`      | Whether the prompt is shown to the user or used only for LLM extraction |
 | `range`              | `boolean`                             | No       | `false`      | Collect as a range `{low, high}` instead of a scalar                    |
 | `list`               | `boolean`                             | No       | `false`      | Collect as an array instead of a scalar                                 |
-| `preferences`        | `boolean`                             | No       | `false`      | Categorize into accept/desire/avoid/refuse preference sets              |
+| `preferences`        | `boolean`                             | No       | `false`      | Marks a preference field. See [Preference collection](#preference-collection) |
 | `activation`         | `string` , `{when: string}`          | No       | `"required"` | Activation mode (see [Progressive activation](#progressive-activation)) |
 | `depends_on`         | `string[]`                            | No       | _none_       | Fields that must be collected before this field activates               |
 | `satisfied_by`       | `string[]`                            | No       | _none_       | Provenance classes allowed to satisfy this field (see [Value provenance](#value-provenance)) |
 | `sensitive`          | `boolean`                             | No       | `false`      | Whether this field carries PII                                          |
 | `sensitive_display`  | `"redact"` , `"mask"` , `"replace"` | No       | _none_       | How sensitive values are displayed outside the gather context           |
-| `mask_config`        | `{showFirst, showLast, char}`         | No       | _none_       | Masking configuration when `sensitive_display` is `"mask"`              |
-| `pii_type`           | `string`                              | No       | _none_       | Explicit PII classification for shape-preserving masking (see [Sensitive fields](#sensitive-fields)) |
+| `mask_config`        | `{show_first, show_last, char}`       | No       | _none_       | Masking configuration when `sensitive_display` is `"mask"`. Write it as a block with snake_case keys. |
+| `pii_type`           | `string`                              | No       | _none_       | Explicit PII classification for shape-preserving masking: `email`, `phone`, `ssn`, `credit_card`, `address`, `name`, or `custom`. Any other value is ignored (see [Sensitive fields](#sensitive-fields)) |
 | `pii_pattern_ref`    | `string`                              | No       | _none_       | Name of a project-defined PII pattern to bind this field to, instead of `pii_type` (see [Sensitive fields](#sensitive-fields)) |
 | `transient`          | `boolean`                             | No       | `false`      | Whether PII auto-cleans after gather completes                          |
 | `extraction_pattern` | `string`                              | No       | _none_       | Custom regex pattern for value extraction                               |
@@ -170,7 +170,7 @@ GATHER:
     prompt: "What is the ABA routing number?"
     type: string
     required: true
-    validate: "^\\d{9}$"
+    validate: "^\d{9}$"
     retry_prompt: "That doesn't look like a valid 9-digit routing number. Please re-enter."
     max_retries: 3
 
@@ -202,7 +202,15 @@ GATHER:
 
 `enum(a, b, c)` is the one special-cased `validate` expression: the compiler lowers it into the same allowed-values metadata as [`options`](#enum-options) — use whichever reads better for the field. Any other non-regex text (`min(1)`, `pattern(...)`, `email()`, and similar function-call-looking strings) is read literally as a regular expression, not evaluated as a function — it almost never matches what was intended, so don't write `validate` that way.
 
-`retry_prompt` replaces the field's `prompt` after a failed check; `max_retries` bounds the number of attempts. Once `max_retries` is exhausted, the agent's `ON_ERROR` handler for `validation_error` with `SUBTYPE: max_retries_exceeded` runs.
+Write a regular expression with a single backslash, such as `^\d{9}$`. A double backslash is kept as two characters and never matches. The same applies to `extraction_pattern`.
+
+A regular expression check rejects every value of type `number`, `integer`, `currency`, or `boolean`, because those values are not text. Do not put a regular expression `validate` on those types. Rely on the type, or collect the value as `string`.
+
+`retry_prompt`, `max_retries`, and `validation_process` need a `validate` rule. Without one the compiler reports `GATHER_VALIDATION_RULE_REQUIRED`.
+
+In a `FLOW` step `GATHER`, `retry_prompt` is the question the step asks again after a failed check, and `max_retries` counts failed attempts per field. When the limit is reached, the agent's `ON_ERROR` handler for `validation_error` with `SUBTYPE: max_retries_exceeded` runs.
+
+In a top-level `GATHER`, the model receives `retry_prompt` as a hint and asks again. The platform counts the attempts and records a `validation_max_retries` trace event. It resolves a matching `ON_ERROR` handler and applies its `SET` assignments, but it does not run the handler's `RESPOND`, `ESCALATE`, or `COMPLETE` action. To act on the limit, collect the field in a `FLOW` step.
 
 <Note>
   `validate` must be one line. A multi-line `validate:` block, or an object/list value such as `{ pattern: "..." }`, is not read as a rule: the top-level parser warns [`W170`](/agent-platform/abl/reference/errors-and-warnings#w170), and a FLOW step `GATHER` warns [`W174`](/agent-platform/abl/reference/errors-and-warnings#w174) (empty) or [`W175`](/agent-platform/abl/reference/errors-and-warnings#w175) (object/list shape) — the field is left unvalidated rather than failing the compile.
@@ -211,7 +219,9 @@ GATHER:
 ## LLM inference
 
 
-When `infer: true`, the LLM can extract or infer the field value from conversational context without explicitly asking the user. This enables natural, conversational information collection.
+When `infer: true`, the runtime can fill the field from what the customer already said, without asking. In a `FLOW` step, inference runs once, when the step starts to collect. It reads the last few customer messages. It does not read assistant messages, tool results, or memory. The `conversation_history_window` setting in `EXECUTION` sets how many messages it reads. The default is 2, the maximum is 10, and 0 turns inference off.
+
+On a top-level `GATHER`, `infer: true` only makes the field eligible for extraction. The `infer_confidence` and `infer_confirm` properties have no effect there.
 
 ```yaml expandable=true
 GATHER:
@@ -238,10 +248,10 @@ GATHER:
 | Property           | Type       | Default | Description                                                                 |
 | ------------------ | ---------- | ------- | --------------------------------------------------------------------------- |
 | `infer`            | `boolean`  | `false` | Enable LLM inference for this field                                         |
-| `infer_confidence` | `number`   | `0.8`   | Minimum confidence (0.0--1.0) the LLM must have to accept an inferred value |
-| `infer_confirm`    | `boolean`  | `true`  | Whether to ask the user to confirm inferred values                          |
+| `infer_confidence` | `number`   | `0.8`   | Minimum confidence (0.0--1.0) the runtime accepts for an inferred value. The compiler does not check the range. `FLOW` steps only. |
+| `infer_confirm`    | `boolean`  | `true`  | Whether to ask the user to confirm inferred values. `FLOW` steps only. An accepted confirmation is a system write, so a field with `satisfied_by: [user_input]` rejects it. |
 
-When the LLM's confidence in an inferred value falls below `infer_confidence`, the runtime falls back to asking the user directly using the `prompt`.
+When the confidence in an inferred value falls below `infer_confidence`, a `FLOW` step leaves the field empty and asks its `prompt`. Write `infer`, `infer_confirm`, and `required` as lowercase `true` or `false`. Any other spelling reads as `false`.
 
 Use `extraction_hints` to steer extraction with example surface forms:
 
@@ -273,7 +283,7 @@ GATHER:
     prompt: "What is your phone number?"
     type: phone
     strategy: pattern
-    extraction_pattern: "\\d{3}-\\d{3}-\\d{4}"
+    extraction_pattern: "\d{3}-\d{3}-\d{4}"
 ```
 
 ## Range collection
@@ -290,7 +300,7 @@ GATHER:
     range: true
 ```
 
-The collected value is stored as an object: `{low: number, high: number}`.
+The collected value is stored as an object: `{low: number, high: number}`. Either end can be missing, so test `budget.low IS SET AND budget.high IS SET`. Do not set both `list` and `range` on one field. The list wins and the range is dropped without a warning.
 
 ## List collection
 
@@ -306,12 +316,12 @@ GATHER:
     list: true
 ```
 
-The collected value is stored as an array: `["vegetarian", "no nuts"]`.
+The collected value is stored as an array: `["vegetarian", "no nuts"]`. A text reply is split on commas. A `{{dietary_restrictions}}` template prints the array as JSON. Use `"item" IN dietary_restrictions` to test membership, because `CONTAINS` works on text only. Do not add `validate` to a list or range field. The rule applies to the whole value and rejects valid answers.
 
 ## Preference collection
 
 
-When `preferences: true`, the field categorizes user input into preference sets:
+`preferences: true` marks a field that holds preferences:
 
 ```yaml
 GATHER:
@@ -322,7 +332,7 @@ GATHER:
     preferences: true
 ```
 
-The collected value is categorized into: `{accept: [], desire: [], avoid: [], refuse: []}`.
+The property does not change the stored value. The field holds the value as collected. A reasoning agent that has a memory store also scans each customer message for stated preferences and saves them under `preferences.accept`, `preferences.desire`, `preferences.avoid`, and `preferences.refuse`. That scan runs for top-level `GATHER` fields only.
 
 ## Progressive activation
 
@@ -342,7 +352,7 @@ GATHER:
     prompt: "What is the ABA routing number?"
     type: string
     required: true
-    activation: required
+    activation: progressive
     depends_on: [transfer_type]
 
   swift_code:
@@ -350,17 +360,21 @@ GATHER:
     type: string
     required: true
     activation:
-      WHEN: "transfer_type == 'international'"
-    depends_on: [transfer_type]
+      when: "transfer_type == 'international'"
 ```
 
 A conditional activation needs a non-empty, valid executable expression.
 
 - A value that contains only a `//` line comment is invalid. It is not treated as an omitted activation.
-- Malformed expressions receive a compiler diagnostic.
+- Malformed expressions receive a compiler diagnostic. An unknown activation mode, such as `sometimes`, gets no diagnostic in line-based ABL, and a required field with that mode never completes. The YAML form reports error `E175`.
 - For a required field, default GATHER completion stays incomplete when its activation declaration is invalid, even if the field already has a collected or default value.
 - A valid condition that evaluates to false leaves the field inactive.
 - The independent `required: false`, `optional`, and `progressive` policies, and an explicitly authored `COMPLETE_WHEN`, keep their existing completion rules.
+- Write the condition as a block: `activation:` followed by `when:` on the next line. The one-line form `activation: { when: "..." }` is stored as text, and the field never activates.
+- Write `when` in lowercase. An uppercase `WHEN:` works only in line-based ABL.
+- `depends_on` gates a field only with `activation: progressive`. With `required` or no activation, it does not gate.
+- Write `depends_on` as a one-line list, such as `[a, b]`. A multi-line list is misread without an error.
+- Write the mode in lowercase in a top-level `GATHER`.
 
 ### Field dependencies
 
@@ -406,6 +420,8 @@ See [FLOW](/agent-platform/abl-reference/flow) for the full flow step GATHER syn
 
 Fields marked `sensitive: true` carry PII and receive special handling:
 
+<Warning>Vault tokenization and prompt protection depend on the project PII protection setting. With protection off, `sensitive: true` does not stop the raw value from being stored or from appearing in the model prompt. Trace masking is always on.</Warning>
+
 <Warning>`sensitive: true` controls how a value is **displayed and stored** afterward (masking, redaction) — the raw value is still extracted by the LLM and lands in session state during collection. For data that must **never** reach the model, transcript, session state, or logs at all — a full card number, CVV, and similar PCI-scoped values — use [`SECURE_INPUT`](/agent-platform/abl-reference/flow#secure_input) instead of `GATHER`. `SECURE_INPUT` is currently a **`FLOW:`-step-only** action: it has no reasoning-mode/top-level form, so it's only available to agents that have a `FLOW:` section — a pure reasoning-mode agent has no equivalent construct today.</Warning>
 
 ```yaml
@@ -417,8 +433,8 @@ GATHER:
     sensitive: true
     sensitive_display: mask
     mask_config:
-      showFirst: 0
-      showLast: 4
+      show_first: 0
+      show_last: 4
       char: "*"
 ```
 
@@ -432,7 +448,7 @@ GATHER:
     type: string
     sensitive: true
     sensitive_display: mask
-    pii_type: custom      # email | phone | ssn | credit_card | address | name | custom
+    pii_type: custom      # email | phone | ssn | credit_card | address | name | custom (any other value is ignored)
 ```
 
 Alternatively, bind the field to a **named project PII pattern** with `pii_pattern_ref` instead of `pii_type`:
@@ -456,21 +472,23 @@ GATHER:
 | --------- | ------------------------------------------ | -------------- |
 | `redact`  | Replace entire value with placeholder      | `[REDACTED]`   |
 | `mask`    | Show partial value with masking characters | `****1234`     |
-| `replace` | Replace with a generic description         | `[SSN]`        |
+| `replace` | Replace with the field name in capitals    | `[SSN_LAST4]`  |
 
 ### Mask configuration
 
 
 | Property    | Type     | Default | Description                               |
 | ----------- | -------- | ------- | ----------------------------------------- |
-| `showFirst` | `number` | `0`     | Number of characters to show at the start |
-| `showLast`  | `number` | `4`     | Number of characters to show at the end   |
-| `char`      | `string` | `"*"`   | Masking character                         |
+| `show_first` | `number` | `0`     | Number of characters to show at the start |
+| `show_last`  | `number` | `4`     | Number of characters to show at the end   |
+| `char`       | `string` | `"*"`   | Masking character                         |
+
+Write `mask_config` as a block with snake_case keys. A camelCase key such as `showLast` gives warning `W170` and the defaults apply. A one-line `mask_config: {show_last: 2}` is dropped without an error. Without a `mask_config` block, `mask` shows the last 3 characters. `mask_config` has no effect unless `sensitive_display` is `mask`. Write `sensitive_display` in lowercase. An unknown value, such as `hide` or `MASK`, shows the raw value.
 
 ### Transient fields
 
 
-Fields marked `transient: true` are automatically cleared from the session after the gather phase completes. Use this for sensitive data that should not persist beyond its immediate use:
+Fields marked `transient: true` are cleared from the session when an agent with a top-level `GATHER` completes or hands off. The property is not applied to fields in a `FLOW` step `GATHER`. Use it for sensitive data that should not persist beyond its immediate use:
 
 ```yaml
 GATHER:
@@ -566,7 +584,6 @@ GATHER:
     prompt: "How much would you like to send?"
     type: number
     required: true
-    validate: min(1)
 
   currency:
     prompt: "What currency? (for example. USD, EUR, GBP)"
