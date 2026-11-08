@@ -1,0 +1,254 @@
+# Handle digressions without losing the current flow
+
+Use this pattern when a customer interrupts a guided flow with a side question or a request for a person, and the flow must answer and then carry on.
+
+## Concept
+
+A digression is a handler for an interruption. When the customer's message matches a digression, the runtime runs the digression actions. A `RESUME` at the end returns to the step that was waiting, and asks its pending question again.
+
+You can declare a digression in two places:
+
+| Where | Scope |
+| ----- | ----- |
+| `global_digressions` under `FLOW` | Every step in the flow. |
+| `DIGRESSIONS:` inside a step | That step only. |
+
+The runtime checks step digressions first, then global digressions.
+
+Digressions differ from sub-intents. A digression can jump to a step, hand off, delegate, and resume. A sub-intent only runs a small handler and stays. See [Use scoped sub-intents inside a flow step](/agent-platform/abl/how-to/use-scoped-sub-intents).
+
+## Minimal working example
+
+A returns agent collects an order number and a category. Customers may ask about the return policy, ask where to find the order number, or ask for a person.
+
+The `get_return_policy` tool is a project-local assumption. Bind it to your policy service in Project Tools.
+
+`agents/returns-assistant.agent.abl`
+
+```abl
+AGENT: Returns_Assistant
+GOAL: "Collect the details needed to start a product return."
+
+PERSONA: |
+  Calm returns assistant. Keep questions short.
+
+TOOLS:
+  get_return_policy(category: string) -> {policy_text: string}
+    description: "Look up the return policy for a product category"
+    effect: read_only
+    parameters:
+      category:
+        description: "Product category such as apparel, electronics, or home."
+
+MEMORY:
+  session:
+    - human_requested
+      TYPE: boolean
+      DESCRIPTION: "True after the customer asks for a person."
+
+HANDOFF:
+  - TO: Human_Support
+    WHEN: human_requested == true
+    RETURN: false
+
+FLOW:
+  entry_point: collect_order
+  steps:
+    - collect_order
+    - collect_reason
+    - confirm
+
+  global_digressions:
+    - INTENT: return_policy_question
+      KEYWORDS: [return policy, how long do I have, can I return]
+      DO:
+        - CALL: get_return_policy(product_category)
+        - RESPOND: "Our policy: {{policy_text}}"
+        - RESUME
+
+    - INTENT: speak_to_human
+      KEYWORDS: [human, agent, representative]
+      DO:
+        - SET: human_requested = true
+        - RESPOND: "I will connect you with a person."
+        - HANDOFF: Human_Support
+          RETURN: false
+
+  collect_order:
+    REASONING: false
+    GATHER:
+      - order_id: required
+        prompt: "What is your order number?"
+      - product_category: required
+        type: enum
+        options: [apparel, electronics, home]
+        prompt: "Is the item apparel, electronics, or home?"
+    DIGRESSIONS:
+      - INTENT: order_lookup_help
+        KEYWORDS: [where do I find my order number, order number location]
+        DO:
+          - RESPOND: "The order number is in your confirmation email, starting with ORD."
+          - RESUME
+    THEN: collect_reason
+
+  collect_reason:
+    REASONING: false
+    GATHER:
+      - return_reason: required
+        prompt: "Why do you want to return the item?"
+    THEN: confirm
+
+  confirm:
+    REASONING: false
+    RESPOND: "Return started for order {{order_id}} ({{product_category}}). Reason: {{return_reason}}."
+    THEN: COMPLETE
+```
+
+`agents/human-support.agent.abl`
+
+```abl
+AGENT: Human_Support
+GOAL: "Take over a conversation that needs a person."
+
+COMPLETE:
+  - WHEN: true
+    RESPOND: "A person will join shortly."
+```
+
+Variable sources:
+
+- `order_id`, `product_category`, and `return_reason` are `GATHER` fields that the customer supplies.
+- `human_requested` is set by the digression.
+- `policy_text` comes from the tool call.
+
+## How it works
+
+Write each digression as a list item with an `INTENT` name, optional `KEYWORDS`, and a `DO` list of actions.
+
+Actions allowed in `DO`: `RESPOND`, `SET`, `CLEAR`, `CALL`, `HANDOFF`, `DELEGATE`, `GOTO`, and `RESUME`. `LOG` is not allowed. Write every action line with a leading dash. Write a plain `- RESUME`.
+
+Rules the compiler enforces:
+
+| You write | Result |
+| --------- | ------ |
+| A terminal action that is not last | Error `E264` and `DIGRESSION_TERMINAL_NOT_LAST`. Terminal actions are `RESUME`, `GOTO`, `HANDOFF`, and a `DELEGATE` that does not return. |
+| A `DELEGATE` without `RETURN: true` | Error `E265` and `DIGRESSION_DELEGATE_MUST_RETURN`. |
+| A `HANDOFF` with `RETURN: true` | Error `DIGRESSION_HANDOFF_MUST_BE_TERMINAL`. Omit `RETURN`, or write `false`. |
+| A `HANDOFF` target missing from the agent `HANDOFF:` section | Error `INVALID_HANDOFF_TARGET`. Declare the target there. |
+| The same `INTENT` twice in the flow, ignoring case | Error `DUPLICATE_DIGRESSION_INTENT`. |
+| `GOTO` to a missing step | Error `DANGLING_STEP_REF`. |
+| An unknown action, such as `LOG` or `ASK` | Error `E261`. |
+| An unknown digression property, such as `PRIORITY` | Error `E268`. |
+| An `INTENT` with spaces, commas, or quotes | Warning `W260`. The text becomes the ID as written. |
+| A line in `DO` without a dash | Error `E260`. |
+
+A digression without a terminal action sends its reply, ends the turn, and leaves the step current. It does not repeat the question.
+
+How a digression is detected:
+
+1. A decision-model check runs first, when your project enables it.
+2. The classifier runs with each digression as a candidate. Its description is the humanized `INTENT` plus the `KEYWORDS` as examples.
+3. The keyword fallback matches `KEYWORDS`, subject to `LEXICAL_FALLBACK`.
+4. A `CONDITION`, if you write one, runs only after a candidate matched. A failed condition blocks the digression.
+
+A digression without `KEYWORDS` and with a plain name is semantic only. It cannot match when the classifier is off.
+
+What happens when the step is waiting for an answer:
+
+- When the message holds both an answer and an interruption, the runtime extracts the answer first and then handles the digression.
+- When the digression has a `GOTO` to another step, or a `HANDOFF` or `DELEGATE` that returns, and the step still needs answers, the runtime queues it as a pending request. The step stays current and keeps collecting. The queue is traced with `gather_locked_intent_queued`.
+- A digression that only replies, sets, calls, resumes, or hands off without returning runs at once.
+
+What each ending does:
+
+| Ending | Result |
+| ------ | ------ |
+| `RESUME` | The step runs again and asks its pending question in the same turn. |
+| `GOTO` | The flow moves to that step. The pending question of the old step is not resumed. |
+| `HANDOFF` | The conversation moves to the target. |
+| `DELEGATE` with `RETURN: true` | The delegate runs and its return map is applied. Later actions, such as `RESUME`, then run. |
+| None | The reply is sent. The step stays current. |
+
+A digression does not run when a supervisor route owns the turn, during secure card entry, or when an intent is pinned.
+
+### What happens to a queued digression
+
+A queued digression joins the same request queue that multi-intent handling uses. The runtime does not run it while the flow is still collecting.
+
+1. The flow finishes.
+2. The runtime appends a notice to the final reply. The default wording is `Next: <request>. Would you like me to help with that?` It opens an offer and waits for the customer's answer. The trace shows `multi_intent_queue_surfaced`.
+3. If the customer accepts, the runtime runs the queued target. A `GOTO` moves the flow to that step. A `HANDOFF` or `DELEGATE` goes to that agent.
+4. If the customer declines, the runtime drops the request.
+
+Limits on the queue:
+
+- A queued request expires after `queue_max_age_ms` from the `MULTI_INTENT` section. The default is 600000 milliseconds, which is 10 minutes. An expired request leaves the queue with a traced reason.
+- The queue holds at most `max_intents` requests. The default is 3.
+- The runtime drops a request whose target is switched off.
+
+The queue is shared. A multi-intent request and a queued digression wait in the same list. See [Handle messages that contain multiple user intents](/agent-platform/abl/how-to/handle-multiple-intents) for the settings and the wording.
+
+## Common variations
+
+### A step digression
+
+Declare `DIGRESSIONS:` inside the step for help that applies only there, as the order number help does.
+
+### Delegate and resume
+
+Use a `DELEGATE` with `RETURN: true`, then `RESUME`, to do a lookup and come back. The delegate target must exist in the project, and the delegate needs its own `INPUT` mapping. See [Delegate and map the result](/agent-platform/abl/how-to/delegate-and-map-result).
+
+### Legacy flat form
+
+Older agents write `RESPOND`, `GOTO`, `CLEAR`, `CALL`, and `RESUME: true` directly under the digression. This still works. You cannot mix it with `DO`. A legacy `DELEGATE` warns `W261`. Use `DO` for new agents, because only `DO` supports `HANDOFF` and ordered actions.
+
+## Verification
+
+1. Run the validator on both files. Expect no errors and no warnings.
+2. At the order number question, say "what is your return policy". Expect the policy reply and then the order number question again.
+3. Say "where do I find my order number". Expect the help text and the question again.
+4. Say "I want to talk to a human". Expect the handoff to `Human_Support`.
+5. Say "order A100, and what is your return policy". Expect the order number to be stored, and then the policy reply.
+6. Add a digression with a `GOTO`. While the order step still needs answers, say a phrase that matches it. Expect the step to keep collecting and the trace to show `gather_locked_intent_queued`. After the flow ends, expect the "Next:" offer.
+7. In the trace, open the `digression` events. Check `intent`, `matched`, `detectionMode`, and `inputClassification`. Look for `answer_with_interruption` in step 5.
+
+## Production readiness checklist
+
+- Every digression ends with a deliberate terminal action, or with a reply only.
+- Every `HANDOFF` target is in the agent `HANDOFF:` section, and its `WHEN` variable is declared.
+- Every `KEYWORDS` list is on one line.
+- Every `INTENT` is a snake_case name with no spaces.
+- Every tool used in a digression has a `read_only` effect and parameter descriptions where it only reads.
+- Tests cover a side question, an answer with a side question, a request for a person, a normal answer, and a queued digression with its offer.
+- Tests run with the classifier on and off.
+
+## Common mistakes
+
+| Mistake | Why it happens | How to avoid it |
+| ------- | -------------- | --------------- |
+| Forgetting `RESUME` | The reply looks complete. | End a side question with `- RESUME`. |
+| Putting an action after `RESUME` or `GOTO` | The order looks flexible. | Put the terminal action last. |
+| Using `HANDOFF` in `DO` without an agent-level route | The target is named in the digression. | Add the target to the agent `HANDOFF:` section. |
+| Using `GOTO: COMPLETE` | The runtime handles it. | The validator reports `DANGLING_STEP_REF`. Use a final step instead. |
+| Writing `- RESUME: false` | It looks like a switch. | Leave out `RESUME`. The value `false` does nothing. |
+| Using a trailing comment on `KEYWORDS` or `INTENT` | Comments are common. | Put comments on their own line. |
+| Relying on keywords with the classifier on | Keywords only help the fallback and the candidate examples. | Test with both settings. |
+
+## Troubleshooting
+
+| Symptom | Likely cause | What to check |
+| ------- | ------------ | ------------- |
+| The digression never fires | No `KEYWORDS`, the classifier is off, or a `CONDITION` fails. | The `digression` trace and the condition. |
+| The flow does not ask the question again | The digression has no `RESUME`. | The `DO` list. |
+| The compile fails with `E264` | An action follows a terminal action. | The `DO` order. |
+| The compile fails with `INVALID_HANDOFF_TARGET` | The target is not in the agent `HANDOFF:` section. | The agent routes. |
+| The digression waits until the answers are in | It has a `GOTO` or a returning `DELEGATE`, and the step still needs answers. | `gather_locked_intent_queued` in the trace. |
+| A duplicate intent error | The same `INTENT` appears twice. | The global and step lists. |
+
+## Related HowTos
+
+- [Use scoped sub-intents inside a flow step](/agent-platform/abl/how-to/use-scoped-sub-intents)
+- [Collect information inside a FLOW step](/agent-platform/abl/how-to/collect-with-flow-gather)
+- [Transfer control permanently to another agent](/agent-platform/abl/how-to/terminal-agent-handoff)
+- [Delegate and map the result](/agent-platform/abl/how-to/delegate-and-map-result)
+- [Escalate a conversation to a human](/agent-platform/abl/how-to/escalate-to-human)

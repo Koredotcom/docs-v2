@@ -1,0 +1,166 @@
+---
+title: How to extract pattern-based values like IDs and phone numbers
+sidebarTitle: Extract pattern-based values
+---
+
+<Badge icon="arrow-left" color="gray">[Back to how-to guides](/agent-platform/abl/how-to/overview#entities-nlu-and-intent-understanding)</Badge>
+
+Use this pattern when a value has a fixed shape, such as a ticket ID, an order number, or a phone number, and you want a regular expression to find it in the customer's message.
+
+## Concept
+
+A pattern finds a value by its shape. It runs on the raw message text and needs no model call. You can attach a pattern in three places.
+
+| Where | What it does |
+| ----- | ------------ |
+| An entity with `PATTERN` | Extracts the value for every field that binds to the entity. |
+| A field with `EXTRACTION_PATTERN` and `EXTRACTION_GROUP` | Extracts the value for that field. A capture group picks the part you want. |
+| A field with `VALIDATE` | Checks the value after extraction. It does not extract. |
+
+Built-in patterns exist for `email` and `phone` fields. A phone value is also normalized to E.164 format.
+
+Extraction and validation are different jobs. Use `EXTRACTION_PATTERN` to find a value in free text. Use `VALIDATE` to reject a value of the wrong format. A `TYPE: pattern` entity extracts. It does not enforce the pattern when the value is stored. To enforce a format, add `VALIDATE` on the field.
+
+## Minimal working example
+
+A ticket lookup agent finds a ticket ID by its shape, finds an order number after the word "order", and accepts an optional phone number.
+
+```yaml
+AGENT: Ticket_Lookup
+GOAL: "Find a support ticket from its ID and capture a callback number if the customer gives one."
+
+PERSONA: "You are a concise support assistant."
+
+ENTITIES:
+  ticket_id:
+    TYPE: pattern
+    PATTERN: "TKT-[0-9]{6}"
+    DESCRIPTION: "Support ticket ID: TKT, a hyphen, and six digits."
+
+GATHER:
+  ticket:
+    ENTITY_REF: ticket_id
+    PROMPT: "What is your ticket ID?"
+  order_number:
+    TYPE: string
+    PROMPT: "What is your order number?"
+    EXTRACTION_PATTERN: "order\s+#?([0-9]{6})"
+    EXTRACTION_GROUP: 1
+    VALIDATE: "^[0-9]{6}$"
+    RETRY_PROMPT: "An order number is exactly six digits."
+    MAX_RETRIES: 3
+  callback_phone:
+    TYPE: phone
+    PROMPT: "What number can we call you on?"
+    REQUIRED: false
+    STRATEGY: pattern
+
+COMPLETE:
+  - WHEN: ticket IS SET AND order_number IS SET
+    RESPOND: "Found ticket {{ticket}} for order {{order_number}}. Callback: {{callback_phone}}."
+```
+
+Variable sources:
+
+- All three variables are `GATHER` fields that the customer supplies.
+- `EXTRACTION_GROUP: 1` returns only the six digits, not the word "order".
+
+## How it works
+
+How a pattern runs:
+
+- The runtime searches the whole message. A match can appear anywhere in the text.
+- Matching is case-sensitive. Add `(?i)` at the start for case-insensitive matching.
+- Every match becomes a candidate value.
+- `EXTRACTION_GROUP` is the capture group to return. The default is 0, the whole match. A group number that does not exist falls back to the whole match, and the compiler does not warn.
+- A field pattern overrides an entity pattern.
+- The pattern step runs only for entities and fields that have a pattern, and for `email` and `phone` types.
+- When nothing matches, the field stays empty. A model-based step can still fill it, unless the strategy is `pattern`. The step asks again if the field is still empty.
+
+Do not anchor a pattern with `^` and `$` for extraction. An anchored pattern matches nothing inside a full sentence. Use anchors in `VALIDATE`, where the whole value is checked.
+
+### Write one backslash
+
+The runtime keeps the text of a pattern exactly as you write it. It does not unescape.
+
+| You write | The runtime sees | Result |
+| --------- | ---------------- | ------ |
+| `"\b[A-Z]{2}\d{4,6}\b"` | `\b[A-Z]{2}\d{4,6}\b` | Matches `AB1234`. |
+| `"\\b[A-Z]{2}\\d{4,6}\\b"` | Two backslashes, then `b` | Matches a literal backslash. Never matches. |
+
+A double backslash compiles with no error and never matches. This applies to `PATTERN`, `EXTRACTION_PATTERN`, and `VALIDATE`.
+
+### What the compiler allows
+
+The platform uses a safe regular expression engine.
+
+- The pattern is limited to 500 characters.
+- Lookahead, lookbehind, and back-references such as `\1` are compile errors. The whole agent fails to compile.
+- An unclosed bracket is a compile error.
+- `(?i)`, `(?:...)`, named groups, `\b`, `\d`, and anchors work.
+- A group that contains `+` or `*` and is then repeated is rejected, even when harmless. For example, `(\d+)?` and `(\d+)+` fail. Rewrite the group, or use a bounded quantifier such as `(\d{3}[-. ]?){2}\d{4}`.
+
+## Common variations
+
+### Pattern on a field with no entity
+
+Use `EXTRACTION_PATTERN` on a field when only one field needs it. The ticket example does this for `order_number`.
+
+### Built-in email and phone
+
+Set `TYPE: email` or `TYPE: phone`. The built-in extractor finds the value. For a phone number, the default country is the US, or the country from the conversation locale. Set `STRATEGY: pattern` to keep extraction deterministic and skip the model.
+
+### Pattern plus a format check
+
+Add `VALIDATE`, `RETRY_PROMPT`, and `MAX_RETRIES` after extraction, as the order number does. The validation runs on the stored value. A regular expression `VALIDATE` rejects every value of type `number`, `integer`, `currency`, or `boolean`, so collect an ID as `string`.
+
+### Choose the extraction engine
+
+`STRATEGY` sets the engine for one field. The values are `auto`, `ml`, `llm`, `hybrid`, and `pattern`. `hybrid` is another name for `auto`. The order of precedence is the field, then the step block, then the project extraction mode. A `pattern` field with no `EXTRACTION_PATTERN` extracts only built-in email and phone values.
+
+## Verification
+
+1. Run the validator. Expect no errors and no warnings.
+2. Say "ticket TKT-123456 for order 654321". Expect `ticket` to be `TKT-123456` and `order_number` to be `654321`.
+3. Say "my ticket is tkt-123456". Expect no match, because the pattern is case-sensitive.
+4. Say "order 12345". Expect the extraction to find five digits, fail the six-digit rule, and ask again with the retry prompt.
+5. Say "call me on 415 555 0100". Expect `callback_phone` as `+14155550100`.
+6. In the trace, open the `pattern` stage result. It lists the matches, or shows `skipped` when no pattern applies.
+
+## Production readiness checklist
+
+- Every pattern uses single backslashes.
+- Every pattern avoids lookaround, back-references, and repeated groups with `+` or `*`.
+- Extraction patterns are not anchored. Validation patterns are anchored.
+- Each ID field has a `VALIDATE` rule when the format must be exact.
+- Tests cover lowercase input, extra text around the value, two matches in one message, and no match.
+- Phone and email fields have a country or locale test.
+
+## Common mistakes
+
+| Mistake | Why it happens | How to avoid it |
+| ------- | -------------- | --------------- |
+| Writing `\\d` | Other languages need a double backslash. | Write a single backslash. |
+| Anchoring an extraction pattern | Anchors are a habit. | Remove `^` and `$` from extraction patterns. |
+| Expecting `TYPE: pattern` to enforce the format | The type name suggests it. | Add `VALIDATE` on the field. |
+| Forgetting case | IDs are often uppercase. | Add `(?i)` if customers type lowercase. |
+| Using `(\d+)?` | The group looks safe. | Use a bounded quantifier, or drop the group. |
+| Setting `EXTRACTION_GROUP` for a missing group | The number looks right. | Count the capture groups. A wrong number returns the whole match. |
+
+## Troubleshooting
+
+| Symptom | Likely cause | What to check |
+| ------- | ------------ | ------------- |
+| The pattern never matches | Double backslash, case, or an anchor. | The pattern text in the file. |
+| The compile fails with `AGENT_COMPILATION_FAILED` | Unsupported syntax such as lookahead. | The message. It names the construct. |
+| The field gets the whole phrase, not the ID | `EXTRACTION_GROUP` is 0. | The group number. |
+| A wrong format is stored | `TYPE: pattern` does not enforce. | Add `VALIDATE`. |
+| The phone has the wrong country | The default country is the US. | The conversation locale. |
+| No `pattern` stage in the trace | The field has no pattern and is not email or phone. | The field and entity settings. |
+
+{{related}}
+
+- [Define reusable entities for structured extraction](/agent-platform/abl/how-to/define-reusable-entities)
+- [Extract dates, numbers, locations, and free text](/agent-platform/abl/how-to/extract-common-entity-types)
+- [Silently extract values without asking the user](/agent-platform/abl/how-to/silently-extract-values)
+- [Collect information with global GATHER](/agent-platform/abl/how-to/collect-with-global-gather)
