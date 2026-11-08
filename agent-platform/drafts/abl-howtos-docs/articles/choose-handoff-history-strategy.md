@@ -43,7 +43,7 @@ The specialists are short stand-ins in the same project. Replace them with your 
 
 `agents/care-hub.agent.abl`
 
-```abl
+```yaml
 SUPERVISOR: Care_Hub
 GOAL: "Route care requests and choose a history strategy for each specialist"
 
@@ -98,7 +98,7 @@ HANDOFF:
 
 `agents/fraud-agent.agent.abl`
 
-```abl
+```yaml
 AGENT: Fraud_Agent
 GOAL: "Handle card fraud reports"
 
@@ -146,7 +146,7 @@ The strategy also applies to remote agents and to the return trip of a returnabl
 
 Use `last_5` with a `SUMMARY` when the target needs the brief and the latest exchange.
 
-```abl
+```yaml
 HANDOFF:
   - TO: Loan_Agent
     WHEN: intent.category == "loan_question" AND customer_ref IS SET

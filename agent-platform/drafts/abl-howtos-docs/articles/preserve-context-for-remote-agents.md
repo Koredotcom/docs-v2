@@ -27,7 +27,7 @@ The partner endpoint is a project-local assumption. Replace the URL with your pa
 
 `agents/intake-hub.agent.abl`
 
-```abl
+```yaml
 SUPERVISOR: Intake_Hub
 GOAL: "Send fraud reviews to the partner fraud service and share only what it needs"
 
@@ -97,7 +97,7 @@ Rules that apply:
 
 Use this when `PASS` and the summary carry everything.
 
-```abl
+```yaml
 HANDOFF:
   - TO: Partner_Fraud_Service
     WHEN: intent.category == "fraud_review" AND transaction_id IS SET
@@ -120,7 +120,7 @@ Set `RETURN: false` when the remote agent owns the rest of the conversation. The
 
 Set `ASYNC: true` and `TIMEOUT` in seconds when the remote task takes long. The default is 300 seconds. Write the key as `TIMEOUT`. The text parser ignores `ASYNC_TIMEOUT` without a message. The remote agent must advertise push notifications. The platform must have its async infrastructure enabled. If either is missing, the handoff fails. The runtime does not fall back to a synchronous call.
 
-```abl
+```yaml
     ASYNC: true
     TIMEOUT: 3600
     RETURN: true
@@ -132,7 +132,7 @@ This is an illustrative fragment. Add these lines to the remote route. The runti
 
 A remote agent can return named values. It sends an A2A `data` part that holds a `returnValues` object, in the reply message, the task status message, or a task artifact. `MAP` reads the keys of that object. The key is the left side of the entry.
 
-```abl
+```yaml
 HANDOFF:
   - TO: Partner_Fraud_Service
     WHEN: intent.category == "fraud_review" AND transaction_id IS SET

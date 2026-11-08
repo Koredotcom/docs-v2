@@ -25,7 +25,7 @@ The specialists are short stand-ins in the same project. Replace them with your 
 
 `agents/billing-hub.agent.abl`
 
-```abl
+```yaml
 SUPERVISOR: Billing_Hub
 GOAL: "Route billing requests and brief the specialist with a short summary"
 
@@ -67,7 +67,7 @@ HANDOFF:
 
 `agents/dispute-agent.agent.abl`
 
-```abl
+```yaml
 AGENT: Dispute_Agent
 GOAL: "Open a billing dispute using the context from the router"
 
@@ -92,7 +92,7 @@ COMPLETE:
 
 `agents/payment-plan-agent.agent.abl`
 
-```abl
+```yaml
 AGENT: Payment_Plan_Agent
 GOAL: "Set up a payment plan"
 
@@ -142,7 +142,7 @@ How `HISTORY: auto` decides:
 
 Keep the summary and add the last few messages when the target needs the customer's exact words.
 
-```abl
+```yaml
 HANDOFF:
   - TO: Dispute_Agent
     WHEN: intent.category == "dispute" AND account_id IS SET

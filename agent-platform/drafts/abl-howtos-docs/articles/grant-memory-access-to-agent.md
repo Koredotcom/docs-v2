@@ -29,7 +29,7 @@ An account router holds a customer ID that all specialists in this conversation 
 
 `agents/account-hub.agent.abl`
 
-```abl
+```yaml
 SUPERVISOR: Account_Hub
 GOAL: "Route account requests and share only the stored values a specialist needs"
 
@@ -63,7 +63,7 @@ HANDOFF:
 
 `agents/statement-agent.agent.abl`
 
-```abl
+```yaml
 AGENT: Statement_Agent
 GOAL: "Send a statement for the verified customer whose ID is in Granted Memory"
 
@@ -113,7 +113,7 @@ The same rules apply to a `DELEGATE` `MEMORY_GRANTS` list.
 
 A route can mix kinds. The session field `region` needs no `access` line. The user path is read-only.
 
-```abl
+```yaml
 HANDOFF:
   - TO: Profile_Agent
     WHEN: intent.category == "profile"
@@ -135,7 +135,7 @@ Use `readwrite` only for execution-tree memory that the caller declares with `AC
 
 `agents/verify-agent.agent.abl`
 
-```abl
+```yaml
 AGENT: Verify_Agent
 GOAL: "Verify the customer and store the verified ID for the next agent"
 
@@ -151,7 +151,7 @@ FLOW:
 
 The route grants the path with `access: readwrite`.
 
-```abl
+```yaml
       memory_grants:
         - path: workflow.customer_id
           access: readwrite
@@ -163,7 +163,7 @@ The second block is an illustrative fragment of a grant list. The first block is
 
 A `DELEGATE` uses a `MEMORY_GRANTS` list on the entry.
 
-```abl
+```yaml
 DELEGATE:
   - TO: Refund_Checker
     WHEN: order_id IS SET

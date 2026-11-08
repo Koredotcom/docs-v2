@@ -24,7 +24,7 @@ A route passes `policy_no`, but the router variable is `policy_number`. The rout
 
 Broken route:
 
-```abl
+```yaml
 HANDOFF:
   - TO: Auto_Claims_Agent
     WHEN: intent.category == "auto_claim" AND policy_number IS SET
@@ -36,7 +36,7 @@ HANDOFF:
 
 Fixed route:
 
-```abl
+```yaml
 HANDOFF:
   - TO: Auto_Claims_Agent
     WHEN: intent.category == "auto_claim" AND policy_number IS SET

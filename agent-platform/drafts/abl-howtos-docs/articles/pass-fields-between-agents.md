@@ -27,7 +27,7 @@ The specialists are short stand-ins in the same project. Replace them with your 
 
 `agents/claims-hub.agent.abl`
 
-```abl
+```yaml
 SUPERVISOR: Claims_Hub
 GOAL: "Send each claim request to the owner and pass only the fields the owner needs"
 
@@ -73,7 +73,7 @@ HANDOFF:
 
 `agents/auto-claims-agent.agent.abl`
 
-```abl
+```yaml
 AGENT: Auto_Claims_Agent
 GOAL: "Open an auto claim"
 
@@ -94,7 +94,7 @@ COMPLETE:
 
 `agents/home-claims-agent.agent.abl`
 
-```abl
+```yaml
 AGENT: Home_Claims_Agent
 GOAL: "Open a home claim"
 
@@ -162,7 +162,7 @@ Do not depend on this for business data. Name every field the target needs in `P
 
 Use a block list when the route passes many fields.
 
-```abl
+```yaml
 HANDOFF:
   - TO: Auto_Claims_Agent
     WHEN: intent.category == "auto_claim" AND policy_number IS SET
@@ -179,7 +179,7 @@ This is a section snippet. It needs the router `MEMORY` and `GATHER` fields from
 
 Pass `request` so the specialist can start from what the customer said.
 
-```abl
+```yaml
 HANDOFF:
   - TO: Glass_Claims_Agent
     WHEN: intent.category == "glass_claim"
@@ -199,7 +199,7 @@ Use `set` inside `CONTEXT` to fix a value that no agent gathered. See the home c
 
 A `DELEGATE` uses `INPUT` instead of `PASS`. The key is the target field. The value is the caller variable or dotted path.
 
-```abl
+```yaml
 DELEGATE:
   - TO: Refund_Checker
     WHEN: order_id IS SET

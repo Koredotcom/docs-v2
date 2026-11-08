@@ -32,7 +32,7 @@ The risk score is set to a fixed value in `ON_START` as a stand-in. In your proj
 
 `agents/payments-hub.agent.abl`
 
-```abl
+```yaml
 SUPERVISOR: Payments_Hub
 GOAL: "Route payment requests and share the minimum context with each specialist"
 
@@ -72,7 +72,7 @@ HANDOFF:
 
 `agents/card-dispute-agent.agent.abl`
 
-```abl
+```yaml
 AGENT: Card_Dispute_Agent
 GOAL: "Add details to an existing card dispute"
 
@@ -124,7 +124,7 @@ Controls that apply:
 
 Use `summary_only` when the target needs the reason but not the words. Write the summary without personal data. See [Pass a conversation summary during handoff](/agent-platform/abl/how-to/pass-summary-during-handoff).
 
-```abl
+```yaml
 HANDOFF:
   - TO: Card_Dispute_Agent
     WHEN: intent.category == "card_dispute" AND dispute_id IS SET

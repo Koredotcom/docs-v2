@@ -26,7 +26,7 @@ The specialists are short stand-ins in the same project. Replace them with your 
 
 `agents/retail-hub.agent.abl`
 
-```abl
+```yaml
 SUPERVISOR: Retail_Hub
 GOAL: "Route retail requests and give each specialist the amount of history it needs"
 
@@ -74,7 +74,7 @@ HANDOFF:
 
 `agents/order-status-agent.agent.abl`
 
-```abl
+```yaml
 AGENT: Order_Status_Agent
 GOAL: "Report the status of one order"
 
@@ -91,7 +91,7 @@ COMPLETE:
 
 `agents/returns-agent.agent.abl`
 
-```abl
+```yaml
 AGENT: Returns_Agent
 GOAL: "Start a return for one order"
 
@@ -112,7 +112,7 @@ COMPLETE:
 
 `agents/complaint-agent.agent.abl`
 
-```abl
+```yaml
 AGENT: Complaint_Agent
 GOAL: "Log a complaint using the customer's own account of events"
 
@@ -172,7 +172,7 @@ Use a positive count. A value that the compiler does not recognize silently give
 
 Inside `CONTEXT`, write the key in lowercase.
 
-```abl
+```yaml
 HANDOFF:
   - TO: Returns_Agent
     WHEN: intent.category == "return_item" AND order_id IS SET
