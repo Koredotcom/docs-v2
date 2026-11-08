@@ -45,7 +45,7 @@ ON_START:
 | `DELEGATE`     | `string`                | No       | --      | Agent to delegate to during initialization.                                                    |
 | `RESPOND`      | `string`                | No       | --      | Greeting or welcome message sent to the user.                                                  |
 | `MESSAGE_KEY`  | `string`                | No       | --      | Locale catalog key used to localize the greeting.                                              |
-| `VOICE`        | `object`                | No       | --      | Voice-specific overrides for the response. See [Rich content](/agent-platform/abl-reference/rich-content). |
+| `VOICE`        | `object`                | No       | --      | Voice overrides for the response, including `BARGE_IN` and `STREAMING`. See [Voice delivery for lifecycle replies](#voice-delivery-for-lifecycle-replies) and [Rich content](/agent-platform/abl-reference/rich-content). |
 | `RICH_CONTENT` | `object`                | No       | --      | Rich content format variants (the `.agent.abl` keyword is `FORMATS:`). See [Rich content](/agent-platform/abl-reference/rich-content). |
 | `ACTIONS`      | `object`                | No       | --      | Interactive actions attached to the response.                                                  |
 | `BRANCHES`     | `object[]`              | No       | --      | Conditional greeting branches (`IF`/`ELSE`). See [Conditional greeting](#conditional-greeting). |
@@ -314,7 +314,7 @@ Each hook supports the same set of action properties:
 | `SET`          | `Record<string,string>` | No       | --      | Variable assignments.                               |
 | `CALL`         | `string`                | No       | --      | Tool to call (supports `WITH:`/`AS:`).              |
 | `RESPOND`      | `string`                | No       | --      | Message to send (uncommon in hooks, but supported). |
-| `VOICE`        | `object`                | No       | --      | Voice-specific overrides.                           |
+| `VOICE`        | `object`                | No       | --      | Voice overrides, including `BARGE_IN` and `STREAMING`. See [Voice delivery for lifecycle replies](#voice-delivery-for-lifecycle-replies). |
 | `RICH_CONTENT` | `object`                | No       | --      | Rich content format variants.                       |
 | `ACTIONS`      | `object`                | No       | --      | Interactive actions.                                |
 | `SET_INTERACTION_LANGUAGE`   | `string`  | No | -- | Set the authoritative session interaction language — a literal BCP-47 tag (for example `es`, `es-ES`, `fr-CA`) or a dynamic value that resolves to one at runtime. Subsequent actions and turns use it. |
@@ -434,7 +434,7 @@ A FLOW agent takes the same `before_turn` actions. They run before the turn's st
 
 In this example the English branch comes first (the first matching `WHEN:` wins), so a confident English message clears back to the default language while any other confident detection switches:
 
-```yaml
+```yaml expandable=true
 HOOKS:
   before_turn:
     WHEN: session.languageDetection.status == "detected" AND session.languageDetection.confidence >= 0.85 AND session.languageDetection.language == "en"
@@ -452,6 +452,37 @@ FLOW:
     REASONING: true
     GOAL: "Tell the customer the status of their order in one or two sentences."
 ```
+
+### Voice delivery for lifecycle replies
+
+On KoreVG pipeline voice, a lifecycle reply can carry a nested `VOICE` block with `BARGE_IN` and `STREAMING` under its `RESPOND`.
+
+```yaml expandable=true
+AGENT: Hook_Voice
+GOAL: "Greet and route callers"
+HOOKS:
+  before_turn:
+    WHEN: needs_zip == true
+      RESPOND: "Before we continue, what is your zip code?"
+        VOICE:
+          BARGE_IN: allow
+  after_turn:
+    RESPOND: "Anything else I can help with?"
+      VOICE:
+        BARGE_IN: allow
+        STREAMING: true
+```
+
+- **Legal homes.** An `ON_START` reply and its branches, a hook `RESPOND`, a hook `WHEN` reply branch, an `ON_ERROR` handler, and a tool's `on_result.do` or `on_error.do` reply.
+- **When it applies.** The reply applies its own policy before its first audio. The previous policy returns afterwards. A reply that sets no keys runs under the FLOW step or turn default.
+- **Agent types.** Reasoning and FLOW agents both honor a hook reply's `VOICE`. Realtime speech-to-speech is unchanged.
+- **Never spoken.** An `after_agent` `RESPOND` goes to the transcript only, so its `VOICE` keys have no audible effect.
+- **Block-form reply.** After `RESPOND: |` in a `WHEN:` branch, a nested line reads as reply text. Put `VOICE` level with `RESPOND` instead.
+- **Ignored placement.** A `VOICE` block beside a one-line `RESPOND`, or in a hook branch with no `RESPOND`, warns with [`HOOK_VOICE_NOT_UNDER_RESPOND`](/agent-platform/abl/reference/errors-and-warnings#hook_voice_not_under_respond) and is ignored.
+- **Free-standing blocks.** A free-standing `ON_START` or branch `VOICE` block rejects `BARGE_IN` with [`VOICE_BARGE_IN_ILLEGAL_PLACEMENT`](/agent-platform/abl/reference/errors-and-warnings#voice_barge_in_illegal_placement). Nest the block under the `RESPOND`.
+- **Runtime support.** A hook `WHEN` branch's `VOICE` block is published with the IR marker `voice_output_policy`. A runtime without the marker refuses the agent.
+
+Values and precedence are in [Scoped barge-in](/agent-platform/abl/reference/flow#scoped-barge-in).
 
 ### Example: audit logging hook
 
