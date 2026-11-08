@@ -250,7 +250,7 @@ DELEGATE:
 | The compile fails with an unknown section error on `SET` | `SET` is on the route, not inside `CONTEXT`. | Move `set` into `CONTEXT:`. |
 | `request` arrives empty | The caller holds an empty variable named `request`. | Rename the caller variable, or pass a different field. |
 
-## Related HowTos
+{{related}}
 
 - [Pass a conversation summary during handoff](/agent-platform/abl/how-to/pass-summary-during-handoff)
 - [Choose the right history strategy for handoff](/agent-platform/abl/how-to/choose-handoff-history-strategy)

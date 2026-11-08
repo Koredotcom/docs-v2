@@ -212,7 +212,7 @@ A grant adds the path and its access level to the envelope. See [Grant another a
 | The partner receives more history than expected | The route uses `full` or has no `HISTORY`. | The `HISTORY` line. |
 | `MAP` values never appear | The remote reply has no `returnValues` data part, or the key names differ from your `MAP`. | The reply payload and the `mappedFields` list in `handoff_return_handler`. |
 
-## Related HowTos
+{{related}}
 
 - [Pass specific fields between agents](/agent-platform/abl/how-to/pass-fields-between-agents)
 - [Pass full, recent, or no conversation history](/agent-platform/abl/how-to/choose-handoff-history-scope)

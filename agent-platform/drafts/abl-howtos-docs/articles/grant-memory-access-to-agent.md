@@ -219,7 +219,7 @@ This is a section snippet. It needs the caller `MEMORY` declaration and the `Ref
 | The target cannot update the value | The grant is `read`. | The grant `access` and the reason `granted_memory_read_only`. |
 | The compile fails with `E322` | The route uses `grant_memory`. | Rename it to `memory_grants`. |
 
-## Related HowTos
+{{related}}
 
 - [Pass specific fields between agents](/agent-platform/abl/how-to/pass-fields-between-agents)
 - [Minimize context for privacy and compliance](/agent-platform/abl/how-to/minimize-agent-context)

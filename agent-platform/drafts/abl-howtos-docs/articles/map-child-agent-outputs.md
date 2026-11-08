@@ -186,7 +186,7 @@ A remote child can also return values. The remote agent sends an A2A `data` part
 | The delegate fails with "completed without required return values" | No `RETURNS` field mapped. | The child field names and the `delegate_complete` event. |
 | The warning `UNKNOWN_DELEGATE_RETURN_FIELD` appears | The child does not declare the field. | The child `MEMORY` and flow. |
 
-## Related HowTos
+{{related}}
 
 - [Transfer control to another agent and return later](/agent-platform/abl/how-to/returnable-agent-handoff)
 - [Delegate and map the result](/agent-platform/abl/how-to/delegate-and-map-result)

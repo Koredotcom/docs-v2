@@ -164,7 +164,7 @@ For the broken route above, expect `seededFields` to be empty before the fix and
 | The return applies nothing | A `MAP` or `SET` target is not writable by the parent. | `memory_error` events. |
 | A revisited child keeps an old value | The runtime resumed the waiting thread, and the child gathered that value from the customer. | `thread_resume` and `preservedDataKeys`. |
 
-## Related HowTos
+{{related}}
 
 - [Debug routing traces](/agent-platform/abl/how-to/debug-routing-traces)
 - [Pass specific fields between agents](/agent-platform/abl/how-to/pass-fields-between-agents)
