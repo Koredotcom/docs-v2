@@ -1,0 +1,266 @@
+---
+title: How to pass specific fields between agents
+sidebarTitle: Pass specific fields
+---
+
+<Badge icon="arrow-left" color="gray">[Back to how-to guides](/agent-platform/abl/how-to/overview#context-passing-between-agents)</Badge>
+
+Use this pattern when a specialist needs values that the calling agent already holds, so the customer does not repeat them.
+
+## Concept
+
+A handoff starts the target agent in a new thread. The target does not read the caller's variables. It receives a context bundle that the handoff route builds.
+
+You control the bundle with four settings in the `HANDOFF` route.
+
+| Setting | What it sends |
+| ------- | ------------- |
+| `PASS` | Copies named caller variables to the target. |
+| `SET` (inside `CONTEXT`) | Assigns values at routing time. |
+| `SUMMARY` | Sends a text summary. See [Pass a conversation summary during handoff](/agent-platform/abl/how-to/pass-summary-during-handoff). |
+| `MEMORY_GRANTS` (inside `CONTEXT`) | Shares stored memory. See [Grant another agent access to memory](/agent-platform/abl/how-to/grant-memory-access-to-agent). |
+
+Use `PASS` when the caller already holds the value. Use `SET` when the route must compute or fix a value. Use `DELEGATE` `INPUT` when the caller keeps the conversation. See [Delegate and map the result](/agent-platform/abl/how-to/delegate-and-map-result).
+
+A field that the caller collected with `GATHER` does not reach the target on its own. You must name it in `PASS`. The runtime does copy some other caller values automatically. See [What the target receives without PASS](#what-the-target-receives-without-pass).
+
+## Minimal working example
+
+A claims router gathers the policy number, then sends each claim to the right specialist. The route passes the policy number, so the specialist does not ask for it again.
+
+The specialists are short stand-ins in the same project. Replace them with your real agents.
+
+`agents/claims-hub.agent.abl`
+
+```abl
+SUPERVISOR: Claims_Hub
+GOAL: "Send each claim request to the owner and pass only the fields the owner needs"
+
+BEHAVIOR:
+  role: router
+
+INTENTS:
+  auto_claim: "Vehicle damage, theft, or collision claims."
+  home_claim: "Property damage or loss claims."
+
+MEMORY:
+  session:
+    - policy_number
+      TYPE: string
+      DESCRIPTION: "Customer policy number, for example POL-48213."
+
+GATHER:
+  policy_number:
+    PROMPT: "What is your policy number?"
+    TYPE: string
+    REQUIRED: true
+
+HANDOFF:
+  - TO: Auto_Claims_Agent
+    WHEN: intent.category == "auto_claim" AND policy_number IS SET
+    PASS: [policy_number]
+    SUMMARY: "Customer reports an auto claim on policy {{policy_number}}."
+    HISTORY: summary_only
+    RETURN: false
+
+  - TO: Home_Claims_Agent
+    WHEN: intent.category == "home_claim" AND policy_number IS SET
+    CONTEXT:
+      pass: [policy_number]
+      set:
+        claim_source: "web_chat"
+      summary: "Customer reports a home claim on policy {{policy_number}}."
+      history:
+        mode: last_n
+        count: 6
+    RETURN: false
+```
+
+`agents/auto-claims-agent.agent.abl`
+
+```abl
+AGENT: Auto_Claims_Agent
+GOAL: "Open an auto claim"
+
+GATHER:
+  policy_number:
+    PROMPT: "What is your policy number?"
+    TYPE: string
+    REQUIRED: true
+  incident_date:
+    PROMPT: "When did the incident happen?"
+    TYPE: string
+    REQUIRED: true
+
+COMPLETE:
+  - WHEN: incident_date IS SET
+    RESPOND: "I opened an auto claim on policy {{policy_number}} for {{incident_date}}."
+```
+
+`agents/home-claims-agent.agent.abl`
+
+```abl
+AGENT: Home_Claims_Agent
+GOAL: "Open a home claim"
+
+GATHER:
+  policy_number:
+    PROMPT: "What is your policy number?"
+    TYPE: string
+    REQUIRED: true
+  claim_source:
+    PROMPT: "How are you contacting us today?"
+    TYPE: string
+    REQUIRED: true
+  loss_date:
+    PROMPT: "When did the loss happen?"
+    TYPE: string
+    REQUIRED: true
+
+COMPLETE:
+  - WHEN: loss_date IS SET
+    RESPOND: "I opened a home claim on policy {{policy_number}} for {{loss_date}}, from {{claim_source}}."
+```
+
+Variable sources:
+
+- `policy_number` is a `GATHER` field of the router. `PASS` copies it.
+- `claim_source` is a fixed value that the home claim route assigns with `set`.
+- Each target declares the passed field in its own `GATHER`. This declaration is what stops the target from asking again.
+
+## How it works
+
+The runtime builds the target context in this order. A later step overrides an earlier one for the same key.
+
+1. A base value, `handoff_from`, names the calling agent.
+2. Session values that the runtime copies automatically.
+3. Values that the routing model supplied. This applies when a supervisor routes with a handoff tool call.
+4. `PASS` fields, read from the calling agent.
+5. `SET` assignments.
+6. The `SUMMARY` text.
+7. Memory grants.
+
+How `PASS` resolves a field:
+
+- The runtime reads the exact key from the calling agent. If the name has dots, it also tries the nested path.
+- A field with no value, or an empty string, is skipped. There is no error and no compile warning.
+- The names `request`, `user_request`, `customer_request`, `query`, `message`, `utterance`, and `latest_user_utterance` resolve to the customer's current message when the caller holds no value of that name.
+- A `PASS` value overrides a value that the routing model supplied for the same key.
+
+How the target uses the bundle:
+
+- The runtime marks a passed value as filled when the target declares the same name in `GATHER`, at agent level or in a `FLOW` step. The target does not ask for it.
+- A value can stay pending even when you pass it. The target `GATHER` field can limit its sources with `SATISFIED_BY`. A passed value from a source that the field does not allow stays visible as context, and the target still asks.
+- The target model sees only the keys that the handoff authorizes: `PASS` fields, `SET` fields, the summary, memory grants, and any value the routing model supplied. See [Minimize context for privacy and compliance](/agent-platform/abl/how-to/minimize-agent-context).
+
+When a supervisor routes with a model-driven handoff tool, each `PASS` field becomes a typed argument of that tool. The compiler reads the type and description from the router `MEMORY.session` declaration. Declare `TYPE` and `DESCRIPTION` there. A bare field falls back to type `string` and the description `Context: <name>`.
+
+### What the target receives without PASS
+
+The runtime copies some caller values even when you do not pass them. It copies values that are not gathered fields, not internal keys that start with an underscore, and not empty. Of these, the keys `conversationSummary`, `user`, `gender`, and `location` also reach the target prompt.
+
+Do not depend on this for business data. Name every field the target needs in `PASS`.
+
+## Common variations
+
+### Write PASS as a block list
+
+Use a block list when the route passes many fields.
+
+```abl
+HANDOFF:
+  - TO: Auto_Claims_Agent
+    WHEN: intent.category == "auto_claim" AND policy_number IS SET
+    PASS:
+      - policy_number
+      - incident_type
+    SUMMARY: "Auto claim on policy {{policy_number}}: {{incident_type}}."
+    RETURN: false
+```
+
+This is a section snippet. It needs the router `MEMORY` and `GATHER` fields from the minimal example.
+
+### Pass the customer's own words
+
+Pass `request` so the specialist can start from what the customer said.
+
+```abl
+HANDOFF:
+  - TO: Glass_Claims_Agent
+    WHEN: intent.category == "glass_claim"
+    PASS: [policy_number, request]
+    RETURN: false
+```
+
+The target declares `request` in `GATHER`. The runtime fills it from the current message when the router holds no variable named `request`.
+
+### Assign a value at routing time
+
+Use `set` inside `CONTEXT` to fix a value that no agent gathered. See the home claim route in the minimal example. The runtime evaluates each assignment against the calling agent's values. An assignment that resolves to no value is skipped.
+
+`SET` and `MEMORY_GRANTS` work only inside a `CONTEXT:` block, with lowercase keys. `PASS`, `SUMMARY`, and `HISTORY` also work directly on the route.
+
+### Pass values to a delegate
+
+A `DELEGATE` uses `INPUT` instead of `PASS`. The key is the target field. The value is the caller variable or dotted path.
+
+```abl
+DELEGATE:
+  - TO: Refund_Checker
+    WHEN: order_id IS SET
+    PURPOSE: "Check whether the order qualifies for a refund"
+    INPUT:
+      order_id: order_id
+    RETURNS:
+      eligible: refund_eligible
+```
+
+`INPUT` copies a path. It does not evaluate expressions. Compute a derived value first, then map it. A delegate has no `HISTORY` setting. See [Delegate and map the result](/agent-platform/abl/how-to/delegate-and-map-result).
+
+## Verification
+
+1. Run the validator on the router and both specialists. Expect no errors and no warnings.
+2. Send "I need to report a car accident" to the router. Give the policy number when asked.
+3. Expect a `handoff` trace event with `to: Auto_Claims_Agent`.
+4. Expect a `handoff_context_seed` trace event. `seededFields` must list `policy_number`. `remainingWaitingFields` must not list it.
+5. Expect `Auto_Claims_Agent` to ask only for the incident date.
+6. Repeat with a home claim. Expect a `handoff_context_set_applied` event that lists `claim_source`.
+7. Test a route with an empty policy number on purpose. Expect `seededFields` to omit it and the target to ask for it.
+
+## Production readiness checklist
+
+- Every `PASS` field exists in the calling agent as a `GATHER` field, a session memory field, or a tool result.
+- Every passed field is declared in the target `GATHER` or `MEMORY`.
+- Each `PASS` list holds only the fields the target needs.
+- The router declares `TYPE` and `DESCRIPTION` for each field a routing model must supply.
+- Tests cover a route with the value set and a route with the value missing.
+- Trace checks confirm `seededFields` on every handoff that must skip a question.
+
+## Common mistakes
+
+| Mistake | Why it happens | How to avoid it |
+| ------- | -------------- | --------------- |
+| Expecting a gathered field to reach the target without `PASS` | The runtime copies some session values, so it looks automatic. | Name every needed field in `PASS`. |
+| Passing a field that the caller never holds | The name differs from the caller variable. | Match the exact caller variable name. A missing value is skipped without an error. |
+| Writing `SET` or `MEMORY_GRANTS` directly on the route | `PASS` and `SUMMARY` work there. | Move `set` and `memory_grants` into a `CONTEXT:` block. |
+| Writing `CONTEXT` keys in uppercase | Route keys are uppercase. | Write `pass`, `set`, `summary`, `history`, and `memory_grants` in lowercase inside `CONTEXT`. |
+| Passing a field the target does not declare | One `PASS` list is reused for several targets. | Declare the field in the target `GATHER` or `MEMORY`. |
+
+## Troubleshooting
+
+| Symptom | Likely cause | What to check |
+| ------- | ------------ | ------------- |
+| The specialist asks for a value you passed | The target does not declare the field, or the caller value is empty. | `seededFields` in `handoff_context_seed`, and the target `GATHER`. |
+| The specialist asks again although the value is seeded | The target field limits its sources with `SATISFIED_BY`. | `remainingWaitingFields` and the field `SATISFIED_BY` setting. |
+| The compile fails with an unknown section error on `SET` | `SET` is on the route, not inside `CONTEXT`. | Move `set` into `CONTEXT:`. |
+| `request` arrives empty | The caller holds an empty variable named `request`. | Rename the caller variable, or pass a different field. |
+
+## Related HowTos
+
+- [Pass a conversation summary during handoff](/agent-platform/abl/how-to/pass-summary-during-handoff)
+- [Choose the right history strategy for handoff](/agent-platform/abl/how-to/choose-handoff-history-strategy)
+- [Minimize context for privacy and compliance](/agent-platform/abl/how-to/minimize-agent-context)
+- [Grant another agent access to memory](/agent-platform/abl/how-to/grant-memory-access-to-agent)
+- [Map child-agent outputs back to parent-agent variables](/agent-platform/abl/how-to/map-child-agent-outputs)
+- [Debug missing or incorrect context after handoff](/agent-platform/abl/how-to/debug-handoff-context)
+- [Delegate and map the result](/agent-platform/abl/how-to/delegate-and-map-result)
