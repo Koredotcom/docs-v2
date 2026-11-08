@@ -3,19 +3,40 @@ title: NLU (Natural Language Understanding)
 sidebarTitle: NLU
 ---
 
-The `NLU:` block configures how the agent classifies user intent, extracts entities, resolves synonyms, and matches utterances. NLU definitions are used by the runtime for intent routing, digression matching, and entity extraction during conversation.
+The `NLU:` block holds keyword patterns for intent categories and entity definitions for extraction.
+
+<Warning>In this release the runtime reads only two parts of the `NLU:` block: `categories` (keyword patterns) and `entities`. The other sub-blocks are parsed and compiled, and they raise no warning, but nothing at run time reads them. They are `intents`, `embeddings`, `glossary`, `models`, `languages`, `language_models`, `evaluation`, and `config_file`. Do not rely on them to change routing or extraction. See [Runtime status of NLU sub-blocks](#runtime-status-of-nlu-sub-blocks).</Warning>
 
 ## Overview
 
 
-ABL's NLU configuration supports:
+ABL's NLU configuration supports these active features:
 
-- **Intent classification** with keyword patterns and example utterances.
+- **Keyword patterns** for intent categories, through `categories`. They act as a fallback when the classifier is unavailable.
 - **Entity extraction** with typed extractors (enum, pattern, location, date, number, free text).
 - **Synonyms** for normalizing variant expressions to canonical values.
-- **Embeddings-based matching** for semantic similarity when keyword patterns are insufficient.
-- **Multi-language support** with per-language model configuration.
-- **A glossary** for domain-specific terminology.
+
+The block also accepts the sub-blocks below. They compile, and the runtime does not read them:
+
+- `intents` with example utterances.
+- `embeddings` for semantic similarity.
+- `languages`, `language_models`, and `models` for per-language and per-model settings.
+- `glossary` for domain terminology.
+- `evaluation` and `config_file`.
+
+### Runtime status of NLU sub-blocks
+
+| Sub-block | Runtime effect |
+| --------- | -------------- |
+| `categories` | Active. Keyword patterns for the fallback match. See [Categories](#categories). |
+| `entities` | Active. Entity extraction and synonyms. See [Entity extraction](#entity-extraction). |
+| `intents` | None. The keywords and examples are not read. |
+| `embeddings` | None. |
+| `glossary` | None. |
+| `models`, `languages`, `language_models`, `allow_code_switching`, `default_language` | None. |
+| `evaluation`, `config_file` | None. |
+
+To improve how the language model classifies a request, write a precise description in the `INTENTS:` section. See [Intent categories](#intent-categories-intents-section).
 
 ```yaml expandable=true
 NLU:
@@ -40,7 +61,9 @@ NLU:
 ## Intent classification
 
 
-Intents represent categories of user messages. Each intent has a name, keyword patterns for quick matching, and optional example utterances for model-based classification.
+<Warning>The `intents` sub-block is parsed and compiled, and the runtime does not read it. Its `PATTERNS`, `EXAMPLES`, `EXAMPLES_FILE`, and `ENTITIES` have no effect on routing. To define routing categories, use the [`INTENTS:` section](#intent-categories-intents-section). To add keyword patterns, use [`categories`](#categories).</Warning>
+
+Intents represent categories of user messages. Each intent has a name, keyword patterns, and optional example utterances.
 
 ### Syntax
 
@@ -63,18 +86,18 @@ NLU:
 | Property        | Type       | Required | Default | Description                                                                |
 | --------------- | ---------- | -------- | ------- | -------------------------------------------------------------------------- |
 | `NAME`          | `string`   | Yes      | --      | Unique intent identifier.                                                  |
-| `PATTERNS`      | `string[]` | Yes      | --      | Keyword patterns for quick substring matching.                             |
-| `EXAMPLES`      | `string[]` | No       | --      | Full example utterances for model-based classification. Improves accuracy. |
+| `PATTERNS`      | `string[]` | Yes      | --      | Keyword patterns. Parsed, not read by the runtime.                         |
+| `EXAMPLES`      | `string[]` | No       | --      | Example utterances. Parsed, not read by the runtime.                       |
 | `EXAMPLES_FILE` | `string`   | No       | --      | Path to an external file containing example utterances (one per line).     |
 | `ENTITIES`      | `string[]` | No       | --      | Entity types expected to co-occur with this intent.                        |
 
 ### Pattern matching
 
-Patterns are matched as case-insensitive substrings against the user's message. If any pattern appears in the message, the intent is a candidate match. Pattern matching is the first tier of classification; it is fast but imprecise.
+Keyword patterns that the runtime reads come from [`categories`](#categories). They match whole words and phrases, without regard to case. They do not match part of a word and they do not stem words, so "cancel order" does not match "cancel orders". Add each form you need.
 
 ### Example-based classification
 
-When `EXAMPLES` are provided, the runtime uses an LLM or embedding model to classify messages based on semantic similarity to the examples. This is more accurate than pattern matching but requires more compute.
+The runtime does not classify with `EXAMPLES`. The language model classifier reads the category name and the description from the `INTENTS:` section. Write contrasting examples inside that description.
 
 ### Intent with external examples file
 
@@ -90,7 +113,13 @@ NLU:
 
 ## Categories
 
-The `categories:` sub-block declares coarse-grained message categories matched by keyword patterns. Categories are a lighter-weight classification than full intents (no examples or entity bindings).
+The `categories:` sub-block declares keyword patterns for intent categories. It is the only source of keywords that the runtime reads.
+
+- The keywords run only as a fallback. They apply when the classifier is off or unavailable, and the `LEXICAL_FALLBACK` setting of the `INTENTS:` section allows it. The default is `when_unavailable`.
+- A keyword match sets `intent.category` with a fixed confidence of 0.5. That is below the default short-circuit threshold of 0.85.
+- If the category has no description in `INTENTS:`, the compiler writes one from the patterns, such as "Examples: invoice, refund".
+- Write the keys in uppercase, and write `PATTERNS` as a one-line list. A multi-line list is silently empty. A trailing comment on the line corrupts the list, and a comma inside a quoted pattern splits it.
+- The `NAME` uses letters, digits, and underscores. A name with a hyphen is dropped.
 
 ```yaml
 NLU:
@@ -125,7 +154,7 @@ NLU:
 
     - NAME: phone_number
       TYPE: pattern
-      PATTERN: "\\b\\d{3}[-.]?\\d{3}[-.]?\\d{4}\\b"
+      PATTERN: "\b\d{3}[-.]?\d{3}[-.]?\d{4}\b"
       VALIDATION: "Must be a valid US phone number"
 
     - NAME: destination
@@ -160,7 +189,7 @@ NLU:
 | `TYPE`       | `string`                   | Yes      | --      | Entity type. See [Entity types](#entity-types). |
 | `VALUES`     | `string[]`                 | No       | --      | Valid values (for `enum` type).                 |
 | `SYNONYMS`   | `Record<string, string[]>` | No       | --      | Synonym mappings. Keys are canonical values.    |
-| `PATTERN`    | `string`                   | No       | --      | Regular expression (for `pattern` type).        |
+| `PATTERN`    | `string`                   | No       | --      | Regular expression (for `pattern` type). Write a single backslash, such as `\d`. A double backslash is kept as two characters and never matches. |
 | `VALIDATION` | `string`                   | No       | --      | Validation description or expression.           |
 | `SENSITIVE`  | `boolean`                  | No       | `false` | Marks extracted values as PII for privacy-aware handling. |
 
@@ -177,9 +206,15 @@ SYNONYMS:
 
 If the user says "100 bucks", the entity extraction yields `currency_code: "USD"`.
 
+Write synonyms as a map of canonical values to inline lists. A block list, a flow map, and a key with a hyphen or a space are silently dropped. Quotes around a synonym in the top-level `ENTITIES:` section stay in the text, so the synonym never matches. The `NLU: entities:` form strips quotes.
+
+A `pattern` entity extracts a value. It does not enforce the pattern when the value is stored. To reject a wrong format, add a `VALIDATE` rule to the `GATHER` field. A pattern searches the whole message, so do not anchor it with `^` and `$`.
+
 ## Embeddings-based matching
 
-For more accurate semantic matching, enable embeddings-based NLU. This uses vector similarity to match user messages against intent examples.
+<Warning>The `embeddings` sub-block is parsed and compiled, and the runtime does not read it. It does not turn on semantic matching. To improve routing, write precise descriptions in the `INTENTS:` section and tune the pipeline thresholds.</Warning>
+
+The sub-block has this shape:
 
 ```yaml
 NLU:
@@ -204,7 +239,9 @@ NLU:
 
 ## Multi-language support
 
-ABL NLU supports multiple languages with per-language model configuration and optional code-switching detection.
+<Warning>The language settings are parsed and compiled, and the runtime does not read them.</Warning>
+
+The sub-block has this shape:
 
 ```yaml
 NLU:
@@ -228,7 +265,9 @@ NLU:
 
 ## Model configuration
 
-Specify which models to use for NLU classification tasks:
+<Warning>The `models` sub-block is parsed and compiled, and the runtime does not read it. The classifier model comes from the project runtime configuration.</Warning>
+
+The sub-block has this shape:
 
 ```yaml
 NLU:
@@ -244,7 +283,9 @@ NLU:
 
 ## Evaluation configuration
 
-Control NLU evaluation behavior for monitoring and testing:
+<Warning>The `evaluation` sub-block is parsed and compiled, and the runtime does not read it.</Warning>
+
+The sub-block has this shape:
 
 ```yaml
 NLU:
@@ -262,7 +303,9 @@ NLU:
 
 ## Glossary
 
-The glossary defines domain-specific terms and abbreviations. These definitions are injected into the LLM context to improve understanding of specialized vocabulary.
+<Warning>The `glossary` sub-block is parsed and compiled, and the runtime does not read it. Its entries are not added to the model context. A top-level `GLOSSARY:` section is a compile error, `E105`.</Warning>
+
+The sub-block has this shape:
 
 ```yaml
 NLU:
@@ -285,9 +328,11 @@ NLU:
   config_file: "./nlu/config.yaml"
 ```
 
-The external file is merged with any inline NLU configuration. Inline values take precedence.
+The external file is merged with any inline NLU configuration. Inline values take precedence. The runtime reads only `categories` and `entities` from the merged result.
 
 ## Complete example
+
+<Note>This example shows every sub-block. Only `categories` and `entities` have a runtime effect. The `intents`, `embeddings`, `glossary`, `models`, and `languages` parts are shown for completeness.</Note>
 
 ```yaml expandable=true
 NLU:
@@ -344,7 +389,7 @@ NLU:
 
 ## Named entities (`ENTITIES:` section)
 
-Separate from the `NLU:` block, the top-level `ENTITIES:` section defines **reusable** semantic entities that are shared by both NLU (for recognition) and [GATHER](/agent-platform/abl-reference/gather) (via `entity_ref`). Declaring an entity once lets multiple fields and agents reuse the same type, allowed values, synonyms, and validation.
+Separate from the `NLU:` block, the top-level `ENTITIES:` section defines **reusable** semantic entities that are shared by both NLU (for recognition) and [GATHER](/agent-platform/abl-reference/gather) (via `entity_ref`). Declaring an entity once lets multiple fields in the same agent file reuse the same type, allowed values, synonyms, and validation. Declare the entity in each agent file that uses it.
 
 ```yaml expandable=true
 ENTITIES:
@@ -357,7 +402,7 @@ ENTITIES:
 
   booking_ref:
     TYPE: pattern
-    PATTERN: "^[A-Z]{2}[0-9]{4,6}$"
+    PATTERN: "[A-Z]{2}[0-9]{4,6}"
     VALIDATION: "Two letters followed by 4-6 digits"
     SENSITIVE: false
 ```
@@ -372,6 +417,8 @@ ENTITIES:
 | `SENSITIVE`  | `boolean`                  | No       | `false`    | Marks the value as PII.                                        |
 | `DESCRIPTION` | `string`                  | No       | --         | Semantic, model-facing description of what the entity value represents. A GATHER field's `entity_ref` inherits it. |
 | `EXTRACTION_HINTS` | `string[]`           | No       | --         | Example surface forms that guide extraction. Inherited by GATHER fields that reference the entity. |
+
+The parser reads only the properties in the table. An unknown property, such as `ALIASES`, is dropped without a message. Lowercase keys are accepted with warning `W171`. An unknown `TYPE` gives warning `W172`. Write `SENSITIVE` as lowercase `true` or `yes`.
 
 Top-level entities accept the full unified type set: `string`, `text`, `free_text`, `number`,
 `integer`, `float`, `currency`, `boolean`, `date`, `datetime`, `email`, `phone`, `enum`, `pattern`,
@@ -394,11 +441,13 @@ INTENTS:
 | Property          | Type     | Description                                                                          |
 | ----------------- | -------- | ------------------------------------------------------------------------------------ |
 | category name     | `string` | Intent category identifier; optionally followed by `: "description"`.                |
-| `LEXICAL_FALLBACK` | `string` | When to fall back to lexical matching: `never`, `when_unavailable`, or `always`.     |
+| `LEXICAL_FALLBACK` | `string` | When to fall back to lexical matching: `never`, `when_unavailable`, or `always`. The default is `when_unavailable`. An invalid value gives warning `W460`. |
+
+The section takes only a category name, an optional quoted description, and `LEXICAL_FALLBACK`. It has no examples, keywords, patterns, or priority properties. The classifier reads the name and the description. Write the description on one line and in quotes. An unquoted description, a name with a hyphen, a trailing comment, or a block with `EXAMPLES:` or `KEYWORDS:` gives warning `W463`, and the compiler drops the entry. A duplicate category gives warning `W462`, and the first entry wins. If every entry is invalid, the section becomes an inferred list of the categories in your `WHEN` conditions.
 
 ## Multi-intent handling (`MULTI_INTENT:`)
 
-The top-level `MULTI_INTENT:` section configures how the agent handles a single user message that contains **more than one intent** — for example, *"Book me a flight to NYC and also cancel my hotel reservation."* When enabled, the NLU pipeline detects and triages multiple intents per turn, and the `strategy` controls how they are dispatched.
+The top-level `MULTI_INTENT:` section configures how the agent handles a single user message that contains **more than one intent** — for example, *"Book me a flight to NYC and also cancel my hotel reservation."* The reasoning pipeline classifier, or the routing model in one turn, detects the requests. The `strategy` controls how they are dispatched. See [Detect multiple intents in one user message](/agent-platform/abl/how-to/detect-multiple-intents) for how detection works.
 
 ```yaml
 MULTI_INTENT:
@@ -414,13 +463,15 @@ MULTI_INTENT:
 
 | Property                        | Type      | Default        | Description                                                                 |
 | ------------------------------- | --------- | -------------- | --------------------------------------------------------------------------- |
-| `enabled`                       | `boolean` | `true`         | Whether multi-intent detection and triage is active.                        |
+| `enabled`                       | `boolean` | `true`         | Whether multi-intent handling is active. Detection by the classifier also needs the project reasoning pipeline on. When the pipeline is off, a supervisor runs its classifier fallback only when `enabled: true` is written in the agent. |
 | `strategy`                      | `string`  | `primary_queue`| How detected intents are dispatched. See [Strategies](#multi-intent-strategies). |
 | `unknown_relationship_strategy` | `string`  | `parallel`     | Fallback strategy when the relationship between intents is unknown: `sequential`, `parallel`, or `disambiguate`. |
-| `max_intents`                   | `number`  | `3`            | Maximum intents to consider per message (1–10).                             |
-| `confidence_threshold`          | `number`  | `0.6`          | Minimum confidence (0.0–1.0) for a secondary intent to be accepted.         |
+| `max_intents`                   | `number`  | `3`            | The most requests the queue holds and the most choices a `disambiguate` menu shows (1–10). It does not limit what the classifier detects, and it does not cap a `parallel` plan or the tasks of a `sequential` plan built from a classifier detection. |
+| `confidence_threshold`          | `number`  | `0.6`          | Minimum confidence (0.0–1.0) for a secondary intent to be accepted. A lower-confidence alternative is dropped without a trace event. |
 | `queue_max_age_ms`              | `number`  | `600000`       | Time-to-live for queued intents in milliseconds (0–3,600,000). After this, queued intents are dropped. |
 | `advance_on_primary_response`   | `boolean` | `true`         | With `strategy: primary_queue`, whether the primary specialist's first delivered, non-blocking answer counts as done for queue purposes — advancing to the next queued intent in the same turn. Also applies to a `sequential` task resuming after a nested child returns, and to the option picked from a `disambiguate` menu. Set `false` to require an explicit completion signal (a `COMPLETE` condition, a terminal control, or return-to-parent) before advancing. See the note below for how a prose-only reply is judged. |
+
+Write `MULTI_INTENT` keys in snake_case. A camelCase key, an unknown key, or an empty block is ignored without a message. A repeated key keeps the last value.
 
 ### Multi-intent strategies
 

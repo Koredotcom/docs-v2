@@ -1,0 +1,206 @@
+# Detect multiple intents in one user message
+
+Use this pattern when you must understand why the platform treats a message as one request or as several, and tune that decision.
+
+## Concept
+
+This article covers detection: how the platform decides that a message holds more than one intent. To choose what happens next, such as queueing, running in sequence, or running in parallel, see [Handle messages that contain multiple user intents](/agent-platform/abl/how-to/handle-multiple-intents) and [Run multiple agents in parallel with multi-intent fan-out](/agent-platform/abl/how-to/parallel-multi-intent-fan-out).
+
+Detection has one main path and three narrower paths.
+
+| Path | When it runs |
+| ---- | ------------ |
+| Pipeline classifier | The project enables the reasoning pipeline. One model call returns a list of intents. This is the main path. |
+| Supervisor routing calls | The routing model makes several routing calls in one turn. See the handling article. |
+| Classifier fallback with the pipeline off | A router or orchestrator supervisor, on the first customer request only, with two or more targets, and `MULTI_INTENT` `enabled: true` written in the agent. |
+| Flow `ON_INPUT` branches | Two or more `ON_INPUT` branches match the same message. |
+
+The platform does not detect intents with embeddings in production. You cannot set the detection prompt, the classifier timeout, or a classifier cap in ABL.
+
+## Minimal working example
+
+A service desk supervisor lets the classifier detect billing and shipping intents in one message. It sets both thresholds and a minimum confidence for each detected request.
+
+The specialists are short stand-ins in the same project. Replace them with your real agents.
+
+`agents/service-desk.agent.abl`
+
+```abl
+SUPERVISOR: Service_Desk
+GOAL: "Route billing and shipping requests, including messages that contain both."
+
+MULTI_INTENT:
+  enabled: true
+  strategy: auto
+  max_intents: 3
+  confidence_threshold: 0.7
+
+INTENTS:
+  billing_help: "Invoices, charges, refunds, or payment methods."
+  shipping_help: "Delivery dates, tracking, or address changes for a parcel."
+
+EXECUTION:
+  pipeline:
+    enabled: true
+    mode: parallel
+    shortCircuit:
+      enabled: true
+      confidenceThreshold: 0.9
+    intentBridge:
+      enabled: true
+      guidedThreshold: 0.6
+
+HANDOFF:
+  - TO: Billing_Agent
+    WHEN: intent.category == "billing_help"
+    RETURN: true
+    SUMMARY: "Customer needs billing help."
+  - TO: Shipping_Agent
+    WHEN: intent.category == "shipping_help"
+    RETURN: true
+    SUMMARY: "Customer needs shipping help."
+```
+
+`agents/billing-agent.agent.abl`
+
+```abl
+AGENT: Billing_Agent
+GOAL: "Answer billing questions."
+COMPLETE:
+  - WHEN: true
+    RESPOND: "Billing handled."
+```
+
+`agents/shipping-agent.agent.abl`
+
+```abl
+AGENT: Shipping_Agent
+GOAL: "Answer shipping questions."
+COMPLETE:
+  - WHEN: true
+    RESPOND: "Shipping handled."
+```
+
+## How it works
+
+### What the classifier sees and returns
+
+The classifier reads:
+
+- The current message and the last 4 earlier messages.
+- Each intent category and its description from `INTENTS:`.
+- The names and descriptions of the agent's domain tools.
+- The agent goal and limitations, when set.
+
+It returns a list of intents. Each entry has a category, a confidence from 0 to 1, and a short summary of that request. It also returns a relationship: `independent`, `dependent`, or `ambiguous`.
+
+What the platform does with the answer:
+
+- A category that is not in your list is dropped.
+- A reply that cannot be read, a reply cut off by the output limit, or an empty list becomes one intent with no category and confidence 0.
+- Fewer than two intents means the multi-intent path does not run.
+- If the relationship is missing, the platform sets it. An intent without a route makes it `ambiguous`. All intents on one agent make it `dependent`. Otherwise it is `ambiguous`.
+
+You cannot change the classifier timeout, its output size, or its prompt in ABL. It uses the project pipeline model.
+
+### Two thresholds in sequence
+
+A message passes through up to two confidence checks, then the `MULTI_INTENT` filter.
+
+| Step | Setting | Default | Effect |
+| ---- | ------- | ------- | ------ |
+| 1. High-confidence mode | `shortCircuit.confidenceThreshold` | 0.85 | Needs `shortCircuit.enabled`, two or more matching routes, a target for every intent, and every intent at or above the threshold. The relationship picks the plan: `independent` runs in parallel, `dependent` in sequence, `ambiguous` goes to model reasoning. |
+| 2. Guided mode | `intentBridge.guidedThreshold` | 0.5 | Needs every intent at or above the threshold, and `intentBridge.multiIntentSignal` on. The plan uses your declared strategy. |
+| 3. Alternative filter | `MULTI_INTENT` `confidence_threshold` | 0.6 | Drops detected alternatives below the value. The drop is silent. |
+
+Example: intents at 0.9 and 0.7 do not pass step 1 at 0.85, because 0.7 is below it. They pass step 2 at 0.5, and the 0.6 filter keeps both.
+
+`max_intents` applies after detection, and only to some plans. It limits the queue, which holds the requests that wait their turn, and the menu choices of the `disambiguate` strategy. It is not part of the classifier prompt. It does not cap a `parallel` plan, and it does not cap the tasks that a `sequential` plan runs after a classifier detection. Every detected request that passes the confidence filter runs. The classifier output limit is the practical bound on how many intents it returns.
+
+The pipeline settings in an agent file must use camelCase keys: `shortCircuit`, `confidenceThreshold`, `intentBridge`, `guidedThreshold`. Snake_case keys are dropped without a message. The agent setting `EXECUTION` `pipeline` `enabled: true` has no effect unless the project runtime configuration also enables the pipeline.
+
+### Detection in a flow
+
+A `FLOW` step checks each `ON_INPUT` branch alone. A branch with no condition, or a branch that ends in `COMPLETE`, is skipped. Two or more matches make a multi-intent message. The confidence does not come from a model. It comes from English wording in the message:
+
+| Wording | Relationship | Confidence |
+| ------- | ------------ | ---------- |
+| `either ... or` | ambiguous | 0.76 |
+| `if`, `unless` | dependent | 0.86 |
+| `then`, `before`, `after`, `next` | dependent | 0.92 |
+| `and`, `also` | independent | 0.84 |
+| None of these | ambiguous | 0.68 |
+
+Each later intent subtracts 0.04, with a floor of 0.55. A `confidence_threshold` above 0.92 drops every flow detection. A value above 0.68 drops a message with none of these words. A message in another language gets 0.68.
+
+### When the classifier fails
+
+Three failures in a row open a circuit breaker for the tenant. It resets after 60 seconds. While it is open, detection stops silently and the supervisor routes with its normal model-driven path.
+
+### What a route can read
+
+A route `WHEN` can read `intent.category` and `intent.confidence`. A condition on `intent.intent_count` compiles but is not available to routes. Do not use it.
+
+## Common variations
+
+### Tighten detection
+
+Raise `MULTI_INTENT` `confidence_threshold` to drop weak second requests. Raise `shortCircuit.confidenceThreshold` to send fewer messages to the fast path.
+
+### Loosen detection
+
+Lower `intentBridge.guidedThreshold` and `confidence_threshold`. Expect more false multi-intent plans. Two intents that map to one agent become `dependent`.
+
+### Turn detection off
+
+Set `MULTI_INTENT` `enabled: false`. The supervisor makes one routing call per turn.
+
+## Verification
+
+1. Run the validator on all three files. Expect no errors and no warnings.
+2. Say "I was charged twice and where is my parcel". Expect a plan with both intents.
+3. In the trace, open the `pipeline_classify` event. Check the intents, their confidence, and their summaries.
+4. Open `pipeline_routing_resolve` for the matching routes. Open `pipeline_tiered_action` for the tier chosen.
+5. Open `multi_intent_plan_built` for the strategy, the relationship, and the targets.
+6. Compare the intents in `pipeline_classify` with the targets in the plan. An intent that is missing from the plan was dropped by a threshold. No event reports the drop.
+7. Say "I was charged twice". Expect a single intent and the normal route.
+
+## Production readiness checklist
+
+- The project enables the reasoning pipeline. Without it the agent setting does nothing.
+- Pipeline keys in the agent file are camelCase.
+- Every intent has a description that separates it from the others.
+- Both thresholds are tested with confidences on each side.
+- `confidence_threshold` is at most 0.9 if you use flow detection.
+- Tests cover a compound message, a single message, a message with an unknown request, and two intents for one agent.
+- Traces are checked for `pipeline_classifier_unavailable` during tests.
+
+## Common mistakes
+
+| Mistake | Why it happens | How to avoid it |
+| ------- | -------------- | --------------- |
+| Writing `maxIntents` or `confidenceThreshold` in `MULTI_INTENT` | The pipeline uses camelCase. | `MULTI_INTENT` keys are snake_case. A camelCase key is ignored without a message. |
+| Writing `short_circuit` in the pipeline | Other sections use snake_case. | Write `shortCircuit`. A snake_case key is dropped. |
+| Setting `pipeline.enabled: true` in the agent only | The agent file looks complete. | Enable the pipeline in the project runtime configuration. |
+| Expecting `max_intents` to limit the classifier or a parallel plan | The name suggests it. | It limits the queue and the menu. Raise `confidence_threshold` to run fewer requests. |
+| Expecting a trace of dropped alternatives | Plans list the kept targets. | Compare `pipeline_classify` with the plan. |
+| Expecting embeddings or a detection model setting | Other tools offer them. | They are not available in ABL. |
+
+## Troubleshooting
+
+| Symptom | Likely cause | What to check |
+| ------- | ------------ | ------------- |
+| A compound message routes as one intent | The classifier returned one category, or dropped one as unknown. | `pipeline_classify` and the category names. |
+| The second request is missing from the plan | Its confidence is below `confidence_threshold`. | The confidence in `pipeline_classify`. |
+| Compound messages go to model reasoning | The relationship is `ambiguous`. | The relationship in `multi_intent_plan_built`. |
+| Detection stops after errors | The circuit breaker is open. | `pipeline_classifier_unavailable`. |
+| Two intents run in sequence and not in parallel | Both map to one agent, so they are `dependent`. | The route targets. |
+| The compile fails with `MULTI_INTENT_INVALID_CONFIDENCE_THRESHOLD` | The value is outside 0 to 1. | The value. |
+
+## Related HowTos
+
+- [Handle messages that contain multiple user intents](/agent-platform/abl/how-to/handle-multiple-intents)
+- [Run multiple agents in parallel with multi-intent fan-out](/agent-platform/abl/how-to/parallel-multi-intent-fan-out)
+- [Configure EXECUTION.pipeline models, modes, thresholds, and fallbacks](/agent-platform/abl/how-to/configure-agent-execution-pipeline)
+- [Define intents with examples and keyword patterns](/agent-platform/abl/how-to/define-intents-with-examples)
+- [Improve intent matching with domain glossary and embeddings](/agent-platform/abl/how-to/improve-intent-matching)
