@@ -375,6 +375,29 @@ FLOW:
 
 Upper-case keys at that level (`PROMPT`, `STRATEGY`, and other recognized GATHER-block keywords) stay GATHER block properties, not fields. Only a lower-case (or mixed-case) name that is not a recognized GATHER-block keyword is read as a new field header.
 
+#### Inline and bare forms
+
+For fields that need no other properties, write the names on the `GATHER:` line, or as bare list items:
+
+```yaml
+FLOW:
+  collect_name:
+    REASONING: false
+    GATHER: first_name, last_name
+    THEN: next_step
+
+  collect_contact:
+    REASONING: false
+    GATHER: [email, phone]
+    THEN: next_step
+```
+
+A bare list item, such as `- email`, is a required field. The inline forms `GATHER: a: required, b: optional` are also accepted. A list item that ends in `default=value` sets `required: false` and a default, and always gives warning `W822`.
+
+#### Inheriting a top-level field
+
+A step field inherits the properties of a top-level `GATHER` field with the same name. The step overrides only the properties it sets. A step field that sets nothing but `required` or `optional`, such as `- notes: optional`, does not change the inherited `required` value. Add another property, such as `prompt`, to override it.
+
 #### Multi-field collection
 
 
@@ -413,10 +436,12 @@ Each field in a flow `GATHER:` supports these properties:
 | `prompt`                               | `string`                     | No       | _none_     | Question shown to the user          |
 | `type`                                 | `string`                     | No       | `"string"` | Data type                           |
 | `default`                              | `any`                        | No       | _none_     | Default value                       |
-| `validation`                           | `string`                     | No       | _none_     | Validation expression               |
-| `infer`                                | `boolean`                    | No       | `false`    | Allow LLM inference                 |
+| `validation`, `validate`               | `string`                     | No       | _none_     | Validation expression. Both key names are accepted, here and in a top-level `GATHER`. |
+| `description`                          | `string`                     | No       | _none_     | Model-facing meaning of the value, separate from `prompt` |
+| `strategy`                             | `"auto"` , `"ml"` , `"llm"` , `"hybrid"` , `"pattern"` | No | _none_ | Extraction strategy for this field. A field value wins over the block `STRATEGY`. |
+| `infer`                                | `boolean`                    | No       | `false`    | Fill from earlier customer messages when the step starts to collect |
 | `infer_confidence`                     | `number`                     | No       | `0.8`      | Minimum inference confidence        |
-| `infer_confirm`                        | `boolean`                    | No       | `true`     | Confirm inferred values             |
+| `infer_confirm`                        | `boolean`                    | No       | `true`     | Ask the customer to confirm inferred values |
 | `extraction_hints`                     | `string[]`                   | No       | _none_     | LLM extraction guidance             |
 | `range`                                | `boolean`                    | No       | `false`    | Collect as range                    |
 | `list`                                 | `boolean`                    | No       | `false`    | Collect as array                    |
@@ -452,7 +477,9 @@ FLOW:
 - **Errors.** An invalid `BARGE_IN` is [`VOICE_INVALID_BARGE_IN`](/agent-platform/abl/reference/errors-and-warnings#voice_invalid_barge_in). A non-boolean `STREAMING` warns with [`VOICE_INVALID_STREAMING`](/agent-platform/abl/reference/errors-and-warnings#voice_invalid_streaming). `LISTENING` is [`VOICE_LISTENING_CALL_LEVEL_ONLY`](/agent-platform/abl/reference/errors-and-warnings#voice_listening_call_level_only). Keypad settings belong in the field's `DTMF:` block.
 - **Runtime support.** A field's `BARGE_IN` is published with the IR marker `voice_output_policy`. A runtime without the marker refuses the agent at publish, deploy and activation.
 
-<Note> Flow gather fields also accept the same additional properties as top-level [GATHER](/agent-platform/abl-reference/gather) fields: `entity_ref`, `options`, `message_key`, `satisfied_by`, `validation_process`, `retry_prompt`, `max_retries`, `preferences`, `sensitive`, `sensitive_display`, `mask_config`, `pii_type`, `transient`, `extraction_pattern`, `extraction_group`, and `semantics`. In addition, a flow gather field may carry `rich_content` format variants for its prompt. Flow gather uses `validation:` where the top-level section uses `validate:`. </Note>
+<Note> Flow gather fields also accept the same additional properties as top-level [GATHER](/agent-platform/abl-reference/gather) fields: `entity_ref`, `options`, `message_key`, `satisfied_by`, `validation_process`, `retry_prompt`, `max_retries`, `preferences`, `sensitive`, `sensitive_display`, `mask_config`, `pii_type`, `transient`, `extraction_pattern`, `extraction_group`, and `semantics`. In addition, a flow gather field may carry `rich_content` format variants for its prompt. Both `validation:` and `validate:` are accepted in a flow field. Write `transient` for a field in a top-level `GATHER` only: the runtime does not clear a transient field in a flow step.</Note>
+
+A flow step asks only for required fields. Optional fields are captured when the customer volunteers them and are never asked. A step with only optional fields passes on entry. Put `ON_INPUT` branching in the step after the `GATHER` step. A step that has both gives warning `FLOW_ON_INPUT_GATHER_ORDER_AMBIGUITY`. A multi-line `VALIDATE` block is ignored with warning `W174`, and a `VALIDATE` object or list is used literally as a regular expression with warning `W175`.
 
 #### Field-level listening settings (`ASR:`)
 
