@@ -146,38 +146,79 @@ You can download recordings, transcripts, latency reports, and events from the d
 
 ## Latency Metrics (Beta)
 
-The Latency Metrics feature measures the duration of each stage in a voice interaction: ASR, bot processing, TTS, and end-to-end response time.
+The Latency Metrics feature measures the duration of each stage in a voice interaction. Metrics are displayed against user messages and bot messages separately in the Transcript tab.
 
-- **ASR Latency**: Time between when the user stops speaking and when the ASR provider returns the full transcription.
+**User Message Metrics**
 
-    Formula: `ASR Latency = User stops speaking → ASR returns full transcript`
+The following metrics display against each user message:
 
-    Example: User stops speaking at `10:00:05.000`; ASR returns transcript at `10:00:05.450` → ASR Latency = 450 ms
+| Metric | Description | Formula |
+|:------------|:-----------------|:-------------|
+| ASR Latency | Time between when the user stops speaking and when the ASR provider returns the complete transcription. | User stops speaking → ASR returns full transcript |
+| Endpointing Latency | Time between when Voice Gateway receives the final ASR transcript and when it commits the turn. | Final transcript received → Turn committed by Voice Gateway |
+| Turn Detection Latency | Combined latency for detecting and processing the user's turn. | ASR Latency + Endpointing Latency |
+| Endpointing Reason | The rule that causes Voice Gateway to commit the turn. See Endpointing Reasons. | — |
 
-- **Bot Latency**: Time between when the Voice Gateway (VG) sends the transcription to the platform and when VG receives the full response.
+Example (turn detection enabled):
 
-    Formula: `Bot Latency = VG sends transcript → VG receives bot response`
+User stops speaking at 10:00:05.000 → ASR returns transcript at 10:00:05.450 → Turn committed at 10:00:05.851
 
-    Example: Transcript sent at `10:00:05.450`; bot response received at `10:00:06.300` → Bot Latency = 850 ms
+ASR Latency = 450 ms
+Endpointing Latency = 401 ms
+Turn Detection Latency = 851 ms
 
-- **TTS Latency**: Time between when VG sends the bot's response text to the TTS provider and when VG receives the first byte of synthesized audio (Time to First Byte). Total TTS audio-generation time isn't shown.
+<Note> When turn detection isn't configured, Endpointing Latency is shown as 0 — Voice Gateway commits the turn immediately on receiving the Is Final event. The Endpointing Reason is displayed as Silence threshold reached with final speech.</Note>
 
-    Formula: `TTS Latency = VG sends TTS request → VG receives first audio byte`
+**Bot Message Metrics**
 
-    Example: TTS request sent at `10:00:06.300`; first audio byte received at `10:00:06.700` → TTS Latency = 400 ms
+The following metrics display against each bot message:
 
-- **End-to-End Latency**: Total time between when the user stops speaking and when the first audio byte plays back to the user.
+| Metric             | Description                                                                                                                                                  | Formula                                         |
+| :---------------------- | :---------------------------------------------------------------------------------------------------------------------------------------------------------------- | :--------------------------------------------------- |
+| Bot Latency        | Time between when Voice Gateway sends the transcription to the platform and when it receives the full bot response.                                              | VG sends transcript → VG receives bot response     |
+| TTS Latency        | Time between when Voice Gateway sends the bot's response text to the TTS provider and when it receives the first byte of synthesized audio (Time to First Byte). | VG sends TTS request → VG receives first audio byte |
+| End-to-End Latency | Total time between when the user stops speaking and when the first audio byte plays back to the user.                                                            | ASR Latency + Endpointing Latency + Bot Latency + TTFB |
 
-    Formula: `End-to-End Latency = User stops speaking → First audio byte heard`
+At the bottom of each bot message, the following breakdown displays:
 
-    Example: User stops speaking at `10:00:05.000`; first audio byte heard at `10:00:06.700` → End-to-End Latency = 1.7 seconds
+Includes user turn: ASR x ms + Endpointing y ms
 
-| Metric | Measures Time Between | Represents | Example |
-|:--------|:-----------------------|:------------|:---------|
-| `ASR Latency` | User stops speaking → ASR full transcript | Speed of speech recognition | 450 ms |
-| `Bot Latency` | VG sends transcript → VG gets bot response | Bot processing and platform delays | 850 ms |
-| `TTS Latency` | VG sends TTS request → VG receives first audio byte | TTS responsiveness (Time to First Byte) | 400 ms |
-| `End-to-End Latency` | User stops speaking → user hears first audio byte | Full round-trip delay | 1.7 s |
+Example:
+
+Transcript sent at 10:00:05.851 → Bot response received at 10:00:06.701 → First audio byte received at 10:00:07.101
+Bot Latency = 850 ms
+TTS Latency = 400 ms
+End-to-End Latency = 450 + 401 + 850 + 400 = 2,101 ms
+
+**Latency Metrics Summary**
+
+| Metric             | Against  | Measures time between                          | Example |
+| :---------------------- | :------------ | :--------------------------------------------------- | :----------- |
+| ASR Latency            | User message | User stops speaking → ASR full transcript           | 450 ms      |
+| Endpointing Latency    | User message | Is Final received → Turn committed                  | 401 ms      |
+| Turn Detection Latency | User message | User stops speaking → Turn committed                | 851 ms      |
+| Bot Latency            | Bot message  | VG sends transcript → VG receives bot response      | 850 ms      |
+| TTS Latency            | Bot message  | VG sends TTS request → VG receives first audio byte | 400 ms      |
+| End-to-End Latency     | Bot message  | User stops speaking → First audio byte heard        | 2,101 ms    |
+
+**Endpointing Reasons**
+
+The Endpointing Reason identifies the rule that caused Voice Gateway to commit the turn. It displays alongside the user message metrics.
+
+| Reason                  | UI Label                                                                                  | Description                                                                                                                                |
+| :--------------------------- | :--------------------------------------------------------------------------------------------- | :---------------------------------------------------------------------------------------------------------------------------------------------- |
+| (Turn detection disabled) | Silence threshold reached with final speech.                                                  | The silence threshold was reached, and a final speech result was available.                                                                    |
+| eouRelease:smart_turn       | Audio-based turn end detected.                                                                | The turn ended early based on voice analysis indicating that the caller had finished speaking.                                                 |
+| eouRelease:text_eou         | Text-based turn end detected.                                                                 | The turn ended early because the text model determined that the caller's sentence was complete.                                                |
+| audioFastCommit             | Early turn end detected based on voice confidence.                                            | The turn ended early because the voice model was highly confident the caller had finished speaking and a final speech result was available.    |
+| finalAfterSilence           | Silence threshold reached but final speech received shortly afterward.                        | The silence threshold was reached before the final speech result arrived; the turn ended when the final result was received shortly afterward. |
+| endpoint                    | Silence threshold reached with final speech.                                                  | The silence threshold was reached, and a final speech result was available.                                                                    |
+| endpointMaxNoFinal          | Silence threshold reached; turn ended with interim speech since no final speech was received. | The maximum hold time was reached without a final speech result; the available interim speech was used to complete the turn.                   |
+| silenceCeiling              | Silence limit reached beyond threshold value, and no final speech is received.                | The silence limit was reached without a reliable final speech result; the detected speech may be incomplete or unreliable.                     |
+
+**Enabling Latency Metrics**
+
+To enable the Latency Metrics download, add the call control parameter `notifySttLatency` and set it to true. 
 
 ---
 
@@ -234,6 +275,8 @@ You can create and save multiple filters on the Conversations tab to avoid re-en
 SmartStatus is a fine-grained, business-relevant version of conversation status. It detects events such as call handling, messaging activity, inactivity, or disconnections and updates the conversation status accordingly.
 
 ![Smart Status](/ai-for-service/analytics/overview/images/smart-status.png)
+
+In the Smart Status filter, Bot conversation timer triggered displays under Terminated. Select it to list calls that ended because the maximum bot call duration was reached. Dashboard counts include these calls under the same classification.
 
 #### Filter for Custom Tags
 
@@ -356,8 +399,11 @@ Connection lost with Agent `<Agent Name>`: Timestamp and error type: SIP drop, W
 | `Consulting agents` | Name of the consulting agent. |
 | `Joined Users` | Names of users who joined. |
 | `Queues` | Queues that handled the call. |
-| `Status` | Conversation status (SmartStatus). |
+| `Status` | Conversation status. |
 | `Mode` | Mode of the conversation. |
+| `Smart Status` | Detailed conversation status. |
+| `Reason` | 	Reason for the Smart Status. |
+| `Disconnecting Reason` | Event that ended the conversation. |
 | `CSAT` | CSAT survey score and feedback. |
 | `Disposition` | Dispositions assigned. |
 | `Notes` | Notes added to the conversation (view only). |
@@ -366,7 +412,24 @@ Connection lost with Agent `<Agent Name>`: Timestamp and error type: SIP drop, W
 | `Campaign Name` | Campaign name (applicable for campaigns). |
 | `Session-level tags` | Session-level tags assigned to the conversation. |
 
-![Details Tab](/ai-for-service/analytics/overview/images/csat-feedback.png)
+Calls ended by the maximum bot call duration
+
+When a call ends because the maximum bot call duration is reached, the Details tab shows these values:
+
+`Status`: Completed
+`Mode`: Bot conversation timer triggered
+`Smart Status`: Terminated
+`Reason`: Bot conversation timer triggered
+`Disconnecting Reason`: botHangUp
+
+Calls that end for any other reason keep their existing values. These include calls ended by the caller, a human agent, Voice Gateway, or a queue timeout.
+
+Highlighted Notes:
+
+Highlighted notes and their highlight state are available in the Conversation Details view. Notes highlighted in the current conversation appear with a yellow indicator. Notes highlighted in a previous conversation appear with a grey indicator.
+
+
+![Details Tab](/ai-for-service/analytics/overview/images/log-details-tab.png)
 
 **User**: Shows the following information.
 
@@ -455,7 +518,20 @@ A message appears on the Transcript tab when Call Recording Control is disabled 
 | `media_unavailable_short_duration` | Recording unavailable. No recording was generated because the captured audio was less than 2 seconds long.                                                                                                           |
 | `recording_disabled`             | Media unavailable. Recording is disabled for this interaction.                                                                                                                   |
 
-<Note>Ensure that the audio recording duration exceeds 2 seconds. Recordings with a duration of 2 seconds or less aren't available on the platform.</Note>
+<Note>
+Ensure that the audio recording duration exceeds 2 seconds. Recordings with a duration of 2 seconds or less aren't available on the platform.
+
+Why call duration and recording duration may differ ?
+
+Call duration and recording duration are measured independently:
+
+- Call duration measures the time from when the call connects until it disconnects.
+- Recording duration measures only the period during which the recording service actively captures audio.
+
+The recording may start slightly after the call connects because the recording service requires initialization. Similarly, recording may stop before or after the call disconnects. Transfers, recording pauses and resumes, and recording-service processing can also contribute to duration differences.
+
+Therefore, a slight difference between call duration and recording duration is expected.
+</Note>
 
 ### Screen Recording
 
