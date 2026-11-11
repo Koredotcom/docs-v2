@@ -225,6 +225,34 @@ CONVERSATION:
       max_questions: 1
 ```
 
+#### Listening mode
+
+On KoreVG pipeline voice, the **listening mode** is fixed for the whole call. **Barge-in** and **streaming** are decided for each spoken output, inside that mode. An agent or channel that authors none of these keys behaves as before.
+
+| Setting | Values | Resolved |
+| ------- | ------ | -------- |
+| Listening mode | `background`, `turn_taking` | Once, at call start |
+| Barge-in | `allow`, `disallow` | Per output |
+| Streaming | `true`, `false` | Per output |
+
+- **`background`.** A sticky background gather listens during and after speech.
+- **`turn_taking`.** Each agent turn is its own foreground gather that listens for the caller's answer.
+- **Resolution, most specific first.** The channel's explicit `listeningMode`. The entry agent's `CONVERSATION.listening.mode`, layered across behavior profiles and the agent. The derived mode: `background` when the entry agent's `listening.barge_in` (otherwise `on_overlap`) allows interruption, or, when the agent sets neither, when the channel's barge-in checkbox is on. Otherwise `turn_taking`.
+- **Fixed for the call.** A handoff, a FLOW step, a reply or a tool cannot change the mode. A later agent's `listening.mode` is ignored.
+- **No per-turn key.** `LISTENING` in any `VOICE` block is the compile error [`VOICE_LISTENING_CALL_LEVEL_ONLY`](/agent-platform/abl/reference/errors-and-warnings#voice_listening_call_level_only).
+- **Default barge-in.** It comes from `listening.barge_in`, otherwise `listening.on_overlap`. The `on_overlap` values `stop_and_listen`, `listen`, `yield` and `yield_to_user` allow. The values `ignore_overlap`, `continue` and `talk_over` disallow.
+
+```yaml
+CONVERSATION:
+  listening:
+    mode: turn_taking
+    barge_in: allow
+```
+
+Two warnings apply to the mode. [`CONVERSATION_BACKGROUND_DISALLOW_DEFAULT`](/agent-platform/abl/reference/errors-and-warnings#conversation_background_disallow_default) flags `background` with a default of `disallow`. [`CONVERSATION_BACKGROUND_ONLY_WITH_TURN_TAKING`](/agent-platform/abl/reference/errors-and-warnings#conversation_background_only_with_turn_taking) flags caller back-channel phrases or `barge_in_continuation` with `turn_taking`. A behavior profile that sets `listening.mode` gets the same two warnings.
+
+An agent that sets `listening.mode` is published with the IR marker `voice_listening_mode`. A runtime without the marker refuses the agent. Per-output placements are described in [Scoped barge-in](/agent-platform/abl/reference/flow#scoped-barge-in), [Voice delivery for a field](/agent-platform/abl/reference/flow#voice-delivery-for-a-field) and [Voice reply policy](/agent-platform/abl/reference/tools#voice-reply-policy).
+
 #### Voice turn-taking
 
 For voice/telephony channels, four `listening` sub-blocks control turn-taking behavior:
@@ -240,6 +268,8 @@ For voice/telephony channels, four `listening` sub-blocks control turn-taking be
 | `max_retries` | `number` | Maximum no-input prompts before exhaustion. Integer from 0 to 20. Default `3`. |
 | `on_exhausted` | `"hangup"` , `"transfer"` , `"custom"` , `"hook"` | Action when retries run out. `hook` runs the agent's `on_no_input_exhausted` hook. See [on_no_input_exhausted](/agent-platform/abl/reference/lifecycle-and-hooks#on_no_input_exhausted). A behavior profile takes action words only. |
 | `exhausted_message` | `string` | Message when retries are exhausted. |
+| `barge_in` | `"allow"` , `"disallow"` | Whether a reprompt or the exhausted message can be interrupted. Inherits the owning step, then the turn default. |
+| `streaming` | `boolean` | Whether a reprompt or the exhausted message is streamed. Inherits the owning step, then the turn default. |
 | `order` | `"sequence"` , `"random"` | Prompt play order. |
 | `play_style` | `"looped"` , `"once"` , `"non_looped"` | Whether prompts repeat. |
 | `messages` | `object[]` | Static re-prompt texts. Each message has `text` and can also have `ssml`. The compiler requires at least one message when the block declares `enabled: true` and `mode: static`. |
@@ -262,13 +292,16 @@ messages:
 
 Silence and keypad input interact as follows:
 
-- Caller speech or speech barge-in resets the retry sequence. Accepted non-empty DTMF input also resets it.
+- Recognized speech or speech barge-in resets the retry sequence. Accepted non-empty DTMF input also resets it. An ASR partial only restarts the silence window. It keeps the retry count until an answer is accepted, so partials that never commit (noise, abandoned speech) still exhaust the retries.
+- Forwarded native voice activity detection (VAD) activity pauses the background silence window without resetting retries or accepting an answer. When the activity stops, the configured window starts again.
 - DTMF barge-in stops the silence timer without resetting the retry sequence.
 - A gather that receives no digits and no speech restarts the timer with the existing retry count. This includes a press of the finish key alone.
+- A keypad-only gather, such as a secure card entry, never receives a speech end-of-speech timeout, whatever pause timeout the call has. Speech and mixed gathers keep it.
+- The final line the caller hears before a hang-up is recorded in the Conversation as an assistant turn, like every reprompt. This covers the `exhausted_message`, the fallback line when a `transfer` has no target, and the closing line of a flow target that could not run. If the voice gateway does not confirm that the line finished, the row is marked as playback unconfirmed. If only part of a long line played, it is also marked partial. A line the gateway never received is not recorded.
 
 Realtime voice for Gemini, Nova, and OpenAI uses the same effective configuration for static prompts. Dynamic no-input generation is available on pipeline voice only. Provider activity, transfer, and channel-capability gates still apply. OpenAI also honors the channel's `realtimeNoInputEnabled: false` setting. A resolved configuration with an invalid value, such as a retry count outside 0 to 20, disables no-input handling for the session. Pipeline voice emits `voice_no_input_config_dropped`. Realtime voice reports a `status_update` with `operation: no_input` and `source: invalid`, or `source: dynamic_unsupported` when it rejects dynamic mode.
 
-**`dtmf`**: set the default grouping of keypad digits for every KoreVG/Jambonz pipeline voice turn of the agent or profile. It takes the same keys as a FLOW field `DTMF:` block.
+**`dtmf`**: set the default grouping of keypad digits for every KoreVG pipeline voice turn of the agent or profile. It takes the same keys as a FLOW field `DTMF:` block.
 
 | Key | Values | Description |
 | --- | ------ | ----------- |

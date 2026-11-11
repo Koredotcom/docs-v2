@@ -323,7 +323,16 @@ Once the channel is created, open it from the **Realtime LLM Voice** connections
           Also configure the **Advanced voice behaviour** settings that apply to all providers, described after the provider list.
         </Accordion>
       </AccordionGroup>
- 
+
+    * **Parallel caller transcription**: For supported Kore.ai Voice Gateway (KoreVG) realtime channels, you can use a separate speech-to-text (STT) provider to transcribe caller audio while the realtime speech-to-speech (S2S) provider handles the conversation. The S2S provider continues to supply the agent's response transcript.
+    * **Availability:** Off by default. A platform administrator must enable the **Realtime LLM parallel STT** feature for your tenant. When enabled, use the **Caller transcription** card on the **Speech** tab to select a configured STT provider instance and the caller's language.
+    * **Supported S2S providers:** **OpenAI Realtime**, **Azure OpenAI Realtime**, **Grok Realtime (S2S)**, and **Google Gemini Live**. **Amazon Nova Sonic (S2S)** isn't supported.
+    * **Transcripts:** Final transcripts from the STT provider are used for caller messages in the session transcript and conversation history, with one message per caller turn. Interim caller transcripts aren't sent. Agent transcripts still come from the S2S provider. If the STT provider doesn't return a final transcript within 3 seconds, the system falls back to the S2S caller transcript.
+    * **Troubleshooting:** The `voice_stt` trace can show both the STT transcript (`transcript`) and the S2S transcript (`s2sTranscript`) for the same caller turn. They're two values for one turn, not separate messages.
+    * **Billing:** Caller audio goes to both the STT provider and the S2S provider, so review usage and billing for both.
+
+    <Note>The existing **Caller wording** setting controls which wording the agent runs a caller turn on. Itsis separate from selecting an STT provider for caller transcription. If you don't see the **Caller transcription** card, ask your platform administrator whether the feature is enabled for your tenant. If the feature is revoked after configuration, the saved settings become read-only and new calls use S2S caller transcription.</Note>
+
     * **Advanced voice behaviour (all providers)**: Optional behaviours for this channel. Each one is off, empty, or set to the earlier platform behaviour until you change it.
  
       | Field | Description |
@@ -610,41 +619,51 @@ Under **Speech Synthesis**, set the following fields. The available fields vary 
 
 Set the following fields to tune barge-in, listening mode, speech timeout, and no-input behavior for the caller experience.
 
-| Field | Description |
-| --- | --- |
-| **Barge-in** | Allow the caller to interrupt the agent while it is speaking. |
-| **Listening mode** | Controls how the call handles caller interruption. The default is **Agent setting, else Barge-in (Turn-taking)**. When no mode is set, the entry agent's listening setting decides, and without one the mode follows the **Barge-in** checkbox. Once you set a mode here, it takes priority over the agent's setting, and the **Barge-in** checkbox only sets the default for caller interruption. The mode is fixed for the whole call. |
-| **Stream speech** | Speaks each reply as it's generated, for a faster first word. When off, every reply, greeting, and reprompt plays only after it's fully generated. |
-| **Speech Timeout (ms)** | Controls how long the speech provider waits through silence before finalizing the current speech segment. This doesn't combine separate final results. The allowed range depends on the provider (for Microsoft, 100-5000 ms). Leave blank to use the provider default, or select **Use recommended value (3000 ms)**. |
-| **Transcript Grouping Timeout (ms)** | After the speech provider returns a final result, waits this long for another final result and combines the parts into one user input. Leave blank to process each final result immediately. For example, `1500`. |
-| **Welcome Message** | The opening prompt the agent speaks, such as `Hello! How can I help you today?`. |
-| **Allow caller to interrupt the welcome** | When off, the welcome plays to completion even if barge-in is on. It applies only while barge-in is active for the call, through the channel's **Barge-in** setting or the agent's listening settings. |
+| Field                                     | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
+|-------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **Barge-in**                              | Allow the caller to interrupt the agent while it's speaking.                                                                                                                                                                                                                                                                                                                                                                                                                                            |
+| **Listening mode**                        | Controls how the call handles caller interruption. Select **Agent setting, else Barge-in (Turn-taking)** (default), **Background**, or **Turn-taking**. When no mode is set, the entry agent's listening setting decides, and without one the mode follows the **Barge-in** checkbox. Once you set a mode here, it takes priority over the agent's setting, and the **Barge-in** checkbox only sets the default for caller interruption. The mode is fixed for the whole call. See the following table. |
+| **Stream speech**                         | Speaks each reply as it's generated, for a faster first word. When off, every reply, greeting, and reprompt plays only after it's fully generated.                                                                                                                                                                                                                                                                                                                                                      |
+| **Speech Timeout (ms)**                   | Controls how long the speech provider waits through silence before finalizing the current speech segment. This doesn't combine separate final results. The allowed range depends on the provider (for Microsoft, 100-5000 ms). Leave blank to use the provider default, or select **Use recommended value (3000 ms)**.                                                                                                                                                                                  |
+| **Transcript Grouping Timeout (ms)**      | After the speech provider returns a final result, waits this long for another final result and combines the parts into one user input. Leave blank to process each final result immediately. For example, `1500`.                                                                                                                                                                                                                                                                                       |
+| **Welcome Message**                       | The opening prompt the agent speaks, such as `Hello! How can I help you today?`.                                                                                                                                                                                                                                                                                                                                                                                                                        |
+| **Allow caller to interrupt the welcome** | When off, the welcome plays to completion even if barge-in is on. It applies only while barge-in is active for the call, through the channel's **Barge-in** setting or the agent's listening settings.                                                                                                                                                                                                                                                                                                  |
+
+Select one of the following **Listening mode** options.
+
+| Option                                         | Description                                                                                                                |
+|------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------|
+| **Agent setting, else Barge-in (Turn-taking)** | Default. Uses the entry agent's listening setting. Without one, the mode follows the **Barge-in** checkbox.                |
+| **Background**                                 | The system actively listens while the agent is speaking, and the no-input timer pauses whenever caller speech is detected. |
+| **Turn-taking**                                | A listener opens only after a prompt completes. Prompts play as complete audio rather than streamed content.               |
+
+<Note>If you pair **Background** with **Barge-in** off, it behaves like a slower **Turn-taking** mode, and Studio displays a warning.</Note>
 
 **Voice transfer and survey capabilities**
 
 A read-only panel shows how many of the transfer and survey capabilities Runtime evaluates as available for the concrete voice execution boundary (the execution surface is **KoreVG pipeline**), for example **11 of 11 capabilities available**. It lists the following capabilities, each marked **Available** or not.
 
-| Capability | Description |
-| --- | --- |
-| **Human transfer** | Transfer the caller to a human agent. |
-| **Pre-transfer announcement** | Speak an announcement before a transfer. |
-| **Transfer outcome recovery** | Recover when a transfer doesn't complete. |
-| **SIP transfer** | Transfer the call over SIP. |
-| **PSTN transfer** | Transfer the call to a phone number on the public telephone network. |
-| **Bridged agent transcript** | Carry the transcript to the agent the call is bridged to. |
-| **Transfer CSAT** | Collect a satisfaction rating after a transfer (`csat`, `nps`, `likeDislike`). |
-| **Template survey** | Run a template survey with a rating type of `star`, `thumbs`, or `scale`. |
-| **Survey comments** | Collect free-text comments in a survey. |
-| **Survey follow-ups** | Ask follow-up questions in a survey. |
-| **Return-leg survey** | Run a survey on the return leg of a transferred call. |
+| Capability                    | Description                                                                    |
+|-------------------------------|--------------------------------------------------------------------------------|
+| **Human transfer**            | Transfer the caller to a human agent.                                          |
+| **Pre-transfer announcement** | Speak an announcement before a transfer.                                       |
+| **Transfer outcome recovery** | Recover when a transfer doesn't complete.                                      |
+| **SIP transfer**              | Transfer the call over SIP.                                                    |
+| **PSTN transfer**             | Transfer the call to a phone number on the public telephone network.           |
+| **Bridged agent transcript**  | Carry the transcript to the agent the call is bridged to.                      |
+| **Transfer CSAT**             | Collect a satisfaction rating after a transfer (`csat`, `nps`, `likeDislike`). |
+| **Template survey**           | Run a template survey with a rating type of `star`, `thumbs`, or `scale`.      |
+| **Survey comments**           | Collect free-text comments in a survey.                                        |
+| **Survey follow-ups**         | Ask follow-up questions in a survey.                                           |
+| **Return-leg survey**         | Run a survey on the return leg of a transferred call.                          |
 
 **Bind the channel to an environment**
 
 On the **Deployment** tab, under **Environment Binding**, use the **Environment** dropdown to select which deployed version handles incoming messages.
 
-| Option | Description |
-| --- | --- |
-| **Working Copy (draft)** | Uses the current draft of the project. |
+| Option                                       | Description                                                                                                                                                    |
+|----------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **Working Copy (draft)**                     | Uses the current draft of the project.                                                                                                                         |
 | **Development**, **Staging**, **Production** | Uses the active deployment of that environment. An environment with no active deployment appears dimmed with **(no active deployment)** and can't be selected. |
 
 Click **Save Changes** to apply the binding. The button is available only after you change the environment.

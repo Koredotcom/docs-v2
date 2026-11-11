@@ -1,0 +1,160 @@
+# Collect required and optional fields from users
+
+Use this pattern when some fields must be collected before the conversation can finish, and others are welcome but not needed.
+
+## Concept
+
+A field is required unless you say otherwise. A required field with no value blocks collection. An optional field never blocks it.
+
+You have four ways to relax a field. They differ in what the agent does with the field.
+
+| Setting | Blocks completion | The agent asks for it | The runtime captures a volunteered value |
+| ------- | ----------------- | --------------------- | ---------------------------------------- |
+| `required: true` (default) | Yes | Yes | Yes |
+| `required: false` | No | A reasoning agent may ask. A `FLOW` step never asks. | Only with an extraction setting. See below. |
+| `activation: optional` | No, even with `required: true` | Same as `required: false` | Yes. The field is active for extraction. |
+| `prompt_mode: extract_only` | Only if also required | Never | Yes. See [Silently extract values without asking the user](/agent-platform/abl/how-to/silently-extract-values). |
+
+A field that carries a `default` counts as filled for completion. The runtime does not write the default into the field, so a reply template that reads the field may show nothing.
+
+## Minimal working example
+
+An order support agent requires the order number and the issue. It accepts a callback phone number when the customer offers one. The gift note and callback window are optional.
+
+```yaml
+AGENT: Order_Issue_Intake
+
+GOAL: "Log an order issue. Collect the order number and the issue. Capture a phone number if the customer offers one."
+
+PERSONA: "You are a concise support assistant."
+
+GATHER:
+  order_number:
+    prompt: "What is your order number?"
+    type: string
+    required: true
+
+  issue:
+    prompt: "What went wrong with the order?"
+    type: text
+    required: true
+
+  contact_phone:
+    prompt: "Phone number for a callback."
+    type: phone
+    required: false
+    strategy: pattern
+
+  gift_note:
+    prompt: "Is there a gift note to add?"
+    type: string
+    required: false
+
+  callback_window:
+    prompt: "When can we call you?"
+    type: string
+    required: true
+    activation: optional
+
+COMPLETE:
+  - WHEN: order_number IS SET AND issue IS SET
+    RESPOND: "Logged issue for order {{order_number}}. Callback phone: {{contact_phone}}. Gift note: {{gift_note}}. Callback window: {{callback_window}}."
+```
+
+Variable sources:
+
+- All variables are `GATHER` fields.
+- `COMPLETE` reads the two required fields and the three optional fields. The optional ones can be empty.
+
+## How it works
+
+How completion is decided:
+
+- A required field is missing when it has no value, and no `default`.
+- `activation: optional` is never missing. It overrides `required: true`.
+- A value that failed validation is not stored, so the field stays missing.
+- A value whose source the field does not allow, through `satisfied_by`, does not count.
+- A field with an invalid `activation` value stays missing for good. See [Progressively collect fields only when needed](/agent-platform/abl/how-to/progressively-collect-fields).
+
+How extraction treats optional fields:
+
+- A reasoning agent extracts values for all missing fields in one pass before the model replies. A plain optional field is left out of that pass. A plain optional field is one with no `extraction_pattern`, `infer`, `prompt_mode: extract_only`, or `strategy`.
+- To capture a volunteered optional value, give the field one of those settings. The example sets `strategy: pattern` on the phone field, which uses the built-in phone pattern.
+- A `FLOW` step extracts all active step fields in one call, optional ones included, when a model client is wired. Without one, it extracts only the missing fields.
+- A `FLOW` step does not ask for optional fields. A step with only optional fields passes through on entry.
+
+A reasoning agent lists each field in its prompt as required or optional. The model may ask for an optional field. Do not rely on it.
+
+## Common variations
+
+### Ask for an optional field in a FLOW
+
+To ask, make the field required in a step of its own, or write a step prompt that mentions it. See [Collect information inside a FLOW step](/agent-platform/abl/how-to/collect-with-flow-gather).
+
+### Optional in a FLOW step with the shorthand
+
+Write `- phone: optional` in a step. If a top-level `GATHER` has a field of the same name that is required, the shorthand alone does not override it. Add a property such as `prompt`.
+
+### Use a default
+
+Set `default` on a field to let completion pass without a value. Remove `required: false` when you set a default. The compiler warns `W822` for both together.
+
+```yaml
+GATHER:
+  gift_note:
+    prompt: "Is there a gift note to add?"
+    type: string
+    default: "none"
+```
+
+This is a section snippet. Add it to the agent in the minimal example.
+
+### Gate a field instead
+
+Use `activation: progressive` or a `when` condition for a field that applies only after another answer. See [Progressively collect fields only when needed](/agent-platform/abl/how-to/progressively-collect-fields).
+
+## Verification
+
+1. Run the validator. Expect no errors and no warnings.
+2. Say "My order is A100 and it arrived broken". Expect the agent to log the issue without asking for the phone number.
+3. Say "My order is A100, it arrived broken, call me on 555 010 2000". Expect `contact_phone` to fill.
+4. Say only the order number. Expect the agent to ask for the issue.
+5. In the trace, open the `gather_slot_ledger` events with the phase `completion_check`. `missingFields` must list required fields only.
+6. When the trace shows `all_optional_reasoning_gather` as a skip reason, all missing fields were plain optional fields.
+
+## Production readiness checklist
+
+- Every required field is read by `COMPLETE`, a flow step, or a route.
+- Every optional field you need to capture has an extraction setting.
+- Every optional field has a safe fallback where templates read it.
+- No field sets `required: false` together with a `default`.
+- Tests cover a customer who gives only required values, all values, and an optional value in the first message.
+
+## Common mistakes
+
+| Mistake | Why it happens | How to avoid it |
+| ------- | -------------- | --------------- |
+| Writing `required: no` | Other languages accept it. | Write `required: false`. The runtime treats anything other than `true` as optional, and a typo can hide a required field. |
+| Expecting a plain optional field to fill when volunteered | The field is in `GATHER`. | Add `extraction_pattern`, `infer`, `prompt_mode: extract_only`, or `strategy`. |
+| Reading a defaulted field in a reply | The default is not written to the field. | Test the reply, or set the value with `SET`. |
+| Reading an optional field in a condition without a check | The value can be empty. | Use `IS SET` in the condition. |
+| Setting `activation: optional` and `required: true` together | It looks inconsistent. | The field is optional. Remove `required: true` for clarity. |
+
+## Troubleshooting
+
+| Symptom | Likely cause | What to check |
+| ------- | ------------ | ------------- |
+| The agent never finishes | A required field cannot be filled, or has an invalid `activation` value. | `missingFields` in `gather_slot_ledger` and the `activation` spelling. |
+| An optional value the customer gave is lost | The field has no extraction setting. | The extraction settings on the field. |
+| A required field is not asked | `required` was written in a form that reads as `false`. | The exact `required` value. |
+| A reply shows an empty value | The optional field was not filled. | The reply template. |
+| The compile warns `UNUSED_REQUIRED_GATHER_FIELD` | Nothing reads a required field. | `COMPLETE`, flow steps, and route conditions. |
+| The compile warns `W822` | `required: false` and `default` are both set. | Remove one of them. |
+
+{{related}}
+
+- [Collect information with global GATHER](/agent-platform/abl/how-to/collect-with-global-gather)
+- [Collect information inside a FLOW step](/agent-platform/abl/how-to/collect-with-flow-gather)
+- [Progressively collect fields only when needed](/agent-platform/abl/how-to/progressively-collect-fields)
+- [Silently extract values without asking the user](/agent-platform/abl/how-to/silently-extract-values)
+- [Collect multiple fields across a natural conversation](/agent-platform/abl/how-to/collect-multiple-fields-naturally)

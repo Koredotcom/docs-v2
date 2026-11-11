@@ -1,0 +1,202 @@
+---
+title: How to collect information with global GATHER
+sidebarTitle: Collect with global GATHER
+---
+
+<Badge icon="arrow-left" color="gray">[Back to how-to guides](/agent-platform/abl/how-to/overview#data-collection-and-entity-gathering)</Badge>
+
+Use this pattern when an agent must collect several values in conversation and the model, not a fixed script, decides how to ask for them.
+
+## Concept
+
+A global `GATHER` is the top-level `GATHER:` section of an agent. It declares the fields the agent needs. The runtime does the collection work around the model:
+
+1. It lists the fields in the agent prompt, in declaration order, and marks each as required or optional.
+2. On each customer message, it extracts values for all missing fields in one pass.
+3. It validates each value and stores the good ones.
+4. The model asks for whatever is still missing.
+
+The order of questions is the model's choice. The runtime does not run fields in a fixed sequence. For a fixed sequence, use a `GATHER` inside a `FLOW` step. See [Collect information inside a FLOW step](/agent-platform/abl/how-to/collect-with-flow-gather).
+
+Completion is separate from collection. A `COMPLETE` rule fires when its `WHEN` condition is true. Write that condition on the fields you need, for example `amount IS SET`.
+
+## Minimal working example
+
+A transfer assistant collects the source account, amount, and date. The memo is optional.
+
+`agents/transfer-intake.agent.abl`
+
+```yaml
+AGENT: Transfer_Intake
+GOAL: "Collect the details of a funds transfer request and confirm them."
+
+PERSONA: |
+  Concise banking assistant. Ask only for missing details.
+
+GATHER:
+  source_account:
+    prompt: "Which account do you want to send from?"
+    type: string
+    required: true
+  amount:
+    prompt: "How much do you want to send?"
+    type: currency
+    required: true
+  transfer_date:
+    prompt: "When should the transfer happen?"
+    type: date
+    required: true
+  memo:
+    prompt: "Do you want to add a memo?"
+    type: string
+    required: false
+
+COMPLETE:
+  - WHEN: source_account IS SET AND amount IS SET AND transfer_date IS SET
+    RESPOND: "Transfer of {{amount}} from {{source_account}} on {{transfer_date}} is ready for review."
+```
+
+Variable sources:
+
+- All four variables are `GATHER` fields that the customer supplies.
+- `COMPLETE` reads the three required fields. The memo is optional and does not block completion.
+
+## How it works
+
+Field syntax:
+
+- Write each field as a named block: the field name, a colon, and indented properties. The name uses letters, digits, and underscores. A name with a hyphen or a dot is not recognized.
+- Property keys are case-insensitive.
+- A list form such as `- amount: required` does not work in a top-level `GATHER`. It produces no fields and no error. Use the list form only inside a `FLOW` step.
+- An inline form such as `GATHER: a, b` is a compile error.
+
+Important defaults and rules:
+
+| Property | Behavior |
+| -------- | -------- |
+| `required` | Defaults to `true`. Only the exact lowercase `true` counts. `yes`, `True`, or a trailing comment on the line reads as `false`. |
+| `prompt` | Optional. Without it the runtime uses the field name. Write a prompt for every field the agent asks. |
+| `type` | One of `string`, `text`, `free_text`, `number`, `integer`, `float`, `currency`, `boolean`, `date`, `datetime`, `email`, `phone`, `enum`, `pattern`, `location`. An unknown type compiles and skips validation. |
+| `default` | Counts as a value for completion only. The runtime does not write it into the field. |
+| `options` | Allowed values for an `enum` field. |
+
+How the runtime normalizes a value:
+
+- `integer`, `number`, `float`, and `currency` become numbers.
+- `boolean` accepts `true`, `yes`, `1`, and `false`, `no`, `0`.
+- `date` and `datetime` become ISO values. `semantics.temporal: past` or `future` limits the direction.
+- `email` is lowercased. `phone` becomes an E.164 number, with the US as the default country.
+- `enum` is matched to `options` and synonyms.
+
+How completion is checked:
+
+- A required field is missing when it has no value and no `default`.
+- `activation: optional` is never missing. See [Progressively collect fields only when needed](/agent-platform/abl/how-to/progressively-collect-fields).
+- A plain optional field, one with no `extraction_pattern`, `infer`, `prompt_mode: extract_only`, or `strategy`, is left out of the extraction pass. See [Collect required and optional fields from users](/agent-platform/abl/how-to/collect-required-and-optional-fields).
+
+## Common variations
+
+### Validate a value and retry
+
+Add `validate` and a `retry_prompt` for a value with a fixed format. On a failure the model receives the field error and the retry prompt as a hint, and asks again. `max_retries` counts failed attempts and records them in the trace. It does not stop the agent from asking, and it does not run an `ON_ERROR` action. To escalate after repeated failures, collect the field in a `FLOW` step. See [Collect information inside a FLOW step](/agent-platform/abl/how-to/collect-with-flow-gather).
+
+`agents/claim-intake.agent.abl`
+
+```yaml
+AGENT: Claim_Intake
+GOAL: "Register an insurance claim with a valid policy number and incident date."
+
+PERSONA: |
+  Patient claims assistant. Explain exactly what format is needed when a value is rejected.
+
+GATHER:
+  policy_number:
+    prompt: "What is your policy number?"
+    description: "Policy number in the format AB123456"
+    type: string
+    validate: "^[A-Z]{2}[0-9]{6}$"
+    retry_prompt: "A policy number is two letters followed by six digits, for example AB123456."
+    max_retries: 3
+  incident_date:
+    prompt: "On what date did the incident happen?"
+    type: date
+    semantics:
+      temporal: past
+  claim_type:
+    prompt: "Is this a collision, theft, or water damage claim?"
+    type: enum
+    options: [collision, theft, water_damage]
+
+COMPLETE:
+  - WHEN: policy_number IS SET AND incident_date IS SET AND claim_type IS SET
+    RESPOND: "Claim registered for policy {{policy_number}}: {{claim_type}} on {{incident_date}}."
+```
+
+Rules for `validate`:
+
+- Write a regular expression with a single backslash, such as `^\d{9}$`. A double backslash is kept as two characters and never matches.
+- A regular expression check rejects every value of type `number`, `integer`, `currency`, or `boolean`, because those values are not text. Validate those types with `type` and `semantics`, or collect the value as `string`.
+- `validate: min(1)` is read as a regular expression, not as a numeric minimum.
+- `retry_prompt`, `max_retries`, or `validation_process` without a `validate` is a compile error `GATHER_VALIDATION_RULE_REQUIRED`.
+- An unsafe expression, such as `(a+)+$`, fails compilation.
+
+On a reasoning agent, the platform counts failed attempts per field and records a `validation_max_retries` trace event when the limit is reached. It resolves a matching `ON_ERROR` rule and applies its `SET` assignments, but it does not run the rule's `RESPOND`, `ESCALATE`, or `COMPLETE` action. With `inline_gather: true` it does not resolve `ON_ERROR` at all. The retry-limit action runs only in a `FLOW` step.
+
+### A supervisor that collects first
+
+A `SUPERVISOR` can declare `GATHER`. Use it when routing needs a value, such as a policy number. See [Pass specific fields between agents](/agent-platform/abl/how-to/pass-fields-between-agents).
+
+### Collect several fields in one reply
+
+Add `description` and `extraction_hints` to guide extraction, or set `inline_gather`. See [Collect multiple fields across a natural conversation](/agent-platform/abl/how-to/collect-multiple-fields-naturally).
+
+## Verification
+
+1. Run the validator. Expect no errors and no warnings.
+2. Say "I want to send 200 dollars". Expect the agent to ask for the source account and the date, and not for the amount.
+3. Give a bad value for a validated field. Expect the agent to explain the format from the `retry_prompt`.
+4. Give all required values. Expect the `COMPLETE` reply.
+5. In the trace, open the `dsl_collect` events with the mode `reasoning_gather`. They list the extracted fields.
+6. Open the `completion_check` event for the completion decision.
+
+## Production readiness checklist
+
+- Every field has a `prompt` and a `type`.
+- Every required field is read by `COMPLETE`, a flow step, or a route. Otherwise the compiler warns `UNUSED_REQUIRED_GATHER_FIELD`.
+- Formats use single-backslash regular expressions.
+- Fields with a fixed format have a `retry_prompt`. A field that must escalate after repeated failures is collected in a `FLOW` step.
+- Tests cover a customer who gives everything at once, one value at a time, and an invalid value.
+- Field names are not `user_id`, `session_id`, `tenant_id`, or `project_id`. The compiler warns `SYSTEM_IDENTIFIER_SHADOW` for them.
+
+## Common mistakes
+
+| Mistake | Why it happens | How to avoid it |
+| ------- | -------------- | --------------- |
+| Writing `required: yes` or `required: True` | Other languages accept these. | Write lowercase `true` or `false`, with no trailing comment. |
+| Using a list form such as `- amount: required` | `FLOW` steps use it. | Use named blocks in a top-level `GATHER`. |
+| Putting a comment on a `type` or `prompt` line | Comments are common in YAML. | Put comments on their own line. A trailing comment becomes part of the value. |
+| Naming a field `last-name` | Hyphens look natural. | Use `last_name`. |
+| Setting `default` and expecting the field to fill | The name suggests a fill. | Treat `default` as a completion rule. Set the value with `SET` if you need it. |
+| Using `validate` on a number field | The expression looks like a range check. | Use a `string` field, or rely on the type. |
+| Expecting `max_retries` to escalate | The name suggests a limit that acts. | Use a `FLOW` step with `ON_ERROR` for the escalation. |
+
+## Troubleshooting
+
+| Symptom | Likely cause | What to check |
+| ------- | ------------ | ------------- |
+| A required field is never asked | `required` was written in a form that reads as `false`. | The exact value on the `required` line. |
+| A validated field rejects correct values | Double backslash, or a number type. | The expression and the field type. |
+| The agent asks the same field again | The value failed validation, or the model did not extract it. | `_validation_errors` in the trace and the `retry_prompt`. |
+| An `ON_ERROR` rule never escalates | Top-level `GATHER` does not run `ON_ERROR` actions. | Move the field into a `FLOW` step. |
+| The compile warns `W822` | `required: false` is set with a `default`. | Remove one of the two. |
+| The compile fails with `GATHER_VALIDATION_RULE_REQUIRED` | Retry settings without `validate`. | Add `validate`, or remove the retry settings. |
+| No fields appear for a list-style `GATHER` | The list form is ignored at top level. | Use named blocks. |
+
+{{related}}
+
+- [Collect information inside a FLOW step](/agent-platform/abl/how-to/collect-with-flow-gather)
+- [Collect required and optional fields from users](/agent-platform/abl/how-to/collect-required-and-optional-fields)
+- [Collect multiple fields across a natural conversation](/agent-platform/abl/how-to/collect-multiple-fields-naturally)
+- [Progressively collect fields only when needed](/agent-platform/abl/how-to/progressively-collect-fields)
+- [Collect sensitive or PII fields safely](/agent-platform/abl/how-to/collect-sensitive-pii-fields)
+- [Combine reasoning steps with FLOW steps](/agent-platform/abl/how-to/combine-reasoning-and-flow-steps)

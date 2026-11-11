@@ -4,7 +4,7 @@ Use this pattern when customers bundle several tasks in one message, such as "ch
 
 ## Concept
 
-`MULTI_INTENT:` is a top-level section on an `AGENT:` or a `SUPERVISOR:`. Multi-intent handling is on by default. You add the section to change how the requests are handled.
+`MULTI_INTENT:` is a top-level section on an `AGENT:` or a `SUPERVISOR:`. The settings default to on. When the reasoning pipeline is on for the project, the classifier can detect several requests without any `MULTI_INTENT:` section. When the pipeline is off, a supervisor runs its classifier fallback only if the agent writes `MULTI_INTENT:` with `enabled: true`. You add the section to change how the requests are handled. See [Detect multiple intents in one user message](/agent-platform/abl/how-to/detect-multiple-intents) for how detection works.
 
 Three layers set the values. The agent section wins over the project runtime configuration, and the project configuration wins over the platform defaults.
 
@@ -13,8 +13,8 @@ Three sources can find several requests in one message.
 | Source | Applies to | Notes |
 | ------ | ---------- | ----- |
 | Several routing calls in one model turn | A supervisor with no `BEHAVIOR` block, or with `ROLE: orchestrator` | The supervisor model calls more than one `handoff_to_` or `delegate_to_` action. `max_intents` and `confidence_threshold` do not filter these calls. Each call must still pass its route `WHEN` and `ENABLED_WHEN`. |
-| The classifier in the execution pipeline | Agents with the execution pipeline on | `max_intents` and `confidence_threshold` apply. The classifier also rates how the requests relate. |
-| Two or more `ON_INPUT` branches that match one message | Flow agents | The branch conditions decide. `max_intents` applies. |
+| The classifier in the execution pipeline | Agents with the execution pipeline on, and the project pipeline on | `confidence_threshold` drops weaker alternatives without a trace event. `max_intents` limits the queue and the menu, not a `parallel` plan or the tasks of a `sequential` plan. The classifier also rates how the requests relate. |
+| Two or more `ON_INPUT` branches that match one message | Flow agents | The branch conditions decide. `max_intents` keeps the first matches and records the rest as overflow. |
 
 A supervisor with `ROLE: router` does not make several routing calls in one turn. It routes one request at a time.
 
@@ -79,7 +79,7 @@ Send "Check my balance and pay my bill." The supervisor routes to `Balance_Agent
 ## How it works
 
 1. A source in the table above finds two or more requests.
-2. For the classifier and for flow branches, the platform drops requests below `confidence_threshold` and keeps at most `max_intents`.
+2. For the classifier and for flow branches, the platform drops requests below `confidence_threshold`. `max_intents` then limits the queue and the menu. For flow branches it keeps the first matches. It does not cap a `parallel` plan or a `sequential` plan from the classifier.
 3. The platform picks a strategy. The `auto` and `parallel` strategies adjust it by the relationship rating. The table below shows the result.
 4. The platform dispatches the requests with that strategy.
 
@@ -92,7 +92,7 @@ A `HANDOFF` entry without `HISTORY` gives each specialist the full conversation 
 | `enabled` | boolean | `true` | `true`, `false` | Turns multi-intent handling on or off. When it is off, a supervisor makes one routing call per turn. |
 | `strategy` | string | `primary_queue` | `primary_queue`, `sequential`, `parallel`, `disambiguate`, `auto` | How the requests are handled. |
 | `unknown_relationship_strategy` | string | `parallel` | `sequential`, `parallel`, `disambiguate` | The relationship to assume for several routing calls in one turn. `parallel` means independent, `sequential` means dependent, and `disambiguate` means ambiguous. |
-| `max_intents` | integer | `3` | 1 to 10 | The most requests the platform keeps from one message. |
+| `max_intents` | integer | `3` | 1 to 10 | The most requests the queue holds, and the most choices a `disambiguate` menu shows. For flow branches, the most matches kept. It does not limit what the classifier detects or a `parallel` plan. |
 | `confidence_threshold` | number | `0.6` | 0.0 to 1.0 | The lowest confidence for a request to count. |
 | `queue_max_age_ms` | integer | `600000` | 0 to 3600000 | How long a queued request waits before the platform drops it. Use a positive value. |
 | `advance_on_primary_response` | boolean | `true` | `true`, `false` | Counts the first finished answer from the primary specialist as its completion, so the next offer appears in the same reply. Set `false` to wait for a completion condition or a return. |
@@ -377,7 +377,7 @@ In the trace, check these events.
 | Setting `strategy: parallel` and expecting it to hold | The rating is dependent or ambiguous. | Check the `strategy` in `multi_intent_plan_built`. |
 | Writing the old default option text | It was copied from an older example. | Use a different text. The platform replaces the exact old default. |
 | Writing `governed_tasks` or `offer_policy` in the agent section | They look like agent settings. | Set them in the project runtime configuration. The compiler reports `E465`. |
-| Expecting `max_intents` to cap a supervisor's routing calls | The name suggests a hard limit. | It filters classifier and flow detection only. |
+| Expecting `max_intents` to cap routing calls, the classifier, or a parallel plan | The name suggests a hard limit. | It limits the queue and the menu, and flow matches. Raise `confidence_threshold` to run fewer requests. |
 | Setting `ROLE: router` and expecting several requests per turn | A router routes one request at a time. | Remove `BEHAVIOR`, or use `ROLE: orchestrator`. |
 
 ## Troubleshooting
@@ -388,7 +388,7 @@ In the trace, check these events.
 | Requests run one after another when you set `parallel` | The agent is not a supervisor, or the rating is dependent or ambiguous. | `declaredStrategy` and `strategy` in `multi_intent_plan_built`. |
 | No menu appears for `disambiguate` | The message produced one request. | `multi_intent_plan_built` and the number of `targets`. |
 | A queued request disappears | It was older than `queue_max_age_ms`. | `multi_intent_queue_retired`. |
-| Secondary requests are dropped | `confidence_threshold` is high or `max_intents` is low, for classifier or flow detection. | The values in `multi_intent_plan_built`. |
+| Secondary requests are dropped | `confidence_threshold` is high, or `max_intents` is low for the queue, the menu, or flow matches. | The values in `multi_intent_plan_built`, and the intents in `pipeline_classify`. |
 | The customer sees different option text | The `MESSAGES:` block is missing or used the old default. | The `MESSAGES:` block and the variables. |
 | Compile error `MULTI_INTENT_INVALID_STRATEGY` | The strategy is not one of the five values. | The spelling of `strategy`. |
 | Error `E465` | A project-only key is in the agent section. | Move the key to the project runtime configuration. |

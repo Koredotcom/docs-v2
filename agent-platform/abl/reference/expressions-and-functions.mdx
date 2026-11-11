@@ -351,6 +351,37 @@ Ordinary boolean conditions can combine `AND`, `OR`, and `NOT` beyond the origin
 
 Short conditions, strict checkpoint conditions, PII comparisons, and scalar `SET` evaluation keep their existing protections. A supported long rule can now match where the old fallback disagreed. No migration is required. An unsupported expression produces the non-blocking warning [`CEL_EXPRESSION_LIMIT`](/agent-platform/abl/reference/errors-and-warnings#cel_expression_limit), with its agent, path, and prepared length.
 
+#### Size limits for conditions and regex patterns
+
+The same limits apply to every condition: step `IF` / `WHEN` branches, `HANDOFF` and `DELEGATE` `WHEN`, `COMPLETE`, constraints, hooks, and guardrail checks.
+
+| What                                                                                     | Limit               |
+| ---------------------------------------------------------------------------------------- | ------------------- |
+| A whole condition, with parts joined by `AND`, `OR`, and `NOT`                           | 65,536 characters   |
+| Syntax parts in one condition                                                            | 4,096               |
+| Nesting depth in one condition                                                           | 64 levels           |
+| One part: a single comparison, function call, list (`x in [...]`), or conditional (`? :`) | 4,096 characters    |
+| A whole condition that compares protected (PII) values, or a checkpoint condition        | 4,096 characters    |
+| A computed value, such as a `SET` value                                                  | 4,096 characters    |
+| One regex pattern in `abl.matches_pattern`, `abl.not_matches_pattern`, or `x MATCHES "…"` | 500 characters, RE2 |
+
+Lengths are counted in characters after ABL syntax is converted to CEL, so they can differ slightly from what you typed. `HANDOFF` and `DELEGATE` `WHEN` evaluate each top-level `OR` / `AND` alternative on its own, so the limits apply to each alternative.
+
+A condition or pattern over a limit does not stop the agent and is not an error:
+
+- **At publish**, the compiler warns: [`CEL_EXPRESSION_LIMIT`](/agent-platform/abl/reference/errors-and-warnings#cel_expression_limit) for a condition and [`CEL_MATCH_PATTERN_REJECTED`](/agent-platform/abl/reference/errors-and-warnings#cel_match_pattern_rejected) for a pattern written as text. Studio shows up to three of these warnings as toasts after you publish an agent, with a "+N more" note. A pattern held in a variable can only be checked at run time.
+- **At run time**, a pattern over the limit matches nothing: `abl.matches_pattern` is false and `abl.not_matches_pattern` is true for every input. A condition over the limit is not evaluated as written. Most conditions fall back to a simpler evaluator that can return a different result. Hook `CALL` / `RESPOND` guards, checkpoint conditions, and PII comparisons fail closed. In step branches and in `HANDOFF` / `DELEGATE` `WHEN`, the session trace records a `warning` event with code `condition_limit_reached`, the reason, and the length.
+
+To stay within the limits, split long rules into shorter parts joined with `OR` / `AND` (`||` / `&&`):
+
+```yaml
+# A pattern over 500 characters: split it into several calls.
+WHEN: abl.matches_pattern(input, "refund|chargeback|money back") || abl.matches_pattern(input, "cancel order|cancel my order")
+
+# For abl.not_matches_pattern, join the calls with &&.
+WHEN: abl.not_matches_pattern(input, "password|pin") && abl.not_matches_pattern(input, "card number|cvv")
+```
+
 #### Comments in conditions
 
 On condition surfaces that accept line comments, `//` outside a complete string starts a comment through the end of the line. Comment text does not add variables, operators, or `WHEN`, `BEFORE`, or `IMPLIES` clauses. A quoted URL, or `//` inside an escaped, raw, bytes, or triple-quoted string, stays literal. YAML `enabled_when` keeps its separate single-line scalar restriction.
@@ -372,6 +403,50 @@ SET:
   wire_reference = UNIQUE_ID(12)
   greeting = COALESCE(user.name, "valued customer")
 ```
+
+#### Missing paths in value expressions
+
+A value expression computes a value for a `CALL` argument (`WITH` or a named inline argument), a tool `PROCESS` mapping, a `TRANSFORM` `MAP` field, or a `SET`. Inside one, a key that is missing from a record reads as `null` wherever it appears, including inside `COALESCE`, a ternary, an object or list literal, and arithmetic. So `COALESCE(order.list.items, fallback)` falls through to `fallback` when `order` has no `list`. Only the branch a ternary takes is evaluated. `x IS SET` over a missing nested path is `false`.
+
+| Value expression                                            | Value                         |
+| ----------------------------------------------------------- | ----------------------------- |
+| `COALESCE(empty.list.kind, "fallback")`                     | `"fallback"`                  |
+| `(COALESCE(empty.list.n, 0) == 0) ? 7 : 8`                  | `7`                           |
+| `[{"orderId": "1", "x": COALESCE(empty.list.kind, "")}]`    | `[{"orderId": "1", "x": ""}]` |
+| `COALESCE(empty.list.n, 0) + 1`                             | `1`                           |
+| `empty.list.kind IS SET ? "yes" : "no"`                     | `"no"`                        |
+| `empty.list.kind`                                           | no value                      |
+
+An expression has **no value** in two cases:
+
+- **A single path that is not set**, such as `empty.list.kind` on its own. A `CALL` argument written this way is left out of the tool input, and a `MAP` field has no value. Use `COALESCE(path, default)` when the tool needs a value.
+- **An expression that cannot be evaluated**, such as text plus a number, a ternary whose condition is not `true` or `false`, or bracket access to a missing key (`order["list"].kind`). The runtime never sends a partial reading of it. The trace records a `warning` event that names the argument or field.
+
+<Warning>**Behavior change.** An expression that cannot be evaluated now sends no value instead of a partial one. Check agents that pass computed arguments to tools.</Warning>
+
+#### Types in conditions and computed values
+
+- **A conditional needs a true/false condition.** In `flag ? "a" : "b"`, `flag` must hold `true` or `false`. Text, a number, or a missing value is an evaluation error. Write `flag == true ? "a" : "b"` when `flag` may be missing.
+- **`!x` needs a true/false `x`.** Write `flag != true` when `flag` may be missing.
+- **`contains` needs text or a list on the left.** On text it is a substring test. On a list, an element must equal the right side. A number or an object on the left is an evaluation error.
+- **Arithmetic needs numbers.** `+` also joins text to text and a list to a list.
+
+#### When a SET value cannot be evaluated
+
+A computed value is a function call, field read, index, conditional, comparison, logical operator, or arithmetic with an operand that is quoted text or a variable the session holds or declares. When one cannot be evaluated:
+
+- A step `SET` clears the variable. A `HANDOFF` `CONTEXT` `SET` leaves it unchanged.
+- The trace gets a `warning` event with code `set_expression_not_evaluated`. It carries `field`, `source`, `outcome` (`no_value`, or `stored_expression_text` under `keep_text`), `reason` (`ternary_condition_not_bool`, `no_matching_overload`, or `evaluation_failed`), and a `hint`. It never carries values or the expression text.
+
+{/* Earlier releases stored the expression's own text in the variable. To keep that behavior, set it on the agent:
+
+```yaml
+EXECUTION:
+  set_expression_failure: keep_text
+```
+
+The warning is still recorded under `keep_text`. Unquoted text that is not an expression, such as `release-2026-04-21` or `N/A`, is stored as text either way. An unrecognized `set_expression_failure` value is dropped and the default `unset` applies.
+*/}
 
 <Note>`recent_input` is a built-in available in `SET` contexts: the caller's last 3 utterances, joined. `input_transcript` is a built-in, read-only `SET` value on realtime voice channels — the provider's transcript of the current caller turn (empty when there is none). An authored session variable with either name takes precedence over the built-in.</Note>
 

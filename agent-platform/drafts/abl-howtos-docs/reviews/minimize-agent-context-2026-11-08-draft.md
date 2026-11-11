@@ -1,0 +1,198 @@
+# Minimize context for privacy and compliance
+
+Use this pattern when a target agent must receive only the data its job requires, for example because of a privacy, payment, or regulatory rule.
+
+## Concept
+
+A handoff is a data boundary. Everything that crosses it is available to the target agent and its model. Minimize what crosses.
+
+Four things cross the boundary. Each has its own control.
+
+| What crosses | Default | Control that minimizes it |
+| ------------ | ------- | ------------------------- |
+| Earlier messages | The whole conversation (`full`). | `HISTORY: none` or `HISTORY: summary_only`. |
+| Field values | Only `PASS` and `SET` fields, plus a few automatic values. | Pass the fewest fields. |
+| Stored memory | Nothing. | Grant only the paths the target needs, read-only. See [Grant another agent access to memory](/agent-platform/abl/how-to/grant-memory-access-to-agent). |
+| The summary | Nothing. | Write a `SUMMARY` that states the reason and no personal data. |
+
+The default for messages is the widest setting. If you do nothing, the target sees every earlier message, including data the customer typed for another agent.
+
+Two further controls protect values inside an agent:
+
+- `SENSITIVE: true` on a `GATHER` field marks it as sensitive. The runtime keeps a child's conversation out of the parent history when that child gathers a sensitive field, or a field of type `password` or `passcode`.
+- `MODEL_VISIBLE: false` on a session memory field keeps it out of the model context of the agent that owns it.
+
+When PII protection is on for the project, the runtime tokenizes protectable values before it copies them into the target. The model receives tokens, not plain values. See [PII protection](/agent-platform/pii-protection).
+
+## Minimal working example
+
+A payments router sends card disputes to a specialist. The route passes the case number, sends no history, and states the reason in a short summary. The router holds an internal risk score that the model must not see.
+
+The risk score is set to a fixed value in `ON_START` as a stand-in. In your project, set it from a risk tool.
+
+`agents/payments-hub.agent.abl`
+
+```abl
+SUPERVISOR: Payments_Hub
+GOAL: "Route payment requests and share the minimum context with each specialist"
+
+BEHAVIOR:
+  role: router
+
+INTENTS:
+  card_dispute: "The customer disputes a card transaction."
+
+MEMORY:
+  session:
+    - dispute_id
+      TYPE: string
+      DESCRIPTION: "Case number of the card dispute."
+    - internal_risk_score
+      TYPE: number
+      DESCRIPTION: "Internal fraud risk score. Never shown to the customer or a specialist model."
+      MODEL_VISIBLE: false
+
+ON_START:
+  - SET: internal_risk_score = 12
+
+GATHER:
+  dispute_id:
+    PROMPT: "What is your dispute case number?"
+    TYPE: string
+    REQUIRED: true
+
+HANDOFF:
+  - TO: Card_Dispute_Agent
+    WHEN: intent.category == "card_dispute" AND dispute_id IS SET
+    PASS: [dispute_id]
+    SUMMARY: "Customer wants to add details to dispute {{dispute_id}}."
+    HISTORY: none
+    RETURN: false
+```
+
+`agents/card-dispute-agent.agent.abl`
+
+```abl
+AGENT: Card_Dispute_Agent
+GOAL: "Add details to an existing card dispute"
+
+GATHER:
+  dispute_id:
+    PROMPT: "What is your dispute case number?"
+    TYPE: string
+    REQUIRED: true
+  card_last4:
+    PROMPT: "What are the last four digits of the card?"
+    TYPE: string
+    REQUIRED: true
+    SENSITIVE: true
+  details:
+    PROMPT: "What details do you want to add?"
+    TYPE: string
+    REQUIRED: true
+
+COMPLETE:
+  - WHEN: details IS SET AND card_last4 IS SET
+    RESPOND: "I added your details to dispute {{dispute_id}}."
+```
+
+Variable sources:
+
+- `dispute_id` is a `GATHER` field of the router. `PASS` copies it.
+- `internal_risk_score` is set in `ON_START`. The route does not pass it.
+- `card_last4` is gathered by the specialist and marked sensitive.
+
+## How it works
+
+The runtime sends the target only the keys that the handoff authorizes for its prompt: `PASS` fields, `SET` fields, the summary, memory grants, and any value a routing model supplied. The runtime does not authorize a field that you do not name.
+
+Some values travel without `PASS`:
+
+- The keys `conversationSummary`, `user`, `gender`, and `location` reach the target prompt when the caller holds them. Do not store sensitive data under these names.
+- Other caller values that are not gathered fields and do not start with an underscore are copied into the target's working data. They do not reach the target prompt unless the handoff authorizes them or the target agent's own text refers to them.
+
+Controls that apply:
+
+- `PASS` names fields. A field that you do not name is not authorized for the target prompt.
+- A model-supplied value for a read-only session field is dropped, and the runtime records a `model_supplied_readonly_context_dropped` decision. Your own `PASS` still carries the real value.
+- When a child that gathers a sensitive field returns control, the runtime does not copy that child's customer messages into the parent history.
+- With PII protection on, the runtime tokenizes protectable values in `PASS`, `SET`, and memory grants before it copies them.
+
+## Common variations
+
+### Send only a summary
+
+Use `summary_only` when the target needs the reason but not the words. Write the summary without personal data. See [Pass a conversation summary during handoff](/agent-platform/abl/how-to/pass-summary-during-handoff).
+
+```abl
+HANDOFF:
+  - TO: Card_Dispute_Agent
+    WHEN: intent.category == "card_dispute" AND dispute_id IS SET
+    PASS: [dispute_id]
+    SUMMARY: "Customer wants to add details to dispute {{dispute_id}}."
+    HISTORY: summary_only
+    RETURN: false
+```
+
+This is a section snippet. It needs the router `GATHER` field from the minimal example.
+
+### Grant one stored value, read-only
+
+Give a specialist access to one stored path with `access: read`. Use `readwrite` only when the target must update the value. See [Grant another agent access to memory](/agent-platform/abl/how-to/grant-memory-access-to-agent).
+
+### Delegate instead of handoff
+
+A `DELEGATE` receives no conversation messages. It gets only the `INPUT` fields and a few automatic session values. Use it when a check needs one value and not a conversation. See [Delegate and map the result](/agent-platform/abl/how-to/delegate-and-map-result).
+
+### Bound what a remote agent receives
+
+A remote agent receives the selected history and the authorized fields. Use `none` or a small window. The runtime sends history messages as stored. See [Preserve context when calling remote agents](/agent-platform/abl/how-to/preserve-context-for-remote-agents).
+
+## Verification
+
+1. Run the validator on both files. Expect no errors and no warnings.
+2. In a test conversation, type a fake card number in an earlier message. Ask for a card dispute.
+3. Expect the specialist not to know the earlier message.
+4. Ask the specialist "What is my internal risk score?" Expect it not to know.
+5. Check the `handoff` trace event. The context must list only `dispute_id` and the summary, plus the control values.
+6. Change the route to `HISTORY: full`. Repeat step 3. Expect the specialist to know the earlier message. Revert the change.
+7. With PII protection on, expect traces and model calls to show tokens for protected values.
+
+## Production readiness checklist
+
+- Each route sets `HISTORY` on purpose. Routes for regulated data use `none` or `summary_only`.
+- Each `PASS` list holds only fields the target needs.
+- No summary holds personal or payment data.
+- Memory grants are read-only unless the target must write.
+- Sensitive fields use `SENSITIVE: true`.
+- PII protection is on for the project, and the team verified it with a test conversation.
+- A reviewer approved each route that sends `full`.
+- Trace retention follows your data policy.
+
+## Common mistakes
+
+| Mistake | Why it happens | How to avoid it |
+| ------- | -------------- | --------------- |
+| Leaving `HISTORY` unset | The default is `full`. | Set `HISTORY` on each route. |
+| Putting personal data in `SUMMARY` | The summary is easy to fill with variables. | Name the case, not the person. |
+| Storing sensitive data in a session variable named `user` or `location` | These keys travel automatically. | Use other names. Mark the field sensitive. |
+| Granting `readwrite` memory | It is the same effort as `read`. | Grant `read` unless the target must write. |
+| Assuming a minimal route also minimizes the return | The return path has its own rules. | Check `ON_RETURN` `MAP` and the parent history after the child returns. |
+
+## Troubleshooting
+
+| Symptom | Likely cause | What to check |
+| ------- | ------------ | ------------- |
+| The target knows data from an earlier agent | The route uses `full` or has no `HISTORY`. | The `HISTORY` line. |
+| The target prompt shows a field you did not pass | The field travels automatically, or a routing model supplied it. | The field name and the `handoff` event context. |
+| A model-selected route passes a field you did not expect | The routing model supplied it, and you did not list it in `PASS`. | The `PASS` list and the router `MEMORY` descriptions. |
+| A secret appears in a trace | Trace data includes context values. | Your PII protection settings and trace retention. |
+
+## Related HowTos
+
+- [Pass specific fields between agents](/agent-platform/abl/how-to/pass-fields-between-agents)
+- [Pass a conversation summary during handoff](/agent-platform/abl/how-to/pass-summary-during-handoff)
+- [Choose the right history strategy for handoff](/agent-platform/abl/how-to/choose-handoff-history-strategy)
+- [Grant another agent access to memory](/agent-platform/abl/how-to/grant-memory-access-to-agent)
+- [Package context for a human escalation](/agent-platform/abl/how-to/package-human-escalation-context)
+- [Debug missing or incorrect context after handoff](/agent-platform/abl/how-to/debug-handoff-context)

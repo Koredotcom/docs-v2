@@ -1,0 +1,228 @@
+---
+title: Amazon SES Actions integration
+sidebarTitle: Amazon SES Actions
+---
+
+<Badge icon="arrow-left" color="gray">[Back to list of integrations](/agent-platform/integrations/enterprise-systems)</Badge>
+
+Use the Amazon SES integration to let agents send transactional email and manage SES templates through Action Tools. Artemis signs each request with AWS SigV4.
+
+| Authentication | Actions | Workflow triggers |
+| --- | --- | --- |
+| AWS IAM (SigV4) | [7](#supported-actions) | None |
+
+## Supported actions
+
+Actions are Amazon SES operations that an agent runs as Action Tools during a conversation. You can also run them from an [Integration node](/agent-platform/workflows#integration-node) in a workflow.
+
+| Action | Use it to |
+| --- | --- |
+| [Send Email](#send-email) | Send a custom email from a verified sender address. |
+| [Send Templated Email](#send-templated-email) | Send a personalized email based on an existing template. |
+| [Create Email Template](#create-email-template) | Create a reusable HTML or text template with variables. |
+| [Update Email Template](#update-email-template) | Change the content of an existing template. |
+| [Create Custom Verification Email Template](#create-custom-verification-email-template) | Create a branded template for identity verification email. |
+| [Send Custom Verification Email](#send-custom-verification-email) | Send a verification email that adds an address to your SES identities. |
+| [Update Custom Verification Email Template](#update-custom-verification-email-template) | Change an existing custom verification template. |
+
+## Prerequisites
+
+- Amazon SES in your Region, with at least one [verified sender identity](https://docs.aws.amazon.com/ses/latest/dg/creating-identities.html). Identities and templates are Region specific.
+- [Production access](https://docs.aws.amazon.com/ses/latest/dg/request-production-access.html) to email unverified recipients. The SES sandbox sends only to verified addresses.
+
+## Set up the integration
+
+<Steps>
+  <Step title="Prepare AWS credentials">
+    Create an IAM role (recommended) or an IAM user with access keys, and attach a policy for the actions you use. For a role, add a trust policy that requires the **External ID** shown in the Artemis profile form. External agents require a role.
+
+    <Accordion title="Sample permissions policy">
+```json
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "ArtemisSesActions",
+      "Effect": "Allow",
+      "Action": [
+        "ses:SendEmail",
+        "ses:SendTemplatedEmail",
+        "ses:CreateTemplate",
+        "ses:UpdateTemplate",
+        "ses:GetTemplate",
+        "ses:CreateCustomVerificationEmailTemplate",
+        "ses:UpdateCustomVerificationEmailTemplate",
+        "ses:GetCustomVerificationEmailTemplate",
+        "ses:SendCustomVerificationEmail",
+        "ses:ListIdentities",
+        "ses:ListTemplates",
+        "ses:ListCustomVerificationEmailTemplates",
+        "ses:ListConfigurationSets"
+      ],
+      "Resource": "*"
+    }
+  ]
+}
+```
+    </Accordion>
+  </Step>
+  <Step title="Create the auth profile">
+    In **Integrations**, select **Amazon SES** > **Connect**. On **Project Auth Profiles**, select **New Profile** > **Integration Profile** > **Amazon SES** > **Continue**. Set **Usage Mode** to **Preconfigured**, choose **Credentials**, and select **Create Profile**.
+
+    <Tabs>
+      <Tab title="Assume role (recommended)">
+        | Field | Value |
+        | --- | --- |
+        | **Endpoint type** | **Custom AWS service** (the default, Bedrock AgentCore, doesn't apply) |
+        | **Signing service** | `ses` |
+        | **Region** | The Region of your SES identities, for example `us-east-1` |
+        | **Role ARN** | ARN of the role you created |
+        | **Session duration** | Optional. 900 to 3600 seconds (default 3600) |
+        | **External ID** | Read only. Add it to the role's trust policy. |
+
+        <Warning>If the form shows **Platform AWS identity not configured**, ask your platform administrator to configure it, or use access keys.</Warning>
+      </Tab>
+      <Tab title="Access keys">
+        | Field | Value |
+        | --- | --- |
+        | **Region** | The Region of your SES identities |
+        | **Signing service** | `ses` (pre-filled) |
+        | **Access Key ID**, **Secret Access Key** | From the IAM user. Leave **Bucket**, **Endpoint**, and **Session Token** empty. |
+      </Tab>
+    </Tabs>
+  </Step>
+  <Step title="Create the action tool">
+    In **Tools**, select **New Tool** > **Action** > **Amazon SES** > **Continue**. Select the **Action** and **Auth Profile**, set parameter defaults (leave a value empty for the agent to supply at runtime), and select **Create Tool**. Then [assign the tool to an agent](/agent-platform/tools/actions#assign-an-action-to-an-agent).
+  </Step>
+</Steps>
+
+## Action reference
+
+<AccordionGroup>
+  <Accordion title="Send Email" id="send-email">
+    Sends a custom email from a verified sender address.
+
+    | Parameter | Type | Description |
+    | --- | --- | --- |
+    | `fromEmailAddress` | enum | Verified sender email address. |
+    | `toAddresses` | array | Recipient email addresses. |
+    | `ccAddresses` | array | Carbon copy recipients. |
+    | `bccAddresses` | array | Blind carbon copy recipients. |
+    | `subject` | string | Email subject line. |
+    | `bodyFormat` | enum | Email format. Default: `HTML`. |
+    | `htmlBody` | string | HTML content. Artemis generates the text version automatically. |
+    | `textBody` | string | Plain text content. |
+    | `replyToAddresses` | array | Reply-to email addresses. |
+    | `returnPath` | string | Email address that receives bounce notifications. |
+    | `configurationSetName` | enum | SES configuration set for tracking. |
+    | `emailTags` | object | Key-value pairs for tracking and analytics. |
+    | `sourceArn` | string | Advanced. ARN for sending authorization. |
+    | `returnPathArn` | string | Advanced. ARN for return path authorization. |
+  </Accordion>
+  <Accordion title="Send Templated Email" id="send-templated-email">
+    Sends a personalized email based on an existing template.
+
+    | Parameter | Type | Description |
+    | --- | --- | --- |
+    | `fromEmailAddress` | enum | Verified sender email address. |
+    | `templateName` | enum | Template to use. |
+    | `templateData` | object | Values for the template variables, for example `{"firstName": "John", "company": "Acme"}`. |
+    | `toAddresses` | array | Recipient email addresses. |
+    | `ccAddresses` | array | Carbon copy recipients. |
+    | `bccAddresses` | array | Blind carbon copy recipients. |
+    | `replyToAddresses` | array | Reply-to email addresses. |
+    | `returnPath` | string | Email address that receives bounce notifications. |
+    | `configurationSetName` | enum | SES configuration set for tracking. |
+    | `emailTags` | object | Key-value pairs for tracking and analytics. |
+    | `sourceArn` | string | Advanced. ARN for sending authorization. |
+    | `returnPathArn` | string | Advanced. ARN for return path authorization. |
+  </Accordion>
+  <Accordion title="Create Email Template" id="create-email-template">
+    Creates a reusable HTML or text template. Use `{{variable}}` placeholders for dynamic content.
+
+    | Parameter | Type | Description |
+    | --- | --- | --- |
+    | `templateName` | string | Unique name. Use letters, numbers, underscores, and hyphens only. |
+    | `templateFormat` | enum | Template format. Default: `HTML`. |
+    | `subjectPart` | string | Subject line, for example `Welcome, {{firstName}}`. |
+    | `htmlPart` | string | HTML content with variables. |
+    | `textPart` | string | Plain text content with variables. |
+    | `checkExisting` | boolean | Checks that the name is unique before creating. Default: `True`. |
+    | `sampleData` | object | Optional test data to preview the variables. |
+  </Accordion>
+  <Accordion title="Update Email Template" id="update-email-template">
+    Changes the content of an existing template.
+
+    | Parameter | Type | Description |
+    | --- | --- | --- |
+    | `templateName` | enum | Template to modify. |
+    | `loadCurrentContent` | boolean | Pre-fills fields with the current template content. Default: `True`. |
+    | `templateFormat` | enum | Template format. Default: `HTML`. |
+    | `subjectPart` | string | Subject line with variables. |
+    | `htmlPart` | string | HTML content with variables. |
+    | `textPart` | string | Plain text content with variables. |
+    | `preserveUnspecified` | boolean | Keeps the existing HTML or text content when you don't provide new content. Default: `False`. |
+    | `sampleData` | object | Optional test data to preview the variables. |
+  </Accordion>
+  <Accordion title="Create Custom Verification Email Template" id="create-custom-verification-email-template">
+    Creates a branded template for the email SES sends to verify an address.
+
+    | Parameter | Type | Description |
+    | --- | --- | --- |
+    | `templateName` | string | Unique name. Use letters, numbers, underscores, and hyphens only. |
+    | `fromEmailAddress` | enum | Verified sender email address. |
+    | `templateSubject` | string | Subject of the verification email. |
+    | `templateContent` | string | HTML content. Must include the verification link. |
+    | `successRedirectionURL` | string | URL that opens after successful verification. |
+    | `failureRedirectionURL` | string | URL that opens if verification fails. |
+    | `checkExisting` | boolean | Checks that the name is unique before creating. Default: `True`. |
+    | `validateUrls` | boolean | Checks that the redirect URLs are well formed. Default: `True`. |
+
+    See [Using custom verification email templates](https://docs.aws.amazon.com/ses/latest/dg/creating-identities.html#send-email-verify-address-custom).
+  </Accordion>
+  <Accordion title="Send Custom Verification Email" id="send-custom-verification-email">
+    Sends a verification email that adds the address to your SES identities after the recipient confirms.
+
+    | Parameter | Type | Description |
+    | --- | --- | --- |
+    | `emailAddress` | string | Email address to verify. |
+    | `templateName` | enum | Custom verification template to use. |
+    | `configurationSetName` | enum | Optional. SES configuration set for tracking. |
+    | `validateEmailFormat` | boolean | Checks the address format before sending. Default: `True`. |
+    | `checkExistingIdentity` | boolean | Warns if the address is already a verified identity. Default: `True`. |
+  </Accordion>
+  <Accordion title="Update Custom Verification Email Template" id="update-custom-verification-email-template">
+    Changes an existing custom verification template.
+
+    | Parameter | Type | Description |
+    | --- | --- | --- |
+    | `templateName` | enum | Template to modify. |
+    | `loadCurrentContent` | boolean | Pre-fills fields with the current template content. Default: `True`. |
+    | `fromEmailAddress` | enum | Verified sender email address. |
+    | `templateSubject` | string | Subject of the verification email. |
+    | `templateContent` | string | HTML content. Must include the verification link. |
+    | `successRedirectionURL` | string | URL that opens after successful verification. |
+    | `failureRedirectionURL` | string | URL that opens if verification fails. |
+    | `preserveUnspecified` | boolean | Keeps existing values for fields you leave empty. Default: `False`. |
+    | `validateUrls` | boolean | Checks that the redirect URLs are well formed. Default: `True`. |
+  </Accordion>
+</AccordionGroup>
+
+## Troubleshoot common issues
+
+| Issue | Resolution |
+| --- | --- |
+| The sender address list is empty | Verify the sender identity in SES in the same Region as the auth profile, and confirm the IAM policy includes `ses:ListIdentities`. |
+| `MessageRejected: Email address is not verified` | The account is in the SES sandbox. Verify the recipient address, or request production access. |
+| `AccessDenied` or `not authorized to perform` | Add the missing SES action to the IAM policy attached to the role or user. |
+| Role profile fails or can't be tested | Confirm the trust policy includes the workspace **External ID**, and confirm the **Role ARN** is correct. If the form shows **Platform AWS identity not configured**, contact your platform administrator. |
+| Requests fail with a signature error | Confirm **Signing service** is `ses`, and that the **Region** matches your SES Region. For Assume role, confirm **Endpoint type** is **Custom AWS service**. |
+| Template variables appear as `{{name}}` in sent email | Pass a value for each variable in `templateData`. Variable names are case sensitive. |
+| `AlreadyExists` when you create a template | Use a unique `templateName`, or use the matching update action. |
+
+{{related}}
+
+- [Enterprise systems integrations](/agent-platform/integrations/enterprise-systems)
+- [Auth profiles](/agent-platform/administration/integrations-settings#auth-profiles)
+- [Action Tools](/agent-platform/tools/actions)
+- [Amazon SES Developer Guide](https://docs.aws.amazon.com/ses/latest/dg/Welcome.html)
