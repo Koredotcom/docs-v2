@@ -892,6 +892,49 @@ TOOLS:
 
 <Note>The workflow must exist in the same tenant/project; this is validated at compile time. Legacy `workflow_version` / `trigger_id` fields are no longer used and are silently ignored.</Note>
 
+### Sync and async
+
+| Mode             | What the agent receives                                                                                       | Use it for                                     |
+| ---------------- | ------------------------------------------------------------------------------------------------------------- | ---------------------------------------------- |
+| `sync` (default) | The workflow's output, in the same turn, when the run completes. If `timeout_ms` passes first, the call fails. | Anything the agent needs to answer right away. |
+| `async`          | `{executionId, status: "running"}` straight away. The workflow's output is not returned.                      | Long-running work the agent does not wait for. |
+
+- With `async`, the agent reads the result later with the `check_workflow_status` tool. The runtime adds that tool when the agent has at least one async workflow tool.
+- A `SECURE_INPUT` step can deliver only to a sync workflow tool. An async one is a compile error (`SECURE_INPUT_WORKFLOW_TOOL_NOT_SYNC`).
+- Studio, the tools API, and the Arch MCP `platform_workflows` `create_tool` action all create a sync tool unless you choose async. Arch MCP tools 1.6.0 to 1.8.0 were the exception: their `create_tool` created an async tool when `toolMode` was left out. With those versions, pass `toolMode: "sync"`.
+- A tool keeps the mode it was saved with. To change an existing tool, edit its DSL: write `mode: sync`, or remove the `mode` line.
+
+## Missing values in CALL arguments
+
+A `CALL` argument (`WITH` or a named inline argument) is a value expression, evaluated against the session when the call runs. A key missing from a record reads as `null` inside it, so `COALESCE`, ternaries, object and list literals, and arithmetic over a missing path give their documented value. See [Missing paths in value expressions](/agent-platform/abl-reference/expressions-and-functions#missing-paths-in-value-expressions).
+
+```yaml
+reply_list:
+  REASONING: false
+  CALL: od_list_send_tool
+    WITH:
+      kind: kind
+      items: COALESCE(brief.output.orderList, order.list.items)
+      session: {"language": COALESCE(ctx.output.language, ""), "channel": COALESCE(ctx.output.channel, "voice")}
+    AS: listResult
+  THEN: done
+```
+
+An argument is **left out of the tool input** when it has no value:
+
+| Argument                                               | Tool input      | Trace                                      |
+| ------------------------------------------------------ | --------------- | ------------------------------------------ |
+| A single path that is not set: `name: order.list.kind` | `name` left out | none: there is no value to send            |
+| An expression that cannot be evaluated: `n: kind + 1`  | `n` left out    | `warning`, code `call_argument_unresolved` |
+| `COALESCE(order.list.kind, "")`                        | `""`            | none                                       |
+| `order.list.kind IS SET ? order.list.kind : "none"`    | `"none"`        | none                                       |
+
+An expression cannot be evaluated when, for example, it adds text to a number, its ternary condition is not `true` or `false`, or it uses bracket access on a missing key. The runtime never sends a partial reading of it.
+
+<Warning>**Behavior change.** An argument that cannot be evaluated is now left out instead of sent as a partial value. Wrap the path in `COALESCE(path, default)` to send an explicit default.</Warning>
+
+The `call_argument_unresolved` warning carries `argument`, `celCode` (for example `no_such_overload` or `no_such_key`), `step` (when the call runs in a FLOW step), and `tool`. It never contains the expression or any value. FLOW step CALLs, hook CALLs, and tool `on_result` / `on_error` CALLs all emit it. A tool `process` field or a `TRANSFORM` `MAP` field that cannot be evaluated emits `value_expression_unresolved` instead, with `surface` (`process_before`, `process_after`, or `transform_map`), `field`, `celCode`, and `tool` or `step`. A `MAP` field is reported once per run.
+
 ---
 
 ## SearchAI tools
