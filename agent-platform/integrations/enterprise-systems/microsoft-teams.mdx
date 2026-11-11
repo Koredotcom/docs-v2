@@ -1,0 +1,209 @@
+---
+title: Microsoft Teams Actions integration
+sidebarTitle: Microsoft Teams Actions
+---
+
+<Badge icon="arrow-left" color="gray">[Back to list of integrations](/agent-platform/integrations/enterprise-systems)</Badge>
+
+Use the Microsoft Teams integration to let agents post and read messages, create channels and chats, find members, and request approvals through Microsoft Graph. To let users talk to an agent inside Teams, deploy the agent to the Teams channel instead.
+
+| Authentication | Actions | Workflow triggers |
+| --- | --- | --- |
+| OAuth 2.0 App (User Delegated), Azure AD (Service Principal) | [14](#supported-actions) | [4](#workflow-triggers) |
+
+## Supported actions
+
+Actions are Teams operations that an agent runs as Action Tools during a conversation. You can also run them from an [Integration node](/agent-platform/workflows#integration-node) in a workflow.
+
+| Action | Use it to |
+| --- | --- |
+| [Send Channel Message](#send-channel-message) | Post a message to a channel, with optional @mentions. |
+| [Reply to Channel Message](#reply-to-channel-message) | Reply to a channel message thread. |
+| [Send Chat Message](#send-chat-message) | Post a message in an existing chat. |
+| [Create Chat & Send Message](#create-chat-and-send-message) | Start a chat with members and send the first message. |
+| [Get Channel Message](#get-channel-message) | Read a channel message or one of its replies. |
+| [Get Chat Message](#get-chat-message) | Read a chat message. |
+| [Delete Chat Message](#delete-chat-message) | Soft-delete a chat message the connected account sent. |
+| [Create Channel](#create-channel) | Create a standard channel in a team. |
+| [Create Private Channel](#create-private-channel) | Create a private channel in a team. |
+| [Find Channel](#find-channel) | Find channels by name. |
+| [Find Team Member](#find-team-member) | Find a team member by email or display name. |
+| [Request Approval in Channel](#request-approval-in-channel) | Post an approval request to a channel and wait for a response. |
+| [Request Approval from a User](#request-approval-from-a-user) | Send an approval request in a chat and wait for a response. |
+| [Custom API Call](#custom-api-call) | Call any Microsoft Graph endpoint the other actions don't cover. |
+
+## Workflow triggers
+
+Triggers are Teams events that start a workflow automatically. Select them as [app triggers](/agent-platform/workflows#app-triggers) when you configure a workflow.
+
+| Trigger | Fires when |
+| --- | --- |
+| New Channel Message | A message is posted in a channel. |
+| New Channel | A channel is created in a team. |
+| New Chat | A chat is created. |
+| New Chat Message | A message is received in a chat. |
+
+<Warning>Microsoft Graph doesn't allow app-only message sending. Use **OAuth 2.0 App (User Delegated)** for message and approval actions; use **Azure AD (Service Principal)** only for reading and managing teams and channels.</Warning>
+
+## Set up the integration
+
+<Steps>
+  <Step title="Register an Entra ID app">
+    Register an app in [Microsoft Entra ID](https://learn.microsoft.com/en-us/entra/identity-platform/quickstart-register-app), create a client secret, and copy the **Application (client) ID**, **Directory (tenant) ID**, and secret value. Add the scopes listed in the next step as Microsoft Graph permissions (**Delegated** or **Application**), grant admin consent, and for delegated access add the Artemis **Callback URL** as a **Web** redirect URI.
+  </Step>
+  <Step title="Create the auth profile">
+    In **Integrations**, select **Microsoft Teams** > **Connect**. On **Project Auth Profiles**, select **New Profile** > **Integration Profile** > **Microsoft Teams** > **Continue**. Select an **Auth Type**, configure the fields, and select **Create Profile**. For delegated access, select **Authorize**.
+
+    <Tabs>
+      <Tab title="OAuth 2.0 App (User Delegated)">
+        Artemis pre-fills the `common` Microsoft identity platform endpoints and these scopes: `openid`, `email`, `profile`, `offline_access`, `User.Read`, `User.ReadBasic.All`, `Team.ReadBasic.All`, `TeamMember.Read.All`, `Channel.Create`, `Channel.ReadBasic.All`, `ChannelMessage.Send`, `ChannelMessage.Read.All`, `Chat.ReadWrite`, `Presence.Read.All`. Enter **Client ID** and **Client Secret**.
+
+        **Usage Mode**: **Preconfigured** shares one authorization across users; **JIT** and **Preflight** ask each user to authorize, during or before the session. See [Auth profiles](/agent-platform/administration/integrations-settings#auth-profiles).
+      </Tab>
+      <Tab title="Azure AD (Service Principal)">
+        Enter **Azure Tenant ID**, **Scopes** (`https://graph.microsoft.com/.default`), **Client ID**, and **Client Secret**. Keep **Resource** as `https://graph.microsoft.com`.
+      </Tab>
+    </Tabs>
+  </Step>
+  <Step title="Create the action tool">
+    In **Tools**, select **New Tool** > **Action** > **Microsoft Teams** > **Continue**. Select the **Action** and **Auth Profile**, set parameter defaults (leave a value empty for the agent to supply at runtime), and select **Create Tool**. Then [assign the tool to an agent](/agent-platform/tools/actions#assign-an-action-to-an-agent).
+  </Step>
+</Steps>
+
+## Action reference
+
+<AccordionGroup>
+  <Accordion title="Send Channel Message" id="send-channel-message">
+    | Parameter | Type | Description |
+    | --- | --- | --- |
+    | `teamId` | enum | Team. |
+    | `channelId` | enum | Channel. |
+    | `contentType` | enum | Content type. Default: `Text`. |
+    | `content` | string | Message. Use `@username` to mention team members. |
+  </Accordion>
+  <Accordion title="Reply to Channel Message" id="reply-to-channel-message">
+    | Parameter | Type | Description |
+    | --- | --- | --- |
+    | `teamId` | enum | Team. |
+    | `channelId` | enum | Channel. |
+    | `messageId` | string | ID of the parent message. |
+    | `contentType` | enum | Content type. Default: `Text`. |
+    | `content` | string | Reply message. |
+  </Accordion>
+  <Accordion title="Send Chat Message" id="send-chat-message">
+    | Parameter | Type | Description |
+    | --- | --- | --- |
+    | `chatId` | enum | Existing chat. |
+    | `contentType` | enum | Content type. Default: `Text`. |
+    | `content` | string | Message. |
+  </Accordion>
+  <Accordion title="Create Chat & Send Message" id="create-chat-and-send-message">
+    | Parameter | Type | Description |
+    | --- | --- | --- |
+    | `teamId` | enum | Team whose members you can add. |
+    | `members` | array | Chat members. |
+    | `contentType` | enum | Content type. Default: `Text`. |
+    | `content` | string | First message. |
+  </Accordion>
+  <Accordion title="Get Channel Message" id="get-channel-message">
+    | Parameter | Type | Description |
+    | --- | --- | --- |
+    | `teamId` | enum | Team. |
+    | `channelId` | enum | Channel. |
+    | `messageId` | string | ID of the channel message. |
+    | `replyId` | string | Optional. ID of a reply under the message. |
+  </Accordion>
+  <Accordion title="Get Chat Message" id="get-chat-message">
+    | Parameter | Type | Description |
+    | --- | --- | --- |
+    | `chatId` | enum | Chat. |
+    | `messageId` | string | ID of the message. |
+  </Accordion>
+  <Accordion title="Delete Chat Message" id="delete-chat-message">
+    Soft-deletes the message. You can delete only messages the connected account sent.
+
+    | Parameter | Type | Description |
+    | --- | --- | --- |
+    | `chatId` | enum | Chat. |
+    | `messageId` | string | ID of the message. |
+  </Accordion>
+  <Accordion title="Create Channel" id="create-channel">
+    | Parameter | Type | Description |
+    | --- | --- | --- |
+    | `teamId` | enum | Team. |
+    | `channelDisplayName` | string | Channel name. |
+    | `channelDescription` | string | Channel description. |
+  </Accordion>
+  <Accordion title="Create Private Channel" id="create-private-channel">
+    | Parameter | Type | Description |
+    | --- | --- | --- |
+    | `teamId` | enum | Team. |
+    | `channelDisplayName` | string | Channel name. |
+    | `channelDescription` | string | Channel description. |
+  </Accordion>
+  <Accordion title="Find Channel" id="find-channel">
+    | Parameter | Type | Description |
+    | --- | --- | --- |
+    | `teamId` | enum | Team to search. |
+    | `channelName` | string | Channel name. |
+  </Accordion>
+  <Accordion title="Find Team Member" id="find-team-member">
+    | Parameter | Type | Description |
+    | --- | --- | --- |
+    | `teamId` | enum | Team to search. |
+    | `searchBy` | enum | Search field. Default: `Email`. |
+    | `searchValue` | string | Email address or name. |
+  </Accordion>
+  <Accordion title="Request Approval in Channel" id="request-approval-in-channel">
+    Posts the request and pauses the tool until a user approves or rejects it.
+
+    | Parameter | Type | Description |
+    | --- | --- | --- |
+    | `teamId` | enum | Team. |
+    | `channelId` | enum | Channel. |
+    | `message` | string | Approval request text. |
+  </Accordion>
+  <Accordion title="Request Approval from a User" id="request-approval-from-a-user">
+    Sends the request in a chat and pauses the tool until the user approves or rejects it.
+
+    | Parameter | Type | Description |
+    | --- | --- | --- |
+    | `chatId` | enum | Chat with the approver. |
+    | `message` | string | Approval request text. |
+  </Accordion>
+  <Accordion title="Custom API Call" id="custom-api-call">
+    Sends a request to any Microsoft Graph endpoint. Artemis injects the authorization header from the auth profile.
+
+    | Parameter | Type | Description |
+    | --- | --- | --- |
+    | `url` | object | Endpoint URL. |
+    | `method` | enum | HTTP method. |
+    | `headers` | object | Additional request headers. |
+    | `queryParams` | object | Query parameters. |
+    | `body_type` | enum | Body type. Default: `None`. |
+    | `body` | object | Request body. |
+    | `response_is_binary` | boolean | Turn on for binary responses, such as PDFs or images. Default: `False`. |
+    | `failsafe` | boolean | Returns no error when the call fails. |
+    | `timeout` | number | Timeout, in seconds. |
+    | `followRedirects` | boolean | Follows HTTP redirects. Default: `False`. |
+  </Accordion>
+</AccordionGroup>
+
+## Troubleshoot common issues
+
+| Issue | Resolution |
+| --- | --- |
+| `AADSTS50011` redirect URI mismatch | Add the exact **Callback URL** as a **Web** redirect URI in the app registration. |
+| `AADSTS65001` consent required | Grant admin consent for the API permissions, and then authorize again. |
+| Message actions fail with an app-only profile | Graph blocks app-only message sending. Use an **OAuth 2.0 App (User Delegated)** profile. |
+| Team or channel dropdowns are empty | Confirm the connected account is a member of the team, and the profile includes `Team.ReadBasic.All` and `Channel.ReadBasic.All`. |
+| Mentions appear as plain text | Use `@username` for a member of the team, and confirm the member exists with **Find Team Member**. |
+| **Delete Chat Message** fails | You can delete only messages that the connected account sent. |
+
+{{related}}
+
+- [Enterprise systems integrations](/agent-platform/integrations/enterprise-systems)
+- [Auth profiles](/agent-platform/administration/integrations-settings#auth-profiles)
+- [Action Tools](/agent-platform/tools/actions)
+- [Microsoft Outlook Actions integration](/agent-platform/integrations/enterprise-systems/microsoft-outlook)
+- [Microsoft Teams API in Microsoft Graph](https://learn.microsoft.com/en-us/graph/teams-concept-overview)
