@@ -212,6 +212,70 @@ MEMORY:
 Any list declaration, including `CONTEXT_UPDATES: []`, requires compiler and Runtime support for IR version 1.3. An older Runtime rejects an artifact built with one. Existing projects get no automatic change: a project must opt in by adding a list to a step and publishing only after every Runtime pod serving that project has been upgraded (the compiler does not block publishing out of order; that ordering is a deployment-operations responsibility). Rolling back to an older Runtime requires an artifact with no list declarations.
 </Note>
 
+### Per-step EXECUTION
+
+A `REASONING: true` step can set its own model and generation settings with an `EXECUTION:` block indented under the step. Keys the step leaves out keep the agent `EXECUTION` value. The settings apply only to the calls that produce the step's answer. Extraction, classification, and other steps keep the agent settings.
+
+```yaml
+FLOW:
+  entry_point: triage
+  steps:
+    - triage
+    - answer
+
+  triage:
+    REASONING: true
+    GOAL: "Work out which product the customer is asking about"
+    EXECUTION:
+      model: gpt-4o-mini
+      temperature: 0.2
+      max_tokens: 300
+    THEN: answer
+
+  answer:
+    REASONING: true
+    GOAL: "Answer the question in full"
+    THEN: COMPLETE
+```
+
+#### Step EXECUTION parameters
+
+| Key                 | Accepted value                                                                      | Notes                                                                                   |
+| ------------------- | ----------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------- |
+| `model`             | A non-empty model name, or a `{{config.KEY}}` template.                             | Templates are not checked at compile time.                                              |
+| `reasoning_effort`  | `none`, `minimal`, `low`, `medium`, `high`, `xhigh`, or `max`.                      | Models without reasoning ignore it ([`STEP_EXECUTION_MODEL_CAPABILITY`](/agent-platform/abl/reference/errors-and-warnings#step_execution_model_capability)). |
+| `verbosity`         | `low`, `medium`, or `high`.                                                         | Supported models only.                                                                  |
+| `max_tokens`        | Whole number, 1 or more.                                                            | Output length limit.                                                                    |
+| `temperature`       | Number from 0 to 2.                                                                 | Some models disable it.                                                                 |
+| `top_p`             | Number from 0 to 1.                                                                 |                                                                                         |
+| `top_k`             | Whole number, 0 or more.                                                            |                                                                                         |
+| `frequency_penalty` | Any finite number.                                                                  |                                                                                         |
+| `presence_penalty`  | Any finite number.                                                                  |                                                                                         |
+| `seed`              | Whole number.                                                                       | Reproducible output is provider-dependent.                                              |
+| `enable_thinking`   | `true` or `false`.                                                                  | Lowercase only. `yes` and `on` are not accepted.                                        |
+| `thinking_budget`   | Whole number, 1 or more.                                                            | Token budget for extended thinking.                                                     |
+| `stop_sequences`    | A list of 1 to 16 non-empty strings, each at most 256 characters.                   | Keep to 4 or fewer so every provider receives them ([W562](/agent-platform/abl/reference/errors-and-warnings#w562)). Not sent on calls that offer tools. |
+| `llm_timeout`       | Whole number of milliseconds, 1 or more.                                            | Capped by the server limit and the turn's remaining time.                               |
+| `tool_timeout`      | Whole number of milliseconds, 1 or more.                                            |                                                                                         |
+
+Values are never converted. A quoted number such as `"0.2"` is text and raises W565. A number outside its range raises W564. In both cases the step uses the agent value for that key.
+
+```yaml
+EXECUTION:
+  model: "{{config.TRIAGE_MODEL}}"
+  reasoning_effort: low
+  temperature: 0.2
+  max_tokens: 300
+  stop_sequences: ["END_OF_ANSWER"]
+  llm_timeout: 8000
+```
+
+Write one key per line, all at the same indent. Put `fallback_model` and `conversation_history_window` in the agent `EXECUTION` section instead. They raise W567 in a step.
+
+- The step model outranks the agent's Model Config tab and its `EXECUTION` model. It must be a model the project can run. If not, the step uses the agent's model and the trace records `model_access:step_model_fallback`. A deployment model override still wins.
+- A mistake in the block is a warning ([W563 to W569 and W573](/agent-platform/abl/reference/errors-and-warnings#w563), [`STEP_EXECUTION_*`](/agent-platform/abl/reference/errors-and-warnings#step_execution_model_capability)). The bad key is ignored and the other keys apply, so the agent still compiles.
+- The block has no effect on a step that is not a `REASONING` step, or on a speech-to-speech voice session.
+
 ### Choosing the next step
 
 A step runs whenever the flow reaches it. To take one path or another based on a value collected or computed earlier, route from a decision step with `ON_RESULT`. It works on a step without a `CALL`. The first matching branch wins:
@@ -711,6 +775,8 @@ FLOW:
     THEN: next_step
 ```
 
+A key missing from a record reads as `null` inside a `WITH` expression. An argument with no value is left out of the tool input. See [Missing values in CALL arguments](/agent-platform/abl-reference/tools#missing-values-in-call-arguments).
+
 | Property | Type                     | Required | Default | Description                           |
 | -------- | ------------------------ | -------- | ------- | ------------------------------------- |
 | `CALL`   | `string`                 | --       | --      | Tool name to invoke                   |
@@ -819,6 +885,8 @@ SET:
 ```
 
 Surround the whole value with quotes when JSON-shaped *text* is intentional — `SET: payload_text = '[{"customer":"{{employer_name}}"}]'` stores a string, not a structured value. A session `TYPE` declaration alone doesn't validate every `SET` write; validate structured arguments at the tool boundary (pass the variable to a typed parameter, such as `filters: object[]`, through `WITH`).
+
+<Warning>**Behavior change.** A computed `SET` value that cannot be evaluated no longer stores its own formula text. The variable gets no value, and the trace records a `warning` event with code `set_expression_not_evaluated`. Set `EXECUTION: set_expression_failure: keep_text` to keep the old behavior. See [When a SET value cannot be evaluated](/agent-platform/abl-reference/expressions-and-functions#when-a-set-value-cannot-be-evaluated).</Warning>
 
 ### CHECK
 
@@ -1004,7 +1072,7 @@ FLOW:
 | `COLLECT` | `object` | `digits: N..M` (min/max digit count), `finishOnKey`, `interDigitTimeoutMs`, `asrTimeoutMs` (spoken-path silence window). |
 | `VALIDATE` | list | Validation rules: a bare rule name (`luhn`), an inline object (`{ length: 4..4 }`, `{ date_mmYY: "not_past" }`), or a delegated `CALL <tool> WITH: {...}` rule. |
 | `PROGRESS_PROMPT` | `string` or `object` | Hold line spoken while this field's `VALIDATE` `CALL` runs. |
-| `NOT_SECRET` | `postal_code` | Marks a value that is not card data. Requires `SAVE_AS`. See [Readable values](#readable-values-not_secret). |
+| `NOT_SECRET` | `true/false` | 	Specifies whether the field value can be treated as non-sensitive. By default, all fields in a `SECURE_INPUT` step are secret. Set to `true` to allow the field value to be stored using `SAVE_AS` and accessed by subsequent steps, tools, traces, and reports. Use this option only for non-sensitive values, such as a billing ZIP code. A `SECURE_INPUT` step must include at least one secret field. |
 | `SAVE_AS` | `string` | Session variable that receives the `NOT_SECRET` value once the field is accepted. |
 
 A failed check asks for the field again, up to `MAX_ATTEMPTS`. A `CALL` validation rule passes only when the tool returns `valid: true`, and may reference the field being checked plus any fields collected before it. A field accepts only `PROMPT`, `COLLECT`, `VALIDATE`, `PROGRESS_PROMPT`, `NOT_SECRET`, and `SAVE_AS`. Anything else is ignored with a warning ([`W210`](/agent-platform/abl/reference/errors-and-warnings#w210)).
@@ -1830,8 +1898,80 @@ The error type (the handler's key) is matched against a **fixed, canonical set**
 `unknown_error`. A key outside this set (for example the older `tool_timeout`, `invalid_input`, or
 `api_error`) is flagged at compile time ([`ON_ERROR_HANDLER_TYPE_DRIFT`](/agent-platform/abl/reference/errors-and-warnings#on_error_handler_type_drift)) and never matches at
 runtime — see [Error types](/agent-platform/abl-reference/lifecycle-and-hooks#error-types) for the
-full table and the deprecated-name mapping. Narrow `tool_error` with `SUBTYPE`/`SUBTYPES` (known
-values: `rate_limit`, `auth_failure`, `network_error`, `tool_timeout`).
+full table and the deprecated-name mapping. Narrow a handler with `SUBTYPE`/`SUBTYPES`. Known
+values: `rate_limit`, `auth_failure`, `network_error`, `tool_timeout` for `tool_error`, and
+`timeout`, `content_filter`, `rate_limited`, `context_exceeded`, `api_error` for `llm_error`.
+
+### List form and map form
+
+Write a step's handlers as `- TYPE:` list items, or keyed by type like agent-level handlers. Both forms are equivalent:
+
+```yaml expandable=true
+FLOW:
+  # List form
+  answer_billing:
+    REASONING: true
+    GOAL: "Answer the billing question"
+    ON_ERROR:
+      - TYPE: llm_error
+        SUBTYPE: timeout
+        RESPOND: "Sorry, that took too long. Could you ask again?"
+        RETRY: 1
+        RETRY_DELAY: 1000
+        RETRY_BACKOFF: fixed
+        THEN: RETRY_STEP
+      - TYPE: llm_error
+        SUBTYPES: [content_filter, api_error]
+        SET: needs_human = true
+        RESPOND: "Let me pass this to a colleague."
+        THEN: BACKTRACK
+        BACKTRACK_TO: handover
+    THEN: wrap_up
+```
+
+A type can repeat. Handlers match subtype first, so the `timeout` entry wins for a timeout and the second `llm_error` entry catches the listed subtypes.
+
+- A step handler takes `SUBTYPE` or `SUBTYPES`, a one-line `RESPOND`, any number of `SET: name = expression` lines (applied before `RESPOND` is rendered), `RETRY`, `RETRY_DELAY`, `RETRY_BACKOFF`, `THEN`, `BACKTRACK_TO`, and `HANDOFF_TARGET`.
+- `VOICE`, `FORMATS`, multi-line responses, and `TEMPLATE(name)` references work on agent-level handlers only.
+- **Which handler runs.** The step's handlers are checked first, then the agent's, then the agent's default handler. Within each, a subtype match wins over a type match, which wins over `DEFAULT`. A matching step handler replaces the agent-level handler for that step, including its `RESPOND`. When no handler matches a model error, a declared `unknown_error` handler is used.
+- **Where step handlers apply.** They cover a `REASONING: true` step's own model calls, its scripted `CALL:`, and its other step-owned errors. An error from a tool the model calls, and a `validation_error` after a field's `MAX_RETRIES`, use the agent-level handlers only.
+
+### When a reasoning step's model call fails
+
+A model error in a `REASONING: true` step (`llm_error`: a timeout, a content filter, a rate limit, and other model failures) first runs the handler's `RETRY`, if any. If the call still fails, `THEN` decides what happens on that turn:
+
+| `THEN`       | On the failed turn                                                                                                                                                  | With `EXIT_WHEN`                                                                                                       |
+| ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| `BACKTRACK`  | The handler's `RESPOND` is sent, then `BACKTRACK_TO` runs in the same turn and its reply follows. Naming the failing step itself acts like `CONTINUE`.             | Ignored: the step is left.                                                                                             |
+| `COMPLETE`   | The handler's `RESPOND` is sent and the flow completes. The completion's own reply, if any, follows.                                                                | Ignored: the step is left.                                                                                             |
+| `RETRY_STEP` | The handler's line is the reply. The conversation stays in the step and the next message runs it again. Counts toward `MAX_ATTEMPTS`, then `ON_EXHAUSTED` applies. | Not evaluated on the failed turn.                                                                                      |
+| `CONTINUE`   | The handler's line is the reply. Without `EXIT_WHEN` the step advances to its `THEN`.                                                                               | Not met (the usual case): the step waits and runs again on the next message. Met: `THEN` runs in the same turn.        |
+| `HANDOFF`    | The handoff target takes over. The handler's `RESPOND`, if any, is the reply.                                                                                       | Ignored.                                                                                                               |
+| `ESCALATE`   | The escalation routine runs. The handler's line, or "Escalating to a human agent.", is the reply.                                                                   | Ignored.                                                                                                               |
+
+- **Without a `RESPOND`.** `BACKTRACK` and `COMPLETE` send no error line: the target step, or the completion, speaks. `CONTINUE`, `RETRY_STEP`, and a `BACKTRACK` naming the failing step send the platform fallback line below. `HANDOFF` lets the target answer.
+- **`RETRY` versus `RETRY_STEP`.** `RETRY: N` repeats the failed model call up to `N` more times in the same turn. Only a model timeout, a rate limit, and an unavailable provider are retried. A retry is not attempted once the failed attempt has streamed part of its reply. `RETRY_STEP` waits for the customer's next message.
+- **Model time limit.** A call times out when the step's `EXECUTION: llm_timeout` (else the agent's) runs out, capped by the server limit and the turn's remaining time. A caller cancellation is not a timeout and runs no handler.
+
+#### Platform fallback lines
+
+When a handler has no `RESPOND` and needs one, the customer sees the agent's message for the error's subtype:
+
+| Message key                  | Sent for                       | Default text (English)                                              |
+| ---------------------------- | ------------------------------ | ------------------------------------------------------------------- |
+| `error_llm_timeout`          | `llm_error` / `timeout`        | "I apologize for the delay. Could you please repeat your request?" |
+| `error_llm_content_filter`   | `llm_error` / `content_filter` | "An error occurred. Please try again."                              |
+| `error_llm_rate_limited`     | `llm_error` / `rate_limited`   | "An error occurred. Please try again."                              |
+| `error_llm_context_exceeded` | `llm_error` / `context_exceeded` | "An error occurred. Please try again."                            |
+| `error_llm_api_error`        | `llm_error` / `api_error`      | "An error occurred. Please try again."                              |
+| `error_default`              | Any other error                | "An error occurred. Please try again."                              |
+
+Replace a line for one agent in `MESSAGES:`, or per language in `locales/<locale>/<agent>.json` (one agent) or `locales/<locale>/_shared.json` (all agents). A locale file wins over `MESSAGES`, which wins over the default.
+
+```yaml
+MESSAGES:
+  error_llm_timeout: "One moment, please. Could you say that again?"
+```
 
 #### Step ON_ERROR handler properties
 
@@ -1839,7 +1979,9 @@ values: `rate_limit`, `auth_failure`, `network_error`, `tool_timeout`).
 | Property          | Type      | Description                                                                        |
 | ----------------- | --------- | ---------------------------------------------------------------------------------- |
 | `SUBTYPE`         | `string`  | Narrow the handler to a specific error subtype.                                    |
-| `RESPOND`         | `string`  | Message to show when the error fires.                                              |
+| `SUBTYPES`        | `string[]`| Narrow the handler to any of several error subtypes.                               |
+| `SET`             | `string`  | `name = expression`. Repeatable. Applied before `RESPOND` is rendered.             |
+| `RESPOND`         | `string`  | One-line message to show when the error fires.                                     |
 | `RETRY`           | `number`  | Retry attempts before giving up.                                                   |
 | `RETRY_DELAY`     | `number`  | Delay (ms) between retries.                                                        |
 | `RETRY_BACKOFF`   | `string`  | Backoff strategy: `fixed`, `exponential`, or `linear`.                             |

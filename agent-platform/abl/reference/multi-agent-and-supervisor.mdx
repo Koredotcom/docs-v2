@@ -141,7 +141,7 @@ ROUTING:
 
 #### Conditional routing (WHEN clauses)
 
-WHEN clauses use the same expression syntax as [Expressions & functions](/agent-platform/abl-reference/expressions-and-functions). Common patterns include:
+WHEN clauses use the same expression syntax as [Expressions & functions](/agent-platform/abl-reference/expressions-and-functions), with the same [size limits](/agent-platform/abl-reference/expressions-and-functions#size-limits-for-conditions-and-regex-patterns). A long `WHEN` can combine parts with `OR` / `AND`, but each single comparison or list stays under 4,096 characters and each regex pattern under 500. Common patterns include:
 
 ```yaml expandable=true
 # Intent-based
@@ -386,6 +386,38 @@ HANDOFF:
 | `intentBridge.guidedThreshold`       | Number  | `0.5`      | Confidence at/above which intent is offered to the model as guidance.                                                             |
 | `intentBridge.outOfScopeDecline`     | Boolean | `true`     | Decline out-of-scope requests detected by the classifier.                                                                         |
 | `intentBridge.multiIntentSignal`     | Boolean | `true`     | Allow guided multi-intent detection when every detected intent reaches `guidedThreshold`.                                         |
+
+#### Parent return options
+
+When a supervisor hands off with `RETURN: true`, the runtime checks the caller's replies against the supervisor's routes while the specialist is active, so a caller who changes topic can be routed back. The `parentReturn` options control that check. Each is read from the supervisor's `EXECUTION.pipeline.parentReturn` block first, then the project's `pipeline.parentReturn` runtime configuration (Studio: Runtime Config → Pipeline), then the default.
+
+| Option                     | Type    | Default | Description                                                                                                                                  |
+| -------------------------- | ------- | ------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| `parentReturn.minConfidence`   | Number  | compiled threshold | Minimum confidence for a route to take the caller out of the specialist.                                                       |
+| `parentReturn.ignoreAmbiguous` | Boolean | `false` | Keep the specialist in charge when the check is ambiguous.                                                                                 |
+| `parentReturn.answerFirst`     | Boolean | `false` | Give each reply to the active specialist before any topic check. Studio: **Answer Pending Question First**.                                |
+
+```yaml
+EXECUTION:
+  pipeline:
+    enabled: true
+    parentReturn:
+      answerFirst: true
+```
+
+By default the check runs before the specialist sees the reply, and a matching route wins even when the reply answers the specialist's question. A short answer such as "no" to "Does anyone else have access to this card?" can be classified as another route.
+
+With `answerFirst: true` the specialist gets the reply first:
+
+| Active specialist             | `answerFirst: false` (default)                                       | `answerFirst: true`                                                                                                                                                       |
+| ----------------------------- | -------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Flow step waiting on `GATHER` | The topic check runs first. Its route wins.                          | The reply is extracted first. If it gives a valid value for every pending customer-facing field, the check is skipped. A whole reply captured into a lone free-text field does not count. Other replies are checked as before. |
+| Reasoning agent               | The topic check (decision model, then classifier) runs before every turn. | No check. The specialist answers, and calls `__return_to_parent__` when the request is outside its scope. Only then does the supervisor route it.                    |
+
+A skipped check is traced as a `pipeline_classifier_skipped` decision with reason `parent_return_answer_first`.
+
+- A flow reply that answers the pending question and also names a new topic stays with the flow.
+- Instruct a reasoning specialist to hand back requests outside its scope with `__return_to_parent__`. Without that instruction, a caller who changes topic stays with the specialist.
 
 Write the pipeline keys in camelCase in an agent file, such as `shortCircuit` and `confidenceThreshold`. Snake_case keys are dropped without a message. An agent file does not range-check the threshold values. The project runtime configuration does.
 
@@ -1386,9 +1418,9 @@ COMPLETE:
 ```
 
 - Names must be RFC 3261 tokens of at most 64 characters. Values must be strings without control characters. Violations are compile errors: `COMPLETE_SIP_HEADERS_INVALID_NAME`, `COMPLETE_SIP_HEADERS_INVALID_VALUE`, and `COMPLETE_SIP_HEADERS_WRONG_TYPE`. Quote a value that starts with `{{`.
-- The platform defines no header names or values of its own here. `X-RouteType` is not an ABL or platform header. It is an example of a header that a contact center such as Five9 reads, and `hangup` is the value that example uses. The set of values is defined by the system that receives the BYE, so use the names and values from its routing documentation. The runtime sends any valid string value as written.
+- The platform adds its own correlation headers to the BYE: `x-session-id`, `x-project-id`, `x-tenant-id`, and the call metadata `x-caller-number` and `x-call-start-time` (the same set a transfer sends). You cannot set or override these names. `X-RouteType` is not an ABL or platform header. It is an example of a header that a contact center such as Five9 reads, and `hangup` is the value that example uses. The set of values is defined by the system that receives the BYE, so use the names and values from its routing documentation. The runtime sends any valid string value as written.
 - `{{variable}}` placeholders resolve from session values when the condition fires. A header whose value resolves empty is not sent.
-- The headers pass the project's outbound SIP header policy. Its block list and `headerPassthrough: false` apply. The runtime drops reserved platform names (`x-session-id`, `x-tenant-id`, and similar), and the count and size limits hold. These headers need no allow-list row, and the project's transfer allow rows are never added to a hangup.
+- The headers pass the project's outbound SIP header policy. Its block list and `headerPassthrough: false` apply. The runtime drops authored headers that use reserved platform names (`x-session-id`, `x-tenant-id`, and similar), and the count and size limits hold. These headers need no allow-list row, and the project's transfer allow rows are never added to a hangup.
 - The platform always sets `X-ArtemisReason: BotHangup` and you cannot override it.
 - The headers apply to pipeline and realtime voice calls that this condition ends.
 - `sip_headers` anywhere other than a COMPLETE condition's `VOICE` block is ignored with a warning ([`VOICE_SIP_HEADERS_ILLEGAL_PLACEMENT`](/agent-platform/abl/reference/errors-and-warnings#voice_sip_headers_illegal_placement)). Transfer headers belong in `ESCALATE.routing.voice.sip_headers`.
