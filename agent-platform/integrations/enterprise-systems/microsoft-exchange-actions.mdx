@@ -1,0 +1,124 @@
+---
+title: Microsoft Exchange Actions integration
+sidebarTitle: Microsoft Exchange Actions
+---
+
+<Badge icon="arrow-left" color="gray">[Back to list of integrations](/agent-platform/integrations/enterprise-systems)</Badge>
+
+Use the Microsoft Exchange integration to let agents send, find, and read email and download attachments on an on-premises Exchange Server through Exchange Web Services (EWS).
+
+<Tip>For Exchange Online, use [Microsoft Outlook Actions](/agent-platform/integrations/enterprise-systems/microsoft-outlook-actions).</Tip>
+
+| Authentication | Actions | Triggers |
+| --- | --- | --- |
+| Basic Auth | 5 | 1 ([use in workflows](/agent-platform/workflows#app-triggers)) |
+
+## Supported actions
+
+| Action | Use it to |
+| --- | --- |
+| [Send Email](#send-email) | Send an email from the connected mailbox. |
+| [Find Emails](#find-emails) | List messages in a folder, newest first, with optional search. |
+| [Get Email](#get-email) | Read one message in full, including its body and attachment list. |
+| [Get Attachment](#get-attachment) | Download one attachment from a message. |
+| [Custom SOAP Call](#custom-soap-call) | Run any EWS operation the other actions don't cover, such as `MoveItem` or `CreateFolder`. |
+
+## Triggers
+
+| Trigger | Fires when |
+| --- | --- |
+| New Email | A new message arrives in the mailbox. The trigger polls on a schedule and matches messages by received time, so two messages that arrive in the same millisecond can yield one event. |
+
+## Prerequisites
+
+- EWS enabled and reachable from Artemis over HTTPS.
+- A service account with a mailbox. To act on other mailboxes, the account needs the [ApplicationImpersonation](https://learn.microsoft.com/en-us/exchange/client-developer/exchange-web-services/impersonation-and-ews-in-exchange) role.
+
+## Set up the integration
+
+<Steps>
+  <Step title="Create the auth profile">
+    In **Integrations**, select **Microsoft Exchange** > **Connect**. On **Project Auth Profiles**, select **New Profile** > **Integration Profile** > **Microsoft Exchange** > **Continue**. Configure the fields, and select **Create Profile**.
+
+    | Field | Value |
+    | --- | --- |
+    | **Server URL** | Server URL with scheme, for example `https://mail.example.com`. Artemis appends `/EWS/Exchange.asmx`; a full EWS URL also works. |
+    | **Exchange Version** | `Exchange2016` works for Exchange 2016, 2019, and Subscription Edition. Lower it only if the server rejects requests. |
+    | **Act as Mailbox** | Optional. SMTP address of a mailbox the account doesn't own. Requires ApplicationImpersonation. Actions can override it with `mailbox`. |
+    | **Username**, **Password** | Service account credentials. |
+  </Step>
+  <Step title="Create the action tool">
+    In **Tools**, select **New Tool** > **Action** > **Microsoft Exchange** > **Continue**. Select the **Action** and **Auth Profile**, set parameter defaults (leave a value empty for the agent to supply at runtime), and select **Create Tool**. Then [assign the tool to an agent](/agent-platform/tools/actions#assign-an-action-to-an-agent).
+  </Step>
+</Steps>
+
+## Action reference
+
+Every action accepts an optional `mailbox` parameter that overrides **Act as Mailbox** in the profile. Using it requires the **ApplicationImpersonation** role.
+
+<AccordionGroup>
+  <Accordion title="Send Email" id="send-email">
+    | Parameter | Type | Description |
+    | --- | --- | --- |
+    | `to` | string | Recipient addresses, separated by commas. |
+    | `subject` | string | Subject line. |
+    | `body` | string | Message body. |
+    | `bodyType` | enum | Body format. Default: `HTML`. |
+    | `cc` | string | Carbon copy recipients. |
+    | `bcc` | string | Blind carbon copy recipients. |
+    | `saveCopy` | boolean | Saves a copy in **Sent Items**. Default: `True`. |
+    | `mailbox` | string | Optional. Mailbox to send from. |
+  </Accordion>
+  <Accordion title="Find Emails" id="find-emails">
+    | Parameter | Type | Description |
+    | --- | --- | --- |
+    | `folder` | enum | Folder to list. Default: `inbox`. |
+    | `query` | string | Optional. Exchange search syntax, as in the Outlook search box, for example `from:someone@example.com` or `hasattachment:true`. |
+    | `max` | number | Maximum results. |
+    | `offset` | number | Number of messages to skip, for paging. |
+    | `mailbox` | string | Optional. Mailbox to read. |
+  </Accordion>
+  <Accordion title="Get Email" id="get-email">
+    | Parameter | Type | Description |
+    | --- | --- | --- |
+    | `itemId` | string | Message ID from a **Find Emails** result. |
+    | `changeKey` | string | Optional. Change key from the same result. Guarantees the exact message version. |
+    | `bodyType` | enum | Body format. Default: `Plain text`, which is easier for agents to process than HTML. |
+    | `mailbox` | string | Optional. Mailbox to read. |
+  </Accordion>
+  <Accordion title="Get Attachment" id="get-attachment">
+    | Parameter | Type | Description |
+    | --- | --- | --- |
+    | `attachmentId` | string | Attachment ID from a **Get Email** result. |
+    | `mailbox` | string | Optional. Mailbox to read. |
+  </Accordion>
+  <Accordion title="Custom SOAP Call" id="custom-soap-call">
+    Runs any EWS operation. Artemis adds the SOAP envelope, namespaces, and `RequestServerVersion` header.
+
+    | Parameter | Type | Description |
+    | --- | --- | --- |
+    | `operation` | string | EWS operation name exactly as Microsoft documents it, for example `MoveItem`. It must match the element in `body`. |
+    | `body` | string | Operation element only, for example `<m:MoveItem>…</m:MoveItem>`. Use the `m:` prefix for the messages namespace and `t:` for types. |
+    | `mailbox` | string | Optional. Mailbox to run against. |
+
+    See [EWS operations in Exchange](https://learn.microsoft.com/en-us/exchange/client-developer/web-service-reference/ews-operations-in-exchange).
+  </Accordion>
+</AccordionGroup>
+
+## Troubleshoot common issues
+
+| Issue | Resolution |
+| --- | --- |
+| Connection times out | Confirm the **Server URL** is reachable from Artemis and the firewall allows HTTPS to the EWS endpoint. |
+| `401 Unauthorized` | Verify the username and password, and confirm Basic authentication is enabled for EWS on the server. |
+| `ErrorInvalidServerVersion` or a schema error | Lower **Exchange Version**, for example to `Exchange2013_SP1`. |
+| `ErrorImpersonateUserDenied` | Assign the **ApplicationImpersonation** role to the service account, or remove the `mailbox` value. |
+| **Get Email** returns a stale version | Pass the `changeKey` from the same **Find Emails** result. |
+| **Custom SOAP Call** fails to parse the response | Make sure `operation` matches the element name in `body`. |
+
+{{related}}
+
+- [Enterprise systems integrations](/agent-platform/integrations/enterprise-systems)
+- [Auth profiles](/agent-platform/administration/integrations-settings#auth-profiles)
+- [Action Tools](/agent-platform/tools/actions)
+- [Microsoft Outlook Actions integration](/agent-platform/integrations/enterprise-systems/microsoft-outlook-actions)

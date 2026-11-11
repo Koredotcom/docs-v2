@@ -5,18 +5,11 @@ sidebarTitle: Amazon SES Actions
 
 <Badge icon="arrow-left" color="gray">[Back to list of integrations](/agent-platform/integrations/enterprise-systems)</Badge>
 
-Use the Amazon SES integration to let Artemis agents send transactional email and manage SES email templates through Action Tools. Artemis signs each request with AWS Signature Version 4 (SigV4), so you first create an **AWS IAM** auth profile that grants Artemis access to your AWS account.
+Use the Amazon SES integration to let agents send transactional email and manage SES templates through Action Tools. Artemis signs each request with AWS SigV4.
 
-## At a glance
-
-| Item | Value |
-| --- | --- |
-| Category | Communication |
-| Authentication | AWS IAM (SigV4) |
-| Credential modes | Assume role (recommended), Access keys |
-| Signing service | `ses` |
-| Actions | 7 |
-| Triggers | None |
+| Authentication | Actions | Triggers |
+| --- | --- | --- |
+| AWS IAM (SigV4) | 7 | None |
 
 ## Supported actions
 
@@ -32,39 +25,16 @@ Use the Amazon SES integration to let Artemis agents send transactional email an
 
 ## Prerequisites
 
-- An AWS account with Amazon SES enabled in the Region you plan to use.
-- At least one verified sender identity (email address or domain) in that Region. See [Creating and verifying identities](https://docs.aws.amazon.com/ses/latest/dg/creating-identities.html).
-- Production access for the account if agents must email unverified recipients. In the SES sandbox, you can send only to verified addresses. See [Request production access](https://docs.aws.amazon.com/ses/latest/dg/request-production-access.html).
-- Permission to create IAM roles, or IAM users and access keys, in AWS.
-- An Artemis project with permission to create auth profiles and Action Tools.
+- Amazon SES in your Region, with at least one [verified sender identity](https://docs.aws.amazon.com/ses/latest/dg/creating-identities.html). Identities and templates are Region specific.
+- [Production access](https://docs.aws.amazon.com/ses/latest/dg/request-production-access.html) to email unverified recipients. The SES sandbox sends only to verified addresses.
 
-## Step 1: Prepare AWS credentials
+## Set up the integration
 
-Choose the credential mode before you create the auth profile. Artemis recommends **Assume role** because Artemis stores no long-lived keys.
+<Steps>
+  <Step title="Prepare AWS credentials">
+    Create an IAM role (recommended) or an IAM user with access keys, and attach a policy for the actions you use. For a role, add a trust policy that requires the **External ID** shown in the Artemis profile form. External agents require a role.
 
-<Tabs>
-  <Tab title="Assume role (recommended)">
-    1. In the AWS IAM console, create a role for a **Custom trust policy**.
-    2. Add a trust policy that allows the Artemis platform identity to assume the role and requires the **External ID** that Artemis generates for your workspace. Copy the External ID from the auth profile form in [Step 2](#step-2-create-an-amazon-ses-auth-profile).
-    3. Attach a permissions policy for the SES actions your agents use. See [IAM permissions](#iam-permissions).
-    4. Copy the **Role ARN**, for example `arn:aws:iam::123456789012:role/artemis-ses`.
-
-    <Note>Assume role is required when external agents use the profile.</Note>
-  </Tab>
-  <Tab title="Access keys">
-    1. In the AWS IAM console, create an IAM user for Artemis.
-    2. Attach a permissions policy for the SES actions your agents use. See [IAM permissions](#iam-permissions).
-    3. Create an access key for the user, and then copy the **Access Key ID** and **Secret Access Key**.
-
-    <Warning>Access keys are long-lived. Rotate them regularly, and grant only the SES permissions your agents need. See [Managing access keys](https://docs.aws.amazon.com/IAM/latest/UserGuide/id_credentials_access-keys.html).</Warning>
-  </Tab>
-</Tabs>
-
-### IAM permissions
-
-Grant only the permissions for the actions you plan to use. The list actions populate the dropdown values (sender addresses, templates, and configuration sets) in the tool configuration.
-
-<Accordion title="Sample permissions policy">
+    <Accordion title="Sample permissions policy">
 ```json
 {
   "Version": "2012-10-17",
@@ -92,104 +62,37 @@ Grant only the permissions for the actions you plan to use. The list actions pop
   ]
 }
 ```
-</Accordion>
-
-## Step 2: Create an Amazon SES auth profile
-
-<Steps>
-  <Step title="Open the auth profile form">
-    1. In Artemis, go to **Integrations**, and then select **Amazon SES**. The details panel lists the supported actions and any configured auth profiles.
-    2. Select **Connect**. The **Project Auth Profiles** page opens.
-    3. Select **New Profile** > **Integration Profile**.
-    4. Under **Communication**, select **Amazon SES**, and then select **Continue**.
+    </Accordion>
   </Step>
-  <Step title="Enter the profile details">
-    | Field | Description |
-    | --- | --- |
-    | **Auth Type** | Keep **AWS IAM (SigV4)**. |
-    | **Profile Name** | Enter a name that identifies the account and environment, for example `SES - Production`. |
-    | **Description** | Optional. Describe the purpose of the profile. |
-    | **Usage Mode** | Set to **Preconfigured**. An admin provides credentials once, and users don't need to authorize. |
-    | **Visible to project members** | Turn on to let project members use the profile. |
-
-    For more about profile settings, see [Auth profiles](/agent-platform/administration/integrations-settings#auth-profiles).
-  </Step>
-  <Step title="Configure the credentials">
-    In **Configuration** > **Credentials**, select the mode you prepared in [Step 1](#step-1-prepare-aws-credentials).
+  <Step title="Create the auth profile">
+    In **Integrations**, select **Amazon SES** > **Connect**. On **Project Auth Profiles**, select **New Profile** > **Integration Profile** > **Amazon SES** > **Continue**. Set **Usage Mode** to **Preconfigured**, choose **Credentials**, and select **Create Profile**.
 
     <Tabs>
       <Tab title="Assume role (recommended)">
-        | Field | Description |
+        | Field | Value |
         | --- | --- |
-        | **Endpoint type** | Select **Custom AWS service**. The default, **Amazon Bedrock AgentCore**, doesn't apply to SES. |
-        | **Signing service** | Enter `ses`. |
-        | **Region** | Enter the SES Region, for example `us-east-1`. |
-        | **Role ARN** | Paste the Role ARN from Step 1. |
-        | **Session duration (seconds)** | Optional. Enter a value from 900 to 3600. The default is 3600. |
-        | **External ID** | Read only. Copy this value into the role's trust policy. The ID is unique to your workspace. |
+        | **Endpoint type** | **Custom AWS service** (the default, Bedrock AgentCore, doesn't apply) |
+        | **Signing service** | `ses` |
+        | **Region** | The Region of your SES identities, for example `us-east-1` |
+        | **Role ARN** | ARN of the role you created |
+        | **Session duration** | Optional. 900 to 3600 seconds (default 3600) |
+        | **External ID** | Read only. Add it to the role's trust policy. |
 
-        Select **Open the setup guide** for help with configuring the role in AWS.
-
-        <Warning>If the form shows **Platform AWS identity not configured**, your deployment can't generate a trust policy or test role profiles. Ask your platform administrator to configure the platform AWS identity, or use **Access keys**.</Warning>
+        <Warning>If the form shows **Platform AWS identity not configured**, ask your platform administrator to configure it, or use access keys.</Warning>
       </Tab>
       <Tab title="Access keys">
-        | Field | Description |
+        | Field | Value |
         | --- | --- |
-        | **Region** | Enter the SES Region, for example `us-east-1`. |
-        | **Signing service** | Keep `ses`. |
-        | **Bucket (S3 only)** | Leave empty. This field applies only to Amazon S3. |
-        | **Endpoint (S3-compatible)** | Leave empty. This field applies only to S3-compatible storage. |
-        | **Access Key ID** | Paste the access key ID from Step 1. |
-        | **Secret Access Key** | Paste the secret access key from Step 1. |
-        | **Session Token** | Optional. Enter a token only if you use temporary credentials. |
-
-        <Note>Artemis encrypts secrets at rest and never displays them after you save the profile.</Note>
+        | **Region** | The Region of your SES identities |
+        | **Signing service** | `ses` (pre-filled) |
+        | **Access Key ID**, **Secret Access Key** | From the IAM user. Leave **Bucket**, **Endpoint**, and **Session Token** empty. |
       </Tab>
     </Tabs>
   </Step>
-  <Step title="Save the profile">
-    Select **Create Profile**. The profile appears on the **Project Auth Profiles** page. Verify that its status is **Active**.
+  <Step title="Create the action tool">
+    In **Tools**, select **New Tool** > **Action** > **Amazon SES** > **Continue**. Select the **Action** and **Auth Profile**, set parameter defaults (leave a value empty for the agent to supply at runtime), and select **Create Tool**. Then [assign the tool to an agent](/agent-platform/tools/actions#assign-an-action-to-an-agent).
   </Step>
 </Steps>
-
-<Tip>Make sure the **Region** matches the Region where you verified your sender identities. SES identities and templates are Region specific.</Tip>
-
-## Step 3: Create an Amazon SES action tool
-
-<Steps>
-  <Step title="Start a new action tool">
-    1. Go to **Tools**.
-    2. Select **New Tool** > **Action**.
-    3. In **Choose an Integration**, select **Amazon SES**, and then select **Continue**. The **New Action Tool** page opens.
-  </Step>
-  <Step title="Configure the tool">
-    | Field | Description |
-    | --- | --- |
-    | **Tool Name** | Artemis suggests a name based on the action, for example `amazon_ses_send_email`. Use lowercase letters, numbers, and underscores. Agents use this name to invoke the tool. |
-    | **Description** | Describe what the tool does and when the agent should use it. The agent uses this text to decide when to call the tool. |
-    | **Action** | Select one of the [supported actions](#supported-actions). |
-    | **Auth Profile** | Select the profile you created in Step 2. Select **Manage profiles** to create or edit profiles. |
-  </Step>
-  <Step title="Configure input parameters">
-    Artemis loads the parameter names, types, and required status from the action schema. For each parameter, either enter a **Default value** or leave it empty so the agent provides the value at runtime. To exclude a parameter, select its delete icon. See [Action reference](#action-reference) for the parameters of each action.
-  </Step>
-  <Step title="Configure output parameters">
-    Select an output mode:
-    - **Use complete tool output** returns the full SES response to the agent.
-    - **Define custom parameters** returns only the fields you define.
-  </Step>
-  <Step title="Save the tool">
-    Select **Create Tool**.
-  </Step>
-</Steps>
-
-For more details, see [Action Tools](/agent-platform/tools/actions).
-
-## Step 4: Use the action tool
-
-Add the tool to an agent so the agent can invoke it during conversations. See [Assign an action to an agent](/agent-platform/tools/actions#assign-an-action-to-an-agent).
-
-**Example:** A support agent uses `amazon_ses_send_templated_email` to send a case confirmation. The tool sets `templateName` to `case_confirmation` by default, and the agent fills `toAddresses` and `templateData` from the conversation.
 
 ## Action reference
 
@@ -315,7 +218,7 @@ Add the tool to an agent so the agent can invoke it during conversations. See [A
 | Template variables appear as `{{name}}` in sent email | Pass a value for each variable in `templateData`. Variable names are case sensitive. |
 | `AlreadyExists` when you create a template | Use a unique `templateName`, or use the matching update action. |
 
-## Related articles
+{{related}}
 
 - [Enterprise systems integrations](/agent-platform/integrations/enterprise-systems)
 - [Auth profiles](/agent-platform/administration/integrations-settings#auth-profiles)
