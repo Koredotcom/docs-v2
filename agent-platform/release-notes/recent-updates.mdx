@@ -24,6 +24,83 @@ and NOT <p className="rn-heading">\{ Artemis x.y.z \} Month DD, 2026 </p>
 
 */}
 
+<Update label="November 11, 2026" description="v1.9.3">
+
+This release brings per-step Execution settings for Flow reasoning steps and an Answer Pending Question First option for active specialists. Reasoning turns and PII-protected replies are faster, and voice call endings now carry correlation headers on the SIP BYE. Studio now warns at publish about conditions that will not run, and SharePoint site members can retrieve documents they can open.
+
+<p className="rn-heading">Agent builder experience</p>
+
+<p className="rn-subtitle">Set model options for a single FLOW reasoning step</p>
+
+A `FLOW` step with `REASONING: true` can now include its own `EXECUTION:` block, so that a specific step can use a faster model or lower reasoning effort than the rest of the agent. In this block, you can set the model, reasoning effort, token limits, temperature, and tool timeouts for that step. Any setting you leave out uses the agent-level `EXECUTION` value.
+
+```yaml wrap
+present:
+  REASONING: true
+  EXECUTION:
+    reasoning_effort: none
+    max_tokens: 400
+
+# This step runs with no reasoning and a 400 token cap. Other steps keep the agent's settings.
+```
+
+<p className="rn-subtitle">Reasoning steps exit without an extra model call</p>
+
+If an undeclared key is included in a `__set_context__` that satisfies `EXIT_WHEN`, the step now exits immediately instead of triggering a second model call. Undeclared keys are still recorded in `rejected_keys` and traces, and receive correction feedback if the exit condition is unmet.
+
+<p className="rn-subtitle">Keep valid answers with the active specialist</p>
+
+You can now turn on the ‘Answer Pending Question First’ option in Studio (Runtime Config → Reasoning Pipeline), or set `parentReturn.answerFirst: true` in a supervisor’s `EXECUTION: pipeline` block. With it on, an active specialist handles the caller’s reply before the platform checks for a topic switch. For flow specialists, a reply that gives valid answers to all pending fields stays in the flow, and other replies still go through the topic-switch check. For reasoning specialists, the specialist handles the reply and must hand out-of-scope requests back to the supervisor with `__return_to_parent__`. This setting is off by default.
+
+```yaml wrap
+EXECUTION:
+  pipeline:
+    enabled: true
+    parentReturn:
+      answerFirst: true
+
+# Each reply goes to the active specialist before any topic check.
+```
+
+<p className="rn-subtitle">ABL Expression, Limit, and Error Handling Refinements</p>
+
+Updates impacting ABL runtime execution and publish-time diagnostics:
+
+- **Post-publish compiler warnings:** Publishing in Studio now alerts you to unexecutable logic, such as `WHEN` conditions exceeding roughly 4,000 characters or `matches_pattern` expressions longer than 500 characters.
+- **Evaluation of missing paths:** Within `CALL WITH`, `PROCESS`, and `TRANSFORM MAP`, executing `IS SET` on a missing path returns false. Unevaluated values are omitted, with diagnostic traces explicitly indicating the omission.
+- **Step-level `ON_ERROR` enhancements:** Model request timeouts before provider response are now classified as model timeouts, triggering `llm_error` logic and `RETRY` mechanisms. Saving step handlers in Studio preserves existing `SET` statements and additional `SUBTYPES`.
+
+<p className="rn-subtitle">Arch MCP updates</p>
+
+MCP clients can now perform guarded updates to a project's runtime configuration (fillers, language detection, and voice latency profiles) using the new `update_runtime_config` action. The access token now renews before it expires, so calls no longer fail with a 401 error during active sessions. Additionally, alignment with the ABL reference standard ensures that `create_tool` generates synchronous workflow tools by default.
+
+
+<p className="rn-heading">Voice experience</p>
+
+<p className="rn-subtitle">Enhanced call termination tracing and completeness</p>
+
+- **SIP BYE correlation headers:** When a KoreVG call concludes via `COMPLETE`, the BYE request now includes `x-session-id`, `x-project-id`, `x-tenant-id`, and associated call metadata—matching transfer behavior to restore post-call contact center lookup capabilities.
+- **Conversation transcript retention:** Final utterances spoken immediately before disconnection (such as no-input exhaustion prompts) are now fully captured across Conversation logs, history, and trace exports.
+- **Pre-disconnect queue suppression:** Executing a `COMPLETE` action at the root agent prevents queued requests from being re-offered right before session termination, ensuring previously handled requests are not repeated.
+
+
+<p className="rn-heading">Knowledge and connectors</p>
+
+<p className="rn-subtitle">SharePoint site members can retrieve documents</p>
+
+Permission-aware SharePoint connectors now resolve site-group access for Office documents, so site members get answers from documents they can open. Recrawl existing documents to refresh their permissions.
+
+
+<p className="rn-heading">Governance</p>
+
+<p className="rn-subtitle">Streaming output responses with active PII redaction</p>
+
+Projects configured for output PII redaction can now stream the initial PII-safe portion of a reply as it is generated by enabling the ‘Stream responses while redacting’ option (Project → Govern → PII). Text requiring verification is buffered; if PII is detected, streaming halts and the full reply is redacted before the remainder is transmitted. This feature is disabled by default.
+
+
+</Update>
+
+
 <Update label="November 6, 2026" description="v1.9.2">
 
 This release improves voice call control and agent configuration, with step-level barge-in overrides, configurable listening modes, per-channel speech streaming, per-agent model settings, and environment variables in MCP server configuration.
