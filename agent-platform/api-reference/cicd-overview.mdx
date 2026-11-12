@@ -1,0 +1,45 @@
+---
+title: Project deploy and promote API overview
+description: Use the CI/CD API to build releases, deploy projects to dev, staging, and production, and promote deployments to higher environments with a platform API key.
+sidebarTitle: Overview
+---
+
+Use the CI/CD API to build an immutable release of a project, deploy it to an environment, and promote it to a higher environment. The API needs no Studio login and no Git integration.
+
+## Prerequisites
+
+- A platform API key with a client ID (`plt-…`) and a client secret (`abl_…`).
+- A project ID that is in the key's allowed projects.
+- The `cicd.release.create`, `cicd.deploy`, and `cicd.promote` scopes on the key.
+- Authority on each environment you deploy or promote to. Call [Get caller identity](/agent-platform/api-reference/cicd-whoami) to check.
+
+## Endpoints
+
+| Step | Article | Method and path | Purpose |
+|---|---|---|---|
+| Authenticate | [Exchange Platform key for JWT token](/agent-platform/api-reference/cicd-tokens) | `POST /api/cicd/v1/oauth/token` | Exchange a platform API key for a Bearer JWT. |
+| Check access | [Get caller identity](/agent-platform/api-reference/cicd-whoami) | `GET /api/cicd/v1/whoami` | Describe the calling credential, including its environment authority. |
+| Build | [Create release](/agent-platform/api-reference/cicd-releases-create) | `POST /api/cicd/v1/projects/{projectId}/releases` | Build an immutable release from Git, a project snapshot, or a cross-tenant transfer. |
+| Build | [Get release](/agent-platform/api-reference/cicd-releases-get) | `GET /api/cicd/v1/projects/{projectId}/releases/{releaseId}` | Poll a release until its status is `ready` or `failed`. |
+| Build | [List releases](/agent-platform/api-reference/cicd-releases-list) | `GET /api/cicd/v1/projects/{projectId}/releases` | List releases for the project. |
+| Deploy | [Create deployment](/agent-platform/api-reference/cicd-deployments-create) | `POST /api/cicd/v1/projects/{projectId}/deployments` | Deploy a `ready` release to an environment. |
+| Deploy | [Get deployment](/agent-platform/api-reference/cicd-deployments-get) | `GET /api/cicd/v1/projects/{projectId}/deployments/{deploymentId}` | Get a deployment's status, environment, release, and versions. |
+| Promote | [Promote deployment](/agent-platform/api-reference/cicd-deployments-promote) | `POST /api/cicd/v1/projects/{projectId}/deployments/{deploymentId}/promote` | Promote an active deployment's release to a higher environment. |
+| Deploy | [List deployments](/agent-platform/api-reference/cicd-deployments-list) | `GET /api/cicd/v1/projects/{projectId}/deployments` | List deployments for the project. |
+
+## Workflow
+
+1. Exchange the platform API key for a Bearer token. Send the token in the `Authorization: Bearer <token>` header on every other call. The token expires after 900 seconds by default.
+2. Call `whoami` to confirm the environments you can deploy and promote to.
+3. Create a release. Use `source.kind="project_snapshot"` to build from the project's current content, or `git` to build from a branch, tag, or commit.
+4. Poll the release until its status is `ready`.
+5. Create a deployment with the `releaseId` and a target environment: `dev`, `staging`, or `production`.
+6. Poll the deployment until its status is `active`.
+7. Promote the active deployment to a higher environment.
+
+## Behavior to know
+
+- A release is immutable and independent of the environment. Promotion moves the same release to the target environment.
+- Release builds, deployments, and promotions run asynchronously. Use the status endpoints to track them.
+- The API checks environment authority at deploy and promote time, not when you build a release.
+- A qualification gate runs on every deploy and promote. To bypass it, set `bypassQualificationGate` and `bypassReason`. The key needs the `cicd.gate.bypass` scope.
