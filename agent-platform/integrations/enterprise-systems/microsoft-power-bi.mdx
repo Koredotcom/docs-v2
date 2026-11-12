@@ -1,0 +1,101 @@
+---
+title: Microsoft Power BI integration
+sidebarTitle: Microsoft Power BI
+---
+
+<Badge icon="arrow-left" color="gray">[Back to list of integrations](/agent-platform/integrations/enterprise-systems)</Badge>
+
+Use the Microsoft Power BI integration to let agents create push datasets and push rows into them, so reports reflect data that agents collect.
+
+| Authentication | Actions | Workflow triggers |
+| --- | --- | --- |
+| Azure AD (Service Principal), OAuth 2.0 App (User Delegated) | [3](#supported-actions) | None |
+
+## Supported actions
+
+Actions are Microsoft Power BI operations that an agent runs as Action Tools during a conversation. You can also run them from an [Integration node](/agent-platform/workflows#integration-node) in a workflow.
+
+| Action | Use it to |
+| --- | --- |
+| [Create Dataset](#create-dataset) | Create a dataset with a custom schema. |
+| [Push Rows to Dataset Table](#push-rows-to-dataset-table) | Add rows to a dataset table. |
+| [Custom API Call](#custom-api-call) | Call any API endpoint the other actions don't cover. |
+
+## Prerequisites
+
+- A Power BI workspace. For a service principal, enable **Allow service principals to use Power BI APIs** in the Power BI admin portal, and add the principal to the workspace.
+
+## Set up the integration
+
+<Steps>
+  <Step title="Register an Entra ID app">
+    Register an app in [Microsoft Entra ID](https://learn.microsoft.com/en-us/entra/identity-platform/quickstart-register-app), create a client secret, and copy the **Application (client) ID** and **Directory (tenant) ID**. Add Microsoft Graph permissions (Power BI Service permissions, for example `Dataset.ReadWrite.All`) as **Delegated** or **Application** permissions, grant admin consent, and for delegated access add the Artemis **Callback URL** as a **Web** redirect URI.
+  </Step>
+  <Step title="Create the auth profile">
+    In **Integrations**, select **Microsoft Power BI** > **Connect**. On **Project Auth Profiles**, select **New Profile** > **Integration Profile** > **Microsoft Power BI** > **Continue**. Select an **Auth Type**, configure the fields, and select **Create Profile**. For delegated access, select **Authorize**.
+
+    <Tabs>
+      <Tab title="OAuth 2.0 App (User Delegated)">
+        Enter the Microsoft identity platform endpoints if Artemis doesn't pre-fill them (`https://login.microsoftonline.com/<tenant>/oauth2/v2.0/authorize` and `.../token`), the delegated **Scopes**, **Client ID**, and **Client Secret**. {/* TODO: confirm which endpoints and scopes are pre-filled */}
+
+        **Usage Mode**: **Preconfigured** shares one authorization across users; **JIT** and **Preflight** ask each user to authorize, during or before the session. See [Auth profiles](/agent-platform/administration/integrations-settings#auth-profiles).
+      </Tab>
+      <Tab title="Azure AD (Service Principal)">
+        Enter **Azure Tenant ID**, **Scopes**, **Client ID**, and **Client Secret**. Set **Resource** for the Power BI API {/* TODO: confirm Resource and Scopes for Power BI */}.
+      </Tab>
+    </Tabs>
+  </Step>
+  <Step title="Create the action tool">
+    In **Tools**, select **New Tool** > **Action** > **Microsoft Power BI** > **Continue**. Select the **Action** and **Auth Profile**, set parameter defaults (leave a value empty for the agent to supply at runtime), and select **Create Tool**. Then [assign the tool to an agent](/agent-platform/tools/actions#assign-an-action-to-an-agent).
+  </Step>
+</Steps>
+
+## Action reference
+
+<AccordionGroup>
+  <Accordion title="Create Dataset" id="create-dataset">
+    | Parameter | Type | Description |
+    | --- | --- | --- |
+    | `dataset_name` | string | Dataset name. |
+    | `mode` | enum | `Push`, `Streaming`, or `PushStreaming`. Default: `Push`. |
+    | `tables` | object | Tables and columns, in JSON. |
+  </Accordion>
+  <Accordion title="Push Rows to Dataset Table" id="push-rows-to-dataset-table">
+    | Parameter | Type | Description |
+    | --- | --- | --- |
+    | `dataset_id` | enum | Dataset. |
+    | `table_name` | enum | Table. |
+    | `rows` | object | Rows in JSON. Each row must match the table schema. |
+    | `skip_refresh` | boolean | Skips the dataset refresh after the push (Push and PushStreaming only). Default: `False`. |
+  </Accordion>
+  <Accordion title="Custom API Call" id="custom-api-call">
+    | Parameter | Type | Description |
+    | --- | --- | --- |
+    | `url` | object | Endpoint URL. |
+    | `method` | enum | HTTP method. |
+    | `headers` | object | Additional request headers. Artemis injects the authorization header. |
+    | `queryParams` | object | Query parameters. |
+    | `body_type` | enum | Body type. Default: `None`. |
+    | `body` | object | Request body. |
+    | `response_is_binary` | boolean | Turn on for binary responses. Default: `False`. |
+    | `failsafe` | boolean | Returns no error when the call fails. |
+    | `timeout` | number | Timeout, in seconds. |
+    | `followRedirects` | boolean | Follows HTTP redirects. Default: `False`. |
+  </Accordion>
+</AccordionGroup>
+
+## Troubleshoot common issues
+
+| Issue | Resolution |
+| --- | --- |
+| `401 Unauthorized` with a service principal | Enable service principal API access in the Power BI admin portal, and add the principal to the workspace. |
+| Push fails with a schema error | Match each row's keys and types to the table columns defined in **Create Dataset**. |
+| `AADSTS50011` redirect URI mismatch | Add the exact **Callback URL** as a **Web** redirect URI in the app registration. |
+| `AADSTS65001` consent required | Grant admin consent for the API permissions, and then authorize again. |
+
+{{related}}
+
+- [Enterprise systems integrations](/agent-platform/integrations/enterprise-systems)
+- [Auth profiles](/agent-platform/administration/integrations-settings#auth-profiles)
+- [Action Tools](/agent-platform/tools/actions)
+- [Power BI push datasets](https://learn.microsoft.com/en-us/power-bi/connect-data/service-real-time-streaming)
