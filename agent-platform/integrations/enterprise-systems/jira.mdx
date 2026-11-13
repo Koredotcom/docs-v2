@@ -1,0 +1,227 @@
+---
+title: Jira integration
+sidebarTitle: Jira
+---
+
+<Badge icon="arrow-left" color="gray">[Back to list of integrations](/agent-platform/integrations/enterprise-systems)</Badge>
+
+Use the Jira integration to let agents create, update, search, assign, and comment on issues in Jira Cloud or Jira Data Center through Action Tools.
+
+| Authentication | Actions | Workflow triggers |
+| --- | --- | --- |
+| OAuth 2.0 (Cloud); Bearer Token, Basic Auth, or OAuth 2.0 (Data Center) | [16](#supported-actions) | [3](#workflow-triggers) |
+
+## Supported actions
+
+Actions are Jira operations that an agent runs as Action Tools during a conversation. You can also run them from an [Integration node](/agent-platform/workflows#integration-node) in a workflow.
+
+| Group | Actions |
+| --- | --- |
+| Issues | [Create Issue](#create-issue), [Update Issue](#update-issue), [Get Issue](#get-issue), [Search Issues](#search-issues), [Assign Issue](#assign-issue), [Link Issues](#link-issues), [Add Watcher to Issue](#add-watcher-to-issue) |
+| Comments | [Add Issue Comment](#add-issue-comment), [Update Issue Comment](#update-issue-comment), [List Issue Comments](#list-issue-comments), [Delete Issue Comment](#delete-issue-comment) |
+| Attachments | [Add Attachment to Issue](#add-attachment-to-issue), [Get Issue Attachment](#get-issue-attachment) |
+| Users and utilities | [Find User](#find-user), [Markdown to Jira format](#markdown-to-jira-format), [Custom API Call](#custom-api-call) |
+
+## Workflow triggers
+
+Triggers are Jira events that start a workflow automatically. Select them as [app triggers](/agent-platform/workflows#app-triggers) when you configure a workflow.
+
+| Trigger | Fires when |
+| --- | --- |
+| New Issue | An issue is created. |
+| Updated Issue | An issue is updated. |
+| Updated Issue Status | An issue's status changes. |
+
+## Set up the integration
+
+<Steps>
+  <Step title="Prepare Jira credentials">
+    - **Cloud**: In the [Atlassian Developer Console](https://developer.atlassian.com/console/myapps/), create an **OAuth 2.0 (3LO)** app, add the Jira API scopes listed in the next step, add the Artemis **Callback URL** as the callback URL, and copy the **Client ID** and **Secret**. See [OAuth 2.0 (3LO) apps](https://developer.atlassian.com/cloud/jira/platform/oauth-2-3lo-apps/).
+    - **Data Center 10.3**: Create a personal access token, use a service account's username and password, or create an incoming OAuth 2.0 application link in Jira with the Artemis **Callback URL**.
+  </Step>
+  <Step title="Create the auth profile">
+    In **Integrations**, select **Jira** > **Connect**. On **Project Auth Profiles**, select **New Profile** > **Integration Profile** > **Jira** > **Continue**. Select the **Version**, configure the fields, and select **Create Profile**. For OAuth, select **Authorize**.
+
+    <Tabs>
+      <Tab title="Cloud">
+        **Auth Type** is **OAuth 2.0**. Artemis pre-fills the Atlassian endpoints, the `audience=api.atlassian.com` and `prompt=consent` parameters, and the scopes `read:jira-work`, `write:jira-work`, `read:jira-user`, and `offline_access`. Enter the **Client ID** and **Client Secret**.
+
+        **Usage Mode**: **Preconfigured** shares one authorization across users; **JIT** and **Preflight** ask each user to authorize, during or before the session. See [Auth profiles](/agent-platform/administration/integrations-settings#auth-profiles).
+      </Tab>
+      <Tab title="Data Center 10.3">
+        Enter **Base URL** (for example `https://jira.example.com`), and then select an **Auth Type**:
+
+        | Auth Type | Fields |
+        | --- | --- |
+        | **Bearer Token** | **Token** (personal access token). Keep **Authorization Prefix** as `Bearer`. |
+        | **Basic Auth** | **Username** and **Password**. |
+        | **OAuth 2.0 App (User Delegated)** | **Client ID** and **Client Secret**. Artemis builds the endpoints from **Base URL** (`/rest/oauth2/latest/authorize` and `/token`) and pre-fills the `READ` and `WRITE` scopes. |
+      </Tab>
+    </Tabs>
+  </Step>
+  <Step title="Create the action tool">
+    In **Tools**, select **New Tool** > **Action** > **Jira** > **Continue**. Select the **Version** that matches your profile, the **Action**, and **Auth Profile**, set parameter defaults (leave a value empty for the agent to supply at runtime), and select **Create Tool**. Then [assign the tool to an agent](/agent-platform/tools/actions#assign-an-action-to-an-agent).
+  </Step>
+</Steps>
+
+## Action reference
+
+### Issues
+
+<AccordionGroup>
+  <Accordion title="Create Issue" id="create-issue">
+    | Parameter | Type | Description |
+    | --- | --- | --- |
+    | `projectId` | enum | Project ID or key. |
+    | `issueTypeId` | enum | Issue type. |
+    | `issueFields` | object | Field values, such as summary and priority. |
+    | `adfFields` | array | Fields in [Atlassian Document Format](https://developer.atlassian.com/cloud/jira/platform/apis/document/structure/), such as a rich-text description. |
+  </Accordion>
+  <Accordion title="Update Issue" id="update-issue">
+    | Parameter | Type | Description |
+    | --- | --- | --- |
+    | `issueId` | enum | Issue ID or key. |
+    | `statusId` | enum | New status. |
+    | `issueFields` | object | Field values to change. |
+    | `adfFields` | array | Fields in [Atlassian Document Format](https://developer.atlassian.com/cloud/jira/platform/apis/document/structure/), such as a rich-text description. |
+  </Accordion>
+  <Accordion title="Get Issue" id="get-issue">
+    | Parameter | Type | Description |
+    | --- | --- | --- |
+    | `projectId` | enum | Project ID or key. |
+    | `issueId` | enum | Issue ID or key. |
+    | `expand` | array | Extra data to include. Default: `Rendered Fields`. |
+    | `mapNames` | boolean | Maps field IDs to readable names. Default: `False`. |
+    | `mapTransitions` | boolean | Maps transitions to readable names. Default: `False`. |
+  </Accordion>
+  <Accordion title="Search Issues" id="search-issues">
+    | Parameter | Type | Description |
+    | --- | --- | --- |
+    | `jql` | string | JQL query, for example `project = SUP AND status = Open`. |
+    | `maxResults` | number | Maximum results. |
+    | `sanitizeJql` | boolean | Sanitizes the JQL before running it. Default: `True`. |
+  </Accordion>
+  <Accordion title="Assign Issue" id="assign-issue">
+    | Parameter | Type | Description |
+    | --- | --- | --- |
+    | `projectId` | enum | Project ID or key. |
+    | `issueId` | enum | Issue ID or key. |
+    | `assignee` | enum | User to assign. |
+  </Accordion>
+  <Accordion title="Link Issues" id="link-issues">
+    | Parameter | Type | Description |
+    | --- | --- | --- |
+    | `firstIssueId` | enum | First issue. |
+    | `issueLinkTypeId` | enum | Link type, such as **blocks** or **relates to**. |
+    | `secondIssueId` | enum | Second issue. |
+  </Accordion>
+  <Accordion title="Add Watcher to Issue" id="add-watcher-to-issue">
+    | Parameter | Type | Description |
+    | --- | --- | --- |
+    | `issueId` | enum | Issue ID or key. |
+    | `userId` | enum | User to add. |
+  </Accordion>
+</AccordionGroup>
+
+### Comments
+
+<AccordionGroup>
+  <Accordion title="Add Issue Comment" id="add-issue-comment">
+    | Parameter | Type | Description |
+    | --- | --- | --- |
+    | `projectId` | enum | Project ID or key. |
+    | `issueId` | enum | Issue ID or key. |
+    | `comment` | string | Comment body. |
+    | `isADF` | boolean | The body is in Atlassian Document Format. Default: `False`. |
+  </Accordion>
+  <Accordion title="Update Issue Comment" id="update-issue-comment">
+    | Parameter | Type | Description |
+    | --- | --- | --- |
+    | `projectId` | enum | Project ID or key. |
+    | `issueId` | enum | Issue ID or key. |
+    | `commentId` | enum | Comment. |
+    | `comment` | string | New body. |
+    | `isADF` | boolean | The body is in Atlassian Document Format. Default: `False`. |
+  </Accordion>
+  <Accordion title="List Issue Comments" id="list-issue-comments">
+    | Parameter | Type | Description |
+    | --- | --- | --- |
+    | `projectId` | enum | Project ID or key. |
+    | `issueId` | enum | Issue ID or key. |
+    | `orderBy` | enum | Sort order. Default: `Created (Descending)`. |
+    | `limit` | number | Maximum results. |
+  </Accordion>
+  <Accordion title="Delete Issue Comment" id="delete-issue-comment">
+    | Parameter | Type | Description |
+    | --- | --- | --- |
+    | `projectId` | enum | Project ID or key. |
+    | `issueId` | enum | Issue ID or key. |
+    | `commentId` | enum | Comment. |
+  </Accordion>
+</AccordionGroup>
+
+### Attachments
+
+<AccordionGroup>
+  <Accordion title="Add Attachment to Issue" id="add-attachment-to-issue">
+    | Parameter | Type | Description |
+    | --- | --- | --- |
+    | `projectId` | enum | Project ID or key. |
+    | `issueId` | enum | Issue ID or key. |
+    | `attachment` | string | Public URL of the file. |
+  </Accordion>
+  <Accordion title="Get Issue Attachment" id="get-issue-attachment">
+    | Parameter | Type | Description |
+    | --- | --- | --- |
+    | `attachmentId` | string | Attachment ID. |
+  </Accordion>
+</AccordionGroup>
+
+### Users and utilities
+
+<AccordionGroup>
+  <Accordion title="Find User" id="find-user">
+    | Parameter | Type | Description |
+    | --- | --- | --- |
+    | `keyword` | string | Name or email to search. |
+  </Accordion>
+  <Accordion title="Markdown to Jira format" id="markdown-to-jira-format">
+    Converts Markdown to Atlassian Document Format for comments and descriptions.
+
+    | Parameter | Type | Description |
+    | --- | --- | --- |
+    | `markdown` | string | Markdown text. |
+  </Accordion>
+  <Accordion title="Custom API Call" id="custom-api-call">
+    | Parameter | Type | Description |
+    | --- | --- | --- |
+    | `url` | object | Endpoint URL. |
+    | `method` | enum | HTTP method. |
+    | `headers` | object | Additional request headers. Artemis injects the authorization header. |
+    | `queryParams` | object | Query parameters. |
+    | `body_type` | enum | Body type. Default: `None`. |
+    | `body` | object | Request body. |
+    | `response_is_binary` | boolean | Turn on for binary responses. Default: `False`. |
+    | `failsafe` | boolean | Returns no error when the call fails. |
+    | `timeout` | number | Timeout, in seconds. |
+    | `followRedirects` | boolean | Follows HTTP redirects. Default: `False`. |
+  </Accordion>
+</AccordionGroup>
+
+## Troubleshoot common issues
+
+| Issue | Resolution |
+| --- | --- |
+| Authorization fails or doesn't complete | Verify that the callback URL in the Atlassian app or Jira application link exactly matches the Artemis **Callback URL**. |
+| `401 Unauthorized` | For Cloud, authorize the profile again. For Data Center, check the token or password and the **Base URL**. |
+| `403 Forbidden` or missing fields | Confirm the app has the required scopes and the account has the Jira project permission for the action. |
+| Project, issue, or user lists are empty | Confirm the authorized account can browse the project. |
+| Rich text appears as raw markup | Run the text through **Markdown to Jira format**, and pass it in `adfFields` or with `isADF` turned on. |
+| **Search Issues** returns an error | Test the JQL in Jira's issue search first. |
+
+{{related}}
+
+
+- [Auth profiles](/agent-platform/administration/integrations-settings#auth-profiles)
+- [Action Tools](/agent-platform/tools/actions)
+- [Jira Cloud REST API](https://developer.atlassian.com/cloud/jira/platform/rest/v3/intro/)
