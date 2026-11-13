@@ -1,0 +1,242 @@
+---
+title: Microsoft SharePoint integration
+sidebarTitle: Microsoft SharePoint
+---
+
+<Badge icon="arrow-left" color="gray">[Back to list of enterprise systems](/agent-platform/integrations/enterprise-systems)</Badge>
+
+Use the Microsoft SharePoint integration to let agents manage lists, files, folders, and pages, and look up sites, through Microsoft Graph.
+
+| Authentication | Actions | Workflow triggers |
+| --- | --- | --- |
+| Azure AD (Service Principal), OAuth 2.0 App (User Delegated), OAuth 2.0 Client Credentials | [16](#supported-actions) | [8](#workflow-triggers) |
+
+## Supported actions
+
+Actions are Microsoft SharePoint operations that an agent runs as Action Tools during a conversation. You can also run them from an [Integration node](/agent-platform/workflows#integration-node) in a workflow.
+
+| Group | Actions |
+| --- | --- |
+| Lists | [Create List](#create-list), [Create List Item](#create-list-item), [Update List Item](#update-list-item), [Find List Item](#find-list-item), [Delete List Item](#delete-list-item) |
+| Files and folders | [Upload File](#upload-file), [Find File](#find-file), [Get Folder Contents](#get-folder-contents), [Create Folder](#create-folder), [Move File](#move-file), [Copy File or Folder (Within Site)](#copy-file-or-folder-within-site), [Copy File or Folder (Across Sites)](#copy-file-or-folder-across-sites) |
+| Sites and pages | [Find Site](#find-site), [Get Site Information](#get-site-information), [Publish Page](#publish-page) |
+| Advanced | [Custom API Call](#custom-api-call) |
+
+## Workflow triggers
+
+Triggers are Microsoft SharePoint events that start a workflow automatically. Select them as [app triggers](/agent-platform/workflows#app-triggers) when you configure a workflow.
+
+| Trigger | Fires when |
+| --- | --- |
+{/* TODO: add the 8 trigger names and descriptions from staging */}
+
+## Set up the integration
+
+<Steps>
+  <Step title="Register an Entra ID app">
+    Register an app in [Microsoft Entra ID](https://learn.microsoft.com/en-us/entra/identity-platform/quickstart-register-app), create a client secret, and copy the **Application (client) ID** and **Directory (tenant) ID**. Add Microsoft Graph permissions (for example `Sites.ReadWrite.All` and `Files.ReadWrite.All`, plus `offline_access` for delegated access) as **Delegated** or **Application** permissions, grant admin consent, and for delegated access add the Artemis **Callback URL** as a **Web** redirect URI.
+  </Step>
+  <Step title="Create the auth profile">
+    In **Integrations**, select **Microsoft SharePoint** > **Connect**. On **Project Auth Profiles**, select **New Profile** > **Integration Profile** > **Microsoft SharePoint** > **Continue**. Select an **Auth Type**, configure the fields, and select **Create Profile**. For delegated access, select **Authorize**.
+
+    <Tabs>
+      <Tab title="OAuth 2.0 App (User Delegated)">
+        Enter the Microsoft identity platform endpoints if Artemis doesn't pre-fill them (`https://login.microsoftonline.com/<tenant>/oauth2/v2.0/authorize` and `.../token`), the delegated **Scopes**, **Client ID**, and **Client Secret**. {/* TODO: confirm which endpoints and scopes are pre-filled */}
+
+        **Usage Mode**: **Preconfigured** shares one authorization across users; **JIT** and **Preflight** ask each user to authorize, during or before the session. See [Auth profiles](/agent-platform/administration/integrations-settings#auth-profiles).
+      </Tab>
+      <Tab title="Azure AD (Service Principal)">
+        Enter **Azure Tenant ID**, **Scopes** (`https://graph.microsoft.com/.default`), **Client ID**, and **Client Secret**. Keep **Resource** as `https://graph.microsoft.com`.
+      </Tab>
+      <Tab title="OAuth 2.0 Client Credentials">
+        Keep **Authorize Using** as **Client Secret** and the pre-filled **Token URL** and **Scopes**. Enter **Client ID** and **Client Secret**.
+      </Tab>
+    </Tabs>
+  </Step>
+  <Step title="Create the action tool">
+    In **Tools**, select **New Tool** > **Action** > **Microsoft SharePoint** > **Continue**. Select the **Action** and **Auth Profile**, set parameter defaults (leave a value empty for the agent to supply at runtime), and select **Create Tool**. Then [assign the tool to an agent](/agent-platform/tools/actions#assign-an-action-to-an-agent).
+  </Step>
+</Steps>
+
+## Action reference
+
+### Lists
+
+<AccordionGroup>
+  <Accordion title="Create List" id="create-list">
+    | Parameter | Type | Description |
+    | --- | --- | --- |
+    | `siteId` | enum | Site. |
+    | `displayName` | string | List name. |
+    | `description` | string | List description. |
+  </Accordion>
+  <Accordion title="Create List Item" id="create-list-item">
+    | Parameter | Type | Description |
+    | --- | --- | --- |
+    | `siteId` | enum | Site. |
+    | `listId` | enum | List. |
+    | `listColumns` | object | Column values. |
+  </Accordion>
+  <Accordion title="Update List Item" id="update-list-item">
+    | Parameter | Type | Description |
+    | --- | --- | --- |
+    | `siteId` | enum | Site. |
+    | `listId` | enum | List. |
+    | `listItemId` | enum | Item. |
+    | `listColumns` | object | Column values. |
+  </Accordion>
+  <Accordion title="Find List Item" id="find-list-item">
+    | Parameter | Type | Description |
+    | --- | --- | --- |
+    | `siteId` | enum | Site. |
+    | `listId` | enum | List. |
+    | `searchValue` | string | Item title. |
+  </Accordion>
+  <Accordion title="Delete List Item" id="delete-list-item">
+    | Parameter | Type | Description |
+    | --- | --- | --- |
+    | `siteId` | enum | Site. |
+    | `listId` | enum | List. |
+    | `listItemId` | enum | Item. |
+  </Accordion>
+</AccordionGroup>
+
+### Files and folders
+
+<AccordionGroup>
+  <Accordion title="Upload File" id="upload-file">
+    | Parameter | Type | Description |
+    | --- | --- | --- |
+    | `siteId` | enum | Site. |
+    | `driveId` | enum | Document library (drive). |
+    | `file` | string | File or URL to upload. |
+    | `parentFolder` | string | Folder path, for example `/docs/`. |
+    | `fileName` | string | File name. |
+  </Accordion>
+  <Accordion title="Find File" id="find-file">
+    | Parameter | Type | Description |
+    | --- | --- | --- |
+    | `siteId` | enum | Site. |
+    | `driveId` | enum | Document library (drive). |
+    | `findMethod` | enum | Search by name or by path. Default: `Search by Name`. |
+    | `filePath` | string | Exact path from the library root. |
+    | `searchQuery` | string | File name or keyword. |
+    | `searchFolderId` | enum | Folder to search. Searches the whole library if empty. |
+  </Accordion>
+  <Accordion title="Get Folder Contents" id="get-folder-contents">
+    | Parameter | Type | Description |
+    | --- | --- | --- |
+    | `siteId` | enum | Site. |
+    | `driveId` | enum | Document library (drive). |
+    | `folderId` | enum | Folder. |
+    | `includeCustomFields` | boolean | Includes SharePoint metadata. Default: `False`. |
+    | `top` | number | Maximum items. |
+    | `select` | string | Comma-separated properties to return. |
+    | `orderby` | string | Sort order. |
+  </Accordion>
+  <Accordion title="Create Folder" id="create-folder">
+    | Parameter | Type | Description |
+    | --- | --- | --- |
+    | `siteId` | enum | Site. |
+    | `driveId` | enum | Document library (drive). |
+    | `parentFolder` | string | Parent folder path, for example `/demo/`. |
+    | `folderName` | string | Folder name. |
+  </Accordion>
+  <Accordion title="Move File" id="move-file">
+    Moves a file within the same library.
+
+    | Parameter | Type | Description |
+    | --- | --- | --- |
+    | `siteId` | enum | Site. |
+    | `driveId` | enum | Document library (drive). |
+    | `fileId` | enum | File. |
+    | `destinationFolderId` | enum | Destination folder. |
+    | `newName` | string | Optional new name. |
+  </Accordion>
+  <Accordion title="Copy File or Folder (Within Site)" id="copy-file-or-folder-within-site">
+    | Parameter | Type | Description |
+    | --- | --- | --- |
+    | `siteId` | enum | Site. |
+    | `driveId` | enum | Document library (drive). |
+    | `itemId` | enum | Source file or folder. |
+    | `destinationFolderId` | enum | Destination folder. |
+    | `newName` | string | Optional new name. |
+    | `conflictBehavior` | enum | Action when an item with the same name exists. Default: `Fail on conflict`. |
+  </Accordion>
+  <Accordion title="Copy File or Folder (Across Sites)" id="copy-file-or-folder-across-sites">
+    Copies to another site in the same tenant.
+
+    | Parameter | Type | Description |
+    | --- | --- | --- |
+    | `siteId` | enum | Site. |
+    | `driveId` | enum | Document library (drive). |
+    | `itemId` | enum | Source file or folder. |
+    | `destination_site_id` | enum | Destination site. |
+    | `destination_drive_id` | enum | Destination library. |
+    | `destination_folder_id` | enum | Destination folder. |
+    | `new_name` | string | Optional new name. |
+    | `conflict_behavior` | enum | Action on a name conflict. Default: `Fail on conflict`. |
+  </Accordion>
+</AccordionGroup>
+
+### Sites and pages
+
+<AccordionGroup>
+  <Accordion title="Find Site" id="find-site">
+    | Parameter | Type | Description |
+    | --- | --- | --- |
+    | `searchTerm` | string | Site name or keyword. |
+  </Accordion>
+  <Accordion title="Get Site Information" id="get-site-information">
+    Returns site metadata, such as ID, title, URL, and description.
+
+    | Parameter | Type | Description |
+    | --- | --- | --- |
+    | `siteId` | enum | Site. |
+    | `select` | string | Comma-separated properties to return. |
+  </Accordion>
+  <Accordion title="Publish Page" id="publish-page">
+    Publishes a page for all users.
+
+    | Parameter | Type | Description |
+    | --- | --- | --- |
+    | `siteId` | enum | Site. |
+    | `pageId` | enum | Page. |
+  </Accordion>
+</AccordionGroup>
+
+### Advanced
+
+<AccordionGroup>
+  <Accordion title="Custom API Call" id="custom-api-call">
+    | Parameter | Type | Description |
+    | --- | --- | --- |
+    | `url` | object | Endpoint URL. |
+    | `method` | enum | HTTP method. |
+    | `headers` | object | Additional request headers. Artemis injects the authorization header. |
+    | `queryParams` | object | Query parameters. |
+    | `body_type` | enum | Body type. Default: `None`. |
+    | `body` | object | Request body. |
+    | `response_is_binary` | boolean | Turn on for binary responses. Default: `False`. |
+    | `failsafe` | boolean | Returns no error when the call fails. |
+    | `timeout` | number | Timeout, in seconds. |
+    | `followRedirects` | boolean | Follows HTTP redirects. Default: `False`. |
+  </Accordion>
+</AccordionGroup>
+
+## Troubleshoot common issues
+
+| Issue | Resolution |
+| --- | --- |
+| `AADSTS50011` redirect URI mismatch | Add the exact **Callback URL** as a **Web** redirect URI in the app registration. |
+| `AADSTS65001` consent required | Grant admin consent for the API permissions, and then authorize again. |
+| `403 Forbidden` | Add the missing Microsoft Graph permission for the action, and grant consent. |
+| Site or library lists are empty | Confirm the account or app can access the site. For app-only access, grant `Sites.ReadWrite.All` or `Sites.Selected` with a site grant. |
+| Copy or upload fails with a conflict | Change **conflictBehavior**, or set a new name. |
+
+{{related}}
+
+- [Auth profiles](/agent-platform/administration/integrations-settings#auth-profiles)
+- [Action Tools](/agent-platform/tools/actions)
+- [Microsoft Excel integration](/agent-platform/integrations/enterprise-systems/microsoft-excel)
+- [SharePoint API in Microsoft Graph](https://learn.microsoft.com/en-us/graph/api/resources/sharepoint)
