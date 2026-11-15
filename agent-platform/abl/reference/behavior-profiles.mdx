@@ -387,6 +387,36 @@ CONVERSATION:
 
 <Note>`barge_in_continuation` refines what happens to an *already-allowed* interruption's speech segmentation — it's a sibling of, not a replacement for, the scalar `barge_in: allow`/`disallow` policy above, and distinct from the per-output scoped `BARGE_IN` covered in [Scoped barge-in](/agent-platform/abl-reference/flow#scoped-barge-in). A project-level default can be overlaid beneath this per-agent block.</Note>
 
+### Project defaults for silence and speech recognition
+
+Two project settings apply to KoreVG voice calls when the agent sets nothing.
+
+**When silence retries run out (`voiceNoInput`).** Set `onExhausted` in the project Runtime Config API, or under **When Retries Run Out** in Studio. It applies to every agent and step that leaves `on_exhausted` unset.
+
+| `onExhausted` | Target field | What the silent caller gets |
+| ------------- | ------------ | --------------------------- |
+| `hangup` | None | The final message, then the call ends. This is the default. |
+| `transfer` | `transferTarget`: `sip` or `pstn` | The `exhaustedMessage`, then a transfer to that Agent Transfer target. |
+| `handoff` | `handoffTarget`: an agent name | The `exhaustedMessage`, then a handoff to that agent, with no caller message. |
+
+```yaml
+voiceNoInput:
+  enabled: true
+  maxRetries: 2
+  exhaustedMessage: "Let me get you some help."
+  onExhausted: handoff
+  handoffTarget: Recovery_Desk
+```
+
+- An `on_exhausted` on the agent, a behavior profile, or the step replaces the project choice, target included.
+- A handoff grants no route. The current agent must already declare a `HANDOFF` or routing rule to the target. Without one, the call plays the final message and ends.
+- A transfer uses Agent Transfer. If the target is gone when the call runs, or the transfer fails, the call plays the final message and ends.
+- The action and its target save together. Saving is refused with a `400` for a `transfer` with no `transferTarget`, a `handoff` with no `handoffTarget`, a target that does not match the action, or a `handoffTarget` that is not an agent of the project. Choosing `hangup` removes the stored target.
+- It runs once per silence. A repeated report of the same silence runs it once, and a call that already tried to transfer does not transfer again.
+- Pipeline voice only. On realtime voice and Twilio it acts as `custom`.
+
+**STT minimum confidence (`sttMinConfidence`).** Set it on the channel connection, or in project runtime config as `voice.sttMinConfidence`. It takes a value from 0 to 1. Pipeline voice discards a recognition scored below it, so the agent never receives it. The channel value wins over the project value, and `0` at channel level turns the check off. The runtime also passes the value to the KoreVG recognizer.
+
 ### GATHER
 
 
