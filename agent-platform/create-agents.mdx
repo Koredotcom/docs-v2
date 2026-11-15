@@ -196,7 +196,7 @@ Valid Directives inside `ON_START`:
 |-----------|--------------|
 | `RESPOND:` | Sends an initial message to the user when the session starts. |
 | `FORMATS:` | Defines rich content for the initial response without a preceding `RESPOND:` block. |
-| `VOICE:` | Defines voice configuration for the initial response without a preceding `RESPOND:` block. [Learn More](/agent-platform/create-agents#voice-agents).|
+| `VOICE:` | Defines voice configuration for the initial response without a preceding `RESPOND:` block. See [Voice agents](/agent-platform/create-agents#voice-agents) and [Voice output](/agent-platform/abl/reference/voice#voice-output-voice). |
 | `ACTIONS:` | Adds interactive buttons or forms to the initial message. |
 | `CALL:` | Invokes a tool when the session starts. |
 | `SET:` | Sets a variable using the syntax `SET: field = value`. |
@@ -363,7 +363,7 @@ Actions that fire when a session begins: tool calls, variable initialization, an
 | **Initial Message**     | Sends a welcome or introductory message at the start of the conversation.                                                    |
 | **Tool Call on Start**  | Automatically invokes a tool when the conversation starts.                                                                   |
 | **Delegate on Start**   | Transfers the conversation to a selected delegate agent on startup.                                                          |
-| **Voice**               | Configures voice settings for the startup interaction.                                                                       |
+| **Voice**               | Sets how the startup message is spoken, such as SSML or a separate spoken version. See [Voice output](/agent-platform/abl/reference/voice#voice-output-voice). |
 | **Rich Content**        | Adds structured content such as quick replies, cards, images, lists, or other supported rich media to the startup message.   |
 | **Interactive Actions** | Adds interactive controls such as buttons, dropdowns (Select), and input fields to collect user responses during onboarding. |
 | **Submit Label**        | Defines the text displayed on the submit button for interactive actions.                                                     |
@@ -1285,8 +1285,56 @@ Promotion can trigger deployment pipeline actions depending on your project conf
 
 ## Voice Agents
 
-Agents you build can also be deployed to voice channels for real-time phone or SIP conversations. Add a telephony provider, a Voice Gateway, and a speech-to-speech or STT/TTS pipeline to the same agent runtime to enable voice interactions.
-See [Enabling Voice Agents](/agent-platform/enable-voice) for setup steps, including voice architecture selection and channel configuration.
+Any agent can take phone calls. Build the agent as described in this guide, tune it for speech, then connect it to a voice channel.
+
+### Build a voice agent
+
+1. **Build the agent.** Define the identity, tools, and flow as for any agent.
+2. **Write for the ear.** Callers hear your replies, so keep them short and plain. Set `EXECUTION.voice.instructions` to give spoken-style rules. The runtime strips markdown from `RESPOND:` text before speech. Add a `VOICE:` block only when you need SSML or a different spoken version.
+3. **Set how the agent listens.** Use `CONVERSATION.listening` to decide what happens when the caller stays silent (`on_no_input`) or talks over the agent (barge-in). Use `DTMF:` on a `GATHER` field for keypad entry, and `SECURE_INPUT` for card numbers and other sensitive values.
+4. **Plan hold, hang-up, and transfer.** Use `COMPLETE` to end the call, `on_caller_hold_limit` to handle a long hold, and `ESCALATE` to transfer the call to a human.
+5. **Connect a voice channel.** Follow [Enable voice interactions](/agent-platform/enable-voice) to add credentials, create the channel, and test with the Soft Phone.
+6. **Check the traces.** After a test call, open the traces to confirm what the agent heard and said.
+
+### Choose a voice architecture
+
+| | Pipeline voice | Realtime voice |
+| --- | --- | --- |
+| How it works | Speech-to-text, then the agent, then text-to-speech | One speech-to-speech model |
+| Listening settings in ABL | Most apply, such as `on_no_input`, `DTMF:`, and barge-in | Many do not apply, because the model provider owns turn detection and delivery |
+| Dynamic no-input replies | Supported | Not supported |
+
+Pick the architecture when you create the channel. Each voice setting in the [voice reference](/agent-platform/abl/reference/voice) states where it applies.
+
+### Example
+
+This agent greets the caller, speaks in short sentences, and hangs up politely after two silent prompts.
+
+```yaml
+AGENT: Appointment_Agent
+GOAL: "Help callers book and confirm appointments"
+
+EXECUTION:
+  voice:
+    instructions: "Speak in short, plain sentences. Do not read out lists."
+
+CONVERSATION:
+  listening:
+    on_no_input:
+      enabled: true
+      mode: static
+      timeout_ms: 5000
+      max_retries: 2
+      messages:
+        - text: "Are you still there?"
+      on_exhausted: hangup
+      exhausted_message: "I will end the call now. Goodbye."
+
+ON_START:
+  RESPOND: "Hello, this is the appointment line. How can I help?"
+```
+
+For every voice setting, with values, defaults, and where each applies, see [Voice in ABL](/agent-platform/abl/reference/voice).
 
 
 ## Use The AI Architect
@@ -1328,4 +1376,5 @@ The panel adapts to your current context. When editing a specific section (for e
 - [Memory and state](/agent-platform/memory-and-state) - session and persistent memory.
 - [FLOW reference](/agent-platform/abl-reference/flow) - complete FLOW syntax reference.
 - [Tools reference](/agent-platform/abl-reference/tools) - tool definition syntax.
-- [Enable voice interactions](/agent-platform/enable-voice) - voice related configurations. 
+- [Enable voice interactions](/agent-platform/enable-voice) - voice channel setup.
+- [Voice in ABL](/agent-platform/abl/reference/voice) - every voice setting in ABL.
