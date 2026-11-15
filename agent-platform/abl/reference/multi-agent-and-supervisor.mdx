@@ -466,6 +466,7 @@ HANDOFF:
 | `PRIORITY`       | `number`                | No       | --       | Evaluation priority. Lower values are evaluated first when multiple handoff rules match.     |
 | `CONTEXT`        | `object`                | Yes      | --       | Context to pass to the target agent. See [Context](#handoff-context).                        |
 | `EXPECT_RETURN`  | `boolean`               | Yes      | `false`  | Whether control should return to this agent after the target completes. `RETURN` is accepted as a backward-compatible alias. |
+| `HAND_BACK`      | `string`                | No       | `after_reply` | For a handoff with `EXPECT_RETURN: true`. Decides when a reasoning target with no `COMPLETE` condition hands the customer back: `after_reply` or `when_finished`. See [Handing back](#handing-back-hand_back). |
 | `ON_FAILURE`     | `string` / `object`     | No       | --       | Parent-side fallback for setup or dispatch failures **before** the target accepts the handoff. See [Handoff failure strategies](#handoff-failure-strategies). |
 | `ON_RETURN`      | `string` / `object`     | No       | --       | How to handle the target returning control. See [Return expectations](#return-expectations). |
 | `EXPERIENCE_MODE`| `string`                | No       | --       | End-user experience when the transfer happens. See [Experience modes](#experience-modes).    |
@@ -524,6 +525,35 @@ When the target explicitly returns control (via its built-in return capability),
 When `EXPECT_RETURN: false`, the handoff is a one-way transfer and the calling agent's turn ends — the parent does not automatically get control back.
 
 <Note>`EXPECT_RETURN: false` disables *automatic* return, not every path back. If the child agent (while that same nested handoff call is still unwinding) itself authors a `HANDOFF` route back to that exact direct parent, and the route is otherwise authorized, Runtime resumes the parent's completed thread as the conversation owner — it does not re-enable automatic returns, and it does not make any *other* completed ancestor resumable. For a FLOW child, this only applies while its authored FLOW is still live; once the child reaches `COMPLETE`, that parent frame is closed for good. Routes to an unrelated or non-direct ancestor remain blocked as a cycle.</Note>
+
+A queued request that targets a FLOW step belongs to the agent activation that queued it. Only that activation runs it or offers it. If that agent completes or returns to its parent before the step runs, the runtime removes the request and records a `multi_intent_queue_retired` trace. The parent never runs or offers the step. If that agent is paused while another agent has the conversation, its queued steps stay queued until it resumes. Requests that target an agent are not affected. See [Multi-intent handling](/agent-platform/abl-reference/nlu#multi-intent-handling-multi_intent).
+
+### Handing back (`HAND_BACK`)
+
+A target reached with `EXPECT_RETURN: true` normally decides when it is done: a `COMPLETE` condition, a FLOW that finishes, or a return to the parent. A target with none of these runs on reasoning alone. It has no `COMPLETE`, no domain tools, and no required `GATHER` field. The runtime hands the customer back as soon as such a target shows a reply. `HAND_BACK` sets what "done" means for that target, for each handoff.
+
+| Value | The target hands the customer back |
+| ----- | ---------------------------------- |
+| `after_reply` (default) | After any reply. The same applies when `HAND_BACK` is not written. |
+| `when_finished` | After a reply that finishes the customer's request. A reply that still waits on the customer, such as a question, keeps the target in control. The customer's answer then reaches the agent that asked. |
+
+```yaml
+HANDOFF:
+  - TO: TransfersStatus
+    WHEN: intent.category == "transfers"
+    EXPECT_RETURN: true
+    HAND_BACK: when_finished
+    ON_RETURN:
+      action: continue
+```
+
+With `when_finished`, TransfersStatus can ask "Has it been more than 24 hours since the payment?" and keep the conversation. The customer's "yes" goes to TransfersStatus, and its answer hands the customer back. With `after_reply`, the question hands the customer back at once, and the "yes" reaches the supervisor.
+
+- **How the runtime judges a reply.** It makes one small model call on the target's own model binding. The call asks whether the reply finished the customer's latest message or still waits on the customer. It runs only for a `when_finished` handoff, only on a reply that would otherwise hand back, and at most once per reply.
+- **A reply that cannot be judged hands back.** This covers no model, an open classifier circuit, a timeout, an unreadable verdict, and an interrupted turn. The trace records `handoff_return_backstop_hand_back_unjudged`. A reply that the judgement keeps records `handoff_return_backstop_withheld`.
+- **What it does not change.** A target with a `COMPLETE` condition, a FLOW, domain tools, a required `GATHER` field, or a pending input keeps its own completion rules. The same applies to a handoff whose `ON_RETURN` is `resume_intent`. The completion rules of a multi-intent plan decide before `HAND_BACK`. A return to the parent still works at any time. Realtime speech-to-speech targets do not use this rule.
+- **When it takes effect.** A session already inside the target keeps the handoff it entered with. A changed `HAND_BACK` applies from the next handoff.
+- **Diagnostics.** An unknown value is ignored, and the handoff keeps `after_reply` ([`W324`](/agent-platform/abl/reference/errors-and-warnings#w324)). `HAND_BACK` on a handoff without `EXPECT_RETURN: true` has no effect ([`W325`](/agent-platform/abl/reference/errors-and-warnings#w325)).
 
 `ON_RETURN` controls what happens when the target returns. It accepts either a **string** (the name of a named return handler, or a built-in action) or a **structured block**:
 
@@ -586,7 +616,7 @@ For a reasoning parent without a FLOW, a non-blank forwarded customer request be
 - The handler runs once. Completion and deterministic routing come before model-based routing.
 - Within the forwarded continuation's own deterministic coordination chain, the runtime dispatches each authored `DELEGATE` entry automatically by `WHEN` at most once, even if `WHEN` stays true. Nested ordinary continuations keep their earlier dispatch policy. Explicit model-selected delegation stays eligible. Distinct same-target entries keep their own input and result mappings.
 - The parent can synthesize successful typed results. Later customer turns can select the entries again.
-- The returned child keeps its waiting state and cannot block its own forwarded request. Other pending children keep their waiting-work protection.
+- The returned child keeps its waiting state and cannot block its own forwarded request. Other pending children keep their waiting-work protection while they still hold open work: pending input, an unfilled required `GATHER` field, or pending actions. They also keep it while the parent's interrupted-child resume can still resume them on this turn. A child with no open work, parked by its own hand-back on an earlier turn, does not block the forwarded request.
 - A return without an authoritative forwarded request keeps the existing continuation policy.
 
 ### Handoff failure strategies
@@ -1368,6 +1398,8 @@ COMPLETE:
 ```
 
 <Note> Always clear the condition that triggered a `COMPLETE` block when using `TERMINAL: false` (for example, by using `SET`). Otherwise, the same completion condition may be evaluated again on the next user message, creating a completion loop. When such a loop is detected, the platform automatically closes the session and logs a warning. </Note>
+
+**Voice calls on KoreVG.** Every `COMPLETE` ends the call after its message plays, whether or not it is `TERMINAL`. Caller speech or keys heard while that message plays are not a new turn. The runtime acknowledges and ignores them, and the `voice_caller_input_ignored_call_ending` trace records the reason. The message plays once, even when the agent that handed back already said the same line in that turn. The `voice_duplicate_final_suppressed` trace records the removed copy.
 
 ### Rich content in completion
 
