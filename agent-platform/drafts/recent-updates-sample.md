@@ -5,6 +5,83 @@ rss: true
 mode: center
 ---
 
+<Update label="November 11, 2026" description="v1.9.3">
+
+This release brings per-step Execution settings for Flow reasoning steps and an Answer Pending Question First option for active specialists. Reasoning turns and PII-protected replies are faster, and voice call endings now carry correlation headers on the SIP BYE. Studio now warns at publish about conditions that will not run, and SharePoint site members can retrieve documents they can open.
+
+<p className="rn-heading">Agent builder experience</p>
+
+<p className="rn-subtitle">Set model options for a single FLOW reasoning step</p>
+
+A `FLOW` step with `REASONING: true` can now include its own `EXECUTION:` block, so that a specific step can use a faster model or lower reasoning effort than the rest of the agent. In this block, you can set the model, reasoning effort, token limits, temperature, and tool timeouts for that step. Any setting you leave out uses the agent-level `EXECUTION` value. [Learn more →](/agent-platform/abl/reference/flow#per-step-execution)
+
+```yaml wrap
+present:
+  REASONING: true
+  EXECUTION:
+    reasoning_effort: none
+    max_tokens: 400
+
+# This step runs with no reasoning and a 400 token cap. Other steps keep the agent's settings.
+```
+
+<p className="rn-subtitle">Reasoning steps exit without an extra model call</p>
+
+If an undeclared key is included in a `__set_context__` that satisfies `EXIT_WHEN`, the step now exits immediately instead of triggering a second model call. Undeclared keys are still recorded in `rejected_keys` and traces, and receive correction feedback if the exit condition is unmet.
+
+<p className="rn-subtitle">Keep valid answers with the active specialist</p>
+
+You can now turn on the ‘Answer Pending Question First’ option in Studio (Runtime Config → Reasoning Pipeline), or set `parentReturn.answerFirst: true` in a supervisor’s `EXECUTION: pipeline` block. With it on, an active specialist handles the caller’s reply before the platform checks for a topic switch. For flow specialists, a reply that gives valid answers to all pending fields stays in the flow, and other replies still go through the topic-switch check. For reasoning specialists, the specialist handles the reply and must hand out-of-scope requests back to the supervisor with `__return_to_parent__`. This setting is off by default. [Learn more →](/agent-platform/abl/reference/multi-agent-and-supervisor#parent-return-options)
+
+```yaml wrap
+EXECUTION:
+  pipeline:
+    enabled: true
+    parentReturn:
+      answerFirst: true
+
+# Each reply goes to the active specialist before any topic check.
+```
+
+<p className="rn-subtitle">ABL Expression, Limit, and Error Handling Refinements</p>
+
+Updates impacting ABL runtime execution and publish-time diagnostics:
+
+- **Post-publish compiler warnings:** Publishing in Studio now alerts you to unexecutable logic, such as `WHEN` conditions exceeding roughly 4,000 characters or `matches_pattern` expressions longer than 500 characters.
+- **Evaluation of missing paths:** Within `CALL WITH`, `PROCESS`, and `TRANSFORM MAP`, executing `IS SET` on a missing path returns false. Unevaluated values are omitted, with diagnostic traces explicitly indicating the omission.
+- **Step-level `ON_ERROR` enhancements:** Model request timeouts before provider response are now classified as model timeouts, triggering `llm_error` logic and `RETRY` mechanisms. Saving step handlers in Studio preserves existing `SET` statements and additional `SUBTYPES`.
+
+<p className="rn-subtitle">Arch MCP updates</p>
+
+MCP clients can now perform guarded updates to a project's runtime configuration (fillers, language detection, and voice latency profiles) using the new `update_runtime_config` action. The access token now renews before it expires, so calls no longer fail with a 401 error during active sessions. Additionally, alignment with the ABL reference standard ensures that `create_tool` generates synchronous workflow tools by default.
+
+
+<p className="rn-heading">Voice experience</p>
+
+<p className="rn-subtitle">Enhanced call termination tracing and completeness</p>
+
+- **SIP BYE correlation headers:** When a KoreVG call concludes via `COMPLETE`, the BYE request now includes `x-session-id`, `x-project-id`, `x-tenant-id`, and associated call metadata—matching transfer behavior to restore post-call contact center lookup capabilities. [Learn more →](/agent-platform/abl/reference/multi-agent-and-supervisor#sip-headers-on-the-closing-bye-voice)
+- **Conversation transcript retention:** Final utterances spoken immediately before disconnection (such as no-input exhaustion prompts) are now fully captured across Conversation logs, history, and trace exports.
+- **Pre-disconnect queue suppression:** Executing a `COMPLETE` action at the root agent prevents queued requests from being re-offered right before session termination, ensuring previously handled requests are not repeated.
+
+
+<p className="rn-heading">Knowledge and connectors</p>
+
+<p className="rn-subtitle">SharePoint site members can retrieve documents</p>
+
+Permission-aware SharePoint connectors now resolve site-group access for Office documents, so site members get answers from documents they can open. Recrawl existing documents to refresh their permissions.
+
+
+<p className="rn-heading">Governance</p>
+
+<p className="rn-subtitle">Streaming output responses with active PII redaction</p>
+
+Projects configured for output PII redaction can now stream the initial PII-safe portion of a reply as it is generated by enabling the ‘Stream responses while redacting’ option (Project → Govern → PII). Text requiring verification is buffered; if PII is detected, streaming halts and the full reply is redacted before the remainder is transmitted. This feature is disabled by default. [Learn more →](/agent-platform/pii-protection)
+
+
+</Update>
+
+
 <Update label="November 6, 2026" description="v1.9.2">
 
 This release improves voice call control and agent configuration, with step-level barge-in overrides, configurable listening modes, per-channel speech streaming, per-agent model settings, and environment variables in MCP server configuration.
@@ -410,99 +487,5 @@ For workspaces that use their own encryption keys in Azure Managed HSM, the plat
 <p className="rn-subtitle">Connect to services that use a private certificate authority</p>
 
 The platform can now connect to services that use certificates from your own certificate authority, such as services on an internal network. Create a CA Certificate auth profile and select it as the TLS profile on API tools and MCP servers. The platform then trusts servers whose certificates are signed by your private CA.
-
-</Update>
-
-
-<Update label="October 28, 2026" description="v1.8.3">
-
-This release expands the platform’s capabilities in agent building, voice, digital channels, and governance. Key features include language detection for customer messages, WhatsApp invitations during voice calls, configurable supervisor return thresholds, extra Genesys transfer headers, and Bitbucket Data Center support on private networks.
-
-<p className="rn-heading">Agent builder experience</p>
-
-<p className="rn-subtitle">Detect the language of each customer message</p>
-
-Projects can now detect the language of every customer message and share the result with agents as `session.languageDetection`, including the language, confidence, and status. Turn it on in Runtime Config under the new Language detection section, where you can also set a confidence threshold, a minimum message length, and the allowed languages. Detection doesn’t change the conversation language on its own. An agent’s `before_turn` hook decides, using `WHEN` conditions with `SET_INTERACTION_LANGUAGE` or `CLEAR_INTERACTION_LANGUAGE`. The reply, the filler, and, on calls without a voice language profile, the voice then switch together. Session traces show the detection result under each customer message. The setting is off by default and can be turned on once the language detection service is available in your environment.
-[Learn more →](/agent-platform/abl/reference/lifecycle-and-hooks#hooks)
-
-```yaml wrap
-HOOKS:
-  before_turn:
-    WHEN: session.languageDetection.status == "detected" AND session.languageDetection.confidence >= 0.85
-      SET_INTERACTION_LANGUAGE: session.languageDetection.language
-
-# Switches the reply language only when detection is confident. A low-confidence result leaves the language unchanged.
-```
-
-<p className="rn-subtitle">Control when callers return to the supervisor</p>
-
-While a specialist is handling a conversation, the supervisor’s classifier checks whether the caller’s reply belongs to a different specialist. You can now set how confident it must be before the caller goes back to the supervisor. In ‘Runtime Config > Reasoning pipeline’, turn on ‘Custom Return Threshold’ and set the threshold. To leave unclear replies with the current specialist, turn on ‘Keep Ambiguous Replies With Specialist’. A supervisor can override both settings in its `EXECUTION` pipeline with `parentReturn`. The classifier also now judges the reply against the specialist’s own conversation, so callers are returned by mistake less often. 
-[Learn more →](/agent-platform/abl/reference/multi-agent-and-supervisor#pipeline-options)
-
-```yaml wrap
-EXECUTION:
-  pipeline:
-    enabled: true
-    parentReturn:
-      minConfidence: 0.9
-      ignoreAmbiguous: true
-
-# The caller returns to this supervisor only when the classifier is at least 90% sure, and never on an ambiguous result.
-```
-
-<p className="rn-subtitle">Run session-end workflows for several agents</p>
-
-The After Session Ends workflow trigger can now target more than one agent. Select the agents in the trigger’s Agents list. The workflow runs when a session owned by any of them ends, but not for sessions handled only by internal helper agents. Leave the list empty to run the workflow for any agent. Existing triggers keep their selected agent.
-[Learn more →](/agent-platform/workflows#after-session-ends-trigger)
-
-
-<p className="rn-heading">Voice experience</p>
-
-<p className="rn-subtitle">Send continuity invitations over WhatsApp during a call</p>
-
-During a voice call, an agent can now send the caller a WhatsApp message with tappable options, such as appointment slots, using the `offer_continuity` tool with `delivery: 'whatsapp'`. The message uses a WhatsApp template and goes through the project’s WhatsApp connection on Meta Cloud or Infobip. The caller’s tap or typed reply reaches the live call as input, on both pipeline and realtime voice. Replies that arrive after the invitation expires don’t reach the call, and the caller gets a message saying the request expired. Text typed on a web page that has joined a live pipeline voice call is also answered on the call.
-
-<p className="rn-subtitle">More transfer headers for Genesys Audio Connector</p>
-
-Escalations to Genesys through the Genesys Audio Connector can now send any extra headers your Genesys flow needs. Add them under `additional_headers` in `genesys_sip_headers`, and each one is sent as its own header with the transfer. Values can use `{{...}}` templates that are filled in from the session at transfer time, and a trigger’s headers override the routing defaults one by one. On `korevg_savg` transfers, the SIP BYE now also carries User-to-User Information (UUI), and transfer metadata is no longer limited in size.
-[Learn more →](/agent-platform/abl/reference/multi-agent-and-supervisor#genesys-sip-transfer-headers)
-
-```yaml wrap
-ESCALATE:
-  routing:
-    connection: "genesys_prod"
-    genesys_sip_headers:
-      additional_headers:
-        X-Interaction-Id: "{{interactionID}}"
-        X-Brand: "{{brand}}"
-
-# Each additional header is sent separately with the transfer, with its template filled in at transfer time.
-```
-
-<p className="rn-heading">Digital experience</p>
-
-<p className="rn-subtitle">Let Genesys Architect announce escalations</p>
-
-For Genesys Cloud Bot Connector, you can now leave the escalation message to Genesys Architect, such as to check business hours before telling the customer about the transfer. Set `escalation_format` to an empty string in the agent’s `MESSAGES`. A successful escalation then returns no reply messages, while still sending the escalation intent. The same applies when the response is replayed. If you leave the key out or set a message, escalations work as before.
-[Learn more →](/agent-platform/abl/reference/lifecycle-and-hooks#messages)
-
-```yaml wrap
-MESSAGES:
-  escalation_format: ""
-
-# Genesys Architect plays its own transfer announcement. The escalation intent is still returned.
-```
-
-<p className="rn-subtitle">Connect Infobip through an API gateway</p>
-
-Infobip WhatsApp connections can now authenticate with a custom header, for setups that route Infobip traffic through an API gateway such as Azure API Management. Choose Custom Header (API Gateway) as the Auth Type and enter the header name and value. The connection dialog now shows only the fields for the selected auth type. You can also add an optional inbound webhook secret, which lets the connection accept typed replies to WhatsApp continuity invitations.
-[Learn more →](/agent-platform/channels/whatsapp#infobip-setup)
-
-
-<p className="rn-heading">Governance</p>
-
-<p className="rn-subtitle">Bitbucket Data Center on private networks and through your proxy</p>
-
-Projects can now sync with a Bitbucket Data Center server on a private network, such as one you reach over VPN or a private link. Allow the host on the Basic auth profile used for the repository, and it can resolve to a private address for that profile’s repositories. If the server is behind a corporate proxy, add a Global rule for it in Settings > Account > Secrets > Proxy Configs. Git and API calls to the server then go through that proxy. When Studio can’t resolve the host, the error now says so, instead of reporting that the host isn’t allowed.
 
 </Update>
