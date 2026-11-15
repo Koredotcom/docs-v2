@@ -177,7 +177,7 @@ Shapes response rendering.
 
 
 Voice (TTS) overrides while the profile is active. Accepts the full
-[voice configuration](/agent-platform/abl-reference/rich-content#voice-configuration)
+[voice configuration](/agent-platform/abl/reference/rich-content#voice-configuration)
 — `instructions`, `ssml`, `plain_text`, `provider`, `voice_id`, `speed`, `pace`, `temperature`, and
 `auto_tts_language_switch`.
 
@@ -263,17 +263,18 @@ For voice/telephony channels, four `listening` sub-blocks control turn-taking be
 | ----- | ---- | ----------- |
 | `enabled` | `boolean` | Toggle no-input handling. |
 | `mode` | `"static"` , `"dynamic"` | Static prompts vs. LLM-generated re-prompts. |
-| `timeout_ms` | `number` | Silence duration before triggering. |
-| `relaxed_interval_ms` | `number` | Extended interval between retries. |
+| `timeout_ms` | `number` | Silence duration before triggering. Whole milliseconds, 1 to 60000. |
+| `relaxed_interval_ms` | `number` | Extended interval between retries. Whole milliseconds, 1 to 120000. |
 | `max_retries` | `number` | Maximum no-input prompts before exhaustion. Integer from 0 to 20. Default `3`. |
 | `on_exhausted` | `"hangup"` , `"transfer"` , `"custom"` , `"hook"` | Action when retries run out. `hook` runs the agent's `on_no_input_exhausted` hook. See [on_no_input_exhausted](/agent-platform/abl/reference/lifecycle-and-hooks#on_no_input_exhausted). A behavior profile takes action words only. |
 | `exhausted_message` | `string` | Message when retries are exhausted. |
+| `exhausted_ssml` | `string` or locale map | SSML version of the final message. See the SSML notes below. |
 | `barge_in` | `"allow"` , `"disallow"` | Whether a reprompt or the exhausted message can be interrupted. Inherits the owning step, then the turn default. |
 | `streaming` | `boolean` | Whether a reprompt or the exhausted message is streamed. Inherits the owning step, then the turn default. |
 | `order` | `"sequence"` , `"random"` | Prompt play order. |
 | `play_style` | `"looped"` , `"once"` , `"non_looped"` | Whether prompts repeat. |
 | `messages` | `object[]` | Static re-prompt texts. Each message has `text` and can also have `ssml`. The compiler requires at least one message when the block declares `enabled: true` and `mode: static`. |
-| `generation` | `object` | Dynamic prompt generation (`mode: dynamic`): `enabled`, `model_source`, `model_id`, `prompt_ref`, `max_output_tokens`. |
+| `generation` | `object` | Dynamic prompt generation (`mode: dynamic`): `enabled`, `model_source`, `model_id`, `prompt_ref`, `max_output_tokens` (whole number, 1 to 512). |
 
 A no-input message can author `ssml` as a string or a locale-to-string map, next to `text`:
 
@@ -312,6 +313,7 @@ Realtime voice for Gemini, Nova, and OpenAI uses the same effective configuratio
 | `digits` | `min..max`, 1 to 32 | Number of digits in one answer. |
 | `finishOnKey` | `"#"`, `"*"`, `"none"` | Key that ends the entry. |
 | `interDigitTimeoutMs` | 500 to 30000 | Pause between key presses that ends the entry. |
+| `finishKeyAlone` | `"no_input"`, `"input"` | What a finish key pressed alone does. Use `value` only on a FLOW field. See [Finish key pressed alone](/agent-platform/abl/reference/flow#finish-key-pressed-alone-finishkeyalone). |
 
 ```yaml
 CONVERSATION:
@@ -324,7 +326,7 @@ CONVERSATION:
 ```
 
 - Each key resolves on its own, in this order: `SECURE_INPUT` `COLLECT`, field `DTMF:`, active behavior profile, agent, project, platform default. The platform default is 2 seconds between key presses, `#` as the finish key, and 1 to 12 digits. `digits` counts as one unit.
-- A project sets the same defaults in Studio (**Settings > Runtime Config > Listening**) or as Runtime Config `voiceListening.dtmf` (`minDigits`, `maxDigits`, `finishOnKey`, `interDigitTimeoutMs`). Set `minDigits` and `maxDigits` together. `voiceListening: null` clears the setting.
+- A project sets the same defaults in Studio (**Settings > Runtime Config > Listening**) or as Runtime Config `voiceListening.dtmf` (`minDigits`, `maxDigits`, `finishOnKey`, `interDigitTimeoutMs`, `finishKeyAlone`). Set `minDigits` and `maxDigits` together. `voiceListening: null` clears the setting.
 - A minimum above 1 produces a warning at agent, profile, and project level. It applies to every keypad answer, including one-key menu choices. A pause does not end an entry shorter than the minimum, so the short entry is lost after the no-input timeout. Keep the minimum at 1 here and set a longer one on the fields that need it.
 - `finishOnKey: "*"` produces a warning at these levels, because `*` then ends every keypad answer, menus included.
 - A profile that turns on or off, a handoff, a return, or a language switch applies from the next caller turn. A profile that changes keypad settings on every turn restarts the listener every turn, so keep profile settings stable.
@@ -385,7 +387,7 @@ CONVERSATION:
       max_chars: 2000
 ```
 
-<Note>`barge_in_continuation` refines what happens to an *already-allowed* interruption's speech segmentation — it's a sibling of, not a replacement for, the scalar `barge_in: allow`/`disallow` policy above, and distinct from the per-output scoped `BARGE_IN` covered in [Scoped barge-in](/agent-platform/abl-reference/flow#scoped-barge-in). A project-level default can be overlaid beneath this per-agent block.</Note>
+<Note>`barge_in_continuation` refines what happens to an *already-allowed* interruption's speech segmentation — it's a sibling of, not a replacement for, the scalar `barge_in: allow`/`disallow` policy above, and distinct from the per-output scoped `BARGE_IN` covered in [Scoped barge-in](/agent-platform/abl/reference/flow#scoped-barge-in). A project-level default can be overlaid beneath this per-agent block.</Note>
 
 ### Project defaults for silence and speech recognition
 
