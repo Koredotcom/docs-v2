@@ -67,7 +67,7 @@ Required declarations:
 | Declaration         | Required | Notes                                                          |
 | ------------------- | -------- | -------------------------------------------------------------- |
 | `BEHAVIOR_PROFILE:` | yes      | Case-sensitive profile name                                    |
-| `PRIORITY:`         | yes      | Non-negative integer. Higher priority wins when profiles conflict. |
+| `PRIORITY:`         | yes      | Non-negative integer. Within a scope, profiles apply in ascending priority, so a higher priority wins when profiles conflict. See [Resolution order](#resolution-order). |
 | `WHEN:`             | yes      | CEL expression evaluated against context (`WHEN: true` for a default profile). |
 
 ## WHEN evaluation context and timing
@@ -288,11 +288,15 @@ messages:
 - Values substituted into the markup are XML-escaped after output protection.
 - When `text` is absent, the runtime derives readable text from the rendered SSML for transcripts and for vendors without SSML delivery.
 - Azure pipeline voice plays the markup through buffered speech. Other vendors and realtime voice use the plain text.
-- `exhausted_message` stays plain text.
+- `exhausted_message` stays plain text. It is the transcript and vendor fallback for the final message.
+- `exhausted_ssml` is an optional SSML version of the final message. It takes a string or a locale-to-string map. It follows the same XML checks, escaping, and Azure buffered playback as retry SSML. When `exhausted_message` is absent, the runtime derives readable text from the rendered SSML. Markup that is invalid or cannot render falls back to the plain message, then to the built-in final message.
+- After the final message, the runtime runs the configured `on_exhausted` action. A hang-up opens no new listener. A route action goes on to the flow step or agent, with no built-in farewell unless you wrote one.
 
 Silence and keypad input interact as follows:
 
 - Recognized speech or speech barge-in resets the retry sequence. Accepted non-empty DTMF input also resets it. An ASR partial only restarts the silence window. It keeps the retry count until an answer is accepted, so partials that never commit (noise, abandoned speech) still exhaust the retries.
+- Caller input that the runtime accepted but has not yet run is not silence. The same holds for input still arriving over a reply the caller has not heard. The silence window waits instead of reprompting or ending the call.
+- The first ASR partial reaches the runtime almost a second after the caller starts to speak. When the runtime-owned background window runs out, the runtime waits one more second before it reprompts or runs `on_exhausted`. A partial in that second restarts the window. With real silence, the prompt or exhausted action comes one second after `timeout_ms`. A gateway no-input timeout acts at once.
 - Forwarded native voice activity detection (VAD) activity pauses the background silence window without resetting retries or accepting an answer. When the activity stops, the configured window starts again.
 - DTMF barge-in stops the silence timer without resetting the retry sequence.
 - A gather that receives no digits and no speech restarts the timer with the existing retry count. This includes a press of the finish key alone.
@@ -327,6 +331,8 @@ CONVERSATION:
 - An agent that uses these keys is published with the IR marker `voice_listening`. A runtime without the marker refuses to publish, deploy, or run the agent, so upgrade every runtime first. Speech settings above field level (`listening.asr`) add the marker `voice_listening_asr`. A Studio import into a project whose runtime does not report this marker drops the speech block and reports [`LISTENING_KEY_NEEDS_NEWER_RUNTIME`](/agent-platform/abl/reference/errors-and-warnings#listening_key_needs_newer_runtime).
 
 **`on_caller_backchannel`** — recognize caller acknowledgements ("uh-huh", "okay") without treating them as a turn: `enabled`, `phrases`, `max_words`.
+
+The KoreVG gateway can also decide that caller speech over a playing prompt is a back-channel, using its barge-in model or its phrase list. The runtime accepts that decision without checking the words against your phrases, and also when you wrote no phrases. The prompt keeps playing, the words get no reply, and the transcript saves them as a hidden caller message. This holds in every listening mode, including `turn_taking`, where only your phrases are inactive. The runtime treats the words as a normal turn in two cases: the agent's audio stopped more than 1.5 seconds before they arrived, or a voice tool is waiting for the caller's answer.
 
 <Warning>`max_duration_ms` on `on_caller_backchannel` is accepted but has **no effect** — the voice gateway cannot enforce a back-channel duration cap, so back-channels are matched on the phrase list alone. Authoring it now emits a compile warning ([`CONVERSATION_BACKCHANNEL_DURATION_CAP_IGNORED`](/agent-platform/abl/reference/errors-and-warnings#conversation_backchannel_duration_cap_ignored)); remove it.</Warning>
 
@@ -449,12 +455,54 @@ A profile attached at agent level applies to every model call the agent makes. T
 
 In a FLOW reasoning step, the matched profiles' `INSTRUCTIONS`, `CONSTRAINTS`, `VOICE` instructions (voice channels), and `CONVERSATION` (when a matched profile sets it) are added to the step prompt. They come before the step's own `GOAL`, `BEHAVIOR`, and `STEP_CONSTRAINTS`, which take precedence for that step. A FLOW agent with no matching profile gets no profile text in its steps. Literal `RESPOND` text in a `REASONING: false` step is sent as written.
 
-A flow step has no profile or persona setting of its own. The compiler ignores these and reports warning [`W498`](/agent-platform/abl/reference/errors-and-warnings#w498):
+### Resolution order
 
-- A `USE BEHAVIOR_PROFILE:` or `PERSONA:` line inside a step, in `FLOW:` or in legacy `STEPS:`.
-- A `persona` or `use_behavior_profile` key on a YAML flow step.
+At runtime the platform collects the profiles whose `WHEN` is true within each scope. Within a scope it applies profiles in ascending `PRIORITY`. When priorities are equal, the later declaration wins for a single-valued field. The effective view layers four sources, from least to most specific:
 
-Use the profile `WHEN` to target channels, callers, or languages. Use the step `GOAL`, `BEHAVIOR`, `STEP_CONSTRAINTS`, `AVAILABLE_TOOLS`, and step `VOICE` block for step-specific behavior.
+1. The agent settings.
+2. The matched agent-level profiles.
+3. The matched step-level profiles.
+4. The current step's inline keys.
+
+The most specific value wins for each single-valued field. Constraints add up. A narrower scope cannot remove a constraint from a wider scope.
+
+### Step attachment in a text FLOW
+
+A text FLOW step can attach one or more profiles. Write one name per line. Both keyword spellings and the same profile-name rules apply as for agent-level references.
+
+```yaml
+AGENT: Support_Agent
+GOAL: "Help customers verify their identity"
+FLOW:
+  entry_point: verify_identity
+  steps:
+    - verify_identity
+  verify_identity:
+    REASONING: true
+    USE BEHAVIOR_PROFILE: identity_check
+    USE_BEHAVIOR_PROFILE: concise_support
+    GOAL: "Confirm the customer's identity before continuing."
+    THEN: COMPLETE
+```
+
+- Step profiles apply after agent profiles and before the step's inline keys.
+- Their instructions appear in a labeled `Step-Specific Behavior` section. It comes after the agent profile sections and before the step goal.
+- Profile constraints add to agent constraints.
+- Tool hides add up. A step profile cannot restore a tool that an agent-level profile hides. The step `AVAILABLE_TOOLS` then narrows the tool list.
+- TTS voice settings in a step profile apply to the output of that step. Its `CONVERSATION` listening fields layer after the agent profile fields and below the step's inline `VOICE` settings.
+- `CONVERSATION.listening.mode` applies to the whole call. A step profile ignores it and the compiler reports `STEP_PROFILE_CALL_SCOPED_FIELD`.
+- `RESPONSE_RULES`, `GATHER_OVERRIDES`, flow modifications, and `FLOW_REPLACE` do not apply at step scope. A step profile that contains one reports `STEP_PROFILE_UNSUPPORTED_FIELD`.
+- A step that attaches a profile already attached at agent level changes nothing and reports `STEP_PROFILE_ALREADY_AGENT_LEVEL`.
+- Realtime speech-to-speech does not refresh the provider prompt or tools when a FLOW step changes. Refresh happens only at handoff, and it uses the target agent's agent-level view. Step profile text is not included. The runtime still rejects a tool that a step hides.
+- Step profile references need their profile documents in the compile set. CI/CD release builds and `compileToResolvedAgent` paths do not load profile documents. On those paths a step reference reports `STEP_PROFILE_NOT_FOUND` and is not applied. A missing step profile during project import is a warning and does not block the import.
+- Studio shows `usedBySteps` in profile usage. It blocks rename and delete while a step uses the profile.
+- For agents with step profile uses, the `profile_resolution` trace adds `scope`, `stepEvaluatedProfiles`, `stepMatchedProfiles`, `dedupedProfiles`, `toolsHiddenByStep`, and `stepAdditionalConstraints`. Step-scoped events name the step in `stepName`. A call-scoped `listening.mode` that a step profile ignores records the `step_profile_mode_ignored` trace. Agents without step uses keep their earlier trace shape.
+
+The six step-path warnings are [`STEP_PROFILE_NOT_FOUND`](/agent-platform/abl/reference/errors-and-warnings#step_profile_not_found), [`STEP_PROFILE_PRIORITY_CONFLICT`](/agent-platform/abl/reference/errors-and-warnings#step_profile_priority_conflict), [`STEP_PROFILE_UNKNOWN_TOOL`](/agent-platform/abl/reference/errors-and-warnings#step_profile_unknown_tool), [`STEP_PROFILE_UNSUPPORTED_FIELD`](/agent-platform/abl/reference/errors-and-warnings#step_profile_unsupported_field), [`STEP_PROFILE_CALL_SCOPED_FIELD`](/agent-platform/abl/reference/errors-and-warnings#step_profile_call_scoped_field), and [`STEP_PROFILE_ALREADY_AGENT_LEVEL`](/agent-platform/abl/reference/errors-and-warnings#step_profile_already_agent_level).
+
+A step `PERSONA:` line, step profile syntax in a YAML flow step (`persona` or `use_behavior_profile` keys), and step profile syntax in legacy `STEPS:` are still ignored. The compiler reports [`W498`](/agent-platform/abl/reference/errors-and-warnings#w498) for them. For one release, the language service also shows the informational notice `STEP_BEHAVIOR_PROFILE_APPLIED` on text FLOW step profile uses that now take effect.
+
+Use the profile `WHEN` to target channels, callers, or languages.
 
 <Warning>Profile response rules, `GATHER` overrides, and flow modifications (`FLOW` skip, override, and replace) compile but the runtime does not apply them yet. Do not rely on them to change agent behavior.</Warning>
 
@@ -480,4 +528,4 @@ Common fixes:
 | `BEHAVIOR_PROFILE requires a PRIORITY declaration`     | Add `PRIORITY: <number>`.                                                    |
 | `BEHAVIOR_PROFILE requires a WHEN declaration`         | Add `WHEN: <condition>`, or `WHEN: true` for a default profile.              |
 | Agent references a missing `profile_use` target        | Add the standalone profile file or remove the `USE` reference.               |
-| `W498` on a `PERSONA:` or `USE BEHAVIOR_PROFILE:` line in a flow step | Move `USE BEHAVIOR_PROFILE:` to agent level and target it with `WHEN`. Put step wording in the step `GOAL` or `BEHAVIOR`. |
+| `W498` on a step `PERSONA:` line, or on step profile syntax in a YAML flow step or legacy `STEPS:` | Remove the line. Attach the profile in a text FLOW step with `USE BEHAVIOR_PROFILE:`, or attach it at agent level and target it with `WHEN`. |

@@ -222,7 +222,7 @@ After the start, the route behaves as an ordinary handoff — `RETURN`, `CONTEXT
 ## HOOKS
 
 
-The `HOOKS:` block defines actions that run at four lifecycle points, plus `on_no_input_exhausted` when voice silence retries run out. Unlike `ON_START`, hooks fire repeatedly throughout the session.
+The `HOOKS:` block defines actions that run at four lifecycle points, plus `on_no_input_exhausted` when voice silence retries run out and `on_caller_hold_limit` when a caller hold reaches its limit. Unlike `ON_START`, hooks fire repeatedly throughout the session.
 
 ### Syntax
 
@@ -257,6 +257,7 @@ HOOKS:
 | `before_turn`  | Before each user message is processed.                                          |
 | `after_turn`   | After each turn completes (after the agent's response is sent).                 |
 | `on_no_input_exhausted` | When voice silence retries run out and `on_exhausted` is `hook`. See [on_no_input_exhausted](#on_no_input_exhausted). |
+| `on_caller_hold_limit` | When a caller hold reaches its limit and the limit action is `hook`. See [on_caller_hold_limit](#on_caller_hold_limit). |
 
 ### on_no_input_exhausted
 
@@ -303,6 +304,84 @@ HOOKS:
 - **Where to set it:** on a step or an agent, as for a flow target, and only in ABL. Studio keeps the value on save and has no form for the hook. A behavior profile takes action words only.
 - **Other channels:** on realtime voice and Twilio, `hook` acts as `custom`. The hook does not run, and a `voice_no_input_route_unsupported` trace records it.
 - **Compile errors:** [`NO_INPUT_TARGET_NO_HOOK`](/agent-platform/abl/reference/errors-and-warnings#no_input_target_no_hook) for `hook` on an agent with no hook and no step of that name, [`NO_INPUT_HOOK_RESPOND_UNSUPPORTED`](/agent-platform/abl/reference/errors-and-warnings#no_input_hook_respond_unsupported) for a reply in the hook, and [`INVALID_HANDOFF_TARGET`](/agent-platform/abl/reference/errors-and-warnings#invalid_handoff_target) for a `HANDOFF` to an agent with no `HANDOFF` entry.
+
+### on_caller_hold_limit
+
+On a KoreVG voice call, the gateway can signal that the caller put the agent on hold. The project's caller hold setting limits how long a hold can last. When a hold reaches the limit and the limit action is `hook`, the Runtime runs the active agent's `on_caller_hold_limit` hook. This works on pipeline and realtime voice. The caller is still on hold, so the hook says nothing.
+
+#### Turn caller hold on
+
+Caller hold is a project setting. In Studio, go to **Settings → Runtime Config → Caller hold**. The API name is the `callerHold` section of the project runtime config. Project export and import carry it.
+
+| Setting | Values | Default |
+| ------- | ------ | ------- |
+| Handle caller hold | On or off | On for a new project. Off for a project created before caller hold existed, or imported without the setting, until a project admin turns it on. |
+| Maximum time on hold | The longest single hold, from 0:30 to 60:00 (minutes:seconds) | 10:00 |
+| Maximum total hold time per call | All holds in the call added together, from 1:00 to 240:00. It must be at least the maximum time on hold. | 30:00 |
+| When the limit is reached | **End the call**; **Transfer to the configured human target** (the SIP or phone number target from the project's Agent Transfer settings); or **Run the agent's on_caller_hold_limit hook** | End the call |
+
+While the caller is on hold, the agent stays silent and stops listening. When the caller comes back, the agent listens again. A reply that the hold interrupted is kept for the next turn when possible.
+
+- **Transfer needs a target.** The chosen target must be set in Agent Transfer, as a valid SIP URI or an E.164 phone number. Studio refuses to save the setting without it.
+- **Import.** If an imported project transfers on the limit but the target is missing or not valid, caller hold comes in turned off and the import warns `CALLER_HOLD_TRANSFER_TARGET_MISSING`. Add the target, then turn caller hold on. The Runtime looks for the target in the imported project settings first, when the export has them. Otherwise it uses the project's current Agent Transfer settings.
+- **Scope.** The setting applies only to holds that the phone network signals on KoreVG voice calls, and only when the KoreVG gateway supports caller hold. Otherwise the call behaves as before. While caller hold is on, the trace of each such call records `voice_caller_hold_unsupported` when the call starts.
+
+#### Write the hook
+
+```yaml
+AGENT: Card_Support
+GOAL: "Help the caller with a card"
+
+TOOLS:
+  record_abandoned_hold(hold_seconds: number) -> object
+    description: "Note that the caller stayed on hold past the limit"
+
+HANDOFF:
+  - TO: Transfer_Desk
+    CONTEXT:
+      pass: [transfer_reason]
+    RETURN: false
+
+HOOKS:
+  on_caller_hold_limit:
+    CALL: record_abandoned_hold
+      WITH:
+        hold_seconds: session.callerHold.durationSeconds
+    SET: transfer_reason = "Caller stayed on hold past the limit"
+    HANDOFF: Transfer_Desk
+```
+
+- **What the hook can hold:** `CALL`, `SET`, `HANDOFF`, and `CRITICAL`, the same as `on_no_input_exhausted`. The Runtime reads `HANDOFF` only in these two hooks, and ignores it elsewhere with a warning. Values set here reach the target through the entry's `CONTEXT.pass`.
+- **No `RESPOND`:** the caller is on hold and the call can end straight after the hook. The compiler refuses `RESPOND`, `WHEN` replies, and rich content with `CALLER_HOLD_HOOK_RESPOND_UNSUPPORTED`. A `HANDOFF` to an agent with no `HANDOFF` entry gives [`INVALID_HANDOFF_TARGET`](/agent-platform/abl/reference/errors-and-warnings#invalid_handoff_target).
+- **Order:** `CALL`, then `SET`, then `HANDOFF`. All of them run in the time the gateway allows before it hangs up. A failed `CALL` does not stop the actions after it, unless the hook sets `CRITICAL: true`.
+- **After the hook:** with a `HANDOFF`, the target starts on its own with no caller message, and the call stays on hold. A transfer started by the hook's tool keeps the call. With no `HANDOFF`, or with a `HANDOFF` that fails, the call ends. An agent with no such hook also ends the call.
+- **YAML:** the hook is `hooks.on_caller_hold_limit` with `call`, `call_spec`, `set`, `handoff` and `critical`.
+
+#### Caller hold values
+
+The Runtime sets `session.callerHold`. The values are read-only, and an agent declares nothing to read them. They exist only for the turn or hook shown, and are cleared after it.
+
+| Value | First turn after the caller resumes | While `on_caller_hold_limit` runs |
+| ----- | ----------------------------------- | --------------------------------- |
+| `session.callerHold.resumed` | `true` | -- |
+| `session.callerHold.durationSeconds` | Length of the hold that just ended | Length of the current hold |
+| `session.callerHold.cumulativeSeconds` | Total time on hold in this call | Total time on hold in this call |
+| `session.callerHold.holdCount` | Number of holds in this call | -- |
+| `session.callerHold.pendingReply` | `true` when a reply the caller had not heard is delivered on this turn | `true` when a reply is waiting for the caller |
+| `session.callerHold.holdId` | -- | Identifier of the current hold |
+| `session.callerHold.sequence` | -- | Event sequence number of the limit |
+| `session.callerHold.direction` | -- | `inbound` or `outbound` |
+| `session.callerHold.mode` | -- | `pipeline` or `realtime` |
+| `session.callerHold.toolCallInProgress` | -- | `true` when a tool call was running at the limit |
+
+To thank the caller for waiting, guard a `before_turn` reply with `pendingReply`. The line then does not replace or repeat a kept reply. This works on pipeline voice. A realtime speech-to-speech provider runs no per-turn hook.
+
+```yaml
+HOOKS:
+  before_turn:
+    WHEN: session.callerHold.resumed == true AND session.callerHold.pendingReply == false
+      RESPOND: "Thanks for waiting. Where were we?"
+```
 
 ### Hook action properties
 
@@ -407,11 +486,24 @@ The `session.languageDetection` object holds the latest detection result.
 | `language`   | `string` | BCP 47 tag. Present only when `status` is `detected`. |
 | `confidence` | `number` | 0 to 1. |
 | `candidate`  | `string` | The best guess. Present when `status` is `low_confidence`. |
+| `ranked`     | `array`  | The detection service's languages, best first, at most five. Each entry has `language`, `confidence` and `script`. Filled when `status` is `detected` or `low_confidence`. Empty otherwise. |
 | `script`     | `string` | The detected script. |
 | `textLength` | `number` | Characters sent for detection, after redaction. |
 | `reason`     | `string \| null` | Why the status is what it is, or `null`. |
 
 The project's language-detection setting can configure an allowed-languages list and a minimum message length (default 12 characters). A message in a language outside the allowed list comes back `no_language` with `reason: "not_allowed"`, so an unsupported language is never offered as `candidate`. A message shorter than the minimum comes back `low_confidence` with `reason: "too_short"` and its guess as `candidate`, whatever the confidence: a single short word like "Ciao" can still score 1.0. Scripts used by only one supported language (Korean, Japanese, Thai, Greek, Hebrew, and most Indic scripts) are exempt from the minimum-length rule. The session's current interaction language is sent as a hint to the detection service, improving accuracy on short or romanized input.
+
+`ranked` lets a guard read the score of a runner-up language even when another language leads. For example: `session.languageDetection.ranked[1].language == "en"`. A language outside the allowed-languages list never appears in `ranked`.
+
+**Confidence floor.** A confidence below 0.5 is never `detected`, because the confidence threshold in the setting cannot go below 0.5. The detection service deliberately answers some turns at 0.49, so they stay below that floor:
+
+- a number with one widely shared word or a currency word, such as `11,000 pesos`;
+- a turn made only of known names;
+- a short turn of common words, such as `ok` or `agent`, when the session has no language yet.
+
+The label of such a guess can change between service releases. A guard that switches on a `low_confidence` `candidate` must also require enough text and a high enough confidence. If it does not, the caller can see a language switch on a turn that carries no language.
+
+**Language hint.** The hint is the session's authored interaction language, for example one set by `SET_INTERACTION_LANGUAGE`. A session with no authored language sends no hint. A project cannot switch the hint off. On a short message (four words or fewer), the hint gives that language a small bonus when the message already holds evidence for it. It breaks close calls. It does not override clear evidence for another language. Frequent English words do not count as evidence for a non-English hint, so a caller who switches back to English is detected as English.
 
 #### Recipe: avoid language flapping
 

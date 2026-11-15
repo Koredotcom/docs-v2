@@ -291,15 +291,16 @@ TOOLS:
     description: "Get account balance"
     hints:
       cacheable: true
+      side_effects: false
       latency: fast
       timeout: 5000
 ```
 
 | Hint            | Type                               | Default | Description                                                                |
 | --------------- | ---------------------------------- | ------- | -------------------------------------------------------------------------- |
-| `cacheable`     | `boolean`                          | _none_  | Whether results can be cached across calls with the same parameters        |
+| `cacheable`     | `boolean`                          | _none_  | Reuse the result of an identical call in the same conversation. Read-only tools only. See [Result caching](#result-caching). |
 | `latency`       | `"fast"` , `"medium"` , `"slow"` | _none_  | Expected latency category for runtime scheduling                           |
-| `side_effects`  | `boolean`                          | _none_  | Whether the tool modifies external state                                   |
+| `side_effects`  | `boolean`                          | derived | Whether the tool modifies external state. Without it, an HTTP tool follows its method, SearchAI and read-only table tools are read-only, and other non-HTTP tools count as writing. |
 | `requires_auth` | `boolean`                          | _none_  | Whether the tool requires authenticated context                            |
 | `timeout`       | `number`                           | _none_  | Tool-specific timeout in milliseconds (overrides `EXECUTION.tool_timeout`) |
 
@@ -1360,24 +1361,54 @@ TOOLS:
 
 `before` supports `params` (computed parameter map), `require` (precondition expressions), `on_fail` (one of `block("msg")`, `reask("msg")`, `warn("msg")`, `use_original`, `fallback("msg")`), and `use` (a named transform). `after` supports `result` (output remapping) and `on_fail`.
 
-### Caching hints
+### Result caching
 
-
-Use the `cacheable` hint to indicate that a tool's results can be cached.
+`cacheable: true` on a read-only tool lets the Runtime reuse the result of an identical call in the same conversation. The backend is not called again. It is the only switch. A tool without it is never cached.
 
 ```yaml
 TOOLS:
   get_exchange_rate(from: string, to: string) -> {rate: number}
     description: "Get current exchange rate"
     type: http
-    endpoint: "/api/fx/rate"
+    endpoint: "https://fx.example.com/api/fx/rate"
     method: GET
     hints:
       cacheable: true
+      side_effects: false
       latency: fast
+    cache_ttl_ms: 120000
+    cache_invalidated_by: [book_transfer]
 ```
 
-When `cacheable: true`, the runtime may cache results for identical parameter combinations. When `cacheable: false`, results are never cached (use this for tools that return time-sensitive data).
+An agent-level tool with no project tool binding counts as writing, unless it states `side_effects: false` or `effect: read_only`, as above. A bound tool follows its binding. For example, an HTTP `GET` is read-only.
+
+In a project tool file, write `cacheable: true` under the tool, next to `cache_ttl_ms` and `cache_invalidated_by`.
+
+| Property | Type | Default | Description |
+| -------- | ---- | ------- | ----------- |
+| `cacheable` | `boolean` | _none_ | Turns caching on for this tool. |
+| `cache_ttl_ms` | `number` | `60000` | How long a stored result stays valid, from 1000 to 3600000 ms. When the agent and the tool file both set it, the smaller value applies. |
+| `cache_invalidated_by` | `string[]` | All write tools | Only these tools clear this tool's cached results. Each name must be a write tool of the project. |
+
+What is reused, and for how long:
+
+- A result is reused only in the same conversation, for the same caller identity, credential owner, deployment, tool definition and arguments. A child agent shares its parent's conversation.
+- Every write tool in the conversation clears the cached results before and after it runs. With `cache_invalidated_by`, only the listed tools clear this tool's results.
+- A verified identity change clears every cached result. The results are deleted when the session ends.
+- The Runtime does not store results that report an error, results larger than 64 KiB, or results that are not plain JSON. A conversation keeps at most 64 results.
+- A reused result goes through the same output guardrails, PII redaction and `on_result` mapping as a live one.
+- Simulations, the public Tools API and tool tests in Studio always call the backend.
+
+Only read-only tools can be cached. These tools compile with the warning `TOOL_CACHE_INELIGIBLE` when authored with `cacheable: true`. They always call the backend:
+
+- a tool that writes (an HTTP `POST`, `PUT`, `PATCH` or `DELETE`, a write effect, or `side_effects: true`);
+- an MCP, sandbox, lambda or workflow tool without `effect: read_only`;
+- a workflow tool that does not run synchronously;
+- a connector, platform or async webhook tool.
+
+`TOOL_CACHE_INVALID` reports a `cache_ttl_ms` that is not a whole number or is out of range, and a `cache_invalidated_by` entry that is not a write tool of the project. For a bad `cache_ttl_ms`, the compiler uses the default or the nearest bound. Studio rejects the save. The compiler warns.
+
+Caching starts at the next compile of the agent: on publish, in preview, and when a pinned deployment reloads. Each `tool_call` trace shows the outcome in `cache.status` (`hit`, `miss_stored`, `miss_not_stored`, `bypass` or `error`). It also shows a reason, the age of a reused result and a short key digest. Argument values never appear.
 
 ### PII access
 
