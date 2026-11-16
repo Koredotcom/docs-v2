@@ -1,0 +1,42 @@
+---
+title: Project import and export API overview
+description: Use the project import and export API to export a project as a portable archive and import project content into another project, with status tracking and dependency validation.
+sidebarTitle: Project APIs
+---
+
+Use the project import and export API to export a project's configuration as a portable archive and to import project content into an existing project. Both operations run asynchronously and use the same dependency validation, staging, activation, and rollback flow as Studio.
+
+## Prerequisites
+
+- A project-bound Platform Key. Send it in the `x-api-key` header.
+- The `project_io.read` scope on the key for export operations and for reading import status. The `project_io.write` scope is for starting imports. A pipeline that promotes changes normally needs both.
+- The ID of a project that belongs to your tenant.
+
+## Workflow and use cases
+
+To move a project between workspaces, export it from the source project and import the content into the target project:
+
+1. Start an export of the source project. Save the `operationId` from the response.
+2. Poll the export status until it is `completed`. Download the archive from `downloadUrl` before `expiresAt`.
+3. Start an import into the target project with the content in `files`. Set the layers and conflict strategy you need.
+4. Poll the import status until it is `completed`. Check `warnings`, `errors`, and the `applied` counts.
+
+## List of endpoints
+
+| Use case | Help article                                                                      | Purpose                                                                             | Scope               |
+|:---------|:----------------------------------------------------------------------------------|:------------------------------------------------------------------------------------|:--------------------|
+| Export   | [Start project export](/agent-platform/api-reference/project-export-post)         | Start an asynchronous export of a project's configuration as a portable archive.    | `project_io.read`   |
+|          | [Get project export status](/agent-platform/api-reference/project-export-get)     | Get the export status and, after completion, the manifest, lockfile, and download URL. | `project_io.read`   |
+| Import   | [Start project import](/agent-platform/api-reference/project-import-post)         | Start an asynchronous import of project content into an existing project.           | `project_io.write`  |
+|          | [Get project import status](/agent-platform/api-reference/project-import-get)     | Get the import status, per-layer progress, warnings, errors, and applied counts.    | `project_io.read`   |
+
+## Behavior to know
+
+- The start endpoints return `202` with an `operationId`, a `status`, and a `statusUrl`. Poll the status endpoint until the operation reaches a final state: `completed`, `failed`, or `reverted`.
+- A successful status request does not mean the operation succeeded. Check `data.status` and `data.errors`.
+- Warnings are informational and do not block completion. Errors are blocking.
+- An import validates dependencies before it changes anything. Blocking validation errors stop staging and activation. If activation fails partway, the import rolls back.
+- By default, an import merges matching content and deletes nothing. Use `conflictStrategy` and `deleteUnmatched` to change this.
+- Both operations work on layers: `core`, `connections`, `prompts`, `guardrails`, `workflows`, `evals`, `search`, `channels`, `vocabulary`, and `tables`. An export always includes `core`. An import detects layers from the content unless you set `layers` or `excludedLayers`.
+- Starting an import while another import runs returns `409`. Send an `Idempotency-Key` header on start requests so a retry is safe.
+- Exports do not include environment credentials.
