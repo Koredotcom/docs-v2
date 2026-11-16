@@ -1,0 +1,55 @@
+---
+title: User management API overview
+description: Use the user management API to provision, update, and remove workspace and project members from an identity provider, HR system, or script with a platform API key.
+sidebarTitle: Overview
+---
+
+Use the user management API to provision, update, and remove workspace and project members from an identity provider, an HR system, or a script. You invite people to a workspace, add them to projects, change their roles, and remove them when they leave.
+
+## Prerequisites
+
+- A workspace platform key (`abl_ws_…`). A workspace Owner or Admin creates it under **Settings > Secrets > Platform Keys**. Project endpoints also accept a project platform key bound to that project.
+- The scopes that the endpoints you call need: `workspace.members.read`, `workspace.members.write`, `workspace.roles.read`, `project.members.read`, or `project.members.write`. A missing scope returns `403 INSUFFICIENT_SCOPE`.
+- The workspace ID or project ID that you manage.
+
+Send the key in the `X-API-Key` header or as `Authorization: Bearer <key>`. The API rejects user session tokens and SDK tokens with `401`.
+
+## Workflow
+
+1. List the workspace roles and project roles. Use `assignableByCaller` to see which roles your key can assign.
+2. List the workspace projects to get project IDs.
+3. Invite people to the workspace. Each person starts as `pending` and gets access after they accept and sign in.
+4. Add active workspace members to projects with a project role.
+5. Look up, update, or apply lifecycle actions to members as their access changes.
+6. Remove members from projects or the workspace when they leave.
+
+## List of endpoints
+
+| Task          | Article                                                                                                   | Method and path                                             | Scope                     |
+|---------------|-----------------------------------------------------------------------------------------------------------|-------------------------------------------------------------|---------------------------|
+| Find roles    | [List workspace roles](/agent-platform/api-reference/user-management-list-roles)                          | `GET /workspaces/{workspaceId}/roles`                       | `workspace.roles.read`    |
+| Find roles    | [Get a workspace role](/agent-platform/api-reference/user-management-get-role)                            | `GET /workspaces/{workspaceId}/roles/{roleId}`              | `workspace.roles.read`    |
+| Find roles    | [List assignable project roles](/agent-platform/api-reference/user-management-list-project-roles)         | `GET /projects/{projectId}/roles`                           | `project.members.read`    |
+| Find projects | [List workspace projects](/agent-platform/api-reference/user-management-list-projects)                    | `GET /workspaces/{workspaceId}/projects`                    | `project.members.read`    |
+| Onboard       | [Create workspace member invitations](/agent-platform/api-reference/user-management-invite-members)       | `POST /workspaces/{workspaceId}/members`                    | `workspace.members.write` |
+| Onboard       | [Add project members](/agent-platform/api-reference/user-management-add-project-members)                  | `POST /projects/{projectId}/members`                        | `project.members.write`   |
+| Look up       | [List workspace members](/agent-platform/api-reference/user-management-list-members)                      | `GET /workspaces/{workspaceId}/members`                     | `workspace.members.read`  |
+| Look up       | [Search workspace members](/agent-platform/api-reference/user-management-search-members)                  | `POST /workspaces/{workspaceId}/members/search`             | `workspace.members.read`  |
+| Look up       | [Get a workspace member](/agent-platform/api-reference/user-management-get-member)                        | `GET /workspaces/{workspaceId}/members/{memberId}`          | `workspace.members.read`  |
+| Look up       | [List project members](/agent-platform/api-reference/user-management-list-project-members)                | `GET /projects/{projectId}/members`                         | `project.members.read`    |
+| Look up       | [Get a project member](/agent-platform/api-reference/user-management-get-project-member)                  | `GET /projects/{projectId}/members/{memberId}`              | `project.members.read`    |
+| Change        | [Update a workspace member](/agent-platform/api-reference/user-management-update-member)                  | `PATCH /workspaces/{workspaceId}/members/{memberId}`        | `workspace.members.write` |
+| Change        | [Apply a workspace member lifecycle action](/agent-platform/api-reference/user-management-member-actions) | `POST /workspaces/{workspaceId}/members/{memberId}/actions` | `workspace.members.write` |
+| Change        | [Update a project member role](/agent-platform/api-reference/user-management-update-project-member)       | `PATCH /projects/{projectId}/members/{memberId}`            | `project.members.write`   |
+| Offboard      | [Remove a workspace member](/agent-platform/api-reference/user-management-remove-member)                  | `DELETE /workspaces/{workspaceId}/members/{memberId}`       | `workspace.members.write` |
+| Offboard      | [Remove a project member](/agent-platform/api-reference/user-management-remove-project-member)            | `DELETE /projects/{projectId}/members/{memberId}`           | `project.members.write`   |
+
+## Behavior and limits
+
+- A key can assign only `builtin.workspace.restricted_member` and `builtin.workspace.workbench_manager` at workspace level. At project level it can assign `builtin.project.developer`, `builtin.project.tester`, `builtin.project.viewer`, and `builtin.project.workbench_manager`. Owner, Admin, Auditor, and custom roles are never assignable by a key.
+- Batch endpoints accept up to 100 items. They return `201` when every item succeeds and `207` when any item fails. Each item carries its own `outcome`.
+- Send an `Idempotency-Key` header on every write so a retry replays the first result. Send the `ETag` from your last read in `If-Match` on updates to avoid overwriting concurrent changes.
+- Every response carries an `X-Request-Id` header. Quote it to Kore.ai Support.
+- Responses use the envelope `{ "success": true, "data": … }` or `{ "success": false, "error": { "code", "message", "details" } }`.
+- Per key, the limits are 300 reads per minute, 60 writes per minute, 300 removals per minute, and 5 requests in flight. Exceeding a limit returns `429` with a `Retry-After` header.
+- Invitation emails are limited to 500 per hour for each workspace and 3 per address in 24 hours.
