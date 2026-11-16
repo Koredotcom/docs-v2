@@ -291,15 +291,16 @@ TOOLS:
     description: "Get account balance"
     hints:
       cacheable: true
+      side_effects: false
       latency: fast
       timeout: 5000
 ```
 
 | Hint            | Type                               | Default | Description                                                                |
 | --------------- | ---------------------------------- | ------- | -------------------------------------------------------------------------- |
-| `cacheable`     | `boolean`                          | _none_  | Whether results can be cached across calls with the same parameters        |
+| `cacheable`     | `boolean`                          | _none_  | Reuse the result of an identical call in the same conversation. Read-only tools only. See [Result caching](#result-caching). |
 | `latency`       | `"fast"` , `"medium"` , `"slow"` | _none_  | Expected latency category for runtime scheduling                           |
-| `side_effects`  | `boolean`                          | _none_  | Whether the tool modifies external state                                   |
+| `side_effects`  | `boolean`                          | derived | Whether the tool modifies external state. Without it, an HTTP tool follows its method, SearchAI and read-only table tools are read-only, and other non-HTTP tools count as writing. |
 | `requires_auth` | `boolean`                          | _none_  | Whether the tool requires authenticated context                            |
 | `timeout`       | `number`                           | _none_  | Tool-specific timeout in milliseconds (overrides `EXECUTION.tool_timeout`) |
 
@@ -492,7 +493,7 @@ TOOLS:
 
 Beyond `set:`, both `on_result:` and `on_error:` accept an ordered `do:` action block that can run `SET`, `CLEAR`, `LOG`, `RESPOND`, `CALL`, `GOTO`/`THEN`, `HANDOFF`, `DELEGATE`, `RETURN`, `FORMATS` (or its canonical alias `RICH_CONTENT`), and `COMPLETE` actions, with conditional `IF:`/`WHEN:`/`ELSE:` branches. A rich-content payload rendered this way — for example a `FEEDBACK` survey attached to a tool's result — works with either spelling.
 
-A `do:` action's `RESPOND` can carry its own `MODEL_CONTEXT` — a text-scalar sibling, the same idea as [MODEL_CONTEXT on a response](/agent-platform/abl-reference/flow#model_context-on-a-response), applied here to a tool lifecycle response instead of a FLOW step's:
+A `do:` action's `RESPOND` can carry its own `MODEL_CONTEXT` — a text-scalar sibling, the same idea as [MODEL_CONTEXT on a response](/agent-platform/abl/reference/flow#model_context-on-a-response), applied here to a tool lifecycle response instead of a FLOW step's:
 
 ```yaml
 TOOLS:
@@ -906,7 +907,7 @@ TOOLS:
 
 ## Missing values in CALL arguments
 
-A `CALL` argument (`WITH` or a named inline argument) is a value expression, evaluated against the session when the call runs. A key missing from a record reads as `null` inside it, so `COALESCE`, ternaries, object and list literals, and arithmetic over a missing path give their documented value. See [Missing paths in value expressions](/agent-platform/abl-reference/expressions-and-functions#missing-paths-in-value-expressions).
+A `CALL` argument (`WITH` or a named inline argument) is a value expression, evaluated against the session when the call runs. A key missing from a record reads as `null` inside it, so `COALESCE`, ternaries, object and list literals, and arithmetic over a missing path give their documented value. See [Missing paths in value expressions](/agent-platform/abl/reference/expressions-and-functions#missing-paths-in-value-expressions).
 
 ```yaml
 reply_list:
@@ -1331,9 +1332,9 @@ TOOLS:
 
 `fields` and `template` are mutually exclusive — choose one. The full, unprojected tool result is still available everywhere else: `CALL AS`, `ON_RESULT`, assignments, response templates, and client delivery. Omit `MODEL_CONTEXT` entirely to keep the historical full-result behavior. An invalid or empty policy (both or neither of `fields`/`template`, an empty/overlapping `fields` list, or an empty `template`) fails validation (`MODEL_CONTEXT_INVALID`); if a *valid* policy can't be projected at runtime (a path doesn't resolve, say), the model receives a bounded "unavailable" marker instead of the full result — it never silently falls back to exposing everything.
 
-<Note>A rendered, non-empty view is **preserved exactly** through later history compaction and summarization, evaluated once and reused on later turns rather than re-rendered — see [MODEL_CONTEXT on a response](/agent-platform/abl-reference/flow#model_context-on-a-response) for the full preservation contract and the `AUTHORED_MODEL_CONTEXT_CAPACITY_EXCEEDED` capacity limit, which applies to both forms identically.</Note>
+<Note>A rendered, non-empty view is **preserved exactly** through later history compaction and summarization, evaluated once and reused on later turns rather than re-rendered — see [MODEL_CONTEXT on a response](/agent-platform/abl/reference/flow#model_context-on-a-response) for the full preservation contract and the `AUTHORED_MODEL_CONTEXT_CAPACITY_EXCEEDED` capacity limit, which applies to both forms identically.</Note>
 
-<Note>Legacy `.agent.abl` format: `MODEL_CONTEXT:` with nested `FIELDS:`/`TEMPLATE:` keys, directly under the tool signature. `MODEL_CONTEXT` can also sit beside a FLOW step's `RESPOND` or a `COMPLETE` condition's `RESPOND` — see [MODEL_CONTEXT on a response](/agent-platform/abl-reference/flow#model_context-on-a-response) for that (separate) use.</Note>
+<Note>Legacy `.agent.abl` format: `MODEL_CONTEXT:` with nested `FIELDS:`/`TEMPLATE:` keys, directly under the tool signature. `MODEL_CONTEXT` can also sit beside a FLOW step's `RESPOND` or a `COMPLETE` condition's `RESPOND` — see [MODEL_CONTEXT on a response](/agent-platform/abl/reference/flow#model_context-on-a-response) for that (separate) use.</Note>
 
 ### Input/output transforms (`process`)
 
@@ -1360,24 +1361,54 @@ TOOLS:
 
 `before` supports `params` (computed parameter map), `require` (precondition expressions), `on_fail` (one of `block("msg")`, `reask("msg")`, `warn("msg")`, `use_original`, `fallback("msg")`), and `use` (a named transform). `after` supports `result` (output remapping) and `on_fail`.
 
-### Caching hints
+### Result caching
 
-
-Use the `cacheable` hint to indicate that a tool's results can be cached.
+`cacheable: true` on a read-only tool lets the Runtime reuse the result of an identical call in the same conversation. The backend is not called again. It is the only switch. A tool without it is never cached.
 
 ```yaml
 TOOLS:
   get_exchange_rate(from: string, to: string) -> {rate: number}
     description: "Get current exchange rate"
     type: http
-    endpoint: "/api/fx/rate"
+    endpoint: "https://fx.example.com/api/fx/rate"
     method: GET
     hints:
       cacheable: true
+      side_effects: false
       latency: fast
+    cache_ttl_ms: 120000
+    cache_invalidated_by: [book_transfer]
 ```
 
-When `cacheable: true`, the runtime may cache results for identical parameter combinations. When `cacheable: false`, results are never cached (use this for tools that return time-sensitive data).
+An agent-level tool with no project tool binding counts as writing, unless it states `side_effects: false` or `effect: read_only`, as above. A bound tool follows its binding. For example, an HTTP `GET` is read-only.
+
+In a project tool file, write `cacheable: true` under the tool, next to `cache_ttl_ms` and `cache_invalidated_by`.
+
+| Property | Type | Default | Description |
+| -------- | ---- | ------- | ----------- |
+| `cacheable` | `boolean` | _none_ | Turns caching on for this tool. |
+| `cache_ttl_ms` | `number` | `60000` | How long a stored result stays valid, from 1000 to 3600000 ms. When the agent and the tool file both set it, the smaller value applies. |
+| `cache_invalidated_by` | `string[]` | All write tools | Only these tools clear this tool's cached results. Each name must be a write tool of the project. |
+
+What is reused, and for how long:
+
+- A result is reused only in the same conversation, for the same caller identity, credential owner, deployment, tool definition and arguments. A child agent shares its parent's conversation.
+- Every write tool in the conversation clears the cached results before and after it runs. With `cache_invalidated_by`, only the listed tools clear this tool's results.
+- A verified identity change clears every cached result. The results are deleted when the session ends.
+- The Runtime does not store results that report an error, results larger than 64 KiB, or results that are not plain JSON. A conversation keeps at most 64 results.
+- A reused result goes through the same output guardrails, PII redaction and `on_result` mapping as a live one.
+- Simulations, the public Tools API and tool tests in Studio always call the backend.
+
+Only read-only tools can be cached. These tools compile with the warning `TOOL_CACHE_INELIGIBLE` when authored with `cacheable: true`. They always call the backend:
+
+- a tool that writes (an HTTP `POST`, `PUT`, `PATCH` or `DELETE`, a write effect, or `side_effects: true`);
+- an MCP, sandbox, lambda or workflow tool without `effect: read_only`;
+- a workflow tool that does not run synchronously;
+- a connector, platform or async webhook tool.
+
+`TOOL_CACHE_INVALID` reports a `cache_ttl_ms` that is not a whole number or is out of range, and a `cache_invalidated_by` entry that is not a write tool of the project. For a bad `cache_ttl_ms`, the compiler uses the default or the nearest bound. Studio rejects the save. The compiler warns.
+
+Caching starts at the next compile of the agent: on publish, in preview, and when a pinned deployment reloads. Each `tool_call` trace shows the outcome in `cache.status` (`hit`, `miss_stored`, `miss_not_stored`, `bypass` or `error`). It also shows a reason, the age of a reused result and a short key digest. Argument values never appear.
 
 ### PII access
 
@@ -1462,7 +1493,7 @@ In reasoning mode, the runtime does not bind result fields to top-level variable
 
 Retained working state is not automatic model visibility. A tool result from an earlier agent, including a FLOW `AS` alias, is not added to the next agent's generated prompt just because it stays in session state or appears in an ancestor's FLOW. Pass the data the next agent needs explicitly. Authorized authored references, memory grants, and authored broad-context prompts keep their existing permissions. Explicit denials and privacy filtering still apply. This rule does not delete result bindings that tools, conditions, assignments, or return handling use.
 
-For the agent-wide limits on how many compacted tool rounds survive in history, and how tool results are compacted across turns, see [Compaction policy overrides](/agent-platform/abl-reference/agent-declaration#compaction-policy-overrides).
+For the agent-wide limits on how many compacted tool rounds survive in history, and how tool results are compacted across turns, see [Compaction policy overrides](/agent-platform/abl/reference/agent-declaration#compaction-policy-overrides).
 
 ### Voice reply policy
 
@@ -1543,8 +1574,8 @@ For the full list of built-in tools and how to use them, see [Inbuilt tools](/ag
 
 {{related}}
 
-- [Language overview](/agent-platform/abl-reference/language-overview) -- file structure and syntax.
-- [Agent declaration](/agent-platform/abl-reference/agent-declaration) -- `tool_timeout` and model settings in EXECUTION.
-- [GATHER](/agent-platform/abl-reference/gather) -- information collection (often used alongside tools).
-- [FLOW](/agent-platform/abl-reference/flow) -- `CALL` action for invoking tools within flow steps.
+- [Language overview](/agent-platform/abl/reference/language-overview) -- file structure and syntax.
+- [Agent declaration](/agent-platform/abl/reference/agent-declaration) -- `tool_timeout` and model settings in EXECUTION.
+- [GATHER](/agent-platform/abl/reference/gather) -- information collection (often used alongside tools).
+- [FLOW](/agent-platform/abl/reference/flow) -- `CALL` action for invoking tools within flow steps.
 - [Inbuilt tools](/agent-platform/inbuilt-tools/index) -- Inbuilt tools.
