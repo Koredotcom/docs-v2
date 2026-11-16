@@ -26,9 +26,220 @@ and NOT <p className="rn-heading">\{ Artemis x.y.z \} Month DD, 2026 </p>
 
 <Update label="November 15, 2026" description="v1.10.0">
 
-This release redesigns the Sessions detail page and adds FLOW PARALLEL steps, prompt caching for new projects, GPT-Live full-duplex voice, and alerts for evals. ABL validation is stricter, and refused HTTP and MCP tools now fail the workflow step. Voice gains a project default for silence exhaustion, keypad and secure-input fixes, and call ID lookup. The Sessions API adds voice and contact-center analytics, and Studio adds Azure Content Safety and custom HTTP guardrail providers.
+This release brings parallel tool calls for FLOW steps, a redesigned Sessions detail page, GPT-Live full-duplex voice, caller hold handling, and alerts for evals. New projects get better prompt caching, and the ABL compiler now flags configuration keys that have no effect. Behavior profiles can be assigned to many agents at once, and Studio supports new guardrail providers.
+
+<p className="rn-heading">Agent builder experience</p>
+
+<p className="rn-subtitle">Run tool calls in parallel in a FLOW step</p>
+
+A deterministic `FLOW` step can now run multiple read-only tool calls at the same time. Add a `PARALLEL:` block and list the calls. Only read-only tools are allowed: HTTP GET or tools that declare `effect: read_only`. The step waits until all calls finish and saves each result in its own variable, then routes through `ON_SUCCESS`, `ON_PARTIAL`, or `ON_FAILURE`. You can also use `FOR_EACH` to iterate over a list, `AFTER` to set dependencies between calls, and `MAX_CONCURRENCY` to limit how many calls run at once.
+
+```yaml wrap
+PARALLEL:
+  - CALL: get_account_info
+    WITH:
+      account_id: account_id
+    AS: account
+  - CALL: get_limit_info
+    WITH:
+      account_id: account_id
+    AS: limits
+
+# Both lookups run together. The step routes once, after the slower call finishes.
+```
+
+<p className="rn-subtitle">Strict validation for configuration keys</p>
+
+The ABL compiler now actively flags invalid configuration keys—including unknown, misspelled, incorrectly cased, or ineffective entries—as explicit warnings or compilation errors. Configurations that previously produced silent no-ops may now fail to compile or trigger warnings. Ensure all key names are updated, or unneeded keys are removed.
+
+<p className="rn-subtitle">Updated FLOW runtime behavior</p>
+
+The following `FLOW` updates change how agents run:
+
+- `TRANSFORM`: Step-level `TRANSFORM` statements with `MAP` or `FILTER` operations now populate their output variable.
+- `CALL`: Passing an empty string to a required tool parameter through `CALL` now produces a visible error, instead of failing silently.
+- `GATHER`: Regex `VALIDATE` rules on `ENTITY_REF` fields no longer fail valid inputs.
+
+<p className="rn-subtitle">Hand off before a reasoning call</p>
+
+Routing state can now be updated directly by a before-turn pre-hook. Immediately after the pre-hook executes, the runtime evaluates handoff conditions; if a match occurs, the agent initiates an immediate handoff, bypassing the turn's reasoning LLM call entirely.
+
+<p className="rn-subtitle">Bulk agent behavior assignment and step-level profile support</p>
+
+You can now assign a behavior profile to many agents at once using the new Assign Agents tab. In ABL, setting `APPLIES_TO: all_agents` on a standalone profile applies it to every agent. A `FLOW` reasoning step can also use its own behavior profile and persona, so one step can speak differently from the rest of the agent. Project import now warns you before it overwrites a profile, and the session IR view shows the profile that was applied.
+
+<p className="rn-subtitle">Pick an environment when you test a tool</p>
+
+The Test Tool panel now has an environment selector. Run a test with variables set to Dev, Staging, or Production. The choice applies to that run only. The request-body diagnostic now shows the body that was sent, not a substituted copy.
+
+<p className="rn-subtitle">Export and import environment variables</p>
+
+The Environment page now has a Copy as JSON action, letting you back up variables or reuse them in other projects and environments. A secret you import without a value is created unset and shows a warning, and the list shows which variables have a value. Import now handles duplicate keys, edited values, and deleted entries correctly.
+
+<p className="rn-subtitle">Agent context support in Playground</p>
+
+An Agent Context field has been added to the Debug context popover in the Playground. The agent evaluates this input for the duration of the debug session.
+
+<p className="rn-subtitle">Synchronized agent version tracking with Git sync</p>
+
+Agent version history is now maintained consistently across Git operations by assigning a persistent key to each agent and tracking version changes within `abl.lock`. Before removing history files during a push, the system displays a preview and enforces a deletion threshold. Additionally, renaming or deleting an agent no longer leaves residual orphan files during push or clone operations, and a dedicated CLI command is now available to clear orphaned version files.
+
+<p className="rn-subtitle">Better Prompt Caching</p>
+
+New projects now use prompt version `v2`, which places static tool definitions before per-session content so providers can reuse a cached prompt prefix. This lowers cost and time to first token, and `FLOW` reasoning steps now reuse the cache across turns. Projects created earlier stay on `v1` until you change them.
+
+You can set the version in Studio (Runtime Config → Prompt building) or with `EXECUTION.prompt_version`. For OpenAI and Azure models, you can also set `prompt_cache_key` (`true`, `false`, or a name suffix) and `prompt_cache_retention` (`in_memory` or `24h`).
+
+```yaml wrap
+EXECUTION:
+  prompt_version: v2
+  prompt_cache_key: true
+  prompt_cache_retention: 24h
+
+# This agent uses the v2 cache layout. OpenAI and Azure reuse the cached prompt prefix for up to 24 hours.
+```
+
+<p className="rn-subtitle">Eval suite alert notifications</p>
+
+You can now configure alert rules directly on an eval suite. When a run shows a performance regression compared to the preceding run, an alert is triggered, and failure notices, including the reason, are sent to the inbox. Each alert rule has an Edit button. Regression notes also state the suite’s tolerance threshold and link to its configuration settings.
+
+<p className="rn-subtitle">Scripted values for simulated users</p>
+
+An eval scenario or persona can now include scripted values and instructions for the simulated user, such as a PIN or customer ID. The simulated user states the exact value when the agent asks for it.
+
+<p className="rn-subtitle">Measure text agent latency in eval suites</p>
+
+Text eval suites now include four Code Check evaluators for first and average response time, including time to first token. Set a ‘Max ms’ budget for each evaluator, and it passes when the measured time is within budget and fails otherwise. Use them to catch slow responses and track latency alongside answer quality.
+
+<p className="rn-subtitle">Descriptions and a Type filter for eval suites</p>
+
+Each eval suite can now have a description, and the full text shows in a tooltip when it is truncated. The Eval Suites list shows each suite’s kind as an icon and has a Type filter.
+
+<p className="rn-subtitle">Microsoft Foundry hosted agents</p>
+
+You can now publish a new version of a live Microsoft Foundry hosted agent from Studio.
+
+
+<p className="rn-heading">Knowledge base</p>
+
+<p className="rn-subtitle">Recrawl failed pages</p>
+
+You can now recrawl only the pages that failed in a web source, instead of crawling the whole source again.
+
+<p className="rn-subtitle">Searchable text from embedded images</p>
+
+HTML ingestion now detects Base64-encoded images and extracts their content, so it becomes searchable. Encoded image data is no longer indexed as text.
+
+<p className="rn-subtitle">Turn off automatic sync for a connector</p>
+
+A connector's automatic sync can now be turned off. A migration sets the sync state for existing connectors. Check each connector's sync mode after you update.
+
+<p className="rn-subtitle">Client Credentials authentication profiles</p>
+
+The OAuth 2.0 Client Credentials setup form now includes all required token URL fields, including the Databricks workspace host, Confluence Data Center base URL, Salesforce My Domain URL, and ServiceNow Instance URL.
+
+
+<p className="rn-heading">Voice experience</p>
+
+<p className="rn-subtitle">GPT-Live full-duplex voice</p>
+
+A KoreVG voice channel can now use GPT-Live-1 from the OpenAI model catalog. Select OpenAI Realtime as the channel provider, then pick the GPT-Live connection. Callers get full-duplex conversations with smooth interruption handling, tool use, and agent handoff.
+
+On the channel, you can choose the voice; Marin is the default. You can also set an optional acknowledgment delay of 0 to 800 ms and the orchestration mode: Runtime owned, or Responses with Runtime checks.
+
+<p className="rn-subtitle">Caller hold handling</p>
+
+Agents can now detect when a caller goes on hold. During the hold, the agent stays silent and pauses listening. When the caller returns, the agent resumes listening and picks up its response where it left off.
+
+To configure this, go to Runtime Config > Caller hold in Studio and set the maximum single hold duration (0:30 to 60:00, default 10:00) and the total hold time per call (default 30:00). When a limit is exceeded, the agent can end the call, transfer it, or trigger `on_caller_hold_limit`. The feature is on by default for new projects, and an admin must turn it on for existing projects.
+
+```yaml wrap
+HOOKS:
+  on_caller_hold_limit:
+    SET: transfer_reason = "Caller stayed on hold past the limit"
+    HANDOFF: Transfer_Desk
+
+# When a hold reaches its limit, the agent hands off to Transfer_Desk.
+```
+
+<p className="rn-subtitle">Project-wide default for silence exhaustion</p>
+
+Studio now lets you define a project-level default action when a caller remains silent across all retry attempts, including terminating the call, transferring to a person, or handing off to an agent. This default setting can still be overridden at the individual agent or step level using `on_exhausted`.
+
+<p className="rn-subtitle">Keypad passcodes stay out of the model</p>
+
+A one-time passcode typed on the keypad is now kept out of the model, or the platform enables `SECURE_INPUT` for the step. `SECURE_INPUT` also works for DTMF-only collection, honors its delivery timeout, and delivers values through the tool’s body and header template. Spoken numbers that mix single digits with words such as “eleven” are no longer added up. Re-test keypad and OTP flows, and check that transcripts and traces stay redacted.
+
+<p className="rn-subtitle">Keypad prompts and input appear in transcripts</p>
+
+Keypad gather steps (`ivr_digit_input`) now show their prompt and masked input in the session transcript and trace. The `#` key is now captured as input and is no longer treated as no input. A voice survey now asks again when the caller presses an out-of-range key.
+
+<p className="rn-subtitle">SIP and carrier connection settings</p>
+
+A SIP termination URI can now hold comma-separated IP addresses, and a BYOC channel supports multiple SIP gateway IPs and CIDRs. All configured SIPREC recording servers are forwarded to the voice gateway. Outbound sessions now show the SIP Call-ID in the SIP Ladder.
+
+
+<p className="rn-heading">Digital experience</p>
+
+<p className="rn-subtitle">Channel User ID in Sessions</p>
+
+The platform now keeps one channel-based user identifier for each session. Sessions shows a Channel User ID column and a filter for it. The value is encrypted at rest.
+
+<p className="rn-subtitle">Adaptive Card templates and Copilot setup in Microsoft Teams</p>
+
+The Teams channel now supports Adaptive Card templates, such as a user profile card. The Teams channel setup also includes the Copilot custom engine configuration.
+
+<p className="rn-subtitle">Web SDK events for human agent chats</p>
+
+The Web SDK now sends events when the user closes the chat, when a human agent connects, and when a chat transfers between human agents, so your chat window can react.
+
+<p className="rn-subtitle">Updates to agent transfer connectors</p>
+
+The complete transfer lifecycle is now supported for Zendesk chat escalations via Sunshine Conversations. Additionally, the conversation transcript now records responses from the Genesys Bot Connector, including the platform session ID in its parameters. For the webhook channel, `ESCALATE` routing metadata is now included in the transfer request's agent transfer settings alongside session-level tags. Note that CCAI routing keys will not be overridden by custom keys.
+
+
+<p className="rn-heading">Insights</p>
+
+<p className="rn-subtitle">Redesigned Sessions detail page</p>
+
+The Sessions detail page is rebuilt for investigation. A trace continues after you refresh the page. You get recording controls, token metrics, and an inspector that fits narrow screens. Realtime voice sessions show readable steps, with one row per turn and a turn outline. You can open archived and past-retention sessions, and the page stays usable when one read is slow or fails. The open session refreshes during a live call, and you can also refresh it yourself.
+
+<p className="rn-subtitle">Correct Source and Channel values in Sessions</p>
+
+The Source, Channel Type, and Channel columns in Sessions now show the actual values, and test traffic is separate from real traffic. You can filter by a single WhatsApp number or voice connection.
+
+<p className="rn-subtitle">Voice turn quality measures</p>
+
+Voice quality now measures first sound, answer time, and wording for each caller turn on pipeline and realtime voice. On OpenAI realtime calls, LLM and tool traces now group under the correct turn.
+
+
+<p className="rn-heading">Governance</p>
+
+<p className="rn-subtitle">New guardrail providers</p>
+
+You can now add Azure Content Safety as a guardrail provider. Studio also supports a custom HTTP provider type, with response content mappings, so you can call your own moderation service.
+
+<p className="rn-subtitle">Expanded support for Gemini and GPT models</p>
+
+Credential forms now include Vertex AI as a supported provider, with service-account credential authentication. The model catalog also includes Gemini 3.1 through 3.8 and Gemini 4 on Vertex AI, along with the GPT-5.6 series on Azure OpenAI.
+
+
+<p className="rn-heading">APIs and SDK</p>
+
+<p className="rn-subtitle">Voice analytics in the Sessions API</p>
+
+Public Sessions API rows now include `voice` and `contactCenter` objects with per-call voice quality and contact-center details. Check the OpenAPI document before you use the new fields.
+
+<p className="rn-subtitle">Find voice conversations by call ID</p>
+
+Voice sessions now save the external call ID and the KoreVG `callSid`, both indexed. The public Conversation History API (`GET` and `POST`) accepts `externalCallIds` and `callSids` filters.
+
+<p className="rn-subtitle">More detail in the Traces API</p>
+
+The tool call event now carries the response headers of an HTTP tool, masked where needed, and the tool call card in Studio shows them. HTTP calls that workflows make now appear in the `/traces` API. Use this data to match Artemis traces with your API gateway records.
 
 </Update>
+
 
 <Update label="November 11, 2026" description="v1.9.3">
 
