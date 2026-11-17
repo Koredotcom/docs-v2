@@ -198,7 +198,7 @@ In YAML, use `context_updates: [qr_text, qr_done]` directly on the reasoning ste
 
 A reasoning step whose only job is to present already-selected state can declare `CONTEXT_UPDATES: false` so the model is never offered a write tool it has no reason to use:
 
-```dsl
+```yaml
 AGENT: ResultPresenter
 GOAL: "Present the selected result"
 
@@ -211,6 +211,70 @@ MEMORY:
 <Note>
 Any list declaration, including `CONTEXT_UPDATES: []`, requires compiler and Runtime support for IR version 1.3. An older Runtime rejects an artifact built with one. Existing projects get no automatic change: a project must opt in by adding a list to a step and publishing only after every Runtime pod serving that project has been upgraded (the compiler does not block publishing out of order; that ordering is a deployment-operations responsibility). Rolling back to an older Runtime requires an artifact with no list declarations.
 </Note>
+
+### Per-step EXECUTION
+
+A `REASONING: true` step can set its own model and generation settings with an `EXECUTION:` block indented under the step. Keys the step leaves out keep the agent `EXECUTION` value. The settings apply only to the calls that produce the step's answer. Extraction, classification, and other steps keep the agent settings.
+
+```yaml
+FLOW:
+  entry_point: triage
+  steps:
+    - triage
+    - answer
+
+  triage:
+    REASONING: true
+    GOAL: "Work out which product the customer is asking about"
+    EXECUTION:
+      model: gpt-4o-mini
+      temperature: 0.2
+      max_tokens: 300
+    THEN: answer
+
+  answer:
+    REASONING: true
+    GOAL: "Answer the question in full"
+    THEN: COMPLETE
+```
+
+#### Step EXECUTION parameters
+
+| Key                 | Accepted value                                                                      | Notes                                                                                   |
+| ------------------- | ----------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------- |
+| `model`             | A non-empty model name, or a `{{config.KEY}}` template.                             | Templates are not checked at compile time.                                              |
+| `reasoning_effort`  | `none`, `minimal`, `low`, `medium`, `high`, `xhigh`, or `max`.                      | Models without reasoning ignore it ([`STEP_EXECUTION_MODEL_CAPABILITY`](/agent-platform/abl/reference/errors-and-warnings#step_execution_model_capability)). |
+| `verbosity`         | `low`, `medium`, or `high`.                                                         | Supported models only.                                                                  |
+| `max_tokens`        | Whole number, 1 or more.                                                            | Output length limit.                                                                    |
+| `temperature`       | Number from 0 to 2.                                                                 | Some models disable it.                                                                 |
+| `top_p`             | Number from 0 to 1.                                                                 |                                                                                         |
+| `top_k`             | Whole number, 0 or more.                                                            |                                                                                         |
+| `frequency_penalty` | Any finite number.                                                                  |                                                                                         |
+| `presence_penalty`  | Any finite number.                                                                  |                                                                                         |
+| `seed`              | Whole number.                                                                       | Reproducible output is provider-dependent.                                              |
+| `enable_thinking`   | `true` or `false`.                                                                  | Lowercase only. `yes` and `on` are not accepted.                                        |
+| `thinking_budget`   | Whole number, 1 or more.                                                            | Token budget for extended thinking.                                                     |
+| `stop_sequences`    | A list of 1 to 16 non-empty strings, each at most 256 characters.                   | Keep to 4 or fewer so every provider receives them ([W562](/agent-platform/abl/reference/errors-and-warnings#w562)). Not sent on calls that offer tools. |
+| `llm_timeout`       | Whole number of milliseconds, 1 or more.                                            | Capped by the server limit and the turn's remaining time.                               |
+| `tool_timeout`      | Whole number of milliseconds, 1 or more.                                            |                                                                                         |
+
+Values are never converted. A quoted number such as `"0.2"` is text and raises W565. A number outside its range raises W564. In both cases the step uses the agent value for that key.
+
+```yaml
+EXECUTION:
+  model: "{{config.TRIAGE_MODEL}}"
+  reasoning_effort: low
+  temperature: 0.2
+  max_tokens: 300
+  stop_sequences: ["END_OF_ANSWER"]
+  llm_timeout: 8000
+```
+
+Write one key per line, all at the same indent. Put `fallback_model` and `conversation_history_window` in the agent `EXECUTION` section instead. They raise W567 in a step.
+
+- The step model outranks the agent's Model Config tab and its `EXECUTION` model. It must be a model the project can run. If not, the step uses the agent's model and the trace records `model_access:step_model_fallback`. A deployment model override still wins.
+- A mistake in the block is a warning ([W563 to W569 and W573](/agent-platform/abl/reference/errors-and-warnings#w563), [`STEP_EXECUTION_*`](/agent-platform/abl/reference/errors-and-warnings#step_execution_model_capability)). The bad key is ignored and the other keys apply, so the agent still compiles.
+- The block has no effect on a step that is not a `REASONING` step, or on a speech-to-speech voice session.
 
 ### Choosing the next step
 
@@ -319,7 +383,7 @@ FLOW:
     THEN: next_step
 ```
 
-This is useful when the delivered response carries a large presentation payload (a widget, a card, a big table) that would otherwise bloat every later model call for no benefit — `MODEL_CONTEXT` lets the model keep a short textual summary of what the customer saw instead. `MODEL_CONTEXT` is a text scalar; a non-text value fails validation ([`MODEL_CONTEXT_INVALID`](/agent-platform/abl/reference/errors-and-warnings#model_context_invalid)). An explicitly empty value omits the response from later model requests entirely. Omit the property to keep the historical full-response behavior. See also [MODEL_CONTEXT on a tool result](/agent-platform/abl-reference/tools#model_context-on-a-tool-result) for the equivalent policy on a tool's own result.
+This is useful when the delivered response carries a large presentation payload (a widget, a card, a big table) that would otherwise bloat every later model call for no benefit — `MODEL_CONTEXT` lets the model keep a short textual summary of what the customer saw instead. `MODEL_CONTEXT` is a text scalar; a non-text value fails validation ([`MODEL_CONTEXT_INVALID`](/agent-platform/abl/reference/errors-and-warnings#model_context_invalid)). An explicitly empty value omits the response from later model requests entirely. Omit the property to keep the historical full-response behavior. See also [MODEL_CONTEXT on a tool result](/agent-platform/abl/reference/tools#model_context-on-a-tool-result) for the equivalent policy on a tool's own result.
 
 <Note>A successfully rendered, non-empty `MODEL_CONTEXT` view is **preserved exactly** through later history compaction, summarization, and automatic conversation windowing — it's never auto-shortened, replaced with a summary, or dropped for being old. It's evaluated once, when the response is produced; later turns reuse that same rendered text rather than re-evaluating the template against newer data. This doesn't raise the model's context window or bypass the usual budget: an authored view may exceed the ordinary per-value/aggregate *soft* budget, but must still fit the aggregate *hard* capacity, or the runtime reports `AUTHORED_MODEL_CONTEXT_CAPACITY_EXCEEDED` rather than silently shrinking it. Keep `MODEL_CONTEXT` to the identifiers, status, and decision facts a later turn actually needs, and fetch further detail through a read tool — a large preserved view repeats in every later prompt, which adds up in prompt size, model cost, and latency. (This guarantee needs a matching Runtime version on every process handling the session; a rollback or a mixed-version deployment can silently lose it.)</Note>
 
@@ -375,6 +439,29 @@ FLOW:
 
 Upper-case keys at that level (`PROMPT`, `STRATEGY`, and other recognized GATHER-block keywords) stay GATHER block properties, not fields. Only a lower-case (or mixed-case) name that is not a recognized GATHER-block keyword is read as a new field header.
 
+#### Inline and bare forms
+
+For fields that need no other properties, write the names on the `GATHER:` line, or as bare list items:
+
+```yaml
+FLOW:
+  collect_name:
+    REASONING: false
+    GATHER: first_name, last_name
+    THEN: next_step
+
+  collect_contact:
+    REASONING: false
+    GATHER: [email, phone]
+    THEN: next_step
+```
+
+A bare list item, such as `- email`, is a required field. The inline forms `GATHER: a: required, b: optional` are also accepted. A list item that ends in `default=value` sets `required: false` and a default, and always gives warning `W822`.
+
+#### Inheriting a top-level field
+
+A step field inherits the properties of a top-level `GATHER` field with the same name. The step overrides only the properties it sets. A step field that sets nothing but `required` or `optional`, such as `- notes: optional`, does not change the inherited `required` value. Add another property, such as `prompt`, to override it.
+
 #### Multi-field collection
 
 
@@ -413,10 +500,12 @@ Each field in a flow `GATHER:` supports these properties:
 | `prompt`                               | `string`                     | No       | _none_     | Question shown to the user          |
 | `type`                                 | `string`                     | No       | `"string"` | Data type                           |
 | `default`                              | `any`                        | No       | _none_     | Default value                       |
-| `validation`                           | `string`                     | No       | _none_     | Validation expression               |
-| `infer`                                | `boolean`                    | No       | `false`    | Allow LLM inference                 |
+| `validation`, `validate`               | `string`                     | No       | _none_     | Validation expression. Both key names are accepted, here and in a top-level `GATHER`. |
+| `description`                          | `string`                     | No       | _none_     | Model-facing meaning of the value, separate from `prompt` |
+| `strategy`                             | `"auto"` , `"ml"` , `"llm"` , `"hybrid"` , `"pattern"` | No | _none_ | Extraction strategy for this field. A field value wins over the block `STRATEGY`. |
+| `infer`                                | `boolean`                    | No       | `false`    | Fill from earlier customer messages when the step starts to collect |
 | `infer_confidence`                     | `number`                     | No       | `0.8`      | Minimum inference confidence        |
-| `infer_confirm`                        | `boolean`                    | No       | `true`     | Confirm inferred values             |
+| `infer_confirm`                        | `boolean`                    | No       | `true`     | Ask the customer to confirm inferred values |
 | `extraction_hints`                     | `string[]`                   | No       | _none_     | LLM extraction guidance             |
 | `range`                                | `boolean`                    | No       | `false`    | Collect as range                    |
 | `list`                                 | `boolean`                    | No       | `false`    | Collect as array                    |
@@ -452,7 +541,9 @@ FLOW:
 - **Errors.** An invalid `BARGE_IN` is [`VOICE_INVALID_BARGE_IN`](/agent-platform/abl/reference/errors-and-warnings#voice_invalid_barge_in). A non-boolean `STREAMING` warns with [`VOICE_INVALID_STREAMING`](/agent-platform/abl/reference/errors-and-warnings#voice_invalid_streaming). `LISTENING` is [`VOICE_LISTENING_CALL_LEVEL_ONLY`](/agent-platform/abl/reference/errors-and-warnings#voice_listening_call_level_only). Keypad settings belong in the field's `DTMF:` block.
 - **Runtime support.** A field's `BARGE_IN` is published with the IR marker `voice_output_policy`. A runtime without the marker refuses the agent at publish, deploy and activation.
 
-<Note> Flow gather fields also accept the same additional properties as top-level [GATHER](/agent-platform/abl-reference/gather) fields: `entity_ref`, `options`, `message_key`, `satisfied_by`, `validation_process`, `retry_prompt`, `max_retries`, `preferences`, `sensitive`, `sensitive_display`, `mask_config`, `pii_type`, `transient`, `extraction_pattern`, `extraction_group`, and `semantics`. In addition, a flow gather field may carry `rich_content` format variants for its prompt. Flow gather uses `validation:` where the top-level section uses `validate:`. </Note>
+<Note> Flow gather fields also accept the same additional properties as top-level [GATHER](/agent-platform/abl/reference/gather) fields: `entity_ref`, `options`, `message_key`, `satisfied_by`, `validation_process`, `retry_prompt`, `max_retries`, `preferences`, `sensitive`, `sensitive_display`, `mask_config`, `pii_type`, `transient`, `extraction_pattern`, `extraction_group`, and `semantics`. In addition, a flow gather field may carry `rich_content` format variants for its prompt. Both `validation:` and `validate:` are accepted in a flow field. Write `transient` for a field in a top-level `GATHER` only: the runtime does not clear a transient field in a flow step.</Note>
+
+A flow step asks only for required fields. Optional fields are captured when the customer volunteers them and are never asked. A step with only optional fields passes on entry. Put `ON_INPUT` branching in the step after the `GATHER` step. A step that has both gives warning `FLOW_ON_INPUT_GATHER_ORDER_AMBIGUITY`. A multi-line `VALIDATE` block is ignored with warning `W174`, and a `VALIDATE` object or list is used literally as a regular expression with warning `W175`.
 
 #### Field-level listening settings (`ASR:`)
 
@@ -586,18 +677,52 @@ The block can also be written over several lines (`DTMF:` followed by indented `
 | `digits` | `min..max`, both whole numbers 1-32. The answer finishes as soon as the caller types `max` digits. A pause finishes it only after at least `min` digits. Keep `min` at 1 unless a short entry should end only by the finish key. |
 | `finishOnKey` | `"#"`, `"*"`, or `"none"`. Pressing the key finishes the answer at once; the key itself is not part of the answer. `"none"` means no finish key. |
 | `interDigitTimeoutMs` | Longest pause between two key presses, 500-30000 ms. A longer pause finishes the answer. |
+| `finishKeyAlone` | What happens when the caller presses only the finish key: `no_input` (default), `input`, or `value`. See [Finish key pressed alone](#finish-key-pressed-alone-finishkeyalone). |
 
 Rules:
 
 - Keys are strict: an unknown key, a malformed value, or an out-of-range value is a compile error. `min` above `max` is a compile error. A `DTMF:` block with no settings is a compile error.
 - `min` above 1 is a compile warning: a caller who stops early is not finished by the pause.
 - **One keypad-settings field per step.** A field with `DTMF:` must be the only field in its step. Split other fields into their own steps.
-- **FLOW steps only.** `DTMF:` on a top-level (reasoning) GATHER field is reported as an unknown key ([`W170`](/agent-platform/abl/reference/errors-and-warnings#w170)) and has no effect.
-- `VALIDATE` checks the stored value. A `type: phone` field is stored in international format (e.g. `+919876543210`), so `^[0-9]{10}$` never matches it. Use `type: string` to check digits exactly as typed, or write the pattern for the international format.
-- `DTMF:` does not change validation or retries: use `VALIDATE`, `RETRY_PROMPT`, `MAX_RETRIES` on the same field, plus the agent's `ON_ERROR` handler for `validation_error` with `SUBTYPE: max_retries_exceeded`.
+{/* Commented - This behavior is updated in 1.9.0 - **FLOW steps only.** `DTMF:` on a top-level (reasoning) GATHER field is reported as an unknown key ([`W170`](/agent-platform/abl/reference/errors-and-warnings#w170)) and has no effect.*/}
+- `VALIDATE` checks the stored value. A `type: phone` field is stored in international format (for example, `+919876543210`), so `^[0-9]{10}$` never matches it. Use `type: string` to check digits exactly as typed, or write the pattern for the international format.
+- `DTMF:` doesn't change validation or retries: use `VALIDATE`, `RETRY_PROMPT`, `MAX_RETRIES` on the same field, plus the agent's `ON_ERROR` handler for `validation_error` with `SUBTYPE: max_retries_exceeded`.
 - `DTMF:` collects ordinary data. The typed number reaches the agent, its memory, and the transcript like any GATHER value. For secrets (card numbers, security codes, PINs), use [`SECURE_INPUT`](#secure_input) instead.
 - Explicit keypad collections (`SECURE_INPUT`, the `ivr_digit_input` tool, voice surveys) keep their own settings and are unaffected.
-- At runtime, settings apply with the field's listening settings (same mechanism as `ASR:`). If they can't be applied (e.g. a realtime speech-to-speech channel, or a gateway that doesn't confirm the change), the call keeps its normal keypad settings and continues.
+- At runtime, settings apply with the field's listening settings (same mechanism as `ASR:`). If they can't be applied (for example, a realtime speech-to-speech channel, or a gateway that doesn't confirm the change), the call keeps its normal keypad settings and continues.
+
+##### Finish key pressed alone (`finishKeyAlone`)
+
+By default, a caller who presses only the finish key, with no digits before it, gives no input. The bot waits and asks again. `finishKeyAlone` changes this on KoreVG voice calls.
+
+```yaml
+FLOW:
+  confirm_mobile:
+    REASONING: false
+    GATHER:
+      - confirm: required
+        type: string
+        prompt: "Press # to confirm your registered mobile number, or enter a new one."
+        DTMF: { digits: 1..10, finishOnKey: "#", finishKeyAlone: value }
+    THEN: verify_customer
+```
+
+| Value | What a finish key pressed alone does | Where it is allowed |
+| ----- | ------------------------------------ | ------------------- |
+| `no_input` | Counts as no input. This is the default. | Everywhere |
+| `input` | Goes to the agent as what the caller pressed. The turn text is the key (`#` or `*`). A FLOW step can branch on it with `ON_INPUT`. | FLOW fields, behavior profiles, agents, and the project |
+| `value` | Is stored as the field's answer, so the field holds `#` or `*`. | A FLOW `GATHER` field only |
+
+The key resolves in this order: the field `DTMF:` block, the active behavior profile, the agent (`CONVERSATION.listening.dtmf`), the project (`voiceListening.dtmf.finishKeyAlone`), then `no_input`.
+
+- `value` above a FLOW field is a compile error (`LISTENING_FINISH_KEY_ALONE_VALUE_LEVEL`). The project Runtime Config API returns `400`. On a top-level (reasoning) field it is `GATHER_DTMF_FINISH_KEY_ALONE_VALUE_REASONING`. Any other unknown value is `GATHER_DTMF_FINISH_KEY_ALONE_INVALID`.
+- `value` on a field whose type can never hold `#` or `*` (number, date, phone, email, yes or no, list, or range) is a compile error (`GATHER_DTMF_FINISH_KEY_ALONE_VALUE_TYPE`). Allowed values, or a `VALIDATE` pattern, that reject the key give the warning `GATHER_DTMF_FINISH_KEY_ALONE_NEVER_ACCEPTED`.
+- `input` or `value` with `finishOnKey: "none"` gives the warning `GATHER_DTMF_FINISH_KEY_ALONE_NO_FINISH_KEY`. The caller cannot press a finish key alone.
+- An agent or profile `input` that reaches a FLOW question with no `finishKeyAlone` of its own and no `ON_INPUT` branch gives the warning `GATHER_DTMF_FINISH_KEY_ALONE_INPUT_UNUSED`. The caller hears the question again.
+- A finish key pressed by habit after a keypad answer that already ended on its own belongs to that answer. With barge-in on, a key that arrives within 3 seconds and before the next prompt starts is ignored. A repeat of the same key within 150 ms is also ignored.
+- `SECURE_INPUT`, the `ivr_digit_input` tool, `ivr_menu`, and voice surveys (where `#` means skip) keep their own handling.
+- The trace records whether the key was delivered, ignored, or kept as no input, and the level the setting came from. Typed digits are never logged or traced.
+- An agent that sets `finishKeyAlone` is published with the IR feature marker `voice_listening_finish_key`. A runtime that does not support the marker refuses to publish, deploy, or run the agent. Upgrade every runtime before you publish such an agent.
 
 #### GATHER block properties
 
@@ -684,6 +809,8 @@ FLOW:
     THEN: next_step
 ```
 
+A key missing from a record reads as `null` inside a `WITH` expression. An argument with no value is left out of the tool input. See [Missing values in CALL arguments](/agent-platform/abl/reference/tools#missing-values-in-call-arguments).
+
 | Property | Type                     | Required | Default | Description                           |
 | -------- | ------------------------ | -------- | ------- | ------------------------------------- |
 | `CALL`   | `string`                 | --       | --      | Tool name to invoke                   |
@@ -753,6 +880,143 @@ FLOW:
 
 If a referenced key isn't defined for the caller's locale (and no less-specific locale in the chain provides it), the tool is **not** called — the `CALL` result is `success: false` with `error.code: "LOCALE_KEY_MISSING"`, so the step's failure branch runs and raw `{{locale.KEY}}` text never reaches the tool or the caller. Only authored text is treated as a locale reference; a session value that happens to contain `{{locale.…}}` passes through as plain data. Supported forms are `"{{locale.KEY}}"` (optionally with filters, like `"{{locale.KEY | upper}}"`, and mixed with other text) and a bare `locale.KEY`; an expression such as `locale["KEY"]` or `locale.KEY + "!"` is not supported and the `CALL` is not run.
 
+### PARALLEL
+
+`PARALLEL:` runs several read-only tool calls at the same time in one step. Each call binds its own `AS` variable after all calls settle. The step then routes once through `ON_SUCCESS`, `ON_PARTIAL`, or `ON_FAILURE`. Three sequential calls take the sum of their latencies. A parallel block takes the slowest one.
+
+```yaml
+FLOW:
+  fetch_account_data:
+    REASONING: false
+    PARALLEL:
+      - CALL: get_account_info
+        WITH:
+          account_id: account_id
+        AS: account
+      - CALL: get_limit_info
+        WITH:
+          account_id: account_id
+        AS: limits
+    ON_SUCCESS:
+      THEN: answer
+    ON_PARTIAL:
+      THEN: answer
+    ON_FAILURE:
+      RESPOND: "I can't get your account details right now."
+      THEN: COMPLETE
+```
+
+`PARALLEL` is a step key, not a step type. Agents without it compile as before.
+
+#### Forms
+
+The list form holds calls only. The full form holds block options and a `CALLS:` list:
+
+```yaml
+FLOW:
+  fetch:
+    REASONING: false
+    PARALLEL:
+      WAIT: all
+      FAIL_FAST: false
+      MAX_CONCURRENCY: 5
+      TIMEOUT: 30s
+      STATUS_AS: lookups
+      CALLS:
+        - CALL: get_account_info
+          WITH:
+            account_id: account_id
+          AS: account
+          REQUIRED: true
+        - CALL: get_reward_points
+          AFTER: cards
+          FOR_EACH: cards.items
+          ITEM_AS: card
+          WITH:
+            card_id: card.id
+          AS: rewards
+    ON_SUCCESS:
+      THEN: answer
+    ON_PARTIAL:
+      THEN: answer
+    ON_FAILURE:
+      THEN: offer_agent
+```
+
+| Block key | Meaning |
+| --------- | ------- |
+| `WAIT` | `all` (default), `first_success`, `first` (the first call to settle, success or not), or a number of successes. |
+| `FAIL_FAST` | `true`: a failed `REQUIRED` call cancels the other calls. Default `false`. |
+| `MAX_CONCURRENCY` | 1 to 10. Default 5. |
+| `TIMEOUT` | Block deadline. Default 30 s, maximum 120 s. |
+| `STATUS_AS` | Session variable that receives the status of every call. |
+| `CALLS` | The list of calls. |
+
+| Call key | Meaning |
+| -------- | ------- |
+| `CALL` | Required. The tool to call. |
+| `WITH` | Tool arguments. |
+| `AS` | Variable that receives the result. |
+| `WHEN` | Condition. A call whose condition is false is skipped. |
+| `REQUIRED` | `true`: the step fails when this call fails. |
+| `TIMEOUT` | Per-call timeout. It covers all retries and cannot outlast the block `TIMEOUT`. |
+| `RETRY`, `RETRY_DELAY`, `RETRY_BACKOFF` | Retries (maximum 3) for retryable errors only. Backoff is `fixed`, `linear`, or `exponential`. |
+| `SET` | Assignments that run when the call succeeds. `result` is in scope. |
+| `DEFAULT` | Value bound to `AS` when the call does not succeed. Default is null. |
+| `ERROR_AS` | Variable that receives a safe error object. |
+| `FALLBACK` | A second tool, run once after the retries fail, with the same `WITH` inputs. |
+| `AFTER` | Name of another call in the block to wait for. This call can then read its `AS` variable. |
+| `FOR_EACH`, `ITEM_AS`, `INDEX_AS`, `FILTER`, `MAX_ITEMS`, `KEY_BY` | One call per list item. `ITEM_AS` defaults to `item`. `MAX_ITEMS` defaults to 10, maximum 20. `KEY_BY` binds a map instead of a list. |
+
+Durations are `1500ms`, `2s`, or a bare number of milliseconds. Zero is rejected.
+
+#### How it runs
+
+1. Calls run at the same time and do not write the session while they run. After every call settles (or the `WAIT` target is met, or the block deadline passes), results bind in authored order, the same way as a single `CALL`.
+2. A call that succeeds binds its result to `AS`, sets `ERROR_AS` to null, and runs its `SET`. A call that fails or times out binds `DEFAULT` (or null) to `AS` and a safe error object to `ERROR_AS`. A skipped or cancelled call binds `DEFAULT` (or null) and a null `ERROR_AS`.
+3. `FOR_EACH` binds a list in item order, or a map when `KEY_BY` is set. A failed item holds `DEFAULT` or null. `FOR_EACH` counts the list's items before `FILTER`. A list longer than `MAX_ITEMS` fails the whole call with `too_many_items`, and nothing is sent.
+4. A call reads another call's `AS` variable only when it names that call in `AFTER`. Without `AFTER`, it sees the session as it was before the step.
+5. A barge-in or turn cancellation cancels the running calls. Nothing binds, and the step does not route.
+6. Calls never prompt the customer. A missing sign-in fails the call with `auth_required`. A constraint that refuses a call fails it with `constraint_blocked`, and nothing is sent. Inside a block, there is no missing-input reask, no `ON_ERROR` handler, and no read-only result cache.
+
+#### Routing
+
+| Result | The step goes to |
+| ------ | ---------------- |
+| Every call that ran succeeded | `ON_SUCCESS` |
+| Some calls failed, and no `REQUIRED` call failed | `ON_PARTIAL`, or `ON_SUCCESS` if there is no `ON_PARTIAL` |
+| A `REQUIRED` call failed, or every call that ran failed | `ON_FAILURE` |
+| `WAIT: first`, and the first call failed | `ON_FAILURE` |
+
+Skipped calls do not count. A step where every call is skipped goes to `ON_SUCCESS`.
+
+#### Limits
+
+- At most 10 calls and 20 reserved invocations per block. A plain call reserves 1. A `FOR_EACH` reserves its `MAX_ITEMS`.
+- The block keeps at most 2 MB of results. An HTTP tool reads at most 2 MB of a response inside `PARALLEL`. A larger response fails the call with `result_too_large`.
+- The tool's own HTTP retries are off inside `PARALLEL`. `RETRY` is the only retry.
+
+#### Rules and diagnostics
+
+Only read-only tools are allowed. A tool must be an HTTP `GET`, or declare `effect: read_only`. A YAML-format agent cannot hold `PARALLEL`. Keep these agents in ABL text.
+
+| Code | Fires when |
+| ---- | ---------- |
+| `PARALLEL_STEP_SHAPE` | `PARALLEL` is in the same step as `CALL`, `GATHER`, `SECURE_INPUT`, `HUMAN_APPROVAL`, or `REASONING: true`, or `ON_PARTIAL` is written without `PARALLEL`. |
+| `PARALLEL_TOOL_UNKNOWN` | The tool, or the `FALLBACK` tool, is not declared. |
+| `PARALLEL_TOOL_NOT_READ_ONLY` | The tool may write: it is not `effect: read_only` and not an HTTP `GET`. |
+| `PARALLEL_TOOL_NOT_ALLOWED` | A confirmation, SearchAI, `result_secrets`, or `secret_access` tool, or a hook other than SET, CLEAR, or LOG. |
+| `PARALLEL_NAME_CONFLICT` | Two calls write the same `AS`, `ERROR_AS`, `SET`, or `STATUS_AS` name. |
+| `PARALLEL_CROSS_CALL_READ` | A call reads another call's binding without `AFTER`. |
+| `PARALLEL_DEPENDENCY_INVALID` | `AFTER` names an unknown call, names itself, or forms a cycle. |
+| `PARALLEL_OPTION_CONFLICT` | A list key without `FOR_EACH`, or an option pair that cannot work together. |
+| `PARALLEL_LIMIT_EXCEEDED` | Calls, invocations, concurrency, timeout, or retry above the limits. |
+| `PARALLEL_EXPRESSION_INVALID` | A `WHEN`, `FILTER`, `KEY_BY`, or `WITH` expression does not parse. |
+| `PARALLEL_REQUIRED_WITH_ON_RESULT` (warning) | `REQUIRED` together with `ON_RESULT` routing. |
+| `PARALLEL_MAPPING_TARGET_OVERLAP` (warning) | A tool `on_result` mapping writes the same variable as a call binding. |
+
+The parser reports `E580` to `E587` for malformed blocks. A YAML-format agent with a `parallel` or `on_partial` key gets `E587`. The runtime refuses an agent with `PARALLEL` unless it supports the `flow_parallel_call` IR feature (`UNSUPPORTED_AGENT_IR_FEATURE`).
+
 ### SET
 
 
@@ -792,6 +1056,16 @@ SET:
 ```
 
 Surround the whole value with quotes when JSON-shaped *text* is intentional — `SET: payload_text = '[{"customer":"{{employer_name}}"}]'` stores a string, not a structured value. A session `TYPE` declaration alone doesn't validate every `SET` write; validate structured arguments at the tool boundary (pass the variable to a typed parameter, such as `filters: object[]`, through `WITH`).
+
+**Assigning the same variable on more than one line.** A step `SET` keeps every line and runs them one by one in written order. A later line reads what an earlier line wrote: `x = 1` then `x = x + 1` gives `2`. The compiler warns for each such variable (`STEP_SET_DUPLICATE_TARGET`). An agent version compiled by an earlier release keeps its earlier result until you publish it again. In that case, only the last line for the variable runs, at the position of the first line, and the trace records a `warning` event with code `set_duplicate_target_legacy_order`.
+
+Branch (`ON_INPUT`, `ON_RESULT`, `ON_SUCCESS`, `ON_FAILURE`), `ON_START`, `DO`, `SUB_INTENTS`, and hook `SET` blocks keep one value per name. When a name is assigned twice, only the last assignment is used, and the parser reports the later line as [`W214`](/agent-platform/abl/reference/errors-and-warnings#w214).
+
+**Placeholders inside a formula.** A `SET` value that contains a `{{name}}` placeholder is never evaluated as an expression. The platform fills in the placeholders and stores the whole value as text. For example, `gate = LOWER(TRIM(TO_STRING("{{flag}}"))) == "true"` stores the text `LOWER(TRIM(TO_STRING("false"))) == "true"`. `IF gate` is then true, because the text is not empty. The compiler warns on every `SET` surface (`SET_PLACEHOLDER_IN_EXPRESSION`). To compute the value, name the variable without braces: `gate = LOWER(TRIM(TO_STRING(flag))) == "true"`. To store text, put the whole value in quotes: `label = "flag is {{flag}}"`.
+
+The check reads only the syntax of the value. It reports a value with a placeholder when the value has a function call, a comparison, `&&`, `||`, `!`, a ternary, an index, or arithmetic where one side is a literal or a computed value (`{{count}} + 1`). It does not report a lone placeholder, a quoted value, a JSON object or array, prose, markdown, a URL, or arithmetic between names and placeholders only (`{{amount}} * {{rate}}`, `ref-{{id}}`). Text that joins a number and a placeholder, such as `2026-{{month}}`, is reported. Quote it to keep it as text. Values over 4,096 characters are not checked.
+
+<Warning>**Behavior change.** A computed `SET` value that cannot be evaluated no longer stores its own formula text. The variable gets no value, and the trace records a `warning` event with code `set_expression_not_evaluated`. Set `EXECUTION: set_expression_failure: keep_text` to keep the old behavior. See [When a SET value cannot be evaluated](/agent-platform/abl/reference/expressions-and-functions#when-a-set-value-cannot-be-evaluated).</Warning>
 
 ### CHECK
 
@@ -912,7 +1186,10 @@ FLOW:
 
 The `SECURE_INPUT:` action pauses the step to collect one or more **sensitive** values — a card number, CVV, or similar — via DTMF and/or speech, and delivers them **directly to one tool**, without the raw values ever passing through the LLM, transcript, session state, logs, call recordings, or traces: speech recognition is suppressed and recording is paused while the caller enters them, and the values are wiped from memory once the delivery call returns. It's the PCI-safe alternative to `GATHER` for data that must never reach the model.
 
+{/* This is not needed - SECURE_INPUT_ENABLED is a runtime setting, not a property of the action and is on by default.
+
 <Warning>`SECURE_INPUT` is currently authored only in the legacy `.agent.abl` (line-based) format. The `.agent.yaml` parser does not yet accept this action. It also requires a **live voice call** and the `SECURE_INPUT_ENABLED` runtime setting (on by default; only the value `false` turns it off): without a live voice session the step takes `ON_FAIL`; with the setting set to `false`, the step is skipped entirely and the trace records `secure_input_disabled`. Both the delivery `CALL` and any validation `CALL` must be **HTTP project tools** (configured in Project Tools, not the agent's own `TOOLS:` section) that send a JSON body.</Warning>
+*/}
 
 ```yaml
 FLOW:
@@ -947,7 +1224,7 @@ FLOW:
 
 | Property | Type | Description |
 | -------- | ---- | ----------- |
-| `MODE` | `("dtmf" \| "speech")[]` | Which collection channel(s) are accepted. Required; at least one. |
+| `MODE` | `("dtmf" \| "speech")[]` | Which collection channel(s) are accepted. Required; at least one. A spoken answer is read as a string of digits. Each spoken group gives its own digits, and the groups are put side by side: `eleven one two five` and `one one one twenty five` both give `11125`, and `oh nine twenty seven` gives `0927`. A whole number with `hundred` or `thousand` keeps its value: `eleven thousand one hundred twenty five` gives `11125`. Words that are not numbers are dropped, so a spoken `yes` gives no digits. |
 | `FIELDS` | list | One or more fields to collect, in order. Each is a `- <name>:` entry with `PROMPT`, `COLLECT`, and optional `VALIDATE`. |
 | `MAX_ATTEMPTS` | `number` | Failed collection attempts allowed before `ON_FAIL` (default 3). |
 | `CANCEL` | `object` | Cancellation trigger: `dtmf_key` and/or `keywords` (a keyword must be spoken as its own word). |
@@ -977,10 +1254,13 @@ FLOW:
 | `COLLECT` | `object` | `digits: N..M` (min/max digit count), `finishOnKey`, `interDigitTimeoutMs`, `asrTimeoutMs` (spoken-path silence window). |
 | `VALIDATE` | list | Validation rules: a bare rule name (`luhn`), an inline object (`{ length: 4..4 }`, `{ date_mmYY: "not_past" }`), or a delegated `CALL <tool> WITH: {...}` rule. |
 | `PROGRESS_PROMPT` | `string` or `object` | Hold line spoken while this field's `VALIDATE` `CALL` runs. |
-| `NOT_SECRET` | `postal_code` | Marks a value that is not card data. Requires `SAVE_AS`. See [Readable values](#readable-values-not_secret). |
+| `NOT_SECRET` | `true/false` | Declares the field value readable. By default, all fields in a `SECURE_INPUT` step are secret. Set to `true` to allow the field value to be stored using `SAVE_AS` and accessed by subsequent steps, tools, traces, and reports. Use this option only for values that may be read, such as a billing ZIP code or a one-key consent. A `SECURE_INPUT` step must include at least one secret field. |
 | `SAVE_AS` | `string` | Session variable that receives the `NOT_SECRET` value once the field is accepted. |
+| `MODE` | `("dtmf" \| "speech")[]` | `NOT_SECRET` fields only. The input this field accepts. Without it, the field uses the step `MODE`. |
+| `RECORD` | `true/false` | `NOT_SECRET` fields only. `true` keeps call recording on while this field is asked and answered, and shows the caller's answer in the transcript. |
+| `SPEECH_AS` | `"digits" \| "text"` | `NOT_SECRET` fields only. How a spoken answer is read: `digits` (default) or `text` (the caller's words). |
 
-A failed check asks for the field again, up to `MAX_ATTEMPTS`. A `CALL` validation rule passes only when the tool returns `valid: true`, and may reference the field being checked plus any fields collected before it. A field accepts only `PROMPT`, `COLLECT`, `VALIDATE`, `PROGRESS_PROMPT`, `NOT_SECRET`, and `SAVE_AS`. Anything else is ignored with a warning ([`W210`](/agent-platform/abl/reference/errors-and-warnings#w210)).
+A failed check asks for the field again, up to `MAX_ATTEMPTS`. A `CALL` validation rule passes only when the tool returns `valid: true`, and may reference the field being checked plus any fields collected before it. A field accepts only `PROMPT`, `COLLECT`, `VALIDATE`, `PROGRESS_PROMPT`, `NOT_SECRET`, `SAVE_AS`, `MODE`, `RECORD`, and `SPEECH_AS`. Anything else is ignored with a warning ([`W210`](/agent-platform/abl/reference/errors-and-warnings#w210)).
 
 References inside the delivery `WITH:` block must be a **whole-value** placeholder — `pan: "{{secure.card_number}}"` is valid; embedding it in a larger string (`pan: "card:{{secure.card_number}}"`) or referencing an undeclared field is a compile error.
 
@@ -1020,25 +1300,57 @@ collect_card:
 
 #### Readable values (`NOT_SECRET`)
 
-A value that is not card data, such as the billing ZIP code, can be collected in the same step and saved for the agent. Mark the field `NOT_SECRET: postal_code` and name the session variable with `SAVE_AS`:
+A value the agent needs later, such as a billing ZIP code or a one-key consent, can be collected in the same step and saved for the agent. Mark the field `NOT_SECRET: true` and name the session variable with `SAVE_AS`. Any field can be declared readable, and a step can hold any number of readable fields beside its secret ones:
 
 ```yaml
 - postal_code:
     PROMPT: "{{locale.BILLING_ZIP_PROMPT}}"
     COLLECT: { digits: 5..5, finishOnKey: "#" }
     VALIDATE: [ { regex: "^[0-9]{5}$" } ]
-    NOT_SECRET: postal_code
+    NOT_SECRET: true
     SAVE_AS: billing_zip
 ```
 
 The caller types the value with recording paused, like every other field. When it passes its checks, the runtime writes it to `billing_zip` as text and keeps a leading zero. From then on it is an ordinary session value. Later steps, reports, and tools read `{{billing_zip}}`. It is not part of the step's secure values, so a response field that echoes it is kept.
 
 - The runtime clears each `SAVE_AS` variable when the step starts, so a value from an earlier run is never used. If it cannot clear the variable, the step takes `ON_FAIL` before it asks anything.
-- The saved value must be digits only. Anything else, or a session write that is not applied, takes `ON_FAIL` before the delivery.
-- `postal_code` is the only readable kind. The compiler rejects `NOT_SECRET` with another kind, without `SAVE_AS`, with `READ_ONCE`, or with a `luhn` or `date_mmYY` check. It also rejects it when `COLLECT` allows fewer than 5 or more than 10 digits, or when the field is named like card data or a PIN (`card_number`, `pan`, `cvv`, `cvc`, `cvv2`, `csc`, `security_code`, `expiry`, `exp`, `pin`, `passcode`, and similar). A card number, expiry, security code, or PIN always stays secret.
-- The runtime applies the same rules again and takes `ON_FAIL` before it asks anything if they are broken.
+- The declaration is yours. The platform keeps no list of value kinds, field names, or digit counts that may be readable. The compiler rejects `NOT_SECRET` without `SAVE_AS` (or `SAVE_AS` without it) and `NOT_SECRET` with `READ_ONCE`. A `NOT_SECRET` field checked with `luhn` or `date_mmYY` is accepted with a warning ([`SECURE_INPUT_NOT_SECRET_CARD_DATA`](/agent-platform/abl/reference/errors-and-warnings#secure_input_not_secret_card_data)), because the card number or expiry would be saved where later steps, tools, and reports can read it.
+- The runtime applies the same rules again. If they are broken, the step takes `ON_FAIL` before it asks anything.
 - Only the field's own `VALIDATE` `CALL` can read `{{secure.<field>}}` for a `NOT_SECRET` field. Every later `CALL` reads the `SAVE_AS` variable.
 - The step keeps at least one secret field, and the delivery sends at least one of them.
+
+#### Voice and recording for readable values
+
+A secret field is always collected with the step `MODE` and with call recording paused. Its Conversation row shows only the outcome (`Secure keypad entry: completed`). A `NOT_SECRET` field can change this with `MODE`, `RECORD`, and `SPEECH_AS`:
+
+```yaml
+SECURE_INPUT:
+  MODE: [dtmf]
+  FIELDS:
+    - card_number:
+        PROMPT: { en: "Enter your card number, then press pound." }
+        COLLECT: { digits: 13..19, finishOnKey: "#" }
+        VALIDATE: [ luhn ]
+    - consent:
+        PROMPT: { en: "I'll charge {{amount}} to this card. Say yes or press 1 to confirm." }
+        COLLECT: { digits: 1..1 }
+        NOT_SECRET: true
+        SAVE_AS: payment_consent
+        MODE: [dtmf, speech]
+        RECORD: true
+        SPEECH_AS: text
+        VALIDATE: [ { regex: "^(1|yes|yeah)( |$)" } ]
+  CALL charge_card WITH: { pan: "{{secure.card_number}}", consent: "{{payment_consent}}" }
+  ON_SUCCESS: payment_done
+  ON_FAIL: payment_declined
+```
+
+- `MODE` lets the caller speak this field while the card fields stay keypad-only.
+- `RECORD: true` resumes call recording before the field is asked. The Conversation row shows the answer (`Spoken entry: yes` or `Keypad entry: 1`). Before the next field without `RECORD`, recording is paused again. The gateway must confirm the pause. If it does not, that field is never asked and the step takes `ON_FAIL`. If the gateway does not confirm the resume, the `RECORD` field is still asked, at worst unrecorded.
+- A step pauses and resumes recording each time it moves between a recorded field and an unrecorded one. Put readable fields first or last.
+- `SPEECH_AS: text` keeps the caller's words instead of reading them as digits, so a `regex` can check them. The platform does not interpret the words. Your `VALIDATE` pattern decides what counts as yes. A failed check asks again with `RETRY_PROMPT`.
+
+<Warning>The caller can say anything while a `RECORD` field is asked. A card number spoken there is recorded and shown. Ask only for values that may be recorded. `MODE`, `RECORD`, or `SPEECH_AS` on a secret field is a compile error ([`SECURE_INPUT_FIELD_VOICE_ON_SECRET`](/agent-platform/abl/reference/errors-and-warnings#secure_input_field_voice_on_secret)), and the runtime ignores them there.</Warning>
 
 | Diagnostic | Fires when |
 | ---------- | ---------- |
@@ -1054,6 +1366,11 @@ The caller types the value with recording paused, like every other field. When i
 | [`SECURE_INPUT_PROGRESS_PROMPT_UNUSED`](/agent-platform/abl/reference/errors-and-warnings#secure_input_progress_prompt_unused) (warning) | A field `PROGRESS_PROMPT` on a field without a `VALIDATE` `CALL`. |
 | [`SECURE_INPUT_INVALID_NOT_SECRET`](/agent-platform/abl/reference/errors-and-warnings#secure_input_invalid_not_secret) | `NOT_SECRET` used outside the rules above, or `{{secure.<field>}}` of a `NOT_SECRET` field used outside its own `VALIDATE` `CALL`. |
 | [`SECURE_INPUT_INVALID_SAVE_AS`](/agent-platform/abl/reference/errors-and-warnings#secure_input_invalid_save_as) | `SAVE_AS` is not a variable name, or it has the same name as `AS`, `SAFE_DETAILS_AS`, or another field's `SAVE_AS`. |
+| `SECURE_INPUT_NOT_SECRET_CARD_DATA` (warning) | A `NOT_SECRET` field is checked with `luhn` or `date_mmYY`. The card number or expiry is saved readable. |
+| `SECURE_INPUT_FIELD_VOICE_ON_SECRET` | `MODE`, `RECORD`, or `SPEECH_AS` on a field without `NOT_SECRET`. |
+| `SECURE_INPUT_INVALID_FIELD_MODE` | A field `MODE` that is empty or names a channel other than `dtmf` or `speech`. |
+| `SECURE_INPUT_INVALID_SPEECH_AS` | `SPEECH_AS` other than `digits` or `text`. |
+| `SECURE_INPUT_SPEECH_AS_UNUSED` (warning) | `SPEECH_AS` on a field that neither its own `MODE` nor the step `MODE` lets the caller speak. |
 | `W208` / `W210` | A line inside the block, or a field property, that `SECURE_INPUT` doesn't read — it's ignored. |
 | [`W212`](/agent-platform/abl/reference/errors-and-warnings#w212) / [`W213`](/agent-platform/abl/reference/errors-and-warnings#w213) | A `PROGRESS_PROMPT` line other than `TEXT`, `AFTER`, `REPEAT_EVERY`, or `REPEAT_TEXT`, or a duration that is not `<n>s` or `<n>ms`. The runtime ignores it. |
 | [`W211`](/agent-platform/abl/reference/errors-and-warnings#w211) | `RESULT_FIELDS` or `SUCCESS_WHEN` written across several lines; write them inline. |
@@ -1246,6 +1563,32 @@ FLOW:
 <Warning>A step that has only `ON_INPUT` branches — no `RESPOND`/prompt and no default (`ELSE`) branch — traps any unmatched input on the same step forever. The compiler warns ([`FLOW_PROMPTLESS_ON_INPUT_UNMATCHED_TRAP`](/agent-platform/abl/reference/errors-and-warnings#flow_promptless_on_input_unmatched_trap)): add a default `ELSE` route or an authored prompt unless the wait is intentional.</Warning>
 
 `ON_INPUT` and `ON_RESULT` conditions also bind `turn_input`. It holds the caller message of the current turn, the same value `RESPOND` renders as `{{input}}`. `input` holds the message the step owns. When a transition in the same turn enters the step, `input` is empty and `turn_input` keeps the caller message.
+
+Each caller message is routed by one step. A promptless `ON_INPUT` gate routes the message that arrives at it. It does not route a message that an earlier step of the same turn already routed on. A gate entered by a branch `THEN` waits with no reply, and the caller's next message is routed there. `turn_input` in the gate's conditions does not change this, because its `ON_INPUT` branches are not evaluated in that turn.
+
+To route on the same message in a second step, use `ON_RESULT` and read `turn_input`:
+
+```yaml
+FLOW:
+  triage:
+    REASONING: false
+    ON_INPUT:
+      - IF: input contains "cancel"
+        THEN: cancel_visit
+      - ELSE:
+        THEN: prefill_specialty
+
+  prefill_specialty:
+    REASONING: false
+    ON_RESULT:
+      - IF: turn_input contains "dermatology"
+        SET: requested_specialty = "dermatology"
+        THEN: ask_location
+      - ELSE:
+        THEN: ask_specialty
+```
+
+To wait for a new answer instead, `RESPOND` with the question on the branch or on a step before the gate. The compiler warns ([`FLOW_ON_INPUT_GATE_AFTER_CONSUMED_INPUT`](/agent-platform/abl/reference/errors-and-warnings#flow_on_input_gate_after_consumed_input)) when an `ON_INPUT` branch, or the `THEN` or `ON_RESULT` branch of a `GATHER` step, reaches a promptless `ON_INPUT` gate with nothing shown on the way. A `RESPOND` on the branch or on a step in between ends the warning for that route. Routes through a step with `DO` actions or `REASONING: true`, and a flow entered by a handoff or delegate, are not checked. The waiting `flow_step_exit` trace event carries `reason: input_consumed_by_previous_step`, the `consumingStep` that used the message, and the `enteredFromStep` the waiting step was entered from.
 
 ### Digressions
 
@@ -1499,7 +1842,7 @@ ACTIONS:
 The `ACTIONS:` block also accepts an optional `RENDER_ID:` to give the whole action set a stable
 identifier for rendering/telemetry.
 
-To place inputs, buttons, and text side by side, use `ROW`, `SUBMIT`, and `TEXT` items. See [Form layout](/agent-platform/abl-reference/rich-content#form-layout).
+To place inputs, buttons, and text side by side, use `ROW`, `SUBMIT`, and `TEXT` items. See [Form layout](/agent-platform/abl/reference/rich-content#form-layout).
 
 ### ON_ACTION callbacks
 
@@ -1567,7 +1910,7 @@ FLOW:
 
 
 The runtime recognizes these format keys. In addition to the messaging formats, several structured
-template types are available (see [Rich content](/agent-platform/abl-reference/rich-content) for their schemas):
+template types are available (see [Rich content](/agent-platform/abl/reference/rich-content) for their schemas):
 
 | Format          | Description                       |
 | --------------- | --------------------------------- |
@@ -1802,9 +2145,81 @@ The error type (the handler's key) is matched against a **fixed, canonical set**
 `default`, `llm_error`, `tool_error`, `routing_error`, `validation_error`, `timeout_error`, and
 `unknown_error`. A key outside this set (for example the older `tool_timeout`, `invalid_input`, or
 `api_error`) is flagged at compile time ([`ON_ERROR_HANDLER_TYPE_DRIFT`](/agent-platform/abl/reference/errors-and-warnings#on_error_handler_type_drift)) and never matches at
-runtime — see [Error types](/agent-platform/abl-reference/lifecycle-and-hooks#error-types) for the
-full table and the deprecated-name mapping. Narrow `tool_error` with `SUBTYPE`/`SUBTYPES` (known
-values: `rate_limit`, `auth_failure`, `network_error`, `tool_timeout`).
+runtime — see [Error types](/agent-platform/abl/reference/lifecycle-and-hooks#error-types) for the
+full table and the deprecated-name mapping. Narrow a handler with `SUBTYPE`/`SUBTYPES`. Known
+values: `rate_limit`, `auth_failure`, `network_error`, `tool_timeout` for `tool_error`, and
+`timeout`, `content_filter`, `rate_limited`, `context_exceeded`, `api_error` for `llm_error`.
+
+### List form and map form
+
+Write a step's handlers as `- TYPE:` list items, or keyed by type like agent-level handlers. Both forms are equivalent:
+
+```yaml expandable=true
+FLOW:
+  # List form
+  answer_billing:
+    REASONING: true
+    GOAL: "Answer the billing question"
+    ON_ERROR:
+      - TYPE: llm_error
+        SUBTYPE: timeout
+        RESPOND: "Sorry, that took too long. Could you ask again?"
+        RETRY: 1
+        RETRY_DELAY: 1000
+        RETRY_BACKOFF: fixed
+        THEN: RETRY_STEP
+      - TYPE: llm_error
+        SUBTYPES: [content_filter, api_error]
+        SET: needs_human = true
+        RESPOND: "Let me pass this to a colleague."
+        THEN: BACKTRACK
+        BACKTRACK_TO: handover
+    THEN: wrap_up
+```
+
+A type can repeat. Handlers match subtype first, so the `timeout` entry wins for a timeout and the second `llm_error` entry catches the listed subtypes.
+
+- A step handler takes `SUBTYPE` or `SUBTYPES`, a one-line `RESPOND`, any number of `SET: name = expression` lines (applied before `RESPOND` is rendered), `RETRY`, `RETRY_DELAY`, `RETRY_BACKOFF`, `THEN`, `BACKTRACK_TO`, and `HANDOFF_TARGET`.
+- `VOICE`, `FORMATS`, multi-line responses, and `TEMPLATE(name)` references work on agent-level handlers only.
+- **Which handler runs.** The step's handlers are checked first, then the agent's, then the agent's default handler. Within each, a subtype match wins over a type match, which wins over `DEFAULT`. A matching step handler replaces the agent-level handler for that step, including its `RESPOND`. When no handler matches a model error, a declared `unknown_error` handler is used.
+- **Where step handlers apply.** They cover a `REASONING: true` step's own model calls, its scripted `CALL:`, and its other step-owned errors. An error from a tool the model calls, and a `validation_error` after a field's `MAX_RETRIES`, use the agent-level handlers only.
+
+### When a reasoning step's model call fails
+
+A model error in a `REASONING: true` step (`llm_error`: a timeout, a content filter, a rate limit, and other model failures) first runs the handler's `RETRY`, if any. If the call still fails, `THEN` decides what happens on that turn:
+
+| `THEN`       | On the failed turn                                                                                                                                                  | With `EXIT_WHEN`                                                                                                       |
+| ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| `BACKTRACK`  | The handler's `RESPOND` is sent, then `BACKTRACK_TO` runs in the same turn and its reply follows. Naming the failing step itself acts like `CONTINUE`.             | Ignored: the step is left.                                                                                             |
+| `COMPLETE`   | The handler's `RESPOND` is sent and the flow completes. The completion's own reply, if any, follows.                                                                | Ignored: the step is left.                                                                                             |
+| `RETRY_STEP` | The handler's line is the reply. The conversation stays in the step and the next message runs it again. Counts toward `MAX_ATTEMPTS`, then `ON_EXHAUSTED` applies. | Not evaluated on the failed turn.                                                                                      |
+| `CONTINUE`   | The handler's line is the reply. Without `EXIT_WHEN` the step advances to its `THEN`.                                                                               | Not met (the usual case): the step waits and runs again on the next message. Met: `THEN` runs in the same turn.        |
+| `HANDOFF`    | The handoff target takes over. The handler's `RESPOND`, if any, is the reply.                                                                                       | Ignored.                                                                                                               |
+| `ESCALATE`   | The escalation routine runs. The handler's line, or "Escalating to a human agent.", is the reply.                                                                   | Ignored.                                                                                                               |
+
+- **Without a `RESPOND`.** `BACKTRACK` and `COMPLETE` send no error line: the target step, or the completion, speaks. `CONTINUE`, `RETRY_STEP`, and a `BACKTRACK` naming the failing step send the platform fallback line below. `HANDOFF` lets the target answer.
+- **`RETRY` versus `RETRY_STEP`.** `RETRY: N` repeats the failed model call up to `N` more times in the same turn. Only a model timeout, a rate limit, and an unavailable provider are retried. A retry is not attempted once the failed attempt has streamed part of its reply. `RETRY_STEP` waits for the customer's next message.
+- **Model time limit.** A call times out when the step's `EXECUTION: llm_timeout` (else the agent's) runs out, capped by the server limit and the turn's remaining time. A caller cancellation is not a timeout and runs no handler.
+
+#### Platform fallback lines
+
+When a handler has no `RESPOND` and needs one, the customer sees the agent's message for the error's subtype:
+
+| Message key                  | Sent for                       | Default text (English)                                              |
+| ---------------------------- | ------------------------------ | ------------------------------------------------------------------- |
+| `error_llm_timeout`          | `llm_error` / `timeout`        | "I apologize for the delay. Could you please repeat your request?" |
+| `error_llm_content_filter`   | `llm_error` / `content_filter` | "An error occurred. Please try again."                              |
+| `error_llm_rate_limited`     | `llm_error` / `rate_limited`   | "An error occurred. Please try again."                              |
+| `error_llm_context_exceeded` | `llm_error` / `context_exceeded` | "An error occurred. Please try again."                            |
+| `error_llm_api_error`        | `llm_error` / `api_error`      | "An error occurred. Please try again."                              |
+| `error_default`              | Any other error                | "An error occurred. Please try again."                              |
+
+Replace a line for one agent in `MESSAGES:`, or per language in `locales/<locale>/<agent>.json` (one agent) or `locales/<locale>/_shared.json` (all agents). A locale file wins over `MESSAGES`, which wins over the default.
+
+```yaml
+MESSAGES:
+  error_llm_timeout: "One moment, please. Could you say that again?"
+```
 
 #### Step ON_ERROR handler properties
 
@@ -1812,7 +2227,9 @@ values: `rate_limit`, `auth_failure`, `network_error`, `tool_timeout`).
 | Property          | Type      | Description                                                                        |
 | ----------------- | --------- | ---------------------------------------------------------------------------------- |
 | `SUBTYPE`         | `string`  | Narrow the handler to a specific error subtype.                                    |
-| `RESPOND`         | `string`  | Message to show when the error fires.                                              |
+| `SUBTYPES`        | `string[]`| Narrow the handler to any of several error subtypes.                               |
+| `SET`             | `string`  | `name = expression`. Repeatable. Applied before `RESPOND` is rendered.             |
+| `RESPOND`         | `string`  | One-line message to show when the error fires.                                     |
 | `RETRY`           | `number`  | Retry attempts before giving up.                                                   |
 | `RETRY_DELAY`     | `number`  | Delay (ms) between retries.                                                        |
 | `RETRY_BACKOFF`   | `string`  | Backoff strategy: `fixed`, `exponential`, or `linear`.                             |
@@ -1945,7 +2362,7 @@ FLOW:
 
 {{related}}
 
-- [Language overview](/agent-platform/abl-reference/language-overview) -- syntax rules and auto-detection
-- [Tools](/agent-platform/abl-reference/tools) -- tool definitions used by `CALL` actions
-- [GATHER](/agent-platform/abl-reference/gather) -- top-level gather field definitions
-- [Agent declaration](/agent-platform/abl-reference/agent-declaration) -- GOAL used by `REASONING: true` steps, `max_flow_iterations` and model settings
+- [Language overview](/agent-platform/abl/reference/language-overview) -- syntax rules and auto-detection
+- [Tools](/agent-platform/abl/reference/tools) -- tool definitions used by `CALL` actions
+- [GATHER](/agent-platform/abl/reference/gather) -- top-level gather field definitions
+- [Agent declaration](/agent-platform/abl/reference/agent-declaration) -- GOAL used by `REASONING: true` steps, `max_flow_iterations` and model settings

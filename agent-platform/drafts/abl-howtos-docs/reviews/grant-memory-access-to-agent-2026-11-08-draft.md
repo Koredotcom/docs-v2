@@ -1,0 +1,228 @@
+# Grant another agent access to memory
+
+Use this pattern when a target agent must read, or update, a stored value that the calling agent owns.
+
+## Concept
+
+Memory belongs to the agent that declares it. A target agent does not see the caller's stored values. A memory grant gives the target access to named paths for one handoff or one delegate call.
+
+A grant has two parts:
+
+- `path` names the memory path.
+- `access` is `read` or `readwrite`. The default is `read`.
+
+Use a grant for stored values. Use `PASS` for values the caller already holds in the conversation. See [Pass specific fields between agents](/agent-platform/abl/how-to/pass-fields-between-agents).
+
+| Memory kind | Grant `path` | Readwrite allowed |
+| ----------- | ------------ | ----------------- |
+| Session memory declared by the caller | The field name, such as `region`. | No. |
+| Persistent memory with `SCOPE: user` or `SCOPE: project` | The declared path, such as `user.preferred_language`. | No. |
+| Persistent memory with `SCOPE: execution_tree` | The declared path, such as `workflow.customer_id`, or the same path with the `execution_tree.` prefix. | Yes, when the source declaration is `ACCESS: readwrite`. |
+
+Grant the fewest paths and the lowest access that the target needs.
+
+## Minimal working example
+
+An account router holds a customer ID that all specialists in this conversation tree share. The statement agent needs to read it. The router grants the path read-only.
+
+`ON_START` sets the customer ID to a fixed value as a stand-in. In your project, set it from your sign-in or lookup step.
+
+`agents/account-hub.agent.abl`
+
+```abl
+SUPERVISOR: Account_Hub
+GOAL: "Route account requests and share only the stored values a specialist needs"
+
+BEHAVIOR:
+  role: router
+
+INTENTS:
+  statements: "Statements or transaction history."
+
+MEMORY:
+  persistent:
+    - PATH: workflow.customer_id
+      SCOPE: execution_tree
+      ACCESS: readwrite
+      TYPE: string
+
+ON_START:
+  - SET: workflow.customer_id = "cust-1042"
+
+HANDOFF:
+  - TO: Statement_Agent
+    WHEN: intent.category == "statements"
+    CONTEXT:
+      summary: "Customer asks for a statement."
+      history: none
+      memory_grants:
+        - path: workflow.customer_id
+          access: read
+    RETURN: false
+```
+
+`agents/statement-agent.agent.abl`
+
+```abl
+AGENT: Statement_Agent
+GOAL: "Send a statement for the verified customer whose ID is in Granted Memory"
+
+GATHER:
+  month:
+    PROMPT: "Which month do you want?"
+    TYPE: string
+    REQUIRED: true
+
+COMPLETE:
+  - WHEN: month IS SET
+    RESPOND: "I will send the {{month}} statement."
+```
+
+The target declares no memory. The grant alone gives it access. The target model sees the value in a "Granted Memory" section of its prompt.
+
+Variable sources:
+
+- `workflow.customer_id` is persistent memory of the router, set in `ON_START`.
+- The target receives it under `granted_memory.workflow.customer_id`.
+
+## How it works
+
+When the handoff runs, the runtime resolves each grant, then attaches the value to the target.
+
+1. The runtime reads the source declaration in the caller. The grant path must match a declared path or the `execution_tree.` namespace.
+2. The runtime finds the value in this order: the execution tree, the caller's current values, then the stored user or project value. If no value exists, it uses the declared default.
+3. The runtime attaches the value to the target under `granted_memory.<path>`. The target does not need to declare the path. If a value is missing, nothing is attached for that path.
+4. The runtime authorizes each path that has a value for the target prompt. The prompt shows these values in a "Granted Memory" section.
+5. When PII protection is on, the runtime tokenizes protectable values first.
+6. A write to a `read` grant is refused. The runtime reports the reason `granted_memory_read_only`.
+
+Rules that the compiler enforces:
+
+| You write | Result |
+| --------- | ------ |
+| A path the caller does not declare | Compile error `INVALID_HANDOFF_MEMORY_GRANT`. |
+| `access: readwrite` on a path that is not execution-tree memory with `ACCESS: readwrite` | Compile error `INVALID_HANDOFF_MEMORY_GRANT_ACCESS`. |
+| An empty `path` | Compile error `INVALID_HANDOFF_MEMORY_GRANT`. |
+| `grant_memory: [path]` | Parse error `E322`. Use `memory_grants`. |
+
+The same rules apply to a `DELEGATE` `MEMORY_GRANTS` list.
+
+## Common variations
+
+### Grant stored user and session values
+
+A route can mix kinds. The session field `region` needs no `access` line. The user path is read-only.
+
+```abl
+HANDOFF:
+  - TO: Profile_Agent
+    WHEN: intent.category == "profile"
+    CONTEXT:
+      summary: "Customer asks about profile preferences."
+      history: none
+      memory_grants:
+        - path: user.preferred_language
+          access: read
+        - path: region
+    RETURN: false
+```
+
+This is a section snippet. It needs the router `MEMORY` declarations `user.preferred_language` and `region`.
+
+### Let the target update shared memory
+
+Use `readwrite` only for execution-tree memory that the caller declares with `ACCESS: readwrite`. The target writes the value with a `SET` to `granted_memory.<path>`.
+
+`agents/verify-agent.agent.abl`
+
+```abl
+AGENT: Verify_Agent
+GOAL: "Verify the customer and store the verified ID for the next agent"
+
+FLOW:
+  entry_point: verify
+
+  verify:
+    REASONING: false
+    SET: granted_memory.workflow.customer_id = "cust-2077"
+    RESPOND: "Verified customer."
+    THEN: COMPLETE
+```
+
+The route grants the path with `access: readwrite`.
+
+```abl
+      memory_grants:
+        - path: workflow.customer_id
+          access: readwrite
+```
+
+The second block is an illustrative fragment of a grant list. The first block is a full document. The value `cust-2077` is a stand-in. Set it from your verification step. A `SET` to a path that has a `read` grant is refused at run time with the reason `granted_memory_read_only`. The compiler does not catch it.
+
+### Grant memory to a delegate
+
+A `DELEGATE` uses a `MEMORY_GRANTS` list on the entry.
+
+```abl
+DELEGATE:
+  - TO: Refund_Checker
+    WHEN: order_id IS SET
+    PURPOSE: "Check whether the order qualifies for a refund"
+    INPUT:
+      order_id: order_id
+    RETURNS:
+      eligible: refund_eligible
+      reason: refund_reason
+    MEMORY_GRANTS:
+      - path: workflow.customer_id
+        access: read
+    USE_RESULT: refund_check
+```
+
+This is a section snippet. It needs the caller `MEMORY` declaration and the `Refund_Checker` agent from [Delegate and map the result](/agent-platform/abl/how-to/delegate-and-map-result).
+
+## Verification
+
+1. Run the validator on both files. Expect no errors and no warnings.
+2. Send "I need my statement." Answer the month.
+3. Expect a `handoff` trace event to `Statement_Agent`.
+4. Open the first model call of `Statement_Agent` in the trace. Expect a "Granted Memory" section that lists `workflow.customer_id`.
+5. Remove the `memory_grants` block and repeat. Expect the section to be missing. Restore the block.
+6. Change the access to `readwrite` on a user-scoped path. Expect compile error `INVALID_HANDOFF_MEMORY_GRANT_ACCESS`.
+
+## Production readiness checklist
+
+- Every granted path is declared in the caller.
+- Every grant uses `read` unless the target must write.
+- Each `readwrite` grant has a written reason and a test for the write.
+- The target reads or writes each granted path as `granted_memory.<path>`.
+- The granted data fits the target's purpose. See [Minimize context for privacy and compliance](/agent-platform/abl/how-to/minimize-agent-context).
+- Tests cover a path that has a value and a path that has none.
+
+## Common mistakes
+
+| Mistake | Why it happens | How to avoid it |
+| ------- | -------------- | --------------- |
+| Granting a path that the caller never declared | The path exists in another agent. | Declare it in the caller `MEMORY`. |
+| Requesting `readwrite` on user or session memory | The access level looks like a free choice. | Use `read`. Only execution-tree memory can be `readwrite`. |
+| Writing `grant_memory` | An older form. | Use `memory_grants` with `path` and `access`. |
+| Putting `memory_grants` directly on the route | `PASS` and `SUMMARY` work there. | Put it inside `CONTEXT:`. |
+| Granting a path to carry a value the caller just gathered | A grant looks like `PASS`. | Use `PASS` for conversation values. |
+
+## Troubleshooting
+
+| Symptom | Likely cause | What to check |
+| ------- | ------------ | ------------- |
+| The compile fails with `INVALID_HANDOFF_MEMORY_GRANT` | The path is not declared in the caller. | The caller `MEMORY` section. |
+| The compile fails with `INVALID_HANDOFF_MEMORY_GRANT_ACCESS` | `readwrite` on a path that cannot be written. | The source `SCOPE` and `ACCESS`. |
+| The target does not see the value | The path has no stored value and no default. | The stored value and the `ON_START` assignment. |
+| The target cannot update the value | The grant is `read`. | The grant `access` and the reason `granted_memory_read_only`. |
+| The compile fails with `E322` | The route uses `grant_memory`. | Rename it to `memory_grants`. |
+
+## Related HowTos
+
+- [Pass specific fields between agents](/agent-platform/abl/how-to/pass-fields-between-agents)
+- [Minimize context for privacy and compliance](/agent-platform/abl/how-to/minimize-agent-context)
+- [Map child-agent outputs back to parent-agent variables](/agent-platform/abl/how-to/map-child-agent-outputs)
+- [Delegate and map the result](/agent-platform/abl/how-to/delegate-and-map-result)
+- [Debug missing or incorrect context after handoff](/agent-platform/abl/how-to/debug-handoff-context)

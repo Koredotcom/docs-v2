@@ -1,0 +1,179 @@
+---
+title: How to use scoped sub-intents inside a flow step
+sidebarTitle: Scoped sub-intents
+---
+
+<Badge icon="arrow-left" color="gray">[Back to how-to guides](/agent-platform/abl/how-to/overview#entities-nlu-and-intent-understanding)</Badge>
+
+Use this pattern when a customer may interrupt one specific step with a small, predictable request, such as "change my order number", and the step must handle it and stay where it is.
+
+## Concept
+
+A sub-intent is a short handler that lives inside one `FLOW` step. It works only while that step is current. When the customer's message matches a sub-intent, the runtime runs the handler's actions and then returns to the step.
+
+Choose the construct by scope and by what must happen next.
+
+| You need | Use |
+| -------- | --- |
+| A handler for one step, then stay in the step | `SUB_INTENTS` |
+| A handler for one step or the whole flow, with a jump, a handoff, or a resume | A digression. See [Handle digressions without losing the current flow](/agent-platform/abl/how-to/handle-flow-digressions). |
+| A different specialist for a new request | A supervisor route. See [Route users by detected intent](/agent-platform/abl/how-to/route-by-user-intent). |
+
+A sub-intent has no global form. It applies only to the step that declares it.
+
+## Minimal working example
+
+A returns agent asks for an order number and then a reason. While it asks for the reason, the customer may say "change my order number". The sub-intent clears the order number and asks for it again.
+
+```yaml
+AGENT: Return_Starter
+GOAL: "Collect the order number and the reason to start a product return."
+
+PERSONA: "You are a concise returns assistant."
+
+FLOW:
+  entry_point: collect_order
+  steps:
+    - collect_order
+    - collect_reason
+    - confirm
+
+  collect_order:
+    REASONING: false
+    GATHER:
+      - order_id: required
+        prompt: "What is your order number?"
+    THEN: collect_reason
+
+  collect_reason:
+    REASONING: false
+    GATHER:
+      - return_reason: required
+        prompt: "Why do you want to return the item?"
+    SUB_INTENTS:
+      - INTENT: "change my order number"
+        CLEAR: [order_id]
+        RESPOND: "No problem. Let's start with the order number."
+    THEN: confirm
+
+  confirm:
+    REASONING: false
+    RESPOND: "Return started for order {{order_id}}. Reason: {{return_reason}}."
+    THEN: COMPLETE
+```
+
+Variable sources:
+
+- `order_id` and `return_reason` are `GATHER` fields that the customer supplies.
+- The sub-intent clears `order_id`. The `confirm` step reads both values.
+
+## How it works
+
+Each sub-intent is a list item that starts with `INTENT:`. The properties are:
+
+| Property | What it does |
+| -------- | ------------ |
+| `RESPOND` | Replies to the customer. |
+| `MESSAGE_KEY` | A locale catalog key for the reply. |
+| `CLEAR` | Clears the listed variables. |
+| `SET` | Assigns variables. |
+| `CALL` | Calls a tool. |
+| `LOG` | Writes a log entry. |
+| `RESUME` | Parsed, but the runtime ignores it. |
+
+Do not use `WITH` or `AS` in a sub-intent. They are compile error `E203`.
+
+Any other key that is not in the table is dropped without an error or a warning. This includes `KEYWORDS`, `CONDITION`, `GOTO`, and a misspelled property name. The dropped key has no effect on the sub-intent or on the step. A sub-intent cannot jump to another step. Use a digression for that.
+
+What happens on each customer message, in order:
+
+1. The step's digressions are checked, then the flow's global digressions.
+2. If none matched, the sub-intents of the current step are checked.
+3. If none matched, the runtime checks whether the parent supervisor should take the message back.
+4. If none matched, the step handles the message as usual, with `GATHER` extraction and `ON_INPUT`.
+
+All of these checks are skipped when an intent is pinned for the session, and during secure card entry.
+
+How a message matches a sub-intent:
+
+1. A decision-model check runs first, when your project enables it.
+2. The classifier runs with the sub-intent names as the only candidates. A match needs the classifier to return one of those names. There is no per-candidate confidence threshold.
+3. The keyword fallback runs when the classifier is unavailable, subject to `LEXICAL_FALLBACK` (default `when_unavailable`).
+
+The keyword fallback exists only for a quoted multi-word `INTENT`, such as `"change my order number"`. A plain name such as `change_order_number` has no keyword path. With the classifier off it can never match.
+
+What happens after a match:
+
+- The actions run in this order: `CLEAR`, `SET`, `CALL`.
+- With a `RESPOND`, the runtime sends the reply and ends the turn. The step stays current. The pending question is not repeated in the same turn.
+- Without a `RESPOND`, the step runs again with an empty message. It asks the pending `GATHER` question again.
+
+Two sub-intents with the same label produce a runtime warning in the trace. The runtime matches in declaration order.
+
+## Common variations
+
+### Reply and then repeat the question
+
+Leave out `RESPOND` when the handler only changes state. The step then repeats its question.
+
+```yaml
+    SUB_INTENTS:
+      - INTENT: "use my saved address"
+        SET: delivery_choice = "saved"
+```
+
+This is a section snippet. It needs a `delivery_choice` variable and a step with a `GATHER`.
+
+### Call a tool in the handler
+
+Add `CALL` to look something up, and `RESPOND` to answer from the result. Declare the tool with a `read_only` effect and a parameter description, or the compiler warns.
+
+### Semantic names with the classifier on
+
+Use a name such as `change_order_number` when the classifier is always on. The classifier reads the name and matches the meaning. Keep the quoted phrase form when you need a keyword fallback.
+
+## Verification
+
+1. Run the validator. Expect no errors and no warnings.
+2. Give an order number. When the agent asks for the reason, say "actually, change my order number".
+3. Expect the reply "No problem. Let's start with the order number." and the order number cleared.
+4. In the trace, open the `sub_intent` events. Check `intent`, `matched`, `detectionMode`, and `classifierConfidence`.
+5. Say "it arrived broken". Expect the step to take the answer as the reason.
+6. Say the same sub-intent phrase during `collect_order`. Expect no match, because the sub-intent belongs to `collect_reason`.
+
+## Production readiness checklist
+
+- Every sub-intent `INTENT` is a quoted phrase when the classifier can be off.
+- Every sub-intent has a `RESPOND`, or the pending question follows.
+- No two sub-intents in a step share a label.
+- Every key in a sub-intent is in the property table. A key that is not listed is dropped without a message.
+- Tests cover a matching phrase, a phrase for another step, and a normal answer.
+- Tests run with the classifier on and off.
+
+## Common mistakes
+
+| Mistake | Why it happens | How to avoid it |
+| ------- | -------------- | --------------- |
+| Using a plain name and expecting keyword matching | Digressions have `KEYWORDS`. | Quote a multi-word phrase, or rely on the classifier. |
+| Adding `GOTO`, `KEYWORDS`, or `CONDITION` | Digressions have them. | Use a digression. A sub-intent drops these keys without a message. |
+| Setting `RESUME: false` to leave the step | The property is documented in the type. | The runtime ignores it. |
+| Expecting a global sub-intent | The name suggests reuse. | Use a global digression. |
+| Using `WITH` and `AS` on a `CALL` | A flow `CALL` takes them. | Write the call with its arguments in parentheses. |
+
+## Troubleshooting
+
+| Symptom | Likely cause | What to check |
+| ------- | ------------ | ------------- |
+| The sub-intent never fires | The classifier is off and the `INTENT` is a plain name. | The `INTENT` text and the pipeline setting. |
+| The step asks the same question after the handler | The handler has no `RESPOND`. | The sub-intent actions. |
+| The sub-intent fires on the wrong phrase | Two candidates overlap. | The candidate names and the `sub_intent` trace. |
+| The compile fails with `E203` | `WITH` or `AS` in the handler. | The `CALL` line. |
+| A property has no effect and no error appears | The key is not a sub-intent property, so it was dropped. | The property names against the table. |
+| The trace shows a duplicate label warning | Two sub-intents share an `INTENT`. | The labels. |
+
+{{related}}
+
+- [Handle digressions without losing the current flow](/agent-platform/abl/how-to/handle-flow-digressions)
+- [Define intents with examples and keyword patterns](/agent-platform/abl/how-to/define-intents-with-examples)
+- [Collect information inside a FLOW step](/agent-platform/abl/how-to/collect-with-flow-gather)
+- [Combine reasoning steps with FLOW steps](/agent-platform/abl/how-to/combine-reasoning-and-flow-steps)

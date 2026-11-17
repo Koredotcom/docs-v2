@@ -1,0 +1,243 @@
+# Collect multiple fields across a natural conversation
+
+Use this pattern when customers give several details in one message, in any order, and the agent must capture them all and ask only for what is missing.
+
+## Concept
+
+Collection works on all missing fields at once, not one at a time. When the customer says "Boston to Denver next Friday", one extraction pass can fill the origin, destination, and date. The agent then asks only for what is still empty.
+
+Three settings shape how well this works.
+
+| Setting | What it does |
+| ------- | ------------ |
+| `description` | Gives the extractor a model-facing label for what the value means. It is separate from `prompt`, which is the question. |
+| `extraction_hints` | Gives example phrasings, such as "leaving JFK". The extractor sees them next to the field. |
+| `inline_gather` | Moves extraction into the model's own turn through an `_extract_entities` tool. It runs alongside your domain tools. |
+
+You have three ways to collect several fields.
+
+| Mechanism | Use it when |
+| --------- | ----------- |
+| Top-level `GATHER` (default) | The model leads the conversation. A separate extraction pass runs before each reply. |
+| Top-level `GATHER` with `inline_gather: true` | The model must collect and call tools in the same turn, for example a search that needs the collected values. |
+| `GATHER` in a `FLOW` step | You need a fixed step, one combined question, and corrections. |
+
+## Minimal working example
+
+A flight search agent collects the origin, destination, and date. The customer can give them in any order. The agent calls the search tool when the required fields are complete.
+
+The search tool is a project-local assumption. Bind it to your flight search service in Project Tools.
+
+`agents/flight-search-agent.agent.abl`
+
+```abl
+AGENT: Flight_Search_Agent
+GOAL: "Find flights once origin, destination, and travel date are known."
+
+PERSONA: |
+  Efficient travel assistant. Use what the traveler already said and ask only for what is missing.
+
+EXECUTION:
+  temperature: 0.2
+  max_iterations: 8
+  inline_gather: true
+
+TOOLS:
+  search_flights(origin: string, destination: string, depart_date: string, passengers?: number) -> {flights: object[]}
+    description: "Search available flights for a route and date."
+    effect: read_only
+    parameters:
+      origin:
+        description: "Departure city or airport code."
+      destination:
+        description: "Arrival city or airport code."
+      depart_date:
+        description: "Departure date in YYYY-MM-DD format."
+      passengers:
+        description: "Number of travelers. Defaults to one when omitted."
+
+GATHER:
+  origin:
+    prompt: "Which city are you flying from?"
+    description: "Departure city or airport"
+    type: string
+    extraction_hints:
+      - "from Boston"
+      - "leaving JFK"
+  destination:
+    prompt: "Where do you want to fly to?"
+    description: "Arrival city or airport"
+    type: string
+    extraction_hints:
+      - "to Denver"
+      - "heading to LAX"
+  depart_date:
+    prompt: "What date do you want to leave?"
+    type: date
+    semantics:
+      temporal: future
+  passengers:
+    prompt: "How many passengers?"
+    type: integer
+    required: false
+
+COMPLETE:
+  - WHEN: origin IS SET AND destination IS SET AND depart_date IS SET
+    RESPOND: "Here are the flights from {{origin}} to {{destination}} on {{depart_date}}."
+```
+
+Variable sources:
+
+- `origin`, `destination`, `depart_date`, and `passengers` are `GATHER` fields. The customer supplies them, in any order.
+- The tool reads `origin`, `destination`, and `depart_date` from the collected values.
+
+## How it works
+
+Without `inline_gather` (the default):
+
+1. Before the model replies, the runtime makes one extraction call for all missing fields.
+2. It validates and stores the good values.
+3. The model sees what is collected and asks for the rest. It chooses the order of the questions.
+
+With `inline_gather: true`:
+
+1. The model receives an `_extract_entities` tool built from the active fields. It calls the tool in the same turn, in parallel with domain tools.
+2. The prompt shows "Already collected" and "Still needed" lists.
+3. The separate extraction pass is skipped.
+4. Until the required fields are complete, the runtime removes domain tools from the model. Handoff, delegate, internal, and `_extract_entities` tools stay. A domain tool call that gets through returns `GATHER_INCOMPLETE` with the missing field names.
+5. If the model never calls `_extract_entities`, a fallback extraction runs after the reply. It helps the next turn.
+
+Rules that apply:
+
+- A supervisor that routes with a model tool does not offer the extraction tool. It carries inferred values in the routing context instead.
+- On voice channels with the voice latency profile, `inline_gather` is on by default. An explicit `false` turns it off. Write `true` and `false` in lowercase. `True` or `yes` reads as `false`.
+- `extraction_hints` appear in the tool description as "(hints: ...)". They do not change the question.
+- `description` falls back to `prompt` when you omit it.
+- Field order is declaration order. There is no scheduling. Put the most important fields first.
+
+## Common variations
+
+### One combined question in a FLOW step
+
+A `FLOW` step asks for all missing fields in one question. Set `PRESENT` for the introduction and `PROMPT` for the question. Use `{{_missingList}}` for the missing field names. Set `CORRECTIONS: true` so the customer can fix a value. Set `MAX_ATTEMPTS` and `ON_EXHAUSTED` to hand off.
+
+`agents/beneficiary-setup.agent.abl`
+
+```abl
+AGENT: Beneficiary_Setup
+GOAL: "Collect beneficiary details in one step and let the customer correct any value before continuing."
+
+PERSONA: |
+  Precise payments assistant. Accept several details in one message.
+
+FLOW:
+  entry_point: collect_beneficiary
+
+  steps:
+    - collect_beneficiary
+    - confirm_details
+    - save_beneficiary
+    - hand_off_to_agent
+
+  collect_beneficiary:
+    REASONING: false
+    PRESENT: "I need a few details about the beneficiary. You can share them in one message."
+    PROMPT: "Please share the missing details: {{_missingList}}."
+    GATHER:
+      FIELDS:
+        - beneficiary_name: required
+          prompt: "full legal name on the account"
+        - beneficiary_account: required
+          prompt: "account number or IBAN"
+          validate: "^[A-Z0-9]{8,34}$"
+          retry_prompt: "Enter 8 to 34 letters and digits with no spaces."
+          max_retries: 3
+        - country: optional
+          prompt: "country of the bank"
+          extraction_hints:
+            - "bank in Germany"
+            - "UK account"
+      STRATEGY: llm
+    CORRECTIONS: true
+    MAX_ATTEMPTS: 4
+    ON_EXHAUSTED: hand_off_to_agent
+    THEN: confirm_details
+
+  confirm_details:
+    REASONING: false
+    RESPOND: "Save {{beneficiary_name}}, account {{beneficiary_account}}, country {{country}}? Reply yes to save or no to edit."
+    ON_INPUT:
+      - IF: input.contains("yes")
+        THEN: save_beneficiary
+      - ELSE:
+        RESPOND: "Tell me which detail to change."
+        THEN: collect_beneficiary
+
+  save_beneficiary:
+    REASONING: false
+    RESPOND: "Beneficiary {{beneficiary_name}} saved."
+    THEN: COMPLETE
+
+  hand_off_to_agent:
+    REASONING: false
+    RESPOND: "I could not capture the details. I will connect you with an agent."
+    THEN: ESCALATE
+```
+
+Because the field prompts are noun phrases, such as "account number or IBAN", they read well inside the combined question.
+
+### Capture a fixed-shape value with a pattern
+
+Set `extraction_pattern` and `extraction_group` for a value such as a reference number. The pattern runs on the raw message and needs no model call. See [Silently extract values without asking the user](/agent-platform/abl/how-to/silently-extract-values).
+
+### Pick the extraction engine
+
+`strategy` sets the engine per field: `auto`, `ml`, `llm`, `hybrid`, or `pattern`. In a `FLOW` step, a block-level `STRATEGY` applies to the whole step. A field setting wins over the block, and the block wins over the project setting. An `ml` field does not fall back to `llm`. A `pattern` field with no `extraction_pattern` extracts only built-in email and phone values.
+
+## Verification
+
+1. Run the validator. Expect no errors and no warnings.
+2. Say "I need a flight from Boston to Denver next Friday". Expect the agent to search without asking for the origin, destination, or date.
+3. Say "I need a flight to Denver". Expect the agent to ask for the origin and the date.
+4. Give the missing values in one reply. Expect the search to run.
+5. In the beneficiary example, give the name and account in one message. Expect the country to stay empty and the flow to move on.
+6. In the trace, open the `dsl_collect` events. The mode is `inline_gather`, `reasoning_gather`, or `gather`. Check the extracted fields.
+7. When a tool call arrives too early, look for the `GATHER_INCOMPLETE` result.
+
+## Production readiness checklist
+
+- Each field has a `description`. Fields that are hard to extract have `extraction_hints`.
+- Each fixed-format field has a `validate` rule and a `retry_prompt`.
+- Required fields are first in the list.
+- `inline_gather` is set to a lowercase `true` or `false` on purpose.
+- Tools that need collected values are listed in the agent, with parameter descriptions.
+- Tests cover all values in one message, values in any order, a partial message, and a correction.
+
+## Common mistakes
+
+| Mistake | Why it happens | How to avoid it |
+| ------- | -------------- | --------------- |
+| Writing `inline_gather: True` | Other languages accept it. | Write lowercase `true`. |
+| Setting `inline_gather` on an agent with no `GATHER` | The flag looks global. | Add a `GATHER` section. The flag does nothing without fields. |
+| Expecting the question order to follow a script | The model chooses. | Use a `FLOW` step for a fixed order. |
+| Writing long, sentence-style `prompt` values for a combined question | The prompt is also the question. | Use short noun phrases when you reuse the prompts in `{{_missingList}}`. |
+| Putting hints on a field and expecting them to change the question | Hints sound like prompts. | Hints guide extraction only. Change `prompt` to change the question. |
+
+## Troubleshooting
+
+| Symptom | Likely cause | What to check |
+| ------- | ------------ | ------------- |
+| The agent asks for a value the customer already gave | Extraction missed it. | `description`, `extraction_hints`, and the `dsl_collect` result. |
+| A tool call returns `GATHER_INCOMPLETE` | Required fields are not complete. | The `missing_fields` list. |
+| The agent calls no tool, then answers | `inline_gather` is off, or a required field is missing. | The `inline_gather` value and the field list. |
+| Extraction works for some fields only | Plain optional fields are skipped. | The extraction settings on optional fields. |
+| A `FLOW` step asks one field at a time | A step `PROMPT` limits the question, or the customer gave one value. | The step `PROMPT` and `{{_missingList}}`. |
+
+## Related HowTos
+
+- [Collect information with global GATHER](/agent-platform/abl/how-to/collect-with-global-gather)
+- [Collect information inside a FLOW step](/agent-platform/abl/how-to/collect-with-flow-gather)
+- [Collect required and optional fields from users](/agent-platform/abl/how-to/collect-required-and-optional-fields)
+- [Silently extract values without asking the user](/agent-platform/abl/how-to/silently-extract-values)
+- [Infer values from conversation context](/agent-platform/abl/how-to/infer-values-from-context)
+- [Progressively collect fields only when needed](/agent-platform/abl/how-to/progressively-collect-fields)
