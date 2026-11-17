@@ -17,6 +17,23 @@ info:
     Authenticate with the `x-api-key` header. The key must be bound to the project you
     are querying and have `session:read` permission.
 
+    ## Source, channel and Channel Type
+
+    Every session reports its `source` (why it exists), its `channel` (the channel it
+    entered through) and its `channelType`.
+
+    - **Default Source changed.** Without a `source` filter the API now returns only
+      `user_initiated` sessions (real end-user traffic). It used to return sessions of
+      every Source, including evaluation runs, Studio debug chats, workflow runs,
+      synthetic traffic and Insights demo data. Send `source=all` for every Source.
+    - **`channel` filter is exact.** It matches the exact channel id plus older stored
+      spellings of that same id. It no longer groups channels into families, so
+      `channel=voice_pipeline` returns only voice-pipeline sessions. Use
+      `channelType=voice` for every voice session.
+    - Sessions created before this change are not backfilled. They keep the coarse
+      channel they were stored with (`web_chat`, `voice`, `api`) and report a
+      `channelType` only when that channel names one.
+
     ## Sending parameters in a POST body
 
     Every GET on this API has a POST form on the same path. Send the same parameters
@@ -88,8 +105,10 @@ info:
     member, as in standard JWE, so JOSE libraries (for example `jose` for Node.js)
     can produce and open these envelopes directly. Pin the algorithms when
     decrypting: key management `RSA-OAEP-256`, content encryption `A256GCM`.
+  x-payload-encryption:
+    runtime-capability: 'GET /health -> capabilities.payloadEncryption: 2'
 servers:
-  - url: https://agents.example.com
+  - url: https://{host}
     description: ABL Runtime public endpoint
     variables:
       host:
@@ -139,6 +158,7 @@ paths:
                   contained_unresolved,
                   escalated,
                   abandoned,
+                  failed,
                 ]
         - name: environment
           in: query
@@ -163,9 +183,24 @@ paths:
         - name: channelUId
           in: query
           description: |
-            Filter to sessions belonging to specific end users, using the identity
-            recorded for them on the channel. Pass up to 100 values, comma-separated or
-            by repeating the parameter.
+            Filter to sessions of specific end users by their channel user identifier
+            (`channelUId`): the email address, phone number, SIP address or provider id
+            the channel supplied for them, or the `externalUserId` an integrator passed
+            when the session started. Values are normalized before matching, so
+            `Priya@Example.com` and `priya@example.com` match, and `+1 (415) 555-0100`,
+            `14155550100` and `tel:+14155550100` match the same phone number. Phone
+            numbers must include the country code; a national number without one matches
+            only as a provider id. Matching is exact on the whole identifier (no partial
+            or prefix match). A match is evidence, not proof of identity: numbers and
+            emails get reassigned. Pass up to 100 values, comma-separated or by repeating
+            the parameter. Prefer the POST operation for identifier lookups: GET query
+            strings can be recorded by proxies and access logs.
+
+            Changed in this release: `channelUId` no longer matches the internal contact,
+            customer or anonymous identifiers recorded on the session. Sessions created
+            before this feature have no `channelUId` and cannot be found by it; use
+            `sessionIds` or a date range for them. An empty or invalid value returns 400
+            `INVALID_CHANNEL_UID`.
           style: form
           explode: false
           schema:
@@ -226,21 +261,23 @@ paths:
         - name: channel
           in: query
           description: |
-            Filter by the channel the conversation came in on. Pass one or more values,
+            Filter by the channel the session entered through. Pass one or more values,
             comma-separated or by repeating the parameter, up to 50 distinct channels of
             128 characters each.
 
-            This endpoint understands shorthand. Values are grouped into channel
-            families before matching, and each family also matches its older stored
-            spellings, so `channel=web`, `channel=sdk_web`, and `channel=web_chat` all
-            return the same web-chat sessions. The groupings are listed under
-            `x-alias-groups`, and those alias spellings are accepted here even though
-            they are not in the enum — the enum is kept identical across all the public
-            analytics endpoints so there is one channel list to learn.
+            Matches the exact channel id. Each id also matches the older stored
+            spellings of the same id, listed under `x-alias-groups` (for example
+            `channel=web_chat` also matches sessions stored as `webchat`). Those
+            spellings are accepted here even though they are not in the enum.
 
-            Because of that grouping, asking for one specific voice channel such as
-            `channel=voice_pipeline` returns all voice sessions, not just that
-            transport. Use the traces endpoint if you need to distinguish them.
+            Channels are not grouped into families: `channel=voice_pipeline` returns
+            only voice-pipeline sessions, and `channel=voice` returns only older
+            sessions stored as `voice`. Use `channelType` to filter by family. Before
+            release 1.10.0 this filter grouped channels, so `channel=voice_pipeline` returned
+            every voice session.
+
+            Sessions created before release 1.10.0 are stored with a coarse channel
+            (`web_chat`, `voice`, `api`) and match only that value.
 
             Not restricted to a fixed list, so an unrecognised value returns no results
             rather than an error.
@@ -254,57 +291,103 @@ paths:
               type: string
               maxLength: 128
               enum:
-                [
-                  http_async,
+                &channel_ids [
                   slack,
                   line,
                   msteams,
+                  a365,
                   whatsapp,
                   messenger,
                   instagram,
+                  telegram,
                   twilio_sms,
                   zendesk,
-                  telegram,
                   genesys,
                   genesys_open_messaging,
+                  email,
                   ai4w,
                   kore_agent_assist,
-                  email,
+                  web_debug,
+                  voice_realtime,
+                  voice_pipeline,
                   voice_vxml,
-                  korevg,
                   audiocodes,
                   genesys_audio_connector,
-                  voice_pipeline,
-                  voice_realtime,
-                  voice,
+                  korevg,
                   voice_twilio,
                   voice_livekit,
+                  sdk_web,
+                  sdk_mobile,
+                  sdk_api,
+                  direct_api,
+                  http_async,
                   ag_ui,
                   a2a,
-                  sdk_websocket,
-                  web_debug,
+                  workflow,
+                  eval_simulation,
+                  voice,
                   web_chat,
                   api,
-                  http,
                 ]
           x-alias-groups:
-            web_chat: [web, sdk_web, sdk_chat, chat, webchat, sdk_websocket, sdk_ws, sdk-ws, ws]
+            web_chat: [web, chat, webchat, ws, sdk_ws, sdk-ws, sdk_chat, sdk_websocket]
+            api: [http, sdk_http]
+            twilio_sms: [sms]
             web_debug: [debug_websocket, web_debug_socket]
-            api: [http, sdk_http, sdk_api]
-            twilio_sms: [sms, twilio]
-            voice:
-              [
-                vxml,
-                voice_vxml,
-                korevg,
-                audiocodes,
-                genesys_audio_connector,
-                voice_pipeline,
-                voice_realtime,
-                voice_twilio,
-                voice_livekit,
-                twilio_voice,
-              ]
+            voice_vxml: [vxml]
+            voice_twilio: [twilio_voice]
+        - name: source
+          in: query
+          description: |
+            Filter by why the session exists. Pass one or more values, comma-separated or
+            by repeating the parameter, up to 100. Matching ignores case and surrounding
+            spaces.
+
+            **Default `user_initiated`.** Without this parameter (or with an empty value)
+            only real end-user sessions are returned. `all` returns every Source and
+            cannot be combined with another value. Filtering on `user_initiated` also
+            returns sessions stored with the older value `production` or with no Source;
+            `production` is still accepted as a filter value and means `user_initiated`.
+            `production` is a legacy value: send `user_initiated` in new calls.
+
+            Anything else is rejected with `400 INVALID_SOURCE`; the message lists the
+            allowed values.
+          style: form
+          explode: false
+          schema:
+            type: array
+            maxItems: 100
+            uniqueItems: true
+            default: [user_initiated]
+            items:
+              type: string
+              enum:
+                [user_initiated, workflow, eval, synthetic, debug, demo_insights, production, all]
+          example: [user_initiated, workflow]
+        - name: channelType
+          in: query
+          description: |
+            Filter by the type of the channel the session entered through. Pass one or
+            more values, comma-separated or by repeating the parameter. Matching ignores
+            case and surrounding spaces. Omit it for every Channel Type.
+
+            A session matches on its stored Channel Type. A session stored before
+            Channel Type existed matches when its channel names that type (the older
+            `voice` is `voice`); one stored as `web_chat` or `api` matches no Channel
+            Type, because several channel types reported those values.
+
+            Anything else is rejected with `400 INVALID_CHANNEL_TYPE`; the message lists
+            the allowed values.
+          style: form
+          explode: false
+          schema:
+            type: array
+            maxItems: 6
+            uniqueItems: true
+            items:
+              type: string
+              enum: &channel_types [messaging, voice, sdk, webhook, protocol, workflow]
+          example: [voice]
         - $ref: '#/components/parameters/TraceDimension'
         - name: status
           in: query
@@ -313,11 +396,26 @@ paths:
             the parameter only the first value is used.
 
             Case-sensitive, and anything else is rejected with `400 INVALID_STATUS`.
-            Sessions can be stored with a status of `failed`, but `failed` is
+            Note that sessions can be stored with a status of `failed`, but `failed` is
             not accepted as a filter value here.
           schema:
             type: string
             enum: [active, idle, ended, completed, escalated, abandoned, archived]
+        - name: dispositionCode
+          in: query
+          description: |
+            Return only sessions whose `dispositionCode` equals this value: the wrap-up
+            code the human agent chose in after-contact work. Pass a single value; if you
+            repeat the parameter only the first value is used. Surrounding whitespace is
+            trimmed and an empty value means no filter.
+
+            Exact and case-sensitive, like `status`: `resolved` does not match `Resolved`.
+            Codes are the contact centre's own labels, so use the value exactly as it
+            appears in `dispositionCode` on a returned session. Longer than 200
+            characters is rejected with `400 INVALID_DISPOSITION_CODE`.
+          schema:
+            type: string
+            maxLength: 200
         - name: limit
           in: query
           description: |
@@ -347,10 +445,13 @@ paths:
                 hasMore: false
                 sessions:
                   - id: sess-01J4S8Y1
-                    channel: web_chat
+                    channel: sdk_web
+                    source: user_initiated
+                    channelType: sdk
                     environment: production
                     status: ended
                     containmentType: contained_resolved
+                    dispositionCode: null
                     createdAt: '2026-08-01T00:00:00.000Z'
                     lastActivityAt: '2026-08-01T00:05:00.000Z'
                     endedAt: '2026-08-01T00:05:30.000Z'
@@ -359,6 +460,7 @@ paths:
                     tokenCount:
                       inputTokens: 100
                       cachedTokens: 10
+                      cacheWriteTokens: null
                       completionTokens: 32
                       reasoningTokens: 8
                       outputTokens: 40
@@ -369,6 +471,8 @@ paths:
                     durationMs: 330000
                     idleDurationMs: 30000
                     isTest: null
+                    voice: null
+                    contactCenter: null
         '400': { $ref: '#/components/responses/BadRequest' }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
@@ -566,9 +670,12 @@ components:
         [
           id,
           channel,
+          source,
+          channelType,
           environment,
           status,
           containmentType,
+          dispositionCode,
           createdAt,
           lastActivityAt,
           endedAt,
@@ -580,6 +687,8 @@ components:
           durationMs,
           idleDurationMs,
           isTest,
+          voice,
+          contactCenter,
         ]
       properties:
         id:
@@ -589,44 +698,29 @@ components:
         channel:
           type: string
           description: |
-            The channel the conversation came in on, exactly as recorded — not grouped
-            into a family the way the `channel` filter is. Empty when no channel was
-            recorded.
-          enum:
-            [
-              '',
-              http_async,
-              slack,
-              line,
-              msteams,
-              whatsapp,
-              messenger,
-              instagram,
-              twilio_sms,
-              zendesk,
-              telegram,
-              genesys,
-              genesys_open_messaging,
-              ai4w,
-              kore_agent_assist,
-              email,
-              voice_vxml,
-              korevg,
-              audiocodes,
-              genesys_audio_connector,
-              voice_pipeline,
-              voice_realtime,
-              voice,
-              voice_twilio,
-              voice_livekit,
-              ag_ui,
-              a2a,
-              sdk_websocket,
-              web_debug,
-              web_chat,
-              api,
-              http,
-            ]
+            The channel the session entered through, exactly as recorded: the precise
+            channel id (for example `slack`, `voice_pipeline`, `sdk_web`, `direct_api`)
+            for sessions created from release 1.10.0 on, and the coarse value older sessions
+            were stored with (for example `web_chat`, `voice`, `api`). Empty when no
+            channel was recorded. Not restricted to the listed values: a channel added
+            later is returned as stored.
+          examples: [slack, voice_pipeline, sdk_web, web_chat, '']
+        source:
+          type: string
+          description: |
+            Why the session exists. Sessions stored with the older value `production`
+            or with no Source are reported as `user_initiated`. Clients should accept
+            values added later.
+          enum: [user_initiated, workflow, eval, synthetic, debug, demo_insights]
+        channelType:
+          type: [string, 'null']
+          description: |
+            The type of the channel the session entered through. For a session stored
+            before Channel Type existed it is the type its channel names, and `null`
+            when the channel names none (`web_chat`, `api`) or no channel was recorded.
+            An evaluation run (`eval_simulation`) reports the type of what it
+            simulates.
+          enum: [messaging, voice, sdk, webhook, protocol, workflow, null]
         environment:
           type: string
           description: Empty when the source column is null.
@@ -649,7 +743,27 @@ components:
               contained_unresolved,
               escalated,
               abandoned,
+              failed,
             ]
+        channelUId:
+          type: [string, 'null']
+          description: |
+            The end user's channel identifier, normalized (lowercased email, E.164
+            phone, SIP URI or the provider's user id), for example `priya@example.com`
+            or `+14155550100`. Null when the channel supplied no end-user identity or
+            the session was created before this field existed. This is personal data.
+            Masking is planned for a later release, together with role-based access to unmasked values.
+        dispositionCode:
+          type: [string, 'null']
+          description: |
+            The wrap-up code the human agent chose in after-contact work (ACW) after a
+            transfer to a contact centre, such as `Resolved`, exactly as the contact
+            centre sent it. Taken from the latest completed ACW of the session that
+            carried a code.
+
+            `null` when the session was not transferred, the contact centre sent no
+            code, or ACW completed after the session had already ended. Not the same
+            thing as `containmentType`, which is the platform's own classification.
         createdAt:
           type: [string, 'null']
           format: date-time
@@ -693,6 +807,65 @@ components:
             Useful for separating real handling time from waiting.
         isTest:
           { type: ['boolean', 'null'], description: Reserved field; currently returned as null. }
+        voice:
+          description: |
+            Call quality of a voice session, one value for each Voice Analytics dashboard
+            card. `null` when the session was not a voice call, or ended before this
+            release. A metric the call did not measure is `null`, never `0`.
+          oneOf:
+            - $ref: '#/components/schemas/SessionVoice'
+            - type: 'null'
+        contactCenter:
+          type: 'null'
+          description: |
+            Reserved for the queue, agent, wait time, handle time and outcome after a
+            transfer to Kore Contact Center. Always `null` in this release. The key is
+            always present.
+    SessionVoice:
+      type: object
+      additionalProperties: false
+      required: [mos, asrScore, e2eLatencyMs, bargeInRate, dtmfFallbackRate, ttsMos, silencePercent]
+      properties:
+        mos:
+          type: ['number', 'null']
+          minimum: 1
+          maximum: 5
+          description: Inbound network MOS of the call (the Avg MOS card).
+        asrScore:
+          type: ['number', 'null']
+          minimum: 0
+          maximum: 100
+          description: Overall speech-recognition quality score (the ASR Quality card).
+        e2eLatencyMs:
+          type: ['number', 'null']
+          minimum: 0
+          description: |
+            Average end-to-end response latency in milliseconds (the E2E Latency card).
+            `null` when no turn was measured.
+        bargeInRate:
+          type: ['number', 'null']
+          minimum: 0
+          maximum: 1
+          description: |
+            Share of turns where the caller interrupted the agent, as a decimal: `0.2`
+            means 20% (the dashboard card divided by 100). `null` when the call had no turns.
+        dtmfFallbackRate:
+          type: ['number', 'null']
+          minimum: 0
+          maximum: 1
+          description: |
+            Share of turns answered with the keypad, as a decimal (the dashboard card
+            divided by 100). `null` when the call had no turns.
+        ttsMos:
+          type: ['number', 'null']
+          minimum: 1
+          maximum: 5
+          description: Estimated text-to-speech quality (the TTS Quality card).
+        silencePercent:
+          type: ['number', 'null']
+          minimum: 0
+          maximum: 100
+          description: Percent of the call with no speech (the Silence card).
     MessageCount:
       type: object
       additionalProperties: false
@@ -747,7 +920,15 @@ components:
       type: object
       additionalProperties: false
       required:
-        [inputTokens, cachedTokens, completionTokens, reasoningTokens, outputTokens, totalTokens]
+        [
+          inputTokens,
+          cachedTokens,
+          cacheWriteTokens,
+          completionTokens,
+          reasoningTokens,
+          outputTokens,
+          totalTokens,
+        ]
       properties:
         inputTokens:
           type: number
@@ -760,6 +941,13 @@ components:
           description: |
             Input tokens served from the provider prompt cache. Part of inputTokens, and usually
             cheaper.
+        cacheWriteTokens:
+          type: [number, 'null']
+          minimum: 0
+          description: |
+            Input tokens written to the provider prompt cache across the session's LLM calls. Part
+            of inputTokens. null means no call in the session reported cache writes (or the
+            per-call accounting could not be read); 0 means the provider reported zero.
         completionTokens:
           type: number
           minimum: 0
@@ -850,6 +1038,7 @@ components:
                   - contained_unresolved
                   - escalated
                   - abandoned
+                  - failed
             - type: string
               minLength: 1
         environment:
@@ -888,7 +1077,8 @@ components:
               minLength: 1
         channelUId:
           description: Same as the `channelUId` query parameter of the GET operation. Send a JSON
-            array, or a comma-separated string as in the query string.
+            array, or a comma-separated string as in the query string. Each array entry is
+            one value and is never split on commas.
           anyOf:
             - type: array
               maxItems: 100
@@ -908,40 +1098,36 @@ components:
               items:
                 type: string
                 maxLength: 128
-                enum:
-                  - http_async
-                  - slack
-                  - line
-                  - msteams
-                  - whatsapp
-                  - messenger
-                  - instagram
-                  - twilio_sms
-                  - zendesk
-                  - telegram
-                  - genesys
-                  - genesys_open_messaging
-                  - ai4w
-                  - kore_agent_assist
-                  - email
-                  - voice_vxml
-                  - korevg
-                  - audiocodes
-                  - genesys_audio_connector
-                  - voice_pipeline
-                  - voice_realtime
-                  - voice
-                  - voice_twilio
-                  - voice_livekit
-                  - ag_ui
-                  - a2a
-                  - sdk_websocket
-                  - web_debug
-                  - web_chat
-                  - api
-                  - http
+                enum: *channel_ids
             - type: string
               minLength: 1
+        source:
+          description: Same as the `source` query parameter of the GET operation (default
+            `user_initiated`). Send a string, a JSON array, or a comma-separated string.
+            `production` is the legacy name of `user_initiated` and is still accepted.
+          anyOf:
+            - type: array
+              maxItems: 100
+              uniqueItems: true
+              items:
+                type: string
+                enum:
+                  [user_initiated, workflow, eval, synthetic, debug, demo_insights, production, all]
+            - type: string
+          example: [user_initiated, workflow]
+        channelType:
+          description: Same as the `channelType` query parameter of the GET operation. Send a
+            string, a JSON array, or a comma-separated string.
+          anyOf:
+            - type: array
+              maxItems: 6
+              uniqueItems: true
+              items:
+                type: string
+                enum: *channel_types
+            - type: string
+              minLength: 1
+          example: [voice, messaging]
         traceDimensions:
           type: object
           description: |
@@ -970,6 +1156,10 @@ components:
             - escalated
             - abandoned
             - archived
+        dispositionCode:
+          description: Same as the `dispositionCode` query parameter of the GET operation.
+          type: string
+          maxLength: 200
         limit:
           description: Same as the `limit` query parameter of the GET operation.
           type: integer
@@ -1119,6 +1309,18 @@ components:
         than 512 characters. Any caller format, including bare
         digits and national formats, is accepted. The message names the position of
         the offending entry and never echoes it.
+
+        `INVALID_DISPOSITION_CODE`: the `dispositionCode` parameter is longer than 200
+        characters after trimming.
+
+        `INVALID_SOURCE`: a `source` value is not one of `user_initiated`, `workflow`,
+        `eval`, `synthetic`, `debug`, `demo_insights`, `all` (or the older
+        `production`), or `all` is combined with another value. The message lists the
+        allowed values.
+
+        `INVALID_CHANNEL_TYPE`: a `channelType` value is not one of `messaging`,
+        `voice`, `sdk`, `webhook`, `protocol`, `workflow`. The message lists the
+        allowed values.
       content:
         {
           application/json:
