@@ -325,7 +325,7 @@ Multi-Intent allows an agent to handle multiple customer requests instead of tre
 | Value | Behavior |
 |---|---|
 | **Primary queue** | Handles the first intent immediately and queues the rest, addressing them in sequence once the primary completes. |
-| **Sequential** | Addresses intents one at a time in detection order, finishing each before starting the next. |
+| **Sequential** | Addresses intents one at a time in detection order, finishing each before starting the next. Before each request begins, the supervisor introduces it with a transition message or acknowledgement(for example, "Next, your other request..."), unless a merged response is generated.|
 | **Parallel** | Dispatches all intents at once and resolves them concurrently. |
 | **Ask the customer to choose** | Asks the user which request to handle first. |
 | **Automatic** | Lets the runtime choose based on the intent relationship and conversation context. |
@@ -392,6 +392,7 @@ The reasoning pipeline runs a lightweight classifier ahead of each reasoning tur
 | **Custom Return Threshold** | Enables a custom confidence threshold for returning the caller to the supervisor while a specialist is active. When disabled, the supervisor's default threshold of 0.5 applies. When enabled, the default return threshold is 0.9. |
 | **Return Threshold** | Sets the minimum classifier confidence required to return the caller to the supervisor. The default is 0.9 when Custom Return Threshold is enabled. |
 | **Keep Ambiguous Replies With Specialist** | When enabled, the active specialist handles replies that the classifier marks as ambiguous instead of returning the caller to the supervisor. |
+| **Answer Pending Question First** | When enabled, gives a reply to the active specialist before the supervisor checks for a topic switch. For a flow specialist, the check is skipped only when the reply validly answers all pending fields; otherwise, the check still runs. A new topic included alongside a valid answer may not be detected. For a reasoning specialist, the specialist receives the reply and must return out-of-scope requests to the supervisor. Off by default. |
 | **Routing provider** | Configures a decision provider to handle routing decisions. This section appears when **Decision Models** is enabled at the platform level. For configuration details, see [Configure decision models for a project](/agent-platform/administration/decision-models). |
 
 
@@ -592,6 +593,8 @@ When the agent is processing a request, Runtime waits for the configured delay b
 | **Previous Fillers** | Sets how many already-emitted fillers the prompt includes. Its purpose is avoiding repetition within a turn, so it matters most when the max per turn runs high. |
 | **Filler Prompt** | Selects a prompt-library version that replaces the built-in filler prompt. Select **Clone built-in** to start from the platform's prompt rather than an empty one. The prompt accepts placeholders for the user message, the conversation history, and previously emitted fillers. |
 
+<Note>Custom filler and no-input prompts can access only the values that are available to the active agent's prompt. This includes conversation language and locale (for example, `{{interactionContext.language}}`, `{{session.interactionContext.current.language}}`, and `{{interaction_language}}`) and any values passed using CONTEXT.pass during agent handoff. Hidden memory, access restrictions, and PII redaction are enforced in the same way as for agent prompts. </Note>
+
 #### Background audio
 
 Background audio is looped hold music the voice gateway plays during compute waits. It covers silence without the agent having to say anything.
@@ -635,11 +638,37 @@ This section sets what happens when a voice caller goes silent. Silence is ambig
 |---|---|
 | **Enabled** | Turns on no-input handling for voice sessions. |
 | **Mode** | Chooses between authored prompts and contextual generated prompts. Generated prompts fall back to the authored and default prompts, so choosing them adds a behavior rather than replacing one. |
+| **No-Input messages (JSON)** | In static mode, holds the authored check-in prompts. Enter an array of objects with a locale-keyed `text` value. |
+| **Exhausted no-input message** | Sets the message played after the configured retries are exhausted. Enter plain text or a locale-keyed message map for multilingual calls. |
 | **Timeout** | Sets the silence that must pass before a no-input prompt fires. Too short interrupts a caller who's reading something out, and too long lets a caller believe the call has dropped. |
 | **Max Retries** | Sets how many no-input prompts the agent issues before it takes the terminal action. |
 | **Relaxed Interval** | Sets the extended timeout interval used in dynamic mode. |
+| **When Retries Run Out** | Chooses the terminal action: **End the call** (default), **Transfer to a person**, or **Hand off to an agent**. |
+| **Transfer Target** | Appears when **Transfer to a person** is selected. Choose **SIP target** or **Phone number (PSTN)**. Configure the selected destination under **Project Settings → Agent Transfer → Voice Gateway** first. |
+| **Handoff Agent** | Appears when **Hand off to an agent** is selected. Choose an agent in this project. Each calling agent must allow that target in its `HANDOFF` list. |
 | **Play Order** | Sets the order in which no-input messages play. |
 | **Play Style** | Sets how messages repeat across retries. Repeating the same prompt signals a system that isn't listening, so this choice affects how a stuck caller reads the failure. |
+
+For example, use a JSON array for static localized check-ins and a locale map for the exhausted message:
+
+```json
+{
+  "messages": [
+    { "text": { "en": "I'm still here whenever you're ready." } }
+  ],
+  "exhaustedMessage": {
+    "en": "I still didn't hear anything, so I'll end the call now."
+  }
+}
+```
+
+**End the call** plays the exhausted message and then hangs up. For a transfer or handoff, use a brief hand-over message. To run custom recovery steps or a tool call, hand off to a recovery agent that runs them.
+
+An agent or step with its own `on_exhausted` behavior takes precedence over the project action. A project-level handoff does not grant permission; add the selected agent to each calling agent's `HANDOFF` list.
+
+Project-level transfer and handoff actions are supported on Pipeline Voice through KoreVG. Twilio and speech-to-speech voice do not apply these project-level routes; the exhausted message plays and the call ends. Save the project settings, then publish the project or start a new preview call to use the change.
+
+The Runtime Config API stores the action and its target under `voiceNoInput`. Use `onExhausted: "hangup"` (the default), `"transfer"`, or `"handoff"`. A transfer also requires `transferTarget: "sip"` or `"pstn"`; a handoff requires `handoffTarget` to name an agent in the project. Set a target only for its matching action.
 
 ### Listening
 

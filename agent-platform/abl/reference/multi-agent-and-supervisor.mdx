@@ -141,7 +141,7 @@ ROUTING:
 
 #### Conditional routing (WHEN clauses)
 
-WHEN clauses use the same expression syntax as [Expressions & functions](/agent-platform/abl-reference/expressions-and-functions). Common patterns include:
+WHEN clauses use the same expression syntax as [Expressions & functions](/agent-platform/abl/reference/expressions-and-functions), with the same [size limits](/agent-platform/abl/reference/expressions-and-functions#size-limits-for-conditions-and-regex-patterns). A long `WHEN` can combine parts with `OR` / `AND`, but each single comparison or list stays under 4,096 characters and each regex pattern under 500. Common patterns include:
 
 ```yaml expandable=true
 # Intent-based
@@ -206,13 +206,13 @@ STATE:
       source: system
 ```
 
-State variables follow the same [VariableDefinition](/agent-platform/abl-reference/data-types-and-utilities) structure as agent variables, with the addition of namespace grouping.
+State variables follow the same [VariableDefinition](/agent-platform/abl/reference/data-types-and-utilities) structure as agent variables, with the addition of namespace grouping.
 
 #### State variable properties
 
 | Property      | Type                                                                     | Required | Default | Description                                          |
 |---------------|--------------------------------------------------------------------------|----------|---------|------------------------------------------------------|
-| `type`        | See [Data types](/agent-platform/abl-reference/data-types-and-utilities) | Yes      | --      | Variable type.                                       |
+| `type`        | See [Data types](/agent-platform/abl/reference/data-types-and-utilities) | Yes      | --      | Variable type.                                       |
 | `required`    | `boolean`                                                                | No       | `false` | Whether the variable must have a value.              |
 | `default`     | any                                                                      | No       | --      | Default value.                                       |
 | `description` | `string`                                                                 | No       | --      | Human-readable description.                          |
@@ -373,7 +373,7 @@ HANDOFF:
 
 | Option                               | Type    | Default    | Description                                                                                                                       |
 |--------------------------------------|---------|------------|-----------------------------------------------------------------------------------------------------------------------------------|
-| `enabled`                            | Boolean | `false`    | Enable the pre-classification pipeline.                                                                                           |
+| `enabled`                            | Boolean | `false`    | Enable the pre-classification pipeline. The setting has no effect unless the project runtime configuration also turns the pipeline on. |
 | `mode`                               | String  | `parallel` | `parallel` — classifier and main LLM run simultaneously; `sequential` — classifier runs first, main LLM only if no short-circuit. |
 | `shortCircuit.enabled`               | Boolean | `true`     | Allow direct routing when classifier confidence is high.                                                                          |
 | `shortCircuit.confidenceThreshold`   | Number  | `0.85`     | Minimum confidence to skip the reasoning loop.                                                                                    |
@@ -382,10 +382,44 @@ HANDOFF:
 | `keywordVeto.enabled`                | Boolean | `true`     | Prevent short-circuit when the user mentions local tool keywords.                                                                 |
 | `keywordVeto.keywords`               | String  | `[]`       | Additional keywords that veto short-circuit routing.                                                                              |
 | `intentBridge.enabled`               | Boolean | `true`     | Bridge classifier intent into routing decisions.                                                                                  |
-| `intentBridge.programmaticThreshold` | Number  | `0.85`     | Confidence at/above which intent routing is applied programmatically.                                                             |
+| `intentBridge.programmaticThreshold` | Number  | `0.85`     | Confidence at/above which the runtime declines an out-of-scope request. It is not used for other routing.                         |
 | `intentBridge.guidedThreshold`       | Number  | `0.5`      | Confidence at/above which intent is offered to the model as guidance.                                                             |
 | `intentBridge.outOfScopeDecline`     | Boolean | `true`     | Decline out-of-scope requests detected by the classifier.                                                                         |
-| `intentBridge.multiIntentSignal`     | Boolean | `true`     | Signal when the message contains multiple distinct intents.                                                                       |
+| `intentBridge.multiIntentSignal`     | Boolean | `true`     | Allow guided multi-intent detection when every detected intent reaches `guidedThreshold`.                                         |
+
+#### Parent return options
+
+When a supervisor hands off with `RETURN: true`, the runtime checks the caller's replies against the supervisor's routes while the specialist is active, so a caller who changes topic can be routed back. The `parentReturn` options control that check. Each is read from the supervisor's `EXECUTION.pipeline.parentReturn` block first, then the project's `pipeline.parentReturn` runtime configuration (Studio: Runtime Config → Pipeline), then the default.
+
+| Option                     | Type    | Default | Description                                                                                                                                  |
+| -------------------------- | ------- | ------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| `parentReturn.minConfidence`   | Number  | compiled threshold | Minimum confidence for a route to take the caller out of the specialist.                                                       |
+| `parentReturn.ignoreAmbiguous` | Boolean | `false` | Keep the specialist in charge when the check is ambiguous.                                                                                 |
+| `parentReturn.answerFirst`     | Boolean | `false` | Give each reply to the active specialist before any topic check. Studio: **Answer Pending Question First**.                                |
+
+```yaml
+EXECUTION:
+  pipeline:
+    enabled: true
+    parentReturn:
+      answerFirst: true
+```
+
+By default the check runs before the specialist sees the reply, and a matching route wins even when the reply answers the specialist's question. A short answer such as "no" to "Does anyone else have access to this card?" can be classified as another route.
+
+With `answerFirst: true` the specialist gets the reply first:
+
+| Active specialist             | `answerFirst: false` (default)                                       | `answerFirst: true`                                                                                                                                                       |
+| ----------------------------- | -------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Flow step waiting on `GATHER` | The topic check runs first. Its route wins.                          | The reply is extracted first. If it gives a valid value for every pending customer-facing field, the check is skipped. A whole reply captured into a lone free-text field does not count. Other replies are checked as before. |
+| Reasoning agent               | The topic check (decision model, then classifier) runs before every turn. | No check. The specialist answers, and calls `__return_to_parent__` when the request is outside its scope. Only then does the supervisor route it.                    |
+
+A skipped check is traced as a `pipeline_classifier_skipped` decision with reason `parent_return_answer_first`.
+
+- A flow reply that answers the pending question and also names a new topic stays with the flow.
+- Instruct a reasoning specialist to hand back requests outside its scope with `__return_to_parent__`. Without that instruction, a caller who changes topic stays with the specialist.
+
+Write the pipeline keys in camelCase in an agent file, such as `shortCircuit` and `confidenceThreshold`. Snake_case keys are dropped without a message. An agent file does not range-check the threshold values. The project runtime configuration does.
 
 For pure routing supervisors, `sequential` mode with `shortCircuit.enabled: true` gives the best cost savings. In `parallel` mode the classifier adds latency protection but no cost savings, since both calls run regardless.
 
@@ -432,12 +466,13 @@ HANDOFF:
 | `PRIORITY`       | `number`                | No       | --       | Evaluation priority. Lower values are evaluated first when multiple handoff rules match.     |
 | `CONTEXT`        | `object`                | Yes      | --       | Context to pass to the target agent. See [Context](#handoff-context).                        |
 | `EXPECT_RETURN`  | `boolean`               | Yes      | `false`  | Whether control should return to this agent after the target completes. `RETURN` is accepted as a backward-compatible alias. |
+| `HAND_BACK`      | `string`                | No       | `after_reply` | For a handoff with `EXPECT_RETURN: true`. Decides when a reasoning target with no `COMPLETE` condition hands the customer back: `after_reply` or `when_finished`. See [Handing back](#handing-back-hand_back). |
 | `ON_FAILURE`     | `string` / `object`     | No       | --       | Parent-side fallback for setup or dispatch failures **before** the target accepts the handoff. See [Handoff failure strategies](#handoff-failure-strategies). |
 | `ON_RETURN`      | `string` / `object`     | No       | --       | How to handle the target returning control. See [Return expectations](#return-expectations). |
 | `EXPERIENCE_MODE`| `string`                | No       | --       | End-user experience when the transfer happens. See [Experience modes](#experience-modes).    |
 | `REMOTE`         | `object`                | No       | --       | Remote agent configuration. Can also be expressed as top-level `LOCATION`/`ENDPOINT`/`PROTOCOL` keys. See [Remote agent support](#remote-agent-support). |
 | `ASYNC`          | `boolean`               | No       | `false`  | Use async dispatch with push notifications for remote agents.                                |
-| `ASYNC_TIMEOUT`  | `number`                | No       | --       | Timeout in seconds for async handoff. (Also accepted as `TIMEOUT`.)                          |
+| `TIMEOUT`        | `number`                | No       | `300`    | Timeout in seconds for async handoff. The platform caps it at a configured maximum. In YAML, use `async_timeout`. Text ABL ignores an `ASYNC_TIMEOUT` key without a message. |
 
 <Note>The primary keyword is **`EXPECT_RETURN`**. The older `RETURN` keyword is still parsed for backward compatibility, but new agents should use `EXPECT_RETURN`. The legacy top-level `MAP` block is superseded by `ON_RETURN.map` (see [Return expectations](#return-expectations)).</Note>
 
@@ -490,6 +525,35 @@ When the target explicitly returns control (via its built-in return capability),
 When `EXPECT_RETURN: false`, the handoff is a one-way transfer and the calling agent's turn ends — the parent does not automatically get control back.
 
 <Note>`EXPECT_RETURN: false` disables *automatic* return, not every path back. If the child agent (while that same nested handoff call is still unwinding) itself authors a `HANDOFF` route back to that exact direct parent, and the route is otherwise authorized, Runtime resumes the parent's completed thread as the conversation owner — it does not re-enable automatic returns, and it does not make any *other* completed ancestor resumable. For a FLOW child, this only applies while its authored FLOW is still live; once the child reaches `COMPLETE`, that parent frame is closed for good. Routes to an unrelated or non-direct ancestor remain blocked as a cycle.</Note>
+
+A queued request that targets a FLOW step belongs to the agent activation that queued it. Only that activation runs it or offers it. If that agent completes or returns to its parent before the step runs, the runtime removes the request and records a `multi_intent_queue_retired` trace. The parent never runs or offers the step. If that agent is paused while another agent has the conversation, its queued steps stay queued until it resumes. Requests that target an agent are not affected. See [Multi-intent handling](/agent-platform/abl/reference/nlu#multi-intent-handling-multi_intent).
+
+### Handing back (`HAND_BACK`)
+
+A target reached with `EXPECT_RETURN: true` normally decides when it is done: a `COMPLETE` condition, a FLOW that finishes, or a return to the parent. A target with none of these runs on reasoning alone. It has no `COMPLETE`, no domain tools, and no required `GATHER` field. The runtime hands the customer back as soon as such a target shows a reply. `HAND_BACK` sets what "done" means for that target, for each handoff.
+
+| Value | The target hands the customer back |
+| ----- | ---------------------------------- |
+| `after_reply` (default) | After any reply. The same applies when `HAND_BACK` is not written. |
+| `when_finished` | After a reply that finishes the customer's request. A reply that still waits on the customer, such as a question, keeps the target in control. The customer's answer then reaches the agent that asked. |
+
+```yaml
+HANDOFF:
+  - TO: TransfersStatus
+    WHEN: intent.category == "transfers"
+    EXPECT_RETURN: true
+    HAND_BACK: when_finished
+    ON_RETURN:
+      action: continue
+```
+
+With `when_finished`, TransfersStatus can ask "Has it been more than 24 hours since the payment?" and keep the conversation. The customer's "yes" goes to TransfersStatus, and its answer hands the customer back. With `after_reply`, the question hands the customer back at once, and the "yes" reaches the supervisor.
+
+- **How the runtime judges a reply.** It makes one small model call on the target's own model binding. The call asks whether the reply finished the customer's latest message or still waits on the customer. It runs only for a `when_finished` handoff, only on a reply that would otherwise hand back, and at most once per reply.
+- **A reply that cannot be judged hands back.** This covers no model, an open classifier circuit, a timeout, an unreadable verdict, and an interrupted turn. The trace records `handoff_return_backstop_hand_back_unjudged`. A reply that the judgement keeps records `handoff_return_backstop_withheld`.
+- **What it does not change.** A target with a `COMPLETE` condition, a FLOW, domain tools, a required `GATHER` field, or a pending input keeps its own completion rules. The same applies to a handoff whose `ON_RETURN` is `resume_intent`. The completion rules of a multi-intent plan decide before `HAND_BACK`. A return to the parent still works at any time. Realtime speech-to-speech targets do not use this rule.
+- **When it takes effect.** A session already inside the target keeps the handoff it entered with. A changed `HAND_BACK` applies from the next handoff.
+- **Diagnostics.** An unknown value is ignored, and the handoff keeps `after_reply` ([`W324`](/agent-platform/abl/reference/errors-and-warnings#w324)). `HAND_BACK` on a handoff without `EXPECT_RETURN: true` has no effect ([`W325`](/agent-platform/abl/reference/errors-and-warnings#w325)).
 
 `ON_RETURN` controls what happens when the target returns. It accepts either a **string** (the name of a named return handler, or a built-in action) or a **structured block**:
 
@@ -552,7 +616,7 @@ For a reasoning parent without a FLOW, a non-blank forwarded customer request be
 - The handler runs once. Completion and deterministic routing come before model-based routing.
 - Within the forwarded continuation's own deterministic coordination chain, the runtime dispatches each authored `DELEGATE` entry automatically by `WHEN` at most once, even if `WHEN` stays true. Nested ordinary continuations keep their earlier dispatch policy. Explicit model-selected delegation stays eligible. Distinct same-target entries keep their own input and result mappings.
 - The parent can synthesize successful typed results. Later customer turns can select the entries again.
-- The returned child keeps its waiting state and cannot block its own forwarded request. Other pending children keep their waiting-work protection.
+- The returned child keeps its waiting state and cannot block its own forwarded request. Other pending children keep their waiting-work protection while they still hold open work: pending input, an unfilled required `GATHER` field, or pending actions. They also keep it while the parent's interrupted-child resume can still resume them on this turn. A child with no open work, parked by its own hand-back on an earlier turn, does not block the forwarded request.
 - A return without an authoritative forwarded request keeps the existing continuation policy.
 
 ### Handoff failure strategies
@@ -603,7 +667,7 @@ HANDOFF:
       endpoint: "https://review.partner.com/api/v1/submit"
       protocol: a2a
     ASYNC: true
-    ASYNC_TIMEOUT: 3600
+    TIMEOUT: 3600
 ```
 
 ### Memory grants
@@ -1112,7 +1176,7 @@ The first CCAI call carries the session's current interaction language in `Inter
 To transfer in the language the customer writes in:
 
 1. Turn on the project's language detection setting. The runtime also needs a Language Detection service.
-2. Apply the detection with `SET_INTERACTION_LANGUAGE` in a `before_turn` hook. See [Hook action properties](/agent-platform/abl-reference/lifecycle-and-hooks#hook-action-properties). The language is set before the escalating turn's reply, so the first call carries it.
+2. Apply the detection with `SET_INTERACTION_LANGUAGE` in a `before_turn` hook. See [Hook action properties](/agent-platform/abl/reference/lifecycle-and-hooks#hook-action-properties). The language is set before the escalating turn's reply, so the first call carries it.
 
 `{{session.languageDetection.language}}` and `{{session.languageDetection.status}}` are ordinary session values. You can send them in `user_info` or `metadata`. The language value keeps the region (`zh-CN`) that the language fields drop.
 
@@ -1164,7 +1228,7 @@ ESCALATE:
 
 #### Custom voice transfer
 
-`call_transfer_type: custom` (ABLP-3552, CXone/NICE integration) replaces the SIP/PSTN leg transfer with an ordered sequence of **project tools**. Instead of moving the call, the runtime keeps the Artemis audio leg live and runs the named tools serially as a notification sequence — for example, obtaining a token from one HTTP tool and signaling an external contact-center API with the next.
+`call_transfer_type: custom` replaces the SIP/PSTN leg transfer with an ordered sequence of **project tools**. Instead of moving the call, the runtime keeps the Artemis audio leg live and runs the named tools serially as a notification sequence — for example, obtaining a token from one HTTP tool and signaling an external contact-center API with the next.
 
 ```yaml
 ESCALATE:
@@ -1279,7 +1343,7 @@ on_human_complete:
 
 Each entry has a `condition` and an `action`. The action can be `COMPLETE` (end the conversation), `HANDOFF` (transfer to another agent), or `CONTINUE` (resume the current agent).
 
-<Note>When the human agent closes the conversation, a `FEEDBACK` survey card can be shown — authored either on the agent itself or inside a `FLOW:` step. See [Post-transfer surveys](/agent-platform/abl-reference/rich-content#post-transfer-surveys-escalate-to-a-human-agent) for exactly which block is picked and when.</Note>
+<Note>When the human agent closes the conversation, a `FEEDBACK` survey card can be shown — authored either on the agent itself or inside a `FLOW:` step. See [Post-transfer surveys](/agent-platform/abl/reference/rich-content#post-transfer-surveys-escalate-to-a-human-agent) for exactly which block is picked and when.</Note>
 
 ---
 
@@ -1316,9 +1380,9 @@ COMPLETE:
 | `SET`      | `Record<string,string>` | No       | --      | Session assignments applied when the completion fires (for example, clear the sticky flag that triggered it). |
 | `TERMINAL` | `boolean`               | No       | `true`  | When `false`, the response renders (including interactive widgets like a closing feedback collector) **without** ending the session — control returns to the agent for the next turn. |
 | `STORE`    | `string`                | No       | --      | Collection or path name to store the completion result for analytics.  |
-| `MODEL_CONTEXT` | `string`           | No       | --      | Text retained for the model instead of the delivered `RESPOND` in future model calls. See [MODEL_CONTEXT on a response](/agent-platform/abl-reference/flow#model_context-on-a-response). |
+| `MODEL_CONTEXT` | `string`           | No       | --      | Text retained for the model instead of the delivered `RESPOND` in future model calls. See [MODEL_CONTEXT on a response](/agent-platform/abl/reference/flow#model_context-on-a-response). |
 
-<Warning> `COMPLETE`'s `WHEN` is **deterministic** — it must be a boolean expression over session state. Plain-English / intent-style text is rejected at compile time ([`PLAIN_ENGLISH_COMPLETE_WHEN`](/agent-platform/abl/reference/errors-and-warnings#plain_english_complete_when)). Use `NLU`/routing for intent matching, not `COMPLETE WHEN`. A fully-quoted `WHEN` (`WHEN: "status == \"done\""`) is unwrapped and evaluated the same as an unquoted one when it contains an operator — see [Quoting a condition](/agent-platform/abl-reference/expressions-and-functions#quoting-a-condition). </Warning>
+<Warning> `COMPLETE`'s `WHEN` is **deterministic** — it must be a boolean expression over session state. Plain-English / intent-style text is rejected at compile time ([`PLAIN_ENGLISH_COMPLETE_WHEN`](/agent-platform/abl/reference/errors-and-warnings#plain_english_complete_when)). Use `NLU`/routing for intent matching, not `COMPLETE WHEN`. A fully-quoted `WHEN` (`WHEN: "status == \"done\""`) is unwrapped and evaluated the same as an unquoted one when it contains an operator — see [Quoting a condition](/agent-platform/abl/reference/expressions-and-functions#quoting-a-condition). </Warning>
 
 <Note>A `COMPLETE` condition that matches does **not** complete the agent if the agent's own `CONSTRAINTS` fail on the state it would complete with — the failing constraint's `ON_FAIL` runs instead, so a completion can never bypass a constraint that would otherwise block the same state.</Note>
 
@@ -1334,6 +1398,8 @@ COMPLETE:
 ```
 
 <Note> Always clear the condition that triggered a `COMPLETE` block when using `TERMINAL: false` (for example, by using `SET`). Otherwise, the same completion condition may be evaluated again on the next user message, creating a completion loop. When such a loop is detected, the platform automatically closes the session and logs a warning. </Note>
+
+**Voice calls on KoreVG.** Every `COMPLETE` ends the call after its message plays, whether or not it is `TERMINAL`. Caller speech or keys heard while that message plays are not a new turn. The runtime acknowledges and ignores them, and the `voice_caller_input_ignored_call_ending` trace records the reason. The message plays once, even when the agent that handed back already said the same line in that turn. The `voice_duplicate_final_suppressed` trace records the removed copy.
 
 ### Rich content in completion
 
@@ -1384,9 +1450,9 @@ COMPLETE:
 ```
 
 - Names must be RFC 3261 tokens of at most 64 characters. Values must be strings without control characters. Violations are compile errors: `COMPLETE_SIP_HEADERS_INVALID_NAME`, `COMPLETE_SIP_HEADERS_INVALID_VALUE`, and `COMPLETE_SIP_HEADERS_WRONG_TYPE`. Quote a value that starts with `{{`.
-- The platform defines no header names or values of its own here. `X-RouteType` is not an ABL or platform header. It is an example of a header that a contact center such as Five9 reads, and `hangup` is the value that example uses. The set of values is defined by the system that receives the BYE, so use the names and values from its routing documentation. The runtime sends any valid string value as written.
+- The platform adds its own correlation headers to the BYE: `x-session-id`, `x-project-id`, `x-tenant-id`, and the call metadata `x-caller-number` and `x-call-start-time` (the same set a transfer sends). You cannot set or override these names. `X-RouteType` is not an ABL or platform header. It is an example of a header that a contact center such as Five9 reads, and `hangup` is the value that example uses. The set of values is defined by the system that receives the BYE, so use the names and values from its routing documentation. The runtime sends any valid string value as written.
 - `{{variable}}` placeholders resolve from session values when the condition fires. A header whose value resolves empty is not sent.
-- The headers pass the project's outbound SIP header policy. Its block list and `headerPassthrough: false` apply. The runtime drops reserved platform names (`x-session-id`, `x-tenant-id`, and similar), and the count and size limits hold. These headers need no allow-list row, and the project's transfer allow rows are never added to a hangup.
+- The headers pass the project's outbound SIP header policy. Its block list and `headerPassthrough: false` apply. The runtime drops authored headers that use reserved platform names (`x-session-id`, `x-tenant-id`, and similar), and the count and size limits hold. These headers need no allow-list row, and the project's transfer allow rows are never added to a hangup.
 - The platform always sets `X-ArtemisReason: BotHangup` and you cannot override it.
 - The headers apply to pipeline and realtime voice calls that this condition ends.
 - `sip_headers` anywhere other than a COMPLETE condition's `VOICE` block is ignored with a warning ([`VOICE_SIP_HEADERS_ILLEGAL_PLACEMENT`](/agent-platform/abl/reference/errors-and-warnings#voice_sip_headers_illegal_placement)). Transfer headers belong in `ESCALATE.routing.voice.sip_headers`.
@@ -1458,8 +1524,8 @@ COMPLETE:
 
 {{related}}
 
-- [NLU](/agent-platform/abl-reference/nlu) -- intent classification that drives routing decisions
-- [Memory and Constraints](/agent-platform/abl-reference/memory-and-constraints) -- session and persistent state used in routing conditions
-- [Expressions and functions](/agent-platform/abl-reference/expressions-and-functions) -- condition syntax for WHEN clauses
-- [Lifecycle and hooks](/agent-platform/abl-reference/lifecycle-and-hooks) -- ON_START and hooks that interact with multi-agent flows
-- [Rich content](/agent-platform/abl-reference/rich-content) -- formatting for RESPOND and COMPLETE messages
+- [NLU](/agent-platform/abl/reference/nlu) -- intent classification that drives routing decisions
+- [Memory and Constraints](/agent-platform/abl/reference/memory-and-constraints) -- session and persistent state used in routing conditions
+- [Expressions and functions](/agent-platform/abl/reference/expressions-and-functions) -- condition syntax for WHEN clauses
+- [Lifecycle and hooks](/agent-platform/abl/reference/lifecycle-and-hooks) -- ON_START and hooks that interact with multi-agent flows
+- [Rich content](/agent-platform/abl/reference/rich-content) -- formatting for RESPOND and COMPLETE messages

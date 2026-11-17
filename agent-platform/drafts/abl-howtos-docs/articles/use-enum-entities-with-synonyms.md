@@ -1,0 +1,153 @@
+# Use enum entities with synonyms
+
+Use this pattern when the customer can say one choice in many ways and the agent must store one canonical value.
+
+## Concept
+
+An enum entity lists the allowed values. Synonyms map the customer's own words to those values. The runtime stores the canonical value, with the spelling from `VALUES`, no matter which phrase the customer used.
+
+Matching is strict and has three steps:
+
+1. An exact match on a value.
+2. A case-insensitive match on a value.
+3. A case-insensitive match on a synonym.
+
+There is no partial or approximate matching. A phrase that is not a value or a synonym is rejected, unless the extraction model maps it and the phrase appears in a synonym or an extraction hint. A model cannot rewrite a phrase into a value on its own.
+
+So every paraphrase you want to accept needs a synonym or an `EXTRACTION_HINTS` entry.
+
+## Minimal working example
+
+A shipping assistant stores one of three delivery speeds. Customers say "overnight", "asap", "cheapest", and similar words.
+
+```yaml
+AGENT: Delivery_Options
+GOAL: "Find out which delivery speed the customer wants and confirm it."
+
+PERSONA: "You are a concise shipping assistant."
+
+ENTITIES:
+  delivery_speed:
+    TYPE: enum
+    DESCRIPTION: "How fast the customer wants the parcel to arrive."
+    VALUES: [STANDARD, EXPRESS, NEXT_DAY]
+    SYNONYMS:
+      STANDARD: [normal, regular, slowest, cheapest]
+      EXPRESS: [fast, quick, two day, 2 day]
+      NEXT_DAY: [overnight, tomorrow, next day, asap]
+    EXTRACTION_HINTS: ["I need it by tomorrow", "whatever is cheapest"]
+
+GATHER:
+  speed:
+    ENTITY_REF: delivery_speed
+    PROMPT: "Which delivery speed do you want: standard, express, or next day?"
+
+COMPLETE:
+  - WHEN: speed IS SET
+    RESPOND: "Delivery set to {{speed}}."
+```
+
+Variable sources:
+
+- `speed` is a `GATHER` field that the customer supplies.
+- The entity supplies the allowed values and the synonyms. The stored value is `STANDARD`, `EXPRESS`, or `NEXT_DAY`.
+
+## How it works
+
+Write synonyms as a map. Each key is a canonical value. Each value is an inline list.
+
+Rules for the syntax:
+
+| You write | Result |
+| --------- | ------ |
+| `VALUES: [A, B]` on one line | Works. Quotes around an item are removed. |
+| `VALUES:` followed by a `- A` list | Silently empty. The enum accepts any value. |
+| A trailing comment after `VALUES: [A, B]` | The list is corrupted. Put comments on their own line. |
+| `SYNONYMS` key with an inline list, `A: [x, y]` | Works. Multi-word synonyms, such as `money back`, need no quotes. |
+| `SYNONYMS` key followed by a block list | Silently dropped. |
+| `SYNONYMS` as a flow map, `{A: [x]}` | Silently dropped. |
+| A synonym key with a hyphen or a space, such as `Next-Day` | Silently skipped. Use letters, digits, and underscores. |
+| Quotes around a synonym in `ENTITIES`, `["alpha one"]` | The quotes stay in the stored text, so the synonym never matches. Write it without quotes. |
+| A comma inside one synonym | The synonym splits at the comma. |
+| A synonym key that is not in `VALUES` | Compiles. The runtime ignores it. |
+| A key with different case than `VALUES`, `a` and `A` | Ignored. The key must match exactly. |
+| The same synonym under two values | The first value declared wins. |
+
+At run time:
+
+- The stored value is the canonical spelling from `VALUES`.
+- A value that matches nothing is rejected with the message `Invalid value "x" for "field". Allowed: A, B`. The value is left out of the message for a sensitive field.
+- The trace stage result lists each raw phrase, the value it resolved to, and whether it changed.
+- When two synonyms could match, the first one in declaration order wins. There is no clarification step.
+
+The compiler does not warn about a missing `VALUES` list, orphan synonyms, or duplicates.
+
+## Common variations
+
+### Enum without an entity
+
+A single field can list its allowed values with `OPTIONS`. It cannot carry synonyms. Use an entity when you need synonyms.
+
+```yaml
+GATHER:
+  speed:
+    TYPE: enum
+    OPTIONS: [standard, express, next_day]
+    PROMPT: "Which delivery speed do you want?"
+```
+
+This is a section snippet. A field cannot combine `OPTIONS` with `ENTITY_REF`.
+
+### Synonyms in the NLU section
+
+The `NLU:` section declares entities in a list form. Its synonym lists accept quotes, and keys can contain a hyphen. Use one place per entity, either `ENTITIES:` or `NLU:`.
+
+### Let the model map paraphrases
+
+Add `EXTRACTION_HINTS` for phrasings that are hard to list, such as "I need it by tomorrow". The model can map a phrase to a value only when the phrase is a synonym or a hint.
+
+## Verification
+
+1. Run the validator. Expect no errors and no warnings.
+2. Say "overnight please". Expect `speed` to fill as `NEXT_DAY`.
+3. Say "the CHEAPEST one". Expect `STANDARD`.
+4. Say "sometime this week". Expect the field to stay empty and the agent to ask again.
+5. In the trace, open the extraction stage result. Check the raw phrase, the resolved value, and the `changed` flag.
+6. Check the rejection reason code `invalid_option` when a phrase is refused.
+
+## Production readiness checklist
+
+- `VALUES` is on one line, with no trailing comment.
+- Every synonym key matches a value exactly.
+- Synonyms are inline lists, and none contains a quote or a comma.
+- Customers' real phrases come from logs or tests, and each one maps to a value.
+- Each ambiguous phrase appears under one value only.
+- Tests cover an exact value, a synonym, a different case, and an unknown phrase.
+
+## Common mistakes
+
+| Mistake | Why it happens | How to avoid it |
+| ------- | -------------- | --------------- |
+| Writing `VALUES` as a block list | YAML lists look natural. | Write `VALUES: [A, B]`. |
+| Quoting a multi-word synonym | Quotes seem safer. | Write it without quotes. |
+| Using a hyphen in a synonym key | Value names often have hyphens. | Use underscores. |
+| Expecting partial matches | The name "synonyms" suggests loose matching. | List every phrase. |
+| Declaring an enum entity with no `VALUES` | The entity looks complete. | Add `VALUES`. Otherwise any text is valid. |
+| Expecting the model to invent a mapping | Models paraphrase well. | Add the phrase as a synonym or a hint. |
+
+## Troubleshooting
+
+| Symptom | Likely cause | What to check |
+| ------- | ------------ | ------------- |
+| Every phrase is accepted as the value | `VALUES` is empty because of a block list or a comment. | The `VALUES` line. |
+| A synonym never matches | It is quoted, in a block list, or under a key with a hyphen. | The `SYNONYMS` block. |
+| The stored value has the wrong case | The key or the value case differs from `VALUES`. | The exact spelling in `VALUES`. |
+| The field is rejected with `invalid_option` | The phrase is not a value, a synonym, or a hint. | The customer's wording. |
+| A phrase maps to the wrong value | The synonym appears under two values. | The first declared value. |
+
+{{related}}
+
+- [Define reusable entities for structured extraction](/agent-platform/abl/how-to/define-reusable-entities)
+- [Normalize user language into canonical values](/agent-platform/abl/how-to/normalize-user-language)
+- [Extract pattern-based values like IDs and phone numbers](/agent-platform/abl/how-to/extract-pattern-based-values)
+- [Collect required and optional fields from users](/agent-platform/abl/how-to/collect-required-and-optional-fields)

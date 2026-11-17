@@ -354,21 +354,27 @@ All properties are optional. When omitted, the platform applies its built-in def
 | `llm_timeout`              | `number`  | No       | Platform default | Timeout in milliseconds for LLM inference calls                                                     |
 | `session_idle_timeout`     | `number`  | No       | Platform default | Timeout in milliseconds before an idle session expires                                              |
 | `max_reasoning_iterations` | `number`  | No       | Platform default | Maximum reasoning loop iterations for agents without a flow                                         |
-| `max_flow_iterations`      | `number`  | No       | Platform default | Maximum step transitions in a flow before forced exit                                               |
+| `max_flow_iterations` &dagger;| `number`  | No       | Platform default | Maximum accepted step transitions for one active agent flow.                             |
 | `voice_latency_target`     | `number`  | No       | Platform default | Target latency in milliseconds for voice channel responses                                          |
 | `fallback_model`           | `string`  | No       | _none_           | Model to use when the primary model is unavailable or errors                                        |
 | `enable_thinking`          | `boolean` | No       | `false`          | Enable extended thinking (Anthropic Claude models)                                                  |
 | `thinking_budget`          | `number`  | No       | Platform default | Token budget allocated to extended thinking                                                         |
-| `token_budget`             | `number`  | No       | _none_           | Cumulative LLM token budget for a single execution/session; primarily used to bound debug/test runs |
+| `token_budget`             | `number`  | No       | _none_           | Cumulative LLM usage budget for one debug execution or session. Studio Observatory reports when usage goes over it. |
 | `compaction_threshold`     | `number`  | No       | Platform default | Context-usage ratio (0.0--1.0) that triggers auto-compaction                                        |
 | `compaction`               | `object`  | No       | Platform default | Fine-grained compaction policy overrides. See [Compaction policy overrides](#compaction-policy-overrides). |
 | `inline_gather`            | `boolean` | No       | `false`          | When `true`, gather fields are collected inline during conversation rather than as a separate phase |
+| `prompt_cache_key`         | `boolean` or `string` | No | _none_      | OpenAI and Azure OpenAI only. `true`, `false`, or a name added to the cache key. See [Provider prompt caching](#provider-prompt-caching). |
+| `prompt_cache_retention`   | `string`  | No       | Provider default | OpenAI and Azure OpenAI only. `in_memory` or `24h`.                                                 |
+| `prompt_version`           | `string`  | No       | Project setting, then `v1` | Prompt version: `v1` (no cache layout) or `v2` (cache layout). See [Provider prompt caching](#provider-prompt-caching). |
+| `set_expression_failure`   | `string`  | No       | `unset`          | What a computed `SET` value does when it can't be evaluated: `unset` leaves the variable without a value, `keep_text` stores the expression's own text. See [When a SET value cannot be evaluated](/agent-platform/abl/reference/expressions-and-functions#when-a-set-value-cannot-be-evaluated). |
 | `concurrency`              | `string`  | No       | `serial`         | Message-processing strategy: `serial`, `preemptive`, or `parallel`. See [Message concurrency](#message-concurrency). |
 | `max_queue_depth`          | `number`  | No       | `10`             | Maximum pending messages held in the per-session queue.                                             |
 | `max_concurrent_messages`  | `number`  | No       | Platform default | Maximum concurrent message executions when `concurrency: parallel`.                                 |
 | `conversation_history_window` | `number` | No     | Platform default | Number of prior conversation messages to include in the LLM context.                                |
-| `voice`                    | `object`  | No       | _none_           | Agent-level voice (TTS) configuration. See [Voice configuration](/agent-platform/abl-reference/rich-content#voice-configuration). |
-| `pipeline`                 | `object`  | No       | disabled         | Pre-classification / tool-filter pipeline (supervisors). See [Multi-Agent and Supervisor](/agent-platform/abl-reference/multi-agent-and-supervisor#execution-pipeline-pre-classification). |
+| `voice`                    | `object`  | No       | _none_           | Agent-level voice (TTS) configuration. See [Voice configuration](/agent-platform/abl/reference/rich-content#voice-configuration). |
+| `pipeline`                 | `object`  | No       | disabled         | Pre-classification / tool-filter pipeline (supervisors). See [Multi-Agent and Supervisor](/agent-platform/abl/reference/multi-agent-and-supervisor#execution-pipeline-pre-classification). |
+
+&dagger; `max_flow_iterations` counts across customer messages and session restoration. It doesn't restart on each request. The Runtime blocks the next non-terminal flow transition that would pass the limit. Terminal completion and an intercepted handoff stay allowed at the limit. A parent agent and a child agent keep separate counters.
 
 #### Authored values and project model selection
 
@@ -378,14 +384,41 @@ Values you author in `EXECUTION:` apply on every project, including projects tha
 
 The runtime sends `seed` and `stop_sequences` only where the provider accepts them.
 
-| Provider | `seed` | `stop_sequences` |
-| -------- | ------ | ---------------- |
-| OpenAI and Azure OpenAI, non-reasoning models on Chat Completions | Sent | Sent |
-| Anthropic and Google | Not sent | Sent |
+| Provider                                                          | `seed`   | `stop_sequences` |
+|-------------------------------------------------------------------|----------|------------------|
+| OpenAI and Azure OpenAI, non-reasoning models on Chat Completions | Sent     | Sent             |
+| Anthropic and Google                                              | Not sent | Sent             |
 
 - **Reply call only.** Stop sequences go only on the customer-facing reply call.
 - **More than four.** More than four stop sequences gives warning [`W562`](/agent-platform/abl/reference/errors-and-warnings#w562). The runtime leaves the list out for any provider whose limit it exceeds.
 - **Traces.** `llm_call` traces record the stop sequences sent.
+
+### Provider prompt caching
+
+`prompt_cache_key` and `prompt_cache_retention` apply only to OpenAI and Azure OpenAI model calls. Other providers ignore them. An agent that sets neither sends the same requests as before.
+
+| Key | Accepts | Effect |
+| --- | ------- | ------ |
+| `prompt_cache_key` | `true`, `false`, or a name of 1 to 64 letters, digits, underscores, dots, colons or hyphens | `true` sends a stable key built from the tenant, project, agent, agent version and call type. A name is added to that key as a suffix. It never replaces the key, so it cannot reach another tenant's or project's cache. `false` sends no key, even when the platform-wide key switch is on. |
+| `prompt_cache_retention` | `in_memory` or `24h` | Asks the provider to use that policy when the model and API support it. Otherwise the provider default applies. |
+
+The key helps the provider route requests with a matching prefix. It does not guarantee a cache hit. Prompt content stays the same.
+
+`prompt_version` sets how the Runtime builds the prompt for the agent:
+
+- `v1`: one system message, with no cache layout.
+- `v2`: lets the provider reuse the fixed part of the prompt (instructions and tool definitions). This works on OpenAI GPT models on OpenAI, Azure OpenAI and Microsoft Foundry, and on Claude models on Anthropic and Microsoft Foundry. Other models get the request without cache markers.
+
+Without the key, the project's runtime config setting applies. Without that, the agent uses `v1`. New projects start with `v2`. Projects created earlier stay on `v1`. An agent stays on its version until you change it. If a provider rejects the cache layout, the Runtime retries the call once without it. Later calls to that deployment skip the layout for a while.
+
+```yaml
+EXECUTION:
+  prompt_cache_key: true
+  prompt_cache_retention: 24h
+  prompt_version: v2
+```
+
+An invalid value for any of these keys is dropped with warning `W497`. The agent then behaves as if the key were absent.
 
 ### Extended thinking
 
@@ -627,6 +660,6 @@ EXECUTION:
 
 {{related}}
 
-- [Language overview](/agent-platform/abl-reference/language-overview) -- file structure, syntax rules, and auto-detection
-- [Tools](/agent-platform/abl-reference/tools) -- tool-level timeout configuration
-- [FLOW](/agent-platform/abl-reference/flow) -- per-step GOAL overrides and `MAX_TURNS` for reasoning steps
+- [Language overview](/agent-platform/abl/reference/language-overview) -- file structure, syntax rules, and auto-detection
+- [Tools](/agent-platform/abl/reference/tools) -- tool-level timeout configuration
+- [FLOW](/agent-platform/abl/reference/flow) -- per-step GOAL overrides and `MAX_TURNS` for reasoning steps

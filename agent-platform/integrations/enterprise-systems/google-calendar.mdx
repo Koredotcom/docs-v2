@@ -1,0 +1,207 @@
+---
+title: Google Calendar integration
+sidebarTitle: Google Calendar
+---
+
+<Badge icon="arrow-left" color="gray">[Back to list of enterprise systems](/agent-platform/integrations/enterprise-systems)</Badge>
+
+Use the Google Calendar integration to let agents create, find, update, and delete events and check availability through Action Tools, and to start workflows when calendar events change. Artemis authenticates with OAuth 2.0.
+
+| Authentication | Actions | Workflow triggers |
+| --- | --- | --- |
+| OAuth 2.0 | [9](#supported-actions) | [7](#supported-triggers) |
+
+## Supported actions
+
+Actions are Google Calendar operations that an agent runs as Action Tools during a conversation. You can also run them from an [Integration node](/agent-platform/workflows#integration-node) in a workflow.
+
+| Action | Use it to |
+| --- | --- |
+| [Add Attendees to Event](#add-attendees-to-event) | Add guests to an existing event. |
+| [Create Quick Event](#create-quick-event) | Create an event from a text description. |
+| [Create Event](#create-event) | Create an event with full details. |
+| [Get all Events](#get-all-events) | Get the events in a calendar. |
+| [Update Event](#update-event) | Change an event's details. |
+| [Delete Event](#delete-event) | Delete an event. |
+| [Find Busy/Free Periods in Calendar](#find-busy-free-periods-in-calendar) | Find busy periods across calendars. |
+| [Get Event by ID](#get-event-by-id) | Get an event's details by its ID. |
+| [Custom API Call](#custom-api-call) | Call a Google Calendar API endpoint that the other actions don't cover. |
+
+## Supported triggers
+
+Triggers start a [workflow](/agent-platform/workflows) when an event occurs in Google Calendar.
+
+| Trigger | Starts a workflow when |
+| --- | --- |
+| New or Updated Event | An event is created or updated. |
+| New Event | An event is created in a calendar. |
+| Event Ends | An event ends. |
+| Event Start (Time Before) | A set amount of time remains before an event starts, for example as a reminder. |
+| New Event Matching Search | An event that matches a search term is created. |
+| Event Cancelled | An event is canceled or deleted. |
+| New Calendar | A calendar is created or becomes accessible. |
+
+## Prerequisites
+
+- A Google account with access to the calendars that agents use.
+- A Google Cloud project with the Google Calendar API enabled, an OAuth consent screen, and an OAuth client ID of type **Web application**. See [Configure the OAuth consent screen and choose scopes](https://developers.google.com/workspace/calendar/api/guides/auth).
+
+## Set up the integration
+
+<Steps>
+  <Step title="Create a Google OAuth client">
+    In the Google Cloud console, enable the Google Calendar API, and configure the OAuth consent screen with the `calendar.events` and `calendar.readonly` scopes. Create an OAuth client ID of type **Web application**, add the **Callback URL** from the Artemis profile form to **Authorized redirect URIs**, and copy the **Client ID** and **Client Secret**.
+  </Step>
+  <Step title="Create the auth profile">
+    In **Integrations**, select **Google Calendar** > **Connect**. On **Project Auth Profiles**, select **New Profile** > **Integration Profile** > **Google Calendar** > **Continue**.
+
+    | Field | Value |
+    | --- | --- |
+    | **Profile Name** | A name for the profile, for example `Google Calendar - Production` |
+    | **Usage Mode** | **Preconfigured** (default), **JIT (Just-in-Time)**, or **Preflight**. With **Preconfigured**, an admin provides credentials at setup, and users don't authorize. See [Auth profiles](/agent-platform/administration/integrations-settings#auth-profiles). |
+    | **Authorization URL**, **Token URL**, **Refresh URL** | Pre-filled with the Google endpoints. Keep the defaults. |
+    | **Scopes** | Pre-filled with `https://www.googleapis.com/auth/calendar.events` and `https://www.googleapis.com/auth/calendar.readonly`. |
+    | **Additional Authorization Parameters** | Pre-filled with `access_type=offline` and `prompt=consent`, which let Artemis refresh the access token. Keep the defaults. |
+    | **Callback URL** | Read only. Add it to the OAuth client's authorized redirect URIs. |
+    | **Client ID**, **Client Secret** | From your Google OAuth client. |
+
+    Select **Create Profile**, and complete the Google sign-in and consent when prompted.
+  </Step>
+  <Step title="Create the action tool">
+    In **Tools**, open the **Actions** tab and select **Create Tool**. Enter a **Tool Name** and **Description**, and select **Select Integration** > **Google Calendar** > **Continue**. Select the **Action** and **Auth Profile**, set parameter defaults (leave a value empty for the agent to supply at runtime), choose an output mode, and select **Create Tool**. Then [assign the tool to an agent](/agent-platform/tools/actions#assign-an-action-to-an-agent).
+  </Step>
+</Steps>
+
+## Action reference
+
+<AccordionGroup>
+  <Accordion title="Add Attendees to Event" id="add-attendees-to-event">
+    Adds one or more guests to an existing event.
+
+    | Parameter | Type | Description |
+    | --- | --- | --- |
+    | `calendar_id` | enum | Calendar. |
+    | `eventId` | string | Event ID. |
+    | `attendees` | array | Guest email addresses. |
+  </Accordion>
+  <Accordion title="Create Quick Event" id="create-quick-event">
+    Creates an event from a text description, for example `Lunch with Priya tomorrow at 1 PM`.
+
+    | Parameter | Type | Description |
+    | --- | --- | --- |
+    | `calendar_id` | enum | Calendar. |
+    | `text` | string | Text that describes the event. |
+    | `send_updates` | enum | Guests who receive a notification about the new event. |
+  </Accordion>
+  <Accordion title="Create Event" id="create-event">
+    Creates an event with full details.
+
+    | Parameter | Type | Description |
+    | --- | --- | --- |
+    | `calendar_id` | enum | Calendar. |
+    | `title` | string | Event title. |
+    | `start_date_time` | string | Start date and time. |
+    | `end_date_time` | string | End date and time. If empty, the event ends 30 minutes after it starts. |
+    | `location` | string | Event location. |
+    | `description` | string | Event description. Supports HTML tags. |
+    | `colorId` | enum | Event color. |
+    | `attendees` | array | Guest email addresses. |
+    | `guests_can_modify` | boolean | Lets guests modify the event. Default: `False`. |
+    | `guests_can_invite_others` | boolean | Lets guests invite others. Default: `False`. |
+    | `guests_can_see_other_guests` | boolean | Lets guests see the guest list. Default: `False`. |
+    | `send_notifications` | enum | Guests who receive a notification. Default: `Yes, to everyone`. |
+    | `create_meet_link` | boolean | Adds a Google Meet link to the event. Default: `False`. |
+  </Accordion>
+  <Accordion title="Get all Events" id="get-all-events">
+    Gets the events in a calendar.
+
+    | Parameter | Type | Description |
+    | --- | --- | --- |
+    | `calendar_id` | enum | Calendar. |
+    | `event_types` | array | Event types to return: `Default`, `Out Of Office`, `Focus Time`, or `Working Location`. |
+    | `search` | string | Search term. |
+    | `start_date` | string | Start of the date range. |
+    | `end_date` | string | End of the date range. |
+    | `singleEvents` | boolean | Expands recurring events into individual instances and returns only single events and instances. Default: `False`. |
+  </Accordion>
+  <Accordion title="Update Event" id="update-event">
+    Changes an event's details.
+
+    | Parameter | Type | Description |
+    | --- | --- | --- |
+    | `calendar_id` | enum | Calendar. |
+    | `eventId` | string | Event ID. |
+    | `title` | string | Event title. |
+    | `start_date_time` | string | Start date and time. |
+    | `end_date_time` | string | End date and time. |
+    | `location` | string | Event location. |
+    | `description` | string | Event description. Supports HTML tags. |
+    | `colorId` | enum | Event color. |
+    | `attendees` | array | Guest email addresses. |
+    | `guests_can_modify` | boolean | Lets guests modify the event. Default: `False`. |
+    | `guests_can_invite_others` | boolean | Lets guests invite others. Default: `False`. |
+    | `guests_can_see_other_guests` | boolean | Lets guests see the guest list. Default: `False`. |
+  </Accordion>
+  <Accordion title="Delete Event" id="delete-event">
+    Deletes an event.
+
+    | Parameter | Type | Description |
+    | --- | --- | --- |
+    | `calendar_id` | enum | Calendar. |
+    | `eventId` | string | Event ID. |
+  </Accordion>
+  <Accordion title="Find Busy/Free Periods in Calendar" id="find-busy-free-periods-in-calendar">
+    Finds the busy periods in one or more calendars for a time range.
+
+    | Parameter | Type | Description |
+    | --- | --- | --- |
+    | `calendar_ids` | array | Calendars to check. |
+    | `start_date` | string | Start of the time range. |
+    | `end_date` | string | End of the time range. |
+  </Accordion>
+  <Accordion title="Get Event by ID" id="get-event-by-id">
+    Gets an event's details by its ID.
+
+    | Parameter | Type | Description |
+    | --- | --- | --- |
+    | `calendar_id` | enum | Calendar. |
+    | `event_id` | string | Event ID, for example `abc123def456`. Find it in the event URL or in the output of other calendar actions. |
+    | `max_attendees` | number | Maximum number of attendees to return. If the event has more, the response includes only the participant. |
+    | `time_zone` | string | Time zone for the response, for example `America/New_York`. Defaults to the calendar's time zone. |
+  </Accordion>
+  <Accordion title="Custom API Call" id="custom-api-call">
+    Sends a request to a Google Calendar API endpoint. Artemis adds the authorization headers from the auth profile.
+
+    | Parameter | Type | Description |
+    | --- | --- | --- |
+    | `url` | object | Endpoint URL. |
+    | `method` | enum | HTTP method. |
+    | `headers` | object | Request headers. Authorization headers are added automatically. |
+    | `queryParams` | object | Query parameters. |
+    | `body_type` | enum | Body type. Default: `None`. |
+    | `body` | object | Request body. |
+    | `response_is_binary` | boolean | Returns the response as a file. Use for PDFs, images, and other files. Default: `False`. |
+    | `failsafe` | boolean | Returns a result instead of an error when the request fails. |
+    | `timeout` | number | Timeout, in seconds. |
+    | `followRedirects` | boolean | Follows HTTP redirects. Default: `False`. |
+  </Accordion>
+</AccordionGroup>
+
+## Troubleshoot common issues
+
+| Issue | Resolution |
+| --- | --- |
+| `redirect_uri_mismatch` | Add the exact **Callback URL** from the profile form to the OAuth client's authorized redirect URIs. |
+| The profile status stays **Awaiting authorization** | Complete the Google sign-in and consent in the same browser session. |
+| `access_denied` or `Access blocked` during sign-in | Add the user as a test user on the OAuth consent screen, or publish the app. |
+| Requests fail after the access token expires | Keep `access_type=offline` and `prompt=consent` in **Additional Authorization Parameters**, and reauthorize the profile. |
+| `403 insufficient permissions` | Confirm the consent screen includes both Calendar scopes, and reauthorize the profile. |
+| The calendar list is empty | Confirm the authorizing user owns the calendar or has access to it. |
+| Recurring events return as one event | Set `singleEvents` to `True` in **Get all Events**. |
+
+{{related}}
+
+- [Auth profiles](/agent-platform/administration/integrations-settings#auth-profiles)
+- [Action Tools](/agent-platform/tools/actions)
+- [Workflows](/agent-platform/workflows)
+- [Google Calendar API reference](https://developers.google.com/workspace/calendar/api/v3/reference)

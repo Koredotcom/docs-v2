@@ -821,41 +821,116 @@ To add a pause between prompts, configure a custom delay in the **Bot Response**
 
 #### Handle Bot Delay After User Input
 
-The delay is only applied when Voice Gateway sends a response to the bot and is waiting for the bot's reply. This includes delays at the Entity Node, Confirmation Node, or Message Node with an "On Intent" (User-Bot delay).
-![Handle Bot Delay](/ai-for-service/channels/voice-gateway/images/handle-bot-delay.png)
+**Configuring Bot No Input Timeout and Delays**
 
-If a delay occurs between two Message nodes, the bot developer must handle it manually by playing audio and stopping it after the delay.
+Bot No Input handles delays when the bot or a backend operation takes longer than expected to respond. It prevents dead air by playing configured speech or audio and provides a recovery action if the bot remains unresponsive.
 
-By setting timeout properties, configure the following actions:
+**Turn on Bot No Input**
 
-* Play a textual prompt to the user
-* Play an audio file to the user
-* Disconnect the call
+Turn on this feature in the [Start Flow](/ai-for-service/flows/create-and-manage-flows#create-a-start-flow) creation page to apply the configured settings.
 
-**Use Case**:
+When turned off, the default give-up timeout applies. If the bot doesn't respond within the default timeout, the call is disconnected.
 
-* To play a message to the user, configure a timeout on the botNoInputTimeoutMS parameter and define the action:
-* To play a textual prompt, set the prompt on the `botNoInputSpeech` parameter.
-* To play an audio file, set the file URL using the `botNoInputUrl` parameter.
-* To replay the message if the timeout exceeds multiple times, configure the number of retries using the botNoInputRetries parameter.
-* Configure a separate timeout for disconnecting the call using the `botNoInputGiveUpTimeoutMS` parameter, set to 30 seconds by default.
+![Edit Flow](/ai-for-service/channels/voice-gateway/images/edit-flow.png)
 
-**Parameters Description**
+**Supported Parameters**
 
-The following table lists the bot parameters used to configure this feature:
+| Parameter                | Type   | Description                                                                                                    |
+| :----------------------- | :----- | :------------------------------------------------------------------------------------------------------------- |
+| `botNoInputTimeout`      | Number | Wait time (in seconds) for a bot response before triggering a Bot No Input action.                          |
+| `botNoInputSpeech`       | String | One or more quoted sentences to play when the timeout is triggered. Sentences are separated by commas.         |
+| `botNoInputURL`          | String | URL of the audio file to play when the timeout is triggered.                                                   |
+| `botNoInputRetries`      | Number | Number of times to perform the Bot No Input action.                                                            |
+| `botNoInputGiveUpTimeout`| Number | Maximum time to wait before performing the configured give-up action.                                          |
+| `botNoInputPlaySelection`| String | Selects sequential or random playback for multiple speech messages. Currently, configure this parameter through call control parameters. |
 
-| Parameter               | Type       | Description                                                                                                                                                                                                  | Required          |
-| :--------------------------- | :-------------- | :---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------- |
-| `botNoInputGiveUpTimeoutMS` | Number         | Timeout (in milliseconds) to wait for a bot response before disconnecting the call.<br />If no response is received within this duration, Voice Gateway disconnects the call.<br />**Default:** 30 seconds | Yes (Default: 30 sec) |
-| `botNoInputTimeoutMS`       | Number         | Timeout (in milliseconds) before playing a prompt to the user.<br />If no input is received from the bot, Voice Gateway plays a textual prompt (`botNoInputSpeech`) or an audio file (`botNoInputUrl`).          | Yes                   |
-| `botNoInputRetries`         | Number         | Number of retry attempts after a no-input timeout.<br />For example, if set to `2` and timeout is `1000` ms, the system plays the prompt two additional times if no bot response is received.                    | Yes                   |
-| `botNoInputSpeech`          | String/Array | Prompt played when no input is received from the bot.<br />Supports:<br />- Plain text<br />- SSML<br />- Audio URL<br />Example: `["https://audiourl", "This is second message"]`                     | Yes                   |
-| `botNoInputUrl`             | String         | URL of an audio file played when the bot doesn't respond within the defined timeout.                                                                                                                            | Yes                   |
+**Interaction Types**
 
-Example:
-![Example Configuration](/ai-for-service/channels/voice-gateway/images/message-node-parameters.png)
+**Bot No Input Speech**
 
-<Note>  `botNoInputSpeech` can contain multiple messages, including audio URLs. Example: `botNoInputSpeech` = `[“this is first delay Msg”, https://thisdummy.wav, “ this is third textual Message”]`.</Note>
+Enter one or more sentences in double quotation marks, separated by commas:
+
+For example: `"Please wait while I check that for you.","I am still retrieving your information.","This is taking longer than expected."`
+
+**Bot No Input URL**
+
+Provide a valid audio URL. The audio file plays whenever the Bot No Input timeout is triggered.
+
+**Speech selection**
+
+The `botNoInputPlaySelection` parameter controls how multiple speech sentences are played.
+
+```bash
+{
+  "botNoInputPlaySelection": "sequential"
+}
+```
+
+Supported values:
+
+* `sequential` - Plays sentences in the configured order.
+* `random` - Selects a sentence randomly for each retry.
+* Parameter omitted - Uses random playback by default.
+
+**Timer and playback behavior**
+
+The Bot No Input timer starts when bot processing begins.
+
+When the timer expires:
+    
+1. The configured speech or audio is played.
+2. After playback completes, the Bot No Input timer starts again.
+3. The next retry occurs after the configured timeout.
+
+  For example, with a 10-second timeout, if the first message starts at 10 seconds and takes 3 seconds to play, the next timer starts at 13 seconds. The next message starts at 23 seconds, not 28 seconds.
+
+```
+First message: 10 seconds
+First message ends: 13 seconds
+Second message: 23 seconds
+```
+
+If the bot response becomes available while a progressive message is playing:
+    
+* The progressive message stops immediately.
+* The bot response starts playing.
+* No further Bot No Input message is triggered for that response cycle.
+* The complete progressive sentence appears in the transcription, even if playback was interrupted.
+
+**Give-up actions**
+
+When `botNoInputGiveUpTimeout` is reached, no further retries occur. The configured give-up action is performed.
+
+**End the call**
+
+The system plays the configured end-call message and disconnects the call.
+
+**Transfer the call**
+
+The system plays the configured transfer message and transfers the call to the configured SIP destination.
+
+Transfer configuration may include:
+
+* SIP transfer method
+* SIP redirect URL
+* SIP headers
+
+Example: Sequential playback
+
+```bash
+{
+  "enabled": true,
+  "botNoInputTimeout": 10,
+  "botNoInputSpeech": "\"Please wait while I check that for you.\",\"I am still retrieving your information.\",\"This is taking longer than expected.\"",
+  "botNoInputRetries": 3,
+  "botNoInputGiveUpTimeout": 40,
+  "botNoInputPlaySelection": "sequential",
+  "giveUpAction": "endCall",
+  "endCallMessage": "I am unable to retrieve the information right now. Please try again later."
+}
+```
+
+The messages play sequentially after each configured timeout until the bot responds, the retries are exhausted, or the give-up timeout is reached.
 
 #### Handle Delay Between Two Message Nodes
 
