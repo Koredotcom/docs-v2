@@ -183,15 +183,28 @@ To create a scenario:
 | **Category**            | Logical grouping used to organize scenarios, such as Billing, Customer Support, Technical, or Onboarding.      |
 | **Difficulty**          | Complexity level of the scenario: **Easy**, **Medium**, or **Hard**.                                           |
 | **Entry Agent**         | Agent that starts the conversation. Primarily used in multi-agent projects.                                    |
-| **Initial Message**     | First user message that starts the conversation.                                                               |
 | **Max Turns**           | Maximum number of conversation turns before the evaluation stops.                                              |
+| **Initial Message**     | First user message that starts the conversation.                                                               |
+| **Session Variables (JSON)** | Optional session variables used to provide contextual data for the scenario. Scenario session variables are merged with the persona's session variables when an evaluation runs. If the same key is defined in both, the scenario value takes precedence unless the key is selected as a **Priority key** for the persona. |
+| **Instructions** | Optional guidance sent to the simulated-user LLM about how the user should behave. |
+| **Scripted values JSON** | Optional key-value pairs for exact values the simulated user should provide when relevant, such as a PIN or account number. The LLM does not see the literal values. Supported for text scenarios only. |
 | **Agent Path**          | Expected sequence of agent handoffs during the conversation. Applicable to multi-agent projects.               |
 | **Expected Milestones** | Key checkpoints the conversation should achieve.                                                               |
 | **Expected Outcome**    | Describes what a successful conversation should accomplish.                                                    |
-| **Session Variables (JSON)** | Optional session variables used to provide contextual data for the scenario. Scenario session variables are merged with the persona's session variables when an evaluation runs. If the same key is defined in both, the scenario value takes precedence unless the key is selected as a **Priority key** for the persona. |
 | **Tags**                | Labels used to organize and filter scenarios by feature area, regression suite, priority, or other categories. |
 
+<Tip>Judges score what can't be checked exactly. Use **Agent Path** and **Expected Milestones** for everything that must be exact.</Tip>
 
+**Scripted values** let you define exact facts for the simulated user to provide when relevant, such as a PIN or account number. They are separate from **Session Variables**, which provide context to the agent. Scripted values are supported for text scenarios only.
+
+For example, enter the following in **Scripted values JSON**:
+
+```yaml
+{
+  "pin": "4417",
+  "account_number": "00123456789"
+}
+```
 
 ![Evaluate](/agent-platform/images/scenario.png)
 
@@ -221,6 +234,7 @@ SCENARIO:
     - "Supervisor"
     - "Booking_Manager"
 ```
+
 
 ### Troubleshoot scenarios
 
@@ -255,6 +269,9 @@ To create a persona:
     | **Adversarial Type**    | Specifies whether the persona behaves as a normal user or intentionally challenges the agent to test its robustness. |
     | **Session Variables (JSON)** | Optional session variables that provide contextual data for the persona.|
     | **Priority keys** | Select session variable keys whose persona values take precedence over values defined in a scenario. |
+    | **Instructions** | Optional rules for the simulated user to follow, such as the order in which to provide scripted values. |
+    | **Scripted values JSON** | Optional JSON values the simulated user provides exactly as written when relevant. The persona model does not see the values. For partial values, such as a card’s last four digits, add them as a separate key. By default, the scenario’s value takes precedence when the same key is defined in both places. |
+    | **Priority scripted keys** | Select the keys for which the persona’s value should override the scenario’s value. |
 
 3. Select an adversarial behavior type if you want to simulate edge cases or malicious interactions.
 4. Click **Create**.
@@ -321,7 +338,7 @@ Supported evaluator types include:
 | Type         | Description                                 |
 |:-------------|:--------------------------------------------|
 | LLM Judge    | Uses an LLM to evaluate conversations.      |
-| Code Scorer  | Uses deterministic programmatic scoring.    |
+| Code Check  | Uses deterministic programmatic scoring.    |
 | Trajectory   | Evaluates conversation flow and milestones. |
 | Human Review | Flags conversations for manual review.      |
 
@@ -389,9 +406,9 @@ Use them to validate:
 * Path efficiency -- how many unnecessary steps did the agent take?
 * Tool sequence -- did the agent call tools in the right order? 
 
-### Code Scorer evaluators
+### Code Check evaluators
 
-Use Code Scorer evaluators for deterministic validations that do not require an LLM.
+Use Code Check evaluators for deterministic validations that do not require an LLM. They use built-in scorers to validate agent responses and runtime behavior.
 
 Typical use cases include:
 
@@ -400,13 +417,24 @@ Typical use cases include:
 * Latency or response-time thresholds
 * Structured output validation
 
-Code Scorer evaluators execute custom scoring logic to validate agent responses and runtime behavior using deterministic rules.
+For text-agent latency, select one of these built-in scorers and set its **Max ms** budget:
+
+| Built-in scorer | What it measures |
+|---|---|
+| **First response time** | Runtime processing time for the first agent reply. |
+| **Average response time** | Average runtime processing time across agent replies in the conversation. |
+| **First response time to first token** | Time until the first streamed output for the first agent reply. |
+| **Average time to first token** | Average time until the first streamed output across agent replies in the conversation. |
+
+A latency check passes when the measured time is within the **Max ms** budget and fails when it exceeds the budget. It returns a score of 1 when it passes and 0 when it fails. These measurements cover Runtime processing time; they do not include network time, evaluation queue time, or screen rendering.
 
 ### Human Review evaluators
 
 Use Human Review evaluators for subjective or manual quality assessments.
 
 Human Review evaluators flag conversations for manual inspection when evaluation scores fall below configured thresholds, allowing reviewers to validate agent behavior, response quality, or policy compliance before approval or release.
+
+<Note>A Human Review evaluator leaves a run provisional. Keep that suite out of automated baselines.</Note>
 
 ### Scoring scale types
 
@@ -456,7 +484,7 @@ Run settings determine how the evaluation suite is executed. To configure, follo
 
 | Setting | Description |
 |---|---|
-| **Variations per pair** | Specifies the number of conversation variations to generate for each scenario and persona combination. Multiple variations help evaluate the consistency of your agent's responses across different interactions. |
+| **Variations per pair** | Specifies the number of conversation variations to generate for each scenario and persona combination. Multiple variations help evaluate the consistency of your agent's responses across different interactions. Default is 3. Use one variation for suites that write real rows, and reset the rows before each run. |
 | **Conversation model** | Specifies the model used to generate the conversations that are graded. |
 | **Conversation budget** | Sets the spending limit for the conversation model. You can set the budget in dollars or tokens, or leave it unlimited. |
 | **When to run** | Specifies whether the evaluation suite runs manually or on a recurring schedule. For scheduled runs, configure the frequency (Daily, Weekly, or Monthly), day and time, start date, and end condition. The next scheduled run is shown in the eval suite, and scheduled runs are identified in the run history. |
@@ -474,6 +502,8 @@ During execution:
 * All configured Evaluators score the resulting conversations
 
 This creates a full evaluation matrix across personas, scenarios, and evaluators.
+
+In text evaluations, each repeated message from the simulated user reaches the agent as a separate turn, even when the message is identical to the previous one.
 
 **Example Evaluation Matrix**
 
@@ -522,6 +552,26 @@ Provides a high-level summary of the evaluation suite and its latest execution. 
 | **Arch recommendation** | Shows the status of recommendations from Arch based on the evaluation results. |
 | **Evaluators below target** | Highlights evaluators whose results are below the configured passing score. |
 
+### Set up alerts for an evaluation suite
+
+Use the Alerts section on a suite’s Overview page to get notified when a watched run fails, falls below its target score, or regresses. 
+
+Alerts apply to the suite as a whole; they do not identify a particular scenario, persona, or evaluator as the cause.
+
+Select Create alert to add a rule for that suite and Configure the alert rule:
+
+| Field | Description |
+|---|---|
+| **Rule name** | Name the alert so you can identify it in the suite and alert inbox. |
+| **Evaluating** | Turn the rule on or off. Turning it off pauses evaluation but keeps the rule in the list. |
+| **Alert when** | Choose **Run failed** if a run does not complete successfully, **Score below target** if its score falls below the suite target, or **Regressed against previous run** if its score drops beyond the suite’s regression tolerance. |
+| **Runs to watch** | Choose **Scheduled**, **CI/CD**, **Manual**, or any combination. Only runs started from the selected sources can trigger the alert. |
+| **Cooldown** | Set how long the rule stays quiet after firing before a later run can trigger it again. |
+| **Deliver via** | Choose **Email** or **Webhook**. Email requires recipient addresses. Webhook requires a URL and can use an auth profile. |
+
+For regression alerts, the regression note shows the suite’s tolerance and links to the suite settings. When a watched run matches the rule, the alert appears in the project’s alert inbox with a reason, and the platform sends a notification through the configured delivery method.
+
+Evaluation alerts support failed runs, below-target scores, and regressions. They do not currently alert on run cost or duration.
 ---
 
 ### Latest run
@@ -608,6 +658,17 @@ Use the evaluation results to prioritize improvements to your agent.
 | **Low safety scores**  | Strengthen guardrails and evaluate with adversarial personas.        |
 | **Low tool accuracy**  | Review tool configuration, input parameters, and agent instructions. |
 | **Handoff issues**     | Review handoff conditions and validate the expected agent path.      |
+
+### Compare runs and set a baseline
+
+Studio has no Compare screen. The Arch MCP `platform_eval_runs` compare operation returns evaluator-level averages for two complete, compatible runs. Open the run cases to see scenario-level results.
+
+{/* REVIEW: Confirm the eval-set field name baselineRunId and where it can be set. */}
+A baseline is a complete run that records the starting point of a stable suite. Set it as the suite's `baselineRunId` through `platform_eval_sets` or the API. Comparison is refused when results are incomplete or the scenarios, evaluators, or variations changed. After you change the suite on purpose, create a new baseline.
+
+The platform doesn't measure how often an LLM Judge agrees with people. Before you use a judge as a release gate, hand-score 10 to 20 conversations and compare.
+
+<Tip>For baselines, judge calibration, and CI gates, see [Evaluate agents](/agent-platform/best-practices/evaluate-agents).</Tip>
 
 ### Troubleshoot
 
