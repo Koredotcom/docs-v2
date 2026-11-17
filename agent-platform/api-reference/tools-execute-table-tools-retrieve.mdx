@@ -1,19 +1,22 @@
 ---
 title: Describe a tool and its input schema
+description: Get a tool's summary and the JSON Schema of the input parameters that a caller can supply when executing it.
 openapi: "/agent-platform/api-specs/tool-execution.yaml get /api/v1/project/{projectSlug}/tools/{toolName}"
 ---
 
+<Badge icon="arrow-left" color="gray">[Back to the Tools Execution API overview](/agent-platform/api-reference/tool-execution-overview)</Badge>
+
 This API retrieves a tool's summary and its input schema as JSON Schema. The schema describes the parameters that callers may supply when invoking the tool.
 
-Use this endpoint after discovering a tool to determine its accepted inputs and construct a valid invocation request. Parameters resolved by the platform at runtime, such as configuration values, authentication-profile values, expression results, lookup results, and other server-side values, are omitted from the published schema.
+Use this endpoint after [discovering a tool](/agent-platform/api-reference/tools-execute-table-tools-list) to determine its accepted inputs and construct a valid invocation request. Parameters resolved by the platform at runtime, such as configuration values, authentication-profile values, expression results, lookup results, and other server-side values, are omitted from the published schema.
 
-Permission requirement `tool:read`, granted by the platform API key scope `tools.read`.
+**Permission:** `tool:read`, granted by the platform API key scope `tools.read`.
 
 ## Path parameters
 
 | Parameter | Type | Required | Description |
 |---|---|---|---|
-| `projectSlug` | string | Yes | Project slug, not the project ID or UUID. |
+| `projectSlug` | string | Yes | Project slug, not the project ID or UUID. A project UUID returns `404`. |
 | `toolName` | string | Yes | Tool name as authored. For MCP tools, use the `alias__toolName` format. |
 
 This endpoint does not define query parameters or a request body.
@@ -22,9 +25,9 @@ This endpoint does not define query parameters or a request body.
 
 Use one of the supported credentials:
 
-- `x-api-key: abl_...` — platform API key.
-- `Authorization: Bearer <abl_... | JWT>` — platform API key or Studio user JWT.
-- `auth: <assertion>` — JWT App assertion.
+- `x-api-key: abl_...` for a platform API key.
+- `Authorization: Bearer <abl_... | JWT>` for a platform API key or Studio user JWT.
+- `auth: <assertion>` for a JWT App assertion.
 
 Public SDK keys (`pk_...`) are not accepted. The JWT App assertion must be sent in the `auth` header, not the `Authorization` header.
 
@@ -46,15 +49,17 @@ The response can include the following properties:
 | `unsupportedReason` | Reason the tool cannot be executed, when applicable. |
 | `input` | JSON Schema describing the parameters the caller may supply. |
 
+The `unsupportedReason` value is one of `TOOL_TYPE_DISABLED`, `TOOL_DEFINITION_INVALID`, `WSDL_BINDING_DISABLED`, `MCP_SERVER_NOT_CONFIGURED`, `TABLE_SCOPE_UNSUPPORTED`, `ASYNC_BINDING_UNSUPPORTED`, or `RESERVED_PARAMETER_NAME`.
+
 ## Input schema behavior
 
 The `input` schema includes only caller-suppliable parameters. Parameters resolved by the platform are omitted rather than published as caller inputs.
 
-For an Agent Table tool without a query template, the schema describes the structured call accepted by the executor. This includes `op` and the operands applicable to the selected operation. Only `op` is unconditionally required; the applicability of other operands depends on the selected operation.
+For an Agent Table tool without a query template, the schema describes the structured call accepted by the executor. This includes `op` and the operands applicable to the selected operation. Only `op` is unconditionally required. The applicability of other operands depends on the selected operation.
 
 A tool whose definition cannot be parsed can still be returned. In that case, `executable` is `false`, and `unsupportedReason` is `TOOL_DEFINITION_INVALID`.
 
-Use the returned schema to construct the `params` object for the **Execute a tool** endpoint.
+Use the returned schema to construct the `params` object for [Execute a specific tool](/agent-platform/api-reference/tools-execute-table-tools-execute).
 
 ## Errors
 
@@ -62,7 +67,7 @@ Use the returned schema to construct the `params` object for the **Execute a too
 |---|---|
 | `401` | Missing or invalid credentials, or an unsupported public SDK key. |
 | `403` | The credential lacks the required permission or project access. |
-| `404` | Project or tool not found, or the resource is unavailable. |
+| `404` | Project or tool not found, or the resource is unavailable. A tool of a disabled type returns the same response as an unknown tool. |
 | `429` | Tenant request or tool-call rate limit exceeded. |
 
 The `429` response uses a rate-limiter-specific response format rather than the standard API error envelope. Check the response headers for rate-limit information and retry guidance.
