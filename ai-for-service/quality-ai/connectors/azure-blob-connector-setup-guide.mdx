@@ -5,9 +5,7 @@ noindex: true
 ---
 <Badge icon="arrow-left" color="gray">[Back to Connectors](/ai-for-service/quality-ai/configurations#connectors)</Badge>
 
-Set up the Azure Blob Storage connector to import conversation recordings, transcripts, and metadata from Azure Blob Storage into Quality AI Express.
-
-The Azure Blob Storage Connector imports conversation recordings, transcripts, and metadata from Microsoft Azure Blob Storage into Quality AI Express on a configurable schedule. Use this connector to analyze interactions from third-party CCaaS platforms.
+Set up the Azure Blob Storage connector to import conversation recordings, transcripts, and metadata from Azure Blob Storage into Quality AI Express. The Connector imports conversation recordings, transcripts, and metadata from Microsoft Azure Blob Storage into Quality AI Express on a configurable schedule. This also supports voice and chat interactions from third-party CCaaS platforms and processes data on a configurable schedule.
 
 | Section | Description |
 |---------|-------------|
@@ -24,45 +22,296 @@ The Azure Blob Storage Connector imports conversation recordings, transcripts, a
 | Requirement | Description |
 |---|---|
 | **Storage Account** | Azure Storage account with Blob access subscription. |
-| **Authentication** | Connection string. |
+| **Authentication** | Service Principal (Recommended) or Connection String. |
 | **Container** | Azure Blob container with conversation files. |
 | **Supported File Types** | WAV, MP3, JSON, CSV. |
 | **Maximum File Size** | 50 MB per file. |
 | **Timestamp Format** | ISO 8601 UTC (`YYYY-MM-DDTHH:MM:SSZ`). |
+| **File Accessibility** | Audio files must be reachable over HTTPS. |
+| **Test File** | A `test.csv` file in each configured ingestion folder. |
 
 ### Platform Requirements
 
 | Requirement | Description |
 |---|---|
-| **Quality AI Express** | Connector feature enabled. |
-| **Agent Setup** | Agents configured with valid email addresses. |
+| **Quality AI Express** | Connector feature enabled in platform settings. |
+| **Agent Setup** | Agents configured with valid email addresses matching platform accounts. |
 | **Queue Setup** | Quality AI queues configured and available for mapping. |
-| **Permissions** | Access to Connectors configuration. |
+| **Permissions** | Access to Connectors configuration or Integrations and Extensions. |
 
-## Authentication Method
+### Service Principal Permissions
 
-The connector authenticates with Azure Blob Storage using a connection string.
+Service Principal authentication requires the following Azure role assignment.
+
+| Role | Scope | Purpose |
+|---|---|---|
+| **Storage Blob Data Reader** | Storage Account | Read and list blobs. |
+
+Assign this role at the storage account level, not just at the container level.
+
+Navigate to: **Storage Account** > **Access Control (IAM)** > **Add role assignment**.
+
+Avoid assigning broader permissions such as Contributor or Owner.
+
+## Authentication Methods
+
+The connector supports two authentication methods.
+
+### Service Principal (Recommended)
+
+Service Principal provides identity-based authentication using an Azure App Registration.
+
+The following credentials are required:
+
+- Tenant ID
+- Client ID
+- Client Secret
+- Storage Account Name
+
+The App Registration must have the `Storage Blob Data Reader` role assigned to the storage account.
 
 ### Connection String
 
+The connector authenticates with Azure Blob Storage using a connection string.
+
+To obtain the connection string:
+
 1. Open the Azure portal.
 1. Navigate to **Storage Account**.
+1. Select the required storage account.
 1. Go to **Security + Networking** > **Access Keys**.
-1. Copy the **Connection String** for **Key1** or **Key2**, and use it to configure the connector.
+1. Copy the **Connection String** for **Key1** or **Key2**.
+1. Use the connection string while configuring the connector.
+
+Example format:
+
+`DefaultEndpointsProtocol=https;AccountName=...;AccountKey=...;EndpointSuffix=core.windows.net`
 
 <Note>The fields displayed in the connector vary depending on the selected **Auth Type**.</Note>
 
 ## Supported Data Types
 
-| Data Type            | Format   | Files per Conversation | Analytics                               | Notes                                                                |
+The connector supports stereo voice, mono voice, voice transcripts, and chat transcripts.
+
+| Data Type            | Format   | Files per Conversation | Analytics                               | Channel Assignment                                                                |
 | -------------------- | -------- | ---------------------- | --------------------------------------- | -------------------------------------------------------------------- |
-| **Stereo Voice**     | WAV, MP3 | 1                      | Complete Analytics, Enhanced Analytics  | Single dual-channel recording (agent + customer).                    |
+| **Stereo Voice**     | WAV, MP3 | 1                      | Complete Analytics, Enhanced Analytics  | Single dual-channel recording (Left = Agent, Right = Customer).                    |
 | **Mono Voice**       | WAV, MP3 | 2                      | Complete Analytics, Enhanced Analytics  | Separate agent and customer recordings. Mixed audio isn't supported. |
 | **Voice Transcript** | JSON     | 1                      | Text Analytics, Complete Text Analytics | Pre-transcribed voice conversation.                                  |
 | **Chat Transcript**  | JSON     | 1                      | Text Analytics, Complete Text Analytics | Message-level chat transcript.                                       |
 
+### Stereo Voice
 
-### Storage Structure Options
+A stereo recording contains both agent and customer audio in a single dual-channel recording.
+
+- **Left channel**: Agent.
+- **Right channel**: Customer.
+- One audio file per conversation.
+
+Channel assignments must be represented correctly in the CSV metadata using `agentChannel` and `customerChannel`.
+
+### Mono Voice
+Mono conversations require two separate audio files:
+
+- **Agent recording**
+- **Customer recording**
+
+Example:
+
+- `conv-123456-agent.wav`
+- `conv-123456-customer.wav`
+
+A single mixed mono recording isn't supported.
+
+Each mono conversation must have two CSV rows sharing the same `conversationId`.
+
+### Voice Transcripts
+
+Voice transcripts allow importing previously transcribed voice conversations without reprocessing the original audio.
+
+- Format: JSON.
+- One transcript file per conversation.
+- `recordingType = transcription`.
+- `channelType = voice`.
+
+### Chat Transcripts
+
+Chat transcripts support conversations from platforms such as:
+
+- Web Chat, WhatsApp, Facebook Messenger, and other supported messaging platforms.
+- Format: JSON.
+- One transcript file per conversation.
+- `recordingType = transcription`.
+- `channelType = chat`.
+
+## CSV Metadata Formats
+
+This section defines the required CSV metadata fields for each supported conversation type.
+
+Core fields are shared across conversation types, while recording-specific fields differ.
+
+### Stereo Voice
+
+- `recordingType = stereo`
+- `channelType = voice`
+
+| Field | Required | Type | Description |
+|-------|----------|------|-------------|
+| `conversationId` | Yes | String | Unique conversation identifier, maximum 50 characters. |
+| `agentEmail` | Yes | String | Must match a platform user account. |
+| `conversationStartTime` | Yes | String | ISO 8601 UTC timestamp. |
+| `conversationEndTime` | Yes | String | ISO 8601 UTC timestamp; must be after start time. |
+| `channelType` | Yes | String | Always `voice`. |
+| `recordingType` | Yes | String | Always `stereo`. |
+| `chatScriptUrl` | Yes* | String | Full HTTPS URL to the JSON transcript. |
+| `recordingUrl` | Yes | String | HTTPS URL to the audio recording. |
+| `transcriptUrl` | Yes* | String | Full HTTPS URL to the JSON transcript. |
+| `queueId` | Yes | String | Must exist in queue mapping. |
+| `agentChannel` | Yes | Integer | Agent channel: `0` or `1`. |
+| `customerChannel` | Yes | Integer | Customer channel: `0` or `1`. |
+| `language` | No | String | ISO 639-1 language code. Defaults to `en`. |
+| `asprovider` | No | String | Audio service provider. |
+
+Confirm whether both `chatScriptUrl` and `transcriptUrl` are required for stereo recordings in the deployed connector version.
+
+### Mono Voice
+
+- `recordingType = mono`
+- `channelType = voice`
+
+Each conversation requires two CSV rows and two audio files. Both rows must share the same `conversationId`.
+
+| Field | Required | Type | Description |
+|-------|----------|------|-------------|
+| `conversationId` | Yes | String | Same identifier on both rows. |
+| `agentEmail` | Yes | String | Must match a platform user account. |
+| `conversationStartTime` | Yes | String | ISO 8601 UTC timestamp. |
+| `conversationEndTime` | Yes | String | ISO 8601 UTC timestamp; must be after start time. |
+| `channelType` | Yes | String | Always `voice`. |
+| `recordingType` | Yes | String | Always `mono`. |
+| `agentRecordings` | Yes | String | URL to the agent audio file. |
+| `customerRecordings` | Yes | String | URL to the customer audio file. |
+| `queueId` | Yes | String | Must exist in queue mapping. |
+| `agentId` | No | String | Internal agent identifier. |
+| `language` | No | String | ISO 639-1 language code. Defaults to `en`. |
+| `asProvider` | No | String | Transcription provider. |
+
+### Voice Transcripts
+
+- `recordingType = transcription`
+- `channelType = voice`
+
+| Field | Required | Type | Description |
+|-------|----------|------|-------------|
+| `conversationId` | Yes | String | Unique identifier, maximum 50 characters. |
+| `agentEmail` | Yes | String | Must match a platform user account. |
+| `conversationStartTime` | Yes | String | ISO 8601 UTC timestamp. |
+| `conversationEndTime` | Yes | String | ISO 8601 UTC timestamp; must be after start time. |
+| `channelType` | Yes | String | Always `voice`. |
+| `recordingType` | Yes | String | Always `transcription`. |
+| `transcriptPath` | Yes | String | Path to the JSON transcript file. |
+| `queueId` | Yes | String | Must exist in queue mapping. |
+| `language` | No | String | ISO 639-1 language code. Defaults to `en`. |
+| `asProvider` | No | String | Original audio service provider. |
+
+### Chat Transcripts
+
+- `recordingType = transcription`
+- `channelType = chat`
+
+| Field | Required | Type | Description |
+|-------|----------|------|-------------|
+| `conversationId` | Yes | String | Unique conversation identifier, maximum 50 characters. |
+| `agentEmail` | Yes | String | Must match a platform user account. |
+| `conversationStartTime` | Yes | String | ISO 8601 UTC timestamp. |
+| `conversationEndTime` | Yes | String | ISO 8601 UTC timestamp. |
+| `channelType` | Yes | String | Always `chat`. |
+| `recordingType` | Yes | String | Always `transcription`. |
+| `transcriptPath` | Yes | String | Path to the JSON transcript file. |
+| `queueId` | Yes | String | Must exist in queue mapping. |
+| `language` | No | String | Language code. Defaults to `en`. |
+
+Example:
+
+`transcripts/chat-123.json`
+
+### Agent and Queue Validation
+
+Additional processing rules for agent and queue onboarding.
+
+| Agent Onboarded | Queue Onboarded | Processing Result |
+|----------------|----------------|------------------|
+| No | Yes | Conversation is processed. |
+| Yes | Yes | Conversation is processed, even if the agent isn't mapped to the queue. |
+| Any | No | Conversation is rejected. |
+
+For transferred conversations:
+
+- Use the queue where the conversation ended.
+- Use the email address of the agent who closed the conversation.
+
+## JSON Transcript Schemas
+
+Detailed JSON transcript structure and mandatory fields.
+
+### Voice Transcript
+
+The root JSON object contains a `recognizedPhrases` array.
+
+Each phrase can include:
+
+- `recognitionStatus`
+- `channel`
+- `offset`
+- `duration`
+- `offsetInTicks`
+- `durationInTicks`
+- `durationMilliseconds`
+- `offsetMilliseconds`
+- `nBest`
+- `words`
+
+Each `nBest` alternative can include:
+
+- `confidence`
+- `lexical`
+- `itn`
+- `maskedITN`
+- `display`
+- `words`
+
+Each word can include:
+
+- `word`
+- `offset`
+- `duration`
+- `offsetInTicks`
+- `durationInTicks`
+- `durationMilliseconds`
+- `offsetMilliseconds`
+- `confidence`
+- `Required fields`
+
+| JSON Level | Required Fields |
+|------------|----------------|
+| `Phrase` | `channel`, `offsetInTicks`, `nBest` |
+| `nBest` | `lexical`, `words` |
+| `Words` | `word`, `offsetInTicks`, `durationInTicks`, `confidence` |
+
+### Chat Transcript
+
+The root JSON object contains messages identified by numeric keys (for example, 1, 2, 3).
+
+Each message requires the following fields:
+
+| Field | Values | Description |
+|-------|--------|-------------|
+| `type` | `AGENT`, `USER`, `SYSTEM` | Identifies the speaker. |
+| `text` | String | Message content. |
+| `timestamp` | Unix time in milliseconds | Message timestamp. |
+| `userId` | String | Agent email or customer ID. |
+
+## Storage Structure Options
 
 Choose a folder structure for your Azure Blob container before setting up the connector.
 
@@ -93,6 +342,43 @@ container/
     ├── transcripts/
     └── test.csv
 ```
+**Azure Blob path format:**
+
+`azure://your-container/your-folder/`
+
+Important requirements:
+
+- File and folder names must not contain spaces or special characters.
+- Each configured ingestion path must contain a `test.csv` file.
+- Metadata CSV files must contain the required headers.
+- Mono recordings must have separate agent and customer files.
+- All referenced files must be accessible to the connector.
+
+## Prepare Service Principal Authentication
+
+Complete Azure App Registration and Service Principal configuration.
+
+Skip this section if you are using Connection String authentication.
+
+You need three values from Azure:
+
+- Tenant ID.
+- Client ID.
+- Client Secret.
+
+You must also assign the Storage Blob Data Reader role to the App Registration.
+
+Step 1: Create an App Registration
+Go to Azure Portal.
+Search for Azure Active Directory, also known as Microsoft Entra ID.
+Select App registrations.
+Select + New registration.
+Configure the registration:
+Name: quality-ai-connector.
+Supported account types: Accounts in this organizational directory only.
+Redirect URI: Leave blank.
+Select Register.
+After registration, copy the following values:
 
 ## Set Up the Connector
 
@@ -195,6 +481,6 @@ Ingestion is successful when the uploaded and processed file counts match, the j
 
 ### Performance Considerations
 
-Processing time depends on file size, audio duration, transcription latency, and AI analysis complexity.
+Processing time depends on file size, conversation duration, audio duration, transcription latency, LLM processing time, AI analysis complexity, and number of conversations being ingested.
 
 ---
