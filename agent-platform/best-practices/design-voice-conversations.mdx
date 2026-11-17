@@ -1,0 +1,177 @@
+---
+title: Design voice conversations
+sidebarTitle: Design voice conversations
+---
+
+A phone call is live and turn by turn. Keep each turn short, recover from misheard values, and say what every yes will do.
+
+A caller can't scan a screen. They may be distracted, in a noisy place, or unsure what the system needs. Speak the essential answer first, ask one question at a time, and give the caller a clear way to correct, pause, or reach a person.
+
+For channel setup steps, see [Voice channels](/agent-platform/channels/voice). To test the result, see [Test voice agents](/agent-platform/best-practices/test-voice-agents).
+
+## Write for the channel
+
+| Chat can show | Voice should say |
+|---|---|
+| Several options at once, formatted details, links, a long policy, and visual confirmation | The answer first, a small number of choices, short spoken details, and the next action in plain words |
+
+Design the words before you choose speech settings. Read the script aloud. If the meaning depends on punctuation, a screen, or a long list, revise the interaction.
+
+The same agents answer on every channel (**Project** → **Operate** → **Deployments** → **Channels**). Each channel shows what it supports and falls back to plain text.
+
+| Channel | Shows |
+|---|---|
+| Web SDK | The Markdown or HTML variant, with buttons and cards |
+| Microsoft Teams, Slack | A card with buttons |
+| WhatsApp | Plain text with up to 3 reply buttons |
+| Twilio SMS, voice | Plain text only |
+
+Write a template's `DEFAULT` first, as a complete sentence that ends with the question. Give each button a `VALUE` a person would say, because routing reads it as the user's message. Cross-channel recall needs a verified identity and recorded consent. Consent collection is on by default, so check the project's Omnichannel settings and test with the identity and consent state your channel supplies.
+
+## Choose Pipeline Voice or Realtime LLM Voice
+
+Set up voice channels at **Project** → **Operate** → **Deployments** → **Channels** → **Voice**. Choose from your targets sheet, then confirm the choice with an eval comparison.
+
+| | Pipeline Voice | Realtime LLM Voice |
+|---|---|---|
+| **How it works** | Speech recognition, then the agent runtime, then speech synthesis. You pick each vendor. | A speech-to-speech model hears and speaks. |
+| **Listening settings per question** (turn types, `ASR:`, `DTMF:`) | Yes | No. The provider owns turn detection. |
+| **Same turn logic as text evals** | Yes | Only in **Runtime owned** mode |
+| **Fits** | Fixed flows, exact values, keypad entry | Open conversation where speed and a natural sound matter most |
+
+On a realtime line, set **Realtime orchestration** on the channel's **Speech** tab. The mode applies to every agent a call can reach.
+
+* **Runtime owned** runs each caller turn through the runtime, so `FLOW` steps, tool contracts, and confirmations work as in chat.
+* **Runtime guarded** protects `FLOW` steps only. A reasoning agent's tools run whenever the model calls them, within their contracts.
+* Never leave a line on **Legacy**.
+
+Voyager runs Pipeline Voice, because Manage Trip waits for exact answers such as a booking reference or "refund or credit". To compare lines, copy the voice scenarios once per line, because each scenario names its connection. Keep personas and evaluators the same, and record the provider, model, and mode.
+
+## Keep one agent with a phone behavior profile
+
+Keep one agent for chat and voice. Put the spoken style in a behavior profile (**Project** → **Settings** → **Agent Behavior** → **Behavior Profiles**), and attach it to every agent with `USE BEHAVIOR_PROFILE`. Split an agent only when the phone conversation itself differs, such as an outbound call script or a keypad menu.
+
+```yaml ABL: voice behavior profile
+BEHAVIOR_PROFILE: voyager_phone
+PRIORITY: 10
+WHEN: channel.name in ["voice", "voice_realtime", "voice_pipeline", "korevg"]
+INSTRUCTIONS: |
+  The traveller is on a phone call.
+  - Keep each turn to one or two short sentences. No lists, headings, bold text or symbols.
+  - Offer at most two flights or options at a time, then ask which one they want.
+  - Read booking references and bag tags one character at a time, for example "K, 7, X, 9, Q, P".
+  - Say times and dates the way people speak, for example "six forty-five in the evening on the twentieth of October". Never add a day of the week.
+  - Read a booking reference back to the traveller before you check it.
+```
+
+<Warning>Use `channel.name` in the condition. A `context.channel` condition never matches, and the profile then does nothing. Check the channel name on a real test session (**Project** → **Operate** → **Sessions**), and list every voice transport you use. Studio's test chat is `web_debug`, so test a profile on its own channel.</Warning>
+
+See [Behavior profiles](/agent-platform/abl/reference/behavior-profiles).
+
+## Write a voice script
+
+Read the script aloud before you build. It shows unclear prompts, missing ways out, awkward read-outs, and promises the agent can't keep. A transcript that looks clear can still be hard to hear at the actual pace.
+
+| Speaker | Line |
+|---|---|
+| Caller | "My flight to Denver was cancelled. Booking D2HT6V, Patel." |
+| Agent | "Let me read that back: D, 2, H, T, 6, V, surname Patel. Is that right?" |
+| Agent | "I'm sorry, your flight on the twentieth of October was cancelled. I can move you free of charge to six forty-five that evening, or to one thirty in the afternoon on the twenty-first. Which would you like?" |
+| Caller | "The six forty-five." |
+| Agent | "To confirm, I'll move booking D2HT6V to the six forty-five flight to Denver this evening. Shall I make that change?" |
+
+Every yes or no question names the action or choice it controls. "Would you like me to continue?" is too vague before a write. State what will change, then wait for an unambiguous answer.
+
+Script checks:
+
+* One question at the end of each turn.
+* Say what yes means before an action.
+* Read back reference codes and amounts when accuracy matters.
+* Don't introduce details the system didn't return.
+* Offer a way out, a correction, or a person.
+
+## Handle speech recognition errors
+
+Speech recognition is less reliable for short codes, names, airport abbreviations, dates, and values spoken in noise. Build a recognition set from the fields the journey collects. Include likely accents, background conditions, words that sound alike, pauses, and corrections.
+
+When a value matters, read it back in words the caller can check. Let the caller correct one field without restarting the whole journey. Minimum STT confidence is off by default. Calibrate it on test calls before you raise it, because a low-confidence transcript counts as silence. If validation fails repeatedly, offer the keypad for digits, or a person.
+
+| Input | Risk | Safer interaction |
+|---|---|---|
+| Booking code | Letters sound alike; a pause can end the answer early. | Set `end_of_speech_turn_type: structured_value` on that step. Read it back one character at a time. Never ask for a letter code by keypad. |
+| Name | Recognition differs from the record's spelling. | Ask for spelling only after a mismatch. Don't guess a match. |
+| Date or time | The model invents a weekday the tool never returned, often copied from an example in the instructions. | Speak only the returned date and time. Keep weekdays out of examples. |
+| Secret value | Spoken input reaches the transcript. | `SECURE_INPUT:` sends the value to one tool only, never to the model, transcript, or recording. `DTMF:` values do reach the transcript. |
+
+## Set listening time per question
+
+On Pipeline Voice, set how long the recognizer waits after a pause with `end_of_speech_turn_type` in the step's `VOICE:` block.
+
+| Turn type | Wait | Use it for |
+|---|---|---|
+| `simple_confirmation` | 650 ms | Yes or no |
+| `anything_else` | 850 ms | Short answers |
+| `structured_value` | 1,000 ms | Booking references, dates, codes |
+| `open_ended_question` | 1,250 ms | "How can I help?" |
+| `complex_explanation` | 1,600 ms | "What happened to your bag?" |
+
+`end_of_speech_timeout_ms` sets an exact wait from 100 to 5,000 ms. The most specific setting wins: a `RESPOND`'s `VOICE`, then the `FLOW` step, then the behavior profile, then the agent's `EXECUTION.voice`.
+
+## Shape spoken output
+
+Use short sentences, natural word order, and familiar terms. Avoid long lists, screen directions, internal agent names, raw tool output, and visual markup. Put the most important information before the explanation.
+
+Render codes and numbers for speech on purpose. A flight code can be easier as characters; a time is clearer in ordinary spoken form. Read amounts with units, and say the time zone when it matters.
+
+The phone profile shapes only what the model writes. `RESPOND`, template, and `GATHER` prompt text is spoken word for word, so give it a spoken version with `VOICE: PLAIN_TEXT:`; chat keeps the original. Studio's debug chat is a text channel and never applies the phone profile, so hear the wording on a test call.
+
+Don't read every search result. Offer two options, then ask which one. If a result is too complex to hear safely, offer to text it, and still say the essentials on the call, because the message may never be opened.
+
+The platform adds its own spoken-style rules on every voice turn: plain sentences, no markdown, no emoji, and no lists. What you write changes them.
+
+| You write | Effect on the platform rules |
+|---|---|
+| Behavior profile `INSTRUCTIONS` | Added on top of them |
+| `EXECUTION: voice: instructions:`, or `VOICE: instructions:` in a profile | Replaces them. Restate "plain speech, no lists" in your text. |
+| A custom `SYSTEM_PROMPT` | Drops them. Write the rules into the prompt. |
+
+## Handle interruptions, silence, and recovery
+
+Let callers interrupt ordinary explanations. Protect the few outputs that must be heard in full, such as a legal disclosure or a read-back right before a write. If a caller interrupts, stop speaking, recognize the new request, and keep the prior action uncommitted until confirmation is complete.
+
+Protect an output with `BARGE_IN: disallow` in its `VOICE:` block, and add `STREAMING: false` for one complete playback. `STREAMING: false` alone protects nothing. Keep the channel switch **Allow caller to interrupt the welcome** off to protect the greeting. It is off for new channels, so check older ones.
+
+Keep a pending action separate from a completed one. If the caller hangs up before confirming, don't treat the earlier choice as a yes. An interruption during a write leads to a status check before any retry.
+
+| Situation | Helpful response | Test it |
+|---|---|---|
+| **Silence** | Turn on no-input handling. It is off by default (**Project** → **Settings** → **Runtime Config** → **Voice No-Input Defaults**, or `on_no_input` in the profile). Offer a colleague in a message, and always write a goodbye. `on_exhausted: transfer` hangs up; it doesn't transfer. | Silence after the greeting, after a question, and during a write confirmation |
+| **Unrecognized answer** | `VALIDATE`, `RETRY_PROMPT`, and `MAX_RETRIES` on the `GATHER` field. When retries run out, the `ON_ERROR` handler for `validation_error` with `SUBTYPE: max_retries_exceeded` runs. Change the approach on each retry. | A wrong code, a mumbled surname, and an irrelevant answer |
+| **Interruption** | Stop the long reply and answer the new request without losing the pending choice. | Interrupt an explanation and a confirmation read-back |
+| **Tool failure** | Say what couldn't be checked, don't claim success, and offer a safe next step. | Timeout, unavailable service, empty result, duplicate response |
+| **Side question** | Answer if the current step supports it, then return to the pending choice. | Ask about baggage policy during a rebooking flow |
+
+| On a call | Setting | Behavior |
+|---|---|---|
+| The recognizer splits an interrupted sentence | **Barge-in Continuation Window** (**Project** → **Settings** → **Runtime Config**) | On by default. Holds the first part for 700 ms, up to 4 merges. |
+| "Mm-hmm" while the agent speaks | `on_caller_backchannel` phrases under `CONVERSATION: listening:` | Off until you list phrases. Keep "yes" and "okay" off the list, because they are answers. |
+| "Hold on, let me find it" | `on_hold` phrases with `suppress_response: true` | No built-in phrases. Waits 30 seconds, up to two holds. |
+
+See [General settings](/agent-platform/administration/general-settings) for the runtime voice settings.
+
+## Plan transfers, outbound calls, and follow-ups
+
+Before a transfer, tell the caller what happens next. The model never chooses where a call goes. Destinations come from **Project** → **Settings** → **Agent Behavior** → **Agent Transfer**, or from an `ESCALATE` routing entry.
+
+* Route phone escalations with `WHEN: system.isVoice == true`. `system.channel == "voice"` misses Twilio and AudioCodes calls.
+* Put session values such as `{{booking_ref}}` under `metadata:`. Values under `sip_headers:` are sent as literal text.
+* Turn on **Send Conversation Summary in SIP Header**, so the person doesn't ask again. Don't send secrets or unnecessary personal data.
+* If a transfer fails, the call stays with the agent. Write words for that path, and test it.
+
+| Need | Use |
+|---|---|
+| Call a traveler | The Outbound Calls API (**Project** → **Operate** → **Deployments** → **Endpoints** → **Outbound Calls**). Pass `sessionMetadata` for `ON_START` to read, and one `idempotencyKey` per booking, so a retry doesn't ring twice. |
+| Open an outbound call | Name the flight and verify the caller before you mention the booking. A voicemail or the wrong person may be listening. |
+| Text after a missed call | A workflow with the Twilio connector's **Send SMS** step. The Twilio SMS channel only replies to incoming texts. |
+
+See the [Outbound calls API](/agent-platform/api-reference/outbound-calls-overview) and [Agent behavior settings](/agent-platform/administration/agent-behavior-settings).
