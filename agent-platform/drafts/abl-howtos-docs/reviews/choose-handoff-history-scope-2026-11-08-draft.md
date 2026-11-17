@@ -1,0 +1,241 @@
+# Pass full, recent, or no conversation history
+
+Use this pattern when you must set how many earlier messages a target agent receives in a handoff.
+
+## Concept
+
+When a handoff creates a target thread, the runtime copies zero or more earlier messages into it. The `HISTORY` setting on the route controls the copy. The copy applies once, when the target thread starts.
+
+| `HISTORY` value | Messages the target receives |
+| --------------- | ---------------------------- |
+| `full` | The calling agent's whole conversation. This is the default. |
+| `last_5`, or `mode: last_n` with `count: 5` | The most recent 5 messages. Use any positive number. |
+| `none` | No messages. |
+
+`summary_only` and `auto` also exist. They depend on `SUMMARY`. See [Choose the right history strategy for handoff](/agent-platform/abl/how-to/choose-handoff-history-strategy).
+
+If you omit `HISTORY`, the target receives the whole conversation. A project-level default, if your deployment sets one, replaces this default. Set `HISTORY` on every route so the behavior does not depend on a default.
+
+`HISTORY` controls messages. `PASS` and `SET` still send field values when `HISTORY: none` is set. See [Pass specific fields between agents](/agent-platform/abl/how-to/pass-fields-between-agents).
+
+## Minimal working example
+
+A retail router has three specialists with different history needs. The order status agent needs only the order number. The returns agent needs recent context. The complaint agent needs the whole story.
+
+The specialists are short stand-ins in the same project. Replace them with your real agents.
+
+`agents/retail-hub.agent.abl`
+
+```abl
+SUPERVISOR: Retail_Hub
+GOAL: "Route retail requests and give each specialist the amount of history it needs"
+
+BEHAVIOR:
+  role: router
+
+INTENTS:
+  order_status: "Where an order is, or when it arrives."
+  return_item: "Returns, exchanges, or refunds."
+  complaint: "A complaint about service, product quality, or a past experience."
+
+MEMORY:
+  session:
+    - order_id
+      TYPE: string
+      DESCRIPTION: "Order number, for example ORD-20931."
+
+GATHER:
+  order_id:
+    PROMPT: "What is your order number?"
+    TYPE: string
+    REQUIRED: true
+
+HANDOFF:
+  - TO: Order_Status_Agent
+    WHEN: intent.category == "order_status" AND order_id IS SET
+    PASS: [order_id]
+    HISTORY: none
+    RETURN: false
+
+  - TO: Returns_Agent
+    WHEN: intent.category == "return_item" AND order_id IS SET
+    PASS: [order_id]
+    HISTORY:
+      mode: last_n
+      count: 6
+    RETURN: false
+
+  - TO: Complaint_Agent
+    WHEN: intent.category == "complaint"
+    PASS: [order_id]
+    HISTORY: full
+    RETURN: false
+```
+
+`agents/order-status-agent.agent.abl`
+
+```abl
+AGENT: Order_Status_Agent
+GOAL: "Report the status of one order"
+
+GATHER:
+  order_id:
+    PROMPT: "What is your order number?"
+    TYPE: string
+    REQUIRED: true
+
+COMPLETE:
+  - WHEN: order_id IS SET
+    RESPOND: "Order {{order_id}} is on its way."
+```
+
+`agents/returns-agent.agent.abl`
+
+```abl
+AGENT: Returns_Agent
+GOAL: "Start a return for one order"
+
+GATHER:
+  order_id:
+    PROMPT: "What is your order number?"
+    TYPE: string
+    REQUIRED: true
+  return_reason:
+    PROMPT: "Why do you want to return the item?"
+    TYPE: string
+    REQUIRED: true
+
+COMPLETE:
+  - WHEN: return_reason IS SET
+    RESPOND: "I started a return for order {{order_id}}."
+```
+
+`agents/complaint-agent.agent.abl`
+
+```abl
+AGENT: Complaint_Agent
+GOAL: "Log a complaint using the customer's own account of events"
+
+GATHER:
+  order_id:
+    PROMPT: "What is your order number?"
+    TYPE: string
+    REQUIRED: false
+  desired_outcome:
+    PROMPT: "What outcome do you want?"
+    TYPE: string
+    REQUIRED: true
+
+COMPLETE:
+  - WHEN: desired_outcome IS SET
+    RESPOND: "I logged your complaint and noted your requested outcome."
+```
+
+Variable sources:
+
+- `order_id` is a `GATHER` field of the router. Each route passes it.
+- `return_reason` and `desired_outcome` are gathered by the specialists.
+
+## How it works
+
+The runtime resolves the history setting when it creates the target thread.
+
+1. `full` copies the calling agent's conversation. It also adds customer messages that earlier child agents handled, so the target sees every customer turn. It leaves out messages from a child that gathered a sensitive field, such as a PIN.
+2. `last_n` takes the most recent messages of the calling agent's conversation. A tool call and its result count as one unit. The runtime never splits the pair. If the newest unit is larger than the count, the target receives no messages.
+3. `none` copies no messages.
+
+Rules that apply to every value:
+
+- The count is in messages, not customer turns. A user message and an assistant reply are two messages.
+- The setting applies when the target thread is created. If the route returns to a child that is still waiting, the runtime resumes that thread and keeps its own history. It does not apply `HISTORY` again.
+- When a returnable child returns control, the setting also decides what comes back. With `full` or `last_n`, the child's replies join the parent conversation. With `none`, the child's prompts stay out of the parent conversation.
+- The setting applies to remote targets. The runtime sends the selected messages as they are stored. See [Preserve context when calling remote agents](/agent-platform/abl/how-to/preserve-context-for-remote-agents).
+
+How the compiler reads the value:
+
+| You write | Result |
+| --------- | ------ |
+| `HISTORY: last_5` | The last 5 messages. |
+| `HISTORY: last_0` | No messages. |
+| `HISTORY:` with `mode: last_n` and no `count` | Compile error `E331`. |
+| `HISTORY: last_n` with no number | No error. The route falls back to the default, `full`. |
+| `HISTORY:` with `mode: last_n` and `count: 0` | No error. The route falls back to the default, `full`. |
+| `HISTORY:` with `mode: recent` | Compile error `E330`. |
+| `HISTORY: recent` on one line | No error. The route falls back to the default, `full`. |
+| `HISTORY: FULL` or `HISTORY: "none"` | Accepted. The compiler ignores case and quotes. |
+
+Use a positive count. A value that the compiler does not recognize silently gives the target the whole conversation.
+
+## Common variations
+
+### Write the window in a CONTEXT block
+
+Inside `CONTEXT`, write the key in lowercase.
+
+```abl
+HANDOFF:
+  - TO: Returns_Agent
+    WHEN: intent.category == "return_item" AND order_id IS SET
+    CONTEXT:
+      pass: [order_id]
+      history: last_3
+    RETURN: false
+```
+
+This is a section snippet. It needs the router `GATHER` field from the minimal example.
+
+### Send no history but brief the target
+
+Pair `none` with a `SUMMARY` when the target needs a reason but not the transcript. See [Pass a conversation summary during handoff](/agent-platform/abl/how-to/pass-summary-during-handoff). `summary_only` gives the same result and states the intent.
+
+### Send full history for a legal or quality reason
+
+Use `full` when the target must see the customer's exact words, such as a complaint or a dispute. Check [Minimize context for privacy and compliance](/agent-platform/abl/how-to/minimize-agent-context) first.
+
+## Verification
+
+1. Run the validator on all four files. Expect no errors and no warnings.
+2. Send an order status request after two other messages. Expect a `handoff` event to `Order_Status_Agent`.
+3. Ask the order status agent "What did I say earlier?" Expect it not to know.
+4. Send a return request. Expect the returns agent to know only the latest 6 messages.
+5. Send a complaint. Ask the complaint agent to restate your earlier messages. Expect it to know all of them.
+6. In the trace, open the first model call of each target agent. Count the earlier messages. The count must match the route setting.
+
+## Production readiness checklist
+
+- Every route sets `HISTORY` on purpose.
+- Every `count` is a positive number.
+- Each target works with the history it receives. Test the target with exactly that history.
+- Each target that gets `none` or `last_n` receives the facts it needs through `PASS` or `SUMMARY`.
+- The team reviewed each route that sends `full` for personal data in earlier messages.
+- Tests cover a long conversation and a conversation that is shorter than the window.
+
+## Common mistakes
+
+| Mistake | Why it happens | How to avoid it |
+| ------- | ------------- | --------------- |
+| Omitting `HISTORY` and expecting a short window | The default is `full`. | Set `HISTORY` on every route. |
+| Writing `count: 0` to send nothing | Zero reads as "none". | Write `HISTORY: none`. A zero count falls back to `full`. |
+| Writing `HISTORY: last_n` on one line | The count is missing. | Write `last_5` or use the block form with `count`. |
+| Typing a mode name that does not exist | A typo on one line passes validation. | Use `full`, `none`, `summary_only`, `auto`, or `last_n`. |
+| Expecting `HISTORY` to apply on every re-entry | A waiting child thread resumes with its own history. | Pass fresh values with `PASS` on each route. |
+| Using `none` and giving no other context | The target starts blind. | Add `PASS` fields or a `SUMMARY`. |
+
+## Troubleshooting
+
+| Symptom | Likely cause | What to check |
+| ------- | ------------ | ------------- |
+| The target knows everything the customer said | The route sets no `HISTORY`, or the value is not valid. | The `HISTORY` line and the compile result. |
+| The target knows nothing from earlier | The route sets `none`, or `last_n` is smaller than the needed context. | The `HISTORY` value and the count. |
+| The target gets fewer messages than `count` | A tool call and its result form one unit, or the conversation is shorter. | The calling agent's message list. |
+| A returning child does not remember the new request | The route resumed a waiting thread, so `HISTORY` did not run again. | The `thread_resume` event and the `PASS` fields. |
+| The compile fails with `E330` or `E331` | The block form has a bad mode or no count. | The `HISTORY` block. |
+
+## Related HowTos
+
+- [Choose the right history strategy for handoff](/agent-platform/abl/how-to/choose-handoff-history-strategy)
+- [Pass a conversation summary during handoff](/agent-platform/abl/how-to/pass-summary-during-handoff)
+- [Pass specific fields between agents](/agent-platform/abl/how-to/pass-fields-between-agents)
+- [Minimize context for privacy and compliance](/agent-platform/abl/how-to/minimize-agent-context)
+- [Debug missing or incorrect context after handoff](/agent-platform/abl/how-to/debug-handoff-context)
+- [Transfer control to another agent and return later](/agent-platform/abl/how-to/returnable-agent-handoff)

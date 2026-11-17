@@ -1,0 +1,196 @@
+# Map child-agent outputs back to parent-agent variables
+
+Use this pattern when a child agent collects or computes values and the parent agent must use them after the child finishes.
+
+## Concept
+
+A child agent runs in its own scope. When it finishes, nothing comes back unless you map it. The mapping names each child field and the parent variable that receives it.
+
+Two constructs return values. They use the same `child_field: parent_variable` shape.
+
+| Construct | Where you write the mapping | When the values arrive |
+| --------- | --------------------------- | ---------------------- |
+| `HANDOFF` with `RETURN: true` | `MAP` inside `ON_RETURN` | When the child completes and control returns to the parent. |
+| `DELEGATE` | `RETURNS` | When the delegate finishes. The parent stays the active agent throughout. |
+
+Choose by who talks to the customer. A child that asks the customer questions is a returnable `HANDOFF`. A hidden call that returns a result is a `DELEGATE`. See [When to use HANDOFF instead of DELEGATE](/agent-platform/abl/how-to/use-handoff-instead-of-delegate).
+
+Only mapped fields come back. A child field that you do not map stays in the child.
+
+## Minimal working example
+
+A refill agent needs a delivery postcode before it can confirm the request. A delivery agent talks to the customer and collects it. `MAP` copies the postcode to the parent. `SET` records that delivery is confirmed.
+
+The delivery agent is a short stand-in in the same project. Replace it with your real agent.
+
+`agents/refill-request-agent.agent.abl`
+
+```abl
+AGENT: Refill_Request_Agent
+GOAL: "Record a prescription refill request after the delivery address is confirmed"
+
+MEMORY:
+  session:
+    - delivery_postcode
+      TYPE: string
+      DESCRIPTION: "Delivery postcode collected by Delivery_Agent."
+    - delivery_confirmed
+      TYPE: boolean
+      DESCRIPTION: "True after Delivery_Agent returns a postcode."
+
+HANDOFF:
+  - TO: Delivery_Agent
+    WHEN: delivery_postcode IS NOT SET
+    SUMMARY: "Confirm the delivery postcode for a refill."
+    HISTORY: none
+    RETURN: true
+    ON_RETURN:
+      action: continue
+      MAP:
+        delivery_postcode: delivery_postcode
+      SET:
+        delivery_confirmed = true
+
+COMPLETE:
+  - WHEN: delivery_confirmed IS SET
+    RESPOND: "Thanks. Your refill ships to {{delivery_postcode}}."
+```
+
+`agents/delivery-agent.agent.abl`
+
+```abl
+AGENT: Delivery_Agent
+GOAL: "Collect the delivery postcode and hand control back"
+
+GATHER:
+  delivery_postcode:
+    PROMPT: "What is the delivery postcode?"
+    TYPE: string
+    REQUIRED: true
+
+COMPLETE:
+  - WHEN: delivery_postcode IS SET
+    RESPOND: "Thanks. I have your postcode."
+```
+
+Variable sources:
+
+- `delivery_postcode` in the child is a `GATHER` field. `MAP` copies it to the parent variable of the same name.
+- `delivery_confirmed` is set by the `SET` line after `MAP` runs.
+
+## How it works
+
+1. The parent routes to the child. `RETURN: true` makes the parent wait.
+2. The child talks to the customer and gathers its field.
+3. The child's `COMPLETE` rule fires. The child returns control.
+4. The runtime applies `MAP`: it reads each child field and writes it to the parent variable. A child field with no value is skipped.
+5. The runtime applies `SET` assignments.
+6. The `action` decides what the parent does next. `continue` resumes the parent without routing again. `resume_intent` replays the customer's request through the parent routes.
+
+Rules for `MAP`:
+
+- Write `child_field: parent_variable`. The child field is on the left.
+- The child must declare or produce the child field. Otherwise the compiler reports `UNKNOWN_HANDOFF_RETURN_FIELD` as an error. The check runs for local children with `RETURN: true`.
+- The parent must be allowed to write each target. If one target is not writable, the runtime applies none of the return effects. See [Transfer control to another agent and return later](/agent-platform/abl/how-to/returnable-agent-handoff).
+- `ON_RETURN` without `RETURN: true` is unreachable. The compiler warns with `HANDOFF_ON_RETURN_WITHOUT_RETURN`.
+
+Rules for `RETURNS` on a delegate:
+
+- Write `child_field: parent_variable`. The runtime looks for the child field in the result, then in the JSON response, then in the delegate's session values, then in its state context.
+- A field that has no value is skipped.
+- If `RETURNS` is declared and no field maps, the delegate fails and the `ON_FAILURE` path runs.
+- An empty string never overwrites a parent variable that holds a value. Return `null` to clear one on purpose.
+- The compiler warns with `UNKNOWN_DELEGATE_RETURN_FIELD` when the child does not declare the field.
+- The full result also lands in the variable that `USE_RESULT` names. The default is `delegate_result`.
+
+## Common variations
+
+### Map a delegate result
+
+A delegate returns two values to the caller.
+
+```abl
+DELEGATE:
+  - TO: Refund_Checker
+    WHEN: order_id IS SET
+    PURPOSE: "Check whether the order qualifies for a refund"
+    INPUT:
+      order_id: order_id
+    RETURNS:
+      eligible: refund_eligible
+      reason: refund_reason
+    USE_RESULT: refund_check
+```
+
+This is a section snippet. It needs the caller `MEMORY` fields and the `Refund_Checker` agent from [Delegate and map the result](/agent-platform/abl/how-to/delegate-and-map-result).
+
+### Map several fields and replay the request
+
+Add more `MAP` lines and use `resume_intent` when the parent must route again with the new values.
+
+```abl
+    ON_RETURN:
+      action: resume_intent
+      MAP:
+        delivery_postcode: delivery_postcode
+        delivery_window: preferred_window
+```
+
+This is an illustrative fragment. `delivery_window` must be a child field and `preferred_window` a parent variable.
+
+### Reuse return behavior with a handler
+
+Define a named handler in `RETURN_HANDLERS` when several routes share the same return behavior. A handler cannot combine `RESPOND` with `RESUME_INTENT`. See [Transfer control to another agent and return later](/agent-platform/abl/how-to/returnable-agent-handoff).
+
+### Remote children
+
+A remote child can also return values. The remote agent sends an A2A `data` part with a `returnValues` object, and `MAP` reads its keys. The compiler does not check `MAP` fields for a remote target, so a wrong key is skipped without an error. See [Preserve context when calling remote agents](/agent-platform/abl/how-to/preserve-context-for-remote-agents).
+
+## Verification
+
+1. Run the validator on both files. Expect no errors and no warnings.
+2. Send "Refill my prescription."
+3. Expect a `handoff` trace event to `Delivery_Agent` with `returnExpected: true`.
+4. Answer the postcode. Expect the child to complete.
+5. Expect a `handoff_return_handler` trace event. `mappedFields` must list `delivery_postcode`.
+6. Expect the parent reply "Your refill ships to" followed by your postcode.
+7. Change the `MAP` child field to a name the child does not declare. Expect `UNKNOWN_HANDOFF_RETURN_FIELD`. Revert the change.
+
+## Production readiness checklist
+
+- Every `MAP` and `RETURNS` entry names a child field that the child sets on every successful path.
+- Every parent variable is declared in `MEMORY`, and the parent reads it.
+- The parent can write every `MAP` and `SET` target.
+- A failure path exists for the child. See [Transfer control to another agent and return later](/agent-platform/abl/how-to/returnable-agent-handoff).
+- Tests cover a child that returns every field, a child that returns some fields, and a child that never completes.
+- Trace checks confirm `mappedFields` on every return.
+
+## Common mistakes
+
+| Mistake | Why it happens | How to avoid it |
+| ------- | -------------- | --------------- |
+| Expecting values to return without `MAP` | The child completes and the parent resumes. | Add a `MAP` entry for each value. |
+| Swapping the sides of `MAP` | `PASS` and `INPUT` read in the other direction. | Write the child field first, then the parent variable. |
+| Writing `ON_RETURN` and `RETURN: false` | The route looks complete. | Set `RETURN: true`. |
+| Mapping into a parent variable that nothing reads | The mapping looks done. | Read the variable in `COMPLETE`, `FLOW`, or a route `WHEN`. |
+| Returning `""` to clear a delegate variable | An empty string reads as "no value". | Return `null`. |
+| Using `RETURNS` with a type name as the target | `string` reads as a schema. | Name parent variables in lowercase with real names. |
+
+## Troubleshooting
+
+| Symptom | Likely cause | What to check |
+| ------- | ------------ | ------------- |
+| The parent variable stays empty | The child never sets the field, or `MAP` is missing. | The child field and `mappedFields` in `handoff_return_handler`. |
+| The compile fails with `UNKNOWN_HANDOFF_RETURN_FIELD` | The child does not declare the mapped field. | The child `GATHER` and `MEMORY`. |
+| No `MAP` value arrives and no error appears | A target is not writable, so none of the return effects applied. | `memory_error` events and the parent `MEMORY`. |
+| The delegate fails with "completed without required return values" | No `RETURNS` field mapped. | The child field names and the `delegate_complete` event. |
+| The warning `UNKNOWN_DELEGATE_RETURN_FIELD` appears | The child does not declare the field. | The child `MEMORY` and flow. |
+
+## Related HowTos
+
+- [Transfer control to another agent and return later](/agent-platform/abl/how-to/returnable-agent-handoff)
+- [Delegate and map the result](/agent-platform/abl/how-to/delegate-and-map-result)
+- [When to use HANDOFF instead of DELEGATE](/agent-platform/abl/how-to/use-handoff-instead-of-delegate)
+- [When to use DELEGATE instead of HANDOFF](/agent-platform/abl/how-to/use-delegate-instead-of-handoff)
+- [Resume after a child or human agent completes](/agent-platform/abl/how-to/resume-after-child-or-human-agent)
+- [Debug missing or incorrect context after handoff](/agent-platform/abl/how-to/debug-handoff-context)

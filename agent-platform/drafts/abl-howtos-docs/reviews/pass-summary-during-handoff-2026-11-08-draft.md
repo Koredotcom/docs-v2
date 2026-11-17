@@ -1,0 +1,213 @@
+# Pass a conversation summary during handoff
+
+Use this pattern when the target agent needs the reason for the handoff, but not the full conversation.
+
+## Concept
+
+`SUMMARY` is text that you write in the route. It is not a summary that the platform generates. The runtime fills the `{{variables}}` in your text with the calling agent's values and sends the result to the target as `_handoff_summary`. The target model reads it as context.
+
+The summary and the history setting work together. `HISTORY` decides whether the target also gets raw messages. See [Choose the right history strategy for handoff](/agent-platform/abl/how-to/choose-handoff-history-strategy).
+
+| You write | The target receives |
+| --------- | ------------------- |
+| `SUMMARY` and `HISTORY: summary_only` | The summary text only. |
+| `SUMMARY` and no `HISTORY` | The summary and the whole conversation. History defaults to `full`. |
+| `SUMMARY` and `HISTORY: auto` | The summary only, when the target runs on a model. Otherwise the last 5 messages. |
+| `HISTORY: summary_only` and no `SUMMARY` | Nothing. The compiler warns. |
+
+Write the summary for a reader who has not seen the conversation. State who the customer is, what they want, and what is already done.
+
+## Minimal working example
+
+A billing router gathers the account number and the disputed amount. It sends a one-line brief and no raw history.
+
+The specialists are short stand-ins in the same project. Replace them with your real agents.
+
+`agents/billing-hub.agent.abl`
+
+```abl
+SUPERVISOR: Billing_Hub
+GOAL: "Route billing requests and brief the specialist with a short summary"
+
+BEHAVIOR:
+  role: router
+
+INTENTS:
+  dispute: "The customer disputes a charge."
+  payment_plan: "The customer wants to split a balance into payments."
+
+GATHER:
+  account_id:
+    PROMPT: "What is your account number?"
+    TYPE: string
+    REQUIRED: true
+  disputed_amount:
+    PROMPT: "How much is the disputed charge?"
+    TYPE: string
+    REQUIRED: true
+
+HANDOFF:
+  - TO: Dispute_Agent
+    WHEN: intent.category == "dispute" AND account_id IS SET
+    PASS: [account_id, disputed_amount]
+    SUMMARY: "Customer on account {{account_id}} disputes a charge of {{disputed_amount}}."
+    HISTORY: summary_only
+    RETURN: false
+
+  - TO: Payment_Plan_Agent
+    WHEN: intent.category == "payment_plan" AND account_id IS SET
+    CONTEXT:
+      pass: [account_id]
+      summary: |
+        Customer on account {{account_id}} asks for a payment plan.
+        Identity is already verified in this session.
+      history: auto
+    RETURN: false
+```
+
+`agents/dispute-agent.agent.abl`
+
+```abl
+AGENT: Dispute_Agent
+GOAL: "Open a billing dispute using the context from the router"
+
+GATHER:
+  account_id:
+    PROMPT: "What is your account number?"
+    TYPE: string
+    REQUIRED: true
+  disputed_amount:
+    PROMPT: "How much is the disputed charge?"
+    TYPE: string
+    REQUIRED: true
+  dispute_reason:
+    PROMPT: "Why do you dispute this charge?"
+    TYPE: string
+    REQUIRED: true
+
+COMPLETE:
+  - WHEN: dispute_reason IS SET
+    RESPOND: "I opened a dispute for {{disputed_amount}} on account {{account_id}}."
+```
+
+`agents/payment-plan-agent.agent.abl`
+
+```abl
+AGENT: Payment_Plan_Agent
+GOAL: "Set up a payment plan"
+
+GATHER:
+  account_id:
+    PROMPT: "What is your account number?"
+    TYPE: string
+    REQUIRED: true
+  installments:
+    PROMPT: "How many monthly payments do you want?"
+    TYPE: string
+    REQUIRED: true
+
+COMPLETE:
+  - WHEN: installments IS SET
+    RESPOND: "I set up {{installments}} payments for account {{account_id}}."
+```
+
+Variable sources:
+
+- `account_id` and `disputed_amount` are `GATHER` fields of the router. `PASS` copies them. The summary text reads the same router values.
+- `dispute_reason` and `installments` are gathered by the specialists.
+
+## How it works
+
+1. The router selects a route.
+2. The runtime replaces each `{{variable}}` in the summary with the router value. A variable with no value becomes an empty string. No error occurs.
+3. The runtime stores the result as `_handoff_summary` in the target context and authorizes it for the target prompt.
+4. The runtime applies the `HISTORY` setting. With `summary_only` or `none`, the target gets no raw messages.
+
+Rules that apply to the summary:
+
+- A routing model cannot supply `_handoff_summary`. Only the `SUMMARY` text in the route sets it.
+- The summary is a template. It does not change between conversations except through its variables.
+- The shorthand `SUMMARY:` takes a one-line quoted string. For several lines, use `summary: |` inside a `CONTEXT:` block, as the payment plan route does.
+- In a `DELEGATE`, `SUMMARY` is a synonym for `PURPOSE`. A delegate does not use it as a history summary.
+
+How `HISTORY: auto` decides:
+
+- If the route has a non-empty `SUMMARY` and the target runs on a model, the runtime sends the summary only.
+- If the target does not run on a model, the runtime sends the last 5 messages.
+- If a pipeline short-circuit triggers the handoff, the runtime sends the last 5 messages even when a summary exists.
+
+## Common variations
+
+### Summary with a bounded window of messages
+
+Keep the summary and add the last few messages when the target needs the customer's exact words.
+
+```abl
+HANDOFF:
+  - TO: Dispute_Agent
+    WHEN: intent.category == "dispute" AND account_id IS SET
+    PASS: [account_id, disputed_amount]
+    SUMMARY: "Customer on account {{account_id}} disputes a charge of {{disputed_amount}}."
+    HISTORY: last_5
+    RETURN: false
+```
+
+This is a section snippet. It needs the router `GATHER` fields from the minimal example. `last_5` and the block form `mode: last_n` with `count` are equivalent.
+
+### Summary on a returnable handoff
+
+A child that returns control also gets the summary. Use it to state the one job the child must finish. See [Transfer control to another agent and return later](/agent-platform/abl/how-to/returnable-agent-handoff).
+
+### Summary that carries a fixed instruction
+
+A summary can hold fixed text and no variables, as in "Identity is already verified in this session." Use this for facts the router knows from its own flow.
+
+Do not use the summary to grant permissions or skip checks. The target must verify any fact that affects authorization.
+
+## Verification
+
+1. Run the validator. Expect no errors and no warnings.
+2. Send "I want to dispute a charge" and answer the router questions.
+3. Expect a `handoff` trace event with `to: Dispute_Agent`.
+4. Expect the target context to include `_handoff_summary` with the account number and amount filled in.
+5. Expect `Dispute_Agent` to ask only for the dispute reason.
+6. Send a payment plan request. Expect the `history: auto` route to send the summary and no raw messages, because `Payment_Plan_Agent` runs on a model.
+7. Remove `SUMMARY` from the first route. Expect the warning `HANDOFF_SUMMARY_ONLY_WITHOUT_SUMMARY`.
+
+## Production readiness checklist
+
+- Each route that uses `summary_only` or `auto` has a `SUMMARY`.
+- Each variable in the summary exists in the calling agent.
+- The summary holds no data that the target must not see. See [Minimize context for privacy and compliance](/agent-platform/abl/how-to/minimize-agent-context).
+- The target does not depend on facts that only the raw conversation held.
+- Tests cover a filled summary and a summary with a missing variable.
+- Trace checks confirm the summary text on each handoff.
+
+## Common mistakes
+
+| Mistake | Why it happens | How to avoid it |
+| ------- | -------------- | --------------- |
+| Using `summary_only` with no `SUMMARY` | The route looks complete. | Write a `SUMMARY`. The compiler warns with `HANDOFF_SUMMARY_ONLY_WITHOUT_SUMMARY`. |
+| Expecting the platform to write the summary | The word "summary" suggests generation. | Write the template yourself. |
+| Naming a variable that the router never sets | The variable name differs from the router field. | Use the exact router field name. A missing value leaves a gap in the sentence. |
+| Writing a multi-line summary on the route | `SUMMARY:` takes one line. | Use a multi-line `summary` inside `CONTEXT:`, as the payment plan route does. |
+| Expecting `auto` to always send only the summary | `auto` has fallbacks. | Set `summary_only` when you need exactly that. |
+
+## Troubleshooting
+
+| Symptom | Likely cause | What to check |
+| ------- | ------------ | ------------- |
+| The target ignores the briefing | The route sets no `SUMMARY`, or the summary has empty variables. | The `handoff` event context and the router values. |
+| The target gets the whole conversation | The route sets no `HISTORY`. The default is `full`. | The `HISTORY` line on the route. |
+| The summary has gaps such as "disputes a charge of ." | A variable has no value at routing time. | The router `GATHER` order and the `WHEN` condition. |
+| `auto` sends 5 messages and no summary | The route has no `SUMMARY`, the target does not run on a model, or a pipeline short-circuit triggered the handoff. | The route `SUMMARY` and the target type. |
+| The compile warns about `summary_only` | The route has no `SUMMARY`. | Add `SUMMARY` to the route. |
+
+## Related HowTos
+
+- [Pass specific fields between agents](/agent-platform/abl/how-to/pass-fields-between-agents)
+- [Pass full, recent, or no conversation history](/agent-platform/abl/how-to/choose-handoff-history-scope)
+- [Choose the right history strategy for handoff](/agent-platform/abl/how-to/choose-handoff-history-strategy)
+- [Minimize context for privacy and compliance](/agent-platform/abl/how-to/minimize-agent-context)
+- [Debug missing or incorrect context after handoff](/agent-platform/abl/how-to/debug-handoff-context)
+- [Transfer control to another agent and return later](/agent-platform/abl/how-to/returnable-agent-handoff)

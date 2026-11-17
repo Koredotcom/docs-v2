@@ -1,0 +1,169 @@
+---
+title: Databricks integration
+---
+
+<Badge icon="arrow-left" color="gray">[Back to list of enterprise systems](/agent-platform/integrations/enterprise-systems)</Badge>
+
+Use the Databricks integration to manage jobs and runs, execute SQL statements in a SQL warehouse, and call other Databricks REST API endpoints through Action Tools. It also provides a job notification webhook trigger.
+
+| Authentication | Actions | Triggers |
+| --- | --- | --- |
+| OAuth 2.0 Client Credentials | ([12](/agent-platform/integrations/enterprise-systems/databricks#supported-actions)) | ([1](/agent-platform/integrations/enterprise-systems/databricks#triggers)) |
+
+## Supported actions
+
+| Action | Use it to |
+| --- | --- |
+| [List Jobs](#list-jobs) | List jobs, optionally filtered by name. |
+| [Get Job](#get-job) | Retrieve a job by its ID. |
+| [Run Job Now](#run-job-now) | Start a job run with optional parameters. |
+| [List Runs](#list-runs) | List job runs with optional filters. |
+| [Get Run](#get-run) | Retrieve a run by its ID. |
+| [Cancel Run](#cancel-run) | Cancel a job run. |
+| [Get Run Output](#get-run-output) | Retrieve a run's output. |
+| [List SQL Warehouses](#list-sql-warehouses) | List SQL warehouses available to the authenticated principal. |
+| [Execute SQL Statement](#execute-sql-statement) | Execute a SQL statement in a warehouse. |
+| [Get SQL Statement](#get-sql-statement) | Retrieve statement execution details. |
+| [Cancel SQL Statement](#cancel-sql-statement) | Cancel a running SQL statement. |
+| [Custom API Call](#custom-api-call) | Send a request to a Databricks REST API endpoint. |
+
+## Triggers
+
+| Trigger | Fires when |
+| --- | --- |
+| Job Notification Webhook | A selected event occurs for the configured Databricks job: start, success, failure, duration warning threshold exceeded, or streaming backlog threshold exceeded. The trigger attaches a webhook notification destination to the job. It can create a destination or reuse one whose URL already points to the workflow's trigger webhook. When disabled, the trigger removes its job attachment and deletes the destination only if it created it. |
+
+## Prerequisites
+
+- A Databricks workspace and a service principal or OAuth client credentials with permission for the jobs, SQL, and API operations you plan to use.
+- A SQL warehouse for **List SQL Warehouses** and SQL statement actions.
+- For **Job Notification Webhook**, a job that the authenticated principal can edit. If reusing a notification destination, its URL must already be the workflow trigger's webhook URL.
+
+## Set up the integration
+
+<Steps>
+  <Step title="Prepare Databricks OAuth credentials">
+    Prepare the OAuth client ID and client secret, workspace URL, and required scopes for the Databricks APIs your tools will call. The token URL is prefilled as `${connectionConfig.workspaceHost}/oidc/v1/token`; verify it resolves to the workspace token endpoint. See [Databricks OAuth machine-to-machine authentication](https://docs.databricks.com/en/dev-tools/auth/oauth-m2m.html).
+  </Step>
+  <Step title="Create the auth profile">
+    In **Integrations**, select **Databricks** > **Connect**. On **Project Auth Profiles**, select **New Profile** > **Integration Profile** > **Databricks** > **Continue**. Select **OAuth 2.0 Client Credentials**, enter the profile details, workspace **Host**, token URL, scopes, **Client ID**, and **Client Secret**, then select **Create Profile**. The Host is the Databricks workspace URL without a trailing slash. Studio also provides an optional refresh token URL field.
+  </Step>
+  <Step title="Create the action tool">
+    In **Tools**, select **New Tool** > **Action** > **Databricks** > **Continue**. Select the **Action** and **Auth Profile**, configure the inputs, and select **Create Tool**. Then [assign the tool to an agent](/agent-platform/tools/actions#assign-an-action-to-an-agent).
+  </Step>
+</Steps>
+
+## Action reference
+
+The inputs below match the fields shown in Studio for each action.
+
+<AccordionGroup>
+  <Accordion title="List Jobs" id="list-jobs">
+    | Parameter | Type | Required | Description |
+    | --- | --- | --- | --- |
+    | `limit` | number | No | Maximum number of jobs to return. Defaults to `25`; values above `100` are capped at `100`. |
+    | `offset` | number | No | Number of jobs to skip. |
+    | `name` | string | No | Filter jobs by name. |
+  </Accordion>
+  <Accordion title="Get Job" id="get-job">
+    | Parameter | Type | Required | Description |
+    | --- | --- | --- | --- |
+    | `jobId` | number | Yes | ID of the job to retrieve. |
+  </Accordion>
+  <Accordion title="Run Job Now" id="run-job-now">
+    | Parameter | Type | Required | Description |
+    | --- | --- | --- | --- |
+    | `jobId` | number | Yes | ID of the job to run. |
+    | `idempotencyToken` | string | No | Token used to make repeated run requests idempotent. |
+    | `parameters` | object | No | Job run parameters object. Defaults to `{}`. Use the parameter fields supported by the job, such as notebook, Python, JAR, or job parameters. |
+  </Accordion>
+  <Accordion title="List Runs" id="list-runs">
+    | Parameter | Type | Required | Description |
+    | --- | --- | --- | --- |
+    | `jobId` | number | No | Filter runs by job ID. |
+    | `activeOnly` | boolean | No | Return active runs only. |
+    | `completedOnly` | boolean | No | Return completed runs only. |
+    | `limit` | number | No | Maximum number of runs to return. Defaults to `25`; values above `100` are capped at `100`. |
+    | `offset` | number | No | Number of runs to skip. |
+  </Accordion>
+  <Accordion title="Get Run" id="get-run">
+    | Parameter | Type | Required | Description |
+    | --- | --- | --- | --- |
+    | `runId` | number | Yes | ID of the run to retrieve. |
+  </Accordion>
+  <Accordion title="Cancel Run" id="cancel-run">
+    | Parameter | Type | Required | Description |
+    | --- | --- | --- | --- |
+    | `runId` | number | Yes | ID of the run to cancel. |
+  </Accordion>
+  <Accordion title="Get Run Output" id="get-run-output">
+    | Parameter | Type | Required | Description |
+    | --- | --- | --- | --- |
+    | `runId` | number | Yes | ID of the run whose output to retrieve. |
+  </Accordion>
+  <Accordion title="List SQL Warehouses" id="list-sql-warehouses">
+    This action has no input parameters.
+  </Accordion>
+  <Accordion title="Execute SQL Statement" id="execute-sql-statement">
+    | Parameter | Type | Required | Description |
+    | --- | --- | --- | --- |
+    | `warehouseId` | string | Yes | ID of the SQL warehouse. |
+    | `statement` | string | Yes | SQL statement to execute. |
+    | `parameters` | object | No | Statement parameters array. Defaults to `[]`. |
+    | `waitTimeout` | string | No | How long to wait for completion. Defaults to `10s`. |
+    | `rowLimit` | number | No | Maximum rows to return. Defaults to `100`; values above `1000` are capped at `1000`. |
+    | `byteLimit` | number | No | Maximum response size in bytes. Defaults to `2097152` (2 MiB); values above `5242880` (5 MiB) are capped at `5242880`. |
+    | `disposition` | enum | No | Result delivery mode: `INLINE` (default, displayed as **Inline**) or `EXTERNAL_LINKS` (displayed as **External Links**). |
+    | `format` | enum | No | Result format: `JSON_ARRAY` (default, displayed as **JSON Array**), `ARROW_STREAM` (displayed as **Arrow Stream**), or `CSV`. |
+  </Accordion>
+  <Accordion title="Get SQL Statement" id="get-sql-statement">
+    | Parameter | Type | Required | Description |
+    | --- | --- | --- | --- |
+    | `statementId` | string | Yes | ID of the SQL statement to retrieve. |
+  </Accordion>
+  <Accordion title="Cancel SQL Statement" id="cancel-sql-statement">
+    | Parameter | Type | Required | Description |
+    | --- | --- | --- | --- |
+    | `statementId` | string | Yes | ID of the SQL statement to cancel. |
+  </Accordion>
+  <Accordion title="Custom API Call" id="custom-api-call">
+    | Parameter | Type | Required | Description |
+    | --- | --- | --- | --- |
+    | `method` | enum | Yes | HTTP method: `GET` (default), `POST`, `PATCH`, or `DELETE`. |
+    | `path` | string | Yes | Databricks API path beginning with `/api/`, such as `/api/2.2/jobs/list`. |
+    | `query` | object | No | Query string parameters. Defaults to `{}`. |
+    | `body` | object | No | Request body for non-GET methods. Defaults to `{}`; GET requests don't use the body. |
+  </Accordion>
+</AccordionGroup>
+
+## Trigger reference
+
+<AccordionGroup>
+  <Accordion title="Job Notification Webhook" id="job-notification-webhook">
+    | Parameter | Type | Required | Description |
+    | --- | --- | --- | --- |
+    | `jobId` | number | Yes | ID of the job to monitor. |
+    | `events` | multi-select | Yes | Job events to receive. Defaults to `on_failure`. Options: `on_start`, `on_success`, `on_failure`, `on_duration_warning_threshold_exceeded`, and `on_streaming_backlog_exceeded`. |
+    | `destinationId` | string | No | Existing webhook notification destination to reuse. Its URL must already be the workflow trigger's webhook URL. If omitted, the trigger creates a destination. |
+    | `displayName` | string | No | Display name for a newly created destination. Used only when creating one. |
+  </Accordion>
+</AccordionGroup>
+
+## Troubleshoot common issues
+
+| Issue | Resolution |
+| --- | --- |
+| OAuth authorization or token exchange fails | Verify the workspace Host, client ID and secret, token URL, scopes, and service principal permissions. |
+| A job or run action returns an access error | Confirm that the authenticated principal can view, run, or cancel the specified job or run. |
+| SQL execution fails | Verify the warehouse ID, warehouse availability, SQL permissions, statement syntax, and parameter format. |
+| SQL results are incomplete | Check the row and byte limits and the selected disposition and format. |
+| The job notification trigger can't be enabled | Verify that the principal can edit the job. For a reused destination, confirm its configured URL is the trigger webhook URL. |
+| The trigger stops receiving notifications | Confirm the selected events and that the Databricks job still has the notification destination attached. |
+
+## Related articles
+
+- [Auth profiles](/agent-platform/administration/integrations-settings#auth-profiles)
+- [Action Tools](/agent-platform/tools/actions)
+- [Databricks OAuth machine-to-machine authentication](https://docs.databricks.com/en/dev-tools/auth/oauth-m2m.html)
+- [Databricks Jobs API](https://docs.databricks.com/api/workspace/jobs)
+- [Databricks SQL Statement Execution API](https://docs.databricks.com/api/workspace/statementexecution)
