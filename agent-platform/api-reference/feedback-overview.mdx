@@ -1,0 +1,41 @@
+---
+title: Feedback API overview
+description: Use the feedback API to submit ratings collected in your own channels against a project survey and to retrieve the survey's responses with cursor pagination.
+sidebarTitle: Feedback APIs
+---
+
+Use the feedback API to submit ratings that you collect in your own channels against a survey in a project. You can also retrieve the survey's responses, including the ones captured in the product, by paging forward through them with a cursor.
+
+## Prerequisites
+
+- A platform API key (`abl_…`). Send it in the `x-api-key` header or as `Authorization: Bearer abl_…`. User session tokens (JWT) are refused.
+- The `feedback-survey:write` permission on the key to submit ratings. The `feedback-survey:read` permission to list responses.
+- The ID of the project.
+- The name of an existing survey in the project. You refer to a survey by name.
+
+## Workflow and use cases
+
+1. Submit a rating for each response you collect. Send the survey name and the rating on the survey's own scale.
+2. Poll the list of responses from the oldest one. Pass the `nextCursor` from each page as `cursor` in the next request.
+3. Use `survey_id` to match responses to a survey, because a survey name can change.
+
+## List of endpoints
+
+All paths start with `/api/public/feedback/projects/{projectId}`.
+
+| Use case | Help article                                                                              | Purpose                                                                         | Permission              |
+|:---------|:------------------------------------------------------------------------------------------|:--------------------------------------------------------------------------------|:------------------------|
+| Submit   | [Submit rating for survey](/agent-platform/api-reference/feedback-survey-submit-rating)   | Record one rating against a survey named in the request body.                   | `feedback-survey:write` |
+| Retrieve | [List survey response](/agent-platform/api-reference/feedback-survey-list)                | List the project's survey responses, oldest first, with a cursor for the next page. | `feedback-survey:read`  |
+
+## Behavior to know
+
+- The platform key identifies the origin of every submitted response. A body that sets `origin`, `captureMethod`, `surveyTemplateId`, or `score` returns `400 FIELD_NOT_ACCEPTED`. Any other unknown field returns `400 UNKNOWN_FIELD`.
+- The API checks each rating against the survey's control range: thumbs 0 to 1, star 1 to 5, scale 0 to 10. A rating outside the range returns `422 INVALID_INPUT`. The API never adjusts the value.
+- A free-text survey collects no rating. Submitting a rating to it returns `422 TEMPLATE_COLLECTS_NO_RATING`.
+- A repeated submission returns the original `response_id`.
+- The list returns all responses for the project, including ones captured in the product and by other integrations. Use `response_source` to tell them apart.
+- The `survey` field in a response shows the survey's current name for display only. It is empty if the survey was deleted. Use `survey_id` to correlate.
+- Use `survey`, `from`, and `to` to filter the list. A survey name that does not exist returns `404 SURVEY_NOT_FOUND`.
+- The `limit` parameter accepts 1 to 200 and defaults to 50. Values above 200 are capped. A cursor that the API did not issue returns `400 INVALID_CURSOR`.
+- Exceeding the rate allowance of the key returns `429`.

@@ -1,0 +1,513 @@
+---
+title: Voice in ABL
+sidebarTitle: Voice
+---
+
+Use this page to find every ABL setting that shapes a voice call. It gives the key values, defaults, and precedence for each topic, then links to the full text. For channel setup in Studio, see [Voice channels](/agent-platform/channels/voice).
+
+<Note>Most settings here apply to **KoreVG pipeline voice** (speech-to-text, agent, text-to-speech). Realtime speech-to-speech calls ignore many of them, because the model provider owns turn detection and delivery. Each topic states where it applies. For the pipeline and realtime differences, see [Pipeline vs. realtime voice](/agent-platform/channels/voice#pipeline-vs-realtime-voice).</Note>
+
+## Where voice settings live
+
+Set a voice behavior at the narrowest level that fits. A narrower level wins over a wider one.
+
+| Level | What you can set | Details |
+| ----- | ---------------- | ------- |
+| Channel connection | Listening mode, streaming switch, barge-in checkbox, turn detection, `sttMinConfidence` | [Voice channels](/agent-platform/channels/voice) |
+| Project runtime config | `voiceListening` (keypad defaults), `voiceNoInput` (silence and what happens when retries run out), `callerHold`, `voice.sttMinConfidence`, filler | [Voice turn-taking](/agent-platform/abl/reference/behavior-profiles#voice-turn-taking), [Caller hold](/agent-platform/abl/reference/lifecycle-and-hooks#on_caller_hold_limit) |
+| Agent `EXECUTION.voice` | Spoken-style instructions, grounding guards, coordinator policy, turn detection, end-of-speech hints | [Agent declaration](/agent-platform/abl/reference/agent-declaration#voice-instructions-and-grounding-guards) |
+| Agent `CONVERSATION.listening` | Listening mode, barge-in, no-input, back-channel, hold phrases, barge-in continuation, keypad defaults | [Behavior profiles](/agent-platform/abl/reference/behavior-profiles#conversation) |
+| Behavior profile | `VOICE` (TTS overrides) and `CONVERSATION.listening`, applied when the profile `WHEN` is true | [Behavior profiles](/agent-platform/abl/reference/behavior-profiles#voice) |
+| FLOW step | `VOICE` block: `BARGE_IN`, `STREAMING`, `ON_NO_INPUT`, `TURN_DETECTION`, end-of-speech hints | [Scoped barge-in](/agent-platform/abl/reference/flow#scoped-barge-in) |
+| `GATHER` field (FLOW step) | `VOICE`, `ASR:`, `DTMF:` | [Voice delivery for a field](/agent-platform/abl/reference/flow#voice-delivery-for-a-field) |
+| Tool | `VOICE` reply policy; `call_transfer` SIP destination | [Voice reply policy](/agent-platform/abl/reference/tools#voice-reply-policy) |
+| Hook, `ON_START`, `ON_ERROR`, `COMPLETE` | A nested `VOICE` block under `RESPOND`; SIP headers on the closing BYE | [Voice delivery for lifecycle replies](/agent-platform/abl/reference/lifecycle-and-hooks#voice-delivery-for-lifecycle-replies) |
+| `MESSAGES:` | Filler phrases | [Filler overrides](/agent-platform/abl/reference/lifecycle-and-hooks#filler-overrides-voice) |
+| `ESCALATE` routing | Voice transfer method, SIP headers, custom transfer tools | [Voice transfer settings](/agent-platform/abl/reference/multi-agent-and-supervisor#voice-transfer-settings) |
+
+## Speak: control what the caller hears
+
+### Voice output (`VOICE:`)
+
+A `VOICE:` block next to a `RESPOND` overrides text-to-speech for that reply.
+
+```yaml
+RESPOND: "Your booking is confirmed for December 15th."
+VOICE:
+  ssml: |
+    <speak>
+      Your booking is confirmed for <say-as interpret-as="date" format="mdy">12/15/2025</say-as>.
+    </speak>
+  plain_text: "Your booking is confirmed for December fifteenth."
+  instructions: "Speak in a warm, congratulatory tone"
+```
+
+| Property | Use |
+| -------- | --- |
+| `ssml` | SSML markup for engines that read it (Google, Azure, Amazon Polly). |
+| `plain_text` | Voice-optimized text. It is the fallback for every engine. |
+| `instructions` | Style instructions for OpenAI Realtime and Gemini Live. |
+| `provider`, `voice_id`, `speed`, `pace`, `temperature` | Engine, voice, and delivery controls. |
+| `auto_tts_language_switch` | Match the voice to the detected language of the reply. |
+
+In a FLOW step, write the keys in uppercase (`SSML`, `INSTRUCTIONS`, `PLAIN_TEXT`). A behavior profile `VOICE` block accepts the same keys.
+
+Details: [Voice configuration](/agent-platform/abl/reference/rich-content#voice-configuration), [FLOW voice configuration](/agent-platform/abl/reference/flow#voice-configuration), [Behavior profile VOICE](/agent-platform/abl/reference/behavior-profiles#voice).
+
+### Spoken-style rules and grounding guards
+
+`EXECUTION.voice.instructions` fills `## Voice Delivery Instructions` in the prompt. It **replaces** the platform voice formatting rules. Restate "plain speech, no lists" in your text.
+
+```yaml
+EXECUTION:
+  voice:
+    instructions: "Speak warmly in plain sentences. No lists. One or two short sentences per answer."
+    grounding_guards:
+      tool_arguments: true
+      reply_figures: true
+      reply_repairs: true
+```
+
+All three guards default to `false` and apply to voice channels only.
+
+| Guard | Effect |
+| ----- | ------ |
+| `tool_arguments` | Refuses a tool call whose arguments cannot be traced to a tool result or session value in the turn. |
+| `reply_figures` | Drops a spoken figure that no tool result or session value supports. |
+| `reply_repairs` | Allows one repair pass when the model promises an action but the tool call never ran. |
+
+Details: [Voice instructions and grounding guards](/agent-platform/abl/reference/agent-declaration#voice-instructions-and-grounding-guards).
+
+### Realtime delivery tone (`coordinator_policy`)
+
+For realtime voice agents, `EXECUTION.voice.coordinator_policy` sets `language`, `tone`, `pace`, `brevity`, `interruption`, `greeting_style`, and two accessibility read-back switches. It shapes delivery. It does not change what the agent says.
+
+Details: [Voice coordinator policy](/agent-platform/abl/reference/agent-declaration#voice-coordinator-policy).
+
+### Barge-in and streaming for one output
+
+`BARGE_IN` (`allow` or `disallow`) decides whether the caller can interrupt one spoken output. `STREAMING` (`true` or `false`) decides whether audio starts before the full reply is ready. Set both at the narrowest scope that fits.
+
+```yaml
+FLOW:
+  notice:
+    REASONING: false
+    BARGE_IN: disallow
+    RESPOND: "This required notice must play in full."
+      VOICE:
+        BARGE_IN: allow
+```
+
+Precedence, narrowest first: the output's own `VOICE`, its template, its `GATHER` field, the tool reply policy, the step, the agent's `CONVERSATION.listening.barge_in`, then the channel setting. An explicit `allow` beats a wider `disallow`.
+
+Where each scope reads the policy:
+
+| Scope | Notes |
+| ----- | ----- |
+| `RESPOND` `VOICE` block, step, template | Also `ON_SUCCESS`, `ON_FAILURE`, `ON_RESULT`, `ON_INPUT`, `SUB_INTENTS`, `DIGRESSIONS`, and `ON_ACTION` `DO` replies. |
+| `GATHER` field | FLOW step fields only. See [Voice delivery for a field](/agent-platform/abl/reference/flow#voice-delivery-for-a-field). |
+| Tool `VOICE` block | The reply after a successful tool result. See [Voice reply policy](/agent-platform/abl/reference/tools#voice-reply-policy). |
+| Hook, `ON_START`, `ON_ERROR` replies | Nest `VOICE` under `RESPOND`. See [Voice delivery for lifecycle replies](/agent-platform/abl/reference/lifecycle-and-hooks#voice-delivery-for-lifecycle-replies). |
+
+Placing `BARGE_IN` in a behavior profile `VOICE` block, a channel override, a free-standing `ON_START` or branch `VOICE` block, or YAML `execution.voice` is an error ([`VOICE_BARGE_IN_ILLEGAL_PLACEMENT`](/agent-platform/abl/reference/errors-and-warnings#voice_barge_in_illegal_placement)).
+
+Streaming follows the same scopes. When the call is in derived turn-taking, or the channel Streaming switch is Off, ordinary output is buffered even if you author `STREAMING: true`.
+
+Details: [Scoped barge-in](/agent-platform/abl/reference/flow#scoped-barge-in), [Scoped streaming](/agent-platform/abl/reference/flow#scoped-streaming).
+
+### Filler phrases
+
+On a voice channel the runtime speaks a short filler (for example "One moment.") while a tool call, reasoning step, handoff, delegation, extraction, or constraint check runs. Override the text with `filler_<operation>` keys in `MESSAGES:`.
+
+```yaml
+MESSAGES:
+  filler_tool_call: "Let me look that up for you."
+  filler_general: "One moment, please."
+  filler_tool_call_fr-CA: "Un instant, je regarde ça pour vous."
+```
+
+Filler text is static. It does not support `{{ }}` placeholders. Add a language suffix for a localized variant.
+
+Details: [Filler overrides (voice)](/agent-platform/abl/reference/lifecycle-and-hooks#filler-overrides-voice).
+
+## Listen: control how the bot hears the caller
+
+### Listening mode, barge-in, and streaming
+
+On KoreVG pipeline voice, the **listening mode** is fixed for the whole call. Barge-in and streaming are decided per spoken output inside that mode.
+
+| Setting | Values | Resolved |
+| ------- | ------ | -------- |
+| Listening mode | `background`, `turn_taking` | Once, at call start |
+| Barge-in | `allow`, `disallow` | Per output |
+| Streaming | `true`, `false` | Per output |
+
+The mode resolves in this order: the channel's `listeningMode`, the entry agent's `CONVERSATION.listening.mode`, then a derived mode. The derived mode is `background` when barge-in is allowed, otherwise `turn_taking`. A handoff, step, reply, or tool cannot change it. A `LISTENING` key in any `VOICE` block is an error ([`VOICE_LISTENING_CALL_LEVEL_ONLY`](/agent-platform/abl/reference/errors-and-warnings#voice_listening_call_level_only)).
+
+```yaml
+CONVERSATION:
+  listening:
+    mode: turn_taking
+    barge_in: allow
+```
+
+Details: [Listening mode](/agent-platform/abl/reference/behavior-profiles#listening-mode).
+
+### Caller silence (`on_no_input`)
+
+`CONVERSATION.listening.on_no_input` handles a caller who says nothing.
+
+| Key | Values |
+| --- | ------ |
+| `enabled`, `mode` | Toggle. `static` plays your `messages`. `dynamic` generates reprompts (pipeline voice only). |
+| `timeout_ms`, `relaxed_interval_ms` | Silence wait and extended retry interval, in whole milliseconds. `timeout_ms`: 1 to 60000. `relaxed_interval_ms`: 1 to 120000. |
+| `max_retries` | Integer 0 to 20. Default `3`. |
+| `on_exhausted` | `hangup`, `transfer`, `custom`, or `hook`. A behavior profile takes action words only. |
+| `messages`, `exhausted_message` | Reprompt and final text. Each can carry `ssml`. |
+| `exhausted_ssml` | SSML for the final message. |
+
+```yaml
+CONVERSATION:
+  listening:
+    on_no_input:
+      enabled: true
+      mode: static
+      timeout_ms: 5000
+      max_retries: 2
+      on_exhausted: hook
+      messages:
+        - text: "Are you still there?"
+```
+
+Key rules:
+
+- Recognized speech, or accepted keypad input, resets the retry count. An ASR partial only restarts the window.
+- Input the runtime accepted but has not run is not silence. The window waits.
+- The runtime waits one more second after the window runs out before it reprompts, in case a partial is on its way.
+- A FLOW step can override the policy with `VOICE: ON_NO_INPUT:`. Step messages play after the agent message of the same number. `ON_NO_INPUT` anywhere else is an error ([`VOICE_NO_INPUT_ILLEGAL_PLACEMENT`](/agent-platform/abl/reference/errors-and-warnings#voice_no_input_illegal_placement)).
+- `on_exhausted: hook` runs the `on_no_input_exhausted` hook. The hook can hold `CALL`, `SET`, `HANDOFF`, and `CRITICAL`, but not `RESPOND`.
+- Realtime voice uses static prompts only. OpenAI also honors the channel's `realtimeNoInputEnabled: false`.
+
+**Project default.** The project setting `voiceNoInput.onExhausted` (`hangup`, `transfer`, or `handoff`) applies to every agent and step that leaves `on_exhausted` unset. An agent, profile, or step `on_exhausted` replaces it, target included. A project `handoff` needs a `HANDOFF` or routing rule from the current agent to the target.
+
+Details: [Voice turn-taking](/agent-platform/abl/reference/behavior-profiles#voice-turn-taking), [Step-level no-input](/agent-platform/abl/reference/flow#step-level-no-input-caller-silence), [on_no_input_exhausted](/agent-platform/abl/reference/lifecycle-and-hooks#on_no_input_exhausted), [Project defaults](/agent-platform/abl/reference/behavior-profiles#project-defaults-for-silence-and-speech-recognition).
+
+### Back-channel, hold phrases, and barge-in continuation
+
+Three more `listening` blocks tune natural turn-taking.
+
+| Block | Use |
+| ----- | --- |
+| `on_caller_backchannel` | Recognize acknowledgements ("uh-huh") without treating them as a turn. Keys: `enabled`, `phrases`, `max_words`. Works in `background` mode only. `max_duration_ms` has no effect. |
+| `on_hold` | Recognize "hold on a sec" requests. Keys: `enabled`, `phrases`, `phrases_by_locale`, `grace_ms`, `max_holds`, `suppress_response`. |
+| `barge_in_continuation` | Merge phrase-finals that the recognizer split from one continuous interruption. `window_ms` 300 to 2000, `max_hold_ms` 500 to 8000, `max_merges` 1 to 20, `max_chars` 1 to 20000. Works in `background` mode only. |
+
+The gateway can also decide that caller speech over a prompt is a back-channel. The runtime accepts that decision in every listening mode, even with no phrases authored.
+
+Details: [Voice turn-taking](/agent-platform/abl/reference/behavior-profiles#voice-turn-taking).
+
+### End of speech and turn detection
+
+Tell the recognizer how long to wait after the caller stops speaking.
+
+| Setting | Use |
+| ------- | --- |
+| `END_OF_SPEECH_TURN_TYPE` | Names the expected answer: `simple_confirmation`, `structured_value`, `open_ended_question`, `complex_explanation`, or `anything_else`. The runtime picks a timeout. |
+| `END_OF_SPEECH_TIMEOUT_MS` | Sets an explicit timeout in milliseconds. |
+| `TURN_DETECTION` | `enabled` plus an optional `eou_threshold` from 0.3 to 0.9 (default 0.5). The KoreVG gateway then decides when the caller finished. |
+
+```yaml
+EXECUTION:
+  voice:
+    turn_detection:
+      enabled: true
+      eou_threshold: 0.6
+```
+
+The narrowest scope wins. Gateway turn detection applies to KoreVG pipeline calls only. End-of-speech hints apply to the platform's own speech-recognition pipeline and are ignored on realtime voice.
+
+Details: [Per-turn endpointing](/agent-platform/abl/reference/flow#per-turn-endpointing), [Gateway turn detection](/agent-platform/abl/reference/flow#gateway-turn-detection).
+
+### Speech recognition for one field (`ASR:`)
+
+An `ASR:` block on a FLOW `GATHER` field tunes recognition while that one field is asked. The call's normal settings return afterwards.
+
+```yaml
+FLOW:
+  get_county:
+    REASONING: false
+    GATHER:
+      - county: required
+        prompt: "Which county is the dig site in?"
+        ASR:
+          vocabulary:
+            mode: replace
+            terms: [Guilford, Mecklenburg, Wake]
+          no_input_timeout_ms: 8000
+```
+
+| Key | Use |
+| --- | --- |
+| `provider`, `model` | Speech engine and model for this field. The provider must be set up on the voice channel. |
+| `language` | Listening language for this question only. |
+| `vocabulary.mode`, `vocabulary.terms` | `replace`, `extend`, or `none`, with a list or a map of language to list. Up to 500 entries per field. |
+| `no_input_timeout_ms` | Silence wait, 1000 to 60000 ms. |
+
+The field must be the only field in its step. `ASR:` works in FLOW steps only. Anything the runtime cannot apply falls back to the call's normal settings.
+
+Details: [Field-level listening settings](/agent-platform/abl/reference/flow#field-level-listening-settings-asr).
+
+### Keypad input (`DTMF:`)
+
+A `DTMF:` block on a FLOW `GATHER` field sets how the bot collects digits typed on the phone keypad.
+
+```yaml
+FLOW:
+  get_mobile:
+    REASONING: false
+    GATHER:
+      - mobile_number: required
+        type: string
+        prompt: "Please say or enter your 10-digit registered mobile number."
+        DTMF: { digits: 1..10, finishOnKey: "#", interDigitTimeoutMs: 5000 }
+    THEN: verify_customer
+```
+
+| Key | Values |
+| --- | ------ |
+| `digits` | `min..max`, whole numbers 1 to 32. |
+| `finishOnKey` | `"#"`, `"*"`, or `"none"`. |
+| `interDigitTimeoutMs` | 500 to 30000 ms. |
+| `finishKeyAlone` | What a lone finish key does: `no_input` (default), `input`, or `value`. `value` works on a FLOW `GATHER` field only. |
+
+Each key resolves on its own, in this order: `SECURE_INPUT` `COLLECT`, field `DTMF:`, behavior profile, agent `CONVERSATION.listening.dtmf`, project `voiceListening.dtmf`, platform default. The platform default is 2 seconds between key presses, `#` as the finish key, and 1 to 12 digits.
+
+Use `SECURE_INPUT`, not `DTMF:`, for secrets.
+
+Details: [Field-level keypad settings](/agent-platform/abl/reference/flow#field-level-keypad-settings-dtmf), [Finish key pressed alone](/agent-platform/abl/reference/flow#finish-key-pressed-alone-finishkeyalone), [Keypad defaults](/agent-platform/abl/reference/behavior-profiles#voice-turn-taking).
+
+### Recognition confidence (`sttMinConfidence`)
+
+Set `sttMinConfidence` (0 to 1) on the channel connection or in project runtime config as `voice.sttMinConfidence`. Pipeline voice discards a recognition scored below it. The channel value wins. `0` at channel level turns the check off.
+
+Details: [Project defaults](/agent-platform/abl/reference/behavior-profiles#project-defaults-for-silence-and-speech-recognition).
+
+## Collect sensitive input
+
+### Secure input (`SECURE_INPUT`)
+
+`SECURE_INPUT:` pauses a FLOW step to collect sensitive values, such as a card number, by keypad or speech. It delivers them straight to one tool. The raw values never reach the model, transcript, session state, logs, recordings, or traces. Speech recognition is suppressed and recording is paused while the caller enters them.
+
+Key points:
+
+- **Modes.** Step `MODE` is `dtmf`, `speech`, or both. A spoken answer is read as digits.
+- **Readable fields.** A field marked `NOT_SECRET: true` with `SAVE_AS` is saved for later steps. Only a `NOT_SECRET` field can use `MODE`, `RECORD`, and `SPEECH_AS`.
+- **Recording.** `RECORD: true` resumes call recording while that field is asked. A step pauses and resumes recording each time it moves between a recorded and an unrecorded field.
+- **Spoken answers.** `SPEECH_AS: text` keeps the caller's words instead of reading them as digits.
+- **Outcome routes.** `ON_SUCCESS`, `ON_FAIL`, `ON_TIMEOUT`, and `ON_CANCEL` take a step name only.
+
+```yaml
+SECURE_INPUT:
+  MODE: [dtmf]
+  FIELDS:
+    - card_number:
+        PROMPT: { en: "Enter your card number, then press pound." }
+        COLLECT: { digits: 13..19, finishOnKey: "#" }
+        VALIDATE: [ luhn ]
+    - consent:
+        PROMPT: { en: "Say yes or press 1 to confirm." }
+        COLLECT: { digits: 1..1 }
+        NOT_SECRET: true
+        SAVE_AS: payment_consent
+        MODE: [dtmf, speech]
+        RECORD: true
+        SPEECH_AS: text
+        VALIDATE: [ { regex: "^(1|yes|yeah)( |$)" } ]
+  CALL charge_card WITH: { pan: "{{secure.card_number}}", consent: "{{payment_consent}}" }
+  ON_SUCCESS: payment_done
+  ON_FAIL: payment_declined
+```
+
+<Warning>The caller can say anything while a `RECORD` field is asked. Ask only for values that may be recorded.</Warning>
+
+Details: [SECURE_INPUT](/agent-platform/abl/reference/flow#secure_input), [Voice and recording for readable values](/agent-platform/abl/reference/flow#voice-and-recording-for-readable-values).
+
+## Hold, hang up, and transfer
+
+### Caller hold
+
+When the phone network signals a hold on a KoreVG call, the agent stays silent and stops listening. The project's `callerHold` setting limits the hold. Set it in Studio under **Settings > Runtime Config > Caller hold**.
+
+| Setting | Values | Default |
+| ------- | ------ | ------- |
+| Handle caller hold | On or off | On for new projects. Off for older or imported projects until an admin turns it on. |
+| Maximum time on hold | 0:30 to 60:00 | 10:00 |
+| Maximum total hold time per call | 1:00 to 240:00 | 30:00 |
+| When the limit is reached | End the call, transfer to the Agent Transfer target, or run the `on_caller_hold_limit` hook | End the call |
+
+The `on_caller_hold_limit` hook can hold `CALL`, `SET`, `HANDOFF`, and `CRITICAL`, but not `RESPOND`. Runtime also sets read-only `session.callerHold` values, for example `resumed`, `durationSeconds`, `cumulativeSeconds`, `holdCount`, and `pendingReply`.
+
+```yaml
+HOOKS:
+  on_caller_hold_limit:
+    CALL: record_abandoned_hold
+      WITH:
+        hold_seconds: session.callerHold.durationSeconds
+    HANDOFF: Transfer_Desk
+```
+
+Details: [on_caller_hold_limit](/agent-platform/abl/reference/lifecycle-and-hooks#on_caller_hold_limit), [Caller hold values](/agent-platform/abl/reference/lifecycle-and-hooks#caller-hold-values).
+
+### Ending the call (`COMPLETE`)
+
+On a KoreVG voice call every `COMPLETE` ends the call after its message plays, whether or not it is `TERMINAL`. Caller speech or keys heard while that message plays are ignored. The message plays once, even if the agent that handed back already said the same line.
+
+A `COMPLETE` condition's `VOICE` block can name SIP headers for the closing BYE:
+
+```yaml
+COMPLETE:
+  - WHEN: issue_resolved
+    RESPOND: "Thanks for calling, goodbye."
+    VOICE:
+      sip_headers:
+        X-RouteType: hangup
+```
+
+Header names must be RFC 3261 tokens of at most 64 characters. You cannot override the platform's own headers. `sip_headers` anywhere else gives [`VOICE_SIP_HEADERS_ILLEGAL_PLACEMENT`](/agent-platform/abl/reference/errors-and-warnings#voice_sip_headers_illegal_placement).
+
+Details: [COMPLETE](/agent-platform/abl/reference/multi-agent-and-supervisor#complete), [SIP headers on the closing BYE](/agent-platform/abl/reference/multi-agent-and-supervisor#sip-headers-on-the-closing-bye-voice).
+
+### Transfer a call to a human
+
+| Need | Setting |
+| ---- | ------- |
+| Choose the SIP method and add headers | `ESCALATE.routing.voice`: `transfer_method` (`invite`, `refer`, `bye`), `call_transfer_type` (`sip`, `pstn`, `custom`), `sip_headers`. |
+| Transfer to a pinned SIP destination | Declare `call_transfer` in `TOOLS:` with a `sipTransferId` default and `default_source: config`. |
+| Forward an inbound header | Use `{{sip.<header>}}` in the header part of the `sipTransferId` default. Only `User-to-User` and `x-*` headers are allowed. |
+| Pick the destination at run time | `RESOLVE_SIP_DESTINATION:` in a FLOW step, matched against an `approved_authorities` allow-list. |
+| Signal an external system, not move the call | `call_transfer_type: custom` with 1 to 8 `custom_tools`. It is notification-only. |
+| Send Genesys headers | `GENESYS_SIP_HEADERS:` on `routing` or on a trigger. |
+
+```yaml
+ESCALATE:
+  routing:
+    connection: livechat
+    voice:
+      transfer_method: refer
+      call_transfer_type: sip
+      sip_headers:
+        X-Escalation-Reason: "sanctions_review"
+```
+
+The transfer target is project-owned (Agent Transfer settings) unless you pin one with `sipTransferId`. At transfer time the runtime uses the authored `sipTransferId` default, then the project's `voice.sipTransferTargetUri`, and otherwise fails with a missing-target error.
+
+Details: [Voice transfer settings](/agent-platform/abl/reference/multi-agent-and-supervisor#voice-transfer-settings), [Custom voice transfer](/agent-platform/abl/reference/multi-agent-and-supervisor#custom-voice-transfer), [Genesys SIP transfer headers](/agent-platform/abl/reference/multi-agent-and-supervisor#genesys-sip-transfer-headers), [Trusted SIP transfer destinations](/agent-platform/abl/reference/tools#trusted-sip-transfer-destinations), [Inbound SIP header placeholders](/agent-platform/abl/reference/tools#inbound-sip-header-placeholders), [Dynamic destinations](/agent-platform/abl/reference/tools#dynamic-destinations), [RESOLVE_SIP_DESTINATION](/agent-platform/abl/reference/flow#resolve_sip_destination).
+
+## Runtime support and upgrades
+
+An agent that uses a voice setting is published with an IR feature marker. A runtime that does not support the marker refuses to publish, deploy, or run the agent. Upgrade every runtime before you publish such an agent.
+
+| Marker | Added by |
+| ------ | -------- |
+| `voice_listening` | `CONVERSATION.listening` keypad and voice keys |
+| `voice_listening_asr` | `listening.asr` above field level |
+| `voice_listening_mode` | `listening.mode` |
+| `voice_listening_finish_key` | `finishKeyAlone` |
+| `voice_output_policy` | Field, step, and hook `BARGE_IN` |
+| `voice_no_input_policy` | Step `ON_NO_INPUT` with `barge_in` or `streaming` |
+| `voice_tool_reply_policy` | Tool `VOICE` reply policy |
+
+A Studio import into a project whose runtime lacks `voice_listening_asr` drops the speech block and warns ([`LISTENING_KEY_NEEDS_NEWER_RUNTIME`](/agent-platform/abl/reference/errors-and-warnings#listening_key_needs_newer_runtime)).
+
+## Voice diagnostics
+
+Each code links to its entry. Errors block compile or publish. Warnings do not. Severity matches the entry on the errors page.
+
+### Delivery, listening, and placement
+
+| Code | Type | Meaning |
+| ---- | ---- | ------- |
+| [`VOICE_BARGE_IN_ILLEGAL_PLACEMENT`](/agent-platform/abl/reference/errors-and-warnings#voice_barge_in_illegal_placement) | Error | `BARGE_IN` is in a place that cannot hold it. |
+| [`VOICE_INVALID_BARGE_IN`](/agent-platform/abl/reference/errors-and-warnings#voice_invalid_barge_in) | Error | `BARGE_IN` is not `allow` or `disallow`. |
+| [`VOICE_INVALID_STREAMING`](/agent-platform/abl/reference/errors-and-warnings#voice_invalid_streaming) | Warning | `STREAMING` is not a boolean. |
+| [`VOICE_STREAMING_LEGACY_PLACEMENT`](/agent-platform/abl/reference/errors-and-warnings#voice_streaming_legacy_placement) | Warning | `STREAMING` is in a place that does not read it. |
+| [`VOICE_DELIVERY_KEY_IGNORED_PLACEMENT`](/agent-platform/abl/reference/errors-and-warnings#voice_delivery_key_ignored_placement) | Warning | `BARGE_IN` or `STREAMING` is where no output reads it. |
+| [`VOICE_LISTENING_CALL_LEVEL_ONLY`](/agent-platform/abl/reference/errors-and-warnings#voice_listening_call_level_only) | Error | `LISTENING` is authored per turn, step, or field. |
+| [`VOICE_NO_INPUT_ILLEGAL_PLACEMENT`](/agent-platform/abl/reference/errors-and-warnings#voice_no_input_illegal_placement) | Error | `ON_NO_INPUT` is not directly in a step `VOICE` block. |
+| [`VOICE_INVALID_TURN_DETECTION`](/agent-platform/abl/reference/errors-and-warnings#voice_invalid_turn_detection) | Error | `turn_detection` has an invalid `enabled` or `eou_threshold`. |
+| [`VOICE_TURN_DETECTION_WITH_END_OF_SPEECH`](/agent-platform/abl/reference/errors-and-warnings#voice_turn_detection_with_end_of_speech) | Warning | An end-of-speech hint has no effect while turn detection is on. |
+| [`HOOK_VOICE_NOT_UNDER_RESPOND`](/agent-platform/abl/reference/errors-and-warnings#hook_voice_not_under_respond) | Warning | A hook `VOICE` block is not under a `RESPOND`. |
+| [`TOOL_VOICE_UNKNOWN_KEY`](/agent-platform/abl/reference/errors-and-warnings#tool_voice_unknown_key) | Warning | A tool `VOICE` block has an unknown key. |
+| [`CONSTRAINT_ON_FAIL_VOICE_ILLEGAL_PLACEMENT`](/agent-platform/abl/reference/errors-and-warnings#constraint_on_fail_voice_illegal_placement) | Warning | A constraint refusal uses the delivery policy of the step it interrupts. |
+| [`CONVERSATION_BACKGROUND_DISALLOW_DEFAULT`](/agent-platform/abl/reference/errors-and-warnings#conversation_background_disallow_default) | Warning | `background` mode with a barge-in default of `disallow`. |
+| [`CONVERSATION_BACKGROUND_ONLY_WITH_TURN_TAKING`](/agent-platform/abl/reference/errors-and-warnings#conversation_background_only_with_turn_taking) | Warning | Back-channel or barge-in continuation with `turn_taking`. |
+| [`CONVERSATION_BACKCHANNEL_DURATION_CAP_IGNORED`](/agent-platform/abl/reference/errors-and-warnings#conversation_backchannel_duration_cap_ignored) | Warning | `max_duration_ms` has no effect. |
+| [`LISTENING_KEY_NEEDS_NEWER_RUNTIME`](/agent-platform/abl/reference/errors-and-warnings#listening_key_needs_newer_runtime) | Warning | A listening key is not applied by this runtime. |
+
+### Silence and hold
+
+| Code | Type | Meaning |
+| ---- | ---- | ------- |
+| [`NO_INPUT_TARGET_NO_HOOK`](/agent-platform/abl/reference/errors-and-warnings#no_input_target_no_hook) | Error | `on_exhausted: hook` but no `on_no_input_exhausted` hook. |
+| [`NO_INPUT_HOOK_RESPOND_UNSUPPORTED`](/agent-platform/abl/reference/errors-and-warnings#no_input_hook_respond_unsupported) | Error | The `on_no_input_exhausted` hook has a `RESPOND`. |
+| [`CALLER_HOLD_HOOK_RESPOND_UNSUPPORTED`](/agent-platform/abl/reference/errors-and-warnings#caller_hold_hook_respond_unsupported) | Error | The `on_caller_hold_limit` hook has a `RESPOND`. |
+| [`CALLER_HOLD_TRANSFER_TARGET_MISSING`](/agent-platform/abl/reference/errors-and-warnings#caller_hold_transfer_target_missing) | Warning | An import turned caller hold off because the transfer target is missing. |
+
+### Field listening and keypad
+
+| Code | Type | Meaning |
+| ---- | ---- | ------- |
+| [`GATHER_ASR_UNKNOWN_KEY`](/agent-platform/abl/reference/errors-and-warnings#gather_asr_unknown_key) | Error | Unknown key in an `ASR:` block. |
+| [`GATHER_ASR_SHARED_STEP`](/agent-platform/abl/reference/errors-and-warnings#gather_asr_shared_step) | Warning | An `ASR:` field shares its step with other required fields. |
+| [`GATHER_ASR_REASONING_UNSUPPORTED`](/agent-platform/abl/reference/errors-and-warnings#gather_asr_reasoning_unsupported) | Warning | `ASR:` on a top-level field that is not `armable`. |
+| [`GATHER_ASR_TERMS_BINDING_INVALID`](/agent-platform/abl/reference/errors-and-warnings#gather_asr_terms_binding_invalid) | Error | Vocabulary binding is not one quoted reference. |
+| [`GATHER_ASR_TERMS_BINDING_FORBIDDEN`](/agent-platform/abl/reference/errors-and-warnings#gather_asr_terms_binding_forbidden) | Error | Vocabulary binding reads a value the platform never sends to a speech engine. |
+| [`GATHER_DTMF_FINISH_KEY_INVALID`](/agent-platform/abl/reference/errors-and-warnings#gather_dtmf_finish_key_invalid) | Error | `finishOnKey` is not `"#"`, `"*"`, or `"none"`. |
+| [`GATHER_DTMF_FINISH_KEY_ALONE_INVALID`](/agent-platform/abl/reference/errors-and-warnings#gather_dtmf_finish_key_alone_invalid) | Error | `finishKeyAlone` has a value its level does not allow. |
+| [`GATHER_DTMF_FINISH_KEY_ALONE_VALUE_REASONING`](/agent-platform/abl/reference/errors-and-warnings#gather_dtmf_finish_key_alone_value_reasoning) | Error | `finishKeyAlone: value` on a top-level field. |
+| [`GATHER_DTMF_FINISH_KEY_ALONE_VALUE_TYPE`](/agent-platform/abl/reference/errors-and-warnings#gather_dtmf_finish_key_alone_value_type) | Error | `value` on a type that cannot hold `#` or `*`. |
+| [`LISTENING_FINISH_KEY_ALONE_VALUE_LEVEL`](/agent-platform/abl/reference/errors-and-warnings#listening_finish_key_alone_value_level) | Error | `value` on a profile, agent, or project. |
+| [`GATHER_DTMF_FINISH_KEY_ALONE_NEVER_ACCEPTED`](/agent-platform/abl/reference/errors-and-warnings#gather_dtmf_finish_key_alone_never_accepted) | Warning | Validation rejects the finish key. |
+| [`GATHER_DTMF_FINISH_KEY_ALONE_NO_FINISH_KEY`](/agent-platform/abl/reference/errors-and-warnings#gather_dtmf_finish_key_alone_no_finish_key) | Warning | `input` or `value` with `finishOnKey: "none"`. |
+| [`GATHER_DTMF_FINISH_KEY_ALONE_INPUT_UNUSED`](/agent-platform/abl/reference/errors-and-warnings#gather_dtmf_finish_key_alone_input_unused) | Warning | `input` reaches a question with no way to use it. |
+
+### Secure input
+
+| Code | Type | Meaning |
+| ---- | ---- | ------- |
+| [`SECURE_INPUT_MISSING_DELIVER_TOOL`](/agent-platform/abl/reference/errors-and-warnings#secure_input_missing_deliver_tool) | Error | The step has no delivery tool. |
+| [`SECURE_INPUT_MISSING_PROMPT`](/agent-platform/abl/reference/errors-and-warnings#secure_input_missing_prompt) | Error | No fields, or a field with no usable prompt. |
+| [`SECURE_INPUT_INVALID_MODE`](/agent-platform/abl/reference/errors-and-warnings#secure_input_invalid_mode) | Error | Step `MODE` is empty or not `dtmf` or `speech`. |
+| [`SECURE_INPUT_INVALID_FIELD_MODE`](/agent-platform/abl/reference/errors-and-warnings#secure_input_invalid_field_mode) | Error | Field `MODE` is empty or not `dtmf` or `speech`. |
+| [`SECURE_INPUT_FIELD_VOICE_ON_SECRET`](/agent-platform/abl/reference/errors-and-warnings#secure_input_field_voice_on_secret) | Error | `MODE`, `RECORD`, or `SPEECH_AS` on a secret field. |
+| [`SECURE_INPUT_INVALID_SPEECH_AS`](/agent-platform/abl/reference/errors-and-warnings#secure_input_invalid_speech_as) | Error | `SPEECH_AS` is not `digits` or `text`. |
+| [`SECURE_INPUT_SPEECH_AS_UNUSED`](/agent-platform/abl/reference/errors-and-warnings#secure_input_speech_as_unused) | Warning | `SPEECH_AS` on a field that cannot be spoken. |
+| [`SECURE_INPUT_INVALID_NOT_SECRET`](/agent-platform/abl/reference/errors-and-warnings#secure_input_invalid_not_secret) | Error | A `NOT_SECRET` field breaks a rule that keeps card data secret. |
+| [`SECURE_INPUT_NOT_SECRET_CARD_DATA`](/agent-platform/abl/reference/errors-and-warnings#secure_input_not_secret_card_data) | Warning | A `NOT_SECRET` field is checked with `luhn` or `date_mmYY`. |
+| [`SECURE_INPUT_INVALID_SAVE_AS`](/agent-platform/abl/reference/errors-and-warnings#secure_input_invalid_save_as) | Error | `SAVE_AS` is not a variable name, or the name is already used. |
+| [`SECURE_INPUT_INVALID_RESULT_CONTRACT`](/agent-platform/abl/reference/errors-and-warnings#secure_input_invalid_result_contract) | Error | The delivery result contract cannot be honored. |
+| [`SECURE_INPUT_EMPTY_OUTCOME_ROUTE`](/agent-platform/abl/reference/errors-and-warnings#secure_input_empty_outcome_route) | Error | An outcome route names no step. |
+| [`SECURE_INPUT_INVALID_PROGRESS_PROMPT`](/agent-platform/abl/reference/errors-and-warnings#secure_input_invalid_progress_prompt) | Error | `PROGRESS_PROMPT` has no `TEXT`, or its timing is out of range. |
+| [`SECURE_INPUT_PROGRESS_PROMPT_UNUSED`](/agent-platform/abl/reference/errors-and-warnings#secure_input_progress_prompt_unused) | Warning | `PROGRESS_PROMPT` on a field with no `VALIDATE` `CALL`. |
+| [`SECURE_INPUT_PROMPT_SECURE_REFERENCE`](/agent-platform/abl/reference/errors-and-warnings#secure_input_prompt_secure_reference) | Error | A retry or no-input prompt reads a `{{secure.*}}` value. |
+| [`SECURE_EMBEDDED_PLACEHOLDER`](/agent-platform/abl/reference/errors-and-warnings#secure_embedded_placeholder) | Error | A `{{secure.*}}` value is inside a longer string. |
+| [`SECURE_UNKNOWN_FIELD`](/agent-platform/abl/reference/errors-and-warnings#secure_unknown_field) | Error | A `{{secure.*}}` reference names an undeclared field. |
+
+### SIP and transfer
+
+| Code | Type | Meaning |
+| ---- | ---- | ------- |
+| [`INVALID_SIP_TRANSFER_DESTINATION`](/agent-platform/abl/reference/errors-and-warnings#invalid_sip_transfer_destination) | Error | A trusted `sipTransferId` default is empty, templated, or not a valid SIP URI. |
+| [`UNTRUSTED_SIP_TRANSFER_DESTINATION`](/agent-platform/abl/reference/errors-and-warnings#untrusted_sip_transfer_destination) | Warning | A `sipTransferId` default without `default_source: config`. The runtime ignores it. |
+| [`INVALID_APPROVED_SIP_AUTHORITY`](/agent-platform/abl/reference/errors-and-warnings#invalid_approved_sip_authority) | Error | An `approved_authorities` entry is not a valid literal SIP authority. |
+| [`UNSAFE_SIP_AUTHORITY_PATTERN`](/agent-platform/abl/reference/errors-and-warnings#unsafe_sip_authority_pattern) | Error | An `approved_authorities` pattern uses unsupported syntax. |
+| [`GENESYS_SIP_HEADER_KEY_COLLISION`](/agent-platform/abl/reference/errors-and-warnings#genesys_sip_header_key_collision) | Error | Two Genesys transfer headers resolve to the same key. |
+| [`VOICE_SIP_HEADERS_ILLEGAL_PLACEMENT`](/agent-platform/abl/reference/errors-and-warnings#voice_sip_headers_illegal_placement) | Warning | `sip_headers` outside a `COMPLETE` condition `VOICE` block. |
+
+## Related
+
+- [Voice channels](/agent-platform/channels/voice) -- create and manage voice channels in Studio.
+- [Behavior profiles](/agent-platform/abl/reference/behavior-profiles) -- `VOICE` and `CONVERSATION.listening` in full.
+- [FLOW](/agent-platform/abl/reference/flow) -- field and step voice settings, `SECURE_INPUT`, and SIP destinations.
+- [Lifecycle and hooks](/agent-platform/abl/reference/lifecycle-and-hooks) -- no-input and caller hold hooks, filler.
+- [Errors and warnings](/agent-platform/abl/reference/errors-and-warnings) -- every diagnostic entry.

@@ -87,24 +87,46 @@ Each dimension carries a name, a source, and a data type. Dimensions become filt
 
 ## Telemetry export
 
-The **Telemetry Export** page sends this project's live model, agent, and tool telemetry to an external observability provider, so agent behavior appears alongside the rest of your infrastructure monitoring.
+The **Telemetry Export** page sends this project's live model, agent, and tool telemetry to an external observability provider or to your own endpoint, so agent behavior appears alongside the rest of your infrastructure monitoring.
 
 Navigation: **Project** > **Settings** > **Telemetry Export**
 
 ### Destination
 
-This section holds the provider connection and decides how much telemetry leaves the platform. Complete it before you enable export, since the status switch has nowhere to send to until you do.
+This section holds the destination connection and decides how much telemetry leaves the platform. Complete it before you enable export, since the status switch has nowhere to send to until you do.
 
 | Field | Description |
 |---|---|
-| **Adapter** | Selects the observability provider. Default: **Azure Monitor**. |
-| **Connection string** | Holds the Azure Monitor connection string, which needs to carry both an instrumentation key and an ingestion endpoint. The field masks the value once saved. |
+| **Adapter** | Selects where the platform sends telemetry. Default: **Azure Monitor**. Choose **OTLP/HTTP** to send to any OpenTelemetry-compatible backend, such as Datadog, Grafana, or New Relic, or **Webhook** to send signed payloads to your own HTTPS endpoint. The connection fields change with the adapter you select. See [Connection fields by adapter](#connection-fields-by-adapter). |
 | **Signals** | Selects the telemetry the platform exports: **LLM calls** (model, tokens, latency, and finish reason), **Tool calls** (tool name, outcome, and latency), **Agent lifecycle** (handoffs, delegations, escalations, and decisions), **Messages** (user and agent message events), **Flow steps** (flow step exits and transitions), **Voice** (speech-to-text and text-to-speech completions), **Errors** (system errors), and **Session lifecycle** (session start and end, and turn start and end). |
 | **Data export level** | Decides how much leaves the platform. Default: **Metadata only**. Metadata covers models, token usage, latency, and tool names. Full content adds prompts, responses, and tool inputs and outputs, which makes your observability provider a second store of conversation content and brings it into scope for the same privacy review as the platform itself. |
 | **Trace grouping** | Decides what one trace represents. Grouping per session gives you the whole conversation in a single trace with each turn nested inside it, which suits reading conversations end to end. Grouping per turn gives accurate duration and status on each trace, which suits alerting and latency work. Default: **Per session**. |
 | **Status** | Turns export to the configured destination on or off without discarding the configuration. Default: **Disabled**. Until you enter connection details, the page shows **Connection details required**. |
 
-<Note>Provide an Azure Monitor connection string before you save a new telemetry exporter.</Note>
+<Note>Provide the connection details for the selected adapter before you save a new telemetry exporter.</Note>
+
+### Connection fields by adapter
+
+Each adapter asks only for the details it needs to reach its destination. The platform records every change to a field that carries a credential, such as a connection string, header, or signing secret, in the audit log.
+
+| Adapter | Field | Description |
+|---|---|---|
+| **Azure Monitor** | **Connection string** | Holds the Azure Monitor connection string, which needs to carry both an instrumentation key and an ingestion endpoint. The field masks the value once saved. |
+| **OTLP/HTTP** | **Endpoint URL** | The HTTPS address of your OpenTelemetry collector or vendor intake. The platform sends traces over OTLP/HTTP. |
+| **OTLP/HTTP** | **Headers** | Request headers the destination needs, such as an API key or tenant header. Headers are write-only: once saved, you can replace them but can't read them back. |
+| **Webhook** | **Endpoint URL** | The HTTPS address of the service that receives the telemetry payloads. |
+| **Webhook** | **Headers** | Extra request headers your endpoint expects. Headers are write-only, as with OTLP/HTTP. |
+| **Webhook** | **Signing secret** | The secret the platform uses to sign each payload. Reveal it to copy the value into your receiving service, which uses it to confirm that the payload came from the platform and wasn't changed in transit. |
+
+#### Verify webhook payloads
+
+Webhook payloads follow the [Standard Webhooks](https://www.standardwebhooks.com/) specification, so you can verify them with any Standard Webhooks library instead of writing your own check.
+
+1. Copy the **Signing secret** from the **Telemetry Export** page into your receiving service's configuration.
+2. In your endpoint, pass the raw request body and the `webhook-id`, `webhook-timestamp`, and `webhook-signature` headers to a Standard Webhooks library.
+3. Accept the payload only when the library confirms the signature, and reject requests with an old timestamp to block replayed payloads.
+
+Each destination exports independently. If one destination slows down or stops responding, the platform holds back delivery to that destination only, and the others keep receiving telemetry.
 
 ### Page actions
 

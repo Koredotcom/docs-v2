@@ -3,417 +3,465 @@ title: Sessions
 sidebarTitle: Sessions
 ---
 
-A session represents a conversation between an agent in an Artemis project and a user. The platform creates a session at the beginning of a conversation and uses it for each message exchange between the user and the agent. The session persists throughout the entire conversation, even as the user is transferred between agents.
-
-It stores the conversation context, maintains state across interactions, and remains active until it is closed.
-
-## Session Lifecycle
-
-A session moves through the following set of states from creation to eventual archival.
-
-| Status      | Meaning                                                |
-|:------------|:-------------------------------------------------------|
-| `active`    | Session in progress; agent is processing right now.    |
-| `idle`      | Session in progress; waiting for user input.           |
-| `ended`     | Session completed by user action, or an idle timeout fired after COMPLETE in the DSL (timeout is configurable per project per channel). |
-| `completed` | Agent finished by calling COMPLETE.                    |
-| `escalated` | Session transferred to a human.                        |
-| `abandoned` | Session abandoned by the user after an idle period.    |
-| `failed`    | Fatal execution error or a guardrail violation.        |
-| `archived`  | Moved to cold storage after the retention period ends. |
-
-## Session identification and metadata
-
-Every session has a unique Session ID. Sessions are always scoped to a tenant and a project. To view sessions, go to **Projects** > **Sessions**.
-
-| Field        | Description                                                                                        |
-|--------------|----------------------------------------------------------------------------------------------------|
-| Session ID   | Unique identifier in the format `s-\<uuid>` (for example, s-193fdef8-xxxx-xxxx-xxxx-96020ced84d8). |
-| Caller phone number | Filter by the phone number captured on the session. Enter a number to find every session for a specific caller. |
-| Agent        | The agent that the session is bound to.                                                            |
-| Environment  | The project environment where the session ran (for example, Development, Staging, or Production).  |
-| Channel      | The communication channel used for the session, such as Web, Voice, WhatsApp, or Slack.            |
-| Created At   | Date and time of session creation.                                                                 |
-| Trace events | Total number of trace events generated during the session.                                         |
-| Duration     | Length of time for which the session was active.                                                   |
-| Messages     | Count of messages exchanged in the session                                                         |
-| Cost         | Estimated LLM cost in USD                                                                          |
-
-## Session details
-
-Click a session row to open the detail panel. It lists the following details.
-
-### Engagement
-
-| **Field**           | **Description**                                                                 |
-| ------------------- | ------------------------------------------------------------------------------- |
-| Status              | The current lifecycle state of the session (for example, Active).               |
-| Disposition         | The outcome/resolution state assigned to the session (for example, Pending).    |
-| Engaged time        | Total duration the user was actively engaged with the agent during the session. |
-| Segments            | Number of distinct conversational segments within the session.                  |
-| Escalated to human  | Whether the session was transferred to a human agent (Yes/No).                  |
-| Workflow suspension | Whether the session's workflow was suspended mid-execution (Yes/No).            |
-| First interaction   | Timestamp of the first user interaction in the session.                         |
-| Last interaction    | Timestamp of the most recent interaction (user or agent) in the session.        |
-| Last user activity  | Timestamp of the most recent user-originated activity in the session.           |
-
-### Overview
-
-It summarizes session metadata, timing, and connection-timeout behavior.
-
-| **Section**             | **Field**        | **Description**                                                                                                                                       |
-|-------------------------|------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------|
-| **Session Overview**    | Agent            | The agent that handled the session.                                                                                                                   |
-|                         | Session          | Unique identifier for the session, in the format `s-<uuid>`.                                                                                          |
-|                         | Messages         | Total number of messages exchanged between the user and the agent during the session.                                                                 |
-|                         | Trace Events     | Total number of trace events generated during the session. This value indicates the amount of execution activity captured for debugging and analysis. |
-|                         | Connection       | Current connection status of the session (for example, `Connected` or `Disconnected`).                                                                |
-| **Timestamps**          | Started          | Date and time when the session started.                                                                                                               |
-|                         | Finished         | Date and time when the session ended.                                                                                                                 |
-| **Models Used**         | Model            | The AI model used during the session. If multiple models are used, each model is listed.                                                              |
-| **Token Breakdown**     | Tokens In        | Total number of input tokens sent to the model during the session.                                                                                    |
-|                         | Tokens Out       | Total number of output tokens generated by the model during the session.                                                                              |
-|                         | Total Tokens     | Combined number of input and output tokens consumed during the session.                                                                               |
-|                         | Cache Read       | Number of tokens served from the model cache instead of being processed again.                                                                        |
-|                         | Cache Write      | Number of tokens written to the model provider's prompt cache during the session. Appears only for models whose provider reports cache writes.       |
-|                         | LLM Calls        | Total number of Large Language Model (LLM) invocations made during the session.                                                                       |
-|                         | Cost             | Estimated LLM usage cost for the session, expressed in USD.                                                                                           |
-| **Timeout Diagnostics** | Browser idle     | Maximum period the Studio client (browser) can remain inactive before the user is automatically logged out.                                           |
-|                         | Access token TTL | Maximum lifetime of the Studio access token before it expires and must be refreshed or reissued.                                                      |
-|                         | Runtime idle     | Time before **conversation/runtime session** terminates due to **no user messages**                                                                   |
-|                         | Runtime max age  | Maximum lifetime of a runtime session, regardless of activity. After this period, the runtime is restarted or replaced.                               |
-| **Model Resolution**    | Model resolution | Displays model-resolution information for the session, when available.                                                                                |
-
-### Traces
-
-The **Traces** tab shows a chronological, step-by-step execution log of what the agent did during the session - decisions made, tools called, memory changes, and the final response.
-
-**Trace summary header**
-
-| **Field**    | **Description**                                                           |
-|--------------|---------------------------------------------------------------------------|
-| Trace ID     | Short identifier for this trace (for example,`#b2f1e372`).                |
-| Status       | Overall trace outcome (for example, `Completed`).                         |
-| Interactions | Number of interactions in this trace.                                     |
-| Agents       | Number of agents involved in this trace.                                  |
-| LLM calls    | Number of LLM calls made during this trace.                               |
-| Tool calls   | Number of tool calls made during this trace.                              |
-| Duration     | Total execution time for the trace (for example, `32ms`).                 |
-| Guardrails   | Guardrail policy status for this trace (for example, `no active policy`). |
-
-The rest of the Traces tab renders as a single collapsible timeline for the trace, with one row per agent step and a chronological sequence of colored event cards within each step.
-
-#### Turn timing
-
-Each turn reports where its time went, so you can find the step that slowed a response without reading every event.
-
-| Measure | Description |
-|---------|-------------|
-| Turn timings | Duration of each step in the turn. Setup work counts toward the user-input step, and lifecycle markers don't add to step durations, so each duration reflects the work that step did. |
-| Latency profile | Breakdown of the turn's total latency across its steps. |
-| Time to first token | Time until the model returned its first token for the turn. |
-| Nested spans | Spans appear under the span that started them, so you can trace a slow tool call or model call back to the step that issued it. |
-| TTS first-audio latency | Voice sessions only. Time from the text-to-speech request to the first audio byte reaching the caller. |
-
-#### Hook tool calls
-
-When a lifecycle hook invokes a tool through a `CALL` action, the call appears in the trace as its own tool call, tagged with the hook type. Each one shows the URL, request, response, duration, and whether the call succeeded or failed. Use these entries to confirm that a hook ran and to see what it sent and received.
-
-#### LLM step request and response
-
-Each LLM step in the timeline expands to show the exact call made to the model for that step.
-
-| Sub-tab | What you get |
-|---------|----------------|
-| Request | The full request sent to the model: `systemPrompt` (the complete system prompt text), the `messages` array (conversation history, with tool calls and results exactly as the model saw them), and `tools` (the tool list with schemas). This is the source of truth for what the model actually received -- when a reply is surprising, read this before changing the agent's ABL. |
-| Response | The model's raw reply. |
-| Summary | Tokens in and out, cache read and cache write tokens when the provider reports them, cost, and provider options for the call. |
-
-What to check in the Request view:
-
-- `systemPrompt` -- look for unfilled `{{placeholders}}`, missing memory values, and `_contextLimited` markers.
-- `messages` -- check how earlier turns were compacted, whether tool results show as `**COMPACTED FOR CHAT HISTORY**`, and what a handoff or delegation passed through.
-- Tool results for the current turn -- check whether a `MODEL_CONTEXT` view or the compaction strategy's output appears, and look for truncation markers.
-- `tools` -- confirm each tool's description and parameters read the way you intend the model to use them.
-
-<Note>Secret-looking values are always masked in stored traces, and personal data appears as redacted tokens when the project's PII policy scrubs traces. Stored request payloads are capped at 256 KiB and responses at 128 KiB; use **Export entire trace** on the session page to download every event for offline review.</Note>
-
-#### Execution tree view
-
-Selecting a node in the session page's left-hand execution tree shows the same payload scoped to that one node: **Request** / **Response** for an LLM step, or **Input** / **Output** for a tool step. Use it to jump straight to one agent's call or one tool's exact input and output inside a longer trace, instead of scrolling the full timeline.
-
-### Errors
-
-Lists errors or warnings recorded in the session.
-
-### Data
-
-This tab shows the field collection status from the agent's gather flow and data in the session context.
-
-### Voice
-
-The **Voice** tab only appears for voice-channel sessions. Use it to investigate call quality, latency, speech performance, network conditions, and call termination details.  
-
-| **Card**                    | **Field**                    | **Description**                                                                                                                                                                                                                         |
-| --------------------------- | ---------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Call Overview**           | Duration                     | Total call duration (for example, 39s).                                                                                                                                                                                                 |
-|                        | Turns                        | Number of conversational turns in the call.                                                                                                                                                                                             |
-|                         | Caller                       | Unique identifier for the caller.                                                                                                                                                                                                       |
-|                         | Disconnect                   | Who/what ended the call and the disconnect code.                                                                                                                                                                                        |
-|                         | Avg E2E                      | Average end-to-end response latency. For streamed responses, the measurement ends when the first audio reaches the caller.                                                                                                                                                                                                    |
-|                         | Barge-ins                    | Count and rate of barge-in events (user interrupting the agent) — for example, 2 (100% of turns).                                                                                                                                       |
-|                        | DTMF Input                   | Count of DTMF (keypad) inputs received.                                                                                                                                                                                                 |
-|                         | Containment                  | Whether the call was resolved without escalation (for example, Contained / "AI resolved").                                                                                                                                              |
-|                        | Call Phase                   | The call phase when this data was captured (for example, Greeting), with the responsible agent noted.                                                                                                                                   |
-| **Gateway ⇄ Runtime Verbs** | Event count                  |                                                                                                                                                                                                                                    |
-| **Network Quality (MOS)**   | Inbound (Caller → Platform)  |                                                                                                                                                                                                                                     |
-|                         | Outbound (Platform → Caller) |                                                                                                                                                                                                                                     |
-| **SIP Ladder**              | Reveal control               |                                                                                                                                                                                                                                    |
-| **TTS Quality**             | Combined MOS                 | Combined TTS quality score, blending application and network metrics.                                                                                                                                                                   |
-|                      | Proxy MOS                    | Application-level quality score ("App-level quality").                                                                                                                                                                                  |
-|                         | Network MOS                  | Network-level quality score, from RTCP data.                                                                                                                                                                                            |
-|                       | Avg TTFB                     | Average time-to-first-byte for TTS responses.                                                                                                                                                                                           |
-| **Barge-in Events**         | Total                        | Total number of barge-in events.                                                                                                                                                                                                        |
-|                       | Rate                         | Barge-in rate as a percentage of turns.                                                                                                                                                                                                 |
-|                         | Turns                        | Number of turns with a barge-in.                                                                                                                                                                                                        |
-|                         | Event Details                | Per-turn breakdown (for example, "Turn 1 — SPEECH — Agent spoke 0.7s before interrupt").                                                                                                                                                |
-| **Call Activity**           | Activity bar                 | Visual breakdown of call time by Agent / User / Processing / Dead Air percentages.                                                                                                                                                      |
-|                        | Agent Speaking               | Time and percentage the agent was speaking.                                                                                                                                                                                             |
-|                         | User Speaking                | Time and percentage the user was speaking.                                                                                                                                                                                              |
-|                        | Silence                      | Total silence duration and percentage of call.                                                                                                                                                                                          |
-|                         | Call Duration                | Total call duration (repeated from Call Overview).                                                                                                                                                                                      |
-|                         | Silence Breakdown            | Splits silence into categories (for example, "Processing (E2E — LLM think time)" vs. "Dead Air — waiting gaps").                                                                                                                        |
-| **Speech (realtime)**       | Provider                     | The real-time speech-to-speech model provider (for example, Google). Note: shown only because this agent uses a realtime speech-to-speech model, which has no separate STT/TTS stages — these are turn-level metrics from the provider. |
-|                       | Turns                        | Number of turns measured.                                                                                                                                                                                                               |
-|                         | Avg turn latency             | Average latency per turn. Shows -- when unavailable.                                                                                                                                                                                    |
-|                         | Barge-ins                    | Barge-in count (repeated from Call Overview/Barge-in Events).                                                                                                                                                                           |
-| **Call Termination**        | Disconnect By                | Which party ended the call (for example, platform).                                                                                                                                                                                     |
-|                         | SIP Method                   | SIP method used to terminate (for example, BYE).                                                                                                                                                                                        |
-|                        | SIP Status                   | SIP status code (for example, 200).                                                                                                                                                                                                     |
-|                         | Reason                       | Termination reason string (for example, BYE → 200).                                                                                                                                                                                     |
-|                         | Homer Data                   | Availability of Homer (SIP capture tool) data for this call (for example, Available).                                                                                                                                                   |
-
-### IR
-
-The **IR** tab shows the compiled definition of the agent that produced this session. This information represents the deployed agent definition, not the runtime state captured in the session. 
-
-| **Sub-tab**  | **Content**                                                                                                                                                                                                                             |
-| ------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| ABL Source   | The raw ABL source code defining the agent, as authored.                                                                                                                                            |
-| IR JSON      | Compiled version of the source.                                                                                                                                                                                                         |
-| Test Context | This sub-tab lets you construct a **test scenario** to launch a new session against this agent's current definition, pre-loaded with specific starting conditions. Use it to reproduce or probe agent behavior. |
-
-### Performance
-
-The **Performance** tab shows model- and tool-invocation-level performance data for the session.
-
-**LLM & Tools:** Summarizes every LLM call and tool call made during the session. Expand each event to view the payload.
-
-**Logs**: Shows a raw, timestamped execution log for the session - a flat, chronological stream of system-level events.
-
-### Call recording
-
-Use the **Call Recording** to review completed voice conversations. It helps you verify what was said during a call, correlate the audio with the conversation and execution traces, investigate issues, and download recordings for offline review when available. 
-To view or play a recording, the following conditions must be met:
-
-- Call recording must be enabled for the project. Learn how to enable recordings for a project.
-- You must have the **View Recordings** permission to view, play, and download the recordings. By default, this permission is granted to all system roles. 
-
-![Recordings in Sessions](/agent-platform/images/session-recording.png)
-
-
-**Recording Details**
-
-| **Field**    | **Description**                                                                                                               |
-| ------------ | ----------------------------------------------------------------------------------------------------------------------------- |
-| Recording ID | Unique identifier for the call recording.                                                                                     |
-| Duration     | Total length of the recording.                                                                                                |
-| File size    | Size of the recording file.                                                                                                   |
-| Status       | Current recording state.                                                                                                   |
-| Retention    | Date and time until which the recording is retained.                                                                          |
-| Refresh      | Refreshes the recording status if processing is still in progress.                                                            |
-| Download     | Downloads the recording when it is available. You can download only after the Playback and delivery status is **completed. |
-
-**Recording States**
-
-| State     | Description                                                                                        |
-| ------------- | ------------------------------------------------------------------------------------------------------ |
-| **Pending**   | The call has ended, and the recording is queued for processing.                                        |
-| **Fetching**  | The recording is currently being collected and processed.                                              |
-| **Completed** | The recording is available for playback and download.                                                  |
-| **Failed**    | The recording could not be collected or processed.                                                     |
-| **Deleted**   | The recording has been permanently removed. Only the recording entry remains for historical reference. |
-
-<Note> Recording processing typically completes within a few minutes, but can take up to 15 minutes for longer recordings. Use Refresh to check the latest status.</Note>
-
-- The waveform visually represents the conversation.
-  - **Green** bars represent the caller audio.
-  - **Purple** bars represent the agent audio.
-- The **Synced to** indicator shows the conversation timestamp that corresponds to the current playback position.
-  - Use **Open conversation** to navigate directly to the matching message in the **Conversation** tab.
-  - **Use Open traces** to jump to the corresponding point in the **Traces** tab.
-
-#### Play a recording
-
-Click **Play** to start playback. The recording loads on the first play request, so initial playback may take a few moments.
-
-#### Download a recording
-
-Click **Download** to save the recording locally.
-The **Download** button is available only when the recording status is **Completed**.
-
-#### Recording retention period
-
-Completed recordings are retained until the **Retention** date shown in the Call Recording panel.
-When the retention period expires:
-
-- The recording is permanently deleted.
-- The recording entry remains in the session history, but its status changes to **Deleted**.
-- Deletion runs as a scheduled process, so recordings may remain available for up to **one hour** after the displayed retention time before they are removed.
-
-A project admin or owner can update the Retention Period in [Project Settings](/agent-platform/administration/agent-behavior-settings#recording).
-
-#### Use call recording
-
-Use call recordings to investigate issues with a voice call.
-
-- Listen to the recording.
-- Jump to the corresponding conversation.
-- Open the trace at the same timestamp.
-- Review Performance for slow model or tool calls.
-- Inspect Voice telemetry for latency or network issues.
-
-#### Compliance considerations for recordings
-
-- **Tell the caller yourself.** The platform doesn't play a "this call is recorded" announcement or show the caller a recording indicator. If your region requires consent or a notice, add it to your agent's opening prompt.
-- **Storage location.** Recordings are stored in the storage configured for your workspace. Use your own storage account if the audio must stay in a specific region. 
-
-#### Troubleshoot if recording doesn't start
-
-Check these in order - the first "no" is usually the cause.
-
-1. Does **Workspace Settings** show the **Call Recording** section? If not, contact support team to add the feature to your workspace.
-2. Is the workspace-level switch turned on and saved? If not, ask your account admin to enable it.
-3. Does the project **Settings** menu show **Recording**? If not, the workspace switch is off.
-4. Is **Enable call recording** on for the project, and did you click **Save changes**?
-5. Was the call started after you saved the setting? Recording only applies to new calls.
-6. Did you wait about 15 minutes and click **Refresh**?
-
-If you've verified all six checks and the recording is unavailable, contact the support team and provide the environment details, project name, session ID, and the approximate call date and time.
-
-#### Turn recording off
-
-| Goal                                       | Action                                                                      | Effect                                                                        |
-|---------------------------------------------|--------------------------------------------------------------------------------|----------------------------------------------------------------------------------|
-| Stop recording new calls in one project    | Turn off **Enable call recording** in project **Settings** → **Recording** | New calls aren't recorded. Existing recordings stay and remain playable.     |
-| Hide recording across the whole workspace  | Turn off the workspace-level **Call Recording** switch                     | Recording settings and audio are hidden in every project. Nothing is deleted. |
-| Remove the feature completely              | Contact support team                                            | Every recording surface disappears.                                          |
+A session is one conversation between a user and the agents in a project. The platform creates a session when the conversation starts and keeps it for every message, even when the user moves between agents. Use the **Sessions** page to find a session and investigate what happened in it.
+
+| Find sessions | Investigate a session | Close a session |
+| --- | --- | --- |
+| [Search, filter, and choose columns](#find-a-session) | [Six tabs](#session-detail-tabs) and a [recording player](#review-the-call-recording) | [Agent, timeout, or transfer](#session-closure) |
+
+## Session lifecycle
+
+A session moves through these statuses from creation to archival.
+
+| Status | Meaning |
+| --- | --- |
+| `active` | Session in progress. The agent is processing right now. |
+| `idle` | Session in progress. The agent is waiting for user input. |
+| `completed` | The agent finished by calling `COMPLETE`. |
+| `ended` | The user ended the session, or an idle timeout fired. |
+| `escalated` | The session was transferred to a human. |
+| `abandoned` | The user left after an idle period. |
+| `failed` | A fatal execution error or a guardrail violation ended the session. |
+| `archived` | The session moved to cold storage after the retention period. |
+
+## Find a session
+
+Every session has a unique ID in the format `s-<uuid>` and belongs to one tenant and project.
+
+<Steps>
+  <Step title="Open Sessions">
+    In your project, go to **Operate** > **Sessions**. The **Conversations** view lists sessions from the **Last 7 days**. Select **Traces** to list trace runs instead.
+  </Step>
+  <Step title="Narrow the list">
+    Search by session ID or agent, change the date range, or pick an environment in **All environments**. Select **More filters** to filter by any field in the [filters table](#columns-and-filters), then select **Apply**.
+  </Step>
+  <Step title="Choose columns">
+    Select **Columns** to show or hide columns. Six of the 11 columns show by default. Select **Reset to default** to undo your changes.
+  </Step>
+  <Step title="Open the session">
+    Select a session ID to open its detail page. Select the copy icon next to an ID to copy it without opening the session.
+  </Step>
+</Steps>
+
+![Sessions list with the channelUID column shown](/agent-platform/images/sessions-list.png)
+
+### Columns and filters
+
+<AccordionGroup>
+  <Accordion title="Columns">
+    | Column | Shows | On by default |
+    | --- | --- | --- |
+    | Session | Session ID | Yes (always) |
+    | channelUID | The user's identifier on the channel, such as an email address or phone number. The value is encrypted at rest. | No |
+    | Agent | Agent the session started with | Yes |
+    | Status | Current [status](#session-lifecycle) | Yes |
+    | Channel | Channel the session ran on, for example **Pipeline Voice**, **Voice**, or **Web Debug** | Yes |
+    | Channel Type | Channel category, for example **Voice** or **Messaging** | No |
+    | Environment | Project environment, for example `working-copy` | Yes |
+    | Trace Events | Number of trace events recorded | No |
+    | Duration | Session length | No |
+    | Messages | Number of messages exchanged | No |
+    | Created | Date and time the session started | Yes |
+  </Accordion>
+  <Accordion title="Filters">
+    | Filter | Values |
+    | --- | --- |
+    | channelUID | Email address, phone number with country code, or another channel identifier |
+    | Agent | Agents in the project |
+    | Status | Active, Completed, Failed, Abandoned, Escalated, Ended, Idle, Archived |
+    | Source | User initiated, Workflow, Eval, Synthetic, Debug, Demo Insights |
+    | Channel Type | Messaging, Voice, SDK, Webhook, Protocols, Workflow |
+    | Channel | Channels that have sessions in the selected range |
+    | Caller phone number | A caller's phone number, to find every session from that caller |
+  </Accordion>
+</AccordionGroup>
+
+## Session detail tabs
+
+The detail page opens on the **Timeline** tab. The header stays visible on every tab, and voice sessions also show the [recording panel](#review-the-call-recording) above each tab.
+
+<CardGroup cols={3}>
+  <Card title="Timeline" icon="list-tree" href="#timeline-tab">
+    The conversation beside a turn-by-turn trace
+  </Card>
+  <Card title="Performance" icon="gauge" href="#performance-tab">
+    LLM and tool calls, tokens, cost, and logs
+  </Card>
+  <Card title="Summary" icon="clipboard-list" href="#summary-tab">
+    Session facts and project diagnostics
+  </Card>
+  <Card title="Voice quality" icon="phone" href="#voice-quality-tab">
+    Latency, audio quality, and call termination
+  </Card>
+  <Card title="Data" icon="database" href="#data-tab">
+    Recorded state, gather progress, and memory
+  </Card>
+  <Card title="Historical source" icon="code" href="#historical-source-tab">
+    The agent definition that ran the session
+  </Card>
+</CardGroup>
+
+![Session detail page with the Timeline tab open](/agent-platform/images/session-detail-timeline.png)
+
+### Header
+
+The header summarizes the session in one line: status, error count, **Session length**, **Messages**, and **Trace events**. Below the session ID, it shows the entry agent, channel, and start and end time.
+
+| Control | What it does |
+| --- | --- |
+| **Copy session ID** | Copies the session ID. |
+| **Copy all identifiers** | Copies every identifier for the session, such as the session ID and call IDs. |
+| Error count | Shows errors and warnings in the loaded history. |
+| **Details** | Opens the [session facts](#summary-tab). |
+| Previous and next arrows | Open the previous or next session in the list. |
+| **Refresh snapshot** | Reloads the session. Use it during a live call. |
+| **Export JSON** | Downloads the session and every trace event as JSON for offline review. |
+| **Keyboard shortcuts** | Lists the [keyboard shortcuts](#keyboard-shortcuts). |
+
+<Note>
+  A **History · coverage unverified** label means the page couldn't confirm that every recorded event loaded. The page shows the events it has.
+</Note>
+
+## Timeline tab
+
+The **Timeline** tab places the conversation on the left and the execution trace on the right. Drag the divider to resize the panes.
+
+### Conversation pane
+
+Each message shows the speaker (**Assistant**, **User**, or the agent name) and a timestamp. Hover over a message to use these actions:
+
+- **Inspect message**: opens the message in the [inspector](#inspector).
+- **Play from here**: plays the recording from this message (voice sessions).
+
+Select the search icon to search the loaded messages. Select the more icon for **Older messages**, **Newer messages**, **Refresh messages**, and **Follow loaded messages**.
+
+### Trace pane
+
+The trace shows everything the agent did. Pick a view at the top of the pane:
+
+<Tabs>
+  <Tab title="Steps">
+    Groups the trace into **Setup and greeting**, one row per turn, and **Session events**. Each turn row shows its time range, the agent handoff (for example `BW_Supervisor → BW_Identity_Agent`), how long the turn took, and its step count. Expand a turn to see its steps. Repeated steps collapse into one row, such as **Routing & checks ×10**. Select **Show more steps** to load the rest of a long turn.
+  </Tab>
+  <Tab title="Events">
+    Lists every recorded event in order, without grouping.
+  </Tab>
+  <Tab title="Latency">
+    Lists each event with its category (for example `agent`, `llm`, `tool`, or `voice`) and its duration, so you can spot the slow step. Select the headphone icon on a row to play the recording from that point.
+  </Tab>
+</Tabs>
+
+Use these controls to find a problem fast:
+
+| Control | What it does |
+| --- | --- |
+| Issue chip | Shows the number of errors and warnings. Select it to show only rows with issues. |
+| Down arrow | Jumps to the next issue. |
+| **Search loaded trace headers** | Searches the loaded rows. Select the search scope to also search event content. |
+| **Filter** | Shows or hides rows by event family, recorded category, or issue severity. **Expand all** and **Collapse all** apply to every group. |
+| More icon | Loads an **Older range** or **Newer range** of a long trace. |
+
+<AccordionGroup>
+  <Accordion title="Filter options">
+    | Section | Options |
+    | --- | --- |
+    | Event families | Audio, Conversation, Flow, Guardrails, Memory, Model, Plumbing, Routing, Runtime, Tools |
+    | Recorded categories | agent, flow, llm, message, session, system, tool, voice |
+    | Issue severity | All issues, Errors, Warnings |
+  </Accordion>
+</AccordionGroup>
+
+### Inspector
+
+Select a row and press **Enter**, or select **Inspect message** on a message, to open the inspector. On a narrow screen, the inspector opens below the trace. Use the arrows to move to the previous or next row.
+
+| Inspector tab | Shows |
+| --- | --- |
+| **Summary** | Time, duration, turn, agent, status, category, phase, and identifiers (event, span, parent span, trace, turn, and cause event). |
+| **Request** | LLM calls only. The model, provider, provider options, and model parameters. Select **View recorded value** to see the full recorded request. |
+| **Response** | LLM calls only. The model's reply. |
+| **Payload** | The event's recorded payload. |
+| **Events** | Events related to the row. |
+| **Raw** | The raw recorded event. |
+
+<Tip>
+  When a reply surprises you, open the LLM call's **Request** first. It shows exactly what the model received, so check it before you change the agent's ABL.
+</Tip>
+
+<Note>
+  Secret-looking values are always masked. Personal data appears as redacted tokens, such as `[REDACTED_PHONE]`, when the project's PII policy scrubs traces.
+</Note>
+
+## Review the call recording
+
+Voice sessions show a **Recording** panel at the top of every tab. Use it to hear what was said and to match the audio to the trace.
+
+To view, play, or download a recording:
+
+- Call recording must be on for the project. See [Recording settings](/agent-platform/administration/agent-behavior-settings#recording).
+- You need the **View Recordings** permission. Every system role has it by default.
+
+<Steps>
+  <Step title="Load the recording">
+    Select **Load recording**. The panel draws the waveform for each recorded channel and measures silence.
+  </Step>
+  <Step title="Play it">
+    Select **Play**. Use the back and forward buttons to skip 10 seconds, change the speed, adjust **Volume**, or drag **Recording position**. Use **Zoom** to widen the waveform.
+  </Step>
+  <Step title="Jump to a moment">
+    Select **Play from here** on a message in the conversation, or the headphone icon on a row in the **Latency** view.
+  </Step>
+  <Step title="Download it">
+    Select **Download recording** to save the audio.
+  </Step>
+</Steps>
+
+![Recording panel with the waveform loaded](/agent-platform/images/session-recording-player.png)
+
+Two options help with long silences:
+
+- **Compress measured silence in the display**: shortens silent stretches in the waveform only. Playback keeps the real elapsed time.
+- **Skip measured silence during playback**: skips only verified silent ranges. Speech and unknown ranges still play.
+
+<AccordionGroup>
+  <Accordion title="Recording details and states">
+    | Field | Description |
+    | --- | --- |
+    | Call ID | Voice gateway call identifier |
+    | System call ID | Platform identifier for the call |
+    | Recorded | Length of the recording |
+    | Size | File size |
+    | Created | When the recording was created |
+    | Retention | Date until which the recording is kept |
+
+    | State | Meaning |
+    | --- | --- |
+    | **Pending** | The call ended, and the recording is queued for processing. |
+    | **Fetching** | The platform is collecting and processing the recording. |
+    | **Ready** | The recording is available to play and download. |
+    | **Failed** | The recording couldn't be collected or processed. The panel shows the reason, for example `media_not_available`. |
+    | **Deleted** | The retention period ended, and the audio was removed. The entry stays for reference. |
+
+    Processing usually takes a few minutes, and up to 15 minutes for long calls. Select **Refresh recording** to check the latest state.
+  </Accordion>
+  <Accordion title="Retention">
+    The platform keeps a recording until the **Retention** date. After that, it deletes the audio and sets the state to **Deleted**. Deletion runs on a schedule, so a recording can stay available for up to one hour past that time. A project admin or owner can change the retention period in [Recording settings](/agent-platform/administration/agent-behavior-settings#recording).
+  </Accordion>
+  <Accordion title="Compliance">
+    - **Tell the caller yourself.** The platform doesn't play a "this call is recorded" notice. If your region requires consent or notice, add it to your agent's opening prompt.
+    - **Choose where audio lives.** Recordings go to the storage configured for your workspace. Use your own storage account to keep audio in a specific region.
+  </Accordion>
+  <Accordion title="Turn recording off">
+    | Goal | Action | Effect |
+    | --- | --- | --- |
+    | Stop recording new calls in one project | Turn off **Enable call recording** in project **Settings** > **Recording**. | New calls aren't recorded. Existing recordings stay playable. |
+    | Hide recording across the workspace | Turn off the workspace **Call Recording** switch. | Recording settings and audio are hidden in every project. Nothing is deleted. |
+    | Remove the feature | Contact the support team. | Every recording surface disappears. |
+  </Accordion>
+</AccordionGroup>
+
+## Performance tab
+
+The **Performance** tab shows how the session used models and tools.
+
+<Tabs>
+  <Tab title="Overview">
+    Shows **Trace Events**, **LLM Calls**, **Tool Calls**, **Total Tokens**, and **Duration**, followed by an execution tree of every recorded step with its agent and duration.
+  </Tab>
+  <Tab title="Model and tool exchanges">
+    Lists every model call and tool call with its type, model or tool name, agent, tokens in and out, cost, duration, and time. The header shows the loaded call counts, total tokens, and the session's recorded cost. Select **Inspect** to open the call in the [inspector](#inspector).
+  </Tab>
+  <Tab title="Logs">
+    Shows the latest 256 log lines with time, level, and message. Filter by **All levels**, **Information**, **Warnings**, or **Errors**, or select **Clear local logs** to clear the view.
+  </Tab>
+</Tabs>
+
+## Summary tab
+
+The **Summary** tab lists the session facts and the project settings that affect sessions.
+
+<AccordionGroup>
+  <Accordion title="Session facts">
+    | Field | Description |
+    | --- | --- |
+    | Started, Finished | When the session started and ended |
+    | Duration | Total session length |
+    | Last activity | Time of the most recent activity |
+    | Final agent | Agent that handled the session last |
+    | Engaged time | Time the user was actively engaged with the agent |
+    | Segments | Number of engagement periods in the session |
+    | First interaction, Last interaction | Times of the first user interaction and the latest interaction |
+    | Escalated to a human | Whether the session was transferred to a human agent |
+    | Finalized | When the platform closed out the session |
+    | Deployment | Deployment the session ran on, or **None recorded** for the working copy |
+    | Persisted disposition | Why the session ended. See [Closing a session](#closing-a-session). |
+  </Accordion>
+  <Accordion title="Current project diagnostics">
+    These are the project's current settings, which can differ from the settings in effect during the session. Each value shows its source.
+
+    | Field | Description |
+    | --- | --- |
+    | Guardrails | Guardrail policy status, for example **no active policy** |
+    | Browser idle | How long Studio can stay inactive before it signs the user out |
+    | Access token TTL | How long a Studio access token lasts before it's refreshed |
+    | Runtime idle | How long a runtime session lasts with no user messages |
+    | Runtime max age | Maximum lifetime of a runtime session, regardless of activity |
+  </Accordion>
+</AccordionGroup>
+
+## Voice quality tab
+
+The **Voice quality** tab appears for voice sessions. Use it to investigate latency, audio quality, network conditions, and how the call ended. The tab loads voice evidence in batches. Select **Continue reading** or **Read again** if it stops early.
+
+![Voice quality tab showing call details](/agent-platform/images/session-voice-quality.png)
+
+| Card | What it shows |
+| --- | --- |
+| **Call details** | Call SID, call ID, SBC call ID, caller, called number, direction, originating IP, account and application SIDs, gateway trace ID, and voice gateway |
+| **Voice configuration** | STT provider, TTS provider, TTS voice, and gateway connection time |
+| **Turn latency** | Stage latencies for each turn. End-to-end is green under 800 ms, amber under 1,500 ms, and red above. |
+| **Call Overview** | Duration, turns, caller, disconnect, average end-to-end latency, barge-ins, DTMF input, containment, and call phase |
+| **Network Quality (MOS)** | Inbound and outbound network quality, when Homer data is available |
+| **TTS Quality** | Combined MOS, proxy MOS, network MOS, average time to first byte, and average time to first audio |
+| **Call Activity** | Share of the call spent on agent speech, user speech, processing, and dead air, with a silence breakdown |
+| **Call Termination** | Who ended the call, and Homer data availability |
+| **SIP Ladder** | The SIP message flow. Select **Reveal** to show it. |
+
+## Data tab
+
+The **Data** tab shows the values recorded for the session. It reads from the stored session record, not from the agent editor.
+
+| Sub-tab | Shows |
+| --- | --- |
+| **Raw sections** | **Session state**, **Gather**, and **Context** values |
+| **Full state** | The complete recorded state |
+| **Phase** | The conversation phase, for example `complete` |
+| **Gather overview** | Field collection progress from the agent's gather flow |
+| **Flow** | Flow state |
+| **Constraints** | Constraint results |
+| **Session memory** | Memory values for the session |
+
+Select **Download full value** to save the complete masked value as JSON, or **Refresh recorded data** to reload it.
+
+## Historical source tab
+
+The **Historical source** tab shows the agent definition that produced the session.
+
+<Steps>
+  <Step title="Pick the agent">
+    Select an agent. The list includes the entry agent and every agent recorded on the loaded trace page.
+  </Step>
+  <Step title="Pick the source">
+    Select **Recorded source** to see the definition that ran, or **Current draft** to compare it with the agent as it is now.
+  </Step>
+  <Step title="Read the definition">
+    Select **DSL** for the ABL source, **Compiled IR** for the compiled version, or **Recorded test context** for the test conditions.
+  </Step>
+</Steps>
+
+<Note>
+  Sessions that ran the working copy have no recorded source. Deploy a version to keep its definition with each session.
+</Note>
+
+## Keyboard shortcuts
+
+Select **Keyboard shortcuts** in the header, or press **?**, to see every shortcut. Shortcuts apply to the focused pane.
+
+<AccordionGroup>
+  <Accordion title="Shortcut list">
+    | Action | Key |
+    | --- | --- |
+    | Focus the previous or next row | ↑ or ↓ |
+    | Focus the first or last row | Home or End |
+    | Expand a row, or collapse it | → or ← |
+    | Inspect the focused row | Enter |
+    | Toggle the focused group | E |
+    | Expand or collapse all groups | Shift+E or Shift+C |
+    | Go to the next or previous issue | N or Shift+N |
+    | Inspect the previous or next visible row | [ or ] |
+    | Search the active pane | / |
+    | Go to the next or previous search hit | Enter or Shift+Enter |
+    | Close an overlay, clear search, or close the inspector | Escape |
+    | Show keyboard help | ? |
+    | Play or pause the recording | Space |
+    | Seek back or forward 10 seconds | ← or → |
+
+    Clear **Enable optional character shortcuts** to turn off the single-letter shortcuts.
+  </Accordion>
+</AccordionGroup>
 
 ## API access
 
-Session details are also available via APIs. See [session APIs](/agent-platform/api-reference/analytics-list-session-summaries).
+You can also get session details through the [session APIs](/agent-platform/api-reference/analytics-list-session-summaries).
 
-## Session Closure
+## Session closure
 
-Closing a session finalizes the conversation and is essential for platform operations. 
+Closing a session finalizes the conversation. However the session closes, the platform:
 
-### What happens when a session closes
-
-When a session closes, regardless of how it is closed, the platform performs the following lifecycle operations:
-
-- Persists any pending conversation data.
-- Records the session disposition and final status.
+- Saves any pending conversation data.
+- Records the session's disposition and final status.
 - Publishes a session completion event for downstream services.
-- Finalizes billing metrics. A session is the billable unit. Session duration and engaged time are calculated when the session closes.
-- Finalizes reporting metrics. The session `disposition` and `status` fields are used to derive reporting metrics such as containment, resolution, and abandonment rates.
-- Releases session resources associated with the conversation.
+- Finalizes billing metrics. A session is the billable unit, and the platform calculates duration and engaged time at closure.
+- Finalizes reporting metrics, such as containment, resolution, and abandonment rates.
+- Releases the session's resources.
 
 ### Closing a session
 
-A session can be closed by the agent, automatically by the platform, or when a conversation is transferred to another system. Whenever a session is closed, the platform records the following fields for the session:
-
-- `disposition` — why the conversation ended.
-- `status` — current state of the session.
-
-The `disposition` field can have the following values. The `status` is automatically derived from the `disposition`.
+The agent, the platform, or a transfer can close a session. The platform records a `disposition` (why the conversation ended) and derives the `status` from it.
 
 | Disposition | Meaning | Status |
-|-------------|---------|-----------------|
-| `completed` | The conversation reached its natural end | `completed` |
-| `abandoned` | The user walked away | `abandoned` |
-| `agent_hangup` | The agent side dropped the conversation | `abandoned` |
-| `transferred` | Handed to a human or another system | `escalated` |
-| `failed` | Ended because of a system failure | `abandoned` |
-| `timeout` | Closed automatically after inactivity | `ended` |
-| `unengaged` | Opened but the user never really engaged | `ended` |
+| --- | --- | --- |
+| `completed` | The conversation reached its natural end. | `completed` |
+| `abandoned` | The user walked away. | `abandoned` |
+| `agent_hangup` | The agent side dropped the conversation. | `abandoned` |
+| `transferred` | The conversation went to a human or another system. | `escalated` |
+| `failed` | A system failure ended the conversation. | `abandoned` |
+| `timeout` | The platform closed the session after inactivity. | `ended` |
+| `unengaged` | The session opened, but the user never engaged. | `ended` |
 
-### Closing from agent DSL
+<Tabs>
+  <Tab title="From the agent">
+    Define completion conditions in the agent's `COMPLETE:` block. When a condition matches, the agent sends the final response and closes the session as `completed`.
 
-The most common way to end a session is for the agent to determine that the conversation is complete. You define the completion conditions in the agent using the `COMPLETE:` block. When one of the conditions is met, the agent sends the configured final response and closes the session with the disposition and status as `completed`.
+    ```abl
+    COMPLETE:
+      WHEN: issue_resolved == true
+        RESPOND: "Glad I could help. Have a great day!"
 
-```JSON
-COMPLETE:
-  WHEN: issue_resolved == true
-    RESPOND: "Glad I could help. Have a great day!"
+      WHEN: intent contains "bye"
+        RESPOND: "Thanks for contacting us. Goodbye!"
+    ```
 
-  WHEN: intent contains "bye"
-    RESPOND: "Thanks for contacting us. Goodbye!"
-```
-<Note>
-- In a multi-agent workflow, place the COMPLETE block in the agent that owns the conversation. If a COMPLETE executes in a child agent that's designed to return control to its parent, it completes only that child agent's work and returns to the parent. It doesn't end the overall conversation. To end the conversation, define the COMPLETE block in the supervisor agent or in a dedicated closing agent that doesn't return.
-- Conditions are evaluated in the order they're defined. The first matching condition is applied.
-- The final response is delivered to the user before the session closes.
-- The session is closed with the disposition and status as `completed`.
-</Note>
-  
-When `TERMINAL: false` is specified in a `COMPLETE` block, the current interaction ends, but the session remains active. The response is sent to the user, and their next message starts a new interaction within the same session. [Learn More.](/agent-platform/abl/reference/multi-agent-and-supervisor#complete)
+    - The platform checks conditions in order and applies the first match.
+    - In a multi-agent setup, put the `COMPLETE` block in the agent that owns the conversation. A `COMPLETE` in a child agent that returns to its parent ends only that child's work. Use the supervisor or a dedicated closing agent to end the conversation.
+    - With `TERMINAL: false`, the interaction ends but the session stays active, and the user's next message starts a new interaction. [Learn more](/agent-platform/abl/reference/multi-agent-and-supervisor#complete).
+  </Tab>
+  <Tab title="Automatically">
+    The platform closes a session when it passes either limit:
 
-### Automatic session closure
+    - **Idle timeout**: the longest a user can stay inactive.
+    - **Maximum session age**: the longest a session can last, regardless of activity.
 
-The platform automatically closes sessions when they exceed configured inactivity or configured session lifetime limits, or when channel-specific events indicate that the conversation has ended.
+    Either limit records the `timeout` disposition and the `ended` status. The recorded end time is when the session became inactive, not when the platform detected the timeout. Default limits vary by plan.
 
-The platform can automatically close a session when it exceeds either of the following limits:
+    On asynchronous channels such as WhatsApp, SMS, and email, a session can stay open through long gaps. The platform keeps one session and tracks engagement segments inside it for billing and reporting.
 
-- **Idle timeout**: The maximum period of user inactivity before the session is closed.
-- **Maximum session age**: The maximum lifetime of a session, regardless of activity. 
+    For SDK channels, inactivity closures record `terminal_source: sdk_idle_timeout` with the `timeout` disposition. Closures by the application or user record `terminal_source: sdk_end_session` with the `completed` disposition. Use these fields in the [Analytics explorer query builder](/agent-platform/analytics-insights/analytics-explorer#query) to compare timeouts with explicit closures.
+  </Tab>
+  <Tab title="After a transfer">
+    A transfer to a human or an external system sets the disposition to `transferred` and the status to `escalated`. What happens next depends on the routing's **Post-Agent Action**.
 
-When a session is closed because of either limit, it is recorded with the `timeout` disposition and the `ended` status.
+    **End Conversation** closes the session. The disposition follows the end reason that the contact center sends:
 
-For asynchronous messaging channels such as WhatsApp, SMS, and email, a session may remain active across long periods of inactivity. The platform does not split these conversations into multiple sessions. Instead, it internally tracks active engagement periods or engagement segments for billing and reporting while maintaining a single session.
+    | End reason | Disposition | Status |
+    | --- | --- | --- |
+    | `transferred` | `transferred` | `escalated` |
+    | `completed`, `agent_completed`, `conversation_complete` | `completed` | `completed` |
+    | `abandoned`, `user_left`, `user_exit` | `abandoned` | `abandoned` |
+    | `agent_hangup` | `agent_hangup` | `abandoned` |
+    | `failed`, `error` | `failed` | `abandoned` |
+    | Missing or unrecognized | `completed` | `completed` |
 
-<Note>
-- The recorded end time reflects when the session actually became inactive, not when the timeout was detected.
-- The default values of the idle timeout and max age vary by plan. 
-</Note>
-
-For SDK channels, sessions closed because of inactivity are recorded with `terminal_source: sdk_idle_timeout` and the `timeout` disposition. Sessions explicitly ended by the application or the user are recorded with `terminal_source: sdk_end_session` and the `completed` disposition. 
-
-Use these fields in the [Query builder in Analytics explorer](/agent-platform/analytics-insights/analytics-explorer#query) to build queries that :
-- Identify sessions that timed out because users became inactive.
-- Distinguish application-initiated session closures from inactivity timeouts.
-- Measure SDK session abandonment and user completion trends.
-
-
-## Sessions and agent transfers
-
-When a conversation is transferred to a human agent or another external system, the session disposition is set to 'transferred` and status is set to 'escalated`.
-
-The session lifecycle after the external system completes the conversation on their end depends on the routing configuration.
-
-- When Post-Agent Action is set to **End Conversation**, the session is terminated and the disposition depends on the **end reason** the contact centre sends:
-
-| End reason sent | Disposition | Status |
-|-----------------|-------------|--------|
-| `transferred` | `transferred` | `escalated` |
-| `completed` / `agent_completed` / `conversation_complete` | `completed` | `completed` |
-| `abandoned` / `user_left` / `user_exit` | `abandoned` | `abandoned` |
-| `agent_hangup` | `agent_hangup` | `abandoned` |
-| `failed` / `error` | `failed` | `abandoned` |
-| Missing or unrecognized value | `completed` | `completed` |
-
-
-Post-agent action is **Return to bot**. The conversation session is **not** closed. It remains active and no final `disposition` is recorded.
-
-- Transfer metadata is written onto the session.
-- The status changes from `escalated` back to `active`.
-- The bot resumes handling messages as usual. The session is closed later when the conversation ends through the agent, automatic timeout, or another transfer that terminates the conversation.
+    **Return to bot** keeps the session open. The platform writes the transfer details to the session, changes the status from `escalated` back to `active`, and the bot handles messages again. The session closes later through the agent, a timeout, or another transfer.
+  </Tab>
+</Tabs>
