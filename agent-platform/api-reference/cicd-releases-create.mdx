@@ -1,8 +1,21 @@
 ---
 title: Create release
+description: Build an immutable release from a project snapshot or a Git source. The build runs asynchronously.
 openapi: "/agent-platform/api-specs/project-deploy-promote.yaml post /api/cicd/v1/projects/{projectId}/releases"
 ---
 
+<Badge icon="arrow-left" color="gray">[Back to the Project deployment APIs overview](/agent-platform/api-reference/cicd-overview)</Badge>
+
 Use this endpoint to build an immutable release of a project. The call starts an asynchronous build that produces compiled IR, pinned entity versions, an integrity hash, and an encrypted `.ablenc` bundle. The response returns a `releaseId` and a `statusUrl`. Poll [Get release](/agent-platform/api-reference/cicd-releases-get) until the status is `ready`.
 
-Set `source.kind` to choose the content source. Use `project_snapshot` to capture the project's current content without a Git integration. Use `git`, or omit the field, to build from a branch, tag, or commit. The build is independent of the environment. It needs the `cicd.release.create` scope and project membership, but not environment authority. If an identical versioned release exists, the API reuses it and returns `reused: true`.
+Set `source.kind` to choose the content source. Use `project_snapshot` to capture the project's current content without a Git integration. Use `git`, or omit the field, to build from a branch, tag, or commit. The build is independent of the environment. It needs the `cicd.release.create` scope and project membership, but not environment authority. If an identical versioned release exists, the API reuses it and returns `200` with `reused: true`. It can requeue a failed build and then sets `requeued: true`. Otherwise it returns `202` with `releaseId`, `jobId`, and `statusUrl`.
+
+The optional `version` field sets a release label in the format `X.Y.Z` when versioning is enabled. The optional `lob` and `developer` fields add a line-of-business tag and an attribution.
+
+The API returns these errors:
+
+* `409 RELEASE_VERSION_CONFLICT`: The version exists with different content.
+* `409 RELEASE_SOURCE_EXPIRED`: A failed snapshot source expired.
+* `409 AGENTIC_DRAFT_NOT_ACKNOWLEDGED`: You requested `project_snapshot` while the draft holds an unacknowledged agentic state.
+* `503 PROJECT_SNAPSHOT_UNAVAILABLE` or `503 AGENTIC_HOLD_UNAVAILABLE`: The service is temporarily unavailable. You can retry.
+* `503 RELEASE_STORAGE_NOT_SHARED`: This deployment can't build a `project_snapshot`. Don't retry.
