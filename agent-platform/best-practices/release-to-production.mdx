@@ -1,0 +1,111 @@
+---
+title: Release agents to production
+sidebarTitle: Release agents to production
+---
+
+A tested working copy doesn't reach users until you publish a version and deploy it. Use a controlled path from source change to production. Record which deployment serves each channel, who approved it, and the rollback target.
+
+## Understand which version runs
+
+You edit the working copy. **Publish Version** freezes it as an immutable version with a snapshot of its tools. A deployment runs published versions in Development, Staging, or Production. Each environment runs at most one active deployment.
+
+| Caller | Runs |
+|---|---|
+| **Chat with Agent**, and eval runs on **Working copy** | The working copy |
+| A channel bound to **None** (global), with no pinned deployment | The working copy |
+| A channel with **Auto-follow deployments** on | Its environment's active deployment |
+| A channel with a **Pinned Deployment** | That deployment, until you change the binding |
+| An endpoint URL | The environment named in the URL |
+
+A conversation keeps the agents and deployment it started with until it ends. Test every fix in a new conversation, and judge a release on new conversations only.
+
+* Check each channel's Deployment Binding at **Project** → **Operate** → **Deployments** → **Channels** before you report a release complete.
+* Review auth profiles, environment variables, and endpoint targets separately from the ABL.
+* Know the rollback target. Rollback reactivates the previous deployment in that environment, and callers keep the same endpoint URL.
+
+<Note>**Restore** and **Rollback** are different. **Restore working copy** changes the editable source. **Rollback** reactivates a deployment in an environment.</Note>
+
+See [Deploy agents](/agent-platform/deployment).
+
+## Check the approval policy and access
+
+Set the production approval policy at **Project** → **Settings** → **Governance**. Before you promote, confirm which sign-offs apply to this version. **Strict** requires an approver other than the publisher.
+
+Arch MCP acts as the signed-in person, so project roles apply to each assistant call. Give every person their own sign-in. Require approval for tools that can change state; some tools combine read and write actions, so judge the actions a tool can perform, not its name. Studio's Git actions need `project:git`: the built-in Developer role lacks it, and Admin has it. See [Collaborate with Git](/agent-platform/best-practices/collaborate-with-git#roles-and-the-git-permission).
+
+## Release steps
+
+Before release, name who watches the journey, who can roll back, and who owns tool or telephony failures.
+
+<Steps>
+  <Step title="Test">
+    Run the core eval set on **Working copy**. Inspect its baseline regression status and the affected cases.
+  </Step>
+  <Step title="Publish">
+    Agent → **Version history** → **Publish Version**, with a changelog.
+  </Step>
+  <Step title="Deploy to staging">
+    **Project** → **Operate** → **Deployments** → **Environments** → **New Deploy**, environment **Staging**. Use **Customize per agent** to pin each version.
+  </Step>
+  <Step title="Run the eval gate">
+    Run the suite against Staging with the same cases and evaluators. Review the evaluator-level compare output, regression flags, and each affected case. Record the model and target.
+  </Step>
+  <Step title="Qualify">
+    **Record Qualification** on each version going to production.
+  </Step>
+  <Step title="Release">
+    Deploy the same versions to Production.
+  </Step>
+  <Step title="Watch">
+    Open **Project** → **Operate** → **Sessions**, filtered to Production. If errors appear, keep the trace, stop repeat writes, and use **Rollback** on the deployment card.
+  </Step>
+</Steps>
+
+For a voice journey, rerun the voice tests if the speech provider, timeouts, behavior profile, or gather fields changed. Test the transfer destination on a call, and confirm that the channel serves the new deployment. A successful publish only creates a version.
+
+## Before-release checklist
+
+* Lint and package validation are clean on the exported project.
+* The full core set ran on the release target. Review baseline regression flags, evaluator-level aggregates, and affected scenario results; record the target and model.
+* The write set ran after a row reset, and the rows were reset again.
+* Every defect fixed since the last release has a scenario.
+* Approval, Security, and Eval qualifications are recorded on each version going to production.
+* Each channel is bound to the right environment, with auto-follow or a pinned deployment chosen on purpose.
+* Final tests ran in a new conversation, on the version being deployed.
+* The rollback target is known: the previous deployment in each environment.
+* A test conversation of about 20 turns was read in the Request view for growth, cut markers, and unfilled `{{placeholders}}`.
+* Model calls, time, and tokens per turn are within the targets for the top requests.
+* Voice: the project has a fast-tier model, and every agent with a custom `SYSTEM_PROMPT` states the spoken-style rules.
+
+## After release: turn signals into a backlog
+
+Review outcomes by journey, channel, version, and risk tier. A conversation count or average score alone doesn't tell you whether users finished the task safely.
+
+| Question | Where |
+|---|---|
+| Is the program healthy? | **Project** → **Insights** → **At a Glance**: Containment Rate, Escalation Rate |
+| Which requests stay unresolved? | Customer Insights: Resolution Rate, Intent Performance |
+| Where is answer quality slipping? | Quality Monitor |
+| What does each model call cost and take? | Analytics Explorer |
+| A business outcome, such as rebooked or not | Custom Dashboards, from a `_meta` key set in a tool's `on_result: set:` |
+| Notify on a threshold | **Project** → **Operate** → **Alerts** |
+| Why a number moved | **Project** → **Operate** → **Sessions** → session → **Traces** |
+
+* Containment Rate counts conversations that ended without a person. Read it next to Resolution Rate and the transcripts.
+* Quality Monitor, Agent Performance, and Customer Insights need their analysis pipelines on at **Project** → **Insights** → **Pipelines**.
+* Separate production traffic from eval traffic before you compare numbers.
+* Never run Insights Generator in a project with real traffic. Its sample conversations go into every dashboard and can't be removed there.
+* Read a sample of transcripts and traces behind a metric. Protect privacy, restrict access to recordings, remove identifiers from examples, and keep only what your policy permits.
+
+See [Analytics and insights](/agent-platform/analytics-and-insights).
+
+To find what to fix first, ask a coding assistant to run `debug_session_history` sorted by `errorCount`, `tokenCount`, or `estimatedCost` over a range such as `7d`. Run `debug_analyze_session` on five to ten of the worst, and group them by the layer where each first went wrong.
+
+1. Group similar failures by journey and responsible layer.
+2. Estimate user impact, frequency, safety risk, and effort.
+3. Add the failure as a scenario. Run the full set against the unchanged agent, confirm the known failure, and set that run as the new baseline.
+4. Change one layer. Run the same full set again, review regression flags and evaluator-level aggregates, then open affected run cases.
+5. Check whether the fix improved the journey and kept neighboring routes intact.
+6. Update the agent map, project guidance, or checklist if the learning should last.
+
+Assign owners for shared instructions, tools, prompts, eval sets, and release policy. A toolkit with no owner becomes a second source of truth. Order the backlog by conversations touched multiplied by harm to the user, and feed every diagnosed failure into the regression set.
