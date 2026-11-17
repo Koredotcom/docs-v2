@@ -1,0 +1,352 @@
+---
+title: Agent design guidelines
+sidebarTitle: Agent design guidelines
+---
+
+Choose the smallest structure that meets your targets. Keep language flexible where it helps, and keep rules deterministic where an error matters.
+
+Each component you add brings coordination, model calls, context transfer, and new failure paths. Start with one agent. Add a fixed flow, a workflow, or a specialist only when a scenario needs a distinct responsibility or a controlled procedure. Start from the scenarios and targets in [Plan an agent journey](/agent-platform/best-practices/plan-agent-journey).
+
+## Choose a reasoning, scripted, or hybrid agent
+
+Ask whether the model chooses the next action, or whether the conversation must follow a fixed sequence. A flow is part of an agent's design. It doesn't create a separate agent.
+
+| Studio label | Definition | Use it when |
+|---|---|---|
+| **Reasoning** | No `FLOW`. The model chooses when to call declared tools, ask a question, and respond. | The request varies, and the agent must interpret intent or choose among next steps. |
+| **Scripted** | A `FLOW` with no `REASONING: true` step. Use `REASONING: false` to make deterministic zones explicit. | Order, required fields, confirmations, or exact outcomes must be controlled. |
+| **Hybrid** | A `FLOW` with at least one `REASONING: true` step. | Some stages have fixed rules, and another needs interpretation or a natural-language reply. |
+
+In a hybrid design, keep eligibility checks, required confirmations, and writes deterministic. Use reasoning in the stages that benefit from interpretation. See the how-to guides [Choose a reasoning agent or a flow](/agent-platform/abl/how-to/choose-reasoning-agent-or-flow) and [Combine reasoning and flow steps](/agent-platform/abl/how-to/combine-reasoning-and-flow-steps).
+
+## Choose an agent or a workflow
+
+Use an agent to manage a conversation. Use a workflow to run a repeatable backend process. An agent can call a workflow as a tool when it needs both.
+
+| Choose | Best fit | Example |
+|---|---|---|
+| **Agent** | Interpret a request, ask follow-up questions, select a conversational route, explain results, and manage turn-taking. | Clarify which service change a customer wants, then explain the options. |
+| **Workflow** | Run backend steps in a defined order, enforce a business rule, coordinate a write, or share a process between agents. | Check eligibility, reserve an option, update a record, and return a typed result. |
+
+Use a single tool for one bounded operation. Put a multi-step process in a workflow when it needs deterministic branching, consistent state handling, or an explicit result contract.
+
+## Other building blocks
+
+| Use | When it fits | What to watch |
+|---|---|---|
+| **One agent with tools** | One domain, a manageable tool set, and a consistent voice | Instructions and tool descriptions grow until behavior is hard to predict. |
+| **One tool** | One lookup the model reads | Select only the needed columns. A table tool returns JSON text that a `FLOW` can't branch on. |
+| **Specialist agent** | An orchestrator (`role: orchestrator`) routes with `INTENTS` and `HANDOFF`, one level deep | Each routed turn adds the orchestrator's model calls. Intent descriptions must exclude each other. |
+
+See the how-to guide [Choose a single agent or specialists](/agent-platform/abl/how-to/choose-single-agent-or-specialists).
+
+## Sections of an ABL agent
+
+An ABL agent file is easier to review when each section answers one question. The Designer groups fields into Identity, Coordination, Behavior, Capabilities, and Lifecycle tabs. Those tabs don't map one-to-one to ABL sections, so use the Editor to inspect the source as a whole.
+
+| Group | ABL sections | Question it answers |
+|---|---|---|
+| **Purpose** | `AGENT`, `DESCRIPTION`, `GOAL`, `PERSONA`, `LIMITATIONS` | What job is this agent for, and when does it stop? |
+| **Routes** | `BEHAVIOR` role, `INTENTS`, `HANDOFF`, `DELEGATE`, `ESCALATE` | Which requests belong here, and what travels to the next owner? |
+| **Behavior** | `INSTRUCTIONS`, `FLOW`, `GATHER`, `TEMPLATES`, `USE BEHAVIOR_PROFILE` | What can vary, and what must happen in order? |
+| **Capabilities** | `TOOLS`, `MEMORY`, `CONSTRAINTS`, `GUARDRAILS`, `ON_ERROR`, `COMPLETE` | How are facts and actions grounded? |
+
+Keep agent names, route descriptions, and tool descriptions consistent. A user request needs one clear owner. If two specialists can accept the same request, their descriptions state the boundary in both directions.
+
+Guard safety and money routes with a value that only a tool sets. Every Voyager route into booking data needs `identity_verified == true`, and only `verify_traveller` writes it. With the Reasoning Pipeline on, intent descriptions act as routing rules.
+
+An agent gets hard to manage when its purpose is vague, its prompts repeat each other, or its tool schemas diverge. Split stable, reusable instructions from scenario-specific rules. Give shared tools and behavior profiles an owner. Keep a change history that says what changed, why, and which cases proved it.
+
+## Put each rule where it is enforced
+
+| Rule type | Best home | Reason |
+|---|---|---|
+| Voice, tone, explanation style | Persona and instructions | They guide how the agent expresses an answer. |
+| A must-never rule for an orchestrator | `GOAL` or `INSTRUCTIONS` | An orchestrator's prompt never includes `LIMITATIONS`. |
+| Exact wording and stable read-back | Template or fixed response | Reduces drift across runs and channels. |
+| Required question sequence | Flow | Controls order and required information. |
+| A complete prompt shared by several agents | [Prompts library](/agent-platform/prompts); pin one version to each agent | The library entry replaces the generated system prompt, so keep it complete. |
+| Permission, eligibility, limits, duplicate prevention | Tool contract or workflow | Enforced where the action happens. |
+| Channel-specific spoken style | Behavior profile or channel layer | Separates voice behavior from shared task logic. |
+| Final fact values | Authoritative tool or knowledge source | Stops the model from inventing operational data. |
+
+A Prompts library change doesn't update an agent that is already deployed. Build and release the matching agent version, then verify it in a new session.
+
+<Note>**Enforce confirmations in the tool.** Don't rely on "ask before changing" in prose alone. Set `confirm: always` on the write tool, or read back in a `FLOW` step and set `confirm: never` on the tool. Confirm in one place, or the user hears the question twice. The workflow behind the tool still checks eligibility and the row version.</Note>
+
+## Safety, guardrails, and secrets
+
+Give each risk the control that checks it.
+
+| Risk | Control | Where |
+|---|---|---|
+| Harmful text, or an identifier in a reply | Guardrail policy | **Project** → **Govern** → **Guardrails** |
+| A rule about what the conversation collected | `CONSTRAINTS` | The agent's ABL |
+| Personal data in model requests and traces | PII protection | **Project** → **Govern** → **PII** |
+| An API credential | Auth profile, named by the tool | **Project** → **Settings** → **Integrations** → **Auth Profiles** |
+| Digits that must never reach the model or the recording, such as a loyalty PIN | `SECURE_INPUT` on a phone call | A `FLOW` step |
+| A request for a person | `ESCALATE`, routed by Agent Transfer | **Project** → **Settings** → **Agent Behavior** → **Agent Transfer** |
+
+Check these defaults before release:
+
+* A guardrail lets text through when its provider fails. Set **Closed (block on error)** for compliance checks.
+* The guardrail **Escalate** action stops the text. It doesn't transfer the conversation.
+* New projects start with every built-in PII pattern off. Turn on the ones your journeys need.
+* Write `ESCALATE` triggers as plain sentences. A condition such as `intent.category == "human_agent"` blocks every escalation when nothing sets it.
+
+{/* REVIEW: Confirm with engineering that guardrail providers fail open by default and that built-in PII patterns start off. */}
+
+See [Safety and guardrails](/agent-platform/safety-and-guardrails) and [PII protection](/agent-platform/pii-protection).
+
+### Credentials and tokens
+
+| Rule | Why |
+|---|---|
+| Never write a credential, `{{env.KEY}}`, or a secret config value in `GOAL`, `PERSONA`, `INSTRUCTIONS`, templates, or `RESPOND`. | Prompt text goes to the model provider, traces, exports, and Git as written. A secret config value there fails the compile. |
+| Reference `{{env.KEY}}` and `{{secrets.KEY}}` only in a tool definition. | The value is filled in when the tool runs. |
+| Pass a token between tools through the session. | Save it with `on_result: set` into a `READONLY` variable with `MODEL_VISIBLE: false`. |
+| Hide it on the receiving tool. | Set `default_source: runtime`, `visibility_model: false`, `context_access: read`, and `visibility_trace: false`. |
+
+### Guardrail rules and streaming safety
+
+A guardrail check sees one item: a message, a reply, tool arguments, a tool result, or a handoff. It never sees the history. Put rules about collected values in `CONSTRAINTS`.
+
+In ABL, a rule without `kind` checks output, and a rule without `action` only warns. Set both on every rule. Order checks by cost: a CEL Expression needs no model call, a Provider rule makes one classifier call, and each LLM Check makes one model call.
+
+Output guardrails can hold a reply until it is complete. Set the mode in **Project** → **Settings** → **Runtime Config** → **Streaming Safety**.
+
+| Mode | Effect |
+|---|---|
+| **Legacy passthrough** | Holds every reply until the checks pass. On a call, first audio comes later. |
+| **Terminate forward** | Streams the reply while checks run, and stops it if a check fails. |
+| **Retract capable** | Streams the reply while checks run, and withdraws it if a check fails. |
+
+## When an Agent Table fits
+
+Use [Agent Tables](/agent-platform/agent-tables) for typed, durable rows that an agent or workflow queries and reuses, such as service cases, orders, customer preferences, or an operational queue. First confirm the feature is on for the workspace and project. Choose the scope by who needs the data.
+
+| Scope | Use for | Example |
+|---|---|---|
+| **Project** | Rows shared across the project | Service catalog or shared case queue |
+| **End user** | Rows tied to an identified customer across conversations | Customer preferences or open requests |
+| **Session** | Temporary structured data for one conversation | A short-lived intake record |
+
+Use memory for a single remembered value, a lookup table for fixed extraction choices, and a knowledge base for document search. Give each table tool only the operations it needs. An empty operation set is read only.
+
+Scopes describe data visibility, not environment isolation. Writes through the public Tools API can reach the same production rows from development or staging. Use approved synthetic data. Studio debug and eval sessions use isolated overlays.
+
+## Choose models
+
+Register provider connections and models in the workspace catalog first (**Admin** → **AI Configuration** → **Models**). Then select project models in **Project** → **Settings** → **Models**. An agent can set `EXECUTION: model`, but the effective choice follows the active model-access mode. Enforced access requires the model to be selected for the project. Compatibility mode uses its configured resolution order. Check the effective model and its source before you compare evals.
+
+| Trap | What happens | Fix |
+|---|---|---|
+| The agent-level model isn't in the project selection | In enforced mode, resolution needs a project-selected model. In compatibility mode, the configured resolution order applies. | Confirm the workspace catalog, project selection, and access mode. Then check **Why this model?** |
+| Pipeline Model left at Default | With enforced access, the Reasoning Pipeline classifier doesn't run. | Choose a selected model in **Project** → **Settings** → **Runtime Config**. |
+
+Change one model setting per eval run, and test each change in a new conversation. See [AI configuration](/agent-platform/administration/ai-configuration).
+
+## Design tool contracts
+
+A tool contract says what the tool does, which inputs it needs, and what effect it has. It also says what the model must not supply, what needs a confirmation, and which result fields the agent can use. Keep credentials outside the agent definition, and reference an auth profile by name.
+
+* Read tools return only the fields the agent uses.
+* Write tools validate current state, reject stale or unauthorized actions, and use idempotency, so a repeated request doesn't create a second effect.
+* When several operations must succeed or fail together, put them in a workflow that checks prerequisites and returns a clear outcome.
+* Keep calculations and business rules out of free-form model reasoning.
+
+In ABL, the contract sits in the agent's `TOOLS` section. Shortened from Disruption:
+
+```yaml ABL: tool contract
+rebook_flight(booking_ref: string, new_flight_id: string) -> object
+  description: "Rebook this trip. Moves the booking from a cancelled flight (or one delayed 3 hours or more) to the chosen flight on the same route, at no cost. Returns rebooked, rebooking_id, flight_number, depart_label, arrive_label and seat, or a plain-language reason."
+  effect: side_effect
+  confirm: always
+  immutable: [new_flight_id]
+  params:
+    booking_ref:
+      default_source: runtime
+      visibility_model: false
+      context_access:
+        read: [booking_ref]
+  on_result:
+    set:
+      rebooking_id: result.output.rebooking_id
+```
+
+* The confirmation question is "Shall I" plus the first sentence of the tool's description: "Shall I rebook this trip for VY318-2026-10-21?" Start that sentence with a short verb phrase.
+* The model never sees or types `booking_ref`. The runtime fills it from the session, and `context_access: read` stops the call when the value is missing.
+* After the yes, a change to `new_flight_id` is refused.
+* `on_result: set` keeps the named values for the reply and later turns, and stops the full result from being stored. Add `store_result: true` when follow-up questions need the rest.
+* Declare `effect: read_only` on every read tool. A workflow or MCP tool with no effect counts as a write, so it waits while another action waits for a confirmation.
+
+### Tool contract settings
+
+| Setting | What it does | Voyager |
+|---|---|---|
+| `default_source: runtime`, `visibility_model: false`, `context_access: read` | Use all three for a value the model must never see or type. Without `context_access: read`, a missing value isn't caught before the call. | `booking_ref` on `get_booking` |
+| `confirm` | Takes `always`, `never`, or `when_side_effects`. Any other value, such as `yes`, means no confirmation. | `rebook_flight` uses `always` |
+| `process.before` with `require` and `on_fail: block(…)` | Refuses a call when a model-supplied value is wrong. Never put it on a runtime input, because it runs before runtime inputs are filled. | `cancel_booking` accepts only `refund` or `credit` |
+| `ON_ERROR` with `tool_error` and a `SUBTYPE` | Subtypes are `tool_timeout`, `network_error`, `auth_failure`, and `rate_limit`. A bare `tool_timeout:` handler never matches. | Loyalty escalates on `auth_failure` |
+| `timeout` on an HTTP tool; `timeout_ms` on a workflow tool | Milliseconds. `"30s"` is rejected. | `timeout_ms: 30000` |
+| `store_result: true` | Keeps the full result when `on_result: set` is present. | Follow-up questions about a booking |
+
+A normal business outcome, such as "not eligible", can reach an End node and complete without an error. The agent sees only the fields mapped under `output`. A `success: false` value exists only if the workflow maps it. A failed, cancelled, or rejected workflow run raises a tool error, which the agent's `ON_ERROR` handler can handle. Branch on the mapped result for ordinary refusals, and use `ON_ERROR` for execution failures.
+
+See [Tools](/agent-platform/abl/reference/tools) in the ABL reference.
+
+### Workflow tool settings
+
+Register a workflow as a tool at **Project** → **Resources** → **Tools** → **Workflows** → **Register Workflow**. The start node's inputs become the tool's parameters, and the agent reads the End node's mapping as `result.output.<field>`.
+
+| Choice | Rule |
+|---|---|
+| **Sync or async** | Sync when the user waits for the answer. Async for long runs or a person; the runtime adds `check_workflow_status`. Studio and an ABL tool with no mode use sync. `platform_workflows create_tool` uses async unless you pass `toolMode: sync`. |
+| **Timeout** | `timeout_ms`, up to 300,000. With no value, the runtime waits 60 seconds. Studio suggests 15,000. |
+| **Unknown outcome** | Read the run in the workflow's **Monitor** tab before any retry. |
+| **Versions** | A deployment runs the workflow version pinned at deploy time. Publish the workflow again and redeploy after a change. |
+| **Human steps** | A Human Task waits in **Project** → **Operate** → **Inbox**. Call such workflows async. |
+
+See [Workflows](/agent-platform/workflows).
+
+## Example: a cancellation flow
+
+This example places questions, checks, and writes in an explicit order. A fixed flow fits when policy requires the same steps every time. Ordinary questions can still go to an agent that is better suited to them.
+
+The outcome: explain the allowed refund or credit, confirm the exact booking and choice, cancel once, and read back the result. Eligibility and amounts come from workflows, not model arithmetic.
+
+### Ask for a specific decision
+
+```yaml ABL: scripted flow step
+confirm_intent:
+  REASONING: false
+  GATHER:
+    - wants_cancel: required
+      type: boolean
+      prompt: "Do you want to cancel booking {{booking_ref}} for a refund or travel credit?"
+      extraction_hints: ["true only if the traveller asks to cancel this booking or to get a refund or travel credit for it; false for anything else, such as an upgrade, a change, a status check or a question"]
+  THEN: check_wants_cancel
+```
+
+The question names the action and the booking. The flow checks the answer before it asks the eligibility workflow for options. A request to keep the booking, or to do something else, exits without a write.
+
+### Use workflow results to choose the path
+
+```yaml ABL: route on a workflow result
+quote_refund:
+  REASONING: false
+  CALL: check_refund_eligibility
+  WITH:
+    booking_ref: booking_ref
+  AS: quote
+  ON_RESULT:
+    - IF: quote.output.eligible == true AND quote.output.fee > 0
+      THEN: offer_with_fee
+    - IF: quote.output.eligible == true
+      THEN: offer_no_fee
+    - ELSE:
+      THEN: not_refundable
+```
+
+The workflow applies the fare rules and returns eligibility, fee, and amount fields. The End node maps them under `output`, so the agent reads `quote.output.refund_amount`, and templates use the values for the exact quote.
+
+| Workflow tool | What it does | What the flow reads |
+|---|---|---|
+| `check_refund_eligibility` (read-only) | Applies fare rules without changing the booking. Returns eligibility, amounts, fees, and a reason. | `quote.output.eligible`, amount fields, and the reason the templates use |
+| `cancel_booking` (write) | Checks the selected settlement and cancels. An already-cancelled booking returns its existing result without a second write. | Cancellation status, confirmation code, and settlement amounts |
+
+Give every gather step a way out. Use `DIGRESSIONS` for an in-scope side question, then return to the question. Route a refusal to an explicit no-change step. Bound repeated attempts with `MAX_ATTEMPTS` and `ON_EXHAUSTED`.
+
+### Ask once, then perform the write
+
+```yaml ABL: confirmation and write
+cancel_booking(booking_ref: string, settlement: string) -> object
+  description: "Cancel the booking using the selected settlement"
+  effect: side_effect
+  confirm: never
+
+ask_confirm:
+  REASONING: false
+  GATHER:
+    - cancel_confirmed: required
+      type: boolean
+      prompt: "Shall I go ahead and cancel?"
+  THEN: check_confirmed
+```
+
+The read-back before this step names the flight, booking, and settlement. The flow then asks for a clear yes. The tool uses `confirm: never` because the flow already asks, so the user doesn't hear a second confirmation. The workflow still validates its inputs and handles an already-cancelled booking without repeating the action.
+
+If the write outcome is unknown, don't retry blindly. Read the workflow run and the booking state first.
+
+### Prove the important paths
+
+| Scenario | Exact checks |
+|---|---|
+| Eligible for a refund | The eligibility workflow runs before cancellation. The quote matches its output. One confirmation comes before one cancel call. |
+| Not refundable | The reason and the allowed next step are explained. No cancellation workflow runs. |
+| Traveler changes their mind | The booking stays unchanged. No write tool runs. |
+| Disrupted flight | The no-fee option applies, or the call routes to rebooking. The fee path doesn't run. |
+
+The flow controls the conversation order. The workflow controls whether the action is allowed.
+
+## Keep a large project manageable
+
+* Keep a one-page map for each substantial agent: purpose, routes in, tools, data, flow, handoff, tests, owner, and known limits. Have a coding assistant build it from `platform_package_model`, keep it in Git next to the ABL, and regenerate it in the same change as the agent.
+* Split an agent when its responsibilities have distinct tools, rules, or ownership, and evaluation shows the split helps.
+* Don't create one agent per utterance, or put a thin supervisor in front of a single specialist.
+* Prefer one routing level, unless a deeper route has a clear cost and a testable purpose.
+* Before you split, tighten instructions, move fixed order into a `FLOW`, and cut tools. A split adds a routing step to every turn that crosses it. A long flow is cheap; long instructions and many tools aren't.
+* Review the routing map when you add a journey, so neighboring routes stay distinct.
+
+ABL has no source include. Share by structure: a workflow called as a tool, a shared `.tools.abl` file, one behavior profile attached with `USE BEHAVIOR_PROFILE`, or a config variable. A Prompts library entry is a complete system prompt, not a shared fragment. Each agent repeats a shared tool's signature and description word for word, or the compiler warns `W721`. See the how-to guide [Design reusable agent modules](/agent-platform/abl/how-to/design-reusable-agent-modules).
+
+### Project map worksheet
+
+Fill this in from sources you can access. Keep it short, and link to authoritative files or records. Mark unknown fields as unknown. Don't fill gaps with plausible guesses.
+
+| Map item | Record |
+|---|---|
+| **Purpose and users** | What the agent helps people do; main user groups and channels. |
+| **Current source** | Entry definition, specialist definitions, and version or revision identifier. |
+| **Important boundaries** | Tools, data sources, write operations, authentication, and privacy limits. |
+| **Scenarios and targets** | Primary journey, known failures, relevant eval set, and approved thresholds. |
+| **Validation path** | Definition validator, safe test environment, and focused and release-level checks. |
+| **Owners and approvals** | Policy, data, channel, release, and incident owners. |
+| **Known gaps** | Missing evidence, uncertain behavior, and dependencies that weren't checked. |
+
+## Lifecycle of an agent change
+
+Agent Platform keeps three stages apart: the working copy you edit, a version you publish, and a deployment that runs a version in an environment. Editing the working copy changes only Studio test chats, working-copy eval runs, and any channel bound to **None**. Record the version and environment whenever you diagnose behavior.
+
+1. **Change.** Make one bounded update, and keep unrelated formatting out of the diff.
+2. **Validate and evaluate.** Run `platform_validate_package` and `debug_lint_abl`, then run the eval sets against the exact candidate.
+3. **Review and release.** List every route in and every reference with `platform_package_model` and `debug_get_flow_graph`. Run focused scenarios, then neighboring routes. Get the owner decisions, release, and verify the active version.
+
+Keep the exported project in Git. Don't copy a whole agent to make a one-line change: the copies drift, and a later fix reaches only one of them. See [Collaborate with Git](/agent-platform/best-practices/collaborate-with-git) and [Release agents to production](/agent-platform/best-practices/release-to-production).
+
+## ABL at a glance
+
+ABL agent files use uppercase section names. Start with purpose and behavior, then add only the capabilities the journey needs.
+
+| Construct | Use it for | Typical shape |
+|---|---|---|
+| `AGENT`, `GOAL`, `PERSONA`, `LIMITATIONS` | The agent's job, voice, and boundaries | One clear goal; explicit stop conditions |
+| `TOOLS` | What a tool accepts and returns | Mark reads `effect: read_only`; keep write rules in the tool or workflow |
+| `FLOW` | A deterministic sequence | Named steps with `REASONING: false`, `GATHER`, `CHECK`, `CALL`, and `THEN` |
+| `ON_RESULT` | Routing on an explicit tool result | Read mapped fields such as `result.output.status` |
+| `ON_ERROR` | Tool or execution failures | Match an error key and, when needed, its `SUBTYPE` |
+| `MEMORY`, `HANDOFF`, `DELEGATE` | Only the context the next step needs | Keep source, certainty, and unresolved choices |
+
+```yaml ABL: tool and check
+lookup_booking(booking_ref: string) -> object
+  description: "Read the booking and return its current status"
+  effect: read_only
+
+check_booking:
+  REASONING: false
+  CHECK: booking_ref IS SET AND booking_ref != ""
+  ON_FAIL: ask_booking_ref
+  THEN: lookup
+```
+
+Excerpts on this page explain syntax. They aren't complete importable agents, so validate the complete file after you change a definition. See the [ABL reference](/agent-platform/abl/reference/language-overview).

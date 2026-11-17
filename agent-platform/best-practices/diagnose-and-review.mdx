@@ -1,0 +1,116 @@
+---
+title: Diagnose and review a change
+sidebarTitle: Diagnose and review a change
+---
+
+Separate diagnosis from editing. Make one focused change, then prove both the behavior you intended and the behavior that must stay the same. Keep the loop small enough that a reviewer can connect the change to the evidence.
+
+## Find the cause
+
+Read the current definition, related tools, relevant instructions, and the exact conversation or eval case. Agent Platform records every turn's model request, tool results, decisions, and timings. Open them at **Project** → **Operate** → **Sessions** → session → **Traces**, or read them with `debug_traces`. A transcript tells you what was said; a trace shows why.
+
+Trace the result through its layers: routing, agent instructions, execution flow, tool contract, workflow, data, channel configuration, or deployment. Check the earlier steps that shaped the turn before you edit the most visible agent.
+
+<Tip>Write down the cause before the fix. State the observed event, the expected event, and the evidence that separates them. If the trace can't tell two causes apart, ask for the missing data instead of choosing one.</Tip>
+
+For example, a call offers a standard cancellation fee after the airline caused the delay. Check whether the disruption route was selected, whether the status tool returned the delay, and whether the refund workflow received and enforced that status. A change to the greeting can't fix a missing eligibility check.
+
+### Read what the model received
+
+Open **Project** → **Operate** → **Sessions** → session → **Traces** → LLM step → **Request**. It shows the system prompt, the history, and the tool list the model received. To follow a value that went missing, see [Debug a missing value](/agent-platform/best-practices/context-memory-handoffs#debug-a-missing-value).
+
+## Find the layer where the fix lives
+
+Write the expected path from the ABL and `debug_get_flow_graph` before you open the trace. Then pick the earliest layer whose evidence is already wrong.
+
+| Layer | Read first | The fix lives in |
+|---|---|---|
+| **Speech recognition** | What was heard, against what the caller said | Provider, vocabulary, per-field listening |
+| **Endpointing** | The pause, against the end-of-speech wait | The turn type on that step |
+| **Routing** | Handoff decisions and `WHEN` results | Intent descriptions, `WHEN` conditions |
+| **Gather** | Extraction input and output | The `GATHER` field and its validation |
+| **Tool** | Arguments, raw result, cut markers | The tool contract or the workflow |
+| **Knowledge search** | The query and the chunks returned | Search settings |
+| **Model reasoning** | The Request view: right inputs, wrong choice | Instructions, tool descriptions, model |
+| **Configuration** | Runtime Config and channel settings | An explicit setting |
+
+For voice calls, see [Diagnose a failed call](/agent-platform/best-practices/test-voice-agents#diagnose-a-failed-call).
+
+## Plan a small change
+
+The plan names the behavior to change, the files or definitions involved, possible side effects, and the checks to run. Prefer the smallest layer that owns the rule. A policy enforced in a write workflow must not depend only on wording in a prompt.
+
+| Plan item | Question to answer |
+|---|---|
+| **Scope** | Which agent, tool, workflow, scenario, or configuration may change? |
+| **Reason** | Which trace or test demonstrates the cause? |
+| **Risk** | Could the edit change routing, permissions, data, cost, or another channel? |
+| **Verification** | Which validator, focused scenario, and regression cases will run? |
+| **Stop condition** | Which result means stop and return for a decision? |
+
+For a single agent change, use the guarded edit action instead of a whole-project import or an unguarded save. If the edit is refused because the source changed, read the current definition, reconcile the change, and reapply it. See [How guarded edits work](/agent-platform/arch-mcp-reference#how-guarded-edits-work).
+
+## Validate and test
+
+Validation tells you whether the definition is structurally acceptable. A conversation or evaluation tells you whether behavior meets the scenario. Neither one alone proves a release is safe.
+
+1. Run syntax, schema, and package checks.
+2. Test the scenario that motivated the change.
+3. Run nearby regression cases, including neighboring routes and negative cases.
+4. Review complete evaluation runs with the same cases and evaluators. See [Evaluate agents](/agent-platform/best-practices/evaluate-agents).
+5. Review the diff and the evidence before you merge or release.
+
+<Warning>If a write times out, read back first. When a tool call times out or returns an ambiguous result, inspect the resulting record or operation before a retry. A blind retry can duplicate a booking change, refund, or claim.</Warning>
+
+Studio test chats, debug messages, workflow runs, and eval runs write real rows; there is no isolated copy. Keep read-only and write scenarios in separate eval sets. Name the test rows before you start, and reset them after each stage.
+
+{/* REVIEW: Agent Tables sessions in Studio debug and eval use isolated overlays, per the handbook's Agent Tables section. Confirm how this fits with "test chats write real rows". */}
+
+## Write a change note
+
+The note gives the next reviewer enough context to understand why the change exists and how to detect a regression.
+
+```text Change note template
+Change:
+Reason and evidence:
+Behavior that should change:
+Behavior that must remain:
+Files or definitions changed:
+Validation:
+Scenario and evaluation results:
+Data or environment used:
+Known gaps:
+Restore: choose the prior restore point and confirm Restore working copy.
+Rollback: reactivate the previous deployment in the target environment.
+```
+
+Keep the evidence linked to the exact version or eval run. "Looks better" isn't a useful result without the scenario, the expected behavior, and the observed outcome.
+
+## Review a change
+
+Read the diff from the outside in. Start with the behavior and the affected boundary, then inspect individual edits. This stops a technically neat change with the wrong product outcome from getting through.
+
+| Review layer | Questions to ask |
+|---|---|
+| **Outcome** | Does the behavior match the approved scenario and target? Is the user told what happens next? |
+| **Ownership** | Is the rule enforced by the component that can guarantee it? |
+| **Safety** | Are authorization, confirmation, privacy, and duplicate-write protections still present? |
+| **Compatibility** | Could the change alter another route, channel, specialist, tool contract, or saved context? |
+| **Maintainability** | Are names, examples, tests, and session notes clear enough for the next person? |
+| **Evidence** | Do the test results identify the version, inputs, environment, and cases that ran? |
+
+Ask for an assistant's reasoning only where it explains a consequential choice. Ground the review in the source and the test evidence. Keep the run ID and source version with each result, and say when the test set, evaluator, or environment changed.
+
+### Match review depth to the risk
+
+Use a stronger review when a mistake can change customer data, disclose private information, create a financial effect, or affect many journeys. Match the review depth to the consequence, whatever the size of the diff.
+
+| Change type | Review emphasis |
+|---|---|
+| **Wording or example** | Read the rendered response in a normal case and a misunderstood-input case. |
+| **Routing or agent boundary** | Test expected routes, neighboring intents, ambiguity, and fallback behavior. |
+| **Context or handoff** | Check provenance, missing values, conflicting values, privacy, and long-session behavior. |
+| **Tool or workflow write** | Check authorization, confirmation, idempotency, timeout recovery, and read-back. |
+| **Release configuration** | Confirm the target environment, active version, rollback path, and monitoring owner. |
+
+Ask a domain owner to decide policy questions. A coding assistant can show where a decision is needed and present the evidence. It must never invent a business rule to complete a change.
