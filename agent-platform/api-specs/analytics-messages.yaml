@@ -8,8 +8,8 @@ info:
     content is filtered according to the project's PII policy before it is returned, so
     sensitive values may be masked or removed.
 
-    Give either a date range (`fromDate` and `toDate` together) or a list of
-    `sessionIds`.
+    Give a date range (`fromDate` and `toDate` together), a list of `sessionIds`,
+    or the call IDs of voice calls (`externalCallIds` or `callSids`).
 
     For paging, prefer `cursor`: pass the `nextCursor` value from the previous response.
     `offset` also works, and `skip` is an older name for `offset` that is still
@@ -89,8 +89,10 @@ info:
     member, as in standard JWE, so JOSE libraries (for example `jose` for Node.js)
     can produce and open these envelopes directly. Pin the algorithms when
     decrypting: key management `RSA-OAEP-256`, content encryption `A256GCM`.
+  x-payload-encryption:
+    runtime-capability: 'GET /health -> capabilities.payloadEncryption: 2'
 servers:
-  - url: https://agents.example.com
+  - url: https://{host}
     variables: { host: { default: runtime.example.com } }
 security: [{ ApiKeyAuth: [] }]
 tags: [{ name: Messages }]
@@ -113,12 +115,31 @@ paths:
         - $ref: '#/components/parameters/FromDate'
         - $ref: '#/components/parameters/ToDate'
         - $ref: '#/components/parameters/SessionIds'
-        - name: channelUIds
+        - $ref: '#/components/parameters/ExternalCallIds'
+        - $ref: '#/components/parameters/CallSids'
+        - name: channelUId
           in: query
           description: |
-            Filter to messages from specific end users, using the identity recorded for
-            them on the channel. Pass up to 100 values, comma-separated or by repeating
-            the parameter.
+            Filter to the messages of specific end users by their channel user identifier
+            (`channelUId`): the email address, phone number, SIP address or provider id
+            the channel supplied for them, or the `externalUserId` an integrator passed
+            when the session started. Values are normalized before matching, so
+            `Priya@Example.com` and `priya@example.com` match, and `+1 (415) 555-0100`,
+            `14155550100` and `tel:+14155550100` match the same phone number. Phone
+            numbers must include the country code; a national number without one matches
+            only as a provider id. Matching is exact on the whole identifier (no partial
+            or prefix match). A match is evidence, not proof of identity: numbers and
+            emails get reassigned. Pass up to 100 values, comma-separated or by repeating
+            the parameter. Prefer the POST operation for identifier lookups: GET query
+            strings can be recorded by proxies and access logs.
+
+            Changed in this release: `channelUId` no longer matches the internal contact,
+            customer or anonymous identifiers recorded on the session. Sessions created
+            before this feature have no `channelUId` and cannot be found by it; use
+            `sessionIds` or a date range for them. An empty or invalid value returns 400
+            `INVALID_CHANNEL_UID`.
+            Returns every message of each matching session. The former `channelUIds`
+            alias is no longer accepted (400 `INVALID_QUERY_PARAMETER`).
           style: form
           explode: false
           schema:
@@ -310,7 +331,7 @@ paths:
                     channel: web_chat
                     sourceChannel: web_chat
                     environment: production
-                    channelUId: contact-123
+                    channelUId: p***@example.com
                     traceDimensions:
                       accountTier: gold
                     traceId: trace-123
@@ -330,7 +351,7 @@ paths:
                     channel: web_chat
                     sourceChannel: web_chat
                     environment: production
-                    channelUId: contact-123
+                    channelUId: p***@example.com
                     traceDimensions: { accountTier: gold }
                     traceId: trace-124
                     attachmentIds: []
@@ -463,13 +484,64 @@ components:
     FromDate:
       name: fromDate
       in: query
-      description: Inclusive ISO 8601 timestamp. Required with `toDate` unless `sessionIds` is supplied.
+      description: |
+        Inclusive ISO 8601 timestamp. Required with `toDate` unless `sessionIds`,
+        `externalCallIds` or `callSids` is supplied. When sent with call IDs, the range
+        still applies (AND).
       schema: { type: string, format: date-time }
     ToDate:
       name: toDate
       in: query
-      description: Exclusive ISO 8601 timestamp. Required with `fromDate` unless `sessionIds` is supplied.
+      description: |
+        Exclusive ISO 8601 timestamp. Required with `fromDate` unless `sessionIds`,
+        `externalCallIds` or `callSids` is supplied.
       schema: { type: string, format: date-time }
+    ExternalCallIds:
+      name: externalCallIds
+      in: query
+      description: |
+        Filter to the voice calls with these upstream call IDs — the ID the contact
+        center or carrier put in the SIP INVITE (for example a Genesys conversation ID,
+        a Five9 call ID or a Cisco GUID). The ID is taken from the first header present
+        in this order: `X-ExternalCallId`, `X-ConversationId`, `Cisco-Guid`,
+        `X-Inin-Cnv`, `X-Five9SessionId`, `X-Twilio-CallSid`, `X-MasterContactId`,
+        `X-InContact-ContactId`, `X-Avaya-UCID`, `P-Genesys-ConnId`,
+        `X-Genesys-CallUUID`, `X-User-To-User`, `User-to-User` (the part before the
+        first `;`), `X-CID`.
+
+        Pass 1 to 100 values, comma-separated or by repeating the parameter. Each value
+        is 1 to 256 characters after trimming. Matching ignores case. Can be used
+        instead of a date range, and is ANDed with every other filter, including
+        `callSids`. An empty value, an empty entry, a value over 256 characters or more
+        than 100 values returns `400 INVALID_EXTERNAL_CALL_IDS`; the values are never
+        returned. Works when the project's exposure config disables the `identity`
+        field group. Only calls made after this filter shipped carry the external call
+        ID; find older calls with `callSids`.
+      style: form
+      explode: false
+      schema:
+        type: array
+        minItems: 1
+        maxItems: 100
+        items: { type: string, minLength: 1, maxLength: 256 }
+    CallSids:
+      name: callSids
+      in: query
+      description: |
+        Filter to the voice calls with these KoreVG call SIDs. Pass 1 to 100 values,
+        comma-separated or by repeating the parameter. Each value is 1 to 256
+        characters after trimming and is matched exactly. Can be used instead of a date
+        range, and is ANDed with every other filter. Invalid input returns
+        `400 INVALID_CALL_SIDS`; the values are never returned. Works when the
+        project's exposure config disables the `identity` field group, and also finds
+        calls recorded before this filter shipped.
+      style: form
+      explode: false
+      schema:
+        type: array
+        minItems: 1
+        maxItems: 100
+        items: { type: string, minLength: 1, maxLength: 256 }
     SessionIds:
       name: sessionIds
       in: query
@@ -558,6 +630,8 @@ components:
           messageOrder,
           orderingVersion,
           agentName,
+          externalCallId,
+          callSid,
           timestamp,
           createdAt,
           updatedAt,
@@ -671,10 +745,12 @@ components:
           type: [string, 'null']
           enum: [dev, staging, production, working-copy, null]
         channelUId:
-          {
-            type: [string, 'null'],
-            description: Resolved end-user identity for the channel session.,
-          }
+          type: [string, 'null']
+          description: |
+            The normalized channel user identifier of the message's session (for example
+            `priya@example.com` or `+14155550100`). Null when the session has none or was
+            created before this field existed. Changed: this previously returned an
+            internal identifier. This is personal data. Masking is planned for a later release, together with role-based access to unmasked values.
         traceDimensions:
           type: [object, 'null']
           additionalProperties: { type: string }
@@ -724,6 +800,18 @@ components:
           type: [string, 'null']
           description: |
             The agent that produced this message. Null for user messages.
+        externalCallId:
+          type: [string, 'null']
+          description: |
+            The upstream call ID of the voice call this message belongs to, as received
+            in the SIP INVITE (see the `externalCallIds` parameter). Null for non-voice
+            sessions, calls without such a header, and calls recorded before this field
+            shipped. Use it with `callSid` to group messages by call.
+        callSid:
+          type: [string, 'null']
+          description: |
+            The KoreVG call SID of the voice call this message belongs to. Null for
+            non-voice sessions.
         timestamp:
           type: string
           format: date-time
@@ -811,6 +899,30 @@ components:
                 minLength: 1
             - type: string
               minLength: 1
+        externalCallIds:
+          description: |
+            Same as the `externalCallIds` query parameter of the GET operation. Send a JSON
+            array or a comma-separated string. An empty array returns
+            `400 INVALID_EXTERNAL_CALL_IDS`.
+          example: ['ABC-123']
+          anyOf:
+            - type: array
+              minItems: 1
+              maxItems: 100
+              items: { type: string, minLength: 1, maxLength: 256 }
+            - type: string
+              minLength: 1
+        callSids:
+          description: |
+            Same as the `callSids` query parameter of the GET operation. Send a JSON array
+            or a comma-separated string. An empty array returns `400 INVALID_CALL_SIDS`.
+          anyOf:
+            - type: array
+              minItems: 1
+              maxItems: 100
+              items: { type: string, minLength: 1, maxLength: 256 }
+            - type: string
+              minLength: 1
         callerNumber:
           description: |
             Same as the `callerNumber` query parameter of the GET operation. Send a JSON
@@ -828,9 +940,10 @@ components:
                 maxLength: 512
             - type: string
               minLength: 1
-        channelUIds:
-          description: Same as the `channelUIds` query parameter of the GET operation. Send a
-            JSON array, or a comma-separated string as in the query string.
+        channelUId:
+          description: Same as the `channelUId` query parameter of the GET operation. Send a
+            JSON array (recommended for identifier lookups), or a comma-separated string.
+            Each array entry is one value and is never split on commas.
           anyOf:
             - type: array
               maxItems: 100
@@ -838,6 +951,7 @@ components:
               items:
                 type: string
                 minLength: 1
+                maxLength: 512
             - type: string
               minLength: 1
         channel:
@@ -1065,7 +1179,8 @@ components:
     BadRequest:
       description: |
         The request could not be understood. Common causes: an invalid or one-sided date
-        range, neither a date range nor `sessionIds` supplied, more than one of
+        range, none of a date range, `sessionIds`, `externalCallIds` or `callSids`
+        supplied (`MISSING_REQUIRED_FILTER`), more than one of
         `cursor`, `offset`, and `skip` used together, too many filter values, or a
         date-range query that would span more than 10,000 sessions. The `error.code`
         says which.
@@ -1083,6 +1198,11 @@ components:
         than 512 characters. Any caller format, including bare
         digits and national formats, is accepted. The message names the position of
         the offending entry and never echoes it.
+
+        `INVALID_EXTERNAL_CALL_IDS` / `INVALID_CALL_SIDS`: the parameter is present but
+        is empty, has an empty entry, a non-string entry, an entry longer than 256
+        characters after trimming, or more than 100 unique values. The values are never
+        echoed.
       content:
         {
           application/json:
@@ -1104,7 +1224,8 @@ components:
       description: |
         The key lacks `analytics:read` for its bound project, or (`CALLER_NUMBER_LOOKUP_DISABLED`)
         the request used `callerNumber` while the project's reporting exposure config
-        disables the `identity` field group.
+        disables the `identity` field group. `externalCallIds` and `callSids` are not
+        affected by that setting.
       content:
         {
           application/json:

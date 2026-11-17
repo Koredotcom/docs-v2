@@ -1,0 +1,52 @@
+---
+title: Analytics API overview
+description: Use the analytics API to retrieve project-scoped session summaries, conversation messages, trace events, and LLM calls, with optional payload encryption.
+sidebarTitle: Analytics APIs
+---
+
+Use the analytics API to retrieve data about the conversations in a project. You can list session summaries, conversation messages, agent trace events, and individual LLM calls with their token counts, latency, and cost.
+
+## Prerequisites
+
+- A Platform Key bound to the project you query. Send it in the `x-api-key` header.
+- The `session:read` permission on the key for session summaries. The other endpoints need `analytics:read`.
+- The project ID.
+- For payload encryption, a Platform Key bound to exactly one project, with encryption turned on under **Settings > API Keys > Platform Keys** in Studio.
+
+## Workflow and endpoint groups
+
+The API returns four types of data. Each type has a GET article and a POST article that accepts an encrypted request body. Use the groups in this order to investigate sessions, or call any endpoint on its own.
+
+| Sub-group             | What to do                                                                                            | GET article                                                                                      | POST article                                                                                                                              |
+|:----------------------|:------------------------------------------------------------------------------------------------------|:-------------------------------------------------------------------------------------------------|:------------------------------------------------------------------------------------------------------------------------------------------|
+| Sessions              | List session summaries for a date range. Filter by channel, status, environment, or containment type. | [List session summaries](/agent-platform/api-reference/analytics-list-session-summaries)         | [List session summaries using JWE payload](/agent-platform/api-reference/analytics-list-session-summaries-with-encrypted-payload)         |
+| Conversation messages | List the messages for the session IDs of interest.                                                    | [List conversation messages](/agent-platform/api-reference/analytics-list-conversation-messages) | [List conversation messages using JWE payload](/agent-platform/api-reference/analytics-list-conversation-messages-with-encrypted-payload) |
+| Trace events          | List the trace events for the same sessions to see how agents reached each result.                    | [List trace events](/agent-platform/api-reference/analytics-list-traces)                         | [List trace events using JWE payload](/agent-platform/api-reference/analytics-list-traces-with-encrypted-payload)                         |
+| LLM calls             | List LLM calls to review model, token, latency, and cost details for each call.                       | [List LLM calls](/agent-platform/api-reference/analytics-list-llm-calls)                         | [List LLM calls using JWE payload](/agent-platform/api-reference/analytics-list-llm-calls-with-encrypted-payload)                         |
+
+Use the session IDs from the sessions group to query messages and trace events.
+
+## List of endpoints
+
+All paths start with `/api/public/analytics/projects/{projectId}`.
+
+| Use case              | Help article                                                                                                                         | Purpose                                                                                              | Permission     |
+|:----------------------|:-------------------------------------------------------------------------------------------------------------------------------------|:-----------------------------------------------------------------------------------------------------|:---------------|
+| Session summaries     | [List session summaries](/agent-platform/api-reference/analytics-list-session-summaries)                                             | Get one row per session with its channel, outcome, message count, token usage, and cost.             | `session:read` |
+|                       | [List session summaries using JWE payload](/agent-platform/api-reference/analytics-list-session-summaries-with-encrypted-payload)    | Get the same data with the parameters in an encrypted request body.                                  | `session:read` |
+| Conversation messages | [List conversation messages](/agent-platform/api-reference/analytics-list-conversation-messages)                                     | Get the messages exchanged in conversations, in time order, with the project's PII policy applied.   | `analytics:read` |
+|                       | [List conversation messages using JWE payload](/agent-platform/api-reference/analytics-list-conversation-messages-with-encrypted-payload) | Get the same data with the parameters in an encrypted request body.                             | `analytics:read` |
+| Trace events          | [List trace events](/agent-platform/api-reference/analytics-list-traces)                                                             | Get LLM calls, tool calls, agent decisions, and failures, grouped by trace.                          | `analytics:read` |
+|                       | [List trace events using JWE payload](/agent-platform/api-reference/analytics-list-traces-with-encrypted-payload)                    | Get the same data with the parameters in an encrypted request body.                                  | `analytics:read` |
+| LLM calls             | [List LLM calls](/agent-platform/api-reference/analytics-list-llm-calls)                                                             | Get one record per LLM call with its model, provider, token counts, latency, and cost.               | `analytics:read` |
+|                       | [List LLM calls using JWE payload](/agent-platform/api-reference/analytics-list-llm-calls-with-encrypted-payload)                    | Get the same data with the parameters in an encrypted request body.                                  | `analytics:read` |
+
+## Behavior to know
+
+- Different filters combine with AND. Multiple values in the same filter combine with OR.
+- Session summaries and conversation messages accept either a date range (`fromDate` and `toDate`) or a list of `sessionIds`. Trace events and LLM calls need a date range.
+- Trace events and LLM calls return key facts by default. Set `dataMode` to `full` to include the request and response content.
+- A sessions page can hold fewer rows than `limit` so the response stays within 1 MiB. Check `hasMore` instead of assuming a short page is the last one. For conversation messages, use `cursor` for paging.
+- Every endpoint has a POST form on the same path. Send the same parameters as a flat JSON object. Use POST when the parameters must be encrypted, because a GET query string is never encrypted.
+- Request encryption and response encryption are separate settings on the Platform Key. With request encryption on, send a JWE body. With response encryption on, every response after authentication is a JWE, except `401`.
+- Exceeding the tenant request rate limit returns `429`.
