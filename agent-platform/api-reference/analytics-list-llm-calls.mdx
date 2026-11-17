@@ -1,19 +1,32 @@
 ---
 title: List LLM calls
+description: List the individual LLM calls made in a project, with their model, provider, token counts, latency, and cost.
 openapi: "/agent-platform/api-specs/llm-ledger.yaml get /api/public/analytics/projects/{projectId}/llm-ledger"
 ---
 
 <Badge icon="arrow-left" color="gray">[Back to the Analytics APIs overview](/agent-platform/api-reference/analytics-overview)</Badge>
 
-Use this endpoint to retrieve the LLM call ledger for a project. The response contains one record for each individual LLM call, including details such as the model, provider, token usage, latency, and cost. The endpoint doesn't aggregate calls by conversation turn.
+Use this endpoint to retrieve the LLM call ledger for a project. The response contains one record for each individual LLM call, including details such as the model, provider, token usage, latency, and cost. The endpoint doesn't aggregate calls by conversation turn. Each record includes a `traceId` and an `eventId` that you can use with [List trace events](/agent-platform/api-reference/analytics-list-traces) to get the full execution context.
 
 Use the `dataMode` parameter to control the level of detail returned. The default mode returns call-level facts, while `full` additionally includes the exact prompt and response payloads when available.
 
+Authenticate with the `x-api-key` header. The key must be bound to the project you are querying and have the `analytics:read` permission.
+
 The available filtering criteria are:
 
-- Date range — required: `fromDate` and `toDate`. `fromDate` is inclusive, while `toDate` is exclusive.
-- Source: Filter by the source of the LLM call.
-- Source subtype: Further filter calls by source subtype.
-- Model: Filter calls by the LLM model.
-- Provider: Filter calls by the model provider.
-- Other query parameters: The endpoint also supports pagination and sorting, but these control how results are returned rather than which records are included.
+- `fromDate` and `toDate`: Required. `fromDate` is inclusive, while `toDate` is exclusive.
+- `sessionIds`: Filter by specific session IDs; up to 10,000.
+- `channel`: Filter by the exact channel name as stored, such as `web_chat` or `twilio_sms`. Shorthand such as `web` isn't expanded. Design-time calls, such as Studio test calls, have no channel.
+- `channelType`: Filter by the exact transport-specific channel type.
+- `source`: Filter by the part of the platform that made the call, such as `runtime` for live agent traffic or `evals` for evaluation runs. Older spellings are translated.
+- `sourceSubtype`: Filter by the purpose of the call within its source, such as `response_generation` or `guardrails`.
+- `status`: Filter by `success` or `failed`.
+- `model`: Filter by the exact model ID as recorded, such as `gpt-4o`. Calls without a model ID use `unknown`.
+- `provider`: Filter by model provider, such as `openai` or `azure`. Calls without a provider use `unknown`.
+- `environment`: Filter by `development`, `staging`, `production`, or `working-copy`. This endpoint uses `development`, not `dev`. Design-time calls have no environment.
+- `name`: Filter by the exact effective agent name, operation type, or provider fallback.
+- `attributionName`, `attributionType`, `attributionId`, and `attributionScope`: Filter by the credential, auth profile, or other source that the call is attributed to.
+
+All filters other than the date range are optional and match exactly. Filters combine with `AND`. An empty filter value returns `400 INVALID_FILTER`.
+
+Use `sortBy` (`timestamp`, `latencyMs`, `cost`, or `totalTokens`) and `sortOrder` (`asc` by default, or `desc`) to order the results. Use `limit` (1 to 10,000, default 100) and `offset` to page through them. With `dataMode=full`, a page can hold fewer calls than `limit` so the response stays within 1 MiB. Check `hasMore` instead of assuming that a short page is the last one. The `cost` value is an estimate in USD.
