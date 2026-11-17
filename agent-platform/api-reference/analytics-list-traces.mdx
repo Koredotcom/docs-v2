@@ -8,7 +8,7 @@ openapi: "/agent-platform/api-specs/traces.yaml get /api/public/analytics/projec
 
 Use this endpoint to retrieve the execution events recorded while agents run. The response groups events by trace and can include LLM calls, tool calls, agent decisions, and failures. Each event provides execution metadata and, depending on the selected `dataMode`, either summary information or the complete sanitized request and response content.
 
-Use `dataMode=summary` when you need operational information such as the event type, model, token usage, duration, cost, or error status without retrieving the event payloads. Use `dataMode=full` when you need the detailed sanitized request and response content associated with the events.
+Use `dataMode=summary` when you need operational information such as the event type, model, token usage, duration, cost, or error status without retrieving the event payloads. Use `dataMode=full` when you need the detailed sanitized request and response content associated with the events. To also return the response headers of HTTP tool calls, see [Response headers](#response-headers).
 
 Authenticate with the `x-api-key` header. The key must be bound to the project you are querying and have the `analytics:read` permission.
 
@@ -42,6 +42,58 @@ To get the next page, pass the `nextCursor` value from the response as `cursor`,
 - `hasError`: Set to `true` to return only events with errors, `false` to return only events without errors, or omit the parameter to return both.
 
 The `eventTypes` filter accepts up to four categories. The `eventNames` filter accepts up to 20 names. Unsupported event names are ignored rather than rejected and are reported in `meta.unsupportedEventNamesRequested`.
+
+### Response headers
+
+Set `includeResponseHeaders` to `true` to return the response headers of HTTP tool calls. The headers appear under `eventData.payloadData.responseHeaders`. The default is `false`.
+
+- The parameter requires `dataMode=full`.
+- Header names are lowercase. Repeated headers are joined with a comma and a space.
+- Credential headers, such as `authorization`, `set-cookie`, and `x-api-key`, keep their name. Their value is `[REDACTED]`.
+- When the call was retried, the headers come from the final attempt.
+- `responseHeaders` is an empty object when the event has no headers. This happens when the tool is not an HTTP tool, no response arrived, or the event was recorded before header capture existed.
+- `responseHeadersTruncated` is `true` when headers were dropped to keep the stored names and values within 16 KB.
+
+The parameter accepts `true`, `false`, `1`, or `0`. Other values and invalid combinations return a `400` error:
+
+| Error code | Cause |
+|:-----------|:------|
+| `INVALID_PARAM_COMBINATION` | `includeResponseHeaders=true` with `dataMode=summary`, or without `dataMode`. |
+| `INVALID_INCLUDE_RESPONSE_HEADERS` | A value other than `true`, `false`, `1`, or `0`. |
+
+### Workflow runs
+
+When a tool call starts a workflow, the event includes the run in `eventData.workflowRun`. This applies to tool events where `toolType` is `workflow`, including `tool.call.failed` events. The object lists the steps in the order they ran. It doesn't include step inputs or outputs.
+
+| Field | Description |
+|:------|:------------|
+| `executionId` | The ID of the run. |
+| `workflowId` | The ID of the workflow. |
+| `workflowName` | The name of the workflow. |
+| `status` | The status of the run, such as `running`, `completed`, or `failed`. |
+| `startedAt`, `completedAt` | The start and end timestamps of the run. |
+| `durationMs` | The duration of the run in milliseconds. |
+| `stepAvailability` | `complete`, or `partial` when some steps aren't available yet. The `steps` list then holds only the available steps. |
+| `stepsTruncated` | `true` when the run has more than 200 steps. Only the first 200 are listed. |
+| `steps` | The top-level steps of the run. Steps that a loop runs for each item aren't listed. |
+
+Each item in `steps` has the following fields:
+
+| Field | Description |
+|:------|:------------|
+| `name` | The name of the step, as written in the workflow. |
+| `stepId` | The ID of the step. |
+| `nodeType` | The kind of step, such as `http`, `function`, or `email`. |
+| `status` | `running`, `completed`, `failed`, `rejected`, `skipped`, `cancelled`, or a `waiting_` status such as `waiting_approval`. |
+| `startedAt`, `completedAt` | The start and end timestamps of the step. |
+| `durationMs` | The duration of the step in milliseconds. |
+| `error` | The `code` and `message` of a failed step. The message has personal data removed under the project's PII settings. |
+
+`workflowRun` is absent when the run could not be loaded. The events are still complete. In that case, `meta.warnings` explains why.
+
+### Warnings
+
+`meta.warnings` is present only when part of the page could not be served in full. Each warning has a `code` and a `message`. The only code is `WORKFLOW_STEPS_UNAVAILABLE`. It means some workflow tool calls are returned without `workflowRun`. The events themselves are complete.
 
 Use `GET` when:
 
