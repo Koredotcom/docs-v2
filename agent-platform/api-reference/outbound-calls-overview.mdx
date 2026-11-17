@@ -3,7 +3,7 @@ title: Introduction to outbound dialing API
 sidebarTitle: Overview
 ---
 
-These APIs let an agent make voice calls to customers and manage incoming voice calls. The API supports a proactive customer-engagement requirement: 
+These APIs let an application place outbound voice calls to customers and track them until they end. The API supports a proactive customer-engagement requirement:
 
 - An external event or an app triggers a call.
 - The voice agent conducts the conversation for answered calls.
@@ -16,6 +16,36 @@ A few specific use cases are:
 - Send delivery notification or seek confirmation.
 - Call as a follow-up of a user's contact request.
 
-**Prerequisite** to use this API is an outbound-capable KoreVG [voice channel](/agent-platform/channels#voice-channels).
+Pre-configured channels manage the telephony operations, infrastructure, and provider details. It makes the API simple to use by focusing on outcomes such as answered, busy, not answered, or failed calls. After a call is answered, it is handed over to an Artemis agent as a normal agent conversation. It uses idempotency to prevent unnecessary repeat calls.
 
-Pre-configured channels manage the telephony operations, infrastructure, and provider details. It makes the API simple to use by focusing on outcomes such as answered, busy, not answered, or failed calls. After a call is answered, it is handled over to an Artemis agent as a normal agent conversation. It uses idempotency to prevent unnecessary repeat calls.
+## Prerequisites
+
+- An outbound-capable KoreVG [voice channel](/agent-platform/channels#voice-channels).
+- A project-bound Platform API key (`abl_…`). Send it in the `x-api-key` header.
+- The `outbound_calls.initiate` scope on the key to [place](/agent-platform/api-reference/outbound-calls-place) and [terminate](/agent-platform/api-reference/outbound-calls-terminate) calls. The `outbound_calls.read` scope to look up, list, summarize, search, and stream calls.
+
+## Call lifecycle
+
+A call moves through these phases in order: `accepted`, `dialing`, `ringing`, `in_progress`, and `terminal`. A call that connects creates a session. When a call is `terminal`, its `outcome` shows how it ended: `completed`, `busy`, `rejected`, `no_answer`, `machine`, `failed`, `canceled`, or `expired`.
+
+Placing a call returns at once with the phase `accepted`. Track the call by [looking it up](/agent-platform/api-reference/outbound-calls-id), by [listing](/agent-platform/api-reference/outbound-calls-listing) or [searching](/agent-platform/api-reference/outbound-calls-search) the call log, or by subscribing to its [event stream](/agent-platform/api-reference/outbound-calls-events).
+
+## List of endpoints
+
+All paths start with `/api/v1/project/{projectSlug}/{env}/outbound-calls`.
+
+| Use case | Help article                                                                       | Purpose                                                                                     | Scope                     |
+|:---------|:-----------------------------------------------------------------------------------|:--------------------------------------------------------------------------------------------|:--------------------------|
+| Place    | [Place outbound calls](/agent-platform/api-reference/outbound-calls-place)         | Place an outbound call through a channel connection. The call returns once it is accepted.  | `outbound_calls.initiate` |
+| Track    | [Look up a call by ID](/agent-platform/api-reference/outbound-calls-id)            | Get one call's phase, outcome, status history, and session ID.                              | `outbound_calls.read`     |
+|          | [Events of outbound calls](/agent-platform/api-reference/outbound-calls-events)    | Stream the status changes of one call as server-sent events.                                | `outbound_calls.read`     |
+|          | [List outbound calls](/agent-platform/api-reference/outbound-calls-listing)        | List the project's outbound calls with filters and cursor pagination.                       | `outbound_calls.read`     |
+|          | [Search outbound calls](/agent-platform/api-reference/outbound-calls-search)       | Find calls by the real destination number or SIP URI without putting it in a URL.           | `outbound_calls.read`     |
+| Report   | [Summarize outbound calls](/agent-platform/api-reference/outbound-calls-summary)   | Get total, answered, in-flight, machine-detected, and per-outcome counts for a time window. | `outbound_calls.read`     |
+| Stop     | [Terminate outbound calls](/agent-platform/api-reference/outbound-calls-terminate) | Hang up a call that has not ended.                                                          | `outbound_calls.initiate` |
+
+## Behavior to know
+
+- Each request to place a call needs an `idempotencyKey`. Repeating the same request returns the original call. Reusing the key with a different body returns `409`.
+- Responses always mask the destination number. To find a call by number, use the search endpoint.
+- A call that belongs to a different project returns `404`, not `403`.
