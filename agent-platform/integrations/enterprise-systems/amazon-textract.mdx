@@ -1,0 +1,132 @@
+---
+title: Amazon Textract integration
+sidebarTitle: Amazon Textract
+---
+
+<Badge icon="arrow-left" color="gray">[Back to list of integrations](/agent-platform/integrations/enterprise-systems)</Badge>
+
+Use the Amazon Textract integration to let agents and workflows extract text, tables, forms, expenses, and ID fields from documents.
+
+| Authentication | Actions | Workflow triggers |
+| --- | --- | --- |
+| AWS credentials | [5](#supported-actions) | None |
+
+## Supported actions
+
+Actions are Amazon Textract operations that an agent runs as Action Tools during a conversation. You can also run them from an [Integration node](/agent-platform/workflows#integration-node) in a workflow.
+
+| Action | Use it to |
+| --- | --- |
+| [Analyze Document](#analyze-document) | Extract text, tables, forms, signatures, or layout from a single-page document. |
+| [Extract Document (Async)](#extract-document-async) | Extract from multi-page PDF or TIFF files, up to 3,000 pages. |
+| [Detect Document Text](#detect-document-text) | Extract raw text from a single-page document. |
+| [Analyze Expense](#analyze-expense) | Extract fields from receipts and invoices. |
+| [Analyze ID](#analyze-id) | Extract fields from US passports and driver's licenses. |
+
+## Prerequisites
+
+- An S3 bucket in the same Region as Textract. Artemis stages files there and deletes them after extraction.
+
+## Set up the integration
+
+<Steps>
+  <Step title="Prepare AWS credentials">
+    Create an IAM user with access keys, and grant it Textract and S3 access on the staging folder.
+
+    <Accordion title="Sample permissions policy">
+```json
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": [
+        "textract:AnalyzeDocument",
+        "textract:DetectDocumentText",
+        "textract:AnalyzeExpense",
+        "textract:AnalyzeID",
+        "textract:StartDocumentAnalysis",
+        "textract:GetDocumentAnalysis"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Effect": "Allow",
+      "Action": ["s3:PutObject", "s3:GetObject", "s3:DeleteObject"],
+      "Resource": "arn:aws:s3:::<bucket>/<folder-prefix>/*"
+    }
+  ]
+}
+```
+    </Accordion>
+  </Step>
+  <Step title="Create the auth profile">
+    In **Integrations**, select **Amazon Textract** > **Connect**. On **Project Auth Profiles**, select **New Profile** > **Integration Profile** > **Amazon Textract** > **Continue**. Configure the fields, and select **Create Profile**.
+
+    | Field | Value |
+    | --- | --- |
+    | **AWS Region** | Region of Textract and the bucket, for example `us-east-1`. Both must match. |
+    | **S3 Bucket** | Bucket for staging files. |
+    | **Folder Prefix** | Folder in the bucket. Use letters, numbers, slashes, hyphens, and underscores. |
+    | **Access Key ID**, **Secret Access Key** | From the IAM user. |
+    | **Session Token** | Optional. Required only for temporary STS credentials. |
+  </Step>
+  <Step title="Create the action tool">
+    In **Tools**, select **New Tool** > **Action** > **Amazon Textract** > **Continue**. Select the **Action** and **Auth Profile**, set parameter defaults (leave a value empty for the agent to supply at runtime), and select **Create Tool**. Then [assign the tool to an agent](/agent-platform/tools/actions#assign-an-action-to-an-agent).
+  </Step>
+</Steps>
+
+## Action reference
+
+<AccordionGroup>
+  <Accordion title="Analyze Document" id="analyze-document">
+    | Parameter | Type | Description |
+    | --- | --- | --- |
+    | `fileUrl` | string | HTTPS URL of a JPEG, PNG, PDF, or TIFF. |
+    | `featureTypes` | array | Features to extract. Select at least one. Default: `Tables`. |
+    | `queries` | array | Natural-language questions. Required when `featureTypes` includes Queries. |
+    | `timeout` | number | Maximum seconds, from 10 to 180. Default: 60. |
+  </Accordion>
+  <Accordion title="Extract Document (Async)" id="extract-document-async">
+    | Parameter | Type | Description |
+    | --- | --- | --- |
+    | `fileUrl` | string | HTTPS URL of a PDF or TIFF. |
+    | `featureTypes` | array | Features to extract. Default: `Tables`. |
+    | `queries` | array | Required when `featureTypes` includes Queries. |
+    | `timeout` | number | Maximum seconds, from 30 to 900. Default: 120. |
+  </Accordion>
+  <Accordion title="Detect Document Text" id="detect-document-text">
+    | Parameter | Type | Description |
+    | --- | --- | --- |
+    | `fileUrl` | string | HTTPS URL of a JPEG, PNG, PDF, or TIFF. |
+    | `timeout` | number | Maximum seconds, from 10 to 180. Default: 60. |
+  </Accordion>
+  <Accordion title="Analyze Expense" id="analyze-expense">
+    | Parameter | Type | Description |
+    | --- | --- | --- |
+    | `fileUrl` | string | HTTPS URL of a JPEG, PNG, or PDF. |
+    | `timeout` | number | Maximum seconds, from 10 to 180. Default: 60. |
+  </Accordion>
+  <Accordion title="Analyze ID" id="analyze-id">
+    | Parameter | Type | Description |
+    | --- | --- | --- |
+    | `fileUrl` | string | HTTPS URL of the front of the document (JPEG or PNG). |
+    | `backUrl` | string | Back of a driver's license. |
+    | `timeout` | number | Maximum seconds, from 10 to 180. Default: 60. |
+  </Accordion>
+</AccordionGroup>
+
+## Troubleshoot common issues
+
+| Issue | Resolution |
+| --- | --- |
+| `AccessDeniedException` | Add the missing Textract or S3 action to the IAM policy. |
+| `InvalidS3ObjectException` or a Region error | Use the same Region for Textract and the bucket. |
+| `UnsupportedDocumentException` | Check the file type, and use **Extract Document (Async)** for multi-page files. |
+| Extraction times out | Increase `timeout`, or switch to **Extract Document (Async)**. |
+
+{{related}}
+
+- [Auth profiles](/agent-platform/administration/integrations-settings#auth-profiles)
+- [Action Tools](/agent-platform/tools/actions)
+- [Amazon Textract Developer Guide](https://docs.aws.amazon.com/textract/latest/dg/what-is.html)
