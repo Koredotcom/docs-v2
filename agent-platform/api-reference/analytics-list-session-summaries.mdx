@@ -6,23 +6,123 @@ openapi: "/agent-platform/api-specs/sessions.yaml get /api/public/analytics/proj
 
 <Badge icon="arrow-left" color="gray">[Back to the Analytics APIs overview](/agent-platform/api-reference/analytics-overview)</Badge>
 
-Use this endpoint to retrieve session-level analytics for a project. Each result represents one conversation session and includes summary information such as the channel, environment, status, containment outcome, message and trace-event counts, token usage, cost, and session duration. The response doesn't include the individual messages or trace details. Use [List conversation messages](/agent-platform/api-reference/analytics-list-conversation-messages) and [List trace events](/agent-platform/api-reference/analytics-list-traces) to retrieve those details.
+Use this endpoint to retrieve session-level analytics for a project. Each result represents one conversation session and includes summary information such as the source, channel, channel type, environment, status, containment outcome, disposition code, message and trace-event counts, token usage, cost, session duration, and voice call quality. The response doesn't include the individual messages or trace details. Use [List conversation messages](/agent-platform/api-reference/analytics-list-conversation-messages) and [List trace events](/agent-platform/api-reference/analytics-list-traces) to retrieve those details.
 
 Authenticate with the `x-api-key` header. The key must be bound to the project you are querying and have the `session:read` permission.
+
+<Note>Without a `source` filter, this endpoint returns only `user_initiated` sessions, which are real end-user sessions. Earlier versions returned sessions of every source, including evaluation runs, Studio debug chats, workflow runs, synthetic traffic, and Insights demo data. Send `source=all` to get every source. The `channel` filter also changed. See [Source](#source) and [Channel and channel type](#channel-and-channel-type).</Note>
 
 It provides the following filters:
 
 - `fromDate`: Inclusive start timestamp.
 - `toDate`: Exclusive end timestamp.
 - `sessionIds`: Filter by specific session IDs; up to 10,000.
-- `containmentType`: Filter by how the session was resolved, such as `contained_resolved`, `contained_partial`, `escalated`, or `abandoned`. Values are case-sensitive.
+- `containmentType`: Filter by how the session was resolved, such as `contained_resolved`, `contained_partial`, `escalated`, `abandoned`, or `failed`. Values are case-sensitive.
 - `environment`: Filter by environment: `dev`, `staging`, `production`, or `working-copy`. Use `dev`, not `development`.
-- `channelUId`: Filter by the end-user identity recorded on the channel.
-- `callerNumber`: Filter by caller number or caller identity.
-- `channel`: Filter by the channel through which the conversation originated. Shorthand works, so `web`, `sdk_web`, and `web_chat` all return the same web chat sessions. A voice channel such as `voice_pipeline` returns all voice sessions.
+- `channelUId`: Filter by the channel identifier of the end user, such as an email address or phone number. Up to 100 values. See [Filter by end user](#filter-by-end-user).
+- `callerNumber`: Filter by the caller number (ANI) or provider caller ID. Up to 100 values. See [Filter by caller number](#filter-by-caller-number).
+- `channel`: Filter by the exact channel ID the session entered through, such as `slack`, `voice_pipeline`, or `web_chat`. Up to 50 channels. The filter doesn't group channels into families. See [Channel and channel type](#channel-and-channel-type).
+- `channelType`: Filter by the type of channel: `messaging`, `voice`, `sdk`, `webhook`, `protocol`, or `workflow`. For example, `channelType=voice` returns every voice session.
+- `source`: Filter by why the session exists, such as `user_initiated`, `workflow`, `eval`, `synthetic`, `debug`, or `demo_insights`. The default is `user_initiated`. Send `all` for every source. See [Source](#source).
 - `traceDimensions[key]`: Filter by custom session dimensions and their values.
 - `status`: Filter by session state, such as `active`, `idle`, `ended`, `completed`, `escalated`, or `abandoned`. Pass a single value. The value `failed` is not accepted as a filter.
+- `dispositionCode`: Return only sessions with this wrap-up code, which the human agent chose in after-contact work. Pass a single value, up to 200 characters. The match is exact and case-sensitive. Use the code exactly as it appears in `dispositionCode` on a returned session.
 
 You must provide either `fromDate` and `toDate` together, or `sessionIds`. All other filters are optional. Multiple filters are combined with `AND` logic; multiple values within a filter are combined with `OR` logic.
 
 Use `limit` (1 to 10,000, default 100) and `offset` to paginate through the results. A page can hold fewer sessions than `limit` so the response stays within 1 MiB. Check `hasMore` instead of assuming that a short page is the last one.
+
+### Source
+
+The `source` filter says why a session exists. Pass one or more values, comma-separated or by repeating the parameter, up to 100. Matching ignores case and surrounding spaces.
+
+- `user_initiated`: Real end-user sessions. This is the default when you omit `source` or send an empty value.
+- `workflow`: Workflow runs.
+- `eval`: Evaluation runs.
+- `synthetic`: Synthetic traffic.
+- `debug`: Studio debug chats.
+- `demo_insights`: Insights demo data.
+- `all`: Every source. You can't combine `all` with another value.
+- `production`: A legacy name for `user_initiated`. Send `user_initiated` in new calls.
+
+Filtering on `user_initiated` also returns sessions stored with the older value `production` or with no source. A value outside this list returns `400 INVALID_SOURCE`, and the message lists the allowed values.
+
+### Channel and channel type
+
+The `channel` filter matches the exact channel ID. Each ID also matches the older stored spellings of the same ID. For example, `channel=web_chat` also matches sessions stored as `webchat`. The filter doesn't group channels into families. `channel=voice_pipeline` returns only voice-pipeline sessions. Use `channelType` to filter by family. For example, `channelType=voice` returns every voice session.
+
+Sessions created before v1.10.0 aren't backfilled. They keep the coarse channel they were stored with, which is `web_chat`, `voice`, or `api`, and the `channel` filter matches only that value. For example, `channel=voice` returns only older sessions stored as `voice`. These sessions report a `channelType` only when their channel names one. A session stored as `web_chat` or `api` matches no `channelType`, because several channel types reported those values.
+
+Pass up to six `channelType` values. A value outside the list returns `400 INVALID_CHANNEL_TYPE`, and the message lists the allowed values.
+
+### Filter by end user
+
+Use `channelUId` to find the sessions of specific end users. The value is the identifier that the channel supplied for the user: an email address, phone number, SIP address, or provider ID. It can also be the `externalUserId` that an integrator passed when the session started.
+
+- Pass up to 100 values, comma-separated or by repeating the parameter.
+- Values are normalized before matching. `Priya@Example.com` and `priya@example.com` match. `+1 (415) 555-0100`, `14155550100`, and `tel:+14155550100` match the same phone number.
+- Phone numbers must include the country code. A national number without one matches only as a provider ID.
+- Matching is exact on the whole identifier. Partial and prefix matches aren't supported.
+- A match is evidence, not proof of identity. Phone numbers and email addresses are reassigned over time.
+- `channelUId` no longer matches the internal contact, customer, or anonymous identifiers recorded on the session.
+- Sessions created before this feature have no `channelUId`. Find them with `sessionIds` or a date range.
+
+For identifier lookups, use [List session summaries using JWE payload](/agent-platform/api-reference/analytics-list-session-summaries-with-encrypted-payload). Proxies and access logs can record a GET query string. An empty or invalid value returns `400 INVALID_CHANNEL_UID`.
+
+### Filter by caller number
+
+Use `callerNumber` to find the sessions of specific callers. The value is the caller number (ANI) or the provider caller ID.
+
+- Pass up to 100 values, comma-separated or by repeating the parameter. Spaces after commas are allowed. The limit counts entries before duplicates are merged. A value that contains a comma can't be queried, because commas always separate values.
+- Paste the value in any format that the provider, a transcript, or a call detail record shows. The API cleans the value to the same match key that the platform stored at call time.
+- Phone-like values, including `sip:` and `tel:` URIs, become E.164 numbers. The API removes spaces, dashes, dots, slashes, parentheses, invisible characters, and a national trunk `(0)` after the country code. For example, `+44 (0)20 7946 0958` matches `+442079460958`.
+- A value of 7 to 15 bare digits is treated as an international number. For example, `919876543210` matches `+919876543210`.
+- Digits written in a national format keep their digits. For example, `098765 43210` matches `09876543210`.
+- Other values, such as softphone usernames, SDK IDs, or `Anonymous`, match as cleaned text. `Anonymous` matches every withheld-number call in the time range.
+- Matching is exact and case-sensitive. `anonymous` doesn't match `Anonymous`, and `+14155550100 ext 12` doesn't match `+14155550100`. Non-ASCII digits aren't converted to ASCII.
+- The API doesn't infer the country. `9876543210` doesn't match a stored `+919876543210`, and it doesn't convert `00` or `011` dial prefixes. Send the full international form.
+- In a URL, send `+` as `%2B`, or use the POST form. An unencoded `+` decodes to a space, which gives the same match.
+- The filter matches only sessions whose summary was written after the filter was released. For earlier sessions, use [List conversation messages](/agent-platform/api-reference/analytics-list-conversation-messages). Playground and Studio debug sessions never match.
+
+The API never returns the value in a response. A request that uses `callerNumber` returns `403 CALLER_NUMBER_LOOKUP_DISABLED` when the project's reporting exposure configuration disables the `identity` field group.
+
+### Response fields
+
+Each session in the response includes these fields:
+
+| Field | Description |
+|:------|:------------|
+| `source` | Why the session exists. Sessions stored with the older value `production` or with no source report `user_initiated`. Accept values added later. |
+| `channel` | The exact channel as stored. New sessions report the precise channel ID, such as `slack` or `sdk_web`. Older sessions report the coarse value, such as `web_chat`. It is empty when no channel was recorded. |
+| `channelType` | The type of channel: `messaging`, `voice`, `sdk`, `webhook`, `protocol`, or `workflow`. It is `null` when the channel names no type or no channel was recorded. An evaluation run reports the type of the channel it simulates. |
+| `channelUId` | The normalized channel identifier of the end user, such as `priya@example.com` or `+14155550100`. This is personal data. It is `null` when the channel supplied no end-user identity or the session predates the field. |
+| `dispositionCode` | The wrap-up code that the human agent chose in after-contact work after a transfer to a contact center, exactly as the contact center sent it. It comes from the latest completed after-contact work that carried a code. It is `null` when the session wasn't transferred, the contact center sent no code, or the work finished after the session ended. It isn't the same as `containmentType`, which is the platform's own classification. |
+| `containmentType` | Now also returns `failed`. |
+| `tokenCount.cacheWriteTokens` | Input tokens written to the provider's prompt cache across the LLM calls of the session. They are part of `inputTokens`. `null` means no call reported cache writes, or the per-call accounting couldn't be read. `0` means the provider reported zero. |
+| `voice` | The call quality of a voice session. It is `null` when the session wasn't a voice call or ended before this release. See the next table. |
+| `contactCenter` | Reserved for queue, agent, and handling details after a transfer to Kore Contact Center. Always `null` in this release. The key is always present. |
+
+The `voice` object has one value for each Voice Analytics dashboard card. A metric that the call didn't measure is `null`, never `0`.
+
+| Field | Description |
+|:------|:------------|
+| `mos` | The inbound network mean opinion score (MOS) of the call, from 1 to 5. |
+| `asrScore` | The overall speech-recognition quality score, from 0 to 100. |
+| `e2eLatencyMs` | The average end-to-end response latency, in milliseconds. `null` when no turn was measured. |
+| `bargeInRate` | The share of turns where the caller interrupted the agent, from 0 to 1. For example, `0.2` means 20%. `null` when the call had no turns. |
+| `dtmfFallbackRate` | The share of turns answered with the keypad, from 0 to 1. `null` when the call had no turns. |
+| `ttsMos` | The estimated text-to-speech quality, from 1 to 5. |
+| `silencePercent` | The percent of the call with no speech, from 0 to 100. |
+
+### Errors
+
+Invalid filter values return a `400` error:
+
+| Error code | Cause |
+|:-----------|:------|
+| `INVALID_SOURCE` | A `source` value is outside the allowed list, or `all` is combined with another value. |
+| `INVALID_CHANNEL_TYPE` | A `channelType` value is outside the allowed list. |
+| `INVALID_CHANNEL_UID` | A `channelUId` value is empty or invalid. |
+| `INVALID_DISPOSITION_CODE` | `dispositionCode` is longer than 200 characters after trimming. |
+| `INVALID_CALLER_NUMBER` | A `callerNumber` entry is empty, has no letter or digit after cleanup, isn't a string, or is longer than 512 characters. The message names the position of the entry and never repeats it. |
+| `TOO_MANY_FILTER_VALUES` | The `callerNumber` filter has more than 100 values. The count includes duplicates. |
