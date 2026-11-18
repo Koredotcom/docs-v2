@@ -1,0 +1,131 @@
+---
+title: Oracle Database integration
+---
+
+<Badge icon="arrow-left" color="gray">[Back to list of enterprise systems](/agent-platform/integrations/enterprise-systems)</Badge>
+
+Use the Oracle Database integration to insert, update, find, and delete rows, run custom SQL or PL/SQL, and trigger workflows when new rows are created.
+
+| Authentication | Actions | Triggers |
+| --- | --- | --- |
+| API Key (database username and password) | ([6](/agent-platform/integrations/enterprise-systems/oracle-database#supported-actions)) | ([1](/agent-platform/integrations/enterprise-systems/oracle-database#triggers)) |
+
+## Supported actions
+
+| Action | Use it to |
+| --- | --- |
+| [Insert Row](#insert-row) | Insert one row into an Oracle table. |
+| [Insert Rows](#insert-rows) | Insert multiple rows into an Oracle table. |
+| [Run Custom SQL](#run-custom-sql) | Run SQL or PL/SQL and return query results. |
+| [Update Row](#update-row) | Update rows matching a filter. |
+| [Delete Row](#delete-row) | Delete rows matching a filter. |
+| [Find Row](#find-row) | Find rows matching a filter. |
+
+## Triggers
+
+| Trigger | Fires when |
+| --- | --- |
+| [New Row](#new-row) | A new row is detected by polling the selected table using an increasing ID, timestamp, or other order column. |
+
+## Prerequisites
+
+- An Oracle Database instance reachable from the platform runtime.
+- An Oracle database username and password with permissions for the tables and SQL operations used by your tools or workflows.
+- The database host, listener port, and service name, or a full connection string.
+
+## Set up the integration
+
+<Steps>
+  <Step title="Create an Oracle Database auth profile">
+    In **Integrations**, select **Oracle Database** > **Connect**. On **Project Auth Profiles**, select **New Profile** > **Integration Profile** > **Oracle Database** > **Continue**. Keep **API Key** as the auth type. Enter a profile name and database connection details. **Port** defaults to `1521`. Provide a **Service Name** with the host and port, or provide a **Connection String** instead. Enter the database **Username** and password in **API Key**, then select **Create Profile**.
+  </Step>
+  <Step title="Create an action tool">
+    In **Tools**, select **New Tool** > **Action Tool** > **Oracle Database**. Select an action and auth profile, configure its inputs, and select **Create Tool**. Then [assign the tool to an agent](/agent-platform/tools/actions#assign-an-action-to-an-agent).
+  </Step>
+  <Step title="Use the New Row trigger (optional)">
+    In a workflow, select **Oracle Database** > **New Row** as the trigger. Choose a table and an order column that increases over time, such as an ID or timestamp.
+  </Step>
+</Steps>
+
+## Action reference
+
+<AccordionGroup>
+  <Accordion title="Insert Row" id="insert-row">
+    | Parameter | Type | Required | Description |
+    | --- | --- | --- | --- |
+    | `tableName` | dropdown | Yes | Oracle table to insert into. |
+    | `row` | object | Yes | Column names and values for the row. |
+  </Accordion>
+  <Accordion title="Insert Rows" id="insert-rows">
+    | Parameter | Type | Required | Description |
+    | --- | --- | --- | --- |
+    | `tableName` | dropdown | Yes | Oracle table to insert into. |
+    | `rows` | array | Yes | Array of objects containing column names and values. |
+  </Accordion>
+  <Accordion title="Run Custom SQL" id="run-custom-sql">
+    | Parameter | Type | Required | Description |
+    | --- | --- | --- | --- |
+    | `sql` | string | Yes | SQL or PL/SQL statement. Use bind variables such as `:dept_id` for dynamic values. |
+    | `binds` | object | No | Values for SQL bind variables. |
+    | `limit` | number | No | Rows per page for SELECT/WITH queries. Defaults to `100` and is capped at `500`. |
+    | `offset` | number | No | Starting row offset for SELECT/WITH paging. Defaults to `0`; pass `nextOffset` from the preceding result to request the next page. |
+    | `markdown` | string | No | Optional note displayed with the action input. |
+
+    For SELECT/WITH queries, use an `ORDER BY` clause to keep pages stable. Results include `rows`, `rowCount`, `offset`, `limit`, `hasMore`, and `nextOffset`. When `hasMore` is `true`, pass `nextOffset` to the next call. Other statements return at most `500` rows.
+
+    **Security:** Don't insert dynamic input directly into the SQL string. Use bind parameters to help prevent SQL injection.
+  </Accordion>
+  <Accordion title="Update Row" id="update-row">
+    | Parameter | Type | Required | Description |
+    | --- | --- | --- | --- |
+    | `tableName` | dropdown | Yes | Oracle table to update. |
+    | `values` | object | Yes | Column names and new values to set. |
+    | `filter` | object | Yes | Conditions to match rows. An empty object updates all rows. |
+  </Accordion>
+  <Accordion title="Delete Row" id="delete-row">
+    | Parameter | Type | Required | Description |
+    | --- | --- | --- | --- |
+    | `tableName` | dropdown | Yes | Oracle table to delete from. |
+    | `filter` | object | Yes | Conditions to match rows for deletion. |
+  </Accordion>
+  <Accordion title="Find Row" id="find-row">
+    | Parameter | Type | Required | Description |
+    | --- | --- | --- | --- |
+    | `tableName` | dropdown | Yes | Oracle table to search. |
+    | `filter` | object | Yes | Conditions to match rows. |
+
+    The action returns at most `500` rows and sets `hasMore` when additional rows match. Use **Run Custom SQL** to page through larger result sets.
+  </Accordion>
+</AccordionGroup>
+
+## Trigger reference
+
+<AccordionGroup>
+  <Accordion title="New Row" id="new-row">
+    | Parameter | Type | Required | Description |
+    | --- | --- | --- | --- |
+    | `tableName` | dropdown | Yes | Table to monitor. |
+    | `orderBy` | dropdown | Yes | Column that increases over time, such as an ID or timestamp. The options depend on the selected table. |
+    | `orderDirection` | dropdown | Yes | Sort direction used to fetch the newest rows first. Defaults to `DESC`; options are `ASC` and `DESC`. |
+    | `description` | string | No | Optional Markdown note. The trigger fetches the latest rows using the order column, then polls for new rows. |
+  </Accordion>
+</AccordionGroup>
+
+## Troubleshoot common issues
+
+| Issue | Resolution |
+| --- | --- |
+| The connection fails | Check that the host is reachable, the port is correct, and the username and password are valid. The default port is `1521`. |
+| The service can't be found | Confirm the service name. For SID-based configurations, use a full connection string. |
+| A query fails for dynamic values | Use bind variables in the SQL and provide their values in `binds`; do not interpolate dynamic input into the query. |
+| A query page repeats or skips rows | Add an `ORDER BY` clause with a stable sort key, then pass the returned `nextOffset` as the next `offset`. |
+| Find Row doesn't return every match | Find Row returns up to `500` rows. Use Run Custom SQL to page through larger result sets. |
+| New Row doesn't detect expected records | Choose an order column that increases over time and verify the table selection and sort direction. |
+| Update Row changes more rows than expected | Check the `filter`; an empty object updates all rows. |
+
+## Related articles
+
+- [Auth profiles](/agent-platform/administration/integrations-settings#auth-profiles)
+- [Action Tools](/agent-platform/tools/actions)
+- [Workflows](/agent-platform/workflows)
+- [Oracle Database documentation](https://docs.oracle.com/en/database/)
