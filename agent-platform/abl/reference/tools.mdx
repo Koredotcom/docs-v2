@@ -938,6 +938,41 @@ An expression cannot be evaluated when, for example, it adds text to a number, i
 
 The `call_argument_unresolved` warning carries `argument`, `celCode` (for example `no_such_overload` or `no_such_key`), `step` (when the call runs in a FLOW step), and `tool`. It never contains the expression or any value. FLOW step CALLs, hook CALLs, and tool `on_result` / `on_error` CALLs all emit it. A tool `process` field or a `TRANSFORM` `MAP` field that cannot be evaluated emits `value_expression_unresolved` instead, with `surface` (`process_before`, `process_after`, or `transform_map`), `field`, `celCode`, and `tool` or `step`. A `MAP` field is reported once per run.
 
+### Empty values for required parameters
+
+An empty literal (`""` or `''`) bound to a required parameter counts as a missing value. The runtime does not call the tool. The step takes its failure route, and the `CALL` result carries `__errorCode` `TOOL_REQUIRED_INPUT_MISSING` with the names of the missing parameters. A `tool_precondition_failed` trace event records the block. It names the tool, step, and fields, never their values. A write tool can still take a gathered field of the same name when the call runs.
+
+```yaml
+TOOLS:
+  lookup_order(order_id: string, note?: string) -> object
+    description: "Look up an order"
+
+FLOW:
+  find_order:
+    REASONING: false
+    CALL: lookup_order
+      WITH:
+        order_id: ""
+        note: ""
+      AS: orderResult
+    ON_FAIL: handle_missing_order
+```
+
+Here `order_id` is required, so the compiler warns with [`CALL_WITH_REQUIRED_PARAM_EMPTY`](/agent-platform/abl/reference/errors-and-warnings#call_with_required_param_empty). `note` is optional, so its empty value is sent and gets no warning.
+
+The warning does not cover a parameter that:
+
+- has a default value, or a source other than the model
+- is hidden from the model
+- is filled by a `process.before` value
+- is `session_id`, `tenant_id`, or `project_id`, which the runtime always supplies
+
+To fix it, pick one:
+
+- Declare the parameter optional (`order_id?: string`) when an empty value is valid.
+- Bind a value that is never empty.
+- Branch on `__errorCode == "TOOL_REQUIRED_INPUT_MISSING"` in the failure branch to handle the missing input.
+
 ---
 
 ## SearchAI tools
