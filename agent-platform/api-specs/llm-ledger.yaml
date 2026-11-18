@@ -83,6 +83,8 @@ info:
     member, as in standard JWE, so JOSE libraries (for example `jose` for Node.js)
     can produce and open these envelopes directly. Pin the algorithms when
     decrypting: key management `RSA-OAEP-256`, content encryption `A256GCM`.
+  x-payload-encryption:
+    runtime-capability: 'GET /health -> capabilities.payloadEncryption: 2'
 servers:
   - url: https://{host}
     variables: { host: { default: runtime.example.com } }
@@ -149,7 +151,7 @@ paths:
             endpoint, shorthand such as `web` or `sms` is not expanded here — use the
             exact channel name such as `web_chat` or `twilio_sms`.
 
-            Not restricted to a fixed list, so an unrecognized value returns no results
+            Not restricted to a fixed list, so an unrecognised value returns no results
             rather than an error. Cannot be empty (`400 INVALID_FILTER`).
           schema:
             type: string
@@ -381,7 +383,7 @@ paths:
         - name: environment
           in: query
           description: |
-            Filter by environment. This endpoint stores `development` rather
+            Filter by environment. Note that this endpoint stores `development` rather
             than `dev` — unlike the sessions endpoint, which uses `dev`. Design-time
             calls, such as Studio test calls, are not tied to an environment and will
             not match this filter.
@@ -451,6 +453,45 @@ paths:
           in: query
           description: Exact attribution scope recorded on the call.
           schema: { type: string, minLength: 1 }
+        - name: channelUId
+          in: query
+          description: |
+            Filter to calls made in conversations with a given end user, identified by
+            their channel user ID: the email address, phone number, SIP URI or other
+            identifier the channel reported for that user. Pass up to 100 values,
+            comma-separated or by repeating the parameter. A call matches when it
+            matches any value, and the filter combines with every other filter.
+
+            Each value must be the full identifier; partial or prefix searches are
+            not supported. Emails match case-insensitively. Phone numbers must be in
+            international format with the country code (for example `+14155550100`);
+            a national number without a country code matches only an identical
+            identifier stored the same way. Only calls recorded after this filter was
+            released carry the identifier, so older calls never match.
+
+            A match is evidence, not proof: phone numbers and email addresses are
+            reassigned over time, and a channel reports what the user's device or
+            account supplied.
+
+            Prefer the POST form of this endpoint for identifier lookups: a GET query
+            string can be recorded by proxies, load balancers and browser history,
+            while a POST body is not (and can be encrypted).
+
+            Errors: `400 INVALID_CHANNEL_UID` when a value is empty, not a string,
+            contains a control character, is longer than 512 characters, or is longer
+            than 256 characters after normalization; the message names the value's
+            position and never repeats the value. `400 TOO_MANY_FILTER_VALUES` when
+            more than 100 values are sent (counted before duplicates are removed).
+          style: form
+          explode: false
+          schema:
+            {
+              type: array,
+              minItems: 1,
+              maxItems: 100,
+              items: { type: string, minLength: 1, maxLength: 512 },
+            }
+          example: ['priya@example.com', '+14155550100']
         - name: dataMode
           in: query
           description: |
@@ -497,6 +538,7 @@ paths:
                         status: success
                         inputTokens: 1396
                         cachedTokens: 224
+                        cacheWriteTokens: 0
                         completionTokens: 500
                         reasoningTokens: 280
                         outputTokens: 780
@@ -538,6 +580,7 @@ paths:
                         status: success
                         inputTokens: 1396
                         cachedTokens: 224
+                        cacheWriteTokens: 0
                         completionTokens: 500
                         reasoningTokens: 280
                         outputTokens: 780
@@ -757,6 +800,7 @@ components:
           status,
           inputTokens,
           cachedTokens,
+          cacheWriteTokens,
           completionTokens,
           reasoningTokens,
           outputTokens,
@@ -783,6 +827,7 @@ components:
           attributionName,
           attributionProvider,
           statusCode,
+          channelUId,
           payloadState,
         ]
       properties:
@@ -855,6 +900,39 @@ components:
           description: |
             Input tokens served from the provider's prompt cache. These are part of inputTokens
             and usually cost less.
+        cacheWriteTokens:
+          type: [number, 'null']
+          minimum: 0
+          description: |
+            Input tokens the provider wrote to its prompt cache on this call. These are part of
+            inputTokens and are priced at the cache-write rate when one is configured. null means
+            the provider did not report cache writes (for example Azure Chat) or the call predates
+            provider token accounting; 0 means the provider reported zero.
+        canonicalTokenUsage:
+          type: object
+          additionalProperties: true
+          description: |
+            Optional versioned per-call usage record (input, output, total, cacheWrite, cacheRead,
+            reasoning) with each quantity's status and provider source. Omitted for calls recorded
+            before provider token accounting. See docs/reference/LLM_ACCOUNTING_API.md.
+        canonicalCostEstimate:
+          type: object
+          additionalProperties: true
+          description: |
+            Optional stored cost estimate for this call, with its status, currency and the pricing
+            snapshot used. Never recalculated from current prices.
+        canonicalAccountingStatus:
+          type: object
+          additionalProperties: false
+          required: [usage, estimate]
+          properties:
+            usage: { type: string, enum: [valid, legacy, invalid, unsupported] }
+            estimate: { type: string, enum: [valid, legacy, invalid, unsupported] }
+            usageReason: { type: string }
+            estimateReason: { type: string }
+          description: |
+            Optional read-validation state of the stored accounting. Present only when the call has
+            accounting metadata.
         completionTokens:
           type: number
           minimum: 0
@@ -996,8 +1074,8 @@ components:
           description: |
             A display-ready name for `sourceSubtype`, such as `Response Generation`. The
             25 labels below cover the known subtypes; anything else is returned as its
-            raw value, so this list is not exhaustive. `routing_pipeline`
-            has no display name and is returned as `routing_pipeline`.
+            raw value, so this list is not exhaustive. Note that `routing_pipeline`
+            currently has no display name and is returned as `routing_pipeline`.
           x-common-values:
             [
               'Response Generation',
@@ -1155,6 +1233,16 @@ components:
           maximum: 599
           description: |
             HTTP status code returned by the provider — 200 when the call succeeded.
+        channelUId:
+          type: [string, 'null']
+          description: |
+            Normalized channel user ID of the end user in the conversation the call
+            belongs to, for example `priya@example.com` or `+14155550100`. This is
+            personal data. Masking is planned for a later release, together with role-based access to unmasked values. `null` when the call has no end user (for example a
+            design-time or pipeline call), when the channel did not identify the user,
+            or for calls recorded before this field was released. Searchable evidence,
+            not proof of identity.
+          example: priya@example.com
         payloadState:
           type: string
           enum: [available, omitted, missing, unknown]
@@ -1448,6 +1536,22 @@ components:
           description: Same as the `attributionScope` query parameter of the GET operation.
           type: string
           minLength: 1
+        channelUId:
+          description: Same as the `channelUId` query parameter of the GET operation. Send a
+            JSON array, or a comma-separated string as in the query string. Each array entry
+            is one value and is never split on commas. This POST form is the recommended
+            way to look up an end user, because the identifier stays out of URLs that
+            proxies and access logs may record.
+          anyOf:
+            - type: array
+              minItems: 1
+              maxItems: 100
+              items:
+                type: string
+                minLength: 1
+                maxLength: 512
+            - type: string
+              minLength: 1
         dataMode:
           description: Same as the `dataMode` query parameter of the GET operation.
           type: string
@@ -1601,6 +1705,11 @@ components:
         unrecognised query parameter, an empty filter value, an invalid value for
         `status`, `dataMode`, `sortBy` or `sortOrder`, or a `limit` or `offset` outside
         the allowed range. The `error.code` says which.
+
+        `channelUId` errors: `INVALID_CHANNEL_UID` (a value is empty, not a string,
+        contains a control character, or is too long; the message names its position
+        and never repeats the value) and `TOO_MANY_FILTER_VALUES` (more than 100
+        values).
 
         Encryption and POST-body errors also return 400: `ENCRYPTED_PAYLOAD_INVALID`
         (malformed, unexpected or undecryptable JWE, or a plain body for a

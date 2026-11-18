@@ -1,0 +1,124 @@
+---
+title: Postgres integration
+---
+
+<Badge icon="arrow-left" color="gray">[Back to list of enterprise systems](/agent-platform/integrations/enterprise-systems)</Badge>
+
+Use the Postgres integration to discover tables and schemas, read and write rows, and run parameterized SQL queries through Action Tools.
+
+| Authentication | Actions |
+| --- | --- |
+| API Key (database password) | ([7](/agent-platform/integrations/enterprise-systems/postgres#supported-actions)) |
+
+## Supported actions
+
+| Action | Use it to |
+| --- | --- |
+| [Get Tables](#get-tables) | List the tables and views the database user can access. |
+| [Get Table Schema](#get-table-schema) | Inspect a table's columns, types, nullability, defaults, and primary key. |
+| [Find Rows](#find-rows) | Read rows with optional filters, selected columns, ordering, and paging. |
+| [Insert Row](#insert-row) | Insert one row and return the stored row. |
+| [Update Rows](#update-rows) | Update rows matching required column-value conditions. |
+| [Delete Rows](#delete-rows) | Delete rows matching required column-value conditions. |
+| [Run Query](#run-query) | Run one parameterized SQL statement. |
+
+## Prerequisites
+
+- A PostgreSQL database reachable from the platform runtime.
+- A database user with only the privileges required by the tools. Enable **Read Only** in the profile when the connection should reject all writes.
+- The database host, port, database name, username, and password. The default port is `5432`.
+
+## Set up the integration
+
+<Steps>
+  <Step title="Create a Postgres auth profile">
+    In **Integrations**, select **Postgres** > **Connect**. On **Project Auth Profiles**, select **New Profile** > **Integration Profile** > **Postgres** > **Continue**. Keep **API Key** as the auth type. Enter the profile name, host, port, user, and database, then enter the database password in **API Key**. **Use SSL** and **Verify Server Certificate** are enabled by default. Keep certificate verification enabled where possible. Enable **Read Only** when the connection should reject every write, then select **Create Profile**.
+  </Step>
+  <Step title="Create the action tool">
+    In **Tools**, select **New Tool** > **Action Tool** > **Postgres**. Select an action and auth profile, configure its inputs, and select **Create Tool**. Then [assign the tool to an agent](/agent-platform/tools/actions#assign-an-action-to-an-agent).
+  </Step>
+</Steps>
+
+## Action reference
+
+<AccordionGroup>
+  <Accordion title="Get Tables" id="get-tables">
+    This action has no input parameters. It returns the tables and views visible to the database user, with their schemas. Use it to discover available data.
+  </Accordion>
+  <Accordion title="Get Table Schema" id="get-table-schema">
+    | Parameter | Type | Required | Description |
+    | --- | --- | --- | --- |
+    | `table` | dropdown | Yes | Table to describe. Select an available table or specify `schema.table`; an unqualified table uses the `public` schema. |
+
+    Returns the table's column names, data types, nullability, defaults, and primary key information. Use this action before writing a query or row action when the schema is unknown.
+  </Accordion>
+  <Accordion title="Find Rows" id="find-rows">
+    | Parameter | Type | Required | Description |
+    | --- | --- | --- | --- |
+    | `table` | dropdown | Yes | Table to read. An unqualified table uses the `public` schema. |
+    | `where` | object | No | Column-value pairs; all conditions must match. Leave empty to read all rows. A `null` value matches rows where the column is `NULL`. |
+    | `columns` | array | No | Columns to return. Leave empty to return all columns. |
+    | `order_by` | string | No | Column to order by for stable paging. |
+    | `order_direction` | dropdown | No | Sort direction: `ASC` or `DESC`. Defaults to `ASC`. |
+    | `limit` | number | No | Maximum rows to return, from `1` to `500`. Defaults to `100`. |
+    | `offset` | number | No | Rows to skip. Defaults to `0`; pass `nextOffset` from the previous result to request the next page. |
+
+    Results include `rows`, `rowCount`, and `truncated`. When `truncated` is `true`, pass the returned `nextOffset` as the next `offset`. The result may not include a total `rowCount` until the final page.
+  </Accordion>
+  <Accordion title="Insert Row" id="insert-row">
+    | Parameter | Type | Required | Description |
+    | --- | --- | --- | --- |
+    | `table` | dropdown | Yes | Table to insert into. An unqualified table uses the `public` schema. |
+    | `values` | object | Yes | Non-empty column-value pairs for the row. |
+
+    Returns the stored row, including database defaults and generated IDs.
+  </Accordion>
+  <Accordion title="Update Rows" id="update-rows">
+    | Parameter | Type | Required | Description |
+    | --- | --- | --- | --- |
+    | `table` | dropdown | Yes | Table to update. |
+    | `match` | object | Yes | Non-empty column-value pairs identifying rows. Every condition must match; a `null` value matches `NULL`. |
+    | `values` | object | Yes | Non-empty column-value pairs to set. |
+
+    Returns `rowCount`, the number of rows changed. A non-empty `match` is required, so this action cannot update every row by leaving the match empty.
+  </Accordion>
+  <Accordion title="Delete Rows" id="delete-rows">
+    | Parameter | Type | Required | Description |
+    | --- | --- | --- | --- |
+    | `table` | dropdown | Yes | Table to delete from. |
+    | `match` | object | Yes | Non-empty column-value pairs identifying rows. Every condition must match; a `null` value matches `NULL`. |
+
+    Returns `rowCount`, the number of rows deleted. A non-empty `match` is required, so this action cannot delete every row by leaving the match empty.
+  </Accordion>
+  <Accordion title="Run Query" id="run-query">
+    | Parameter | Type | Required | Description |
+    | --- | --- | --- | --- |
+    | `query` | string | Yes | One SQL statement. Use `$1`, `$2` for dynamic values. |
+    | `args` | array | No | Values for `$1`, `$2` in placeholder order. |
+    | `limit` | number | No | Maximum rows to return, from `1` to `500`. Defaults to `100`. |
+    | `offset` | number | No | Rows to skip. Defaults to `0`; pass `nextOffset` from the previous result to request the next page. |
+
+    Results include `rows`, `rowCount`, and `truncated`. When `truncated` is `true`, pass `nextOffset` as the next `offset`. Add an `ORDER BY` clause for stable pages. Queries time out after 30 seconds.
+
+    **Security:** Never interpolate dynamic values into the SQL string. Use `$1`, `$2`, and the `args` array so values are bound by the connector. For example, use `SELECT * FROM employees WHERE department_id = $1` with the department ID as the first argument.
+  </Accordion>
+</AccordionGroup>
+
+## Troubleshoot common issues
+
+| Issue | Resolution |
+| --- | --- |
+| The connection fails | Check the host, port, database, username, and password. Confirm that SSL and certificate verification match the database server configuration. |
+| A table is missing | Check that the database user can access it. Use **Get Tables** to see available tables and views; specify `schema.table` when the table is outside the `public` schema. |
+| An action returns no matching rows | Check the table and match conditions. All conditions must match; `null` matches database `NULL` values. |
+| Update or delete is rejected | Provide a non-empty `match` object. The actions require match conditions and don't allow a blank match to target the entire table. |
+| A write fails while using a valid profile | Check whether **Read Only** is enabled and whether the database user has the required write privileges. |
+| A query fails for dynamic values | Use `$1`, `$2`, and the `args` array. Don't interpolate dynamic values into the query. |
+| Query results are incomplete or pages are unstable | Results are limited to `500` rows per call. Add `ORDER BY`, then pass `nextOffset` from a truncated result as the next `offset`. |
+| A query exceeds its execution time | Keep queries within the 30-second timeout or narrow the query and page the results. |
+
+## Related articles
+
+- [Auth profiles](/agent-platform/administration/integrations-settings#auth-profiles)
+- [Action Tools](/agent-platform/tools/actions)
+- [PostgreSQL documentation](https://www.postgresql.org/docs/current/)
