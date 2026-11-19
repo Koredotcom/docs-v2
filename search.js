@@ -86,8 +86,8 @@
 
   function addStyles() {
     var css =
-      '#cs-wrap{position:fixed;top:max(12px,env(safe-area-inset-top));left:50%;transform:translateX(calc(-50% - var(--cs-shift,0px)));z-index:9999;width:clamp(106px,calc((100vw - 760px) * 0.48),326px);font-family:system-ui,sans-serif}' +
-      '#cs-input{-webkit-appearance:none;appearance:none;width:100%;box-sizing:border-box;height:43px;padding:0 14px 0 38px;background-image:url("data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 width=%2716%27 height=%2716%27 viewBox=%270 0 24 24%27 fill=%27none%27 stroke=%27%23667085%27 stroke-width=%272%27 stroke-linecap=%27round%27 stroke-linejoin=%27round%27%3E%3Ccircle cx=%2711%27 cy=%2711%27 r=%278%27/%3E%3Cpath d=%27m21 21-4.3-4.3%27/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:12px center;background-size:16px;font-size:14px;border:1px solid #d0d5dd;border-radius:10px;background-color:#fff;color:#111;outline:none;box-shadow:0 1px 3px rgba(0,0,0,.08)}' +
+      '#cs-wrap{position:fixed;top:max(12px,env(safe-area-inset-top));left:50%;transform:translateX(calc(-50% - var(--cs-shift,0px)));z-index:9999;width:min(448px,calc(100vw - 32px));font-family:system-ui,sans-serif}' +
+      '#cs-input{-webkit-appearance:none;appearance:none;width:100%;box-sizing:border-box;height:36px;padding:0 14px 0 38px;background-image:url("data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 width=%2716%27 height=%2716%27 viewBox=%270 0 24 24%27 fill=%27none%27 stroke=%27%23667085%27 stroke-width=%272%27 stroke-linecap=%27round%27 stroke-linejoin=%27round%27%3E%3Ccircle cx=%2711%27 cy=%2711%27 r=%278%27/%3E%3Cpath d=%27m21 21-4.3-4.3%27/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:12px center;background-size:16px;font-size:14px;border:1px solid #d0d5dd;border-radius:10px;background-color:#fff;color:#111;outline:none;box-shadow:0 1px 3px rgba(0,0,0,.08)}' +
       '#cs-input::-webkit-search-decoration,#cs-input::-webkit-search-cancel-button{-webkit-appearance:none;appearance:none}' +
       '#cs-input:focus{border-color:#7a5af8}' +
       '#cs-list{display:none;position:absolute;top:49px;left:50%;transform:translateX(-50%);width:max(100%,min(440px,94vw));max-height:70vh;overflow:auto;background:#fff;color:#111;border:1px solid #d0d5dd;border-radius:10px;padding:6px;box-shadow:0 8px 24px rgba(0,0,0,.18)}' +
@@ -329,10 +329,31 @@
     });
   }
 
+  function alignToHeader() {
+    if (!wrap) return;
+    var trigger = document.getElementById('search-bar-entry');
+    var slot = trigger && trigger.parentElement;
+    var row = slot && slot.parentElement;
+    if (slot && row && window.innerWidth > 1023 && getComputedStyle(slot).display !== 'none') {
+      var s = slot.getBoundingClientRect();
+      var r = row.getBoundingClientRect();
+      wrap.style.left = (s.left + s.width / 2) + 'px';
+      wrap.style.top = (r.top + (r.height - 36) / 2) + 'px';
+      wrap.style.width = Math.min(s.width, window.innerWidth - 32) + 'px';
+      wrap.style.transform = 'translateX(-50%)';
+    } else {
+      wrap.style.left = '';
+      wrap.style.top = '';
+      wrap.style.width = '';
+      wrap.style.transform = '';
+    }
+  }
+
   // Mintlify navigates without full reloads, so re-check the URL regularly.
   function sync() {
     var on = !!productFor(location.pathname);
     if (on && !wrap) build();
+    alignToHeader();
     if (wrap) {
       wrap.style.display = on ? 'block' : 'none';
       if (!on) showList(false);
