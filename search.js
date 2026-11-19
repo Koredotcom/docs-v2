@@ -333,11 +333,13 @@
     if (!wrap) return;
     var trigger = document.getElementById('search-bar-entry');
     var slot = trigger && trigger.parentElement;
+    var content = document.getElementById('content') || document.getElementById('content-area');
     var row = slot && slot.parentElement;
-    if (slot && row && window.innerWidth > 1023 && getComputedStyle(slot).display !== 'none') {
+    if (slot && row && content && window.innerWidth > 1023 && getComputedStyle(slot).display !== 'none') {
       var s = slot.getBoundingClientRect();
+      var c = content.getBoundingClientRect();
       var r = row.getBoundingClientRect();
-      wrap.style.left = (s.left + s.width / 2) + 'px';
+      wrap.style.left = (c.left + c.width / 2) + 'px';
       wrap.style.top = (r.top + (r.height - 36) / 2) + 'px';
       wrap.style.width = Math.min(s.width, window.innerWidth - 32) + 'px';
       wrap.style.transform = 'translateX(-50%)';
