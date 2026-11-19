@@ -144,11 +144,34 @@ Chat transcripts support conversations from platforms such as:
 - `recordingType = transcription`.
 - `channelType = chat`.
 
+## Data Flow
+
+The Azure Blob Storage connector imports conversation recordings, transcripts, and metadata into Quality AI Express through the following process:
+
+1. **Azure Blob Storage:** Stores audio recordings, voice transcripts, chat transcripts, and CSV metadata files.
+2. **Connector Authentication:** The connector authenticates with Azure Blob Storage using the configured Service Principal or Connection String.
+3. **Data Ingestion:** The connector accesses the configured Blob container and retrieves the metadata and associated conversation files.
+4. **Conversation Processing:** Quality AI Express processes the ingested conversations. Audio recordings are transcribed and analyzed, while existing transcripts are processed as text.
+5. **Analytics:** Processed conversations become available in Quality AI Express dashboards for quality evaluation, sentiment analysis, topic identification, and other supported analytics.
+
 ## CSV Metadata Formats
 
 This section defines the required CSV metadata fields for each supported conversation type.
 
 Core fields are shared across conversation types, while recording-specific fields differ.
+
+### Common Metadata Requirements
+
+The following requirements apply when preparing metadata CSV files:
+
+- Conversation start and end timestamps must use ISO 8601 UTC format.
+- The conversation end time must be later than the conversation start time.
+- The `agentEmail` must match a valid platform user account.
+- The `queueId` must match an existing Quality AI Express queue mapping.
+- The `conversationId` must not exceed 50 characters.
+- Language defaults to `en` when the optional language field is omitted.
+
+For mono recordings, both CSV rows must share the same `conversationId` and reference the corresponding agent and customer recordings.
 
 ### Stereo Voice
 
@@ -196,6 +219,39 @@ Each conversation requires two CSV rows and two audio files. Both rows must shar
 | `language` | No | String | ISO 639-1 language code. Defaults to `en`. |
 | `asProvider` | No | String | Transcription provider. |
 
+The following example illustrates how to structure the CSV metadata for a mono voice conversation, where two rows share the same `conversationId` and reference separate agent and customer audio recordings.
+
+`conversationId`, `agentEmail`, `conversationStartTime`, `conversationEndTime`, `channelType`, `recordingType`, `agentRecordings`, `customerRecordings`, `queueId`, `agentId`, `language`, `asProvider`
+`conv-123456`, `agent@example.com`, `2025-04-10T14:30:00Z`, `2025-04-10T14:45:00Z`, `voice`, `mono`, `https://example.com/agent.wav`, `https://example.com/customer.wav`
+
+
+### Mono Recording Requirements
+
+Mono conversations must contain two separate audio recordings:
+
+- One recording for the agent.
+- One recording for the customer.
+
+Both recordings must be associated with the same conversation identifier in the metadata CSV.
+
+Example filenames:
+
+- `conv-123456-agent.wav`
+- `conv-123456-customer.wav`
+
+A single mixed mono recording isn't supported and may reduce transcription accuracy.
+
+### Stereo Recording Requirements
+
+Stereo recordings contain both agent and customer audio in one dual-channel audio file.
+
+The CSV metadata must identify the correct channel assignment:
+
+- `agentChannel`: Agent audio channel (`0` or `1`).
+- `customerChannel`: Customer audio channel (`0` or `1`).
+
+The channel assignments must correctly identify the agent and customer audio.
+
 ### Voice Transcripts
 
 - `recordingType = transcription`
@@ -213,6 +269,33 @@ Each conversation requires two CSV rows and two audio files. Both rows must shar
 | `queueId` | Yes | String | Must exist in queue mapping. |
 | `language` | No | String | ISO 639-1 language code. Defaults to `en`. |
 | `asProvider` | No | String | Original audio service provider. |
+
+
+### Voice Transcript Field Requirements
+
+The `recognizedPhrases` array contains phrase-level recognition information.
+
+The following fields are mandatory:
+
+| JSON Level | Required Fields |
+|---|---|
+| Phrase | `channel`, `offsetInTicks`, `nBest` |
+| `nBest` alternative | `lexical`, `words` |
+| Word | `word`, `offsetInTicks`, `durationInTicks`, `confidence` |
+
+Other properties, including `recognitionStatus`, `offset`, `duration`, `durationMilliseconds`, `offsetMilliseconds`, `confidence` at the alternative level, `itn`, `maskedITN`, and `display`, may be included as applicable.
+
+### Chat Transcript Message Requirements
+
+The root JSON object contains numbered message keys, such as `"1"`, `"2"`, and `"3"`.
+
+Each message must contain:
+
+- `type`: `AGENT`, `USER`, or `SYSTEM`.
+- `text`: Message content.
+- `timestamp`: Unix timestamp in milliseconds.
+- `userId`: Agent email or customer identifier.
+
 
 ### Chat Transcripts
 
@@ -249,6 +332,14 @@ For transferred conversations:
 
 - Use the queue where the conversation ended.
 - Use the email address of the agent who closed the conversation.
+
+For conversations transferred between agents or queues, use the following metadata:
+
+- **Queue ID:** The queue where the conversation ended.
+- **Agent Email:** The email address of the agent who closed the conversation.
+
+This ensures the conversation is associated with the final handling queue and closing agent.
+
 
 ## JSON Transcript Schemas
 
@@ -354,6 +445,22 @@ Important requirements:
 - Mono recordings must have separate agent and customer files.
 - All referenced files must be accessible to the connector.
 
+### Storage Path and File Validation
+
+Before configuring the connector, verify the following:
+
+- Each configured ingestion folder contains a `test.csv` file.
+- Each metadata CSV contains the required column headers.
+- Audio files are in WAV or MP3 format and don't exceed 50 MB.
+- Referenced audio files are accessible over HTTPS.
+- Voice and chat transcript files are in JSON format.
+- File and folder names don't contain spaces or special characters.
+- Mono conversations have separate agent and customer recordings.
+- The configured Azure Blob paths point to the correct ingestion folders.
+
+The connector must be able to access the configured storage paths and the files referenced by the metadata.
+
+
 ## Prepare Service Principal Authentication
 
 Complete Azure App Registration and Service Principal configuration.
@@ -368,17 +475,97 @@ You need three values from Azure:
 
 You must also assign the Storage Blob Data Reader role to the App Registration.
 
-Step 1: Create an App Registration
-Go to Azure Portal.
-Search for Azure Active Directory, also known as Microsoft Entra ID.
-Select App registrations.
-Select + New registration.
-Configure the registration:
-Name: quality-ai-connector.
-Supported account types: Accounts in this organizational directory only.
-Redirect URI: Leave blank.
-Select Register.
-After registration, copy the following values:
+**Step 1: Create an App Registration**
+
+1. Go to Azure Portal.
+1. Search for **Azure Active Directory**, also known as **Microsoft Entra ID**.
+1. Select **App registrations**.
+1. Select **+ New registration**.
+1. Configure the registration.
+1. Select **Register**.
+
+After registering the application, open the App Registration overview page and copy the following values:
+
+| Credential | Where to Find It |
+|---|---|
+| **Application (client) ID** | Available under Essentials on the App Registration overview page. |
+| **Directory (tenant) ID** | Available under Essentials on the App Registration overview page. |
+
+Save both values securely. You will need them when configuring the connector.
+
+### Client Secret Expiration
+
+When creating the client secret:
+
+- Enter a descriptive name, such as `quality-ai-key`.
+- Select an appropriate expiration period. The original setup recommendation is at least 12 months.
+- Copy the Client Secret Value immediately after creation.
+- Store the secret securely.
+
+The Client Secret Value is displayed only once. If you lose it, create a replacement secret and update the connector configuration.
+
+**Step 2: Create a Client Secret**
+
+A client secret acts as the password that the App Registration uses to prove its identity.
+
+1. Open the App Registration you created.
+1. Select **Certificates & secrets** from the left navigation menu.
+1. Select the **Client secrets** tab.
+1. Select **+ New client secret**.
+1. Enter a description, such as quality-ai-key.
+1. Select an expiration period of at least 12 months.
+1. Select **Add**.
+
+The newly created secret appears in the table.
+
+| Column | Action |
+|---|---|
+| **Value** | Copy this value. It's the Client Secret required by the connector. |
+| **Secret ID** | Don't use this value. It's an internal identifier, not an authentication credential. |
+
+<Note>The Client Secret Value is visible only once. Copy it immediately and store it securely. If you navigate away without saving it, you must delete and recreate the secret. Don't use the Secret ID in the connector configuration.</Note>
+
+**Step 3: Grant the App Registration Access to the Storage Account**
+
+The App Registration doesn't have access to Azure Blob Storage by default. Assign the required role at the storage account level.
+
+1. Open the Azure portal.
+1. Search for **Storage accounts**.
+1. Open the required storage account.
+1. Select **Access Control (IAM)** from the left navigation menu.
+1. Select **+ Add** > **Add role assignment**.
+1. Under the Role tab:
+    - Search for `Storage Blob Data Reader`.
+    - Select the role.
+    - Select **Next**.
+1. Under the Members tab:
+    - Set **Assign access to** to **User**, **group**, or **service principal**.
+    - Select **+ Select members**.
+    - Search for the App Registration name, such as quality-ai-connector.
+    - Select the App Registration.
+    - Select **Select**.
+    - Select **Review + assign**.
+    - Select **Review + assign** again to confirm.
+
+The role assignment appears under **Access Control (IAM)** > **Role assignments**.
+
+<Note>Role assignments can take up to 10 minutes to propagate. Wait for the permissions to become effective before testing the connector.</Note>
+
+**Minimum required permission**: `Storage Blob Data Reader` at the storage account scope is sufficient. Don't assign broader roles such as Contributor or Owner.
+
+**Step 4: Configure the Storage Account Firewall (If Required)**
+
+If the Azure Storage account has network access restrictions enabled, the Quality AI service may be blocked even when the authentication credentials and role assignments are correct. In this case, add the outbound IP address provided by your Kore.ai administrator to the storage account firewall allowlist.
+
+1. Open the required storage account in the Azure portal.
+1. Select **Networking** under **Security + networking**.
+1. Under **Firewalls and virtual networks**, check the network access configuration.
+1. If **Enabled from selected virtual networks and IP addresses** is selected:
+    - Locate the **Firewall** section.
+    - Enter the outbound IP address provided by your Kore.ai administrator in the **Address range** field.
+1. Select **Save**.
+
+<Note> To determine whether this step is required, navigate to **Networking** > **Public network access**. If the storage account is configured to allow access only from selected virtual networks and IP addresses, the firewall must allow the Quality AI service's outbound IP.</Note>
 
 ## Set Up the Connector
 
@@ -400,6 +587,18 @@ Before you begin, verify that your Blob container is ready:
 1. Enter a **Name** for the connector.
 1. Select the **Azure Region** for the storage account.
 1. Set **Authentication Type** to **Connection String**.
+    
+#### Service Principal (Recommended)
+
+1. If you select Service Principal, provide the following credentials:
+   
+**Connection String**
+
+If you select Connection String, provide the following:
+
+Example:
+
+DefaultEndpointsProtocol=https;AccountName=...;AccountKey=...;EndpointSuffix=core.windows.net 
 1. Enter the **Connection String** from your Azure Storage account.
 1. Configure the storage paths:
    - **Unified Path**: Enter a single Blob path for both voice and chat data.
@@ -419,20 +618,32 @@ Before you begin, verify that your Blob container is ready:
 
 <Note>Every queue ID in the metadata file must map to an existing Quality AI Express queue before ingestion can run. Evaluation forms linked to mapped queues determine how interactions are evaluated.</Note>
 
+
 ### Step 4: Configure the Schedule
 
+Configure the ingestion schedule to determine when the connector retrieves and processes conversation files from Azure Blob Storage.
+
 1. Select the **Schedule** tab.
-1. Set the **Interval Type**, **Start Date**, **Repeat Every**, and **Start Time** (UTC).
-1. Select **Save** to activate the schedule.
+2. Configure the following schedule settings:
 
-After saving, verify the setup is complete:
+   | Field | Description |
+   |---|---|
+   | **Interval Type** | Select the schedule frequency, such as minutes, hours, or days. |
+   | **Start Date** | Specify the date on which the ingestion schedule should begin. |
+   | **Repeat Every** | Define how frequently the connector should run based on the selected interval type. |
+   | **Start Time** | Specify the time at which ingestion should begin. Use UTC. |
 
-- Verify that the system saved and validated the queue mappings.
-- Verify that the processing schedule is active.
-- Verify that the first ingestion job appears in the Log tab.
-- Verify that the system reports no processing errors.
+3. Review the schedule configuration.
+4. Select **Save** to activate the connector schedule.
 
-The setup is complete when all conversations appear in **Quality AI Express** dashboards and analytics data is available for ingested interactions.
+After saving, verify that:
+
+- Queue mappings are saved and validated.
+- The ingestion schedule is active.
+- The first ingestion job appears in the **Log** tab.
+- The ingestion job completes without processing errors.
+
+The setup is complete when conversations are successfully ingested and appear in **Quality AI Express** dashboards with their corresponding analytics data.
 
 ### Step 5: Monitor Ingestion Jobs
 
@@ -455,8 +666,11 @@ Ingestion is successful when the uploaded and processed file counts match, the j
 
 | Problem | Symptom | Resolution |
 |---|---|---|
-| **Authentication Failed** | Authentication error. | Verify the account key, connection string, and storage account name. Re-copy the credentials from the Azure portal and test again. |
-| **Authorization Header Error** | Request rejected. | Generate a new access key and update the connector configuration. |
+| **AuthorizationFailure** | Access is denied despite valid credentials. | Check the storage account firewall configuration. If network restrictions are enabled, add the Quality AI service outbound IP provided by your administrator to the allowlist. |
+| **AADSTS7000215: Invalid client secret** | Service Principal authentication fails. | Verify that the Client Secret Value is correct and hasn't expired. Regenerate it if necessary. Don't use the Secret ID. |
+| **AuthorizationPermissionMismatch** | The connector can't read or list Blob files. | Verify that `Storage Blob Data Reader` is assigned at the storage account scope. Allow up to 10 minutes for role assignments to propagate. |
+| **Azure connection string is required** | The connector reports a missing connection string. | Enter the complete connection string from the Azure Storage Account Access Keys page. |
+| **Invalid Azure connection string** | Azure rejects the connection string. | Copy the full connection string directly from Azure Access Keys without modifying it. |
 
 ### Storage Access Issues
 
@@ -481,6 +695,6 @@ Ingestion is successful when the uploaded and processed file counts match, the j
 
 ### Performance Considerations
 
-Processing time depends on file size, conversation duration, audio duration, transcription latency, LLM processing time, AI analysis complexity, and number of conversations being ingested.
+Processing time also depends on Automatic Speech Recognition (ASR) latency for voice recordings, conversation duration, file size, LLM processing time, AI analysis complexity, and the number of conversations being ingested.
 
 ---
