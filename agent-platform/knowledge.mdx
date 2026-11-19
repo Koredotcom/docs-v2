@@ -239,6 +239,24 @@ To configure a scheduled crawl:
 
 **Extraction Preview** shows samples of what will be extracted from each section using the current configuration before the full crawl runs. 
 
+**Recrawl the entire source**
+
+Click **Recrawl** at the bottom of the page to start a new crawl for the entire source. Recrawl submits all source URLs for crawling, irrespective of earlier crawl results.
+
+Use Recrawl when you want to:
+- Crawl all pages again after making significant changes to the source.
+- Refresh the indexed content for the entire source.
+- Re-run the crawl for a historical crawl job.
+
+**Retry failed pages**
+
+Use **Retry** when you want to crawl only specific failed or timed-out pages instead of running the entire crawl again.
+
+You can retry failed pages from the **Crawl Status** section under **Content** tab for the source. Locate the relevant error group (for example, Duplicate Content or Timeout or Error) and click Retry. This resubmits only the URLs in that error group. Expand the group to view the affected URLs before retrying.
+
+<Note> A targeted retry submits only the selected page URLs. Successfully crawled pages are not crawled again.</Note>
+  
+
 #### Connectors
 
 Pre-built integrations for third-party applications. Navigate to **Sources** > **Add Source** to configure integrations.
@@ -288,7 +306,52 @@ After the **dry run completes**, click **Review field mapping**.
 
 Click Save mappings, followed by **Approve & start** to begin indexing.
 
-**Post configuration**, you can update the settings under the **Field Mapping** tab. 
+**Monitor and manage connector**
+
+After the initial synchronization, you can monitor the connector's health, review failed documents, retry failed processing, and configure scheduled synchronizations.
+
+**View connector status**: Open the connector to view its **Overview** page. It shows:
+  - Current connector status
+  - Last synchronization time
+  - Number of processed and failed documents
+  - Configured connector objects
+  - Recent synchronization activity
+
+If any documents fail during synchronization, the connector displays a **Needs attention** notification with the number of failed documents.
+
+To review the failures, click **View failures**. Select a failed document to view its processing details, including the failure reason and the pipeline stage where processing stopped. If the underlying issue has been resolved, click **Retry** to reprocess only the selected document.
+
+<Note> Retrying a document reprocesses only that document. It does not resynchronize or reprocess the entire connector.</Note>
+
+**View synchronization activity**: The Activity tab shows the history of connector synchronization runs, including the sync status, duration, and processing statistics. Select a run to view additional details and any associated failures.
+
+**Manage field mappings**: Use the Field Mapping tab to review and customize how connector fields are mapped to your knowledge base schema. The available object types and fields vary by connector.
+
+**Update connector settings**: Use the Settings tab to modify connector-specific configuration, such as content scope, filters, scheduling, permissions, and other supported options. Available settings vary by connector, and some options are available only after the initial synchronization.
+
+**Schedule automatic synchronizations**
+  
+  After the connector completes its initial synchronization, you can configure **automatic content synchronization** from the **Settings** tab under **Schedule and sync**.
+
+  <Note>This schedule applies only to **content synchronization**. Permission synchronization can be configured separately under **RACL (Permission-aware search)**.</Note>
+
+Configure the following options:
+
+| Option | Description |
+|--------|-------------|
+| **Schedule** | Select how often the connector synchronizes content, such as hourly, daily, or weekly. |
+| **Start time** | Specify when the scheduled content synchronization begins. |
+| **Day of week** | For weekly schedules, select the day on which the synchronization runs. |
+| **Timezone** | Select the timezone used for the scheduled start time. |
+| **Recrawl permissions after saving** | Runs a permission synchronization after saving configuration changes to keep document permissions up to date. |
+| **Allow this sync to remove most of the indexed documents** | Allows a scheduled content sync to remove a large number of indexed documents when the connector scope has been intentionally reduced, such as after excluding sites, libraries, or folders. This safeguard helps prevent accidental large-scale deletions. |
+
+ **Configure permission synchronization (RACL)**: If Permission-aware search is enabled, you can configure a separate schedule for synchronizing document permissions. This keeps search permissions up to date independently of content synchronization.
+
+| Option | Description |
+|--------|-------------|
+| **Scheduled permission sync** | Enables automatic synchronization of document permissions independently of content synchronization. |
+| **Sync frequency** | Specifies how often document permissions are synchronized to keep search access permissions up to date. |
 
 **Available Connectors**
 
@@ -453,15 +516,18 @@ Click **+** at any connection point in the pipeline canvas to insert a new stage
 | Visual Analysis | Analyzes images, tables, charts, and screenshots using a multimodal LLM. |
 | Enrichment | Enriches chunks with LLM-generated metadata. |
 
-**Utility Stages** — general-purpose stages you can insert anywhere in the pipeline for custom processing logic.
+**Utility Stages** 
 
-| Stage | Description |
-| --- | --- |
-| Field Mapping | Maps and transforms fields using conditional rules. |
-| API Call | Calls an external HTTP API during processing. |
-| LLM | Enriches data with a large language model call. |
-| Custom Script | Runs sandboxed JavaScript to transform content and metadata. |
+Utility stages add custom processing to a pipeline. You can insert them at different points and use more than one. Their position matters: each stage receives the data available at its configured point, and later stages receive its output.
 
+| Stage | What it does | What to consider |
+| --- | --- | --- |
+| Field Mapping | Applies configured conditions to set target fields, such as canonical metadata fields. | Choose conditions and target fields that match the data available at this point in the pipeline. |
+| API Call | Sends the current document content and metadata to an external HTTP API for processing. | Configure the endpoint and authentication. Production endpoints must use HTTPS. Calls have a timeout and can be retried; the service must return a successful response for processing to continue. |
+| LLM | Runs a prompt against document or chunk content and can replace the content, add the response as metadata, or do both. | Configure the prompt and an available model. LLM calls add processing time and may incur model usage costs. |
+| Transform Script | Runs JavaScript to update content, metadata, or canonical metadata. | Scripts run in a sandbox with no network access or Node.js globals, and are subject to execution and size limits. Choose the pipeline phase carefully: some phases operate on the whole document, while later phases operate on individual chunks. |
+
+<Note>Utility stages can be inserted at different points, but they don’t all run against the same input. For example, a stage configured before extraction receives document input; a stage after chunking can run on individual chunks. Place each stage where the required input exists and where downstream stages can use its output.</Note>
 
 ##### Field Mapping
 
@@ -673,10 +739,9 @@ The **Diagnostics** panel on the right provides a real-time view of the knowledg
 
 The **Query** History section shows recent queries run against the knowledge base, along with the number of results returned, query type, and time taken.
 
-{/* 
 **Images in Search Results**
 
-During ingestion, platform extracts and stores images embedded in supported document types, including PDF, DOCX, PPTX, and inline images in HTML pages. Remote images referenced by HTML pages are not fetched and remain as `<!-- image -->` placeholders in the chunk text.
+During ingestion, SearchAI stores extracted images embedded in PDF, DOCX and PPTX files. HTML pages can also include inline base64 encoded images using a `data:` URL, commonly written as `data:image/png;base64,...`; extracted image bytes are stored with the document. Remote images referenced by an HTML page, such as `<img src="https://…">`, are not fetched. Their position can remain as an `<!-- image -->` marker in the chunk text, without a stored image to display.
 
 If a search result contains references to stored images, it includes an `images` array.
 
@@ -701,14 +766,17 @@ The images array contains the following information for each image:
 - imageIndex: The index of the image on the page.
 
 Points to Note:
-- Image URLs can retrieve only the referenced image. They cannot be used to download the source document.
+- The `images` list is part of the SearchAI query API response; Studio does not display these links inline in its search results.  You can preview only extracted images in Studio in the document details.
+- Image URLs can retrieve only the referenced image. They cannot be used to download the source document. 
+- Image URLs are persistent and authorize access to a single image within a specific document. Access is validated on every request, so the URL continues to work after the document is reprocessed but becomes invalid if the document is deleted.
+- Search results return image URLs, not Base64-encoded image data. If your application requires a Base64 representation, retrieve the image using the returned `url` and encode the image bytes in your application.
 - For PDF, DOCX, and PPTX files, each chunk lists the images from the pages it spans.
-- For HTML pages, each chunk lists the images referenced by its content. In rare cases where a section is split at an image boundary, all chunks for that document may include the complete image list.
+- For HTML pages, each chunk lists the images referenced by its content. 
 - Results without stored images do not include the images field.
-- Existing documents must be reprocessed before image URLs are included in search results.
+- Existing documents must be reprocessed before image URLs are included in search results. 
 
 <Note> Agent responses currently use only the chunk text. The images metadata is returned in search results but is not passed to the model, so images are not included in generated responses.</Note>
-*/}
+
 
 ### Additional settings
 
@@ -972,5 +1040,19 @@ Silent traps:
 - `retrieval_profile` accepts only the exact value `object-aware`. Any other value, including different casing, is ignored.
 - An agent-file `search_instructions` is ignored once the project tool already has instructions of its own.
 - If citations are turned off on any one knowledge base attached to an agent, they are turned off for all of that agent's knowledge bases.
-- Test retrieval with a real customer identity where possible. Studio test chats search with public permissions, so permission-restricted content may not show up there.
+- Test retrieval with a real customer identity where possible. Studio test chats search with public permissions, so permission-restricted content may not show up there. Search applies per-user document permissions only when the session carries the user's verified identity with an email.
+- Always set `max_search_tokens` in the agent's copy of the search tool, so results stay small as the documents grow.
+
+### Diagnose a wrong answer
+
+Read the search call in the session's traces. Then run the same query in the knowledge base's **Search & Test**.
+
+| Failed layer | Sign | Fix |
+|---|---|---|
+| Not indexed | The document is missing or not indexed. | Ingestion |
+| Not retrieved | The right chunk isn't in the results. | Query, description, Top K, chunking |
+| Cut by the budget | The trace shows omitted results. | `max_search_tokens`, Top K |
+| Ignored | The right chunk came back, but the answer is wrong. | Instructions |
+
+Add test questions that the documents can't answer. They catch invented answers. Give the agent the sentence to say when the documents don't cover a question.
 

@@ -1,20 +1,23 @@
 ---
 title: Execute a specific tool
+description: Execute a project tool synchronously with caller-supplied parameters and get its result.
 openapi: "/agent-platform/api-specs/tool-execution.yaml post /api/v1/project/{projectSlug}/tools/{toolName}/invoke"
 ---
 
+<Badge icon="arrow-left" color="gray">[Back to the Tools Execution API overview](/agent-platform/api-reference/tool-execution-overview)</Badge>
+
 Executes a tool in a project and returns its result. The request supplies the tool's caller-defined input parameters in a JSON body. Execution is synchronous: the request waits for the tool to complete or reach its timeout.
 
-Use this endpoint to run an executable tool after identifying it and retrieving its input schema. The tool's output is returned without being reshaped by the platform, except that an Agent Table tool's output is returned as a JSON object.
+Use this endpoint to run an executable tool after [identifying it](/agent-platform/api-reference/tools-execute-table-tools-list) and [retrieving its input schema](/agent-platform/api-reference/tools-execute-table-tools-retrieve). The tool's output is returned without being reshaped by the platform, except that an Agent Table tool's output is returned as a JSON object.
 
 **Permission:** `tool:execute`, granted by the platform API key scope `tools.execute`.
 
 ## Path parameters
 
-| Parameter     | Type   | Required | Description                                                             |
-|---------------|--------|----------|-------------------------------------------------------------------------|
-| `projectSlug` | string | Yes      | Project slug, not the project ID or UUID.                               |
-| `toolName`    | string | Yes      | Tool name as authored. For MCP tools, use the `alias__toolName` format. |
+| Parameter     | Type   | Required | Description                                                                              |
+|---------------|--------|----------|------------------------------------------------------------------------------------------|
+| `projectSlug` | string | Yes      | Project slug, not the project ID or UUID. A project UUID returns `404`.                  |
+| `toolName`    | string | Yes      | Tool name as authored. For MCP tools, use the `alias__toolName` format.                  |
 
 ## Request body
 
@@ -34,17 +37,21 @@ For Agent Table tools without a query template, `params` contains a structured c
 
 Use one of the supported credentials:
 
-- `x-api-key: abl_...` — platform API key.
-- `Authorization: Bearer <abl_... | JWT>` — platform API key or Studio user JWT.
-- `auth: <assertion>` — JWT App assertion.
+- `x-api-key: abl_...` for a platform API key.
+- `Authorization: Bearer <abl_... | JWT>` for a platform API key or Studio user JWT.
+- `auth: <assertion>` for a JWT App assertion.
 
 Public SDK keys (`pk_...`) are not accepted. The JWT App assertion must be sent in the `auth` header, not the `Authorization` header.
 
 The credential must have the `tool:execute` permission. A sensitive-column lookup also requires `table:sensitive:reveal`.
 
+A JWT App created with payload encryption enforced doesn't send a plain JSON body. It sends a JWE in compact serialization with `Content-Type: application/jose` and receives `application/jose` back. Errors from the encryption layer, such as `PAYLOAD_MALFORMED` or `PAYLOAD_DECRYPT_FAILED`, are returned unencrypted.
+
 ## Response
 
 A successful response contains `success` and `data`. The `data` object includes the execution `status`, the tool's `output` when provided, and `trace` information when the caller is entitled to it.
+
+A `200` response means the tool ran. The `status` field reports the tool executor's own outcome.
 
 The response headers identify the tool type, resolved environment, and configuration source:
 
@@ -72,11 +79,11 @@ For Agent Table tools, `output` is a JSON object rather than a serialized JSON s
 | `403`       | Missing execution permission, insufficient project scope, or a sensitive-column lookup without the required permission.                                       |
 | `404`       | Project or tool not found, tool type disabled, tool not executable, or public execution disabled. Some of these cases intentionally return the same response. |
 | `409`       | Conflict requiring caller action, such as a unique-constraint violation, row-version conflict, or unsupported authentication-profile mode.                    |
-| `413`       | Request payload exceeds the allowed size or structural limits.                                                                                                |
+| `413`       | Request payload exceeds the allowed size or structural limits. The caller payload limit is 512 KiB serialized, a depth of 32, and 10,000 nodes. The global body limit is 1 MiB. |
 | `415`       | Unsupported media type or charset. A JWT App configured to require payload encryption must use the required encrypted format.                                 |
 | `422`       | Tool configuration or execution failure, invalid tool response, or SOAP fault.                                                                                |
 | `429`       | Tenant request or tool-call rate limit exceeded.                                                                                                              |
-| `500`       | Unexpected execution failure.                                                                                                                                 |
+| `500`       | Unexpected execution failure. This also covers an undeclared parameter that the tool's policy rejects.                                                        |
 | `502`       | Tool network, HTTP, authentication, or upstream failure.                                                                                                      |
 | `503`       | A dependency is unavailable, such as an MCP server or Agent Table service.                                                                                    |
 | `504`       | The tool did not respond within its timeout.                                                                                                                  |

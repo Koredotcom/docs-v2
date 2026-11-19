@@ -1,0 +1,140 @@
+---
+title: Microsoft OneDrive integration
+---
+
+<Badge icon="arrow-left" color="gray">[Back to list of enterprise systems](/agent-platform/integrations/enterprise-systems)</Badge>
+
+Use the Microsoft OneDrive integration to upload and download files, list files and folders, or call Microsoft Graph through Action Tools. It also provides a trigger for new files.
+
+| Authentication | Actions | Triggers |
+| --- | --- | --- |
+| Azure AD, OAuth App, Client Creds | [5](#supported-actions) | [1](#triggers) |
+
+## Supported actions
+
+| Action | Use it to |
+| --- | --- |
+| [Upload file](#upload-file) | Upload a file to OneDrive. Files larger than 4 MiB use chunked upload. |
+| [Get File](#get-file) | Find and download a file by its ID or exact name. |
+| [List Files](#list-files) | List files in a OneDrive folder. |
+| [List Folders](#list-folders) | List folders in a OneDrive folder. |
+| [Custom API Call](#custom-api-call) | Call a Microsoft Graph endpoint. |
+
+## Triggers
+
+| Trigger | Fires when |
+| --- | --- |
+| New File | A new file is uploaded. Optionally select a parent folder. |
+
+## Prerequisites
+
+- A Microsoft OneDrive account with access to the files and folders the tools will use.
+- A Microsoft Entra ID app registration and the permissions required by the selected actions and authentication mode.
+
+## Set up the integration
+
+<Steps>
+  <Step title="Register an app in Microsoft Entra ID">
+    Register an app and configure Microsoft Graph permissions for the OneDrive operations the agent needs. For delegated access, add the callback URL shown in the Studio auth profile as a **Web** redirect URI. For app-only access, configure the required application permissions and grant tenant admin consent. Keep the application (client) ID, tenant ID, and client secret available for the profile.
+  </Step>
+  <Step title="Create the auth profile">
+    In **Integrations**, select **Microsoft OneDrive** > **Connect**. On **Project Auth Profiles**, select **New Profile** > **Integration Profile** > **Microsoft OneDrive** > **Continue**. Choose an auth type, enter its configuration and secret values, and select **Create Profile**. For **OAuth 2.0 App (User Delegated)**, select **Authorize** and complete Microsoft consent.
+
+    Studio offers **Azure AD (Service Principal)**, **OAuth 2.0 App (User Delegated)**, and **OAuth 2.0 Client Credentials**. The service-principal and client-credentials profiles use admin-provided credentials. For delegated OAuth, the usage modes are **Preconfigured**, **JIT (Just-in-Time)**, and **Preflight**.
+
+    For delegated OAuth, Studio prepopulates the Microsoft authorization, token, and refresh endpoints. The inspected profile showed the scopes `User.Read`, `Files.Read.All`, and `offline_access`; the connector catalog lists `Files.ReadWrite` and `offline_access` as its defaults. Ensure the profile has the permissions required for the actions you select, including write permission for **Upload file**, and grant consent in Entra ID. The callback URL is environment-specific; use the value displayed in your profile.
+  </Step>
+  <Step title="Create the action tool">
+    In **Tools**, select **New Tool** > **Action** > **Microsoft OneDrive** > **Continue**. Select the **Action** and **Auth Profile**, configure the inputs, and choose whether to return the complete connector response or define custom output parameters. Select **Create Tool**, then [assign the tool to an agent](/agent-platform/tools/actions#assign-an-action-to-an-agent).
+  </Step>
+</Steps>
+
+## Auth profile reference
+
+The auth profile form includes a profile name and description. **Visible to project members** is enabled by default. Studio shows the following configuration by auth type:
+
+| Auth type | Configuration fields |
+| --- | --- |
+| **Azure AD (Service Principal)** | **Azure Tenant ID**, **Resource** (defaults to `https://graph.microsoft.com`), **Scopes** (space-separated), **Client ID**, and **Client Secret**. Usage mode is **Preconfigured**. |
+| **OAuth 2.0 App (User Delegated)** | **Usage Mode** (**Preconfigured**, **JIT (Just-in-Time)**, or **Preflight**); **Scope** (derived from usage mode; **Shared** for the default **Preconfigured** mode); **Tenant type** (defaults to **Multi-tenant**); optional **Discovery / Server URL**; **Authorization URL**, **Token URL**, and **Refresh URL**; **Scopes**; **Require PKCE** (off by default); additional authorization parameters; callback URL; **Client ID** and **Client Secret**. The inspected default endpoints use `https://login.microsoftonline.com/common/oauth2/v2.0/authorize` and `https://login.microsoftonline.com/common/oauth2/v2.0/token`. |
+| **OAuth 2.0 Client Credentials** | **Directory (tenant) ID**, **Authorize Using** (defaults to **Client Secret**), **Token URL** (defaults to the tenant-specific Microsoft token endpoint), **Refresh Token URL**, **Scopes** (defaults to `https://graph.microsoft.com/.default`), **Client ID**, and **Client Secret**. Usage mode is **Preconfigured**. |
+
+For delegated OAuth, Studio's default additional authorization parameters are `response_type=code` and `response_mode=query`. Use the callback URL shown in the profile; its host varies by environment.
+
+## Action reference
+
+The parameter details below match the action forms in Studio. Folder dropdowns can list up to 1,000 folders. The form notes that if a folder is missing, use the **(F)** option to enter its ID; OneDrive folder IDs appear after `?id=` in the folder URL.
+
+<AccordionGroup>
+  <Accordion title="Upload file" id="upload-file">
+    | Parameter | Type | Required | Description |
+    | --- | --- | --- | --- |
+    | `fileName` | string | Yes | Name to save the uploaded file as, such as `file.txt`. |
+    | `file` | string | Yes | File URL or base64 content to upload. |
+    | `markdown` | string | No | Studio displays a note about finding folders beyond the dropdown list and entering a folder ID. |
+    | `parentId` | enum | No | Parent OneDrive folder. |
+  </Accordion>
+  <Accordion title="Get File" id="get-file">
+    | Parameter | Type | Required | Description |
+    | --- | --- | --- | --- |
+    | `lookupBy` | enum | Yes | Choose `File ID` (default) or `File Name`. |
+    | `fileIdentifier` | string | Yes | File ID or exact filename, according to **Look Up By**. |
+  </Accordion>
+  <Accordion title="List Files" id="list-files">
+    | Parameter | Type | Required | Description |
+    | --- | --- | --- | --- |
+    | `markdown` | string | No | Studio displays a note about finding folders beyond the dropdown list and entering a folder ID. |
+    | `parentFolder` | enum | No | Folder whose files to list. |
+  </Accordion>
+  <Accordion title="List Folders" id="list-folders">
+    | Parameter | Type | Required | Description |
+    | --- | --- | --- | --- |
+    | `markdown` | string | No | Studio displays a note about finding folders beyond the dropdown list and entering a folder ID. |
+    | `parentFolder` | enum | No | Parent folder whose subfolders to list. |
+  </Accordion>
+  <Accordion title="Custom API Call" id="custom-api-call">
+    | Parameter | Type | Required | Description |
+    | --- | --- | --- | --- |
+    | `url` | object | Yes | Microsoft Graph endpoint URL. |
+    | `method` | enum | Yes | `GET`, `POST`, `PATCH`, `PUT`, `DELETE`, or `HEAD`. |
+    | `headers` | object | Yes | Additional request headers. Studio injects authorization headers from the selected profile. |
+    | `queryParams` | object | Yes | Query string parameters. |
+    | `body_type` | enum | No | `None` (default), `JSON`, `Form Data`, or `Raw`. |
+    | `body` | object | No | Request body. |
+    | `response_is_binary` | boolean | No | Enable for file responses such as PDFs or images. Defaults to `false`. |
+    | `failsafe` | boolean | No | **No Error on Failure** option. No default is selected. |
+    | `timeout` | number | No | Request timeout in seconds. |
+    | `followRedirects` | boolean | No | Follow redirects. Defaults to `false`. |
+  </Accordion>
+</AccordionGroup>
+
+## Trigger reference
+
+The **New File** trigger has one optional folder selector. The form's note explains that the folder picker lists up to 1,000 folders; use **(F)** to enter a folder ID if needed.
+
+<AccordionGroup>
+  <Accordion title="New File" id="new-file">
+    | Parameter | Type | Required | Description |
+    | --- | --- | --- | --- |
+    | `markdown` | string | No | Studio displays a note about the folder dropdown limit and entering a folder ID. |
+    | `parentFolder` | dropdown | No | Limit the trigger to files in this folder. |
+  </Accordion>
+</AccordionGroup>
+
+## Troubleshoot common issues
+
+| Issue | Resolution |
+| --- | --- |
+| OAuth authorization fails or doesn't complete | Verify the client ID and secret, redirect URI, tenant configuration, and consented Microsoft Graph permissions. |
+| Upload or another write action is denied | Confirm the profile has the Microsoft Graph write permission required by the action and that consent has been granted. |
+| A folder is missing from a dropdown | Confirm the authorized account can access it. If it's beyond the first 1,000 folders, use **(F)** and enter its folder ID from the OneDrive URL. |
+| **Get File** doesn't find an item | Check **Look Up By** and enter the file ID or exact filename that matches the selected mode. |
+| A custom API request fails | Verify the Microsoft Graph endpoint, method, headers, query parameters, request body, and permissions on the selected auth profile. Studio injects authorization headers. |
+
+## Related articles
+
+- [Auth profiles](/agent-platform/administration/integrations-settings#auth-profiles)
+- [Action Tools](/agent-platform/tools/actions)
+- [Microsoft Entra app registration](https://learn.microsoft.com/en-us/entra/identity-platform/quickstart-register-app)
+- [Microsoft Graph permissions reference](https://learn.microsoft.com/en-us/graph/permissions-reference)
+- [Microsoft Graph OneDrive API](https://learn.microsoft.com/en-us/graph/api/resources/onedrive)

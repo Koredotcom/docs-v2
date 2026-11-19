@@ -1,0 +1,38 @@
+---
+title: Call recording API overview
+description: Use the call recording API to fetch a session's call recordings with media URLs and to stream recording media for compliance archiving, QA, and analytics.
+sidebarTitle: Call recording APIs
+---
+
+Use the call recording API to fetch the server-side call recordings that a voice session produced, with a media URL for each recorded file. The API is read-only. It supports unattended jobs such as compliance archiving, QA sampling, and analytics pipelines that need call audio without a person's credentials. It does not return transcripts or other conversation text.
+
+## Prerequisites
+
+- A project-bound platform API key (`abl_…`) with the `recordings.read` scope. Send it in the `x-api-key` header or as `Authorization: Bearer abl_…`. The API refuses Studio user JWTs, JWT App assertions, and public `pk_` keys with `403 PLATFORM_API_KEY_REQUIRED`.
+- Call recording enabled for the tenant.
+- The project ID and the session ID.
+
+## Workflow and use cases
+
+1. Get all recordings for the session.
+2. Check `data.status`. If `data.retryable` is `true`, retry with backoff. Stop retrying when it is `false`.
+3. For each file that has a URL, check `urlKind`. For `signed` and `external`, send a `GET` request to the URL. For `proxied`, prefix the relative URL with the API host and send a `GET` request.
+4. Stream the media. A `proxied` URL calls the stream endpoint, which supports byte ranges.
+
+Send no API key or `Authorization` header when you request a media URL.
+
+## List of endpoints
+
+| Use case | Help article                                                                                        | Purpose                                                                                             | Credential                         |
+|:---------|:----------------------------------------------------------------------------------------------------|:----------------------------------------------------------------------------------------------------|:-----------------------------------|
+| Fetch    | [Get all recordings for a session](/agent-platform/api-reference/recording-fetch-calls-per-session) | List a session's recordings and their files, each with a media URL or the reason none is available. | `recordings.read` scope on the key |
+| Stream   | [Stream a recording](/agent-platform/api-reference/recording-stream)                                | Stream a recording file from a `proxied` URL, with HTTP range support.                              | Media token in the URL             |
+
+## Behavior to know
+
+- A session can produce several recordings, such as after a transfer. Each recording can have several files, such as separate caller and agent channels.
+- An HTTP `200` response does not mean the media is available. The `data.status` field is `success`, `partial`, `call_in_progress`, `media_in_progress`, or `media_unavailable`.
+- Media URLs are short-lived. The default lifetime is 900 seconds and the maximum is 3600 seconds. The `expiresIn` field is `null` for external URLs. Treat every media URL as a bearer secret.
+- Use the `disposition` parameter to choose `attachment` (default) to download the file or `inline` to play it in a browser.
+- A session allows up to 64 recordings and, by default, up to 32 stored files across them. Exceeding a limit returns `413`.
+- When the API issues at least one media URL, it records an audit event attributed to the calling key.

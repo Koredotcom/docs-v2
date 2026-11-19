@@ -1,0 +1,144 @@
+---
+title: Evaluate agents
+sidebarTitle: Evaluate agents
+---
+
+An eval set replays conversations with simulated users and scores each one. Use it as the gate between a change and a release. For the screens and settings, see [Evaluations](/agent-platform/evals).
+
+## Use eval sets as a release gate
+
+Eval sets live at **Project** → **Evaluate** → **Evals**.
+
+| Part | What it holds |
+|---|---|
+| **Persona** | The simulated user's style, goals, and limits |
+| **Scenario** | Opening message, entry agent, expected outcome written as rules, **Max Turns**, and optional exact checks such as **Expected Milestones** |
+| **Evaluator** | LLM Judge, Code Check, Trajectory, or Human Review |
+| **Run** | Every persona × scenario × variation, on an execution target: the working copy or an environment. Arch MCP also accepts a deployment or one agent version. |
+
+* Studio has no Compare screen. The `platform_eval_runs compare` operation reports evaluator-level aggregates; read the individual run cases for scenario-level results.
+* Runs need compatible, complete snapshots to compare. Keep scenarios, evaluators, personas, and variation counts stable for regression runs.
+* A Human Review evaluator leaves a run provisional. Keep that set out of automated baselines.
+* Put scenarios that write real rows in a separate set with one variation, and reset the rows before each run.
+
+## Add exact checks to scenarios
+
+Judges score what can't be checked exactly. Set exact checks for everything that must be exact.
+
+| Check | Where you set it | What it proves |
+|---|---|---|
+| **Expected Milestones** | Scenario → **Expected Milestones** | Each named tool call, flow step, or handoff happened. |
+| `requiredToolOrder`, `maxToolCalls` | A trajectory branch, through `platform_eval_scenarios update` | Tools succeeded in this order, within the limit. |
+| `responseOutcomeContract` | The scenario | Named values in the outcome match the tool trace. |
+| `toolFixtures` | The scenario file in the project export | Fixed tool results. A call that no fixture matches runs the real tool, so give every write tool a catch-all fixture. |
+| `turnLatencyBudgetMs` | The suite, or one scenario | A slower turn fails the case. |
+
+A Trajectory evaluator on a scenario with none of these checks has nothing to score.
+
+{/* REVIEW: Confirm with engineering that requiredToolOrder, maxToolCalls, responseOutcomeContract, toolFixtures, and turnLatencyBudgetMs are supported for customers. */}
+
+* Variations default to 3. Keep 3 on read-only sets, and read the spread per scenario. Use one variation for sets that write.
+* Set **Judge Model** explicitly, and prefer a model other than the agent's.
+* After you change an evaluator, re-judge a finished run with `runMode: "evaluator_only"` and `sourceRunId`.
+* `platform_eval_runs compare` doesn't check the execution target or the model. Record both with every run.
+
+## Compare runs with a baseline
+
+A baseline records the starting point for a stable eval set. Use it to ask whether a change regressed measured behavior. It doesn't replace reading the conversations or checking a policy-sensitive path.
+
+<Steps>
+  <Step title="Keep a core set">
+    Keep scenarios, personas, evaluators, and the variation count stable. Record the execution target and model.
+  </Step>
+  <Step title="Add the failure scenario">
+    Add the new scenario that captures the failure you want to prevent.
+  </Step>
+  <Step title="Run the unchanged target">
+    Before you change the agent, run the full set against the unchanged target. Confirm the new scenario shows the known failure and the existing cases behave as expected.
+  </Step>
+  <Step title="Set the baseline">
+    Set the set's `baselineRunId` to this complete run, through `platform_eval_sets` or the API. Studio has no button that marks a run as the baseline.
+  </Step>
+  <Step title="Change and rerun">
+    Make one bounded change, then rerun the same full set against the same target and model.
+  </Step>
+  <Step title="Review the results">
+    Review regression flags and evaluator-level compare results. Open the changed cases, and read their conversations, tool results, and traces.
+  </Step>
+</Steps>
+
+{/* REVIEW: Confirm that baselineRunId has no Studio control, so this step is API or Arch MCP only. */}
+
+| Evidence | What it tells you | What still needs review |
+|---|---|---|
+| **Regression status** | Whether a scored cell crossed the configured regression threshold against the baseline, with details | Whether the score change is safe, and whether the scenario still meets its product goal |
+| **`platform_eval_runs compare`** | Evaluator-level averages and pass rates for compatible complete runs | Per-scenario results, run target, model, and the conversation evidence |
+| **Run cases and traces** | What the simulated user said, which path ran, and what each tool returned | Whether the scenario set covers the intended users and risks |
+
+Comparison can be refused when results are incomplete or the scenario, evaluator, or variation snapshots differ. Reasons include `run_results_incomplete`, `scenario_snapshot_changed`, `evaluator_snapshot_changed`, and `variant_count_changed`. Resolve the mismatch, or create a new baseline after you change the set on purpose.
+
+## Use personas that exercise different paths
+
+A persona describes how a simulated user communicates and what they want. A scenario supplies the opening request, fixed booking or account data, expected outcome, and exact checks. Keep personal or case-specific data in the scenario fixtures, not in a reusable persona.
+
+| Persona pattern | Behavior to test | What to observe |
+|---|---|---|
+| **Brisk** | Gives the request and required details directly. | Does the agent complete a simple path without needless questions? |
+| **Worried** | Repeats a concern and asks for reassurance. | Does the agent explain the next step without making promises? |
+| **Vague** | Starts with an incomplete request and reveals details gradually. | Does the agent ask only for the missing information? |
+| **Adversarial** | Presses for an action outside policy or ignores a required check. | Do tool and workflow contracts keep the boundary intact? |
+
+Start with one persona per communication pattern that changes a path. **Evals** → **Library** → **Personas** includes adversarial templates, and Arch or `platform_eval_personas` can generate drafts. Review generated goals and constraints before you use them in a release set.
+
+## Check the judges against human review
+
+An LLM Judge is useful only when its rule is clear and its examples agree with how your team applies the rule. Calibration is a repeatable review process; the platform doesn't calculate human-judge agreement for you.
+
+1. Write the evaluator as observable pass and fail criteria. Include one example at the boundary.
+2. Hand-score 10 to 20 conversations from a completed run. Record the case ID and a short reason for each decision.
+3. Use **Re-run evaluators only**, or evaluator-only mode, on the same source run.
+4. Count disagreements and inspect the evidence. Separate an unclear rubric from a missing conversation trace or a judge mistake.
+5. Revise the prompt, examples, or exact checks, then repeat the sample.
+6. Keep a judge out of the release gate until the remaining disagreements are uncommon and explainable.
+
+Choose the judge model explicitly, preferably a different model from the agent's. Set temperature to zero where available, use Pass/Fail for binary rules, and ask the judge to cite the conversation evidence. Read cases marked **Needs human review**. A judge's rationale is supporting evidence; it doesn't replace a reviewer's decision on a high-impact outcome.
+
+## Run evaluations in CI
+
+Use a CI-only project as the integration target. Store API credentials in the CI secret store. The pull-request gate uses read-only tools and fixtures; keep real writes in a separate set with controlled test rows and a reset plan.
+
+The sequence below shows the CLI calls. Adapt the JSON checks to your runner. Require the validation diagnostics to be valid: `lifecycle validate` can exit successfully while its JSON still reports package errors. Preview the sync first, and apply it to the CI project only after you review the returned digest and issues.
+
+```bash CI validation and evaluation
+set -euo pipefail
+artemis-platform-cli verify "$PACKAGE_PATH"
+validation="$(artemis-platform-cli lifecycle validate "$PACKAGE_PATH" \
+  --project "$PROJECT_ID" --preview)"
+printf '%s\n' "$validation" | jq .
+printf '%s' "$validation" | jq -e \
+  '.data.validation.diagnostics.valid == true' >/dev/null
+preview="$(artemis-platform-cli lifecycle sync "$PACKAGE_PATH" \
+  --project "$PROJECT_ID")"
+digest="$(printf '%s' "$preview" | jq -r '.data.preview.digest')"
+artemis-platform-cli lifecycle sync "$PACKAGE_PATH" \
+  --project "$PROJECT_ID" --apply --confirm \
+  --preview-digest "$digest" --operation-id "$CI_PIPELINE_ID"
+artemis-platform-cli lifecycle eval run \
+  --project "$PROJECT_ID" --set "$EVAL_SET_ID" \
+  --mode full --wait --timeout 3600 \
+  --min-pass-rate 0.90 --min-score 0.80
+```
+
+Set the pass-rate and score thresholds on purpose, and keep them aligned with the suite's **Passing score** and regression settings. A failed eval gate returns exit code 2. The run count is scenarios × personas × variations: 11 scenarios × 3 personas × 1 variation is 33 conversations. See [Use the Artemis CLI](/agent-platform/use-cli).
+
+The CLI has no compare command. The CI/CD API can start a release eval with an optional baseline, return per-scenario results, compare release scores, and report gate status.
+
+| CI/CD API step | Request and result |
+|---|---|
+| **Start the release eval** | `POST /api/cicd/v1/projects/{projectId}/releases/{releaseId}/evals` with `evalSetId` and an optional `baselineReleaseId`. Keep the returned `runId`. |
+| **Read the run** | Poll `GET /api/cicd/v1/projects/{projectId}/eval-runs/{runId}` for completion, gate status, and per-persona, per-scenario, per-evaluator, and per-variant results. |
+| **Compare releases** | `GET /api/cicd/v1/projects/{projectId}/releases/{releaseId}/eval/compare?baselineReleaseId=…` returns scores and their delta. `GET /api/cicd/v1/projects/{projectId}/releases/{releaseId}/gates` returns the release gate status. |
+
+The release-compare endpoint returns the overall score delta. Inspect the run's scenario breakdown to see which cases passed. Run a broader set nightly or before release.
+
+{/* REVIEW: Confirm that the CI/CD API endpoints under /api/cicd/v1 are public. No API reference page exists for them yet. */}

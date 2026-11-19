@@ -13,7 +13,8 @@ The setup requires:
 2. [Artemis channel configuration](#artemis-channel-configuration): create the connection, then copy its messaging endpoint.
 3. [Configure the messaging endpoint](#configure-the-messaging-endpoint) and the Teams channel in Azure.
 4. [Create and install the Teams app](#create-and-install-the-teams-app).
-5. [Verify the connection](#verify-the-connection) in a real Teams conversation.
+5. Optional: [Set up Microsoft 365 Copilot](#set-up-microsoft-365-copilot) as a custom engine agent.
+6. [Verify the connection](#verify-the-connection) in a real Teams conversation.
 
 After setup, Teams sends each activity to Artemis. Artemis validates the Bot Framework token, runs the agent, and replies in the same conversation.
 
@@ -134,7 +135,7 @@ Package the bot as a Teams app. Select **Open Teams Developer Portal** in the se
     }
     ```
 
-    For Microsoft 365 Copilot, also set `webApplicationInfo.id` and `copilotAgents.customEngineAgents.id` to the Microsoft App ID.
+    For Microsoft 365 Copilot, also complete [Set up Microsoft 365 Copilot](#set-up-microsoft-365-copilot).
   </Step>
 
   <Step title="Validate and download the package">
@@ -143,6 +144,54 @@ Package the bot as a Teams app. Select **Open Teams Developer Portal** in the se
 
   <Step title="Upload or publish the app">
     For development, go to **Apps** > **Manage your apps** > **Upload a custom app**, if tenant policy allows it. For a controlled rollout, have a Teams administrator publish the app and assign app permission and setup policies.
+  </Step>
+</Steps>
+
+---
+
+## Set up Microsoft 365 Copilot
+
+Make the agent available in Microsoft 365 Copilot as a custom engine agent. The same bot and Artemis connection serve both Teams and Copilot, so complete the Teams app setup first. Select **Setup instructions** on the channel page to see these steps in Studio.
+
+<Steps>
+  <Step title="Use a compatible manifest">
+    Set `manifestVersion` to `1.21` or later. Keep `bots[].botId` equal to the Microsoft App ID of this connection.
+  </Step>
+
+  <Step title="Add the Copilot scope">
+    Add `copilot` to `bots[].scopes`. Keep `personal`, `team`, and `groupChat` only for the Teams surfaces you support.
+  </Step>
+
+  <Step title="Add the custom engine agent entry">
+    Add a `copilotAgents.customEngineAgents` entry with `type` set to `bot` and `id` set to the same Microsoft App ID. If your manifest has `webApplicationInfo`, set its `id` to the Microsoft App ID too.
+
+    ```json
+    {
+      "manifestVersion": "1.21",
+      "name": { "short": "Contoso Agent" },
+      "description": { "short": "Custom engine agent" },
+      "bots": [
+        {
+          "botId": "00000000-0000-0000-0000-000000000000",
+          "scopes": ["personal", "copilot"]
+        }
+      ],
+      "copilotAgents": {
+        "customEngineAgents": [
+          {
+            "id": "00000000-0000-0000-0000-000000000000",
+            "type": "bot"
+          }
+        ]
+      }
+    }
+    ```
+
+    Replace the sample ID with your Microsoft App ID in both places.
+  </Step>
+
+  <Step title="Validate and publish">
+    Validate the manifest, package the app, and upload or publish it through the Teams Admin Center or Microsoft 365 Agents Toolkit. Confirm that tenant policy lets users install the custom app.
   </Step>
 </Steps>
 
@@ -158,6 +207,7 @@ Artemis doesn't synthesize Teams activities, so a real conversation is the only 
 4. Install the bot in a test team and group chat only if the manifest includes those scopes. Confirm @mentions and routing in each context, because a personal-chat pass doesn't prove team or group behavior.
 5. With `supportsFiles` on, send an approved file and an inline image in personal chat, and confirm the agent processes them.
 6. To test in Copilot, open the app in Teams and select **Open with Copilot**.
+7. If the agent uses a [feedback survey](/agent-platform/feedback-template), finish a conversation and confirm the survey appears after the closing reply and that your response is recorded.
 
 | Capability | Where it works |
 |---|---|
@@ -256,6 +306,8 @@ Most failures trace to a mismatched App ID or a stale manifest.
 | Teams won't install the app | Validation or policy block | Resolve Developer Portal validation errors, confirm tenant policy allows custom app upload, or ask a Teams administrator to publish and permit the app. |
 | Personal chat works but team or group chat doesn't | Scope missing or not reinstalled | Add the scope to the manifest, reinstall the updated package, add the app to the target context, and test the required @mention behavior. |
 | Text works but files don't | Files not enabled or outside policy | Set `supportsFiles` to `true`, reinstall, test in personal chat, stay within the size limit, and confirm Artemis trusts the download host. |
+| No feedback survey after the conversation ends | Survey not attached to the completion | Confirm the agent's completion response references the survey template, and that the conversation reached `COMPLETE`. |
+| Copilot doesn't list the agent | Manifest missing Copilot entries | Set `manifestVersion` to `1.21` or later, add the `copilot` scope, add the `customEngineAgents` entry with the Microsoft App ID, and reinstall the package. |
 | Adaptive Card buttons don't submit | Unsupported card or stale app | Use a supported Adaptive Card with `Action.Execute`, confirm the app is current, and check whether the invoke activity reaches the same connection. |
 
 ---
@@ -270,6 +322,7 @@ Use these pages when you need detail beyond what this article covers. Artemis fi
 | [Upload a custom Teams app](https://learn.microsoft.com/microsoftteams/platform/concepts/deploy-and-publish/apps-upload) | Sideloading the app package for testing. |
 | [Teams Developer Portal](https://dev.teams.microsoft.com/) | Creating, validating, and downloading the app package. |
 | [Teams Admin Center](https://admin.teams.microsoft.com/) | Publishing the app and assigning policies. |
+| [Custom engine agents](https://learn.microsoft.com/en-us/microsoft-365/copilot/extensibility/overview-custom-engine-agent) | Building and publishing a custom engine agent for Microsoft 365 Copilot. |
 
 ---
 

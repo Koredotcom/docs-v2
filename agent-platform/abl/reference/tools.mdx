@@ -14,12 +14,17 @@ The `type:` property selects how a tool is executed. The supported values are:
 |:----------------|:--------------------------------------------------------------------------------------------|
 | `http`          | Call a REST (or SOAP) API endpoint. See [HTTP tools](#http-tools).                          |
 | `mcp`           | Bind a tool exposed by an MCP server. See [MCP tools](#mcp-tools).                          |
-| `sandbox`       | Run inline JavaScript/Python in an isolated sandbox. See [Code tools](#code-tools-sandbox). |
 | `lambda`        | Invoke a cloud serverless function. See [Lambda tools](#lambda-tools).                      |
 | `async_webhook` | Fire-and-callback async HTTP. See [Async webhook tools](#async-webhook-tools).              |
 | `workflow`      | Invoke a durable workflow on the workflow engine. See [Workflow tools](#workflow-tools).    |
 | `searchai`      | Query a SearchAI knowledge base. See [SearchAI tools](#searchai-tools).                     |
 | `table`         | Structured CRUD against an Agent Table. See [Table tools](#table-tools).                    |
+
+{/* AG: Hiding code tools row for now.
+
+| `sandbox`       | Run inline JavaScript/Python in an isolated sandbox. See [Code tools](#code-tools-sandbox). |
+
+*/}
 
 ## Tool declaration syntax
 
@@ -739,6 +744,8 @@ TOOLS:
 
 ---
 
+{/* AG: Hiding code tools for now.
+
 ## Code tools (sandbox)
 
 Code tools execute user-provided JavaScript or Python code in an isolated sandbox environment with resource limits and no network access.
@@ -810,6 +817,8 @@ TOOLS:
 ```
 
 ---
+
+*/}
 
 ## Lambda tools
 
@@ -888,10 +897,12 @@ TOOLS:
 | `type`          | `"workflow"`            | Yes      | --       | Declares this as a workflow tool.                                                |
 | `workflow_id`   | `string`                | Yes      | --       | Logical workflow identifier. Version routing comes from the deployment manifest. |
 | `mode`          | `"sync"` , `"async"`    | No       | `"sync"` | `sync` waits for completion; `async` starts the run and returns a handle.        |
-| `timeout_ms`    | `number`                | No       | _none_   | Maximum time to wait. Supports `{{config.X}}` interpolation.                     |
+| `timeout_ms`    | `number`                | No       | _none_   | Maximum time to wait, in milliseconds, up to 300,000. With no value, the runtime waits 60 seconds. Supports `{{config.X}}` interpolation. |
 | `param_mapping` | `Record<string,string>` | No       | _none_   | Maps workflow input fields to tool parameters (workflow key → tool parameter).   |
 
 <Note>The workflow must exist in the same tenant/project; this is validated at compile time. Legacy `workflow_version` / `trigger_id` fields are no longer used and are silently ignored.</Note>
+
+<Note>HTTP tools use `timeout`. Workflow tools use `timeout_ms`. Both take milliseconds. A value such as `"30s"` is rejected.</Note>
 
 ### Sync and async
 
@@ -935,6 +946,41 @@ An expression cannot be evaluated when, for example, it adds text to a number, i
 <Warning>**Behavior change.** An argument that cannot be evaluated is now left out instead of sent as a partial value. Wrap the path in `COALESCE(path, default)` to send an explicit default.</Warning>
 
 The `call_argument_unresolved` warning carries `argument`, `celCode` (for example `no_such_overload` or `no_such_key`), `step` (when the call runs in a FLOW step), and `tool`. It never contains the expression or any value. FLOW step CALLs, hook CALLs, and tool `on_result` / `on_error` CALLs all emit it. A tool `process` field or a `TRANSFORM` `MAP` field that cannot be evaluated emits `value_expression_unresolved` instead, with `surface` (`process_before`, `process_after`, or `transform_map`), `field`, `celCode`, and `tool` or `step`. A `MAP` field is reported once per run.
+
+### Empty values for required parameters
+
+An empty literal (`""` or `''`) bound to a required parameter counts as a missing value. The runtime does not call the tool. The step takes its failure route, and the `CALL` result carries `__errorCode` `TOOL_REQUIRED_INPUT_MISSING` with the names of the missing parameters. A `tool_precondition_failed` trace event records the block. It names the tool, step, and fields, never their values. A write tool can still take a gathered field of the same name when the call runs.
+
+```yaml
+TOOLS:
+  lookup_order(order_id: string, note?: string) -> object
+    description: "Look up an order"
+
+FLOW:
+  find_order:
+    REASONING: false
+    CALL: lookup_order
+      WITH:
+        order_id: ""
+        note: ""
+      AS: orderResult
+    ON_FAIL: handle_missing_order
+```
+
+Here `order_id` is required, so the compiler warns with [`CALL_WITH_REQUIRED_PARAM_EMPTY`](/agent-platform/abl/reference/errors-and-warnings#call_with_required_param_empty). `note` is optional, so its empty value is sent and gets no warning.
+
+The warning does not cover a parameter that:
+
+- has a default value, or a source other than the model
+- is hidden from the model
+- is filled by a `process.before` value
+- is `session_id`, `tenant_id`, or `project_id`, which the runtime always supplies
+
+To fix it, pick one:
+
+- Declare the parameter optional (`order_id?: string`) when an empty value is valid.
+- Bind a value that is never empty.
+- Branch on `__errorCode == "TOOL_REQUIRED_INPUT_MISSING"` in the failure branch to handle the missing input.
 
 ---
 
@@ -1193,6 +1239,9 @@ TOOLS:
 | `consent_action`      | `string`                                         | _none_  | Named consent action to trigger.                     |
 | `consent_fallback`    | `"explicit_prompt"` , `"block"`                  | _none_  | What to do if consent isn't granted.                |
 
+{/* REVIEW: The handbook writes this setting as confirm: always and says any value other than always, never, or when_side_effects means no confirmation. Confirm the key name and the fallback. */}
+Only `always`, `never`, and `when_side_effects` turn on a confirmation rule. Any other value, such as `yes`, means no confirmation.
+
 #### What the customer is asked
 
 When a call needs approval, the customer sees a plain-language question in chat and in cascaded voice (speech-to-text, reasoning, text-to-speech). The runtime builds it from the `tool_confirmation_request` message, your `consent_action` (if you set one), and a readable label for each parameter value. The default wording is:
@@ -1252,6 +1301,8 @@ TOOLS:
 <Note>`effect` is optional by default, but a project can opt into a **strict realtime effect metadata mode** at compile time. Under that mode, every non-system tool must declare an explicit `effect` — an undeclared one is a compile error ([`REALTIME_TOOL_EFFECT_REQUIRED`](/agent-platform/abl/reference/errors-and-warnings#realtime_tool_effect_required)): *"Tool must declare an explicit effect (read_only, state_write, or side_effect) for strict realtime effect metadata mode."* This lets the compiler safely select the guarded scheduler lane a tool runs on. Strict mode is off by default for backward compatibility; declare `effect` on every tool to stay compatible with it regardless.</Note>
 
 <Note>When neither `effect` nor `hints.side_effects` is declared, the runtime infers one: for an HTTP tool, `GET`, `HEAD`, and `OPTIONS` default to read-only and every other method defaults to side-effecting; SearchAI and read-only table bindings default to read-only; any other non-HTTP tool defaults conservatively to side-effecting. An explicit `effect`/`side_effects` always wins over the inferred default.</Note>
+
+<Warning>A workflow or MCP tool with no declared effect counts as a write. It's held while another action waits for a confirmation. Declare `effect: read_only` on every read tool.</Warning>
 
 ### Concurrent tool execution
 
@@ -1360,6 +1411,8 @@ TOOLS:
 ```
 
 `before` supports `params` (computed parameter map), `require` (precondition expressions), `on_fail` (one of `block("msg")`, `reask("msg")`, `warn("msg")`, `use_original`, `fallback("msg")`), and `use` (a named transform). `after` supports `result` (output remapping) and `on_fail`.
+
+<Warning>Don't put a `before` `require` check on a runtime input (a parameter with `default_source: runtime`). The `before` stage runs before runtime inputs are filled.</Warning>
 
 ### Result caching
 
