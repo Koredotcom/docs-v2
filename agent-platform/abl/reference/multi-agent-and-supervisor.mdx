@@ -842,8 +842,8 @@ DELEGATE:
 A remote agent's credentials never live in the ABL file. The project's external agent registry record holds them. The record either references an Auth Profile through `authProfileId`, or stores inline `authType` (`bearer`, `api_key`, or `none`) plus an `authConfig` reference to the project secret. When `authProfileId` is set, it takes precedence and the runtime ignores inline auth.
 
 - Header-rendering profiles add headers to the outgoing request. These are bearer, header API key, basic, custom header, OAuth client credentials, OAuth app and token grants, and Azure AD.
-- An `aws_iam` profile in IAM role mode (`credentialMode: assume_role`) makes the runtime assume the customer's IAM role and SigV4-sign every request to the agent.
-- Static-key AWS IAM, AWS credential-pair, mTLS, query-parameter API key, and personal profiles are rejected.
+- An `aws_iam` profile makes the runtime SigV4-sign every request to the agent. In Assume role mode (`credentialMode: assume_role`, recommended), the runtime assumes the customer's IAM role. In Access keys mode (`credentialMode: static_keys`), it signs with the stored keys. Use access keys where the runtime has no AWS workload identity.
+- AWS credential-pair, mTLS, query-parameter API key, and personal profiles are rejected.
 
 Rotating a credential is a registry or profile update, not an agent edit.
 
@@ -1403,6 +1403,8 @@ COMPLETE:
 | `TERMINAL` | `boolean`               | No       | `true`  | When `false`, the response renders (including interactive widgets like a closing feedback collector) **without** ending the session — control returns to the agent for the next turn. |
 | `STORE`    | `string`                | No       | --      | Collection or path name to store the completion result for analytics.  |
 | `MODEL_CONTEXT` | `string`           | No       | --      | Text retained for the model instead of the delivered `RESPOND` in future model calls. See [MODEL_CONTEXT on a response](/agent-platform/abl/reference/flow#model_context-on-a-response). |
+
+The runtime reads only `- WHEN:` conditions under `COMPLETE:`. A line written directly under `COMPLETE:` is ignored, so the agent gets no completion condition from it. The compiler reports [`W362`](/agent-platform/abl/reference/errors-and-warnings#w362). A condition property (`RESPOND`, `MODEL_CONTEXT`, `SET`, `STORE`, `TERMINAL`, or a response payload block) written at or left of the indent of its `- WHEN:` line is still read into that condition, so a `TERMINAL: false` there keeps the session open. The compiler reports [`W363`](/agent-platform/abl/reference/errors-and-warnings#w363). Indent each property under its condition.
 
 <Warning> `COMPLETE`'s `WHEN` is **deterministic** — it must be a boolean expression over session state. Plain-English / intent-style text is rejected at compile time ([`PLAIN_ENGLISH_COMPLETE_WHEN`](/agent-platform/abl/reference/errors-and-warnings#plain_english_complete_when)). Use `NLU`/routing for intent matching, not `COMPLETE WHEN`. A fully-quoted `WHEN` (`WHEN: "status == \"done\""`) is unwrapped and evaluated the same as an unquoted one when it contains an operator — see [Quoting a condition](/agent-platform/abl/reference/expressions-and-functions#quoting-a-condition). </Warning>
 
