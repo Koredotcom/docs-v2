@@ -342,6 +342,8 @@ Multi-Intent allows an agent to handle multiple customer requests instead of tre
 
 [Learn More](/agent-platform/abl-reference/nlu#multi-intent-handling-multi_intent)
 
+<Note>A yes to a queued offer approves nothing else. A write tool still asks for its own confirmation. An orchestrator requests one tool call at a time unless Multi-Intent is on.</Note>
+
 ### Field inference
 
 This section lets the runtime use an LLM to infer values the user hasn't stated, which shortens conversations at the cost of occasionally guessing wrong.
@@ -377,8 +379,8 @@ The reasoning pipeline runs a lightweight classifier ahead of each reasoning tur
 |---|---|
 | **Enable Pipeline** | Runs the classifier ahead of reasoning to enable short-circuit routing and tool filtering. Everything else in this section depends on it. |
 | **Execution Mode** | Decides whether the classifier and tool filter run together or one after the other. **Parallel** runs them simultaneously, which costs less time. **Sequential** waits for the classifier result before deciding whether to run the tool filter at all. Default: `parallel`. |
-| **Pipeline Model** | Selects the model that performs intent classification. **Default** uses the project's `tool_selection` model. The pipeline runs on every turn, so this choice sets a recurring latency and cost floor for the whole project. |
-| **Short Circuit** | Skips the reasoning loop when classifier confidence is very high. Most of the pipeline's latency saving comes from here, and so does most of its risk, because no reasoning step follows to catch a misclassification. |
+| **Pipeline Model** | Selects the model that performs intent classification. **Default** uses the project's `tool_selection` model. The pipeline runs on every turn, so this choice sets a recurring latency and cost floor for the whole project. With enforced model access, the classifier doesn't run while this is **Default**. |
+| **Short Circuit** | Skips the reasoning loop when classifier confidence is very high. Most of the pipeline's latency saving comes from here, and so does most of its risk, because no reasoning step follows to catch a misclassification. On by default. Turn it off unless every guarded route carries its check in `WHEN`. |
 | **Short Circuit Threshold** | Sets the minimum confidence (0.0-1.0) a classification needs before the runtime routes programmatically. Default: 0.85. Treat it as the safety margin on short-circuiting. |
 | **Tool Filter** | Reduces the tool set sent to the LLM based on classifier analysis. Large catalogs degrade tool selection accuracy, so filtering helps most in projects that expose many tools. |
 | **Max Tools** | Caps how many tools reach the reasoning loop. Default: 6. |
@@ -432,7 +434,7 @@ This section sets project-level controls for how the runtime behaves when a safe
 
 | Value | Behavior |
 |---|---|
-| **Legacy passthrough** | Keeps the behavior that existed before this setting. Default for projects created before the setting was introduced. |
+| **Legacy passthrough** | Keeps the behavior that existed before this setting. Default for projects created before the setting was introduced. With output guardrails, it holds every reply until the checks pass, so first audio on a call comes later. |
 | **Buffered** | Holds streamed output back until the safety check completes, so nothing unchecked reaches the user. Adds delay before the first words appear. |
 | **Gated** | Releases streamed output in stages as each portion passes the safety check. |
 | **Terminate forward** | Stops sending further output when an intervention fires. Text already delivered stays with the user. |
@@ -462,6 +464,8 @@ Select the trash icon on a mapping to delete it.
 This section holds channel-scoped defaults for fast voice responses. It tunes model routing, reasoning, context size, and filler behavior for voice while preserving semantic response quality, and explicit developer overrides still take precedence. It appears for projects with a voice channel.
 
 When the project has an active voice channel but the recommended defaults aren't applied, a banner reads **Recommended voice defaults are not active**. Select **Apply recommended defaults** to apply the low-latency profile in one step: fast model routing, inline gather, bounded context, and generative filler defaults.
+
+<Note>The profile affects voice sessions only. An active voice channel doesn't prove the profile is applied. Check the banner and test a new call.</Note>
 
 #### Voice setting differences
 
@@ -554,7 +558,7 @@ Recovery policies are versioned. Publishing a policy doesn't apply it to any cha
 This group configures what a caller experiences while the agent thinks or works: spoken filler phrases, background hold-music audio, or both together. The settings interact, so read the whole group before you change any one part.
 
 <Note>
-  **How filler settings take effect.** Agent no-input messages and channel-specific Gemini settings take precedence over these project defaults. Otherwise, Runtime uses project filler pools and timing, then localized platform defaults. Native realtime fillers are available only for the `voice_realtime` tier. Genesys realtime supports pending-tool fillers but not the native coordinator filler.
+  **How filler settings take effect.** Agent no-input messages and channel-specific Gemini settings take precedence over these project defaults. Otherwise, Runtime uses project filler pools and timing, then localized platform defaults. Saved Filler Settings override the voice low-latency profile's filler defaults, and the profile's own overrides win over both. Native realtime fillers are available only for the `voice_realtime` tier. Genesys realtime supports pending-tool fillers but not the native coordinator filler.
 </Note>
 
 #### Filler settings
@@ -632,7 +636,7 @@ The exposure settings deserve particular care. Tool, workflow, and agent names d
 
 ### Voice no-input defaults
 
-This section sets what happens when a voice caller goes silent. Silence is ambiguous, since it can mean the caller is thinking, has walked away, or didn't hear the prompt, and these settings decide how long the agent waits before treating it as a problem.
+This section sets what happens when a voice caller goes silent. No-input handling is off by default. Always write a goodbye message. Silence is ambiguous, since it can mean the caller is thinking, has walked away, or didn't hear the prompt, and these settings decide how long the agent waits before treating it as a problem.
 
 | Field | Description |
 |---|---|
@@ -701,7 +705,7 @@ This section sets the project default for caller backchannel acknowledgements. T
 | **Enabled** | Turns on backchannel handling for the project. |
 | **Phrases** | Holds the acknowledgement phrases. This is one set for all callers, regardless of language, and the runtime sends it to the voice gateway. Type a phrase and press Enter to add it. |
 
-<Note>Backchannel is only effective with at least one phrase. If you turn it on without adding any, the page shows the warning **Backchannel is on but has no phrases**.</Note>
+<Note>Keep answers such as "yes" and "okay" off the list. Backchannel is only effective with at least one phrase. If you turn it on without adding any, the page shows the warning **Backchannel is on but has no phrases**.</Note>
 
 ### On hold
 

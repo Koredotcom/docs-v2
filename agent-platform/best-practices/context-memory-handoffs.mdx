@@ -1,0 +1,298 @@
+---
+title: Design context, memory, and handoffs
+sidebarTitle: Context, memory, and handoffs
+---
+
+Context is the working material a model has on a turn. Keep the useful facts, make their source clear, and pass only what the next step needs. Store the smallest durable fact needed later: a tool result can be large, but the value you pass forward should be small.
+
+For the settings behind this guide, see [How a turn is built](/agent-platform/context-and-prompts), [Memory and state](/agent-platform/memory-and-state), and [Context size, compaction, and budgets](/agent-platform/context-compaction).
+
+## Where to keep each value
+
+Don't store every utterance as a variable. Choose storage by lifetime, authority, visibility, and who needs the value.
+
+| Information | Where it belongs | Voyager example |
+|---|---|---|
+| Current request detail | Current turn or conversation history | "I can take the 6:45 flight." |
+| Verified value needed across the journey | `MEMORY` session variable with `READONLY: true`, written by the tool's `on_result: set` | `booking_ref`, `identity_verified` |
+| Value that only tools and conditions read | `MODEL_VISIBLE: false`, or a tool parameter with `default_source: runtime`, `visibility_model: false`, and `context_access: read` | The `flight_id` that `get_booking` saves for `get_upgrade_offer` |
+| Fact needed in a future conversation | `PERSISTENT` with `SCOPE: user`, for an identified user only. Kept 90 days unless you set a TTL. | Usual departure airport |
+| Long source material | Search or knowledge retrieval | Current travel policy, kept out of the prompt |
+
+* `READONLY: true` stops every model in the project from writing the value. `on_result`, `SET`, and hooks still write it.
+* Declared session variables go into every model call in full, with no size cap. Keep them to IDs, flags, and short strings.
+* An agent with a `BEHAVIOR` role reads only the values it declares.
+* Row versions stay inside the workflow that checks them.
+* Never store card data, PINs, or passwords in memory.
+
+## What the prompt leaves out
+
+| Gap | What goes wrong | What to do |
+|---|---|---|
+| Today's date and time | The model can't work out "tomorrow" or "within 24 hours". | Supply the date from a tool result or a session value. Test a relative-date question. |
+| An unset `{{value}}` in `GOAL`, `PERSONA`, or `INSTRUCTIONS` | The literal `{{value}}` text reaches the model. | Set an `INITIAL` value, or word the sentence so an empty value still reads well. |
+| `LIMITATIONS` in an orchestrator or a custom `SYSTEM_PROMPT` | The model never sees them. | Write the rule in `GOAL`, `INSTRUCTIONS`, or the prompt text. |
+| A changing `{{value}}` in `GOAL` or `PERSONA` | The provider's cached prompt is lost on every call. | Keep changing values in memory. |
+
+## Ground answers in knowledge bases
+
+Put policy text that people ask about in many different words in a knowledge base with citations (**Project** → **Resources** → **Knowledge Bases**). The model chooses a knowledge base by its description, so make the description specific.
+
+Give the agent the sentence to say when the documents don't cover a question. "Answer only from the documents" still let Voyager's policy agent add general knowledge. Set `max_search_tokens` under `compaction:` in the agent's copy of the search tool, so results stay small as the documents grow.
+
+| Failed layer | Sign | Fix |
+|---|---|---|
+| **Not indexed** | The document is missing or not indexed. | Ingestion |
+| **Not retrieved** | The right chunk is absent from the results. | Query, description, Top K, chunking |
+| **Cut by the budget** | The trace shows omitted results. | `max_search_tokens`, Top K |
+| **Ignored** | The right chunk came back, with a wrong answer. | Instructions |
+
+Read the search call in the session's traces, then run the same query in the knowledge base's **Search & Test**. Add test questions the documents can't answer. They catch invented answers.
+
+| Setting | Default | Change it when |
+|---|---|---|
+| `compaction: max_search_tokens` in the agent's copy of the search tool | No cap up to 10 chunks; 40,000 tokens above 10 | Always set it. Voyager sets 3,000. |
+| Top K (knowledge base → **Settings** → **Index Configuration**) | 10 | You want fewer, better chunks. |
+| Similarity threshold | 0.2 | Weak matches come back. |
+| Keyword Weight (Hybrid) | 0.5 | Exact terms, such as fare names, are missed. |
+| Chunking (knowledge base → **Pipeline**) | Set by the pipeline. Voyager chunks by heading. | Documents are long. Re-index after a change. |
+| `kb_fast_path: on` | Off | The agent's only business tool is one knowledge base, it has no handoff or delegate tools, and another agent didn't forward the message. It saves one model round. |
+
+Search applies per-user document permissions only when the session carries the user's verified identity with an email. Test restricted content with real user identities, because a Studio test chat has none. See [Knowledge bases](/agent-platform/knowledge).
+
+## Keep model requests small
+
+Each model call carries the system prompt, the conversation history, session memory, and the tool list. Large requests cost time and can crowd out relevant details.
+
+| Part of the request | Default |
+|---|---|
+| Conversation history | No cap. The whole-conversation summary is off. |
+| Session memory | Every declared value, on every call. |
+| A tool result, in the round it returns | Whole up to 10,000 characters. Above that, an extra model call summarizes it on text channels. |
+| Tool results on later turns | Replaced by a marker. A `model_context` view stays whole in every later request, up to 16,000 characters. |
+| Current Context (other values the agent may read) | 8,000 characters per value (4,000 for a stored tool result), 24,000 in total. |
+
+Send less first, and compact second:
+
+1. Select only the columns and rows the agent reads in each table tool's query.
+2. Add `model_context` with `FIELDS` to the agent's copy of a large workflow tool.
+3. Save the values later turns need with `on_result: set`.
+4. Give every agent a `BEHAVIOR` role, and set `history` on every handoff.
+
+Set compaction once, in the `compaction` block of the project's runtime configuration (`config/runtime-config.json` in an export). Studio's Runtime Config page shows only the voice profile values.
+
+Before you diagnose forgetting, read the request at **Project** → **Operate** → **Sessions** → session → **Traces** → LLM step → **Request**. Search it for `COMPACTED FOR CHAT HISTORY`.
+
+<Tip>Fix the source before you tune compaction. If a needed value disappears, fix its storage or handoff. Raising every context limit adds cost and latency and leaves the missing-data path broken.</Tip>
+
+### Compaction settings
+
+| Policy | Text default | Phone call (low-latency profile) |
+|---|---|---|
+| `tool_results` | Summarize above 10,000 characters, with an extra model call. The last 2 results stay whole. | Structured above 4,000 characters. The last 1 stays whole. |
+| `prior_turns` | Earlier tool results become a marker; earlier replies a 200-character preview. | 120-character preview |
+| `prompt_context` | 8,000 characters per value, 24,000 in total | 6,000 and 16,000 |
+
+When tools return large results and latency matters, set `tool_results` to `strategy: structured` to remove the summarizing call. An agent can override the project with `EXECUTION: compaction:`, but one policy per conversation is easier to diagnose.
+
+### Rules for model_context
+
+| Rule | Why |
+|---|---|
+| Put `model_context` on the agent's copy of the tool. | A shared tool file ignores it. |
+| List only fields that every result carries. | One missing field replaces the whole result with "Authored tool model context unavailable". |
+| Never list a path and its parent together. | Overlapping paths make the view fail. |
+| Keep the view short. | It stays whole in every later request. |
+| Shape table tools in their query. | A table tool returns JSON text. |
+| Use `TEMPLATE` instead of `FIELDS` for a one-line summary. | The model reads one short sentence built from the result. |
+
+## Reduce time and cost
+
+Model calls take most of a turn's time and cost; tool calls usually take a small share. Read each turn's calls, tokens, and cost at **Project** → **Operate** → **Sessions** → session → **Performance**.
+
+| Lever | What it removes |
+|---|---|
+| A specialist waits for its tool results before it hands back. | A routing bounce |
+| `FLOW` steps with `REASONING: false`; `TEMPLATES` for fixed answers | The model calls in those steps |
+| Independent tools requested in one step | One model round |
+| `EXECUTION: inline_gather: true` | The separate extraction call |
+| `RESPOND` under `on_result: do:`, with a `WHEN` for the case it fits | The model call that phrases a fixed answer. Needs a workflow tool, because the hook reads `result.output`. |
+| Extended reasoning off for conversational agents | Thinking time on every call |
+| `EXECUTION: pipeline: toolFilter: enabled: false` on an agent with few tools | The tool-filter call |
+| `max_iterations` (default 10 tool rounds per turn) | Raise it only when a trace shows a turn that needs more. |
+
+From Disruption, a delay under three hours needs no second model call:
+
+```yaml ABL: result handling
+on_result:
+  do:
+    - WHEN: result.output.flight_status == "delayed" AND result.output.delay_minutes < 180
+      RESPOND: "Flight {{result.output.flight_number}} from {{result.output.origin}} to {{result.output.destination}} is delayed by {{result.output.delay_minutes}} minutes and leaves from gate {{result.output.gate}}. Free rebooking starts at a three-hour delay, so your booking stays as it is."
+      MODEL_CONTEXT: "Told the traveller flight {{result.output.flight_number}} is delayed {{result.output.delay_minutes}} minutes, gate {{result.output.gate}}, and that free rebooking starts at three hours."
+```
+
+Any other result goes back to the model. A `respond:` placed directly under `on_result` is dropped without a warning.
+
+Change one lever, rerun the evals, and keep it only if the scores hold. Never remove verification or a write confirmation for speed. Studio shows the Reasoning Pipeline's **Short Circuit** on by default, and it skips the orchestrator's reasoning. Turn it off unless every guarded route carries its check in `WHEN`. See [Tuning for latency](/agent-platform/latency-and-speed).
+
+{/* REVIEW: Confirm with engineering that Short Circuit is on by default in Studio. */}
+
+### Parallel tool calls
+
+Tools the model requests in one step run at the same time, so the wait is close to the slowest call. A tool that needs another tool's result runs in a later step.
+
+| Need | Use |
+|---|---|
+| Lookups that can run in any order | Instructions that name the tools to request together. The model decides, so the grouping isn't guaranteed. |
+| One tool's result as the next tool's input | Save it with `on_result: set` and read it with `default_source: runtime`. A tool called before the value exists is refused. |
+| A fixed order, or a sequence several agents share | A workflow. Branches from one canvas node run together, and a node with several inputs waits for all of them. |
+
+For an upgrade question, Loyalty requests `get_member` and `get_booking` together. It then calls `get_upgrade_offer` with the `flight_id` that `get_booking` saved.
+
+An orchestrator asks the model for one tool call at a time unless Multi-Intent Recognition is on. Put parallel lookups in a specialist. In **Chat with Agent** → **Debug** → **Traces**, tools that ran together overlap.
+
+## Choose handoff, delegate, tool, or human review
+
+Ask whether control should move, whether a short subtask should return, or whether the work stays within one operation.
+
+| Use | When it fits | What happens next |
+|---|---|---|
+| **Tool or workflow** | One bounded operation, or a defined backend process | The agent keeps the conversation and uses the result. |
+| **`DELEGATE`** | A one-shot subtask that finishes without asking the user or waiting for a later turn | The child returns mapped results to the calling agent. |
+| **`HANDOFF`** | A specialist takes over the conversation, asks the user, or waits. Use `EXPECT_RETURN: true` when control must come back. | The receiving agent owns the conversation until it completes or returns it. |
+| **Human escalation** | The user asks for a person, policy requires one, or the agent can't resolve the case safely | Use the configured human transfer or escalation path, and make the reason clear. |
+
+Don't use a delegate for a child that needs to ask the user or suspend. Use a returning handoff for that. See [Multi-agent orchestration](/agent-platform/orchestrate).
+
+## Hand off between agents
+
+A receiving agent needs to know why it was called, what has already been verified, what the user asked for, and which values it can trust. Make clear which agent asks the user, which one owns a write, and where control returns.
+
+Use this one-line format for the handoff summary:
+
+> Reason · verified facts · user goal · next decision · safety limit · unresolved question
+
+For example: the traveler asks to change a disrupted flight; the booking reference matched and the status tool confirmed the delay; offer eligible flights without repeating identity checks; don't change the booking until the caller confirms the named flight.
+
+Set `history` on every `HANDOFF`. Without it, the receiver gets the whole conversation. Pass verified values by name, and add a one-line summary. Use `summary_only` when the passed values carry the request, and a small `last_n` when you pass nothing.
+
+Add `EXPECT_RETURN: true` when control must come back. The default is `false`, so without it the transfer is permanent. Write the `CONTEXT` keys in lowercase; an uppercase `PASS:` isn't read. From Concierge:
+
+```yaml ABL: handoff
+HANDOFF:
+  - TO: Disruption
+    WHEN: intent.category == "disruption" AND identity_verified == true
+    CONTEXT:
+      pass: [booking_ref, passenger_name, identity_verified]
+      summary: "{{passenger_name}} is asking about the status of the flight on booking {{booking_ref}} or a disruption."
+      history: summary_only
+    EXPECT_RETURN: true
+```
+
+With `EXPECT_RETURN: true`, the specialist gets a tool to hand back. In its instructions, list the follow-ups it keeps. It hands back only when the user wants something else, and never in the same step as another tool call.
+
+| `history` | What the receiver gets |
+|---|---|
+| Left out, or `full` | The whole earlier conversation, with no size cap |
+| `none` | No earlier messages |
+| `summary_only` | Only the summary line, so always write one |
+| `last_n` | The last N messages, written as a block with `mode: last_n` and `count` |
+| `auto` | `summary_only` when a summary is written and the receiver uses a model. Otherwise the last 5 messages. |
+
+Handoffs drawn on the Studio canvas start with `auto`. Voyager's Booking and Travel Policy agents use `last_n` with a count of 4, because Concierge passes them little.
+
+Without an `ON_RETURN` map, values the receiver gathered come back under the same names. Map the values the sender needs, so a returned field can't overwrite an unrelated one.
+
+| `ON_RETURN` key | What it does |
+|---|---|
+| `map` | Copies receiver values into sender values, written `child_key: parent_key`. |
+| `action: continue` | The sender carries on from where it stopped. |
+| `action: resume_intent` | The sender routes the request again with the returned values. |
+
+### Hand off to an external agent
+
+For an external A2A-capable agent, register it in the project's External Agent Registry and use a remote handoff. The registry owns the endpoint and authentication; the ABL names the registered alias. A successful registry connection test doesn't prove the live transfer, so test a real session with safe data. See [External agent](/agent-platform/external-agent).
+
+```yaml ABL: remote handoff
+HANDOFF:
+  - TO: External_Review
+    WHEN: needs_external_review == true
+    CONTEXT:
+      pass: [case_id, document_summary]
+      summary: "The case needs an external review."
+    EXPECT_RETURN: true
+    LOCATION: remote
+```
+
+## Handle several requests in one message
+
+"My flight to Denver was cancelled. And how many bags can I check?" holds two requests. Turn on Multi-Intent Recognition (**Project** → **Settings** → **Runtime Config**) with the Primary queue strategy. The runtime handles the main request first, then offers the others.
+
+Leave the plan to the runtime. The orchestrator's instructions shouldn't try to answer both. A yes to a queued offer approves nothing else, so the write tool still asks for its own confirmation. See the how-to guide [Handle multiple intents](/agent-platform/abl/how-to/handle-multiple-intents).
+
+## Context symptoms and fixes
+
+Check the request size on short and long conversations, especially after tool calls and handoffs. Track selected memory, tool result size, history length, cuts, model calls, and latency.
+
+| Symptom | Inspect | Likely correction |
+|---|---|---|
+| The agent asks for verified data again | State write, read-only flag, receiving agent declaration, handoff payload | Fix the state path. Pass only the verified value needed. |
+| The answer misses a tool result | Tool output, model request, compaction marker, result mapping | Project fewer fields, and map the needed result explicitly. |
+| An old policy controls behavior | The deployed version, the config pinned in that deployment, and the settings the session started with | Update the source, publish and redeploy, then test in a new session. |
+| A long call responds slowly | Context growth, model rounds, tool waits, handoff hops | Remove unneeded hops, and reduce payload at its source. |
+| A tentative choice is treated as final | Value type, confirmation state, write precondition | Store preference and authorization separately. |
+| Private details appear in unrelated turns | Context projection, persistent memory | Remove unneeded fields, and narrow retention. |
+
+## Debug a missing value
+
+1. **State the missing fact.** Name the exact value or decision, not "the model forgot."
+2. **Find its source.** Was it spoken, extracted, verified, returned by a tool, or inferred?
+3. **Follow the value.** Check where it was stored, whether it was visible, and whether the next agent received it.
+4. **Read the request.** Look for missing context, truncation, stale history, or a newer source that overrides it.
+5. **Fix and prove.** Add one scenario that fails without the value and passes with the intended context path.
+
+When you read the request, check each part, then search for the markers the platform leaves where it cut something.
+
+| Part of the request | What to check |
+|---|---|
+| `systemPrompt` | Unfilled `{{placeholders}}`, missing memory values, and `_contextLimited` markers |
+| `messages` | `COMPACTED FOR CHAT HISTORY` markers, shortened earlier turns, and what a handoff passed in |
+| `tools` | Each description and parameter reads the way you want the model to use it |
+
+| What was cut | Default | Search for |
+|---|---|---|
+| A large tool result, in its round | Above 10,000 characters; cut at 102,400 | `_summarized`, `truncated` |
+| Earlier replies after a tool call | 200-character preview | The preview text |
+| One Current Context value | Up to 8,000 characters; a stored tool result is limited to 4,000 | `_contextLimited` |
+| All of Current Context | 24,000 characters | The left-out values, listed by name |
+| A `model_context` view that can't be built | Any listed field missing | `Authored tool model context unavailable` |
+| Knowledge search results | `max_search_tokens` | A `searchai_kb_token_budget` decision in the trace |
+
+## Record where a value came from
+
+A value is safer to use when the agent can tell who supplied it, how it was checked, and whether it may have changed. Store provenance beside important context, especially values that control a route, an eligibility decision, or a write.
+
+Don't turn uncertainty into certainty when you summarize. A handoff keeps "caller may prefer the 6:45 p.m. flight" apart from "caller confirmed the 6:45 p.m. flight." The difference matters when a receiving agent can act on the value.
+
+## Retain user memory with care
+
+Persistent memory is useful only when the benefit of reuse justifies keeping the information. Make the purpose, permitted fields, owner, retention period, and deletion path explicit. Follow your organization's privacy and records rules for personal data.
+
+User memory needs an identified user: a verified user ID from your server on web chat, or the caller's number on a call. Web and phone are separate users.
+
+* Don't persist authentication secrets, payment credentials, or unnecessary personal details in model memory.
+* Read a preference from the system that owns it before you copy it into memory.
+* Reconfirm time-sensitive facts instead of trusting an old remembered value.
+* Let people correct a remembered preference, and define what the correction changes downstream.
+
+## Context and handoff checklist
+
+* Is the source of each value clear: user, verified system, or inference?
+* Are verified values stored with the right type and write protection?
+* Does every receiving agent declare the context it accepts?
+* Does the handoff say why it happened and what is still unresolved?
+* Are internal fields hidden from model context when they aren't needed?
+* Are tool results projected to only the fields used for a decision or answer?
+* Have long sessions been checked for truncation or compacted values?
+* Can the receiver continue without making the person repeat known facts?
+* Can the agent tell an uncertain value from a confirmed choice?

@@ -1,0 +1,369 @@
+---
+title: How to enforce business rules with constraints
+sidebarTitle: Enforce business constraints
+---
+
+<Badge icon="arrow-left" color="gray">[Back to how-to guides](/agent-platform/abl/how-to/overview#validation-and-business-rules)</Badge>
+
+Add a `CONSTRAINTS` section to an agent to enforce rules that a field type cannot express, such as "age 18 or older", "refund at most 200", or "no more than 8 seats". The runtime checks each rule against collected data and runs your `ON_FAIL` action when a rule breaks.
+
+## Concept
+
+A field `type` checks the format of one value. A constraint checks a business rule over one or more values. Use a constraint when the rule is a number range, a comparison between fields, or a limit that depends on another field.
+
+`validate:` on a `GATHER` field does not check numeric bounds. The compiler reads `validate:` text as a regular expression or `enum(...)`. `validate: min(18)` rejects every value. Write bounds as a constraint.
+
+A constraint has four parts:
+
+| Part             | What it does                                                                       |
+| ---------------- | ---------------------------------------------------------------------------------- |
+| Keyword          | `REQUIRE`, `WARN`, `LIMIT`, or `RESTRICT`. Sets what happens when the rule breaks. |
+| Condition        | An expression over session data, such as `loan_amount <= 50000`.                   |
+| Scope (optional) | `WHEN` limits the rule to some cases. `BEFORE` ties it to a tool call or a reply.  |
+| `ON_FAIL`        | The action to run when the rule breaks.                                            |
+
+| Keyword    | The condition describes                                           | Blocks when broken                                            |
+| ---------- | ----------------------------------------------------------------- | ------------------------------------------------------------- |
+| `REQUIRE`  | A state that must be true                                         | Yes                                                           |
+| `LIMIT`    | A limit that must hold                                            | Yes                                                           |
+| `RESTRICT` | A state that must not be true. The runtime negates the condition. | Yes                                                           |
+| `WARN`     | A state you want to flag                                          | No. The agent continues and the message is kept as a warning. |
+
+The runtime does not check a rule until the data it reads exists. The compiler adds an `IS NOT SET` guard for each field in the condition. A rule on `loan_amount` is skipped until the customer gives an amount. A rule that already contains `IS SET` or `IS NOT SET` is left as you wrote it. A condition made only of `OR` terms gets no guard.
+
+## Minimal working example
+
+A loan agent collects an age and an amount. It enforces an age floor and an amount range.
+
+`agents/loan-intake.agent.abl`
+
+```yaml
+AGENT: Loan_Intake
+
+GOAL: "Collect a personal loan request and confirm it is within policy."
+
+PERSONA: "You are a concise lending assistant."
+
+GATHER:
+  applicant_age:
+    prompt: "How old are you?"
+    type: integer
+    required: true
+
+  loan_amount:
+    prompt: "How much would you like to borrow?"
+    type: currency
+    required: true
+
+CONSTRAINTS:
+  - REQUIRE: applicant_age >= 18
+    ON_FAIL: RESPOND "You must be 18 or older to apply for a loan."
+
+  - REQUIRE: loan_amount >= 1000 AND loan_amount <= 50000
+    ON_FAIL: ESCALATE Requested amount is outside the self-service range
+
+COMPLETE:
+  - WHEN: applicant_age IS SET AND loan_amount IS SET
+    RESPOND: "Request received for {{loan_amount}}."
+```
+
+Variable sources:
+
+- `applicant_age` and `loan_amount` are `GATHER` fields. The customer supplies both.
+- The `CONSTRAINTS` conditions read both fields. `COMPLETE` reads both.
+
+Results:
+
+| Collected values     | Result                                                      |
+| -------------------- | ----------------------------------------------------------- |
+| Nothing yet          | All rules pass. The guards skip them.                       |
+| Age 17               | The age rule fails. The agent says the `RESPOND` text.      |
+| Amount 500 or 60000  | The amount rule fails. The agent escalates with the reason. |
+| Age 30, amount 25000 | All rules pass.                                             |
+
+## How it works
+
+When a rule runs depends on where it is in the agent.
+
+| Point                                                          | What runs                                                    |
+| -------------------------------------------------------------- | ------------------------------------------------------------ |
+| After the runtime extracts values from a customer message      | All unscoped rules                                           |
+| Before the reasoning agent starts a turn                       | All unscoped rules                                           |
+| Each time a `FLOW` step runs                                   | All unscoped rules                                           |
+| Before the agent calls a tool named in `BEFORE calling <tool>` | Rules scoped to that tool                                    |
+| Before the agent sends a reply, for `BEFORE returning results` | Rules scoped to replies                                      |
+| Before `COMPLETE` finishes                                     | Unscoped blocking rules. A broken rule holds the completion. |
+
+All rules run every turn. Rules do not run in phases.
+
+### What happens when a rule breaks
+
+The value that broke the rule stays stored. Unless `ON_FAIL` clears it, the rule fails again at the next check. Use `CLEAR` with `COLLECT` to remove the value and ask again.
+
+| Action                                                                                             | Result                                                                                                                       |
+| -------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| `RESPOND "text"` or a bare text string                                                             | The text replaces the agent's reply for that turn.                                                                           |
+| `BLOCK "text"`                                                                                     | The guarded action does not run. The text is the refusal.                                                                    |
+| `ESCALATE reason`                                                                                  | The conversation goes to a human with the reason.                                                                            |
+| `HANDOFF agent_name`                                                                               | The conversation moves to that agent. The agent must exist in the project, or the compiler reports `INVALID_HANDOFF_TARGET`. |
+| `GOTO step_name`                                                                                   | The flow returns to that step. The name must be a step of this agent.                                                        |
+| A block with `RESPOND`, `CLEAR`, `COLLECT`, `GOTO`, `RETRY`, `THEN`, `MAX_REPEATS`, `ON_EXHAUSTED` | Combines a message, field reset, and routing. See the next example.                                                          |
+
+A `REQUIRE` with no `ON_FAIL` compiles with an empty message. The rule still blocks, and the customer hears nothing. Always write `ON_FAIL`.
+
+## Realistic example
+
+A refund agent limits standard-tier refunds to 200 before it calls the refund tool. It warns on large amounts and escalates one premium case.
+
+`agents/refund-agent.agent.abl`
+
+```yaml
+AGENT: Refund_Agent
+
+GOAL: "Issue refunds within policy. Call issue_refund only after the amount and tier are known."
+
+PERSONA: "You are a concise support assistant."
+
+TOOLS:
+  issue_refund(order_id: string, amount: number) -> {status: string}
+    description: "Issue a refund for an order"
+    parameters:
+      order_id:
+        type: string
+        description: "Order number"
+        required: true
+      amount:
+        type: number
+        description: "Refund amount"
+        required: true
+    confirm: always
+
+GATHER:
+  order_id:
+    prompt: "What is the order number?"
+    type: string
+    required: true
+
+  refund_amount:
+    prompt: "How much should be refunded?"
+    type: currency
+    required: true
+
+  customer_tier:
+    prompt: "Is the customer standard or premium?"
+    type: string
+    required: true
+    validate: enum(standard, premium)
+
+CONSTRAINTS:
+  - REQUIRE: refund_amount > 0 AND refund_amount <= 200 BEFORE calling issue_refund WHEN customer_tier == "standard"
+    ON_FAIL:
+      RESPOND: "Standard refunds are limited to 200. What amount should I refund?"
+      CLEAR: refund_amount
+      COLLECT: refund_amount
+      MAX_REPEATS: 2
+      ON_EXHAUSTED: ESCALATE Refund above standard limit
+
+  - WARN: refund_amount <= 1000
+    ON_FAIL: "Refunds above 1000 need a follow-up review."
+
+  - RESTRICT: customer_tier == "premium" AND refund_amount > 5000
+    ON_FAIL: ESCALATE Premium refund above 5000
+
+COMPLETE:
+  - WHEN: order_id IS SET AND refund_amount IS SET AND customer_tier IS SET
+    RESPOND: "Refund of {{refund_amount}} for order {{order_id}} is ready."
+```
+
+Variable sources:
+
+- `order_id`, `refund_amount`, and `customer_tier` are `GATHER` fields. The customer supplies each one.
+- `issue_refund` is defined in this file. It reads `order_id` and `refund_amount` when the model calls it.
+
+How each rule behaves:
+
+| Rule            | Behavior                                                                                                                                                      |
+| --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| First `REQUIRE` | Runs only at the `issue_refund` call, and only for the standard tier. A refund of 300 clears `refund_amount` and asks again. After two failures it escalates. |
+| `WARN`          | Never blocks. A refund of 1500 passes and the message is kept as a warning.                                                                                   |
+| `RESTRICT`      | Negates the condition. A premium refund of 6000 escalates.                                                                                                    |
+
+Write `BEFORE` before `WHEN` on one line. The reverse order fails to compile with `INVALID_CEL_SYNTAX`. A `WHEN:` on its own line also works.
+
+## Common variations
+
+### Scope a rule with WHEN or IMPLIES
+
+`WHEN` applies a rule only when its condition is true. `IMPLIES` writes the same rule as one expression. Both lower to the same check. This is a section snippet.
+
+```yaml
+CONSTRAINTS:
+  always:
+    - REQUIRE: qty <= 10
+      WHEN: tier == "gold"
+      ON_FAIL: "Gold orders are limited to 10 units."
+    - REQUIRE: tier == "gold" IMPLIES qty <= 10
+      ON_FAIL: "Gold orders are limited to 10 units."
+    - LIMIT: qty <= 100
+      ON_FAIL: BLOCK "No single order can exceed 100 units."
+```
+
+The phase label `always:` is optional. Any other label, such as `pre_booking:`, only names the group. The compiler reports `W823` because the label has no effect on when rules run.
+
+### Return to a flow step
+
+In a `FLOW`, use `GOTO` to send the customer back to the step that collects the value.
+
+`agents/seat-booking.agent.abl`
+
+```yaml
+AGENT: Seat_Booking
+
+GOAL: "Book seats for a group. Groups of more than 8 need a different process."
+
+PERSONA: "You are a concise booking assistant."
+
+FLOW:
+  entry_point: ask_size
+  steps:
+    - ask_size
+    - confirm
+
+  ask_size:
+    REASONING: false
+    GATHER:
+      - party_size: required
+        type: integer
+        prompt: "How many seats do you need?"
+    THEN: confirm
+
+  confirm:
+    REASONING: false
+    RESPOND: "Booked {{party_size}} seats."
+    THEN: COMPLETE
+
+CONSTRAINTS:
+  - REQUIRE: party_size >= 1 AND party_size <= 8
+    ON_FAIL:
+      RESPOND: "We book 1 to 8 seats online. Attempt {{_abl_constraint_fail_count}}."
+      CLEAR: party_size
+      GOTO: ask_size
+      MAX_REPEATS: 2
+      ON_EXHAUSTED: ESCALATE Group booking above online limit
+```
+
+`{{_abl_constraint_fail_count}}` is the number of times this rule has failed, starting at 1. A flow stops a goto loop after three returns to the same step and escalates.
+
+### Check the arguments of a tool call
+
+A rule scoped with `BEFORE calling <tool>` can read the call's arguments as `tool_args`. Set `guardrail_builtins: true` in `EXECUTION` first. Without it, the rule cannot read `tool_args`, fails, and refuses the call. The compiler warns with `GUARDRAIL_BUILTIN_NOT_BOUND`.
+
+`agents/payout-agent.agent.abl`
+
+```yaml
+AGENT: Payout_Agent
+
+GOAL: "Send payouts. Call send_payout once the customer confirms the amount."
+
+PERSONA: "You are a concise payments assistant."
+
+EXECUTION:
+  guardrail_builtins: true
+
+TOOLS:
+  send_payout(account_id: string, amount: number) -> {status: string}
+    description: "Send a payout to an account"
+    parameters:
+      account_id:
+        type: string
+        description: "Destination account"
+        required: true
+      amount:
+        type: number
+        description: "Payout amount"
+        required: true
+    confirm: always
+
+CONSTRAINTS:
+  - REQUIRE: tool_args.amount > 0 AND tool_args.amount <= 10000 BEFORE calling send_payout
+    ON_FAIL: BLOCK "Payouts must be between 1 and 10000."
+```
+
+This rule blocks the tool call. Blocking tool calls is the subject of [Block tool calls when required data is missing](/agent-platform/abl/how-to/block-tool-calls-with-constraints).
+
+### Constraints on a supervisor
+
+A `SUPERVISOR` accepts a `CONSTRAINTS` section. A supervisor has no `GATHER` fields, so a rule that reads a worker's field compiles with `UNDEFINED_CONDITION_VAR`. Put the rule on the agent that collects the data.
+
+### Step-level notes
+
+A `REASONING: true` step accepts `STEP_CONSTRAINTS` lines. They are plain text. The runtime does not evaluate them as rules. Put enforceable rules in `CONSTRAINTS`.
+
+## Verification
+
+Test each rule at its boundary. Send the messages in a test session, then open the trace.
+
+| Agent        | Customer says            | Expected result                                        |
+| ------------ | ------------------------ | ------------------------------------------------------ |
+| Loan_Intake  | "I am 17"                | Age rule fails. The agent says the age message.        |
+| Loan_Intake  | "I need 500"             | The agent escalates. The reason is the amount message. |
+| Loan_Intake  | "I need 25000"           | All rules pass.                                        |
+| Refund_Agent | Standard, "refund 300"   | At the tool call, the agent asks for the amount again. |
+| Refund_Agent | Standard, "refund 150"   | The tool call proceeds after confirmation.             |
+| Refund_Agent | Premium, "refund 300"    | The standard-only rule does not apply.                 |
+| Refund_Agent | Premium, "refund 6000"   | The agent escalates.                                   |
+| Seat_Booking | "12 seats"               | The flow returns to `ask_size` and says attempt 1.     |
+| Seat_Booking | "12 seats" a second time | The flow returns again and says attempt 2.             |
+| Seat_Booking | "12 seats" a third time  | The agent escalates.                                   |
+
+What to check in the trace:
+
+- A `constraint_check` event for each rule, with `passed` set to true or false and the `onFail` action.
+- A `constraint_guard_skipped` event when a rule waits for data that is not yet collected.
+- A `constraint_warning` event for a broken `WARN` rule.
+- A `constraint_repeat_limit` event when `MAX_REPEATS` runs out.
+
+## Production readiness checklist
+
+- Every `REQUIRE`, `LIMIT`, and `RESTRICT` has an `ON_FAIL` with customer-facing text.
+- Numeric bounds are constraints, not `validate:` rules.
+- `HANDOFF` targets and `GOTO` steps exist in the project.
+- A rule that must stop a tool call uses `BEFORE calling <tool>`.
+- A rule on a value that the customer can correct uses `CLEAR` with `COLLECT` or `GOTO`.
+- A loop has a limit: `MAX_REPEATS` with `ON_EXHAUSTED`, or an escalation path.
+- You tested each boundary: below, at, and above the limit. You also tested the unset case.
+- Field names in conditions match `GATHER` field names exactly.
+
+## Common mistakes
+
+| Mistake                                        | Why it happens                                 | How to avoid it                                                                                                               |
+| ---------------------------------------------- | ---------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| `validate: min(18)` on a field                 | Some reference pages list `min()` and `max()`. | Use `REQUIRE: applicant_age >= 18`.                                                                                           |
+| No `ON_FAIL`                                   | The rule looks complete without it.            | Write the message. Without it the customer hears nothing.                                                                     |
+| `BEFORE` after `WHEN` on one line              | The clauses read in any order.                 | Write `BEFORE` first, or put `WHEN:` on its own line.                                                                         |
+| `=<` or `=>` operator                          | Typing habit.                                  | Use `<=` and `>=`. The compiler reports `INVALID_CONSTRAINT_OPERATOR`.                                                        |
+| Plain bullet list in `CONSTRAINTS`             | Natural-language rules read like constraints.  | Start each item with `REQUIRE`, `WARN`, `LIMIT`, or `RESTRICT`. Plain bullets are ignored with `PLAIN_CONSTRAINT_LIST_ITEMS`. |
+| `BEFORE doing something`                       | Free text looks like a target.                 | Use `BEFORE calling <tool>` or `BEFORE returning results`. Other text compiles with `W824` and has no effect.                 |
+| Quoted text after `ESCALATE`                   | Quotes work for `RESPOND` and `BLOCK`.         | Write `ESCALATE reason text` with no quotes.                                                                                  |
+| Rule that reads `tool_args` without the opt-in | The name looks built in.                       | Set `guardrail_builtins: true`.                                                                                               |
+| Phase labels expected to order rules           | The labels look like stages.                   | All rules run each turn. Labels are for reading only.                                                                         |
+
+## Troubleshooting
+
+| Symptom                                          | Likely cause                                              | What to check                                                           |
+| ------------------------------------------------ | --------------------------------------------------------- | ----------------------------------------------------------------------- |
+| The agent says nothing when a rule breaks        | `ON_FAIL` is missing                                      | Add `ON_FAIL` with text.                                                |
+| The rule never fires                             | The field is not yet collected, or the name is misspelled | Look for `constraint_guard_skipped` in the trace. Check the field name. |
+| The same message repeats every turn              | The bad value is still stored                             | Add `CLEAR` for the field, with `COLLECT` or `GOTO`.                    |
+| The compiler reports `INVALID_HANDOFF_TARGET`    | The agent in `HANDOFF` is not in the project              | Compile the target with this agent, or fix the name.                    |
+| The compiler reports `INVALID_CEL_SYNTAX`        | A clause is out of order, or an operator is wrong         | Check `BEFORE` and `WHEN` order and the operators.                      |
+| A tool call is refused for a rule on `tool_args` | `guardrail_builtins` is off                               | Set `guardrail_builtins: true` in `EXECUTION`.                          |
+| A `WARN` rule does not stop the flow             | `WARN` never blocks                                       | Use `REQUIRE` if the rule must block.                                   |
+
+## Related HowTos
+
+- [Validate collected fields by type](/agent-platform/abl/how-to/validate-fields-by-type)
+- [Block tool calls when required data is missing](/agent-platform/abl/how-to/block-tool-calls-with-constraints)
+- [Show recovery prompts when validation fails](/agent-platform/abl/how-to/recover-from-validation-failures)
+- [Choose between constraints and guardrails](/agent-platform/abl/how-to/choose-constraints-or-guardrails)
+- [Make one field depend on another field](/agent-platform/abl/how-to/create-field-dependencies)
