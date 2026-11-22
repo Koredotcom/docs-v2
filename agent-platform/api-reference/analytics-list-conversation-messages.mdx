@@ -1,16 +1,29 @@
 ---
 title: List conversation messages
+description: List the messages exchanged in a project's conversations in time order, with the project's PII policy applied.
 openapi: "/agent-platform/api-specs/analytics-messages.yaml get /api/public/analytics/projects/{projectId}/conversation-history"
 ---
 
-Returns the messages exchanged in a project's conversations chronologically. Message content is filtered according to the project's PII policy before it is returned, so sensitive values may be masked or removed. Messages are ordered by time, then by message ID to keep the order stable. 
+<Badge icon="arrow-left" color="gray">[Back to the Analytics APIs overview](/agent-platform/api-reference/analytics-overview)</Badge>
 
-Different filters combine with AND, and multiple values in the same filter combine with OR.
+Returns the messages exchanged in a project's conversations chronologically. Message content is filtered according to the project's PII policy before it is returned, so sensitive values may be masked or removed. Messages are ordered by time, then by message ID to keep the order stable.
 
-Give either a date range (`fromDate` and `toDate` together) or a list of `sessionIds`. A date-range query with no other filter may span a long list of sessions, so always use a filter and paginate as needed. A response that span more than 10,000 sessions is rejected with `400`, so narrow the range or add `sessionIds` for busy projects.
+Give either a date range (`fromDate` and `toDate` together), a list of `sessionIds`, or the call IDs of voice calls (`externalCallIds` or `callSids`). A date-range query with no other filter that would span more than 10,000 sessions is rejected with `400`. Narrow the range or add `sessionIds` for busy projects. Always use a filter and paginate as needed.
 
-For pagination, prefer `cursor`: pass the `nextCursor` value from the previous response. `offset` also works, and `skip` is an older name for `offset` that is still accepted. Use only one of the three in a single request.
+For pagination, prefer `cursor`: pass the `nextCursor` value from the previous response. `offset` also works, and `skip` is an older name for `offset` that is still accepted. Use only one of the three in a single request. Use `limit` (1 to 10,000, default 100) to set the page size. A page can hold fewer messages than `limit` so the response stays within 1 MiB. Check `hasMore` instead of assuming that a short page is the last one. Use `direction` to sort by time: `asc` (default) for oldest first, or `desc` for newest first.
 
 Authenticate with the `x-api-key` header. The key must be bound to the project you are querying and have `analytics:read` permission.
 
-{/* AG: Add H2 with filter info. Link from the post article. */}
+## Filters
+
+Different filters combine with `AND`. Multiple values in the same filter combine with `OR`.
+
+- `fromDate` and `toDate`: Inclusive start and exclusive end timestamps. Send them together unless you send `sessionIds`, `externalCallIds`, or `callSids`. When you send both, the date range still applies.
+- `sessionIds`: Filter by specific session IDs; up to 10,000.
+- `externalCallIds`: Filter voice calls by the upstream call ID that the contact center or carrier sent in the SIP INVITE, such as a Genesys conversation ID. Pass 1 to 100 values. Matching ignores case. Only calls made after this filter shipped carry the ID. Use `callSids` for older calls.
+- `callSids`: Filter voice calls by KoreVG call SID. Pass 1 to 100 values. Matching is exact. It also finds calls recorded before this filter shipped.
+- `channelUId`: Filter by the end-user identifier that the channel supplied, such as an email address, phone number, or provider ID. Pass up to 100 values. Values are normalized before matching, and phone numbers need a country code. Sessions created before this filter shipped can't be found with it. Use the POST endpoint for identifier lookups so they stay out of URLs and logs.
+- `callerNumber`: Filter by caller number (ANI) or provider caller ID. Pass up to 100 values.
+- `channel`: Filter by the channel the conversation took place on. Pass up to 100 values.
+- `environment`: Filter by environment: `dev`, `staging`, `production`, or `working-copy`. Pass up to 100 values.
+- `traceDimensions[key]`: Filter by a custom session dimension, for example `traceDimensions[tier]=gold`. Repeat with different keys to require all of them.

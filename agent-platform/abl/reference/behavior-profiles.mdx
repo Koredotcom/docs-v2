@@ -69,6 +69,7 @@ Required declarations:
 | `BEHAVIOR_PROFILE:` | yes      | Case-sensitive profile name                                    |
 | `PRIORITY:`         | yes      | Non-negative integer. Within a scope, profiles apply in ascending priority, so a higher priority wins when profiles conflict. See [Resolution order](#resolution-order). |
 | `WHEN:`             | yes      | CEL expression evaluated against context (`WHEN: true` for a default profile). |
+| `APPLIES_TO:`       | no       | `all_agents` attaches the profile to every agent in the project. See [Attach a profile to every agent](#attach-a-profile-to-every-agent). |
 
 ## WHEN evaluation context and timing
 
@@ -106,6 +107,8 @@ The runtime expression values include:
 Every ordinary accepted expression value is available directly and through `context`. For example, `customer_tier` and `context.customer_tier` resolve to the same value, as do `input` and `context.input`.
 
 Top-level `channel`, `caller`, and `interaction` retain profile metadata. Use `context.channel`, `context.caller`, and `context.interaction` for colliding business values.
+
+<Warning>Match the channel with `channel.name`. A `context.channel` condition doesn't match the channel, and the profile then does nothing. List every voice transport you use, for example `WHEN: channel.name in ["voice", "voice_realtime", "voice_pipeline", "korevg"]`. Check the name on a real session. Studio's test chat is `web_debug`, so test a profile on its own channel.</Warning>
 
 Nested keys, including a business object's own `context` property, remain ordinary accepted state.
 
@@ -300,6 +303,7 @@ Silence and keypad input interact as follows:
 - The first ASR partial reaches the runtime almost a second after the caller starts to speak. When the runtime-owned background window runs out, the runtime waits one more second before it reprompts or runs `on_exhausted`. A partial in that second restarts the window. With real silence, the prompt or exhausted action comes one second after `timeout_ms`. A gateway no-input timeout acts at once.
 - Forwarded native voice activity detection (VAD) activity pauses the background silence window without resetting retries or accepting an answer. When the activity stops, the configured window starts again.
 - DTMF barge-in stops the silence timer without resetting the retry sequence.
+- While the caller keys digits, the background silence window waits. The voice gateway reports each accepted key, and each report restarts the window. The window is the longer of `timeout_ms` and the gateway's pending-entry time plus one second. If the gateway reports no pending-entry time, the normal window applies, so the wait stays bounded. A reported key is caller activity only. It does not reset the retry sequence. That happens when digits are accepted.
 - A gather that receives no digits and no speech restarts the timer with the existing retry count. This includes a press of the finish key alone.
 - A keypad-only gather, such as a secure card entry, never receives a speech end-of-speech timeout, whatever pause timeout the call has. Speech and mixed gathers keep it.
 - The final line the caller hears before a hang-up is recorded in the Conversation as an assistant turn, like every reprompt. This covers the `exhausted_message`, the fallback line when a `transfer` has no target, and the closing line of a flow target that could not run. If the voice gateway does not confirm that the line finished, the row is marked as playback unconfirmed. If only part of a long line played, it is also marked partial. A line the gateway never received is not recorded.
@@ -480,6 +484,27 @@ USE BEHAVIOR_PROFILE: voice_vip
 
 The attached profile name must match the `BEHAVIOR_PROFILE:` header, not just the filename. Both
 `USE BEHAVIOR_PROFILE:` (space) and `USE_BEHAVIOR_PROFILE:` (underscore) forms are accepted.
+
+### Attach a profile to every agent
+
+Add `APPLIES_TO: all_agents` to a standalone profile to attach it to every agent and supervisor in the project, including agents you add later. The result is the same as a `USE BEHAVIOR_PROFILE:` line in each agent, placed after the agent's own references. An agent that already references the profile attaches it once. No agent file changes.
+
+```yaml
+BEHAVIOR_PROFILE: brand_voice
+PRIORITY: 10
+APPLIES_TO: all_agents
+WHEN: true
+
+INSTRUCTIONS: |
+  Keep a friendly, professional tone.
+```
+
+- `all_agents` is the only supported value. Any other value is the error [`PROFILE_INVALID_APPLIES_TO`](/agent-platform/abl/reference/errors-and-warnings#profile_invalid_applies_to).
+- Without the line, a profile applies only to the agents that reference it.
+- `WHEN` and `PRIORITY` keep their meaning. The attach-time checks run for each agent, as for a hand-written reference. Two attached profiles with the same priority report `PROFILE_PRIORITY_CONFLICT`. A profile that hides a tool the agent does not declare reports `PROFILE_UNKNOWN_TOOL`. A `FLOW` `SKIP` entry that names a step the agent does not declare reports `PROFILE_UNKNOWN_STEP` for that agent.
+- Write the line at the top level of the profile, for example directly under the `BEHAVIOR_PROFILE:` header. Studio writes it there. Inside a multi-line block, the line is part of the block text.
+- Inline profiles do not read `APPLIES_TO`. An inline profile belongs to the agent that declares it.
+- The profile document must be in the compile set. A build path that does not load profile documents does not attach the profile.
 
 ## Where profiles apply
 

@@ -1,0 +1,422 @@
+---
+title: How to block tool calls when required data is missing
+sidebarTitle: Block tool calls with constraints
+---
+
+<Badge icon="arrow-left" color="gray">[Back to how-to guides](/agent-platform/abl/how-to/overview#validation-and-business-rules)</Badge>
+
+Add a `REQUIRE ... BEFORE calling <tool>` constraint to stop a tool from running until the data it needs is present and valid. The tool does not run. The customer sees the line you wrote in `ON_FAIL`.
+
+## Concept
+
+A model decides when to call a tool. A constraint decides whether the call may go ahead. The runtime checks every constraint that targets a tool, at the moment of the call, and before the tool runs.
+
+Four mechanisms can stop a tool call. They differ in who writes the rule and what the customer hears.
+
+| Mechanism                                  | You write            | When it fires                                       | What the customer hears                          |
+| ------------------------------------------ | -------------------- | --------------------------------------------------- | ------------------------------------------------ |
+| `CONSTRAINTS` with `BEFORE calling <tool>` | A rule on the agent  | Before any call to that tool                        | Your `ON_FAIL` text                              |
+| `process.before.require` on the tool       | A rule on the tool   | After constraints, before the tool runs             | Your `on_fail` text                              |
+| `confirm:` on the tool                     | A policy on the tool | After the rules above pass                          | A confirmation question                          |
+| `EXECUTION: inline_gather: true`           | One setting          | Before any tool call, with all fields still missing | Nothing directly. The model collects the fields. |
+
+Use a constraint when the rule depends on agent state, such as gathered fields or session values. Use `process.before.require` when the rule is about the tool's own inputs and must travel with the tool. Use `confirm:` when the customer must approve a side effect.
+
+A rejected call is not a retry loop. When a constraint blocks a tool, the turn ends with your `ON_FAIL` message. The model does not get a chance to reword it.
+
+## Minimal working example
+
+A refund agent must not call `issue_refund` until it has the order number, the amount, and the customer's confirmation. Refunds above 500 go to a person.
+
+`issue_refund` is a project-local tool. Replace it with your refund API.
+
+`agents/refund-agent.agent.abl`
+
+```yaml
+AGENT: Refund_Agent
+
+GOAL: "Issue a refund for an order after the customer confirms the details."
+
+PERSONA: "You are a careful refund assistant."
+
+TOOLS:
+  issue_refund(order_id: string, amount: number) -> {success: boolean, refund_id: string}
+    description: "Issue a refund for an order. Project-local tool: replace with your refund API."
+    effect: side_effect
+    confirm: when_side_effects
+    params:
+      order_id:
+        description: "The order to refund"
+      amount:
+        description: "Refund amount in the order currency"
+
+GATHER:
+  order_id:
+    prompt: "What is the order number?"
+    type: string
+    required: true
+
+  amount:
+    prompt: "How much should we refund?"
+    type: currency
+    required: true
+
+  refund_confirmed:
+    prompt: "Do you confirm the refund of the amount above?"
+    type: boolean
+    required: true
+
+CONSTRAINTS:
+  - REQUIRE order_id IS SET AND amount IS SET BEFORE calling issue_refund
+    ON_FAIL: RESPOND "I need the order number and the refund amount before I can issue a refund."
+
+  - REQUIRE refund_confirmed == true BEFORE calling issue_refund
+    ON_FAIL: RESPOND "Please confirm the refund before I proceed."
+
+  - REQUIRE amount <= 500 BEFORE calling issue_refund
+    ON_FAIL: ESCALATE Refund above 500 needs a supervisor
+```
+
+Variable sources:
+
+- `order_id`, `amount`, and `refund_confirmed` are `GATHER` fields. The customer supplies them.
+- The tool inputs `order_id` and `amount` come from the model, which reads the gathered fields.
+- `issue_refund` is a project-local assumption. Its backing API must exist in your project.
+
+## How it works
+
+`BEFORE calling issue_refund` ties the rule to one tool. The compiler turns the rule into "if this is a call to `issue_refund`, then the condition must hold". The rule is skipped for every other tool and for every other point in the conversation.
+
+When the model calls `issue_refund`, the runtime evaluates each matching rule against the current session. The first rule that fails decides the outcome.
+
+| Session state at the call             | Result                                                                              |
+| ------------------------------------- | ----------------------------------------------------------------------------------- |
+| Nothing gathered                      | Blocked. "I need the order number and the refund amount..."                         |
+| Order and amount set, no confirmation | Blocked. "Please confirm the refund..."                                             |
+| `refund_confirmed` is `false`         | Blocked. "Please confirm the refund..."                                             |
+| Amount 900, confirmed                 | Escalated. "Escalated to human agent. Reason: Refund above 500 needs a supervisor." |
+| Order, amount 100, confirmed          | The tool runs.                                                                      |
+| Any state, a different tool           | The rule does not apply.                                                            |
+
+Three details matter:
+
+- `IS SET` tests that a value exists. A rule on a field that is not yet gathered fails at the tool call. It does not wait for the field.
+- Rules are not checked "once per turn". They are checked at each call. A blocked call can succeed on the next turn after the customer supplies the data.
+- A `WARN` rule never blocks. It records a warning and the call goes ahead.
+
+### What the customer hears
+
+The `ON_FAIL` form decides the reply.
+
+| `ON_FAIL` form                                     | Result                                                                        |
+| -------------------------------------------------- | ----------------------------------------------------------------------------- |
+| `RESPOND "text"`                                   | The text. The tool does not run.                                              |
+| `BLOCK` or `BLOCK "text"`                          | The text, or "I cannot proceed with that request."                            |
+| `ESCALATE reason`                                  | An escalation message that names the reason. Write the reason without quotes. |
+| `HANDOFF agent`                                    | A handoff to that agent.                                                      |
+| Block form with `COLLECT:`                         | Your `RESPOND` text, then the agent collects the listed fields.               |
+| Block form with `GOTO:`                            | Your `RESPOND` text, then the flow jumps to that step.                        |
+| Block form with `MAX_REPEATS:` and `ON_EXHAUSTED:` | The block answers that many failures, then `ON_EXHAUSTED` takes over.         |
+
+An `ESCALATE "text"` with quotes keeps a stray opening quote in the reason. Write `ESCALATE text`.
+
+## Common variations
+
+### Collect the missing data, then escalate after repeated failures
+
+Use the block form to send the customer back to collection. Cap the loop with `MAX_REPEATS`.
+
+`agents/account-change-agent.agent.abl`
+
+```yaml
+AGENT: Account_Change_Agent
+
+GOAL: "Update a customer's account details after the required details are collected."
+
+PERSONA: "You are a careful account assistant."
+
+EXECUTION:
+  guardrail_builtins: true
+
+TOOLS:
+  update_account(account_id: string, new_email: string, region: string) -> {success: boolean}
+    description: "Update the email on an account. Project-local tool: replace with your account API."
+    effect: side_effect
+    confirm: when_side_effects
+    params:
+      account_id:
+        description: "Account to update"
+      new_email:
+        description: "New email address"
+      region:
+        description: "Account region code"
+
+GATHER:
+  account_id:
+    prompt: "What is your account ID?"
+    type: string
+    required: true
+
+  new_email:
+    prompt: "What is the new email address?"
+    type: email
+    required: true
+
+  region:
+    prompt: "Which region is the account in: us, eu, or apac?"
+    type: string
+    required: true
+    validate: enum(us, eu, apac)
+
+  vip_override:
+    prompt: "Is a manager override on file?"
+    type: boolean
+    required: false
+
+CONSTRAINTS:
+  - REQUIRE account_id IS SET AND new_email IS SET BEFORE calling update_account
+    ON_FAIL:
+      COLLECT: [account_id, new_email]
+      RESPOND: "I still need your account ID and the new email address."
+      MAX_REPEATS: 2
+      ON_EXHAUSTED: ESCALATE Customer could not supply account details
+
+  - REQUIRE tool_args.region == "us" BEFORE calling update_account WHEN vip_override != true
+    ON_FAIL: RESPOND "Email changes for this region need a manager override."
+
+  - RESTRICT account_id == "ADMIN" BEFORE calling update_account
+    ON_FAIL: BLOCK "That account cannot be changed here."
+
+  - WARN new_email contains "+" BEFORE calling update_account
+    ON_FAIL: RESPOND "Plus-addresses are not verified."
+```
+
+Variable sources:
+
+- `account_id`, `new_email`, `region`, and `vip_override` are `GATHER` fields.
+- `tool_args` holds the arguments of the pending call. It exists only at a `BEFORE calling` check, and only when `EXECUTION: guardrail_builtins: true` is set.
+
+What each rule does:
+
+| Rule                         | Behavior                                                                                                        |
+| ---------------------------- | --------------------------------------------------------------------------------------------------------------- |
+| `REQUIRE ... BEFORE calling` | The call must satisfy the condition.                                                                            |
+| `RESTRICT`                   | The call must not satisfy the condition. `RESTRICT account_id == "ADMIN"` blocks that account.                  |
+| `WARN`                       | Records a warning. Never blocks.                                                                                |
+| `WHEN`                       | The rule applies only when the `WHEN` condition is true. A false or missing `WHEN` value lets the call through. |
+
+The first rule answers two failures with a collection prompt. On the third failure, `ON_EXHAUSTED` escalates. The `ON_EXHAUSTED` count is per conversation.
+
+Without `guardrail_builtins: true`, `tool_args` is not bound. A rule that reads it fails, so the tool is refused on every call. The compiler warns with `GUARDRAIL_BUILTIN_NOT_BOUND`.
+
+### Block a FLOW `CALL` step
+
+The same rule gates a `CALL` step in a `FLOW`. A block can send the flow to an earlier step with `GOTO`.
+
+`agents/order-cancellation.agent.abl`
+
+```yaml
+AGENT: Order_Cancellation
+
+GOAL: "Cancel an order after the customer confirms."
+
+PERSONA: "You are a careful order assistant."
+
+TOOLS:
+  cancel_order(order_id: string) -> {success: boolean, status: string}
+    description: "Cancel an order. Project-local tool: replace with your order API."
+    effect: side_effect
+    confirm: never
+    params:
+      order_id:
+        description: "Order to cancel"
+
+CONSTRAINTS:
+  - REQUIRE order_id IS SET AND cancel_confirmed == true BEFORE calling cancel_order
+    ON_FAIL:
+      RESPOND: "I need the order number and your confirmation first."
+      GOTO: collect_details
+
+FLOW:
+  entry_point: collect_details
+  steps:
+    - collect_details
+    - cancel
+    - done
+
+  collect_details:
+    REASONING: false
+    GATHER:
+      - order_id: required
+        type: string
+        prompt: "Which order should I cancel?"
+      - cancel_confirmed: required
+        type: boolean
+        prompt: "Do you want me to cancel it now?"
+    THEN: cancel
+
+  cancel:
+    REASONING: false
+    CALL: cancel_order
+      WITH:
+        order_id: "{{order_id}}"
+      AS: cancel_result
+    THEN: done
+
+  done:
+    REASONING: false
+    RESPOND: "Order {{order_id}} cancellation status: {{cancel_result.status}}."
+    THEN: COMPLETE
+```
+
+Variable sources:
+
+- `order_id` and `cancel_confirmed` are gathered in `collect_details`.
+- `cancel_result` is the output of the `cancel_order` call. The `done` step reads its `status`.
+
+A `FLOW` step has two more guards on a `CALL`. If a required tool input is empty, the platform does not run the tool. It asks the customer for the missing fields, or reports the tool as not run when it cannot ask. In a `PARALLEL` block, a blocked call fails that one call and nothing else.
+
+### Put the rule on the tool
+
+Use `process.before.require` when the check is about the tool's own inputs. Read the inputs with `params.<name>`. Session values are also readable by name.
+
+```yaml
+AGENT: Transfer_Agent
+
+GOAL: "Transfer money between the customer's accounts after the details are confirmed."
+
+PERSONA: "You are a careful banking assistant."
+
+TOOLS:
+  transfer_funds(from_account: string, to_account: string, amount: number) -> {success: boolean, transfer_id: string}
+    description: "Move money between two accounts. Project-local tool: replace with your transfer API."
+    effect: side_effect
+    confirm: when_side_effects
+    immutable: [from_account, to_account, amount]
+    process:
+      before:
+        require:
+          - params.amount > 0
+          - params.from_account != params.to_account
+        on_fail: reask("Give two different accounts and an amount above zero.")
+    params:
+      from_account:
+        description: "Source account id"
+      to_account:
+        description: "Destination account id"
+      amount:
+        description: "Amount to move"
+
+GATHER:
+  from_account:
+    prompt: "Which account should the money come from?"
+    type: string
+    required: true
+  to_account:
+    prompt: "Which account should receive it?"
+    type: string
+    required: true
+  amount:
+    prompt: "How much should we move?"
+    type: currency
+    required: true
+```
+
+`on_fail` takes one of these:
+
+| Value           | Result                                                                                                         |
+| --------------- | -------------------------------------------------------------------------------------------------------------- |
+| `reask("text")` | The text goes to the customer. The tool does not run. This is the default on chat and voice.                   |
+| `block("text")` | The tool does not run. The model gets an error that carries the text. This is the default on an async channel. |
+| `warn("text")`  | The call goes ahead with a warning.                                                                            |
+| `use_original`  | The call goes ahead with the original inputs.                                                                  |
+| `fallback(...)` | The call goes ahead with fallback inputs, if they are valid.                                                   |
+
+### Require confirmation before a side effect
+
+`confirm:` makes the runtime ask before the tool runs.
+
+| Value               | Behavior                                                                 |
+| ------------------- | ------------------------------------------------------------------------ |
+| `always`            | Always ask.                                                              |
+| `when_side_effects` | Ask when the tool has a side effect. The compiler recommends this value. |
+| `never`             | Never ask.                                                               |
+
+The compiler warns with `SIDE_EFFECT_TOOL_WITHOUT_CONFIRMATION` when a side-effecting tool sets none. The default question reads "Please confirm before I go ahead", followed by the call details and "Shall I proceed?". Override it with the `tool_confirmation_request` message. `immutable:` locks the listed inputs after the customer approves, so the model cannot change them. A confirmation expires after five minutes.
+
+### Hold every tool until required fields are collected
+
+`EXECUTION: inline_gather: true` blocks every domain tool until all required `GATHER` fields have a value. The model gets a `GATHER_INCOMPLETE` error that lists the missing fields. It collects them and tries again.
+
+This is a section snippet.
+
+```yaml
+EXECUTION:
+  inline_gather: true
+```
+
+## Verification
+
+Send these turns to the agent in a test session and open the session trace.
+
+| Agent                | Situation                             | Expected result                                                                           |
+| -------------------- | ------------------------------------- | ----------------------------------------------------------------------------------------- |
+| Refund_Agent         | Ask for a refund with no details      | `issue_refund` does not run. The customer reads "I need the order number...".             |
+| Refund_Agent         | Give order and amount, do not confirm | Blocked with "Please confirm the refund...".                                              |
+| Refund_Agent         | Confirm a refund of 900               | The conversation escalates with the supervisor reason.                                    |
+| Refund_Agent         | Confirm a refund of 100               | The tool runs. The customer is asked to confirm, because of `confirm: when_side_effects`. |
+| Account_Change_Agent | Withhold the email three times        | Two collection prompts, then an escalation.                                               |
+| Account_Change_Agent | Use region `eu` with no override      | Blocked with the override message.                                                        |
+| Order_Cancellation   | Reach the `cancel` step unconfirmed   | The flow returns to `collect_details`.                                                    |
+| Transfer_Agent       | Send the same account twice           | The customer is asked for two different accounts.                                         |
+
+What to check in the trace:
+
+- A `constraint_check` event for each rule that applies at the tool call. A failed one names the rule.
+- A blocked call has a failed `constraint_check` and no result from the tool.
+- For `process.before`, a `process_before_require` event shows the result.
+- For a `FLOW` step, the trace shows the step ending on the block, or the jump to the `GOTO` step.
+
+## Production readiness checklist
+
+- Every tool named in a `BEFORE calling` rule exists in `TOOLS`. A misspelled tool name never matches, so the rule never fires.
+- Every `BEFORE` target uses the form `calling <tool>` or `tool <tool>`. Other forms compile with warning `W824` and do nothing.
+- Each blocking rule has an `ON_FAIL` that the customer can act on.
+- Each side-effecting tool sets `confirm:` on purpose.
+- Rules that read `tool_args` run with `guardrail_builtins: true`.
+- You tested the block, the pass, a different tool, and a repeated block for each rule.
+- There is an escalation path for a customer who cannot supply the data. Use `MAX_REPEATS` with `ON_EXHAUSTED`, or a `COMPLETE` or handoff rule.
+- Trace alerts cover blocked calls on tools that change money, access, or records.
+
+## Common mistakes
+
+| Mistake                                                                        | Why it happens              | How to avoid it                                                                                                                                   |
+| ------------------------------------------------------------------------------ | --------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `BEFORE sending send_notice`, or `BEFORE calling a, b`                         | Other wording looks natural | Use `BEFORE calling <tool>`, or `BEFORE tool <tool>`. Other forms compile with warning `W824` and the rule does nothing. Write one rule per tool. |
+| `ON_FAIL: ESCALATE "text"`                                                     | Quotes look right           | Write `ESCALATE text`. Quotes leave a stray `"` in the reason.                                                                                    |
+| `tool_args` without `guardrail_builtins: true`                                 | The name looks built in     | Set the option. Otherwise every call is refused.                                                                                                  |
+| A phase name such as `pre_send:`                                               | It reads like a gate        | Phase names are labels. Every rule is checked at its own checkpoint. The compiler warns with `W823`.                                              |
+| Putting agent-state rules in `process.before.require`                          | Both look alike             | `process.before` can read session values, but it runs after constraints and belongs to the tool. Put agent-state rules in `CONSTRAINTS`.          |
+| `ON_FAIL: block(...)` on an async channel and expecting the customer to see it | The text is for the model   | On an async channel the model, not the customer, receives a `block` message. Use `reask` or a constraint `RESPOND`.                               |
+| Expecting `WARN` to stop the call                                              | The name suggests a gate    | `WARN` never blocks. Use `REQUIRE` or `RESTRICT`.                                                                                                 |
+
+## Troubleshooting
+
+| Symptom                                                          | Likely cause                                                           | What to check                                     |
+| ---------------------------------------------------------------- | ---------------------------------------------------------------------- | ------------------------------------------------- |
+| The tool runs even though a rule should block it                 | The tool name in `BEFORE calling` is misspelled, or the rule is `WARN` | Compare the name with `TOOLS`. Check for `W824`.  |
+| Every call to the tool is refused                                | The rule reads `tool_args` with no `guardrail_builtins`                | Look for `GUARDRAIL_BUILTIN_NOT_BOUND`.           |
+| The block text is generic: "I cannot proceed with that request." | `ON_FAIL: BLOCK` with no text                                          | Add text, or use `RESPOND`.                       |
+| The customer sees "Please provide valid tool input."             | A `process.before.require` failed with no `on_fail` text               | Add `reask("...")`.                               |
+| The model says a tool "is missing required input"                | A required tool input is empty and no collection prompt could be built | Gather the field, or pass it from a parent agent. |
+| A rule never evaluates in a `FLOW`                               | The `CALL` names a different tool                                      | Check the step's `CALL:` target against the rule. |
+| The agent loops: collect, block, collect                         | `ON_FAIL` collects, and the customer keeps failing                     | Add `MAX_REPEATS` and `ON_EXHAUSTED`.             |
+| An approval was asked, then the call failed                      | The model changed a locked input, or the confirmation expired          | Check `immutable:` and the five-minute limit.     |
+
+## Related HowTos
+
+- [Validate collected fields by type](/agent-platform/abl/how-to/validate-fields-by-type)
+- [Enforce business rules with constraints](/agent-platform/abl/how-to/enforce-business-constraints)
+- [Show recovery prompts when validation fails](/agent-platform/abl/how-to/recover-from-validation-failures)
+- [Choose between constraints and guardrails](/agent-platform/abl/how-to/choose-constraints-or-guardrails)
+- [Collect information inside a FLOW step](/agent-platform/abl/how-to/collect-with-flow-gather)

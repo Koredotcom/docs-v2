@@ -1,0 +1,97 @@
+---
+title: Test voice agents
+sidebarTitle: Test voice agents
+---
+
+Evaluate the full call path: recognition, agent logic, tools, timing, and speech output. A clear prompt can't make up for inaccurate recognition, a slow workflow, a repeated identity check, or a transfer that loses the caller's context. Measure each source of delay and error separately.
+
+<Tip>Read every turn of a test call. One call can expose defects in routing, money rules, and timing as well as speech. An average turn time can hide one very slow turn. Confirm each fix with a scenario set.</Tip>
+
+## Measure what callers hear
+
+Measure from the end of the caller's speech to the first useful audio. Separate recognition, model time, tool time, handoff time, and uncovered silence. The `voice_dead_air` trace event names what each silence waited on, such as a model, a tool, or a handoff.
+
+1. **Reduce work first.** Remove duplicate verification, unneeded agent hops, redundant model rounds, and oversized tool results.
+2. **Then tune presentation.** Use short progress messages only when the agent can deliver what they imply. The filler model sees only the caller's words. Test a side question at every step that waits for an answer.
+
+| Measure | Question it answers | Pair it with |
+|---|---|---|
+| **Recognition quality** | Did the recognized text keep names, numbers, dates, and intent? | Audio and the correction outcome |
+| **Turn latency** | How long did the caller wait for the first useful response? | Time in recognition, agent work, tools, and speech generation, separately |
+| **Task completion** | Did the caller reach the intended result? | Eligibility, confirmation, and final record state |
+| **Recovery** | Did the agent recover from a misunderstanding or failure? | Retry count, abandonment, and human transfer |
+| **Safety** | Did the system prevent an unconfirmed or duplicate write? | Operation history and read-back verification |
+
+On Voyager's first call, a filler said it was checking the rules for bringing a small dog, and no answer followed: the flow had dropped the side question.
+
+The **Voice low-latency profile** (**Project** → **Settings** → **Runtime Config**) affects voice sessions only. Configure it for the latency and quality trade-offs your use case needs, and test with the models available to the project. An enabled voice channel doesn't by itself mean the profile is active.
+
+**Filler Settings** (**Project** → **Settings** → **Runtime Config**) set the delay before the first filler and the most fillers per turn. Saved Filler Settings override the low-latency profile's filler defaults, and the profile's own overrides win over both. If the static line always plays, the filler model is slower than the voice delay. Raise the delay, or choose a faster filler model.
+
+## Build a voice test matrix
+
+Use a small matrix that covers both intent and audio conditions. Keep the test set stable enough for comparison, and add real failures after you remove identifying details.
+
+| Dimension | Cases to include |
+|---|---|
+| **Intent** | Status, rebooking, cancellation question, human request, unrelated policy question |
+| **Recognition** | Codes, names, times, corrections, spelling, keypad alternative, varied speaking pace |
+| **Turn-taking** | Silence, back-channel, interruption, "hold on," an answer over a filler |
+| **System response** | Normal result, empty result, timeout, stale record, duplicate response |
+| **Risk** | Before and after confirmation, identity mismatch, ineligible action, transfer request |
+
+For each case, define the expected transcript outcome and any trace or data-state checks. Scoring must not reward a fluent answer that breaks a business rule. Label synthetic and production-derived data, so comparisons stay clear.
+
+## Turn failures into regression cases
+
+After a fix, rerun the original failure and related cases. Compare complete runs with unchanged scenarios and evaluators. If a tool or policy changed, record the difference instead of crediting every score change to the agent edit.
+
+| Failure found | Regression case to add |
+|---|---|
+| A weekday invented from an example | The caller supplies a weekday; the agent reports only the date and time the source returned. |
+| The caller says yes to an ambiguous question | A side question comes before confirming; no write happens until the named action is accepted. |
+| The flow drops a side question | An unrelated but answerable question during every wait state |
+| A repeat identity check adds silence | Verify once, hand off, and confirm the specialist uses the trusted result. |
+
+Monitor live-call trends as well as averages. A small group of long calls can disappear inside a mean. Review completion, transfer, recognition correction, tool failure, and silence together.
+
+## Choose where to run each test
+
+| Test | Where |
+|---|---|
+| Test call | Agent → **Chat with Agent** → **Voice**, or channel → **Settings** → **Call routing** → **Soft Phone** |
+| Scored voice runs | **Project** → **Evaluate** → **Evals**, with Conversation modality **Voice** |
+| Recognition, latency, and barge-in per turn | **Project** → **Operate** → **Sessions** → session → **Voice** tab |
+| Live trends | **Project** → **Insights** → **Channels** → **Voice Analytics** |
+
+* Test calls on the working copy run real tools and write real rows. Keep a reset list with each script.
+* Text evals never apply the phone profile. Only a voice scenario tests phone wording.
+* Each turn reads the project's Runtime Config again, including Filler Settings and the Reasoning Pipeline. When the project has a Streaming Safety block, only the Filler Settings section is read again. Test every change in a new call.
+* Voice evals record background noise with the result but don't mix it into the audio. Test noise with your own recordings.
+
+See [Evaluations](/agent-platform/evals) and [Voice analytics](/agent-platform/analytics-insights/voice-analytics).
+
+## Check each test call
+
+* Listen to the audio and read the transcript. Each shows different problems.
+* Check the recognition of every high-risk field.
+* Verify the result against authoritative data.
+* Check that confirmations named the action and came before the write.
+* Measure dead air, and identify which system step owned it.
+* Confirm that a transfer carried the context and gave the caller a clear transition.
+* Record the scenario, version, data reset, and outcome.
+
+## Diagnose a failed call
+
+Start with what the caller heard, then compare the recognized words, event sequence, agent decision, tool results, and final state. This order keeps you from changing the prompt when the cause was recognition, or changing recognition settings when the tool supplied stale data.
+
+1. Keep the recording or approved redacted audio, and identify the exact session version.
+2. Compare the audio with the recognized text, especially names, digits, negation, and corrections.
+3. Find the first turn where the agent's interpretation or route diverged.
+4. Inspect tool timing, result content, timeout behavior, and the resulting record state.
+5. Check whether the spoken response described the result accurately.
+6. Create a regression case that reproduces the failure without exposing identity.
+
+A correct trace with a poor spoken response points to presentation. An incorrect tool result points to data or a workflow. A gap between recognition and routing points to the transcript, the route description, or a flow guard.
+
+Keep recordings, traces, and evaluation access controlled. When you share a review, use redacted excerpts, and keep only the evidence needed to explain the failure.

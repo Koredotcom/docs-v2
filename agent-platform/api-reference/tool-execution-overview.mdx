@@ -1,0 +1,42 @@
+---
+title: Tool execution API overview
+description: Use the tool execution API to discover a project's tools, read their input schemas, and execute them synchronously with a platform API key, a user JWT, or a JWT App assertion.
+sidebarTitle: Tools execution APIs
+---
+
+Use the tool execution API to discover the tools in a project and run them. You list the tools that the API can execute, read a tool's input schema, and invoke the tool with parameters that match the schema. Execution is synchronous.
+
+## Prerequisites
+
+- A credential: a platform API key (`abl_…`) in the `x-api-key` header, a platform API key or Studio user JWT as `Authorization: Bearer`, or a JWT App assertion in the `auth` header. Public SDK keys (`pk_…`) are refused.
+- The `tool:read` permission to list and describe tools. The `tool:execute` permission to execute them. A platform API key gets these from the `tools.read` and `tools.execute` scopes.
+- The project slug. A project ID or UUID returns `404`.
+- A tool of a type that is enabled for public API execution.
+
+## Workflow and use cases
+
+1. List the project's tools. Check `executable` and `unsupportedReason` for each tool.
+2. Describe the tool you want to run to get its input schema.
+3. Execute the tool with a `params` object that matches the schema.
+
+## List of endpoints
+
+All paths start with `/api/v1/project/{projectSlug}/tools`.
+
+| Use case | Help article                                                                                             | Purpose                                                                              | Permission     |
+|:---------|:---------------------------------------------------------------------------------------------------------|:-------------------------------------------------------------------------------------|:---------------|
+| Discover | [List the available project tools](/agent-platform/api-reference/tools-execute-table-tools-list)         | List the tools that the API can execute, with a type filter and cursor pagination.   | `tool:read`    |
+| Inspect  | [Describe a tool and its input schema](/agent-platform/api-reference/tools-execute-table-tools-retrieve) | Get a tool's summary and the JSON Schema of the parameters that a caller can supply. | `tool:read`    |
+| Execute  | [Execute a specific tool](/agent-platform/api-reference/tools-execute-table-tools-execute)               | Run a tool synchronously and return its result.                                      | `tool:execute` |
+
+## Behavior to know
+
+- The API serves the live working copy of each tool definition. The environment is always `draft`. Nothing is pinned to a version or a deployment. Paths that include an `{env}` segment still respond for existing integrations but are deprecated. Don't build new integrations on them.
+- Only tool types on the allowlist run. The `table` type is enabled by default. The `http`, `mcp`, `searchai`, `workflow`, and `integration` types are opt-in for each environment. A tool of a disabled type returns `404`, the same response as an unknown tool name.
+- The `connector` type is the older stored name of `integration`. The list can return either one, so treat them as the same type.
+- The `timeout` property sets a per-call timeout from 1000 to 300000 milliseconds. A `mode` other than `sync` returns `400 ASYNC_NOT_SUPPORTED`.
+- A `200` response means the tool ran. Check `data.status` for the outcome of the tool itself.
+- The request body is strict. Unknown properties and platform-derived fields return `400`.
+- A JWT App created with payload encryption enforced sends a JWE in compact serialization with `Content-Type: application/jose` instead of JSON.
+- The `429` response has its own format, not the standard error envelope. Use the `Retry-After` and `X-RateLimit-*` headers.
+- Retry `503` errors with backoff. Don't automatically retry a tool that has side effects unless you know a retry is safe.

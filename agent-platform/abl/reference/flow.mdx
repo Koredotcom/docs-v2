@@ -809,7 +809,7 @@ FLOW:
     THEN: next_step
 ```
 
-A key missing from a record reads as `null` inside a `WITH` expression. An argument with no value is left out of the tool input. See [Missing values in CALL arguments](/agent-platform/abl/reference/tools#missing-values-in-call-arguments).
+A key missing from a record reads as `null` inside a `WITH` expression. An argument with no value is left out of the tool input. See [Missing values in CALL arguments](/agent-platform/abl/reference/tools#missing-values-in-call-arguments). An empty `""` bound to a required tool parameter blocks the call. See [Empty values for required parameters](/agent-platform/abl/reference/tools#empty-values-for-required-parameters).
 
 | Property | Type                     | Required | Default | Description                           |
 | -------- | ------------------------ | -------- | ------- | ------------------------------------- |
@@ -882,7 +882,7 @@ If a referenced key isn't defined for the caller's locale (and no less-specific 
 
 ### PARALLEL
 
-`PARALLEL:` runs several read-only tool calls at the same time in one step. Each call binds its own `AS` variable after all calls settle. The step then routes once through `ON_SUCCESS`, `ON_PARTIAL`, or `ON_FAILURE`. Three sequential calls take the sum of their latencies. A parallel block takes the slowest one.
+`PARALLEL:` runs several read-only tool calls at the same time in one deterministic FLOW step. Each call binds its own `AS` variable after all calls settle. The step then routes once through `ON_SUCCESS`, `ON_PARTIAL`, or `ON_FAILURE`. Three sequential calls take the sum of their latencies. A parallel block takes the slowest one.
 
 ```yaml
 FLOW:
@@ -988,7 +988,7 @@ Durations are `1500ms`, `2s`, or a bare number of milliseconds. Zero is rejected
 | A `REQUIRED` call failed, or every call that ran failed | `ON_FAILURE` |
 | `WAIT: first`, and the first call failed | `ON_FAILURE` |
 
-Skipped calls do not count. A step where every call is skipped goes to `ON_SUCCESS`.
+Skipped calls do not count as failed. A step where every call is skipped goes to `ON_SUCCESS`.
 
 #### Limits
 
@@ -998,7 +998,7 @@ Skipped calls do not count. A step where every call is skipped goes to `ON_SUCCE
 
 #### Rules and diagnostics
 
-Only read-only tools are allowed. A tool must be an HTTP `GET`, or declare `effect: read_only`. A YAML-format agent cannot hold `PARALLEL`. Keep these agents in ABL text.
+Only read-only tools are allowed. A tool must be an HTTP `GET`, or declare `effect: read_only`. 
 
 | Code | Fires when |
 | ---- | ---------- |
@@ -1057,9 +1057,22 @@ SET:
 
 Surround the whole value with quotes when JSON-shaped *text* is intentional — `SET: payload_text = '[{"customer":"{{employer_name}}"}]'` stores a string, not a structured value. A session `TYPE` declaration alone doesn't validate every `SET` write; validate structured arguments at the tool boundary (pass the variable to a typed parameter, such as `filters: object[]`, through `WITH`).
 
+**Tracing a SET.** Every `SET` block emits a `dsl_set` trace event. It lists each variable, the authored expression, the value it produced, and whether the expression could be evaluated. Variables that an agent declares sensitive are masked.
+
 **Assigning the same variable on more than one line.** A step `SET` keeps every line and runs them one by one in written order. A later line reads what an earlier line wrote: `x = 1` then `x = x + 1` gives `2`. The compiler warns for each such variable (`STEP_SET_DUPLICATE_TARGET`). An agent version compiled by an earlier release keeps its earlier result until you publish it again. In that case, only the last line for the variable runs, at the position of the first line, and the trace records a `warning` event with code `set_duplicate_target_legacy_order`.
 
 Branch (`ON_INPUT`, `ON_RESULT`, `ON_SUCCESS`, `ON_FAILURE`), `ON_START`, `DO`, `SUB_INTENTS`, and hook `SET` blocks keep one value per name. When a name is assigned twice, only the last assignment is used, and the parser reports the later line as [`W214`](/agent-platform/abl/reference/errors-and-warnings#w214).
+
+**Quoted values in branch blocks.** In `ON_INPUT`, `ON_RESULT`, `ON_SUCCESS` and `ON_FAILURE` branches, in digression `DO` blocks, and in handoff `ON_RETURN` and return handlers, the parser removes the quotes from a `SET` value. The quotes decide how the value is read:
+
+- Quoted text with spaces or punctuation, such as `transfer_stage: "AI Pre-call Stage"`, is stored as written. Validation does not report its words as variables.
+- A quoted bare name or dotted path, such as `transfer_reason: "USER_REQUESTED_FOR_AGENT_TRANSFER"`, is read as the variable of that name when one exists. It is stored as text only when no such variable exists. The compiler warns with [`SET_QUOTED_VALUE_READ_AS_PATH`](/agent-platform/abl/reference/errors-and-warnings#set_quoted_value_read_as_path).
+- `{{name}}` placeholders inside the quoted text are still checked as variable reads.
+- When the same assignment (same name, same value) is written both quoted and unquoted in one block, the two cannot be told apart after the quotes are removed. Validation treats both as a variable read.
+
+A step-level `SET` keeps the quotes, so it always stores the text. Use it when a value must always be text.
+
+**Literal `SET` value mode.** Literal mode stores a quoted value in these branch blocks as written, the same way a step-level `SET` does. It reads no variable and gives no warning. It is a project setting, `setValueMode`. A project runs in the legacy mode described above unless the setting is `literal`. In 1.10.0 the setting has no Studio control or settings API route. Each published version keeps the mode it was compiled with. A change applies from the next publish.
 
 **Placeholders inside a formula.** A `SET` value that contains a `{{name}}` placeholder is never evaluated as an expression. The platform fills in the placeholders and stores the whole value as text. For example, `gate = LOWER(TRIM(TO_STRING("{{flag}}"))) == "true"` stores the text `LOWER(TRIM(TO_STRING("false"))) == "true"`. `IF gate` is then true, because the text is not empty. The compiler warns on every `SET` surface (`SET_PLACEHOLDER_IN_EXPRESSION`). To compute the value, name the variable without braces: `gate = LOWER(TRIM(TO_STRING(flag))) == "true"`. To store text, put the whole value in quotes: `label = "flag is {{flag}}"`.
 

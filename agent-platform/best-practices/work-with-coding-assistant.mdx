@@ -1,0 +1,252 @@
+---
+title: Work with a coding assistant
+sidebarTitle: Work with a coding assistant
+---
+
+A coding assistant connected through Arch MCP can orient itself in a project, investigate a failure, make a bounded change, and gather evidence for your review. Agent developers still own the outcome: you set the intended behavior and the risk boundaries, then review the changes and the evidence before you authorize consequential actions.
+
+## Choose Studio, Arch, or a coding assistant
+
+Studio is the visual workspace for configuring and testing agents. Arch MCP gives coding assistants access to supported platform tools. A task can use one surface or combine them.
+
+| Work need | Starting point | Your role |
+|---|---|---|
+| A first version from an SOP, or one small change | Arch in Studio | Approve the plan, then each agent diff. |
+| Credentials, auth profiles, models, channels, phone numbers | Studio | Enter secrets and account settings in the console. Arch MCP never accepts them. |
+| Visual authoring or an interactive check | Studio | Choose the behavior, edit the resource, and confirm the result meets the scenario. |
+| An investigation or a change that spans definitions, tools, workflows, and tests | Coding assistant through Arch MCP | Set the scope, review the plan and changes, inspect the validation evidence, and approve release decisions. |
+| A coordinated change that also needs visual inspection | Studio and a coding assistant | Use each surface for the work it supports, and reconcile the results before release. |
+
+Arch proposes a plan, then shows each agent change as a before-and-after diff. Choose **Approve** or **Do not approve**. An approved change compiles into the working copy. Arch never publishes or deploys on its own.
+
+## Connect a coding assistant to Arch MCP
+
+Install the Arch MCP server and connect your assistant as described in [Install and configure MCP server](/agent-platform/mcp-server). After `platform_connect` signs you in, confirm the active workspace before you start.
+
+Install the guidance skills for your assistant and scope. For a project-level Codex install:
+
+```bash
+npx -y -p @koreai/arch-mcp-tools@1.8.0 arch-mcp-guidance install --client codex --scope project
+```
+
+Use `--client claude` for Claude Code, or `--scope user` to install the skills for all projects. Start a task with the `arch-agent-guide` skill. Keep an `AGENTS.md` file in the project folder with the project ID, environment, topology, test data, and the actions that need your approval.
+
+Skills add reusable task guidance. They don't add tools or grant permissions. For all 13 skills, see [Arch MCP tools and skills](/agent-platform/arch-mcp-reference). For the tool catalog, see [Build with Arch using MCP](/agent-platform/use-mcp-server).
+
+{/* REVIEW: The handbook pins package version 1.8.0 as "approved by your team". Confirm the customer version policy and install command, and confirm that the guidance skills installer is public. */}
+
+<Warning>In the assistant's settings, auto-approve only tools that just read. Some tools, such as `platform_agents`, mix read and write actions in one tool. Require approval for them and for any tool that changes the platform.</Warning>
+
+### Build a customer skill
+
+Create a team skill for a recurring task that combines platform procedures with your policies, project context, or acceptance criteria.
+
+1. **Name the task and the trigger.** State which request activates the skill, and when it doesn't apply.
+2. **Set the context.** Point to project facts in `AGENTS.md` or team standards. Include the environment, data, and assumptions the task needs.
+3. **Choose platform references.** For example, a release skill can follow `arch-release-check`, then add your release thresholds, approvers, and required evidence.
+4. **Write the workflow and boundaries.** Order the investigation, tool calls, validation, and reporting. Name read-only actions, actions that need approval, stop conditions, and how to handle an unknown outcome.
+5. **Define proof and maintain it.** Specify the answer format and evidence. Try the skill on representative requests and edge cases, then store it in version control for review.
+
+Put the skill in the project skills folder for your assistant, such as `.codex/skills/<team-skill>/SKILL.md` or `.claude/skills/<team-skill>/SKILL.md`. Give it an organization prefix so it stays distinct from the platform's `arch-*` skills. Build on the platform skills by naming and following them; don't edit their installed `arch-*` folders, because the installer manages them.
+
+## What the assistant does and what you decide
+
+| The assistant can | You decide |
+|---|---|
+| Map files, explain a trace, propose a design, make a bounded change, run an approved validator, and summarize the evidence. | Whether the behavior is right, whether a side effect is acceptable, whether the data is safe to use, and whether a release is authorized. |
+
+<Tip>Start with an explicit mode. For an investigation, say "read only." For implementation, name which files or agents may change and which actions need approval.</Tip>
+
+## Give the assistant context
+
+Don't ask the assistant to infer the project from one agent file. Give it the smallest set of references that lets it understand the task and verify the result.
+
+| Include | What it answers | Voyager example |
+|---|---|---|
+| **Project map** | Where behavior, tools, tests, and guidance live | Entry agent, disruption specialist, booking lookup, rebooking workflow |
+| **Task evidence** | What happened, or what should happen | Call transcript, session ID, trace span, current eval case |
+| **Constraints** | What is safe or out of scope | Read only; don't start a call or change; no real booking writes |
+| **Acceptance** | What success looks like | Eligible options are explained; the write waits for a clear confirmation |
+| **Checks** | How to prove the work | Validate the definition, run a safe scenario, review affected eval cases |
+
+Point to authoritative sources. A project instruction file can describe conventions and test data. A task prompt names the current goal. A trace, schema, or policy stays the source for runtime facts.
+
+The assistant's context and the agent's context are different things. The assistant's context is the guidance, files, tools, and conversation it reads during development. The deployed agent's context is the information assembled for a user conversation at runtime. They need separate budgets, controls, and debugging methods.
+
+### Skills, house standards, and project guidance
+
+Keep project guidance stable: naming, source-of-truth files, test commands, approval boundaries, and how to report evidence. Don't put a one-off fix in it, or copy a whole platform manual into it.
+
+* **Platform skills:** the 13 `arch-*` skills that ship with Arch MCP. Never edit them.
+* **House standards:** your team's skills and templates, kept in their own Git repository.
+* **Project context:** `AGENTS.md` and the targets sheet in the project folder.
+
+The task request sits on top of these. It names the goal, the evidence, the limits, the acceptance criteria, and the output you want.
+
+<Tip>Keep guidance testable. "Use safe test data for write scenarios" is actionable. "Be careful" isn't. Tell the assistant which check proves that it followed the rule.</Tip>
+
+## Write a request
+
+A good request states the job and the answer you need. It gives enough context to avoid guesswork, but doesn't prescribe a fix before the evidence is known. For implementation, add the allowed change surface and the exact checks. Ask for the plan first when the work may affect shared behavior or data. Give the source, scope, limits, and proof in the first request.
+
+### Set limits on actions and data
+
+Name the operations that stay read only. Say whether edits are allowed, which test data the assistant can use, and whether publishing or deployment is out of scope. Secrets live in Studio auth profiles; tools and requests refer to the profile by name.
+
+| Vague limit | Clear limit |
+|---|---|
+| "Be cautious with changes." | "You may edit the working copy of the Disruption agent and its tests. Don't publish, deploy, import, or write to live booking rows. Stop if validation reports a schema mismatch." |
+
+For voice work, don't include unredacted recordings, names, phone numbers, or account IDs in general prompts. Use approved examples, and remove identifiers before you share transcripts.
+
+### When sources disagree
+
+Assistants combine instructions, task text, retrieved files, tool results, and earlier messages, and these can disagree. Policy decides what to build, the current agent decides what is defined, and the trace decides what happened.
+
+Tell the assistant to report conflicts. An old session note may disagree with the current definition: the assistant names the mismatch and uses the approved source for that decision. Don't ask it to silently reconcile policy, runtime facts, and code comments.
+
+## Use task modes
+
+Don't combine "find out what happened," "fix it," and "release it" in one vague request. Each step produces an artifact that gives you a reason to continue.
+
+| Mode | Assistant work | What you review |
+|---|---|---|
+| **Orient** | Read instructions, map relevant files and agents, and list the system boundaries | Whether it found the current source and understood the task surface |
+| **Investigate** | Follow a scenario, session, trace, tool result, or code path without changing it | Evidence, uncertainty, and whether it separated facts from hypotheses |
+| **Implement** | Make the named change in the allowed working copy | Plan, diff, validation, and the effect on neighboring behavior |
+| **Verify** | Run approved checks and collect scenario-level results | Completeness of the run, the version and data used, and failures |
+
+For a small typo, a short plan can be enough. For a routing, identity, voice, or write-path change, ask for a diagnosis and a reviewable plan first. When the evidence reveals an unknown requirement, stop and get the policy decision. Don't ask the assistant to invent it.
+
+<Note>Know which copy you change. Edits change the working copy, which Studio test chats, working-copy eval runs, and channels bound to **None** use. Publishing freezes a version, and a deployment runs a version in an environment. A conversation keeps the version it started with, so test every change in a new one. If a save is refused because the source changed after the assistant read it, reopen the current definition, reconcile the change, then apply and validate it again. See [How guarded edits work](/agent-platform/arch-mcp-reference#how-guarded-edits-work).</Note>
+
+## Match each question to its evidence
+
+A repository search can't prove what happened in a live conversation. A trace can't prove that a policy document is current. Use each source for the question it can answer.
+
+| Question | Best evidence | What it doesn't prove alone |
+|---|---|---|
+| What is defined in this agent? | `platform_agents get` | That the running deployment uses this copy |
+| What happened in this session? | `debug_session_history`, `debug_analyze_session`, `debug_traces` | That another session behaves the same way |
+| Why did the agent decide that? | `debug_explain_decision`, `debug_get_span_tree` | That the decision was right |
+| Is this ABL valid? | `platform_validate_package`, `debug_lint_abl` | That the conversation meets the user's goal |
+| Did quality hold after the change? | `platform_eval_runs compare` | That the test set covers every production case |
+| Which rule is authoritative? | Approved policy, business owner, or source data | That an assistant's summary is current |
+
+Read the action as well as the tool name. `platform_eval_runs cases` only reads results, but `start` runs conversations that can write rows. Keep the returned IDs and versions with the findings.
+
+## Review the assistant's work
+
+A concise answer can still hide a wrong assumption. Review the trail from evidence to decision to change, in the order described in [Diagnose and review a change](/agent-platform/best-practices/diagnose-and-review#review-a-change).
+
+If the assistant reports success but can't point to a completed check, treat the work as unverified. If the result differs from the plan, inspect the difference before you accept it. Stop when the requested behavior is demonstrated and the relevant regression cases pass. New scope becomes a new task.
+
+### Example: a cancelled-flight call that went wrong
+
+A traveler phoned about a Denver flight that Voyager had cancelled, and wanted another flight. The call ended with the booking cancelled and a 75 USD fee, which policy forbids for a cancelled flight.
+
+A vague request, "The rebooking call failed. Fix the Disruption agent", produces an instructions edit that can't fix the call. A read-only request in the [debugging request](#debugging-request) format found four causes:
+
+| Cause | Layer | Fix |
+|---|---|---|
+| A fee was quoted on a flight Voyager cancelled | Workflow | The refund and cancellation workflows read the flight status. |
+| Disruption handed back before its result arrived | Instructions | Never hand back in the same step as another tool call. |
+| Concierge sent a cancelled flight to Manage Trip | Instructions | A disrupted flight always goes to Disruption. |
+| "Do you want to cancel booking D2HT6V?" invited a yes | Flow | The question names what the yes does. |
+
+Only one of the four causes was in Disruption. When a policy is unclear, the assistant returns the question to the policy owner.
+
+### Common assistant mistakes
+
+| What you notice | What to ask next |
+|---|---|
+| The answer sounds certain but has no source. | Ask which file, event, policy, or tool result supports the claim. Mark anything else as an inference. |
+| The assistant proposes a broad cleanup. | Ask it to connect every edit to an acceptance criterion, and remove unrelated changes. |
+| It relies on an old summary. | Ask it to reread the current definition and compare it with the saved session note. |
+| It says validation passed after a partial run. | Ask which cases ran, which were skipped, and whether the result came from the exact changed version. |
+| A tool times out during a write. | Stop. Read back the operation state before you consider a retry. |
+| It can't access an expected system. | Use an approved local artifact, or ask for access through the normal process. Don't invent the missing result. |
+
+A correction must change the working context or the next action. When the assistant repeats the same error, narrow the scope, point it to the authoritative source, and ask for one verifiable step.
+
+### Decide what the assistant may do on its own
+
+"Work autonomously" leaves too much open. State which steps the assistant performs on its own and where it must stop.
+
+* It may read the project guide, inspect named sources, and draft a plan.
+* It may edit the allowed working copy after the plan fits the task.
+* It may run the named validator and eval sets that have no write scenarios.
+* It must stop before it changes shared state, real customer data, permissions, or a deployment.
+* It must return for a decision when a policy, product target, or data owner is missing.
+
+For example, let the assistant edit the Disruption agent's working copy and run an eval set with no write scenarios, while the project owner approves the publish. Keep these permissions distinct in the request and in the tool setup. Keep publishing, import, deployment, and live-data changes behind your project's approval process.
+
+## Keep session notes between sessions
+
+A long project can outlive one assistant session. Keep the result of the work in a short session note that points to durable sources. The next session then resumes without repeating the investigation or inheriting stale assumptions. Link to traces or eval runs instead of copying sensitive details into the note.
+
+```text Session note template
+Goal and current state:
+Source version or project identifier:
+Evidence reviewed:
+Changes made, if any:
+Checks and exact results:
+Open questions and next step:
+Last updated:
+```
+
+Update the note when a material decision changes. Date it, and mark a hypothesis as a hypothesis. At the start of a new session, ask the assistant to compare the note with the current sources before it continues.
+
+## Request templates
+
+Replace the brackets, and say whether the assistant may edit or act.
+
+### Read-only orientation request
+
+```text
+Read the project instructions and relevant definitions.
+Do not edit files or perform write actions.
+Return: project map, entry agent, relevant tools and tests,
+known risks, read-only/write boundary, and facts you could not verify.
+```
+
+### Small change request
+
+```text
+Goal: [observable behavior]
+Current source and version: [agent, files, environment]
+Evidence: [scenario, trace, source, policy]
+Scope: [allowed definitions/files]
+Do not change: [neighboring behavior, interfaces, data]
+Out of scope: [data writes, publish, deploy]
+Before editing, give a short plan and name the checks.
+After editing, show the diff, validation, scenario results,
+risks, and any unresolved question.
+```
+
+### Debugging request
+
+```text
+Analyze session [session ID] in project [project ID].
+Start with debug_analyze_session, then debug_traces.
+Do not edit or replay it.
+Return:
+1. Plain-language summary
+2. Turn table: user words, recognized text, agent, tools, result
+3. Earliest supported divergence from expected behavior
+4. Responsible layer and evidence for and against it
+5. Smallest proposed change
+6. Regression scenario and exact checks
+7. Confidence and missing evidence
+```
+
+### Verification request
+
+```text
+Test in a new conversation, not the session that showed the bug.
+Run the approved validator and the focused scenario first.
+Then run the specified regression cases.
+Do not claim success from a partial run.
+Review the run's baseline regression status and list changed inputs,
+versions, data, or evaluators. Stop on an unknown write outcome.
+```
