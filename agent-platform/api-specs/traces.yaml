@@ -85,12 +85,7 @@ info:
     member, as in standard JWE, so JOSE libraries (for example `jose` for Node.js)
     can produce and open these envelopes directly. Pin the algorithms when
     decrypting: key management `RSA-OAEP-256`, content encryption `A256GCM`.
-  x-source-release: develop
-  x-source-commit: b6a1a328b3e089e03ca2494a7091d72a6a481d4b
   x-payload-encryption:
-    jira: ABLP-5317
-    source: develop, PR #4293 (POST twins + encryption) and PR #4314 (JWE envelope)
-    source-commit: 6de86f59eb
     runtime-capability: 'GET /health -> capabilities.payloadEncryption: 2'
 servers:
   - url: https://{host}
@@ -319,6 +314,18 @@ paths:
             adds the complete request and response content under
             `eventData.payloadData`.
           schema: { type: string, enum: [summary, full], default: summary }
+        - name: includeResponseHeaders
+          in: query
+          description: |
+            Set to `true` to return the response headers of HTTP tool calls under
+            `eventData.payloadData.responseHeaders`. Requires `dataMode=full`; with
+            `summary` (or no `dataMode`) the request returns 400
+            `INVALID_PARAM_COMBINATION`. Credential headers (for example `authorization`,
+            `set-cookie`, `x-api-key`) appear with the value `[REDACTED]`. Accepts `true`,
+            `false`, `1`, or `0`; any other value returns 400
+            `INVALID_INCLUDE_RESPONSE_HEADERS`. Omit or set `false` for the default
+            response.
+          schema: { type: boolean, default: false }
         - name: sortOrder
           in: query
           schema: { type: string, enum: [asc, desc], default: asc }
@@ -894,7 +901,13 @@ components:
             eventData:
               type: object
               additionalProperties: false
-              properties: { payloadData: { $ref: '#/components/schemas/PayloadData' } }
+              properties:
+                payloadData: { $ref: '#/components/schemas/PayloadData' }
+                workflowRun:
+                  $ref: '#/components/schemas/WorkflowRun'
+                  description: |
+                    Present on a `tool.call.failed` event for a workflow tool: the run the
+                    call started, with its steps. Absent when the run could not be loaded.
     LlmEventData:
       type: object
       additionalProperties: false
@@ -1032,7 +1045,7 @@ components:
             and so on. The values below cover the built-in tool kinds; a custom tool can
             report its own value.
           x-common-values:
-            [http, mcp, sandbox, lambda, connector, workflow, searchai, async_webhook, table]
+            [http, mcp, lambda, connector, workflow, searchai, async_webhook, table]
         success:
           type: [boolean, 'null']
           description: |
@@ -1058,6 +1071,84 @@ components:
             True when the tool failed for an infrastructure reason, such as a timeout, rather
             than returning a normal error.
         payloadData: { $ref: '#/components/schemas/PayloadData' }
+        workflowRun:
+          $ref: '#/components/schemas/WorkflowRun'
+          description: |
+            Present only when `toolType` is `workflow`: the run the call started, with its
+            steps. Absent when the run could not be loaded; `meta.warnings` then says so.
+    WorkflowRun:
+      type: object
+      additionalProperties: false
+      description: |
+        The workflow run a workflow tool call started. Steps are listed in the order they
+        ran. Only top-level steps are listed: the steps a loop runs for each item are not.
+        Step inputs and outputs are not included.
+      required: [executionId, workflowId, status, stepAvailability, steps]
+      properties:
+        executionId:
+          type: string
+          description: The run's ID.
+        workflowId:
+          type: string
+          description: The workflow's ID.
+        workflowName:
+          type: string
+          description: The workflow's name.
+        status:
+          type: string
+          description: |
+            The run's status, such as `running`, `completed` or `failed`.
+        startedAt: { type: string, format: date-time }
+        completedAt: { type: string, format: date-time }
+        durationMs:
+          type: integer
+          minimum: 0
+          description: How long the run took, in milliseconds.
+        stepAvailability:
+          type: string
+          enum: [complete, partial]
+          description: |
+            `partial` when some of the run's steps are not available yet. The list then
+            holds only the steps that are.
+        stepsTruncated:
+          type: boolean
+          description: |
+            True when the run has more than 200 steps. Only the first 200 are listed.
+        steps:
+          type: array
+          maxItems: 200
+          items: { $ref: '#/components/schemas/WorkflowStep' }
+    WorkflowStep:
+      type: object
+      additionalProperties: false
+      required: [name, status]
+      properties:
+        name:
+          type: string
+          description: The step's name, as written in the workflow.
+        stepId: { type: string }
+        nodeType:
+          type: string
+          description: The kind of step, such as `http`, `function` or `email`.
+        status:
+          type: string
+          description: |
+            The step's status: `running`, `completed`, `failed`, `rejected`, `skipped`,
+            `cancelled`, or a `waiting_` status such as `waiting_approval`.
+        startedAt: { type: string, format: date-time }
+        completedAt: { type: string, format: date-time }
+        durationMs:
+          type: integer
+          minimum: 0
+        error:
+          type: object
+          additionalProperties: false
+          required: [message]
+          properties:
+            code: { type: string }
+            message:
+              type: string
+              description: The error, with personal data removed under the project's PII settings.
     DecisionEventData:
       type: object
       additionalProperties: false
@@ -1119,6 +1210,22 @@ components:
         response: { description: Complete sanitized LLM response payload }
         input: { description: Complete sanitized event input }
         output: { description: Complete sanitized event output }
+        responseHeaders:
+          type: object
+          additionalProperties: { type: string }
+          description: |
+            Tool events only, returned when `includeResponseHeaders=true`. Response
+            headers of the HTTP call, from the final attempt when the call was retried.
+            Names are lowercase; repeated headers are joined with `, `. Credential
+            headers keep their name with the value `[REDACTED]`; other values follow the
+            project PII policy. An empty object when the event has none (not an HTTP
+            tool, no response received, or recorded before header capture existed).
+        responseHeadersTruncated:
+          type: boolean
+          enum: [true]
+          description: |
+            Present only when headers were dropped to keep the stored total of names
+            and values within 16 KB.
         details:
           {
             type: object,
@@ -1269,6 +1376,19 @@ components:
             ignored rather than rejected. Use this to spot typos when a query returns
             fewer results than expected.
           items: { type: string }
+        warnings:
+          type: array
+          description: |
+            Present only when part of the page could not be served in full. For example,
+            `WORKFLOW_STEPS_UNAVAILABLE` means some workflow tool calls are returned without
+            their `workflowRun`. The events themselves are complete.
+          items:
+            type: object
+            additionalProperties: false
+            required: [code, message]
+            properties:
+              code: { type: string, enum: [WORKFLOW_STEPS_UNAVAILABLE] }
+              message: { type: string }
     ErrorEnvelope:
       type: object
       required: [error]
@@ -1450,6 +1570,10 @@ components:
             - summary
             - full
           default: summary
+        includeResponseHeaders:
+          description: Same as the `includeResponseHeaders` query parameter of the GET operation.
+          type: boolean
+          default: false
         sortOrder:
           description: Same as the `sortOrder` query parameter of the GET operation.
           type: string
@@ -1583,6 +1707,9 @@ components:
     BadRequest:
       description: |
         Invalid date range, filter, data mode, limit, sort order, boolean, or cursor.
+        `includeResponseHeaders=true` without `dataMode=full` returns
+        `INVALID_PARAM_COMBINATION`; a non-boolean `includeResponseHeaders` returns
+        `INVALID_INCLUDE_RESPONSE_HEADERS`.
 
         Encryption and POST-body errors also return 400: `ENCRYPTED_PAYLOAD_INVALID`
         (malformed, unexpected or undecryptable JWE, or a plain body for a

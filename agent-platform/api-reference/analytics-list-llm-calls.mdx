@@ -1,17 +1,68 @@
 ---
 title: List LLM calls
+description: List the individual LLM calls made in a project, with their model, provider, token counts, latency, and cost.
 openapi: "/agent-platform/api-specs/llm-ledger.yaml get /api/public/analytics/projects/{projectId}/llm-ledger"
 ---
 
-Use this endpoint to retrieve the LLM call ledger for a project. The response contains one record for each individual LLM call, including details such as the model, provider, token usage, latency, and cost. The endpoint does not aggregate calls by conversation turn.
+<Badge icon="arrow-left" color="gray">[Back to the Analytics APIs overview](/agent-platform/api-reference/analytics-overview)</Badge>
+
+Use this endpoint to retrieve the LLM call ledger for a project. The response contains one record for each individual LLM call, including details such as the model, provider, token usage, latency, and cost. The endpoint doesn't aggregate calls by conversation turn. Each record includes a `traceId` and an `eventId` that you can use with [List trace events](/agent-platform/api-reference/analytics-list-traces) to get the full execution context.
 
 Use the `dataMode` parameter to control the level of detail returned. The default mode returns call-level facts, while `full` additionally includes the exact prompt and response payloads when available.
 
+Authenticate with the `x-api-key` header. The key must be bound to the project you are querying and have the `analytics:read` permission.
+
 The available filtering criteria are:
 
-- Date range — required: `fromDate` and `toDate`. `fromDate` is inclusive, while `toDate` is exclusive.
-- Source: Filter by the source of the LLM call.
-- Source subtype: Further filter calls by source subtype.
-- Model: Filter calls by the LLM model.
-- Provider: Filter calls by the model provider.
-- Other query parameters: The endpoint also supports pagination and sorting, but these control how results are returned rather than which records are included.
+- `fromDate` and `toDate`: Required. `fromDate` is inclusive, while `toDate` is exclusive.
+- `sessionIds`: Filter by specific session IDs; up to 10,000.
+- `channel`: Filter by the exact channel name as stored, such as `web_chat` or `twilio_sms`. Shorthand such as `web` isn't expanded. Design-time calls, such as Studio test calls, have no channel.
+- `channelType`: Filter by the exact transport-specific channel type.
+- `source`: Filter by the part of the platform that made the call, such as `runtime` for live agent traffic or `evals` for evaluation runs. Older spellings are translated.
+- `sourceSubtype`: Filter by the purpose of the call within its source, such as `response_generation` or `guardrails`.
+- `status`: Filter by `success` or `failed`.
+- `model`: Filter by the exact model ID as recorded, such as `gpt-4o`. Calls without a model ID use `unknown`.
+- `provider`: Filter by model provider, such as `openai` or `azure`. Calls without a provider use `unknown`.
+- `environment`: Filter by `development`, `staging`, `production`, or `working-copy`. This endpoint uses `development`, not `dev`. Design-time calls have no environment.
+- `name`: Filter by the exact effective agent name, operation type, or provider fallback.
+- `attributionName`, `attributionType`, `attributionId`, and `attributionScope`: Filter by the credential, auth profile, or other source that the call is attributed to.
+- `channelUId`: Filter by the identifier of the end user in the conversation, such as an email address or phone number. Up to 100 values. See [Filter by end user](#filter-by-end-user).
+
+All filters other than the date range are optional and match exactly. Filters combine with `AND`. An empty filter value returns `400 INVALID_FILTER`.
+
+Use `sortBy` (`timestamp`, `latencyMs`, `cost`, or `totalTokens`) and `sortOrder` (`asc` by default, or `desc`) to order the results. Use `limit` (1 to 10,000, default 100) and `offset` to page through them. With `dataMode=full`, a page can hold fewer calls than `limit` so the response stays within 1 MiB. Check `hasMore` instead of assuming that a short page is the last one. The `cost` value is an estimate in USD.
+
+### Filter by end user
+
+Use `channelUId` to find the LLM calls made in conversations with a given end user. The value is the channel user ID that the channel reported for the user, such as an email address, phone number, or SIP URI.
+
+- Pass up to 100 values, comma-separated or by repeating the parameter. A call matches when it matches any value.
+- Send the full identifier. Partial and prefix searches aren't supported.
+- Emails match case-insensitively.
+- Write phone numbers in international format with the country code, such as `+14155550100`. A national number matches only an identical identifier stored the same way.
+- Only calls recorded after this filter was released carry the identifier. Older calls never match.
+- A match is evidence, not proof of identity. Phone numbers and email addresses are reassigned over time.
+
+For identifier lookups, use [List LLM calls using JWE payload](/agent-platform/api-reference/analytics-list-llm-calls-with-encrypted-payload). Proxies, load balancers, and browser history can record a GET query string. They don't record a POST body, and you can encrypt it.
+
+Invalid values return a `400` error:
+
+| Error code | Cause |
+|:-----------|:------|
+| `INVALID_CHANNEL_UID` | A value is empty, isn't a string, contains a control character, is longer than 512 characters, or is longer than 256 characters after normalization. The message names the position of the value and never repeats it. |
+| `TOO_MANY_FILTER_VALUES` | The request has more than 100 values. The count includes duplicates. |
+
+Each call in the response includes `channelUId`, the normalized identifier of the end user. This is personal data. The value is `null` when the call has no end user, such as a design-time or pipeline call, when the channel didn't identify the user, or when the call predates the field.
+
+### Token and accounting fields
+
+Each call record includes these token and accounting fields:
+
+| Field | Description |
+|:------|:------------|
+| `cacheWriteTokens` | Input tokens that the provider wrote to its prompt cache on this call. They are part of `inputTokens`, and they are priced at the cache-write rate when one is configured. `null` means the provider didn't report cache writes, as with Azure Chat, or the call predates provider token accounting. `0` means the provider reported zero. |
+| `canonicalTokenUsage` | Optional. A versioned usage record for the call with input, output, total, cache write, cache read, and reasoning quantities. Each quantity has a status and a provider source. |
+| `canonicalCostEstimate` | Optional. The cost estimate stored for the call, with its status, currency, and the pricing snapshot used. The API never recalculates it from current prices. |
+| `canonicalAccountingStatus` | Optional. The validation state of the stored accounting: `usage` and `estimate`, each `valid`, `legacy`, `invalid`, or `unsupported`. `usageReason` and `estimateReason` explain a state. |
+
+The `canonical` fields are omitted for calls recorded before provider token accounting. `canonicalAccountingStatus` appears only when the call has accounting metadata.

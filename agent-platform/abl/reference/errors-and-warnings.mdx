@@ -473,6 +473,14 @@ Severity: <Badge color="yellow">warning</Badge>
 
 **Fix.** Add the target in Agent Transfer. Then turn caller hold on.
 
+## CALL_WITH_REQUIRED_PARAM_EMPTY
+
+Severity: <Badge color="yellow">warning</Badge>
+
+**Meaning.** A `CALL` `WITH:` block binds an empty value (`""` or `''`) to a parameter the tool declares as required. The runtime treats an empty required input as missing. It does not call the tool, and the step takes its failure path with the error code `TOOL_REQUIRED_INPUT_MISSING`. The warning skips a parameter that has a default, a non-model source, or hidden model visibility. It also skips a parameter that `process.before` fills, and the session values `session_id`, `tenant_id`, and `project_id`. An empty `user_id` still warns, because a session with no user has no `user_id`.
+
+**Fix.** If an empty value is valid, declare the parameter optional in the tool signature (`name?: string`) so the runtime sends it. Otherwise bind a value that is never empty, or branch on `__errorCode == "TOOL_REQUIRED_INPUT_MISSING"` in `ON_FAILURE`.
+
 ## CEL_CONDITION_UNRESOLVED_CALL
 
 Severity: <Badge color="yellow">warning</Badge>
@@ -496,6 +504,22 @@ Severity: <Badge color="yellow">warning</Badge>
 **Meaning.** A condition or guardrail check passes a literal pattern to abl.matches_pattern or abl.not_matches_pattern (or uses x MATCHES "pattern", which runs as abl.matches_pattern) that the runtime regex engine cannot run: it is longer than 500 characters, uses a construct RE2 does not support (backreferences, lookahead or lookbehind), or is not a valid regex. At runtime the call does not fail: abl.matches_pattern returns false and abl.not_matches_pattern returns true for every input, so a guardrail built on it never fires (or always fires) and the trace shows an ordinary result. It is a warning, not an error, and evaluation is unchanged.
 
 **Fix.** Keep each pattern to 500 characters or fewer and to RE2 syntax. Split a long alternation into several calls of at most 500 characters each, joined with || for abl.matches_pattern or with && for abl.not_matches_pattern. Replace lookarounds and backreferences with plain alternatives or an additional condition.
+
+## CONFIGURATION_INVALID_VALUE
+
+Severity: <Badge color="yellow">warning</Badge>
+
+**Meaning.** A configuration value is not one the setting supports. The parser keeps its existing behavior, and the message says what applies instead. Strict validation does not promote this warning to an error. It is raised for these settings: the `EXECUTION` `conversation_history_window` (a whole number from 0 to 10; an invalid value is not applied and the runtime keeps its default of `2`), `EXECUTION` `compaction_threshold` (a number from 0 to 1), a block-form value for an `EXECUTION` scalar key, and the `HANDOFF` `CONTEXT` `history` value and its `last_n` count.
+
+**Fix.** Use a supported value for the named setting. The message names the setting and the behavior that applies instead. If the setting is missing, check the inherited project configuration.
+
+## CONFIGURATION_UNKNOWN_KEY
+
+Severity: <Badge color="yellow">warning</Badge>
+
+**Meaning.** A key is not recognized in the block that holds it. Names are scoped to their block, so a key that works in one block can be unknown in another. The key has no effect, and the defaults or inherited settings stay in effect. The warning does not make a misspelled or wrongly cased key work. Strict validation does not promote it to an error. The parser raises it for unknown keys in the agent `EXECUTION` block (ABL text and YAML) and in a `HANDOFF` `CONTEXT` block. In ABL text, `EXECUTION` keys match without regard to case or underscores. In YAML, only the documented spellings (snake_case or camelCase) are accepted, so a key with other casing warns.
+
+**Fix.** Check the spelling, the case, and the block. See [Configuration properties](/agent-platform/abl/reference/agent-declaration#configuration-properties) for the supported `EXECUTION` keys.
 
 ## CONSTRAINT_ON_FAIL_VOICE_ILLEGAL_PLACEMENT
 
@@ -1145,6 +1169,14 @@ Severity: <Badge color="red">error</Badge>
 
 **Fix.** Restate the condition as a boolean expression over session state, for example task_done == true or refund_status == "issued". If the judgment the sentence describes genuinely belongs to the model, have a reasoning step or instruction set a variable recording the outcome, then complete on that variable, or classify into intent state first and complete on the classified value.
 
+## PROFILE_INVALID_APPLIES_TO
+
+Severity: <Badge color="red">error</Badge>
+
+**Meaning.** The behavior profile has an `APPLIES_TO` line with a value other than `all_agents`. `APPLIES_TO` only widens a profile to every agent in the project, so no other value is supported. Compile fails for that profile.
+
+**Fix.** Write `APPLIES_TO: all_agents` to attach the profile to every agent. Or delete the line and reference the profile from each agent with `USE BEHAVIOR_PROFILE:`.
+
 ## REALTIME_TOOL_EFFECT_REQUIRED
 
 Severity: <Badge color="red">error</Badge>
@@ -1345,6 +1377,14 @@ Severity: <Badge color="yellow">warning</Badge>
 
 **Fix.** To compute the value, name the variable without braces: `LOWER(flag) == "true"`. To store text, put the whole value in quotes.
 
+## SET_QUOTED_VALUE_READ_AS_PATH
+
+Severity: <Badge color="yellow">warning</Badge>
+
+**Meaning.** In `ON_INPUT`, `ON_RESULT`, `ON_SUCCESS` and `ON_FAILURE` branches, digression `DO` blocks, and handoff return handlers, a `SET` value written in quotes is stored without its quotes. A quoted bare name or dotted path, such as `"USER_REQUESTED_FOR_AGENT_TRANSFER"`, is then read as the variable or path of that name when one exists. It is stored as text only when none exists. A step-level `SET` keeps the quotes and always stores the text. The warning applies to an agent compiled in legacy `SET` value mode. A project created with literal `SET` value mode stores a complete quoted value as written and is not warned. A project created before the mode existed stays in legacy mode.
+
+**Fix.** Move the assignment to a step-level `SET` when the value must always be text. Or use text that cannot match a variable name, for example text with a space or punctuation. Quoted text with spaces or punctuation is stored as written and does not warn.
+
 ## STEP_PROFILE_ALREADY_AGENT_LEVEL
 
 Severity: <Badge color="yellow">warning</Badge>
@@ -1413,7 +1453,7 @@ Severity: <Badge color="yellow">warning</Badge>
 
 Severity: <Badge color="yellow">warning</Badge>
 
-**Meaning.** The runtime reuses a tool result within one conversation only for read-only tools. An HTTP tool is read-only when its method is GET or HEAD, or when it declares `effect: read_only`. MCP, sandbox, lambda, and synchronous workflow tools must declare `effect: read_only`. Connector, platform, and async webhook tools, async workflows, and system tools are never cached. The hint stays, and the tool runs on every call.
+**Meaning.** The runtime reuses a tool result within one conversation only for read-only tools. An HTTP tool is read-only when its method is GET or HEAD, or when it declares `effect: read_only`. MCP, lambda, and synchronous workflow tools must declare `effect: read_only`. Connector, platform, and async webhook tools, async workflows, and system tools are never cached. The hint stays, and the tool runs on every call.
 
 **Fix.** Remove `cacheable: true`, or declare `effect: read_only` if the tool never changes data. Strict validation reports this as an error for a tool that declares a write effect.
 

@@ -160,6 +160,28 @@ WHEN: intent.unclear == true OR intent.confidence < 0.5
 WHEN: handoff_count >= 4
 ```
 
+##### Conditions that read `before_turn` values
+
+A routing rule `WHEN`, a `HANDOFF` `WHEN`, or an `ENABLED_WHEN` can read a value that the `before_turn` hook writes. In an agent or supervisor without a `FLOW`, such a route is judged after the hook, in the same turn. This happens before the agent's model call and before an intent shortcut or classifier routes the message. A route that matches hands off without the agent's own model call, and the destination answers.
+
+```yaml
+TOOLS:
+  lookup_case(customer_id: string) -> object
+
+HOOKS:
+  before_turn:
+    CALL: lookup_case(customer_id: customer_id) AS case_lookup
+
+HANDOFF:
+  - TO: Delivery_Case_Agent
+    WHEN: case_lookup.open == true
+```
+
+- The hook writes its `SET` keys, its `CALL` result variable, and what the called tool's `on_result` or `on_error` writes or clears. A value that the hook clears no longer routes on its old value.
+- Routes keep their authored order. Routing rules run by priority, then handoffs in the order you wrote them. A route before the first route that reads a hook value is judged before the hook. So a guard that does not read hook values, such as an identity check, still runs ahead of the hook's `CALL`. The first route that reads a hook value, and every route after it, is judged after the hook.
+- For such an agent, `before_turn` also runs on a turn that an intent shortcut or classifier then answers. On that turn the shortcut's answer wins.
+- The earlier order stays in these cases: the agent has a `FLOW`, the agent has `GATHER` fields, the runtime awaits a specific reply (a pending choice, a queued offer, or a sequential continuation), or the hook calls a tool that the agent does not declare.
+
 #### Routing constraint blocks
 
 Add constraints to limit when a rule applies beyond the WHEN condition:

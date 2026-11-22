@@ -1,0 +1,365 @@
+# Use fuzzy matching for misspelled user input
+
+Use a lookup table with fuzzy matching to accept a misspelled value, such as "Heathrw", when the correct values come from a list you own. The agent asks the customer to confirm the closest entry before it stores it.
+
+## Concept
+
+ABL does not match fuzzily by default. Most fields compare exact text. Fuzzy matching exists in two places only.
+
+| Need                                                                                 | Use                                                                                    | Behavior                                                  |
+| ------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------- | --------------------------------------------------------- |
+| Accept a value from a known list, even when misspelled                               | A **lookup table** with `fuzzy_match: true`, linked to a field with `semantics.lookup` | Finds the closest entry. Asks the customer to confirm it. |
+| Check that what a caller said matches a stored value, such as a name or phone number | The functions `MATCHES()`, `MATCH_RESULT()`, and `MATCH_SCORE()`                       | Scores the match. Tolerates speech-to-text slips.         |
+
+These features do not match fuzzily:
+
+| Feature                                        | What it does with a misspelling                                                                                                                    |
+| ---------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `type: enum`, `options`, `validate: enum(...)` | Accepts an exact match, ignoring case, or a listed synonym. Rejects everything else.                                                               |
+| `ENTITIES` `SYNONYMS`                          | Exact match, ignoring case. List each misspelling you want to accept.                                                                              |
+| Lexical intent keywords                        | Exact phrases only. No plurals, no stemming.                                                                                                       |
+| Embeddings and domain glossary in `NLU:`       | Not active in this release. See [Improve intent matching with domain glossary and embeddings](/agent-platform/abl/how-to/improve-intent-matching). |
+
+A lookup table is a good fit for a list you control, such as airports, branches, or product names. For a short, fixed list of choices, use an enum and add the common misspellings as synonyms. See [Validate fields with enums and allowed values](/agent-platform/abl/how-to/validate-fields-with-enums).
+
+### How a lookup table decides
+
+For each collected value, the runtime does this in order:
+
+1. **Exact match.** The comparison ignores case unless `case_sensitive: true`. The runtime stores the table's spelling and does not ask. "heathrow" becomes "Heathrow".
+2. **Fuzzy match,** if `fuzzy_match: true`. It scores the value against every entry, ignoring case. The score is `1 - (edits ÷ length of the longer string)`. The best entry at or above `fuzzy_threshold` is the suggestion.
+3. **No match.** The runtime drops the value and tells the customer the value is not valid. The field stays missing.
+
+A suggestion is never stored on its own. The agent asks, and the customer decides.
+
+| Customer says | Closest entry | Score     | At 0.85  | At 0.8   |
+| ------------- | ------------- | --------- | -------- | -------- |
+| Heathrw       | Heathrow      | 0.875     | Suggests | Suggests |
+| newrk         | Newark        | 0.833     | No match | Suggests |
+| LX            | LAX           | 0.667     | No match | No match |
+| Chicago       | none          | below 0.6 | No match | No match |
+
+Short values score low. One missing letter in a three-letter code drops the score to 0.67. Do not use fuzzy matching for short codes.
+
+## Minimal working example
+
+A flight agent accepts one of five airports. It asks for confirmation when the customer misspells one.
+
+First, create the table once for the project. Add it in the project's runtime configuration, in the Lookup Tables section. This fragment shows the settings. It is not ABL.
+
+```json
+{
+  "lookup_tables": [
+    {
+      "name": "destinations",
+      "source": "inline",
+      "values": ["Heathrow", "Gatwick", "Stansted", "Luton", "Newark"],
+      "case_sensitive": false,
+      "fuzzy_match": true,
+      "fuzzy_threshold": 0.8
+    }
+  ]
+}
+```
+
+Then link the field to the table.
+
+`agents/trip-destination-intake.agent.abl`
+
+```yaml
+AGENT: Trip_Destination_Intake
+
+GOAL: "Collect a destination city that exists in the airline network."
+
+PERSONA: "You are a concise travel assistant."
+
+FLOW:
+  entry_point: ask_destination
+  steps:
+    - ask_destination
+    - confirm
+
+  ask_destination:
+    REASONING: false
+    GATHER:
+      - destination: required
+        type: string
+        prompt: "Which airport are you flying to?"
+        semantics:
+          lookup: destinations
+    THEN: confirm
+
+  confirm:
+    REASONING: false
+    RESPOND: "Booking a flight to {{destination}}."
+    THEN: COMPLETE
+```
+
+Variable sources:
+
+- `destination` is a `GATHER` field. The customer supplies it, and the `destinations` table checks it.
+- `destinations` is a project-local resource. The agent does not define it.
+
+If the table does not exist, nothing warns you and nothing is checked. See [Common mistakes](#common-mistakes).
+
+## How it works
+
+Where the check runs decides how the customer hears about a near match.
+
+| Where the field is   | Near match                                                                                                                                        | No match                                                                        |
+| -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------- |
+| A `FLOW` step        | The agent asks: `Did you mean "Heathrow" for destination?` The next reply accepts or declines.                                                    | The agent says `"Chicago" is not a valid value for destination` and asks again. |
+| A top-level `GATHER` | The runtime drops the value and tells the model: the value is close to "Heathrow", confirm or give the exact value. The model words the question. | The runtime drops the value and tells the model the value is not valid.         |
+
+In a `FLOW` step, the customer's reply to "Did you mean" is read as follows:
+
+- **Accept** (such as "yes"): the runtime stores the suggestion.
+- **Decline** (such as "no"): the runtime clears the field and asks again. A reply such as "no, Gatwick" is read as the new answer.
+- **Unclear**: the runtime repeats the question and keeps the suggestion.
+
+The "Did you mean" and "not a valid value" wording is fixed English text. You cannot override it with `MESSAGES`.
+
+A field with `sensitive: true` never gets a suggestion. A near match counts as no match, and the message does not quote the value. This stops the agent from revealing a valid value.
+
+## Common variations
+
+### Top-level GATHER
+
+The same table works with a model-led agent. The model asks the confirming question.
+
+`agents/trip-destination-global.agent.abl`
+
+```yaml
+AGENT: Trip_Destination_Global
+
+GOAL: "Collect a destination airport that exists in the airline network."
+
+PERSONA: "You are a concise travel assistant."
+
+GATHER:
+  destination:
+    prompt: "Which airport are you flying to?"
+    type: string
+    required: true
+    semantics:
+      lookup: destinations
+
+COMPLETE:
+  - WHEN: destination IS SET
+    RESPOND: "Booking a flight to {{destination}}."
+```
+
+Variable sources:
+
+- `destination` is a `GATHER` field checked against the project table `destinations`.
+
+### Choose where the list lives
+
+Set `source` on the table. The fuzzy settings work for two of the three sources.
+
+| `source`     | Where values live                                                           | Fuzzy matching                           |
+| ------------ | --------------------------------------------------------------------------- | ---------------------------------------- |
+| `inline`     | A `values` list in the table                                                | Yes. Keep it under 1,000 values.         |
+| `collection` | Rows stored for the project, loaded from a CSV or JSON upload of up to 1 MB | Yes. Only the first 500 rows are scored. |
+| `api`        | Your HTTP endpoint                                                          | No. See below.                           |
+
+An `api` table sends the value to your endpoint and trusts the answer. The endpoint returns `found` and `matched_value`. The runtime computes no score, so it never asks "Did you mean". If your endpoint corrects a spelling, the runtime applies the corrected value silently. See [Validate values using an external lookup API](/agent-platform/abl/how-to/validate-with-external-lookup-api).
+
+The lookup settings in a project table:
+
+| Setting           | Default                                                         | Meaning                                                                             |
+| ----------------- | --------------------------------------------------------------- | ----------------------------------------------------------------------------------- |
+| `fuzzy_match`     | `false`                                                         | Turns on the fuzzy step.                                                            |
+| `fuzzy_threshold` | `0.8` in project configuration. `0.85` in an agent-local table. | Minimum score from 0 to 1. Nothing checks the range. A value above 1 never matches. |
+| `case_sensitive`  | `false`                                                         | Whether an exact match must have the same case.                                     |
+
+### Agent-local tables
+
+An agent can declare its own `LOOKUP_TABLES:` block. The compiler reports warning `AGENT_LOOKUP_TABLE_EXPERIMENTAL`: agent-local tables are experimental and not shared with other agents. Prefer the project table.
+
+This is a section snippet. It keeps the table next to the agent.
+
+```yaml
+LOOKUP_TABLES:
+  destinations:
+    source: inline
+    values: [Heathrow, Gatwick, Stansted, Luton, Newark]
+    fuzzy_match: true
+    fuzzy_threshold: 0.8
+```
+
+Write an `endpoint:` URL without quotes. A quoted URL is read with the quotes and fails with `E485`. A project table and an agent table cannot share a name. The runtime raises a conflict error.
+
+### Verify a spoken name, email, address, or number
+
+Lookup tables compare against a list. To compare what a caller said with one stored value, use the match functions in a condition. They are built for speech-to-text output.
+
+| Function                           | Returns                                                        |
+| ---------------------------------- | -------------------------------------------------------------- |
+| `MATCHES(said, stored, kind)`      | `true` for a clear match.                                      |
+| `MATCH_RESULT(said, stored, kind)` | `"match"`, `"retry"`, `"mismatch"`, or `"missing"`.            |
+| `MATCH_SCORE(said, stored, kind)`  | A score from 0 to 100, or -1 when there is nothing to compare. |
+
+`kind` is `"name"`, `"email"`, `"address"`, `"phone"`, `"digits"`, `"text"`, or `"auto"`. `"auto"` picks a kind from the stored value. You do not set a threshold. The platform sets the bands: 70 and above is a match, 50 to 69 is a near miss worth a retry, and below 50 is a mismatch. For `phone` and `digits`, every digit must match.
+
+| Said                    | Stored             | Kind  | Result                                              |
+| ----------------------- | ------------------ | ----- | --------------------------------------------------- |
+| Jon Smyth               | John Smith         | name  | match                                               |
+| Smith John              | John Smith         | name  | match                                               |
+| Katherine Johnson       | Katherine Johnston | name  | retry                                               |
+| Mark Lee                | Mary Lee           | name  | mismatch. Similar first names are different people. |
+| sara at example dot com | sarah@example.com  | email | match                                               |
+| sarah@exampel.com       | sarah@example.com  | email | mismatch. The domain must match.                    |
+| 5 5 5 0 1 0 0           | 555-0100           | phone | match                                               |
+| 4 1 5 5 5 5 0 1 0 1     | 415-555-0100       | phone | retry. One digit is off.                            |
+
+A missing or empty value returns `"missing"`, and `MATCH_SCORE` returns -1. A score of -1 is below every threshold, so a rule such as `MATCH_SCORE(...) >= 70` fails closed.
+
+`agents/caller-verification.agent.abl`
+
+```yaml
+AGENT: Caller_Verification
+
+GOAL: "Verify the caller's name against the name on file before sharing account details."
+
+PERSONA: "You are a concise banking assistant."
+
+MEMORY:
+  SESSION:
+    - NAME: profile_name
+
+ON_START:
+  SET: profile_name = session.profile_name
+
+FLOW:
+  entry_point: ask_name
+  steps:
+    - ask_name
+    - check_name
+    - ask_name_again
+    - check_again
+    - verified
+    - refused
+
+  ask_name:
+    REASONING: false
+    GATHER:
+      - spoken_name: required
+        type: string
+        prompt: "For security, please say your full name."
+    THEN: check_name
+
+  check_name:
+    REASONING: false
+    ON_RESULT:
+      - IF: MATCHES(spoken_name, profile_name, "name")
+        THEN: verified
+      - IF: MATCH_RESULT(spoken_name, profile_name, "name") == "retry"
+        RESPOND: "I did not catch that clearly."
+        THEN: ask_name_again
+      - ELSE:
+        THEN: refused
+
+  ask_name_again:
+    REASONING: false
+    GATHER:
+      - second_attempt: required
+        type: string
+        prompt: "Please say your full name once more."
+    THEN: check_again
+
+  check_again:
+    REASONING: false
+    ON_RESULT:
+      - IF: MATCHES(second_attempt, profile_name, "name")
+        THEN: verified
+      - ELSE:
+        THEN: refused
+
+  verified:
+    REASONING: false
+    RESPOND: "Thank you. You are verified."
+    THEN: COMPLETE
+
+  refused:
+    REASONING: false
+    RESPOND: "I could not verify that name, so I cannot share account details."
+    THEN: COMPLETE
+```
+
+Variable sources:
+
+- `profile_name` comes from the caller data your channel passes at session start, read as `session.profile_name`. This is a project-local assumption. Your integration must set it.
+- `spoken_name` and `second_attempt` are `GATHER` fields. The caller supplies them.
+
+The retry branch gives one more attempt. A second near miss is refused.
+
+## Verification
+
+Test the lookup example with these replies. Send them in a test session and open the session trace.
+
+| Customer says            | Table threshold | Expected result                                                         |
+| ------------------------ | --------------- | ----------------------------------------------------------------------- |
+| heathrow                 | 0.8             | Stored as `Heathrow`. No question asked.                                |
+| Heathrw                  | 0.8             | `Did you mean "Heathrow" for destination?`                              |
+| yes (after the question) | 0.8             | `destination` is `Heathrow`. The flow moves to `confirm`.               |
+| no (after the question)  | 0.8             | The field is cleared. The agent asks the destination again.             |
+| newrk                    | 0.8             | Suggests `Newark`.                                                      |
+| newrk                    | 0.85            | `"newrk" is not a valid value for destination`.                         |
+| Chicago                  | 0.8             | `"Chicago" is not a valid value for destination`. The agent asks again. |
+
+For the caller check, set `profile_name` to "John Smith" and test "Jon Smyth" (verified), "Katherine Johnson" against "Katherine Johnston" (one retry), and "Mark Lee" against "Mary Lee" (refused).
+
+Trace events to check:
+
+- `lookup_fuzzy_confirmation_requested` lists the suggested value and score for each field.
+- `lookup_fuzzy_confirmation_interaction` shows the decision: accept, decline, or unresolved.
+- `lookup_fuzzy_accepted` and `lookup_fuzzy_rejected` show the outcome.
+- `lookup_validation_failed` lists values that matched nothing.
+
+## Production readiness checklist
+
+- The table exists in the project before you publish the agent. A missing table disables the check without a warning.
+- The threshold is tested with real misspellings from your customers. Start at `0.8`, and check both a near match and a clear miss.
+- Fuzzy matching is off for short codes and for identifiers where a wrong guess has a cost.
+- A `collection` table has 500 rows or fewer, or you accept that later rows are not scored.
+- Fields that hold secrets set `sensitive: true`.
+- Customers have a way out when nothing matches. The agent otherwise asks again.
+- Identity checks route a `"mismatch"` result to a refusal or a human. They never fall through to account details.
+- `profile_name`, or any stored value you compare against, is set by your integration before the first turn.
+
+## Common mistakes
+
+| Mistake                                                    | Why it happens                                                                              | How to avoid it                                                        |
+| ---------------------------------------------------------- | ------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------- |
+| Expecting `type: enum` to fix a misspelling                | Enum fields feel like a choice list. They match exactly, ignoring case.                     | Use a lookup table, or add the misspellings as synonyms.               |
+| A `lookup` name that does not exist                        | A typo in `semantics.lookup`, or the project table was not created.                         | Nothing warns you. Test a bad value and confirm that it is rejected.   |
+| A threshold above 1, or below the score of your test cases | The range is not checked.                                                                   | Use a value from 0.7 to 0.9. Test it.                                  |
+| Fuzzy matching on a 3-letter code                          | One edit scores 0.67.                                                                       | Use an exact list, or a longer value.                                  |
+| A large `collection` table                                 | Only the first 500 rows are scored. A correct entry beyond that is missed.                  | Keep the table small, or use an `api` table that searches your data.   |
+| Expecting "Did you mean" from an `api` table               | The runtime gets no score from your endpoint.                                               | Return the corrected value from your endpoint, or use a project table. |
+| Using `x MATCHES "gold"` for fuzzy matching                | The infix form is an exact, case-sensitive text search. The function form is the fuzzy one. | Write `MATCHES(x, stored)`. The compiler warns on plain-text patterns. |
+| A regular expression inside `MATCHES(x, "^gold$")`         | The function compares two values. It does not run a regular expression.                     | Use the infix form for a regular expression. The compiler warns.       |
+
+## Troubleshooting
+
+| Symptom                                                | Likely cause                                                            | What to check                                                                           |
+| ------------------------------------------------------ | ----------------------------------------------------------------------- | --------------------------------------------------------------------------------------- |
+| A misspelled value is accepted as typed                | The `lookup` name is wrong or the table is missing                      | The table name in `semantics.lookup`. The project's Lookup Tables settings.             |
+| A misspelling is rejected with "not a valid value"     | The score is below the threshold, or `fuzzy_match` is off               | Compute the score: `1 - edits ÷ longer length`. Lower the threshold or add the entry.   |
+| The agent never asks "Did you mean"                    | The match is exact, or the source is `api`, or the field is `sensitive` | The trace shows `lookup_validation_failed` or no event.                                 |
+| A misspelling in an enum field is rejected             | Enum matching is exact                                                  | Use a lookup table, or add synonyms.                                                    |
+| The agent suggests the wrong entry                     | Two entries are close in spelling                                       | Remove one, or raise the threshold. The best score wins and the first entry wins a tie. |
+| A table with many rows misses valid entries            | Only 500 rows are scored                                                | Reduce the table or use an `api` source.                                                |
+| `E485` on an agent-local table                         | The `endpoint:` URL has quotes                                          | Remove the quotes.                                                                      |
+| The compiler reports `AGENT_LOOKUP_TABLE_EXPERIMENTAL` | The agent declares `LOOKUP_TABLES:`                                     | Move the table to project configuration.                                                |
+| `MATCH_SCORE` returns -1                               | The said or stored value is empty, missing, or too long to judge        | Check that both values are set.                                                         |
+
+## Related HowTos
+
+- [Validate collected fields by type](/agent-platform/abl/how-to/validate-fields-by-type)
+- [Validate fields with enums and allowed values](/agent-platform/abl/how-to/validate-fields-with-enums)
+- [Validate values using an external lookup API](/agent-platform/abl/how-to/validate-with-external-lookup-api)
+- [Show recovery prompts when validation fails](/agent-platform/abl/how-to/recover-from-validation-failures)
+- [Normalize user language into canonical values](/agent-platform/abl/how-to/normalize-user-language)
+- [Improve intent matching with domain glossary and embeddings](/agent-platform/abl/how-to/improve-intent-matching)

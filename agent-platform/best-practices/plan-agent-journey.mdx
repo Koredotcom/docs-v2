@@ -1,0 +1,116 @@
+---
+title: Plan an agent journey
+sidebarTitle: Plan an agent journey
+---
+
+A useful agent design starts with real requests and observable outcomes. Convert the business process into scenarios before you decide how many agents to build.
+
+Start with the source material: policies, procedures, system capabilities, sample conversations, channel requirements, and risk constraints. Note conflicts and unknowns. Don't let a model fill gaps in policy, or invent a target because a table has an empty cell. Arch can read an uploaded SOP section by section and ask about conflicts and gaps before it drafts a design.
+
+## Gather journey evidence
+
+| Evidence | What to record |
+|---|---|
+| **What people ask** | Their own words, including incomplete and indirect requests. |
+| **What the system can do** | The authoritative reads, writes, and handoff options. |
+| **What must hold** | Identity, consent, eligibility, and failure rules. |
+
+<Tip>Separate evidence from assumptions. Mark an unconfirmed policy, latency target, or data field as a question. Resolve it with an owner before you encode it as agent behavior.</Tip>
+
+## Write scenarios
+
+Each scenario describes a starting situation and a result you can check. Write at least one ordinary case, one boundary case, and one failure or recovery case for every important journey.
+
+| Field | What to record | Voyager example |
+|---|---|---|
+| **Starting point** | Channel, identity state, relevant record state | Phone; booking identified; flight cancelled by Voyager |
+| **User goal** | What the person wants, in their words | "My flight was cancelled. Can you put me on another one?" |
+| **Expected path** | Routing, necessary reads, decision, and write, if any | Check status, retrieve eligible options, ask before rebooking |
+| **Observable result** | Exact facts or state that prove success | New flight and reference returned; booking changed once |
+| **Guard case** | What must not happen | No paid change offered for an eligible free rebooking |
+| **Recovery** | What happens when the system can't finish | Say options are unavailable and offer a person |
+
+Write a short sample dialogue before you build. It shows missing decisions: when the identity check happens, what a yes confirms, which facts come from the system, and what the agent says after a failed tool call.
+
+## Plan journeys that use files or media
+
+For a journey that involves a document, image, or other uploaded file, include the file in the scenario. Decide which file types the channel accepts, what the agent extracts, whether the content is sensitive, and what to do when a file is unsupported or still processing.
+
+Agents can use the built-in `list_attachments` and `get_attachment` tools to find a session file and read its extracted text. Project attachment settings control extraction. `content` and `imageDescription` can be null while the file processes or when extraction is off. A missing extraction isn't evidence that the file holds nothing relevant.
+
+Ask for confirmation before the agent sends a file to an external service or hands it to a person. Use an approved path for file retention and access. Test a successful extraction and an unavailable or unsupported file.
+
+## Set measurable targets
+
+A targets sheet is a short agreement between the people who own the journey and the people who build it. Keep one row per top request, with an observable result and a scenario that proves it.
+
+| Target | Define it as | Example question |
+|---|---|---|
+| **Completion** | A returned result or an explicit safe handoff | Did the traveler get eligible options or a clear escalation? |
+| **Correctness** | Facts tied to an authoritative source | Did the delay and options match the booking and policy data? |
+| **Safety** | Required checks before a consequential action | Was identity verified and the specific change confirmed? |
+| **Efficiency** | Latency, model calls, and context size where they matter | Does the phone journey meet its agreed response target? |
+| **Recovery** | Behavior for unavailable, ambiguous, or invalid results | Does the agent stop safely when the booking isn't found? |
+
+Set a numeric limit only when the owner can explain the measurement and the trade-off. Measure from a defined start and end point, with the same method in every comparison. Give a rate a numerator and a denominator, and define what counts as an eligible case. For each target, record the owner, the measurement method, and the response when the target is missed.
+
+## Budget each turn
+
+Write a target for model calls and input tokens per turn for each top request. Check each design choice against it.
+
+| Design choice | Adds to each turn it touches |
+|---|---|
+| An orchestrator in front of specialists | Its own model calls on every routed turn |
+| The Reasoning Pipeline | A classification call and a tool-filter call before the main call |
+| A reply the model phrases | One model call. A template or a fixed `RESPOND` adds none |
+| `confirm: always` on a write | One more turn with the user |
+| A tool result over 10,000 characters on a text channel | One summarizing call |
+| `history` left unset on a handoff | Input tokens that grow with every turn |
+| Fixed `FLOW` steps | No model call, except to read the user's answer |
+
+See [Tuning for latency](/agent-platform/latency-and-speed) for the levers that reduce these costs.
+
+## Sort scenarios by risk tier
+
+Sort scenarios by what the agent can change. Each tier needs different controls and different test data.
+
+| Tier | Scope | Controls |
+|---|---|---|
+| **Read** | Facts and guidance | Answer from a source or tool result. Test freshness, missing data, and unsupported questions. |
+| **Change** | Record updates | Check eligibility, ask a specific confirmation, and enforce authorization and idempotency in the write path. |
+| **High impact** | Money or irreversible outcomes | Use deterministic rules, an explicit read-back, a clear yes, and an auditable result. |
+| **Out of scope** | Actions the channel must not collect | Decline the unsafe path, explain the approved alternative, or connect a person. Voyager never takes card details in a conversation; payment happens in its app or website. |
+
+<Note>A confirmation question isn't authorization by itself. The system that performs the action still checks identity, permission, current record state, eligibility, and duplicate requests.</Note>
+
+## Plan the test set with the journey
+
+For each rule, create at least one case that passes and one case that would expose a violation. Make every evaluator check something visible in the transcript, trace, tool result, or resulting record.
+
+* Cover neighboring intents that could route incorrectly.
+* Include vague wording, interruptions, missing fields, and corrections.
+* Test unavailable tools and empty or conflicting data.
+* Keep read-only scenarios in one eval set and write scenarios in another. Test chats and evals change real records, so reset the rows after each write run.
+* Use a small, stable baseline for routine regression, and a broader set before release.
+
+<Tip>Turn each diagnosed failure into a scenario. Add the smallest case that would have caught the failure, and keep it after the fix.</Tip>
+
+{/* REVIEW: The handbook says test chats and evals write real rows, while Agent Tables says Studio debug and eval sessions use isolated overlays. Confirm one rule with engineering. */}
+
+## Build a scenario portfolio
+
+A scenario portfolio covers the ways a person can enter, continue, correct, and leave a journey. The same journey can sound different on web, chat, and voice, so keep channel-specific input where it affects behavior.
+
+| Scenario family | Voyager example |
+|---|---|
+| **Typical completion** | The caller verifies a booking and chooses an eligible rebooking option. |
+| **Ambiguity** | Two travelers share a name, or the caller says "the earlier one." |
+| **Correction** | The caller changes the flight date or corrects a spoken confirmation. |
+| **Unavailable data** | The status service can't confirm the disruption. |
+| **Denied or ineligible** | The requested change is outside the published rule. |
+| **Interrupted or abandoned** | The caller asks a side question or disconnects before confirmation. |
+
+## Next steps
+
+* [Agent design guidelines](/agent-platform/best-practices/agent-design-guidelines): choose the structure that meets these targets.
+* [Evaluate agents](/agent-platform/best-practices/evaluate-agents): turn the scenarios into eval sets.
