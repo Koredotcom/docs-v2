@@ -1,0 +1,302 @@
+---
+title: How to validate collected fields by type
+sidebarTitle: Validate by type
+---
+
+<Badge icon="arrow-left" color="gray">[Back to how-to guides](/agent-platform/abl/how-to/overview#validation-and-business-rules)</Badge>
+
+Set `type:` on a `GATHER` field to make the agent accept only values of that type. The runtime converts the customer's wording to a clean value, rejects what it cannot convert, and asks again.
+
+## Concept
+
+A customer types free text. A field with a `type` turns that text into a typed value before the agent stores it.
+
+For every collected value, the runtime does this in order:
+
+1. **Normalize.** It converts spoken or formatted input: "twelve" becomes `12`, "(415) 555-0100" becomes `+14155550100`, "tomorrow" becomes an ISO date.
+2. **Check the type.** It rejects values that cannot be converted, such as "maybe" for a `boolean`.
+3. **Check the date direction.** A `date` field with `semantics: temporal` rejects dates on the wrong side of today.
+4. **Apply your `validate:` rule,** if the field has one.
+5. **Store or re-ask.** A valid value is stored. An invalid value is dropped, the field stays missing, and the agent asks again.
+
+A rejected value never reaches `COMPLETE`, tool inputs, or handoffs. Typing a field is the first and cheapest line of defense. Use `validate:` only for rules a type cannot express.
+
+### Field types
+
+| Type                          | Accepts                                                                                                   | Stored value                                                      |
+| ----------------------------- | --------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------- |
+| `string`, `text`, `free_text` | Any text. Rejects lists and objects.                                                                      | The text                                                          |
+| `integer`                     | Digits, spoken numbers, "8 guests", "1,200"                                                               | Whole number. A decimal is cut, not rounded: `10.9` becomes `10`. |
+| `number`, `float`             | Same as `integer`                                                                                         | Number                                                            |
+| `currency`                    | `$49.99`, `250 USD`, `€120`                                                                               | Number. The currency symbol or code is dropped.                   |
+| `boolean`                     | yes, no, true, false, y, n, 1, 0. The extraction step also accepts ok, sure, confirm, decline, "not now". | `true` or `false`                                                 |
+| `date`, `datetime`            | ISO dates, "next Friday", "March 3rd 2025"                                                                | ISO date string                                                   |
+| `email`                       | `name@domain.tld`                                                                                         | Lowercase address                                                 |
+| `phone`                       | 7 to 15 digits in any common format                                                                       | E.164 number, such as `+14155550100`                              |
+| `enum`                        | One of the field's `options`                                                                              | The matching option. Covered in a separate article.               |
+| `location`                    | Any value                                                                                                 | Unchanged. No check runs.                                         |
+
+Type names are not case-sensitive. A type the runtime does not know, such as `colour`, compiles without a warning and accepts any value. Check the spelling.
+
+## Minimal working example
+
+A newsletter agent collects an email address and a team size. Both are checked by type.
+
+`agents/newsletter-signup.agent.abl`
+
+```yaml
+AGENT: Newsletter_Signup
+
+GOAL: "Sign a customer up for the newsletter."
+
+PERSONA: "You are a concise assistant."
+
+GATHER:
+  email:
+    prompt: "What email address should we use?"
+    type: email
+    required: true
+
+  seats:
+    prompt: "How many people are on your team?"
+    type: integer
+    required: true
+
+COMPLETE:
+  - WHEN: email IS SET AND seats IS SET
+    RESPOND: "Signed up {{email}} for a team of {{seats}}."
+```
+
+Variable sources:
+
+- `email` and `seats` are `GATHER` fields. The customer supplies both.
+- `COMPLETE` reads both fields in its condition and its reply.
+
+A customer who answers "ann@example" is asked again. A customer who answers "we are twelve" gets `seats = 12`.
+
+## How it works
+
+The same checks run in a top-level `GATHER` and in a `GATHER` inside a `FLOW` step. They differ in how the re-ask reaches the customer.
+
+| Where the field is                    | What the customer hears after a rejected value                                                       |
+| ------------------------------------- | ---------------------------------------------------------------------------------------------------- |
+| A `FLOW` step with `REASONING: false` | A fixed reason, then the field's prompt. For example: "That doesn't look like a valid phone number." |
+| A top-level `GATHER`                  | The model words the re-ask. The runtime tells it which fields failed and why.                        |
+
+Reasons for `REASONING: false` steps, with the `MESSAGES` key that overrides each:
+
+| Field type                      | Default reason                                                   | `MESSAGES` key                                         |
+| ------------------------------- | ---------------------------------------------------------------- | ------------------------------------------------------ |
+| `phone`                         | That doesn't look like a valid phone number.                     | `gather_invalid_phone`                                 |
+| `email`                         | That doesn't look like a valid email address.                    | `gather_invalid_email`                                 |
+| `integer`, `number`, `float`    | That doesn't look like a valid number.                           | `gather_invalid_number`                                |
+| `currency`                      | That doesn't look like a valid amount.                           | `gather_invalid_currency`                              |
+| `boolean`                       | Please answer yes or no.                                         | `gather_invalid_boolean`                               |
+| `date`, `datetime`              | That doesn't look like a valid date.                             | `gather_invalid_date`                                  |
+| Date on the wrong side of today | Please give a date that is today or later. Or: today or earlier. | `gather_date_not_in_future`, `gather_date_not_in_past` |
+| `enum`                          | That isn't one of the available options.                         | `gather_invalid_option`                                |
+| Any other rejected value        | That answer doesn't look right.                                  | `gather_invalid_value`                                 |
+
+The reason never quotes the rejected value when the field is `sensitive: true`.
+
+## Realistic example
+
+A warranty agent collects six typed fields. The purchase date must be in the past. The repair cost is optional.
+
+`agents/warranty-claim-intake.agent.abl`
+
+```yaml
+AGENT: Warranty_Claim_Intake
+
+GOAL: "Collect the details of a warranty claim and log it."
+
+PERSONA: "You are a concise support assistant."
+
+GATHER:
+  email:
+    prompt: "What email address should we send updates to?"
+    type: email
+    required: true
+
+  phone:
+    prompt: "What phone number can we call you on?"
+    type: phone
+    required: true
+
+  purchase_date:
+    prompt: "When did you buy the product?"
+    type: date
+    required: true
+    semantics:
+      temporal: past
+
+  quantity:
+    prompt: "How many units are affected?"
+    type: integer
+    required: true
+
+  repair_cost:
+    prompt: "What did the repair quote cost?"
+    type: currency
+    required: false
+
+  accepts_inspection:
+    prompt: "Can a technician inspect the product?"
+    type: boolean
+    required: true
+
+COMPLETE:
+  - WHEN: email IS SET AND phone IS SET AND purchase_date IS SET AND quantity IS SET AND accepts_inspection IS SET
+    RESPOND: "Claim logged for {{quantity}} unit(s) bought on {{purchase_date}}. We will write to {{email}} and call {{phone}}. Inspection allowed: {{accepts_inspection}}."
+```
+
+Variable sources:
+
+- All variables are `GATHER` fields. The customer supplies each one.
+- `repair_cost` is optional and is not read in `COMPLETE`.
+
+## Common variations
+
+### Deterministic re-ask in a FLOW step
+
+Use a `FLOW` step with `REASONING: false` when the re-ask wording must be the same every time. Override the default reason in `MESSAGES`.
+
+`agents/callback-booking.agent.abl`
+
+```yaml
+AGENT: Callback_Booking
+
+GOAL: "Collect a callback number and a party size, then confirm the booking."
+
+PERSONA: "You are a concise scheduling assistant."
+
+MESSAGES:
+  gather_invalid_phone: "Please share a full mobile number with the area code."
+
+FLOW:
+  entry_point: ask_contact
+  steps:
+    - ask_contact
+    - confirm
+
+  ask_contact:
+    REASONING: false
+    GATHER:
+      - mobile: required
+        type: phone
+        prompt: "What mobile number should we call?"
+      - party_size: required
+        type: integer
+        prompt: "How many people will attend?"
+    THEN: confirm
+
+  confirm:
+    REASONING: false
+    RESPOND: "Booked a callback to {{mobile}} for {{party_size}} people."
+    THEN: COMPLETE
+```
+
+A phone number with no region is read as a US number. When the session locale carries a region, such as `fr-CA`, that region is used instead.
+
+### Ranges and lists
+
+Add `range: true` to collect a `low` and `high` value. Add `list: true` to collect several values. Each endpoint or item is checked against the field type. One bad item rejects the whole value.
+
+This is a section snippet.
+
+```yaml
+GATHER:
+  budget:
+    prompt: "What is your budget range?"
+    type: currency
+    range: true
+    required: true
+
+  delivery_dates:
+    prompt: "Which dates can we deliver on?"
+    type: date
+    list: true
+    required: true
+    semantics:
+      temporal: future
+```
+
+A text list splits a reply on commas. A list of numbers or dates does not: one string such as "1, 2, 3" is rejected, so the items must be extracted as separate values.
+
+### Add a rule on top of the type
+
+A type cannot say "two letters and six digits". Add a `validate:` rule for that. The type check still runs first.
+
+```yaml
+GATHER:
+  order_number:
+    prompt: "What is your order number?"
+    type: string
+    required: true
+    validate: "^[A-Z]{2}[0-9]{6}$"
+    retry_prompt: "An order number is two letters and six digits, for example AB123456."
+    max_retries: 3
+```
+
+`validate:` accepts a regular expression or `enum(a, b, c)`. `retry_prompt` and `max_retries` need a `validate:` rule. Without one, the compiler reports `GATHER_VALIDATION_RULE_REQUIRED`. In a `FLOW` step, `retry_prompt` replaces the whole re-ask.
+
+## Verification
+
+Test each field with a good value, a bad value, and a spoken value. Send these to the agent in a test session, then open the session trace.
+
+| Agent                 | Customer says                       | Expected result                                                            |
+| --------------------- | ----------------------------------- | -------------------------------------------------------------------------- |
+| Warranty_Claim_Intake | "ann@example"                       | `email` is not stored. The agent asks for the email again.                 |
+| Warranty_Claim_Intake | "(415) 555-0100"                    | `phone` is stored as `+14155550100`.                                       |
+| Warranty_Claim_Intake | "we have twelve"                    | `quantity` is stored as `12`.                                              |
+| Warranty_Claim_Intake | "next Friday" for the purchase date | Rejected. The date is in the future and the field is `temporal: past`.     |
+| Warranty_Claim_Intake | "maybe" for the inspection          | `accepts_inspection` is not stored. The agent asks for a yes or no.        |
+| Callback_Booking      | "12345" for the mobile number       | The agent says the override text from `MESSAGES`, then repeats the prompt. |
+| Callback_Booking      | "415 555 0100" after a failure      | `mobile` is stored as `+14155550100` and the flow moves to `confirm`.      |
+
+What to check in the trace:
+
+- In a `FLOW` step, the `ner_stage_resolution` event lists each value with `valid: false` and the internal error. The customer never sees that error.
+- After `max_retries` failures, a `validation_max_retries` event names the field and the retry count.
+- The stored value in the session data is the normalized value, not the customer's words.
+
+## Production readiness checklist
+
+- Every field has the narrowest type that fits. Use `string` only for free text.
+- Type names are spelled correctly. A misspelled type disables validation without a warning.
+- Fields that hold secrets or personal data set `sensitive: true`.
+- Each `REASONING: false` step has a `MESSAGES` override for the reasons your customers will see, in every language you support.
+- You decided what happens after repeated failures: a `max_retries` limit, a trace alert, or a route to a human.
+- You tested a good value, a bad value, a spoken value, and a blank reply for each field.
+- Downstream tools expect the normalized form: E.164 phone, ISO date, lowercase email, number for currency.
+
+## Common mistakes
+
+| Mistake                                       | Why it happens                                                                                                                          | How to avoid it                                                                                                                 |
+| --------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| `validate: min(18)` on a number field         | Some reference pages list `min()` and `max()`. The compiler reads any `validate:` text that is not `enum(...)` as a regular expression. | Do not use `min()`, `max()`, `email()`, or `pattern()`. Use a type for the format. A numeric bound needs a different mechanism. |
+| A regular expression on an `integer` field    | The runtime stores the value as a number. Regular expressions test text only, so the rule always fails.                                 | Put regular expressions on `string` fields only.                                                                                |
+| A misspelled type such as `integr`            | The compiler does not check type names.                                                                                                 | Copy the type name from the table above.                                                                                        |
+| `retry_prompt` on a field with no `validate:` | The prompt looks like a type-level setting.                                                                                             | Add a `validate:` rule, or use `MESSAGES` for type failures.                                                                    |
+| Expecting `10.9` to round to `11`             | Rounding is a common default.                                                                                                           | `integer` cuts the decimal. Use `number` to keep it.                                                                            |
+| Expecting the currency code to be stored      | The customer said "250 USD".                                                                                                            | Only the amount is stored. Collect the currency in a separate `enum` field.                                                     |
+
+## Troubleshooting
+
+| Symptom                                                | Likely cause                                                               | What to check                                                                                |
+| ------------------------------------------------------ | -------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------- |
+| The agent asks for the same field again and again      | The value fails the type or a `validate:` rule                             | Open the trace and read the `ner_stage_resolution` error. Test the value in the table above. |
+| Every answer to a field is rejected                    | A regular expression on a non-text field, or `validate: min(...)`          | Remove the rule or move it to a `string` field.                                              |
+| A bad value is accepted                                | The type is `string`, `location`, or misspelled                            | Check the field's `type:`.                                                                   |
+| A date in the past is accepted                         | `semantics: temporal` is missing or set to `any`                           | Set `temporal: future` or `temporal: past`.                                                  |
+| A phone number is rejected                             | Fewer than 7 or more than 15 digits                                        | Ask the customer to include the area code. Override `gather_invalid_phone`.                  |
+| The re-ask is in English for a French caller           | No `MESSAGES` text exists for that locale                                  | Add the reason key to the project message catalog or the agent `MESSAGES`.                   |
+| The compiler reports `GATHER_VALIDATION_RULE_REQUIRED` | `retry_prompt`, `max_retries`, or `validation_process` without `validate:` | Add a `validate:` rule or remove the setting.                                                |
+
+## Related HowTos
+
+- [Collect information with global GATHER](/agent-platform/abl/how-to/collect-with-global-gather)
+- [Collect information inside a FLOW step](/agent-platform/abl/how-to/collect-with-flow-gather)
+- [Collect sensitive or PII fields safely](/agent-platform/abl/how-to/collect-sensitive-pii-fields)
+- [Extract common entity types](/agent-platform/abl/how-to/extract-common-entity-types)
+- [Normalize user language into canonical values](/agent-platform/abl/how-to/normalize-user-language)

@@ -20,12 +20,6 @@ The `type:` property selects how a tool is executed. The supported values are:
 | `searchai`      | Query a SearchAI knowledge base. See [SearchAI tools](#searchai-tools).                     |
 | `table`         | Structured CRUD against an Agent Table. See [Table tools](#table-tools).                    |
 
-{/* AG: Hiding code tools row for now.
-
-| `sandbox`       | Run inline JavaScript/Python in an isolated sandbox. See [Code tools](#code-tools-sandbox). |
-
-*/}
-
 ## Tool declaration syntax
 
 
@@ -744,82 +738,6 @@ TOOLS:
 
 ---
 
-{/* AG: Hiding code tools for now.
-
-## Code tools (sandbox)
-
-Code tools execute user-provided JavaScript or Python code in an isolated sandbox environment with resource limits and no network access.
-
-```yaml
-TOOLS:
-  calculate_tax(income: number, state: string) -> {tax: number, rate: number}
-    description: "Calculate state income tax"
-    type: sandbox
-    runtime: javascript
-    timeout: 5000
-    memory_mb: 128
-    code: |
-      const rates = { CA: 0.133, NY: 0.109, TX: 0 };
-      const rate = rates[state] || 0.05;
-      return { tax: income * rate, rate };
-```
-
-### Sandbox binding properties
-
-| Property    | Type                         | Required | Default          | Description                                           |
-| ----------- | ---------------------------- | -------- | ---------------- | ----------------------------------------------------- |
-| `type`      | `"sandbox"`                  | Yes      | --               | Declares this as a sandbox tool                       |
-| `runtime`   | `"javascript"` , `"python"`  | Yes      | --               | Execution runtime                                     |
-| `code`      | `string`                     | No       | _none_           | Inline source code (pipe block syntax for multi-line) |
-| `timeout`   | `number`                     | No       | Platform default | Maximum execution time in milliseconds                |
-| `memory_mb` | `number`                     | No       | Platform default | Memory limit in megabytes                             |
-
-### Isolation
-
-Sandbox tools execute in a gVisor-isolated environment with the following restrictions:
-
-- No network access
-- No filesystem access beyond the sandbox working directory
-- Resource limits enforced (CPU, memory, execution time)
-- Each execution runs in a new environment
-
-### JavaScript runtime
-
-JavaScript code tools have access to standard JavaScript built-ins. The code should return a value matching the declared return type.
-
-```yaml
-TOOLS:
-  format_currency(amount: number, currency: string) -> {formatted: string}
-    type: sandbox
-    runtime: javascript
-    code: |
-      const formatter = new Intl.NumberFormat('en-US', {
-        style: 'currency',
-        currency: currency
-      });
-      return { formatted: formatter.format(amount) };
-```
-
-### Python runtime
-
-Python code tools use a sandboxed Python interpreter. The code should return a dictionary matching the declared return type.
-
-```yaml
-TOOLS:
-  analyze_text(text: string) -> {word_count: number, sentences: number}
-    type: sandbox
-    runtime: python
-    code: |
-      import re
-      words = len(text.split())
-      sentences = len(re.split(r'[.!?]+', text))
-      return {"word_count": words, "sentences": sentences}
-```
-
----
-
-*/}
-
 ## Lambda tools
 
 Lambda tools invoke cloud serverless functions. The function name is a logical identifier resolved to an actual endpoint (ARN, URL) at runtime through the project's function registry.
@@ -1439,9 +1357,25 @@ In a project tool file, write `cacheable: true` under the tool, next to `cache_t
 
 | Property | Type | Default | Description |
 | -------- | ---- | ------- | ----------- |
-| `cacheable` | `boolean` | _none_ | Turns caching on for this tool. |
-| `cache_ttl_ms` | `number` | `60000` | How long a stored result stays valid, from 1000 to 3600000 ms. When the agent and the tool file both set it, the smaller value applies. |
+| `cacheable` | `boolean` or variable | _none_ | Turns caching on for this tool. A variable reference makes the value depend on the environment. See [Set caching with variables](#set-caching-with-variables). |
+| `cache_ttl_ms` | `number` or variable | `60000` | How long a stored result stays valid, from 1000 to 3600000 ms. When the agent and the tool file both set it, the smaller value applies. |
 | `cache_invalidated_by` | `string[]` | All write tools | Only these tools clear this tool's cached results. Each name must be a write tool of the project. |
+
+#### Set caching with variables
+
+Write `cacheable` or `cache_ttl_ms` as one `{{env.NAME}}` or `{{config.NAME}}` reference. Each environment can then use its own value, and you can change the value without publishing the agent again.
+
+```yaml
+cacheable: {{env.ORDERS_CACHE_ENABLED}}
+cache_ttl_ms: {{config.ORDERS_CACHE_TTL_MS}}
+```
+
+- The runtime reads the variables on every call.
+- A tool with `cacheable: {{env.NAME}}` caches only on a call where the variable reads `true`. Any other value turns caching off for that call.
+- A `cache_ttl_ms` variable must read as a whole number. A value out of range is moved to the nearest bound. A value that is not a whole number keeps the default lifetime.
+- The reference must be the whole value. Text around it, or a name that is not `env` or `config`, is not a valid `cacheable` value and caching stays off. The compiler reports `TOOL_CACHE_INVALID`.
+- If the runtime cannot read a variable, that call runs the tool live and caches nothing.
+- In Studio, the **Result caching** section of the project tool page sets the same values and lists the write tools that clear the cache. The Debug panel and the Sessions page mark cached calls and show their age.
 
 What is reused, and for how long:
 
@@ -1455,7 +1389,7 @@ What is reused, and for how long:
 Only read-only tools can be cached. These tools compile with the warning `TOOL_CACHE_INELIGIBLE` when authored with `cacheable: true`. They always call the backend:
 
 - a tool that writes (an HTTP `POST`, `PUT`, `PATCH` or `DELETE`, a write effect, or `side_effects: true`);
-- an MCP, sandbox, lambda or workflow tool without `effect: read_only`;
+- an MCP, lambda,  or workflow tool without `effect: read_only`;
 - a workflow tool that does not run synchronously;
 - a connector, platform or async webhook tool.
 
@@ -1577,10 +1511,10 @@ TOOLS:
 
 Some flows need a credential produced by one tool (a one-time token, session key, or OTP) to be sent to a later tool — without ever exposing the raw value to the LLM. SecretRef captures such values into an encrypted, session-scoped **secret vault** and restores them into downstream tool calls.
 
-- **Producer** — the tool that returns the secret declares a `RESULT_SECRETS:` block. Each entry captures a result field into the vault under a key, in the form `<result_path> -> <vault_key> (options)`. Capture works on **every tool type** — HTTP, code sandbox, and `workflow` tools can all produce vaulted secrets.
+- **Producer** — the tool that returns the secret declares a `RESULT_SECRETS:` block. Each entry captures a result field into the vault under a key, in the form `<result_path> -> <vault_key> (options)`. Capture works on **every tool type** — HTTP and `workflow` tools can all produce vaulted secrets.
 - **Consumer** — a downstream tool declares a `SECRET_ACCESS:` block listing the vault keys it may read, then references them with the `{{_secret.<key>}}` placeholder in its `headers` or `body_template`. Only **HTTP tools** can consume secrets — `{{_secret.<key>}}` resolves in the HTTP request path alone.
 
-<Warning>Declaring `SECRET_ACCESS` on a non-HTTP tool (a `workflow` or code-sandbox tool) is a **compile error** ([`SECRET_REF_UNSUPPORTED_CONSUMER_TYPE`](/agent-platform/abl/reference/errors-and-warnings#secret_ref_unsupported_consumer_type)): the executor cannot resolve `{{_secret.<key>}}`, so the single-use vault entry would be consumed without delivering the value, and the next authorized consumer would fail with "already used". If you reached for a workflow tool to assemble a variable-length batch payload from a secret, build it directly in an HTTP tool with `{{#each input.<parameter>}}` in the `body_template` instead. (`RESULT_SECRETS` capture is unaffected and still works on workflow tools.)</Warning>
+<Warning>Declaring `SECRET_ACCESS` on a non-HTTP tool (a `workflow`) is a **compile error** ([`SECRET_REF_UNSUPPORTED_CONSUMER_TYPE`](/agent-platform/abl/reference/errors-and-warnings#secret_ref_unsupported_consumer_type)): the executor cannot resolve `{{_secret.<key>}}`, so the single-use vault entry would be consumed without delivering the value, and the next authorized consumer would fail with "already used". If you reached for a workflow tool to assemble a variable-length batch payload from a secret, build it directly in an HTTP tool with `{{#each input.<parameter>}}` in the `body_template` instead. (`RESULT_SECRETS` capture is unaffected and still works on workflow tools.)</Warning>
 
 ```yaml expandable=true
 TOOLS:

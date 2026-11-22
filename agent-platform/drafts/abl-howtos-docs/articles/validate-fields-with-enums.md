@@ -1,0 +1,269 @@
+# Validate fields with enums and allowed values
+
+Set `type: enum` and list the allowed values in `options:`. The agent stores only one of those values, spelled exactly as you wrote it.
+
+## Concept
+
+An enum field limits a customer's answer to a fixed list. The customer can answer in their own words. The runtime maps the answer to one of your values, or rejects it and asks again.
+
+The runtime matches in this order and stops at the first hit:
+
+1. **Exact match** with an option.
+2. **Case-insensitive match.** "PRO" becomes `pro`.
+3. **Synonym match.** "premium" becomes `pro`, if you declared it as a synonym of `pro`.
+
+The runtime does not match parts of words or near misses. "the pro plan" and "pr" are rejected. To accept looser wording, add synonyms or an extraction hint. See [Accept looser wording](#accept-looser-wording).
+
+An enum field stores the canonical option, never the customer's wording. Conditions and tool inputs can rely on the exact value.
+
+For free-form text, see [Validate collected fields by type](/agent-platform/abl/how-to/validate-fields-by-type). For format rules, see [Validate fields with regex or custom patterns](/agent-platform/abl/how-to/validate-fields-with-regex).
+
+## Minimal working example
+
+A support agent collects a ticket priority.
+
+`agents/ticket-priority.agent.abl`
+
+```yaml
+AGENT: Ticket_Priority
+
+GOAL: "Open a support ticket with a priority."
+
+PERSONA: "You are a concise support assistant."
+
+GATHER:
+  priority:
+    prompt: "How urgent is this: low, medium, or high?"
+    type: enum
+    options: [low, medium, high]
+    required: true
+
+COMPLETE:
+  - WHEN: priority IS SET
+    RESPOND: "Ticket opened with {{priority}} priority."
+```
+
+Variable sources:
+
+- `priority` is a `GATHER` field. The customer supplies it.
+- `COMPLETE` reads it in the condition and in the reply.
+
+"HIGH" is stored as `high`. "urgent" is rejected and the agent asks again.
+
+## Ways to declare the allowed values
+
+All forms give the same result. Pick one per field.
+
+| Form                  | Example                                                          |
+| --------------------- | ---------------------------------------------------------------- |
+| `options` inline      | `options: [low, medium, high]`                                   |
+| `options` as a list   | A `-` item per value on the lines below `options:`               |
+| `semantics.enum_set`  | `semantics:` then `enum_set: [email, sms, phone]`                |
+| `validate: enum(...)` | `validate: enum(monthly, yearly)`                                |
+| `entity_ref`          | Reuse values from an `ENTITIES` entry. Also brings its synonyms. |
+
+If a field has both `options` and `enum_set`, `options` wins.
+
+Rules for the field forms:
+
+- **Do not quote values in the inline form.** `options: ["iPhone", "iPad"]` keeps the quote marks as part of each value. The customer's "iPhone" then fails to match `"iPhone"`. Write `[iPhone, iPad]`, or use the list form. The list form removes the quote marks.
+- **Do not quote values in `enum(...)`.** The same applies.
+- **Do not combine `entity_ref` with `type` or `options`.** The compiler reports `GATHER_ENTITY_REF_CONFLICT`.
+- **Do not leave `options` out of a `type: enum` field.** It compiles with no warning and accepts any value.
+
+## Realistic example
+
+A plan-change agent uses four enum forms. The plan tier comes from a shared entity with synonyms.
+
+`agents/plan-change.agent.abl`
+
+```yaml
+AGENT: Plan_Change
+
+GOAL: "Change a customer's subscription plan."
+
+PERSONA: "You are a concise billing assistant."
+
+ENTITIES:
+  plan_tier:
+    TYPE: enum
+    VALUES: [basic, plus, pro]
+    SYNONYMS:
+      basic: [starter, free, entry]
+      pro: [premium, enterprise]
+
+GATHER:
+  plan:
+    prompt: "Which plan do you want: basic, plus, or pro?"
+    entity_ref: plan_tier
+    required: true
+
+  region:
+    prompt: "Which region?"
+    type: enum
+    options: [EU, US, APAC]
+    required: true
+
+  channel:
+    prompt: "How should we contact you?"
+    type: string
+    required: true
+    semantics:
+      enum_set: [email, sms, phone]
+
+  billing:
+    prompt: "Billed monthly or yearly?"
+    type: string
+    required: true
+    validate: enum(monthly, yearly)
+
+COMPLETE:
+  - WHEN: plan IS SET AND region IS SET AND channel IS SET AND billing IS SET
+    RESPOND: "Changing to {{plan}} in {{region}}, contact by {{channel}}, billed {{billing}}."
+```
+
+Variable sources:
+
+- All variables are `GATHER` fields. The customer supplies each one.
+- `plan` takes its values and synonyms from the `plan_tier` entity.
+
+"premium" is stored as `pro`. "starter" is stored as `basic`. "us" is stored as `US`.
+
+## Accept looser wording
+
+Synonyms cover fixed alternatives. Extraction hints cover phrases you cannot list. A hint tells the model how to map the customer's words to an option.
+
+```yaml
+GATHER:
+  device:
+    prompt: "Which device: iPhone, iPad, or Mac?"
+    type: enum
+    options: [iPhone, iPad, Mac]
+    extraction_hints: ["A laptop or MacBook means Mac."]
+    required: true
+```
+
+The model reads the customer's words and returns an option. The runtime accepts that only when the customer's words are the option itself or one of its synonyms. Any other mapping is rejected, unless the field has an `extraction_hints` entry. Without synonyms or hints, a customer who says "my laptop" is asked again.
+
+## Common variations
+
+### Deterministic re-ask in a FLOW step
+
+In a `FLOW` step with `REASONING: false`, a rejected value gets a fixed reason, then the prompt.
+
+`agents/laptop-support.agent.abl`
+
+```yaml
+AGENT: Laptop_Support
+
+GOAL: "Route a device issue by device type."
+
+PERSONA: "You are a concise support assistant."
+
+FLOW:
+  entry_point: ask_device
+  steps:
+    - ask_device
+    - done
+
+  ask_device:
+    REASONING: false
+    GATHER:
+      - device: required
+        type: enum
+        options:
+          - "iPhone"
+          - "iPad"
+          - "Mac"
+        prompt: "Which device: iPhone, iPad, or Mac?"
+    THEN: done
+
+  done:
+    REASONING: false
+    RESPOND: "Opening a {{device}} case."
+    THEN: COMPLETE
+```
+
+The default reason is "That isn't one of the available options." Change it with a `MESSAGES` entry.
+
+```yaml
+MESSAGES:
+  gather_invalid_option: "Please pick iPhone, iPad, or Mac."
+```
+
+### Reuse values across agents
+
+Declare the values once in `ENTITIES` and point each field at them with `entity_ref`. The Plan_Change example above shows this. A field with `entity_ref` inherits the type, values, and synonyms. It can still add its own `description` and `extraction_hints`.
+
+### Multiple choices
+
+Add `list: true` to accept several values. Each item must be a valid option. One bad item rejects the whole answer.
+
+## How a rejected value behaves
+
+- The value is not stored. The field stays missing.
+- In a top-level `GATHER`, the runtime tells the model which field failed and which values are allowed. The model words the re-ask.
+- In a `FLOW` step with `REASONING: false`, the customer hears the `gather_invalid_option` reason, then the field's prompt.
+- The reason never lists the allowed values. Put them in the field `prompt`.
+
+## Verification
+
+Send these in a test session, then open the session trace.
+
+| Agent           | Customer says  | Expected result                                                               |
+| --------------- | -------------- | ----------------------------------------------------------------------------- |
+| Ticket_Priority | "high"         | `priority` is `high`.                                                         |
+| Ticket_Priority | "HIGH"         | `priority` is `high`.                                                         |
+| Ticket_Priority | "urgent"       | Rejected. The agent asks again.                                               |
+| Plan_Change     | "premium"      | `plan` is `pro`.                                                              |
+| Plan_Change     | "the pro plan" | Rejected, unless the model extracts the exact word `pro` from it.             |
+| Plan_Change     | "yearly"       | `billing` is `yearly`.                                                        |
+| Laptop_Support  | "tablet"       | The customer hears "That isn't one of the available options." and the prompt. |
+| Device_Support  | "my MacBook"   | `device` is `Mac`, because of the hint.                                       |
+
+In the trace:
+
+- The `ner_stage_resolution` event shows each value with `valid` and the internal error.
+- The error "Extracted enum rewrite is not authorized by authored field metadata." means the model changed the customer's words into an option and nothing authorized it. Add a synonym or an `extraction_hints` entry.
+
+## Production readiness checklist
+
+- Every option is spelled exactly as downstream tools and conditions expect. The stored value is that spelling.
+- No option is wrapped in quote marks in the inline form or in `enum(...)`.
+- Each enum field has a `prompt` that names the options.
+- Synonyms cover the words customers use for each option.
+- Each `FLOW` step with an enum has a `MESSAGES` override in every language you support.
+- You decided what happens after repeated failures. See [Show recovery prompts when validation fails](/agent-platform/abl/how-to/recover-from-validation-failures).
+- Large or changing lists use a lookup instead. See [Validate values using an external lookup API](/agent-platform/abl/how-to/validate-with-external-lookup-api).
+
+## Common mistakes
+
+| Mistake                                                 | Why it happens                                 | How to avoid it                                            |
+| ------------------------------------------------------- | ---------------------------------------------- | ---------------------------------------------------------- |
+| `options: ["iPhone", "iPad"]`                           | Quoted strings look normal in YAML.            | Remove the quotes, or use the list form.                   |
+| `type: enum` with no `options`                          | The list is forgotten.                         | Always list the values. Nothing warns you.                 |
+| `entity_ref` plus `type: enum`                          | Both seem to say the same thing.               | Keep only `entity_ref`.                                    |
+| Expecting "the pro plan" to match `pro`                 | The runtime does not match parts of an answer. | Add a synonym, a hint, or ask a shorter question.          |
+| Expecting the stored value to match the customer's case | The customer typed "us".                       | The stored value is the option's spelling, `US`.           |
+| A synonym key that is not an option                     | The key names `premium`, not `pro`.            | Use the option as the key. The runtime ignores other keys. |
+
+## Troubleshooting
+
+| Symptom                                                    | Likely cause                                        | What to check                                           |
+| ---------------------------------------------------------- | --------------------------------------------------- | ------------------------------------------------------- |
+| The customer says an exact option and is rejected          | Quote marks are part of the option                  | Remove the quotes in the inline form or in `enum(...)`. |
+| Every answer is accepted                                   | `type: enum` has no options                         | Add `options`.                                          |
+| "my laptop" is rejected                                    | No synonym or hint                                  | Add `extraction_hints`.                                 |
+| The trace shows "Extracted enum rewrite is not authorized" | The model changed the wording and no rule allows it | Add a synonym or an `extraction_hints` entry.           |
+| The compiler reports `GATHER_ENTITY_REF_CONFLICT`          | `entity_ref` with `type` or `options`               | Remove `type` and `options`.                            |
+| The compiler reports `GATHER_ENTITY_REF_UNRESOLVED`        | The entity is not in `ENTITIES`                     | Check the entity name.                                  |
+| The re-ask is in English for another language              | No `MESSAGES` text for that locale                  | Add `gather_invalid_option` for the locale.             |
+
+## Related HowTos
+
+- [Validate collected fields by type](/agent-platform/abl/how-to/validate-fields-by-type)
+- [Validate fields with regex or custom patterns](/agent-platform/abl/how-to/validate-fields-with-regex)
+- [Use fuzzy matching for misspelled user input](/agent-platform/abl/how-to/use-fuzzy-matching)
+- [Validate values using an external lookup API](/agent-platform/abl/how-to/validate-with-external-lookup-api)
+- [Show recovery prompts when validation fails](/agent-platform/abl/how-to/recover-from-validation-failures)
+- [Define reusable entities](/agent-platform/abl/how-to/define-reusable-entities)
