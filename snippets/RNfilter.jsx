@@ -165,7 +165,7 @@ export const VersionFinder = () => {
       if (m !== month) m.node.style.display = "none";
     });
 
-    current.anchor.style.scrollMarginTop = "100px";
+    current.anchor.style.scrollMarginTop = "200px";
     current.anchor.scrollIntoView({ block: "start" });
     window.history.replaceState(
       null,
@@ -240,7 +240,7 @@ export const VersionFinder = () => {
       <style>{`
         .vf-root { display: flex; align-items: center; gap: 0.75rem; margin: 1rem 0 0.5rem; flex-wrap: wrap; }
         .vf-label { font-weight: 600; }
-        .vf-field { position: relative; width: 100px; }
+        .vf-field { position: relative; width: 200px; }
         .vf-input { width: 100%; box-sizing: border-box; padding: 0.4rem 0.6rem; border: 1px solid #d1d5db; border-radius: 0.5rem; font-size: 0.9rem; background: transparent; color: inherit; }
         .vf-list { position: absolute; z-index: 20; top: 100%; left: 0; min-width: 100%; max-height: 16rem; overflow-y: auto; margin-top: 0.25rem; padding: 0.25rem; border: 1px solid #d1d5db; border-radius: 0.5rem; background: #ffffff; color: #111827; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12); }
         .vf-option { padding: 0.35rem 0.6rem; border-radius: 0.35rem; cursor: pointer; white-space: nowrap; }
@@ -253,7 +253,7 @@ export const VersionFinder = () => {
       `}</style>
 
       <label htmlFor="version-finder" className="vf-label">
-        Version finder
+        Filter RNs by a version
       </label>
 
       <div className="vf-field">
