@@ -1,323 +1,321 @@
-(function () {
-  "use strict";
-
-  const RELEASE_NOTES_PATH =
-    "/agent-platform/release-notes/rn5";
-
-  function initializeVersionFinder() {
-
-    if (window.location.pathname.replace(/\/$/, "") !==
-        RELEASE_NOTES_PATH.replace(/\/$/, "")) return;
-
-    if (document.getElementById("version-finder")) return;
-
-    const article = document.querySelector("main");
-    if (!article) return;
-
-    // Find all custom release anchors.
-    const markers = Array.from(
-      article.querySelectorAll('a[id^="v-"]')
-    ).filter(a => /^v-\d+(?:-\d+)+$/.test(a.id));
-
-    if (!markers.length) return;
-
-    // Find the lowest common ancestor of all release anchors.
-    function getCommonAncestor(elements) {
-      let ancestor = elements[0].parentElement;
-
-      while (ancestor &&
-        !elements.every(el => ancestor.contains(el))) {
-        ancestor = ancestor.parentElement;
-      }
-
-      return ancestor;
-    }
-
-    const container = getCommonAncestor(markers);
-    if (!container) return;
-
-    const children = Array.from(container.children);
-
-    // Get the direct child containing a given element.
-    function getDirectChild(element) {
-      let node = element;
-
-      while (node && node.parentElement !== container) {
-        node = node.parentElement;
-      }
-
-      return node && node.parentElement === container
-        ? node : null;
-    }
-
-    function getIndex(element) {
-      return children.indexOf(getDirectChild(element));
-    }
-
-    // Extract version information.
-    const releases = markers.map(marker => {
-      const version = "v" +
-        marker.id.substring(2).replace(/-/g, ".");
-
-      return {
-        marker,
-        version,
-        index: getIndex(marker)
-      };
-    });
-
-    // Find the month heading associated with each release.
-    releases.forEach(release => {
-      release.monthIndex = -1;
-
-      for (let i = release.index - 1; i >= 0; i--) {
-        const node = children[i];
-
-        if (node.matches("h2") ||
-            node.querySelector("h2")) {
-          release.monthIndex = i;
-          break;
-        }
-      }
-    });
-
-    // Define the content range for each release.
-    releases.forEach((release, i) => {
-      const next = releases[i + 1];
-
-      let endIndex = next
-        ? next.index - 1
-        : children.length - 1;
-
-      // Exclude the next month's heading from this release.
-      if (next &&
-          next.monthIndex > release.index) {
-        endIndex = next.monthIndex - 1;
-      }
-
-      release.nodes = children.slice(
-        release.index,
-        endIndex + 1
-      );
-    });
-
-    // Create the version finder.
-    const finder = document.createElement("div");
-    finder.id = "version-finder";
-
-    const label = document.createElement("label");
-    label.htmlFor = "version-finder-input";
-    label.textContent = "Version finder";
-
-    const controls = document.createElement("div");
-    controls.className = "vf-controls";
-
-    const input = document.createElement("input");
-    input.type = "search";
-    input.id = "version-finder-input";
-    input.placeholder = "Search or select a version...";
-    input.setAttribute("list", "version-finder-options");
-    input.autocomplete = "off";
-
-    const datalist = document.createElement("datalist");
-    datalist.id = "version-finder-options";
-
-    releases.forEach(release => {
-      const option = document.createElement("option");
-      option.value = release.version;
-      datalist.appendChild(option);
-    });
-
-    const clearButton = document.createElement("button");
-    clearButton.type = "button";
-    clearButton.textContent = "Clear";
-
-    const status = document.createElement("div");
-    status.id = "version-finder-status";
-    status.setAttribute("aria-live", "polite");
-
-    controls.append(input, datalist, clearButton);
-    finder.append(label, controls, status);
-
-    // Add styling.
-    const style = document.createElement("style");
-
-    style.textContent = `
-      #version-finder {
-        margin: 16px 0 28px;
-        padding: 16px;
-        border: 1px solid var(--border);
-        border-radius: 8px;
-      }
-
-      #version-finder label {
-        display: block;
-        margin-bottom: 8px;
-        font-size: 14px;
-        font-weight: 600;
-      }
-
-      #version-finder .vf-controls {
-        display: flex;
-        gap: 8px;
-      }
-
-      #version-finder-input {
-        flex: 1;
-        min-width: 0;
-        padding: 9px 12px;
-        border: 1px solid var(--border);
-        border-radius: 6px;
-        background: var(--background);
-        color: var(--foreground);
-        font: inherit;
-      }
-
-      #version-finder-clear {
-        padding: 8px 14px;
-        border: 1px solid var(--border);
-        border-radius: 6px;
-        background: var(--background);
-        color: var(--foreground);
-        cursor: pointer;
-      }
-
-      #version-finder-status {
-        margin-top: 8px;
-        font-size: 12px;
-        color: var(--muted);
-      }
-      
-      /* Adjust release anchor scroll position */
-      a[id^="v-"]
-        {
-          scroll-margin-top: 100px;
-        }
-    `;
-
-    document.head.appendChild(style);
-
-    // Insert finder before the first month heading.
-    const firstMonth = releases[0].monthIndex >= 0
-      ? children[releases[0].monthIndex]
-      : getDirectChild(markers[0]);
-
-    firstMonth.parentNode.insertBefore(finder, firstMonth);
-
-    // Save original visibility states.
-    const originalVisibility = new Map();
-
-    children.forEach(node => {
-      originalVisibility.set(node, node.hidden);
-    });
-
-    // Filter the page.
-    function filterVersion(value) {
-      const selected = releases.find(release =>
-        release.version.toLowerCase() ===
-        value.toLowerCase()
-      );
-
-      if (!selected) {
-        status.textContent =
-          "Select an available version from the suggestions.";
-        return;
-      }
-
-      // Hide all release content except the selected version.
-      releases.forEach(release => {
-        release.nodes.forEach(node => {
-          node.hidden = release === selected
-            ? originalVisibility.get(node)
-            : true;
-        });
-      });
-
-      // Show only the selected release's month heading.
-      const monthIndexes = new Set(
-        releases.map(r => r.monthIndex).filter(i => i >= 0)
-      );
-
-      monthIndexes.forEach(index => {
-        const node = children[index];
-
-        node.hidden = index === selected.monthIndex
-          ? originalVisibility.get(node)
-          : true;
-      });
-
-      status.textContent =
-        "Showing release: " + selected.version;
-
-      // Update URL for direct linking.
-      history.replaceState(
-        null,
-        "",
-        window.location.pathname +
-        window.location.search +
-        "#" + selected.marker.id
-      );
-
-      selected.marker.scrollIntoView({
-        behavior: "smooth",
-        block: "start"
-      });
-    }
-
-    // Apply filter on selection.
-    input.addEventListener("change", () => {
-      if (input.value.trim()) {
-        filterVersion(input.value.trim());
-      }
-    });
-
-    input.addEventListener("keydown", event => {
-      if (event.key === "Enter") {
-        filterVersion(input.value.trim());
-      }
-    });
-
-    // Restore all releases.
-    function clearFilter() {
-      originalVisibility.forEach((hidden, node) => {
-        node.hidden = hidden;
-      });
-
-      input.value = "";
-      status.textContent = "Showing all releases.";
-
-      history.replaceState(
-        null,
-        "",
-        window.location.pathname +
-        window.location.search
-      );
-    }
-
-    clearButton.addEventListener("click", clearFilter);
-
-    // Support direct links to a release anchor.
-    const initialVersion = window.location.hash.substring(1);
-
-    if (/^v-\d+(?:-\d+)+$/.test(initialVersion)) {
-      const release = releases.find(
-        r => r.marker.id === initialVersion
-      );
-
-      if (release) {
-        input.value = release.version;
-        filterVersion(release.version);
-      }
-    }
+import { useEffect, useMemo, useRef, useState } from "react";
+
+// Matches custom release anchors such as v-1-9-3 and v-1-0.
+const ANCHOR_PATTERN = /^v-\d+(?:-\d+)+$/;
+
+// Convert an anchor ID to a display version: v-1-9-3 becomes v1.9.3.
+const toVersion = (id) => "v" + id.slice(2).replace(/-/g, ".");
+
+// Normalize user input so "V1.9.3", " 1.9.3 " and "v1.9.3" are equal.
+const normalize = (text) => text.toLowerCase().replace(/^v/, "").trim();
+
+// A horizontal line (---) renders as <hr>, possibly inside a wrapper element.
+const isRule = (node) =>
+  node.tagName === "HR" ||
+  (node.children.length === 1 && node.firstElementChild.tagName === "HR");
+
+// Reads the release anchors from the page and maps each release to its content.
+// A release starts at its anchor and ends at the next horizontal line.
+const readReleases = (root) => {
+  const anchors = Array.from(root.querySelectorAll("a[id]")).filter(
+    (anchor) => ANCHOR_PATTERN.test(anchor.id) && !anchor.closest("pre, code")
+  );
+
+  if (!anchors.length) return null;
+
+  // Find the element that directly contains all release blocks.
+  let container = anchors[0].parentElement;
+  while (container && !anchors.every((anchor) => container.contains(anchor))) {
+    container = container.parentElement;
   }
+  if (!container) return null;
 
-  if (document.readyState === "loading") {
-    document.addEventListener(
-      "DOMContentLoaded",
-      initializeVersionFinder
+  const children = Array.from(container.children);
+
+  const blockOf = (element) => {
+    let node = element;
+    while (node && node.parentElement !== container) node = node.parentElement;
+    return node;
+  };
+
+  const releases = anchors.map((anchor) => {
+    const start = children.indexOf(blockOf(anchor));
+    let end = children.length - 1;
+
+    for (let i = start + 1; i < children.length; i++) {
+      if (isRule(children[i])) {
+        end = i;
+        break;
+      }
+    }
+
+    return {
+      id: anchor.id,
+      version: toVersion(anchor.id),
+      anchor,
+      start,
+      end,
+      nodes: children.slice(start, end + 1),
+    };
+  });
+
+  // Month headings are H2 elements that sit outside every release.
+  const inRelease = (index) =>
+    releases.some((r) => index >= r.start && index <= r.end);
+
+  const monthHeadings = children
+    .map((node, index) => ({ node, index }))
+    .filter(
+      ({ node, index }) =>
+        !inRelease(index) &&
+        (node.tagName === "H2" || node.querySelector("h2"))
     );
-  } else {
-    initializeVersionFinder();
-  }
 
-})();
+  return { children, releases, monthHeadings };
+};
+
+// Provides the Version finder and filters the release notes by version.
+export const VersionFinder = () => {
+  const [versions, setVersions] = useState([]);
+  const [query, setQuery] = useState("");
+  const [selected, setSelected] = useState(null);
+  const [open, setOpen] = useState(false);
+  const [activeIndex, setActiveIndex] = useState(-1);
+
+  const data = useRef(null);
+  const wrapper = useRef(null);
+
+  // Read the anchors once the MDX content is on the page.
+  useEffect(() => {
+    let attempts = 0;
+    let timer;
+
+    const load = () => {
+      const root = wrapper.current?.closest("main") || document.body;
+      const result = readReleases(root);
+
+      if (result) {
+        data.current = result;
+        setVersions(result.releases.map((r) => r.version));
+
+        // Support direct links such as #v-1-9-3.
+        const hash = decodeURIComponent(window.location.hash.slice(1));
+        const linked = result.releases.find((r) => r.id === hash);
+        if (linked) {
+          setQuery(linked.version);
+          setSelected(linked.version);
+        }
+      } else if (attempts++ < 30) {
+        timer = setTimeout(load, 100);
+      }
+    };
+
+    load();
+
+    // Show every release again when the component unmounts.
+    return () => {
+      clearTimeout(timer);
+      showAll();
+    };
+  }, []);
+
+  // Apply the filter when the user follows a link to a release anchor.
+  useEffect(() => {
+    const onHashChange = () => {
+      const hash = decodeURIComponent(window.location.hash.slice(1));
+      const linked = data.current?.releases.find((r) => r.id === hash);
+      if (linked) {
+        setQuery(linked.version);
+        setSelected(linked.version);
+      }
+    };
+
+    window.addEventListener("hashchange", onHashChange);
+    return () => window.removeEventListener("hashchange", onHashChange);
+  }, []);
+
+  const showAll = () => {
+    data.current?.children.forEach((node) => {
+      node.style.display = "";
+    });
+  };
+
+  // Hide every release except the selected one.
+  useEffect(() => {
+    if (!data.current) return;
+
+    showAll();
+    if (!selected) return;
+
+    const { releases, monthHeadings } = data.current;
+    const current = releases.find((r) => r.version === selected);
+    if (!current) return;
+
+    releases.forEach((release) => {
+      if (release !== current) {
+        release.nodes.forEach((node) => {
+          node.style.display = "none";
+        });
+      }
+    });
+
+    // Keep only the month heading that sits above the selected release.
+    const month = monthHeadings.filter((m) => m.index < current.start).pop();
+    monthHeadings.forEach((m) => {
+      if (m !== month) m.node.style.display = "none";
+    });
+
+    current.anchor.style.scrollMarginTop = "100px";
+    current.anchor.scrollIntoView({ block: "start" });
+    window.history.replaceState(
+      null,
+      "",
+      window.location.pathname + window.location.search + "#" + current.id
+    );
+  }, [selected, versions]);
+
+  const suggestions = useMemo(() => {
+    const q = normalize(query);
+    if (!q) return versions;
+
+    const starts = versions.filter((v) => normalize(v).startsWith(q));
+    const contains = versions.filter(
+      (v) => !normalize(v).startsWith(q) && normalize(v).includes(q)
+    );
+    return [...starts, ...contains];
+  }, [query, versions]);
+
+  const choose = (version) => {
+    setQuery(version);
+    setSelected(version);
+    setOpen(false);
+    setActiveIndex(-1);
+  };
+
+  const handleClear = () => {
+    setQuery("");
+    setSelected(null);
+    setOpen(false);
+    setActiveIndex(-1);
+    window.history.replaceState(
+      null,
+      "",
+      window.location.pathname + window.location.search
+    );
+  };
+
+  const handleChange = (event) => {
+    setQuery(event.target.value);
+    setOpen(true);
+    setActiveIndex(-1);
+    if (!event.target.value.trim()) handleClear();
+  };
+
+  const handleKeyDown = (event) => {
+    if (event.key === "ArrowDown") {
+      event.preventDefault();
+      setOpen(true);
+      setActiveIndex((i) => Math.min(i + 1, suggestions.length - 1));
+    } else if (event.key === "ArrowUp") {
+      event.preventDefault();
+      setActiveIndex((i) => Math.max(i - 1, 0));
+    } else if (event.key === "Enter") {
+      event.preventDefault();
+      const exact = versions.find((v) => normalize(v) === normalize(query));
+      if (activeIndex >= 0 && suggestions[activeIndex]) {
+        choose(suggestions[activeIndex]);
+      } else if (exact) {
+        choose(exact);
+      } else if (suggestions.length === 1) {
+        choose(suggestions[0]);
+      }
+    } else if (event.key === "Escape") {
+      setOpen(false);
+    }
+  };
+
+  return (
+    <div ref={wrapper} className="vf-root">
+      {/* Styles use classes so the dropdown can follow the page's light and dark mode. */}
+      <style>{`
+        .vf-root { display: flex; align-items: center; gap: 0.75rem; margin: 1rem 0 0.5rem; flex-wrap: wrap; }
+        .vf-label { font-weight: 600; }
+        .vf-field { position: relative; width: 100px; }
+        .vf-input { width: 100%; box-sizing: border-box; padding: 0.4rem 0.6rem; border: 1px solid #d1d5db; border-radius: 0.5rem; font-size: 0.9rem; background: transparent; color: inherit; }
+        .vf-list { position: absolute; z-index: 20; top: 100%; left: 0; min-width: 100%; max-height: 16rem; overflow-y: auto; margin-top: 0.25rem; padding: 0.25rem; border: 1px solid #d1d5db; border-radius: 0.5rem; background: #ffffff; color: #111827; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12); }
+        .vf-option { padding: 0.35rem 0.6rem; border-radius: 0.35rem; cursor: pointer; white-space: nowrap; }
+        .vf-option[aria-selected="true"] { background: rgba(0, 0, 0, 0.07); }
+        .vf-button { padding: 0.4rem 0.8rem; border: 1px solid #d1d5db; border-radius: 0.5rem; background: transparent; color: inherit; cursor: pointer; font-size: 0.9rem; }
+        .vf-status { font-size: 0.875rem; opacity: 0.7; }
+        html.dark .vf-input, html.dark .vf-button { border-color: rgba(255, 255, 255, 0.2); }
+        html.dark .vf-list { background: #111717; color: #f3f4f6; border-color: rgba(255, 255, 255, 0.2); box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5); }
+        html.dark .vf-option[aria-selected="true"] { background: rgba(255, 255, 255, 0.12); }
+      `}</style>
+
+      <label htmlFor="version-finder" className="vf-label">
+        Version finder
+      </label>
+
+      <div className="vf-field">
+        <input
+          id="version-finder"
+          className="vf-input"
+          type="text"
+          role="combobox"
+          aria-expanded={open}
+          aria-controls="version-finder-list"
+          aria-autocomplete="list"
+          aria-describedby="version-finder-status"
+          autoComplete="off"
+          value={query}
+          onChange={handleChange}
+          onFocus={() => setOpen(true)}
+          onBlur={() => setTimeout(() => setOpen(false), 150)}
+          onKeyDown={handleKeyDown}
+          placeholder="v1.9.3"
+        />
+
+        {/* Use div elements, not a list, so the page's list styles never apply. */}
+        {open && suggestions.length > 0 && (
+          <div id="version-finder-list" role="listbox" className="vf-list">
+            {suggestions.map((version, index) => (
+              <div
+                key={version}
+                role="option"
+                className="vf-option"
+                aria-selected={index === activeIndex}
+                // Use mouse down so the choice registers before the input loses focus.
+                onMouseDown={(event) => {
+                  event.preventDefault();
+                  choose(version);
+                }}
+                onMouseEnter={() => setActiveIndex(index)}
+              >
+                {version}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Show the button only when a version is selected. */}
+      {selected && (
+        <button type="button" className="vf-button" onClick={handleClear}>
+          Show all
+        </button>
+      )}
+
+      <div
+        id="version-finder-status"
+        className="vf-status"
+        aria-live="polite"
+      >
+        {selected
+          ? `Showing release ${selected}`
+          : query && suggestions.length === 0
+          ? "No matching version."
+          : ""}
+      </div>
+    </div>
+  );
+};
