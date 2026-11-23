@@ -9,13 +9,7 @@ const toVersion = (id) => "v" + id.slice(2).replace(/-/g, ".");
 // Normalize user input so "V1.9.3", " 1.9.3 " and "v1.9.3" are equal.
 const normalize = (text) => text.toLowerCase().replace(/^v/, "").trim();
 
-// A horizontal line (---) renders as <hr>, possibly inside a wrapper element.
-const isRule = (node) =>
-  node.tagName === "HR" ||
-  (node.children.length === 1 && node.firstElementChild.tagName === "HR");
-
-// Reads the release anchors from the page and maps each release to its content.
-// A release starts at its anchor and ends at the next horizontal line.
+// Reads the release anchors from the page.
 const readReleases = (root) => {
   const anchors = Array.from(root.querySelectorAll("a[id]")).filter(
     (anchor) => ANCHOR_PATTERN.test(anchor.id) && !anchor.closest("pre, code")
@@ -23,58 +17,14 @@ const readReleases = (root) => {
 
   if (!anchors.length) return null;
 
-  // Find the element that directly contains all release blocks.
-  let container = anchors[0].parentElement;
-  while (container && !anchors.every((anchor) => container.contains(anchor))) {
-    container = container.parentElement;
-  }
-  if (!container) return null;
-
-  const children = Array.from(container.children);
-
-  const blockOf = (element) => {
-    let node = element;
-    while (node && node.parentElement !== container) node = node.parentElement;
-    return node;
-  };
-
-  const releases = anchors.map((anchor) => {
-    const start = children.indexOf(blockOf(anchor));
-    let end = children.length - 1;
-
-    for (let i = start + 1; i < children.length; i++) {
-      if (isRule(children[i])) {
-        end = i;
-        break;
-      }
-    }
-
-    return {
-      id: anchor.id,
-      version: toVersion(anchor.id),
-      anchor,
-      start,
-      end,
-      nodes: children.slice(start, end + 1),
-    };
-  });
-
-  // Month headings are H2 elements that sit outside every release.
-  const inRelease = (index) =>
-    releases.some((r) => index >= r.start && index <= r.end);
-
-  const monthHeadings = children
-    .map((node, index) => ({ node, index }))
-    .filter(
-      ({ node, index }) =>
-        !inRelease(index) &&
-        (node.tagName === "H2" || node.querySelector("h2"))
-    );
-
-  return { children, releases, monthHeadings };
+  return anchors.map((anchor) => ({
+    id: anchor.id,
+    version: toVersion(anchor.id),
+    anchor,
+  }));
 };
 
-// Provides the Version finder and filters the release notes by version.
+// Provides the Version finder and jumps to the selected release.
 export const VersionFinder = () => {
   const [versions, setVersions] = useState([]);
   const [query, setQuery] = useState("");
@@ -84,6 +34,20 @@ export const VersionFinder = () => {
 
   const data = useRef(null);
   const wrapper = useRef(null);
+
+  // Scroll to a release anchor and update the URL for direct linking.
+  const jumpTo = (version) => {
+    const release = data.current?.find((r) => r.version === version);
+    if (!release) return;
+
+    release.anchor.style.scrollMarginTop = "200px";
+    release.anchor.scrollIntoView({ block: "start" });
+    window.history.replaceState(
+      null,
+      "",
+      window.location.pathname + window.location.search + "#" + release.id
+    );
+  };
 
   // Read the anchors once the MDX content is on the page.
   useEffect(() => {
@@ -96,14 +60,15 @@ export const VersionFinder = () => {
 
       if (result) {
         data.current = result;
-        setVersions(result.releases.map((r) => r.version));
+        setVersions(result.map((r) => r.version));
 
         // Support direct links such as #v-1-9-3.
         const hash = decodeURIComponent(window.location.hash.slice(1));
-        const linked = result.releases.find((r) => r.id === hash);
+        const linked = result.find((r) => r.id === hash);
         if (linked) {
           setQuery(linked.version);
           setSelected(linked.version);
+          jumpTo(linked.version);
         }
       } else if (attempts++ < 30) {
         timer = setTimeout(load, 100);
@@ -112,18 +77,14 @@ export const VersionFinder = () => {
 
     load();
 
-    // Show every release again when the component unmounts.
-    return () => {
-      clearTimeout(timer);
-      showAll();
-    };
+    return () => clearTimeout(timer);
   }, []);
 
-  // Apply the filter when the user follows a link to a release anchor.
+  // Show the matching version when the user follows a link to a release anchor.
   useEffect(() => {
     const onHashChange = () => {
       const hash = decodeURIComponent(window.location.hash.slice(1));
-      const linked = data.current?.releases.find((r) => r.id === hash);
+      const linked = data.current?.find((r) => r.id === hash);
       if (linked) {
         setQuery(linked.version);
         setSelected(linked.version);
@@ -133,46 +94,6 @@ export const VersionFinder = () => {
     window.addEventListener("hashchange", onHashChange);
     return () => window.removeEventListener("hashchange", onHashChange);
   }, []);
-
-  const showAll = () => {
-    data.current?.children.forEach((node) => {
-      node.style.display = "";
-    });
-  };
-
-  // Hide every release except the selected one.
-  useEffect(() => {
-    if (!data.current) return;
-
-    showAll();
-    if (!selected) return;
-
-    const { releases, monthHeadings } = data.current;
-    const current = releases.find((r) => r.version === selected);
-    if (!current) return;
-
-    releases.forEach((release) => {
-      if (release !== current) {
-        release.nodes.forEach((node) => {
-          node.style.display = "none";
-        });
-      }
-    });
-
-    // Keep only the month heading that sits above the selected release.
-    const month = monthHeadings.filter((m) => m.index < current.start).pop();
-    monthHeadings.forEach((m) => {
-      if (m !== month) m.node.style.display = "none";
-    });
-
-    current.anchor.style.scrollMarginTop = "200px";
-    current.anchor.scrollIntoView({ block: "start" });
-    window.history.replaceState(
-      null,
-      "",
-      window.location.pathname + window.location.search + "#" + current.id
-    );
-  }, [selected, versions]);
 
   const suggestions = useMemo(() => {
     const q = normalize(query);
@@ -190,6 +111,7 @@ export const VersionFinder = () => {
     setSelected(version);
     setOpen(false);
     setActiveIndex(-1);
+    jumpTo(version);
   };
 
   const handleClear = () => {
@@ -253,7 +175,7 @@ export const VersionFinder = () => {
       `}</style>
 
       <label htmlFor="version-finder" className="vf-label">
-        Filter RNs by a version
+        Go to a version
       </label>
 
       <div className="vf-field">
@@ -272,7 +194,7 @@ export const VersionFinder = () => {
           onFocus={() => setOpen(true)}
           onBlur={() => setTimeout(() => setOpen(false), 150)}
           onKeyDown={handleKeyDown}
-          placeholder="v1.9.3"
+          placeholder="v1.10.0"
         />
 
         {/* Use div elements, not a list, so the page's list styles never apply. */}
@@ -301,7 +223,7 @@ export const VersionFinder = () => {
       {/* Show the button only when a version is selected. */}
       {selected && (
         <button type="button" className="vf-button" onClick={handleClear}>
-          Show all
+          Clear
         </button>
       )}
 
@@ -311,7 +233,7 @@ export const VersionFinder = () => {
         aria-live="polite"
       >
         {selected
-          ? `Showing release ${selected}`
+          ? `Jumped to release ${selected}`
           : query && suggestions.length === 0
           ? "No matching version."
           : ""}
