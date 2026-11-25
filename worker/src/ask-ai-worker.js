@@ -9,7 +9,7 @@ const STOP_WORDS = new Set([
   "a", "about", "after", "all", "an", "and", "any", "are", "as", "at", "be", "because", "before", "but", "by",
   "can", "could", "doc", "docs", "do", "does", "document", "documentation", "find", "for", "from", "get", "had",
   "has", "have", "help", "how", "i", "if", "in", "into", "is", "it", "locate", "me", "my", "of", "on", "or",
-  "our", "page", "pages", "please", "search", "show", "should", "so", "than", "that", "the", "their", "them",
+  "our", "page", "pages", "please", "show", "should", "so", "than", "that", "the", "their", "them",
   "then", "there", "these", "they", "this", "those", "to", "us", "was", "we", "what", "when", "where", "which",
   "who", "why", "will", "with", "would", "you", "your",
 ]);
@@ -17,6 +17,7 @@ const STOP_WORDS = new Set([
 let cachedIndex;
 let cachedAt = 0;
 let cachedTermsByLength = new Map();
+let cachedMetadataTermCounts = new Map();
 const CACHE_MS = 5 * 60 * 1000;
 
 export default {
@@ -128,7 +129,11 @@ async function getIndex(url) {
   if (!Array.isArray(data)) throw new Error("Index must be a JSON array");
   cachedIndex = data;
   cachedTermsByLength = new Map();
+  cachedMetadataTermCounts = new Map();
   for (const doc of data.filter(isAiForServiceDoc)) {
+    for (const term of new Set(tokenize(`${doc.title || ""} ${doc.heading || ""}`))) {
+      cachedMetadataTermCounts.set(term, (cachedMetadataTermCounts.get(term) || 0) + 1);
+    }
     for (const term of tokenize(`${doc.title || ""} ${doc.heading || ""} ${doc.text || ""}`)) {
       if (!cachedTermsByLength.has(term.length)) cachedTermsByLength.set(term.length, new Set());
       cachedTermsByLength.get(term.length).add(term);
@@ -143,6 +148,7 @@ function findMatches(index, question, limit) {
     .filter((term) => !STOP_WORDS.has(term))
     .map(correctQueryTerm))];
   if (!terms.length) return [];
+  const isDefinitionQuestion = /^\s*(?:what\s+(?:is|are|does|do)|define|explain|describe)\b/i.test(question);
   const termSet = new Set(terms);
   const ranked = index.map((doc) => {
     const title = String(doc.title || "");
@@ -154,6 +160,7 @@ function findMatches(index, question, limit) {
       if (titleTerms.has(term)) score += 5;
       if (headingTerms.has(term)) score += 3;
     }
+    if (isDefinitionQuestion && !heading.trim()) score += 8;
     const content = `${title} ${heading} ${String(doc.text || "")}`.toLowerCase();
     const counts = new Map();
     for (const match of content.matchAll(/[a-z0-9][a-z0-9_-]{1,}/g)) {
@@ -193,7 +200,15 @@ function correctQueryTerm(term) {
       }
     }
     if (candidates.size === 1) return candidates.values().next().value;
-    if (candidates.size > 1) return term;
+    if (candidates.size > 1) {
+      const ranked = [...candidates]
+        .map((candidate) => ({ candidate, count: cachedMetadataTermCounts.get(candidate) || 0 }))
+        .sort((a, b) => b.count - a.count);
+      const best = ranked[0];
+      const runnerUpCount = ranked[1]?.count || 0;
+      if (best.count >= 5 && best.count >= runnerUpCount * 3) return best.candidate;
+      return term;
+    }
   }
   return term;
 }
