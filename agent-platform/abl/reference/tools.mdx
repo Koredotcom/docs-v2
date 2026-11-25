@@ -118,12 +118,14 @@ TOOLS:
     method: POST
     parameters:
       customer_id:
-        source: system            # model | system | runtime | config | auth | expr | lookup
-        value: "session.customer_id"
+        source: runtime           # model | system | runtime | config | auth | expr | lookup
+        value: customer_id        # the session key to read
         hidden: true              # do not expose to the model
       amount:
         description: "Charge amount in the account currency"
         required: true
+    context_access:
+      read: [customer_id]         # the tool may read only the keys listed here
 ```
 
 | Enrichment key  | Type      | Description                                                                      |
@@ -131,15 +133,72 @@ TOOLS:
 | `description`   | `string`  | Parameter description shown to the model.                                        |
 | `required`      | `boolean` | Whether the parameter is required.                                               |
 | `default`       | any       | Default value.                                                                   |
-| `source`        | `string`  | Value source: `model`, `system`, `runtime`, `config`, `auth`, `expr`, `lookup`.  |
-| `value`         | `string`  | The expression or reference used with `expr`/`lookup`/`system`/`config` sources. |
+| `source`        | `string`  | Value source: `model`, `system`, `runtime`, `config`, `auth`, `expr` (alias `computed`), `lookup(<table>)`. A word that is not a source leaves the parameter without one and compiles with [`TOOL_PARAM_SOURCE_UNKNOWN`](/agent-platform/abl/reference/errors-and-warnings#tool_param_source_unknown). |
+| `value`         | `string`  | With `runtime` or `system`: the session key the parameter reads. The default is the parameter's own name. With `expr`: the expression. Any other source ignores it ([`TOOL_PARAM_VALUE_IGNORED`](/agent-platform/abl/reference/errors-and-warnings#tool_param_value_ignored)). |
 | `key` / `table` | `string`  | Lookup key and table (with `source: lookup`).                                    |
-| `hidden`        | `boolean` | Hide the parameter from the model (still sent to the tool).                      |
+| `hidden`        | `boolean` | Hide the parameter from the model (still sent to the tool). Short for `visibility_model: false` and `visibility_trace: false`. |
 | `visibility`    | `object`  | Fine-grained `{ model, trace }` visibility flags.                                |
 | `properties`    | `object`  | Nested object field schema (for `object` params).                                |
 | `items`         | `object`  | Item schema (for array params).                                                  |
 
 <Note>`default_source` is accepted as an alias for `source` (both set the parameter's value source). Some compile-time diagnostics — for example the [trusted SIP transfer destination](#trusted-sip-transfer-destinations) check — refer to the key by its `default_source` spelling.</Note>
+
+#### Reading session values into hidden parameters
+
+A hidden parameter can take its value from a session value that the model never supplies. The tool reads only the keys it lists in `context_access.read`. The Runtime resolves those keys with the same authorization as `_context` and hands the values to the tool executor outside the model's arguments. There are two forms:
+
+- `default_source: runtime` (or `system`) with `value: <key>`. The parameter receives the session value `<key>`. Without `value`, the key is the parameter's own name.
+- An expression default that reads `context.<key>`, written as `source: expr` with `value: "<expression>"`. `context` holds only the listed keys.
+
+```abl
+AGENT: Turn_Data_Agent
+VERSION: "1.0"
+GOAL: "Answer with the data for this turn"
+
+MEMORY:
+  session:
+    - NAME: turn_counter
+      TYPE: number
+      MODEL_VISIBLE: false
+      READONLY: true
+
+TOOLS:
+  read_turn(n: number, next_n: number) -> object
+    description: "Read the data for this turn"
+    params:
+      n:
+        default_source: runtime
+        value: turn_counter
+        visibility_model: false
+        visibility_trace: false
+      next_n:
+        source: expr
+        value: "context.turn_counter + 1.0"
+        hidden: true
+    context_access:
+      read: [turn_counter]
+```
+
+The model sees neither `n` nor `next_n`. When it calls `read_turn`, the tool receives `n` as the value of `turn_counter` and `next_n` as that value plus one. The same rules apply to every tool type, including workflow tools, and to FLOW `CALL` steps.
+
+Rules:
+
+- In an expression default, `session` holds only the session identity: `sessionId`, `tenantId`, `projectId`, `userId`, `callerContext`, `source`, `environment` and `workflowToolVersions`. A bare session variable name or `session.<variable>` does not resolve. Use `context.<variable>`.
+- `value` names the session key itself, such as `value: turn_counter`, not `session.turn_counter`.
+- A reasoning call fails closed when a listed key is unauthorized or missing, as for any `context_access.read` key. A FLOW `CALL` uses its `WITH` value when the key is unavailable. A required hidden runtime parameter with no value blocks the `CALL` before dispatch.
+- The value is passed as it is. A number is not converted to a string, so the parameter type must match the session variable `TYPE`.
+- A value the model supplies for a parameter it does not own (a hidden parameter, or any source other than `model`) is dropped when no trusted source resolves it. A resolved default and a gathered FLOW value are kept.
+- When several parameters read one key and any of them is hidden from traces, the key is hidden from the `_context` trace too.
+
+The compiler warns, without blocking compilation, when a declaration cannot deliver a value:
+
+| Code | Cause |
+| ---- | ----- |
+| [`TOOL_PARAM_VALUE_IGNORED`](/agent-platform/abl/reference/errors-and-warnings#tool_param_value_ignored) | `value` is set on a source that ignores it. |
+| [`TOOL_PARAM_SOURCE_UNKNOWN`](/agent-platform/abl/reference/errors-and-warnings#tool_param_source_unknown) | The source word is not a source, such as `session`. |
+| [`TOOL_PARAM_EXPRESSION_UNRESOLVED`](/agent-platform/abl/reference/errors-and-warnings#tool_param_expression_unresolved) | An expression default reads a name outside its scope. |
+| [`TOOL_PARAM_CONTEXT_KEY_NOT_READABLE`](/agent-platform/abl/reference/errors-and-warnings#tool_param_context_key_not_readable) | The key is not in `context_access.read`. |
+| [`TOOL_PARAM_CONTEXT_TYPE_MISMATCH`](/agent-platform/abl/reference/errors-and-warnings#tool_param_context_type_mismatch) | The session variable `TYPE` differs from the parameter type. |
 
 #### Trusted SIP transfer destinations
 
@@ -1420,6 +1479,25 @@ TOOLS:
 | `logs`     | PII from this tool may appear in logs                    |
 | `llm`      | PII from this tool is sent to the LLM                    |
 
+### Expected PII reply
+
+The `expects_pii_reply:` property names the project PII patterns that the customer's next reply is expected to contain once this tool has run. Use it on the tool that sends a one-time password.
+
+```yaml
+TOOLS:
+  send_otp(phone: string) -> {sent: boolean}
+    description: "Send a one-time password to the customer"
+    type: http
+    endpoint: "https://otp.example.com/api/send"
+    method: POST
+    expects_pii_reply: OTP
+```
+
+- The value is one pattern name, as named in Studio, or a comma-separated list such as `OTP, MPIN`.
+- It affects only patterns whose **When To Hide** setting is **Only when expected**. Such a pattern hides a match only in the reply that follows the tool, so a wide rule such as 4 to 8 digits does not hide amounts or PIN codes elsewhere.
+- The arm lasts for the next customer reply. The pattern's context words still work as a fallback.
+- A `GATHER` field with `PII_PATTERN_REF: OTP` arms the pattern the same way while the agent waits for that field.
+
 ### Secret scrubbing
 
 An always-on scrubber masks credentials (API keys, bearer tokens, private keys, passwords) in a tool's output. Set `scrub_secrets: false` to opt a specific tool out (for example, when the tool's job is to return a token your flow needs). This is independent of `pii_access`, which governs PII rather than credentials.
@@ -1436,7 +1514,7 @@ TOOLS:
 ### Context access
 
 
-The `context_access:` block declares which session context variables a tool reads from and writes to. This enables the runtime to automatically inject context into HTTP requests and apply result values back to session state.
+The `context_access:` block declares which session context variables a tool reads from and writes to. This enables the runtime to automatically inject context into HTTP requests and apply result values back to session state. To read a listed key into a hidden parameter, see [Reading session values into hidden parameters](#reading-session-values-into-hidden-parameters).
 
 ```yaml
 TOOLS:
