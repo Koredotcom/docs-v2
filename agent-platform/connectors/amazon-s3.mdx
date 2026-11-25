@@ -1,6 +1,7 @@
 ---
 title: "Amazon S3 connector"
 sidebarTitle: "Amazon S3"
+description: "Index files from Amazon S3 buckets into a knowledge base so agents can retrieve them during conversations."
 ---
 
 <Badge icon="arrow-left" color="gray">[Back to list of knowledge sources](/agent-platform/integrations/knowledge-sources)</Badge>
@@ -9,16 +10,28 @@ Use the Amazon S3 connector to index files from one or more S3 buckets into a kn
 
 ## At a glance
 
-| Item | Value |
-| --- | --- |
-| Category | Cloud storage |
-| Authentication | AWS IAM (SigV4) auth profile |
-| Credential modes | Assume role (recommended), Access keys |
-| Content indexed | Objects under the buckets and prefixes you choose, filtered by file extension |
-| Sync modes | Manual sync, scheduled delta sync |
-| Change detection | Last modified + size (default), Content hash |
-| Permission-aware search | Optional. Maps S3 object ACL grants to platform principals. See [Permissions](#permissions). |
-| Setup path | Connect > Locations > Filters > Permissions > Dry Run > Field Mapping > Activate |
+<CardGroup cols={2}>
+  <Card title="Authentication" icon="key" href="#step-1-prepare-aws-access">
+    AWS IAM (SigV4). Assume role (recommended) or access keys.
+  </Card>
+  <Card title="Content" icon="folder-open" href="#step-3-configure-the-connector">
+    Files in the buckets and prefixes you choose, filtered by extension.
+  </Card>
+  <Card title="Sync" icon="arrows-rotate" href="#sync-behavior">
+    Manual or scheduled delta sync, from hourly to monthly.
+  </Card>
+  <Card title="Permissions" icon="lock" href="#permissions">
+    Optional. Applies S3 object ACLs to search results.
+  </Card>
+</CardGroup>
+
+<Accordion title="Connector details" icon="circle-info">
+  | Item | Value |
+  | --- | --- |
+  | Category | Cloud storage |
+  | Change detection | Last modified + size (default), Content hash |
+  | Setup path | Connect > Locations > Filters > Permissions > Dry Run > Field Mapping > Activate |
+</Accordion>
 
 ## How the connector works
 
@@ -31,10 +44,12 @@ flowchart LR
   F[S3 object ACLs] -. optional .-> E
 ```
 
-1. The connector authenticates with the AWS IAM auth profile and lists objects under each configured location.
-2. It keeps objects that match your filters, then extracts, chunks, and embeds their content.
-3. On each delta sync, it compares change-detection signals and processes only new and changed objects.
-4. If you turn on **Resource ACL**, it reads each object's ACL and applies the mapped grants to search results.
+<Accordion title="What happens at each stage">
+  1. The connector authenticates with the AWS IAM auth profile and lists objects under each configured location.
+  2. It keeps objects that match your filters, then extracts, chunks, and embeds their content.
+  3. On each delta sync, it compares change-detection signals and processes only new and changed objects.
+  4. If you turn on **Resource ACL**, it reads each object's ACL and applies the mapped grants to search results.
+</Accordion>
 
 ## Before you begin
 
@@ -172,20 +187,30 @@ You can create the profile from the connector, so you don't need to leave the se
     | --- | --- | --- |
     | **Bucket** | Enter the bucket name, for example `company-documents`. | None |
     | **AWS region** | Enter the bucket Region. | `us-east-1` |
-    | **Custom endpoint** | Optional. Enter a regional or S3-compatible endpoint, for example `https://s3.us-east-1.amazonaws.com`. | Empty |
-    | **Addressing style** | Select how the connector builds request URLs: **Auto**, **Virtual-hosted**, or **Path-style**. Use **Path-style** for S3-compatible storage that doesn't support virtual-hosted URLs. | **Auto** |
     | **Prefixes** | Optional. Enter comma-separated key prefixes, for example `policies/, runbooks/`. Leave empty to index the whole bucket. | Empty |
     | **Recursive listing** | Includes nested keys below each prefix. Turn off to index only the top level of each prefix. | On |
+
+    <Accordion title="Advanced: custom endpoints">
+      | Field | Description | Default |
+      | --- | --- | --- |
+      | **Custom endpoint** | Optional. Enter a regional or S3-compatible endpoint, for example `https://s3.us-east-1.amazonaws.com`. | Empty |
+      | **Addressing style** | Select how the connector builds request URLs: **Auto**, **Virtual-hosted**, or **Path-style**. Use **Path-style** for S3-compatible storage that doesn't support virtual-hosted URLs. | **Auto** |
+    </Accordion>
   </Step>
   <Step title="Filters and schedule">
     | Field | Description | Default |
     | --- | --- | --- |
     | **Allowed extensions** | Enter comma-separated file extensions to index. | `pdf, docx, txt, md` |
-    | **Change detection** | Select how delta syncs find changed objects. See [Sync behavior](#sync-behavior). | **Last modified + size** |
-    | **Max files per run** | Enter the maximum number of files that one sync run processes. | `10000` |
-    | **Dry-run sample size** | Enter the number of files that a dry run samples. | `25` |
     | **Scheduled delta sync** | Turn on to sync on a schedule. You can still run a manual sync when this is off. | Off |
     | **Sync frequency** | Select **Hourly**, **Every 6 hours**, **Every 12 hours**, **Daily**, **Weekly**, **Monthly**, **Run once**, or **Custom cron**. Available when **Scheduled delta sync** is on. | **Every 6 hours** |
+
+    <Accordion title="Advanced: change detection and run limits">
+      | Field | Description | Default |
+      | --- | --- | --- |
+      | **Change detection** | Select how delta syncs find changed objects. See [Sync behavior](#sync-behavior). | **Last modified + size** |
+      | **Max files per run** | Enter the maximum number of files that one sync run processes. | `10000` |
+      | **Dry-run sample size** | Enter the number of files that a dry run samples. | `25` |
+    </Accordion>
   </Step>
   <Step title="Permissions">
     Optional. Turn on **Resource ACL** to apply S3 object ACLs to search results, and then add grant mappings. See [Permissions](#permissions).
@@ -228,14 +253,16 @@ By default, every user who can search the knowledge base can retrieve indexed S3
 
 <Note>S3 buckets created since April 2023 use the **Bucket owner enforced** setting, which disables ACLs. If your bucket controls access through bucket policies or IAM only, **Resource ACL** has no grants to read.</Note>
 
-Select **Add S3 grant mapping** for each grantee:
+<Accordion title="Grant mapping fields" icon="user-lock">
+  Select **Add S3 grant mapping** for each grantee.
 
-| Field | Options | Description |
-| --- | --- | --- |
-| **S3 grantee type** | **Canonical user**, **Email**, **URI**, **Group** | The type of grantee in the S3 ACL. |
-| **S3 grantee ID** | Text | The canonical user ID, email address, or group URI, for example `http://acs.amazonaws.com/groups/global/AllUsers`. |
-| **Principal type** | **User**, **Group**, **Domain**, **Everyone**, **Anonymous** | The platform principal that receives the grant. |
-| **Principal ID** | Text | The ID of the user, group, or domain. |
+  | Field | Options | Description |
+  | --- | --- | --- |
+  | **S3 grantee type** | **Canonical user**, **Email**, **URI**, **Group** | The type of grantee in the S3 ACL. |
+  | **S3 grantee ID** | Text | The canonical user ID, email address, or group URI, for example `http://acs.amazonaws.com/groups/global/AllUsers`. |
+  | **Principal type** | **User**, **Group**, **Domain**, **Everyone**, **Anonymous** | The platform principal that receives the grant. |
+  | **Principal ID** | Text | The ID of the user, group, or domain. |
+</Accordion>
 
 ## Manage the connector
 
@@ -256,16 +283,32 @@ After activation, open the source from **Sources** in your knowledge base.
 
 ## Troubleshoot common issues
 
-| Issue | Resolution |
-| --- | --- |
-| The auth profile list is empty | Create an **AWS IAM** profile with **New auth profile**, and confirm that **Visible to project members** is on. |
-| `AccessDenied` during the dry run | Add `s3:ListBucket` on the bucket and `s3:GetObject` on `bucket/*` to the IAM policy. |
-| `SignatureDoesNotMatch` | Confirm that **Signing service** is `s3` and that the profile **Region** matches the bucket Region. For Assume role, confirm that **Endpoint type** is **Custom AWS service**. |
-| `PermanentRedirect` or a Region error | Set **AWS region** on the location to the bucket's Region. |
-| The dry run returns no files | Check **Prefixes**, **Recursive listing**, and **Allowed extensions**. Prefixes are case sensitive. |
-| Encrypted files fail with `KMS.AccessDeniedException` | Grant `kms:Decrypt` on the bucket's KMS key to the role or user. |
-| Users see no results after you turn on **Resource ACL** | Add a grant mapping for each readable grantee. Unmapped grants stay restricted. |
-| Assume role can't be tested | Confirm the trust policy includes the workspace **External ID**. If the form shows **Platform AWS identity not configured**, use **Access keys** or contact your platform administrator. |
+<AccordionGroup>
+  <Accordion title="The auth profile list is empty">
+    Create an **AWS IAM** profile with **New auth profile**, and confirm that **Visible to project members** is on.
+  </Accordion>
+  <Accordion title="AccessDenied during the dry run">
+    Add `s3:ListBucket` on the bucket and `s3:GetObject` on `bucket/*` to the IAM policy.
+  </Accordion>
+  <Accordion title="SignatureDoesNotMatch">
+    Confirm that **Signing service** is `s3` and that the profile **Region** matches the bucket Region. For Assume role, confirm that **Endpoint type** is **Custom AWS service**.
+  </Accordion>
+  <Accordion title="PermanentRedirect or a Region error">
+    Set **AWS region** on the location to the bucket's Region.
+  </Accordion>
+  <Accordion title="The dry run returns no files">
+    Check **Prefixes**, **Recursive listing**, and **Allowed extensions**. Prefixes are case sensitive.
+  </Accordion>
+  <Accordion title="Encrypted files fail with KMS.AccessDeniedException">
+    Grant `kms:Decrypt` on the bucket's KMS key to the role or user.
+  </Accordion>
+  <Accordion title="Users see no results after you turn on Resource ACL">
+    Add a grant mapping for each readable grantee. Unmapped grants stay restricted.
+  </Accordion>
+  <Accordion title="Assume role can't be tested">
+    Confirm the trust policy includes the workspace **External ID**. If the form shows **Platform AWS identity not configured**, use **Access keys** or contact your platform administrator.
+  </Accordion>
+</AccordionGroup>
 
 ## Related articles
 
