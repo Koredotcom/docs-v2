@@ -259,6 +259,18 @@ HOOKS:
 | `on_no_input_exhausted` | When voice silence retries run out and `on_exhausted` is `hook`. See [on_no_input_exhausted](#on_no_input_exhausted). |
 | `on_caller_hold_limit` | When a caller hold reaches its limit and the limit action is `hook`. See [on_caller_hold_limit](#on_caller_hold_limit). |
 
+### Hook `CALL` and captured secrets
+
+A hook `CALL` reads captured secrets the same way a FLOW `CALL` or a reasoning tool call does. This applies to every hook point, including `on_no_input_exhausted`.
+
+When the tool declares `secret_access`, the Runtime takes each named key from the session's captured secrets before it builds the request, and fills `{{_secret.<key>}}` with it. The producing tool's `result_secrets` rules apply:
+
+- The consumer list must name the tool.
+- The TTL must not have passed.
+- A single-use secret is spent by this `CALL`, so a later call that needs it fails.
+
+When a key is unavailable, the `CALL` fails before any request is sent. The error names the key and never its value. The hook then fails like any hook whose `CALL` fails: a `CRITICAL: true` hook aborts the turn. Any other hook skips its own remaining actions and the turn continues. An `on_no_input_exhausted` hook's `HANDOFF` still runs. See [Secret handling](/agent-platform/abl/reference/tools#reuse-secrets-across-tools-secretref) for `result_secrets` and `secret_access`.
+
 ### on_no_input_exhausted
 
 On pipeline voice, `on_exhausted: hook` runs the agent's `on_no_input_exhausted` hook when silence retries run out. Use it to act on exhausted silence from an agent with no FLOW. It also works on a FLOW agent.
@@ -663,7 +675,7 @@ ON_ERROR:
 | `VOICE`           | `object`                | No       | --      | Voice-specific overrides for the response.                                           |
 | `RICH_CONTENT`    | `object`                | No       | --      | Rich content format variants.                                                        |
 | `ACTIONS`         | `object`                | No       | --      | Interactive actions.                                                                 |
-| `SET`             | `Record<string,string>` | No       | --      | Variable assignments applied when this error is handled.                             |
+| `SET`             | `Record<string,string>` | No       | --      | Variable assignments applied when this error is handled. Write one inline (`SET: a = 1`) or as a block with one assignment per indented line. |
 | `RETRY`           | `number`                | No       | --      | Number of retry attempts before executing `THEN`.                                    |
 | `RETRY_DELAY`     | `number`                | No       | --      | Delay in milliseconds between retries.                                               |
 | `RETRY_BACKOFF`   | `string`                | No       | --      | Backoff strategy for retries. See [Retry strategies](#retry-strategies).             |
@@ -672,6 +684,8 @@ ON_ERROR:
 | `HANDOFF_TARGET`  | `string`                | No       | --      | Explicit target agent for `THEN: HANDOFF` (alternative to `HANDOFF <agent>`).        |
 | `BACKTRACK_TO`    | `string`                | No       | --      | Target step for `backtrack` action.                                                  |
 | `SUBTYPE` / `SUBTYPES` | `string` / `string[]` | No   | --      | Error subtype(s) for fine-grained matching within `tool_error` (for example `SUBTYPE: tool_timeout` or `SUBTYPES: [rate_limit, network_error]`). |
+
+An agent-level `ON_ERROR:` block also accepts the `- TYPE:` list form that step-level handlers use. Since 1.10.2, a list-form block and a block `SET` register their handlers and assignments. Before, a list-form agent-level block compiled with no handlers, and the lines of a block `SET` were dropped.
 
 ### Retry strategies
 
