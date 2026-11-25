@@ -5,7 +5,7 @@ sidebarTitle: Agents
 
 Agents are the core AI units in Agent Platform. An agent reasons toward a goal, calls tools, and composes replies in the persona you define. This guide shows how to create an agent in Studio and write its ABL definition.
 
-The same agent serves chat and voice, in one or more languages, and you build it the same way for each. A voice agent adds a voice channel and a few voice settings. A multilingual agent adds language settings.
+The same agent can serve chat and voice, in one or more languages. Build the agent once. Then enable voice and extend it.
 
 <Tip>Before you write instructions, read [Agent design guidelines](/agent-platform/best-practices/agent-design-guidelines).</Tip>
 
@@ -23,7 +23,7 @@ flowchart LR
 
 ### Reasoning and FLOW
 
-Every agent reasons by default. Add a `FLOW` section when parts of the conversation need fixed, deterministic steps. A `FLOW` section doesn't create a different agent type. The agent still reasons and calls tools outside the flow steps.
+Every agent reasons by default. Add a `FLOW` section when parts of the conversation need fixed, deterministic steps. A `FLOW` section doesn't create a different agent type. The agent still reasons and calls tools outside the flow steps. To add one, see [Add a FLOW section](#add-a-flow-section).
 
 | Feature | Reasoning (default) | With a FLOW section |
 | --- | --- | --- |
@@ -37,16 +37,27 @@ Every agent reasons by default. Add a `FLOW` section when parts of the conversat
 Most of an agent is the same on every channel and in every language. Only a few parts change.
 
 | Part of the agent | Chat | Voice | More than one language |
-|---|---|---|---|
-| Identity, tools, FLOW, lifecycle, responses | Same | Same | Same |
-| Reply style | Default | Short and spoken, set with a behavior profile or `EXECUTION.voice` | Localized messages and a glossary |
-| Listening | Not used | Silence, barge-in, keypad, and secure input | Not used |
+| --- | --- | --- | --- |
+| Identity, tools, memory, FLOW, lifecycle | Same | Same | Same |
+| Reply style | Text, markdown, and rich content | Short and spoken. See [Set the spoken style](#set-the-spoken-style). | Localized messages and a glossary. See [Multi-language support](#multi-language-support). |
+| Listening | Not used | Silence, barge-in, keypad, and secure input. See [Set how the agent listens](#set-how-the-agent-listens). | Not used |
+| Greeting | `ON_START` | `ON_START`, or the channel **Welcome Message** on a Pipeline voice channel | Same as the channel |
 | Language handling | One language by default | One language by default | Language detection, routing, and per-language models |
-| Channel | Web, SDK, or messaging | Voice channel, Pipeline or Realtime | Any channel |
+| Channel | Web, SDK, or messaging | Voice channel, Pipeline or Realtime. See [Create a voice channel](#create-a-voice-channel). | Any channel |
+| Testing | **Chat** tab in Studio | Soft Phone. See [Test your voice agent](#test-your-voice-agent). | Same as the channel |
 
-Build the agent with this guide. Then complete [Voice agents](#voice-agents) for voice, and [Multi-language support](#multi-language-support) for more than one language. For design advice, see [Design voice conversations](/agent-platform/best-practices/design-voice-conversations) and [Build multilingual agents](/agent-platform/best-practices/multilingual-agents).
+You choose the channel at deployment, but plan for it before you write instructions. Voice callers hear your replies, so write short, plain replies and ask for one thing at a time. Chat users can read longer replies and use buttons, cards, and other rich content.
 
-## Create an agent in Studio
+Build and test the agent first. Then [enable voice](#enable-voice-for-your-agent) and [add languages](#multi-language-support). For design advice, see [Design voice conversations](/agent-platform/best-practices/design-voice-conversations) and [Build multilingual agents](/agent-platform/best-practices/multilingual-agents).
+
+## Build and test an agent
+
+Create the agent, define what it does, choose the model, add a tool, and test it in Studio.
+
+<Note>Before you start, [access the platform](/agent-platform/getting-started#access-the-platform) and make sure you have a project, developer permissions on it, and an LLM provider configured. To build with Arch, MCP, or the CLI instead, see [Ways to build on the platform](/agent-platform/getting-started#ways-to-build-on-the-platform).</Note>
+
+<Steps>
+<Step title="Create an agent in Studio" titleSize="h3">
 
 You need developer permissions on the project.
 
@@ -59,12 +70,12 @@ You need developer permissions on the project.
 | Field | Required | Description |
 | --- | --- | --- |
 | **Agent Name** | Yes | Starts with a letter. Letters, numbers, and underscores only. Maximum 100 characters. |
-| **Execution Mode** | Yes | **Reasoning** (default), or **FLOW-based** for structured steps. |
+| **Execution Mode** | Yes | **Reasoning** (default), or **FLOW-based** for structured steps. See [Reasoning and FLOW](#reasoning-and-flow). |
 | **Description** | No | A short summary of what the agent does. |
 
 3. Select **Create Agent**. The agent editor opens.
 
-### Choose an editor
+#### Choose an editor
 
 {/* REVIEW: The handbook calls these views Designer and Editor. Confirm the current UI names. */}
 Configure the agent in either editor. They stay in sync.
@@ -106,7 +117,8 @@ The ABL Editor has syntax highlighting, inline error markers, and slash commands
   </Accordion>
 </AccordionGroup>
 
-## Define identity and persona
+</Step>
+<Step title="Define identity and persona" titleSize="h3">
 
 Identity and persona set how the agent communicates: its tone, expertise, and boundaries.
 
@@ -138,7 +150,8 @@ LIMITATIONS:
 
 <Tip>Keep `GOAL` and `PERSONA` short and specific. Vague text leads to inconsistent behavior.</Tip>
 
-## Configure execution
+</Step>
+<Step title="Configure execution" titleSize="h3">
 
 The `EXECUTION` block sets the model, token limits, reasoning depth, and timeouts.
 
@@ -168,17 +181,15 @@ EXECUTION:
 {/* REVIEW: The handbook says keep the default of 10 tool rounds and raise it only when a trace shows the need. Confirm the recommended value. */}
 <Tip>Set `max_reasoning_iterations` to stop runaway tool loops. Raise it only when a trace shows a turn that needs more rounds.</Tip>
 
-## Add tools
+</Step>
+<Step title="Add tools" titleSize="h3">
 
 Tools let an agent call APIs, retrieve data, or trigger actions. Create the tool at the project level, then attach it to the agent in Studio or in the `TOOLS` block.
 
 ```yaml
 TOOLS:
-  search_policies(query: string, category: string) -> {results: object[], totalCount: number}
-    description: "Search policy documents by query and category"
-
-  get_policy_detail(policy_id: string) -> {title: string, content: string, effectiveDate: string}
-    description: "Get full text of a specific policy"
+  kb_search(query: string, locale: string) -> {results: array, top_score: number}
+    description: "Search the policy documents in the knowledge base and return ranked snippets."
 ```
 
 The model reads each tool's description to choose a tool, so write descriptions that are clear and accurate.
@@ -188,14 +199,251 @@ When the agent must use tools in a fixed order, list the steps in `INSTRUCTIONS`
 ```yaml
 INSTRUCTIONS: |
   1. Identify the policy area from the user's question.
-  2. Search relevant documents with search_policies.
+  2. Search the policy documents with kb_search.
   3. If results are ambiguous, ask the user to narrow down.
   4. Present the answer with source attribution.
 ```
 
 For tool types and settings, see [Tools](/agent-platform/tools-overview).
 
-## Collect and remember data
+</Step>
+<Step title="Test your agent" titleSize="h3">
+
+Test the agent in Studio's chat. Test chats run on the working copy.
+
+1. On the agent page, select the **Chat** tab.
+2. Send messages. The agent's replies appear in real time.
+3. In the debug panel, open the trace events. Confirm the `kb_search` call, then check that the reply used its results.
+
+For more on traces, see [Using traces to debug](/agent-platform/testing#using-traces-to-debug).
+
+This is the agent so far:
+
+```yaml expandable=true
+AGENT: Policy_Advisor
+
+GOAL: |
+  Answer customer policy questions using semantic search
+  over policy documents. Clarify ambiguous queries before searching.
+
+PERSONA: |
+  Knowledgeable and patient policy specialist.
+  Cites source documents when answering. Never guesses.
+
+LIMITATIONS:
+  - "Cannot modify or override existing policies"
+  - "Cannot process refunds directly"
+
+EXECUTION:
+  model: claude-sonnet-4-5-20250929
+  temperature: 0.3
+  max_tokens: 4096
+  max_reasoning_iterations: 15
+  tool_timeout: 10000
+
+TOOLS:
+  kb_search(query: string, locale: string) -> {results: array, top_score: number}
+    description: "Search the policy documents in the knowledge base and return ranked snippets."
+
+INSTRUCTIONS: |
+  1. Identify the policy area from the user's question.
+  2. Search the policy documents with kb_search.
+  3. If results are ambiguous, ask the user to narrow down.
+  4. Present the answer with source attribution.
+```
+
+#### Debug panel
+
+The chat view has a debug panel.
+
+| Panel item             | What it shows                                                             |
+|------------------------|---------------------------------------------------------------------------|
+| **Trace events**       | Every action the agent takes: LLM calls, tool invocations, state changes. |
+| **Timing information** | Latency for each operation.                                               |
+| **Variable state**     | Current values of session variables.                                      |
+
+<Tip>Use trace events to see why the agent made a decision. They show each reasoning step, tool call, and reply.</Tip>
+
+##### Debug context
+
+The **Debug context** dialog sets context for new chats and Studio voice test calls in the project.
+
+| Field                          | Description                                                                                                                                            |
+|--------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Version                        | Choose the working draft, a published version, or an active deployment to debug. Studio remembers the selection when you close and reopen the popover. |
+| Session metadata (JSON)        | Enter a JSON object. Studio passes it as `_metadata` when the chat starts. The value isn't saved and is cleared when you leave the chat.               |
+| Language, locale, and timezone | Set the canonical interaction context used by Runtime when the session starts and on each turn.                                                        |
+| Caller data                    | Add arbitrary key/value pairs exposed as session variables. Use the interaction context fields for canonical language, locale, and timezone values.    |
+| Agent Context (JSON)           | Enter a JSON object that the agent can read from `agent_context.*` starting with the first message. Applies to text chats only, not Studio voice test calls. |
+
+These settings apply to new chats and Studio voice test calls in the current project. They're stored in the browser and cleared when you sign out.
+
+#### Sessions
+
+Each test conversation creates a session. You can start a new session, view past sessions on the **Sessions** page, and copy a session ID for debugging.
+</Step>
+</Steps>
+
+Your agent is ready. To add voice, continue to [Enable voice for your agent](#enable-voice-for-your-agent). To add more behavior, go to [Extend your agent's capabilities](#extend-your-agents-capabilities).
+
+## Enable voice for your agent
+
+Deploy the agent you built to a voice channel for phone or SIP calls. Add voice credentials, connect the channel, tune the agent for speech and then test it with the Soft Phone.
+
+<Tip>For voice scripts, recovery, and transfers, see [Design voice conversations](/agent-platform/best-practices/design-voice-conversations). For test plans, see [Test voice agents](/agent-platform/best-practices/test-voice-agents).</Tip>
+
+<Steps>
+<Step title="Choose a voice architecture" titleSize="h3">
+
+
+The voice processing path depends on the architecture.
+
+| | Pipeline voice | Realtime voice |
+| --- | --- | --- |
+| How it works | Speech-to-text (STT), then the agent, then text-to-speech (TTS) | One speech-to-speech (S2S) model |
+| Credentials | STT and TTS services, set up independently | An S2S provider: OpenAI Realtime, Google Gemini Live, or Grok Realtime |
+| Listening settings in ABL | Most apply, such as `on_no_input`, `DTMF:`, and barge-in | Many don't apply, because the model provider owns turn detection and delivery |
+| Dynamic no-input replies | Supported | Not supported |
+
+Pick the architecture when you create the channel. Each setting in the [voice reference](/agent-platform/abl/reference/voice) states where it applies.
+
+</Step>
+<Step title="Add voice service credentials" titleSize="h3">
+
+
+1. Go to **Workspace Settings** > **AI Configuration** > **Voice Services**.
+2. For Pipeline voice, add STT and TTS credentials. For Realtime voice, add an S2S provider.
+
+Credentials are set at the workspace level and reused across projects. See [Configure voice services](/agent-platform/administration/ai-configuration#voice-services).
+
+</Step>
+<Step title="Create a voice channel" titleSize="h3">
+
+
+Create a Pipeline Voice or Realtime LLM Voice channel under **Deployments** > **Channels**. Enable **Soft Phone** in the call routing to test without a phone number.
+
+For setup steps and settings, see [Voice channels](/agent-platform/channels#voice-channels). Other voice integrations, such as VXML IVR, Genesys Audio Connector, and AudioCodes, are also available.
+
+</Step>
+<Step title="Tune the agent for speech" titleSize="h3">
+
+The agent works with default speaking and listening behavior. Set these only when you need custom behavior.
+
+#### Set the spoken style
+
+Callers hear your replies, so keep them short and plain. Set `EXECUTION.voice.instructions` to give spoken-style rules. Your instructions replace the default spoken-style rules, so restate rules such as "plain speech, no lists."
+
+The runtime strips markdown from `RESPOND:` text before it sends the text to TTS. Add a `VOICE:` block only when you need to override this for a step:
+
+```yaml
+RESPOND: "Your appointment is confirmed."
+VOICE:
+  ssml: "<speak>Your appointment is <emphasis>confirmed</emphasis>.<break time='500ms'/></speak>"
+  plain_text: "Your appointment is confirmed."
+```
+
+Use `VOICE:` for:
+
+- SSML markup, such as prosody, pauses, emphasis, and phonemes.
+- A different spoken version than the text. For example, `RESPOND:` has a formatted table and you want a short spoken summary.
+- Voice-specific instructions for realtime providers, such as OpenAI Realtime or Gemini Live.
+
+See [Voice output](/agent-platform/abl/reference/voice#voice-output-voice).
+
+To set voice defaults for the whole agent, use a behavior profile. The profile applies to every response on the voice channel, so you don't change each `RESPOND:` block.
+
+```yaml expandable=true
+# voice-optimized.behavior_profile.abl
+BEHAVIOR_PROFILE: voice-optimized
+PRIORITY: 10
+WHEN: context.channel == "voice"
+INSTRUCTIONS: "Keep responses under 2 sentences. No bullet points or markdown formatting."
+VOICE:
+  instructions: "Speak in a warm, conversational tone."
+RESPONSE_RULES:
+  max_buttons: 0
+  fallback_format: plain_text
+  max_response_length: 200
+```
+
+Reference it in the agent:
+
+```yaml
+AGENT: SupportAgent
+USE BEHAVIOR_PROFILE: voice-optimized
+```
+
+To keep one agent for chat and voice, see [Keep one agent with a phone behavior profile](/agent-platform/best-practices/design-voice-conversations#keep-one-agent-with-a-phone-behavior-profile) and [Behavior profiles](/agent-platform/administration/agent-behavior-settings#behavior-profiles).
+
+#### Set how the agent listens
+
+Use `CONVERSATION.listening` to decide what happens when the caller stays silent (`on_no_input`) or talks over the agent (barge-in). Use `DTMF:` on a `GATHER` field for keypad entry, and `SECURE_INPUT` for card numbers and other sensitive values.
+
+For every listening setting, with values, defaults, and where each applies, see [Listen: control how the bot hears the caller](/agent-platform/abl/reference/voice#listen-control-how-the-bot-hears-the-caller).
+
+To apply listening settings to all agents in the project, see [Set default listening settings](/agent-platform/administration/general-settings#listening).
+
+#### Plan hold, hang-up, and transfer
+
+Use `COMPLETE` to end the call, `on_caller_hold_limit` to handle a long hold, and `ESCALATE` to transfer the call to a human. See [Hold, hang up, and transfer](/agent-platform/abl/reference/voice#hold-hang-up-and-transfer).
+
+For SIP headers on transfers, see [Pass custom SIP headers on voice transfer](/agent-platform/sending-custom-sip-headers) and [Handle incoming SIP headers in agents](/agent-platform/handle-incoming-sip-headers).
+
+#### Extend the Policy_Advisor example for voice
+
+Keep the identity, model, tool, and instructions from the earlier example. Add voice settings to the existing `EXECUTION` block, then add listening behavior and a spoken greeting. The agent greets the caller, speaks in short sentences, and hangs up politely after two silent prompts.
+
+```yaml expandable=true
+EXECUTION:
+  # Keep the model and other settings from the earlier example.
+  voice:
+    instructions: "Answer in short, plain sentences. Do not read out lists."
+
+CONVERSATION:
+  listening:
+    on_no_input:
+      enabled: true
+      mode: static
+      timeout_ms: 5000
+      max_retries: 2
+      messages:
+        - text: "Are you still there?"
+      on_exhausted: hangup
+      exhausted_message: "I will end the call now. Goodbye."
+
+ON_START:
+  RESPOND: "Hello, I can help you find answers about your policies. What would you like to know?"
+```
+
+For every voice setting, see [Voice in ABL](/agent-platform/abl/reference/voice).
+
+</Step>
+<Step title="Test your voice agent" titleSize="h3">
+
+
+Test with the Soft Phone before you use a real phone number.
+
+1. In the voice channel's call routing, check that **Soft Phone** is enabled.
+2. On the agent page, select **Chat**, then **New Chat or Call**.
+3. When a voice channel exists, the simulator shows **Voice ready**. Select it, then select **Inbound Call**.
+4. Select your voice channel, then select **Start Call**. The Soft Phone opens.
+5. Speak to the agent. Check that it hears you and answers with audio.
+6. Select **Open in Observatory** to review the session, trace events, and voice quality metrics. Confirm that tool calls ran as expected. See [Sessions](/agent-platform/sessions) and [Check each test call](/agent-platform/best-practices/test-voice-agents#check-each-test-call).
+
+You can also select **Launch dialer** in the channel's Soft Phone settings to start a test call.
+
+After the test passes, enable **Phone Number (DID)** in the channel for real inbound or outbound calls.
+
+</Step>
+</Steps>
+
+## Extend your agent's capabilities
+
+Add these features when the agent needs them. They apply to chat and voice unless a section says otherwise.
+
+<a id="collect-and-remember-data"></a>
+<Accordion title="Collect and remember data">
+
 
 **Gather**: define the fields the agent collects from users, with types and required flags. `GATHER` works in the agent and in flow steps. See [Gather data from users](/agent-platform/gather-data).
 
@@ -220,7 +468,11 @@ MEMORY:
 
 See [Memory and state](/agent-platform/memory-and-state).
 
-## Add a FLOW section
+</Accordion>
+
+<a id="add-a-flow-section"></a>
+<Accordion title="Add a FLOW section">
+
 
 Add a `FLOW` section for fixed, step-by-step control, such as bookings, identity checks, or data collection.
 
@@ -312,7 +564,7 @@ COMPLETE:
 
 Steps with `REASONING: false` follow the defined path. `THEN` names the next step. `ON_INPUT` branches on the user's reply. For entry points, tool-call branching, `SET`, and `MAX_ATTEMPTS`, see the [FLOW reference](/agent-platform/abl/reference/flow).
 
-### Mix reasoning and deterministic steps
+#### Mix reasoning and deterministic steps
 
 One flow can combine deterministic steps (`REASONING: false`) with reasoning steps (`REASONING: true`). Use deterministic steps for data collection and confirmations. Use reasoning steps for open-ended research or analysis.
 
@@ -381,13 +633,17 @@ Key properties for reasoning steps:
 | `MAX_TURNS`        | Maximum reasoning cycles before a forced exit. Default is 10. |
 | `STEP_CONSTRAINTS` | Additional constraints scoped to this reasoning zone.         |
 
-## Customize responses
+</Accordion>
+
+<a id="customize-responses"></a>
+<Accordion title="Customize responses">
+
 
 Every `RESPOND` supports variables, templates, rich content, interactive actions, and channel-specific formats. The platform renders the right format for the active channel.
 
 <Note>On voice, the runtime speaks the `VOICE:` block if there is one. Otherwise it speaks the `RESPOND:` text with markdown removed. Rich content isn't used. Write replies that work as plain speech. See [Channel selection](/agent-platform/abl/reference/rich-content#channel-selection).</Note>
 
-### RESPOND
+#### RESPOND
 
 Use `RESPOND` for text replies. Insert values from variables, memory, and tool results with `{{ }}`.
 
@@ -411,7 +667,7 @@ For a reusable or channel-specific reply, reference a template:
 RESPOND: TEMPLATE(welcome_message)
 ```
 
-### Multiple responses in one turn
+#### Multiple responses in one turn
 
 An agent can send several messages in one turn, in any mix of text and templates. Each message streams to the client separately, in order, and isn't merged with the next one.
 
@@ -473,7 +729,7 @@ FLOW:
 
 The client receives three messages in order: `first_template`, the plain text, and `second_template`.
 
-### Templates
+#### Templates
 
 Use the `TEMPLATES` block to define named replies once and reuse them with `TEMPLATE(name)` in `RESPOND`, `ON_START`, and `COMPLETE`.
 
@@ -499,7 +755,7 @@ The platform automatically selects the appropriate template variant for the acti
 
 See [Templates](/agent-platform/abl/reference/rich-content#templates).
 
-### Interactive responses
+#### Interactive responses
 
 Add interactive elements to any reply with `ACTIONS`:
 
@@ -510,7 +766,7 @@ Add interactive elements to any reply with `ACTIONS`:
 
 See [Interactive actions](/agent-platform/abl/reference/rich-content#interactive-actions).
 
-### Carousels
+#### Carousels
 
 A carousel shows a row of cards that users scroll, each with a title, subtitle, image, and buttons. Use it for several options, such as hotels, products, or flights. Define it in `RICH_CONTENT` with the `CAROUSEL` key.
 
@@ -544,7 +800,7 @@ RICH_CONTENT:
 
 For all card properties, see [Carousels](/agent-platform/abl/reference/rich-content#carousels).
 
-### System messages
+#### System messages
 
 Use `MESSAGES` to set the text of system-generated replies so they match the agent's tone.
 
@@ -557,11 +813,15 @@ MESSAGES:
   gather_prompt: "I need a bit more information to help you."
 ```
 
-## Lifecycle
+</Accordion>
+
+<a id="lifecycle"></a>
+<Accordion title="Lifecycle">
+
 
 Define what happens when a session starts, when an error occurs, and when the task is complete.
 
-### On start
+#### On start
 
 `ON_START` runs once when the agent starts a session, either as the session entry point or after a handoff. Use it for a greeting, tool calls, and variable setup.
 
@@ -641,7 +901,7 @@ ON_START:
       MESSAGE_KEY: welcome_default
 ```
 
-### Error handling
+#### Error handling
 
 Define how the agent recovers from tool failures, timeouts, and unexpected input, so conversations don't dead-end. In Studio, add a handler on the **Error Handling** page.
 
@@ -662,7 +922,7 @@ Define how the agent recovers from tool failures, timeouts, and unexpected input
 
 For example, when a tool call fails, the agent can say "An error occurred. Please try again." and then retry the step, continue, or hand off to another agent.
 
-### Completion
+#### Completion
 
 Completion conditions decide when the task is done. Each condition is an expression on the conversation state, such as whether all required information is collected. When it's true, the agent marks the task complete and can send a final message.
 
@@ -680,7 +940,11 @@ COMPLETE:
     RESPOND: "Is there anything else about our policies I can help with?"
 ```
 
-## Coordinate with other agents
+</Accordion>
+
+<a id="coordinate-with-other-agents"></a>
+<Accordion title="Coordinate with other agents">
+
 
 Configure how the agent hands off work to other agents or to people.
 
@@ -690,7 +954,7 @@ Configure how the agent hands off work to other agents or to people.
 
 See [Multi-agent orchestration](/agent-platform/orchestrate).
 
-### Supervisor agents
+#### Supervisor agents
 
 In a multi-agent project, use the `SUPERVISOR` block to define the agent that routes to the others.
 
@@ -712,13 +976,18 @@ LIMITATIONS:
   - "Must not share personal information about other customers"
 ```
 
-## Behavior and safety
+</Accordion>
+
+<a id="behavior-and-safety"></a>
+<Accordion title="Behavior and safety">
+
 
 Control how the agent enforces rules, filters content, and adapts to context.
 
 - **Constraints**: rules enforced at runtime. Unlike `LIMITATIONS`, a constraint with `REQUIRE` and `ON_FAIL` is hard enforcement. The agent can't proceed until the condition is met.
 - **Guardrails**: content safety policies on inputs and outputs. They can block, redact, or flag content with built-in checks or external moderation providers.
 - **Behavior profiles**: settings that apply in a given context, such as a user role, a session flag, or a channel.
+
 
 ```yaml expandable=true
 GUARDRAILS:
@@ -742,7 +1011,11 @@ GUARDRAILS:
 
 See [Safety and guardrails](/agent-platform/safety-and-guardrails) and [Behavior profiles](/agent-platform/abl/reference/behavior-profiles).
 
-## NLU intent classification
+</Accordion>
+
+<a id="nlu-intent-classification"></a>
+<Accordion title="NLU intent classification">
+
 
 Use the `NLU` block to define intents, entities, and categories that classify user messages. It supports:
 
@@ -756,11 +1029,15 @@ Use the `NLU` block to define intents, entities, and categories that classify us
 
 See [NLU configuration](/agent-platform/abl/reference/nlu).
 
-## Multi-language support
+</Accordion>
+
+<a id="multi-language-support"></a>
+<Accordion title="Multi-language support">
+
 
 Build agents that detect the user's language and reply in it. These settings apply to chat and voice. On voice, also check that the speech settings support each language. For a language policy and test plan, see [Build multilingual agents](/agent-platform/best-practices/multilingual-agents).
 
-### Set up language detection
+#### Set up language detection
 
 ```yaml
 NLU:
@@ -775,7 +1052,7 @@ NLU:
 | `default_language`    | Fallback when detection is ambiguous.                                           |
 | `allow_code_switching` | Whether the agent follows the user when they switch languages mid-conversation. |
 
-### Route by language
+#### Route by language
 
 ```yaml
 HANDOFF:
@@ -790,7 +1067,7 @@ HANDOFF:
       pass: [customer_id, query]
 ```
 
-### Provide language-specific models
+#### Provide language-specific models
 
 Route to different LLM models based on detected language.
 
@@ -804,7 +1081,7 @@ NLU:
     ja: "gpt-4o"
 ```
 
-### Add a glossary
+#### Add a glossary
 
 Add domain terms so the agent uses the right terminology in every language.
 
@@ -819,7 +1096,7 @@ NLU:
     - "guardrail policy"
 ```
 
-### Set the language per environment
+#### Set the language per environment
 
 For a deployment that serves one market:
 
@@ -830,7 +1107,7 @@ NLU:
 
 Configure `DEFAULT_LANGUAGE=es` for your Spanish market deployment and `DEFAULT_LANGUAGE=en` for English.
 
-### Use localized messages
+#### Use localized messages
 
 Keep translated text in locale assets at **Project** > **Settings** > **Localization**. Reference a message with `{{locale.<key>}}`. The same key returns the text for the resolved language.
 
@@ -840,107 +1117,19 @@ RESPOND: "{{locale.greeting}}"
 
 See [Localization](/agent-platform/administration/general-settings#localization).
 
-## Voice agents
+</Accordion>
 
-Deploy an agent to a voice channel for phone or SIP calls. Build the agent as described in this guide, tune it for speech, then connect it to the channel.
+<a id="use-the-ai-architect"></a>
+<Accordion title="Use the AI Architect">
 
-<Tip>For voice scripts, recovery, and transfers, see [Design voice conversations](/agent-platform/best-practices/design-voice-conversations). For test plans, see [Test voice agents](/agent-platform/best-practices/test-voice-agents).</Tip>
-
-### Build a voice agent
-
-1. **Build the agent.** Define the identity, tools, and flow as for any agent.
-2. **Write for the ear.** Callers hear your replies, so keep them short and plain. Set `EXECUTION.voice.instructions` to give spoken-style rules. The runtime strips markdown from `RESPOND:` text before speech. Add a `VOICE:` block only when you need SSML or a different spoken version. Your instructions replace the default spoken-style rules, so restate rules such as "plain speech, no lists". To keep one agent for chat and voice, use a [phone behavior profile](/agent-platform/best-practices/design-voice-conversations#keep-one-agent-with-a-phone-behavior-profile).
-3. **Set how the agent listens.** Use `CONVERSATION.listening` to decide what happens when the caller stays silent (`on_no_input`) or talks over the agent (barge-in). Use `DTMF:` on a `GATHER` field for keypad entry, and `SECURE_INPUT` for card numbers and other sensitive values.
-4. **Plan hold, hang-up, and transfer.** Use `COMPLETE` to end the call, `on_caller_hold_limit` to handle a long hold, and `ESCALATE` to transfer the call to a human.
-5. **Connect a voice channel.** Follow [Enable voice interactions](/agent-platform/enable-voice) to add credentials, create the channel, and test with the Soft Phone.
-6. **Check the traces.** After a test call, open the [traces](/agent-platform/testing#using-traces-to-debug) to confirm what the agent heard and said. See [Check each test call](/agent-platform/best-practices/test-voice-agents#check-each-test-call).
-
-### Choose a voice architecture
-
-|                           | Pipeline voice                                           | Realtime voice                                                                 |
-|---------------------------|----------------------------------------------------------|--------------------------------------------------------------------------------|
-| How it works              | Speech-to-text, then the agent, then text-to-speech      | One speech-to-speech model                                                     |
-| Listening settings in ABL | Most apply, such as `on_no_input`, `DTMF:`, and barge-in | Many don't apply, because the model provider owns turn detection and delivery |
-| Dynamic no-input replies  | Supported                                                | Not supported                                                                  |
-
-Pick the architecture when you create the channel. Each voice setting in the [voice reference](/agent-platform/abl/reference/voice) states where it applies.
-
-### Example
-
-This agent greets the caller, speaks in short sentences, and hangs up politely after two silent prompts.
-
-```yaml expandable=true
-AGENT: Appointment_Agent
-GOAL: "Help callers book and confirm appointments"
-
-EXECUTION:
-  voice:
-    instructions: "Speak in short, plain sentences. Do not read out lists."
-
-CONVERSATION:
-  listening:
-    on_no_input:
-      enabled: true
-      mode: static
-      timeout_ms: 5000
-      max_retries: 2
-      messages:
-        - text: "Are you still there?"
-      on_exhausted: hangup
-      exhausted_message: "I will end the call now. Goodbye."
-
-ON_START:
-  RESPOND: "Hello, this is the appointment line. How can I help?"
-```
-
-For every voice setting, with values, defaults, and where each applies, see [Voice in ABL](/agent-platform/abl/reference/voice).
-
-## Test your agent
-
-Test the agent in Studio's chat. Test chats run on the working copy.
-
-1. Open the agent from the **Agents** list.
-2. Open the **Chat** tab.
-3. Send messages. The agent's replies appear in real time.
-
-To test a voice agent, call it with the Soft Phone. See [Enable voice interactions](/agent-platform/enable-voice).
-
-### Debug panel
-
-The chat view has a debug panel.
-
-| Panel item             | What it shows                                                             |
-|------------------------|---------------------------------------------------------------------------|
-| **Trace events**       | Every action the agent takes: LLM calls, tool invocations, state changes. |
-| **Timing information** | Latency for each operation.                                               |
-| **Variable state**     | Current values of session variables.                                      |
-
-<Tip>Use trace events to see why the agent made a decision. They show each reasoning step, tool call, and reply.</Tip>
-
-#### Debug context
-
-The **Debug context** dialog sets context for new chats and Studio voice test calls in the project.
-
-| Field                          | Description                                                                                                                                            |
-|--------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Version                        | Choose the working draft, a published version, or an active deployment to debug. Studio remembers the selection when you close and reopen the popover. |
-| Session metadata (JSON)        | Enter a JSON object. Studio passes it as `_metadata` when the chat starts. The value isn't saved and is cleared when you leave the chat.               |
-| Language, locale, and timezone | Set the canonical interaction context used by Runtime when the session starts and on each turn.                                                        |
-| Caller data                    | Add arbitrary key/value pairs exposed as session variables. Use the interaction context fields for canonical language, locale, and timezone values.    |
-| Agent Context (JSON)           | Enter a JSON object that the agent can read from `agent_context.*` starting with the first message. Applies to text chats only, not Studio voice test calls. |
-
-These settings apply to new chats and Studio voice test calls in the current project. They're stored in the browser and cleared when you sign out.
-
-### Sessions
-
-Each test conversation creates a session. You can start a new session, view past sessions on the **Sessions** page, and copy a session ID for debugging.
-
-## Use the AI Architect
 
 The AI Architect is an AI assistant built into Studio. Open it from the **Architect** icon in the Studio header.
 It adapts to what you're editing. In a section such as Identity or Tools, it suggests changes as a diff that you can accept, reject, or refine.
 
 <Note>The AI Architect needs an LLM provider configured at **Admin** > **Arch**. Without one, the panel shows a warning.</Note>
+
+</Accordion>
+
 
 ## Troubleshooting
 
@@ -957,8 +1146,6 @@ It adapts to what you're editing. In a section such as Identity or Tools, it sug
 | **Reasoning step produces inconsistent results** | Add `STEP_CONSTRAINTS` to narrow the reasoning scope and use a specific step-level `GOAL`.                                                                                |
 | **Agent responding in the wrong language**       | Verify `allow_code_switching` is enabled. Add explicit instructions in `PERSONA` to respond in the user's language.                                                         |
 
-For NLU accuracy issues, see [NLU configuration](/agent-platform/abl/reference/nlu).
-
 ---
 
 {{related}}
@@ -972,5 +1159,5 @@ For NLU accuracy issues, see [NLU configuration](/agent-platform/abl/reference/n
 - [Memory and state](/agent-platform/memory-and-state): session and persistent memory.
 - [FLOW reference](/agent-platform/abl/reference/flow): full FLOW syntax.
 - [Tools reference](/agent-platform/abl/reference/tools): tool definition syntax.
-- [Enable voice interactions](/agent-platform/enable-voice): voice channel setup.
+- [Voice channels](/agent-platform/channels/voice): set up Realtime LLM Voice and Pipeline Voice channels.
 - [Voice in ABL](/agent-platform/abl/reference/voice): every voice setting in ABL.
