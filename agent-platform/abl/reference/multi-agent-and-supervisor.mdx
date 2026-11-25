@@ -608,6 +608,51 @@ HANDOFF:
 | `resume_with` | `string`                | Which utterance to replay when resuming. One of `original_handoff_utterance`, `latest_child_user_utterance`, `latest_session_user_utterance`, `forwarded_return_message`. |
 | `map`         | `Record<string,string>` | Copies child return fields into parent variables (child key → parent variable).                      |
 | `set`         | `Record<string,string>` | Parent assignments applied after `map`, using the same templated assignment shape as flow `ON_RESULT` branches. |
+| `CALL` (YAML: `calls`) | `string` (YAML: list) | Tools the parent runs when the child returns, one at a time, in written order. Each call takes `WITH`, `AS` and an optional `WHEN`. See [Tool calls on return](#tool-calls-on-return). |
+
+#### Tool calls on return
+
+`ON_RETURN` can run one or more declared tools when the child returns, so the parent has the data before it continues. Use it for lookups the parent always needs after the child, such as account and card details after a login.
+
+```yaml expandable=true
+HANDOFF:
+  - TO: Login_Agent
+    WHEN: "the customer is not logged in"
+    EXPECT_RETURN: true
+    ON_RETURN:
+      MAP:
+        is_authenticated: is_authenticated
+        customer_id: customer_id
+      CALL: get_account_info
+        WITH:
+          customer_id: customer_id
+        AS: account_info
+        WHEN: is_authenticated == true
+      CALL: get_card_info
+        WITH:
+          account_id: account_info.primary_account_id
+        AS: card_info
+        WHEN: is_authenticated == true
+      ACTION: resume_intent
+```
+
+In YAML, write the list as `on_return.calls`. Each entry has `tool`, `with`, `as` and `when`.
+
+- **Same shape as other calls.** `WITH` sets the inputs, `AS` names the result variable, and `WHEN` is an optional guard. Write all three indented under `CALL`. Repeat `CALL` to add a call. `WITH` or `AS` written beside `CALL` is the parser error `E203`.
+- **Order.** `CLEAR`, `map` and `set` run first. The calls then run one at a time, in written order, and never in parallel. Each call checks its guard, runs, binds its result and runs its tool hooks before the next call starts. A named handler's `RESPOND` and the configured action come after the last call.
+- **Later calls see earlier results.** A call reads its `WITH` and `WHEN` values when it starts, so `get_card_info` above can use `account_info`.
+- **Guards.** A guard that is false or cannot be evaluated skips only that call. The next call still runs. A call with no guard always runs.
+- **Missing input.** If a required input is missing when a call starts, for example because it reads the result of a call that was skipped or failed, the tool does not run. Its `AS` variable holds the standard "required input missing" result and the next call runs. Guard such a call on the earlier result, for example `WHEN: has(account_info.primary_account_id)`.
+- **Where the result goes.** The call runs on the parent, with the parent's tools, data and permissions, and through the normal tool safety checks. The result is stored under `AS`. Without `AS`, it is stored as `_<tool>_result`, as for an `ON_START` call. If `AS` names a variable that `map` or `set` also writes, the call's result replaces that value, because calls run after `map` and `set`.
+- **Hooks and errors.** A tool `ON_RESULT` or `ON_ERROR` hook that replies, completes, hands off or escalates owns the turn. The later calls, the handler's `RESPOND` and the configured action do not run. A hook that only sets values lets the next call run. A call that returns an error result follows the tool's `ON_ERROR` handling in the same way. A call that throws an unexpected error is logged and the next call runs. A cancelled turn stops the calls. Values already mapped, set and bound stay applied, and no call is retried.
+- **Only calls.** `ON_RETURN` with only calls is valid. Its action defaults to `continue`.
+- **Once per return.** The calls run once per return. A map-only re-route of a paused child never runs them. They run when the child actually returns.
+- **Declared tools only.** Each tool must be declared by the parent agent.
+
+| Code | Severity | Cause |
+| ---- | -------- | ----- |
+| [`E337`](/agent-platform/abl/reference/errors-and-warnings#e337) | Error | A `CALL` in `ON_RETURN` has no tool name. |
+| [`E338`](/agent-platform/abl/reference/errors-and-warnings#e338) | Error | Two calls in one `ON_RETURN` store their result in the same variable: the same `AS`, or the same `_<tool>_result` when `AS` is absent. Give each call its own `AS`. The same tool can run twice with different `AS` names. |
 
 ### Return handlers
 
