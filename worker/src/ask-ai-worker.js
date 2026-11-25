@@ -97,7 +97,7 @@ export default {
           .slice(0, 240);
         console.error(`Model provider error: HTTP ${response.status}, code ${String(errorCode).slice(0, 100)}, message ${errorMessage}`);
         const message = response.status === 429
-          ? "All free AI models are busy right now. Please try again shortly."
+          ? "All AI models are busy right now. Please try again shortly."
           : "The model provider could not answer right now.";
         return json({ error: message }, 502, origin, allowed);
       }
@@ -105,7 +105,7 @@ export default {
       const answer = result.choices?.[0]?.message?.content?.trim();
       if (!answer) return json({ error: "The model returned an empty answer." }, 502, origin, allowed);
       const noAnswer = /^I couldn't find that in the AI for Service documentation\.?$/i.test(answer);
-      const sources = noAnswer ? [] : uniqueSources(contextItems.map(({ item }) => ({ title: item.title, url: item.url })));
+      const sources = noAnswer ? [] : selectRelevantSources(contextItems, question, answer);
       return json({ answer, sources }, 200, origin, allowed);
     } catch (error) {
       console.error("Assistant request failed", error?.message || error);
@@ -248,6 +248,65 @@ function editDistanceWithin(left, right, maxDistance) {
 function isAiForServiceDoc(doc) {
   const path = String(doc.url || "").split(/[?#]/, 1)[0];
   return path === "/ai-for-service" || path.startsWith("/ai-for-service/");
+}
+
+const SOURCE_ACTION_WORDS = new Set([
+  "configure", "configured", "configures", "configuration", "configurations", "set",
+]);
+
+function sourceTerms(value) {
+  return [...new Set(tokenize(value)
+    .flatMap((term) => term.split(/[-_]+/))
+    .filter((term) => term.length > 1 && !STOP_WORDS.has(term) && !SOURCE_ACTION_WORDS.has(term)))];
+}
+
+function selectRelevantSources(contextItems, question, answer) {
+  const questionTerms = sourceTerms(question);
+  const answerTerms = sourceTerms(answer);
+  const candidates = contextItems.map(({ item }) => {
+    const pagePath = String(item.url || "")
+      .split(/[?#]/, 1)[0]
+      .replace(/^\/ai-for-service\/?/, "");
+    const metadataText = `${item.title || ""} ${item.heading || ""} ${pagePath}`;
+    const metadataTerms = new Set(sourceTerms(metadataText));
+    const passageText = `${item.title || ""} ${item.heading || ""} ${String(item.text || "").slice(0, 2500)}`;
+    const passageTerms = new Set(sourceTerms(passageText));
+    const matchedQuestionTerms = questionTerms.filter((term) => metadataTerms.has(term)).length;
+    const queryCoverage = questionTerms.length ? matchedQuestionTerms / questionTerms.length : 0;
+    const answerHits = answerTerms.filter((term) => passageTerms.has(term)).length;
+    const answerCoverage = answerTerms.length ? answerHits / answerTerms.length : 0;
+    return {
+      source: { title: item.title, url: item.url },
+      queryCoverage,
+      answerHits,
+      answerCoverage,
+      score: queryCoverage * 6 + answerCoverage * 3 + (Number(item.score) || 0) / 100,
+      retrievalScore: Number(item.score) || 0,
+    };
+  });
+  if (!candidates.length) return [];
+
+  const bestAnswerCoverage = Math.max(...candidates.map((candidate) => candidate.answerCoverage));
+  const answerCoverageThreshold = Math.max(0.01, bestAnswerCoverage * 0.7);
+  const minimumAnswerHits = answerTerms.length <= 4 ? 1 : 2;
+  const supported = candidates.filter((candidate) =>
+    candidate.answerHits >= minimumAnswerHits && candidate.answerCoverage >= answerCoverageThreshold);
+  if (!supported.length) return [];
+
+  const bestCoverage = Math.max(...supported.map((candidate) => candidate.queryCoverage));
+  const coverageThreshold = bestCoverage >= 2 / 3
+    ? Math.max(2 / 3, bestCoverage - 0.05)
+    : Math.max(0, bestCoverage - 0.1);
+  const finalists = supported
+    .filter((candidate) => candidate.queryCoverage >= coverageThreshold)
+    .sort((a, b) => b.score - a.score);
+
+  const bestScore = finalists[0].score;
+  const selected = finalists
+    .filter((candidate) => candidate.score >= bestScore - 0.75)
+    .slice(0, 2)
+    .map((candidate) => candidate.source);
+  return uniqueSources(selected);
 }
 
 function uniqueSources(sources) {
