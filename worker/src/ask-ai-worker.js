@@ -90,7 +90,11 @@ export default {
       if (!response.ok) {
         const providerError = await response.json().catch(() => ({}));
         const errorCode = providerError.error?.code || providerError.error?.type || "unknown";
-        console.error(`Model provider error: HTTP ${response.status}, code ${String(errorCode).slice(0, 100)}`);
+        const errorMessage = String(providerError.error?.message || providerError.error?.type || "unknown")
+          .replace(/[\r\n]+/g, " ")
+          .replace(/sk-or-v1-[A-Za-z0-9]+/g, "[redacted]")
+          .slice(0, 240);
+        console.error(`Model provider error: HTTP ${response.status}, code ${String(errorCode).slice(0, 100)}, message ${errorMessage}`);
         const message = response.status === 429
           ? "All free AI models are busy right now. Please try again shortly."
           : "The model provider could not answer right now.";
