@@ -179,7 +179,7 @@ function getModelFallbacks(env) {
     .split(",")
     .map((model) => model.trim())
     .filter(Boolean);
-  return [...new Set([primary, ...configured])];
+  return [...new Set([primary, ...configured])].slice(0, 3);
 }
 
 function correctQueryTerm(term) {
