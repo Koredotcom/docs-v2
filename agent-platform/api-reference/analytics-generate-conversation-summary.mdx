@@ -1,0 +1,77 @@
+---
+title: Generate conversation summary
+openapi: "/agent-platform/api-specs/analytics-conversation-summary.yaml post /api/public/analytics/projects/{projectId}/conversation-summary"
+---
+
+<Badge icon="arrow-left" color="gray">[Back to the Analytics APIs overview](/agent-platform/api-reference/analytics-overview)</Badge>
+
+Use this endpoint to generate a model-written summary of one conversation. Summarize a saved session with `sessionId`, or send a transcript in `messages`. Send exactly one of the two. The endpoint doesn't store the summary.
+
+For a saved session, set `includeMessages` to `true` to also get the first page of the conversation history. The history has the same format as [List conversation messages](/agent-platform/api-reference/analytics-list-conversation-messages).
+
+## Prerequisites
+
+- A Platform Key bound to the project, sent in the `x-api-key` header, with the `analytics:read` permission.
+- A model bound to the `conversation_summary` feature in the project. Without it, the API returns `422 SUMMARY_MODEL_NOT_CONFIGURED`.
+- For a saved session, the ID of a session in the project.
+
+## Request
+
+Send a JSON body. Set `Content-Type` to `application/json` or `application/jose+json`. When request encryption is on for the Platform Key, send the body as an encrypted JWE. For details, see [List conversation messages using JWE payload](/agent-platform/api-reference/analytics-list-conversation-messages-with-encrypted-payload).
+
+| Field | Description |
+|:------|:------------|
+| `sessionId` | The ID of a session in the project. Send this or `messages`, not both. |
+| `messages` | The transcript to summarize, from 1 to 500 items. Send this or `sessionId`, not both. The content of all items together is limited to 100,000 characters. |
+| `messages[].role` | Required. `user` or `assistant`. |
+| `messages[].content` | Required. The message text, from 1 to 8,000 characters. |
+| `includeMessages` | Session mode only. When `true`, the response also includes the first page of the conversation history. The default is `false`. |
+
+In session mode, the summary covers at most the 2,000 newest user and assistant messages of the session.
+
+### Include conversation history
+
+With `includeMessages`, the response contains `messages`, `hasMore`, and `nextCursor`. They have the same format as the response of [List conversation messages](/agent-platform/api-reference/analytics-list-conversation-messages). The response holds only the first page. To get the rest, call List conversation messages with `sessionIds` set to the session ID and `cursor` set to `nextCursor`.
+
+## Response
+
+| Field | Description |
+|:------|:------------|
+| `success` | Always `true` on a successful response. |
+| `summary` | The summary text, after the project's PII read policy. `null` only when `summaryStatus` is `unavailable`. |
+| `summaryStatus` | `generated`, or `unavailable`. The status is `unavailable` only when the model failed and `includeMessages` was `true`. The response then still returns the history. |
+| `summaryError` | The `code` and `message` of the failure, when the summary is unavailable. |
+| `sessionId` | The canonical session ID. `null` in transcript mode. |
+| `messageCount` | The number of user and assistant messages available. For a session, this counts at most the 2,000 newest. |
+| `summarizedMessageCount` | The number of messages sent to the model. |
+| `truncated` | `true` when older messages were left out to fit the input budget. |
+| `requestId` | The ID of the request. It matches the LLM call ID and support logs. |
+| `messages`, `hasMore`, `nextCursor` | Only with `includeMessages`. The first page of conversation history and the paging values. |
+
+## How the summary is generated
+
+- Only user and assistant messages reach the model.
+- The prompt is the project's `llm_prompt.conversation_summary` override, or the platform default when there is no override. A deployed session uses the settings version it ran with.
+- The model is the one bound to the project's `conversation_summary` feature.
+- In transcript mode, the project's input PII redaction applies to user messages.
+- The summary passes through the project's PII read policy, as the content of [List conversation messages](/agent-platform/api-reference/analytics-list-conversation-messages) does.
+- The endpoint stores nothing.
+
+## Errors
+
+An error response has `success` set to `false` and an `error` object with a `code` and a `message`.
+
+| Status | Code | Cause |
+|:-------|:-----|:------|
+| `400` | `INVALID_REQUEST_BODY`, `INVALID_QUERY_PARAMETER`, `MISSING_REQUIRED_FILTER`, `CONFLICTING_INPUT`, `INVALID_MESSAGE_ROLE`, `TRANSCRIPT_TOO_LARGE` | The request body or query string is invalid. |
+| `400` | `ENCRYPTED_PAYLOAD_INVALID` | The JWE body is malformed, or its form doesn't match the key's request encryption setting. |
+| `401` | `AUTHENTICATION_REQUIRED` | The `x-api-key` header is missing or invalid. |
+| `403` | `FORBIDDEN` | The key lacks `analytics:read` or isn't bound to the project. |
+| `404` | `NOT_FOUND`, `SESSION_NOT_FOUND` | The project or the session doesn't exist. |
+| `415` | `UNSUPPORTED_MEDIA_TYPE` | The `Content-Type` isn't `application/json` or `application/jose+json`. |
+| `422` | `NO_SUMMARIZABLE_MESSAGES` | The conversation has no messages to summarize. |
+| `422` | `SUMMARY_MODEL_NOT_CONFIGURED` | The project has no model bound to the `conversation_summary` feature. |
+| `429` | `RATE_LIMITED` | The tenant request rate limit is exceeded. |
+| `502` | `SUMMARY_MODEL_FAILED` | The model failed. |
+| `503` | `SERVICE_UNAVAILABLE`, `ENCRYPTION_CONFIG_UNAVAILABLE` | The service or the key's encryption configuration is unavailable. Retry later. |
+| `504` | `SUMMARY_TIMEOUT` | The model didn't respond in time. |

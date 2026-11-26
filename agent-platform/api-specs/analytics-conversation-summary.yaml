@@ -1,0 +1,182 @@
+openapi: 3.1.0
+info:
+  title: Analytics Conversation Summary API
+  version: 1.0.0
+  summary: Generate a summary of one conversation, optionally with its history.
+  description: |
+    Returns a model-written summary of a saved session (`sessionId`) or of a
+    transcript the caller sends (`messages`). Send exactly one of the two.
+
+    With `sessionId`, set `includeMessages: true` to also receive the first page
+    of the session's conversation history. The `messages`, `hasMore` and
+    `nextCursor` fields have the same shape as the conversation-history API; page
+    the rest through `/conversation-history` with `sessionIds` and `cursor`.
+
+    Only user and assistant messages reach the model. The prompt is the project's
+    `llm_prompt.conversation_summary` override (a deployed session uses its
+    settings version), otherwise the platform default, followed by a fixed
+    instruction that the transcript is data. The model is the project's
+    `conversation_summary` feature binding. A passed transcript gets the project's
+    input PII redaction on user turns. The summary is rendered through the
+    project's PII read policy. Nothing is stored.
+
+    Authenticate with the `x-api-key` header. The key must be bound to the
+    project and have `analytics:read`. Request and response encryption follow the
+    Platform Key settings, as for the conversation-history POST form.
+servers:
+  - url: https://agents.example.com
+security:
+  - PlatformKey: []
+paths:
+  /api/public/analytics/projects/{projectId}/conversation-summary:
+    post:
+      operationId: generatePublicAnalyticsConversationSummary
+      tags: [Conversation Summary]
+      summary: Generate a conversation summary
+      parameters:
+        - name: projectId
+          in: path
+          required: true
+          schema: { type: string, minLength: 1 }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ConversationSummaryRequestBody' }
+            examples:
+              session:
+                value: { sessionId: c6c7dfd6-3988-468b-89b2-86907d5acbba, includeMessages: true }
+              transcript:
+                value:
+                  messages:
+                    - {
+                        role: assistant,
+                        content: 'Welcome to Venus Bank! May I have your customer ID?',
+                      }
+                    - { role: user, content: cust-001 }
+          application/jose+json:
+            schema:
+              type: string
+              description: Compact JWE request envelope when request encryption is on.
+      responses:
+        '200':
+          description: Summary generated, or history returned with an unavailable summary.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ConversationSummaryResponse' }
+        '400': { $ref: '#/components/responses/Error' }
+        '401': { $ref: '#/components/responses/Error' }
+        '403': { $ref: '#/components/responses/Error' }
+        '404': { $ref: '#/components/responses/Error' }
+        '415': { $ref: '#/components/responses/Error' }
+        '422': { $ref: '#/components/responses/Error' }
+        '429': { $ref: '#/components/responses/Error' }
+        '502': { $ref: '#/components/responses/Error' }
+        '503': { $ref: '#/components/responses/Error' }
+        '504': { $ref: '#/components/responses/Error' }
+components:
+  securitySchemes:
+    PlatformKey:
+      type: apiKey
+      in: header
+      name: x-api-key
+  responses:
+    Error:
+      description: |
+        Error envelope. Codes: INVALID_REQUEST_BODY, INVALID_QUERY_PARAMETER,
+        MISSING_REQUIRED_FILTER, CONFLICTING_INPUT, INVALID_MESSAGE_ROLE,
+        TRANSCRIPT_TOO_LARGE, ENCRYPTED_PAYLOAD_INVALID (400);
+        AUTHENTICATION_REQUIRED (401); FORBIDDEN (403); NOT_FOUND,
+        SESSION_NOT_FOUND (404); UNSUPPORTED_MEDIA_TYPE (415);
+        NO_SUMMARIZABLE_MESSAGES, SUMMARY_MODEL_NOT_CONFIGURED (422);
+        RATE_LIMITED (429); SUMMARY_MODEL_FAILED (502); SERVICE_UNAVAILABLE,
+        ENCRYPTION_CONFIG_UNAVAILABLE (503); SUMMARY_TIMEOUT (504).
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ErrorEnvelope' }
+  schemas:
+    ConversationSummaryRequestBody:
+      type: object
+      additionalProperties: false
+      properties:
+        sessionId:
+          type: string
+          minLength: 1
+          description: Session ID in this project. Send this or `messages`, not both.
+        messages:
+          type: array
+          minItems: 1
+          maxItems: 500
+          description: |
+            Transcript to summarize. Send this or `sessionId`, not both. Content is
+            limited to 100,000 characters in total.
+          items:
+            type: object
+            additionalProperties: false
+            required: [role, content]
+            properties:
+              role: { type: string, enum: [user, assistant] }
+              content: { type: string, minLength: 1, maxLength: 8000 }
+        includeMessages:
+          type: boolean
+          default: false
+          description: Session mode only. Also return the first page of conversation history.
+    ConversationSummaryResponse:
+      type: object
+      required:
+        - success
+        - summary
+        - summaryStatus
+        - sessionId
+        - messageCount
+        - summarizedMessageCount
+        - truncated
+        - requestId
+      properties:
+        success: { type: boolean, const: true }
+        summary:
+          type: [string, 'null']
+          description: The summary after the PII read policy. Null only when summaryStatus is unavailable.
+        summaryStatus:
+          type: string
+          enum: [generated, unavailable]
+          description: unavailable only when the model failed and includeMessages was true.
+        summaryError:
+          $ref: '#/components/schemas/ErrorBody'
+        sessionId:
+          type: [string, 'null']
+          description: Canonical session ID. Null in transcript mode.
+        messageCount:
+          type: integer
+          description: User and assistant messages available (at most 2,000 newest for a session).
+        summarizedMessageCount:
+          type: integer
+          description: Messages sent to the model.
+        truncated:
+          type: boolean
+          description: True when older messages were left out to fit the input budget.
+        requestId:
+          type: string
+          description: Matches the llm_metrics callId and support logs.
+        messages:
+          type: array
+          description: With includeMessages. Same items as the conversation-history API.
+          items: { type: object }
+        hasMore:
+          type: boolean
+          description: With includeMessages. More history exists after this page.
+        nextCursor:
+          type: [string, 'null']
+          description: With includeMessages. Pass to /conversation-history as cursor.
+    ErrorBody:
+      type: object
+      required: [code, message]
+      properties:
+        code: { type: string }
+        message: { type: string }
+    ErrorEnvelope:
+      type: object
+      required: [success, error]
+      properties:
+        success: { type: boolean, const: false }
+        error: { $ref: '#/components/schemas/ErrorBody' }
