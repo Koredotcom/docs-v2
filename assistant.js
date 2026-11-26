@@ -23,7 +23,7 @@
     #da-panel.da-open{display:flex;flex-direction:column} #da-head{display:flex;align-items:center;justify-content:space-between;padding:15px 17px;border-bottom:1px solid var(--da-line);font-weight:650}
     #da-head-actions{display:flex;align-items:center;gap:8px}#da-clear{border:1px solid var(--da-line);border-radius:8px;background:transparent;color:var(--da-muted);padding:6px 9px;font:inherit;font-size:12px;cursor:pointer}#da-close{border:0;background:transparent;font-size:22px;line-height:1;color:var(--da-muted);cursor:pointer} #da-messages{flex:1;overflow:auto;padding:16px;display:flex;flex-direction:column;gap:12px}
     .da-msg{max-width:92%;padding:11px 13px;border-radius:12px;white-space:pre-wrap;overflow-wrap:anywhere}.da-user{align-self:flex-end;background:var(--da-user)}.da-bot{align-self:flex-start;background:var(--da-bot)}
-    .da-sources{margin-top:9px;display:flex;flex-direction:column;gap:5px;font-size:12px}.da-sources a{color:var(--da-accent);text-decoration:underline}
+    .da-sources{margin-top:9px;display:flex;flex-direction:column;gap:5px;font-size:12px}.da-sources a{color:var(--da-accent);text-decoration:underline}.da-retry{display:inline-flex;align-items:center;gap:6px;margin-top:8px;border:1px solid var(--da-line);border-radius:8px;background:var(--da-surface);color:var(--da-ink);padding:6px 9px;font:inherit;cursor:pointer}.da-retry:hover{border-color:var(--da-accent)}
     #da-form{display:flex;gap:8px;padding:12px;border-top:1px solid var(--da-line)} #da-input{min-width:0;flex:1;border:1px solid var(--da-line);border-radius:10px;padding:10px 11px;background:var(--da-surface);color:var(--da-ink);font:inherit;outline-color:var(--da-accent)}#da-input::placeholder{color:var(--da-muted)} #da-send{border:0;border-radius:10px;padding:0 14px;background:var(--da-accent);color:white;font:600 14px inherit;cursor:pointer} #da-send:disabled{opacity:.65;cursor:wait}#da-send.da-stop{border:1px solid var(--da-line);background:var(--da-surface);color:var(--da-ink)}
     @media(max-width:520px){#da-panel{right:8px;bottom:76px;width:calc(100vw - 16px);height:min(620px,calc(100dvh - 100px))}#da-launch{right:16px;bottom:16px}}
   `;
@@ -31,7 +31,7 @@
 
   const root = document.createElement("div");
   root.id = "docs-ai-assistant";
-  root.innerHTML = `<button id="da-launch" type="button" aria-expanded="false">Ask AI</button><section id="da-panel" aria-label="AI for Service docs" aria-live="polite"><header id="da-head"><span>AI for Service Docs</span><div id="da-head-actions"><button id="da-clear" type="button">Clear</button><button id="da-close" type="button" aria-label="Close">×</button></div></header><div id="da-messages"><div class="da-msg da-bot">Ask about AI for Service docs.</div></div><form id="da-form"><input id="da-input" maxlength="1200" placeholder="Ask about the docs…" aria-label="Your question" required><button id="da-send" type="button">Send</button></form></section>`;
+  root.innerHTML = `<button id="da-launch" type="button" aria-expanded="false">Ask AI</button><section id="da-panel" aria-label="AI for Service docs" aria-live="polite"><header id="da-head"><span>AI for Service</span><div id="da-head-actions"><button id="da-clear" type="button">Clear</button><button id="da-close" type="button" aria-label="Close">×</button></div></header><div id="da-messages"><div class="da-msg da-bot">What would you like to know?</div></div><form id="da-form"><input id="da-input" maxlength="1200" placeholder="Type your question…" aria-label="Your question" required><button id="da-send" type="button">Send</button></form></section>`;
   document.body.append(root);
 
   const panel = root.querySelector("#da-panel");
@@ -118,7 +118,7 @@
     cancelActiveRequest("Request canceled.");
     input.value = "";
     messages.replaceChildren();
-    addMessage("da-bot", "Ask about AI for Service docs.");
+    addMessage("da-bot", "What would you like to know?");
     messages.scrollTop = 0;
     input.focus();
   });
@@ -181,7 +181,12 @@
       const data = await response.json();
       if (activeRequest !== request) return;
       if (!response.ok) throw new Error(data.error || "Request failed");
-      renderBoldMarkdown(pending, data.answer || "No answer was returned.");
+      const answer = String(data.answer || "No answer was returned.").trim();
+      if (/^I couldn't find that in the AI for Service documentation\.?$/i.test(answer)) {
+        renderNoAnswer(pending, question);
+        return;
+      }
+      renderBoldMarkdown(pending, answer);
       if (Array.isArray(data.sources) && data.sources.length) {
         const list = document.createElement("div");
         list.className = "da-sources";
@@ -217,6 +222,20 @@
     }
   }
 
+  function renderNoAnswer(pending, question) {
+    pending.textContent = "I couldn't find an answer in the docs this time.";
+    const retry = document.createElement("button");
+    retry.type = "button";
+    retry.className = "da-retry";
+    retry.setAttribute("aria-label", "Try the same question again");
+    retry.textContent = "↻ Try again";
+    retry.addEventListener("click", () => {
+      if (activeRequest) return;
+      pending.textContent = "Searching the documentation…";
+      runRequest(question, pending);
+    });
+    pending.append(retry);
+  }
   function cancelActiveRequest(message) {
     if (!activeRequest) return;
     const request = activeRequest;
