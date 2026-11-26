@@ -55,7 +55,7 @@ flowchart LR
     | Artemis project ID   | Artemis: Agent Chat > initiate chat > Debug > Data                                          | Use the project ID for the target Artemis project.                                                                                     |
     | Artemis webhook URL  | Artemis: Project > Integrations > Kore SmartAssist > Connect > Webhook Channel Callback URL | Copy the callback URL exactly as shown.                                                                                                |
     | Artemis access token | Bring your own key                                                                          | Create a secret that meets the [token and secret rules](/agent-platform/integrations/ccai#token-and-secret-rules). |
-    | Artemis auth token   | Artemis: Project > Deployments > API Keys > Create a platform key                           | Create a platform key and copy the generated token. The token is shown only once, so copy it immediately; it typically starts with `abl_`. Start with the least-privilege scope your design needs, such as Read Sessions for session history and transcripts. |
+    | Artemis auth token   | Artemis: Project > Deployments > API Keys > Create a platform key                           | Create a platform key and copy the generated token. The token is shown only once, so copy it immediately; it typically starts with `abl_`. For history API access, grant the `sessions.read` scope. |
 
 7. Review all Artemis Integration fields, then click **Enable Artemis Integration**. If an integration already exists for the app, click **Update Artemis Integration** instead.
 8. Confirm the integration status shows **Enabled**.
@@ -89,7 +89,7 @@ Don't swap the **Artemis access token** and the **Artemis auth token**. The acce
 - The conversation remains with the AI agent until a transfer is triggered.
 - Artemis resolves the transfer configuration and selects the active **connection as per the settings**.
 - Artemis sends the transfer request and conversation context to **CCAI**.
-- CCAI routes the conversation to the appropriate queue or agent based on its routing configuration.
+- CCAI routes the conversation to the appropriate queue and assigns it to an agent based on its own routing configuration.
 - If enabled, Artemis retrieves the conversation transcript after the transfer is complete.
 
 When you enable the Artemis integration, CCAI creates two default flows: Artemis Voice Flow and Artemis Chat Flow. These default flows don't contain an automation node. Instead, they include nodes such as check agent availability, check business hours, and set queue.
@@ -97,7 +97,7 @@ When you enable the Artemis integration, CCAI creates two default flows: Artemis
 You can customize the Start Flow to add routing behavior beyond the defaults, and link it to conditional flows for in-queue, no-agent, and out-of-office-hours scenarios. After a conversation lands in a queue, CCAI also evaluates any additional routing configuration set for that queue, such as preferred-agent or conditional routing.
 
 <Note>
-If your implementation sets routing values in the escalate block and also customizes the Start Flow, confirm with Support which configuration takes precedence in your environment before relying on it in production.
+If your implementation sets routing values in the `ESCALATE:` routing list and also customizes the Start Flow, confirm with Support which configuration takes precedence in your environment before relying on it in production.
 </Note>
 
 {/*
@@ -113,15 +113,17 @@ Under **Project Settings** → **Agent Transfer** → **Session Lifecycle**, ali
 | ------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
 | Default routing                | All eligible transfers use the connection and queue configured under Agent Transfer > Default Routing.                            | Best starting point for one CCAI environment or one general support destination.                             |
 | Queue-based routing             | The DSL can pass a queue ID; the transfer carries or resolves a queue so CCAI can deliver to the right team.                      | Use for billing, technical support, claims, or other stable team destinations.                               |
-| Skill or named-agent routing    | The DSL can pass a skill ID or agent ID; the transfer specifies required skills or selected agents when the use case supports it. | Use for language, product, certification, or VIP specialization. Keep a queue fallback.                      |
-| Priority-based routing          | A numeric priority influences the relative urgency of the transfer.                                                               | Use sparingly for genuinely urgent or high-value interactions; scale being 0 to 10. 0 highest and 10 lowest. |
-| Post-agent action               | Return to bot keeps the session in the bot lifecycle after the live-agent leg; End session closes it.                             | Choose based on whether the bot should resume, collect feedback, or terminate after handoff.                 |
+| Skill routing                   | A routing entry can pass a list of CCAI skill IDs. Skills configured on the SmartAssist connection take precedence over skills in the routing entry. | Use for language, product, certification, or VIP specialization when the connection does not override the entry's skills. Keep a queue destination. |
+| Priority-based routing          | A numeric priority influences the relative urgency of the transfer.                                                               | Use the 0 to 10 scale: 0 is lowest, 10 is highest, and the default is 5. Values outside the range are clamped. |
+| Post-agent action               | `return` resumes the Artemis AI agent (bot) after the live-agent leg; `end` closes the session.                                   | Choose based on whether the bot should resume, collect feedback, or terminate after handoff.                 |
 
 ### Routing precedence
 
-- Values assigned in the escalate block apply to that specific transfer.
-- If a value is not assigned, Artemis uses the configured Agent Transfer default.
-- If data is missing or an ID is invalid, routes to the configured general-support fallback in CCAI.
+For a routing list, Artemis evaluates entries from top to bottom and uses the first matching entry. The last entry must use `when: always`; without it, a customer who matches no rule is not transferred. If no list entry matches, Artemis does not transfer the conversation.
+
+For a single `routing:` block instead of a list, an unset `queue`, `priority`, or `post_agent` value comes from **Agent Transfer > Default Routing**. The `connection` field is optional. Artemis uses the connection configured in **Agent Transfer > Default Routing** when it is omitted. A project can have only one active SmartAssist connection; if neither the routing entry nor **Default Routing** specifies a connection, the transfer is skipped.
+
+Artemis does not validate queue or skill IDs. An unknown queue ID is sent to CCAI, which routes it to its default queue. Skills configured on the SmartAssist connection override skills in the routing entry. The SmartAssist Webhook Channel payload carries queue, skills, priority, language, and metadata; it has no named-agent field.
 
 ### Set up digital channel routing
 
@@ -135,11 +137,11 @@ When an agent escalates a conversation, Artemis routes it to the Contact Center 
 
 1. For digital channels, enter a message requesting a transfer to a live agent.
 2. Verify the expected Artemis behavior: an escalation request is initiated and the conversation is transferred to CCAI.
-3. Verify the expected CCAI behavior: a new chat conversation is routed to the configured queue or agent. Accept the interaction.
+3. Verify the expected CCAI behavior: a new chat conversation is routed to the configured queue and offered to an available agent according to CCAI routing. Accept the interaction.
 4. Verify the transfer details:
    - **Artemis Sessions/Trace:** Confirm that an escalation event is recorded for the transfer.
    - **Artemis Transfer Sessions:** Confirm the provider is **SmartAssist**, the channel is chat, and the transfer completes successfully.
-   - **CCAI Agent Console:** Confirm the interaction is offered to the expected queue or agent, accepted successfully, and transitions to the **Connected** state.
+   - **CCAI Agent Console:** Confirm the interaction is offered to an agent from the expected queue, accepted successfully, and transitions to the **Connected** state.
 
 ## Example use case: dynamic customer-profile routing
 
@@ -153,65 +155,82 @@ Use information that's available before the agent transfer and that has a clear 
 
 Evaluate rules from top to bottom. Put the most specific rule first, followed by broader rules, and always finish with a safe default.
 
-- Premium + Payments → Payments Priority queue, Payments skill, high priority.
-- Standard + Payments → Payments Support queue, Payments skill, normal priority.
+- Premium + Payments → Payments Priority queue, Payments skill, priority 10 (highest).
+- Standard + Payments → Payments Support queue, Payments skill, priority 5 (default).
 - Premium + any other product → Priority Support queue, Premium skill (if supported).
 - Missing or unknown profile data → General Support queue. Don't block the customer because a profile field is unavailable.
 
 The queue names and priority labels are examples. Replace them with the actual CCAI queue names, IDs, skills, and approved priority scale for your environment.
 
-### 3. Add queues and skills in the Artemis escalate block
+### 3. Add queues and skills in an ordered routing list
 
-Create the required queues and skills in CCAI first, then copy their IDs into the Artemis routing logic. Use the queue ID as the destination and the skill ID as the agent qualification, and keep a general-support queue as the fallback. Set these values inside the [`escalate` block](/agent-platform/abl/reference/multi-agent-and-supervisor#escalate) in the Artemis agent that invokes the live-agent transfer.
-
-Example DSL pattern:
+Create the queues and skills in CCAI first. Then add an ordered `routing:` list under `ESCALATE:` . Artemis checks the entries from top to bottom and uses the first match. The last entry must be `when:` always . Without it, a customer who matches no rule is not transferred.
 
 ```yaml expandable=true
-escalate {
-    reason = "customer_requested_agent"
-
-    if customer.tier == "Premium"
-       and customer.product == "Payments" {
-        queueId = "QID_PAYMENTS_PRIORITY"
-        skillId = "SKILL_PAYMENTS"
-        priority = 1
-    } else if customer.product == "Payments" {
-        queueId = "QID_PAYMENTS_SUPPORT"
-        skillId = "SKILL_PAYMENTS"
-        priority = 5
-    } else if customer.tier == "Premium" {
-        queueId = "QID_PRIORITY_SUPPORT"
-        skillId = "SKILL_PREMIUM"
-        priority = 5
-    } else {
-        queueId = "QID_GENERAL_SUPPORT"
-        skillId = null
-        priority = 5
-    }
-
-    postAgentAction = "RETURN_TO_BOT"
-}
+ESCALATE:
+  triggers:
+    - WHEN: customer_requested_agent == true
+      REASON: "customer_requested_agent"
+  routing:
+    - id: premium_payments
+      when: customer_tier == "Premium" AND customer_product == "Payments"
+      connection: smartassist
+      queue: "<QID_PAYMENTS_PRIORITY>"
+      skills: ["<SKILL_ID_PAYMENTS>"]
+      priority: 10
+      post_agent: return
+    - id: payments
+      when: customer_product == "Payments"
+      connection: smartassist
+      queue: "<QID_PAYMENTS_SUPPORT>"
+      skills: ["<SKILL_ID_PAYMENTS>"]
+      priority: 5
+      post_agent: return
+    - id: premium
+      when: customer_tier == "Premium"
+      connection: smartassist
+      queue: "<QID_PRIORITY_SUPPORT>"
+      skills: ["<SKILL_ID_PREMIUM>"]
+      priority: 5
+      post_agent: return
+    - id: general
+      when: always
+      connection: smartassist
+      queue: "<QID_GENERAL_SUPPORT>"
+      priority: 5
+      post_agent: return
 ```
 
-Replace the placeholder values with the actual CCAI IDs. The exact property names depend on the Artemis DSL version. Don't use display names when the integration requires IDs.
+Replace the queue and skill placeholders with actual CCAI IDs. Queue IDs, not display names, are required. A queue ID that does not exist in CCAI is sent as-is and CCAI routes the transfer to its default queue. Skills are a list of CCAI skill IDs (24 hexadecimal characters); skills configured on the connection take precedence over skills in the routing entry. The project can have only one active SmartAssist connection, named `smartassist`.
 
-Field reference:
+**Field Reference**
 
-- `queueId`: the CCAI queue that should receive the interaction.
-- `skillId`: the CCAI skill required for the interaction, such as Payments, Spanish, or Premium Support.
-- `agentId`: an optional named-agent destination. Use it only when the business case requires direct routing.
-- `priority`: the agreed numeric priority.
-- `postAgentAction`: what Artemis does after the live-agent leg, such as `RETURN_TO_BOT` or End session.
+| Field | Description |
+| --- | --- |
+| `when` | A condition on session variables, such as `customer_tier`, or on `system.channel`. Use `AND` or `OR`. Only the final list entry can use `always`. |
+| `connection` | Optional. The connector name smartassist. A project can have only one active SmartAssist connection. If omitted, Artemis uses the connection set in Agent Transfer > Default Routing. If Default Routing has no connection either, the transfer is skipped.|
+| `queue` | The CCAI queue ID, not its display name. `{{variable}}` templates resolve at transfer time. |
+| `skills` | A list of CCAI skill IDs (24 hex characters). Skills set on the connection take precedence. |
+| `priority` | An integer from 0 (lowest) to 10 (highest). The default is 5; values outside the range are clamped. |
+| `post_agent` | `return` resumes the Artemis AI agent (bot) after the live-agent leg. `end` closes the session. |
+| `id` | Optional label for the routing entry. It appears in traces as the matched entry and does not affect routing. If omitted, Artemis names entries `entry_0`, `entry_1`, and so on. |
+
+Routing precedence
+1. The first matching routing entry sets the values for that transfer.
+2. With a single `routing:` block instead of a list, an unset `queue` , `priority` or `post_agent` comes from **Agent Transfer > Default Routing**.
+3. If no list entry matches, Artemis does not transfer. Always end the list with `when: always`.
+4. Artemis does not check queue or skill IDs. CCAI routes an unknown queue ID to its default queue.
 
 ### 4. Test the escalation
 
 - Premium customer with a Payments request → Payments Priority queue plus Payments skill.
 - Standard customer with a Payments request → Payments Support queue plus Payments skill.
 - Premium customer with another product → Priority Support queue plus Premium skill.
-- Missing or invalid profile data → General Support fallback queue.
+- Missing or unknown profile values → the final `when: always` entry routes to General Support. If no list entry matches, Artemis does not transfer.
+- A routing entry with an unknown queue ID → CCAI receives the ID and routes the transfer to its default queue.
 - Selected queue has no agents or is outside business hours → CCAI in-queue or no-agent flow.
 
-The connection configuration establishes communication between Artemis and CCAI. The escalate block determines the destination for an individual conversation. Keep changing workforce decisions, such as agent availability and queue capacity, in CCAI rather than encoding them in the bot.
+The connection configuration establishes communication between Artemis and CCAI. The `ESCALATE:` routing list determines the destination for an individual conversation. Keep changing workforce decisions, such as agent availability and queue capacity, in CCAI rather than encoding them in the bot.
 
 {/*
 ## Optional: Customer feedback survey (CSAT)
@@ -264,7 +283,7 @@ Choose a survey frequency:
 
 | Requirement             | Rule                                                                                           |
 |-------------------------|--------------------------------------------------------------------------------------------------|
-| Length                  | Use 32 to 512 characters.                                                                      |
+| Length                  | Use at least 32 characters. No maximum length is enforced.                                      |
 | Character mix           | Use three of the four character types: uppercase letters, lowercase letters, digits, symbols.  |
 | Webhook Secret matching | Must match the Artemis access token configured in AI for Service.                              |
 | Storage                 | Don't paste secrets into tickets, chat, emails, or SOP. Store them in the approved vault.      |
@@ -285,13 +304,17 @@ Choose a survey frequency:
 
 ## Troubleshoot integration issues
 
-| Symptom                                                | Likely cause                                    | Recommended action                                                                                      |
-|--------------------------------------------------------|-------------------------------------------------|---------------------------------------------------------------------------------------------------------|
-| 401 or 403 response                                    | Token mismatch or expired API key               | Re-copy the Artemis auth token and verify the webhook secret.                                           |
-| Webhook events aren't received                         | Incorrect callback URL or channel token         | Verify the callback URL and CCAI Webhook Channel Token.                                                 |
-| Wrong tenant or project is connected                   | Values copied from another workspace or project | Fetch tenant ID and project ID again from Agent Chat → Debug → Data or confirm Workspace ID in Profile. |
-| Connection name rejected                               | Connection name isn't unique                    | Use a unique name.                                                                                      |
-| Integration works before publish but not after changes | Changes saved but not published                 | Publish the AI for Service app again.                                                                   |
-
+| **Symptom** | **Likely cause** | **Recommended action** |
+| :--- | :--- | :--- |
+| History fetch returns 401 | The auth token is not an Artemis platform key | Use a key that starts with `abl_` and has the `sessions.read` scope. |
+| Agent replies never reach the user | The Webhook Secret does not match the CCAI Artemis access token | Set the same value on both sides. |
+| "No agents available" and the chat closes at once | No agent is online in the queue, or the queue ID is wrong | Check agent availability and the queue ID in CCAI. |
+| Escalation ignores your queue | The routing block is not valid ABL | Use the `ESCALATE:` > `routing:` form in step 3. |
+| Chat lands in the default queue, not the configured one | The queue ID does not exist in CCAI | Copy the queue ID from CCAI. Use the ID, not the display name. |
+| 401 or 403 response | Token mismatch or expired API key | Re-copy the Artemis auth token and verify the webhook secret. |
+| Webhook events aren’t received | Incorrect callback URL or channel token | Verify the callback URL and CCAI Webhook Channel Token. |
+| Wrong tenant or project is connected | Values copied from another workspace or project | Fetch tenant ID and project ID again from Agent Chat → Debug → Data or confirm `Workspace ID` in Profile. |
+| Connection name rejected | Connection name isn't unique | Use a unique name. |
+| Integration works before publish but not after changes | Changes saved but not published | Publish the AI for Service app again and test. |
 ---
 
