@@ -2,7 +2,8 @@
   const isAiForServicePage = () => /^\/ai-for-service(?:\/|$)/.test(window.location.pathname);
   const script = document.currentScript || Array.from(document.scripts).find((item) => item.src.includes("assistant.js"));
   const scriptUrl = new URL(script?.src || location.href, location.href);
-  const enabled = script?.dataset.enabled !== "false" && scriptUrl.searchParams.get("enabled") !== "false" && window.DOCS_AI_ENABLED !== false;
+  const TEMPORARILY_DISABLED = true; // Re-enable by setting this to false after the production rollout.
+  const enabled = !TEMPORARILY_DISABLED && script?.dataset.enabled !== "false" && scriptUrl.searchParams.get("enabled") !== "false" && window.DOCS_AI_ENABLED !== false;
   if (!enabled) return;
   const defaultEndpoint = "https://docs-ai-assistant-staging.pratik-gokhe.workers.dev/ask";
   const endpoint = script?.dataset.endpoint
