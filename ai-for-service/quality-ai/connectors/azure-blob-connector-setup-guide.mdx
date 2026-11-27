@@ -5,15 +5,86 @@ noindex: true
 ---
 <Badge icon="arrow-left" color="gray">[Back to Connectors](/ai-for-service/quality-ai/configurations#connectors)</Badge>
 
-Set up the Azure Blob Storage connector to import conversation recordings, transcripts, and metadata from Azure Blob Storage into Quality AI Express. The Connector imports conversation recordings, transcripts, and metadata from Microsoft Azure Blob Storage into Quality AI Express on a configurable schedule. This also supports voice and chat interactions from third-party CCaaS platforms and processes data on a configurable schedule.
+The Azure Blob Storage connector enables the import of voice recordings, pre-transcribed voice conversations, chat transcripts, and associated CSV metadata from Microsoft Azure Blob Storage into Quality AI Express.
+
+It automatically retrieves new files on a configurable schedule, making conversations available for supported quality evaluations and analytics. The connector supports both voice and chat interactions from third-party CCaaS platforms.
+
+## How Connectors Work
+
+Connectors integrate Quality AI Express with external systems where customer conversations are stored, such as cloud storage and telephony platforms. Once configured and enabled, they automatically transfer conversations into Quality AI Express for evaluation and analysis, eliminating the need for manual file uploads.
 
 | Section | Description |
 |---------|-------------|
+| [Connector Overview and Management](#connector-overview-and-management) | Connector list, setup tabs, status, editing, logs, and deletion. |
 | [Prerequisites](#prerequisites) | Azure storage account requirements and platform setup. |
-| [Authentication Method](#authentication-method) | How to authenticate the connector using an Azure Storage connection string. |
+| [Authentication Method](#authentication-method) | Service Principal and Connection String authentication. |
 | [Supported Data Types](#supported-data-types) | Voice and chat formats and file structure options. |
+| [CSV Metadata Formats](#csv-metadata-formats) | Azure Blob file checks and required metadata fields. |
 | [Set Up the Connector](#set-up-the-connector) | Steps to create, test, map queues, and schedule the connector. |
+| [How Connector Sync Works](#how-connector-sync-works) | Schedule, ingestion, status, duplicate protection, and validation behavior. |
 | [Troubleshooting](#troubleshooting) | Fixes for authentication failures, storage access errors, and data processing issues. |
+| [How Connector Sync Works](#how-connector-sync-works) | Synchronization schedules, ingestion, status tracking, duplicate protection, and validation behavior. |
+| [Glossary](#glossary) | Definitions of connector-related terms. |
+
+## Connector Overview and Management
+
+Connectors link Quality AI Express to external systems and storage locations that contain conversation data. After a connector is configured, tested, and enabled, it retrieves conversation files on its configured schedule and makes successfully processed conversations available for supported quality evaluations and analytics. Manual uploads are not required for files retrieved by this connector.
+
+The Connectors page lists the configured conversation sources. Each row represents one connector.
+
+### Who Can Use This Page
+
+You need the **Auto QA** permission with Full access to view and manage connectors. Contact your administrator if the page is unavailable or connector changes are blocked. Your deployment may expose the page under **Quality AI** > **Configure** > **Connectors** or under the Integrations and Extensions area.
+
+### Connector list
+| Column | Description |
+| --- | --- |
+| **Connector Name** | Name assigned during setup. Select the name to open the connector configuration. |
+| **Created By** | User who created the connector. |
+| **Modified By** | User who last changed its configuration. |
+| **Channel** | Conversation channel handled by the connector: Chat, Voice, or Chat and Voice. |
+| **Last Sync** | Date and time of the most recent sync, together with its configured frequency. This is blank before the first run. |
+| **Status** | Indicates whether the connector is enabled or paused. |
+| **Actions** | Provides the available edit, delete, and log-history actions. |
+
+When no connectors are configured, the page displays an empty state. Select **+ New Connector** or **+ Add Connector** to create one. A loading message may appear while the connector list is being retrieved. The available connector types depend on your deployment. This guide covers **Azure Blob Storage**.
+
+### Connector Setup Tabs
+
+To add this source, select **+ New Connector** or **+ Add Connector**, choose **Azure Blob Storage**, and complete the setup panel. The panel is organised into the following tabs or sections. Labels and availability can vary by deployment.
+
+| Tab | Purpose |
+| --- | --- |
+| **Instructions** | Provides setup guidance and links to connector-specific documentation. Review this tab before entering credentials or paths. |
+| **Configuration** | Selects Azure Blob Storage, sets the connector name and region, chooses the channel and path arrangement, and captures authentication details. |
+| **Schedule** | Defines how frequently the connector checks Azure Blob Storage and the earliest date from which conversations are retrieved. |
+| **Test** | 	Runs connection, path, file-format, and metadata checks before the connector is saved and enabled. Correct any reported issues and run the test again before relying on scheduled ingestion. |
+
+
+### Enable or Disable a Connector
+
+Use the **Status** toggle to pause or resume a connector.
+- **Disable**: Confirm the prompt to pause syncing. No new conversations are retrieved while the connector is disabled. Conversations already ingested remain in Quality AI Express.
+- **Enable**: Turn the toggle on to resume the connector's configured schedule. A separate confirmation may not be displayed.
+
+### Edit a Connector
+
+Select the edit action for the connector to reopen its setup panel. Review and update the available configuration, authentication, storage paths, channel settings, queue mappings, or schedule, then save the changes. Re-run the connection test after changing credentials or paths.
+
+### View Connector Logs
+
+Open the connector's log history to review previous sync runs. Depending on the deployment, the log view can include:
+- Run start and finish times.
+- Number of files uploaded or retrieved and number processed.
+- Number of conversations retrieved during the sync run.
+- Job status and processing errors.
+- A details view for an individual ingestion job.
+
+Use the logs to confirm that a schedule ran and to investigate missing or rejected conversations.
+
+### Delete a Connector
+
+Select the delete action and confirm the prompt. Deleting a connector permanently removes its configuration and stops future syncing. Conversations already ingested aren't deleted. This action can't be undone.
 
 ## Prerequisites
 
@@ -26,9 +97,13 @@ Set up the Azure Blob Storage connector to import conversation recordings, trans
 | **Container** | Azure Blob container with conversation files. |
 | **Supported File Types** | WAV, MP3, JSON, CSV. |
 | **Maximum File Size** | 50 MB per file. |
-| **Timestamp Format** | ISO 8601 UTC (`YYYY-MM-DDTHH:MM:SSZ`). |
+| **Timestamp Format** | ISO 8601 (`YYYY-MM-DDTHH:MM:SSZ`). |
 | **File Accessibility** | Audio files must be reachable over HTTPS. |
 | **Test File** | A `test.csv` file in each configured ingestion folder. |
+| **Service Principal** | Account Name, Tenant ID, Client ID, Client Secret. |
+| **Connection String** | Azure Storage Connection String. |
+
+For Service Principal authentication, you must create an App Registration in Microsoft Entra ID and assign the `Storage Blob Data Reader` role to its service principal at the storage account scope.
 
 ### Platform Requirements
 
@@ -47,7 +122,9 @@ Service Principal authentication requires the following Azure role assignment.
 |---|---|---|
 | **Storage Blob Data Reader** | Storage Account | Read and list blobs. |
 
-Assign this role at the storage account level, not just at the container level.
+Assign the Storage Blob Data Reader role to the service principal associated with your App Registration. Assign the role at the storage account scope to provide the required permissions to list and read blobs.
+
+The role assignment must target the correct service principal identity, not an unrelated user or application.
 
 Navigate to: **Storage Account** > **Access Control (IAM)** > **Add role assignment**.
 
@@ -55,7 +132,13 @@ Avoid assigning broader permissions such as Contributor or Owner.
 
 ## Authentication Methods
 
-The connector supports two authentication methods.
+The Azure Blob Storage connector supports two authentication methods:
+
+- **Service Principal (Recommended)**: Uses Microsoft Entra ID application credentials to authenticate with Azure Blob Storage. This method supports connections from AWS, GCP, Oracle Cloud, and other environments without requiring Azure-hosted infrastructure.
+
+- **Connection String**: Uses an Azure Storage Account connection string containing the account access key.
+
+The available configuration fields depend on the selected authentication method.
 
 ### Service Principal (Recommended)
 
@@ -87,7 +170,7 @@ Example format:
 
 `DefaultEndpointsProtocol=https;AccountName=...;AccountKey=...;EndpointSuffix=core.windows.net`
 
-<Note>The fields displayed in the connector vary depending on the selected **Auth Type**.</Note>
+<Note> The fields displayed in the connector vary depending on the selected **Auth Type**. </Note>
 
 ## Supported Data Types
 
@@ -160,6 +243,18 @@ This section defines the required CSV metadata fields for each supported convers
 
 Core fields are shared across conversation types, while recording-specific fields differ.
 
+### Azure Blob File and Metadata Checklist
+
+Before running ingestion, verify that:
+
+- Each configured ingestion folder contains the required `test.csv` file and the metadata CSV uses the required headers.
+- Conversation start and end timestamps use ISO 8601 UTC format (`YYYY-MM-DDTHH:MM:SSZ`), and the end time is later than the start time.
+- Each queueId maps to an existing Quality AI Express queue.
+- Every audio or transcript path referenced by the metadata exists in the configured Blob container and is accessible to the connector.
+- Files use a supported format (WAV, MP3, JSON, or CSV, as applicable) and don't exceed the documented 50 MB per-file limit.
+
+The detailed schemas below are Azure-specific. Don't assume that a field or file format documented for another connector is supported by `Azure Blob Storage`.
+
 ### Common Metadata Requirements
 
 The following requirements apply when preparing metadata CSV files:
@@ -173,6 +268,67 @@ The following requirements apply when preparing metadata CSV files:
 
 For mono recordings, both CSV rows must share the same `conversationId` and reference the corresponding agent and customer recordings.
 
+### CSV Metadata File: Required Columns
+
+Each configured ingestion path must contain a CSV metadata file. The CSV identifies each conversation and references the audio or transcript content that Quality AI Express must retrieve.
+
+| Column | Type | Required | Description |
+| --- | --- | --- | --- |
+| `conversationId` | String | Yes | Unique identifier for the conversation. The generic connector also accepts `clientConversationId`. The Azure guide additionally limits this value to 50 characters. |
+| `conversationStartTime` | Date/time | Yes | Conversation start time. Use the Azure guide's ISO 8601 format, such as `2025-04-10T14:30:00Z`. |
+| `conversationEndTime` | Date/time | Yes | Conversation end time. It must be later than the start time. |
+| `queueId` | String | Yes | Queue identifier matching a configured Quality AI Express queue mapping. Use the queue's custom ID. |
+| `queueName` | String | Yes | Queue name; supported by the generic connector when `queueId` is not supplied. At least one of `queueId` or `queueName` is required by the generic connector. Confirm whether `queueName` is accepted by the Azure connector version in your deployment. |
+| Content reference | URL or path | Yes | Supply the content reference appropriate to the conversation, using the appropriate Azure-specific field such as `recordingUrl`, `agentRecordings`, `customerRecordings`, `transcriptPath`, or the configured chat transcript reference. |
+
+For Azure Blob ingestion, use the field names and path conventions shown in the Azure-specific tables in this guide. The generic connector schema also documents `callId` as an alternative content reference for integrations that retrieve audio through a separate call-system integration. Don't assume that `callId` is supported by this Azure Blob connector unless it's enabled in your deployment.
+
+### CSV Metadata File: Optional Columns
+
+The generic connector supports the following optional metadata. Availability can depend on the Azure connector version and the Quality AI Express configuration.
+
+| Column | Type | Default | Description |
+| --- | --- | --- | --- |
+| `agentEmail` | String | — | Email address of the agent who handled the conversation. It must match an active Quality AI user and, where required, the queue assignment. |
+| `channelType` | String | Auto-detected | `voice` or `chat`. If omitted in the generic connector, `chatScriptUrl` indicates chat; otherwise the channel is treated as voice. |
+| `recordingType` | String | Auto-detected | `stereo`, `mono`, or `transcription`, based on the content reference fields. |
+| `contactDirection` | String | `Inbound` | `Inbound` or `Outbound`. |
+| `language` | String | `en` | Language code, such as `en`, `es`, or `fr`. It must be enabled in the QM language settings. |
+| `asrProvider` | String | `microsoft` | Speech-to-text provider used for voice files. |
+| `agentChannel` | Number | `1` | Agent audio channel in a stereo file. Must be `0` or `1` and differ from `customerChannel`. |
+| `customerChannel` | Number | `0` | Customer audio channel in a stereo file. Must be `0` or `1` and differ from `agentChannel`. |
+| `agentSpeakerId` | Number | `2` | Agent speaker ID when diarization is enabled. Must differ from `customerSpeakerId`. |
+| `customerSpeakerId` | Number | `1` | Customer speaker ID when diarization is enabled. Must differ from `agentSpeakerId`. |
+| `isSpeakerEnabled` | Boolean | `false` | Set to `true` to route transcript speakers by speaker ID instead of audio channel. |
+| `callId` | String | — | Third-party call identifier. Use only when the corresponding integration is configured. |
+
+### Accepted Date Formats
+
+The generic connector accepts date values that JavaScript's Date constructor can parse. The documented formats include:
+
+| Format | Example |
+| --- | --- |
+| ISO 8601 | `2024-01-15T10:30:00Z` |
+| ISO 8601 with milliseconds | `2024-01-15T10:30:00.000Z` |
+| Epoch milliseconds as a number | `1705316400000` |
+| Epoch milliseconds as a string | `"1705316400000"` |
+
+For Azure Blob connector setup, follow the stricter Azure-specific prerequisite in this guide and provide ISO 8601 timestamps (`YYYY-MM-DDTHH:MM:SSZ`). Avoid locale-specific date formats such as `01/15/2024`, which can be interpreted differently by different environments.
+
+### How Conversation Type is Determined
+
+The generic connector can infer the channel and recording type from content-reference fields when `channelType` and `recordingType` aren't explicitly supplied. For `Azure Blob Storage`, use the explicit Azure-specific field names and combinations in the data-type tables below. Don't rely on generic inference unless your deployed connector version documents it.
+
+| Content reference present | Channel type | Recording type | Processing |
+| --- | --- | --- | --- |
+| `chatScriptUrl` | `chat` | `chat` | Reads the chat transcript directly and sends it for text evaluation. |
+| `transcriptUrl` without audio | `voice` | `transcription` | Reads the pre-transcribed voice content and skips audio transcription. |
+| `agentRecordings` and `customerRecordings` | `voice` | `mono` | Processes the separate agent and customer audio tracks. |
+| `recordingUrl` only | `voice` | `stereo` | Splits the stereo recording by the configured channel assignments and transcribes it. |
+
+
+If `channelType` and `recordingType` are explicitly provided, the generic connector uses those values instead of detecting them. Confirm the Azure-specific field names and supported combinations in the data-type tables above before preparing production files.
+
 ### Stereo Voice
 
 - `recordingType = stereo`
@@ -182,13 +338,13 @@ For mono recordings, both CSV rows must share the same `conversationId` and refe
 |-------|----------|------|-------------|
 | `conversationId` | Yes | String | Unique conversation identifier, maximum 50 characters. |
 | `agentEmail` | Yes | String | Must match a platform user account. |
-| `conversationStartTime` | Yes | String | ISO 8601 UTC timestamp. |
-| `conversationEndTime` | Yes | String | ISO 8601 UTC timestamp; must be after start time. |
+| `conversationStartTime` | Yes | String | ISO 8601 timestamp. |
+| `conversationEndTime` | Yes | String | ISO 8601 timestamp; must be after start time. |
 | `channelType` | Yes | String | Always `voice`. |
 | `recordingType` | Yes | String | Always `stereo`. |
-| `chatScriptUrl` | Yes* | String | Full HTTPS URL to the JSON transcript. |
+| `chatScriptUrl` | Yes | String | Full HTTPS URL to the JSON transcript. |
 | `recordingUrl` | Yes | String | HTTPS URL to the audio recording. |
-| `transcriptUrl` | Yes* | String | Full HTTPS URL to the JSON transcript. |
+| `transcriptUrl` | Yes | String | Full HTTPS URL to the JSON transcript. |
 | `queueId` | Yes | String | Must exist in queue mapping. |
 | `agentChannel` | Yes | Integer | Agent channel: `0` or `1`. |
 | `customerChannel` | Yes | Integer | Customer channel: `0` or `1`. |
@@ -208,8 +364,8 @@ Each conversation requires two CSV rows and two audio files. Both rows must shar
 |-------|----------|------|-------------|
 | `conversationId` | Yes | String | Same identifier on both rows. |
 | `agentEmail` | Yes | String | Must match a platform user account. |
-| `conversationStartTime` | Yes | String | ISO 8601 UTC timestamp. |
-| `conversationEndTime` | Yes | String | ISO 8601 UTC timestamp; must be after start time. |
+| `conversationStartTime` | Yes | String | ISO 8601 timestamp. |
+| `conversationEndTime` | Yes | String | ISO 8601 timestamp; must be after start time. |
 | `channelType` | Yes | String | Always `voice`. |
 | `recordingType` | Yes | String | Always `mono`. |
 | `agentRecordings` | Yes | String | URL to the agent audio file. |
@@ -221,10 +377,10 @@ Each conversation requires two CSV rows and two audio files. Both rows must shar
 
 The following example illustrates how to structure the CSV metadata for a mono voice conversation, where two rows share the same `conversationId` and reference separate agent and customer audio recordings.
 
-`conversationId`, `agentEmail`, `conversationStartTime`, `conversationEndTime`, `channelType`, `recordingType`, `agentRecordings`, `customerRecordings`, `queueId`, `agentId`, `language`, `asProvider`
-`conv-123456`, `agent@example.com`, `2025-04-10T14:30:00Z`, `2025-04-10T14:45:00Z`, `voice`, `mono`, `https://example.com/agent.wav`, `https://example.com/customer.wav`
-
-
+```csv
+conversationId,agentEmail,conversationStartTime,conversationEndTime,channelType,recordingType,agentRecordings,customerRecordings,queueId,agentId,language,asProvider
+conv-123456,agent@example.com,2025-04-10T14:30:00Z,2025-04-10T14:45:00Z,voice,mono,https://example.com/agent.wav,https://example.com/customer.wav
+```
 ### Mono Recording Requirements
 
 Mono conversations must contain two separate audio recordings:
@@ -261,8 +417,8 @@ The channel assignments must correctly identify the agent and customer audio.
 |-------|----------|------|-------------|
 | `conversationId` | Yes | String | Unique identifier, maximum 50 characters. |
 | `agentEmail` | Yes | String | Must match a platform user account. |
-| `conversationStartTime` | Yes | String | ISO 8601 UTC timestamp. |
-| `conversationEndTime` | Yes | String | ISO 8601 UTC timestamp; must be after start time. |
+| `conversationStartTime` | Yes | String | ISO 8601 timestamp. |
+| `conversationEndTime` | Yes | String | ISO 8601 timestamp; must be after start time. |
 | `channelType` | Yes | String | Always `voice`. |
 | `recordingType` | Yes | String | Always `transcription`. |
 | `transcriptPath` | Yes | String | Path to the JSON transcript file. |
@@ -287,7 +443,7 @@ Other properties, including `recognitionStatus`, `offset`, `duration`, `duration
 
 ### Chat Transcript Message Requirements
 
-The root JSON object contains numbered message keys, such as `"1"`, `"2"`, and `"3"`.
+The root JSON object contains numbered message keys, such as `1`, `2`, and `3`.
 
 Each message must contain:
 
@@ -306,8 +462,8 @@ Each message must contain:
 |-------|----------|------|-------------|
 | `conversationId` | Yes | String | Unique conversation identifier, maximum 50 characters. |
 | `agentEmail` | Yes | String | Must match a platform user account. |
-| `conversationStartTime` | Yes | String | ISO 8601 UTC timestamp. |
-| `conversationEndTime` | Yes | String | ISO 8601 UTC timestamp. |
+| `conversationStartTime` | Yes | String | ISO 8601 timestamp. |
+| `conversationEndTime` | Yes | String | ISO 8601 timestamp. |
 | `channelType` | Yes | String | Always `chat`. |
 | `recordingType` | Yes | String | Always `transcription`. |
 | `transcriptPath` | Yes | String | Path to the JSON transcript file. |
@@ -402,6 +558,136 @@ Each message requires the following fields:
 | `timestamp` | Unix time in milliseconds | Message timestamp. |
 | `userId` | String | Agent email or customer ID. |
 
+### Chat Transcript File: `chatScriptUrl` format
+
+For the generic connector, `chatScriptUrl` is used for chat conversations, not voice recordings. The JSON file must be a flat JSON object (not an array and not wrapped in a parent `conversation` property). Each key is a numeric message index and each value is a message object.
+
+Two timestamp formats are supported by the generic connector. The selected format is controlled by the conversation source configuration setting `chatscriptTimestampFormat`.
+
+### Offset Format (Default)
+
+Each message contains `offset`, the number of milliseconds from `conversationStartTime`.
+
+```json
+{
+  "1": { "type": "AGENT", "text": "Hello, how can I help?", "offset": 0 },
+  "2": { "type": "USER", "text": "I have a billing question.", "offset": 10000 },
+  "3": { "type": "AGENT", "text": "Let me check that for you.", "offset": 15000 }
+}
+```
+
+`conversationStartTime` is required. The message time is calculated as the conversation start time plus the offset.
+
+### Unix Timestamp Format
+
+Each message contains timestamp, a Unix epoch value in milliseconds (not seconds).
+
+```json
+{
+  "1": { "type": "AGENT", "text": "Hello, how can I help?", "timestamp": 1705316400000 },
+  "2": { "type": "USER", "text": "I have a billing question.", "timestamp": 1705316410000 },
+  "3": { "type": "AGENT", "text": "Let me check that for you.", "timestamp": 1705316415000 }
+}
+```
+
+The first message timestamp must be at or after `conversationStartTime`. The last message timestamp must be at or before `conversationEndTime`.
+
+### Chat Message Field Rules
+
+| Field | Required | Allowed values or format |
+|---|---|---|
+| Message key | Yes | Numeric string, such as `0`, `1`, or `2`. The sequence must start at `0` or `1`. |
+| `type` | Yes | Generic connector: `AGENT`, `USER`, `BOT`, or `CUSTOMER` (case-insensitive). The Azure-specific schema in this guide also documents `SYSTEM`; verify accepted values for the deployed Azure connector version. |
+| `text` | Yes | Message content as a string. |
+| `offset` | Yes, for offset format | Non-negative milliseconds from conversation start. |
+| `timestamp` | Yes, for Unix format | Non-negative Unix epoch timestamp in milliseconds, within the conversation start/end range. |
+| `userId` | Azure-specific | Agent email or customer identifier, where required by the Azure transcript schema. |
+
+Don't mix `offset` and `timestamp` formats within a transcript. Use the timestamp format configured for the conversation source.
+
+### Pre-Transcribed Voice Transcript File: `transcriptUrl`
+
+The generic connector accepts a pre-transcribed voice file in Microsoft Azure Cognitive Services batch transcription format. The root JSON object contains a `recognizedPhrases` array. This lets the connector process an existing transcript without sending the original audio through its own ASR workflow.
+
+A phrase contains timing information, a channel or speaker identifier, and an `nBest` array. The first alternative (`nBest[0]`) is used.
+
+json
+```
+{
+  "recognizedPhrases": [
+    {
+      "offsetInTicks": 10000000,
+      "durationInTicks": 25000000,
+      "channel": 1,
+      "nBest": [
+        {
+          "lexical": "hello how can i help you today",
+          "confidence": 0.95,
+          "words": [
+            {
+              "word": "hello",
+              "offsetInTicks": 10000000,
+              "durationInTicks": 3000000,
+              "confidence": 0.98
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
+```
+
+| JSON field | Required | Description |
+|---|---|---|
+| `recognizedPhrases` | Yes | Top-level array. Each entry represents a spoken phrase. |
+| `offsetInTicks` | Yes | Phrase start time in 100-nanosecond ticks. Divide by 10,000 to convert to milliseconds. |
+| `durationInTicks` | Yes | Phrase duration in 100-nanosecond ticks. |
+| `channel` | Yes, channel-routing mode | Audio channel number. It must match the configured agent or customer channel. |
+| `speaker` | Yes, diarization mode | Speaker ID used when `isSpeakerEnabled = true`; it replaces channel-based routing. |
+| `nBest` | Yes | Recognition alternatives. The system uses `nBest[0]`. |
+| `nBest[0].lexical` | Yes | Recognised phrase text. Empty lexical values are skipped. |
+| `nBest[0].confidence` | No | Confidence score from 0 to 1. |
+| `nBest[0].words` | No in generic schema; required by the Azure-specific schema above | Word-level text, timing, and confidence values. |
+
+All `offsetInTicks` and `durationInTicks` values use 100-nanosecond ticks. For example, 10,000,000 ticks equals 1,000 milliseconds (one second).
+
+## Complete CSV examples
+
+The following examples illustrate the generic connector's content-reference fields. Adapt the field names to the Azure-specific CSV schema in this guide before using them.
+
+### Stereo Voice Recording
+
+| `conversationId` | `conversationStartTime` | `conversationEndTime` | `queueId` | `agentEmail` | `channelType` | `contactDirection` | `recordingUrl` |
+|---|---|---|---|---|---|---|---|
+| `CALL-001` | `2024-01-15T10:30:00Z` | `2024-01-15T10:45:00Z` | `QUEUE-BILLING` | `john.smith@example.com` | `voice` | `Inbound` | `https://storage.example.com/recordings/CALL-001.wav` |
+
+### Mono Voice Recording
+
+| `conversationId` | `conversationStartTime` | `conversationEndTime` | `queueId` | `agentEmail` | `agentRecordings` | `customerRecordings` |
+|---|---|---|---|---|---|---|
+| `CALL-002` | `2024-01-15T11:00:00Z` | `2024-01-15T11:12:00Z` | `QUEUE-SUPPORT` | `jane.doe@example.com` | `https://storage.example.com/agent/CALL-002.wav` | `https://storage.example.com/customer/CALL-002.wav` |
+
+### Pre-Transcribed Voice Conversation
+
+| `conversationId` | `conversationStartTime` | `conversationEndTime` | `queueId` | `agentEmail` | `transcriptUrl` |
+|---|---|---|---|---|---|
+| `CALL-003` | `2024-01-15T14:00:00Z` | `2024-01-15T14:08:00Z` | `QUEUE-SALES` | `mike.jones@example.com` | `https://storage.example.com/transcripts/CALL-003.json` |
+
+### Chat Conversation
+
+| `conversationId` | `conversationStartTime` | `conversationEndTime` | `queueId` | `agentEmail` | `channelType` | `chatScriptUrl` |
+|---|---|---|---|---|---|---|
+| `CHAT-001` | `2024-01-15T09:00:00Z` | `2024-01-15T09:20:00Z` | `QUEUE-CHAT` | `alice.brown@example.com` | `chat` | `https://storage.example.com/chat-transcripts/CHAT-001.json` |
+
+### Array Format for Content URLs
+
+In the generic connector, `recordingUrl`, `agentRecordings`, `customerRecordings`, and `transcriptUrl` can contain multiple URLs. In a CSV cell, represent multiple URLs as a bracketed, comma-separated list:
+
+```text
+`[https://storage.example.com/audio1.wav, https://storage.example.com/audio2.wav]`
+```
+
 ## Storage Structure Options
 
 Choose a folder structure for your Azure Blob container before setting up the connector.
@@ -433,7 +719,7 @@ container/
     ├── transcripts/
     └── test.csv
 ```
-**Azure Blob path format:**
+**Azure Blob Path Format:** 
 
 `azure://your-container/your-folder/`
 
@@ -460,29 +746,33 @@ Before configuring the connector, verify the following:
 
 The connector must be able to access the configured storage paths and the files referenced by the metadata.
 
-
 ## Prepare Service Principal Authentication
 
-Complete Azure App Registration and Service Principal configuration.
+Complete the Azure App Registration and Service Principal configuration before setting up the connector.
 
-Skip this section if you are using Connection String authentication.
+Skip this section if you are using Connection String authentication. 
 
-You need three values from Azure:
+Service Principal authentication requires the following four credentials:
 
-- Tenant ID.
-- Client ID.
-- Client Secret.
+| Credential | Azure Source | Purpose |
+|---|---|---|
+| `accountName` | Azure Storage Account overview | Identifies the Azure Storage Account. |
+| `tenantId` | App Registration overview | Identifies the Microsoft Entra ID tenant. |
+| `clientId` | App Registration overview | Identifies the registered application. |
+| `clientSecret` | Certificates & secrets | Authenticates the application. |
 
-You must also assign the Storage Blob Data Reader role to the App Registration.
+You must also assign the `Storage Blob Data Reader` role to the service principal associated with your App Registration.
+
+<Note> Use the Client Secret **Value**, not the Secret ID, when configuring the connector. </Note>
 
 **Step 1: Create an App Registration**
 
-1. Go to Azure Portal.
-1. Search for **Azure Active Directory**, also known as **Microsoft Entra ID**.
-1. Select **App registrations**.
-1. Select **+ New registration**.
-1. Configure the registration.
-1. Select **Register**.
+1. Go to the [Azure Portal](https://portal.azure.com/).
+2. Search for **Microsoft Entra ID** (formerly Azure Active Directory).
+3. Select **App registrations**.
+4. Select **+ New registration**.
+5. Enter a name for the application and configure the registration as required.
+6. Select **Register**.
 
 After registering the application, open the App Registration overview page and copy the following values:
 
@@ -491,7 +781,12 @@ After registering the application, open the App Registration overview page and c
 | **Application (client) ID** | Available under Essentials on the App Registration overview page. |
 | **Directory (tenant) ID** | Available under Essentials on the App Registration overview page. |
 
-Save both values securely. You will need them when configuring the connector.
+Save both values securely. You may need them when configuring the connector.
+
+You can find the **Storage Account Name** by opening the required Azure Storage Account and checking its overview page. Use this value as the `accountName` credential when configuring the connector.
+
+<Note> The Client Secret is created in the next step. When configuring the connector, use the Client Secret **Value**, not the Secret ID. </Note>
+
 
 ### Client Secret Expiration
 
@@ -583,26 +878,49 @@ Before you begin, verify that your Blob container is ready:
 ### Step 1: Create the Connector
 
 1. Navigate to **Quality AI** > **Configure** > **Connectors**.
-1. Select **+ Add Connector** > **Azure Blob Storage** > **Connect**.
-1. Enter a **Name** for the connector.
-1. Select the **Azure Region** for the storage account.
-1. Set **Authentication Type** to **Connection String**.
-    
-#### Service Principal (Recommended)
+2. Select **+ Add Connector** > **Azure Blob Storage** > **Connect**.
+3. Enter a **Name** for the connector.
+4. Select the **Azure Region** where your storage account is located. For example, `eastus` identifies the East US region.
+5. Select the required **Authentication Type**.
 
-1. If you select Service Principal, provide the following credentials:
-   
-**Connection String**
+**Connector Name Validation**
 
-If you select Connection String, provide the following:
+Enter a unique name for the connector. Connector names must not duplicate existing connector names. If you enter a name that is already in use, an error appears when you try to save the connector.
 
-Example:
+#### Option 1: Service Principal (Recommended)
 
-DefaultEndpointsProtocol=https;AccountName=...;AccountKey=...;EndpointSuffix=core.windows.net 
+Select **Service Principal** as the Authentication Type.
+
+Enter the following credentials:
+
+| Field | Description |
+|---|---|
+| **Account Name** | Name of the Azure Storage Account. |
+| **Tenant ID** | Directory (tenant) ID from the Microsoft Entra ID App Registration overview. |
+| **Client ID** | Application (client) ID from the App Registration overview. |
+| **Client Secret** | Client Secret Value generated for the App Registration. |
+
+<Note> Make sure that the App Registration's service principal has the `Storage Blob Data Reader` role assigned to the Azure Storage Account.</Note>
+
+#### Option 2: Connection String
+
+Select **Connection String** as the Authentication Type.
+
+Enter the connection string obtained from your Azure Storage Account.
+
+**Example:**
+
+`DefaultEndpointsProtocol=https;AccountName=...;AccountKey=...;EndpointSuffix=core.windows.net`
+
+#### Configure Storage Paths
+
 1. Enter the **Connection String** from your Azure Storage account.
 1. Configure the storage paths:
+
    - **Unified Path**: Enter a single Blob path for both voice and chat data.
    - **Separate Paths**: Enter a **Voice Path** and a **Chat Path**.
+
+The authentication fields displayed depend on the selected Authentication Type.
 
 ### Step 2: Test the Connection
 
@@ -610,7 +928,33 @@ DefaultEndpointsProtocol=https;AccountName=...;AccountKey=...;EndpointSuffix=cor
 1. Select **Test** to run the validation checks.
 1. Verify that the following checks pass: **Authentication**, **File Path Access**, **File Format Validation**, and **Metadata Validation**.
 
-### Step 3: Map Queues
+### Test Progress and Validation Status
+
+When you run the test, a progress bar shows the connector moving through each validation step.
+
+The validation checks depend on the configured channel and storage path:
+
+| Field | Description |
+|---|---|
+| **Chat** | Runs authentication, file path availability and accessibility, file format validation, and metadata validation for the chat path. |
+| **Voice** | Runs file path, file format, and metadata validations for the voice path after authentication. |
+| **Unified** | Runs file path, file format, and metadata validations once against the unified path. |
+
+Each validation step displays one of the following statuses:
+
+| Field | Description |
+|---|---|
+| **Pending** | The validation step has not yet been tested. |
+| **Pass** | The validation step completed successfully. |
+| **Fail** | The validation step failed. A reason appears below the step name. |
+
+If a validation step fails, review the displayed reason, correct the issue in the Configuration tab, and run the test again.
+
+After all required validation checks pass, continue with queue mapping and schedule configuration. Save the connector after completing the required configuration.
+
+<Note> Verify that the Azure Blob connector displays these exact channel-specific validation checks and status labels before publishing. The generic connector documentation describes this behavior, but the Azure-specific guide must reflect the deployed connector UI. </Note>
+
+### Step 4: Map Queues
 
 1. Select the **Queue** tab.
 1. Map each `queueId` from the `.csv` files to a **Quality AI Express** queue. Values must match exactly.
@@ -618,10 +962,9 @@ DefaultEndpointsProtocol=https;AccountName=...;AccountKey=...;EndpointSuffix=cor
 
 <Note>Every queue ID in the metadata file must map to an existing Quality AI Express queue before ingestion can run. Evaluation forms linked to mapped queues determine how interactions are evaluated.</Note>
 
+### Step 5: Configure the Schedule
 
-### Step 4: Configure the Schedule
-
-Configure the ingestion schedule to determine when the connector retrieves and processes conversation files from Azure Blob Storage.
+Configure the ingestion schedule to determine when the connector retrieves and processes conversation files from `Azure Blob Storage`. 
 
 1. Select the **Schedule** tab.
 2. Configure the following schedule settings:
@@ -636,6 +979,8 @@ Configure the ingestion schedule to determine when the connector retrieves and p
 3. Review the schedule configuration.
 4. Select **Save** to activate the connector schedule.
 
+After saving the schedule, the next planned run time appears in the **Schedule** tab.
+
 After saving, verify that:
 
 - Queue mappings are saved and validated.
@@ -645,7 +990,7 @@ After saving, verify that:
 
 The setup is complete when conversations are successfully ingested and appear in **Quality AI Express** dashboards with their corresponding analytics data.
 
-### Step 5: Monitor Ingestion Jobs
+### Step 6: Monitor Ingestion Jobs
 
 Use the **Log** tab to monitor ingestion activity.
 
@@ -667,34 +1012,124 @@ Ingestion is successful when the uploaded and processed file counts match, the j
 | Problem | Symptom | Resolution |
 |---|---|---|
 | **AuthorizationFailure** | Access is denied despite valid credentials. | Check the storage account firewall configuration. If network restrictions are enabled, add the Quality AI service outbound IP provided by your administrator to the allowlist. |
-| **AADSTS7000215: Invalid client secret** | Service Principal authentication fails. | Verify that the Client Secret Value is correct and hasn't expired. Regenerate it if necessary. Don't use the Secret ID. |
-| **AuthorizationPermissionMismatch** | The connector can't read or list Blob files. | Verify that `Storage Blob Data Reader` is assigned at the storage account scope. Allow up to 10 minutes for role assignments to propagate. |
-| **Azure connection string is required** | The connector reports a missing connection string. | Enter the complete connection string from the Azure Storage Account Access Keys page. |
-| **Invalid Azure connection string** | Azure rejects the connection string. | Copy the full connection string directly from Azure Access Keys without modifying it. |
+| **Invalid Client Secret** | Microsoft Entra ID authentication fails because the client secret is invalid. | Verify that the Client Secret Value is correct and hasn't expired. Generate a new secret if necessary. 
+| **Invalid Tenant ID** | Service Principal authentication fails because the tenant can't be identified. | Verify the Directory (tenant) ID from the Microsoft Entra ID App Registration overview. |
+| **Invalid Tenant ID** | Service Principal authentication fails because the tenant can't be identified. | Verify the Directory (tenant) ID from the App Registration overview. |
+ **Invalid Account Name** | The connector can't identify or access the configured storage account. | Verify that the Account Name matches the Azure Storage Account name. |
+| **Expired Client Secret** | Service Principal authentication fails after the client secret expires. | Generate a new Client Secret Value and update the connector configuration. |
+| **AuthorizationPermissionMismatch** | The connector can't read or list Blob files. | Verify that `Storage Blob Data Reader` is assigned to the correct service principal at the storage account scope. Allow up to 10 minutes for role assignments to propagate. |
+| **Azure connection string is required** | The connector reports a missing connection string when Connection String authentication is selected. | Verify that **Connection String** is selected as the Authentication Type. Enter the complete connection string from the Azure Storage Account Access Keys page. If Service Principal authentication is selected, verify that the correct authentication method and credentials are configured. |
+| **Invalid Azure connection string** | Azure rejects the connection string when Connection String authentication is selected. | Copy the complete connection string directly from Azure Access Keys without modifying it. Verify that the connection string belongs to the intended storage account. |
 
 ### Storage Access Issues
 
 | Problem | Symptom | Resolution |
 |---|---|---|
-| **Container Not Found** | Container or path not found. | Verify the container name and folder structure. |
-| **File Not Available** | Blob access denied. | Verify blob access permissions and storage access settings. |
+| **Container Not Found** | Container or path not found. | Verify the container name and folder structure. Ensure that the configured Blob path points to the correct container and folder. |
+| **File Not Available** | Blob access denied or the referenced file can't be retrieved. | Verify Blob access permissions, storage account settings, and the availability of the referenced files. |
 
 ### File Validation Issues
 
 | Problem | Symptom | Resolution |
 |---|---|---|
-| **File Format Validation Error** | Unsupported or invalid file format. | Verify the CSV metadata structure and required headers. |
-| **Metadata Validation Error** | Missing or invalid metadata. | Verify required metadata fields and timestamp values. |
+| **File Format Validation Error** | Unsupported or invalid file format. | Verify the CSV metadata structure, supported file formats, and required headers. |
+| **Metadata Validation Error** | Missing or invalid metadata. | Verify that all required metadata fields are present and contain valid values. Check the timestamp format and required field values. |
 
 ### Data Processing Issues
 
 | Problem | Symptom | Resolution |
 |---|---|---|
-| **Timestamp Validation Error** | Invalid timestamp format. | Use ISO 8601 UTC format (`YYYY-MM-DDTHH:MM:SSZ`). |
-| **Queue Mapping Error** | Queue IDs not mapped. | Map all queue IDs before running ingestion. |
+| **Timestamp Validation Error** | Invalid timestamp format. | Use ISO 8601 format (`YYYY-MM-DDTHH:MM:SSZ`). |
+| **Queue Mapping Error** | Queue IDs aren't mapped or don't match existing queues. | Map all queue IDs to existing Quality AI Express queues before running ingestion. |
 
 ### Performance Considerations
 
-Processing time also depends on Automatic Speech Recognition (ASR) latency for voice recordings, conversation duration, file size, LLM processing time, AI analysis complexity, and the number of conversations being ingested.
+Processing time depends on several factors, including Automatic Speech Recognition (ASR) latency for voice recordings, conversation duration, file size, LLM processing time, AI analysis complexity, and the number of conversations being ingested.
+
+## How Connector Sync Works
+
+### Schedule Frequency
+
+The connector runs at the interval configured in the Schedule tab. The generic Connectors documentation describes the following interval ranges. Treat these as general connector guidance; the schedule fields and supported ranges exposed for Azure Blob Storage can vary by deployment.
+
+#### Supported Schedule Intervals
+
+| Interval Type | Supported Range | Behavior |
+| --- | --- | --- |
+| **Minutes** | 1–59 | Runs every configured number of minutes. |
+| **Hourly** | 1–23 | Runs every configured number of hours. |
+| **Daily** | 1–365 | Runs every configured number of days at the configured time. |
+
+The Schedule tab also defines the start date and, for daily schedules, the start time. Use UTC for the start time, where the Azure connector configuration requests it. The start date is the earliest date from which the connector retrieves conversations; files or conversations before that date are ignored.
+
+Each run checks the configured Blob path for files newer than the last successful sync. The Last Sync value is updated after a run.
+
+### How a Sync Run Works
+
+A sync run performs the following high-level actions:
+
+1. Connects to the configured Azure storage account using the saved authentication method.
+2. Checks the configured unified path or separate voice and chat paths for new metadata and content files.
+3. Reads the CSV metadata and retrieves the referenced audio or transcript files.
+4. Sends the files and conversation metadata for processing.
+5. Makes successfully processed conversations available in the Quality AI Express conversation and analytics experience.
+
+After ingestion, the conversation services process the audio or transcript content and create the corresponding post-call analysis record with the conversation metadata. When a conversation is associated with a mapped queue, the configured Auto QA evaluation workflow can be triggered.
+
+Ingested conversations then use the applicable scoring, dashboard, and audit workflows. Successfully ingested conversations are available in **Conversation Mining**, the **QM Dashboard**, and other Quality AI views that display conversation data.
+
+### Connection Status and Failed Runs
+
+The connector's **Status** control indicates whether syncing is enabled or paused; **Last Sync** shows the most recent sync time and configured frequency. Review the log history for the outcome of an individual run.
+
+A failed run means that new conversations were not retrieved in that run; it does not delete conversations that were ingested previously. Use the connector logs and test results to identify and correct the issue.
+
+#### Duplicate Protection
+
+Confirm whether Azure identifies previously ingested files using their unique path and name.
+
+#### Connection Status and Failed Runs
+
+Confirm that a failed run doesn't affect previously ingested conversations and that the Status and Last Sync controls behave as described.
+
+#### Validation Failures
+
+The generic connector documents the following conditions as permanent CSV-row failures (not retried):
+
+- `conversationId` is missing.
+- `conversationStartTime` or `conversationEndTime` is missing or cannot be parsed.
+- `queueId` or `queueName` is missing, or does not match a queue configured in QM.
+- No supported content reference is provided (`recordingUrl`, `agentRecordings`, `customerRecordings`, `transcriptUrl`, `chatScriptUrl`, or an enabled `callId` integration).
+- `agentEmail` is provided but the agent does not exist in Quality AI or is not assigned to the queue.
+- `agentChannel` and `customerChannel` have the same value.
+- `agentSpeakerId` and `customerSpeakerId` have the same value when `isSpeakerEnabled` is `true`.
+- `contactDirection` is not `Inbound` or `Outbound`.
+- The bot has no QM features enabled in settings.
+- The conversation language is not enabled in QM language settings.
+
+#### Chat Transcript Validation Failures
+
+A chat transcript can fail permanently under the following conditions:
+
+- It is not a valid flat JSON object.
+- A message is missing its speaker, text, or configured time field.
+- A speaker value is unsupported.
+- A time value is negative or not numeric.
+- A Unix timestamp falls outside the conversation start/end range.
+
+For Azure Blob-specific failures, also review the file-size, file-accessibility, `test.csv`, queue-mapping, and storage-path requirements in this guide.
+
+---
+
+## Glossary
+
+| Term | Meaning |
+|---|---|
+| **Connector** | A configured link between Quality AI Express and an external conversation source, such as Azure Blob Storage. |
+| **Sync** | One run of the connector. It checks the configured storage paths and retrieves new conversation files. |
+| **Sync frequency** | How often the connector checks Azure Blob Storage for new conversation files. |
+| **Unified path** | A single storage location that contains both voice and chat conversation files. |
+| **Separate paths** | Two distinct storage locations: one for voice files and one for chat files. |
+| **Service Principal** | An application identity in Microsoft Entra ID that the connector can use to access Azure resources. |
 
 ---

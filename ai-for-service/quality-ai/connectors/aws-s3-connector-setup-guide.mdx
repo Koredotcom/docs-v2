@@ -21,6 +21,9 @@ The connector ingests voice recordings (stereo or mono), chat transcripts, pre-t
 | [Storage Structure Options](#storage-structure-options) | Folder organization options for your S3 bucket. |
 | [Set Up the Connector](#set-up-the-connector) | Steps to create, test, and activate the connector. |
 | [Troubleshooting](#troubleshooting) | Fixes for common authentication, file validation, and data processing issues. |
+| [How Connector Sync Works](#how-connector-sync-works) | How scheduled runs discover and ingest new conversation files. |
+| [Monitoring Connector Logs](#monitoring-connector-logs) | How to review connector run history and outcomes. |
+
 
 ## Prerequisites
 
@@ -33,6 +36,32 @@ The connector ingests voice recordings (stereo or mono), chat transcripts, pre-t
 | **Audio files** | WAV or MP3 format, maximum 50 MB each, available via HTTPS. |
 | **Chat files** | JSON format. |
 | **Test file** | A `test.csv` file with sample data in each configured S3 folder. |
+
+### Required IAM Policy
+
+```json
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Effect": "Allow",
+            "Action": ["s3:GetObject", "s3:ListBucket"],
+            "Resource": [
+                "arn:aws:s3:::your-bucket-name",
+                "arn:aws:s3:::your-bucket-name/*"
+            ]
+        }
+    ]
+}
+```
+
+#### AWS IAM Permission Details
+
+| Permission | Resource | Purpose |
+|---|---|---|
+| `s3:ListBucket` | Bucket ARN | Allows the connector to list objects in the configured bucket or prefix. |
+| `s3:GetObject` | Object ARN | Allows the connector to read the configured files. |
+
 
 **Required IAM policy:**
 
@@ -80,28 +109,105 @@ The connector ingests voice recordings (stereo or mono), chat transcripts, pre-t
 
 ## Data Flow
 
+The connector reads the CSV metadata first. It then uses the file references in each row to retrieve the associated audio or transcript content.
+
+
 ```text
 [S3 Bucket]
-└── Audio + Metadata Files
-        │
-        ▼
-[S3 Connector]
-└── Validation + Ingestion
-        │
-        ▼
-[Quality AI Express]
-└── Transcription + Analysis
-        │
-        ▼
-[Analytics Dashboard]
-├── Quality Score
-├── Sentiment
-└── Topics
+    │
+    ├── CSV metadata
+    └── Referenced audio / transcript files
+             │
+             ▼
+       [S3 Connector]
+             │
+             ├── Authentication and path validation
+             ├── CSV metadata validation
+             ├── Retrieve referenced files
+             └── Route by channel and recording type
+                    │
+          ┌─────────┴──────────┐
+          ▼                    ▼
+   [Voice audio]        [Pre-transcribed voice / chat]
+          │                    │
+          ▼                    ▼
+   [ASR transcription]  [Transcript parsing]
+          │                    │
+          └─────────┬──────────┘
+                    ▼
+           [Quality AI Express]
+                    │
+                    ▼
+           [Analytics Dashboard]
+           ├── Quality Score
+           ├── Sentiment
+           └── Topics
 ```
+Stereo and mono audio recordings are sent through voice processing. Pre-transcribed voice JSON and chat JSON are imported as transcript content; they do not require the connector to transcribe the source audio.
 
 ## CSV Metadata Formats
 
 Each recording type requires specific CSV fields. The core fields are the same across all types, only the recording-specific fields differ.
+
+### Common CSV Metadata Requirements
+
+The generic connector specification defines the following common metadata requirements. The AWS S3-specific tables below remain authoritative for fields explicitly marked as required by this connector.
+
+| Column | Type | Requirement | Description |
+| - | - | - | - |
+| `conversationId` | String | Required | Unique conversation identifier. The generic connector also accepts `clientConversationId` as an alias; confirm that the AWS S3 connector accepts this alias before using it. |
+| `conversationStartTime` | Date | Required | Conversation start time. See the accepted formats below. |
+| `conversationEndTime` | Date | Required | Conversation end time; it must be later than the start time. |
+| `queueId` / `queueName` | String | At least one | The generic connector accepts either `queueId` or `queueName`. The AWS S3 examples and queue-mapping workflow currently document `queueId`; confirm `queueName` support for AWS S3 before using it. |
+| Content reference | URL / identifier | At least one | The generic connector accepts one or more of `recordingUrl`, `agentRecordings`, `customerRecordings`, `transcriptUrl`, `chatScriptUrl`, or `callId`. The AWS S3 format-specific tables below document the AWS fields and should be followed unless additional fields are confirmed for this connector. |
+
+<Note> Don't assume that every generic connector alias or content-reference field is supported by the AWS S3 connector. In particular, confirm support for `clientConversationId`, `queueName`, `callId`, and `transcriptUrl` before using them in an AWS S3 metadata file.</Note>
+
+### Accepted Date and Timestamp Formats
+
+The generic connector documentation states that conversation date values are parsed using the JavaScript `Date` constructor. It identifies these reliable formats:
+
+| Format | Example |
+| - | - |
+| ISO 8601 | `2024-01-15T10:30:00Z` |
+| ISO 8601 with milliseconds | `2024-01-15T10:30:00.000Z` |
+| Epoch milliseconds (number) | `1705316400000` |
+| Epoch milliseconds (string) | `"1705316400000"` |
+
+ISO 8601 timestamp is the recommended format. Avoid locale-specific dates such as `01/15/2024`, because their interpretation can vary.
+
+The AWS S3 examples currently specify ISO 8601 UTC. Confirm epoch-millisecond support for AWS S3 before using numeric or string epoch values in its CSV files.
+
+### Optional CSV Metadata Fields
+
+The generic connector documentation describes these optional fields. Availability and defaults must be confirmed for the AWS S3 connector where they are not already shown in its format-specific tables.
+
+| Column | Type | Generic default / behavior | Description |
+| - | - | - | - |
+| `agentEmail` | String | Not required by the generic schema | Email of the agent associated with the conversation. The AWS S3 tables currently mark it as required; follow the AWS-specific requirement unless Engineering confirms otherwise. |
+| `channelType` | String | Auto-detected | `voice` or `chat`. The generic connector detects chat from `chatScriptUrl`; otherwise it defaults to voice. |
+| `recordingType` | String | Auto-detected | `stereo`, `mono`, or `chat` in the generic routing rules. The AWS S3 tables currently use `transcription` for pre-transcribed voice and chat; retain those AWS-specific values unless Engineering confirms a change. |
+| `contactDirection` | String | `Inbound` | `Inbound` or `Outbound`. |
+| `language` | String | `en` | Conversation language code. |
+| `asrProvider` | String | `microsoft` | Speech-to-text provider for voice audio. The AWS S3 examples use both `asprovider` and `asProvider`. Standardize the spelling with Engineering before publishing. |
+| `agentChannel` | Number | `1` | Agent channel in a stereo recording. |
+| `customerChannel` | Number | `0` | Customer channel in a stereo recording. It must differ from `agentChannel`. |
+| `agentSpeakerId` | Number | `2` | Agent speaker ID when speaker diarization is enabled. |
+| `customerSpeakerId` | Number | `1` | Customer speaker ID when speaker diarization is enabled. It must differ from `agentSpeakerId`. |
+| `isSpeakerEnabled` | Boolean | `false` | Enables speaker-based routing instead of channel-based separation for supported voice transcripts. |
+| `callId` | String | No default | Third-party call identifier. The generic connector lists it as an alternative content reference. AWS S3 support needs confirmation. |
+
+### Generic Connector Routing Reference
+
+The generic connector documentation describes the following automatic routing behavior:
+
+| CSV content reference | Generic `channelType` | Generic `recordingType` | Processing |
+| - | - | - | - |
+| `chatScriptUrl` | `chat` | `chat` | Reads the chat transcript directly, skips audio processing. |
+| `agentRecordings` and `customerRecordings` | `voice` | `mono` | Processes separate agent and customer audio tracks. |
+| `recordingUrl` | `voice` | `stereo` | Processes a stereo audio file using channel assignments. |
+
+If `channelType` and `recordingType` are explicitly supplied, the generic connector documentation says those values are used directly. The AWS S3 guide currently documents `recordingType = transcription` for chat and pre-transcribed voice. Confirm the AWS-specific routing values and precedence with Engineering; do not replace the AWS values with the generic values without confirmation.
 
 ### Stereo Voice Recordings
 
@@ -121,14 +227,30 @@ Each recording type requires specific CSV fields. The core fields are the same a
 | `queueId` | Required | String | `support-tier1` | Must exist in queue mapping. |
 | `agentChannel` | Required | Integer | `0` | Agent audio channel (0 = left, 1 = right). |
 | `customerChannel` | Required | Integer | `1` | Customer audio channel (0 = left, 1 = right). |
-| `language` | Optional | String | `en` | ISO 639-1 format, defaults to `en`. |
-| `asprovider` | Optional | String | `microsoft` | Audio service provider. |
+
+### Channel Default Discrepancy to Verify
+
+The generic connector documentation specifies agent channel `1` and customer channel `0` as defaults. However, this AWS S3 example explicitly sets agent channel `0` and customer channel `1`.
+
+Confirm the AWS S3 channel convention and defaults with Engineering. Don't rely on defaults when the channel assignment is known.
+
+| Parameter | Required | Type | Default | Description |
+|---|---|---|---|---|
+| `language` | Optional | String | `en` | Language in ISO 639-1 format. Defaults to `en`. |
+| `asProvider` | Optional | String | `microsoft` | Audio service provider. |
+
 
 ### Mono Voice Recordings
 
 **Configuration**: `recordingType = mono`, `channelType = voice`
 
 <Note>Mono recordings require two separate CSV rows and two audio files per conversation — one for the agent and one for the customer. Use the same `conversationId` for both rows.</Note>
+
+#### Implementation Difference to Confirm
+
+The generic connector documentation describes a single CSV row containing both `agentRecordings` and `customerRecordings`. However, this AWS S3 guide currently documents two separate rows with the same `conversationId`.
+
+Retain the AWS-specific two-row instruction until Engineering confirms whether the generic single-row format is also supported by AWS S3.
 
 | Field | Required | Type | Example | Notes |
 |---|---|---|---|---|
@@ -145,23 +267,23 @@ Each recording type requires specific CSV fields. The core fields are the same a
 | `language` | Optional | String | `en` | ISO 639-1 format, defaults to `en`. |
 | `asProvider` | Optional | String | `microsoft` | Transcription provider. |
 
-### Voice Transcripts (Pre-transcribed Audio)
+## Pre-transcribed Voice Transcripts
 
-**Configuration**: `recordingType = transcription`, `channelType = voice`
+**Configuration:** `recordingType = transcription`, `channelType = voice`
 
-Use this format when you have transcribed voice recordings and want to import the text for analysis without reprocessing the audio.
+Use this format when you have pre-transcribed voice recordings and want to import the transcript text for analysis without reprocessing the audio.
 
 | Field | Required | Type | Example | Notes |
 |---|---|---|---|---|
-| `conversationId` | Required | String | `conv-123456` | Unique identifier, max 50 chars. |
+| `conversationId` | Required | String | `conv-123456` | Unique identifier, max 50 characters. |
 | `agentEmail` | Required | String | `johndoe@example.com` | Must match a platform user account. |
-| `conversationStartTime` | Required | String | `2025-04-10T14:30:00Z` | ISO 8601, UTC timezone. |
-| `conversationEndTime` | Required | String | `2025-04-10T14:32:45Z` | Must be after start time. |
+| `conversationStartTime` | Required | String | `2025-04-10T14:30:00Z` | ISO 8601 format, UTC timezone. |
+| `conversationEndTime` | Required | String | `2025-04-10T14:32:45Z` | Must be after the start time. |
 | `channelType` | Required | String | `voice` | Always `voice` for audio transcripts. |
 | `recordingType` | Required | String | `transcription` | Always `transcription` for this format. |
 | `transcriptPath` | Required | String | `transcripts/voice-123.json` | Path to the JSON transcript file. |
-| `queueId` | Required | String | `support-tier1` | Must exist in queue mapping. |
-| `language` | Optional | String | `en` | ISO 639-1 format, defaults to `en`. |
+| `queueId` | Required | String | `support-tier1` | Must exist in the queue mapping. |
+| `language` | Optional | String | `en` | ISO 639-1 format. Defaults to `en`. |
 | `asProvider` | Optional | String | `microsoft` | Original audio service provider. |
 
 ### Chat Scripts (Live Chat Interactions)
@@ -184,17 +306,17 @@ Use this format for live chat interactions from web chat, WhatsApp, Facebook Mes
 | `queueId` | Required | String | `support-tier1` | Must exist in queue mapping. |
 | `language` | Optional | String | `en-US` | Defaults to `en` if not specified. |
 
-#### Agent and Queue Validation
+## Agent and Queue Validation
 
 The system validates agent and queue combinations as follows:
 
-- Process the conversation when the system has onboarded the queue, even if the system hasn't onboarded the agent.
-- Process the conversation when the system has onboarded both the agent and the queue, even if the agent isn't mapped to the queue.
-- Reject the conversation when the system hasn't onboarded or configured the queue.
+- **Queue onboarded, agent not onboarded:**Process the conversation when the system has onboarded the queue, even if the system hasn't onboarded the agent.
+- **Both agent and queue onboarded:** Process the conversation even if the agent isn't mapped to the queue.
+- **Queue not onboarded or configured:** Reject the conversation.
 
 ## JSON Transcript Schemas
 
-### Voice Transcript Format
+### Voice Transcripts Format
 
 **Full example:**
 
@@ -262,7 +384,28 @@ The system validates agent and queue combinations as follows:
 }
 ```
 
-### Chat Transcript Format
+## Chat Transcript Format
+
+The generic connector documentation describes `chatScriptUrl` as the preferred reference for chat transcripts and `transcriptUrl` as an alternate alias.
+
+The expected chat transcript structure is a **flat JSON object (not an array)** with numeric message keys. Each message object contains the following fields:
+
+- `type`
+- `text`
+- A timestamp field
+
+### Chat Timestamp Formats
+
+The generic connector supports two chat timestamp formats, selected through the conversation source setting `chatscriptTimestampFormat`:
+
+| Format | Description |
+|---|---|
+| `offset` | Each message uses `offset`, specified in milliseconds relative to `conversationStartTime`. |
+| `unix` | Each message uses `timestamp`, specified as Unix epoch milliseconds. The first message must be at or after `conversationStartTime`, and the last message must be at or before `conversationEndTime`. |
+
+### AWS S3 Implementation Difference to Confirm
+
+The AWS S3 example below currently uses `timestamp` in Unix epoch milliseconds. Confirm whether the AWS S3 connector exposes or inherits `chatscriptTimestampFormat` and whether it accepts the offset format before using offset-based chat transcripts.
 
 **Example:**
 
@@ -291,6 +434,28 @@ The system validates agent and queue combinations as follows:
 | `text` | Message content | The message text. |
 | `timestamp` | Unix timestamp in milliseconds | Message send time. |
 | `userId` | Participant identifier | Agent email or customer ID. |
+
+#### Chat Transcript Validation Checklist
+
+The following validation rules apply to the generic connector:
+
+- The transcript must be a JSON object, not a JSON array.
+- The object must be flat; don't wrap message entries in a container property.
+- Message keys must be numeric strings and begin at `0` or `1`.
+- Each message must contain `type` and `text`.
+- The timestamp field must match the configured timestamp mode:
+  - `offset` for offset mode.
+  - `timestamp` for Unix mode.
+- Unix timestamps must be expressed in milliseconds, not seconds, and must fall within the conversation start and end times.
+
+### Speaker Type Discrepancy to Verify
+
+The generic connector field rules list `AGENT` and `USER` as the primary message type values. However:
+
+- Another explanatory note in the generic documentation also mentions `BOT` and `CUSTOMER`.
+- The AWS S3 example lists `AGENT`, `USER`, and `SYSTEM`.
+
+Confirm the accepted speaker type values for AWS S3 with Engineering and document one consistent list. Don't assume that all speaker values supported or mentioned in the generic documentation are supported by AWS S3.
 
 ## Storage Structure Options
 
@@ -366,7 +531,17 @@ Before you begin, verify that your S3 bucket is ready:
    - **File Format Validation**: Verifies that supported file formats are present and readable.
    - **Metadata Validation**: Verifies that required metadata fields are present and valid.
 
-The **Test** tab displays validation progress and any errors.
+#### Validation Status
+
+The **Test** tab displays validation progress and any errors encountered during testing.
+
+Each validation step can have one of the following statuses:
+
+| Status | Meaning |
+|---|---|
+| `Pending` | The validation step hasn't tested yet. |
+| `Pass` | The validation step succeeded. |
+| `Fail` | The validation step failed. The reason for the failure is displayed alongside the failed step. |
 
 <Note>The connector must pass all validation checks before you can proceed with queue mapping and activation.</Note>
 
@@ -376,6 +551,7 @@ The **Test** tab displays validation progress and any errors.
 2. Map each `queueId` from the `.csv` files to a Quality AI Express queue. Values must match exactly.
 3. Navigate to the **Schedule** tab.
 4. Set the **Interval** (minutes, hours, or days) and **Start Time** (UTC).
+The generic connector guide describes a **Start Date** picker as the earliest date from which conversations are eligible to be pulled; conversations recorded before that date are ignored. Confirm whether the AWS S3 Schedule tab uses this same date-based cutoff in addition to, or instead of, the UTC start time.
 5. Select **Save** to activate the connector.
 
 After saving, verify the setup is complete:
@@ -413,6 +589,35 @@ The setup is complete when conversations appear in **Quality AI Express** dashbo
 
 Processing time depends on conversation length, file size, ASR transcription latency for voice interactions, and LLM processing time.
 
+## How Connector Sync Works
 
+The generic connector documentation describes each scheduled sync run as follows:
+
+1. The connector connects to the configured storage location using the saved credentials.
+2. It looks for new conversation files added since the previous sync.
+3. It retrieves the files referenced by the CSV metadata and sends them for processing.
+4. It updates the connector's **Last Sync** value with the current date and time.
+
+Conversations ingested through the connector become available in the relevant Quality AI conversation views, dashboards, and analytics.
+
+### AWS S3 Implementation Details to Confirm
+
+Confirm whether the AWS S3 connector follows the same incremental-file discovery behavior as the generic connector and whether the **Last Sync** value is updated at the same point in the processing workflow.
+
+## Monitoring Connector Logs
+
+Use the connector's **Logs** action to review previous sync runs.
+
+The generic connector documentation specifies that each log entry includes:
+
+- Sync start time and end time.
+- Number of conversations pulled in.
+- Whether the run succeeded or failed.
+
+Use the run history to investigate missing conversations and verify whether a scheduled sync run completed.
+
+### AWS S3 Log Details to Verify
+
+Verify the AWS S3 UI label for the log action and the exact fields displayed in its log view against the current product interface. Don't assume that the AWS S3 interface exposes the same log details as the generic connector.
 
 ---
