@@ -311,6 +311,55 @@ FORMATS:
 | `subtitle`         | `string` | No       | --      | Item subtitle or description.                  |
 | `imageUrl`         | `string` | No       | --      | URL for the item's image.                      |
 | `defaultActionUrl` | `string` | No       | --      | URL opened when the item itself is tapped.     |
+| `id`               | `string` | No       | --      | Makes the row selectable. Sent as the action id when the row is tapped and matched against `ON_ACTION` keys. |
+| `value`            | `string` | No       | `id`    | Hidden value sent with the tap. Read it in the handler as `{{_action.value}}`. An authored number or boolean keeps its type. |
+
+#### Selectable list rows
+
+A row with an `id` is selectable. Tapping it sends the row's `id` and `value` back to the agent, as a carousel card button does, and the agent handles the selection in `ON_ACTION`.
+
+```yaml
+FLOW:
+  choose_account:
+    REASONING: false
+    RESPOND: "Which account?"
+      FORMATS:
+        LIST:
+          title: "Your accounts"
+          items:
+            - id: select_account
+              title: "Checking ****4521"
+              subtitle: "Available: $12,340.50"
+              value: "checking_4521"
+            - id: select_account
+              title: "Savings ****8872"
+              value: "savings_8872"
+    ON_ACTION:
+      select_account:
+        SET: chosen_account = "{{_action.value}}"
+        RESPOND: "Using {{_action.value}}."
+```
+
+Rows can also come from a tool or workflow result. Bind `items` to the collection and give the row `template` an `id` and a `value` that reads the record:
+
+```yaml
+LIST:
+  items:
+    from: "{{accounts}}"
+    template:
+      id: select_account
+      title: "{{nickname}}"
+      value: "{{account_id}}"
+```
+
+- A row without an `id` is display-only, or a link when it has `defaultActionUrl`. Nothing changes for existing lists.
+- A row cannot have both an `id` and a `defaultActionUrl`. The compiler reports [`LIST_ITEM_ACTION_AND_URL`](/agent-platform/abl/reference/errors-and-warnings#list_item_action_and_url).
+- Several rows can share one `id` and differ by `value`, so one `ON_ACTION` handler serves the whole list.
+- A step whose response has selectable rows and a matching `ON_ACTION` handler waits for the tap. This includes a list or carousel shown by an `ON_ACTION` reply or a tool's `on_result` reply. After one tap the list locks.
+- When `items` is bound to a collection without a `template`, the records render as display-only rows. Their own `id` or `value` fields never make a row selectable. Use a `template` to make bound rows selectable.
+- The tapped row's title is echoed as the customer's message.
+- The Web SDK and widget render selectable rows. Other channels show the list without selection.
+- Clients post every tap value as text. The Runtime restores an authored number or boolean, so `_action.value` keeps the type you wrote. A row with `value: 123` gives the number `123`, not the string `"123"`.
 
 Dynamic example — one list item per branch a tool returns:
 
@@ -586,7 +635,7 @@ ACTIONS:
 | `id`          | `string`  | Yes      | --      | Unique action identifier. Referenced in `ON_ACTION` handlers.               |
 | `type`        | `string`  | Yes      | --      | Element type: `button`, `select`, or `input`.                               |
 | `label`       | `string`  | Yes      | --      | Display label.                                                              |
-| `value`       | `string`  | No       | --      | Hidden value sent when the user interacts with this element.                |
+| `value`       | `string`  | No       | --      | Hidden value sent when the user interacts with this element. A `button` keeps an authored number or boolean as that type. `select` and `input` values stay strings. |
 | `url`         | `string`  | No       | --      | For `button` type only: clicking opens this link instead of posting the value back to the agent. (Aliases: `link`, `web_url`.) |
 | `description` | `string`  | No       | --      | Subtitle or help text (for list items).                                     |
 | `options`     | `array`   | No       | --      | Options for `select` type. Each has `id`, `label`, `description`.           |
@@ -669,7 +718,7 @@ To decide where each item sits, group items under `- ROW:`. A row holds any mix 
 | `- TEXT: "..."` | Shows a line of static text inside the form. It supports `{{variable}}` interpolation and is never sent with the form. |
 | `WIDTH:` | Under an item inside a `ROW`: the item's share of the line, a whole number from 1 to 12 (default 1). An item with `WIDTH: 2` takes twice the space of an item with `WIDTH: 1`. Ignored outside a `ROW`. |
 
-```yaml
+```yaml expandable=true
 ACTIONS:
   - INPUT: "Phone ID"
     ID: phone_id

@@ -143,8 +143,9 @@ Work down this list once per connection.
 | Create the Artemis connection | Saved as **Active** with the exact Stream ID and the shared secret. |
 | Configure the integration | Webhook URL and matching secret saved, and the integration active. |
 | Map the Architect outcomes | Intent names match branches that exist in the flow. |
+| Configure output parameters | Selected session key names match the outputs configured in Architect. |
 | Wire the Architect action | **Call Bot Connector** points at this integration, with the failure path connected. |
-| Run a test interaction | A turn reaches the agent, and Architect branches on the returned intent. |
+| Run a test interaction | A turn reaches the agent, Architect branches on the returned intent, and a `COMPLETE` response includes the selected available values. |
 
 ---
 
@@ -168,7 +169,46 @@ Artemis returns an intent name with each reply, and Architect branches on it. Co
 
 ---
 
-## Verify the connection
+## Send session values to Architect
+
+You can choose which Artemis session values the Genesys Bot Connector returns when an interaction completes. Use this for values such as the interaction language, a case ID, or a resolution code.
+
+### Configure output parameters
+
+1. Open the Genesys Bot Connector connection in Studio and select the **Configuration** tab.
+2. Enable **terminal intent mapping**, then add the exact session variable names under **Output parameters**, below **Architect outcome mapping**. Studio rejects duplicate names and the reserved name `artemisSessionId`.
+3. Select **Save Changes** to save the key list.
+4. In the relevant ABL step, set each selected session variable using the existing `SET` syntax. For example:
+
+   ```text
+   SET:
+     conversationLanguage = _language
+   ```
+
+   Make sure `_language` has been resolved before this step runs.
+
+5. In Genesys Architect, add the same names under **Call Bot Connector** > **Session Variables** > **Outputs**, then use them in the appropriate flow branches.
+
+### When Genesys receives the values
+
+On a successful `COMPLETE` reply, Runtime adds configured custom values to the response `parameters` object alongside the existing `parameters.artemisSessionId`. This applies to normal session closure and agent escalation, including silent escalation.
+
+Runtime sends only selected, available scalar values. Strings, booleans, and finite numbers are supported; missing, sensitive, secret, and unsupported values are omitted.
+
+| Scenario | Genesys reply | Custom output parameters |
+|---|---|---|
+| Normal session closure | `COMPLETE` | Sends configured, available values. |
+| Agent escalation, including silent escalation | `COMPLETE` | Sends configured, available values. |
+| Runtime session timeout, followed by another connector request | `COMPLETE` | Sends the last saved values for that bot session. |
+| Retry of a terminal reply | `COMPLETE` | Replays the original saved values for keys that remain configured. |
+| Ongoing message, including one with the default intent | `MOREDATA` | Omits custom output parameters. |
+| Failed reply | `FAILED` | Omits custom output parameters. |
+| Connection has no configured output keys | Any reply | Omits custom output parameters. |
+| Architect timeout or business-hours branch with no further connector request | No Artemis reply | Sends no new values. |
+
+An Architect timeout or business-hours decision that runs before Artemis returns `COMPLETE` can use only values from an earlier reply. Test those branches separately in Architect.
+
+---
 
 Test the failure modes as well as the happy path, because Architect branches on the status Artemis returns.
 
@@ -177,6 +217,9 @@ Test the failure modes as well as the happy path, because Architect branches on 
 3. Return an authored button, send its encoded payload in `inputMessage.buttonResponse.payload`, and confirm the session resumes with the right action value.
 4. Confirm a wrong secret returns `401`, an unknown or inactive Stream ID returns `404`, and malformed input returns `400`.
 5. Confirm the Architect flow handles `503` busy and execution failures without looping.
+6. Configure a sample output key, set it in the test agent, and confirm a `COMPLETE` response includes the selected available value alongside `artemisSessionId`. Check that unset, sensitive, and unselected values are omitted.
+7. Confirm ongoing `MOREDATA` replies omit custom outputs. Retry a terminal completion and confirm the original saved values are returned for keys that remain configured.
+8. In Architect, confirm the configured output is available after `COMPLETE`. Test Architect-side timeout or business-hours branches that run before an Artemis completion reply separately.
 
 ---
 
@@ -188,6 +231,7 @@ Genesys carries the whole turn in one exchange.
 |---|---|
 | Request | Always `genesysConversationId` and `inputMessage.type`. Text turns add `inputMessage.text`. Structured quick replies add `inputMessage.buttonResponse.payload`. |
 | Response | `replymessages`, `botState`, `intent`, and `endOfTask`. A normal reply carries one `replymessages` entry of type Text. |
+| Custom outputs | On `COMPLETE`, `parameters` can include the configured output values alongside `artemisSessionId`. `MOREDATA` and `FAILED` omit custom outputs. |
 | Quick replies | Authored buttons become a Structured reply with QuickReply entries. Each payload encodes the action ID and value. |
 | Defaults | `botState` `MOREDATA`, intent `Default Kore VA Intent`, and `endOfTask` `false`, unless outcome mapping applies. |
 | Media | The channel doesn't process inbound media or send media responses. |
@@ -245,6 +289,7 @@ Open a connection from **Deployments** > **Channels** > **Genesys** to manage it
     | **Message template** | The authorization message the connection sends when a tool needs the user to authorize. Insert variables from the chips, select **Show more** for the full list, and select **Show preview** to check it. |
     | **Webhook URL** | The Bot Connector URL, with a copy control. |
     | **Architect outcome mapping** | The intent names Artemis returns. See [Map Architect outcomes](#map-architect-outcomes). |
+    | **Output parameters** | The selected session variable names Runtime can return on `COMPLETE`. See [Send session values to Architect](#send-session-values-to-architect). |
 
     Select **Save Changes** to apply your changes.
   </Tab>

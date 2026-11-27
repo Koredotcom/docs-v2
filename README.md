@@ -23,24 +23,25 @@ To preview your edits locally, use the npm package of [Mintlify](https://www.min
 ## Folder structure and common files
 
 ```text
-agent-platform/        # Agent Platform v1 archived docs
-agent-platform/v1      # Artemis Agent Platform v2 docs
+.claude/               # Claude Code project instructions (CLAUDE.md). Other files are git-ignored.
+.github/               # Repo automation
+├── CODEOWNERS
+├── scripts/           # Search index build script (build-index.cjs)
+└── workflows/         # Search index builds, external link check, filename convention check
+.vscode/               # Shared VSCode settings and recommended extensions
+agent-platform/        # Agent Platform (Artemis) v2 docs. Has its own drafts/ folder.
+└── v1/                # Agent Platform v1 archived docs
 ai-for-process/        # AI for Process archived docs
-ai-for-service/        # AI for Service docs
-ai-for-work/           # AI for Work docs
+ai-for-service/        # AI for Service docs. Has its own drafts/ folder.
+ai-for-work/           # AI for Work docs. Has its own drafts/ folder.
 assets/                # Common assets for all docs, say favicon, logo, etc. Used in docs.json.
-├── favicon.png
-├── favicon-dark.png
-├── favicon-light.svg
-├── koreailogo-black.svg
-├── koreailogo-white.svg
-custom-css             # custom stylesheets. Don't edit.
-├── style.css
-drafts                 # Drafted content or assets that are to be used later.
-snippets               # Reusable content for single sourcing
-.cspell.json           # Spell check config file that's NOT available in the repo but added in everyone's local clone manually. Works when extension is installed in VSCode editor.
+custom-css/            # Custom stylesheets. Don't edit.
+└── style.css
+drafts/                # Drafted content or assets that are to be used later. Excluded from the Mintlify build. The product folders agent-platform/, ai-for-service/, and ai-for-work/ have their own drafts/ folders.
+snippets/              # Reusable content for single sourcing, including JSX components
+.cspell.json           # Local only. Not in the repo (git-ignored). Add it manually. Instructions are [here](https://github.com/ashishguptaiitb/koreaidocs-cspell-config).
 .gitignore             # Exclusions from repo uploads
-.lycheeignore          # Configuration for Lychee linkchecker. It is configured to run as an on-demand Action on this repo.
+.lycheeignore          # Configuration for Lychee linkchecker. It's an on-demand Action.
 .markdownlint.jsonc    # Markdown linting rules. Works when extension is installed in VSCode editor
 .mintignore            # Exclusions from the Mintlify build
 docs.json              # Config, TOC, home page design theme, analytics integration, etc.
