@@ -1,5 +1,5 @@
 (() => {
-  if (location.pathname !== "/ai-for-service" && !location.pathname.startsWith("/ai-for-service/")) return;
+  const isAiForServicePage = () => /^\/ai-for-service(?:\/|$)/.test(window.location.pathname);
   const script = document.currentScript || Array.from(document.scripts).find((item) => item.src.includes("assistant.js"));
   const scriptUrl = new URL(script?.src || location.href, location.href);
   const enabled = script?.dataset.enabled !== "false" && scriptUrl.searchParams.get("enabled") !== "false" && window.DOCS_AI_ENABLED !== false;
@@ -13,7 +13,10 @@
     console.error("Docs assistant: set data-endpoint on the script tag.");
     return;
   }
-  if (document.getElementById("docs-ai-assistant")) return;
+  if (window.__KORE_DOCS_AI_ASSISTANT__) {
+    window.__KORE_DOCS_AI_ASSISTANT__.updateVisibility();
+    return;
+  }
 
   const style = document.createElement("style");
   style.textContent = `
@@ -251,6 +254,34 @@
     send.textContent = "Send";
     send.classList.remove("da-stop");
   }
+  function updateVisibility() {
+    const visible = isAiForServicePage();
+    root.hidden = !visible;
+    if (!visible) {
+      cancelActiveRequest("Request canceled because you left AI for Service documentation.");
+      panel.classList.remove("da-open");
+      launch.setAttribute("aria-expanded", "false");
+    } else {
+      syncTheme();
+    }
+  }
+
+  window.__KORE_DOCS_AI_ASSISTANT__ = { updateVisibility };
+  const routeChangeEvent = "docs-ai-route-change";
+  for (const method of ["pushState", "replaceState"]) {
+    const original = window.history[method];
+    if (typeof original !== "function") continue;
+    window.history[method] = function (...args) {
+      const result = original.apply(this, args);
+      window.dispatchEvent(new Event(routeChangeEvent));
+      return result;
+    };
+  }
+  window.addEventListener(routeChangeEvent, updateVisibility);
+  window.addEventListener("popstate", updateVisibility);
+  window.addEventListener("hashchange", updateVisibility);
+  updateVisibility();
+
   function scrollMessageToStart(node) {
     requestAnimationFrame(() => {
       if (!panel.classList.contains("da-open")) return;
