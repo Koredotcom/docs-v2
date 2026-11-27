@@ -1,21 +1,27 @@
-# Ask AI staging Worker
+# Ask AI Worker
 
-This Worker serves the Ask AI API for the `ai-for-service-dev` documentation stage. It uses only the AI for Service search index configured in `wrangler.toml` and deploys as `docs-ai-assistant-staging`.
+The same Worker source supports staging and production. The top-level Wrangler configuration is the staging Worker; the production Worker is the production environment in worker/wrangler.toml.
 
-## Deploy from Cloudflare Builds
+## Staging
 
-1. In Cloudflare, open **Workers & Pages** and create an application connected to the `Koredotcom/docs-v2` GitHub repository.
-2. Set the repository branch to `ai-for-service-dev` and the root directory to `worker`.
-3. Use `npx wrangler deploy` as the deploy command. Confirm the deployed Worker name matches `docs-ai-assistant-staging` in `wrangler.toml`.
-4. In the Worker dashboard, open **Settings → Variables and Secrets** and add `OPENROUTER_API_KEY` as a **secret**.
-5. Save and deploy. Cloudflare Builds will deploy the Worker on pushes to the selected branch. The Worker URL will appear in Cloudflare under the `workers.dev` subdomain.
+Cloudflare Builds should use repository Koredotcom/docs-v2, branch ai-for-service-dev, root directory worker, and deploy command npx wrangler deploy. This keeps the existing Worker name docs-ai-assistant-staging.
 
-Cloudflare performs the build and deployment, so this flow does not need a Cloudflare API token, account ID, or GitHub Actions secrets. `ALLOWED_ORIGINS` and `SITE_URL` are public staging values in `wrangler.toml`. Keep the OpenRouter key in Cloudflare Worker secrets; do not put it in Git. The local `worker/.dev.vars` file is for local Wrangler development only and is ignored by Git.
+Set OPENROUTER_API_KEY as a Cloudflare Worker secret on the staging Worker. The stage origin and SITE_URL are configured in wrangler.toml.
 
-See [Cloudflare Workers Builds](https://developers.cloudflare.com/workers/ci-cd/builds/) for Git integration setup.
+## Production
+
+After the production changes are merged to main, configure Cloudflare Builds for branch main, root directory worker, and deploy command npx wrangler deploy --env production. This deploys docs-ai-assistant-production from the production environment in wrangler.toml.
+
+Set OPENROUTER_API_KEY as a Cloudflare Worker secret on the production Worker. Secrets are separate per Worker environment and are not stored in Git. After the first production deployment, add the secret using the Cloudflare dashboard or run npx wrangler secret put OPENROUTER_API_KEY --env production from an authenticated Wrangler session.
+
+The production origin and SITE_URL are https://docs.kore.ai. Both environments intentionally use the current shared AI for Service index at https://raw.githubusercontent.com/Koredotcom/docs-v2/search-index/ai-for-service.json.
+
+assistant.js selects the production Worker on docs.kore.ai, the staging Worker on other hosted docs pages, and the local Worker on localhost. Set window.DOCS_AI_ENDPOINT before the script loads to override the default endpoint.
 
 ## Widget feature flag
 
-The widget is enabled by default. Disable it in its script tag with `data-enabled="false"` or add `?enabled=false` to the script URL. Re-enable it by setting `data-enabled="true"` or removing the `enabled=false` query parameter. A page can also set `window.DOCS_AI_ENABLED = false` before loading the script. The flag hides the widget without changing the Worker deployment.
+The widget is enabled by default. Disable it with data-enabled="false", an enabled=false script URL parameter, or window.DOCS_AI_ENABLED = false before the script loads. Mintlify loads root-level JavaScript files automatically, so docs.json does not need to change.
 
-Mintlify loads root-level JavaScript files automatically. `assistant.js` is at the docs root, is limited to `/ai-for-service` routes, and defaults to the staging Worker URL. `docs.json` remains unchanged.
+## Local development
+
+Use worker/.dev.vars for local Wrangler secrets and development only. It is ignored by Git. Never put OPENROUTER_API_KEY in wrangler.toml, source files, or commits.

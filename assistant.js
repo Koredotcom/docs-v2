@@ -4,11 +4,16 @@
   const scriptUrl = new URL(script?.src || location.href, location.href);
   const enabled = script?.dataset.enabled !== "false" && scriptUrl.searchParams.get("enabled") !== "false" && window.DOCS_AI_ENABLED !== false;
   if (!enabled) return;
+  const hostname = location.hostname.toLowerCase();
+  const defaultEndpoint = hostname === "localhost" || hostname === "127.0.0.1"
+    ? "http://127.0.0.1:8787/ask"
+    : (hostname === "docs.kore.ai"
+      ? "https://docs-ai-assistant-production.pratik-gokhe.workers.dev/ask"
+      : "https://docs-ai-assistant-staging.pratik-gokhe.workers.dev/ask");
   const endpoint = script?.dataset.endpoint
-    || new URL(script?.src || location.href).searchParams.get("endpoint")
-    || (location.hostname === "localhost" || location.hostname === "127.0.0.1"
-      ? "http://127.0.0.1:8787/ask"
-      : (window.DOCS_AI_ENDPOINT || "https://docs-ai-assistant-staging.pratik-gokhe.workers.dev/ask"));
+    || scriptUrl.searchParams.get("endpoint")
+    || window.DOCS_AI_ENDPOINT
+    || defaultEndpoint;
   if (!endpoint) {
     console.error("Docs assistant: set data-endpoint on the script tag.");
     return;
@@ -181,8 +186,12 @@
       const data = await response.json();
       if (activeRequest !== request) return;
       if (!response.ok) throw new Error(data.error || "Request failed");
+      if (data.status === "out_of_scope") {
+        pending.textContent = data.answer || "I can help with questions covered by the AI for Service documentation, such as features, setup, and troubleshooting.";
+        return;
+      }
       const answer = String(data.answer || "No answer was returned.").trim();
-      if (/^I couldn't find that in the AI for Service documentation\.?$/i.test(answer)) {
+      if (data.status === "no_answer" || /^I couldn't find that in the AI for Service documentation\.?$/i.test(answer)) {
         renderNoAnswer(pending, question);
         return;
       }

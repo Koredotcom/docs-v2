@@ -5,6 +5,7 @@ const MAX_CONTEXT_CHARS = 10500;
 const INDEX_TIMEOUT_MS = 10000;
 const MODEL_TIMEOUT_MS = 30000;
 const NO_ANSWER = "I couldn't find that in the AI for Service documentation.";
+const OUT_OF_SCOPE = "I can help with questions covered by the AI for Service documentation, such as features, setup, and troubleshooting.";
 const STOP_WORDS = new Set([
   "a", "about", "after", "all", "an", "and", "any", "are", "as", "at", "be", "because", "before", "but", "by",
   "can", "could", "doc", "docs", "do", "does", "document", "documentation", "find", "for", "from", "get", "had",
@@ -55,7 +56,7 @@ export default {
       const index = await getIndex(env.DOCS_INDEX_URL || DEFAULT_INDEX_URL);
       const matches = findMatches(index.filter(isAiForServiceDoc), question, 6);
       if (!matches.length) {
-        return json({ answer: NO_ANSWER, sources: [] }, 200, origin, allowed);
+        return json({ answer: OUT_OF_SCOPE, status: "out_of_scope", sources: [] }, 200, origin, allowed);
       }
 
       let used = 0;
@@ -106,7 +107,7 @@ export default {
       if (!answer) return json({ error: "The model returned an empty answer." }, 502, origin, allowed);
       const noAnswer = /^I couldn't find that in the AI for Service documentation\.?$/i.test(answer);
       const sources = noAnswer ? [] : selectRelevantSources(contextItems, question, answer);
-      return json({ answer, sources }, 200, origin, allowed);
+      return json({ answer, status: noAnswer ? "no_answer" : "answered", sources }, 200, origin, allowed);
     } catch (error) {
       console.error("Assistant request failed", error?.message || error);
       if (error?.name === "TimeoutError") {
