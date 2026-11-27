@@ -4,12 +4,7 @@
   const scriptUrl = new URL(script?.src || location.href, location.href);
   const enabled = script?.dataset.enabled !== "false" && scriptUrl.searchParams.get("enabled") !== "false" && window.DOCS_AI_ENABLED !== false;
   if (!enabled) return;
-  const hostname = location.hostname.toLowerCase();
-  const defaultEndpoint = hostname === "localhost" || hostname === "127.0.0.1"
-    ? "http://127.0.0.1:8787/ask"
-    : (hostname === "docs.kore.ai"
-      ? "https://docs-ai-assistant-production.pratik-gokhe.workers.dev/ask"
-      : "https://docs-ai-assistant-staging.pratik-gokhe.workers.dev/ask");
+  const defaultEndpoint = "https://docs-ai-assistant-staging.pratik-gokhe.workers.dev/ask";
   const endpoint = script?.dataset.endpoint
     || scriptUrl.searchParams.get("endpoint")
     || window.DOCS_AI_ENDPOINT
